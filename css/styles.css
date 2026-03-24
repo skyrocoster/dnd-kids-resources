@@ -162,9 +162,9 @@ body {
   justify-content: center;
   width: 35px;
   height: 18px;
-  border: 1.5px solid #c4a47a;
+  border: 1.5px solid #2471a3;
   border-radius: 3px;
-  background: white;
+  background: #e3f2fd;
   position: relative;
   font-size: 7pt;
   font-weight: 700;
@@ -174,30 +174,30 @@ body {
 .sab-box::before {
   content: 'SAM';
   position: absolute;
-  color: rgba(196, 164, 122, 0.3);
+  color: #2471a3;
   font-size: 6.5pt;
   font-weight: 700;
 }
 
-.ability-box {
+.bth-box {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 35px;
   height: 18px;
-  border: 1.5px solid #c4a47a;
+  border: 1.5px solid #e67e22;
   border-radius: 3px;
-  background: white;
+  background: #ffe0b2;
   position: relative;
   font-size: 7pt;
   font-weight: 700;
   color: transparent;
   vertical-align: middle;
 }
-.ability-box::before {
+.bth-box::before {
   content: 'BtH';
   position: absolute;
-  color: rgba(196, 164, 122, 0.3);
+  color: #e67e22;
   font-size: 6.5pt;
   font-weight: 700;
 }

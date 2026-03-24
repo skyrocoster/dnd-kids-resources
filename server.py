@@ -10,7 +10,7 @@ import os
 import webbrowser
 from pathlib import Path
 
-PORT = 8000
+PORT = 8001
 HANDLER = http.server.SimpleHTTPRequestHandler
 
 

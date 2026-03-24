@@ -28,7 +28,7 @@
     height: 297mm;
     margin: 0 auto;
     background: var(--parchment);
-    padding: 6mm 8mm 6mm;
+    padding: 4mm 6mm 4mm;
     position: relative;
     overflow: hidden;
     display: flex;
@@ -54,11 +54,12 @@
     font-family: 'Fredoka One', cursive;
     font-size: 8pt;
     color: white;
-    padding: 0.5mm 3mm;
+    padding: 1.2mm 2.5mm;
     border-radius: 20px;
     display: inline-block;
-    margin-bottom: 0.8mm;
-    line-height: 1.3;
+    margin-bottom: 0.5mm;
+    line-height: 1.2;
+    text-align: center;
   }
   .wb {
     background: var(--wb);
@@ -84,39 +85,39 @@
   /* ── HEADER ── */
   .header {
     text-align: center;
-    margin-bottom: 2mm;
-    padding-top: 0.5mm;
+    margin-bottom: 1mm;
+    padding-top: 0;
   }
   .header h1 {
     font-family: 'Fredoka One', cursive;
-    font-size: 20pt;
+    font-size: 16pt;
     color: var(--red);
     text-shadow: 2px 2px 0 #f5cba7, 3px 3px 0 var(--border);
     line-height: 1;
   }
   .header p {
-    font-size: 7pt;
+    font-size: 6pt;
     color: var(--muted);
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 2px;
-    margin-top: 1mm;
+    margin-top: 0.5mm;
   }
 
   /* ══ ROW 1: Name + AC + Speed + Initiative + Spell Mod + Spell DC ══ */
   .row-top {
     display: grid;
-    grid-template-columns: 1fr 26mm 26mm 26mm 26mm 26mm;
-    gap: 2mm;
+    grid-template-columns: 1fr 24mm 24mm 24mm 24mm 24mm;
+    gap: 1.5mm;
     align-items: end;
-    margin-bottom: 1mm;
+    margin-bottom: 2.2mm;
   }
 
   /* Shield */
   .shield-wrap { text-align: center; }
   .shield-svg-wrap {
-    width: 22mm;
-    height: 25mm;
+    width: 20mm;
+    height: 23mm;
     margin: 0 auto;
     position: relative;
   }
@@ -143,7 +144,6 @@
     display: block;
     width: 13mm;
     height: 10mm;
-    border-bottom: 2.5px solid var(--blue);
     position: relative;
     z-index: 1;
   }
@@ -151,8 +151,8 @@
   /* Uniform circle stat */
   .circle-stat { text-align: center; }
   .stat-circle {
-    width: 22mm;
-    height: 22mm;
+    width: 20mm;
+    height: 20mm;
     border: 2.5px solid var(--wbl);
     border-radius: 50%;
     background: var(--wb);
@@ -172,40 +172,53 @@
     pointer-events: none;
   }
 
+  /* Color stat circles by header color */
+  .row-top > .circle-stat:nth-child(3) .stat-circle { border-color: var(--green); }
+  .row-top > .circle-stat:nth-child(4) .stat-circle { border-color: var(--green); }
+  .row-top > .circle-stat:nth-child(5) .stat-circle { border-color: var(--blue); }
+  .row-top > .circle-stat:nth-child(6) .stat-circle { border-color: var(--purple); }
+
   /* ══ ROW 2: HP full width ══ */
   .row-hp {
-    margin-bottom: 1mm;
+    margin-bottom: 2mm;
   }
   .hp-inner {
-    padding: 2mm 3mm;
+    padding: 1.5mm 2mm;
     display: flex;
     align-items: center;
-    gap: 4mm;
+    gap: 3mm;
   }
   .hp-heart {
-    font-size: 28pt;
+    font-size: 24pt;
     line-height: 1;
     flex-shrink: 0;
   }
   .hp-field { flex: 1; }
-  .hp-field .wline { min-height: 10mm; }
+  .hp-field .wline { min-height: 8mm; }
 
   /* ══ ROW 3: Ability Modifiers ══ */
   .row-mods {
     display: grid;
     grid-template-columns: repeat(6, 1fr);
-    gap: 1.5mm;
-    margin-bottom: 1mm;
+    gap: 1.2mm;
+    margin-bottom: 2mm;
   }
   .mod-box {
     background: var(--wb);
     border: 2.5px solid var(--wbl);
     border-radius: 10px;
     text-align: center;
-    padding: 2mm 1mm 1.5mm;
+    padding: 1mm 0.8mm 0;
     position: relative;
-    overflow: hidden;
+    overflow: visible;
+    min-height: 22mm;
   }
+  .mod-box:nth-child(1) { background: #ffe0b2; border-color: #e67e22; }
+  .mod-box:nth-child(2) { background: #c8e6c9; border-color: #1e8449; }
+  .mod-box:nth-child(3) { background: #ffccbc; border-color: #e67e22; }
+  .mod-box:nth-child(4) { background: #e3f2fd; border-color: #2471a3; }
+  .mod-box:nth-child(5) { background: #f3e5f5; border-color: #7d3c98; }
+  .mod-box:nth-child(6) { background: #fffde7; border-color: #c9a90a; }
   .mod-emoji {
     position: absolute;
     inset: 0;
@@ -221,42 +234,51 @@
     font-family: 'Fredoka One', cursive;
     font-size: 7.5pt;
     color: var(--border);
-    display: block;
-    margin-bottom: 1mm;
-    position: relative;
+    position: absolute;
+    bottom: 2mm;
+    left: 2mm;
     z-index: 1;
+    margin: 0;
   }
   .mod-box:nth-child(1) .mod-name { color: #c0392b; }
   .mod-box:nth-child(2) .mod-name { color: #1e8449; }
   .mod-box:nth-child(3) .mod-name { color: #e67e22; }
   .mod-box:nth-child(4) .mod-name { color: #2471a3; }
-  .mod-box:nth-child(5) .mod-name { color: #7d3c98; }
-  .mod-box:nth-child(6) .mod-name { color: #c9a90a; }
+  .mod-box:nth-child(5) .mod-name { color: #8e44ad; }
+  .mod-box:nth-child(6) .mod-name { color: #f39c12; }
   .mod-val {
-    display: block;
-    height: 10mm;
-    border-bottom: 2px solid #c4a47a;
-    font-size: 18pt;
+    position: relative;
+    height: 8mm;
+    font-size: 16pt;
     font-weight: 800;
-    line-height: 10mm;
+    display: flex;
+    align-items: flex-end;
+    padding-left: 1mm;
   }
 
   /* ══ ROW 4: Saving Throws ══ */
   .row-saves {
     display: grid;
     grid-template-columns: repeat(6, 1fr);
-    gap: 1.5mm;
-    margin-bottom: 1mm;
+    gap: 1.2mm;
+    margin-bottom: 2mm;
   }
   .save-box {
     background: var(--wb);
     border: 2.5px solid var(--wbl);
     border-radius: 10px;
     text-align: center;
-    padding: 1.5mm 1mm;
+    padding: 1mm 0.8mm 0;
     position: relative;
-    overflow: hidden;
+    overflow: visible;
+    min-height: 22mm;
   }
+  .save-box:nth-child(1) { background: #ffe0b2; border-color: #e67e22; }
+  .save-box:nth-child(2) { background: #c8e6c9; border-color: #1e8449; }
+  .save-box:nth-child(3) { background: #ffccbc; border-color: #e67e22; }
+  .save-box:nth-child(4) { background: #e3f2fd; border-color: #2471a3; }
+  .save-box:nth-child(5) { background: #f3e5f5; border-color: #7d3c98; }
+  .save-box:nth-child(6) { background: #fffde7; border-color: #c9a90a; }
   .save-emoji {
     position: absolute;
     inset: 0;
@@ -271,23 +293,33 @@
   .save-name {
     font-family: 'Fredoka One', cursive;
     font-size: 7.5pt;
-    color: var(--orange);
-    display: block;
-    margin-bottom: 1mm;
-    position: relative;
+    position: absolute;
+    bottom: 2mm;
+    left: 2mm;
     z-index: 1;
+    margin: 0;
   }
+  .save-box:nth-child(1) .save-name { color: #c0392b; }
+  .save-box:nth-child(2) .save-name { color: #1e8449; }
+  .save-box:nth-child(3) .save-name { color: #e67e22; }
+  .save-box:nth-child(4) .save-name { color: #2471a3; }
+  .save-box:nth-child(5) .save-name { color: #8e44ad; }
+  .save-box:nth-child(6) .save-name { color: #f39c12; }
   .save-val {
-    display: block;
+    position: relative;
     height: 8mm;
-    border-bottom: 2px solid #c4a47a;
+    font-size: 16pt;
+    font-weight: 800;
+    display: flex;
+    align-items: flex-end;
+    padding-left: 1mm;
   }
 
   /* ══ BOTTOM SECTION ══ */
   .row-bottom {
     display: grid;
     grid-template-columns: 1fr auto;
-    gap: 1.5mm;
+    gap: 1mm;
     align-items: stretch;
     flex: 1;
   }
@@ -296,13 +328,19 @@
   .skills-grid {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
-    gap: 1mm 1.5mm;
-    padding: 1mm 1.5mm;
+    gap: 0.8mm 1.2mm;
+    padding: 0.8mm 1.2mm;
   }
   .skill-row {
     display: flex;
     align-items: center;
-    gap: 2mm;
+    gap: 1.5mm;
+    border-right: 1px solid rgba(176, 134, 90, 0.2);
+    padding-right: 1.2mm;
+  }
+  .skill-row:nth-child(3n) {
+    border-right: none;
+    padding-right: 0;
   }
   .skill-emoji {
     position: absolute;
@@ -317,7 +355,7 @@
   }
 
   .skill-val {
-    width: 11mm;
+    width: 10mm;
     height: 8mm;
     background: var(--wb);
     border: 2px solid var(--wbl);
@@ -329,7 +367,7 @@
   .skill-name {
     font-size: 7.5pt;
     font-weight: 700;
-    line-height: 1.2;
+    line-height: 1.1;
     position: relative;
     z-index: 1;
   }
@@ -338,21 +376,21 @@
   .tick-row {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
-    gap: 1.5mm;
-    margin-top: 1mm;
+    gap: 1mm;
+    margin-top: 0.7mm;
   }
   .tick-box {
     background: var(--wb);
     border: 2.5px solid var(--wbl);
     border-radius: 8px;
-    padding: 2mm 3mm;
+    padding: 1.5mm 2mm;
     display: flex;
     align-items: center;
-    gap: 2.5mm;
+    gap: 2mm;
   }
   .tick-square {
-    width: 12mm;
-    height: 12mm;
+    width: 10mm;
+    height: 10mm;
     border: 2.5px solid var(--wbl);
     border-radius: 5px;
     background: white;
@@ -360,7 +398,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 16pt;
+    font-size: 14pt;
     color: transparent;
   }
   .tick-box.adv .tick-square  { border-color: var(--green); }
@@ -368,24 +406,51 @@
   .tick-box.ins .tick-square  { border-color: var(--gold); }
   .tick-text h4 {
     font-family: 'Fredoka One', cursive;
-    font-size: 9pt;
-    line-height: 1.2;
+    font-size: 8pt;
+    line-height: 1.1;
   }
   .tick-box.adv .tick-text h4 { color: var(--green); }
   .tick-box.dis .tick-text h4 { color: var(--red); }
   .tick-box.ins .tick-text h4 { color: var(--gold); }
   .tick-text p {
-    font-size: 6pt;
+    font-size: 5.5pt;
     color: var(--muted);
     font-weight: 700;
-    line-height: 1.3;
+    line-height: 1.2;
   }
 
   /* Card slot */
-  .card-col { display: flex; flex-direction: column; align-items: center; gap: 0; }
+  .card-col { 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    gap: 0.5mm;
+    justify-content: flex-start;
+    width: 63.5mm;
+    flex: 1;
+  }
+  .card-col .pill {
+    width: 100%;
+    text-align: center;
+    display: block;
+  }
+
+  /* Hero Name pill */
+  .row-top > div:first-child > .pill {
+    width: 100%;
+    text-align: center;
+    display: block;
+  }
+
+  /* Hit Points pill */
+  .row-hp > .pill {
+    width: 100%;
+    text-align: center;
+    display: block;
+  }
   .card-slot {
     width: 63.5mm;
-    height: 88.9mm;
+    flex: 1;
     background: var(--wb);
     border: 3px dashed var(--wbl);
     border-radius: 10px;
@@ -398,59 +463,91 @@
     font-family: 'Fredoka One', cursive;
     text-align: center;
   }
-  .card-slot-icon { font-size: 24pt; }
-  .card-slot-label { font-size: 8pt; line-height: 1.4; }
+  .card-slot-icon { font-size: 20pt; }
+  .card-slot-label { font-size: 7pt; line-height: 1.3; }
 
   /* ══ SPELL SLOTS ══ */
-  .spell-slots-grid {
-    display: grid;
-    grid-template-columns: repeat(9, 1fr);
-    gap: 1.5mm;
-    margin-bottom: 1mm;
-    padding: 1.5mm 1.5mm;
-    background: var(--wb);
-    border: 2.5px solid var(--wbl);
+  /* ── Prepared Spells Box ── */
+  .prepared-spells-box {
+    background: linear-gradient(135deg, #fdf5e1 0%, #fef9c3 100%);
+    border: 2.5px solid var(--gold);
     border-radius: 10px;
-  }
-  .spell-level {
+    padding: 0.8mm 1.2mm;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.5mm;
-    padding: 0.5mm 0.5mm;
-    border-radius: 5px;
-    border-left: 3px solid var(--wbl);
+    gap: 0.6mm;
   }
-  .spell-level:nth-child(1) { background: #fef5e7; border-left-color: #c9a90a; }
-  .spell-level:nth-child(2) { background: #fef9c3; border-left-color: #c9a90a; }
-  .spell-level:nth-child(3) { background: #fadbd8; border-left-color: #c0392b; }
-  .spell-level:nth-child(4) { background: #fadbd8; border-left-color: #c0392b; }
-  .spell-level:nth-child(5) { background: #d7bde2; border-left-color: #7d3c98; }
-  .spell-level:nth-child(6) { background: #d7bde2; border-left-color: #7d3c98; }
-  .spell-level:nth-child(7) { background: #a9dfbf; border-left-color: #1e8449; }
-  .spell-level:nth-child(8) { background: #a9dfbf; border-left-color: #1e8449; }
-  .spell-level:nth-child(9) { background: #aed6f1; border-left-color: #2471a3; }
-  .spell-level-name {
-    font-family: 'Fredoka One', cursive;
-    font-size: 7pt;
+  .prepared-label {
+    font-family: 'Nunito', sans-serif;
+    font-size: 8pt;
+    font-weight: 600;
     color: var(--ink);
-    font-weight: 700;
+  }
+  .prepared-write-box {
+    width: 25mm;
+    height: 8mm;
+    background: var(--wb);
+    border: 2px solid var(--wbl);
+    border-radius: 5px;
+    flex-shrink: 0;
+  }
+
+  /* ── Spell Levels Container ── */
+  .spell-levels-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4mm;
+    padding: 0.7mm;
+    background: var(--wb);
+    border: 2.5px solid var(--wbl);
+    border-radius: 10px;
+    width: fit-content;
+    align-content: start;
+    overflow: hidden;
+    flex: 1;
+  }
+  .spell-level-row {
+    display: grid;
+    grid-template-columns: 35mm auto;
+    gap: 1mm;
+    align-items: center;
+    padding: 0.5mm 0.8mm;
+    border-radius: 6px;
+    border-left: 3px solid var(--wbl);
+    width: fit-content;
+  }
+  .spell-level-row:nth-child(1) { background: #fef5e7; border-left-color: #c9a90a; }
+  .spell-level-row:nth-child(2) { background: #fef9c3; border-left-color: #c9a90a; }
+  .spell-level-row:nth-child(3) { background: #fadbd8; border-left-color: #c0392b; }
+  .spell-level-row:nth-child(4) { background: #fadbd8; border-left-color: #c0392b; }
+  .spell-level-row:nth-child(5) { background: #d7bde2; border-left-color: #7d3c98; }
+  .spell-level-row:nth-child(6) { background: #d7bde2; border-left-color: #7d3c98; }
+  .spell-level-row:nth-child(7) { background: #a9dfbf; border-left-color: #1e8449; }
+  .spell-level-row:nth-child(8) { background: #a9dfbf; border-left-color: #1e8449; }
+  .spell-level-row:nth-child(9) { background: #aed6f1; border-left-color: #2471a3; }
+  .spell-level-label {
+    font-family: 'Nunito', sans-serif;
+    font-size: 8pt;
+    color: var(--ink);
+    font-weight: 600;
     display: block;
   }
   .spell-circles {
     display: flex;
     flex-wrap: wrap;
-    gap: 1mm;
-    justify-content: center;
+    gap: 0.7mm;
+    justify-content: flex-start;
   }
   .spell-circle {
-    width: 9mm;
-    height: 9mm;
-    border: 2px solid var(--wbl);
+    width: 7mm;
+    height: 7mm;
+    border: 1.5px solid var(--wbl);
     border-radius: 50%;
     background: white;
     cursor: pointer;
     transition: background 0.2s;
+    flex-shrink: 0;
   }
   .spell-circle:hover {
     background: #f0f0f0;
@@ -468,7 +565,9 @@
     .corner { display: none; }
     .pill { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .wb { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .spell-level { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .prepared-spells-box { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .prepared-write-box { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .spell-level-row { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     @page { margin: 0; size: A4; background: var(--parchment); }
   }
 </style>
@@ -530,7 +629,7 @@
     <p>Dungeons &amp; Dragons · 5th Edition</p>
   </div>
 
-  <!-- ROW 1: Name | Armour Class | Speed | Initiative | Spell Casting Modifier | Spell DC -->
+  <!-- ROW 1: Name | Armour Class | Speed | Initiative | Spell Attack Modifier | Spell DC -->
   <div class="row-top">
 
     <div>
@@ -562,7 +661,7 @@
     </div>
 
     <div class="circle-stat">
-      <span class="pill" style="background:var(--purple);">Spell Casting Modifier</span>
+      <span class="pill" style="background:var(--blue);">🪄 Spell Attack Modifier</span>
       <div class="stat-circle"><div class="stat-emoji">🪄</div></div>
     </div>
 
@@ -587,143 +686,131 @@
   <!-- ROW 3: Ability Modifiers -->
   <span class="pill" style="background:var(--blue);">💪 Ability Modifiers</span>
   <div class="row-mods">
-    <div class="mod-box"><div class="mod-emoji">💪</div><span class="mod-name">Strength</span><span class="mod-val"></span></div>
-    <div class="mod-box"><div class="mod-emoji">🎯</div><span class="mod-name">Dexterity</span><span class="mod-val"></span></div>
-    <div class="mod-box"><div class="mod-emoji">🛡️</div><span class="mod-name">Constitution</span><span class="mod-val"></span></div>
-    <div class="mod-box"><div class="mod-emoji">🧠</div><span class="mod-name">Intelligence</span><span class="mod-val"></span></div>
-    <div class="mod-box"><div class="mod-emoji">👁️</div><span class="mod-name">Wisdom</span><span class="mod-val"></span></div>
-    <div class="mod-box"><div class="mod-emoji">✨</div><span class="mod-name">Charisma</span><span class="mod-val"></span></div>
+    <div class="mod-box"><div class="mod-emoji">💪</div><span class="mod-name">STR</span><span class="mod-val"></span></div>
+    <div class="mod-box"><div class="mod-emoji">⚡</div><span class="mod-name">DEX</span><span class="mod-val"></span></div>
+    <div class="mod-box"><div class="mod-emoji">❤️</div><span class="mod-name">CON</span><span class="mod-val"></span></div>
+    <div class="mod-box"><div class="mod-emoji">🧠</div><span class="mod-name">INT</span><span class="mod-val"></span></div>
+    <div class="mod-box"><div class="mod-emoji">👁️</div><span class="mod-name">WIS</span><span class="mod-val"></span></div>
+    <div class="mod-box"><div class="mod-emoji">✨</div><span class="mod-name">CHA</span><span class="mod-val"></span></div>
   </div>
 
   <!-- ROW 4: Saving Throws -->
   <span class="pill" style="background:var(--orange);">🎲 Saving Throws</span>
   <div class="row-saves">
-    <div class="save-box"><div class="save-emoji">💪</div><span class="save-name">Strength</span><span class="save-val"></span></div>
-    <div class="save-box"><div class="save-emoji">🎯</div><span class="save-name">Dexterity</span><span class="save-val"></span></div>
-    <div class="save-box"><div class="save-emoji">❤️</div><span class="save-name">Constitution</span><span class="save-val"></span></div>
-    <div class="save-box"><div class="save-emoji">🧠</div><span class="save-name">Intelligence</span><span class="save-val"></span></div>
-    <div class="save-box"><div class="save-emoji">👁️</div><span class="save-name">Wisdom</span><span class="save-val"></span></div>
-    <div class="save-box"><div class="save-emoji">✨</div><span class="save-name">Charisma</span><span class="save-val"></span></div>
+    <div class="save-box"><div class="save-emoji">💪</div><span class="save-name">STR</span><span class="save-val"></span></div>
+    <div class="save-box"><div class="save-emoji">⚡</div><span class="save-name">DEX</span><span class="save-val"></span></div>
+    <div class="save-box"><div class="save-emoji">❤️</div><span class="save-name">CON</span><span class="save-val"></span></div>
+    <div class="save-box"><div class="save-emoji">🧠</div><span class="save-name">INT</span><span class="save-val"></span></div>
+    <div class="save-box"><div class="save-emoji">👁️</div><span class="save-name">WIS</span><span class="save-val"></span></div>
+    <div class="save-box"><div class="save-emoji">✨</div><span class="save-name">CHA</span><span class="save-val"></span></div>
   </div>
 
-  <!-- SPELL SLOTS -->
-  <span class="pill" style="background:var(--purple);">💫 Spell Slots (Color them in!)</span>
-  <div class="spell-slots-grid">
-    <div class="spell-level">
-      <span class="spell-level-name">Level 1</span>
-      <div class="spell-circles">
-        <div class="spell-circle"></div>
-        <div class="spell-circle"></div>
-        <div class="spell-circle"></div>
-        <div class="spell-circle"></div>
-      </div>
-    </div>
-    <div class="spell-level">
-      <span class="spell-level-name">Level 2</span>
-      <div class="spell-circles">
-        <div class="spell-circle"></div>
-        <div class="spell-circle"></div>
-        <div class="spell-circle"></div>
-        <div class="spell-circle"></div>
-      </div>
-    </div>
-    <div class="spell-level">
-      <span class="spell-level-name">Level 3</span>
-      <div class="spell-circles">
-        <div class="spell-circle"></div>
-        <div class="spell-circle"></div>
-        <div class="spell-circle"></div>
-        <div class="spell-circle"></div>
-      </div>
-    </div>
-    <div class="spell-level">
-      <span class="spell-level-name">Level 4</span>
-      <div class="spell-circles">
-        <div class="spell-circle"></div>
-        <div class="spell-circle"></div>
-        <div class="spell-circle"></div>
-        <div class="spell-circle"></div>
-      </div>
-    </div>
-    <div class="spell-level">
-      <span class="spell-level-name">Level 5</span>
-      <div class="spell-circles">
-        <div class="spell-circle"></div>
-        <div class="spell-circle"></div>
-        <div class="spell-circle"></div>
-        <div class="spell-circle"></div>
-      </div>
-    </div>
-    <div class="spell-level">
-      <span class="spell-level-name">Level 6</span>
-      <div class="spell-circles">
-        <div class="spell-circle"></div>
-        <div class="spell-circle"></div>
-        <div class="spell-circle"></div>
-        <div class="spell-circle"></div>
-      </div>
-    </div>
-    <div class="spell-level">
-      <span class="spell-level-name">Level 7</span>
-      <div class="spell-circles">
-        <div class="spell-circle"></div>
-        <div class="spell-circle"></div>
-        <div class="spell-circle"></div>
-        <div class="spell-circle"></div>
-      </div>
-    </div>
-    <div class="spell-level">
-      <span class="spell-level-name">Level 8</span>
-      <div class="spell-circles">
-        <div class="spell-circle"></div>
-        <div class="spell-circle"></div>
-        <div class="spell-circle"></div>
-        <div class="spell-circle"></div>
-      </div>
-    </div>
-    <div class="spell-level">
-      <span class="spell-level-name">Level 9</span>
-      <div class="spell-circles">
-        <div class="spell-circle"></div>
-        <div class="spell-circle"></div>
-        <div class="spell-circle"></div>
-        <div class="spell-circle"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- BOTTOM: Skills + Tick boxes | Card slot -->
-  <div class="row-bottom">
-
-    <div style="display: flex; flex-direction: column; gap: 0.5mm; flex: 1;">
-      <span class="pill" style="background:var(--green);">🎯 Skills</span>
-      <div class="wb skills-grid">
-        <div class="skill-row"><div class="skill-val"><div class="skill-emoji">🐕</div></div><span class="skill-name">Animal Handling</span></div>
-        <div class="skill-row"><div class="skill-val"><div class="skill-emoji">🔮</div></div><span class="skill-name">Arcana</span></div>
-        <div class="skill-row"><div class="skill-val"><div class="skill-emoji">🤸</div></div><span class="skill-name">Acrobatics</span></div>
-        <div class="skill-row"><div class="skill-val"><div class="skill-emoji">🏋️</div></div><span class="skill-name">Athletics</span></div>
-        <div class="skill-row"><div class="skill-val"><div class="skill-emoji">🎭</div></div><span class="skill-name">Deception</span></div>
-        <div class="skill-row"><div class="skill-val"><div class="skill-emoji">📜</div></div><span class="skill-name">History</span></div>
-        <div class="skill-row"><div class="skill-val"><div class="skill-emoji">🕵️</div></div><span class="skill-name">Insight</span></div>
-        <div class="skill-row"><div class="skill-val"><div class="skill-emoji">😠</div></div><span class="skill-name">Intimidation</span></div>
-        <div class="skill-row"><div class="skill-val"><div class="skill-emoji">🔍</div></div><span class="skill-name">Investigation</span></div>
-        <div class="skill-row"><div class="skill-val"><div class="skill-emoji">⚕️</div></div><span class="skill-name">Medicine</span></div>
-        <div class="skill-row"><div class="skill-val"><div class="skill-emoji">🌳</div></div><span class="skill-name">Nature</span></div>
-        <div class="skill-row"><div class="skill-val"><div class="skill-emoji">🔭</div></div><span class="skill-name">Perception</span></div>
-        <div class="skill-row"><div class="skill-val"><div class="skill-emoji">🎤</div></div><span class="skill-name">Performance</span></div>
-        <div class="skill-row"><div class="skill-val"><div class="skill-emoji">😊</div></div><span class="skill-name">Persuasion</span></div>
-        <div class="skill-row"><div class="skill-val"><div class="skill-emoji">⛪</div></div><span class="skill-name">Religion</span></div>
-        <div class="skill-row"><div class="skill-val"><div class="skill-emoji">🃏</div></div><span class="skill-name">Sleight of Hand</span></div>
-        <div class="skill-row"><div class="skill-val"><div class="skill-emoji">🥷</div></div><span class="skill-name">Stealth</span></div>
-        <div class="skill-row"><div class="skill-val"><div class="skill-emoji">🌿</div></div><span class="skill-name">Survival</span></div>
-      </div>
-
-    <div style="flex: 1; display: flex; flex-direction: column; gap: 1mm; margin-top: 0.5mm;">
-  <span class="pill" style="background:var(--border);">🎨 Draw Your Hero!</span>
-  <div class="wb" style="flex: 1; border-style: dashed;"></div>
-</div>
+  <!-- SPELL SLOTS + DRAWING AREA + CARD SLOT -->
+  <div style="display: grid; grid-template-columns: auto 1fr auto; gap: 1mm; margin-bottom: 0.7mm; flex: 1; min-height: 0;">
     
+    <!-- Left: Spell Slots -->
+    <div style="display: flex; flex-direction: column; gap: 0.5mm; min-height: 0; flex: 1;">
+      <span class="pill" style="background:var(--purple);">💫 Spell Slots</span>
+      
+      <!-- Prepared Spells Section -->
+      <div class="prepared-spells-box">
+        <span class="prepared-label">Prepared Spells</span>
+        <div class="prepared-write-box"></div>
+      </div>
+      
+      <!-- Spell Levels Grid -->
+      <div class="spell-levels-container">
+        <div class="spell-level-row">
+          <span class="spell-level-label">Level 1 Slots Remaining</span>
+          <div class="spell-circles">
+            <div class="spell-circle"></div>
+            <div class="spell-circle"></div>
+            <div class="spell-circle"></div>
+            <div class="spell-circle"></div>
+          </div>
+        </div>
+        <div class="spell-level-row">
+          <span class="spell-level-label">Level 2 Slots Remaining</span>
+          <div class="spell-circles">
+            <div class="spell-circle"></div>
+            <div class="spell-circle"></div>
+            <div class="spell-circle"></div>
+            <div class="spell-circle"></div>
+          </div>
+        </div>
+        <div class="spell-level-row">
+          <span class="spell-level-label">Level 3 Slots Remaining</span>
+          <div class="spell-circles">
+            <div class="spell-circle"></div>
+            <div class="spell-circle"></div>
+            <div class="spell-circle"></div>
+            <div class="spell-circle"></div>
+          </div>
+        </div>
+        <div class="spell-level-row">
+          <span class="spell-level-label">Level 4 Slots Remaining</span>
+          <div class="spell-circles">
+            <div class="spell-circle"></div>
+            <div class="spell-circle"></div>
+            <div class="spell-circle"></div>
+            <div class="spell-circle"></div>
+          </div>
+        </div>
+        <div class="spell-level-row">
+          <span class="spell-level-label">Level 5 Slots Remaining</span>
+          <div class="spell-circles">
+            <div class="spell-circle"></div>
+            <div class="spell-circle"></div>
+            <div class="spell-circle"></div>
+            <div class="spell-circle"></div>
+          </div>
+        </div>
+        <div class="spell-level-row">
+          <span class="spell-level-label">Level 6 Slots Remaining</span>
+          <div class="spell-circles">
+            <div class="spell-circle"></div>
+            <div class="spell-circle"></div>
+            <div class="spell-circle"></div>
+            <div class="spell-circle"></div>
+          </div>
+        </div>
+        <div class="spell-level-row">
+          <span class="spell-level-label">Level 7 Slots Remaining</span>
+          <div class="spell-circles">
+            <div class="spell-circle"></div>
+            <div class="spell-circle"></div>
+            <div class="spell-circle"></div>
+            <div class="spell-circle"></div>
+          </div>
+        </div>
+        <div class="spell-level-row">
+          <span class="spell-level-label">Level 8 Slots Remaining</span>
+          <div class="spell-circles">
+            <div class="spell-circle"></div>
+            <div class="spell-circle"></div>
+            <div class="spell-circle"></div>
+            <div class="spell-circle"></div>
+          </div>
+        </div>
+        <div class="spell-level-row">
+          <span class="spell-level-label">Level 9 Slots Remaining</span>
+          <div class="spell-circles">
+            <div class="spell-circle"></div>
+            <div class="spell-circle"></div>
+            <div class="spell-circle"></div>
+            <div class="spell-circle"></div>
+          </div>
+        </div>
+      </div>
     </div>
+    
+    <!-- Middle: Draw Your Hero -->
+    <div style="display: flex; flex-direction: column; gap: 0.5mm; min-height: 0;">
+      <span class="pill" style="background:var(--orange); width: 100%; text-align: center;">🎨 Draw Your Hero</span>
+      <div class="wb" style="flex: 1; border: 2.5px solid var(--wbl); border-radius: 8px; padding: 2mm; min-height: 0;"></div>
+    </div>
+    
+    <!-- Right: Card slot -->
     <div class="card-col">
       <span class="pill" style="background:var(--purple);">🗡️ Weapon / Wildshape</span>
       <div class="card-slot">
@@ -732,6 +819,29 @@
       </div>
     </div>
 
+  </div>
+  
+  <!-- SKILLS SECTION - Full Width -->
+  <span class="pill" style="background:var(--green);">🎯 Skills</span>
+  <div class="wb skills-grid">
+    <div class="skill-row"><div class="skill-val"><div class="skill-emoji">🐕</div></div><span class="skill-name">Animal Handling</span></div>
+    <div class="skill-row"><div class="skill-val"><div class="skill-emoji">🔮</div></div><span class="skill-name">Arcana</span></div>
+    <div class="skill-row"><div class="skill-val"><div class="skill-emoji">🤸</div></div><span class="skill-name">Acrobatics</span></div>
+    <div class="skill-row"><div class="skill-val"><div class="skill-emoji">🏋️</div></div><span class="skill-name">Athletics</span></div>
+    <div class="skill-row"><div class="skill-val"><div class="skill-emoji">🎭</div></div><span class="skill-name">Deception</span></div>
+    <div class="skill-row"><div class="skill-val"><div class="skill-emoji">📜</div></div><span class="skill-name">History</span></div>
+    <div class="skill-row"><div class="skill-val"><div class="skill-emoji">🕵️</div></div><span class="skill-name">Insight</span></div>
+    <div class="skill-row"><div class="skill-val"><div class="skill-emoji">😠</div></div><span class="skill-name">Intimidation</span></div>
+    <div class="skill-row"><div class="skill-val"><div class="skill-emoji">🔍</div></div><span class="skill-name">Investigation</span></div>
+    <div class="skill-row"><div class="skill-val"><div class="skill-emoji">⚕️</div></div><span class="skill-name">Medicine</span></div>
+    <div class="skill-row"><div class="skill-val"><div class="skill-emoji">🌳</div></div><span class="skill-name">Nature</span></div>
+    <div class="skill-row"><div class="skill-val"><div class="skill-emoji">🔭</div></div><span class="skill-name">Perception</span></div>
+    <div class="skill-row"><div class="skill-val"><div class="skill-emoji">🎤</div></div><span class="skill-name">Performance</span></div>
+    <div class="skill-row"><div class="skill-val"><div class="skill-emoji">😊</div></div><span class="skill-name">Persuasion</span></div>
+    <div class="skill-row"><div class="skill-val"><div class="skill-emoji">⛪</div></div><span class="skill-name">Religion</span></div>
+    <div class="skill-row"><div class="skill-val"><div class="skill-emoji">🃏</div></div><span class="skill-name">Sleight of Hand</span></div>
+    <div class="skill-row"><div class="skill-val"><div class="skill-emoji">🥷</div></div><span class="skill-name">Stealth</span></div>
+    <div class="skill-row"><div class="skill-val"><div class="skill-emoji">🌿</div></div><span class="skill-name">Survival</span></div>
   </div>
 
 </div>

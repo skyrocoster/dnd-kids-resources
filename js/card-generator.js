@@ -94,34 +94,135 @@ function rollToFormString(rollData) {
 // Creates a modifier box element with configurable text
 function createModifierBox(boxText = 'SAM') {
   const box = document.createElement('span');
-  box.className = 'sab-box';
+  // Use 'sab-box' for spell modifier, 'bth-box' for weapon bonus
+  box.className = boxText === 'BtH' ? 'bth-box' : 'sab-box';
   box.style.display = 'inline-flex';
   box.style.verticalAlign = 'middle';
   box.setAttribute('data-box-text', boxText);
   return box;
 }
 
-// Replaces [BOX] markers in content with actual box elements
-// boxText defaults to 'SAM' but can be customized
-function renderContentWithBoxes(contentStr, boxText = 'SAM') {
-  if (!contentStr.includes('[BOX]')) {
-    return null; // No boxes to replace
+// Renders content with both [BOX] placeholders and [STAT:xxx] placeholders
+// Converts [STAT:dex] to <span class='ability-dex'>DEX</span> etc
+function renderContentWithPlaceholders(contentStr, boxText = 'SAM') {
+  if (!contentStr.includes('[BOX]') && !contentStr.includes('[STAT:')) {
+    return null; // No placeholders to replace
   }
   
-  const fragment = document.createDocumentFragment();
-  const parts = contentStr.split('[BOX]');
+  // Ability emoji mappings
+  const abilityEmojis = {
+    'str': '💪',  // Strength
+    'dex': '⚡',  // Dexterity
+    'con': '❤️',  // Constitution
+    'int': '🧠',  // Intelligence
+    'wis': '👁️',  // Wisdom
+    'cha': '✨'   // Charisma
+  };
   
+  const fragment = document.createDocumentFragment();
+  
+  // First, handle [STAT:xxx] placeholders
+  const statRegex = /\[STAT:(\w+)\]/g;
+  const parts = contentStr.split(/(\[STAT:\w+\])/);
+  
+  let workingStr = '';
   for (let i = 0; i < parts.length; i++) {
-    if (parts[i]) {
-      fragment.appendChild(document.createTextNode(parts[i]));
+    const part = parts[i];
+    
+    if (match = part.match(/\[STAT:(\w+)\]/)) {
+      // If we have accumulated text, add it
+      if (workingStr) {
+        // Process [BOX] in the accumulated text
+        const boxParts = workingStr.split('[BOX]');
+        for (let j = 0; j < boxParts.length; j++) {
+          if (boxParts[j]) fragment.appendChild(document.createTextNode(boxParts[j]));
+          if (j < boxParts.length - 1) fragment.appendChild(createModifierBox(boxText));
+        }
+        workingStr = '';
+      }
+      // Add the ability span
+      const abilityCode = match[1];
+      const abilitySpan = document.createElement('span');
+      abilitySpan.className = `ability-${abilityCode}`;
+      const emoji = abilityEmojis[abilityCode] || '';
+      abilitySpan.textContent = `${emoji} ${abilityCode.toUpperCase()}`;
+      fragment.appendChild(abilitySpan);
+    } else {
+      workingStr += part;
     }
-    if (i < parts.length - 1) {
-      // Add box before the next part
-      fragment.appendChild(createModifierBox(boxText));
+  }
+  
+  // Process any remaining text for [BOX] placeholders
+  if (workingStr) {
+    const boxParts = workingStr.split('[BOX]');
+    for (let j = 0; j < boxParts.length; j++) {
+      if (boxParts[j]) fragment.appendChild(document.createTextNode(boxParts[j]));
+      if (j < boxParts.length - 1) fragment.appendChild(createModifierBox(boxText));
     }
   }
   
   return fragment;
+}
+
+// Reconstructs a structured roll object with dice, baseModifier, statModifier, and applySpellModifier
+// Returns a string to be displayed
+function reconstructStructuredRoll(rollObj) {
+  if (!rollObj || typeof rollObj !== 'object') return 'none';
+  
+  // Check if it's the special "modifier only" format (no dice)
+  if (!rollObj.numDice && !rollObj.diceType) {
+    return rollObj.baseModifier || 'none';
+  }
+  
+  let result = '';
+  
+  // Add dice notation
+  if (rollObj.numDice !== undefined && rollObj.diceType) {
+    result += `${rollObj.numDice}${rollObj.diceType}`;
+  }
+  
+  // Build modifier part: statModifier and/or baseModifier
+  let modifierParts = [];
+  
+  // Add stat modifier if present (will get span styling in renderer)
+  if (rollObj.statModifier) {
+    modifierParts.push(`[STAT:${rollObj.statModifier}]`);
+  }
+  
+  // Add applySpellModifier indicator if needed
+  if (rollObj.applySpellModifier) {
+    modifierParts.push('[BOX]');
+  }
+  
+  // Add base modifier if present
+  if (rollObj.baseModifier) {
+    // All base modifiers (saves, damage types) get parentheses instead of +
+    modifierParts.push(`(${rollObj.baseModifier})`);
+  }
+  
+  // Combine modifier parts
+  if (modifierParts.length > 0) {
+    // Check if last part is a parenthetical modifier like (save)
+    const lastPart = modifierParts[modifierParts.length - 1];
+    if (lastPart.startsWith('(') && lastPart.endsWith(')')) {
+      // Join all but last with ' + ', then add parenthetical modifier with space
+      const nonParenParts = modifierParts.slice(0, -1);
+      if (nonParenParts.length > 0) {
+        result += ' + ' + nonParenParts.join(' + ') + ' ' + lastPart;
+      } else {
+        result += ' ' + lastPart;
+      }
+    } else {
+      result += ' + ' + modifierParts.join(' + ');
+    }
+  }
+  
+  // Add suffix if present
+  if (rollObj.suffix) {
+    result += ' ' + rollObj.suffix;
+  }
+  
+  return result.trim();
 }
 
 function createCardElement(data) {
@@ -186,7 +287,14 @@ function createCardElement(data) {
     label.className = 'label';
     label.style.display = 'inline';
     label.style.marginRight = '2px';
-    label.textContent = detail.label;
+    
+    // Check if this detail has a rollActor - if so, include it in the label
+    let labelText = detail.label;
+    if (typeof detail.content === 'object' && detail.content?.rollActor && detail.content.rollActor !== 'self') {
+      // Insert actor into label before the colon, e.g., "🎲 Roll:" becomes "🎲 Roll (target):"
+      labelText = labelText.replace(':', ` (${detail.content.rollActor}):`);
+    }
+    label.textContent = labelText;
     detailRow.appendChild(label);
     
     // Reconstruct roll data if it's a structured roll object
@@ -194,22 +302,31 @@ function createCardElement(data) {
     let isHtmlContent = false;
     
     if (typeof detail.content === 'object' && detail.content !== null && !Array.isArray(detail.content)) {
-      // Check if it looks like a roll object
-      if (detail.content.numDice !== undefined || detail.content.diceType) {
-        displayContent = reconstructRollString(detail.content);
+      // Check if it's a structured roll object with new format (baseModifier, statModifier, applySpellModifier)
+      if (detail.content.baseModifier !== undefined || detail.content.statModifier !== undefined || 
+          detail.content.applySpellModifier !== undefined || detail.content.rollActor !== undefined || 
+          detail.content.suffix !== undefined || detail.content.numDice !== undefined || 
+          detail.content.diceType || detail.content.modifier !== undefined) {
+        // It's a structured roll - reconstruct it
+        displayContent = reconstructStructuredRoll(detail.content);
       }
     } else if (typeof detail.content === 'string' && detail.content.includes('<')) {
       // Content has HTML tags - mark it as HTML
       isHtmlContent = true;
     }
     
-    // Check if content has [BOX] placeholder - unified method for weapons and spells
-    if (typeof displayContent === 'string' && displayContent.includes('[BOX]')) {
+    // Check if content has HTML tags (from ability spans in modifiers)
+    if (typeof displayContent === 'string' && displayContent.includes('<')) {
+      isHtmlContent = true;
+    }
+    
+    // Check if content has [BOX] or [STAT:xxx] placeholders
+    if (typeof displayContent === 'string' && (displayContent.includes('[BOX]') || displayContent.includes('[STAT:'))) {
       // Determine the box text based on card type
-      const boxText = data.hands ? 'BtH' : 'SAM';  // 'BtH' for weapons, 'SAM' for spells
-      const boxFragment = renderContentWithBoxes(displayContent, boxText);
-      if (boxFragment) {
-        detailRow.appendChild(boxFragment);
+      const boxText = data.hands ? 'BtH' : 'SAM';  // 'BtH' for Bonus to Hit (weapons), 'SAM' for Spell Attack Modifier (spells)
+      const contentFragment = renderContentWithPlaceholders(displayContent, boxText);
+      if (contentFragment) {
+        detailRow.appendChild(contentFragment);
       }
     } else if (isHtmlContent) {
       // Create a span to hold HTML content (for spells with ability spans)
