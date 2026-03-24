@@ -156,6 +156,14 @@ body {
   margin-top: 2mm;
 }
 
+.friend-enemy-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin-top: 1.5mm;
+  min-height: 35px;
+}
+
 .sab-box {
   display: inline-flex;
   align-items: center;
@@ -263,6 +271,17 @@ body {
 /* Magic item colours */
 .card.magic-utility .card-header, .card.magic-utility .card-footer { background: #6a5a9a; }
 .card.magic-combat .card-header,  .card.magic-combat .card-footer  { background: #b53a2a; }
+
+/* NPC profession colours */
+.card.wizard .card-header,    .card.wizard .card-footer    { background: #6a4fa3; }
+.card.rogue .card-header,     .card.rogue .card-footer     { background: #2c3e50; }
+.card.fighter .card-header,   .card.fighter .card-footer   { background: #8b3a1a; }
+.card.cleric .card-header,    .card.cleric .card-footer    { background: #e67e22; }
+.card.barbarian .card-header, .card.barbarian .card-footer { background: #c0392b; }
+.card.ranger .card-header,    .card.ranger .card-footer    { background: #27ae60; }
+.card.druid .card-header,     .card.druid .card-footer     { background: #16a085; }
+.card.paladin .card-header,   .card.paladin .card-footer   { background: #f39c12; }
+.card.bard .card-header,      .card.bard .card-footer      { background: #9b59b6; }
 
 /* cut line hint */
 .cut-hint {

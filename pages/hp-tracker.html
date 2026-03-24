@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>HP Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --parchment: #fdf3e3;
+    --ink: #2c1810;
+    --red: #c0392b;
+    --blue: #2471a3;
+    --green: #1e8449;
+    --gold: #c9a90a;
+    --purple: #7d3c98;
+    --orange: #ca6f1e;
+    --border: #8b5e3c;
+    --wb: #fffef7;
+    --wbl: #b0865a;
+    --muted: #8b5e3c;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #c9a97a; font-family: 'Nunito', sans-serif; color: var(--ink); }
+
+  .sheet {
+    width: 210mm;
+    height: 297mm;
+    margin: 0 auto;
+    background: var(--parchment);
+    padding: 5mm;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .sheet::before {
+    content: '';
+    position: absolute;
+    inset: 3mm;
+    border: 3.5px solid var(--border);
+    border-radius: 10px;
+    pointer-events: none;
+  }
+  .sheet::after {
+    content: '';
+    position: absolute;
+    inset: 6mm;
+    border: 1.5px dashed #c4a47a;
+    border-radius: 7px;
+    pointer-events: none;
+  }
+
+  .page-header {
+    text-align: center;
+    margin-bottom: 2.5mm;
+    padding-top: 0;
+    position: relative;
+    z-index: 1;
+  }
+  .page-header h1 {
+    font-family: 'Fredoka One', cursive;
+    font-size: 18pt;
+    color: var(--red);
+    text-shadow: 2px 2px 0 #f5cba7, 3px 3px 0 var(--border);
+    line-height: 1;
+  }
+
+  .pill {
+    font-family: 'Fredoka One', cursive;
+    font-size: 8pt;
+    color: white;
+    padding: 0.8mm 1.8mm;
+    border-radius: 20px;
+    display: inline-block;
+    margin-bottom: 0.5mm;
+    line-height: 1;
+    text-align: center;
+  }
+
+  .wb {
+    background: var(--wb);
+    border: 2.5px solid var(--wbl);
+    border-radius: 6px;
+  }
+
+  .hp-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 1.5mm;
+    position: relative;
+    z-index: 1;
+    padding: 1.8mm 2mm;
+  }
+
+  .hp-section-header {
+    margin-bottom: 1mm;
+  }
+
+  .hp-label {
+    font-family: 'Fredoka One', cursive;
+    font-size: 6.5pt;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    color: var(--muted);
+    margin-bottom: 0.6mm;
+  }
+
+  .hp-circles {
+    display: grid;
+    grid-template-columns: repeat(15, 1fr);
+    gap: 0.8mm;
+    flex: 1;
+  }
+
+  .hp-circle {
+    aspect-ratio: 1;
+    border: 1.5px solid var(--wbl);
+    border-radius: 50%;
+    background: white;
+    cursor: pointer;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 6pt;
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  .hp-circle:hover {
+    background: #f0f0f0;
+  }
+
+  .hp-circle.filled {
+    background: var(--red);
+    color: white;
+  }
+
+  @media print {
+    body { background: var(--parchment); margin: 0; padding: 0; }
+    .sheet { 
+      margin: 0; 
+      background: var(--parchment);
+      print-color-adjust: exact; 
+      -webkit-print-color-adjust: exact;
+    }
+    .sheet::before, .sheet::after { display: none; }
+    .pill { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .wb { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .hp-circle { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .hp-circle.filled { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    @page { margin: 0; size: A4; background: var(--parchment); }
+  }
+</style>
+<script src="../js/hp-tracker.js"></script>
+</head>
+<body>
+<div class="sheet">
+
+  <!-- HEADER -->
+  <div class="page-header">
+    <h1>⚔️ HP Tracker ⚔️</h1>
+  </div>
+
+  <!-- SECTION 1: Normal Form -->
+  <div class="hp-section wb">
+    <div class="hp-section-header">
+      <span class="pill" style="background:var(--red);">😊 My Normal Form</span>
+      <div class="hp-label">Health</div>
+    </div>
+    <div class="hp-circles" id="normalHealthCircles">
+      <div class="hp-circle">1</div><div class="hp-circle">2</div><div class="hp-circle">3</div><div class="hp-circle">4</div><div class="hp-circle">5</div><div class="hp-circle">6</div><div class="hp-circle">7</div><div class="hp-circle">8</div><div class="hp-circle">9</div><div class="hp-circle">10</div><div class="hp-circle">11</div><div class="hp-circle">12</div><div class="hp-circle">13</div><div class="hp-circle">14</div><div class="hp-circle">15</div><div class="hp-circle">16</div><div class="hp-circle">17</div><div class="hp-circle">18</div><div class="hp-circle">19</div><div class="hp-circle">20</div><div class="hp-circle">21</div><div class="hp-circle">22</div><div class="hp-circle">23</div><div class="hp-circle">24</div><div class="hp-circle">25</div><div class="hp-circle">26</div><div class="hp-circle">27</div><div class="hp-circle">28</div><div class="hp-circle">29</div><div class="hp-circle">30</div><div class="hp-circle">31</div><div class="hp-circle">32</div><div class="hp-circle">33</div><div class="hp-circle">34</div><div class="hp-circle">35</div><div class="hp-circle">36</div><div class="hp-circle">37</div><div class="hp-circle">38</div><div class="hp-circle">39</div><div class="hp-circle">40</div><div class="hp-circle">41</div><div class="hp-circle">42</div><div class="hp-circle">43</div><div class="hp-circle">44</div><div class="hp-circle">45</div><div class="hp-circle">46</div><div class="hp-circle">47</div><div class="hp-circle">48</div><div class="hp-circle">49</div><div class="hp-circle">50</div><div class="hp-circle">51</div><div class="hp-circle">52</div><div class="hp-circle">53</div><div class="hp-circle">54</div><div class="hp-circle">55</div><div class="hp-circle">56</div><div class="hp-circle">57</div><div class="hp-circle">58</div><div class="hp-circle">59</div><div class="hp-circle">60</div><div class="hp-circle">61</div><div class="hp-circle">62</div><div class="hp-circle">63</div><div class="hp-circle">64</div><div class="hp-circle">65</div><div class="hp-circle">66</div><div class="hp-circle">67</div><div class="hp-circle">68</div><div class="hp-circle">69</div><div class="hp-circle">70</div><div class="hp-circle">71</div><div class="hp-circle">72</div><div class="hp-circle">73</div><div class="hp-circle">74</div><div class="hp-circle">75</div>
+    </div>
+  </div>
+
+  <!-- SECTION 2: Wild Shape -->
+  <div class="hp-section wb">
+    <div class="hp-section-header">
+      <span class="pill" style="background:var(--orange);">🐺 Wild Shape Form</span>
+      <div class="hp-label">Health</div>
+    </div>
+    <div class="hp-circles" id="wildShapeHealthCircles">
+      <div class="hp-circle">1</div><div class="hp-circle">2</div><div class="hp-circle">3</div><div class="hp-circle">4</div><div class="hp-circle">5</div><div class="hp-circle">6</div><div class="hp-circle">7</div><div class="hp-circle">8</div><div class="hp-circle">9</div><div class="hp-circle">10</div><div class="hp-circle">11</div><div class="hp-circle">12</div><div class="hp-circle">13</div><div class="hp-circle">14</div><div class="hp-circle">15</div><div class="hp-circle">16</div><div class="hp-circle">17</div><div class="hp-circle">18</div><div class="hp-circle">19</div><div class="hp-circle">20</div><div class="hp-circle">21</div><div class="hp-circle">22</div><div class="hp-circle">23</div><div class="hp-circle">24</div><div class="hp-circle">25</div><div class="hp-circle">26</div><div class="hp-circle">27</div><div class="hp-circle">28</div><div class="hp-circle">29</div><div class="hp-circle">30</div><div class="hp-circle">31</div><div class="hp-circle">32</div><div class="hp-circle">33</div><div class="hp-circle">34</div><div class="hp-circle">35</div><div class="hp-circle">36</div><div class="hp-circle">37</div><div class="hp-circle">38</div><div class="hp-circle">39</div><div class="hp-circle">40</div><div class="hp-circle">41</div><div class="hp-circle">42</div><div class="hp-circle">43</div><div class="hp-circle">44</div><div class="hp-circle">45</div><div class="hp-circle">46</div><div class="hp-circle">47</div><div class="hp-circle">48</div><div class="hp-circle">49</div><div class="hp-circle">50</div><div class="hp-circle">51</div><div class="hp-circle">52</div><div class="hp-circle">53</div><div class="hp-circle">54</div><div class="hp-circle">55</div><div class="hp-circle">56</div><div class="hp-circle">57</div><div class="hp-circle">58</div><div class="hp-circle">59</div><div class="hp-circle">60</div><div class="hp-circle">61</div><div class="hp-circle">62</div><div class="hp-circle">63</div><div class="hp-circle">64</div><div class="hp-circle">65</div><div class="hp-circle">66</div><div class="hp-circle">67</div><div class="hp-circle">68</div><div class="hp-circle">69</div><div class="hp-circle">70</div><div class="hp-circle">71</div><div class="hp-circle">72</div><div class="hp-circle">73</div><div class="hp-circle">74</div><div class="hp-circle">75</div>
+    </div>
+  </div>
+
+  <!-- SECTION 3: Familiar / Companion / Pet -->
+  <div class="hp-section wb">
+    <div class="hp-section-header">
+      <span class="pill" style="background:var(--purple);">👹 My Companion</span>
+      <div class="hp-label">Health</div>
+    </div>
+    <div class="hp-circles" id="companionHealthCircles">
+      <div class="hp-circle">1</div><div class="hp-circle">2</div><div class="hp-circle">3</div><div class="hp-circle">4</div><div class="hp-circle">5</div><div class="hp-circle">6</div><div class="hp-circle">7</div><div class="hp-circle">8</div><div class="hp-circle">9</div><div class="hp-circle">10</div><div class="hp-circle">11</div><div class="hp-circle">12</div><div class="hp-circle">13</div><div class="hp-circle">14</div><div class="hp-circle">15</div><div class="hp-circle">16</div><div class="hp-circle">17</div><div class="hp-circle">18</div><div class="hp-circle">19</div><div class="hp-circle">20</div><div class="hp-circle">21</div><div class="hp-circle">22</div><div class="hp-circle">23</div><div class="hp-circle">24</div><div class="hp-circle">25</div><div class="hp-circle">26</div><div class="hp-circle">27</div><div class="hp-circle">28</div><div class="hp-circle">29</div><div class="hp-circle">30</div><div class="hp-circle">31</div><div class="hp-circle">32</div><div class="hp-circle">33</div><div class="hp-circle">34</div><div class="hp-circle">35</div><div class="hp-circle">36</div><div class="hp-circle">37</div><div class="hp-circle">38</div><div class="hp-circle">39</div><div class="hp-circle">40</div><div class="hp-circle">41</div><div class="hp-circle">42</div><div class="hp-circle">43</div><div class="hp-circle">44</div><div class="hp-circle">45</div><div class="hp-circle">46</div><div class="hp-circle">47</div><div class="hp-circle">48</div><div class="hp-circle">49</div><div class="hp-circle">50</div><div class="hp-circle">51</div><div class="hp-circle">52</div><div class="hp-circle">53</div><div class="hp-circle">54</div><div class="hp-circle">55</div><div class="hp-circle">56</div><div class="hp-circle">57</div><div class="hp-circle">58</div><div class="hp-circle">59</div><div class="hp-circle">60</div><div class="hp-circle">61</div><div class="hp-circle">62</div><div class="hp-circle">63</div><div class="hp-circle">64</div><div class="hp-circle">65</div><div class="hp-circle">66</div><div class="hp-circle">67</div><div class="hp-circle">68</div><div class="hp-circle">69</div><div class="hp-circle">70</div><div class="hp-circle">71</div><div class="hp-circle">72</div><div class="hp-circle">73</div><div class="hp-circle">74</div><div class="hp-circle">75</div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

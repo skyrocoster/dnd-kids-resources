@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 D&D Kids Resources - Local Web Server
-Serves the website on http://localhost:8000
+Serves the website on http://localhost:8001
 """
 
 import http.server

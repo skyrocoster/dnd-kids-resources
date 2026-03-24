@@ -1,0 +1,284 @@
+# Contributing to D&D Kids Resources
+
+**Developer guide for adding new cards, features, and improvements.**
+
+---
+
+## Adding New Card Sets
+
+### 1. Create Data File
+
+Create `data/new-tool.json` with card objects:
+
+```json
+[
+  {
+    "title": "Card Name",
+    "icon": "✨",
+    "level": "wizard",              // or level1, level2, cantrip, condition, etc.
+    "species": "Human",             // For NPCs
+    "profession": "Wizard",         // For NPCs
+    "location": "Tower of Stars",   // For NPCs
+    "explanation": "Kid-friendly description of the card",
+    "details": [
+      { "label": "🎲 Roll", "content": "d20 + modifier" },
+      { "label": "💥 Damage", "content": "1d6 fire" },
+      { "label": "🎯 Range", "content": "60 feet" }
+    ]
+  }
+]
+```
+
+### 2. Create HTML Page
+
+Create `pages/new-tool.html`:
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>New Tool - D&D Kids Resources</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+  <div id="page-container"></div>
+  
+  <script src="../js/card-generator.js"></script>
+  <script src="../js/new-tool.js"></script>
+</body>
+</html>
+```
+
+### 3. Create Initializer Script
+
+Create `js/new-tool.js`:
+
+```javascript
+document.addEventListener('DOMContentLoaded', async function() {
+  try {
+    let response;
+    const paths = [
+      '../data/new-tool.json',
+      './data/new-tool.json',
+      'data/new-tool.json'
+    ];
+    
+    for (const path of paths) {
+      try {
+        response = await fetch(path);
+        if (response.ok) {
+          console.log(`✓ Loaded data from: ${path}`);
+          break;
+        }
+      } catch (e) {
+        // Try next path
+      }
+    }
+    
+    if (!response || !response.ok) {
+      throw new Error(`Failed to load new-tool.json`);
+    }
+    
+    const data = await response.json();
+    
+    renderPaginatedCards(
+      '#page-container',
+      data,
+      9,
+      '✨ New Tool Cards ✨',
+      'Description of your tool'
+    );
+  } catch (error) {
+    console.error('Error loading cards:', error);
+    document.getElementById('page-container').innerHTML = `<p>${error.message}</p>`;
+  }
+});
+```
+
+### 4. Add to Homepage
+
+Add link to `index.html` in the tools grid:
+
+```html
+<a href="pages/new-tool.html" class="tool-card" target="_blank">
+  <div class="tool-icon">✨</div>
+  <div class="tool-name">New Tool Name</div>
+  <div class="tool-description">Short description of the tool</div>
+</a>
+```
+
+---
+
+## Card Format Reference
+
+### All Card Types Support
+
+```json
+{
+  "title": "String - Display name",
+  "icon": "Emoji - Visual identifier",
+  "level": "String - Used for CSS class and coloring",
+  "explanation": "String - Flavor text displayed at top",
+  "details": [
+    {
+      "label": "Emoji Label - e.g., '🎲 Roll'",
+      "content": "String or object - Displayed value"
+    }
+  ]
+}
+```
+
+### Special Fields by Type
+
+**Spells:**
+- `level`: "cantrip", "level1" through "level9"
+- `school`: "Evocation", "Transmutation", etc.
+
+**Weapons:**
+- `type`: "Simple Melee", "Martial Ranged", etc.
+- `hands`: "1-handed", "2-handed", "versatile"
+
+**Conditions:**
+- `level`: Condition name (used for CSS class)
+- `type`: "Condition"
+
+**NPCs:**
+- `species`: Race/species name
+- `profession`: Class/profession name
+- `location`: Where they can be found
+
+---
+
+## Card Colors
+
+**See `COLORS.md` for complete color reference.**
+
+Colors are applied via CSS classes on `.card` element:
+- `.level1`, `.level2`, etc. for spells
+- `.wizard`, `.fighter`, etc. for NPCs
+- `.blinded`, `.charmed`, etc. for conditions
+- `.simple-melee`, `.martial-ranged`, etc. for weapons
+
+---
+
+## Development Tips
+
+### View Changes Locally
+
+```bash
+# Python 3
+python -m http.server 8000
+# Visit http://localhost:8000
+
+# VS Code - Install "Live Server" extension
+# Right-click index.html → "Open with Live Server"
+```
+
+### Print Testing
+
+1. Open card page in browser
+2. Press `Ctrl+P` (or `Cmd+P` on Mac)
+3. Set to **A4 size, fit to page**
+4. Enable **"Background graphics"**
+5. Print or save as PDF
+
+### CSS Styling
+
+All card styles are in `css/styles.css`. Cards inherit:
+- `.card` - Base card styling
+- `.card.level1` - Specific level color
+- `.card-header` - Card header styling
+- `.card-body` - Card body area
+- `.card-footer` - Card footer (species·profession)
+
+---
+
+## Card Generation System
+
+### How It Works
+
+1. **Data Loading** (`js/new-tool.js`)
+   - Fetches JSON file from `data/` folder
+   - Handles multiple path options for flexibility
+
+2. **Card Creation** (`js/card-generator.js`)
+   - `createCardElement(data)` - Creates single card DOM
+   - `renderPaginatedCards()` - Creates full page layout
+
+3. **Styling** (`css/styles.css`)
+   - CSS classes apply colors and layout
+   - Print-friendly media queries handle printing
+
+### Key Functions
+
+**`renderPaginatedCards(selector, data, cardsPerPage, title, subtitle)`**
+- `selector`: CSS selector for container (e.g., '#page-container')
+- `data`: Array of card objects
+- `cardsPerPage`: Cards per page (default: 9)
+- `title`: Page header title
+- `subtitle`: Page header description
+
+---
+
+## File Organization
+
+```
+data/                          # Card data (JSON)
+├── spells.json                # 27 spells
+├── conditions.json            # 19 conditions
+├── magic-items.json           # 9 items
+├── weapons.json               # 42+ weapons
+└── npcs.json                  # 9 NPCs
+
+js/                            # JavaScript
+├── card-generator.js          # Core system (don't modify)
+├── spells.js                  # Data + rendering
+├── conditions.js
+├── magic-items.js
+├── weapons.js
+└── npcs.js
+
+pages/                         # HTML pages for each tool
+├── spell-cards.html
+├── condition-cards.html
+├── magic-items-cards.html
+├── weapon-cards.html
+└── npc-cards.html
+```
+
+---
+
+## Testing Checklist
+
+- [ ] JSON is valid (test with `JSON.parse()`)
+- [ ] Page loads without errors (check browser console)
+- [ ] All cards render properly (view in browser)
+- [ ] Print preview shows correct layout (Ctrl+P→Print Preview)
+- [ ] Colors are accurate (check against COLORS.md)
+- [ ] Links work in index.html
+
+---
+
+## Common Issues
+
+**Cards not loading**
+- Check browser console for fetch errors
+- Verify JSON file path and syntax
+- Ensure file is in correct `data/` folder
+
+**Wrong colors**
+- Verify CSS class matches `data.level` field
+- Check COLORS.md for correct class name
+- Reload page (clear cache if needed)
+
+**Print layout broken**
+- Check page size is A4
+- Enable "Background graphics" in print dialog
+- Verify margins are set correctly
+
+---
+
+For technical architecture details, see **ARCHITECTURE.md**.

@@ -35,12 +35,7 @@
     flex-direction: column;
   }
   .sheet::before {
-    content: '';
-    position: absolute;
-    inset: 4mm;
-    border: 3.5px solid var(--border);
-    border-radius: 10px;
-    pointer-events: none;
+    display: none;
   }
 
   .corner { position: absolute; font-size: 15px; }
@@ -183,18 +178,25 @@
     margin-bottom: 2mm;
   }
   .hp-inner {
-    padding: 1.5mm 2mm;
-    display: flex;
-    align-items: center;
-    gap: 3mm;
+    padding: 2mm 3mm;
+    background: var(--wb);
+    border: 2.5px solid var(--wbl);
+    border-radius: 8px;
+    min-height: 14mm;
   }
-  .hp-heart {
-    font-size: 24pt;
+  .hp-number-box {
+    width: 100%;
+    height: 10mm;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    display: grid;
+    place-items: center;
+    font-size: 11pt;
+    font-weight: 700;
+    color: var(--ink);
     line-height: 1;
-    flex-shrink: 0;
   }
-  .hp-field { flex: 1; }
-  .hp-field .wline { min-height: 8mm; }
 
   /* ══ ROW 3: Ability Modifiers ══ */
   .row-mods {
@@ -618,11 +620,6 @@
 <body>
 <div class="sheet">
 
-  <span class="corner tl">⚔️</span>
-  <span class="corner tr">🛡️</span>
-  <span class="corner bl">🐉</span>
-  <span class="corner br">✨</span>
-
   <!-- HEADER -->
   <div class="header">
     <h1>⚔️ My Adventure Sheet ⚔️</h1>
@@ -672,14 +669,11 @@
 
   </div>
 
-  <!-- ROW 2: Hit Points full width -->
+  <!-- ROW 2: Hit Points -->
   <div class="row-hp">
     <span class="pill" style="background:var(--red);">❤️ Hit Points</span>
-    <div class="wb hp-inner">
-      <span class="hp-heart">❤️</span>
-      <div class="hp-field">
-        <span class="wline" style="min-height:14mm;"></span>
-      </div>
+    <div class="hp-inner">
+      <div class="hp-number-box"></div>
     </div>
   </div>
 

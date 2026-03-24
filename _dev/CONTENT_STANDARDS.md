@@ -20,4 +20,3 @@ Guidelines for writing and formatting content in the D&D Kids Resources project.
 - "Breathe cozy air for 1 hour" (should be "one hour")
 - "1d10" written as "one d ten"
 - "Cast this spell 1 time per day" (should be "once per day")
-

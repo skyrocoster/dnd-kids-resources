@@ -217,6 +217,25 @@ function reconstructStructuredRoll(rollObj) {
     }
   }
   
+  // Add variants if present (for versatile weapons, etc.)
+  if (rollObj.variants && Array.isArray(rollObj.variants)) {
+    rollObj.variants.forEach(variant => {
+      result += ' or ';
+      // Add variant dice notation
+      if (variant.numDice !== undefined && variant.diceType) {
+        result += `${variant.numDice}${variant.diceType}`;
+      }
+      // Add variant modifier
+      if (variant.baseModifier) {
+        result += ` (${variant.baseModifier})`;
+      }
+      // Add variant label
+      if (variant.label) {
+        result += ` ${variant.label}`;
+      }
+    });
+  }
+  
   // Add suffix if present
   if (rollObj.suffix) {
     result += ' ' + rollObj.suffix;
@@ -344,6 +363,44 @@ function createCardElement(data) {
   });
   body.appendChild(detailsDiv);
   
+  // Add friend/enemy coloring box for NPCs
+  if (data.species && data.profession && data.location) {
+    // This is an NPC card
+    const friendEnemyDiv = document.createElement('div');
+    friendEnemyDiv.style.display = 'block';
+    friendEnemyDiv.style.marginBottom = '3px';
+    friendEnemyDiv.style.lineHeight = '1.4';
+    
+    const label = document.createElement('span');
+    label.className = 'label';
+    label.style.display = 'inline';
+    label.style.marginRight = '2px';
+    label.textContent = '👫 Friend/Enemy:';
+    friendEnemyDiv.appendChild(label);
+    
+    const box = document.createElement('span');
+    box.style.display = 'inline-flex';
+    box.style.alignItems = 'center';
+    box.style.justifyContent = 'center';
+    box.style.width = '35px';
+    box.style.height = '18px';
+    box.style.border = '1.5px solid #b0865a';
+    box.style.borderRadius = '3px';
+    box.style.background = '#f5e6d3';
+    box.style.verticalAlign = 'middle';
+    box.style.position = 'relative';
+    box.style.fontSize = '7pt';
+    box.style.fontWeight = '700';
+    box.style.color = 'transparent';
+    box.textContent = '👫';
+    friendEnemyDiv.appendChild(box);
+    
+    detailsDiv.appendChild(friendEnemyDiv);
+  }
+  
+  body.appendChild(detailsDiv);
+  
+  // Add draw box
   const drawBox = document.createElement('div');
   drawBox.className = 'draw-box';
   body.appendChild(drawBox);
@@ -354,9 +411,12 @@ function createCardElement(data) {
   const footer = document.createElement('div');
   footer.className = 'card-footer';
   
-  // For weapons, use type and hands; for spells use level and school; for magic items use type and school
+  // For weapons, use type and hands; for spells use level and school; for magic items use type and school; for NPCs use species and profession
   let footerText;
-  if (data.hands) {
+  if (data.species && data.profession) {
+    // NPCs: "Human · Wizard"
+    footerText = `${data.species} · ${data.profession}`;
+  } else if (data.hands) {
     // Weapons: "Simple Melee · 1-handed"
     footerText = `${data.type} · ${data.hands}`;
   } else if (data.level === 'cantrip' || /^\d+$/.test(data.level)) {
