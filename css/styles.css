@@ -1,0 +1,316 @@
+:root {
+  --parchment: #fdf3e3;
+  --ink: #2c1810;
+  --border: #8b5e3c;
+  --wb: #fffef7;
+  --wbl: #b0865a;
+  --muted: #8b5e3c;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #c9a97a;
+  font-family: 'Nunito', sans-serif;
+  color: var(--ink);
+}
+
+.page {
+  width: 210mm;
+  min-height: 297mm;
+  margin: 0 auto;
+  background: var(--parchment);
+  padding: 8mm;
+  position: relative;
+}
+
+.page::before {
+  content: '';
+  position: absolute;
+  inset: 4mm;
+  border: 3.5px solid var(--border);
+  border-radius: 10px;
+  pointer-events: none;
+}
+.page::after {
+  content: '';
+  position: absolute;
+  inset: 7mm;
+  border: 1.5px dashed #c4a47a;
+  border-radius: 7px;
+  pointer-events: none;
+}
+
+.page-header {
+  text-align: center;
+  margin-bottom: 5mm;
+  padding-top: 2mm;
+}
+.page-header h1 {
+  font-family: 'Fredoka One', cursive;
+  font-size: 22pt;
+  color: #c0392b;
+  text-shadow: 2px 2px 0 #f5cba7, 3px 3px 0 var(--border);
+  line-height: 1;
+}
+.page-header p {
+  font-size: 7pt;
+  color: var(--muted);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-top: 1mm;
+}
+
+/* Grid of cards — 3 columns, playing card ratio 63.5 x 88.9mm */
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 63.5mm);
+  grid-auto-rows: 88.9mm;
+  gap: 3mm;
+  justify-content: center;
+}
+
+.card {
+  border-radius: 10px;
+  border: 3px solid var(--border);
+  background: var(--wb);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Coloured header band */
+.card-header {
+  padding: 2.5mm 3mm 2mm;
+  display: flex;
+  align-items: center;
+  gap: 2mm;
+  flex-shrink: 0;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.card-icon {
+  font-size: 20pt;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.card-title {
+  font-family: 'Fredoka One', cursive;
+  font-size: 11pt;
+  color: white;
+  line-height: 1.2;
+  text-shadow: 1px 1px 0 rgba(0,0,0,0.2);
+  flex-shrink: 1;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
+}
+
+/* Body */
+.card-body {
+  flex: 1;
+  padding: 2mm 3mm 2.5mm;
+  display: flex;
+  flex-direction: column;
+  gap: 2mm;
+}
+
+.simple-explanation {
+  font-family: 'Fredoka One', cursive;
+  font-size: 9pt;
+  color: var(--ink);
+  line-height: 1.3;
+  border-bottom: 1.5px dashed #c4a47a;
+  padding-bottom: 2mm;
+}
+
+.spell-details {
+  font-size: 8pt;
+  font-weight: 700;
+  color: #5a3e2b;
+  line-height: 1.3;
+  display: flex;
+  flex-direction: column;
+  gap: 2.5mm;
+  flex: 0 0 auto;
+}
+.spell-details div {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+.spell-details .label {
+  font-weight: 800;
+  color: var(--wbl);
+  margin-right: 0;
+  flex-shrink: 0;
+}
+
+.draw-box {
+  flex: 1;
+  border: 2px dashed #c4a47a;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.3);
+  margin-top: 2mm;
+}
+
+.sab-box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 35px;
+  height: 18px;
+  border: 1.5px solid #c4a47a;
+  border-radius: 3px;
+  background: white;
+  position: relative;
+  font-size: 7pt;
+  font-weight: 700;
+  color: transparent;
+}
+.sab-box::before {
+  content: 'SAM';
+  position: absolute;
+  color: rgba(196, 164, 122, 0.3);
+  font-size: 6.5pt;
+  font-weight: 700;
+}
+
+.ability-box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 35px;
+  height: 18px;
+  border: 1.5px solid #c4a47a;
+  border-radius: 3px;
+  background: white;
+  position: relative;
+  font-size: 7pt;
+  font-weight: 700;
+  color: transparent;
+}
+.ability-box::before {
+  content: 'BtH';
+  position: absolute;
+  color: rgba(196, 164, 122, 0.3);
+  font-size: 6.5pt;
+  font-weight: 700;
+}
+
+/* Ability Score Colors */
+.ability-str { color: #c0392b; font-weight: 700; } /* Red - Strength */
+.ability-dex { color: #1e8449; font-weight: 700; } /* Green - Dexterity */
+.ability-con { color: #e67e22; font-weight: 700; } /* Orange - Constitution */
+.ability-int { color: #2471a3; font-weight: 700; } /* Blue - Intelligence */
+.ability-wis { color: #8e44ad; font-weight: 700; } /* Purple - Wisdom */
+.ability-cha { color: #f39c12; font-weight: 700; } /* Gold - Charisma */
+
+.card-footer {
+  padding: 1.5mm 3mm;
+  font-size: 6.5pt;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: white;
+  text-align: center;
+  opacity: 0.9;
+}
+
+/* Spell level colours */
+.card.cantrip .card-header,     .card.cantrip .card-footer     { background: #f39c12; }
+.card.level1 .card-header,      .card.level1 .card-footer      { background: #e74c3c; }
+.card.level2 .card-header,      .card.level2 .card-footer      { background: #9b59b6; }
+.card.level3 .card-header,      .card.level3 .card-footer      { background: #3498db; }
+.card.level4 .card-header,      .card.level4 .card-footer      { background: #1abc9c; }
+.card.level5 .card-header,      .card.level5 .card-footer      { background: #2ecc71; }
+.card.level6 .card-header,      .card.level6 .card-footer      { background: #f1c40f; }
+.card.level7 .card-header,      .card.level7 .card-footer      { background: #e67e22; }
+.card.level8 .card-header,      .card.level8 .card-footer      { background: #95a5a6; }
+.card.level9 .card-header,      .card.level9 .card-footer      { background: #34495e; }
+
+/* Condition colours */
+.card.blinded .card-header,       .card.blinded .card-footer       { background: #4a4a6a; }
+.card.charmed .card-header,       .card.charmed .card-footer       { background: #9b59b6; }
+.card.deafened .card-header,      .card.deafened .card-footer      { background: #7f8c8d; }
+.card.frightened .card-header,    .card.frightened .card-footer    { background: #c0392b; }
+.card.grappled .card-header,      .card.grappled .card-footer      { background: #d35400; }
+.card.incapacitated .card-header, .card.incapacitated .card-footer { background: #2c3e50; }
+.card.invisible .card-header,     .card.invisible .card-footer     { background: #1a6b8a; }
+.card.paralyzed .card-header,     .card.paralyzed .card-footer     { background: #16a085; }
+.card.poisoned .card-header,      .card.poisoned .card-footer      { background: #27ae60; }
+.card.prone .card-header,         .card.prone .card-footer         { background: #8b5e3c; }
+.card.stunned .card-header,       .card.stunned .card-footer       { background: #f39c12; }
+.card.unconscious .card-header,   .card.unconscious .card-footer   { background: #2c2c2c; }
+.card.inspiration .card-header,   .card.inspiration .card-footer   { background: #c9a90a; }
+.card.advantage .card-header,     .card.advantage .card-footer     { background: #1e8449; }
+.card.disadvantage .card-header,  .card.disadvantage .card-footer  { background: #c0392b; }
+.card.concentration .card-header, .card.concentration .card-footer { background: #7d3c98; }
+.card.restrained .card-header,    .card.restrained .card-footer    { background: #ca6f1e; }
+.card.hidden .card-header,        .card.hidden .card-footer        { background: #34495e; }
+.card.turn .card-header,          .card.turn .card-footer          { background: #2471a3; }
+
+/* Weapon colours */
+.card.simple-melee .card-header,   .card.simple-melee .card-footer   { background: #7e5e4f; }
+.card.simple-ranged .card-header,  .card.simple-ranged .card-footer  { background: #5a7a7a; }
+.card.martial-melee .card-header,  .card.martial-melee .card-footer  { background: #8b3a1a; }
+.card.martial-ranged .card-header, .card.martial-ranged .card-footer { background: #3a5a8b; }
+
+/* Magic item colours */
+.card.magic-utility .card-header, .card.magic-utility .card-footer { background: #6a5a9a; }
+.card.magic-combat .card-header,  .card.magic-combat .card-footer  { background: #b53a2a; }
+
+/* cut line hint */
+.cut-hint {
+  text-align: center;
+  font-size: 6.5pt;
+  color: var(--muted);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-top: 4mm;
+}
+
+@media print {
+  * { margin: 0; padding: 0; }
+  body { background: white; margin: 0; padding: 0; }
+  .page {
+    width: 210mm;
+    height: 297mm;
+    margin: 0;
+    padding: 4mm;
+    background: white;
+    page-break-after: always;
+    break-after: page;
+  }
+  .page:last-child {
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+  .page::before,
+  .page::after {
+    display: none;
+  }
+  .page-header {
+    margin-bottom: 2mm;
+    padding-top: 0;
+  }
+  .page-header h1 {
+    font-size: 16pt;
+  }
+  .page-header p {
+    font-size: 5.5pt;
+  }
+  .cards-grid {
+    gap: 1.5mm;
+    margin-bottom: 1mm;
+  }
+  .card { -webkit-print-color-adjust: exact; print-color-adjust: exact; break-inside: avoid; }
+  .card-header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .card-footer { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .card-body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .cut-hint { display: none; }
+  @page { margin: 0; size: A4; }
+}

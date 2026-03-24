@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Weapon Cards - D&D Kids Resources</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/styles.css">
+  <style>
+    .weapon-controls {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 20px;
+      margin: 20px;
+      border-radius: 10px;
+      color: white;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+    
+    .weapon-controls h2 {
+      margin-top: 0;
+      margin-bottom: 15px;
+      font-family: 'Fredoka One', cursive;
+    }
+    
+    #add-weapon-form {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+      align-items: flex-end;
+    }
+    
+    .form-group {
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .form-group label {
+      font-size: 0.85em;
+      margin-bottom: 4px;
+      font-weight: 600;
+    }
+    
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      padding: 8px;
+      border: none;
+      border-radius: 5px;
+      font-family: inherit;
+      font-size: 0.9em;
+    }
+    
+    .form-group textarea {
+      resize: vertical;
+      min-height: 40px;
+    }
+    
+    #add-weapon-form button {
+      padding: 8px 16px;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 0.9em;
+      transition: background 0.3s;
+    }
+    
+    #add-weapon-form button:hover {
+      background: #45a049;
+    }
+    
+    .delete-weapon-btn {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      background: #ff4444;
+      color: white;
+      border: none;
+      border-radius: 3px;
+      padding: 4px 8px;
+      cursor: pointer;
+      font-size: 0.75em;
+      font-weight: bold;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    
+    .card {
+      position: relative;
+    }
+    
+    .card:has(.delete-weapon-btn):hover .delete-weapon-btn {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="weapon-controls">
+    <h2>➕ Add Custom Weapon</h2>
+    <form id="add-weapon-form">
+      <div class="form-group">
+        <label for="weapon-title">Name*</label>
+        <input type="text" id="weapon-title" placeholder="e.g., Flaming Sword" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="weapon-icon">Icon</label>
+        <input type="text" id="weapon-icon" placeholder="⚔️" maxlength="2">
+      </div>
+      
+      <div class="form-group">
+        <label for="weapon-level">Category*</label>
+        <select id="weapon-level" required>
+          <option value="">Select...</option>
+          <option value="simple-melee">Simple Melee</option>
+          <option value="simple-ranged">Simple Ranged</option>
+          <option value="martial-melee">Martial Melee</option>
+          <option value="martial-ranged">Martial Ranged</option>
+          <option value="homebrew">Homebrew</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label for="weapon-type">Type*</label>
+        <input type="text" id="weapon-type" placeholder="e.g., Melee" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="weapon-hands">Hands*</label>
+        <select id="weapon-hands" required>
+          <option value="">Select...</option>
+          <option value="1-handed">1-handed</option>
+          <option value="2-handed">2-handed</option>
+          <option value="versatile">Versatile</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label for="weapon-explanation">Description*</label>
+        <textarea id="weapon-explanation" placeholder="Describe the weapon" required></textarea>
+      </div>
+      
+      <div class="form-group">
+        <label for="weapon-roll">Roll</label>
+        <input type="text" id="weapon-roll" placeholder="d20 + ability">
+      </div>
+      
+      <div class="form-group">
+        <label for="weapon-damage">Damage*</label>
+        <input type="text" id="weapon-damage" placeholder="e.g., 1d8 slashing" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="weapon-range">Range*</label>
+        <input type="text" id="weapon-range" placeholder="e.g., touch" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="weapon-effect">Effect</label>
+        <input type="text" id="weapon-effect" placeholder="e.g., magical">
+      </div>
+      
+      <button type="submit">Add Weapon</button>
+    </form>
+  </div>
+  
+  <div id="page-container"></div>
+  
+  <script src="../js/card-generator.js"></script>
+  <script src="../js/weapons.js"></script>
+</body>
+</html>

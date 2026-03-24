@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>My Adventure Sheet</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --parchment: #fdf3e3;
+    --ink: #2c1810;
+    --red: #c0392b;
+    --blue: #2471a3;
+    --green: #1e8449;
+    --gold: #c9a90a;
+    --purple: #7d3c98;
+    --orange: #ca6f1e;
+    --border: #8b5e3c;
+    --wb: #fffef7;
+    --wbl: #b0865a;
+    --muted: #8b5e3c;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #c9a97a; font-family: 'Nunito', sans-serif; color: var(--ink); }
+
+  .sheet {
+    width: 210mm;
+    height: 297mm;
+    margin: 0 auto;
+    background: var(--parchment);
+    padding: 6mm 8mm 6mm;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .sheet::before {
+    content: '';
+    position: absolute;
+    inset: 4mm;
+    border: 3.5px solid var(--border);
+    border-radius: 10px;
+    pointer-events: none;
+  }
+
+  .corner { position: absolute; font-size: 15px; }
+  .corner.tl { top: 7mm; left: 7mm; }
+  .corner.tr { top: 7mm; right: 7mm; }
+  .corner.bl { bottom: 7mm; left: 7mm; }
+  .corner.br { bottom: 7mm; right: 7mm; }
+
+  /* ── Shared ── */
+  .pill {
+    font-family: 'Fredoka One', cursive;
+    font-size: 8pt;
+    color: white;
+    padding: 0.5mm 3mm;
+    border-radius: 20px;
+    display: inline-block;
+    margin-bottom: 0.8mm;
+    line-height: 1.3;
+  }
+  .wb {
+    background: var(--wb);
+    border: 2.5px solid var(--wbl);
+    border-radius: 8px;
+  }
+  .wline {
+    border-bottom: 2px solid #c4a47a;
+    display: block;
+    width: 100%;
+  }
+  .wline:last-child { border-bottom: none; }
+  .flabel {
+    font-size: 6.5pt;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+    display: block;
+    margin-bottom: 0.5mm;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    text-align: center;
+    margin-bottom: 2mm;
+    padding-top: 0.5mm;
+  }
+  .header h1 {
+    font-family: 'Fredoka One', cursive;
+    font-size: 20pt;
+    color: var(--red);
+    text-shadow: 2px 2px 0 #f5cba7, 3px 3px 0 var(--border);
+    line-height: 1;
+  }
+  .header p {
+    font-size: 7pt;
+    color: var(--muted);
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-top: 1mm;
+  }
+
+  /* ══ ROW 1: Name + AC + Speed + Initiative + Spell Mod + Spell DC ══ */
+  .row-top {
+    display: grid;
+    grid-template-columns: 1fr 26mm 26mm 26mm 26mm 26mm;
+    gap: 2mm;
+    align-items: end;
+    margin-bottom: 1mm;
+  }
+
+  /* Shield */
+  .shield-wrap { text-align: center; }
+  .shield-svg-wrap {
+    width: 22mm;
+    height: 25mm;
+    margin: 0 auto;
+    position: relative;
+  }
+  .shield-svg-wrap svg { width: 100%; height: 100%; }
+  .shield-write {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .shield-emoji {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32pt;
+    opacity: 0.3;
+    z-index: 0;
+    pointer-events: none;
+  }
+  .shield-write span {
+    display: block;
+    width: 13mm;
+    height: 10mm;
+    border-bottom: 2.5px solid var(--blue);
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Uniform circle stat */
+  .circle-stat { text-align: center; }
+  .stat-circle {
+    width: 22mm;
+    height: 22mm;
+    border: 2.5px solid var(--wbl);
+    border-radius: 50%;
+    background: var(--wb);
+    margin: 0 auto;
+    position: relative;
+    overflow: hidden;
+  }
+  .stat-emoji {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32pt;
+    opacity: 0.3;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  /* ══ ROW 2: HP full width ══ */
+  .row-hp {
+    margin-bottom: 1mm;
+  }
+  .hp-inner {
+    padding: 2mm 3mm;
+    display: flex;
+    align-items: center;
+    gap: 4mm;
+  }
+  .hp-heart {
+    font-size: 28pt;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+  .hp-field { flex: 1; }
+  .hp-field .wline { min-height: 10mm; }
+
+  /* ══ ROW 3: Ability Modifiers ══ */
+  .row-mods {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 1.5mm;
+    margin-bottom: 1mm;
+  }
+  .mod-box {
+    background: var(--wb);
+    border: 2.5px solid var(--wbl);
+    border-radius: 10px;
+    text-align: center;
+    padding: 2mm 1mm 1.5mm;
+    position: relative;
+    overflow: hidden;
+  }
+  .mod-emoji {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32pt;
+    opacity: 0.3;
+    z-index: 0;
+    pointer-events: none;
+  }
+  .mod-name {
+    font-family: 'Fredoka One', cursive;
+    font-size: 7.5pt;
+    color: var(--border);
+    display: block;
+    margin-bottom: 1mm;
+    position: relative;
+    z-index: 1;
+  }
+  .mod-box:nth-child(1) .mod-name { color: #c0392b; }
+  .mod-box:nth-child(2) .mod-name { color: #1e8449; }
+  .mod-box:nth-child(3) .mod-name { color: #e67e22; }
+  .mod-box:nth-child(4) .mod-name { color: #2471a3; }
+  .mod-box:nth-child(5) .mod-name { color: #7d3c98; }
+  .mod-box:nth-child(6) .mod-name { color: #c9a90a; }
+  .mod-val {
+    display: block;
+    height: 10mm;
+    border-bottom: 2px solid #c4a47a;
+    font-size: 18pt;
+    font-weight: 800;
+    line-height: 10mm;
+  }
+
+  /* ══ ROW 4: Saving Throws ══ */
+  .row-saves {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 1.5mm;
+    margin-bottom: 1mm;
+  }
+  .save-box {
+    background: var(--wb);
+    border: 2.5px solid var(--wbl);
+    border-radius: 10px;
+    text-align: center;
+    padding: 1.5mm 1mm;
+    position: relative;
+    overflow: hidden;
+  }
+  .save-emoji {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32pt;
+    opacity: 0.3;
+    z-index: 0;
+    pointer-events: none;
+  }
+  .save-name {
+    font-family: 'Fredoka One', cursive;
+    font-size: 7.5pt;
+    color: var(--orange);
+    display: block;
+    margin-bottom: 1mm;
+    position: relative;
+    z-index: 1;
+  }
+  .save-val {
+    display: block;
+    height: 8mm;
+    border-bottom: 2px solid #c4a47a;
+  }
+
+  /* ══ BOTTOM SECTION ══ */
+  .row-bottom {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 1.5mm;
+    align-items: stretch;
+    flex: 1;
+  }
+
+  /* Skills grid */
+  .skills-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1mm 1.5mm;
+    padding: 1mm 1.5mm;
+  }
+  .skill-row {
+    display: flex;
+    align-items: center;
+    gap: 2mm;
+  }
+  .skill-emoji {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20pt;
+    opacity: 0.3;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .skill-val {
+    width: 11mm;
+    height: 8mm;
+    background: var(--wb);
+    border: 2px solid var(--wbl);
+    border-radius: 5px;
+    flex-shrink: 0;
+    position: relative;
+    overflow: hidden;
+  }
+  .skill-name {
+    font-size: 7.5pt;
+    font-weight: 700;
+    line-height: 1.2;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Adv / Disadv / Inspiration row */
+  .tick-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1.5mm;
+    margin-top: 1mm;
+  }
+  .tick-box {
+    background: var(--wb);
+    border: 2.5px solid var(--wbl);
+    border-radius: 8px;
+    padding: 2mm 3mm;
+    display: flex;
+    align-items: center;
+    gap: 2.5mm;
+  }
+  .tick-square {
+    width: 12mm;
+    height: 12mm;
+    border: 2.5px solid var(--wbl);
+    border-radius: 5px;
+    background: white;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16pt;
+    color: transparent;
+  }
+  .tick-box.adv .tick-square  { border-color: var(--green); }
+  .tick-box.dis .tick-square  { border-color: var(--red); }
+  .tick-box.ins .tick-square  { border-color: var(--gold); }
+  .tick-text h4 {
+    font-family: 'Fredoka One', cursive;
+    font-size: 9pt;
+    line-height: 1.2;
+  }
+  .tick-box.adv .tick-text h4 { color: var(--green); }
+  .tick-box.dis .tick-text h4 { color: var(--red); }
+  .tick-box.ins .tick-text h4 { color: var(--gold); }
+  .tick-text p {
+    font-size: 6pt;
+    color: var(--muted);
+    font-weight: 700;
+    line-height: 1.3;
+  }
+
+  /* Card slot */
+  .card-col { display: flex; flex-direction: column; align-items: center; gap: 0; }
+  .card-slot {
+    width: 63.5mm;
+    height: 88.9mm;
+    background: var(--wb);
+    border: 3px dashed var(--wbl);
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2mm;
+    color: #c4a47a;
+    font-family: 'Fredoka One', cursive;
+    text-align: center;
+  }
+  .card-slot-icon { font-size: 24pt; }
+  .card-slot-label { font-size: 8pt; line-height: 1.4; }
+
+  /* ══ SPELL SLOTS ══ */
+  .spell-slots-grid {
+    display: grid;
+    grid-template-columns: repeat(9, 1fr);
+    gap: 1.5mm;
+    margin-bottom: 1mm;
+    padding: 1.5mm 1.5mm;
+    background: var(--wb);
+    border: 2.5px solid var(--wbl);
+    border-radius: 10px;
+  }
+  .spell-level {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5mm;
+    padding: 0.5mm 0.5mm;
+    border-radius: 5px;
+    border-left: 3px solid var(--wbl);
+  }
+  .spell-level:nth-child(1) { background: #fef5e7; border-left-color: #c9a90a; }
+  .spell-level:nth-child(2) { background: #fef9c3; border-left-color: #c9a90a; }
+  .spell-level:nth-child(3) { background: #fadbd8; border-left-color: #c0392b; }
+  .spell-level:nth-child(4) { background: #fadbd8; border-left-color: #c0392b; }
+  .spell-level:nth-child(5) { background: #d7bde2; border-left-color: #7d3c98; }
+  .spell-level:nth-child(6) { background: #d7bde2; border-left-color: #7d3c98; }
+  .spell-level:nth-child(7) { background: #a9dfbf; border-left-color: #1e8449; }
+  .spell-level:nth-child(8) { background: #a9dfbf; border-left-color: #1e8449; }
+  .spell-level:nth-child(9) { background: #aed6f1; border-left-color: #2471a3; }
+  .spell-level-name {
+    font-family: 'Fredoka One', cursive;
+    font-size: 7pt;
+    color: var(--ink);
+    font-weight: 700;
+    display: block;
+  }
+  .spell-circles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1mm;
+    justify-content: center;
+  }
+  .spell-circle {
+    width: 9mm;
+    height: 9mm;
+    border: 2px solid var(--wbl);
+    border-radius: 50%;
+    background: white;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .spell-circle:hover {
+    background: #f0f0f0;
+  }
+
+  @media print {
+    body { background: var(--parchment); margin: 0; padding: 0; }
+    .sheet { 
+      margin: 0; 
+      background: var(--parchment);
+      print-color-adjust: exact; 
+      -webkit-print-color-adjust: exact; 
+    }
+    .sheet::before { display: none; }
+    .corner { display: none; }
+    .pill { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .wb { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .spell-level { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    @page { margin: 0; size: A4; background: var(--parchment); }
+  }
+</style>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const circles = document.querySelectorAll('.spell-circle');
+    
+    // Load saved spell circle states from localStorage
+    const savedStates = localStorage.getItem('spellCircleStates');
+    if (savedStates) {
+      const states = JSON.parse(savedStates);
+      circles.forEach((circle, index) => {
+        if (states[index]) {
+          circle.style.background = 'var(--purple)';
+          circle.dataset.colored = 'true';
+        }
+      });
+    }
+    
+    // Add click handlers for interactive spell circles
+    circles.forEach((circle, index) => {
+      circle.addEventListener('click', function(e) {
+        e.preventDefault();
+        const isColored = this.dataset.colored === 'true';
+        if (isColored) {
+          this.style.background = 'white';
+          this.dataset.colored = 'false';
+        } else {
+          this.style.background = 'var(--purple)';
+          this.dataset.colored = 'true';
+        }
+        // Save state to localStorage
+        const allStates = Array.from(circles).map(c => c.dataset.colored === 'true');
+        localStorage.setItem('spellCircleStates', JSON.stringify(allStates));
+      });
+    });
+    
+    // Add keyboard shortcut for printing (Ctrl+P)
+    document.addEventListener('keydown', function(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
+        e.preventDefault();
+        window.print();
+      }
+    });
+  });
+</script>
+</head>
+<body>
+<div class="sheet">
+
+  <span class="corner tl">⚔️</span>
+  <span class="corner tr">🛡️</span>
+  <span class="corner bl">🐉</span>
+  <span class="corner br">✨</span>
+
+  <!-- HEADER -->
+  <div class="header">
+    <h1>⚔️ My Adventure Sheet ⚔️</h1>
+    <p>Dungeons &amp; Dragons · 5th Edition</p>
+  </div>
+
+  <!-- ROW 1: Name | Armour Class | Speed | Initiative | Spell Casting Modifier | Spell DC -->
+  <div class="row-top">
+
+    <div>
+      <span class="pill" style="background:var(--purple);">🧙 Hero Name</span>
+      <div class="wb" style="padding:2mm 3mm;">
+        <span class="wline" style="min-height:11mm;"></span>
+      </div>
+    </div>
+
+    <div class="shield-wrap">
+      <span class="pill" style="background:var(--blue);">Armour Class</span>
+      <div class="shield-svg-wrap">
+        <svg viewBox="0 0 100 115" xmlns="http://www.w3.org/2000/svg">
+          <path d="M50 5 L95 25 L95 65 Q95 95 50 110 Q5 95 5 65 L5 25 Z"
+            fill="#e8f4fd" stroke="#2471a3" stroke-width="5"/>
+        </svg>
+        <div class="shield-write"><div class="shield-emoji">🛡️</div><span></span></div>
+      </div>
+    </div>
+
+    <div class="circle-stat">
+      <span class="pill" style="background:var(--green);">Speed</span>
+      <div class="stat-circle"><div class="stat-emoji">🏃</div></div>
+    </div>
+
+    <div class="circle-stat">
+      <span class="pill" style="background:var(--green);">Initiative</span>
+      <div class="stat-circle"><div class="stat-emoji">⚡</div></div>
+    </div>
+
+    <div class="circle-stat">
+      <span class="pill" style="background:var(--purple);">Spell Casting Modifier</span>
+      <div class="stat-circle"><div class="stat-emoji">🪄</div></div>
+    </div>
+
+    <div class="circle-stat">
+      <span class="pill" style="background:var(--purple);">Spell DC</span>
+      <div class="stat-circle"><div class="stat-emoji">📖</div></div>
+    </div>
+
+  </div>
+
+  <!-- ROW 2: Hit Points full width -->
+  <div class="row-hp">
+    <span class="pill" style="background:var(--red);">❤️ Hit Points</span>
+    <div class="wb hp-inner">
+      <span class="hp-heart">❤️</span>
+      <div class="hp-field">
+        <span class="wline" style="min-height:14mm;"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROW 3: Ability Modifiers -->
+  <span class="pill" style="background:var(--blue);">💪 Ability Modifiers</span>
+  <div class="row-mods">
+    <div class="mod-box"><div class="mod-emoji">💪</div><span class="mod-name">Strength</span><span class="mod-val"></span></div>
+    <div class="mod-box"><div class="mod-emoji">🎯</div><span class="mod-name">Dexterity</span><span class="mod-val"></span></div>
+    <div class="mod-box"><div class="mod-emoji">🛡️</div><span class="mod-name">Constitution</span><span class="mod-val"></span></div>
+    <div class="mod-box"><div class="mod-emoji">🧠</div><span class="mod-name">Intelligence</span><span class="mod-val"></span></div>
+    <div class="mod-box"><div class="mod-emoji">👁️</div><span class="mod-name">Wisdom</span><span class="mod-val"></span></div>
+    <div class="mod-box"><div class="mod-emoji">✨</div><span class="mod-name">Charisma</span><span class="mod-val"></span></div>
+  </div>
+
+  <!-- ROW 4: Saving Throws -->
+  <span class="pill" style="background:var(--orange);">🎲 Saving Throws</span>
+  <div class="row-saves">
+    <div class="save-box"><div class="save-emoji">💪</div><span class="save-name">Strength</span><span class="save-val"></span></div>
+    <div class="save-box"><div class="save-emoji">🎯</div><span class="save-name">Dexterity</span><span class="save-val"></span></div>
+    <div class="save-box"><div class="save-emoji">❤️</div><span class="save-name">Constitution</span><span class="save-val"></span></div>
+    <div class="save-box"><div class="save-emoji">🧠</div><span class="save-name">Intelligence</span><span class="save-val"></span></div>
+    <div class="save-box"><div class="save-emoji">👁️</div><span class="save-name">Wisdom</span><span class="save-val"></span></div>
+    <div class="save-box"><div class="save-emoji">✨</div><span class="save-name">Charisma</span><span class="save-val"></span></div>
+  </div>
+
+  <!-- SPELL SLOTS -->
+  <span class="pill" style="background:var(--purple);">💫 Spell Slots (Color them in!)</span>
+  <div class="spell-slots-grid">
+    <div class="spell-level">
+      <span class="spell-level-name">Level 1</span>
+      <div class="spell-circles">
+        <div class="spell-circle"></div>
+        <div class="spell-circle"></div>
+        <div class="spell-circle"></div>
+        <div class="spell-circle"></div>
+      </div>
+    </div>
+    <div class="spell-level">
+      <span class="spell-level-name">Level 2</span>
+      <div class="spell-circles">
+        <div class="spell-circle"></div>
+        <div class="spell-circle"></div>
+        <div class="spell-circle"></div>
+        <div class="spell-circle"></div>
+      </div>
+    </div>
+    <div class="spell-level">
+      <span class="spell-level-name">Level 3</span>
+      <div class="spell-circles">
+        <div class="spell-circle"></div>
+        <div class="spell-circle"></div>
+        <div class="spell-circle"></div>
+        <div class="spell-circle"></div>
+      </div>
+    </div>
+    <div class="spell-level">
+      <span class="spell-level-name">Level 4</span>
+      <div class="spell-circles">
+        <div class="spell-circle"></div>
+        <div class="spell-circle"></div>
+        <div class="spell-circle"></div>
+        <div class="spell-circle"></div>
+      </div>
+    </div>
+    <div class="spell-level">
+      <span class="spell-level-name">Level 5</span>
+      <div class="spell-circles">
+        <div class="spell-circle"></div>
+        <div class="spell-circle"></div>
+        <div class="spell-circle"></div>
+        <div class="spell-circle"></div>
+      </div>
+    </div>
+    <div class="spell-level">
+      <span class="spell-level-name">Level 6</span>
+      <div class="spell-circles">
+        <div class="spell-circle"></div>
+        <div class="spell-circle"></div>
+        <div class="spell-circle"></div>
+        <div class="spell-circle"></div>
+      </div>
+    </div>
+    <div class="spell-level">
+      <span class="spell-level-name">Level 7</span>
+      <div class="spell-circles">
+        <div class="spell-circle"></div>
+        <div class="spell-circle"></div>
+        <div class="spell-circle"></div>
+        <div class="spell-circle"></div>
+      </div>
+    </div>
+    <div class="spell-level">
+      <span class="spell-level-name">Level 8</span>
+      <div class="spell-circles">
+        <div class="spell-circle"></div>
+        <div class="spell-circle"></div>
+        <div class="spell-circle"></div>
+        <div class="spell-circle"></div>
+      </div>
+    </div>
+    <div class="spell-level">
+      <span class="spell-level-name">Level 9</span>
+      <div class="spell-circles">
+        <div class="spell-circle"></div>
+        <div class="spell-circle"></div>
+        <div class="spell-circle"></div>
+        <div class="spell-circle"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM: Skills + Tick boxes | Card slot -->
+  <div class="row-bottom">
+
+    <div style="display: flex; flex-direction: column; gap: 0.5mm; flex: 1;">
+      <span class="pill" style="background:var(--green);">🎯 Skills</span>
+      <div class="wb skills-grid">
+        <div class="skill-row"><div class="skill-val"><div class="skill-emoji">🐕</div></div><span class="skill-name">Animal Handling</span></div>
+        <div class="skill-row"><div class="skill-val"><div class="skill-emoji">🔮</div></div><span class="skill-name">Arcana</span></div>
+        <div class="skill-row"><div class="skill-val"><div class="skill-emoji">🤸</div></div><span class="skill-name">Acrobatics</span></div>
+        <div class="skill-row"><div class="skill-val"><div class="skill-emoji">🏋️</div></div><span class="skill-name">Athletics</span></div>
+        <div class="skill-row"><div class="skill-val"><div class="skill-emoji">🎭</div></div><span class="skill-name">Deception</span></div>
+        <div class="skill-row"><div class="skill-val"><div class="skill-emoji">📜</div></div><span class="skill-name">History</span></div>
+        <div class="skill-row"><div class="skill-val"><div class="skill-emoji">🕵️</div></div><span class="skill-name">Insight</span></div>
+        <div class="skill-row"><div class="skill-val"><div class="skill-emoji">😠</div></div><span class="skill-name">Intimidation</span></div>
+        <div class="skill-row"><div class="skill-val"><div class="skill-emoji">🔍</div></div><span class="skill-name">Investigation</span></div>
+        <div class="skill-row"><div class="skill-val"><div class="skill-emoji">⚕️</div></div><span class="skill-name">Medicine</span></div>
+        <div class="skill-row"><div class="skill-val"><div class="skill-emoji">🌳</div></div><span class="skill-name">Nature</span></div>
+        <div class="skill-row"><div class="skill-val"><div class="skill-emoji">🔭</div></div><span class="skill-name">Perception</span></div>
+        <div class="skill-row"><div class="skill-val"><div class="skill-emoji">🎤</div></div><span class="skill-name">Performance</span></div>
+        <div class="skill-row"><div class="skill-val"><div class="skill-emoji">😊</div></div><span class="skill-name">Persuasion</span></div>
+        <div class="skill-row"><div class="skill-val"><div class="skill-emoji">⛪</div></div><span class="skill-name">Religion</span></div>
+        <div class="skill-row"><div class="skill-val"><div class="skill-emoji">🃏</div></div><span class="skill-name">Sleight of Hand</span></div>
+        <div class="skill-row"><div class="skill-val"><div class="skill-emoji">🥷</div></div><span class="skill-name">Stealth</span></div>
+        <div class="skill-row"><div class="skill-val"><div class="skill-emoji">🌿</div></div><span class="skill-name">Survival</span></div>
+      </div>
+
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 1mm; margin-top: 0.5mm;">
+  <span class="pill" style="background:var(--border);">🎨 Draw Your Hero!</span>
+  <div class="wb" style="flex: 1; border-style: dashed;"></div>
+</div>
+    
+    </div>
+    <div class="card-col">
+      <span class="pill" style="background:var(--purple);">🗡️ Weapon / Wildshape</span>
+      <div class="card-slot">
+        <span class="card-slot-icon">🏷️</span>
+        <span class="card-slot-label">Place your<br>card here!</span>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+</body>
+</html>
