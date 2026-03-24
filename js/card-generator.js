@@ -10,6 +10,120 @@ const DETAIL_TEMPLATES = {
   ]
 };
 
+// Roll object structure: { numDice: 1, diceType: "d4", modifier: "bludgeoning" }
+// Parses roll strings like "1d4 bludgeoning", "d20 + ability", "2d6 slashing", "1 bludgeoning" etc.
+function parseRollString(rollString) {
+  if (!rollString || typeof rollString !== 'string') return null;
+  
+  const trimmed = rollString.trim();
+  
+  // Handle special cases
+  if (trimmed === 'none' || trimmed === 'unknown') return null;
+  
+  // Parse patterns like "1d4", "d20", "2d6", etc
+  const diceMatch = trimmed.match(/(\d*)d(\d+)/i);
+  if (diceMatch) {
+    const numDice = diceMatch[1] ? parseInt(diceMatch[1]) : 1;
+    const diceType = `d${diceMatch[2]}`;
+    
+    // Extract modifier (everything after the dice notation)
+    const modifierStart = diceMatch[0].length;
+    const modifierPart = trimmed.substring(modifierStart).trim();
+    
+    return {
+      numDice: numDice,
+      diceType: diceType,
+      modifier: modifierPart || ''
+    };
+  }
+  
+  // Handle special case: plain number like "1 bludgeoning" (for unarmed strike)
+  const plainMatch = trimmed.match(/^(\d+)\s+(.+)$/);
+  if (plainMatch) {
+    return {
+      numDice: parseInt(plainMatch[1]),
+      diceType: 'd1',  // Use d1 to represent a flat number
+      modifier: plainMatch[2]
+    };
+  }
+  
+  return null;
+}
+
+// Reconstructs a display string from a roll object or string
+function reconstructRollString(rollData) {
+  // If it's a string, parse it first
+  if (typeof rollData === 'string') {
+    rollData = parseRollString(rollData);
+  }
+  
+  if (!rollData) return 'none';
+  
+  // Handle special case: d1 means a flat number (like "1 bludgeoning")
+  if (rollData.diceType === 'd1') {
+    const number = rollData.numDice;
+    if (rollData.modifier) {
+      return `${number} ${rollData.modifier}`;
+    }
+    return String(number);
+  }
+  
+  const diceNotation = `${rollData.numDice}${rollData.diceType}`;
+  
+  if (rollData.modifier) {
+    // Handle special spacing for modifiers
+    if (rollData.modifier.startsWith('+') || rollData.modifier.startsWith('-')) {
+      return `${diceNotation} ${rollData.modifier}`;
+    } else {
+      return `${diceNotation} ${rollData.modifier}`.trim();
+    }
+  }
+  
+  return diceNotation;
+}
+
+// Converts a roll object to a simple format for forms
+function rollToFormString(rollData) {
+  if (typeof rollData === 'string') {
+    return rollData;
+  }
+  if (!rollData) return '';
+  return reconstructRollString(rollData);
+}
+
+// Creates a modifier box element with configurable text
+function createModifierBox(boxText = 'SAM') {
+  const box = document.createElement('span');
+  box.className = 'sab-box';
+  box.style.display = 'inline-flex';
+  box.style.verticalAlign = 'middle';
+  box.setAttribute('data-box-text', boxText);
+  return box;
+}
+
+// Replaces [BOX] markers in content with actual box elements
+// boxText defaults to 'SAM' but can be customized
+function renderContentWithBoxes(contentStr, boxText = 'SAM') {
+  if (!contentStr.includes('[BOX]')) {
+    return null; // No boxes to replace
+  }
+  
+  const fragment = document.createDocumentFragment();
+  const parts = contentStr.split('[BOX]');
+  
+  for (let i = 0; i < parts.length; i++) {
+    if (parts[i]) {
+      fragment.appendChild(document.createTextNode(parts[i]));
+    }
+    if (i < parts.length - 1) {
+      // Add box before the next part
+      fragment.appendChild(createModifierBox(boxText));
+    }
+  }
+  
+  return fragment;
+}
+
 function createCardElement(data) {
   const card = document.createElement('div');
   card.className = `card ${data.level}`;
@@ -64,41 +178,48 @@ function createCardElement(data) {
   
   detailsToRender.forEach(detail => {
     const detailRow = document.createElement('div');
-    detailRow.style.display = 'flex';
-    detailRow.style.alignItems = 'center';
-    detailRow.style.gap = '2px';
-    detailRow.style.flexWrap = 'wrap';
+    detailRow.style.display = 'block';
+    detailRow.style.marginBottom = '3px';
+    detailRow.style.lineHeight = '1.4';
     
     const label = document.createElement('span');
     label.className = 'label';
+    label.style.display = 'inline';
+    label.style.marginRight = '2px';
     label.textContent = detail.label;
     detailRow.appendChild(label);
     
-    // Check if this is a Roll line for a weapon and replace "ability" with an ability box
-    if (data.hands && detail.label.includes('Roll')) {
-      const contentParts = detail.content.split('ability');
-      if (contentParts.length > 1) {
-        // Has "ability" in the content - replace with a box
-        const textBefore = document.createTextNode(contentParts[0]);
-        detailRow.appendChild(textBefore);
-        
-        const abilityBox = document.createElement('div');
-        abilityBox.className = 'ability-box';
-        abilityBox.style.display = 'inline-flex';
-        detailRow.appendChild(abilityBox);
-        
-        if (contentParts[1]) {
-          const textAfter = document.createTextNode(contentParts[1]);
-          detailRow.appendChild(textAfter);
-        }
-      } else {
-        // No "ability" text, just add content as is
-        const content = document.createTextNode(detail.content);
-        detailRow.appendChild(content);
+    // Reconstruct roll data if it's a structured roll object
+    let displayContent = detail.content;
+    let isHtmlContent = false;
+    
+    if (typeof detail.content === 'object' && detail.content !== null && !Array.isArray(detail.content)) {
+      // Check if it looks like a roll object
+      if (detail.content.numDice !== undefined || detail.content.diceType) {
+        displayContent = reconstructRollString(detail.content);
       }
+    } else if (typeof detail.content === 'string' && detail.content.includes('<')) {
+      // Content has HTML tags - mark it as HTML
+      isHtmlContent = true;
+    }
+    
+    // Check if content has [BOX] placeholder - unified method for weapons and spells
+    if (typeof displayContent === 'string' && displayContent.includes('[BOX]')) {
+      // Determine the box text based on card type
+      const boxText = data.hands ? 'BtH' : 'SAM';  // 'BtH' for weapons, 'SAM' for spells
+      const boxFragment = renderContentWithBoxes(displayContent, boxText);
+      if (boxFragment) {
+        detailRow.appendChild(boxFragment);
+      }
+    } else if (isHtmlContent) {
+      // Create a span to hold HTML content (for spells with ability spans)
+      const contentSpan = document.createElement('span');
+      contentSpan.style.display = 'inline';
+      contentSpan.innerHTML = displayContent;
+      detailRow.appendChild(contentSpan);
     } else {
-      // Non-Roll lines or non-weapons: render content normally
-      const content = document.createTextNode(detail.content);
+      // Render as plain text
+      const content = document.createTextNode(displayContent);
       detailRow.appendChild(content);
     }
     

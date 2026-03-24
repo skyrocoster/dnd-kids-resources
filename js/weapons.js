@@ -109,8 +109,8 @@ document.addEventListener('DOMContentLoaded', async function() {
           hands: document.getElementById('weapon-hands').value,
           explanation: document.getElementById('weapon-explanation').value,
           details: [
-            { label: '🎲 Roll:', content: document.getElementById('weapon-roll').value },
-            { label: '💥 Damage:', content: document.getElementById('weapon-damage').value },
+            { label: '🎲 Roll:', content: parseRollString(document.getElementById('weapon-roll').value) || document.getElementById('weapon-roll').value },
+            { label: '💥 Damage:', content: parseRollString(document.getElementById('weapon-damage').value) || document.getElementById('weapon-damage').value },
             { label: '🎯 Range:', content: document.getElementById('weapon-range').value },
             { label: '✨ Effect:', content: document.getElementById('weapon-effect').value }
           ]

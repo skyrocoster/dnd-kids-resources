@@ -169,6 +169,7 @@ body {
   font-size: 7pt;
   font-weight: 700;
   color: transparent;
+  vertical-align: middle;
 }
 .sab-box::before {
   content: 'SAM';
@@ -191,6 +192,7 @@ body {
   font-size: 7pt;
   font-weight: 700;
   color: transparent;
+  vertical-align: middle;
 }
 .ability-box::before {
   content: 'BtH';
@@ -201,12 +203,12 @@ body {
 }
 
 /* Ability Score Colors */
-.ability-str { color: #c0392b; font-weight: 700; } /* Red - Strength */
-.ability-dex { color: #1e8449; font-weight: 700; } /* Green - Dexterity */
-.ability-con { color: #e67e22; font-weight: 700; } /* Orange - Constitution */
-.ability-int { color: #2471a3; font-weight: 700; } /* Blue - Intelligence */
-.ability-wis { color: #8e44ad; font-weight: 700; } /* Purple - Wisdom */
-.ability-cha { color: #f39c12; font-weight: 700; } /* Gold - Charisma */
+.ability-str { color: #c0392b; font-weight: 700; vertical-align: middle; } /* Red - Strength */
+.ability-dex { color: #1e8449; font-weight: 700; vertical-align: middle; } /* Green - Dexterity */
+.ability-con { color: #e67e22; font-weight: 700; vertical-align: middle; } /* Orange - Constitution */
+.ability-int { color: #2471a3; font-weight: 700; vertical-align: middle; } /* Blue - Intelligence */
+.ability-wis { color: #8e44ad; font-weight: 700; vertical-align: middle; } /* Purple - Wisdom */
+.ability-cha { color: #f39c12; font-weight: 700; vertical-align: middle; } /* Gold - Charisma */
 
 .card-footer {
   padding: 1.5mm 3mm;
