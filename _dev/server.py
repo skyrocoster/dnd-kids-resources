@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 D&D Kids Resources - Local Web Server
-Serves the website on http://localhost:8001
+Serves the website on http://localhost:8000
 """
 
 import http.server
@@ -10,14 +10,14 @@ import os
 import webbrowser
 from pathlib import Path
 
-PORT = 8001
+PORT = 8000
 HANDLER = http.server.SimpleHTTPRequestHandler
 
 
 def start_server():
     """Start the local web server"""
-    # Change to the script directory
-    os.chdir(Path(__file__).parent)
+    # Change to the parent directory (project root)
+    os.chdir(Path(__file__).parent.parent)
 
     with socketserver.TCPServer(("", PORT), HANDLER) as httpd:
         url = f"http://localhost:{PORT}"

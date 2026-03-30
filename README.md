@@ -2,7 +2,7 @@
 
 **Printable D&D 5th Edition tools and reference cards designed for kids.**
 
-🎲 Spell Cards • 🛡️ Condition Cards • 💎 Magic Items • ⚔️ Weapons • 👫 NPCs
+🎲 Spell Cards • 🛡️ Condition Cards • 💎 Magic Items • ⚔️ Weapons • 🧙 NPCs • 🗺️ Locations
 
 ---
 
@@ -40,11 +40,76 @@ npx http-server
 ```
 
 ### Print Cards
+
+#### Quick Print (5 Steps)
 1. Navigate to any card page (e.g., Spell Cards)
-2. Press `Ctrl+P` (or `Cmd+P` on Mac)
-3. Set to **A4 size, fit to page**
-4. Enable "Background graphics"
-5. Cut and use!
+2. Press `Ctrl+P` (Windows) or `Cmd+P` (Mac)
+3. In print dialog, set paper size to **A4**
+4. Enable **"Background graphics"** (also called "Background colors and images")
+5. Click **Print**
+
+#### Browser-Specific Settings
+
+**Chrome/Edge:**
+- Print dialog → More settings
+- Paper size: **A4 (210mm × 297mm)**
+- Margins: **0 (None)**
+- Background graphics: **On**
+- Scale: **100%**
+
+**Firefox:**
+- Print → Format & Options tab
+- Paper size: **A4**
+- Margins: **0mm**
+- Print backgrounds: **Enabled**
+- Scale: 100% (uncheck "Shrink to fit")
+
+**Safari (Mac):**
+- File → Print
+- Paper size: **A4**
+- Orientation: **Portrait**
+- Scale: **100%** (uncheck "Auto")
+- Shows backgrounds: **On**
+
+#### Card Specifications
+- **Paper:** Standard A4 (210mm × 297mm)
+- **Cards per page:** 9 (arranged in 3×3 grid)
+- **Card size:** 63.5mm × 88.9mm (standard playing card)
+- **Page breaks:** Automatic (never splits a card)
+- **Colors:** Preserved exactly as shown on screen
+
+#### What to Expect
+- Each page contains exactly 9 cards
+- Cards are perfectly sized for standard deck boxes
+- All colors and backgrounds print with high fidelity
+- No margin wasted (0mm margins recommended)
+
+#### After Printing
+1. Let ink dry completely (1-2 minutes)
+2. Cut along card borders using a ruler and craft knife, or use a paper cutter
+3. Round corners slightly with a corner rounder tool (optional, for durability)
+4. Store in standard deck boxes
+
+#### Troubleshooting
+
+**Cards appear too small?**
+- Ensure scale is set to **100%**
+- Uncheck any "Fit to page" option
+- Check margins are set to **0mm/None**
+
+**Colors fade or don't print?**
+- Enable **Background graphics** in print settings
+- Ensure **color-adjust: exact** is not disabled (our CSS handles this)
+- Try a different printer if colors still fail
+
+**Cards split across pages?**
+- This shouldn't happen (CSS prevents it)
+- If it does, check your print margin settings are 0mm
+- Try another browser or printer
+
+**Print preview shows extra pages?**
+- This is normal if you have more cards than can fit in 9-card increments
+- Just don't print the blank final page
 
 ---
 

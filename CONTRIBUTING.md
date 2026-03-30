@@ -148,6 +148,10 @@ Add link to `index.html` in the tools grid:
 **NPCs:**
 - `species`: Race/species name
 - `profession`: Class/profession name
+
+**Locations:**
+- `type`: "building", "city", "region", "world", "npc-owner"
+- `level`: "location-building", "location-city", "location-region", "location-world", "location-npc"
 - `location`: Where they can be found
 
 ---
@@ -179,11 +183,27 @@ python -m http.server 8000
 
 ### Print Testing
 
+When adding new card types, verify they print correctly:
+
+**Quick Print Test:**
 1. Open card page in browser
-2. Press `Ctrl+P` (or `Cmd+P` on Mac)
-3. Set to **A4 size, fit to page**
-4. Enable **"Background graphics"**
-5. Print or save as PDF
+2. Press `Ctrl+P` (Windows) or `Cmd+P` (Mac)
+3. Set paper size to **A4** (210mm × 297mm)
+4. Set margins to **0mm** or **None**
+5. Enable **"Background graphics"** (critical for colors)
+6. Scale: **100%** (disable "Fit to page")
+7. Print or save as PDF
+
+**What to Verify:**
+- [ ] 9 cards print per page (3×3 grid)
+- [ ] Each card is exactly 63.5mm × 88.9mm
+- [ ] No cards split across pages
+- [ ] All colors print accurately (compare with [COLORS.md](COLORS.md))
+- [ ] Text is readable and not clipped
+- [ ] Icons and emojis render correctly
+
+**For Detailed Browser-Specific Instructions:**
+See the "Print Cards" section in [README.md](README.md#print-cards)
 
 ### CSS Styling
 

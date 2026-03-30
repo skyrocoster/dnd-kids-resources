@@ -23,22 +23,6 @@ body {
   position: relative;
 }
 
-.page::before {
-  content: '';
-  position: absolute;
-  inset: 4mm;
-  border: 3.5px solid var(--border);
-  border-radius: 10px;
-  pointer-events: none;
-}
-.page::after {
-  content: '';
-  position: absolute;
-  inset: 7mm;
-  border: 1.5px dashed #c4a47a;
-  border-radius: 7px;
-  pointer-events: none;
-}
 
 .page-header {
   text-align: center;
@@ -268,6 +252,9 @@ body {
 .card.martial-melee .card-header,  .card.martial-melee .card-footer  { background: #8b3a1a; }
 .card.martial-ranged .card-header, .card.martial-ranged .card-footer { background: #3a5a8b; }
 
+/* Custom/Blank card colour */
+.card.custom .card-header, .card.custom .card-footer { background: #c0c0c0; }
+
 /* Magic item colours */
 .card.magic-utility .card-header, .card.magic-utility .card-footer { background: #6a5a9a; }
 .card.magic-combat .card-header,  .card.magic-combat .card-footer  { background: #b53a2a; }
@@ -282,6 +269,22 @@ body {
 .card.druid .card-header,     .card.druid .card-footer     { background: #16a085; }
 .card.paladin .card-header,   .card.paladin .card-footer   { background: #f39c12; }
 .card.bard .card-header,      .card.bard .card-footer      { background: #9b59b6; }
+
+/* Location card colours */
+.card.location-building .card-header, .card.location-building .card-footer { background: #8b6f47; }
+.card.location-city .card-header,     .card.location-city .card-footer     { background: #d4a574; }
+.card.location-region .card-header,   .card.location-region .card-footer   { background: #2d8659; }
+.card.location-world .card-header,    .card.location-world .card-footer    { background: #2c5aa0; }
+.card.location-npc .card-header,      .card.location-npc .card-footer      { background: #6a4fa3; }
+
+/* Wild shape size colours */
+.card.tiny .card-header,      .card.tiny .card-footer      { background: #f39c12; }
+.card.medium .card-header,    .card.medium .card-footer    { background: #16a085; }
+
+/* Action card colours */
+.card.action .card-header,  .card.action .card-footer  { background: #27ae60; }
+.card.talk .card-header,    .card.talk .card-footer    { background: #f39c12; }
+.card.either .card-header,  .card.either .card-footer  { background: #1abc9c; }
 
 /* cut line hint */
 .cut-hint {

@@ -2,6 +2,14 @@
 
 **Complete, authoritative color palette for all card types.**
 
+## Custom/Blank Card Color
+
+Used to identify custom and blank printable cards that DMs can fill in:
+
+| Type | Color | Hex Code | Usage |
+|------|-------|----------|-------|
+| Custom/Blank | Silver | #c0c0c0 | Blank cards for custom content |
+
 ---
 
 ## Universal Base Colors
@@ -105,6 +113,20 @@ Applied via CSS classes: `.magic-utility`, `.magic-combat`
 |----------|-------|----------|-------|
 | Utility Items | Purple | #6a5a9a | Non-combat items |
 | Combat Items | Red | #b53a2a | Combat-focused items |
+
+---
+
+## Location Card Colors
+
+Applied via CSS classes: `.location-building`, `.location-city`, `.location-region`, `.location-world`, `.location-npc`
+
+| Type | Color | Hex Code | Theme |
+|------|-------|----------|-------|
+| Building | Warm Brown | #8b6f47 | Structures and establishments |
+| City/Town/Village | Bronze-Gold | #d4a574 | Bustling settlements |
+| Region | Forest Green | #2d8659 | Natural landscapes |
+| World | Deep Blue | #2c5aa0 | Cosmic scope and significance |
+| NPC Owner | Mystical Purple | #6a4fa3 | Important figures |
 
 ---
 

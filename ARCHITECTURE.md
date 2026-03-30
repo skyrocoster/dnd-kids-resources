@@ -257,30 +257,79 @@ Each card type has corresponding color classes:
 
 ### Print Optimization
 
+All pages are optimized for A4 printing with 9 cards per page (3×3 grid). The following CSS rules ensure perfect print output:
+
 ```css
 @media print {
-  /* Remove margins and padding */
+  /* Remove margins and padding for full card utilization */
   html, body {
     margin: 0;
     padding: 0;
   }
   
-  /* Preserve colors */
+  /* Force exact color preservation regardless of browser settings */
   * {
     -webkit-print-color-adjust: exact !important;
     color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
   
-  /* Ensure 9 cards per page */
+  /* Prevent cards from splitting across page boundaries */
   .card {
-    break-inside: avoid;  /* Don't split cards across pages */
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
   
+  /* Force page break after each card grid (9 cards = 1 page) */
   .page {
-    break-after: page;  /* Page break after each page container */
+    break-after: page;
+    page-break-after: always;
+  }
+  
+  /* Hide screen-only elements */
+  .screen-only {
+    display: none !important;
   }
 }
 ```
+
+#### Print Layout Details
+
+**Grid System:**
+- CSS Grid: 3 columns × 3 rows = 9 cards per page
+- Card dimensions: 63.5mm × 88.9mm (standard playing card size)
+- No gaps between cards (flush grid)
+- A4 page: 210mm × 297mm
+
+**Color Preservation:**
+- All cards use CSS variables for header/footer colors
+- `color-adjust: exact` forces exact color printing
+- Cards are visually tested for color accuracy at 100% scale
+- See [COLORS.md](COLORS.md) for all available color classes
+
+**Page Breaking:**
+- `break-inside: avoid` prevents cards from splitting
+- `.page` containers automatically trigger new page
+- Exactly 9 cards print per page
+- Last page may be partial (user manually omits if blank)
+
+#### User Requirements for Perfect Printing
+
+1. **Paper:** Standard A4 (210mm × 297mm) white stock
+2. **Margins:** Set to **0mm/None**
+3. **Scale:** **100%** (disable "Fit to page")
+4. **Background graphics:** **Enabled**
+5. **Color mode:** Color or CMYK (not Grayscale)
+
+#### Browser Compatibility
+
+All modern browsers support CSS print media queries. Tested on:
+- Chrome/Chromium (Windows, Mac, Linux)
+- Firefox (all platforms)
+- Safari (Mac, iOS)
+- Edge (Windows)
+
+All browsers should produce identical output when print settings match.
 
 ---
 

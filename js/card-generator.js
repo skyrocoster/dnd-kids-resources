@@ -263,7 +263,16 @@ function createCardElement(data) {
   
   const explanation = document.createElement('p');
   explanation.className = 'simple-explanation';
-  explanation.textContent = data.explanation;
+  
+  // For custom cards, add writable space instead of text
+  if (data.level === 'custom') {
+    explanation.style.minHeight = '14mm';
+    explanation.style.display = 'flex';
+    explanation.style.alignItems = 'flex-end';
+    explanation.textContent = '';
+  } else {
+    explanation.textContent = data.explanation;
+  }
   body.appendChild(explanation);
   
   const detailsDiv = document.createElement('div');
@@ -411,33 +420,45 @@ function createCardElement(data) {
   const footer = document.createElement('div');
   footer.className = 'card-footer';
   
-  // For weapons, use type and hands; for spells use level and school; for magic items use type and school; for NPCs use species and profession
-  let footerText;
-  if (data.species && data.profession) {
-    // NPCs: "Human · Wizard"
-    footerText = `${data.species} · ${data.profession}`;
-  } else if (data.hands) {
-    // Weapons: "Simple Melee · 1-handed"
-    footerText = `${data.type} · ${data.hands}`;
-  } else if (data.level === 'cantrip' || /^\d+$/.test(data.level)) {
-    // Spells: "Level 1 · Evocation" or "Cantrip · Evocation"
-    let levelText;
-    if (data.level === 'cantrip') {
-      levelText = 'Cantrip';
-    } else {
-      const match = data.level.match(/\d+/);
-      levelText = match ? `Level ${match[0]}` : '';
-    }
-    footerText = levelText && data.school ? `${levelText} · ${data.school}` : (data.school || levelText || '');
-  } else if (data.type && data.school) {
-    // Magic Items: "Magic Item · Utility"
-    footerText = `${data.type} · ${data.school}`;
+  // For custom/blank cards, add a writable line instead of text
+  if (data.level === 'custom') {
+    footer.style.borderTop = '2px solid rgba(255, 255, 255, 0.5)';
+    footer.style.minHeight = '12mm';
+    footer.style.display = 'flex';
+    footer.style.alignItems = 'flex-end';
+    footer.textContent = '';
   } else {
-    // Conditions or other items: just the type
-    footerText = data.type || '';
+    // For weapons, use type and hands; for spells use level and school; for magic items use type and school; for NPCs use species and profession; for wild shapes use size and type
+    let footerText;
+    if (data.species && data.profession) {
+      // NPCs: "Human · Wizard"
+      footerText = `${data.species} · ${data.profession}`;
+    } else if (data.type === 'Beast' && data.size) {
+      // Wild shapes: "Beast · Medium"
+      footerText = `${data.type} · ${data.size}`;
+    } else if (data.hands) {
+      // Weapons: "Simple Melee · 1-handed"
+      footerText = `${data.type} · ${data.hands}`;
+    } else if (data.level === 'cantrip' || /^\d+$/.test(data.level)) {
+      // Spells: "Level 1 · Evocation" or "Cantrip · Evocation"
+      let levelText;
+      if (data.level === 'cantrip') {
+        levelText = 'Cantrip';
+      } else {
+        const match = data.level.match(/\d+/);
+        levelText = match ? `Level ${match[0]}` : '';
+      }
+      footerText = levelText && data.school ? `${levelText} · ${data.school}` : (data.school || levelText || '');
+    } else if (data.type && data.school) {
+      // Magic Items: "Magic Item · Utility"
+      footerText = `${data.type} · ${data.school}`;
+    } else {
+      // Conditions or other items: just the type
+      footerText = data.type || '';
+    }
+    
+    footer.textContent = footerText;
   }
-  
-  footer.textContent = footerText;
   card.appendChild(footer);
   
   return card;
