@@ -25,16 +25,24 @@ Simply open `index.html` in a web browser. All features work offline after first
 
 ### Run Locally (Development)
 
-**Option 1: Python**
+**For Spell Cards (uses database via Flask API):**
+```bash
+python _dev/server_flask.py
+# Visit http://localhost:8000
+# Spells will load from dnd_kids_resources.db
+```
+
+**For Other Cards (Conditions, Weapons, Magic Items, NPCs):**
 ```bash
 python -m http.server 8000
 # Visit http://localhost:8000
+# Cards load from JSON files
 ```
 
-**Option 2: VS Code**
-Install "Live Server" extension, right-click `index.html` → "Open with Live Server"
+**VS Code Option:**
+Install "Live Server" extension, right-click `index.html` → "Open with Live Server" (works for all except spells)
 
-**Option 3: Node.js**
+**Node.js Option:**
 ```bash
 npx http-server
 ```
@@ -144,12 +152,12 @@ npx http-server
 │   └── ...
 │
 ├── data/                   # Card data (JSON)
-│   ├── spells.json
-│   ├── conditions.json
-│   ├── magic-items.json
-│   ├── weapons.json
-│   ├── npcs.json
-│   └── ...
+   ├── conditions.json
+   ├── magic-items.json
+   ├── weapons.json
+   ├── npcs.json
+   └── ...
+   (Spells loaded from database via Flask API)
 │
 ├── js/                     # Rendering logic
 │   ├── card-generator.js   # Core card creation

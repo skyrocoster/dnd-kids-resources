@@ -247,11 +247,12 @@ All card styles are in `css/styles.css`. Cards inherit:
 
 ```
 data/                          # Card data (JSON)
-├── spells.json                # 27 spells
 ├── conditions.json            # 19 conditions
 ├── magic-items.json           # 9 items
 ├── weapons.json               # 42+ weapons
 └── npcs.json                  # 9 NPCs
+
+(Spells are stored in the database and loaded via `/api/spells` endpoint)
 
 js/                            # JavaScript
 ├── card-generator.js          # Core system (don't modify)
@@ -297,6 +298,73 @@ pages/                         # HTML pages for each tool
 **Print layout broken**
 - Check page size is A4
 - Enable "Background graphics" in print dialog
+- Verify card height doesn't exceed page break
+
+---
+
+## Working with Spells (Database)
+
+**Important:** Spells are now stored in the SQLite database (`dnd_kids_resources.db`), not in a JSON file.
+
+### Updating Spell Data
+
+To modify existing spells or add new spells:
+
+1. **Edit the database directly** (via CLI or DB browser):
+   ```bash
+   sqlite3 dnd_kids_resources.db
+   ```
+
+2. **Or use the migration scripts** in `_dev/`:
+   - Modify `_dev/migrate_spells.py` to import spell data from a JSON source
+   - Run the migration script to update the database
+
+### Database Schema for Spells
+
+```sql
+-- Main spell info
+cards (
+  id,              -- Card ID
+  title,           -- Spell name
+  icon,            -- Emoji icon
+  level,           -- "cantrip", "level1"–"level9"
+  explanation,     -- Kid-friendly description
+  card_type        -- "spell"
+)
+
+-- Spell mechanics
+spells (
+  id,
+  card_id,
+  school,          -- "Evocation", "Transmutation", etc.
+  to_hit,          -- JSON: {roll, numerics, types, save}
+  damage,          -- JSON: {roll, numerics, types}
+  heal,            -- JSON: {roll, numerics}
+  range            -- JSON: {distance, target, area}
+)
+
+-- Additional details (scaling, descriptions)
+detail_entries (
+  id,
+  card_id,
+  label,           -- e.g., "⬆️ Scaling"
+  content_text,    -- Description or mechanic info
+  sequence_order   -- Display order
+)
+```
+
+### Testing Spell Changes
+
+1. **Start the Flask server:**
+   ```bash
+   python _dev/server_flask.py
+   ```
+
+2. **Visit Spell Cards page:** `http://localhost:8000/pages/spell-cards.html`
+
+3. **Verify changes appear** in the rendered cards
+
+4. **Check browser console** for any API errors or warnings
 - Verify margins are set correctly
 
 ---

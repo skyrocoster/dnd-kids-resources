@@ -244,6 +244,69 @@ function reconstructStructuredRoll(rollObj) {
   return result.trim();
 }
 
+/**
+ * Reconstructs display string from database roll format.
+ * Returns format with [STAT:code] placeholders that integrate with renderContentWithPlaceholders().
+ * 
+ * Database format: {
+ *   "roll": "1d20",
+ *   "numerics": ["DEX", "SAM"],    // codes like ability scores or special modifiers
+ *   "types": ["fire", "cold"],      // damage types, descriptors (no numeric value)
+ *   "save": false/true              // flag for save rolls
+ * }
+ * 
+ * Examples:
+ * - Fire Bolt: {"roll": "1d20", "numerics": ["SAM"]} → "1d20 + [STAT:SAM]"
+ * - Damage: {"roll": "1d10", "types": ["fire"]} → "1d10 (fire)"
+ * - Con Save: {"roll": "1d20", "numerics": ["CON"], "save": true} → "1d20 + [STAT:CON] (save)"
+ */
+function reconstructDatabaseRoll(rollObj) {
+  if (!rollObj || typeof rollObj !== 'object') return 'none';
+  
+  if (!rollObj.roll) return 'none';
+  
+  let parts = [rollObj.roll];
+  
+  // Add numeric modifiers with [STAT:code] placeholders for ability styling
+  if (rollObj.numerics && Array.isArray(rollObj.numerics) && rollObj.numerics.length > 0) {
+    parts.push(...rollObj.numerics.map(code => `[STAT:${code}]`));
+  }
+  
+  // Build descriptor string (types + flags, no + prefix)
+  const descriptors = [];
+  
+  // Add damage types/descriptors
+  if (rollObj.types && Array.isArray(rollObj.types) && rollObj.types.length > 0) {
+    descriptors.push(rollObj.types.join(', '));
+  }
+  
+  // Add save flag
+  if (rollObj.save === true) {
+    descriptors.push('save');
+  }
+  
+  // Add actor info if not self
+  if (rollObj.actor && rollObj.actor !== 'self') {
+    descriptors.push(rollObj.actor);
+  }
+  
+  // Add shape/AOE if present
+  if (rollObj.shape) {
+    descriptors.push(rollObj.shape);
+  }
+  
+  // Combine: "1d20" + "+ [STAT:SAM]" = "1d20 + [STAT:SAM]"
+  let result = parts.join(' + ');
+  
+  // Add descriptors in parentheses: "1d20 + [STAT:SAM]" + " (fire, save)" = "1d20 + [STAT:SAM] (fire, save)"
+  if (descriptors.length > 0) {
+    result += ` (${descriptors.join(', ')})`;
+  }
+  
+  return result.trim();
+}
+
+
 function createCardElement(data) {
   const card = document.createElement('div');
   card.className = `card ${data.level}`;
@@ -330,12 +393,18 @@ function createCardElement(data) {
     let isHtmlContent = false;
     
     if (typeof detail.content === 'object' && detail.content !== null && !Array.isArray(detail.content)) {
-      // Check if it's a structured roll object with new format (baseModifier, statModifier, applySpellModifier)
-      if (detail.content.baseModifier !== undefined || detail.content.statModifier !== undefined || 
+      // Check if it's the new database roll format (roll, numerics, types, save)
+      if (detail.content.roll !== undefined || detail.content.numerics !== undefined || 
+          detail.content.types !== undefined || detail.content.save !== undefined) {
+        // It's the new database roll format - reconstruct it
+        displayContent = reconstructDatabaseRoll(detail.content);
+      }
+      // Check if it's the old structured roll object format (baseModifier, statModifier, applySpellModifier)
+      else if (detail.content.baseModifier !== undefined || detail.content.statModifier !== undefined || 
           detail.content.applySpellModifier !== undefined || detail.content.rollActor !== undefined || 
           detail.content.suffix !== undefined || detail.content.numDice !== undefined || 
           detail.content.diceType || detail.content.modifier !== undefined) {
-        // It's a structured roll - reconstruct it
+        // It's the old structured roll format - reconstruct it
         displayContent = reconstructStructuredRoll(detail.content);
       }
     } else if (typeof detail.content === 'string' && detail.content.includes('<')) {
@@ -355,8 +424,9 @@ function createCardElement(data) {
       const contentFragment = renderContentWithPlaceholders(displayContent, boxText);
       if (contentFragment) {
         detailRow.appendChild(contentFragment);
+        isHtmlContent = false;  // Already rendered as HTML
       }
-    } else if (isHtmlContent) {
+    } else if (isHtmlContent && !displayContent.includes('[')) {
       // Create a span to hold HTML content (for spells with ability spans)
       const contentSpan = document.createElement('span');
       contentSpan.style.display = 'inline';
