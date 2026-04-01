@@ -66,17 +66,19 @@ data/
 **SQLite Database (Dynamic):**
 ```
 dnd_kids_resources.db
-├── cards table           # Base card info (title, icon, level, explanation)
-├── spells table          # Spell-specific data (school, to_hit, damage, heal, range)
-├── detail_entries table  # Card detail labels/content (scaling, range descriptions, etc.)
-└── Other tables          # Reserved for future card types
+├── spells table           # 28 spells with complete card metadata
+│   └── Fields: id, title, icon, level, school, explanation, 
+│              to_hit, damage, heal, range
+│
+└── detail_entries table   # Spell-specific details (scaling, range descriptions, etc.)
+    └── References: spell_id (FK → spells.id)
 ```
 
-**Migration Details:**
-- **Spells** have been migrated to the database for structured storage and future scalability
-- **Other card types** (Conditions, Weapons, Magic Items, NPCs) still use JSON files
-- Spells are served via Flask API endpoint `GET /api/spells`
-- The database schema separates rolling mechanics (to_hit, damage) from descriptive text
+**Architecture Clarity:**
+- **Spells** are self-contained in the `spells` table (no separate cards table)
+- Each spell record contains all card display information (title, icon, level, etc.)
+- **detail_entries** table stores secondary information linked directly to spells
+- **Other card types** (Conditions, Weapons, Magic Items, NPCs) continue to use JSON files
 
 ---
 
@@ -86,20 +88,33 @@ dnd_kids_resources.db
 
 **Location:** `_dev/server_flask.py`
 
-**Purpose:** Converts database spell records into JSON format compatible with the card renderer
+**Purpose:** Provides REST endpoints to retrieve spell data from the SQLite database in JSON format
 
 **Endpoints:**
 
-| Endpoint | Method | Returns | Example |
+| Endpoint | Method | Returns | Purpose |
 |----------|--------|---------|---------|
-| `/api/spells` | GET | Array of all spells | Loads on spell-cards.html |
+| `/api/spells` | GET | Array of all spells | Used by spell-cards.html |
 | `/api/spells/<title>` | GET | Single spell by title | Can fetch individual spells |
 
+**Query Logic:**
+Spells are now queried directly from the `spells` table (no JOIN with cards table needed):
+```sql
+SELECT id, title, icon, level, school, explanation, 
+       to_hit, damage, heal, range FROM spells ORDER BY title
+```
+
+Detail entries are fetched separately by spell_id:
+```sql
+SELECT label, content_text FROM detail_entries 
+WHERE spell_id = ? ORDER BY sequence_order
+```
+
 **Data Transformation:**
-1. Fetches spell data from SQLite `cards` + `spells` + `detail_entries` tables
-2. Joins related records (spell mechanics, range, damage type, scaling info)
-3. Converts to JSON format with `title`, `icon`, `level`, `school`, `explanation`, `details` array
-4. Returns standardized format compatible with `card-generator.js`
+1. Queries spell metadata directly from `spells` table
+2. Gets related detail entries from `detail_entries` table
+3. Combines into JSON: `{ title, icon, level, school, explanation, details[] }`
+4. Details array includes roll/damage/heal/range/scaling information
 
 **Starting the Flask Server:**
 ```bash
@@ -121,19 +136,11 @@ python server_flask.py
     "details": [
       {
         "label": "🎲 Roll:",
-        "content": {
-          "roll": "1d20",
-          "numerics": ["SAM"],
-          "save": false
-        }
+        "content": {"roll": "1d20", "numerics": ["SAM"], "save": false}
       },
       {
         "label": "💥 Damage:",
-        "content": {
-          "roll": "1d10",
-          "types": ["fire"],
-          "save": false
-        }
+        "content": {"roll": "1d10", "types": ["fire"], "save": false}
       }
     ]
   }
@@ -142,16 +149,19 @@ python server_flask.py
 
 ### Special Fields by Card Type
 
-**Spells (from database via API):**
-- Fields populated from `cards` + `spells` + `detail_entries` tables
+**Spells (from spells table via API):**
+- Self-contained in spells table with all metadata
+- `id`: Unique spell ID
+- `title`: Spell name
+- `icon`: Emoji icon
 - `level`: "cantrip", "level1"–"level9" (CSS color class)
 - `school`: "Evocation", "Transmutation", etc.
-- `details`: Array built from database detail_entries, includes:
-  - Roll mechanics (to_hit with numerics, types, save info)
-  - Damage mechanics (damage with types, numerics)
-  - Heal values (heal with numerics)
-  - Range descriptions
-  - Scaling info
+- `explanation`: Kid-friendly description
+- `to_hit`: JSON with attack/save mechanics
+- `damage`: JSON with damage rolls
+- `heal`: JSON with healing rolls
+- `range`: JSON with range information
+- Linked **detail_entries** provide additional fields (scaling, descriptions, etc.)
 
 **Weapons:**
 - `type`: "Simple Melee", "Martial Ranged", etc.  

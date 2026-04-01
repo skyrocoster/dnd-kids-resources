@@ -321,37 +321,35 @@ To modify existing spells or add new spells:
 
 ### Database Schema for Spells
 
+The spells table is now self-contained with all card metadata:
+
 ```sql
--- Main spell info
-cards (
-  id,              -- Card ID
-  title,           -- Spell name
-  icon,            -- Emoji icon
-  level,           -- "cantrip", "level1"–"level9"
-  explanation,     -- Kid-friendly description
-  card_type        -- "spell"
-)
-
--- Spell mechanics
+-- Main spells table (consolidated from previous cards + spells)
 spells (
-  id,
-  card_id,
-  school,          -- "Evocation", "Transmutation", etc.
-  to_hit,          -- JSON: {roll, numerics, types, save}
-  damage,          -- JSON: {roll, numerics, types}
-  heal,            -- JSON: {roll, numerics}
-  range            -- JSON: {distance, target, area}
+  id              INTEGER PRIMARY KEY,
+  title           TEXT NOT NULL,         -- Spell name
+  icon            TEXT NOT NULL,         -- Emoji icon
+  level           TEXT NOT NULL,         -- "cantrip", "level1"–"level9"
+  school          TEXT,                  -- "Evocation", "Transmutation", etc.
+  explanation     TEXT,                  -- Kid-friendly description
+  to_hit          TEXT,                  -- JSON: {roll, numerics, types, save}
+  damage          TEXT,                  -- JSON: {roll, numerics, types}
+  heal            TEXT,                  -- JSON: {roll, numerics}
+  range           TEXT                   -- JSON: {distance, target, area}
 )
 
--- Additional details (scaling, descriptions)
+-- Detail entries for additional information (scaling, etc.)
 detail_entries (
-  id,
-  card_id,
-  label,           -- e.g., "⬆️ Scaling"
-  content_text,    -- Description or mechanic info
-  sequence_order   -- Display order
+  id              INTEGER PRIMARY KEY,
+  spell_id        INTEGER NOT NULL,      -- FK to spells.id
+  label           TEXT NOT NULL,         -- "⬆️ Scaling", etc.
+  content_text    TEXT,                  -- Description or value
+  sequence_order  INTEGER DEFAULT 0      -- Display order
+  FOREIGN KEY (spell_id) REFERENCES spells(id) ON DELETE CASCADE
 )
 ```
+
+**Important:** The previous `cards` table has been removed. All spell metadata is now stored directly in the `spells` table.
 
 ### Testing Spell Changes
 

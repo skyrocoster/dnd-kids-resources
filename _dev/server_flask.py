@@ -48,8 +48,11 @@ def parse_json_field(json_str):
 def convert_db_spell_to_api_format(spell_row, detail_rows):
     """
     Convert database spell to API format.
-
-    Returns database roll format as-is (roll, numerics, types, save):
+    
+    spell_row contains: id, title, icon, level, school, explanation,
+                       to_hit, damage, heal, range
+    
+    Returns:
     {
       "title": "Fire Bolt",
       "icon": "🔥",
@@ -57,9 +60,9 @@ def convert_db_spell_to_api_format(spell_row, detail_rows):
       "school": "Evocation",
       "explanation": "...",
       "details": [
-        {"label": "🎲 Roll:", "content": {"roll": "1d20", "numerics": ["SAM"], "save": false}},
-        {"label": "💥 Damage:", "content": {"roll": "1d10", "types": ["fire"], "save": false}},
-        {"label": "🎯 Range:", "content": {"distance": "very long", "target": "single"}},
+        {"label": "🎲 Roll:", "content": {...}},
+        {"label": "💥 Damage:", "content": {...}},
+        {"label": "🎯 Range:", "content": {...}},
         ...
       ]
     }
@@ -67,10 +70,10 @@ def convert_db_spell_to_api_format(spell_row, detail_rows):
     spell_dict = dict(spell_row)
 
     # Parse the database JSON fields
-    to_hit_data = parse_json_field(spell_dict['to_hit'])
-    damage_data = parse_json_field(spell_dict['damage'])
-    heal_data = parse_json_field(spell_dict['heal'])
-    range_data = parse_json_field(spell_dict['range'])
+    to_hit_data = parse_json_field(spell_dict.get('to_hit'))
+    damage_data = parse_json_field(spell_dict.get('damage'))
+    heal_data = parse_json_field(spell_dict.get('heal'))
+    range_data = parse_json_field(spell_dict.get('range'))
 
     # Build details array with database format
     details = []
@@ -121,7 +124,7 @@ def convert_db_spell_to_api_format(spell_row, detail_rows):
             "content": content
         })
 
-    # Return in database format
+    # Return in API format
     return {
         "icon": spell_dict.get('icon', '✨'),
         "level": spell_dict.get('level', 'cantrip'),
@@ -142,27 +145,26 @@ def get_spells_api():
         print(f"[API] Database connection established")
         cursor = conn.cursor()
 
-        # Get all spells with their card info
+        # Get all spells directly (cards table no longer exists)
         cursor.execute("""
             SELECT 
-                s.id as spell_id, c.id as card_id, c.title, c.icon, c.level, c.explanation,
-                s.school, s.to_hit, s.damage, s.heal, s.range
-            FROM spells s
-            JOIN cards c ON s.card_id = c.id
-            ORDER BY c.title
+                id, title, icon, level, school, explanation,
+                to_hit, damage, heal, range
+            FROM spells
+            ORDER BY title
         """)
 
         spells = []
         for row in cursor.fetchall():
-            card_id = row['card_id']
+            spell_id = row['id']
 
-            # Get detail entries for this card
+            # Get detail entries for this spell
             cursor.execute("""
                 SELECT label, content_text
                 FROM detail_entries
-                WHERE card_id = ?
+                WHERE spell_id = ?
                 ORDER BY sequence_order
-            """, (card_id,))
+            """, (spell_id,))
 
             detail_rows = cursor.fetchall()
 
@@ -188,33 +190,33 @@ def get_spell_by_title(title):
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        # Get spell by title
+        # Get spell by title (directly from spells table)
         cursor.execute("""
             SELECT 
-                s.id as spell_id, c.id as card_id, c.title, c.icon, c.level, c.explanation,
-                s.school, s.to_hit, s.damage, s.heal, s.range
-            FROM spells s
-            JOIN cards c ON s.card_id = c.id
-            WHERE c.title = ?
+                id, title, icon, level, school, explanation,
+                to_hit, damage, heal, range
+            FROM spells
+            WHERE title = ?
         """, (title,))
 
+        row = cursor.fetchone()
         row = cursor.fetchone()
         if not row:
             return jsonify({"error": f"Spell '{title}' not found"}), 404
 
-        card_id = row['card_id']
+        spell_id = row['id']
 
-        # Get detail entries for this card
+        # Get detail entries for this spell
         cursor.execute("""
             SELECT label, content_text
             FROM detail_entries
-            WHERE card_id = ?
+            WHERE spell_id = ?
             ORDER BY sequence_order
-        """, (card_id,))
+        """, (spell_id,))
 
         detail_rows = cursor.fetchall()
 
-        # Convert to API format (database format with details)
+        # Convert to API format
         spell_json = convert_db_spell_to_api_format(row, detail_rows)
 
         conn.close()
