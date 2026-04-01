@@ -1,31 +1,15 @@
 // Spell-specific initialization
 document.addEventListener('DOMContentLoaded', async function() {
   try {
-    // Try multiple fetch paths to handle different deployment scenarios
-    let response;
-    const paths = [
-      '../data/spells.json',        // From pages/ folder
-      './data/spells.json',         // From root
-      'data/spells.json'            // Relative from current
-    ];
+    // Load spells from Flask API
+    const response = await fetch('/api/spells');
     
-    for (const path of paths) {
-      try {
-        response = await fetch(path);
-        if (response.ok) {
-          console.log(`✓ Loaded spells from: ${path}`);
-          break;
-        }
-      } catch (e) {
-        // Try next path
-      }
-    }
-    
-    if (!response || !response.ok) {
-      throw new Error(`Failed to load spells.json. Status: ${response?.status || 'unknown'}`);
+    if (!response.ok) {
+      throw new Error(`Failed to load spells from API: ${response.status}`);
     }
     
     const spellsData = await response.json();
+    console.log(`✓ Loaded ${spellsData.length} spells from API`);
     
     // Render the cards
     renderPaginatedCards(

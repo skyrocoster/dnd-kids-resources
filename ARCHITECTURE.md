@@ -6,21 +6,28 @@
 
 ## System Overview
 
-The D&D Kids Resources project is a **data-driven card generation system** that converts JSON data into printable physical card layouts for D&D 5e reference materials.
+The D&D Kids Resources project is a **data-driven card generation system** that converts data sources into printable physical card layouts for D&D 5e reference materials.
 
 ```
-Data Layer
-(JSON files)
-    ↓
-JavaScript Layer
-(Initializers + Card Generator)
-    ↓
-DOM Layer
-(HTML Structure)
-    ↓
-Presentation Layer
-(CSS Styling + Print Optimization)
+Spells Data Path:                   Other Cards Data Path:
+  SQLite Database                      JSON Files
+       ↓                                   ↓
+  Flask API Server                   JavaScript Initializer
+  (/api/spells endpoint)             (loads from data/)
+       ↓                                   ↓
+  JavaScript Fetch                   JavaScript Fetch
+       ↓                                   ↓
+  ┌─────────────────────────────────────────┐
+  │   JavaScript Card Generator             │
+  │   (js/card-generator.js)                │
+  └─────────────────────────────────────────┘
+       ↓
+  DOM Layer (HTML Structure)
+       ↓
+  CSS Styling + Print Optimization
 ```
+
+**Key Point:** Spells are served via a Flask API for database-driven flexibility. Other card types load from JSON files in the `data/` directory.
 
 ---
 
@@ -45,22 +52,106 @@ All card data follows a standardized format:
 }
 ```
 
-### Data Files Location
+### Data Files vs. Database
 
+**JSON Data Files (Static):**
 ```
 data/
-├── spells.json           # 27 spells across 3 pages
 ├── conditions.json       # 19 conditions + inspiration
 ├── magic-items.json      # 9 utility and combat items
 ├── weapons.json          # 42+ weapons (simple/martial, melee/ranged)
 └── npcs.json            # 9 example NPCs (various classes)
 ```
 
+**SQLite Database (Dynamic):**
+```
+dnd_kids_resources.db
+├── cards table           # Base card info (title, icon, level, explanation)
+├── spells table          # Spell-specific data (school, to_hit, damage, heal, range)
+├── detail_entries table  # Card detail labels/content (scaling, range descriptions, etc.)
+└── Other tables          # Reserved for future card types
+```
+
+**Migration Details:**
+- **Spells** have been migrated to the database for structured storage and future scalability
+- **Other card types** (Conditions, Weapons, Magic Items, NPCs) still use JSON files
+- Spells are served via Flask API endpoint `GET /api/spells`
+- The database schema separates rolling mechanics (to_hit, damage) from descriptive text
+
+---
+
+## API Layer (Flask Server)
+
+### Flask API for Spells
+
+**Location:** `_dev/server_flask.py`
+
+**Purpose:** Converts database spell records into JSON format compatible with the card renderer
+
+**Endpoints:**
+
+| Endpoint | Method | Returns | Example |
+|----------|--------|---------|---------|
+| `/api/spells` | GET | Array of all spells | Loads on spell-cards.html |
+| `/api/spells/<title>` | GET | Single spell by title | Can fetch individual spells |
+
+**Data Transformation:**
+1. Fetches spell data from SQLite `cards` + `spells` + `detail_entries` tables
+2. Joins related records (spell mechanics, range, damage type, scaling info)
+3. Converts to JSON format with `title`, `icon`, `level`, `school`, `explanation`, `details` array
+4. Returns standardized format compatible with `card-generator.js`
+
+**Starting the Flask Server:**
+```bash
+cd _dev
+python server_flask.py
+# Server runs on http://localhost:8000
+# CORS headers enabled for development
+```
+
+**Example Response:**
+```json
+[
+  {
+    "title": "Fire Bolt",
+    "icon": "🔥",
+    "level": "cantrip",
+    "school": "Evocation",
+    "explanation": "fling a streak of fire...",
+    "details": [
+      {
+        "label": "🎲 Roll:",
+        "content": {
+          "roll": "1d20",
+          "numerics": ["SAM"],
+          "save": false
+        }
+      },
+      {
+        "label": "💥 Damage:",
+        "content": {
+          "roll": "1d10",
+          "types": ["fire"],
+          "save": false
+        }
+      }
+    ]
+  }
+]
+```
+
 ### Special Fields by Card Type
 
-**Spells:**
-- `level`: "cantrip", "level1"–"level9"
-- `school`: "Evocation", "Transmutation", etc. (informational)
+**Spells (from database via API):**
+- Fields populated from `cards` + `spells` + `detail_entries` tables
+- `level`: "cantrip", "level1"–"level9" (CSS color class)
+- `school`: "Evocation", "Transmutation", etc.
+- `details`: Array built from database detail_entries, includes:
+  - Roll mechanics (to_hit with numerics, types, save info)
+  - Damage mechanics (damage with types, numerics)
+  - Heal values (heal with numerics)
+  - Range descriptions
+  - Scaling info
 
 **Weapons:**
 - `type`: "Simple Melee", "Martial Ranged", etc.  
@@ -106,8 +197,32 @@ data/
 - Added NPC footer format ("Species · Profession")
 
 #### 2. **Initializer Scripts** (spells.js, conditions.js, etc.)
-**Pattern Used by All Card Types:**
 
+**Spells (Database-Driven):**
+```javascript
+document.addEventListener('DOMContentLoaded', async function() {
+  try {
+    // Load spells from Flask API endpoint
+    const response = await fetch('/api/spells');
+    if (!response.ok) throw new Error(`Failed to load spells: ${response.status}`);
+    
+    const spellsData = await response.json();
+    
+    // Render the paginated card layout
+    renderPaginatedCards(
+      '#page-container',
+      spellsData,
+      9,  // cards per page
+      '✨ Spell Cards ✨',
+      'Dungeons & Dragons · 5th Edition · Cut out & keep!'
+    );
+  } catch (error) {
+    console.error('Error loading spells:', error);
+  }
+});
+```
+
+**Other Cards (JSON-Based):**
 ```javascript
 document.addEventListener('DOMContentLoaded', async function() {
   const paths = [
@@ -122,7 +237,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     // ... attempt fetch
   }
   
-  // Parse and render
   renderPaginatedCards(
     '#page-container',
     data,
@@ -133,8 +247,12 @@ document.addEventListener('DOMContentLoaded', async function() {
 });
 ```
 
-**Responsibility:** Load JSON data and trigger card generation  
+**Responsibility:** Load card data and trigger card generation  
 **Located:** `js/spells.js`, `js/conditions.js`, `js/magic-items.js`, `js/weapons.js`, `js/npcs.js`
+
+**Key Difference:**
+- **Spells**: Fetch from `/api/spells` API endpoint (served by Flask from database)
+- **Other cards**: Load from local `data/` JSON files
 
 ---
 
@@ -352,11 +470,12 @@ f:\DND\Kids Resources\
 │   └── npc-cards.html
 │
 ├── data/                           # JSON data sources
-│   ├── spells.json
 │   ├── conditions.json
 │   ├── magic-items.json
 │   ├── weapons.json
 │   └── npcs.json
+│
+├── dnd_kids_resources.db           # SQLite database (spells + card data)
 │
 ├── js/                             # JavaScript modules
 │   ├── card-generator.js           # Core (shared)
