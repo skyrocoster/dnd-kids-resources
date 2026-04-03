@@ -6,8 +6,99 @@
   <title>Spell Cards - D&D Kids Resources</title>
   <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/styles.css">
+  <style>
+    #level-filter {
+      background: #fdf3e3;
+      border: 2px solid #8b5e3c;
+      border-radius: 10px;
+      padding: 20px;
+      margin: 20px;
+      display: none;
+    }
+    
+    #level-filter.visible {
+      display: block;
+    }
+    
+    .filter-title {
+      font-weight: 700;
+      margin-bottom: 15px;
+      color: #2c1810;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    
+    .filter-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    
+    .level-btn {
+      padding: 8px 15px;
+      border: 2px solid #8b5e3c;
+      background: white;
+      color: #2c1810;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 13px;
+      transition: all 0.2s ease;
+    }
+    
+    .level-btn:hover {
+      background: #e8dcc8;
+      transform: translateY(-2px);
+    }
+    
+    .level-btn.active {
+      background: #c0392b;
+      color: white;
+      border-color: #a93226;
+    }
+    
+    .filter-controls {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+      padding-top: 15px;
+      border-top: 1px solid #d4b896;
+    }
+    
+    .filter-btn {
+      padding: 8px 15px;
+      border: 2px solid #8b5e3c;
+      background: #fdf3e3;
+      color: #2c1810;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 12px;
+      transition: all 0.2s ease;
+    }
+    
+    .filter-btn:hover {
+      background: #d4b896;
+    }
+    
+    @media print {
+      #level-filter {
+        display: none !important;
+      }
+    }
+  </style>
 </head>
 <body>
+  <div id="level-filter">
+    <div class="filter-title">Filter by Spell Level</div>
+    <div class="filter-buttons" id="level-buttons"></div>
+    <div class="filter-controls">
+      <button class="filter-btn" id="select-all-btn">Select All</button>
+      <button class="filter-btn" id="select-none-btn">Select None</button>
+    </div>
+  </div>
+  
   <div id="page-container"></div>
   
   <script src="../js/card-generator.js"></script>

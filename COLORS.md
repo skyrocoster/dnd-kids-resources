@@ -2,7 +2,13 @@
 
 **Complete, authoritative color palette for all card types.**
 
-## Custom/Blank Card Color
+> **Note:** Colors and emojis for **abilities** (STR, DEX, WIS, SAD, SAM, etc.) and **damage types** (fire, cold, slashing, etc.) are now stored in the SQLite database tables:
+> - `abilities` table: Contains code, name, emoji, and color for each ability
+> - `damage_types` table: Contains code, name, emoji, and color for each damage type
+> 
+> See [ARCHITECTURE.md](ARCHITECTURE.md) for database schema details.
+
+---
 
 Used to identify custom and blank printable cards that DMs can fill in:
 
@@ -130,20 +136,6 @@ Applied via CSS classes: `.location-building`, `.location-city`, `.location-regi
 
 ---
 
-## Ability Score Colors
-
-Applied to ability-related text:
-
-| Ability | Color | Hex Code | Icon | Meaning |
-|---------|-------|----------|------|---------|
-| Strength (STR) | Red | #c0392b | 💪 | Physical power |
-| Dexterity (DEX) | Green | #1e8449 | 🏃 | Agility and reflexes |
-| Constitution (CON) | Orange | #e67e22 | 🛡️ | Endurance |
-| Intelligence (INT) | Blue | #2471a3 | 🧠 | Reasoning ability |
-| Wisdom (WIS) | Purple | #8e44ad | 👁️ | Awareness |
-| Charisma (CHA) | Gold | #c9a90a | ✨ | Force of personality |
-
----
 
 ## Friend/Enemy Indicator
 

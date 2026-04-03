@@ -1,0 +1,16 @@
+
+D&D Kids Resources Server (Flask)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Server running at: http://localhost:8000
+Database: F:\DND\Kids Resources\dnd_kids_resources.db
+API endpoints:
+   - GET /api/spells         (all spells)
+   - GET /api/spells/<title> (single spell)
+   - GET /api/actions        (all actions)
+   - GET /api/actions/<title> (single action)
+
+ Press Ctrl+C to stop the server
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ * Serving Flask app 'server_flask'
+ * Debug mode: on

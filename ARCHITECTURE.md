@@ -9,14 +9,14 @@
 The D&D Kids Resources project is a **data-driven card generation system** that converts data sources into printable physical card layouts for D&D 5e reference materials.
 
 ```
-Spells Data Path:                   Other Cards Data Path:
-  SQLite Database                      JSON Files
-       ↓                                   ↓
-  Flask API Server                   JavaScript Initializer
-  (/api/spells endpoint)             (loads from data/)
-       ↓                                   ↓
-  JavaScript Fetch                   JavaScript Fetch
-       ↓                                   ↓
+Database-Driven:              JSON-Driven:
+  SQLite Database                JSON Files
+       ↓                             ↓
+  Flask API Server              JavaScript Initializer
+  (/api/* endpoints)            (loads from data/)
+       ↓                             ↓
+  JavaScript Fetch              JavaScript Fetch
+       ↓                             ↓
   ┌─────────────────────────────────────────┐
   │   JavaScript Card Generator             │
   │   (js/card-generator.js)                │
@@ -27,7 +27,7 @@ Spells Data Path:                   Other Cards Data Path:
   CSS Styling + Print Optimization
 ```
 
-**Key Point:** Spells are served via a Flask API for database-driven flexibility. Other card types load from JSON files in the `data/` directory.
+**Key Point:** Spells and Conditions are served via a Flask API from the database for dynamic flexibility. Other card types load from JSON files in the `data/` directory.
 
 ---
 
@@ -57,28 +57,45 @@ All card data follows a standardized format:
 **JSON Data Files (Static):**
 ```
 data/
-├── conditions.json       # 19 conditions + inspiration
-├── magic-items.json      # 9 utility and combat items
 ├── weapons.json          # 42+ weapons (simple/martial, melee/ranged)
-└── npcs.json            # 9 example NPCs (various classes)
+└── ...                  # Other static card data
 ```
 
 **SQLite Database (Dynamic):**
 ```
 dnd_kids_resources.db
 ├── spells table           # 28 spells with complete card metadata
-│   └── Fields: id, title, icon, level, school, explanation, 
-│              to_hit, damage, heal, range
+│   └── Fields: id, title (lowercase), icon, level, school, explanation, 
+│              to_hit (JSON), damage (JSON), heal (JSON), range (JSON)
 │
-└── detail_entries table   # Spell-specific details (scaling, range descriptions, etc.)
-    └── References: spell_id (FK → spells.id)
+├── conditions table       # 19 conditions & status effects
+│   └── Fields: id, title (lowercase), icon, explanation, details (JSON)
+│   └── Pattern: Stored lowercase, capitalized at API response time
+│
+├── creatures table        # 6 druid wild shape forms
+│   └── Fields: id, title (lowercase), icon, size (lowercase), type (lowercase), 
+│              hp, ac, explanation, attack_name, attack_to_hit (JSON), 
+│              damage (JSON), special (JSON)
+│   └── Pattern: All text stored lowercase, capitalized at API response time
+│
+├── abilities table        # Ability metadata (abilities, modifiers, proficiency)
+│   └── Fields: code (PK), name, emoji, color
+│   └── Examples: str, dex, con, int, wis, cha, sam, sad
+│
+└── damage_types table     # Damage type metadata with emojis and colors
+    └── Fields: code (PK), name, emoji, color
+    └── Examples: fire, cold, slashing, piercing, bludgeoning, etc.
 ```
 
 **Architecture Clarity:**
-- **Spells** are self-contained in the `spells` table (no separate cards table)
-- Each spell record contains all card display information (title, icon, level, etc.)
-- **detail_entries** table stores secondary information linked directly to spells
-- **Other card types** (Conditions, Weapons, Magic Items, NPCs) continue to use JSON files
+- **All text fields** (title, size, type, etc.) are stored lowercase in database for consistency
+- **All text fields** are capitalized at API response time for proper display ("cat" → "Cat")
+- **CSS `level` field** always uses lowercase for consistent styling
+- **Spells** are self-contained in the `spells` table containing all card display information
+- **Conditions** are self-contained in the `conditions` table with details array as JSON
+- **Creatures** (druid wild shapes) are self-contained in the `creatures` table with attack/damage as JSON
+- **Abilities & Damage Types** store emoji and color metadata for enrichment at API response time
+- **JSON roll data** (to_hit, damage) follows a standardized format across all card types
 
 ---
 
@@ -96,6 +113,10 @@ dnd_kids_resources.db
 |----------|--------|---------|---------|
 | `/api/spells` | GET | Array of all spells | Used by spell-cards.html |
 | `/api/spells/<title>` | GET | Single spell by title | Can fetch individual spells |
+| `/api/conditions` | GET | Array of all conditions | Used by condition-cards.html |
+| `/api/conditions/<title>` | GET | Single condition by title | Can fetch individual conditions |
+| `/api/creatures` | GET | Array of all creatures | Used by wild-shapes.html |
+| `/api/creatures/<title>` | GET | Single creature by title | Can fetch individual creatures |
 
 **Query Logic:**
 Spells are now queried directly from the `spells` table (no JOIN with cards table needed):
@@ -111,10 +132,12 @@ WHERE spell_id = ? ORDER BY sequence_order
 ```
 
 **Data Transformation:**
-1. Queries spell metadata directly from `spells` table
-2. Gets related detail entries from `detail_entries` table
-3. Combines into JSON: `{ title, icon, level, school, explanation, details[] }`
-4. Details array includes roll/damage/heal/range/scaling information
+1. Queries spell/condition/creature metadata directly from appropriate table
+2. Parses JSON fields (to_hit, damage, heal, special, etc.) as needed
+3. Enriches roll objects with ability/damage type metadata
+4. Capitalizes display text fields (title, size, type, etc.) for display
+5. Uses lowercase versions as `level` field for CSS styling
+6. Combines into JSON response with complete card information
 
 **Starting the Flask Server:**
 ```bash
@@ -172,12 +195,6 @@ python server_flask.py
 - `level`: Condition name (CSS class identifier)
 - Self-contained status effects
 
-**NPCs:**
-- `species`: Race/species (e.g., "Human", "Elf", "Dwarf")
-- `profession`: Class name (e.g., "Wizard", "Rogue")
-- `location`: Setting location
-- `explanation`: Flavor text describing the NPC
-
 ---
 
 ## JavaScript Layer
@@ -194,17 +211,11 @@ python server_flask.py
 - Detects card type based on data fields
   - **Spells**: Has `level` field (e.g., "level1") → Spell card styles
   - **Conditions**: Has `level` field + minimal details → Condition styles
-  - **NPCs**: Has `species` AND `profession` AND `location` → NPC styles
   - **Weapons**: Has `type` field → Weapon styles
 - Creates card structure with header, body, footer
 - Applies CSS classes based on card type
 - Generates draw box for interaction
-- Handles special layouts (NPC friend/enemy checkbox, weapon properties, etc.)
-
-**Modification History:**
-- Added NPC detection logic
-- Implemented friend/enemy checkbox box styling (35px × 18px, SAM/BtH matching)
-- Added NPC footer format ("Species · Profession")
+- Handles special layouts (weapon properties, etc.)
 
 #### 2. **Initializer Scripts** (spells.js, conditions.js, etc.)
 
@@ -258,7 +269,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 ```
 
 **Responsibility:** Load card data and trigger card generation  
-**Located:** `js/spells.js`, `js/conditions.js`, `js/magic-items.js`, `js/weapons.js`, `js/npcs.js`
+**Located:** `js/spells.js`, `js/conditions.js`, `js/weapons.js`
 
 **Key Difference:**
 - **Spells**: Fetch from `/api/spells` API endpoint (served by Flask from database)
@@ -296,11 +307,6 @@ Each card page follows this structure:
               <dt class="detail-label">🎲 Roll</dt>
               <dd class="detail-content">d20 + 5</dd>
             </dl>
-            <!-- For NPCs only: friend/enemy checkbox -->
-            <div class="friend-enemy-section">
-              <label>Friend/Enemy</label>
-              <input type="checkbox" class="friend-enemy-box">
-            </div>
             <!-- Draw box -->
             <div class="draw-box"></div>
           </section>
@@ -376,10 +382,8 @@ Cards use Flexbox for responsive grid:
 **Color Classes:**
 Each card type has corresponding color classes:
 - Spells: `.cantrip`, `.level1`–`.level9`
-- NPCs: `.wizard`, `.fighter`, `.rogue`, `.cleric`, `.barbarian`, `.ranger`, `.druid`, `.paladin`, `.bard`
 - Conditions: `.blinded`, `.charmed`, `.deafened`, etc.
 - Weapons: `.simple-melee`, `.simple-ranged`, `.martial-melee`, `.martial-ranged`
-- Magic Items: `.magic-utility`, `.magic-combat`
 
 **See COLORS.md for complete color reference.**
 
@@ -475,15 +479,12 @@ f:\DND\Kids Resources\
 ├── pages/                          # HTML card page templates
 │   ├── spell-cards.html
 │   ├── condition-cards.html
-│   ├── magic-items-cards.html
 │   ├── weapon-cards.html
-│   └── npc-cards.html
+│   └── skill-cards.html
 │
 ├── data/                           # JSON data sources
-│   ├── conditions.json
-│   ├── magic-items.json
 │   ├── weapons.json
-│   └── npcs.json
+│   └── ...                         # Other static card data
 │
 ├── dnd_kids_resources.db           # SQLite database (spells + card data)
 │
@@ -491,9 +492,8 @@ f:\DND\Kids Resources\
 │   ├── card-generator.js           # Core (shared)
 │   ├── spells.js
 │   ├── conditions.js
-│   ├── magic-items.js
 │   ├── weapons.js
-│   └── npcs.js
+│   └── skills.js
 │
 ├── css/
 │   └── styles.css                  # Unified styling
@@ -515,14 +515,14 @@ f:\DND\Kids Resources\
 ### Naming Conventions
 
 **Data Files:** Plural, lowercase, hyphenated
-- `spells.json`, `conditions.json`, `magic-items.json`
+- `spells.json`, `conditions.json`, `weapons.json`
 
 **JavaScript Modules:** Singular, lowercase, hyphenated
 - `card-generator.js` (core), then one for each data type
-- `spells.js`, `conditions.js`, `npcs.js`
+- `spells.js`, `conditions.js`, `weapons.js`
 
 **HTML Pages:** Plural of card type, lowercase, hyphenated
-- `pages/spell-cards.html`, `condition-cards.html`, `npc-cards.html`
+- `pages/spell-cards.html`, `condition-cards.html`, `weapon-cards.html`
 
 **CSS Classes:** Lowercase, hyphenated, semantic
 - `.card`, `.card-header`, `.card-body`, `.card-footer`
@@ -564,32 +564,7 @@ User presses Ctrl+P to print
 Perfect playing cards printed on A4 paper
 ```
 
----
 
-## NPC System (Added Feature)
-
-### NPC Card Detection
-
-In `card-generator.js`, NPC cards are identified by presence of three fields:
-```javascript
-if (data.species && data.profession && data.location)
-```
-
-### NPC-Specific Rendering
-
-1. **Friend/Enemy Checkbox**: Styled neutral box matching SAM/BtH modifier boxes
-   - Width: 35px, Height: 18px
-   - Border: 2px solid #b0865a (brown)
-   - Background: #f5e6d3 (cream)
-   - Formatted with "Friend/Enemy" label
-
-2. **Footer Format**: Changed from standard to NPC format
-   - Template: `${data.species} · ${data.profession}`
-   - Example: "Human · Wizard"
-
-3. **Profession Colors**: Automatic styling based on `data.profession`
-   - Maps profession name to CSS class
-   - Example: profession="Wizard" → class="wizard" → color #6a4fa3
 
 ---
 

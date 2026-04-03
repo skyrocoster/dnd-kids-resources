@@ -2,7 +2,7 @@
 
 **Printable D&D 5th Edition tools and reference cards designed for kids.**
 
-🎲 Spell Cards • 🛡️ Condition Cards • 💎 Magic Items • ⚔️ Weapons • 🧙 NPCs • 🗺️ Locations
+🎲 Spell Cards • 🛡️ Condition Cards • ⚔️ Weapons • 🎯 Skills
 
 ---
 
@@ -25,18 +25,18 @@ Simply open `index.html` in a web browser. All features work offline after first
 
 ### Run Locally (Development)
 
-**For Spell Cards (uses database via Flask API):**
+**Using Flask API (Database):**
 ```bash
 python _dev/server_flask.py
-# Visit http://localhost:8000
-# Spells will load from dnd_kids_resources.db
+# Visit http://localhost:5000
+# Spells and Conditions load from dnd_kids_resources.db
 ```
 
-**For Other Cards (Conditions, Weapons, Magic Items, NPCs):**
+**For Other Cards (Weapons, Skills):**
 ```bash
 python -m http.server 8000
 # Visit http://localhost:8000
-# Cards load from JSON files
+# Cards load from JSON files (or run Flask for all features)
 ```
 
 **VS Code Option:**
@@ -123,13 +123,21 @@ npx http-server
 
 ## Available Tools
 
-| Tool | Cards | Pages | Format |
-|------|-------|-------|--------|
-| **Spell Cards** | 27 spells | 3 | Print |
+| Tool | Cards | Pages | Features |
+|------|-------|-------|----------|
+| **Spell Cards** | 27 spells | 3 | Print • **Level filtering** |
 | **Condition Cards** | 19 conditions | 3 | Print |
-| **Magic Items** | 9 items | 1 | Print |
 | **Weapon Cards** | 42+ weapons | 5+ | Print |
-| **NPC Cards** | 9 NPCs | 1 | Print |
+
+### Spell Card Features
+
+**Level Filtering:**
+- Choose which spell levels to display
+  - Filter by: Cantrips, Level 1, Level 2, etc.
+  - "Select All" / "Select None" buttons
+  - Real-time updates to card display
+- Print only the levels you need
+- Filter controls hide automatically in print preview
 
 ---
 
@@ -146,18 +154,13 @@ npx http-server
 ├── pages/                  # Card generator pages
 │   ├── spell-cards.html
 │   ├── condition-cards.html
-│   ├── magic-items-cards.html
 │   ├── weapon-cards.html
-│   ├── npc-cards.html
 │   └── ...
 │
 ├── data/                   # Card data (JSON)
-   ├── conditions.json
-   ├── magic-items.json
-   ├── weapons.json
-   ├── npcs.json
-   └── ...
-   (Spells loaded from database via Flask API)
+│   ├── weapons.json
+│   └── ...
+   (Spells and Conditions loaded from database via Flask API)
 │
 ├── js/                     # Rendering logic
 │   ├── card-generator.js   # Core card creation

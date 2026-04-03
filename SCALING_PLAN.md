@@ -649,8 +649,7 @@ function seedDatabase() {
     { file: 'npcs.json', type: 'npc' },
     { file: 'locations.json', type: 'location' },
     { file: 'magic-items.json', type: 'magic-item' },
-    { file: 'wild-shapes.json', type: 'wild-shape' },
-    { file: 'actions.json', type: 'action' }
+    { file: 'wild-shapes.json', type: 'wild-shape' }
   ];
 
   const insertCard = db.prepare(`

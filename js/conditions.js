@@ -1,33 +1,16 @@
 // Conditions cards initialization
 document.addEventListener('DOMContentLoaded', async function() {
   try {
-    // Try multiple fetch paths
-    let response;
-    const paths = [
-      '../data/conditions.json',
-      './data/conditions.json',
-      'data/conditions.json'
-    ];
+    // Load conditions from Flask API
+    const response = await fetch('/api/conditions');
     
-    for (const path of paths) {
-      try {
-        response = await fetch(path);
-        if (response.ok) {
-          console.log(`✓ Loaded conditions from: ${path}`);
-          break;
-        }
-      } catch (e) {
-        // Try next path
-      }
-    }
-    
-    if (!response || !response.ok) {
-      throw new Error(`Failed to load conditions.json. Status: ${response?.status || 'unknown'}`);
+    if (!response.ok) {
+      throw new Error(`Failed to load conditions from API: ${response.status}`);
     }
     
     const conditionsData = await response.json();
+    console.log(`✓ Loaded ${conditionsData.length} conditions from API`);
     
-    // Render the cards
     renderPaginatedCards(
       '#page-container',
       conditionsData,
@@ -37,6 +20,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     );
   } catch (error) {
     console.error('Error loading conditions:', error);
-    document.getElementById('page-container').innerHTML = `<p>${error.message}</p>`;
+    document.getElementById('page-container').innerHTML = `<p>Error loading condition data: ${error.message}</p>`;
   }
 });

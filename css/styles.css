@@ -154,7 +154,7 @@ body {
   justify-content: center;
   width: 35px;
   height: 18px;
-  border: 1.5px solid #2471a3;
+  border: 1.5px solid black;
   border-radius: 3px;
   background: #e3f2fd;
   position: relative;
@@ -164,9 +164,9 @@ body {
   vertical-align: middle;
 }
 .sab-box::before {
-  content: 'SAM';
+  content: attr(data-box-text);
   position: absolute;
-  color: #2471a3;
+  color: white;
   font-size: 6.5pt;
   font-weight: 700;
 }
@@ -177,7 +177,7 @@ body {
   justify-content: center;
   width: 35px;
   height: 18px;
-  border: 1.5px solid #e67e22;
+  border: 1.5px solid black;
   border-radius: 3px;
   background: #ffe0b2;
   position: relative;
@@ -189,7 +189,7 @@ body {
 .bth-box::before {
   content: 'BtH';
   position: absolute;
-  color: #e67e22;
+  color: white;
   font-size: 6.5pt;
   font-weight: 700;
 }
@@ -280,6 +280,20 @@ body {
 /* Wild shape size colours */
 .card.tiny .card-header,      .card.tiny .card-footer      { background: #f39c12; }
 .card.medium .card-header,    .card.medium .card-footer    { background: #16a085; }
+
+/* Creature type colours */
+.card.beast .card-header,       .card.beast .card-footer       { background: #8B4513; }
+.card.humanoid .card-header,    .card.humanoid .card-footer    { background: #4472C4; }
+.card.dragon .card-header,      .card.dragon .card-footer      { background: #FF6B35; }
+.card.undead .card-header,      .card.undead .card-footer      { background: #6B5B95; }
+.card.elemental .card-header,   .card.elemental .card-footer   { background: #FFD700; color: #000; }
+.card.fey .card-header,         .card.fey .card-footer         { background: #FF69B4; }
+.card.giant .card-header,       .card.giant .card-footer       { background: #DC143C; }
+.card.goblinoid .card-header,   .card.goblinoid .card-footer   { background: #228B22; }
+.card.monstrosity .card-header, .card.monstrosity .card-footer { background: #8B0000; }
+.card.ooze .card-header,        .card.ooze .card-footer        { background: #00CED1; }
+.card.plant .card-header,       .card.plant .card-footer       { background: #32CD32; color: #000; }
+.card.construct .card-header,   .card.construct .card-footer   { background: #A9A9A9; }
 
 /* Action card colours */
 .card.action .card-header,  .card.action .card-footer  { background: #27ae60; }

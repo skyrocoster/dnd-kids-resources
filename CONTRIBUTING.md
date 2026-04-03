@@ -16,9 +16,6 @@ Create `data/new-tool.json` with card objects:
     "title": "Card Name",
     "icon": "✨",
     "level": "wizard",              // or level1, level2, cantrip, condition, etc.
-    "species": "Human",             // For NPCs
-    "profession": "Wizard",         // For NPCs
-    "location": "Tower of Stars",   // For NPCs
     "explanation": "Kid-friendly description of the card",
     "details": [
       { "label": "🎲 Roll", "content": "d20 + modifier" },
@@ -114,6 +111,17 @@ Add link to `index.html` in the tools grid:
 
 ## Card Format Reference
 
+### Data Storage Standardization (All Database-Driven Cards)
+
+**Important:** All text fields in database-driven cards must follow this pattern:
+- **Storage**: Store as **lowercase** in database (e.g., title: "blinded", size: "tiny", type: "beast")
+- **Display**: Capitalize at the point of use via API response (e.g., "Blinded", "Tiny", "Beast")
+- **CSS**: Use lowercase version as the `level` field for styling
+- **Roll Data**: Store to_hit/damage as JSON arrays (matching spell format)
+- **Metadata**: Never store emojis in database; always add at API response time via enrichment functions
+
+This pattern prevents case-sensitivity bugs, ensures consistent styling, and makes data predictable across all card types.
+
 ### All Card Types Support
 
 ```json
@@ -142,17 +150,34 @@ Add link to `index.html` in the tools grid:
 - `hands`: "1-handed", "2-handed", "versatile"
 
 **Conditions:**
-- `level`: Condition name (used for CSS class)
-- `type`: "Condition"
+- Stored in database table (not JSON)
+- Fields: `title` (lowercase, auto-capitalized), `icon`, `explanation`, `details` (JSON array)
+- Loaded via `/api/conditions` endpoint
 
-**NPCs:**
-- `species`: Race/species name
-- `profession`: Class/profession name
-
-**Locations:**
-- `type`: "building", "city", "region", "world", "npc-owner"
-- `level`: "location-building", "location-city", "location-region", "location-world", "location-npc"
-- `location`: Where they can be found
+**Creatures (Wild Shapes):**
+- Stored in database table (not JSON)
+- Fields: `title`, `icon`, `size`, `type`, `hp`, `ac`, `explanation`, `attack_name`, `attack_to_hit` (JSON), `damage` (JSON), `special`
+- **Storage pattern**: All text fields (title, size, type) stored lowercase
+- **Attack format**: `attack_to_hit` is a JSON array (same format as spell `to_hit`):
+  ```json
+  [
+    {
+      "numDice": 1,
+      "diceType": "d8",
+      "modifier": 4,
+      "numerics": [{"code": "str"}]
+    }
+  ]
+  ```
+- **Damage format**: `damage` is a JSON array where each roll has damage type codes:
+  ```json
+  [
+    {"numDice": 2, "diceType": "d4", "types": ["piercing"]},
+    {"numDice": 1, "diceType": "d6", "types": ["poison"]}
+  ]
+  ```
+- **Enrichment**: Damage types (stored as codes like "piercing", "cold") are enriched with emoji/color at API response time
+- Loaded via `/api/creatures` endpoint
 
 ---
 
@@ -162,7 +187,6 @@ Add link to `index.html` in the tools grid:
 
 Colors are applied via CSS classes on `.card` element:
 - `.level1`, `.level2`, etc. for spells
-- `.wizard`, `.fighter`, etc. for NPCs
 - `.blinded`, `.charmed`, etc. for conditions
 - `.simple-melee`, `.martial-ranged`, etc. for weapons
 
@@ -243,31 +267,109 @@ All card styles are in `css/styles.css`. Cards inherit:
 
 ---
 
+## Spell Card Level Filtering
+
+### How It Works
+
+The spell cards page includes interactive level filtering, allowing users to select which spell levels to display and print.
+
+**Features:**
+- Discover spell levels automatically from the database
+- Toggle individual levels (Cantrips, Level 1, Level 2, etc.) on/off
+- "Select All" and "Select None" quick buttons
+- Real-time re-rendering when filters change
+- Filter controls hide automatically when printing
+
+### Implementation
+
+**HTML** (`pages/spell-cards.html`):
+```html
+<div id="level-filter">
+  <div class="filter-title">Filter by Spell Level</div>
+  <div class="filter-buttons" id="level-buttons"></div>
+  <div class="filter-controls">
+    <button class="filter-btn" id="select-all-btn">Select All</button>
+    <button class="filter-btn" id="select-none-btn">Select None</button>
+  </div>
+</div>
+
+<div id="page-container"></div>
+```
+
+The CSS hides the filter in print mode:
+```css
+@media print {
+  #level-filter {
+    display: none !important;
+  }
+}
+```
+
+**JavaScript** (`js/spells.js`):
+
+1. **Load spells** from `/api/spells` endpoint
+2. **Extract unique levels** from spell data and normalize them:
+   - `"cantrip"` → `0`
+   - `"level1"` → `1`
+   - `"level2"` → `2`, etc.
+3. **Create button** for each level with click handlers
+4. **Filter and re-render** when buttons are clicked using `updateSpellDisplay()`
+
+### Example Usage
+
+```javascript
+// Normalize different spell level formats to numbers
+function normalizeLevel(level) {
+  if (typeof level === 'number') return level;
+  if (level === 'cantrip') return 0;
+  const match = level.match(/\d+/);
+  return match ? parseInt(match[0]) : NaN;
+}
+
+// Filter spells based on selected levels
+function updateSpellDisplay(allSpells, selectedLevels, normalizeLevel) {
+  const filteredSpells = allSpells.filter(spell => 
+    selectedLevels.has(normalizeLevel(spell.level))
+  );
+  
+  renderPaginatedCards('#page-container', filteredSpells, 9, 
+    '✨ Spell Cards ✨', 'Description');
+}
+```
+
+### Extending to Other Card Types
+
+To add level filtering to other card types (e.g., weapons by rarity), follow this pattern:
+
+1. Add filter UI to HTML page (similar to spell-filter div)
+2. Extract unique filter values from data
+3. Create buttons for each value
+4. Re-render when buttons are clicked
+5. Hide filter controls in print mode with CSS
+
+---
+
 ## File Organization
 
 ```
 data/                          # Card data (JSON)
-├── conditions.json            # 19 conditions
-├── magic-items.json           # 9 items
 ├── weapons.json               # 42+ weapons
-└── npcs.json                  # 9 NPCs
+└── ...                        # Other static card data
 
-(Spells are stored in the database and loaded via `/api/spells` endpoint)
+(Spells, Conditions, and Creatures are stored in the database and loaded via `/api/spells`, `/api/conditions`, and `/api/creatures` endpoints)
 
 js/                            # JavaScript
 ├── card-generator.js          # Core system (don't modify)
-├── spells.js                  # Data + rendering
-├── conditions.js
-├── magic-items.js
-├── weapons.js
-└── npcs.js
+├── spells.js                  # Fetch from API & render
+├── conditions.js              # Fetch from API & render
+├── wild-shapes.js             # Fetch creatures from API & render
+└── weapons.js
 
 pages/                         # HTML pages for each tool
 ├── spell-cards.html
 ├── condition-cards.html
-├── magic-items-cards.html
-├── weapon-cards.html
-└── npc-cards.html
+├── wild-shapes.html
+└── weapon-cards.html
 ```
 
 ---

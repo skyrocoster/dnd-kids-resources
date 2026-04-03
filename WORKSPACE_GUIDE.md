@@ -34,10 +34,9 @@
 
 **Looking for color codes?**
 👉 **[COLORS.md](COLORS.md)**
-- Complete, authoritative color palette
-- All 45+ CSS color classes documented
-- Spell levels, conditions, weapons, NPCs, abilities
-- Print color specifications
+- Card styling colors (headers, footers, backgrounds)
+- CSS color classes for spells, conditions, weapons, NPCs
+- Ability and damage type colors are now in the database (see ARCHITECTURE.md)
 
 ---
 
@@ -56,9 +55,9 @@ python -m http.server 8000
 4. Add link to `index.html`
 
 **To customize colors:**
-- See COLORS.md for all available colors
-- Add CSS class to styles.css
-- Reference class name in JSON `level` field
+- **Card styling colors:** See COLORS.md for CSS classes
+- **Ability colors:** Update the `abilities` table in dnd_kids_resources.db
+- **Damage type colors:** Update the `damage_types` table in dnd_kids_resources.db
 
 ---
 

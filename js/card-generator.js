@@ -94,7 +94,8 @@ function rollToFormString(rollData) {
 // Creates a modifier box element with configurable text
 function createModifierBox(boxText = 'SAM') {
   const box = document.createElement('span');
-  // Use 'sab-box' for spell modifier, 'bth-box' for weapon bonus
+  // Use 'bth-box' for weapon bonus (Bonus to Hit)
+  // Use 'sab-box' for spell modifiers (SAM, SAD)
   box.className = boxText === 'BtH' ? 'bth-box' : 'sab-box';
   box.style.display = 'inline-flex';
   box.style.verticalAlign = 'middle';
@@ -102,62 +103,120 @@ function createModifierBox(boxText = 'SAM') {
   return box;
 }
 
-// Renders content with both [BOX] placeholders and [STAT:xxx] placeholders
-// Converts [STAT:dex] to <span class='ability-dex'>DEX</span> etc
-function renderContentWithPlaceholders(contentStr, boxText = 'SAM') {
-  if (!contentStr.includes('[BOX]') && !contentStr.includes('[STAT:')) {
+// Renders content with [SAD], [SAM], [BOX] placeholders, [STAT:xxx] placeholders, and [DAMAGE:xxx] placeholders
+// All ability modifiers render as colored boxes with emoji and ability name inside
+// Damage types render with emoji and color styling
+// rollObj: optional {numerics: [...], types: [...]} to provide ability and damage type metadata
+function renderContentWithPlaceholders(contentStr, boxText = 'SAM', rollObj = null) {
+  if (!contentStr.includes('[BOX]') && !contentStr.includes('[STAT:') && 
+      !contentStr.includes('[SAD]') && !contentStr.includes('[SAM]') && !contentStr.includes('[DAMAGE:')) {
     return null; // No placeholders to replace
   }
   
-  // Ability emoji mappings
-  const abilityEmojis = {
-    'str': '💪',  // Strength
-    'dex': '⚡',  // Dexterity
-    'con': '❤️',  // Constitution
-    'int': '🧠',  // Intelligence
-    'wis': '👁️',  // Wisdom
-    'cha': '✨'   // Charisma
-  };
-  
-  const fragment = document.createDocumentFragment();
-  
-  // First, handle [STAT:xxx] placeholders
-  const statRegex = /\[STAT:(\w+)\]/g;
-  const parts = contentStr.split(/(\[STAT:\w+\])/);
-  
-  let workingStr = '';
-  for (let i = 0; i < parts.length; i++) {
-    const part = parts[i];
-    
-    if (match = part.match(/\[STAT:(\w+)\]/)) {
-      // If we have accumulated text, add it
-      if (workingStr) {
-        // Process [BOX] in the accumulated text
-        const boxParts = workingStr.split('[BOX]');
-        for (let j = 0; j < boxParts.length; j++) {
-          if (boxParts[j]) fragment.appendChild(document.createTextNode(boxParts[j]));
-          if (j < boxParts.length - 1) fragment.appendChild(createModifierBox(boxText));
-        }
-        workingStr = '';
+  // Build a map of ability codes to their metadata
+  const abilityMetadata = {};
+  if (rollObj && rollObj.numerics && Array.isArray(rollObj.numerics)) {
+    for (let ability of rollObj.numerics) {
+      if (ability && typeof ability === 'object' && ability.code) {
+        abilityMetadata[ability.code] = ability;
       }
-      // Add the ability span
-      const abilityCode = match[1];
-      const abilitySpan = document.createElement('span');
-      abilitySpan.className = `ability-${abilityCode}`;
-      const emoji = abilityEmojis[abilityCode] || '';
-      abilitySpan.textContent = `${emoji} ${abilityCode.toUpperCase()}`;
-      fragment.appendChild(abilitySpan);
-    } else {
-      workingStr += part;
     }
   }
   
-  // Process any remaining text for [BOX] placeholders
-  if (workingStr) {
-    const boxParts = workingStr.split('[BOX]');
-    for (let j = 0; j < boxParts.length; j++) {
-      if (boxParts[j]) fragment.appendChild(document.createTextNode(boxParts[j]));
-      if (j < boxParts.length - 1) fragment.appendChild(createModifierBox(boxText));
+  // Build a map of damage type codes to their metadata
+  const damageTypeMetadata = {};
+  if (rollObj && rollObj.types && Array.isArray(rollObj.types)) {
+    for (let damageType of rollObj.types) {
+      if (damageType && typeof damageType === 'object' && damageType.code) {
+        damageTypeMetadata[damageType.code] = damageType;
+      }
+    }
+  }
+  
+  // Fallback emoji mappings
+  const defaultEmojis = {
+    'str': '💪', 'dex': '⚡', 'con': '❤️', 'int': '🧠', 'wis': '👁️', 'cha': '✨'
+  };
+  
+  const fragment = document.createDocumentFragment();
+  const placeholderRegex = /(\[DAMAGE:\w+\]|\[STAT:\w+\]|\[SAD\]|\[SAM\]|\[BOX\])/;
+  const parts = contentStr.split(placeholderRegex);
+  
+  for (let part of parts) {
+    if (!part) continue;
+    
+    if (part === '[SAD]' || part === '[SAM]') {
+      const code = part.slice(1, -1).toLowerCase();
+      const ability = abilityMetadata[code];
+      if (ability) {
+        const emoji = document.createElement('span');
+        emoji.textContent = `${ability.emoji || ''} `;
+        fragment.appendChild(emoji);
+        const boxElement = createModifierBox(code);
+        boxElement.setAttribute('data-box-text', code.toUpperCase());
+        if (ability.color) boxElement.style.backgroundColor = ability.color;
+        fragment.appendChild(boxElement);
+      } else {
+        fragment.appendChild(createModifierBox(code.toUpperCase()));
+      }
+    } else if (part === '[BOX]') {
+      fragment.appendChild(createModifierBox(boxText));
+    } else if (part.startsWith('[DAMAGE:')) {
+      const match = part.match(/\[DAMAGE:(\w+)\]/);
+      if (match) {
+        const damageCode = match[1];
+        const damageType = damageTypeMetadata[damageCode];
+        if (damageType) {
+          // Create a span for the damage type with emoji and color
+          const damageSpan = document.createElement('span');
+          damageSpan.style.display = 'inline-flex';
+          damageSpan.style.alignItems = 'center';
+          damageSpan.style.gaps = '2px';
+          damageSpan.style.marginRight = '2px';
+          
+          // Add emoji
+          const emojiSpan = document.createElement('span');
+          emojiSpan.textContent = damageType.emoji || '';
+          damageSpan.appendChild(emojiSpan);
+          
+          // Add damage type name with optional background color
+          const nameSpan = document.createElement('span');
+          nameSpan.textContent = damageType.name || damageCode;
+          if (damageType.color) {
+            nameSpan.style.color = damageType.color;
+            nameSpan.style.fontWeight = 'bold';
+          }
+          damageSpan.appendChild(nameSpan);
+          
+          fragment.appendChild(damageSpan);
+        } else {
+          // Fallback if damage type not found
+          fragment.appendChild(document.createTextNode(damageCode));
+        }
+      }
+    } else if (part.startsWith('[STAT:')) {
+      const match = part.match(/\[STAT:(\w+)\]/);
+      if (match) {
+        const abilityCode = match[1];
+        const ability = abilityMetadata[abilityCode];
+        if (ability) {
+          const emoji = document.createElement('span');
+          emoji.textContent = `${ability.emoji || ''} `;
+          fragment.appendChild(emoji);
+          const boxElement = createModifierBox(abilityCode);
+          boxElement.setAttribute('data-box-text', abilityCode.toUpperCase());
+          if (ability.color) boxElement.style.backgroundColor = ability.color;
+          fragment.appendChild(boxElement);
+        } else {
+          const abilitySpan = document.createElement('span');
+          abilitySpan.className = `ability-${abilityCode}`;
+          const emoji = defaultEmojis[abilityCode] || '';
+          abilitySpan.textContent = `${emoji} ${abilityCode.toUpperCase()}`;
+          fragment.appendChild(abilitySpan);
+        }
+      }
+    } else {
+      fragment.appendChild(document.createTextNode(part));
     }
   }
   
@@ -260,34 +319,79 @@ function reconstructStructuredRoll(rollObj) {
  * - Damage: {"roll": "1d10", "types": ["fire"]} → "1d10 (fire)"
  * - Con Save: {"roll": "1d20", "numerics": ["CON"], "save": true} → "1d20 + [STAT:CON] (save)"
  */
+// Handles range objects like {distance: "medium", target: "single"} or {distance: "self", shape: "cube"}
+function formatRangeObject(rangeObj) {
+  if (!rangeObj || typeof rangeObj !== 'object') return 'none';
+  
+  let result = '';
+  
+  // Capitalize the distance if present
+  if (rangeObj.distance) {
+    result = rangeObj.distance.charAt(0).toUpperCase() + rangeObj.distance.slice(1);
+  }
+  
+  // Add shape in parentheses if present (e.g., "Self (Cube)")
+  if (rangeObj.shape) {
+    const shapeFormatted = rangeObj.shape.charAt(0).toUpperCase() + rangeObj.shape.slice(1);
+    result += ` (${shapeFormatted})`;
+  }
+  
+  // Add target info in parentheses if present and no shape
+  if (rangeObj.target && !rangeObj.shape) {
+    result += ` (${rangeObj.target})`;
+  }
+  
+  return result || 'none';
+}
+
 function reconstructDatabaseRoll(rollObj) {
   if (!rollObj || typeof rollObj !== 'object') return 'none';
   
   if (!rollObj.roll) return 'none';
   
-  let parts = [rollObj.roll];
-  
-  // Add numeric modifiers with [STAT:code] placeholders for ability styling
-  if (rollObj.numerics && Array.isArray(rollObj.numerics) && rollObj.numerics.length > 0) {
-    parts.push(...rollObj.numerics.map(code => `[STAT:${code}]`));
+  // Start with roll notation, add modifier if present
+  let rollPart = rollObj.roll;
+  if (rollObj.mod !== null && rollObj.mod !== undefined && rollObj.mod !== 0) {
+    const sign = rollObj.mod > 0 ? '+' : '';
+    rollPart = `${rollObj.roll}${sign}${rollObj.mod}`;
   }
   
-  // Build descriptor string (types + flags, no + prefix)
+  let parts = [rollPart];
+  
+  // Add numeric modifiers with ability enrichment from database
+  // Abilities now come with {code, name, emoji, color} from the API
+  // SAD and SAM abilities should appear as [SAD] and [SAM] boxes
+  if (rollObj.numerics && Array.isArray(rollObj.numerics) && rollObj.numerics.length > 0) {
+    parts.push(...rollObj.numerics.map(ability => {
+      // ability is an object like {code: "sad", name: "Spell Ability Modifier", emoji: "🔮", color: "#9b59b6"}
+      if (typeof ability === 'object' && ability.code) {
+        // SAD and SAM are box abilities - embed name in the placeholder
+        if (ability.code === 'sad' || ability.code === 'sam') {
+          return `[${ability.code.toUpperCase()}]`;
+        }
+        return `[STAT:${ability.code}]`;
+      }
+      // Fallback for old format (plain string)
+      return `[STAT:${ability}]`;
+    }));
+  }
+  
+  // Build descriptor string - only include types and shape, NOT actor or save (those go in label)
   const descriptors = [];
   
-  // Add damage types/descriptors
-  if (rollObj.types && Array.isArray(rollObj.types) && rollObj.types.length > 0) {
-    descriptors.push(rollObj.types.join(', '));
-  }
-  
-  // Add save flag
-  if (rollObj.save === true) {
-    descriptors.push('save');
-  }
-  
-  // Add actor info if not self
-  if (rollObj.actor && rollObj.actor !== 'self') {
-    descriptors.push(rollObj.actor);
+  // Add damage types/descriptors (check if it's actually an array/list, not empty string)
+  if (rollObj.types && (Array.isArray(rollObj.types) ? rollObj.types.length > 0 : typeof rollObj.types === 'string' && rollObj.types.trim() !== '')) {
+    // Map types to include emoji if available (from enriched damage_types)
+    let typesList = Array.isArray(rollObj.types) ? rollObj.types : rollObj.types.split(',').map(t => t.trim());
+    const typeDisplays = typesList.map(type => {
+      if (typeof type === 'object' && type.code && type.emoji) {
+        // Enriched damage type with emoji and color
+        return `[DAMAGE:${type.code}]`;  // Placeholder that will be replaced during rendering
+      }
+      // Fallback to plain string
+      return type;
+    });
+    descriptors.push(typeDisplays.join(', '));
   }
   
   // Add shape/AOE if present
@@ -295,15 +399,57 @@ function reconstructDatabaseRoll(rollObj) {
     descriptors.push(rollObj.shape);
   }
   
-  // Combine: "1d20" + "+ [STAT:SAM]" = "1d20 + [STAT:SAM]"
+  // Combine: "1d4" + "+ [SAD]" = "1d4 + [SAD]"
   let result = parts.join(' + ');
   
-  // Add descriptors in parentheses: "1d20 + [STAT:SAM]" + " (fire, save)" = "1d20 + [STAT:SAM] (fire, save)"
+  // Add descriptors in parentheses ONLY if present (don't add empty parens)
   if (descriptors.length > 0) {
     result += ` (${descriptors.join(', ')})`;
   }
   
   return result.trim();
+}
+
+// Reconstruct creature attack display from {name, to_hit: [...], damage: [...]} format
+function reconstructCreatureAttack(attackObj) {
+  if (!attackObj || typeof attackObj !== 'object') return 'none';
+  
+  const parts = [];
+  
+  // Add attack name if present
+  if (attackObj.name) {
+    parts.push(attackObj.name);
+  }
+  
+  // Add to_hit rolls
+  if (attackObj.to_hit) {
+    if (Array.isArray(attackObj.to_hit)) {
+      for (let roll of attackObj.to_hit) {
+        // Each roll in to_hit is already enriched with {roll, numerics, types, ...}
+        parts.push(reconstructDatabaseRoll(roll));
+      }
+    } else {
+      // Single roll object
+      parts.push(reconstructDatabaseRoll(attackObj.to_hit));
+    }
+  }
+  
+  // Add damage rolls in a separate group
+  if (attackObj.damage) {
+    const damageParts = [];
+    if (Array.isArray(attackObj.damage)) {
+      for (let roll of attackObj.damage) {
+        damageParts.push(reconstructDatabaseRoll(roll));
+      }
+    } else {
+      damageParts.push(reconstructDatabaseRoll(attackObj.damage));
+    }
+    if (damageParts.length > 0) {
+      parts.push(damageParts.join(' or '));
+    }
+  }
+  
+  return parts.join(' / ');
 }
 
 
@@ -338,14 +484,34 @@ function createCardElement(data) {
   }
   body.appendChild(explanation);
   
+  // Add centered stats line for creatures (HP / AC)
+  if (data.stats_line) {
+    const statsLine = document.createElement('p');
+    statsLine.style.textAlign = 'center';
+    statsLine.style.fontSize = '7pt';
+    statsLine.style.fontWeight = '700';
+    statsLine.style.margin = '0 0 3px 0';
+    statsLine.style.lineHeight = '1.2';
+    statsLine.textContent = data.stats_line;
+    body.appendChild(statsLine);
+  }
+  
   const detailsDiv = document.createElement('div');
   detailsDiv.className = 'spell-details';
   
   // Handle both object and array detail formats
   let detailsToRender = [];
   if (data.details) {
-    if (Array.isArray(data.details)) {
-      // Check if it's the new format (with labels) or abstracted format
+    if (typeof data.details === 'string') {
+      // Plain text details (from skills) - render directly
+      const detailRow = document.createElement('div');
+      detailRow.style.display = 'block';
+      detailRow.style.marginBottom = '3px';
+      detailRow.style.lineHeight = '1.4';
+      detailRow.textContent = data.details;
+      detailsDiv.appendChild(detailRow);
+    } else if (Array.isArray(data.details)) {
+      // Check if it's the new format (with labels)
       if (data.details[0]?.label) {
         detailsToRender = data.details;
       } else if (data.type === 'Magic Item') {
@@ -374,16 +540,39 @@ function createCardElement(data) {
     detailRow.style.marginBottom = '3px';
     detailRow.style.lineHeight = '1.4';
     
+    // Apply background color if detail has color metadata (e.g., for creature types)
+    if (detail.color) {
+      detailRow.style.backgroundColor = detail.color;
+      detailRow.style.color = '#fff';
+      detailRow.style.padding = '2px 3px';
+      detailRow.style.borderRadius = '3px';
+      detailRow.style.fontWeight = '600';
+    }
+    
     const label = document.createElement('span');
     label.className = 'label';
     label.style.display = 'inline';
     label.style.marginRight = '2px';
     
-    // Check if this detail has a rollActor - if so, include it in the label
+    // Check if this detail has actor/save info from database roll format - include in label
     let labelText = detail.label;
-    if (typeof detail.content === 'object' && detail.content?.rollActor && detail.content.rollActor !== 'self') {
-      // Insert actor into label before the colon, e.g., "🎲 Roll:" becomes "🎲 Roll (target):"
-      labelText = labelText.replace(':', ` (${detail.content.rollActor}):`);
+    if (typeof detail.content === 'object' && detail.content !== null) {
+      const labelParts = [];
+      
+      // Add actor if present and not "self"
+      if (detail.content.actor && detail.content.actor !== 'self') {
+        labelParts.push(detail.content.actor.charAt(0).toUpperCase() + detail.content.actor.slice(1));
+      }
+      
+      // Add Save if present
+      if (detail.content.save === true) {
+        labelParts.push('Save');
+      }
+      
+      // If we have parts, insert them into the label
+      if (labelParts.length > 0) {
+        labelText = labelText.replace(':', ` (${labelParts.join(', ')}):`);
+      }
     }
     label.textContent = labelText;
     detailRow.appendChild(label);
@@ -393,8 +582,16 @@ function createCardElement(data) {
     let isHtmlContent = false;
     
     if (typeof detail.content === 'object' && detail.content !== null && !Array.isArray(detail.content)) {
+      // Check if it's a creature attack {name, to_hit, damage}
+      if (detail.content.to_hit !== undefined || detail.content.damage !== undefined) {
+        displayContent = reconstructCreatureAttack(detail.content);
+      }
+      // Check if it's a range object {distance, target}
+      else if (detail.content.distance !== undefined || detail.content.target !== undefined) {
+        displayContent = formatRangeObject(detail.content);
+      }
       // Check if it's the new database roll format (roll, numerics, types, save)
-      if (detail.content.roll !== undefined || detail.content.numerics !== undefined || 
+      else if (detail.content.roll !== undefined || detail.content.numerics !== undefined || 
           detail.content.types !== undefined || detail.content.save !== undefined) {
         // It's the new database roll format - reconstruct it
         displayContent = reconstructDatabaseRoll(detail.content);
@@ -417,11 +614,17 @@ function createCardElement(data) {
       isHtmlContent = true;
     }
     
-    // Check if content has [BOX] or [STAT:xxx] placeholders
-    if (typeof displayContent === 'string' && (displayContent.includes('[BOX]') || displayContent.includes('[STAT:'))) {
-      // Determine the box text based on card type
-      const boxText = data.hands ? 'BtH' : 'SAM';  // 'BtH' for Bonus to Hit (weapons), 'SAM' for Spell Attack Modifier (spells)
-      const contentFragment = renderContentWithPlaceholders(displayContent, boxText);
+    // Check if content has [SAD], [SAM], [BOX], [STAT:xxx], or [DAMAGE:xxx] placeholders
+    if (typeof displayContent === 'string' && (displayContent.includes('[BOX]') || displayContent.includes('[STAT:') || 
+        displayContent.includes('[SAD]') || displayContent.includes('[SAM]') || displayContent.includes('[DAMAGE:'))) {
+      // Determine the box text based on card type (but [SAD]/[SAM] now embed their own text)
+      let boxText = 'SAM';  // Default: Spell Attack Modifier (for [BOX] legacy format)
+      if (data.hands) {
+        boxText = 'BtH';    // Weapons: Bonus to Hit
+      }
+      // Pass the original roll object so numerics/damage type metadata (emoji, color, name) is available
+      const rollObj = typeof detail.content === 'object' && (detail.content.numerics || detail.content.types) ? detail.content : null;
+      const contentFragment = renderContentWithPlaceholders(displayContent, boxText, rollObj);
       if (contentFragment) {
         detailRow.appendChild(contentFragment);
         isHtmlContent = false;  // Already rendered as HTML
@@ -498,18 +701,21 @@ function createCardElement(data) {
     footer.style.alignItems = 'flex-end';
     footer.textContent = '';
   } else {
-    // For weapons, use type and hands; for spells use level and school; for magic items use type and school; for NPCs use species and profession; for wild shapes use size and type
+    // For weapons, use type and hands; for spells use level and school; for magic items use type and school; for NPCs use species and profession; for creatures use footer_info
     let footerText;
     if (data.species && data.profession) {
       // NPCs: "Human · Wizard"
       footerText = `${data.species} · ${data.profession}`;
+    } else if (data.footer_info) {
+      // Creatures: "🦁 Beast • Tiny"
+      footerText = data.footer_info;
     } else if (data.type === 'Beast' && data.size) {
       // Wild shapes: "Beast · Medium"
       footerText = `${data.type} · ${data.size}`;
     } else if (data.hands) {
       // Weapons: "Simple Melee · 1-handed"
       footerText = `${data.type} · ${data.hands}`;
-    } else if (data.level === 'cantrip' || /^\d+$/.test(data.level)) {
+    } else if (data.level === 'cantrip' || /^\d+$/.test(data.level) || /^level\d+$/i.test(data.level)) {
       // Spells: "Level 1 · Evocation" or "Cantrip · Evocation"
       let levelText;
       if (data.level === 'cantrip') {
