@@ -454,7 +454,12 @@ def convert_db_spell_to_api_format(spell_row, conn=None):
     if to_hit_data:
         if isinstance(to_hit_data, list):
             for i, roll_obj in enumerate(to_hit_data):
-                label = "🎲 Roll:" if i == 0 else f"🎲 Roll ({i+1}):"
+                # Use the roll object's name field if available
+                roll_name = roll_obj.get('name', None) if isinstance(roll_obj, dict) else None
+                if roll_name:
+                    label = f"🎲 Roll: ({roll_name})" if len(to_hit_data) > 1 else "🎲 Roll:"
+                else:
+                    label = "🎲 Roll:" if len(to_hit_data) == 1 else f"🎲 Roll ({i+1}):"
                 enriched_roll = enrich_roll_object(roll_obj, conn)
                 details.append({"label": label, "content": enriched_roll})
         else:
@@ -465,7 +470,12 @@ def convert_db_spell_to_api_format(spell_row, conn=None):
     if damage_data:
         if isinstance(damage_data, list):
             for i, roll_obj in enumerate(damage_data):
-                label = "💥 Damage:" if i == 0 else f"💥 Damage ({i+1}):"
+                # Use the roll object's name field if available
+                roll_name = roll_obj.get('name', None) if isinstance(roll_obj, dict) else None
+                if roll_name:
+                    label = f"💥 Damage: ({roll_name})" if len(damage_data) > 1 else "💥 Damage:"
+                else:
+                    label = "💥 Damage:" if len(damage_data) == 1 else f"💥 Damage ({i+1}):"
                 enriched_roll = enrich_roll_object(roll_obj, conn)
                 details.append({"label": label, "content": enriched_roll})
         else:
@@ -476,7 +486,12 @@ def convert_db_spell_to_api_format(spell_row, conn=None):
     if heal_data:
         if isinstance(heal_data, list):
             for i, roll_obj in enumerate(heal_data):
-                label = "💚 Heal:" if i == 0 else f"💚 Heal ({i+1}):"
+                # Use the roll object's name field if available
+                roll_name = roll_obj.get('name', None) if isinstance(roll_obj, dict) else None
+                if roll_name:
+                    label = f"💚 Heal: ({roll_name})" if len(heal_data) > 1 else "💚 Heal:"
+                else:
+                    label = "💚 Heal:" if len(heal_data) == 1 else f"💚 Heal ({i+1}):"
                 enriched_roll = enrich_roll_object(roll_obj, conn)
                 details.append({"label": label, "content": enriched_roll})
         else:
