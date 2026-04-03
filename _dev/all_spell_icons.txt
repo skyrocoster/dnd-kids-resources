@@ -1,0 +1,31 @@
+All Spells Icons
+======================================================================
+[  1] Burning Hands                       - 🔥
+[  2] Aid                                 - ✨
+[  3] Air Bubble                          - 🫧
+[  4] Animal Messenger                    - 🐦
+[  5] Augury                              - 🔮
+[  6] Barkskin                            - 🌳
+[  7] Beast Sense                         - 👁️
+[  8] Blur                                - 💨
+[  9] Continual Flame                     - 🕯️
+[ 10] Darkvision                          - 🌙
+[ 11] Enhance Ability                     - 💪
+[ 12] Enlarge/Reduce                      - 📏
+[ 13] Find Traps                          - 🪤
+[ 14] Flame Blade                         - 🔥
+[ 15] Gust of Wind                        - 🌬️
+[ 16] Heat Metal                          - 🔴
+[ 17] Hold Person                         - 🛑
+[ 18] Lesser Restoration                  - 💖
+[ 19] Locate Animals or Plants            - 🌿
+[ 20] Locate Object                       - 🧭
+[ 21] Moonbeam                            - 🌕
+[ 22] Pass without Trace                  - 👣
+[ 23] Protection from Poison              - 🛡️
+[ 24] Spike Growth                        - 🌵
+[ 25] Summon Beast                        - 🐾
+[ 26] Wither and Bloom                    - 🌗
+[ 27] Speak with Animals                  - 🔮
+[ 28] Thunderwave                         - ⚡
+[ 29] Wild Cunning                        - 🔄

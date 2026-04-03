@@ -144,6 +144,18 @@ This pattern prevents case-sensitivity bugs, ensures consistent styling, and mak
 **Spells:**
 - `level`: "cantrip", "level1" through "level9"
 - `school`: "Evocation", "Transmutation", etc.
+- `to_hit`: JSON array of roll objects
+  - Each has: `roll`, `numerics` (ability codes), `save` (boolean), `name` (A, B, C for pairing)
+  - Example: `[{"roll": "1d20", "numerics": [{"code": "sam"}], "save": false, "name": "A"}]`
+- `damage`: JSON array of roll objects  
+  - Each has: `roll`, `types` (damage codes), `save` (boolean), `name` (matches to_hit for pairing)
+  - Example: `[{"roll": "1d10", "types": ["fire"], "save": false, "name": "A"}]`
+- `heal`: JSON array of roll objects
+  - Each has: `roll`, `numerics` (ability codes), `name` (A, B, C, etc.)
+  - Example: `[{"roll": "1d8", "numerics": [{"code": "sad"}], "name": "healing"}]`
+- **Pairing**: When to_hit and damage have same count > 1, pair them by matching `name` fields
+  - API displays as: `1️⃣ To Hit:`, `1️⃣ Damage:`, `2️⃣ Save:`, `2️⃣ Damage:`, etc.
+  - Single-roll spells use traditional emojis (🎲, 💥, 💚)
 
 **Weapons:**
 - `type`: "Simple Melee", "Martial Ranged", etc.

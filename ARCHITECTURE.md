@@ -134,10 +134,13 @@ WHERE spell_id = ? ORDER BY sequence_order
 **Data Transformation:**
 1. Queries spell/condition/creature metadata directly from appropriate table
 2. Parses JSON fields (to_hit, damage, heal, special, etc.) as needed
-3. Enriches roll objects with ability/damage type metadata
-4. Capitalizes display text fields (title, size, type, etc.) for display
-5. Uses lowercase versions as `level` field for CSS styling
-6. Combines into JSON response with complete card information
+3. For spells with paired rolls: Interleaves roll/damage pairs together for visual grouping
+4. Uses roll `name` field (A, B, C) to map to number emojis (1️⃣, 2️⃣, 3️⃣)
+5. Generates labels: "To Hit" vs "Save" based on roll object's `save` field
+6. Enriches roll objects with ability/damage type metadata
+7. Capitalizes display text fields (title, size, type, etc.) for display
+8. Uses lowercase versions as `level` field for CSS styling
+9. Combines into JSON response with complete card information
 
 **Starting the Flask Server:**
 ```bash
@@ -147,7 +150,7 @@ python server_flask.py
 # CORS headers enabled for development
 ```
 
-**Example Response:**
+**Example Response (Single Roll - Fire Bolt):**
 ```json
 [
   {
@@ -158,12 +161,51 @@ python server_flask.py
     "explanation": "fling a streak of fire...",
     "details": [
       {
-        "label": "🎲 Roll:",
-        "content": {"roll": "1d20", "numerics": ["SAM"], "save": false}
+        "label": "🎲 To Hit:",
+        "content": {"roll": "1d20", "numerics": [{"code": "sam", "name": "Spellcasting", "emoji": "✨", "color": "#8e44ad"}], "save": false, "name": "attack"}
       },
       {
         "label": "💥 Damage:",
-        "content": {"roll": "1d10", "types": ["fire"], "save": false}
+        "content": {"roll": "1d10", "types": [{"code": "fire", "name": "Fire", "emoji": "🔥", "color": "#e74c3c"}], "save": false, "name": "damage"}
+      },
+      {
+        "label": "🎯 Range:",
+        "content": {"distance": 120, "unit": "ft", "target": "creature"}
+      }
+    ]
+  }
+]
+```
+
+**Example Response (Paired Rolls - Ice Knife):**
+```json
+[
+  {
+    "title": "Ice Knife",
+    "icon": "❄️",
+    "level": "level1",
+    "school": "Conjuration",
+    "explanation": "summon a shard of ice and fling it...",
+    "details": [
+      {
+        "label": "1️⃣ To Hit:",
+        "content": {"roll": "1d20", "numerics": [{"code": "sam", "name": "Spellcasting", "emoji": "✨", "color": "#8e44ad"}], "save": false, "name": "A"}
+      },
+      {
+        "label": "1️⃣ Damage:",
+        "content": {"roll": "1d10", "types": [{"code": "pierce", "name": "Piercing", "emoji": "🔫", "color": "#34495e"}], "save": false, "name": "A"}
+      },
+      {
+        "label": "2️⃣ Save:",
+        "content": {"roll": "1d20", "numerics": [{"code": "dex", "name": "Dexterity", "emoji": "⚡", "color": "#27ae60"}], "save": true, "actor": "target", "name": "B"}
+      },
+      {
+        "label": "2️⃣ Damage:",
+        "content": {"roll": "2d6", "types": [{"code": "cold", "name": "Cold", "emoji": "❄️", "color": "#3498db"}], "save": false, "name": "B"}
+      },
+      {
+        "label": "🎯 Range:",
+        "content": {"distance": 60, "unit": "ft", "target": "point"}
       }
     ]
   }
@@ -180,11 +222,16 @@ python server_flask.py
 - `level`: "cantrip", "level1"–"level9" (CSS color class)
 - `school`: "Evocation", "Transmutation", etc.
 - `explanation`: Kid-friendly description
-- `to_hit`: JSON with attack/save mechanics
-- `damage`: JSON with damage rolls
-- `heal`: JSON with healing rolls
-- `range`: JSON with range information
-- Linked **detail_entries** provide additional fields (scaling, descriptions, etc.)
+- `to_hit`: JSON array of roll objects with attack/save mechanics
+  - Each roll has: `roll` (e.g., "1d20"), `numerics` (ability codes), `save` (boolean), `name` (A, B, C, etc.), optional `actor` field
+- `damage`: JSON array of damage roll objects
+  - Each roll has: `roll` (e.g., "1d10"), `types` (damage type codes), `save` (boolean), `name` (matches to_hit for pairing)
+- `heal`: JSON array of healing roll objects
+  - Each roll has: `roll` (e.g., "1d8"), `numerics` (ability codes), `name` (A, B, C, etc.)
+- `range`: JSON with range information (distance, unit, target)
+- **Paired Rolls:** When spell has multiple to_hit and damage with same count, they are paired by matching `name` fields and displayed interleaved (roll 1, damage 1, roll 2, damage 2)
+- **Number Emojis:** Multi-item to_hit/damage pairs use numbered emojis (1️⃣, 2️⃣, 3️⃣) derived from `name` field (A→1️⃣, B→2️⃣, C→3️⃣)
+- **Labels:** Automatically generated as "To Hit" or "Save" based on `save` field in roll object
 
 **Weapons:**
 - `type`: "Simple Melee", "Martial Ranged", etc.  

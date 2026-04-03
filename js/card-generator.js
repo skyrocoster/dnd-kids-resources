@@ -554,27 +554,8 @@ function createCardElement(data) {
     label.style.display = 'inline';
     label.style.marginRight = '2px';
     
-    // Check if this detail has actor/save info from database roll format - include in label
-    let labelText = detail.label;
-    if (typeof detail.content === 'object' && detail.content !== null) {
-      const labelParts = [];
-      
-      // Add actor if present and not "self"
-      if (detail.content.actor && detail.content.actor !== 'self') {
-        labelParts.push(detail.content.actor.charAt(0).toUpperCase() + detail.content.actor.slice(1));
-      }
-      
-      // Add Save if present
-      if (detail.content.save === true) {
-        labelParts.push('Save');
-      }
-      
-      // If we have parts, insert them into the label
-      if (labelParts.length > 0) {
-        labelText = labelText.replace(':', ` (${labelParts.join(', ')}):`);
-      }
-    }
-    label.textContent = labelText;
+    // Use the label as provided by the API (Flask now handles To Hit vs Save)
+    label.textContent = detail.label;
     detailRow.appendChild(label);
     
     // Reconstruct roll data if it's a structured roll object

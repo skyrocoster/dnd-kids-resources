@@ -416,6 +416,13 @@ def convert_db_spell_to_api_format(spell_row, conn=None):
     spell_row contains: id, title, icon, level, school, explanation,
                        to_hit, damage, heal, range
 
+    Features:
+    - Detects paired rolls (multiple to_hit/damage with same count) and interleaves them
+    - Uses "To Hit" or "Save" labels based on roll's save field
+    - Maps roll name field (A, B, C) to number emojis (1️⃣, 2️⃣, 3️⃣) for visual pairing
+    - Single-roll spells use traditional emojis (🎲, 💥, 💚)
+    - Enriches rolls with ability/damage type metadata
+
     Returns:
     {
       "title": "Fire Bolt",
@@ -424,10 +431,20 @@ def convert_db_spell_to_api_format(spell_row, conn=None):
       "school": "Evocation",
       "explanation": "...",
       "details": [
-        {"label": "🎲 Roll:", "content": {...}},
+        {"label": "🎲 To Hit:", "content": {...}},
         {"label": "💥 Damage:", "content": {...}},
-        {"label": "🎯 Range:", "content": {...}},
-        ...
+        {"label": "🎯 Range:", "content": {...}}
+      ]
+    }
+
+    For spells with paired rolls (e.g., Ice Knife):
+    {
+      "details": [
+        {"label": "1️⃣ To Hit:", "content": {...}},
+        {"label": "1️⃣ Damage:", "content": {...}},
+        {"label": "2️⃣ Save:", "content": {...}},
+        {"label": "2️⃣ Damage:", "content": {...}},
+        {"label": "🎯 Range:", "content": {...}}
       ]
     }
     """
@@ -447,51 +464,104 @@ def convert_db_spell_to_api_format(spell_row, conn=None):
     range_data = parse_json_field(spell_dict.get('range'))
 
     # Build details array with database format
-    # Order: to_hit, damage/heal, range
+    # Order: paired rolls/damage (if applicable), then unpaired, range at end
     details = []
 
-    # Add to_hit rolls (enrich with ability metadata)
-    if to_hit_data:
-        if isinstance(to_hit_data, list):
-            for i, roll_obj in enumerate(to_hit_data):
-                # Use the roll object's name field if available
-                roll_name = roll_obj.get('name', None) if isinstance(roll_obj, dict) else None
-                if roll_name:
-                    label = f"🎲 Roll: ({roll_name})" if len(to_hit_data) > 1 else "🎲 Roll:"
-                else:
-                    label = "🎲 Roll:" if len(to_hit_data) == 1 else f"🎲 Roll ({i+1}):"
-                enriched_roll = enrich_roll_object(roll_obj, conn)
-                details.append({"label": label, "content": enriched_roll})
-        else:
-            enriched_roll = enrich_roll_object(to_hit_data, conn)
-            details.append({"label": "🎲 Roll:", "content": enriched_roll})
+    # Number emoji mapping
+    number_map = {'A': '1️⃣', 'B': '2️⃣', 'C': '3️⃣', 'D': '4️⃣', 'E': '5️⃣'}
 
-    # Add damage rolls (enrich with ability metadata)
-    if damage_data:
-        if isinstance(damage_data, list):
-            for i, roll_obj in enumerate(damage_data):
-                # Use the roll object's name field if available
-                roll_name = roll_obj.get('name', None) if isinstance(roll_obj, dict) else None
-                if roll_name:
-                    label = f"💥 Damage: ({roll_name})" if len(damage_data) > 1 else "💥 Damage:"
-                else:
-                    label = "💥 Damage:" if len(damage_data) == 1 else f"💥 Damage ({i+1}):"
-                enriched_roll = enrich_roll_object(roll_obj, conn)
-                details.append({"label": label, "content": enriched_roll})
-        else:
-            enriched_roll = enrich_roll_object(damage_data, conn)
-            details.append({"label": "💥 Damage:", "content": enriched_roll})
+    # Check if we have paired rolls (multiple to_hit and damage with same count)
+    has_paired_rolls = (
+        isinstance(to_hit_data, list) and isinstance(damage_data, list) and
+        len(to_hit_data) > 1 and len(damage_data) > 1 and
+        len(to_hit_data) == len(damage_data)
+    )
+
+    if has_paired_rolls:
+        # Pair rolls and damages together: roll1, damage1, roll2, damage2, etc.
+        for i, (to_hit_roll, damage_roll) in enumerate(zip(to_hit_data, damage_data)):
+            roll_name = to_hit_roll.get('name', None) if isinstance(
+                to_hit_roll, dict) else None
+
+            # Determine if this is a save or attack roll
+            is_save = to_hit_roll.get('save', False) if isinstance(
+                to_hit_roll, dict) else False
+            roll_label = "Save" if is_save else "To Hit"
+
+            # Use number emoji for paired rolls
+            emoji = number_map.get(roll_name, '1️⃣')
+
+            # Add roll
+            enriched_roll = enrich_roll_object(to_hit_roll, conn)
+            details.append({"label": f"{emoji} {roll_label}:",
+                           "content": enriched_roll})
+
+            # Add paired damage
+            enriched_damage = enrich_roll_object(damage_roll, conn)
+            details.append({"label": f"{emoji} Damage:",
+                           "content": enriched_damage})
+    else:
+        # Add to_hit rolls separately (not paired)
+        if to_hit_data:
+            if isinstance(to_hit_data, list):
+                for i, roll_obj in enumerate(to_hit_data):
+                    roll_name = roll_obj.get('name', None) if isinstance(
+                        roll_obj, dict) else None
+
+                    # Determine if this is a save or attack roll
+                    is_save = roll_obj.get('save', False) if isinstance(
+                        roll_obj, dict) else False
+                    roll_label = "Save" if is_save else "To Hit"
+
+                    if len(to_hit_data) > 1 and roll_name:
+                        emoji = number_map.get(roll_name, '🎲')
+                        label = f"{emoji} {roll_label}:"
+                    else:
+                        label = f"🎲 {roll_label}:"
+
+                    enriched_roll = enrich_roll_object(roll_obj, conn)
+                    details.append({"label": label, "content": enriched_roll})
+            else:
+                enriched_roll = enrich_roll_object(to_hit_data, conn)
+                is_save = to_hit_data.get('save', False) if isinstance(
+                    to_hit_data, dict) else False
+                roll_label = "Save" if is_save else "To Hit"
+                details.append({"label": f"🎲 {roll_label}:",
+                               "content": enriched_roll})
+
+        # Add damage rolls separately (not paired)
+        if damage_data:
+            if isinstance(damage_data, list):
+                for i, roll_obj in enumerate(damage_data):
+                    roll_name = roll_obj.get('name', None) if isinstance(
+                        roll_obj, dict) else None
+
+                    if len(damage_data) > 1 and roll_name:
+                        emoji = number_map.get(roll_name, '💥')
+                        label = f"{emoji} Damage:"
+                    else:
+                        label = "💥 Damage:"
+
+                    enriched_roll = enrich_roll_object(roll_obj, conn)
+                    details.append({"label": label, "content": enriched_roll})
+            else:
+                enriched_roll = enrich_roll_object(damage_data, conn)
+                details.append(
+                    {"label": "💥 Damage:", "content": enriched_roll})
 
     # Add heal rolls (enrich with ability metadata)
     if heal_data:
         if isinstance(heal_data, list):
             for i, roll_obj in enumerate(heal_data):
-                # Use the roll object's name field if available
-                roll_name = roll_obj.get('name', None) if isinstance(roll_obj, dict) else None
-                if roll_name:
-                    label = f"💚 Heal: ({roll_name})" if len(heal_data) > 1 else "💚 Heal:"
+                roll_name = roll_obj.get('name', None) if isinstance(
+                    roll_obj, dict) else None
+
+                if len(heal_data) > 1 and roll_name:
+                    emoji = number_map.get(roll_name, '💚')
+                    label = f"{emoji} Heal:"
                 else:
-                    label = "💚 Heal:" if len(heal_data) == 1 else f"💚 Heal ({i+1}):"
+                    label = "💚 Heal:"
+
                 enriched_roll = enrich_roll_object(roll_obj, conn)
                 details.append({"label": label, "content": enriched_roll})
         else:
