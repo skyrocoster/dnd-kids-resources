@@ -103,7 +103,7 @@ function createModifierBox(boxText = 'SAM') {
   return box;
 }
 
-// Renders content with [SAD], [SAM], [BOX] placeholders, [STAT:xxx] placeholders, and [DAMAGE:xxx] placeholders
+// Renders content with [SAD], [SAM] placeholders, [STAT:xxx] placeholders, and [DAMAGE:xxx] placeholders
 // All ability modifiers render as colored boxes with emoji and ability name inside
 // Damage types render with emoji and color styling
 // rollObj: optional {numerics: [...], types: [...]} to provide ability and damage type metadata
@@ -171,12 +171,12 @@ function renderContentWithPlaceholders(contentStr, boxText = 'SAM', rollObj = nu
           const damageSpan = document.createElement('span');
           damageSpan.style.display = 'inline-flex';
           damageSpan.style.alignItems = 'center';
-          damageSpan.style.gaps = '2px';
+          damageSpan.style.gap = '2px';
           damageSpan.style.marginRight = '2px';
           
-          // Add emoji
+          // Add emoji with space
           const emojiSpan = document.createElement('span');
-          emojiSpan.textContent = damageType.emoji || '';
+          emojiSpan.textContent = (damageType.emoji || '') + ' ';
           damageSpan.appendChild(emojiSpan);
           
           // Add damage type name with optional background color
@@ -453,9 +453,55 @@ function reconstructCreatureAttack(attackObj) {
 }
 
 
-function createCardElement(data) {
+function createCardElement(data, onHideCallback) {
   const card = document.createElement('div');
   card.className = `card ${data.level}`;
+  
+  // Add card ID for hide functionality (use spell/card ID if available, otherwise use title)
+  if (data.id) {
+    card.id = `card-${data.id}`;
+  } else if (data.title) {
+    card.id = `card-${data.title.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
+  }
+  
+  // Add hide checkbox
+  const checkbox = document.createElement('input');
+  checkbox.type = 'checkbox';
+  checkbox.className = 'card-hide-checkbox';
+  checkbox.title = 'Hide this card';
+  checkbox.addEventListener('change', function() {
+    // Add to hidden list
+    const hiddenCards = JSON.parse(localStorage.getItem('hidden_cards') || '[]');
+    if (this.checked) {
+      if (!hiddenCards.includes(card.id)) {
+        hiddenCards.push(card.id);
+      }
+    } else {
+      const index = hiddenCards.indexOf(card.id);
+      if (index > -1) {
+        hiddenCards.splice(index, 1);
+      }
+    }
+    localStorage.setItem('hidden_cards', JSON.stringify(hiddenCards));
+    
+    // Call the callback to re-render
+    if (onHideCallback) {
+      onHideCallback();
+    }
+    
+    // Show/hide reset button
+    const resetBtn = document.getElementById('reset-hidden-btn');
+    if (resetBtn) {
+      resetBtn.style.display = hiddenCards.length > 0 ? 'inline-block' : 'none';
+    }
+  });
+  card.appendChild(checkbox);
+  
+  // Set checkbox to checked if this card is currently hidden
+  const hiddenCards = JSON.parse(localStorage.getItem('hidden_cards') || '[]');
+  if (hiddenCards.includes(card.id)) {
+    checkbox.checked = true;
+  }
   
   // Card header
   const header = document.createElement('div');
@@ -722,7 +768,7 @@ function createCardElement(data) {
 }
 
 // Render paginated cards
-function renderPaginatedCards(containerSelector, cardsData, cardsPerPage = 9, pageTitle = '✨ Cards ✨', pageSubtitle = 'Dungeons & Dragons · 5th Edition · Cut out & keep!') {
+function renderPaginatedCards(containerSelector, cardsData, cardsPerPage = 9, pageTitle = '✨ Cards ✨', pageSubtitle = 'Dungeons & Dragons · 5th Edition · Cut out & keep!', onHideCallback = null) {
   const container = document.querySelector(containerSelector);
   if (!container) return;
   
@@ -748,10 +794,43 @@ function renderPaginatedCards(containerSelector, cardsData, cardsPerPage = 9, pa
     const endIdx = Math.min(startIdx + cardsPerPage, cardsData.length);
     
     for (let i = startIdx; i < endIdx; i++) {
-      grid.appendChild(createCardElement(cardsData[i]));
+      grid.appendChild(createCardElement(cardsData[i], onHideCallback));
     }
     
     page.appendChild(grid);
     container.appendChild(page);
+  }
+}
+
+// Toggle card hidden state and persist to localStorage
+function toggleCardHidden(cardId, isHidden) {
+  const hiddenCards = JSON.parse(localStorage.getItem('hidden_cards') || '[]');
+  const card = document.getElementById(cardId);
+  
+  if (isHidden) {
+    // Add to hidden list
+    if (!hiddenCards.includes(cardId)) {
+      hiddenCards.push(cardId);
+    }
+    if (card) {
+      card.classList.add('hidden');
+    }
+  } else {
+    // Remove from hidden list
+    const index = hiddenCards.indexOf(cardId);
+    if (index > -1) {
+      hiddenCards.splice(index, 1);
+    }
+    if (card) {
+      card.classList.remove('hidden');
+    }
+  }
+  
+  localStorage.setItem('hidden_cards', JSON.stringify(hiddenCards));
+  
+  // Show/hide reset button based on whether there are hidden cards
+  const resetBtn = document.getElementById('reset-hidden-btn');
+  if (resetBtn) {
+    resetBtn.style.display = hiddenCards.length > 0 ? 'inline-block' : 'none';
   }
 }

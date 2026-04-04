@@ -90,11 +90,22 @@ All cards are designed for:
 - **Playing card dimensions** (63.5mm × 88.9mm)
 - **Exact color preservation** (CSS has `color-adjust: exact`)
 - **@media print** rules handle breaks automatically
+- **Black & White preview mode** (fixed toggle button, persists preference)
+
+### Print Features
+- **B&W Mode Toggle:** Every card page has a "📄 Print B&W" button (top-right) to preview in grayscale
+  - Click to convert page to 100% black & white
+  - Perfect for checking ink savings or previewing B&W printouts
+  - Preference saved to localStorage (remembers on next visit)
+  - Button auto-hides when printing
+- **Color accuracy:** Colors are preserved with `print-color-adjust: exact`
+- **Page breaks:** CSS prevents card splitting across pages
 
 When debugging print issues, check:
 - Page size is A4
 - "Background graphics" enabled in print dialog
 - Card doesn't span across pages (CSS prevents this)
+- B&W mode toggled correctly if applicable
 
 ## Common Tasks
 
@@ -112,10 +123,27 @@ When debugging print issues, check:
 ## Key Files (Don't Modify Without Care)
 
 - `js/card-generator.js` - Core rendering engine (used by all card types)
-- `css/styles.css` - All styling (changes affect every card)
+- `css/styles.css` - All styling (changes affect every card) + B&W mode toggle styling
+- `js/bw-mode-toggle.js` - B&W print preview mode functionality
 - `index.html` - Navigation hub
 
 Adding new **JSON-based** card types does NOT require modifying these files—only adding new JSON + initializer. For **database-driven** cards, add data to the database and create a new initializer that fetches from the appropriate API endpoint.
+
+## Recent Quality Improvements (April 2026)
+
+**UI Enhancements:**
+- Added B&W print preview toggle (page-wide grayscale filter with localStorage persistence)
+- Implemented on all card pages: spells, conditions, creatures, skills, weapons
+
+**Database Corrections:**
+- **Spell 55 (Wither and Bloom):** Removed non-standard `types` field from heal JSON for consistency
+- **Spell 21 (Ice Knife):** Fixed multi-roll naming from "primary"/"secondary" to "A"/"B" for proper emoji numbering
+
+**Rendering Fixes:**
+- **Damage types:** Fixed CSS property typo (`gaps` → `gap`) and added space before emoji for proper formatting (e.g., "🔥 fire" instead of "🔥fire")
+
+**QA Tools Added** (in `_dev/`):
+- Scripts to validate spell data consistency, heal field structure, and multi-roll naming conventions
 
 ## Development Setup
 
@@ -226,7 +254,7 @@ Get-Content file.txt
 1. **Encoding Issues:** Windows console uses CP1252 by default. Unicode emoji in print statements require wrapping sys.stdout with UTF-8 encoding wrapper
 2. **Terminal Limitations:** Windows PowerShell ampersand (&) requires wrapping in quotes or using `Start-Process` for background jobs
 3. **Flask Server:** 
-   - Runs on port 5000 by default (configured in start_server)
+   - Runs on port 8000 by default (configured in start_server)
    - Browser opening suppressed to prevent interruptions during development
    - Debug mode enabled for auto-reload on code changes
 4. **Database:** SQLite with enriched metadata tables (abilities, damage_types) for emoji and color storage

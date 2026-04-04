@@ -555,18 +555,27 @@ def convert_db_spell_to_api_format(spell_row, conn=None):
             for i, roll_obj in enumerate(heal_data):
                 roll_name = roll_obj.get('name', None) if isinstance(
                     roll_obj, dict) else None
+                heal_type = roll_obj.get('type', 'normal') if isinstance(
+                    roll_obj, dict) else 'normal'
+
+                # Determine heal label based on type
+                heal_text = "Max HP" if heal_type == 'max_hp' else "Heal"
 
                 if len(heal_data) > 1 and roll_name:
                     emoji = number_map.get(roll_name, '💚')
-                    label = f"{emoji} Heal:"
+                    label = f"{emoji} {heal_text}:"
                 else:
-                    label = "💚 Heal:"
+                    label = f"💚 {heal_text}:"
 
                 enriched_roll = enrich_roll_object(roll_obj, conn)
                 details.append({"label": label, "content": enriched_roll})
         else:
+            heal_type = heal_data.get('type', 'normal') if isinstance(
+                heal_data, dict) else 'normal'
+            heal_text = "Max HP" if heal_type == 'max_hp' else "Heal"
             enriched_roll = enrich_roll_object(heal_data, conn)
-            details.append({"label": "💚 Heal:", "content": enriched_roll})
+            details.append({"label": f"💚 {heal_text}:",
+                           "content": enriched_roll})
 
     # Add range ALWAYS at the end (from spells.range column)
     if range_data:

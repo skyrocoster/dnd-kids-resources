@@ -8,7 +8,7 @@ Scripts and tools for development, testing, and database management. These are *
 
 ### Flask Web Server
 - **`server_flask.py`** ⭐ **PRIMARY TOOL** - Flask API server serving spells from SQLite database
-  - Runs on `http://localhost:5000`
+  - Runs on `http://localhost:8000`
   - Provides `/api/spells` endpoint with enriched metadata (emoji, colors)
   - Usage: `python _dev/server_flask.py`
 
@@ -31,6 +31,22 @@ Scripts and tools for development, testing, and database management. These are *
 
 ---
 
+## Quality Assurance & Recent Fixes
+
+### Validation Scripts
+- `check_spell_grammar.py` - Grammar and content review for spell descriptions
+- `check_ice_knife.py` - Verify multi-roll spell formatting
+- `find_multi_rolls.py` - Locate and validate all spells with multiple roll entries
+- `verify_roll_names.py` - Ensure multi-roll spells use standard A/B/C naming
+- `check_heal_field.py` - Validate heal field structure consistency
+
+### Recent Database Corrections
+1. **Spell 55 (Wither and Bloom):** Removed non-standard `types` field from heal JSON to match other heal values
+2. **Spell 21 (Ice Knife):** Fixed multi-roll naming from "primary"/"secondary" to "A"/"B" for proper number emoji display
+3. **Damage type emoji rendering:** Fixed CSS property typo (`gaps` → `gap`) and added space before emoji in damage displays
+
+---
+
 ## Archived Tools
 
 All one-time-use scripts and legacy tools have been moved to `archive/`:
@@ -50,7 +66,7 @@ See `archive/` if you need to reference historical migration logic or recover de
 ### Start Flask Server
 ```bash
 python _dev/server_flask.py
-# Server will run at http://localhost:5000
+# Server will run at http://localhost:8000
 # API endpoint: GET /api/spells
 ```
 

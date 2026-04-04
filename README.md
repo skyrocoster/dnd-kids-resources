@@ -25,22 +25,23 @@ Simply open `index.html` in a web browser. All features work offline after first
 
 ### Run Locally (Development)
 
-**Using Flask API (Database):**
+**Using Flask API (Database) - Recommended for Full Features:**
 ```bash
 python _dev/server_flask.py
-# Visit http://localhost:5000
-# Spells and Conditions load from dnd_kids_resources.db
+# Visit http://localhost:8000
+# Loads: Spells, Conditions, Skills, Creatures with full database features
 ```
 
-**For Other Cards (Weapons, Skills):**
+**For Weapons & Trackers Only (No Database):**
 ```bash
 python -m http.server 8000
 # Visit http://localhost:8000
-# Cards load from JSON files (or run Flask for all features)
+# Loads: Weapons (JSON), Character Sheet, HP Tracker, Turn Order Tracker
+# Note: Spells, Conditions, Skills, and Creatures won't work without Flask server
 ```
 
 **VS Code Option:**
-Install "Live Server" extension, right-click `index.html` → "Open with Live Server" (works for all except spells)
+Install "Live Server" extension, right-click `index.html` → "Open with Live Server" (works for Weapons & Trackers, but not database-driven cards)
 
 **Node.js Option:**
 ```bash
@@ -49,12 +50,22 @@ npx http-server
 
 ### Print Cards
 
+#### Black & White Preview Mode
+
+All card pages have a **"📄 Print B&W"** toggle button in the top-right corner. Click it to:
+- Convert the page to full black & white (grayscale)
+- Preview exactly how cards will look when printed in B&W
+- Save ink and printing costs
+- The button automatically hides when printing
+
+Your choice is saved—next time you visit, the page remembers your preference.
+
 #### Quick Print (5 Steps)
 1. Navigate to any card page (e.g., Spell Cards)
-2. Press `Ctrl+P` (Windows) or `Cmd+P` (Mac)
-3. In print dialog, set paper size to **A4**
-4. Enable **"Background graphics"** (also called "Background colors and images")
-5. Click **Print**
+2. *(Optional)* Click **"📄 Print B&W"** to preview in black & white
+3. Press `Ctrl+P` (Windows) or `Cmd+P` (Mac)
+4. In print dialog, set paper size to **A4**
+5. Enable **"Background graphics"** (also called "Background colors and images")
 
 #### Browser-Specific Settings
 
@@ -123,11 +134,16 @@ npx http-server
 
 ## Available Tools
 
-| Tool | Cards | Pages | Features |
-|------|-------|-------|----------|
-| **Spell Cards** | 27 spells | 3 | Print • **Level filtering** |
-| **Condition Cards** | 19 conditions | 3 | Print |
-| **Weapon Cards** | 42+ weapons | 5+ | Print |
+| Tool | Items | Features |
+|------|-------|----------|
+| **Spell Cards** | 54 spells | Print • **Level filtering** |
+| **Condition Cards** | 19 conditions | Print |
+| **Skill Cards** | 18 skills | Print |
+| **Creature Cards** | 6 creatures | Print |
+| **Weapon Cards** | 42+ weapons | Print |
+| **Character Sheet** | 1 printable sheet | Print |
+| **HP Tracker** | Interactive circles | Print & Track |
+| **Turn Order Tracker** | 1 printable tracker | Print |
 
 ### Spell Card Features
 
@@ -187,6 +203,7 @@ npx http-server
 ✅ **Optimized for Printing**
 - A4 page layout (3×3 card grid)
 - Color preservation in print mode
+- Black & White print preview mode (toggle button)
 - Page break handling
 - Playing card dimensions (63.5mm × 88.9mm)
 

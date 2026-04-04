@@ -64,7 +64,7 @@ data/
 **SQLite Database (Dynamic):**
 ```
 dnd_kids_resources.db
-├── spells table           # 28 spells with complete card metadata
+├── spells table           # 54 spells with complete card metadata
 │   └── Fields: id, title (lowercase), icon, level, school, explanation, 
 │              to_hit (JSON), damage (JSON), heal (JSON), range (JSON)
 │
@@ -72,11 +72,19 @@ dnd_kids_resources.db
 │   └── Fields: id, title (lowercase), icon, explanation, details (JSON)
 │   └── Pattern: Stored lowercase, capitalized at API response time
 │
-├── creatures table        # 6 druid wild shape forms
-│   └── Fields: id, title (lowercase), icon, size (lowercase), type (lowercase), 
-│              hp, ac, explanation, attack_name, attack_to_hit (JSON), 
-│              damage (JSON), special (JSON)
+├── skills table           # 18 skill reference cards
+│   └── Fields: id, title (lowercase), icon, level, explanation, details (JSON)
+│   └── Pattern: Stored lowercase, capitalized at API response time
+│
+├── creatures table        # 6 creatures (druid wild shape forms)
+│   └── Fields: id, title (lowercase), icon, size (lowercase), creature_type_id, 
+│              hp, ac, explanation, attack_to_hit (JSON*, contains attack name), 
+│              damage (JSON), special (text)
 │   └── Pattern: All text stored lowercase, capitalized at API response time
+│   └── *attack_to_hit: Array where first roll object's 'name' field is the attack name
+│
+├── creature_types table   # Creature type lookup (references in creatures table)
+│   └── Fields: id (PK), code, name, emoji, color
 │
 ├── abilities table        # Ability metadata (abilities, modifiers, proficiency)
 │   └── Fields: code (PK), name, emoji, color
@@ -105,7 +113,7 @@ dnd_kids_resources.db
 
 **Location:** `_dev/server_flask.py`
 
-**Purpose:** Provides REST endpoints to retrieve spell data from the SQLite database in JSON format
+**Purpose:** Provides REST endpoints to retrieve spell, skill, condition, and creature data from the SQLite database in JSON format
 
 **Endpoints:**
 
@@ -113,9 +121,11 @@ dnd_kids_resources.db
 |----------|--------|---------|---------|
 | `/api/spells` | GET | Array of all spells | Used by spell-cards.html |
 | `/api/spells/<title>` | GET | Single spell by title | Can fetch individual spells |
+| `/api/skills` | GET | Array of all skills | Used by skill-cards.html |
+| `/api/skills/<title>` | GET | Single skill by title | Can fetch individual skills |
 | `/api/conditions` | GET | Array of all conditions | Used by condition-cards.html |
 | `/api/conditions/<title>` | GET | Single condition by title | Can fetch individual conditions |
-| `/api/creatures` | GET | Array of all creatures | Used by wild-shapes.html |
+| `/api/creatures` | GET | Array of all creatures | Used by creatures.html |
 | `/api/creatures/<title>` | GET | Single creature by title | Can fetch individual creatures |
 
 **Query Logic:**

@@ -168,27 +168,27 @@ This pattern prevents case-sensitivity bugs, ensures consistent styling, and mak
 
 **Creatures (Wild Shapes):**
 - Stored in database table (not JSON)
-- Fields: `title`, `icon`, `size`, `type`, `hp`, `ac`, `explanation`, `attack_name`, `attack_to_hit` (JSON), `damage` (JSON), `special`
-- **Storage pattern**: All text fields (title, size, type) stored lowercase
-- **Attack format**: `attack_to_hit` is a JSON array (same format as spell `to_hit`):
+- Fields: `title` (lowercase, auto-capitalized), `icon`, `size`, `creature_type_id`, `hp`, `ac`, `explanation`, `attack_to_hit` (JSON), `damage` (JSON), `special`
+- **Storage pattern**: All text fields (title, size, creature_type) stored lowercase
+- **Attack format**: `attack_to_hit` is a JSON array where the first roll object contains the attack name in the `name` field:
   ```json
   [
     {
-      "numDice": 1,
-      "diceType": "d8",
-      "modifier": 4,
-      "numerics": [{"code": "str"}]
+      "name": "Bite",
+      "roll": "1d8",
+      "numerics": [{"code": "str"}],
+      "save": false
     }
   ]
   ```
 - **Damage format**: `damage` is a JSON array where each roll has damage type codes:
   ```json
   [
-    {"numDice": 2, "diceType": "d4", "types": ["piercing"]},
-    {"numDice": 1, "diceType": "d6", "types": ["poison"]}
+    {"roll": "1d4", "types": [{"code": "piercing"}]},
+    {"roll": "1d6", "types": [{"code": "poison"}]}
   ]
   ```
-- **Enrichment**: Damage types (stored as codes like "piercing", "cold") are enriched with emoji/color at API response time
+- **Enrichment**: Damage types and creature types are enriched with emoji/color at API response time
 - Loaded via `/api/creatures` endpoint
 
 ---
@@ -374,13 +374,15 @@ js/                            # JavaScript
 ├── card-generator.js          # Core system (don't modify)
 ├── spells.js                  # Fetch from API & render
 ├── conditions.js              # Fetch from API & render
-├── wild-shapes.js             # Fetch creatures from API & render
+├── creatures.js               # Fetch creatures from API & render
+├── skills.js                  # Fetch from API & render
 └── weapons.js
 
 pages/                         # HTML pages for each tool
 ├── spell-cards.html
 ├── condition-cards.html
-├── wild-shapes.html
+├── creatures.html
+├── skill-cards.html
 └── weapon-cards.html
 ```
 
