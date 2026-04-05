@@ -4,11 +4,17 @@ D&D Kids Resources - Flask Web Server with Database API
 Serves the website on http://localhost:8000 with API endpoints for spell data
 """
 
+from dungeon_parser import DungeonHTMLParser
 import sqlite3
 import json
 from pathlib import Path
-from flask import Flask, jsonify, send_from_directory
+from flask import Flask, jsonify, send_from_directory, request
 import webbrowser
+import sys
+
+# Add _dev to path for imports
+sys.path.insert(0, str(Path(__file__).parent))
+
 
 # Setup Flask app
 app = Flask(__name__, static_folder='..', static_url_path='')
@@ -23,7 +29,7 @@ DB_PATH = str(BASE_DIR / "dnd_kids_resources.db")
 @app.after_request
 def add_cors_headers(response):
     response.headers['Access-Control-Allow-Origin'] = '*'
-    response.headers['Access-Control-Allow-Methods'] = 'GET, OPTIONS'
+    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
     response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
     return response
 
@@ -945,6 +951,132 @@ def get_creature_by_title(title):
         return jsonify({"error": str(e)}), 500
 
 
+# ============================================================================
+# DUNGEON ENDPOINTS
+# ============================================================================
+
+@app.route('/api/dungeons', methods=['GET'])
+def list_dungeons():
+    """List all dungeons"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT id, title, created_at, updated_at 
+            FROM dungeons 
+            ORDER BY created_at DESC
+        """)
+        dungeons = [dict(row) for row in cursor.fetchall()]
+        conn.close()
+        return jsonify(dungeons)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/dungeons/<int:dungeon_id>', methods=['GET'])
+def get_dungeon(dungeon_id):
+    """Get a specific dungeon by ID"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT id, title, original_html, parsed_json, created_at, updated_at 
+            FROM dungeons 
+            WHERE id = ?
+        """, (dungeon_id,))
+        row = cursor.fetchone()
+        conn.close()
+
+        if not row:
+            return jsonify({"error": "Dungeon not found"}), 404
+
+        dungeon = dict(row)
+        # Parse the JSON string back to object
+        if dungeon['parsed_json']:
+            dungeon['parsed_json'] = json.loads(dungeon['parsed_json'])
+        return jsonify(dungeon)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/dungeons/upload', methods=['POST'])
+def upload_dungeon():
+    """Upload and parse a new dungeon HTML file"""
+    try:
+        # Check if HTML file was provided
+        if 'file' not in request.files:
+            return jsonify({"error": "No file provided"}), 400
+
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({"error": "No file selected"}), 400
+
+        # Read the HTML content
+        html_content = file.read().decode('utf-8')
+
+        # Parse the dungeon
+        parser = DungeonHTMLParser(html_content)
+        dungeon_data = parser.parse()
+
+        # Get title from parsed data
+        title = dungeon_data.general_info.title
+        if not title or title == 'Unknown':
+            return jsonify({"error": "Could not extract dungeon title from HTML"}), 400
+
+        # Convert parsed data to JSON
+        parsed_json = json.dumps(dungeon_data.to_full_dict())
+
+        # Store in database
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        try:
+            cursor.execute("""
+                INSERT INTO dungeons (title, original_html, parsed_json)
+                VALUES (?, ?, ?)
+            """, (title, html_content, parsed_json))
+            conn.commit()
+            dungeon_id = cursor.lastrowid
+            conn.close()
+
+            return jsonify({
+                "id": dungeon_id,
+                "title": title,
+                "message": "Dungeon uploaded and parsed successfully"
+            }), 201
+        except sqlite3.IntegrityError:
+            conn.close()
+            return jsonify({"error": f"Dungeon '{title}' already exists"}), 409
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/dungeons/<int:dungeon_id>', methods=['PUT'])
+def update_dungeon(dungeon_id):
+    """Update dungeon parsed data"""
+    try:
+        data = request.get_json()
+        parsed_json = data.get('parsed_json')
+
+        if not parsed_json:
+            return jsonify({"error": "No parsed_json provided"}), 400
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            UPDATE dungeons 
+            SET parsed_json = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+        """, (parsed_json, dungeon_id))
+        conn.commit()
+        conn.close()
+
+        return jsonify({"message": "Dungeon updated successfully"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route('/')
 def index():
     """Serve index.html"""
@@ -979,6 +1111,10 @@ def start_server(port=8000):
     print(f"   - GET /api/conditions/<title> (single condition)")
     print(f"   - GET /api/creatures      (all creatures)")
     print(f"   - GET /api/creatures/<title> (single creature)")
+    print(f"   - GET /api/dungeons       (all dungeons)")
+    print(f"   - GET /api/dungeons/<id>  (single dungeon)")
+    print(f"   - POST /api/dungeons/<id> (save dungeon)")
+    print(f"   - POST /api/dungeons/upload (upload new dungeon file)")
     print(f"\n Press Ctrl+C to stop the server")
     print(f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
 

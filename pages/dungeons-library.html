@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dungeon Library - D&D Kids Resources</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <style>
+        .dungeons-container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .dungeon-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .dungeon-card {
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            padding: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .dungeon-card:hover {
+            border-color: #4a90e2;
+            box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .dungeon-card h3 {
+            margin: 0 0 0.5rem 0;
+            color: #333;
+        }
+
+        .dungeon-card p {
+            margin: 0.25rem 0;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .dungeon-card .meta {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #eee;
+            text-align: right;
+        }
+
+        .dungeon-card .btn {
+            background: #4a90e2;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background 0.3s ease;
+        }
+
+        .dungeon-card .btn:hover {
+            background: #357abd;
+        }
+
+        .dungeon-viewer-layout {
+            display: none;
+            grid-template-columns: 350px 1fr;
+            gap: 0;
+            width: 100vw;
+            height: 100vh;
+            margin: 0;
+            padding: 0;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 100;
+        }
+
+        .dungeon-viewer-layout.active {
+            display: grid;
+        }
+
+        .map-panel {
+            background: #f5f5f5;
+            padding: 1.5rem;
+            border-radius: 0;
+            overflow-y: scroll;
+            height: 100%;
+            position: relative;
+            border-right: 1px solid #ddd;
+            padding-right: calc(1.5rem + 5px);
+        }
+
+        .resize-handle {
+            position: absolute;
+            right: 0;
+            top: 0;
+            width: 5px;
+            height: 100%;
+            background: #ccc;
+            cursor: col-resize;
+            user-select: none;
+            transition: background 0.2s ease;
+            z-index: 10;
+        }
+
+        .resize-handle:hover {
+            background: #999;
+        }
+
+        .map-display {
+            margin-bottom: 1.5rem;
+        }
+
+        .map-container {
+            text-align: center;
+        }
+
+        .map-container img {
+            max-width: 100%;
+            height: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .map-details-display {
+            width: 100%;
+        }
+
+        .dungeon-viewer-right {
+            display: flex;
+            flex-direction: column;
+            background: white;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .viewer-controls {
+            background: #f5f5f5;
+            padding: 1.5rem;
+            border-bottom: 1px solid #ddd;
+            flex-shrink: 0;
+        }
+
+        .viewer-controls h3 {
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .dungeon-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 2rem;
+            min-height: 0;
+        }
+        }
+
+        .dungeon-viewer {
+            display: none;
+            grid-template-columns: 1fr;
+            grid-template-rows: auto 1fr;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .dungeon-viewer.active {
+            display: grid;
+        }
+
+        .viewer-sidebar {
+            background: #f5f5f5;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .viewer-sidebar h3 {
+            display: none;
+        }
+
+        .room-content {
+            margin-bottom: 2rem;
+        }
+
+        .room-title {
+            font-size: 1.5rem;
+            color: #333;
+            margin: 1.5rem 0 1rem 0;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #4a90e2;
+        }
+
+        .entry-group {
+            margin: 1.5rem 0;
+        }
+
+        .entry-group-title {
+            font-weight: bold;
+            color: #4a90e2;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            margin: 1rem 0 0.5rem 0;
+            letter-spacing: 0.05em;
+        }
+
+        .entry {
+            background: #f9f9f9;
+            padding: 1rem;
+            margin: 0.5rem 0;
+            border-left: 3px solid #4a90e2;
+            border-radius: 4px;
+        }
+
+        .entry-title {
+            font-weight: bold;
+            color: #333;
+            margin: 0 0 0.5rem 0;
+        }
+
+        .entry-content {
+            color: #666;
+            margin: 0.5rem 0;
+            line-height: 1.5;
+        }
+
+        .entry-meta {
+            font-size: 0.85rem;
+            color: #999;
+            margin-top: 0.5rem;
+            font-style: italic;
+        }
+
+        .room-link {
+            color: #f39c12;
+            font-weight: bold;
+            text-decoration: none;
+            border-bottom: 2px solid #f39c12;
+            transition: all 0.2s ease;
+        }
+
+        .room-link:hover {
+            background-color: #fff4e6;
+            padding: 2px 4px;
+            border-bottom-color: #e67e22;
+        }
+
+        .entry.monster {
+            border-left-color: #e74c3c;
+        }
+
+        .entry.door {
+            border-left-color: #f39c12;
+        }
+
+        .entry.trap {
+            border-left-color: #e74c3c;
+        }
+
+        .entry.feature {
+            border-left-color: #27ae60;
+        }
+
+        .entry.trick {
+            border-left-color: #9b59b6;
+        }
+
+        .back-btn {
+            background: #7f8c8d;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: background 0.3s ease;
+        }
+
+        .back-btn:hover {
+            background: #687f8c;
+        }
+
+        .general-info {
+            background: #f9f9f9;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border-radius: 8px;
+            border-left: 4px solid #4a90e2;
+        }
+
+        .info-row {
+            display: grid;
+            grid-template-columns: 200px 1fr;
+            gap: 1rem;
+            margin: 0.5rem 0;
+        }
+
+        .info-label {
+            font-weight: bold;
+            color: #4a90e2;
+        }
+
+        .info-value {
+            color: #333;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+        }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 1rem;
+            border-radius: 4px;
+            margin: 1rem 0;
+            border: 1px solid #f5c6cb;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+        }
+
+        .add-feature-btn {
+            background: #27ae60;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: background 0.3s ease;
+        }
+
+        .add-feature-btn:hover {
+            background: #229954;
+        }
+
+        .room-selector {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+            width: 90%;
+            max-width: 500px;
+        }
+
+        .modal h3 {
+            margin-top: 0;
+            color: #333;
+        }
+
+        .modal-field {
+            margin: 1rem 0;
+        }
+
+        .modal-field.hidden {
+            display: none;
+        }
+
+        .modal-field label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            color: #333;
+        }
+
+        .modal-field input,
+        .modal-field select,
+        .modal-field textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: inherit;
+        }
+
+        .modal-field textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+            justify-content: flex-end;
+        }
+
+        .modal-buttons button {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: background 0.3s ease;
+        }
+
+        .modal-buttons .save-btn {
+            background: #4a90e2;
+            color: white;
+        }
+
+        .modal-buttons .save-btn:hover {
+            background: #357abd;
+        }
+
+        .modal-buttons .cancel-btn {
+            background: #ddd;
+            color: #333;
+        }
+
+        .modal-buttons .cancel-btn:hover {
+            background: #ccc;
+        }
+    </style>
+</head>
+<body>
+    <header class="site-header">
+        <h1>🗺️ Dungeon Library</h1>
+        <p>Explore and manage D&D dungeons</p>
+    </header>
+
+    <div class="dungeons-container">
+        <!-- List View -->
+        <div id="listView">
+            <h2>Available Dungeons</h2>
+            <div id="dungeonList" class="dungeon-list">
+                <div class="loading">Loading dungeons...</div>
+            </div>
+
+            <!-- Upload Section -->
+            <div style="margin: 2rem 0; padding: 1.5rem; background: #f5f5f5; border-radius: 8px;">
+                <h3>Upload New Dungeon</h3>
+                <form id="uploadForm" enctype="multipart/form-data">
+                    <input type="file" id="dungeonFile" accept=".html" required style="padding: 0.5rem; margin: 0.5rem 0;">
+                    <button type="submit" class="btn" style="background: #27ae60; padding: 0.75rem 1.5rem; border: none; color: white; border-radius: 4px; cursor: pointer;">
+                        Upload Dungeon
+                    </button>
+                </form>
+                <div id="uploadStatus" style="margin-top: 1rem; display: none;"></div>
+            </div>
+        </div>
+
+        <!-- Dungeon Viewer Main Layout -->
+        <div id="viewerView" class="dungeon-viewer-layout">
+            <!-- Fixed Left Panel: Map and Map Details -->
+            <div id="mapPanel" class="map-panel">
+                <div id="resizeHandle" class="resize-handle"></div>
+                <div id="mapDisplay" class="map-display"></div>
+                <div id="mapDetailsDisplay" class="map-details-display"></div>
+            </div>
+
+            <!-- Right Panel: Controls and Scrollable Room Details -->
+            <div class="dungeon-viewer-right">
+                <div class="viewer-controls">
+                    <button class="back-btn" onclick="showListView()">← Back to List</button>
+                    <h3>Rooms</h3>
+                    <select id="roomSelector" class="room-selector" onchange="displaySelectedRoom()">
+                        <option value="">Loading...</option>
+                    </select>
+                    <button class="add-feature-btn" onclick="openAddFeatureModal()">➕ Add Feature</button>
+                </div>
+
+                <div class="dungeon-content" style="overflow-y: auto;">
+                    <div id="roomDetailsDisplay">
+                        <div class="loading">Loading dungeon...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Feature Modal -->
+        <div id="featureModal" class="modal">
+            <div class="modal-content">
+                <h3>Add New Feature to Room</h3>
+                <div class="modal-field">
+                    <label>Feature Type:</label>
+                    <select id="featureType" onchange="updateFeatureFields()">
+                        <option value="feature">Feature</option>
+                        <option value="monster">Monster</option>
+                        <option value="door">Door</option>
+                        <option value="trap">Trap</option>
+                        <option value="trick">Trick</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div class="modal-field">
+                    <label>Title:</label>
+                    <input type="text" id="featureTitle" placeholder="e.g., Treasure Chest" required>
+                </div>
+                <div class="modal-field">
+                    <label>Description:</label>
+                    <textarea id="featureContent" placeholder="Describe this feature..."></textarea>
+                </div>
+                <div class="modal-field field-monster">
+                    <label>Count:</label>
+                    <input type="number" id="featureCount" value="1" min="1">
+                </div>
+                <div class="modal-field field-door">
+                    <label>Leads to Room #:</label>
+                    <input type="number" id="featureLeadsTo" min="1">
+                </div>
+                <div class="modal-buttons">
+                    <button class="cancel-btn" onclick="closeAddFeatureModal()">Cancel</button>
+                    <button class="save-btn" onclick="saveNewFeature()">Save Feature</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentDungeon = null;
+        let dungeons = [];
+
+        // Initialize page based on URL hash
+        let isResizing = false;
+
+        // Initialize resize handle
+        const resizeHandle = document.getElementById('resizeHandle');
+        const layout = document.getElementById('viewerView');
+        const mapPanel = document.getElementById('mapPanel');
+
+        resizeHandle.addEventListener('mousedown', () => {
+            isResizing = true;
+            document.body.style.userSelect = 'none';
+            document.body.style.cursor = 'col-resize';
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isResizing) return;
+
+            const newWidth = e.clientX;
+            const minWidth = 250;
+            const maxWidth = window.innerWidth * 0.7;
+
+            if (newWidth > minWidth && newWidth < maxWidth) {
+                layout.style.gridTemplateColumns = `${newWidth}px 1fr`;
+                // Store preference
+                localStorage.setItem('dungeonMapPanelWidth', newWidth);
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            isResizing = false;
+            document.body.style.userSelect = '';
+            document.body.style.cursor = '';
+        });
+
+        // Load saved width preference
+        const savedWidth = localStorage.getItem('dungeonMapPanelWidth');
+        if (savedWidth) {
+            layout.style.gridTemplateColumns = `${savedWidth}px 1fr`;
+        }
+
+        function initPage() {
+            loadDungeonsList();
+            
+            // Check if a dungeon ID is in the URL hash
+            const hash = window.location.hash.slice(1); // Remove # prefix
+            if (hash.startsWith('dungeon/')) {
+                const dungeonId = parseInt(hash.split('/')[1]);
+                if (!isNaN(dungeonId)) {
+                    // Load this dungeon directly
+                    viewDungeon(dungeonId);
+                    return;
+                }
+            }
+        }
+
+        // Listen for hash changes (back/forward buttons)
+        window.addEventListener('hashchange', () => {
+            const hash = window.location.hash.slice(1);
+            if (hash.startsWith('dungeon/')) {
+                const dungeonId = parseInt(hash.split('/')[1]);
+                if (!isNaN(dungeonId)) {
+                    viewDungeon(dungeonId);
+                }
+            } else {
+                showListView();
+            }
+        });
+
+        // Call init when page loads
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initPage);
+        } else {
+            initPage();
+        }
+
+        function loadDungeonsList() {
+            console.log('Loading dungeons...');
+            fetch('/api/dungeons')
+                .then(res => {
+                    console.log('Response:', res.status);
+                    return res.json();
+                })
+                .then(data => {
+                    console.log('Dungeons loaded:', data);
+                    dungeons = data;
+                    displayDungeonsList();
+                })
+                .catch(err => {
+                    console.error('Error loading dungeons:', err);
+                    document.getElementById('dungeonList').innerHTML = 
+                        '<div class="error-message">Error loading dungeons: ' + err.message + '</div>';
+                });
+        }
+
+        function displayDungeonsList() {
+            const container = document.getElementById('dungeonList');
+            
+            if (dungeons.length === 0) {
+                container.innerHTML = '<div class="empty-state">No dungeons yet. Upload one to get started!</div>';
+                return;
+            }
+
+            container.innerHTML = dungeons.map(dungeon => `
+                <div class="dungeon-card">
+                    <h3>${escapeHtml(dungeon.title)}</h3>
+                    <p><strong>Created:</strong> ${new Date(dungeon.created_at).toLocaleDateString()}</p>
+                    <div class="meta">
+                        <button class="btn" onclick="viewDungeon(${dungeon.id})">View</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function viewDungeon(dungeonId) {
+            // Set URL hash to preserve state on refresh
+            window.location.hash = `dungeon/${dungeonId}`;
+            
+            fetch(`/api/dungeons/${dungeonId}`)
+                .then(res => res.json())
+                .then(data => {
+                    currentDungeon = data;
+                    showViewerView();
+                    displayDungeonViewer();
+                })
+                .catch(err => {
+                    console.error('Error loading dungeon:', err);
+                    alert('Error loading dungeon: ' + err.message);
+                });
+        }
+
+        function showViewerView() {
+            document.getElementById('listView').style.display = 'none';
+            document.getElementById('viewerView').classList.add('active');
+        }
+
+        function showListView() {
+            window.location.hash = '';
+            document.getElementById('listView').style.display = 'block';
+            document.getElementById('viewerView').classList.remove('active');
+            currentDungeon = null;
+        }
+
+        function displayDungeonViewer() {
+            if (!currentDungeon) return;
+
+            const data = currentDungeon.parsed_json;
+            const rooms = data.rooms || [];
+
+            // Populate room selector
+            const selector = document.getElementById('roomSelector');
+            selector.innerHTML = rooms.map((room, idx) => 
+                `<option value="${idx}">${room.title}</option>`
+            ).join('');
+
+            // Display first room
+            if (rooms.length > 0) {
+                displayRoom(0);
+            }
+        }
+
+        function displaySelectedRoom() {
+            const selector = document.getElementById('roomSelector');
+            const roomIdx = parseInt(selector.value);
+            displayRoom(roomIdx);
+        }
+
+        function goToRoom(roomId) {
+            const data = currentDungeon.parsed_json;
+            const rooms = data.rooms || [];
+            
+            // The displayed room numbers are 1-indexed (Room #1, Room #2, etc.)
+            // but array indices are 0-indexed, so subtract 1
+            const roomIdx = roomId - 1;
+            
+            // Validate the index is within bounds
+            if (roomIdx >= 0 && roomIdx < rooms.length) {
+                // Update selector and display
+                document.getElementById('roomSelector').value = roomIdx;
+                displayRoom(roomIdx);
+            } else {
+                console.warn(`Room #${roomId} not found`);
+            }
+        }
+
+        function displayRoom(roomIdx) {
+            const data = currentDungeon.parsed_json;
+            const rooms = data.rooms || [];
+            const room = rooms[roomIdx];
+
+            if (!room) return;
+
+            let mapContainerHtml = '';
+            let mapDetailsHtml = '';
+            let roomDetailsHtml = '';
+
+            // Section 1: Map Container
+            if (data.map_image) {
+                mapContainerHtml += '<div class="map-container">';
+                mapContainerHtml += `<img src="${data.map_image}" alt="Dungeon Map">`;
+                mapContainerHtml += '</div>';
+            }
+
+            // Section 2: Map Details (dungeon info - only on first room)
+            if (roomIdx === 0 && data.general_info) {
+                const info = data.general_info;
+                mapDetailsHtml += '<div class="general-info">';
+                mapDetailsHtml += `<h2>${escapeHtml(info.title)}</h2>`;
+                if (info.size) mapDetailsHtml += `<div class="info-row"><div class="info-label">Size:</div><div class="info-value">${escapeHtml(info.size)}</div></div>`;
+                if (info.walls) mapDetailsHtml += `<div class="info-row"><div class="info-label">Walls:</div><div class="info-value">${escapeHtml(info.walls)}</div></div>`;
+                if (info.floor) mapDetailsHtml += `<div class="info-row"><div class="info-label">Floor:</div><div class="info-value">${escapeHtml(info.floor)}</div></div>`;
+                if (info.temperature) mapDetailsHtml += `<div class="info-row"><div class="info-label">Temperature:</div><div class="info-value">${escapeHtml(info.temperature)}</div></div>`;
+                if (info.illumination) mapDetailsHtml += `<div class="info-row"><div class="info-label">Illumination:</div><div class="info-value">${escapeHtml(info.illumination)}</div></div>`;
+                mapDetailsHtml += '</div>';
+            }
+
+            // Section 3: Room Details
+            roomDetailsHtml += `<div class="room-content">`;
+            roomDetailsHtml += `<div class="room-title">${escapeHtml(room.title)}</div>`;
+
+            if (!room.entries || room.entries.length === 0) {
+                roomDetailsHtml += '<p style="color: #999;">This room is empty.</p>';
+            } else {
+                // Group entries by type
+                const grouped = {
+                    door: [],
+                    monster: [],
+                    feature: [],
+                    trap: [],
+                    trick: [],
+                    other: [],
+                    empty: []
+                };
+
+                room.entries.forEach(entry => {
+                    if (grouped.hasOwnProperty(entry.entry_type)) {
+                        grouped[entry.entry_type].push(entry);
+                    } else {
+                        grouped.other.push(entry);
+                    }
+                });
+
+                // Display grouped entries
+                const typeLabels = {
+                    door: '🚪 Doors',
+                    monster: '👹 Creatures',
+                    feature: '✨ Features',
+                    trap: '⚠️ Traps',
+                    trick: '🎭 Tricks',
+                    other: '❓ Other'
+                };
+
+                Object.entries(grouped).forEach(([type, entries]) => {
+                    if (entries.length === 0) return;
+
+                    roomDetailsHtml += `<div class="entry-group">`;
+                    roomDetailsHtml += `<div class="entry-group-title">${typeLabels[type] || type}</div>`;
+
+                    // For monsters, deduplicate by title (show each creature type once)
+                    let entriesToDisplay = entries;
+                    if (type === 'monster') {
+                        const seenMonsters = new Set();
+                        entriesToDisplay = entries.filter(entry => {
+                            if (seenMonsters.has(entry.title)) {
+                                return false;
+                            }
+                            seenMonsters.add(entry.title);
+                            return true;
+                        });
+                    }
+
+                    entriesToDisplay.forEach(entry => {
+                        roomDetailsHtml += `<div class="entry ${entry.entry_type}">`;
+                        roomDetailsHtml += `<div class="entry-title">${escapeHtml(entry.title)}`;
+                        
+                        if (entry.count) {
+                            roomDetailsHtml += ` <span style="color: #999;">(${entry.count}x)</span>`;
+                        }
+                        if (entry.leads_to !== null && entry.leads_to !== undefined) {
+                            roomDetailsHtml += ` → <a href="#" onclick="goToRoom(${entry.leads_to}); return false;" class="room-link">Room #${entry.leads_to}</a>`;
+                        }
+                        
+                        roomDetailsHtml += `</div>`;
+
+                        if (entry.content) {
+                            roomDetailsHtml += `<div class="entry-content">${escapeHtml(entry.content)}</div>`;
+                        }
+
+                        if (entry.traps && entry.traps.length > 0) {
+                            roomDetailsHtml += `<div class="entry-meta">Trapped: ${escapeHtml(entry.traps.join(', '))}</div>`;
+                        }
+
+                        roomDetailsHtml += `</div>`;
+                    });
+
+                    roomDetailsHtml += `</div>`;
+                });
+            }
+
+            roomDetailsHtml += `</div>`;
+
+            // Populate the three separate sections
+            document.getElementById('mapDisplay').innerHTML = mapContainerHtml;
+            document.getElementById('mapDetailsDisplay').innerHTML = mapDetailsHtml;
+            document.getElementById('roomDetailsDisplay').innerHTML = roomDetailsHtml;
+        }
+
+        // Handle file upload
+        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const file = document.getElementById('dungeonFile').files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const statusDiv = document.getElementById('uploadStatus');
+            statusDiv.style.display = 'block';
+            statusDiv.innerHTML = '<div class="loading">Uploading and parsing...</div>';
+
+            try {
+                const response = await fetch('/api/dungeons/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    statusDiv.innerHTML = `
+                        <div style="background: #d4edda; color: #155724; padding: 1rem; border-radius: 4px; border: 1px solid #c3e6cb;">
+                            ✓ Successfully uploaded: <strong>${escapeHtml(result.title)}</strong>
+                        </div>
+                    `;
+                    document.getElementById('dungeonFile').value = '';
+                    setTimeout(() => {
+                        loadDungeonsList();
+                    }, 1500);
+                } else {
+                    statusDiv.innerHTML = `
+                        <div class="error-message">
+                            Error: ${escapeHtml(result.error || 'Unknown error')}
+                        </div>
+                    `;
+                }
+            } catch (err) {
+                statusDiv.innerHTML = `
+                    <div class="error-message">
+                        Error: ${escapeHtml(err.message)}
+                    </div>
+                `;
+            }
+        });
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Add Feature Modal Functions
+        function openAddFeatureModal() {
+            if (!currentDungeon) return;
+            document.getElementById('featureModal').classList.add('active');
+            document.getElementById('featureType').value = 'feature';
+            updateFeatureFields();
+            document.getElementById('featureTitle').focus();
+        }
+
+        function closeAddFeatureModal() {
+            document.getElementById('featureModal').classList.remove('active');
+            // Reset form
+            document.getElementById('featureType').value = 'feature';
+            document.getElementById('featureTitle').value = '';
+            document.getElementById('featureContent').value = '';
+            document.getElementById('featureCount').value = '1';
+            document.getElementById('featureLeadsTo').value = '';
+            updateFeatureFields();
+        }
+
+        function updateFeatureFields() {
+            const featureType = document.getElementById('featureType').value;
+            
+            // Hide all conditional fields
+            document.querySelectorAll('.modal-field.field-monster, .modal-field.field-door').forEach(field => {
+                field.classList.add('hidden');
+            });
+            
+            // Show fields based on type
+            if (featureType === 'monster') {
+                document.querySelector('.modal-field.field-monster').classList.remove('hidden');
+            } else if (featureType === 'door') {
+                document.querySelector('.modal-field.field-door').classList.remove('hidden');
+            }
+        }
+
+        function saveNewFeature() {
+            const selector = document.getElementById('roomSelector');
+            const roomIdx = parseInt(selector.value);
+            
+            if (isNaN(roomIdx)) {
+                alert('Please select a room first');
+                return;
+            }
+
+            const title = document.getElementById('featureTitle').value.trim();
+            const content = document.getElementById('featureContent').value.trim();
+            const type = document.getElementById('featureType').value;
+            const count = parseInt(document.getElementById('featureCount').value) || 1;
+            const leadsTo = document.getElementById('featureLeadsTo').value ? parseInt(document.getElementById('featureLeadsTo').value) : null;
+
+            if (!title) {
+                alert('Please enter a title');
+                return;
+            }
+
+            // Create new entry
+            const newEntry = {
+                entry_type: type,
+                title: title,
+                content: content,
+                count: type === 'monster' ? count : null,
+                creature_index: type === 'monster' ? 1 : null,
+                creature_total: type === 'monster' ? count : null,
+                leads_to: leadsTo,
+                traps: []
+            };
+
+            // If monster with count > 1, create multiple entries
+            if (type === 'monster' && count > 1) {
+                const data = currentDungeon.parsed_json;
+                const room = data.rooms[roomIdx];
+                
+                // Add count entries for each creature
+                for (let i = 1; i <= count; i++) {
+                    room.entries.push({
+                        entry_type: type,
+                        title: title,
+                        content: content,
+                        count: count,
+                        creature_index: i,
+                        creature_total: count,
+                        leads_to: leadsTo,
+                        traps: []
+                    });
+                }
+            } else {
+                const data = currentDungeon.parsed_json;
+                const room = data.rooms[roomIdx];
+                room.entries.push(newEntry);
+            }
+
+            // Refresh display and save
+            displayRoom(roomIdx);
+            saveDungeonChanges();
+            closeAddFeatureModal();
+        }
+
+        function saveDungeonChanges() {
+            if (!currentDungeon) return;
+
+            const dungeonId = currentDungeon.id;
+            const updatedJson = JSON.stringify(currentDungeon.parsed_json);
+
+            // Save to database
+            fetch(`/api/dungeons/${dungeonId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ parsed_json: updatedJson })
+            })
+            .then(res => res.json())
+            .then(data => {
+                console.log('✓ Changes saved');
+            })
+            .catch(err => {
+                console.error('Error saving changes:', err);
+                alert('Error saving changes: ' + err.message);
+            });
+        }
+
+        // Close modal when clicking outside of it
+        document.addEventListener('click', (e) => {
+            const modal = document.getElementById('featureModal');
+            if (e.target === modal) {
+                closeAddFeatureModal();
+            }
+        });
+    </script>
+</body>
+</html>

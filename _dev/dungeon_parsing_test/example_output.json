@@ -1,0 +1,66 @@
+{
+  "general_info": {
+    "title": "Example Dungeon",
+    "size": "40 ft. x 40 ft.",
+    "walls": "Stone, 10 ft. high",
+    "floor": "Worked stone",
+    "temperature": "50F",
+    "illumination": "Unlit"
+  },
+  "map_image": "data:image/png;base64,iVBORw0K... (truncated for readability)",
+  "map_image_length": 45821,
+  "rooms": [
+    {
+      "room_id": 0,
+      "title": "Room #1",
+      "entries": [
+        {
+          "entry_type": "monster",
+          "title": "Goblin",
+          "content": "2 x Goblin\n\nThese small humanoids...",
+          "count": 2,
+          "creature_index": 1,
+          "creature_total": 2
+        },
+        {
+          "entry_type": "monster",
+          "title": "Goblin",
+          "content": "2 x Goblin\n\nThese small humanoids...",
+          "count": 2,
+          "creature_index": 2,
+          "creature_total": 2
+        },
+        {
+          "entry_type": "feature",
+          "title": "Room Features",
+          "content": "Stone pillars support the ceiling. A fountain in the corner.",
+          "count": null,
+          "creature_index": null,
+          "creature_total": null
+        },
+        {
+          "entry_type": "trap",
+          "title": "Trap",
+          "content": "Pressure plate trap on the floor",
+          "count": null,
+          "creature_index": null,
+          "creature_total": null
+        }
+      ]
+    },
+    {
+      "room_id": 1,
+      "title": "Room #2",
+      "entries": [
+        {
+          "entry_type": "monster",
+          "title": "Ogre",
+          "content": "1 x Ogre\n\nA large, brutish creature...",
+          "count": 1,
+          "creature_index": 1,
+          "creature_total": 1
+        }
+      ]
+    }
+  ]
+}
