@@ -353,7 +353,7 @@ function reconstructDatabaseRoll(rollObj) {
   let rollPart = rollObj.roll;
   if (rollObj.mod !== null && rollObj.mod !== undefined && rollObj.mod !== 0) {
     const sign = rollObj.mod > 0 ? '+' : '';
-    rollPart = `${rollObj.roll}${sign}${rollObj.mod}`;
+    rollPart = `${rollObj.roll} ${sign} ${rollObj.mod}`;
   }
   
   let parts = [rollPart];
@@ -530,23 +530,14 @@ function createCardElement(data, onHideCallback) {
   }
   body.appendChild(explanation);
   
-  // Add centered stats line for creatures (HP / AC)
-  if (data.stats_line) {
-    const statsLine = document.createElement('p');
-    statsLine.style.textAlign = 'center';
-    statsLine.style.fontSize = '7pt';
-    statsLine.style.fontWeight = '700';
-    statsLine.style.margin = '0 0 3px 0';
-    statsLine.style.lineHeight = '1.2';
-    statsLine.textContent = data.stats_line;
-    body.appendChild(statsLine);
-  }
-  
   const detailsDiv = document.createElement('div');
   detailsDiv.className = 'spell-details';
   
   // Handle both object and array detail formats
   let detailsToRender = [];
+  let savesGridDetail = null;  // Extract saves_grid to render last
+  let statsGridDetail = null;  // Extract stats_grid to render above saves
+  
   if (data.details) {
     if (typeof data.details === 'string') {
       // Plain text details (from skills) - render directly
@@ -580,6 +571,19 @@ function createCardElement(data, onHideCallback) {
     }
   }
   
+  // Extract stats_grid and saves_grid from detailsToRender to render them specially
+  detailsToRender = detailsToRender.filter(detail => {
+    if (detail.type === 'stats_grid') {
+      statsGridDetail = detail;
+      return false;  // Remove from array
+    }
+    if (detail.type === 'saves_grid') {
+      savesGridDetail = detail;
+      return false;  // Remove from array
+    }
+    return true;
+  });
+  
   detailsToRender.forEach(detail => {
     const detailRow = document.createElement('div');
     detailRow.style.display = 'block';
@@ -608,7 +612,18 @@ function createCardElement(data, onHideCallback) {
     let displayContent = detail.content;
     let isHtmlContent = false;
     
-    if (typeof detail.content === 'object' && detail.content !== null && !Array.isArray(detail.content)) {
+    if (Array.isArray(detail.content)) {
+      // Handle arrays of roll objects (e.g., multiple damage rolls)
+      const reconstructedRolls = detail.content.map(roll => {
+        if (typeof roll === 'object' && roll !== null && 
+            (roll.roll !== undefined || roll.numerics !== undefined || 
+             roll.types !== undefined || roll.save !== undefined)) {
+          return reconstructDatabaseRoll(roll);
+        }
+        return String(roll);
+      });
+      displayContent = reconstructedRolls.join(' or ');
+    } else if (typeof detail.content === 'object' && detail.content !== null && !Array.isArray(detail.content)) {
       // Check if it's a creature attack {name, to_hit, damage}
       if (detail.content.to_hit !== undefined || detail.content.damage !== undefined) {
         displayContent = reconstructCreatureAttack(detail.content);
@@ -670,6 +685,92 @@ function createCardElement(data, onHideCallback) {
     
     detailsDiv.appendChild(detailRow);
   });
+  
+  // Render stats_grid (HP/AC) before details but after regular details
+  if (statsGridDetail && Array.isArray(statsGridDetail.content)) {
+    const gridContainer = document.createElement('div');
+    gridContainer.style.display = 'grid';
+    gridContainer.style.gridTemplateColumns = statsGridDetail.content.length === 1 ? '1fr' : 'repeat(2, 1fr)';
+    gridContainer.style.gap = '2px';
+    gridContainer.style.marginBottom = '3px';
+    gridContainer.style.lineHeight = '1.2';
+    
+    statsGridDetail.content.forEach(stat => {
+      const statCell = document.createElement('div');
+      statCell.style.display = 'flex';
+      statCell.style.flexDirection = 'row';
+      statCell.style.alignItems = 'center';
+      statCell.style.justifyContent = 'center';
+      statCell.style.backgroundColor = stat.color || '#ccc';
+      statCell.style.color = '#fff';
+      statCell.style.padding = '1px 2px';
+      statCell.style.borderRadius = '2px';
+      statCell.style.fontSize = '7pt';
+      statCell.style.fontWeight = '600';
+      statCell.style.minHeight = '12px';
+      statCell.style.gap = '1px';
+      
+      // Add emoji
+      const emojiSpan = document.createElement('span');
+      emojiSpan.textContent = stat.emoji;
+      emojiSpan.style.fontSize = '9pt';
+      statCell.appendChild(emojiSpan);
+      
+      // Add value
+      const valSpan = document.createElement('span');
+      valSpan.textContent = stat.value;
+      valSpan.style.fontSize = '8pt';
+      valSpan.style.fontWeight = '700';
+      statCell.appendChild(valSpan);
+      
+      gridContainer.appendChild(statCell);
+    });
+    
+    detailsDiv.appendChild(gridContainer);
+  }
+  
+  // Render saves_grid after all other details (anchors it above footer)
+  if (savesGridDetail && Array.isArray(savesGridDetail.content)) {
+    const gridContainer = document.createElement('div');
+    gridContainer.style.display = 'grid';
+    gridContainer.style.gridTemplateColumns = '1fr 1fr 1fr';
+    gridContainer.style.gap = '2px';
+    gridContainer.style.marginBottom = '3px';
+    gridContainer.style.lineHeight = '1.2';
+    
+    savesGridDetail.content.forEach(save => {
+      const saveCell = document.createElement('div');
+      saveCell.style.display = 'flex';
+      saveCell.style.flexDirection = 'row';
+      saveCell.style.alignItems = 'center';
+      saveCell.style.justifyContent = 'center';
+      saveCell.style.backgroundColor = save.color || '#ccc';
+      saveCell.style.color = '#fff';
+      saveCell.style.padding = '1px 2px';
+      saveCell.style.borderRadius = '2px';
+      saveCell.style.fontSize = '7pt';
+      saveCell.style.fontWeight = '600';
+      saveCell.style.minHeight = '12px';
+      saveCell.style.gap = '1px';
+      
+      // Add emoji
+      const emojiSpan = document.createElement('span');
+      emojiSpan.textContent = save.emoji;
+      emojiSpan.style.fontSize = '8pt';
+      saveCell.appendChild(emojiSpan);
+      
+      // Add modifier
+      const modSpan = document.createElement('span');
+      const sign = save.modifier >= 0 ? '+' : '';
+      modSpan.textContent = sign + save.modifier;
+      saveCell.appendChild(modSpan);
+      
+      gridContainer.appendChild(saveCell);
+    });
+    
+    detailsDiv.appendChild(gridContainer);
+  }
+  
   body.appendChild(detailsDiv);
   
   // Add friend/enemy coloring box for NPCs
@@ -709,10 +810,13 @@ function createCardElement(data, onHideCallback) {
   
   body.appendChild(detailsDiv);
   
-  // Add draw box
-  const drawBox = document.createElement('div');
-  drawBox.className = 'draw-box';
-  body.appendChild(drawBox);
+  // Add draw box (skip for creatures - they have saving throws instead)
+  if (!data.footer_info) {
+    // Only add draw box for cards that don't have footer_info (creatures have this)
+    const drawBox = document.createElement('div');
+    drawBox.className = 'draw-box';
+    body.appendChild(drawBox);
+  }
   
   card.appendChild(body);
   

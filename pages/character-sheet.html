@@ -167,6 +167,16 @@
     pointer-events: none;
   }
 
+  .stat-value {
+    position: relative;
+    z-index: 1;
+    font-size: 16pt;
+    font-weight: 800;
+    color: var(--ink);
+    display: block;
+    min-height: 1.2em;
+  }
+
   /* Color stat circles by header color */
   .row-top > .circle-stat:nth-child(3) .stat-circle { border-color: var(--green); }
   .row-top > .circle-stat:nth-child(4) .stat-circle { border-color: var(--green); }
@@ -196,6 +206,28 @@
     font-weight: 700;
     color: var(--ink);
     line-height: 1;
+    outline: none;
+    cursor: text;
+  }
+
+  /* ══ EDITABLE FIELDS ══ */
+  .editable {
+    cursor: text;
+    outline: none;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .editable:focus {
+    background: rgba(255, 255, 255, 0.6) !important;
+    border-color: var(--gold) !important;
+    box-shadow: 0 0 3px rgba(201, 169, 10, 0.4) !important;
+  }
+
+  @media print {
+    .editable:focus {
+      background: transparent !important;
+      box-shadow: none !important;
+      border-color: inherit !important;
+    }
   }
 
   /* ══ ROW 3: Ability Modifiers ══ */
@@ -365,6 +397,13 @@
     flex-shrink: 0;
     position: relative;
     overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12pt;
+    font-weight: 700;
+    color: var(--ink);
+    outline: none;
   }
   .skill-name {
     font-size: 7.5pt;
@@ -577,7 +616,117 @@
   document.addEventListener('DOMContentLoaded', function() {
     const circles = document.querySelectorAll('.spell-circle');
     
-    // Load saved spell circle states from localStorage
+    // ─── Global data persistence ───
+    const STORAGE_KEY = 'characterSheetData';
+    
+    function loadCharacterData() {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      return saved ? JSON.parse(saved) : {};
+    }
+    
+    function saveCharacterData(data) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }
+    
+    let characterData = loadCharacterData();
+    
+    // ─── Setup editable field ───
+    function setupEditableField(selector, fieldName) {
+      const element = document.querySelector(selector);
+      if (!element) return;
+      
+      element.setAttribute('contenteditable', 'true');
+      element.classList.add('editable');
+      
+      // Load saved value
+      if (characterData[fieldName]) {
+        element.textContent = characterData[fieldName];
+      }
+      
+      // Prevent rich text formatting
+      element.addEventListener('paste', (e) => {
+        e.preventDefault();
+        const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+        document.execCommand('insertText', false, text);
+      });
+      
+      // Save on blur
+      element.addEventListener('blur', () => {
+        const value = element.textContent.trim();
+        characterData[fieldName] = value;
+        saveCharacterData(characterData);
+      });
+      
+      // Handle Enter/Escape
+      element.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          element.blur();
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          element.textContent = characterData[fieldName] || '';
+          element.blur();
+        }
+      });
+    }
+    
+    // ─── Setup multiple editable fields ───
+    function setupEditableFields(selector, fieldPrefix) {
+      const elements = document.querySelectorAll(selector);
+      elements.forEach((element, index) => {
+        const fieldName = element.dataset.field ? fieldPrefix + '_' + element.dataset.field : fieldPrefix + '_' + index;
+        
+        element.setAttribute('contenteditable', 'true');
+        element.classList.add('editable');
+        
+        if (characterData[fieldName]) {
+          element.textContent = characterData[fieldName];
+        }
+        
+        element.addEventListener('paste', (e) => {
+          e.preventDefault();
+          const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+          document.execCommand('insertText', false, text);
+        });
+        
+        element.addEventListener('blur', () => {
+          const value = element.textContent.trim();
+          characterData[fieldName] = value;
+          saveCharacterData(characterData);
+        });
+        
+        element.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            element.blur();
+          } else if (e.key === 'Escape') {
+            e.preventDefault();
+            element.textContent = characterData[fieldName] || '';
+            element.blur();
+          }
+        });
+      });
+    }
+    
+    // ─── Setup all editable fields ───
+    setupEditableField('.row-top > div:first-child .wline', 'heroName');
+    setupEditableField('.shield-write span', 'armorClass');
+    setupEditableField('.hp-number-box', 'hitPoints');
+    setupEditableField('.prepared-write-box', 'preparedSpells');
+    
+    // Stat circles with data-field attribute
+    setupEditableFields('.stat-value', 'stat');
+    
+    // Ability Modifiers
+    setupEditableFields('.mod-val', 'mod');
+    
+    // Saving Throws
+    setupEditableFields('.save-val', 'save');
+    
+    // Skills
+    setupEditableFields('.skill-val', 'skill');
+    
+    // ─── Spell circles (existing functionality) ───
     const savedStates = localStorage.getItem('spellCircleStates');
     if (savedStates) {
       const states = JSON.parse(savedStates);
@@ -589,7 +738,6 @@
       });
     }
     
-    // Add click handlers for interactive spell circles
     circles.forEach((circle, index) => {
       circle.addEventListener('click', function(e) {
         e.preventDefault();
@@ -601,13 +749,12 @@
           this.style.background = 'var(--purple)';
           this.dataset.colored = 'true';
         }
-        // Save state to localStorage
         const allStates = Array.from(circles).map(c => c.dataset.colored === 'true');
         localStorage.setItem('spellCircleStates', JSON.stringify(allStates));
       });
     });
     
-    // Add keyboard shortcut for printing (Ctrl+P)
+    // Keyboard shortcut for printing
     document.addEventListener('keydown', function(e) {
       if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
         e.preventDefault();
@@ -649,22 +796,22 @@
 
     <div class="circle-stat">
       <span class="pill" style="background:var(--green);">Speed</span>
-      <div class="stat-circle"><div class="stat-emoji">🏃</div></div>
+      <div class="stat-circle"><div class="stat-emoji">🏃</div><span class="stat-value editable" data-field="speed"></span></div>
     </div>
 
     <div class="circle-stat">
       <span class="pill" style="background:var(--green);">Initiative</span>
-      <div class="stat-circle"><div class="stat-emoji">⚡</div></div>
+      <div class="stat-circle"><div class="stat-emoji">⚡</div><span class="stat-value editable" data-field="initiative"></span></div>
     </div>
 
     <div class="circle-stat">
       <span class="pill" style="background:var(--blue);">🪄 Spell Attack Modifier</span>
-      <div class="stat-circle"><div class="stat-emoji">🪄</div></div>
+      <div class="stat-circle"><div class="stat-emoji">🪄</div><span class="stat-value editable" data-field="spellAttack"></span></div>
     </div>
 
     <div class="circle-stat">
       <span class="pill" style="background:var(--purple);">Spell DC</span>
-      <div class="stat-circle"><div class="stat-emoji">📖</div></div>
+      <div class="stat-circle"><div class="stat-emoji">📖</div><span class="stat-value editable" data-field="spellDC"></span></div>
     </div>
 
   </div>
@@ -680,23 +827,23 @@
   <!-- ROW 3: Ability Modifiers -->
   <span class="pill" style="background:var(--blue);">💪 Ability Modifiers</span>
   <div class="row-mods">
-    <div class="mod-box"><div class="mod-emoji">💪</div><span class="mod-name">STR</span><span class="mod-val"></span></div>
-    <div class="mod-box"><div class="mod-emoji">⚡</div><span class="mod-name">DEX</span><span class="mod-val"></span></div>
-    <div class="mod-box"><div class="mod-emoji">❤️</div><span class="mod-name">CON</span><span class="mod-val"></span></div>
-    <div class="mod-box"><div class="mod-emoji">🧠</div><span class="mod-name">INT</span><span class="mod-val"></span></div>
-    <div class="mod-box"><div class="mod-emoji">👁️</div><span class="mod-name">WIS</span><span class="mod-val"></span></div>
-    <div class="mod-box"><div class="mod-emoji">✨</div><span class="mod-name">CHA</span><span class="mod-val"></span></div>
+    <div class="mod-box"><div class="mod-emoji">💪</div><span class="mod-name">STR</span><span class="mod-val" data-field="str"></span></div>
+    <div class="mod-box"><div class="mod-emoji">⚡</div><span class="mod-name">DEX</span><span class="mod-val" data-field="dex"></span></div>
+    <div class="mod-box"><div class="mod-emoji">❤️</div><span class="mod-name">CON</span><span class="mod-val" data-field="con"></span></div>
+    <div class="mod-box"><div class="mod-emoji">🧠</div><span class="mod-name">INT</span><span class="mod-val" data-field="int"></span></div>
+    <div class="mod-box"><div class="mod-emoji">👁️</div><span class="mod-name">WIS</span><span class="mod-val" data-field="wis"></span></div>
+    <div class="mod-box"><div class="mod-emoji">✨</div><span class="mod-name">CHA</span><span class="mod-val" data-field="cha"></span></div>
   </div>
 
   <!-- ROW 4: Saving Throws -->
   <span class="pill" style="background:var(--orange);">🎲 Saving Throws</span>
   <div class="row-saves">
-    <div class="save-box"><div class="save-emoji">💪</div><span class="save-name">STR</span><span class="save-val"></span></div>
-    <div class="save-box"><div class="save-emoji">⚡</div><span class="save-name">DEX</span><span class="save-val"></span></div>
-    <div class="save-box"><div class="save-emoji">❤️</div><span class="save-name">CON</span><span class="save-val"></span></div>
-    <div class="save-box"><div class="save-emoji">🧠</div><span class="save-name">INT</span><span class="save-val"></span></div>
-    <div class="save-box"><div class="save-emoji">👁️</div><span class="save-name">WIS</span><span class="save-val"></span></div>
-    <div class="save-box"><div class="save-emoji">✨</div><span class="save-name">CHA</span><span class="save-val"></span></div>
+    <div class="save-box"><div class="save-emoji">💪</div><span class="save-name">STR</span><span class="save-val" data-field="str"></span></div>
+    <div class="save-box"><div class="save-emoji">⚡</div><span class="save-name">DEX</span><span class="save-val" data-field="dex"></span></div>
+    <div class="save-box"><div class="save-emoji">❤️</div><span class="save-name">CON</span><span class="save-val" data-field="con"></span></div>
+    <div class="save-box"><div class="save-emoji">🧠</div><span class="save-name">INT</span><span class="save-val" data-field="int"></span></div>
+    <div class="save-box"><div class="save-emoji">👁️</div><span class="save-name">WIS</span><span class="save-val" data-field="wis"></span></div>
+    <div class="save-box"><div class="save-emoji">✨</div><span class="save-name">CHA</span><span class="save-val" data-field="cha"></span></div>
   </div>
 
   <!-- SPELL SLOTS + DRAWING AREA + CARD SLOT -->
@@ -818,24 +965,24 @@
   <!-- SKILLS SECTION - Full Width -->
   <span class="pill" style="background:var(--green);">🎯 Skills</span>
   <div class="wb skills-grid">
-    <div class="skill-row"><div class="skill-val"><div class="skill-emoji">🐕</div></div><span class="skill-name">Animal Handling</span></div>
-    <div class="skill-row"><div class="skill-val"><div class="skill-emoji">🔮</div></div><span class="skill-name">Arcana</span></div>
-    <div class="skill-row"><div class="skill-val"><div class="skill-emoji">🤸</div></div><span class="skill-name">Acrobatics</span></div>
-    <div class="skill-row"><div class="skill-val"><div class="skill-emoji">🏋️</div></div><span class="skill-name">Athletics</span></div>
-    <div class="skill-row"><div class="skill-val"><div class="skill-emoji">🎭</div></div><span class="skill-name">Deception</span></div>
-    <div class="skill-row"><div class="skill-val"><div class="skill-emoji">📜</div></div><span class="skill-name">History</span></div>
-    <div class="skill-row"><div class="skill-val"><div class="skill-emoji">🕵️</div></div><span class="skill-name">Insight</span></div>
-    <div class="skill-row"><div class="skill-val"><div class="skill-emoji">😠</div></div><span class="skill-name">Intimidation</span></div>
-    <div class="skill-row"><div class="skill-val"><div class="skill-emoji">🔍</div></div><span class="skill-name">Investigation</span></div>
-    <div class="skill-row"><div class="skill-val"><div class="skill-emoji">⚕️</div></div><span class="skill-name">Medicine</span></div>
-    <div class="skill-row"><div class="skill-val"><div class="skill-emoji">🌳</div></div><span class="skill-name">Nature</span></div>
-    <div class="skill-row"><div class="skill-val"><div class="skill-emoji">🔭</div></div><span class="skill-name">Perception</span></div>
-    <div class="skill-row"><div class="skill-val"><div class="skill-emoji">🎤</div></div><span class="skill-name">Performance</span></div>
-    <div class="skill-row"><div class="skill-val"><div class="skill-emoji">😊</div></div><span class="skill-name">Persuasion</span></div>
-    <div class="skill-row"><div class="skill-val"><div class="skill-emoji">⛪</div></div><span class="skill-name">Religion</span></div>
-    <div class="skill-row"><div class="skill-val"><div class="skill-emoji">🃏</div></div><span class="skill-name">Sleight of Hand</span></div>
-    <div class="skill-row"><div class="skill-val"><div class="skill-emoji">🥷</div></div><span class="skill-name">Stealth</span></div>
-    <div class="skill-row"><div class="skill-val"><div class="skill-emoji">🌿</div></div><span class="skill-name">Survival</span></div>
+    <div class="skill-row"><div class="skill-val" data-field="animal-handling"><div class="skill-emoji">🐕</div></div><span class="skill-name">Animal Handling</span></div>
+    <div class="skill-row"><div class="skill-val" data-field="arcana"><div class="skill-emoji">🔮</div></div><span class="skill-name">Arcana</span></div>
+    <div class="skill-row"><div class="skill-val" data-field="acrobatics"><div class="skill-emoji">🤸</div></div><span class="skill-name">Acrobatics</span></div>
+    <div class="skill-row"><div class="skill-val" data-field="athletics"><div class="skill-emoji">🏋️</div></div><span class="skill-name">Athletics</span></div>
+    <div class="skill-row"><div class="skill-val" data-field="deception"><div class="skill-emoji">🎭</div></div><span class="skill-name">Deception</span></div>
+    <div class="skill-row"><div class="skill-val" data-field="history"><div class="skill-emoji">📜</div></div><span class="skill-name">History</span></div>
+    <div class="skill-row"><div class="skill-val" data-field="insight"><div class="skill-emoji">🕵️</div></div><span class="skill-name">Insight</span></div>
+    <div class="skill-row"><div class="skill-val" data-field="intimidation"><div class="skill-emoji">😠</div></div><span class="skill-name">Intimidation</span></div>
+    <div class="skill-row"><div class="skill-val" data-field="investigation"><div class="skill-emoji">🔍</div></div><span class="skill-name">Investigation</span></div>
+    <div class="skill-row"><div class="skill-val" data-field="medicine"><div class="skill-emoji">⚕️</div></div><span class="skill-name">Medicine</span></div>
+    <div class="skill-row"><div class="skill-val" data-field="nature"><div class="skill-emoji">🌳</div></div><span class="skill-name">Nature</span></div>
+    <div class="skill-row"><div class="skill-val" data-field="perception"><div class="skill-emoji">🔭</div></div><span class="skill-name">Perception</span></div>
+    <div class="skill-row"><div class="skill-val" data-field="performance"><div class="skill-emoji">🎤</div></div><span class="skill-name">Performance</span></div>
+    <div class="skill-row"><div class="skill-val" data-field="persuasion"><div class="skill-emoji">😊</div></div><span class="skill-name">Persuasion</span></div>
+    <div class="skill-row"><div class="skill-val" data-field="religion"><div class="skill-emoji">⛪</div></div><span class="skill-name">Religion</span></div>
+    <div class="skill-row"><div class="skill-val" data-field="sleight-hand"><div class="skill-emoji">🃏</div></div><span class="skill-name">Sleight of Hand</span></div>
+    <div class="skill-row"><div class="skill-val" data-field="stealth"><div class="skill-emoji">🥷</div></div><span class="skill-name">Stealth</span></div>
+    <div class="skill-row"><div class="skill-val" data-field="survival"><div class="skill-emoji">🌿</div></div><span class="skill-name">Survival</span></div>
   </div>
 
 </div>

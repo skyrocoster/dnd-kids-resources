@@ -1,0 +1,38 @@
+
+D&D Kids Resources Server (Flask)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Server running at: http://localhost:8000
+Database: F:\DND\Kids Resources\dnd_kids_resources.db
+API endpoints:
+   - GET /api/spells         (all spells)
+   - GET /api/spells/<title> (single spell)
+   - GET /api/skills         (all skills)
+   - GET /api/skills/<title> (single skill)
+   - GET /api/conditions     (all conditions)
+   - GET /api/conditions/<title> (single condition)
+   - GET /api/creatures      (all creatures)
+   - GET /api/creatures/<title> (single creature)
+
+ Press Ctrl+C to stop the server
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ * Serving Flask app 'server_flask'
+ * Debug mode: on
+
+D&D Kids Resources Server (Flask)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Server running at: http://localhost:8000
+Database: F:\DND\Kids Resources\dnd_kids_resources.db
+API endpoints:
+   - GET /api/spells         (all spells)
+   - GET /api/spells/<title> (single spell)
+   - GET /api/skills         (all skills)
+   - GET /api/skills/<title> (single skill)
+   - GET /api/conditions     (all conditions)
+   - GET /api/conditions/<title> (single condition)
+   - GET /api/creatures      (all creatures)
+   - GET /api/creatures/<title> (single creature)
+
+ Press Ctrl+C to stop the server
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+

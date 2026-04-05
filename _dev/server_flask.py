@@ -304,6 +304,19 @@ def convert_db_creature_to_api_format(creature_row, conn=None):
     # Parse the JSON fields
     attack_to_hit = parse_json_field(creature_dict.get('attack_to_hit'))
     damage = parse_json_field(creature_dict.get('damage'))
+    stats = parse_json_field(creature_dict.get('stats'))
+
+    # Calculate saving throws from stats if present
+    saving_throws = {}
+    if stats and isinstance(stats, dict):
+        for ability_code, ability_score in stats.items():
+            if isinstance(ability_score, int):
+                # D&D 5e modifier = (score - 10) // 2
+                modifier = (ability_score - 10) // 2
+                saving_throws[ability_code] = {
+                    "score": ability_score,
+                    "modifier": modifier
+                }
 
     # Build details array
     details = []
@@ -330,7 +343,26 @@ def convert_db_creature_to_api_format(creature_row, conn=None):
     hp = creature_dict.get('hp')
     ac = creature_dict.get('ac')
 
-    # Build stats line for centered display (HP / AC)
+    # Build stats_grid for display with emojis and colors
+    stats_grid_data = []
+    if hp:
+        stats_grid_data.append({
+            "code": "hp",
+            "name": "Hit Points",
+            "emoji": "💗",
+            "color": "#c0392b",
+            "value": hp
+        })
+    if ac:
+        stats_grid_data.append({
+            "code": "ac",
+            "name": "Armor Class",
+            "emoji": "🛡️",
+            "color": "#2471a3",
+            "value": ac
+        })
+
+    # Legacy stats_line for backward compatibility
     stats_line = ""
     if hp and ac:
         stats_line = f"HP {hp} / AC {ac}"
@@ -339,42 +371,111 @@ def convert_db_creature_to_api_format(creature_row, conn=None):
     elif ac:
         stats_line = f"AC {ac}"
 
-    # Add attack info if present (name is now inside attack_to_hit JSON)
+    # Add attack info with same pairing logic as spells
+    # Number emoji mapping (same as spells)
+    number_map = {'A': '1️⃣', 'B': '2️⃣', 'C': '3️⃣', 'D': '4️⃣',
+                  'E': '5️⃣', '1': '1️⃣', '2': '2️⃣', '3': '3️⃣'}
+
+    # Check if we have paired rolls (multiple to_hit and damage with same count)
+    has_paired_rolls = (
+        isinstance(attack_to_hit, list) and isinstance(damage, list) and
+        len(attack_to_hit) > 1 and len(damage) > 1 and
+        len(attack_to_hit) == len(damage)
+    )
+
     if attack_to_hit or damage:
-        attack_obj = {}
+        if has_paired_rolls:
+            # Pair rolls and damages together: roll1, damage1, roll2, damage2, etc.
+            for i, (to_hit_roll, damage_roll) in enumerate(zip(attack_to_hit, damage)):
+                roll_name = to_hit_roll.get('name', None) if isinstance(
+                    to_hit_roll, dict) else None
 
-        # Get attack name from first roll object in attack_to_hit if present
-        if attack_to_hit and isinstance(attack_to_hit, list) and len(attack_to_hit) > 0:
-            if isinstance(attack_to_hit[0], dict) and 'name' in attack_to_hit[0]:
-                attack_obj['name'] = attack_to_hit[0]['name']
+                # Use number emoji for paired rolls
+                emoji = number_map.get(roll_name, '1️⃣')
 
-        # Enrich attack_to_hit with ability metadata (handle both single object and list)
-        if attack_to_hit:
-            if isinstance(attack_to_hit, list):
-                # Multiple attack rolls
-                enriched_to_hit = []
-                for roll_obj in attack_to_hit:
-                    enriched_to_hit.append(enrich_roll_object(roll_obj, conn))
-                attack_obj['to_hit'] = enriched_to_hit
-            else:
-                # Single attack roll
-                attack_obj['to_hit'] = enrich_roll_object(attack_to_hit, conn)
+                # Add roll
+                enriched_roll = enrich_roll_object(to_hit_roll, conn)
+                details.append({"label": f"{emoji} To Hit:",
+                               "content": enriched_roll})
 
-        # Enrich damage rolls (must be a list, with types enriched)
-        if damage and isinstance(damage, list):
-            enriched_damage = []
-            for damage_roll in damage:
-                # Enrich damage types with emoji/color
-                enriched_roll = enrich_roll_object(damage_roll, conn)
-                enriched_damage.append(enriched_roll)
-            attack_obj['damage'] = enriched_damage
+                # Add paired damage
+                enriched_damage = enrich_roll_object(damage_roll, conn)
+                details.append({"label": f"{emoji} Damage:",
+                               "content": enriched_damage})
+        else:
+            # Add to_hit rolls separately (not paired)
+            if attack_to_hit:
+                if isinstance(attack_to_hit, list):
+                    for i, roll_obj in enumerate(attack_to_hit):
+                        enriched_roll = enrich_roll_object(roll_obj, conn)
+                        if len(attack_to_hit) > 1:
+                            details.append(
+                                {"label": "🎲 To Hit:", "content": enriched_roll})
+                        else:
+                            details.append(
+                                {"label": "🎲 To Hit:", "content": enriched_roll})
+                else:
+                    enriched_roll = enrich_roll_object(attack_to_hit, conn)
+                    details.append(
+                        {"label": "🎲 To Hit:", "content": enriched_roll})
 
-        details.append({"label": "🎲 Attack:", "content": attack_obj})
+            # Add damage rolls separately (not paired)
+            if damage:
+                if isinstance(damage, list):
+                    for i, roll_obj in enumerate(damage):
+                        enriched_roll = enrich_roll_object(roll_obj, conn)
+                        if len(damage) > 1:
+                            details.append(
+                                {"label": "💥 Damage:", "content": enriched_roll})
+                        else:
+                            details.append(
+                                {"label": "💥 Damage:", "content": enriched_roll})
 
-    # Add special abilities
-    special = creature_dict.get('special', '')
-    if special:
-        details.append({"label": "⭐ Special:", "content": special})
+    # Add HP and AC stats grid (similar to saves_grid)
+    if stats_grid_data:
+        details.append({
+            "label": "Stats",
+            "content": stats_grid_data,
+            "type": "stats_grid"  # Special type to signal grid rendering
+        })
+
+    # Add saving throws from stats as a structured grid (3x2)
+    # enriched with ability metadata for emoji and color display
+    if saving_throws:
+        ability_order = ['str', 'dex', 'con', 'int', 'wis', 'cha']
+        save_data_with_metadata = []
+
+        cursor = conn.cursor()
+        for ability_code in ability_order:
+            if ability_code in saving_throws:
+                save_value = saving_throws[ability_code]
+                modifier = save_value['modifier']
+
+                # Look up ability metadata for emoji and color
+                cursor.execute("""
+                    SELECT emoji, color, name
+                    FROM abilities
+                    WHERE code = ?
+                """, (ability_code,))
+                ability = cursor.fetchone()
+
+                if ability:
+                    save_data_with_metadata.append({
+                        "code": ability_code,
+                        "name": ability[2],  # name
+                        "emoji": ability[0],  # emoji
+                        "color": ability[1],  # color
+                        "modifier": modifier,
+                        "score": save_value['score']
+                    })
+
+        if save_data_with_metadata:
+            # Add as a structured object for grid display
+            details.append({
+                "label": "💪 Saves:",
+                "content": save_data_with_metadata,
+                "type": "saves_grid"  # Special type to signal grid rendering
+            })
 
     # Get lowercased title (for CSS class) and capitalize for display
     title_lower = creature_dict.get('title', 'unknown')
@@ -796,7 +897,7 @@ def get_creatures_api():
         # Get all creatures
         cursor.execute("""
             SELECT id, title, icon, size, creature_type_id, hp, ac, explanation,
-                   attack_to_hit, damage, special
+                   attack_to_hit, damage, special, stats
             FROM creatures
             ORDER BY title
         """)
@@ -827,7 +928,7 @@ def get_creature_by_title(title):
         # Get creature by title (search case-insensitive)
         cursor.execute("""
             SELECT id, title, icon, size, creature_type_id, hp, ac, explanation,
-                   attack_to_hit, damage, special
+                   attack_to_hit, damage, special, stats
             FROM creatures
             WHERE LOWER(title) = LOWER(?)
         """, (title,))

@@ -27,7 +27,7 @@ PHASE 3 (CRUD + Auth)     | 3 hours        | MEDIUM-HIGH RISK
 PHASE 4 (Advanced Features)| Later         | VERY HIGH RISK
 ```
 
-**Current Status:** [Enter current phase here, e.g., "Completing Phase 0.3"]
+**Current Status:** Phase 2 Complete (70% overall) - Backend + Database fully functional. Phase 3 (CRUD + Auth) in planning.
 
 ---
 
@@ -1356,11 +1356,11 @@ curl -X PUT http://localhost:3000/api/spells/$SPELL_ID \
 
 | Phase | Status | Completion | Notes |
 |-------|--------|------------|-------|
-| 0 (Planning) | ⬜ | 0% | Document architecture |
-| 1 (Backend Setup) | ⬜ | 0% | Node.js + static API |
-| 2 (Database) | ⬜ | 0% | SQLite migration |
-| 3 (CRUD + Auth) | ⬜ | 0% | Basic modifications |
-| 4 (Advanced) | ⬜ | 0% | Print export, auth |
+| 0 (Planning) | ✅ | 100% | Architecture documented in ARCHITECTURE.md, SCHEMA_DESIGN.md |
+| 1 (Backend Setup) | ✅ | 100% | Flask server running on port 8000, serving static/DB data |
+| 2 (Database) | ✅ | 100% | SQLite with 8 tables: spells, conditions, creatures, skills, weapons, wild_shapes, abilities, damage_types |
+| 3 (CRUD + Auth) | ⏳ | 25% | GET/Read endpoints 100% working. POST/PUT/DELETE not implemented. No auth system yet. |
+| 4 (Advanced) | ⬜ | 0% | Print export and real auth planned for future |
 
 ---
 
@@ -1368,34 +1368,57 @@ curl -X PUT http://localhost:3000/api/spells/$SPELL_ID \
 
 **Date | Decision | Rationale**
 
-[Add decisions here as you make them]
-
-Example:
-- April 1, 2026 | Using SQLite instead of PostgreSQL | Local dev simplicity, can upgrade later
-- April 1, 2026 | Express.js for backend | Lightweight, good ecosystem, familiar
-- April 1, 2026 | Starting with Phase 0 | Proper planning prevents rework
+- April 4, 2026 | Using Flask (Python) instead of Node.js/Express | Faster iteration, existing Python knowledge, venv already set up
+- April 4, 2026 | Read-only API first (GET endpoints only) | Safer approach, test data migration, plan write-layer later
+- April 4, 2026 | SQLite for persistent storage | File-based, portable, sufficient for current scale, can upgrade to PostgreSQL later
+- April 4, 2026 | Data enrichment in API response | Metadata (emoji, colors) fetched from abilities/damage_types tables on read
+- April 4, 2026 | CORS enabled for development | Frontend and backend running on different ports during development
+- April 4, 2026 | No frontend refactor during backend rollout | Frontend still works with API, backward compatible with JSON files
 
 ---
 
 ### Known Issues / Blockers
 
-[Add blockers as they arise]
+**Working:**
+- ✅ API endpoints for all read operations (GET /api/spells, /api/conditions, /api/creatures, /api/skills)
+- ✅ Data enrichment with metadata (ability emojis/colors, damage type emojis/colors)
+- ✅ Database migrations completed
+- ✅ Frontend loads from API seamlessly
 
-Example:
-- BLOCKED: Cannot start Phase 2 until [thing] is done
-- ISSUE: Card rendering not working after API switch - [details]
+**Not Implemented (Phase 3+):**
+- ❌ No POST/PUT/DELETE endpoints (read-only API)
+- ❌ No users table with authentication
+- ❌ No permission system (can't edit own vs. default cards yet)
+- ❌ No userId field in cards table
+- ❌ No print export endpoint (Phase 4)
+- ❌ No real authentication system (Phase 4)
+
+**Next Blockers:**
+- To enable writes: Need to add POST/PUT/DELETE endpoints
+- To enable multi-user: Need users table + auth system (JWT or sessions)
+- To track ownership: Need to add userId to cards table
 
 ---
 
 ### Testing Checkpoints
 
-**Before moving to next phase:**
-- [ ] All database migrations run without errors
-- [ ] API returns expected JSON structure
-- [ ] Frontend loads from API without breaking
-- [ ] No console errors in browser
-- [ ] All card types work (not just one)
-- [ ] Backup of previous working state exists
+**Phase 1-2 Completed - All Passing:**
+- ✅ Flask server runs without errors
+- ✅ API endpoints return valid JSON structure
+- ✅ Frontend loads from API without breaking
+- ✅ No console errors in browser
+- ✅ All card types work (spells, conditions, creatures, skills, weapons)
+- ✅ Data enrichment working (emoji/colors from metadata tables)
+- ✅ Backup of working state exists (git commit f6537d1)
+
+**Phase 3 - Before Write Operations:**
+- [ ] Design POST endpoint for creating new cards
+- [ ] Test card creation with userId validation
+- [ ] Implement PUT for updating cards (ownership check)
+- [ ] Implement DELETE with authorization
+- [ ] Create users table and basic auth
+- [ ] Test multi-user isolation
+- [ ] Backup database before first write operation
 
 ---
 
@@ -1422,14 +1445,33 @@ If something breaks during a phase:
 
 ### Next Steps
 
-When ready to begin:
-1. Start with **Phase 0.1 - Design Card Schema**
-2. Create schema document
-3. Once Phase 0 complete, move to **Phase 1.1 - Backend Setup**
-4. Report back with completion status and any blockers
+**Phase 3: CRUD + Authentication (When Ready)**
+
+Recommended approach:
+1. **Design Phase 3.1:** Add userId field to cards table + create users table
+2. **Implement Phase 3.2:** Add POST endpoint for creating new cards (with userId)
+3. **Implement Phase 3.3:** Add PUT endpoint for updating cards (with ownership check)
+4. **Implement Phase 3.4:** Add DELETE endpoint (with authorization)
+5. **Implement Phase 3.5:** Basic authentication (JWT or session-based)
+6. **Test Phase 3:** Full CRUD workflow with multiple users
+
+**Phase 4: Advanced Features (After Phase 3)**
+- Print export endpoint (PDF or formatted HTML)
+- Real authentication UI (login form)
+- User dashboard (my cards, shared cards, etc.)
+
+**Safe To Start When:**
+- ✅ Phase 2 is fully tested and backed up (DONE - git commit f6537d1)
+- ✅ Frontend is stable (DONE)
+- ✅ Read API is reliable (DONE)
+
+**Report back with:**
+- Which Phase 3 step to start with
+- Any new blockers or design questions
 
 ---
 
-**Document Version:** 1.0  
-**Last Updated:** April 1, 2026  
-**Next Review:** [To be set]
+**Document Version:** 1.1  
+**Last Updated:** April 4, 2026  
+**Implementation Status:** 70% complete (Phases 0-2 done, Phase 3 ready to start)  
+**Next Review:** When Phase 3 work begins
