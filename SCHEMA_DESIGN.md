@@ -1,21 +1,245 @@
-# Normalized Database Schema Design
+# Database Schema - Current Implementation
 
-**Principle:** Decompose all JSON elements into proper relational tables. Reconstruct on demand, never collapse.
+**Current Status:** Simplified implementation for D&D Kids Resources card generation  
+**Database:** SQLite (`dnd_kids_resources.db`)
+
+---
+
+## Overview
+
+The database stores card data and metadata for:
+- **Spells** (54 spell cards with mechanics)
+- **Conditions** (19 status effects and conditions)
+- **Creatures** (6 druid wild shape forms)
+- **Skills** (18 skill reference cards)
+- **Weapons** (42+ weapons, mostly JSON-based)
+- **Metadata** (abilities & damage types with emojis and colors)
 
 ---
 
 ## Core Tables
 
-### `icons` (Icon registry - one icon per purpose)
+### `spells` — Spell card data (Database-Driven)
 
-Centralized icon management. Prevents duplicate icon definitions and allows cascading icon updates.
+```sql
+CREATE TABLE spells (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  title TEXT NOT NULL,                -- Spell name (stored lowercase)
+  icon TEXT NOT NULL,                 -- Emoji icon (e.g., "🔥", "❄️")
+  level TEXT NOT NULL,                -- CSS class: "cantrip", "level1"–"level9"
+  school TEXT,                        -- Type: "Evocation", "Abjuration", "Transmutation", etc.
+  explanation TEXT,                   -- Kid-friendly spell description
+  to_hit TEXT,                        -- JSON array of attack/save roll objects (or NULL)
+  damage TEXT,                        -- JSON array of damage roll objects (or NULL)
+  heal TEXT,                          -- JSON array of healing roll objects (or NULL)
+  range TEXT                          -- JSON with range information (distance, unit, target)
+);
+
+CREATE INDEX idx_spells_title ON spells(title);
+CREATE INDEX idx_spells_level ON spells(level);
+CREATE INDEX idx_spells_school ON spells(school);
+```
+
+**Data Pattern:**
+- Title stored as **lowercase** in database (e.g., "fire bolt")
+- Capitalized in API response for display (e.g., "Fire Bolt")
+- `level` uses lowercase CSS class names for styling
+- Roll data stored as JSON arrays for flexibility
+
+**Roll Object Format:**
+```json
+{
+  "roll": "1d20",                     -- Dice notation string
+  "numerics": [                       -- Abilities involved
+    {
+      "code": "sam",                  -- Ability code (lowercase)
+      "name": "Spellcasting",         -- Display name (from abilities table)
+      "emoji": "✨",                  -- Emoji icon (from abilities table)
+      "color": "#8e44ad"              -- Color hex (from abilities table)
+    }
+  ],
+  "types": [                          -- Damage types involved (for damage rolls only)
+    {
+      "code": "fire",                 -- Damage type code (lowercase)
+      "name": "Fire",                 -- Display name (from damage_types table)
+      "emoji": "🔥",                  -- Emoji icon (from damage_types table)
+      "color": "#e74c3c"              -- Color hex (from damage_types table)
+    }
+  ],
+  "save": false,                      -- True for save rolls, false for attack rolls
+  "name": "A"                         -- Identifier (A, B, C, etc.) for pairing rolls
+}
+```
+
+---
+
+### `conditions` — Status effects and conditions (Database-Driven)
+
+```sql
+CREATE TABLE conditions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  title TEXT NOT NULL UNIQUE,         -- Condition name (stored lowercase)
+  icon TEXT NOT NULL,                 -- Emoji icon
+  explanation TEXT NOT NULL,          -- Description of the condition
+  details TEXT,                       -- JSON array of detail objects (or NULL)
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+**Data Pattern:**
+- Title stored as **lowercase** in database (e.g., "blinded")
+- Capitalized in API response for display (e.g., "Blinded")
+- Details stored as JSON array when condition has multiple aspects
+- `icon` field directly stores emoji characters
+
+---
+
+### `creatures` — Druid wild shape forms (Database-Driven)
+
+```sql
+CREATE TABLE creatures (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  title TEXT NOT NULL UNIQUE,         -- Creature name (stored lowercase)
+  icon TEXT NOT NULL,                 -- Emoji icon
+  size TEXT NOT NULL,                 -- Creature size (stored lowercase: "tiny", "small", etc.)
+  creature_type_id INTEGER NOT NULL,  -- FK to creature_types table
+  hp INTEGER NOT NULL,                -- Hit points
+  ac INTEGER NOT NULL,                -- Armor class
+  explanation TEXT NOT NULL,          -- Description of the creature
+  attack_to_hit TEXT,                 -- JSON array of attack roll objects (or NULL)
+  damage TEXT,                        -- JSON array of damage roll objects (or NULL)
+  special TEXT,                       -- Special abilities or traits (plain text)
+  stats TEXT,                         -- Ability scores (if included)
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (creature_type_id) REFERENCES creature_types(id)
+);
+```
+
+**Data Pattern:**
+- All text fields (title, size) stored as **lowercase** in database
+- Capitalized in API response for display ("cat" → "Cat")
+- Attack/damage rolls follow same JSON object format as spells
+- `creature_type_id` references the `creature_types` lookup table
+- Size values: tiny, small, medium, large, huge, gargantuan (lowercase in DB)
+
+---
+
+### `creature_types` — Lookup table for creature categories
+
+```sql
+CREATE TABLE creature_types (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  code TEXT NOT NULL UNIQUE,          -- "beast", "elemental", "fey", etc.
+  emoji TEXT NOT NULL,                -- Type icon
+  color TEXT NOT NULL                 -- CSS color or hex value
+);
+```
+
+**Purpose:** Centralized storage of creature type metadata for reusability and consistency
+
+---
+
+### `skills` — Skill reference cards (Database-Driven)
+
+```sql
+CREATE TABLE skills (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  title TEXT NOT NULL,                -- Skill name (stored lowercase)
+  icon TEXT NOT NULL,                 -- Emoji icon
+  level TEXT NOT NULL,                -- CSS class for styling
+  explanation TEXT,                   -- Skill description
+  details TEXT NOT NULL               -- JSON array of detail objects
+);
+```
+
+**Data Pattern:**
+- Title stored as **lowercase** in database
+- Capitalized in API response for display
+- Details stored as JSON array for flexibility
+
+---
+
+### `abilities` — Ability metadata with emojis and colors
+
+```sql
+CREATE TABLE abilities (
+  code TEXT PRIMARY KEY,              -- "str", "dex", "con", "int", "wis", "cha", "sam", "sad"
+  name TEXT NOT NULL,                 -- Display name ("Strength", "Dexterity", etc.)
+  emoji TEXT NOT NULL UNIQUE,         -- Ability icon (💪, ⚡, etc.)
+  color TEXT NOT NULL                 -- Hex color for styling (#ff5733, etc.)
+);
+```
+
+**Purpose:** Stores metadata for ability modifiers and spellcasting modifiers  
+**Used By:** Spell and creature rendering to display ability colors/emojis on cards  
+**Codes:**
+- **Standard abilities:** str, dex, con, int, wis, cha
+- **Spellcasting modifiers:** sam (spellcasting attack modifier), sad (spellcasting ability difference)
+
+---
+
+### `damage_types` — Damage type metadata with emojis and colors
+
+```sql
+CREATE TABLE damage_types (
+  code TEXT PRIMARY KEY,              -- "fire", "cold", "piercing", "slashing", "acid", etc.
+  name TEXT NOT NULL,                 -- Display name ("Fire", "Cold", etc.)
+  emoji TEXT NOT NULL,                -- Damage type icon (🔥, ❄️, etc.)
+  color TEXT NOT NULL                 -- Hex color for styling
+);
+```
+
+**Purpose:** Stores metadata for damage types used in spells and weapons  
+**Used By:** Spell and creature rendering to display damage type colors/emojis on cards
+
+---
+
+## Legacy/Utility Tables
+
+### `weapons` (Mostly Unused — Weapons Load from JSON)
+
+```sql
+CREATE TABLE weapons (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  card_id INTEGER NOT NULL UNIQUE,
+  type TEXT,                          -- "Simple Melee", "Martial Ranged", etc.
+  hands TEXT,                         -- "1-handed", "2-handed", "versatile"
+  removable INTEGER,                  -- 0 or 1 (boolean)
+  FOREIGN KEY (card_id) REFERENCES cards(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_weapons_card_id ON weapons(card_id);
+```
+
+**Note:** Weapons are primarily loaded from `data/weapons.json` file instead of this table. This table exists for potential future database-driven weapon management.
+
+---
+
+### `wild_shapes` (Mostly Unused — Uses creatures table instead)
+
+```sql
+CREATE TABLE wild_shapes (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  card_id INTEGER NOT NULL UNIQUE,
+  creature_type TEXT,
+  FOREIGN KEY (card_id) REFERENCES cards(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_wild_shapes_card_id ON wild_shapes(card_id);
+```
+
+**Note:** Druid wild shapes are loaded from the `creatures` table. This table exists for legacy compatibility.
+
+---
+
+### `icons` (Unused — Icons stored directly as TEXT)
 
 ```sql
 CREATE TABLE icons (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  symbol TEXT NOT NULL UNIQUE,        -- The actual icon character (✨, ⚔️, etc.)
-  description TEXT NOT NULL,          -- What this icon represents (e.g., 'Fire Spell', 'Melee Weapon')
-  purpose TEXT NOT NULL,              -- Category (spell, weapon, npc, condition, location, etc.)
+  symbol TEXT NOT NULL UNIQUE,        -- Emoji character
+  description TEXT NOT NULL,
+  purpose TEXT NOT NULL,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
@@ -24,265 +248,11 @@ CREATE INDEX idx_icons_symbol ON icons(symbol);
 CREATE INDEX idx_icons_purpose ON icons(purpose);
 ```
 
-**Design decisions:**
-- `symbol UNIQUE` ensures no duplicate icons in the system
-- `purpose` tracks what each icon is used for (prevents misuse)
-- Changing an icon cascades to all cards via ON UPDATE CASCADE
-- ON DELETE RESTRICT prevents accidental icon deletion while in use
+**Note:** Icons are stored directly in spell, condition, creature, and skill records as TEXT fields rather than using this lookup table.
 
 ---
 
-### `cards` (Base table for all card types)
-
-Stores common metadata for every card in the system.
-
-```sql
-CREATE TABLE cards (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  card_type TEXT NOT NULL,            -- 'spell', 'weapon', 'condition', 'npc', 'location', 'magic-item', 'wild-shape', 'action'
-  title TEXT NOT NULL,
-  icon_id INTEGER NOT NULL,           -- FK to icons table (was: icon TEXT)
-  level TEXT NOT NULL,                -- CSS class for colors (e.g., 'cantrip', 'wizard', 'simple-melee')
-  explanation TEXT,
-  is_default INTEGER DEFAULT 1,       -- 1 = available to all, 0 = user-owned
-  user_id INTEGER,                    -- NULL = default/system card, otherwise owner's ID
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-  FOREIGN KEY (icon_id) REFERENCES icons(id) ON DELETE RESTRICT
-);
-
-CREATE INDEX idx_cards_card_type ON cards(card_type);
-CREATE INDEX idx_cards_user_id ON cards(user_id);
-CREATE INDEX idx_cards_is_default ON cards(is_default);
-CREATE INDEX idx_cards_level ON cards(level);
-CREATE INDEX idx_cards_icon_id ON cards(icon_id);
-```
-
-**Changes from original:**
-- `icon TEXT NOT NULL` → `icon_id TEXT NOT NULL` (FK to icons)
-- Added FK constraint with ON DELETE RESTRICT (prevent orphaned icons)
-- Added index on icon_id for performance
-
-**Why separate table:**
-- Enforces icon uniqueness globally
-- Prevents same icon representing different concepts
-- Allows updating icon symbol with one query (cascades to all cards)
-
----
-
-### `spells` (Type-specific attributes for spells)
-
-```sql
-CREATE TABLE spells (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  card_id INTEGER NOT NULL UNIQUE,
-  school TEXT,                        -- 'Evocation', 'Abjuration', etc.
-  to_hit TEXT,                        -- Attack roll template(s): "{1}{d20}+{SAM}..." or NULL
-  damage TEXT,                        -- Damage roll template(s): "{1}{d10}+{fire}|{1}{d8}+{cold}" or NULL
-  heal TEXT,                          -- Healing roll template(s): "{1}{d4}+{INT}" or NULL
-  FOREIGN KEY (card_id) REFERENCES cards(id) ON DELETE CASCADE
-);
-
-CREATE INDEX idx_spells_card_id ON spells(card_id);
-```
-
-**Design:**
-- `to_hit`, `damage`, `heal` are NULL if spell has no rolls in that category
-- Multiple effects for same category separated by pipe: `"{1}{d8}+{fire}|{1}{d4}+{cold}"`
-- Templates use same placeholder syntax: `{dice_count}{dice_type}+{modifiers}`
-- Range, scaling, and other descriptive text remain in `detail_entries` table
-- One spell per card (UNIQUE constraint on card_id)
-
----
-
-### `weapons` (Type-specific attributes for weapons)
-
-```sql
-CREATE TABLE weapons (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  card_id INTEGER NOT NULL UNIQUE,
-  type TEXT,                          -- 'Simple Melee', 'Martial Ranged', etc.
-  hands TEXT,                         -- '1-handed', '2-handed'
-  removable INTEGER,                  -- 0 or 1 (boolean)
-  FOREIGN KEY (card_id) REFERENCES cards(id) ON DELETE CASCADE
-);
-
-CREATE INDEX idx_weapons_card_id ON weapons(card_id);
-```
-
----
-
-### `npcs` (Type-specific attributes for NPCs)
-
-```sql
-CREATE TABLE npcs (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  card_id INTEGER NOT NULL UNIQUE,
-  species TEXT,
-  profession TEXT,
-  location TEXT,
-  FOREIGN KEY (card_id) REFERENCES cards(id) ON DELETE CASCADE
-);
-
-CREATE INDEX idx_npcs_card_id ON npcs(card_id);
-```
-
----
-
-### `conditions` (Type-specific attributes for conditions)
-
-```sql
-CREATE TABLE conditions (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  card_id INTEGER NOT NULL UNIQUE,
-  duration TEXT,                      -- Store the 'school' field from JSON (e.g., 'Until cured or the spell ends')
-  FOREIGN KEY (card_id) REFERENCES cards(id) ON DELETE CASCADE
-);
-
-CREATE INDEX idx_conditions_card_id ON conditions(card_id);
-```
-
----
-
-### `locations` (Type-specific attributes for locations)
-
-```sql
-CREATE TABLE locations (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  card_id INTEGER NOT NULL UNIQUE,
-  location_type TEXT,                 -- 'building', 'wilderness', etc.
-  FOREIGN KEY (card_id) REFERENCES cards(id) ON DELETE CASCADE
-);
-
-CREATE INDEX idx_locations_card_id ON locations(card_id);
-```
-
----
-
-### `magic_items` (Type-specific attributes for magic items)
-
-```sql
-CREATE TABLE magic_items (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  card_id INTEGER NOT NULL UNIQUE,
-  rarity TEXT,                        -- May be in level or details
-  FOREIGN KEY (card_id) REFERENCES cards(id) ON DELETE CASCADE
-);
-
-CREATE INDEX idx_magic_items_card_id ON magic_items(card_id);
-```
-
----
-
-### `wild_shapes` (Type-specific attributes for wild shapes)
-
-```sql
-CREATE TABLE wild_shapes (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  card_id INTEGER NOT NULL UNIQUE,
-  creature_type TEXT,                 -- May be in level or details
-  FOREIGN KEY (card_id) REFERENCES cards(id) ON DELETE CASCADE
-);
-
-CREATE INDEX idx_wild_shapes_card_id ON wild_shapes(card_id);
-```
-
----
-
-### `actions` (Type-specific attributes for actions)
-
-```sql
-CREATE TABLE actions (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  card_id INTEGER NOT NULL UNIQUE,
-  action_type TEXT,                   -- Subtype if needed
-  FOREIGN KEY (card_id) REFERENCES cards(id) ON DELETE CASCADE
-);
-
-CREATE INDEX idx_actions_card_id ON actions(card_id);
-```
-
----
-
-## Details Decomposition
-
-### `detail_entries` (Breaks down the `details` array with template-based rolls)
-
-Instead of storing `details` as JSON, each entry becomes a row with flexible template-based roll storage.
-
-```sql
-CREATE TABLE detail_entries (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  card_id INTEGER NOT NULL,
-  sequence_order INTEGER NOT NULL,    -- Preserves original order in array
-  label TEXT,                         -- "🎲 Roll:", "💥 Damage:", "🎯 Range:", etc
-  content_type TEXT NOT NULL,         -- 'text' or 'template'
-  content_text TEXT,                  -- For simple text content (range, description, etc.)
-  template TEXT,                      -- For roll templates: "{1}{d20}+{SAM}" or "{2}{d8}+{fire}"
-  roll_actor TEXT,                    -- NULL, 'self', or 'target' - who performs the roll
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (card_id) REFERENCES cards(id) ON DELETE CASCADE
-);
-
-CREATE INDEX idx_detail_entries_card_id ON detail_entries(card_id);
-CREATE INDEX idx_detail_entries_sequence ON detail_entries(card_id, sequence_order);
-CREATE UNIQUE INDEX idx_detail_entries_order ON detail_entries(card_id, sequence_order);
-```
-
-**Design approach:** 
-- **Template-based rolls** stored as strings with placeholder syntax: `{dice_count}{dice_type}` + `{modifier}"`
-- **Flexible and future-proof** - no schema changes needed to add new roll types
-- **Single text field** - template string is parsed and rendered by JavaScript
-- **Preserves label context** - label tells you what the roll is for (Roll vs. Damage vs. Scaling, etc.)
-- **Sequence order reconstructs** original array order from JSON
-- **Simple content stays simple** - text details use content_text, template details use template field
-
----
-
-## Template Syntax Reference
-
-### Roll Template Format
-
-Roll templates use curly bracket placeholders parsed and rendered by JavaScript:
-
-```
-{dice_count}{dice_type}+{modifier1}+{modifier2}
-```
-
-**Placeholder Types:**
-
-| Placeholder | Renders As | Examples | Notes |
-|---|---|---|---|
-| `{1}`, `{2}`, `{3}`, etc | Dice count (number) | `1d20`, `2d8` | Just the number value |
-| `{d4}`, `{d6}`, `{d8}`, `{d12}`, `{d20}` | Dice type (no styling) | `d20`, `d8` | D&D dice notation |
-| `{DEX}`, `{STR}`, `{CON}`, `{INT}`, `{WIS}`, `{CHA}` | **Ability + emoji** | 🔵 **DEX**, 💪 **STR** | Uppercase = styled ability score |
-| `{fire}`, `{cold}`, `{thunder}`, `{pierce}`, etc | Damage type (italics) | *fire*, *cold* | Lowercase = passive type |
-| `{SAM}`, `{SAB}` | **Blue modifier box** | [SAM] | Spell Attack Modifier box |
-| `{BtH}` | **Orange modifier box** | [BtH] | Bonus to Hit box (weapons) |
-| `{save}` | Just text | save | Plain text |
-
-**Examples:**
-
-```
-Fire Bolt (attack):        "{1}{d20}+{SAM}"
-Create Bonfire (save):     "{1}{d20} save+{DEX}"
-Thunderwave (damage):      "{2}{d8}+{thunder}"
-Cure Wounds (heal):        "heal {1}{d8}+{SAM}"
-Ice Knife (area save):     "{1}{d20} save+{DEX}"
-```
-
-**Design advantages:**
-- **Human-readable in database** - you can look at the value and see what it renders as
-- **No schema changes needed** - add new spell types without modifying tables
-- **Flexible for custom content** - DMs/kids can define their own spell templates
-- **Parser lives in JavaScript** - rendering logic stays where styling happens
-
----
-
-## User Management
-
-### `users` (For future authentication)
+### `users` (Future Use)
 
 ```sql
 CREATE TABLE users (
@@ -297,6 +267,123 @@ CREATE TABLE users (
 CREATE INDEX idx_users_username ON users(username);
 CREATE INDEX idx_users_email ON users(email);
 ```
+
+**Purpose:** Reserved for future authentication and user-specific custom cards
+
+---
+
+### `dungeons` (Dungeon Parser Integration)
+
+```sql
+CREATE TABLE dungeons (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  title TEXT NOT NULL UNIQUE,
+  original_html TEXT NOT NULL,        -- Original HTML input
+  parsed_json TEXT NOT NULL,          -- Parsed and formatted JSON output
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+**Purpose:** Stores parsed dungeon room data from uploaded HTML documents  
+**Used By:** Dungeon library system for organizing and retrieving room descriptions
+
+---
+
+## API Response Transformation Layer
+
+**Location:** `_dev/server_flask.py`
+
+When data is retrieved from database tables, it is transformed before returning to JavaScript:
+
+### Text Capitalization
+- Input: `title` stored as lowercase in database → `"fire bolt"`
+- Output: Capitalized in API response → `"Fire Bolt"`
+- Pattern: Capital first letter + preserve lowercase for the rest
+
+### Metadata Enrichment
+- Input: Ability codes (sam, dex, etc.) and damage codes (fire, cold, etc.)
+- Output: Enriched with emoji and color from `abilities` and `damage_types` tables
+- Example:
+  ```json
+  // Input (from database):
+  { "code": "sam" }
+  
+  // Output (from API):
+  { 
+    "code": "sam",
+    "name": "Spellcasting",
+    "emoji": "✨",
+    "color": "#8e44ad"
+  }
+  ```
+
+### Roll Pairing (Spells Only)
+- Spells with multiple to_hit and damage rolls can be paired
+- Matching is based on the `name` field (A, B, C, etc.)
+- When pairs match, they are interleaved in output: [to_hit_A, damage_A, to_hit_B, damage_B, ...]
+- Emoji numbering: A → 1️⃣, B → 2️⃣, C → 3️⃣
+
+---
+
+## Data Storage Pattern (Consistency Across All Tables)
+
+**All string fields that display on cards follow this pattern:**
+
+1. **Storage in Database:** Lowercase (e.g. "blinded", "fox", "beast")
+2. **Display in API Response:** Capitalize first letter (e.g. "Blinded", "Fox", "Beast")
+3. **CSS Styling:** Use lowercase version as `level` field identifier
+4. **Reason:** Prevents case-sensitivity bugs, maintains consistent styling, makes data predictable
+
+**Applied to:**
+- Conditions: `title` stored lowercase
+- Creatures: `title`, `size`, `type` stored lowercase
+- Skills: `title` stored lowercase
+- Any future card types should follow this same pattern
+
+---
+
+## Development & Maintenance
+
+### Adding New Card Types
+
+1. **Create new table** for card-specific data (follow spells/conditions/creatures pattern)
+2. **Store text fields as lowercase** in database
+3. **Create API endpoint** that capitalizes text for display
+4. **Create HTML page** in `pages/` folder
+5. **Create JavaScript initializer** in `js/` folder that fetches from API
+6. **Test API response** format matches existing patterns
+
+### Adding New Abilities/Damage Types
+
+1. Insert into `abilities` or `damage_types` table with emoji and color
+2. Use in spell/creature JSON roll objects by code
+3. API transformation will enrich with metadata automatically
+
+### Testing Database Changes
+
+```bash
+# Start Flask server
+python _dev/server_flask.py
+
+# Check API endpoint
+curl http://localhost:8000/api/spells
+curl http://localhost:8000/api/conditions
+curl http://localhost:8000/api/creatures
+curl http://localhost:8000/api/skills
+
+# Verify JSON formatting and field presence
+```
+
+---
+
+## Database Integrity Notes
+
+- **No FK constraints on cards table** (it doesn't exist in current implementation)
+- **Direct storage of JSON** in text fields for flexibility
+- **Lowercase convention enforced by code layer** (not database constraints)
+- **Icons stored as TEXT** rather than using separate table for simplicity
+- **Future normalization possible** if database grows significantly
 
 ---
 

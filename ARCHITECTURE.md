@@ -258,79 +258,190 @@ python server_flask.py
 
 ### Core Modules
 
-#### 1. **card-generator.js** (Core System)
-**Purpose:** Reusable card rendering engine used by all card types  
+#### 1. **card-generator.js** (Core Rendering Engine)
+**Purpose:** Reusable card rendering system used by all card type initializers  
 **Entry Points:**
-- `createCardElement(data)` — Creates single card DOM element
-- `renderPaginatedCards(selector, data, cardsPerPage, title, subtitle)` — Creates paginated layout
+- `createCardElement(data)` — Creates single card DOM element from data object
+- `renderPaginatedCards(selector, data, cardsPerPage, title, subtitle)` — Creates paginated layout with header and page breaks
 
-**Key Functionality:**
-- Detects card type based on data fields
-  - **Spells**: Has `level` field (e.g., "level1") → Spell card styles
-  - **Conditions**: Has `level` field + minimal details → Condition styles
-  - **Weapons**: Has `type` field → Weapon styles
-- Creates card structure with header, body, footer
-- Applies CSS classes based on card type
-- Generates draw box for interaction
-- Handles special layouts (weapon properties, etc.)
+**Key Functions:**
+- `parseRollString(rollString)` — Parses dice notation (e.g., "1d4 bludgeoning") into roll object
+- `reconstructRollString(rollData)` — Converts roll object back to display string
+- `createModifierBox(boxText)` — Generates ability/damage modifier boxes (SAM, SAD, BtH)
 
-#### 2. **Initializer Scripts** (spells.js, conditions.js, etc.)
+**Card Generation Logic:**
+- Detects card type based on data fields:
+  - **Database cards (Spells, Conditions, Creatures, Skills)**: Fetched via API, have `level` field for CSS styling
+  - **Weapon cards**: JSON-based, have `type` field for styling
+  - **Utility cards**: Character sheet, HP tracker, turn order (mostly HTML-based, minimal JS)
+- Creates standard card structure: header (icon + title), body (explanation + details), footer (metadata)
+- Applies CSS classes based on card type and level/type field
+- Generates interactive draw box for user interaction
+- Handles special layouts (weapon properties, multi-roll spell mechanics, etc.)
 
-**Spells (Database-Driven):**
+---
+
+### Initializer Scripts (Card Type Specific)
+
+Each card type has a dedicated initializer that loads data and triggers rendering.
+
+#### **spells.js** (Database-Driven, with Filtering)
+**Purpose:** Load spells from Flask API and render with level filtering  
+**Data Source:** `/api/spells` endpoint (served by Flask server)  
+**Features:**
+- Loads all spells on page load
+- Creates filter buttons for each spell level (Cantrips, Level 1-9)
+- "Select All" / "Select None" quick filters
+- Re-renders cards on filter change
+- Normalizes level values (e.g., "level1" → 1)
+
+**Pattern:**
 ```javascript
-document.addEventListener('DOMContentLoaded', async function() {
+// 1. Fetch from API
+const response = await fetch('/api/spells');
+const allSpells = await response.json();
+
+// 2. Extract unique levels and create filter UI
+const spellLevels = [...new Set(allSpells.map(spell => normalizeLevel(spell.level)))];
+
+// 3. Create filter buttons that update display
+spellLevels.forEach(level => {
+  const btn = document.createElement('button');
+  btn.addEventListener('click', () => updateSpellDisplay(allSpells, selectedLevels));
+  // ...
+});
+```
+
+#### **conditions.js** (Database-Driven, Simple)
+**Purpose:** Load and render condition/status effect cards  
+**Data Source:** `/api/conditions` endpoint (served by Flask server)  
+**Pattern:**
+```javascript
+const response = await fetch('/api/conditions');
+const conditionsData = await response.json();
+renderPaginatedCards(
+  '#page-container',
+  conditionsData,
+  9,  // cards per page
+  'Conditions & Status Effects',
+  'Knowledge about effects that change how characters work'
+);
+```
+
+#### **creatures.js** (Database-Driven, Simple)
+**Purpose:** Load and render druid wild shape creature cards  
+**Data Source:** `/api/creatures` endpoint (served by Flask server)  
+**Features:** Displays creature stats with size, type, HP, AC, attacks, and special abilities
+
+#### **skills.js** (Database-Driven, Simple)
+**Purpose:** Load and render skill reference cards  
+**Data Source:** `/api/skills` endpoint (served by Flask server)  
+**Pattern:** Same as conditions.js and creatures.js (simple fetch → render)
+
+#### **weapons.js** (JSON-Driven, with Fallback Paths)
+**Purpose:** Load weapons from local JSON and render cards  
+**Data Source:** `data/weapons.json` (local file with 3 fallback paths)  
+**Pattern:**
+```javascript
+const paths = [
+  '../data/weapons.json',
+  './data/weapons.json',
+  'data/weapons.json'
+];
+
+// Try each path until one succeeds
+for (const path of paths) {
   try {
-    // Load spells from Flask API endpoint
-    const response = await fetch('/api/spells');
-    if (!response.ok) throw new Error(`Failed to load spells: ${response.status}`);
-    
-    const spellsData = await response.json();
-    
-    // Render the paginated card layout
-    renderPaginatedCards(
-      '#page-container',
-      spellsData,
-      9,  // cards per page
-      '✨ Spell Cards ✨',
-      'Dungeons & Dragons · 5th Edition · Cut out & keep!'
-    );
-  } catch (error) {
-    console.error('Error loading spells:', error);
-  }
-});
+    response = await fetch(path);
+    if (response.ok) break;
+  } catch (e) { /* try next */ }
+}
+
+renderPaginatedCards(
+  '#page-container',
+  standardWeapons,
+  9,
+  'Weapons',
+  'A complete guide to weapons and combat gear'
+);
 ```
 
-**Other Cards (JSON-Based):**
+---
+
+### Utility/Helper Scripts
+
+#### **bw-mode-toggle.js** (Print Preview Utility)
+**Purpose:** Adds B&W print mode toggle button for grayscale preview  
+**Features:**
+- Creates "📄 Print B&W" button in top-right corner
+- Persists user preference to localStorage
+- Applies `bw-mode` CSS class to enable grayscale filter
+- Button changes appearance when B&W mode is active
+- Automatically hidden during printing
+
+**Pattern:**
 ```javascript
-document.addEventListener('DOMContentLoaded', async function() {
-  const paths = [
-    '../data/filename.json',
-    './data/filename.json',
-    'data/filename.json'
-  ];
-  
-  // Fetch with fallback paths for deployment flexibility
-  let response;
-  for (const path of paths) {
-    // ... attempt fetch
-  }
-  
-  renderPaginatedCards(
-    '#page-container',
-    data,
-    9,  // cards per page
-    'Page Title',
-    'Page Subtitle'
-  );
+// On page load, check localStorage for saved preference
+const isBWMode = localStorage.getItem('bw-mode') === 'true';
+if (isBWMode) {
+  document.body.classList.add('bw-mode');
+}
+
+// Toggle on button click
+bwToggleBtn.addEventListener('click', function() {
+  const isCurrentlyBW = document.body.classList.toggle('bw-mode');
+  localStorage.setItem('bw-mode', isCurrentlyBW);
 });
 ```
 
-**Responsibility:** Load card data and trigger card generation  
-**Located:** `js/spells.js`, `js/conditions.js`, `js/weapons.js`
+#### **hp-tracker.js** (Interactive HP Management)
+**Purpose:** Enables interactive HP circle damage tracking with persistence  
+**Features:**
+- Selects all HP circles on the page
+- Loads saved state from localStorage on page load
+- Adds click handlers to toggle circle states (filled = damaged)
+- Saves HP state to localStorage for persistence across sessions
+- No external dependencies
 
-**Key Difference:**
-- **Spells**: Fetch from `/api/spells` API endpoint (served by Flask from database)
-- **Other cards**: Load from local `data/` JSON files
+**Pattern:**
+```javascript
+const circles = document.querySelectorAll('.hp-circle');
+
+// Load saved state
+const savedStates = localStorage.getItem('hpCircleStates');
+if (savedStates) {
+  JSON.parse(savedStates).forEach((state, i) => {
+    if (state) circles[i].classList.add('filled');
+  });
+}
+
+// Add click handlers
+circles.forEach((circle, i) => {
+  circle.addEventListener('click', function() {
+    this.classList.toggle('filled');
+    // Save to localStorage
+  });
+});
+```
+
+#### **character-sheet.js** (Character Sheet Support)
+**Purpose:** Minimal JS support for interactive character sheet features  
+**Features:** All functionality is embedded in the HTML itself (Flex sizing, spell slot marking, modal interactions)  
+**Responsibility:** Provides self-contained character sheet with:
+- Ability modifiers calculation display
+- Spell slot tracking (visual coloring)
+- Saving throws and skills reference
+- Interactive sections for handwritten notes
+
+#### **turn-order.js** (Turn Order Display)
+**Purpose:** Minimal JS for turn order tracker sheet  
+**Features:** Template rendering only; all functionality is in HTML/CSS  
+**Pattern:** Display printable tracker grid for D&D combat initiative tracking
+
+#### **wild-shapes.js** (Druid Creature Selection)
+**Purpose:** Load and display creature cards specifically for druid wild shapes  
+**Data Source:** Same as creatures.js (`/api/creatures`)  
+**Note:** Identical to creatures.js; intended for specialized druid-focused view
 
 ---
 
