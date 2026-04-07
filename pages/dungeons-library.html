@@ -158,7 +158,6 @@
             padding: 2rem;
             min-height: 0;
         }
-        }
 
         .dungeon-viewer {
             display: none;
@@ -250,6 +249,49 @@
             background-color: #fff4e6;
             padding: 2px 4px;
             border-bottom-color: #e67e22;
+        }
+
+        .info-tabs {
+            display: flex;
+            gap: 0;
+            margin-bottom: 1rem;
+            border-bottom: 2px solid #ddd;
+        }
+
+        .info-tab {
+            padding: 0.75rem 1rem;
+            background: #f5f5f5;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            color: #666;
+            transition: all 0.2s ease;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+        }
+
+        .info-tab:hover {
+            background: #efefef;
+        }
+
+        .info-tab.active {
+            background: white;
+            color: #4a90e2;
+            border-bottom-color: #4a90e2;
+        }
+
+        .info-tab-content {
+            display: none;
+            padding: 1rem 0;
+        }
+
+        .info-tab-content.active {
+            display: block;
+        }
+
+        .info-tab-content h2 {
+            margin-top: 0;
+            color: #333;
         }
 
         .entry.monster {
@@ -628,10 +670,16 @@
             fetch('/api/dungeons')
                 .then(res => {
                     console.log('Response:', res.status);
+                    if (!res.ok) {
+                        throw new Error(`HTTP ${res.status}`);
+                    }
                     return res.json();
                 })
                 .then(data => {
                     console.log('Dungeons loaded:', data);
+                    if (!Array.isArray(data)) {
+                        throw new Error('API returned invalid data format');
+                    }
                     dungeons = data;
                     displayDungeonsList();
                 })
@@ -750,17 +798,50 @@
                 mapContainerHtml += '</div>';
             }
 
-            // Section 2: Map Details (dungeon info - only on first room)
-            if (roomIdx === 0 && data.general_info) {
-                const info = data.general_info;
-                mapDetailsHtml += '<div class="general-info">';
-                mapDetailsHtml += `<h2>${escapeHtml(info.title)}</h2>`;
-                if (info.size) mapDetailsHtml += `<div class="info-row"><div class="info-label">Size:</div><div class="info-value">${escapeHtml(info.size)}</div></div>`;
-                if (info.walls) mapDetailsHtml += `<div class="info-row"><div class="info-label">Walls:</div><div class="info-value">${escapeHtml(info.walls)}</div></div>`;
-                if (info.floor) mapDetailsHtml += `<div class="info-row"><div class="info-label">Floor:</div><div class="info-value">${escapeHtml(info.floor)}</div></div>`;
-                if (info.temperature) mapDetailsHtml += `<div class="info-row"><div class="info-label">Temperature:</div><div class="info-value">${escapeHtml(info.temperature)}</div></div>`;
-                if (info.illumination) mapDetailsHtml += `<div class="info-row"><div class="info-label">Illumination:</div><div class="info-value">${escapeHtml(info.illumination)}</div></div>`;
+            // Section 2: Map Details with Tabs (dungeon info and corridors on every room)
+            if (data.general_info || (data.corridors && data.corridors.length > 0)) {
+                mapDetailsHtml += '<div class="info-tabs">';
+                
+                // Dungeon Info Tab
+                if (data.general_info) {
+                    mapDetailsHtml += '<button class="info-tab active" onclick="switchInfoTab(event, \'dungeonInfoTab\')">ℹ️ Dungeon Info</button>';
+                }
+                
+                // Corridor Features Tab
+                if (data.corridors && data.corridors.length > 0) {
+                    const corridorActive = !data.general_info; // Active only if no dungeon info
+                    mapDetailsHtml += `<button class="info-tab${corridorActive ? ' active' : ''}" onclick="switchInfoTab(event, 'corridorFeaturesTab')">🛤️ Corridors</button>`;
+                }
+                
                 mapDetailsHtml += '</div>';
+
+                // Dungeon Info Tab Content
+                if (data.general_info) {
+                    const info = data.general_info;
+                    mapDetailsHtml += '<div id="dungeonInfoTab" class="info-tab-content active">';
+                    mapDetailsHtml += `<h2 style="margin-top: 0; color: #333;">${escapeHtml(info.title)}</h2>`;
+                    if (info.size) mapDetailsHtml += `<div class="info-row"><div class="info-label">Size:</div><div class="info-value">${escapeHtml(info.size)}</div></div>`;
+                    if (info.walls) mapDetailsHtml += `<div class="info-row"><div class="info-label">Walls:</div><div class="info-value">${escapeHtml(info.walls)}</div></div>`;
+                    if (info.floor) mapDetailsHtml += `<div class="info-row"><div class="info-label">Floor:</div><div class="info-value">${escapeHtml(info.floor)}</div></div>`;
+                    if (info.temperature) mapDetailsHtml += `<div class="info-row"><div class="info-label">Temperature:</div><div class="info-value">${escapeHtml(info.temperature)}</div></div>`;
+                    if (info.illumination) mapDetailsHtml += `<div class="info-row"><div class="info-label">Illumination:</div><div class="info-value">${escapeHtml(info.illumination)}</div></div>`;
+                    mapDetailsHtml += '</div>';
+                }
+
+                // Corridor Features Tab Content
+                if (data.corridors && data.corridors.length > 0) {
+                    const corridorActive = !data.general_info; // Active only if no dungeon info
+                    mapDetailsHtml += `<div id="corridorFeaturesTab" class="info-tab-content${corridorActive ? ' active' : ''}">`;
+                    data.corridors.forEach(corridor => {
+                        mapDetailsHtml += `<div class="entry-group">`;
+                        mapDetailsHtml += `<div class="entry-title" style="margin: 0.5rem 0; color: #333;">${escapeHtml(corridor.title)}</div>`;
+                        if (corridor.content) {
+                            mapDetailsHtml += `<div class="entry-content" style="color: #666; margin: 0.25rem 0;">${escapeHtml(corridor.content)}</div>`;
+                        }
+                        mapDetailsHtml += `</div>`;
+                    });
+                    mapDetailsHtml += '</div>';
+                }
             }
 
             // Section 3: Room Details
@@ -1034,6 +1115,26 @@
                 closeAddFeatureModal();
             }
         });
+
+        // Tab switching for dungeon info and corridors
+        function switchInfoTab(event, tabName) {
+            // Hide all tab contents
+            const contents = document.querySelectorAll('.info-tab-content');
+            contents.forEach(content => content.classList.remove('active'));
+
+            // Remove active class from all tabs
+            const tabs = document.querySelectorAll('.info-tab');
+            tabs.forEach(tab => tab.classList.remove('active'));
+
+            // Show selected tab content
+            const selectedContent = document.getElementById(tabName);
+            if (selectedContent) {
+                selectedContent.classList.add('active');
+            }
+
+            // Mark tab as active
+            event.target.classList.add('active');
+        }
     </script>
 </body>
 </html>

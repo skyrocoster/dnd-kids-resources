@@ -27,7 +27,7 @@ Simply open `index.html` in a web browser. All features work offline after first
 
 **Using Flask API (Database) - Recommended for Full Features:**
 ```bash
-python _dev/server_flask.py
+python server_flask.py
 # Visit http://localhost:8000
 # Loads: Spells, Conditions, Skills, Creatures with full database features
 ```
@@ -190,9 +190,17 @@ Your choice is saved—next time you visit, the page remembers your preference.
 ├── assets/
 │   └── images/             # Card backgrounds, assets
 │
-└── _dev/                   # Development utilities
-    ├── server.py           # Local test server
+├── lib/                    # Production modules ⭐ ACTIVE CODE
+│   ├── parse_dungeon.py    # Dungeon HTML parser (used by Flask API)
+│   ├── __init__.py
+│   └── README.md           # Production code guidelines
+│
+├── server_flask.py         # Flask web server (main application)
+├── start-server.ps1        # Flask server launcher
+│
+└── _dev/                   # Development utilities (not needed for production)
     ├── README.md           # Dev folder guide
+    ├── dungeon_parsing_test/  # Testing code for lib/parse_dungeon.py
     └── ...
 ```
 

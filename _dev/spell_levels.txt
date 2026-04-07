@@ -1,6 +1,0 @@
-Spell Level Distribution:
-========================================
-level1          : 4 spells
-level2          : 25 spells
-
-Total cantrips: 0

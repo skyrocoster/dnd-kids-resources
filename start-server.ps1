@@ -25,7 +25,7 @@ Write-Host "Server will be available at: http://localhost:8000" -ForegroundColor
 Write-Host ""
 
 # Start the Flask server
-python _dev/server_flask.py
+python server_flask.py
 
 # If the script reaches here, the server has stopped
 Write-Host ""

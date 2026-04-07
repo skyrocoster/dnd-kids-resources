@@ -2,15 +2,17 @@
 
 Scripts and tools for development, testing, and database management. These are **not needed** for the webpages to operate—they're only for local development and data migration.
 
+**⚠️ Production Code Location:** Core production modules like dungeon parsing are stored in `lib/`, NOT here. The `_dev` folder is exclusively for testing and utility scripts.
+
 ---
 
 ## Active Tools
 
 ### Flask Web Server
-- **`server_flask.py`** ⭐ **PRIMARY TOOL** - Flask API server serving spells from SQLite database
+- **`server_flask.py`** ⭐ **PRIMARY TOOL** - Flask API server serving spells from SQLite database (located in root)
   - Runs on `http://localhost:8000`
   - Provides `/api/spells` endpoint with enriched metadata (emoji, colors)
-  - Usage: `python _dev/server_flask.py`
+  - Usage: `python server_flask.py`
 
 ### Testing & Validation
 - `test_api.py` - Tests Flask API endpoints
@@ -28,6 +30,13 @@ Scripts and tools for development, testing, and database management. These are *
 
 ### Standards
 - `CONTENT_STANDARDS.md` - Guidelines for card content and formatting
+
+### Dungeon Parsing Testing
+- **`dungeon_parsing_test/`** - Test cases and examples for the dungeon HTML parser
+  - Test HTML files: `The Secret Catacombs of Mepha 01.html`, `The_Forsaken_Dungeon_of_Annihilation_01.html`
+  - Test outputs: JSON results of parsing
+  - Debugging: `debug_entries.py` for entry-level debugging
+  - **Note:** The core parser `parse_dungeon.py` is in `lib/` (production code used by Flask), this folder is for testing it
 
 ---
 
@@ -51,11 +60,13 @@ Scripts and tools for development, testing, and database management. These are *
 
 All one-time-use scripts and legacy tools have been moved to `archive/`:
 
-- **Database initialization:** `init_database.py`, `init_database_new.py`
 - **Migrations:** All `migrate_*.py` scripts (database is fully initialized)
 - **Legacy utilities:** `abstract_rolls.py`, `refactor_modifiers.py`, `simplify_prefix.py`, `update_boxes.py`
 - **Legacy server:** `server.py` (replaced by Flask)
 - **Schema inspection:** `schema_inspection.txt`, `view_schema.py`
+
+**Setup Tools (in `_dev/` for initialization only):**
+- `init_database.py` - One-time database initialization script (only needed if rebuilding database from scratch)
 
 See `archive/` if you need to reference historical migration logic or recover deleted functionality.
 
@@ -65,21 +76,21 @@ See `archive/` if you need to reference historical migration logic or recover de
 
 ### Start Flask Server
 ```bash
-python _dev/server_flask.py
+python server_flask.py
 # Server will run at http://localhost:8000
 # API endpoint: GET /api/spells
 ```
 
 ### Test the API
 ```bash
-python _dev/test_api.py
+python test_api.py
 # or use debug_api.py for interactive testing
 ```
 
 ### Inspect Database
 ```bash
-python _dev/show_all_spells.py
-python _dev/verify_spells_complete.py
+python show_all_spells.py
+python verify_spells_complete.py
 ```
 
 ---
