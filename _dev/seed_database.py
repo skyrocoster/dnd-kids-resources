@@ -12,11 +12,13 @@ Seed files:
 - data/seed_creatures.json
 - data/seed_damage_types.json
 - data/seed_creature_types.json
+- data/seed_traps.json
 - data/seed_dungeons.json
 
 Usage:
     python _dev/seed_database.py              # Load all seeds
     python _dev/seed_database.py --spells     # Load only spells
+    python _dev/seed_database.py --traps      # Load only traps
     python _dev/seed_database.py --force      # Force reload (delete existing data first)
 """
 
@@ -24,9 +26,14 @@ import sqlite3
 import json
 from pathlib import Path
 import argparse
+import sys
 
 DB_PATH = Path(__file__).parent.parent / "dnd_kids_resources.db"
 SEEDS_DIR = Path(__file__).parent.parent / "data"
+
+# Add parent directory to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from lib.parse_dungeon import DungeonHTMLParser
 
 def load_json_file(filepath):
     """Load and parse a JSON seed file."""
@@ -221,7 +228,7 @@ def populate_conditions(cursor, conn, force=False):
     print(f"  [OK] Loaded {len(seeds)} conditions")
 
 def populate_creatures(cursor, conn, force=False):
-    """Populate creatures table from seed_creatures.json"""
+    """Populate creatures table from seed_creatures.json using all provided data"""
     print("\n[LION] Loading creatures...")
     
     cursor.execute("SELECT COUNT(*) FROM creatures")
@@ -240,10 +247,6 @@ def populate_creatures(cursor, conn, force=False):
         print("  [WARNING]  No creature seeds found")
         return
     
-    # Get creature type ID mapping
-    cursor.execute("SELECT id, code FROM creature_types WHERE code = ?", ('beast',))
-    beast_type = cursor.fetchone()
-    
     for creature in seeds:
         try:
             # Get creature_type_id from code
@@ -253,7 +256,7 @@ def populate_creatures(cursor, conn, force=False):
                 (creature_type_code,)
             )
             type_row = cursor.fetchone()
-            creature_type_id = type_row[0] if type_row else 1
+            creature_type_id = type_row[0] if type_row else None
             
             # Serialize JSON fields
             attack_to_hit = json.dumps(creature.get('attack_to_hit')) if creature.get('attack_to_hit') else None
@@ -266,15 +269,15 @@ def populate_creatures(cursor, conn, force=False):
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 creature.get('title'),
-                creature.get('icon', '[LION]'),
-                creature.get('size', 'Medium'),
+                creature.get('icon'),
+                creature.get('size'),
                 creature_type_id,
-                creature.get('hp', 10),
-                creature.get('ac', 10),
-                creature.get('explanation', ''),
+                creature.get('hp'),
+                creature.get('ac'),
+                creature.get('explanation'),
                 attack_to_hit,
                 damage,
-                creature.get('special', ''),
+                creature.get('special'),
                 stats
             ))
             print(f"  [CHECK] {creature.get('title')}")
@@ -357,6 +360,69 @@ def populate_damage_types(cursor, conn, force=False):
     cursor.execute("SELECT COUNT(*) FROM damage_types")
     final_count = cursor.fetchone()[0]
     print(f"  [OK] Damage types table now has {final_count} records")
+
+
+def populate_traps(cursor, conn, force=False):
+    """Populate traps table from seed_traps.json - drops and recreates if force"""
+    print("\n[TRAP] Loading traps...")
+    
+    if force:
+        # Drop the entire table and recreate fresh
+        try:
+            cursor.execute("DROP TABLE IF EXISTS traps")
+            print(f"  [TRASH]  Dropped existing traps table")
+        except Exception as e:
+            print(f"  [WARNING]  Error dropping table: {e}")
+        
+        # Create fresh table
+        cursor.execute("""
+            CREATE TABLE traps (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL UNIQUE,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        print("  [OK] Created fresh traps table")
+    else:
+        # Check if table exists and has data
+        try:
+            cursor.execute("SELECT COUNT(*) FROM traps")
+            count = cursor.fetchone()[0]
+            if count > 0:
+                print(f"  [INFO]  Traps table already has {count} records. Skip (use --force to override)")
+                return
+        except Exception:
+            # Table doesn't exist, create it
+            cursor.execute("""
+                CREATE TABLE traps (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL UNIQUE,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            print("  [OK] Created traps table")
+    
+    seeds = load_json_file(SEEDS_DIR / "seed_traps.json")
+    if not seeds:
+        print("  [WARNING]  No trap seeds found")
+        return
+    
+    for trap in seeds:
+        try:
+            cursor.execute("""
+                INSERT INTO traps (name)
+                VALUES (?)
+            """, (
+                trap.get('name'),
+            ))
+            print(f"  [CHECK] {trap.get('name')}")
+        except sqlite3.IntegrityError as e:
+            print(f"  [WARNING]  Error: {trap.get('name')} - {e}")
+    
+    conn.commit()
+    cursor.execute("SELECT COUNT(*) FROM traps")
+    final_count = cursor.fetchone()[0]
+    print(f"  [OK] Traps table now has {final_count} records")
 
 
 def populate_creature_types(cursor, conn, force=False):
@@ -466,12 +532,12 @@ def populate_dungeons(cursor, conn, force=False):
         cursor.execute("DROP TABLE IF EXISTS dungeons")
         cursor.execute("""
             CREATE TABLE dungeons (
-                id INTEGER PRIMARY KEY,
-                title TEXT NOT NULL,
-                description TEXT,
-                rooms JSON,
-                creatures JSON,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT NOT NULL UNIQUE,
+                original_html TEXT NOT NULL,
+                parsed_json TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
         print("  [OK] Created fresh dungeons table")
@@ -487,12 +553,12 @@ def populate_dungeons(cursor, conn, force=False):
             # Table doesn't exist, create it
             cursor.execute("""
                 CREATE TABLE dungeons (
-                    id INTEGER PRIMARY KEY,
-                    title TEXT NOT NULL,
-                    description TEXT,
-                    rooms JSON,
-                    creatures JSON,
-                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    title TEXT NOT NULL UNIQUE,
+                    original_html TEXT NOT NULL,
+                    parsed_json TEXT NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             """)
             print("  [OK] Created dungeons table")
@@ -504,16 +570,16 @@ def populate_dungeons(cursor, conn, force=False):
     
     for dungeon in seeds:
         try:
+            # Seed file already has the correct Flask schema format
             cursor.execute("""
                 INSERT INTO dungeons 
-                (id, title, description, rooms, creatures)
-                VALUES (?, ?, ?, ?, ?)
+                (id, title, original_html, parsed_json)
+                VALUES (?, ?, ?, ?)
             """, (
                 dungeon.get('id'),
                 dungeon.get('title'),
-                dungeon.get('description'),
-                json.dumps(dungeon.get('rooms', [])),
-                json.dumps(dungeon.get('creatures', []))
+                dungeon.get('original_html', ''),
+                dungeon.get('parsed_json', '{}')  # Already JSON string in seed file
             ))
             print(f"  [CHECK] {dungeon.get('title')}")
         except sqlite3.IntegrityError as e:
@@ -525,6 +591,56 @@ def populate_dungeons(cursor, conn, force=False):
     print(f"  [OK] Dungeons table now has {final_count} records")
 
 
+def reparse_all_dungeons():
+    """Re-parse all dungeons in the database to populate trap_ids and other references"""
+    try:
+        conn = sqlite3.connect(str(DB_PATH))
+        cursor = conn.cursor()
+
+        # Get all dungeons
+        cursor.execute('SELECT id, title, original_html FROM dungeons ORDER BY id')
+        dungeons = cursor.fetchall()
+
+        if not dungeons:
+            print("  [INFO] No dungeons found to re-parse")
+            conn.close()
+            return
+
+        print(f"\n  Found {len(dungeons)} dungeon(s) to re-parse\n")
+
+        for dungeon_id, title, original_html in dungeons:
+            print(f"  🔄 Re-parsing: {title} (ID: {dungeon_id})")
+
+            try:
+                # Parse the HTML
+                parser = DungeonHTMLParser(original_html)
+                dungeon_data = parser.parse()
+
+                # Convert to JSON
+                json_output = json.dumps(dungeon_data.to_dict(), indent=2)
+
+                # Update the database
+                cursor.execute(
+                    'UPDATE dungeons SET parsed_json = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+                    (json_output, dungeon_id)
+                )
+                conn.commit()
+
+                print(f"    ✓ Successfully re-parsed and updated\n")
+
+            except Exception as e:
+                print(f"    ✗ Error: {e}\n")
+                conn.rollback()
+
+        conn.close()
+        print("  ✓ Re-parsing complete!")
+        
+    except Exception as e:
+        print(f"  [ERROR] Re-parsing failed: {e}")
+        import traceback
+        traceback.print_exc()
+
+
 def main():
     parser = argparse.ArgumentParser(description='Populate database from seed JSON files')
     parser.add_argument('--abilities', action='store_true', help='Load only abilities')
@@ -533,13 +649,14 @@ def main():
     parser.add_argument('--creatures', action='store_true', help='Load only creatures')
     parser.add_argument('--damage-types', action='store_true', help='Load only damage types')
     parser.add_argument('--creature-types', action='store_true', help='Load only creature types')
+    parser.add_argument('--traps', action='store_true', help='Load only traps')
     parser.add_argument('--dungeons', action='store_true', help='Load only dungeons')
     parser.add_argument('--force', action='store_true', help='Force reload (clear existing data first)')
     
     args = parser.parse_args()
     
     # If no specific tables selected, load all
-    load_all = not any([args.abilities, args.spells, args.conditions, args.creatures, args.damage_types, args.creature_types, args.dungeons])
+    load_all = not any([args.abilities, args.spells, args.conditions, args.creatures, args.damage_types, args.creature_types, args.traps, args.dungeons])
     
     print("="*60)
     print("PHASE 2: DATABASE SEEDING")
@@ -569,10 +686,18 @@ def main():
             populate_spells(cursor, conn, args.force)
         if load_all or args.conditions:
             populate_conditions(cursor, conn, args.force)
+        if load_all or args.traps:
+            populate_traps(cursor, conn, args.force)
         if load_all or args.dungeons:
             populate_dungeons(cursor, conn, args.force)
         
         conn.close()
+        
+        # Re-parse dungeons to populate trap_ids and other references
+        print("\n" + "="*60)
+        print("[REPARSE] Starting dungeon re-parsing...")
+        print("="*60)
+        reparse_all_dungeons()
         
         print("\n" + "="*60)
         print("[OK] PHASE 2 COMPLETE!")
@@ -588,6 +713,7 @@ def main():
         print("  - data/seed_creatures.json")
         print("  - data/seed_damage_types.json")
         print("  - data/seed_creature_types.json")
+        print("  - data/seed_traps.json")
         print("  - data/seed_dungeons.json")
         
         return True

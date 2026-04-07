@@ -10,8 +10,9 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
   background: #c9a97a;
-  font-family: 'Nunito', sans-serif;
+  font-family: 'OpenDyslexic', 'Nunito', sans-serif;
   color: var(--ink);
+}
 }
 
 .page {
@@ -377,8 +378,10 @@ body.bw-mode .page {
   }
   .page:last-child {
     page-break-after: avoid;
-    break-after: avoid;
   }
+  #bw-toggle-btn { display: none !important; }
+  .bw-toggle { display: none !important; }
+}
   .page::before,
   .page::after {
     display: none;

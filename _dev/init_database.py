@@ -86,12 +86,12 @@ def init_database():
         CREATE TABLE IF NOT EXISTS creatures (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             title TEXT NOT NULL UNIQUE,
-            icon TEXT NOT NULL,
-            size TEXT NOT NULL,
-            creature_type_id INTEGER NOT NULL,
-            hp INTEGER NOT NULL,
-            ac INTEGER NOT NULL,
-            explanation TEXT NOT NULL,
+            icon TEXT,
+            size TEXT,
+            creature_type_id INTEGER,
+            hp INTEGER,
+            ac INTEGER,
+            explanation TEXT,
             attack_to_hit TEXT,
             damage TEXT,
             special TEXT,
@@ -103,6 +103,15 @@ def init_database():
 
     cursor.execute(
         "CREATE INDEX IF NOT EXISTS idx_creatures_creature_type_id ON creatures(creature_type_id)")
+
+    # Create traps table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS traps (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL UNIQUE,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
 
     # Create skills table
     cursor.execute("""

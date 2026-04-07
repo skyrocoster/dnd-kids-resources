@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dungeon Library - D&D Kids Resources</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@600;700;800&family=OpenDyslexic&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../css/styles.css">
     <style>
         .dungeons-container {
@@ -237,6 +238,56 @@
             font-style: italic;
         }
 
+        .door-mechanics {
+            font-size: 0.9rem;
+            color: #2471a3;
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            background-color: #ebf5fb;
+            border-left: 3px solid #2471a3;
+            border-radius: 3px;
+            font-weight: 500;
+        }
+
+        .entry-traps {
+            font-size: 0.9rem;
+            color: #c0392b;
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            background-color: #fadbd8;
+            border-left: 3px solid #c0392b;
+            border-radius: 3px;
+            font-weight: 500;
+        }
+
+        .treasure-hidden {
+            font-size: 0.9rem;
+            color: #8e44ad;
+            margin-top: 0.25rem;
+            padding: 0.25rem 0;
+            background-color: transparent;
+            border-left: none;
+            border-radius: 0;
+            font-weight: 500;
+        }
+
+        .treasure-items {
+            font-size: 0.9rem;
+            color: #117a65;
+            margin-top: 0.25rem;
+            padding: 0;
+            background-color: transparent;
+            border-left: none;
+            border-radius: 0;
+            font-weight: normal;
+        }
+
+        .treasure-item {
+            margin: 0.1rem 0;
+            padding-left: 0;
+            color: #0f5c39;
+        }
+
         .room-link {
             color: #f39c12;
             font-weight: bold;
@@ -327,6 +378,69 @@
 
         .back-btn:hover {
             background: #687f8c;
+        }
+
+        .entry-actions {
+            display: none;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid #ddd;
+        }
+
+        body.edit-mode .entry-actions {
+            display: flex;
+        }
+
+        .entry-actions button {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.85rem;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .entry-edit-btn {
+            background: #3498db;
+            color: white;
+        }
+
+        .entry-edit-btn:hover {
+            background: #2980b9;
+        }
+
+        .entry-delete-btn {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .entry-delete-btn:hover {
+            background: #c0392b;
+        }
+
+        .edit-mode-toggle {
+            background: #95a5a6;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+
+        .edit-mode-toggle:hover {
+            background: #7f8c8d;
+        }
+
+        .edit-mode-toggle.active {
+            background: #e67e22;
+            color: white;
+        }
+
+        .edit-mode-toggle.active:hover {
+            background: #d35400;
         }
 
         .general-info {
@@ -531,12 +645,15 @@
             <!-- Right Panel: Controls and Scrollable Room Details -->
             <div class="dungeon-viewer-right">
                 <div class="viewer-controls">
-                    <button class="back-btn" onclick="showListView()">← Back to List</button>
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                        <button class="back-btn" onclick="showListView()">← Back to List</button>
+                        <button class="add-feature-btn" onclick="openAddFeatureModal()">➕ Add Feature</button>
+                        <button id="editModeBtn" class="edit-mode-toggle" onclick="toggleEditMode()" style="margin-bottom: 0;">✎ Edit Mode OFF</button>
+                    </div>
                     <h3>Rooms</h3>
                     <select id="roomSelector" class="room-selector" onchange="displaySelectedRoom()">
                         <option value="">Loading...</option>
                     </select>
-                    <button class="add-feature-btn" onclick="openAddFeatureModal()">➕ Add Feature</button>
                 </div>
 
                 <div class="dungeon-content" style="overflow-y: auto;">
@@ -550,33 +667,69 @@
         <!-- Add Feature Modal -->
         <div id="featureModal" class="modal">
             <div class="modal-content">
-                <h3>Add New Feature to Room</h3>
+                <h3 id="modalTitle">Add New Feature to Room</h3>
                 <div class="modal-field">
                     <label>Feature Type:</label>
                     <select id="featureType" onchange="updateFeatureFields()">
                         <option value="feature">Feature</option>
                         <option value="monster">Monster</option>
+                        <option value="treasure">Treasure</option>
                         <option value="door">Door</option>
                         <option value="trap">Trap</option>
                         <option value="trick">Trick</option>
                         <option value="other">Other</option>
                     </select>
                 </div>
-                <div class="modal-field">
+                <div class="modal-field field-title">
                     <label>Title:</label>
                     <input type="text" id="featureTitle" placeholder="e.g., Treasure Chest" required>
+                </div>
+                <div class="modal-field field-creature hidden">
+                    <label>Creature:</label>
+                    <select id="featureCreature" required>
+                        <option value="">Loading creatures...</option>
+                    </select>
                 </div>
                 <div class="modal-field">
                     <label>Description:</label>
                     <textarea id="featureContent" placeholder="Describe this feature..."></textarea>
                 </div>
-                <div class="modal-field field-monster">
+                <div class="modal-field field-monster hidden">
                     <label>Count:</label>
                     <input type="number" id="featureCount" value="1" min="1">
                 </div>
-                <div class="modal-field field-door">
+                <div class="modal-field field-door hidden">
                     <label>Leads to Room #:</label>
                     <input type="number" id="featureLeadsTo" min="1">
+                </div>
+                <div class="modal-field field-door hidden">
+                    <label>Door Mechanics (unlock DC, break DC, HP, etc.):</label>
+                    <input type="text" id="doorMechanics" placeholder="e.g., DC 20 to open, DC 25 to break; 60 hp">
+                </div>
+                <div class="modal-field field-door hidden">
+                    <label>Associated Trap:</label>
+                    <select id="doorTrapIds">
+                        <option value="">Select a trap...</option>
+                    </select>
+                </div>
+                <div class="modal-field field-treasure hidden">
+                    <label>Container Name:</label>
+                    <input type="text" id="treasureContainer" placeholder="e.g., Locked Iron Chest">
+                </div>
+                <div class="modal-field field-treasure hidden">
+                    <label>Container Mechanics:</label>
+                    <input type="text" id="treasureMechanics" placeholder="e.g., (DC 20 to unlock, DC 20 to break; 15 hp)">
+                </div>
+                <div class="modal-field field-treasure hidden">
+                    <label><input type="checkbox" id="treasureIsHidden"> Hidden Treasure</label>
+                </div>
+                <div class="modal-field field-treasure hidden">
+                    <label>Hidden DC:</label>
+                    <input type="number" id="treasureHiddenDC" min="0" placeholder="e.g., 15">
+                </div>
+                <div class="modal-field field-treasure hidden">
+                    <label>Items (one per line):</label>
+                    <textarea id="treasureItems" placeholder="100 x gold coin&#10;2 x diamond (50 gp)&#10;Spell Scroll"></textarea>
                 </div>
                 <div class="modal-buttons">
                     <button class="cancel-btn" onclick="closeAddFeatureModal()">Cancel</button>
@@ -589,6 +742,10 @@
     <script>
         let currentDungeon = null;
         let dungeons = [];
+        let currentRoomIdx = null;
+        let currentEntryIdx = null;
+        let isEditingEntry = false;
+        let editModeEnabled = false;
 
         // Initialize page based on URL hash
         let isResizing = false;
@@ -750,6 +907,33 @@
                 `<option value="${idx}">${room.title}</option>`
             ).join('');
 
+            // Add keyboard navigation to room selector
+            selector.addEventListener('keydown', function(e) {
+                // Only handle letter keys
+                if (e.key.length === 1 && /[a-zA-Z]/.test(e.key)) {
+                    e.preventDefault();
+                    const searchLetter = e.key.toLowerCase();
+                    const currentIndex = parseInt(this.value);
+                    
+                    // Start searching from the next option after the current one
+                    for (let i = currentIndex + 1; i < this.options.length; i++) {
+                        if (this.options[i].text.charAt(0).toLowerCase() === searchLetter) {
+                            this.value = i;
+                            displaySelectedRoom();
+                            return;
+                        }
+                    }
+                    // If not found after current, search from the beginning
+                    for (let i = 0; i <= currentIndex; i++) {
+                        if (this.options[i].text.charAt(0).toLowerCase() === searchLetter) {
+                            this.value = i;
+                            displaySelectedRoom();
+                            return;
+                        }
+                    }
+                }
+            });
+
             // Display first room
             if (rooms.length > 0) {
                 displayRoom(0);
@@ -777,6 +961,97 @@
                 displayRoom(roomIdx);
             } else {
                 console.warn(`Room #${roomId} not found`);
+            }
+        }
+
+        // Fetch creature details from DB by title (case-insensitive)
+        async function getCreatureDetails(title) {
+            try {
+                const response = await fetch(`/api/creatures/${encodeURIComponent(title)}`);
+                if (response.ok) {
+                    return await response.json();
+                }
+            } catch (e) {
+                console.warn(`Could not fetch creature details for ${title}:`, e);
+            }
+            return null;
+        }
+
+        // Enhance monster displays with creature details from DB
+        async function enrichMonsterDisplay() {
+            const monsters = document.querySelectorAll('.entry.monster');
+            for (const monsterEl of monsters) {
+                const titleEl = monsterEl.querySelector('.entry-title');
+                if (!titleEl) continue;
+                
+                // Extract creature name from title (before count if present)
+                const titleText = titleEl.textContent.trim().split('(')[0].trim();
+                
+                // Fetch creature details
+                const creature = await getCreatureDetails(titleText);
+                if (!creature) continue;
+                
+                // Build creature details HTML - show stats and type info
+                let details = [];
+                
+                // Add HP and AC (format like "HP 13 / AC 12")
+                if (creature.stats_line) {
+                    details.push(creature.stats_line);
+                }
+                
+                // Add type and size info from footer_info (format like "🧟 Undead • Medium")
+                if (creature.footer_info) {
+                    details.push(creature.footer_info);
+                }
+                
+                // Skip if only stats_line (no type info)
+                if (details.length <= 1) continue;
+                
+                const detailsHtml = `<div class="entry-meta" style="margin-top: 6px; color: #666; font-size: 0.95em;">
+                    ${details.join(' • ')}
+                </div>`;
+                
+                // Insert after entry title
+                titleEl.insertAdjacentHTML('afterend', detailsHtml);
+            }
+        }
+
+        async function enrichTrapDisplay() {
+            // Build a map of trap IDs to names for caching
+            const trapCache = {};
+            
+            const trapElements = document.querySelectorAll('[data-trap-ids]');
+            
+            for (const element of trapElements) {
+                const trapIdsStr = element.getAttribute('data-trap-ids');
+                if (!trapIdsStr) continue;
+                
+                const trapIds = trapIdsStr.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
+                if (trapIds.length === 0) continue;
+                
+                // Fetch trap names from cache or API
+                const trapNames = [];
+                for (const trapId of trapIds) {
+                    if (trapCache[trapId]) {
+                        trapNames.push(trapCache[trapId]);
+                    } else {
+                        try {
+                            const response = await fetch(`/api/traps/${trapId}`);
+                            if (response.ok) {
+                                const trap = await response.json();
+                                trapCache[trapId] = trap.name;
+                                trapNames.push(trap.name);
+                            }
+                        } catch (error) {
+                            console.error(`Failed to fetch trap ${trapId}:`, error);
+                        }
+                    }
+                }
+                
+                // Update the display with trap names
+                if (trapNames.length > 0) {
+                    element.textContent = `⚠️ ${trapNames.join(', ')}`;
+                }
             }
         }
 
@@ -857,6 +1132,7 @@
                     monster: [],
                     feature: [],
                     trap: [],
+                    treasure: [],
                     trick: [],
                     other: [],
                     empty: []
@@ -876,6 +1152,7 @@
                     monster: '👹 Creatures',
                     feature: '✨ Features',
                     trap: '⚠️ Traps',
+                    treasure: '💎 Treasure',
                     trick: '🎭 Tricks',
                     other: '❓ Other'
                 };
@@ -899,25 +1176,79 @@
                         });
                     }
 
-                    entriesToDisplay.forEach(entry => {
-                        roomDetailsHtml += `<div class="entry ${entry.entry_type}">`;
-                        roomDetailsHtml += `<div class="entry-title">${escapeHtml(entry.title)}`;
-                        
-                        if (entry.count) {
-                            roomDetailsHtml += ` <span style="color: #999;">(${entry.count}x)</span>`;
-                        }
-                        if (entry.leads_to !== null && entry.leads_to !== undefined) {
-                            roomDetailsHtml += ` → <a href="#" onclick="goToRoom(${entry.leads_to}); return false;" class="room-link">Room #${entry.leads_to}</a>`;
-                        }
-                        
-                        roomDetailsHtml += `</div>`;
+                    entriesToDisplay.forEach((entry, entryIdx) => {
+                        const realEntryIdx = room.entries.indexOf(entry);
+                        // Handle treasure entries
+                        if (entry.entry_type === 'treasure') {
+                            roomDetailsHtml += `<div class="entry ${entry.entry_type}" data-entry-idx="${realEntryIdx}">`;
+                            roomDetailsHtml += `<div class="entry-title">📦 ${escapeHtml(entry.container || entry.title)}</div>`;
+                            
+                            if (entry.container_mechanics) {
+                                roomDetailsHtml += `<div class="entry-content">${escapeHtml(entry.container_mechanics)}</div>`;
+                            }
+                            
+                            if (entry.is_hidden) {
+                                roomDetailsHtml += `<div class="treasure-hidden">🔍 Hidden (DC ${entry.hidden_dc} to find)</div>`;
+                            }
+                            
+                            if (entry.treasure_contents && entry.treasure_contents.length > 0) {
+                                roomDetailsHtml += `<div class="treasure-items"><strong>Items:</strong>`;
+                                entry.treasure_contents.forEach(item => {
+                                    const qty = item.quantity || 1;
+                                    const value = item.value ? ` (${escapeHtml(item.value)})` : '';
+                                    roomDetailsHtml += `<div class="treasure-item">• ${qty}x ${escapeHtml(item.name)}${value}</div>`;
+                                });
+                                roomDetailsHtml += `</div>`;
+                            }
+                            
+                            roomDetailsHtml += `<div class="entry-actions">`;
+                            roomDetailsHtml += `<button class="entry-edit-btn" onclick="openEditEntryModal(${roomIdx}, ${realEntryIdx})">✏️ Edit</button>`;
+                            roomDetailsHtml += `<button class="entry-delete-btn" onclick="deleteEntry(${roomIdx}, ${realEntryIdx})">🗑️ Delete</button>`;
+                            roomDetailsHtml += `</div>`;
+                            roomDetailsHtml += `</div>`;
+                        } else if (entry.entry_type === 'trap' && entry.trap_ids && entry.trap_ids.length > 0) {
+                            // Trap entries with trap_ids - show trap name from database like monsters/doors
+                            roomDetailsHtml += `<div class="entry ${entry.entry_type}" data-entry-idx="${realEntryIdx}">`;
+                            const trapIdsList = entry.trap_ids.join(',');
+                            roomDetailsHtml += `<div class="entry-title" data-trap-ids="${trapIdsList}">⚠️ Loading...</div>`;
+                            
+                            roomDetailsHtml += `<div class="entry-actions">`;
+                            roomDetailsHtml += `<button class="entry-edit-btn" onclick="openEditEntryModal(${roomIdx}, ${realEntryIdx})">✏️ Edit</button>`;
+                            roomDetailsHtml += `<button class="entry-delete-btn" onclick="deleteEntry(${roomIdx}, ${realEntryIdx})">🗑️ Delete</button>`;
+                            roomDetailsHtml += `</div>`;
+                            roomDetailsHtml += `</div>`;
+                        } else {
+                            // Standard entry display for non-treasure entries
+                            roomDetailsHtml += `<div class="entry ${entry.entry_type}" data-entry-idx="${realEntryIdx}">`;
+                            roomDetailsHtml += `<div class="entry-title">${escapeHtml(entry.title)}`;
+                            
+                            if (entry.count) {
+                                roomDetailsHtml += ` <span style="color: #999;">(${entry.count}x)</span>`;
+                            }
+                            if (entry.leads_to !== null && entry.leads_to !== undefined) {
+                                roomDetailsHtml += ` → <a href="#" onclick="goToRoom(${entry.leads_to}); return false;" class="room-link">Room #${entry.leads_to}</a>`;
+                            }
+                            
+                            roomDetailsHtml += `</div>`;
 
-                        if (entry.content) {
-                            roomDetailsHtml += `<div class="entry-content">${escapeHtml(entry.content)}</div>`;
-                        }
+                            if (entry.content) {
+                                roomDetailsHtml += `<div class="entry-content">${escapeHtml(entry.content)}</div>`;
+                            }
 
-                        if (entry.traps && entry.traps.length > 0) {
-                            roomDetailsHtml += `<div class="entry-meta">Trapped: ${escapeHtml(entry.traps.join(', '))}</div>`;
+                            // Door mechanics (separate styling for doors)
+                            if (entry.entry_type === 'door' && entry.door_mechanics) {
+                                roomDetailsHtml += `<div class="door-mechanics">🔓 ${escapeHtml(entry.door_mechanics)}</div>`;
+                            }
+
+                            if (entry.trap_ids && entry.trap_ids.length > 0) {
+                                const trapIdsList = entry.trap_ids.join(',');
+                                roomDetailsHtml += `<div class="entry-traps" data-trap-ids="${trapIdsList}">⚠️ Loading traps...</div>`;
+                            }
+                            
+                            roomDetailsHtml += `<div class="entry-actions">`;
+                            roomDetailsHtml += `<button class="entry-edit-btn" onclick="openEditEntryModal(${roomIdx}, ${realEntryIdx})">✏️ Edit</button>`;
+                            roomDetailsHtml += `<button class="entry-delete-btn" onclick="deleteEntry(${roomIdx}, ${realEntryIdx})">🗑️ Delete</button>`;
+                            roomDetailsHtml += `</div>`;
                         }
 
                         roomDetailsHtml += `</div>`;
@@ -933,6 +1264,23 @@
             document.getElementById('mapDisplay').innerHTML = mapContainerHtml;
             document.getElementById('mapDetailsDisplay').innerHTML = mapDetailsHtml;
             document.getElementById('roomDetailsDisplay').innerHTML = roomDetailsHtml;
+            
+            // Update edit mode button state
+            const editModeBtn = document.getElementById('editModeBtn');
+            if (editModeBtn) {
+                editModeBtn.textContent = editModeEnabled ? '✓ Edit Mode ON' : '✎ Edit Mode OFF';
+                if (editModeEnabled) {
+                    editModeBtn.classList.add('active');
+                } else {
+                    editModeBtn.classList.remove('active');
+                }
+            }
+            
+            // Enhance monster displays with creature details from database
+            enrichMonsterDisplay();
+            
+            // Enhance trap displays with trap names from database
+            enrichTrapDisplay();
         }
 
         // Handle file upload
@@ -991,20 +1339,177 @@
         // Add Feature Modal Functions
         function openAddFeatureModal() {
             if (!currentDungeon) return;
+            isEditingEntry = false;
+            currentRoomIdx = null;
+            currentEntryIdx = null;
+            document.getElementById('modalTitle').textContent = 'Add New Feature to Room';
             document.getElementById('featureModal').classList.add('active');
             document.getElementById('featureType').value = 'feature';
-            updateFeatureFields();
-            document.getElementById('featureTitle').focus();
-        }
-
-        function closeAddFeatureModal() {
-            document.getElementById('featureModal').classList.remove('active');
-            // Reset form
-            document.getElementById('featureType').value = 'feature';
+            document.getElementById('featureType').disabled = false;
             document.getElementById('featureTitle').value = '';
             document.getElementById('featureContent').value = '';
             document.getElementById('featureCount').value = '1';
             document.getElementById('featureLeadsTo').value = '';
+            document.getElementById('doorMechanics').value = '';
+            
+            // Reset trap single-select
+            const doorTrapSelect = document.getElementById('doorTrapIds');
+            doorTrapSelect.value = '';
+            
+            document.getElementById('treasureContainer').value = '';
+            document.getElementById('treasureMechanics').value = '';
+            document.getElementById('treasureIsHidden').checked = false;
+            document.getElementById('treasureHiddenDC').value = '';
+            document.getElementById('treasureItems').value = '';
+            loadCreaturesForModal();
+            loadTrapsForModal();
+            updateFeatureFields();
+            document.getElementById('featureTitle').focus();
+        }
+
+        // Open modal to edit an existing entry
+        function openEditEntryModal(roomIdx, entryIdx) {
+            if (!currentDungeon) return;
+            
+            const data = currentDungeon.parsed_json;
+            const room = data.rooms[roomIdx];
+            const entry = room.entries[entryIdx];
+            
+            if (!entry) return;
+            
+            isEditingEntry = true;
+            currentRoomIdx = roomIdx;
+            currentEntryIdx = entryIdx;
+            
+            document.getElementById('modalTitle').textContent = 'Edit Feature';
+            document.getElementById('featureModal').classList.add('active');
+            
+            // Populate form with entry data
+            document.getElementById('featureType').value = entry.entry_type;
+            document.getElementById('featureType').disabled = true; // Don't allow changing type
+            document.getElementById('featureTitle').value = entry.title || '';
+            document.getElementById('featureContent').value = entry.content || '';
+            document.getElementById('featureCount').value = entry.count || '1';
+            document.getElementById('featureLeadsTo').value = entry.leads_to || '';
+            document.getElementById('doorMechanics').value = entry.door_mechanics || '';
+            // Set trap single-select
+            const doorTrapSelect = document.getElementById('doorTrapIds');
+            doorTrapSelect.value = '';
+            if (entry.trap_ids && entry.trap_ids.length > 0) {
+                doorTrapSelect.value = entry.trap_ids[0];
+            }
+            
+            // Treasure fields
+            document.getElementById('treasureContainer').value = entry.container || '';
+            document.getElementById('treasureMechanics').value = entry.container_mechanics || '';
+            document.getElementById('treasureIsHidden').checked = entry.is_hidden || false;
+            document.getElementById('treasureHiddenDC').value = entry.hidden_dc || '';
+            
+            // Reconstruct items text from treasure_contents
+            if (entry.treasure_contents && entry.treasure_contents.length > 0) {
+                const itemsText = entry.treasure_contents.map(item => {
+                    const qty = item.quantity || 1;
+                    const value = item.value ? ` (${item.value})` : '';
+                    return `${qty} x ${item.name}${value}`;
+                }).join('\n');
+                document.getElementById('treasureItems').value = itemsText;
+            } else {
+                document.getElementById('treasureItems').value = '';
+            }
+            
+            // Set creature selector if it's a monster
+            if (entry.entry_type === 'monster' && entry.creature_id) {
+                document.getElementById('featureCreature').value = entry.creature_id;
+            }
+            
+            loadCreaturesForModal();
+            loadTrapsForModal();
+            updateFeatureFields();
+            document.getElementById('featureTitle').focus();
+        }
+
+        function deleteEntry(roomIdx, entryIdx) {
+            if (!confirm('Are you sure you want to delete this entry?')) return;
+            
+            const data = currentDungeon.parsed_json;
+            const room = data.rooms[roomIdx];
+            
+            if (room && room.entries && room.entries[entryIdx]) {
+                room.entries.splice(entryIdx, 1);
+                displayRoom(roomIdx);
+                saveDungeonChanges();
+            }
+        }
+
+        // Load creatures from DB for the creature selector
+        async function loadCreaturesForModal() {
+            try {
+                const response = await fetch('/api/creatures');
+                if (response.ok) {
+                    const creatures = await response.json();
+                    const selector = document.getElementById('featureCreature');
+                    selector.innerHTML = '<option value="">Select a creature...</option>' + 
+                        creatures.map(c => `<option value="${c.id}">${c.title}</option>`).join('');
+                }
+            } catch (e) {
+                console.error('Error loading creatures:', e);
+                document.getElementById('featureCreature').innerHTML = 
+                    '<option value="">Error loading creatures</option>';
+            }
+        }
+
+        async function loadTrapsForModal() {
+            try {
+                const response = await fetch('/api/traps');
+                if (response.ok) {
+                    const traps = await response.json();
+                    const selector = document.getElementById('doorTrapIds');
+                    selector.innerHTML = traps.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+                }
+            } catch (e) {
+                console.error('Error loading traps:', e);
+                document.getElementById('doorTrapIds').innerHTML = 
+                    '<option value="">Error loading traps</option>';
+            }
+        }
+
+        function toggleEditMode() {
+            editModeEnabled = !editModeEnabled;
+            if (editModeEnabled) {
+                document.body.classList.add('edit-mode');
+            } else {
+                document.body.classList.remove('edit-mode');
+            }
+            // Refresh the current room display to update button state
+            if (currentRoomIdx !== null) {
+                displayRoom(currentRoomIdx);
+            }
+        }
+
+        function closeAddFeatureModal() {
+            document.getElementById('featureModal').classList.remove('active');
+            isEditingEntry = false;
+            currentRoomIdx = null;
+            currentEntryIdx = null;
+            // Reset form
+            document.getElementById('featureType').value = 'feature';
+            document.getElementById('featureType').disabled = false;
+            document.getElementById('featureTitle').value = '';
+            document.getElementById('featureCreature').value = '';
+            document.getElementById('featureContent').value = '';
+            document.getElementById('featureCount').value = '1';
+            document.getElementById('featureLeadsTo').value = '';
+            document.getElementById('doorMechanics').value = '';
+            
+            // Reset trap single-select
+            const doorTrapSelect = document.getElementById('doorTrapIds');
+            doorTrapSelect.value = '';
+            
+            document.getElementById('treasureContainer').value = '';
+            document.getElementById('treasureMechanics').value = '';
+            document.getElementById('treasureIsHidden').checked = false;
+            document.getElementById('treasureHiddenDC').value = '';
+            document.getElementById('treasureItems').value = '';
             updateFeatureFields();
         }
 
@@ -1012,19 +1517,36 @@
             const featureType = document.getElementById('featureType').value;
             
             // Hide all conditional fields
-            document.querySelectorAll('.modal-field.field-monster, .modal-field.field-door').forEach(field => {
+            document.querySelectorAll('.modal-field.field-monster, .modal-field.field-door, .modal-field.field-creature, .modal-field.field-title, .modal-field.field-treasure').forEach(field => {
                 field.classList.add('hidden');
             });
             
+            // Show title field for non-monster types
+            if (featureType !== 'monster') {
+                document.querySelector('.modal-field.field-title').classList.remove('hidden');
+            }
+            
             // Show fields based on type
             if (featureType === 'monster') {
+                document.querySelector('.modal-field.field-creature').classList.remove('hidden');
                 document.querySelector('.modal-field.field-monster').classList.remove('hidden');
             } else if (featureType === 'door') {
-                document.querySelector('.modal-field.field-door').classList.remove('hidden');
+                document.querySelectorAll('.modal-field.field-door').forEach(field => {
+                    field.classList.remove('hidden');
+                });
+            } else if (featureType === 'treasure') {
+                document.querySelectorAll('.modal-field.field-treasure').forEach(field => {
+                    field.classList.remove('hidden');
+                });
             }
         }
 
         function saveNewFeature() {
+            // If editing, call saveEditedEntry instead
+            if (isEditingEntry) {
+                return saveEditedEntry();
+            }
+            
             const selector = document.getElementById('roomSelector');
             const roomIdx = parseInt(selector.value);
             
@@ -1033,35 +1555,49 @@
                 return;
             }
 
-            const title = document.getElementById('featureTitle').value.trim();
-            const content = document.getElementById('featureContent').value.trim();
             const type = document.getElementById('featureType').value;
-            const count = parseInt(document.getElementById('featureCount').value) || 1;
-            const leadsTo = document.getElementById('featureLeadsTo').value ? parseInt(document.getElementById('featureLeadsTo').value) : null;
-
-            if (!title) {
-                alert('Please enter a title');
-                return;
+            
+            // Get title based on feature type
+            let title = '';
+            let creatureId = null;
+            
+            if (type === 'monster') {
+                // For monsters, get from creature selector
+                const creatureSelector = document.getElementById('featureCreature');
+                creatureId = creatureSelector.value;
+                
+                if (!creatureId) {
+                    alert('Please select a creature');
+                    return;
+                }
+                
+                const selectedOption = creatureSelector.options[creatureSelector.selectedIndex];
+                title = selectedOption.textContent;
+            } else {
+                // For other types, use title input
+                title = document.getElementById('featureTitle').value.trim();
+                if (!title && type !== 'treasure') {
+                    alert('Please enter a title');
+                    return;
+                }
             }
 
-            // Create new entry
-            const newEntry = {
-                entry_type: type,
-                title: title,
-                content: content,
-                count: type === 'monster' ? count : null,
-                creature_index: type === 'monster' ? 1 : null,
-                creature_total: type === 'monster' ? count : null,
-                leads_to: leadsTo,
-                traps: []
-            };
+            const content = document.getElementById('featureContent').value.trim();
+            const count = parseInt(document.getElementById('featureCount').value) || 1;
+            const leadsTo = document.getElementById('featureLeadsTo').value ? parseInt(document.getElementById('featureLeadsTo').value) : null;
+            const doorMechanics = document.getElementById('doorMechanics').value.trim();
+            
+            // Get selected trap ID from single-select
+            const doorTrapSelect = document.getElementById('doorTrapIds');
+            const doorTrapId = doorTrapSelect.value ? parseInt(doorTrapSelect.value) : null;
+            const doorTrapIds = doorTrapId ? [doorTrapId] : [];
 
-            // If monster with count > 1, create multiple entries
+            const data = currentDungeon.parsed_json;
+            const room = data.rooms[roomIdx];
+
+            // Create new entry
             if (type === 'monster' && count > 1) {
-                const data = currentDungeon.parsed_json;
-                const room = data.rooms[roomIdx];
-                
-                // Add count entries for each creature
+                // Add multiple entries for each creature
                 for (let i = 1; i <= count; i++) {
                     room.entries.push({
                         entry_type: type,
@@ -1070,18 +1606,169 @@
                         count: count,
                         creature_index: i,
                         creature_total: count,
+                        creature_id: creatureId,
                         leads_to: leadsTo,
-                        traps: []
+                        trap_ids: [],
+                        is_hidden: false,
+                        hidden_dc: null,
+                        container: null,
+                        container_mechanics: null,
+                        treasure_contents: []
                     });
                 }
+            } else if (type === 'treasure') {
+                // Handle treasure entries
+                const container = document.getElementById('treasureContainer').value.trim();
+                const mechanics = document.getElementById('treasureMechanics').value.trim();
+                const isHidden = document.getElementById('treasureIsHidden').checked;
+                const hiddenDC = isHidden ? (parseInt(document.getElementById('treasureHiddenDC').value) || null) : null;
+                const itemsText = document.getElementById('treasureItems').value.trim();
+                
+                // Parse items
+                const treasureContents = [];
+                if (itemsText) {
+                    const itemLines = itemsText.split('\n').filter(line => line.trim());
+                    itemLines.forEach(line => {
+                        // Try to parse "N x item (value)" format
+                        const match = line.match(/(\d+)\s*x\s+(.+?)\s*(?:\(([^)]+)\))?$/);
+                        if (match) {
+                            treasureContents.push({
+                                quantity: parseInt(match[1]),
+                                name: match[2].trim(),
+                                value: match[3] ? match[3].trim() : null
+                            });
+                        } else {
+                            // Just a simple item
+                            treasureContents.push({
+                                quantity: 1,
+                                name: line.trim(),
+                                value: null
+                            });
+                        }
+                    });
+                }
+                
+                room.entries.push({
+                    entry_type: type,
+                    title: title,
+                    content: content,
+                    count: null,
+                    creature_index: null,
+                    creature_total: null,
+                    creature_id: null,
+                    leads_to: null,
+                    trap_ids: [],
+                    is_hidden: isHidden,
+                    hidden_dc: hiddenDC,
+                    container: container || null,
+                    container_mechanics: mechanics || null,
+                    treasure_contents: treasureContents
+                });
             } else {
-                const data = currentDungeon.parsed_json;
-                const room = data.rooms[roomIdx];
-                room.entries.push(newEntry);
+                room.entries.push({
+                    entry_type: type,
+                    title: title,
+                    content: content,
+                    count: type === 'monster' ? count : null,
+                    creature_index: type === 'monster' ? 1 : null,
+                    creature_total: type === 'monster' ? count : null,
+                    creature_id: creatureId,
+                    leads_to: leadsTo,
+                    door_mechanics: type === 'door' ? (doorMechanics || null) : null,
+                    trap_ids: type === 'door' ? doorTrapIds : [],
+                    is_hidden: false,
+                    hidden_dc: null,
+                    container: null,
+                    container_mechanics: null,
+                    treasure_contents: []
+                });
             }
 
             // Refresh display and save
             displayRoom(roomIdx);
+            saveDungeonChanges();
+            closeAddFeatureModal();
+        }
+
+        function saveEditedEntry() {
+            if (!isEditingEntry || currentRoomIdx === null || currentEntryIdx === null) {
+                return saveNewFeature();
+            }
+
+            const data = currentDungeon.parsed_json;
+            const room = data.rooms[currentRoomIdx];
+            const entry = room.entries[currentEntryIdx];
+
+            if (!entry) return;
+
+            const entryType = entry.entry_type;
+            const content = document.getElementById('featureContent').value.trim();
+            const doorMechanics = document.getElementById('doorMechanics').value.trim();
+
+            // Get selected trap ID from single-select
+            const doorTrapSelect = document.getElementById('doorTrapIds');
+            const doorTrapId = doorTrapSelect.value ? parseInt(doorTrapSelect.value) : null;
+            const doorTrapIds = doorTrapId ? [doorTrapId] : [];
+            entry.content = content;
+            entry.leads_to = document.getElementById('featureLeadsTo').value ? parseInt(document.getElementById('featureLeadsTo').value) : null;
+            entry.trap_ids = doorTrapIds;
+
+            // Update type-specific fields
+            if (entryType === 'monster') {
+                const count = parseInt(document.getElementById('featureCount').value) || 1;
+                const creatureSelector = document.getElementById('featureCreature');
+                const creatureId = creatureSelector.value;
+                const selectedOption = creatureSelector.options[creatureSelector.selectedIndex];
+                
+                entry.count = count;
+                entry.creature_id = creatureId;
+                entry.title = selectedOption.textContent;
+            } else if (entryType === 'door') {
+                entry.door_mechanics = doorMechanics || null;
+            } else if (entryType === 'treasure') {
+                const container = document.getElementById('treasureContainer').value.trim();
+                const mechanics = document.getElementById('treasureMechanics').value.trim();
+                const isHidden = document.getElementById('treasureIsHidden').checked;
+                const hiddenDC = isHidden ? (parseInt(document.getElementById('treasureHiddenDC').value) || null) : null;
+                const itemsText = document.getElementById('treasureItems').value.trim();
+
+                entry.container = container || null;
+                entry.container_mechanics = mechanics || null;
+                entry.is_hidden = isHidden;
+                entry.hidden_dc = hiddenDC;
+
+                // Parse items
+                const treasureContents = [];
+                if (itemsText) {
+                    const itemLines = itemsText.split('\n').filter(line => line.trim());
+                    itemLines.forEach(line => {
+                        const match = line.match(/(\d+)\s*x\s+(.+?)\s*(?:\(([^)]+)\))?$/);
+                        if (match) {
+                            treasureContents.push({
+                                quantity: parseInt(match[1]),
+                                name: match[2].trim(),
+                                value: match[3] ? match[3].trim() : null
+                            });
+                        } else {
+                            treasureContents.push({
+                                quantity: 1,
+                                name: line.trim(),
+                                value: null
+                            });
+                        }
+                    });
+                }
+                entry.treasure_contents = treasureContents;
+            } else {
+                // Update title for non-monster types
+                const title = document.getElementById('featureTitle').value.trim();
+                if (title) {
+                    entry.title = title;
+                }
+            }
+
+            // Refresh display and save
+            displayRoom(currentRoomIdx);
             saveDungeonChanges();
             closeAddFeatureModal();
         }

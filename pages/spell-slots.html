@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Spell Slots Tracker</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@600;700;800&family=OpenDyslexic&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --parchment: #fdf3e3;
+      --ink: #2c1810;
+      --red: #c0392b;
+      --blue: #2471a3;
+      --green: #1e8449;
+      --gold: #c9a90a;
+      --purple: #7d3c98;
+      --orange: #ca6f1e;
+      --border: #8b5e3c;
+      --wb: #fffef7;
+      --wbl: #b0865a;
+      --muted: #8b5e3c;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #c9a97a; font-family: 'OpenDyslexic', 'Nunito', sans-serif; color: var(--ink); }
+
+    .sheet {
+      width: 210mm;
+      height: 297mm;
+      margin: 0 auto;
+      background: var(--parchment);
+      padding: 4mm 6mm 4mm;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .sheet::before {
+      display: none;
+    }
+
+    .corner { position: absolute; font-size: 15px; }
+    .corner.tl { top: 7mm; left: 7mm; }
+    .corner.tr { top: 7mm; right: 7mm; }
+    .corner.bl { bottom: 7mm; left: 7mm; }
+    .corner.br { bottom: 7mm; right: 7mm; }
+
+    /* ── Shared ── */
+    .pill {
+      font-family: 'OpenDyslexic', 'Fredoka One', cursive;
+      font-size: 11pt;
+      color: white;
+      padding: 2mm 4mm;
+      border-radius: 20px;
+      display: inline-block;
+      margin-bottom: 0.5mm;
+      line-height: 1.2;
+      text-align: center;
+      letter-spacing: 0.5px;
+    }
+    .wb {
+      background: var(--wb);
+      border: 2.5px solid var(--wbl);
+      border-radius: 8px;
+    }
+    .wline {
+      border-bottom: 2px solid #c4a47a;
+      display: block;
+      width: 100%;
+    }
+    .wline:last-child { border-bottom: none; }
+    .flabel {
+      font-size: 6.5pt;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--muted);
+      display: block;
+      margin-bottom: 0.5mm;
+    }
+
+    /* ── HEADER ── */
+    .header {
+      text-align: center;
+      margin-bottom: 2mm;
+      padding-top: 0;
+    }
+    .header h1 {
+      font-family: 'Fredoka One', cursive;
+      font-size: 22pt;
+      color: var(--purple);
+      text-shadow: 2px 2px 0 #f5cba7, 3px 3px 0 var(--border);
+      line-height: 1;
+    }
+    .header p {
+      font-size: 8pt;
+      color: var(--muted);
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-top: 1mm;
+    }
+
+    /* ══ EDITABLE FIELDS ══ */
+    .editable {
+      cursor: text;
+      outline: none;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .editable:focus {
+      background: rgba(255, 255, 255, 0.6) !important;
+      border-color: var(--gold) !important;
+      box-shadow: 0 0 3px rgba(201, 169, 10, 0.4) !important;
+    }
+
+    @media print {
+      .editable:focus {
+        background: transparent !important;
+        box-shadow: none !important;
+        border-color: inherit !important;
+      }
+    }
+
+    /* ══ SPELL SLOTS ══ */
+    /* ── Spell Levels Container ── */
+    .spell-levels-container {
+      display: flex;
+      flex-direction: column;
+      gap: 1.8mm;
+      padding: 1.5mm;
+      background: var(--wb);
+      border: 2.5px solid var(--wbl);
+      border-radius: 10px;
+      width: 100%;
+      align-content: start;
+      overflow: auto;
+      flex: 1;
+    }
+    .spell-level-row {
+      display: grid;
+      grid-template-columns: 65mm auto 20mm;
+      gap: 2.5mm;
+      align-items: center;
+      padding: 3mm 3mm;
+      border-radius: 8px;
+      border-left: 3px solid var(--wbl);
+      width: fit-content;
+      min-width: 100%;
+      flex: 1;
+    }
+    .spell-level-row:nth-child(1) { border-left-color: #c9a90a; }
+    .spell-level-row:nth-child(2) { border-left-color: #c9a90a; }
+    .spell-level-row:nth-child(3) { border-left-color: #c0392b; }
+    .spell-level-row:nth-child(4) { border-left-color: #c0392b; }
+    .spell-level-row:nth-child(5) { border-left-color: #7d3c98; }
+    .spell-level-row:nth-child(6) { border-left-color: #7d3c98; }
+    .spell-level-row:nth-child(7) { border-left-color: #1e8449; }
+    .spell-level-row:nth-child(8) { border-left-color: #1e8449; }
+    .spell-level-row:nth-child(9) { border-left-color: #2471a3; }
+    .spell-level-label {
+      font-family: 'OpenDyslexic', 'Nunito', sans-serif;
+      font-size: 15pt;
+      color: var(--ink);
+      font-weight: 700;
+      display: block;
+      letter-spacing: 0.5px;
+    }
+    .spell-circles {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 2.5mm;
+      justify-content: flex-start;
+      line-height: 1.5;
+    }
+    .slots-per-day {
+      width: 18mm;
+      height: 18mm;
+      background: var(--wb);
+      border: 2px solid var(--wbl);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16pt;
+      font-weight: 800;
+      color: var(--ink);
+      cursor: text;
+      outline: none;
+      flex-shrink: 0;
+    }
+    .slots-per-day.editable:focus {
+      background: rgba(255, 255, 255, 0.8);
+      border-color: var(--gold);
+      box-shadow: 0 0 3px rgba(201, 169, 10, 0.4);
+    }
+    .spell-circle {
+      width: 17mm;
+      height: 17mm;
+      border: 2.5px solid var(--wbl);
+      border-radius: 50%;
+      background: white;
+      cursor: pointer;
+      transition: background 0.2s;
+      flex-shrink: 0;
+    }
+    .spell-circle:hover {
+      background: #f0f0f0;
+    }
+
+    /* ── B&W Print Toggle Button ── */
+    .bw-toggle {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      padding: 10px 15px;
+      background: var(--parchment);
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      z-index: 1000;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      transition: all 0.3s ease;
+    }
+    .bw-toggle:hover {
+      background: #f5cba7;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .bw-toggle {
+        background: #3a2a1a;
+        color: var(--parchment);
+      }
+      .bw-toggle:hover {
+        background: #4a3a2a;
+      }
+    }
+
+    @media print {
+      body { background: var(--parchment); margin: 0; padding: 0; }
+      .sheet { 
+        margin: 0; 
+        background: var(--parchment);
+        print-color-adjust: exact; 
+        -webkit-print-color-adjust: exact; 
+      }
+      .sheet::before { display: none; }
+      .corner { display: none; }
+      .pill { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .wb { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .spell-level-row { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .bw-toggle { display: none !important; }
+      #bw-toggle-btn { display: none !important; }
+      @page { margin: 0; size: A4; background: var(--parchment); }
+    }
+  </style>
+  <script src="../js/spell-slots.js"></script>
+</head>
+<body>
+<div class="sheet">
+
+  <!-- HEADER -->
+  <div class="header">
+    <h1>💫 Spell Slots Tracker 💫</h1>
+    <p>Dungeons &amp; Dragons · 5th Edition</p>
+  </div>
+
+  <!-- Spell Levels Grid -->
+  <div style="display: flex; flex-direction: column; gap: 2mm; flex: 1;">
+    <span class="pill" style="background:var(--purple);">💫 Spell Slots Remaining</span>
+    <div class="spell-levels-container">
+      <div class="spell-level-row">
+        <span class="spell-level-label">Level 1 Slots Remaining</span>
+        <div class="spell-circles">
+          <div class="spell-circle"></div>
+          <div class="spell-circle"></div>
+          <div class="spell-circle"></div>
+          <div class="spell-circle"></div>
+        </div>
+        <div class="slots-per-day" data-field="slots-level-1"></div>
+      </div>
+      <div class="spell-level-row">
+        <span class="spell-level-label">Level 2 Slots Remaining</span>
+        <div class="spell-circles">
+          <div class="spell-circle"></div>
+          <div class="spell-circle"></div>
+          <div class="spell-circle"></div>
+          <div class="spell-circle"></div>
+        </div>
+        <div class="slots-per-day" data-field="slots-level-2"></div>
+      </div>
+      <div class="spell-level-row">
+        <span class="spell-level-label">Level 3 Slots Remaining</span>
+        <div class="spell-circles">
+          <div class="spell-circle"></div>
+          <div class="spell-circle"></div>
+          <div class="spell-circle"></div>
+          <div class="spell-circle"></div>
+        </div>
+        <div class="slots-per-day" data-field="slots-level-3"></div>
+      </div>
+      <div class="spell-level-row">
+        <span class="spell-level-label">Level 4 Slots Remaining</span>
+        <div class="spell-circles">
+          <div class="spell-circle"></div>
+          <div class="spell-circle"></div>
+          <div class="spell-circle"></div>
+          <div class="spell-circle"></div>
+        </div>
+        <div class="slots-per-day" data-field="slots-level-4"></div>
+      </div>
+      <div class="spell-level-row">
+        <span class="spell-level-label">Level 5 Slots Remaining</span>
+        <div class="spell-circles">
+          <div class="spell-circle"></div>
+          <div class="spell-circle"></div>
+          <div class="spell-circle"></div>
+          <div class="spell-circle"></div>
+        </div>
+        <div class="slots-per-day" data-field="slots-level-5"></div>
+      </div>
+      <div class="spell-level-row">
+        <span class="spell-level-label">Level 6 Slots Remaining</span>
+        <div class="spell-circles">
+          <div class="spell-circle"></div>
+          <div class="spell-circle"></div>
+          <div class="spell-circle"></div>
+          <div class="spell-circle"></div>
+        </div>
+        <div class="slots-per-day" data-field="slots-level-6"></div>
+      </div>
+      <div class="spell-level-row">
+        <span class="spell-level-label">Level 7 Slots Remaining</span>
+        <div class="spell-circles">
+          <div class="spell-circle"></div>
+          <div class="spell-circle"></div>
+          <div class="spell-circle"></div>
+          <div class="spell-circle"></div>
+        </div>
+        <div class="slots-per-day" data-field="slots-level-7"></div>
+      </div>
+      <div class="spell-level-row">
+        <span class="spell-level-label">Level 8 Slots Remaining</span>
+        <div class="spell-circles">
+          <div class="spell-circle"></div>
+          <div class="spell-circle"></div>
+          <div class="spell-circle"></div>
+          <div class="spell-circle"></div>
+        </div>
+        <div class="slots-per-day" data-field="slots-level-8"></div>
+      </div>
+      <div class="spell-level-row">
+        <span class="spell-level-label">Level 9 Slots Remaining</span>
+        <div class="spell-circles">
+          <div class="spell-circle"></div>
+          <div class="spell-circle"></div>
+          <div class="spell-circle"></div>
+          <div class="spell-circle"></div>
+        </div>
+        <div class="slots-per-day" data-field="slots-level-9"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- B&W Print Toggle Button -->
+<button class="bw-toggle">📄 Print B&W</button>
+
+<script src="../js/bw-mode-toggle.js"></script>
+</body>
+</html>

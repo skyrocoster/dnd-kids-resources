@@ -1249,6 +1249,54 @@ def rebuild_database():
         }), 500
 
 
+# ============================================================================
+# TRAPS ENDPOINTS
+# ============================================================================
+
+@app.route('/api/traps', methods=['GET'])
+def get_all_traps():
+    """API endpoint: GET /api/traps - Returns all traps"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT id, name, created_at
+            FROM traps
+            ORDER BY name
+        """)
+        
+        traps = [dict(row) for row in cursor.fetchall()]
+        conn.close()
+        return jsonify(traps)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/traps/<int:trap_id>', methods=['GET'])
+def get_trap_by_id(trap_id):
+    """API endpoint: GET /api/traps/<id> - Returns a single trap by ID"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT id, name, created_at
+            FROM traps
+            WHERE id = ?
+        """, (trap_id,))
+        
+        row = cursor.fetchone()
+        conn.close()
+        
+        if not row:
+            return jsonify({"error": f"Trap with ID {trap_id} not found"}), 404
+        
+        return jsonify(dict(row))
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route('/')
 def index():
     """Serve index.html"""

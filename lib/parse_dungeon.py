@@ -30,7 +30,7 @@ if sys.platform == 'win32':
 @dataclass
 class RoomEntry:
     """Represents a single entry (monster, feature, trap, etc.) in a room"""
-    entry_type: str  # 'monster', 'feature', 'trap', 'trick', 'door', 'other'
+    entry_type: str  # 'monster', 'feature', 'trap', 'trick', 'door', 'treasure', 'other'
     title: str
     content: str
     count: Optional[int] = None
@@ -38,8 +38,15 @@ class RoomEntry:
     creature_total: Optional[int] = None
     creature_id: Optional[int] = None  # Database ID for monsters
     leads_to: Optional[int] = None  # Room number for doors
-    # Associated traps (marked with Ⓣ)
-    traps: List[str] = field(default_factory=list)
+    door_mechanics: Optional[str] = None  # Door-specific mechanics (DC, HP, etc.)
+    # Associated trap IDs (marked with Ⓣ)
+    trap_ids: List[int] = field(default_factory=list)
+    # Treasure-specific fields
+    is_hidden: bool = False  # True if treasure is hidden
+    hidden_dc: Optional[int] = None  # DC to find hidden treasure
+    container: Optional[str] = None  # What the treasure is in (chest, bag, etc.)
+    container_mechanics: Optional[str] = None  # Mechanics for the container (unlock DC, HP, etc.)
+    treasure_contents: List[Dict] = field(default_factory=list)  # List of items: {name, quantity, value}
 
 
 @dataclass
@@ -135,26 +142,12 @@ def get_or_create_creature(creature_name: str, db_conn: sqlite3.Connection) -> O
             print(f"        ✓ Found creature in DB: {creature_name} (ID: {creature_id})")
             return creature_id
         
-        # Creature doesn't exist, create it with minimal data
-        # Get a default creature type ID (using 'humanoid' as default)
-        cursor.execute("SELECT id FROM creature_types WHERE code = ?", ('humanoid',))
-        creature_type_row = cursor.fetchone()
-        creature_type_id = creature_type_row[0] if creature_type_row else 1
-        
-        # Insert new creature with reasonable defaults
+        # Creature doesn't exist, create it with only the name
+        # Other details can be filled in later via the API
         cursor.execute("""
-            INSERT INTO creatures 
-            (title, icon, size, creature_type_id, hp, ac, explanation)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, (
-            creature_name,           # title
-            '👹',                    # icon: generic monster emoji
-            'Medium',                # size: default to Medium
-            creature_type_id,        # creature_type_id
-            10,                      # hp: reasonable default
-            10,                      # ac: reasonable default
-            'Added during dungeon parsing'  # explanation
-        ))
+            INSERT INTO creatures (title)
+            VALUES (?)
+        """, (creature_name,))
         
         db_conn.commit()
         creature_id = cursor.lastrowid
@@ -163,6 +156,46 @@ def get_or_create_creature(creature_name: str, db_conn: sqlite3.Connection) -> O
         
     except sqlite3.Error as e:
         print(f"        ✗ Database error while processing {creature_name}: {e}")
+        return None
+
+
+def get_or_create_trap(trap_name: str, db_conn: sqlite3.Connection) -> Optional[int]:
+    """
+    Check if trap exists in database, create if not.
+    Returns the trap ID, or None if database operation failed.
+    
+    Args:
+        trap_name: Name of the trap (e.g., "Acid Spray")
+        db_conn: Database connection
+        
+    Returns:
+        Trap ID (int) or None if operation failed
+    """
+    try:
+        cursor = db_conn.cursor()
+        
+        # Check if trap already exists (case-insensitive)
+        cursor.execute(
+            "SELECT id FROM traps WHERE LOWER(name) = LOWER(?)",
+            (trap_name,)
+        )
+        existing = cursor.fetchone()
+        
+        if existing:
+            return existing[0]
+        
+        # Trap doesn't exist, create it
+        cursor.execute("""
+            INSERT INTO traps (name)
+            VALUES (?)
+        """, (trap_name,))
+        
+        db_conn.commit()
+        trap_id = cursor.lastrowid
+        return trap_id
+        
+    except sqlite3.Error as e:
+        print(f"        ✗ Database error while processing trap {trap_name}: {e}")
         return None
 
 
@@ -560,17 +593,17 @@ class DungeonHTMLParser:
                         creature_name = potential_name
 
                 # Get or create creature in database
-                creature_id = None
+                # (Ensures creature exists for lookup by title later)
                 if self.db_conn:
-                    creature_id = get_or_create_creature(creature_name, self.db_conn)
+                    get_or_create_creature(creature_name, self.db_conn)
 
                 # Create a single entry with count information (don't create separate per-instance entries)
+                # Note: creature_id not stored; use title to look up creature details via API
                 entry = RoomEntry(
                     entry_type='monster',
                     title=creature_name,  # Just the creature name, count is in the count field
-                    content=creature_name,
+                    content='',  # Don't duplicate creature name in content
                     count=count,
-                    creature_id=creature_id,
                     creature_index=1,
                     creature_total=count
                 )
@@ -579,7 +612,7 @@ class DungeonHTMLParser:
                 continue
 
             # Extract traps marked with Ⓣ (&#9417;) before content cleaning
-            traps = []
+            trap_ids = []
             # Find all trap blocks - look for &#9417; followed by content until </p>
             trap_start_pos = 0
             while True:
@@ -596,8 +629,19 @@ class DungeonHTMLParser:
                 trap_text = trap_text.replace('&nbsp;', ' ')
                 trap_text = re.sub(r'<[^>]+>', ' ', trap_text).strip()
                 trap_text = re.sub(r'\s+', ' ', trap_text)
+                
                 if trap_text:
-                    traps.append(trap_text)
+                    # Extract just the trap name (before the colon, like "Acid Spray")
+                    # Pattern: "TrapName: details..." -> extract just "TrapName"
+                    trap_name_match = re.match(r'^([^:]+?)(?::|$)', trap_text)
+                    if trap_name_match:
+                        trap_name = trap_name_match.group(1).strip()
+                        if trap_name and self.db_conn:
+                            # Get or create trap in database
+                            trap_id = get_or_create_trap(trap_name, self.db_conn)
+                            if trap_id:
+                                trap_ids.append(trap_id)
+                    
                 trap_start_pos = close_p + 1
 
             # Standard entry content cleaning
@@ -612,12 +656,26 @@ class DungeonHTMLParser:
 
             # Extract door-specific data (leads_to)
             leads_to = None
+            door_mechanics = None
             if entry_type == 'door':
                 # Look for "Leads to room #X" pattern
                 leads_match = re.search(
                     r'room\s*#?(\d+)', content_html, re.IGNORECASE)
                 if leads_match:
                     leads_to = int(leads_match.group(1))
+
+                # Extract door mechanics from parentheses at the start of content
+                # Pattern: "Door Description (DC X to Y; Z hp)" or similar
+                mechanics_match = re.match(r'^([^(]*?)\s*\(([^)]+)\)\s*(.*?)$', content)
+                if mechanics_match:
+                    # Content before mechanics
+                    content = mechanics_match.group(1).strip()
+                    # Mechanics in parentheses
+                    door_mechanics = mechanics_match.group(2).strip()
+                    # Any remaining content after mechanics
+                    remaining = mechanics_match.group(3).strip()
+                    if remaining:
+                        content = f"{content} {remaining}".strip() if content else remaining
 
                 # Remove "Leads to" part and arrow symbols from content
                 content = re.sub(
@@ -628,16 +686,152 @@ class DungeonHTMLParser:
                 content = re.sub(r'[→↔]+\s*&nbsp;', '', content).strip()
                 content = re.sub(r'\s+', ' ', content).strip()
 
+            # Parse treasure-specific data
+            is_hidden = False
+            hidden_dc = None
+            container = None
+            container_mechanics = None
+            treasure_contents = []
+            
+            if entry_type == 'treasure':
+                # Parse hidden treasure format from content
+                # Example: "Hidden (DC 15 to find) Locked Good Wooden Chest (DC 20 to unlock, DC 20 to break; 15 hp) 2000 cp, 1000 sp, 80 gp, 2 x diamond (50 gp)"
+                
+                if content:
+                    # Check if treasure is hidden
+                    hidden_match = re.match(r'^(?:Secret|Hidden)\s*\(DC\s*(\d+)\s+to\s+find\)\s*(.*)', content, re.IGNORECASE)
+                    if hidden_match:
+                        is_hidden = True
+                        hidden_dc = int(hidden_match.group(1))
+                        remainder = hidden_match.group(2).strip()
+                    else:
+                        remainder = content
+                    
+                    # Extract container and container mechanics
+                    # Pattern: "Locked Good Wooden Chest (DC 20 to unlock, DC 20 to break; 15 hp) items..."
+                    # First, find everything up to the first item (currency or "X x item")
+                    
+                    # Find the last closing parenthesis that contains mechanics
+                    # Look for patterns like: "...Chest (DC 20 to unlock, DC 20 to break; 15 hp)"
+                    container_match = re.match(r'^([^(]*(?:\([^)]*\))*[^(]*?)\s+(\([^)]*(?:hp|find|unlock|break)[^)]*\))\s+(.*)', remainder, re.IGNORECASE)
+                    
+                    if container_match:
+                        container = container_match.group(1).strip()
+                        container_mechanics = container_match.group(2).strip()
+                        items_text = container_match.group(3).strip()
+                    else:
+                        # Try simpler match: everything before the last parentheses and items after
+                        items_match = re.search(r'(\d+\s*(?:cp|sp|gp)|(?:\d+\s*x\s+))', remainder, re.IGNORECASE)
+                        if items_match:
+                            # Found items start, container is everything before
+                            item_start = items_match.start()
+                            container = remainder[:item_start].strip()
+                            # Extract mechanics from container if present
+                            mech_match = re.search(r'\(([^)]*(?:DC|hp|unlock|break)[^)]*)\)', container, re.IGNORECASE)
+                            if mech_match:
+                                container_mechanics = mech_match.group(1).strip()
+                                # Remove mechanics from container
+                                container = re.sub(r'\s*\([^)]*(?:DC|hp|unlock|break)[^)]*\)', '', container).strip()
+                            items_text = remainder[item_start:].strip()
+                        else:
+                            items_text = remainder
+                    
+                    # Parse treasure items
+                    # Split by comma, but be careful with "x" in "Nx item"
+                    if items_text:
+                        # Split intelligently - look for comma separators at appropriate places
+                        items = []
+                        current_item = ""
+                        paren_depth = 0
+                        
+                        for char in items_text:
+                            if char == '(':
+                                paren_depth += 1
+                            elif char == ')':
+                                paren_depth -= 1
+                            elif char == ',' and paren_depth == 0:
+                                if current_item.strip():
+                                    items.append(current_item.strip())
+                                current_item = ""
+                                continue
+                            current_item += char
+                        
+                        if current_item.strip():
+                            items.append(current_item.strip())
+                        
+                        # Parse each item
+                        for item_text in items:
+                            item_text = item_text.strip()
+                            if not item_text:
+                                continue
+                            
+                            # Parse "2 x diamond (50 gp)" or "2000 cp" or "Spell Scroll (Ensnaring Strike) (common, dmg 200)"
+                            quantity = 1
+                            item_name = ""
+                            value = ""
+                            
+                            # Try "N x ItemName" pattern first
+                            mult_match = re.match(r'^(\d+)\s*x\s+(.+?)(?:\s*\(([^)]*)\))?$', item_text)
+                            if mult_match:
+                                quantity = int(mult_match.group(1))
+                                item_name = mult_match.group(2).strip()
+                                value = mult_match.group(3) if mult_match.group(3) else ''
+                            else:
+                                # Try currency pattern: "2000 cp"
+                                currency_match = re.match(r'^(\d+)\s*([a-z]{2})$', item_text, re.IGNORECASE)
+                                if currency_match:
+                                    quantity = int(currency_match.group(1))
+                                    item_name = currency_match.group(2).upper()
+                                    value = ''
+                                else:
+                                    # Complex item with parentheses like "Spell Scroll (Ensnaring Strike) (common, dmg 200)"
+                                    item_name = item_text
+                                    # Try to extract value from last parentheses
+                                    value_match = re.search(r'\(([^)]*)\)[\s,]*$', item_text)
+                                    if value_match:
+                                        potential_value = value_match.group(1).strip()
+                                        if 'gp' in potential_value or 'sp' in potential_value or 'cp' in potential_value:
+                                            value = potential_value
+                                            item_name = item_text[:value_match.start()].strip()
+                            
+                            if item_name:
+                                treasure_contents.append({
+                                    'name': item_name,
+                                    'quantity': quantity,
+                                    'value': value
+                                })
+
             # Standard entry (non-monster or monster without count)
+            # For standalone trap entries, extract trap name and store in database
+            if entry_type == 'trap' and content and not trap_ids:
+                # Extract trap name from "TrapName: details..." format
+                trap_name_match = re.match(r'^([^:]+?)(?::|$)', content)
+                if trap_name_match:
+                    trap_name = trap_name_match.group(1).strip()
+                    if trap_name and self.db_conn:
+                        # Get or create trap in database
+                        trap_id = get_or_create_trap(trap_name, self.db_conn)
+                        if trap_id:
+                            trap_ids.append(trap_id)
+
             entry = RoomEntry(
                 entry_type=entry_type,
                 title=title,
                 content=content,
                 leads_to=leads_to,
-                traps=traps
+                door_mechanics=door_mechanics,
+                trap_ids=trap_ids,
+                is_hidden=is_hidden,
+                hidden_dc=hidden_dc,
+                container=container,
+                container_mechanics=container_mechanics,
+                treasure_contents=treasure_contents
             )
-            entries.append(entry)
-            entry_index += 1
+            
+            # Skip empty entries
+            if entry_type != 'empty':
+                entries.append(entry)
+                entry_index += 1
 
         return entries
 
@@ -646,7 +840,9 @@ class DungeonHTMLParser:
         title_lower = title.lower()
 
         # Direct matches
-        if 'door' in title_lower or 'class="door"' in row_html:
+        if 'hidden treasure' in title_lower or 'treasure' in title_lower:
+            return 'treasure'
+        elif 'door' in title_lower or 'class="door"' in row_html:
             return 'door'
         elif title_lower == 'monster':
             return 'monster'
