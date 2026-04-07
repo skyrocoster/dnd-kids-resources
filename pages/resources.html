@@ -194,9 +194,90 @@
       </a>
     </div>
     
+    <!-- Admin Section -->
+    <div style="background: #ffe6e6; border: 2px dashed #c0392b; border-radius: 10px; padding: 25px; margin: 40px 0; text-align: center;">
+      <h3 style="font-family: 'Fredoka One', cursive; color: #c0392b; margin-bottom: 15px;">🔧 Admin Tools</h3>
+      <p style="color: #666; margin-bottom: 20px; font-size: 13px;">
+        Completely rebuild the database from seed files. This will delete all existing data and reload from JSON sources.
+      </p>
+      <button id="rebuild-btn" style="
+        background: #c0392b;
+        color: white;
+        border: none;
+        padding: 12px 30px;
+        border-radius: 8px;
+        font-family: 'Nunito', sans-serif;
+        font-weight: 700;
+        font-size: 16px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      " onmouseover="this.style.background='#a93226'" onmouseout="this.style.background='#c0392b'">
+        🔄 Rebuild Database
+      </button>
+      <div id="rebuild-status" style="margin-top: 15px; display: none; padding: 15px; border-radius: 8px; font-size: 14px;"></div>
+    </div>
+    
     <footer>
       <p>© 2024 D&D Kids Resources | Non-commercial fan project</p>
     </footer>
   </div>
+  
+  <script>
+    document.getElementById('rebuild-btn').addEventListener('click', async function() {
+      const btn = this;
+      const statusDiv = document.getElementById('rebuild-status');
+      
+      // Confirm action
+      if (!confirm('⚠️ This will completely rebuild the database!\n\nAll existing data will be deleted and reseeded from JSON files.\n\nContinue?')) {
+        return;
+      }
+      
+      // Disable button and show loading
+      btn.disabled = true;
+      btn.textContent = '⏳ Rebuilding...';
+      statusDiv.style.display = 'block';
+      statusDiv.textContent = 'Starting database rebuild...';
+      statusDiv.style.background = '#e8f4f8';
+      statusDiv.style.color = '#2c3e50';
+      
+      try {
+        const response = await fetch('/api/rebuild-database', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+          statusDiv.style.background = '#d5f4e6';
+          statusDiv.style.color = '#27ae60';
+          statusDiv.innerHTML = `
+            <strong>✅ Success!</strong><br>
+            ${data.message}<br>
+            <small>${data.steps.join(' → ')}</small>
+          `;
+          btn.textContent = '✅ Database Rebuilt';
+          // Reload page after 2 seconds
+          setTimeout(() => location.reload(), 2000);
+        } else {
+          statusDiv.style.background = '#fadbd8';
+          statusDiv.style.color = '#c0392b';
+          statusDiv.innerHTML = `
+            <strong>❌ Error:</strong><br>
+            ${data.error}<br>
+            <small>${data.details || ''}</small>
+          `;
+          btn.disabled = false;
+          btn.textContent = '🔄 Rebuild Database';
+        }
+      } catch (err) {
+        statusDiv.style.background = '#fadbd8';
+        statusDiv.style.color = '#c0392b';
+        statusDiv.innerHTML = `<strong>❌ Error:</strong><br>${err.message}`;
+        btn.disabled = false;
+        btn.textContent = '🔄 Rebuild Database';
+      }
+    });
+  </script>
 </body>
 </html>

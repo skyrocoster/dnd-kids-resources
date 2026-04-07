@@ -195,7 +195,7 @@ This pattern prevents case-sensitivity bugs, ensures consistent styling, and mak
 
 ## Card Colors
 
-**See `COLORS.md` for complete color reference.**
+**See `docs/COLORS.md` for complete color reference.**
 
 Colors are applied via CSS classes on `.card` element:
 - `.level1`, `.level2`, etc. for spells
@@ -211,7 +211,7 @@ Colors are applied via CSS classes on `.card` element:
 ```bash
 # Python 3
 python -m http.server 8000
-# Visit http://localhost:8000
+#Visit http://localhost:8000
 
 # VS Code - Install "Live Server" extension
 # Right-click index.html → "Open with Live Server"
@@ -234,7 +234,7 @@ When adding new card types, verify they print correctly:
 - [ ] 9 cards print per page (3×3 grid)
 - [ ] Each card is exactly 63.5mm × 88.9mm
 - [ ] No cards split across pages
-- [ ] All colors print accurately (compare with [COLORS.md](COLORS.md))
+- [ ] All colors print accurately (compare with [docs/COLORS.md](../docs/COLORS.md))
 - [ ] Text is readable and not clipped
 - [ ] Icons and emojis render correctly
 
@@ -394,7 +394,7 @@ pages/                         # HTML pages for each tool
 - [ ] Page loads without errors (check browser console)
 - [ ] All cards render properly (view in browser)
 - [ ] Print preview shows correct layout (Ctrl+P→Print Preview)
-- [ ] Colors are accurate (check against COLORS.md)
+- [ ] Colors are accurate (check against docs/COLORS.md)
 - [ ] Links work in index.html
 
 ---
@@ -408,7 +408,7 @@ pages/                         # HTML pages for each tool
 
 **Wrong colors**
 - Verify CSS class matches `data.level` field
-- Check COLORS.md for correct class name
+- Check docs/COLORS.md for correct class name
 - Reload page (clear cache if needed)
 
 **Print layout broken**
@@ -471,7 +471,7 @@ detail_entries (
 
 1. **Start the Flask server:**
    ```bash
-   python _dev/server_flask.py
+   python server_flask.py
    ```
 
 2. **Visit Spell Cards page:** `http://localhost:8000/pages/spell-cards.html`
@@ -479,8 +479,7 @@ detail_entries (
 3. **Verify changes appear** in the rendered cards
 
 4. **Check browser console** for any API errors or warnings
-- Verify margins are set correctly
 
 ---
 
-For technical architecture details, see **ARCHITECTURE.md**.
+For technical architecture details, see **[docs/ARCHITECTURE.md](ARCHITECTURE.md)**.

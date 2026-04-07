@@ -163,9 +163,11 @@ Your choice is saved—next time you visit, the page remembers your preference.
 .
 ├── index.html              # Home page
 ├── README.md               # This file
-├── CONTRIBUTING.md         # Developer guide
-├── COLORS.md               # Complete color reference
-├── ARCHITECTURE.md         # Technical documentation
+├── docs/                   # Documentation
+│   ├── CONTRIBUTING.md     # Developer guide
+│   ├── COLORS.md           # Complete color reference
+│   ├── ARCHITECTURE.md     # Technical documentation
+│   └── WORKSPACE_GUIDE.md  # Navigation guide
 │
 ├── pages/                  # Card generator pages
 │   ├── spell-cards.html
@@ -246,9 +248,9 @@ Your choice is saved—next time you visit, the page remembers your preference.
 
 ## Documentation
 
-- **[CONTRIBUTING.md](CONTRIBUTING.md)** — Add new cards and features
-- **[COLORS.md](COLORS.md)** — Complete color reference for all card types
-- **[ARCHITECTURE.md](ARCHITECTURE.md)** — Technical architecture and data formats
+- **[docs/CONTRIBUTING.md](docs/CONTRIBUTING.md)** — Add new cards and features
+- **[docs/COLORS.md](docs/COLORS.md)** — Complete color reference for all card types
+- **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** — Technical architecture and data formats
 - **[_dev/README.md](_dev/README.md)** — Development utilities
 
 ---

@@ -38,6 +38,7 @@ def get_db_connection():
     """Create database connection."""
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
+    conn.execute('PRAGMA foreign_keys = ON')
     return conn
 
 
@@ -53,10 +54,10 @@ def parse_json_field(json_str):
 
 def enrich_numerics_with_abilities(numerics, conn=None):
     """
-    Enrich numerics array with ability metadata (name, emoji, color).
+    Enrich numerics array with ability metadata (id, code, name, emoji, color, type).
 
-    Input: [{"code": "wis"}, {"code": "dex"}]
-    Output: [{"code": "wis", "name": "Wisdom", "emoji": "👁️", "color": "#16a085"}, ...]
+    Input: [34, 39] or [{"code": "dex"}] or ["dex", "sam"]
+    Output: [{"id": 34, "code": "dex", "type": "stat", "name": "Dexterity", "emoji": "⚡", "color": "#f39c12"}, ...]
     """
     if not numerics or not isinstance(numerics, list):
         return numerics
@@ -71,12 +72,47 @@ def enrich_numerics_with_abilities(numerics, conn=None):
     enriched = []
     try:
         for item in numerics:
-            if isinstance(item, dict) and 'code' in item:
+            ability_id = None
+            code = None
+            
+            # Handle integer IDs (e.g., 34, 39)
+            if isinstance(item, int):
+                ability_id = item
+            # Handle string codes (e.g., "dex", "sam")
+            elif isinstance(item, str):
+                code = item
+            # Handle dict with code field
+            elif isinstance(item, dict) and 'code' in item:
                 code = item['code']
-                # Look up ability metadata
+            
+            if ability_id is not None:
+                # Look up by ID
                 cursor = conn.cursor()
                 cursor.execute("""
-                    SELECT name, emoji, color 
+                    SELECT id, code, type, name, emoji, color 
+                    FROM abilities 
+                    WHERE id = ?
+                """, (ability_id,))
+                ability = cursor.fetchone()
+                
+                if ability:
+                    ability_dict = dict(ability)
+                    enriched.append({
+                        'id': ability_dict['id'],
+                        'code': ability_dict['code'],
+                        'type': ability_dict['type'],
+                        'name': ability_dict['name'],
+                        'emoji': ability_dict['emoji'],
+                        'color': ability_dict['color']
+                    })
+                else:
+                    # Fallback if ability not found
+                    enriched.append({'id': ability_id})
+            elif code:
+                # Look up by code
+                cursor = conn.cursor()
+                cursor.execute("""
+                    SELECT id, code, type, name, emoji, color 
                     FROM abilities 
                     WHERE code = ?
                 """, (code,))
@@ -85,14 +121,16 @@ def enrich_numerics_with_abilities(numerics, conn=None):
                 if ability:
                     ability_dict = dict(ability)
                     enriched.append({
-                        'code': code,
+                        'id': ability_dict['id'],
+                        'code': ability_dict['code'],
+                        'type': ability_dict['type'],
                         'name': ability_dict['name'],
                         'emoji': ability_dict['emoji'],
                         'color': ability_dict['color']
                     })
                 else:
                     # Fallback if ability not found
-                    enriched.append(item)
+                    enriched.append(item if isinstance(item, dict) else code)
             else:
                 enriched.append(item)
 
@@ -102,15 +140,15 @@ def enrich_numerics_with_abilities(numerics, conn=None):
             conn.close()
 
 
-def enrich_damage_types(damage_types, conn=None):
+def enrich_damage_types(damage_type_ids, conn=None):
     """
-    Enrich damage_types array with damage_types table metadata (emoji, color).
+    Enrich damage_type_ids array with damage_types table metadata (emoji, color).
 
-    Input: ["fire", "cold"]
-    Output: [{"code": "fire", "name": "Fire", "emoji": "🔥", "color": "#e74c3c"}, ...]
+    Input: [4, 3]  (numeric IDs) or ["fire", "cold"] (string codes)
+    Output: [{"id": 4, "code": "fire", "name": "Fire", "emoji": "🔥", "color": "#e74c3c"}, ...]
     """
-    if not damage_types or not isinstance(damage_types, list):
-        return damage_types
+    if not damage_type_ids or not isinstance(damage_type_ids, list):
+        return damage_type_ids
 
     # If no connection provided, use the new one
     if conn is None:
@@ -121,20 +159,21 @@ def enrich_damage_types(damage_types, conn=None):
 
     enriched = []
     try:
-        for damage_code in damage_types:
-            if isinstance(damage_code, str):
-                # Look up damage type metadata
+        for damage_item in damage_type_ids:
+            if isinstance(damage_item, int):
+                # Look up damage type metadata by ID
                 cursor = conn.cursor()
                 cursor.execute("""
-                    SELECT code, name, emoji, color 
+                    SELECT id, code, name, emoji, color 
                     FROM damage_types 
-                    WHERE code = ?
-                """, (damage_code,))
+                    WHERE id = ?
+                """, (damage_item,))
                 damage_type = cursor.fetchone()
 
                 if damage_type:
                     damage_dict = dict(damage_type)
                     enriched.append({
+                        'id': damage_dict['id'],
                         'code': damage_dict['code'],
                         'name': damage_dict['name'],
                         'emoji': damage_dict['emoji'],
@@ -142,9 +181,31 @@ def enrich_damage_types(damage_types, conn=None):
                     })
                 else:
                     # Fallback if damage type not found
-                    enriched.append(damage_code)
+                    enriched.append(damage_item)
+            elif isinstance(damage_item, str):
+                # Look up damage type metadata by code
+                cursor = conn.cursor()
+                cursor.execute("""
+                    SELECT id, code, name, emoji, color 
+                    FROM damage_types 
+                    WHERE code = ?
+                """, (damage_item,))
+                damage_type = cursor.fetchone()
+
+                if damage_type:
+                    damage_dict = dict(damage_type)
+                    enriched.append({
+                        'id': damage_dict['id'],
+                        'code': damage_dict['code'],
+                        'name': damage_dict['name'],
+                        'emoji': damage_dict['emoji'],
+                        'color': damage_dict['color']
+                    })
+                else:
+                    # Fallback if damage type not found
+                    enriched.append(damage_item if isinstance(damage_item, dict) else damage_item)
             else:
-                enriched.append(damage_code)
+                enriched.append(damage_item)
 
         return enriched
     finally:
@@ -194,7 +255,7 @@ def enrich_creature_type(creature_type_code, conn=None):
 
 
 def enrich_roll_object(roll_obj, conn):
-    """Enrich a single roll object by adding ability metadata to numerics and damage type metadata to types."""
+    """Enrich a single roll object by adding ability metadata to numerics and damage type metadata to type_ids."""
     if not isinstance(roll_obj, dict):
         return roll_obj
 
@@ -206,10 +267,10 @@ def enrich_roll_object(roll_obj, conn):
         enriched_roll['numerics'] = enrich_numerics_with_abilities(
             roll_obj['numerics'], conn)
 
-    # Enrich types with damage type metadata
-    if 'types' in enriched_roll:
-        enriched_roll['types'] = enrich_damage_types(
-            roll_obj['types'], conn)
+    # Enrich type_ids with damage type metadata
+    if 'type_ids' in enriched_roll:
+        enriched_roll['type_ids'] = enrich_damage_types(
+            roll_obj['type_ids'], conn)
 
     return enriched_roll
 
@@ -891,6 +952,46 @@ def get_condition_by_title(title):
         return jsonify({"error": str(e)}), 500
 
 
+@app.route('/api/abilities', methods=['GET'])
+def get_abilities_api():
+    """API endpoint: GET /api/abilities - Returns all abilities with icons and colors."""
+    try:
+        print(
+            f"[API] GET /api/abilities - DB Path: {DB_PATH}, exists: {Path(DB_PATH).exists()}")
+        conn = get_db_connection()
+        print(f"[API] Database connection established")
+        cursor = conn.cursor()
+
+        # Get all abilities
+        cursor.execute("""
+            SELECT id, code, name, emoji, color, type
+            FROM abilities
+            ORDER BY type, name
+        """)
+
+        abilities = []
+        for row in cursor.fetchall():
+            ability_dict = {
+                'id': row['id'],
+                'code': row['code'],
+                'name': row['name'],
+                'emoji': row['emoji'],
+                'color': row['color'],
+                'type': row['type']
+            }
+            abilities.append(ability_dict)
+
+        print(f"[API] Successfully loaded {len(abilities)} abilities")
+        conn.close()
+        return jsonify(abilities)
+
+    except Exception as e:
+        print(f"[API] ERROR: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route('/api/creatures', methods=['GET'])
 def get_creatures_api():
     """API endpoint: GET /api/creatures - Returns all creatures as JSON."""
@@ -1075,6 +1176,77 @@ def update_dungeon(dungeon_id):
         return jsonify({"message": "Dungeon updated successfully"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/rebuild-database', methods=['POST'])
+def rebuild_database():
+    """
+    Rebuild the entire database from scratch.
+    Deletes the existing database and runs init + seed.
+    """
+    try:
+        import subprocess
+        from pathlib import Path
+        
+        db_path = Path(DB_PATH)
+        project_root = db_path.parent
+        
+        # Step 1: Delete existing database
+        if db_path.exists():
+            db_path.unlink()
+            print(f"✓ Deleted existing database")
+        
+        # Step 2: Initialize schema
+        init_script = project_root / "_dev" / "init_database.py"
+        result = subprocess.run(
+            [sys.executable, str(init_script)],
+            cwd=str(project_root),
+            capture_output=True,
+            text=True,
+            timeout=30
+        )
+        
+        if result.returncode != 0:
+            return jsonify({
+                "error": "Database initialization failed",
+                "details": result.stderr
+            }), 500
+        
+        print("✓ Database schema initialized")
+        
+        # Step 3: Seed all data
+        seed_script = project_root / "_dev" / "seed_database.py"
+        result = subprocess.run(
+            [sys.executable, str(seed_script), "--force"],
+            cwd=str(project_root),
+            capture_output=True,
+            text=True,
+            timeout=60
+        )
+        
+        if result.returncode != 0:
+            return jsonify({
+                "error": "Database seeding failed",
+                "details": result.stderr
+            }), 500
+        
+        print("✓ Database seeded successfully")
+        
+        return jsonify({
+            "success": True,
+            "message": "Database rebuilt successfully",
+            "steps": [
+                "Deleted existing database",
+                "Initialized database schema",
+                "Seeded all data (abilities, spells, conditions, creatures, damage types, creature types, dungeons)"
+            ]
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            "error": "Database rebuild failed",
+            "details": str(e)
+        }), 500
 
 
 @app.route('/')

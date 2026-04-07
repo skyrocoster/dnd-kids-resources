@@ -106,7 +106,7 @@ function createModifierBox(boxText = 'SAM') {
 // Renders content with [SAD], [SAM] placeholders, [STAT:xxx] placeholders, and [DAMAGE:xxx] placeholders
 // All ability modifiers render as colored boxes with emoji and ability name inside
 // Damage types render with emoji and color styling
-// rollObj: optional {numerics: [...], types: [...]} to provide ability and damage type metadata
+// rollObj: optional {numerics: [...], type_ids: [...]} to provide ability and damage type metadata
 function renderContentWithPlaceholders(contentStr, boxText = 'SAM', rollObj = null) {
   if (!contentStr.includes('[BOX]') && !contentStr.includes('[STAT:') && 
       !contentStr.includes('[SAD]') && !contentStr.includes('[SAM]') && !contentStr.includes('[DAMAGE:')) {
@@ -125,8 +125,8 @@ function renderContentWithPlaceholders(contentStr, boxText = 'SAM', rollObj = nu
   
   // Build a map of damage type codes to their metadata
   const damageTypeMetadata = {};
-  if (rollObj && rollObj.types && Array.isArray(rollObj.types)) {
-    for (let damageType of rollObj.types) {
+  if (rollObj && rollObj.type_ids && Array.isArray(rollObj.type_ids)) {
+    for (let damageType of rollObj.type_ids) {
       if (damageType && typeof damageType === 'object' && damageType.code) {
         damageTypeMetadata[damageType.code] = damageType;
       }
@@ -171,15 +171,18 @@ function renderContentWithPlaceholders(contentStr, boxText = 'SAM', rollObj = nu
           const damageSpan = document.createElement('span');
           damageSpan.style.display = 'inline-flex';
           damageSpan.style.alignItems = 'center';
-          damageSpan.style.gap = '2px';
-          damageSpan.style.marginRight = '2px';
+          damageSpan.style.gap = '3px';
           
-          // Add emoji with space
-          const emojiSpan = document.createElement('span');
-          emojiSpan.textContent = (damageType.emoji || '') + ' ';
-          damageSpan.appendChild(emojiSpan);
+          // Add emoji
+          if (damageType.emoji) {
+            const emojiSpan = document.createElement('span');
+            emojiSpan.style.fontFamily = 'Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol, sans-serif';
+            emojiSpan.style.fontSize = 'inherit';
+            emojiSpan.textContent = damageType.emoji;
+            damageSpan.appendChild(emojiSpan);
+          }
           
-          // Add damage type name with optional background color
+          // Add damage type name with optional color
           const nameSpan = document.createElement('span');
           nameSpan.textContent = damageType.name || damageCode;
           if (damageType.color) {
@@ -310,13 +313,13 @@ function reconstructStructuredRoll(rollObj) {
  * Database format: {
  *   "roll": "1d20",
  *   "numerics": ["DEX", "SAM"],    // codes like ability scores or special modifiers
- *   "types": ["fire", "cold"],      // damage types, descriptors (no numeric value)
+ *   "type_ids": [4, 3],             // damage type IDs with enriched metadata
  *   "save": false/true              // flag for save rolls
  * }
  * 
  * Examples:
  * - Fire Bolt: {"roll": "1d20", "numerics": ["SAM"]} → "1d20 + [STAT:SAM]"
- * - Damage: {"roll": "1d10", "types": ["fire"]} → "1d10 (fire)"
+ * - Damage: {"roll": "1d10", "type_ids": [{id: 4, code: "fire", emoji: "🔥"}]} → "1d10 (🔥 Fire)"
  * - Con Save: {"roll": "1d20", "numerics": ["CON"], "save": true} → "1d20 + [STAT:CON] (save)"
  */
 // Handles range objects like {distance: "medium", target: "single"} or {distance: "self", shape: "cube"}
@@ -376,20 +379,20 @@ function reconstructDatabaseRoll(rollObj) {
     }));
   }
   
-  // Build descriptor string - only include types and shape, NOT actor or save (those go in label)
+  // Build descriptor string - only include type_ids and shape, NOT actor or save (those go in label)
   const descriptors = [];
   
   // Add damage types/descriptors (check if it's actually an array/list, not empty string)
-  if (rollObj.types && (Array.isArray(rollObj.types) ? rollObj.types.length > 0 : typeof rollObj.types === 'string' && rollObj.types.trim() !== '')) {
-    // Map types to include emoji if available (from enriched damage_types)
-    let typesList = Array.isArray(rollObj.types) ? rollObj.types : rollObj.types.split(',').map(t => t.trim());
+  if (rollObj.type_ids && (Array.isArray(rollObj.type_ids) ? rollObj.type_ids.length > 0 : typeof rollObj.type_ids === 'string' && rollObj.type_ids.trim() !== '')) {
+    // Map type_ids to include emoji if available (from enriched damage_types)
+    let typesList = Array.isArray(rollObj.type_ids) ? rollObj.type_ids : rollObj.type_ids.split(',').map(t => t.trim());
     const typeDisplays = typesList.map(type => {
-      if (typeof type === 'object' && type.code && type.emoji) {
-        // Enriched damage type with emoji and color
+      if (typeof type === 'object' && type.code) {
+        // Enriched damage type - always create placeholder even if emoji is missing
         return `[DAMAGE:${type.code}]`;  // Placeholder that will be replaced during rendering
       }
-      // Fallback to plain string
-      return type;
+      // Fallback for plain string
+      return typeof type === 'string' ? type : String(type);
     });
     descriptors.push(typeDisplays.join(', '));
   }
@@ -617,7 +620,7 @@ function createCardElement(data, onHideCallback) {
       const reconstructedRolls = detail.content.map(roll => {
         if (typeof roll === 'object' && roll !== null && 
             (roll.roll !== undefined || roll.numerics !== undefined || 
-             roll.types !== undefined || roll.save !== undefined)) {
+             roll.type_ids !== undefined || roll.types !== undefined || roll.save !== undefined)) {
           return reconstructDatabaseRoll(roll);
         }
         return String(roll);
@@ -632,9 +635,9 @@ function createCardElement(data, onHideCallback) {
       else if (detail.content.distance !== undefined || detail.content.target !== undefined) {
         displayContent = formatRangeObject(detail.content);
       }
-      // Check if it's the new database roll format (roll, numerics, types, save)
+      // Check if it's the new database roll format (roll, numerics, type_ids, save)
       else if (detail.content.roll !== undefined || detail.content.numerics !== undefined || 
-          detail.content.types !== undefined || detail.content.save !== undefined) {
+          detail.content.type_ids !== undefined || detail.content.types !== undefined || detail.content.save !== undefined) {
         // It's the new database roll format - reconstruct it
         displayContent = reconstructDatabaseRoll(detail.content);
       }
@@ -665,7 +668,7 @@ function createCardElement(data, onHideCallback) {
         boxText = 'BtH';    // Weapons: Bonus to Hit
       }
       // Pass the original roll object so numerics/damage type metadata (emoji, color, name) is available
-      const rollObj = typeof detail.content === 'object' && (detail.content.numerics || detail.content.types) ? detail.content : null;
+      const rollObj = typeof detail.content === 'object' && (detail.content.numerics || detail.content.type_ids) ? detail.content : null;
       const contentFragment = renderContentWithPlaceholders(displayContent, boxText, rollObj);
       if (contentFragment) {
         detailRow.appendChild(contentFragment);

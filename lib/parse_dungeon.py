@@ -12,12 +12,13 @@ Examples:
 
 import sys
 import json
+import sqlite3
 import base64
 import re
 from pathlib import Path
 from html.parser import HTMLParser
 from dataclasses import dataclass, asdict, field
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Tuple
 import argparse
 
 # Enable UTF-8 encoding for Windows console
@@ -35,6 +36,7 @@ class RoomEntry:
     count: Optional[int] = None
     creature_index: Optional[int] = None  # For multiple creatures of same type
     creature_total: Optional[int] = None
+    creature_id: Optional[int] = None  # Database ID for monsters
     leads_to: Optional[int] = None  # Room number for doors
     # Associated traps (marked with Ⓣ)
     traps: List[str] = field(default_factory=list)
@@ -85,12 +87,92 @@ class DungeonData:
         }
 
 
+# ============================================================================
+# Database Management Functions for Creatures
+# ============================================================================
+
+def get_db_connection() -> Optional[sqlite3.Connection]:
+    """Get database connection, returns None if database doesn't exist"""
+    db_path = Path(__file__).parent.parent / "dnd_kids_resources.db"
+    
+    if not db_path.exists():
+        print(f"⚠️  Warning: Database not found at {db_path}. Creatures won't be stored.")
+        return None
+    
+    try:
+        conn = sqlite3.connect(str(db_path))
+        conn.row_factory = sqlite3.Row
+        return conn
+    except sqlite3.Error as e:
+        print(f"⚠️  Warning: Failed to connect to database: {e}")
+        return None
+
+
+def get_or_create_creature(creature_name: str, db_conn: sqlite3.Connection) -> Optional[int]:
+    """
+    Check if creature exists in database, create if not.
+    Returns the creature ID, or None if database operation failed.
+    
+    Args:
+        creature_name: Name of the creature
+        db_conn: Database connection
+        
+    Returns:
+        Creature ID (int) or None if operation failed
+    """
+    try:
+        cursor = db_conn.cursor()
+        
+        # Check if creature already exists (case-insensitive)
+        cursor.execute(
+            "SELECT id FROM creatures WHERE LOWER(title) = LOWER(?)",
+            (creature_name,)
+        )
+        existing = cursor.fetchone()
+        
+        if existing:
+            creature_id = existing[0]
+            print(f"        ✓ Found creature in DB: {creature_name} (ID: {creature_id})")
+            return creature_id
+        
+        # Creature doesn't exist, create it with minimal data
+        # Get a default creature type ID (using 'humanoid' as default)
+        cursor.execute("SELECT id FROM creature_types WHERE code = ?", ('humanoid',))
+        creature_type_row = cursor.fetchone()
+        creature_type_id = creature_type_row[0] if creature_type_row else 1
+        
+        # Insert new creature with reasonable defaults
+        cursor.execute("""
+            INSERT INTO creatures 
+            (title, icon, size, creature_type_id, hp, ac, explanation)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, (
+            creature_name,           # title
+            '👹',                    # icon: generic monster emoji
+            'Medium',                # size: default to Medium
+            creature_type_id,        # creature_type_id
+            10,                      # hp: reasonable default
+            10,                      # ac: reasonable default
+            'Added during dungeon parsing'  # explanation
+        ))
+        
+        db_conn.commit()
+        creature_id = cursor.lastrowid
+        print(f"        ✓ Added creature to DB: {creature_name} (ID: {creature_id})")
+        return creature_id
+        
+    except sqlite3.Error as e:
+        print(f"        ✗ Database error while processing {creature_name}: {e}")
+        return None
+
+
 class DungeonHTMLParser:
     """Parse donjon-generated dungeon HTML into structured data"""
 
     def __init__(self, html_content: str):
         self.html_content = html_content
         self.data = DungeonData(general_info=GeneralInfo(title='Unknown'))
+        self.db_conn = get_db_connection()  # Initialize database connection
 
     def parse(self) -> DungeonData:
         """Main parsing entry point"""
@@ -105,6 +187,10 @@ class DungeonHTMLParser:
         except Exception as e:
             print(f"❌ Parse error: {e}")
             raise
+        finally:
+            # Close database connection when done
+            if self.db_conn:
+                self.db_conn.close()
 
     def extract_general_info(self):
         """Extract title, size, walls, floor, temperature, illumination"""
@@ -473,12 +559,18 @@ class DungeonHTMLParser:
                     if len(potential_name) > 1:
                         creature_name = potential_name
 
+                # Get or create creature in database
+                creature_id = None
+                if self.db_conn:
+                    creature_id = get_or_create_creature(creature_name, self.db_conn)
+
                 # Create a single entry with count information (don't create separate per-instance entries)
                 entry = RoomEntry(
                     entry_type='monster',
                     title=creature_name,  # Just the creature name, count is in the count field
                     content=creature_name,
                     count=count,
+                    creature_id=creature_id,
                     creature_index=1,
                     creature_total=count
                 )

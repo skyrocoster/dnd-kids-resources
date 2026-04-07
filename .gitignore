@@ -24,3 +24,12 @@ node_modules/
 dist/
 build/
 *.log
+
+# Database files (regenerate from seed files instead)
+dnd_kids_resources.db
+*.db
+*.db-shm
+*.db-wal
+
+# Database backups (old versions)
+*.db.backup.*

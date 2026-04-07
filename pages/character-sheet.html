@@ -99,10 +99,10 @@
     margin-top: 0.5mm;
   }
 
-  /* ══ ROW 1: Name + AC + Speed + Initiative + Spell Mod + Spell DC ══ */
+  /* ══ ROW 1: Name + AC + Speed + Initiative + Spell Attack Mod + Spell Ability Mod + Spell DC ══ */
   .row-top {
     display: grid;
-    grid-template-columns: 1fr 24mm 24mm 24mm 24mm 24mm;
+    grid-template-columns: 1fr 24mm 24mm 24mm 24mm 24mm 24mm;
     gap: 1.5mm;
     align-items: end;
     margin-bottom: 2.2mm;
@@ -181,7 +181,8 @@
   .row-top > .circle-stat:nth-child(3) .stat-circle { border-color: var(--green); }
   .row-top > .circle-stat:nth-child(4) .stat-circle { border-color: var(--green); }
   .row-top > .circle-stat:nth-child(5) .stat-circle { border-color: var(--blue); }
-  .row-top > .circle-stat:nth-child(6) .stat-circle { border-color: var(--purple); }
+  .row-top > .circle-stat:nth-child(6) .stat-circle { border-color: var(--blue); }
+  .row-top > .circle-stat:nth-child(7) .stat-circle { border-color: var(--purple); }
 
   /* ══ ROW 2: HP full width ══ */
   .row-hp {
@@ -247,12 +248,6 @@
     overflow: visible;
     min-height: 22mm;
   }
-  .mod-box:nth-child(1) { background: #ffe0b2; border-color: #e67e22; }
-  .mod-box:nth-child(2) { background: #c8e6c9; border-color: #1e8449; }
-  .mod-box:nth-child(3) { background: #ffccbc; border-color: #e67e22; }
-  .mod-box:nth-child(4) { background: #e3f2fd; border-color: #2471a3; }
-  .mod-box:nth-child(5) { background: #f3e5f5; border-color: #7d3c98; }
-  .mod-box:nth-child(6) { background: #fffde7; border-color: #c9a90a; }
   .mod-emoji {
     position: absolute;
     inset: 0;
@@ -274,12 +269,6 @@
     z-index: 1;
     margin: 0;
   }
-  .mod-box:nth-child(1) .mod-name { color: #c0392b; }
-  .mod-box:nth-child(2) .mod-name { color: #1e8449; }
-  .mod-box:nth-child(3) .mod-name { color: #e67e22; }
-  .mod-box:nth-child(4) .mod-name { color: #2471a3; }
-  .mod-box:nth-child(5) .mod-name { color: #8e44ad; }
-  .mod-box:nth-child(6) .mod-name { color: #f39c12; }
   .mod-val {
     position: relative;
     height: 8mm;
@@ -307,12 +296,6 @@
     overflow: visible;
     min-height: 22mm;
   }
-  .save-box:nth-child(1) { background: #ffe0b2; border-color: #e67e22; }
-  .save-box:nth-child(2) { background: #c8e6c9; border-color: #1e8449; }
-  .save-box:nth-child(3) { background: #ffccbc; border-color: #e67e22; }
-  .save-box:nth-child(4) { background: #e3f2fd; border-color: #2471a3; }
-  .save-box:nth-child(5) { background: #f3e5f5; border-color: #7d3c98; }
-  .save-box:nth-child(6) { background: #fffde7; border-color: #c9a90a; }
   .save-emoji {
     position: absolute;
     inset: 0;
@@ -333,12 +316,6 @@
     z-index: 1;
     margin: 0;
   }
-  .save-box:nth-child(1) .save-name { color: #c0392b; }
-  .save-box:nth-child(2) .save-name { color: #1e8449; }
-  .save-box:nth-child(3) .save-name { color: #e67e22; }
-  .save-box:nth-child(4) .save-name { color: #2471a3; }
-  .save-box:nth-child(5) .save-name { color: #8e44ad; }
-  .save-box:nth-child(6) .save-name { color: #f39c12; }
   .save-val {
     position: relative;
     height: 8mm;
@@ -613,7 +590,7 @@
   }
 </style>
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
+  document.addEventListener('DOMContentLoaded', async function() {
     const circles = document.querySelectorAll('.spell-circle');
     
     // ─── Global data persistence ───
@@ -629,6 +606,257 @@
     }
     
     let characterData = loadCharacterData();
+    
+    // ─── Fetch abilities from database ───
+    let abilitiesMap = {};
+    try {
+      const response = await fetch('/api/abilities');
+      if (response.ok) {
+        const abilities = await response.json();
+        // Create a map of ability codes to their data
+        abilities.forEach(ability => {
+          abilitiesMap[ability.code] = ability;
+        });
+        console.log('Loaded abilities from database:', abilitiesMap);
+        
+        // Update emoji divs with database icons
+        updateIconsFromDatabase();
+        
+        // Color header pills from database
+        colorHeaderPills();
+      } else {
+        console.error('Failed to fetch abilities');
+      }
+    } catch (error) {
+      console.error('Error fetching abilities:', error);
+    }
+    
+    // ─── Update emojis from database ───
+    function updateIconsFromDatabase() {
+      // Map of ability codes to their container selectors and elements to color
+      const abilityMappings = {
+        'str': {
+          emojis: ['.row-mods > div:nth-child(1) .mod-emoji', '.row-saves > div:nth-child(1) .save-emoji'],
+          modBox: '.row-mods > div:nth-child(1)',
+          saveBox: '.row-saves > div:nth-child(1)'
+        },
+        'dex': {
+          emojis: ['.row-mods > div:nth-child(2) .mod-emoji', '.row-saves > div:nth-child(2) .save-emoji'],
+          modBox: '.row-mods > div:nth-child(2)',
+          saveBox: '.row-saves > div:nth-child(2)'
+        },
+        'con': {
+          emojis: ['.row-mods > div:nth-child(3) .mod-emoji', '.row-saves > div:nth-child(3) .save-emoji'],
+          modBox: '.row-mods > div:nth-child(3)',
+          saveBox: '.row-saves > div:nth-child(3)'
+        },
+        'int': {
+          emojis: ['.row-mods > div:nth-child(4) .mod-emoji', '.row-saves > div:nth-child(4) .save-emoji'],
+          modBox: '.row-mods > div:nth-child(4)',
+          saveBox: '.row-saves > div:nth-child(4)'
+        },
+        'wis': {
+          emojis: ['.row-mods > div:nth-child(5) .mod-emoji', '.row-saves > div:nth-child(5) .save-emoji'],
+          modBox: '.row-mods > div:nth-child(5)',
+          saveBox: '.row-saves > div:nth-child(5)'
+        },
+        'cha': {
+          emojis: ['.row-mods > div:nth-child(6) .mod-emoji', '.row-saves > div:nth-child(6) .save-emoji'],
+          modBox: '.row-mods > div:nth-child(6)',
+          saveBox: '.row-saves > div:nth-child(6)'
+        }
+      };
+      
+      // Update ability emojis and colors
+      Object.entries(abilityMappings).forEach(([code, mapping]) => {
+        if (abilitiesMap[code]) {
+          const ability = abilitiesMap[code];
+          const emoji = ability.emoji;
+          const color = ability.color;
+          
+          // Update emojis
+          mapping.emojis.forEach(selector => {
+            const element = document.querySelector(selector);
+            if (element) {
+              element.textContent = emoji;
+            }
+          });
+          
+          // Update mod box colors
+          if (mapping.modBox) {
+            const modBox = document.querySelector(mapping.modBox);
+            if (modBox) {
+              modBox.style.borderColor = color;
+              // Slightly transparent background
+              const rgb = hexToRgb(color);
+              if (rgb) {
+                modBox.style.background = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.15)`;
+              }
+            }
+          }
+          
+          // Update save box colors
+          if (mapping.saveBox) {
+            const saveBox = document.querySelector(mapping.saveBox);
+            if (saveBox) {
+              saveBox.style.borderColor = color;
+              // Slightly transparent background
+              const rgb = hexToRgb(color);
+              if (rgb) {
+                saveBox.style.background = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.15)`;
+              }
+            }
+          }
+        }
+      });
+      
+      // Update skill emojis and colors
+      const skillMappings = {
+        'animal_handling': 'animal-handling',
+        'arcana': 'arcana',
+        'acrobatics': 'acrobatics',
+        'athletics': 'athletics',
+        'deception': 'deception',
+        'history': 'history',
+        'insight': 'insight',
+        'intimidation': 'intimidation',
+        'investigation': 'investigation',
+        'medicine': 'medicine',
+        'nature': 'nature',
+        'perception': 'perception',
+        'performance': 'performance',
+        'persuasion': 'persuasion',
+        'religion': 'religion',
+        'sleight_of_hand': 'sleight-hand',
+        'stealth': 'stealth',
+        'survival': 'survival'
+      };
+      
+      Object.entries(skillMappings).forEach(([dbCode, htmlCode]) => {
+        if (abilitiesMap[dbCode]) {
+          const ability = abilitiesMap[dbCode];
+          const emoji = ability.emoji;
+          const color = ability.color;
+          
+          const selector = `.skill-row .skill-val[data-field="${htmlCode}"]`;
+          const container = document.querySelector(selector);
+          if (container) {
+            // Update emoji
+            const emojiEl = container.querySelector('.skill-emoji');
+            if (emojiEl) {
+              emojiEl.textContent = emoji;
+            }
+            
+            // Update color
+            container.style.borderColor = color;
+            const rgb = hexToRgb(color);
+            if (rgb) {
+              container.style.background = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.15)`;
+            }
+          }
+        }
+      });
+      
+      // Update stat circle colors for top row
+      const statMappings = {
+        'speed': '.row-top > div:nth-child(3)',
+        'initiative': '.row-top > div:nth-child(4)',
+        'sam': '.row-top > div:nth-child(5)',
+        'sad': '.row-top > div:nth-child(6)',
+        'sdc': '.row-top > div:nth-child(7)'
+      };
+      
+      Object.entries(statMappings).forEach(([code, selector]) => {
+        if (abilitiesMap[code]) {
+          const ability = abilitiesMap[code];
+          const color = ability.color;
+          const emoji = ability.emoji;
+          
+          const element = document.querySelector(selector);
+          if (element) {
+            const circle = element.querySelector('.stat-circle');
+            const emojiEl = element.querySelector('.stat-emoji');
+            
+            if (circle) {
+              circle.style.borderColor = color;
+            }
+            if (emojiEl) {
+              emojiEl.textContent = emoji;
+            }
+          }
+        }
+      });
+    }
+    
+    // ─── Helper function to convert hex to RGB ───
+    function hexToRgb(hex) {
+      const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+      return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+      } : null;
+    }
+    
+    // ─── Color header pills from database ───
+    function colorHeaderPills() {
+      // Top row stat pills
+      const topRowPills = {
+        'speed': '.row-top > div:nth-child(3) .pill',
+        'initiative': '.row-top > div:nth-child(4) .pill',
+        'sam': '.row-top > div:nth-child(5) .pill',
+        'sad': '.row-top > div:nth-child(6) .pill',
+        'sdc': '.row-top > div:nth-child(7) .pill'
+      };
+      
+      Object.entries(topRowPills).forEach(([code, selector]) => {
+        if (abilitiesMap[code]) {
+          const color = abilitiesMap[code].color;
+          const element = document.querySelector(selector);
+          if (element) {
+            element.style.background = color;
+          }
+        }
+      });
+      
+      // AC pill
+      const acPill = document.querySelector('.shield-wrap .pill');
+      if (acPill && abilitiesMap['ac']) {
+        acPill.style.background = abilitiesMap['ac'].color;
+      }
+      
+      // HP pill
+      const hpPill = document.querySelector('.row-hp .pill');
+      if (hpPill && abilitiesMap['hp']) {
+        hpPill.style.background = abilitiesMap['hp'].color;
+      }
+      
+      // Find pills by their position relative to sections
+      const pills = document.querySelectorAll('span.pill');
+      pills.forEach(pill => {
+        const nextElement = pill.nextElementSibling;
+        
+        // Ability Modifiers pill - use str color
+        if (nextElement && nextElement.classList.contains('row-mods') && abilitiesMap['str']) {
+          pill.style.background = abilitiesMap['str'].color;
+        }
+        
+        // Saving Throws pill - use con color
+        if (nextElement && nextElement.classList.contains('row-saves') && abilitiesMap['con']) {
+          pill.style.background = abilitiesMap['con'].color;
+        }
+        
+        // Skills section pill - find by text content
+        if (pill.textContent.includes('Skills') && abilitiesMap['perception']) {
+          pill.style.background = abilitiesMap['perception'].color;
+        }
+        
+        // Spell Slots pill
+        if (pill.textContent.includes('Spell Slot') && abilitiesMap['spellslots']) {
+          pill.style.background = abilitiesMap['spellslots'].color;
+        }
+      });
+    }
     
     // ─── Setup editable field ───
     function setupEditableField(selector, fieldName) {
@@ -805,8 +1033,13 @@
     </div>
 
     <div class="circle-stat">
-      <span class="pill" style="background:var(--blue);">🪄 Spell Attack Modifier</span>
-      <div class="stat-circle"><div class="stat-emoji">🪄</div><span class="stat-value editable" data-field="spellAttack"></span></div>
+      <span class="pill" style="background:var(--blue);">Spell Attack Mod</span>
+      <div class="stat-circle"><div class="stat-emoji">🎯</div><span class="stat-value editable" data-field="sam"></span></div>
+    </div>
+
+    <div class="circle-stat">
+      <span class="pill" style="background:var(--blue);">Spell Ability Mod</span>
+      <div class="stat-circle"><div class="stat-emoji">🔮</div><span class="stat-value editable" data-field="sad"></span></div>
     </div>
 
     <div class="circle-stat">

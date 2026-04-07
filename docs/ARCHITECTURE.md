@@ -111,7 +111,7 @@ dnd_kids_resources.db
 
 ### Flask API for Spells
 
-**Location:** `_dev/server_flask.py`
+**Location:** `server_flask.py` (root directory)
 
 **Purpose:** Provides REST endpoints to retrieve spell, skill, condition, and creature data from the SQLite database in JSON format
 
@@ -154,7 +154,6 @@ WHERE spell_id = ? ORDER BY sequence_order
 
 **Starting the Flask Server:**
 ```bash
-cd _dev
 python server_flask.py
 # Server runs on http://localhost:8000
 # CORS headers enabled for development
@@ -605,7 +604,7 @@ All pages are optimized for A4 printing with 9 cards per page (3×3 grid). The f
 - All cards use CSS variables for header/footer colors
 - `color-adjust: exact` forces exact color printing
 - Cards are visually tested for color accuracy at 100% scale
-- See [COLORS.md](COLORS.md) for all available color classes
+- See [docs/COLORS.md](COLORS.md) for all available color classes
 
 **Page Breaking:**
 - `break-inside: avoid` prevents cards from splitting
@@ -637,46 +636,48 @@ All browsers should produce identical output when print settings match.
 
 ### Directory Organization
 ```
-f:\DND\Kids Resources\
+dnd-kids-resources/
 ├── index.html                      # Landing page
+├── server_flask.py                 # Flask API server
 ├── README.md                       # User-facing documentation
-├── CONTRIBUTING.md                 # Developer guide
-├── COLORS.md                       # Color reference
-├── ARCHITECTURE.md                 # This file
+├── requirements.txt                # Python dependencies
+│
+├── docs/                           # Documentation
+│   ├── ARCHITECTURE.md             # This file
+│   ├── COLORS.md                   # Color reference
+│   ├── CONTRIBUTING.md             # Developer guide
+│   └── WORKSPACE_GUIDE.md          # Navigation guide
 │
 ├── pages/                          # HTML card page templates
 │   ├── spell-cards.html
 │   ├── condition-cards.html
-│   ├── weapon-cards.html
-│   └── skill-cards.html
+│   ├── creatures.html
+│   ├── skill-cards.html
+│   └── weapon-cards.html
 │
 ├── data/                           # JSON data sources
-│   ├── weapons.json
-│   └── ...                         # Other static card data
+│   └── (static card data would go here)
 │
-├── dnd_kids_resources.db           # SQLite database (spells + card data)
+├── dnd_kids_resources.db           # SQLite database
 │
 ├── js/                             # JavaScript modules
-│   ├── card-generator.js           # Core (shared)
+│   ├── card-generator.js           # Core rendering engine
 │   ├── spells.js
 │   ├── conditions.js
+│   ├── creatures.js
+│   ├── skills.js
 │   ├── weapons.js
-│   └── skills.js
+│   └── bw-mode-toggle.js
 │
 ├── css/
-│   └── styles.css                  # Unified styling
+│   └── styles.css                  # All styling
 │
-├── assets/
-│   └── images/                     # Background images, assets
+├── lib/                            # Python modules
+│   └── parse_dungeon.py            # Dungeon HTML parser
 │
 └── _dev/                           # Development utilities
-    ├── server.py
-    ├── abstract_rolls.py
-    ├── refactor_modifiers.py
-    ├── simplify_prefix.py
-    ├── update_boxes.py
-    ├── test_rendering.js
-    ├── test_variants.py
+    ├── init_database.py
+    ├── reparse_dungeons.py
     └── README.md
 ```
 
@@ -731,8 +732,6 @@ User presses Ctrl+P to print
              ↓
 Perfect playing cards printed on A4 paper
 ```
-
-
 
 ---
 
@@ -862,5 +861,5 @@ All code uses ES6+ JavaScript (Fetch API, Arrow Functions).
 
 ---
 
-For developer questions, see **CONTRIBUTING.md**.
-For color specifications, see **COLORS.md**.
+For developer questions, see **[docs/CONTRIBUTING.md](CONTRIBUTING.md)**.
+For color specifications, see **[docs/COLORS.md](COLORS.md)**.

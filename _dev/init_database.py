@@ -101,6 +101,9 @@ def init_database():
         )
     """)
 
+    cursor.execute(
+        "CREATE INDEX IF NOT EXISTS idx_creatures_creature_type_id ON creatures(creature_type_id)")
+
     # Create skills table
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS skills (
@@ -159,7 +162,7 @@ def init_database():
         )
     """)
 
-    print("✓ Tables created")
+    print("[OK] Tables created")
 
     # Populate abilities if empty
     cursor.execute("SELECT COUNT(*) FROM abilities")
@@ -177,7 +180,7 @@ def init_database():
         ]
         cursor.executemany(
             "INSERT INTO abilities (code, name, emoji, color) VALUES (?, ?, ?, ?)", abilities)
-        print(f"  ✓ Added {len(abilities)} abilities")
+        print(f"  [OK] Added {len(abilities)} abilities")
 
     # Populate damage_types if empty
     cursor.execute("SELECT COUNT(*) FROM damage_types")
@@ -200,7 +203,7 @@ def init_database():
         ]
         cursor.executemany(
             "INSERT INTO damage_types (code, name, emoji, color) VALUES (?, ?, ?, ?)", damage_types)
-        print(f"  ✓ Added {len(damage_types)} damage types")
+        print(f"  [OK] Added {len(damage_types)} damage types")
 
     # Populate creature_types if empty
     cursor.execute("SELECT COUNT(*) FROM creature_types")
@@ -216,12 +219,12 @@ def init_database():
         ]
         cursor.executemany(
             "INSERT INTO creature_types (code, emoji, color) VALUES (?, ?, ?)", creature_types)
-        print(f"  ✓ Added {len(creature_types)} creature types")
+        print(f"  [OK] Added {len(creature_types)} creature types")
 
     conn.commit()
     conn.close()
 
-    print(f"\n✅ Database initialized: {DB_PATH}")
+    print(f"\n[SUCCESS] Database initialized: {DB_PATH}")
     print(f"   Size: {DB_PATH.stat().st_size / 1024:.1f} KB")
 
 
