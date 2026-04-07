@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>D&D Stat Block Parser | Creatures Database</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <style>
+        .parser-container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 2rem;
+        }
+
+        .parser-header {
+            margin-bottom: 2rem;
+        }
+
+        .parser-header h1 {
+            color: #333;
+            margin-bottom: 0.5rem;
+        }
+
+        .parser-header p {
+            color: #666;
+            font-size: 1rem;
+        }
+
+        .parser-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .panel {
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 1.5rem;
+        }
+
+        .panel h2 {
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+            color: #333;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: #333;
+        }
+
+        .form-group textarea,
+        .form-group input[type="text"] {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+
+        .form-group textarea {
+            min-height: 200px;
+            resize: vertical;
+        }
+
+        .form-group input[type="text"] {
+            font-family: inherit;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            cursor: pointer;
+        }
+
+        .checkbox-group label {
+            margin-bottom: 0;
+            cursor: pointer;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        button {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.95rem;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .btn-parse {
+            background: #4CAF50;
+            color: white;
+            flex: 1;
+        }
+
+        .btn-parse:hover {
+            background: #45a049;
+        }
+
+        .btn-parse:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .btn-clear {
+            background: #f44336;
+            color: white;
+        }
+
+        .btn-commit {
+            background: #2196F3;
+            color: white;
+        }
+
+        .btn-commit:hover {
+            background: #1976D2;
+        }
+
+        .btn-commit:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .action-buttons {
+            margin-top: 1rem;
+            padding: 0.75rem;
+            border-radius: 4px;
+            display: none;
+        }
+
+        .status-message.show {
+            display: block;
+        }
+
+        .status-message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status-message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status-message.loading {
+            background: #cce5ff;
+            color: #004085;
+            border: 1px solid #b8daff;
+        }
+
+        .parsed-output {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 1.5rem;
+            word-break: break-all;
+            overflow-x: auto;
+        }
+
+        .parsed-output pre {
+            margin: 0;
+            font-size: 0.85rem;
+            font-family: 'Courier New', monospace;
+        }
+
+        .json-key {
+            color: #881391;
+        }
+
+        .json-string {
+            color: #1976d2;
+        }
+
+        .json-number {
+            color: #098658;
+        }
+
+        .json-boolean {
+            color: #d63384;
+        }
+
+        .creature-preview {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .stat-box {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        .stat-box .label {
+            font-size: 0.75rem;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+
+        .stat-box .value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #333;
+            margin-top: 0.5rem;
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+
+        .action-buttons {
+            display: none;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #ddd;
+        }
+
+        .action-buttons.show {
+            display: flex;
+        }
+
+        .btn-commit {
+            background: #2196F3;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.95rem;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            flex: 1;
+        }
+
+        .btn-commit:hover {
+            background: #1976D2;
+        }
+
+        .btn-commit:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .response-container {
+            margin-top: 2rem;
+        }
+
+        .response-tabs {
+            display: flex;
+            gap: 0;
+            margin-bottom: 1rem;
+            border-bottom: 2px solid #ddd;
+        }
+
+        .tab-button {
+            padding: 0.75rem 1rem;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            color: #666;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .tab-button.active {
+            border-bottom-color: #4CAF50;
+            color: #4CAF50;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .parser-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .creature-preview {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .parser-container {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body style="background: #f5f5f5;">
+    <div class="parser-container">
+        <div class="parser-header">
+            <h1>🗡️ D&D Stat Block Parser</h1>
+            <p>Paste a D&D 5e creature stat block and the AI will extract all the data automatically</p>
+        </div>
+
+        <div class="parser-layout">
+            <!-- Input Panel -->
+            <div class="panel">
+                <h2>Input Stat Block</h2>
+                <div class="form-group">
+                    <label for="statblock">Stat Block Text</label>
+                    <textarea id="statblock" placeholder="Paste D&D 5e creature stat block here...
+
+Example:
+Goblin
+Small humanoid (goblinoid), neutral evil
+Armor Class 15 (leather armor, shield)
+Hit Points 7 (2d6)
+Speed 30 ft.
+
+STR 8 (-1)  DEX 14 (+2)  CON 10 (+0)  INT 10 (+0)  WIS 8 (-1)  CHA 8 (-1)
+
+..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="modelPath">Model Path (Optional)</label>
+                    <input type="text" id="modelPath" placeholder="/path/to/model.gguf">
+                </div>
+
+                <div class="form-group checkbox-group">
+                    <label>Review the output below, then use the Commit button to insert into database</label>
+                </div>
+
+                <div class="button-group">
+                    <button class="btn-parse" id="parseBtn">Parse Stat Block</button>
+                    <button class="btn-clear" id="clearBtn">Clear</button>
+                </div>
+
+                <div class="status-message" id="statusMessage"></div>
+            </div>
+
+            <!-- Results Panel -->
+            <div class="panel">
+                <h2>Parsed Results</h2>
+                <div id="resultsContainer" style="display: none;">
+                    <div class="creature-preview" id="creaturePreview"></div>
+                    <div style="margin-top: 1rem;">
+                        <h3 style="font-size: 0.95rem; margin-bottom: 0.75rem;">Creature Details</h3>
+                        <div style="font-size: 0.85rem; color: #666; line-height: 1.6;">
+                            <p><strong>Title:</strong> <span id="preview-title">-</span></p>
+                            <p><strong>Type:</strong> <span id="preview-type">-</span></p>
+                            <p><strong>Size:</strong> <span id="preview-size">-</span></p>
+                            <p><strong>AC:</strong> <span id="preview-ac">-</span></p>
+                            <p><strong>HP:</strong> <span id="preview-hp">-</span></p>
+                        </div>
+                    </div>
+                    <div class="action-buttons" id="actionButtons">
+                        <button class="btn-commit" id="commitBtn">✓ Commit to Database</button>
+                    </div>
+                </div>
+                <div id="noResultsMessage" style="color: #999; text-align: center; padding: 2rem;">
+                    Results will appear here after parsing
+                </div>
+            </div>
+        </div>
+
+        <!-- Full Response Panel -->
+        <div class="response-container panel">
+            <div class="response-tabs">
+                <button class="tab-button active" data-tab="formatted">Formatted Data</button>
+                <button class="tab-button" data-tab="raw">Raw JSON</button>
+            </div>
+
+            <div id="formatted-tab" class="tab-content active">
+                <div class="parsed-output">
+                    <pre id="formattedOutput">No results yet</pre>
+                </div>
+            </div>
+
+            <div id="raw-tab" class="tab-content">
+                <div class="parsed-output">
+                    <pre id="rawOutput">No results yet</pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const statblockInput = document.getElementById('statblock');
+        const modelPathInput = document.getElementById('modelPath');
+        const parseBtn = document.getElementById('parseBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const statusMessage = document.getElementById('statusMessage');
+        const resultsContainer = document.getElementById('resultsContainer');
+        const noResultsMessage = document.getElementById('noResultsMessage');
+        const formattedOutput = document.getElementById('formattedOutput');
+        const rawOutput = document.getElementById('rawOutput');
+        const commitBtn = document.getElementById('commitBtn');
+        const actionButtons = document.getElementById('actionButtons');
+        
+        let currentJobId = null;      // Current job tracking
+        let pollIntervalId = null;    // Polling interval handle
+        let lastParsedData = null;    // Parsed response data
+
+        // Tab switching
+        document.querySelectorAll('.tab-button').forEach(button => {
+            button.addEventListener('click', () => {
+                const tabName = button.dataset.tab;
+                document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                button.classList.add('active');
+                document.getElementById(`${tabName}-tab`).classList.add('active');
+            });
+        });
+
+        // Clear button
+        clearBtn.addEventListener('click', () => {
+            statblockInput.value = '';
+            modelPathInput.value = '';
+            resultsContainer.style.display = 'none';
+            noResultsMessage.style.display = 'block';
+            formattedOutput.textContent = 'No results yet';
+            rawOutput.textContent = 'No results yet';
+            actionButtons.classList.remove('show');
+            lastParsedData = null;
+            statblockInput.focus();
+        });
+
+        // Queue button (renamed from "Parse")
+        parseBtn.addEventListener('click', async () => {
+            const statblockValue = statblockInput.value.trim();
+            const modelPathValue = modelPathInput.value.trim();
+            
+            if (!statblockValue) {
+                showStatus('Please paste a stat block', 'error');
+                return;
+            }
+
+            showStatus('Submitting to queue...', 'loading');
+
+            try {
+                const payload = {
+                    statblock: statblockValue
+                };
+
+                if (modelPathValue) {
+                    payload.model_path = modelPathValue;
+                }
+
+                // Submit job to queue
+                const response = await fetch('/api/queue/submit', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+
+                if (data.success && data.job_id) {
+                    currentJobId = data.job_id;
+                    showStatus(`✓ Job #${currentJobId} queued. You can add another! (Results will appear below)`, 'loading');
+                    
+                    // Clear form for next job
+                    statblockInput.value = '';
+                    modelPathInput.value = '';
+                    statblockInput.focus();
+                    
+                    // Start polling (runs in background)
+                    startPolling();
+                } else {
+                    showStatus(data.error || 'Failed to submit job', 'error');
+                }
+            } catch (error) {
+                showStatus(`Error: ${error.message}`, 'error');
+            }
+        });
+
+        function showStatus(message, type) {
+            statusMessage.textContent = message;
+            statusMessage.className = `status-message ${type}`;
+            statusMessage.classList.add('show');
+        }
+
+        function startPolling() {
+            // Poll job status every 2 seconds
+            pollIntervalId = setInterval(pollJobStatus, 2000);
+            // Also poll immediately
+            pollJobStatus();
+        }
+
+        async function pollJobStatus() {
+            if (!currentJobId) return;
+
+            try {
+                const response = await fetch(`/api/queue/${currentJobId}`);
+                const job = await response.json();
+
+                if (job.error) {
+                    showStatus(`Job #${currentJobId} not found: ${job.error}`, 'error');
+                    if (pollIntervalId) clearInterval(pollIntervalId);
+                    return;
+                }
+
+                // Update status
+                let statusText = `[Job #${currentJobId}] `;
+                let statusType = 'loading';
+
+                switch (job.status) {
+                    case 'pending':
+                        statusText += `⏳ Pending (in queue...)`;
+                        break;
+                    case 'processing':
+                        const progress = job.progress_percent || 0;
+                        statusText += `⚙️ Processing... ${progress}%`;
+                        break;
+                    case 'completed':
+                        if (job.creature_id) {
+                            statusText += `✓ Complete! Creature #${job.creature_id} saved`;
+                            statusType = 'success';
+                        } else {
+                            statusText += `✓ Parsing complete (no creature created)`;
+                            statusType = 'success';
+                        }
+                        
+                        // Stop polling for this job
+                        if (pollIntervalId) clearInterval(pollIntervalId);
+                        currentJobId = null;
+                        
+                        // Display results
+                        if (job.parsed_data) {
+                            lastParsedData = job.parsed_data;
+                            displayResults(job.parsed_data);
+                            
+                            // Update preview
+                            if (lastParsedData.title) {
+                                document.getElementById('preview-title').textContent = lastParsedData.title;
+                            }
+                            if (lastParsedData.creature_type) {
+                                document.getElementById('preview-type').textContent = lastParsedData.creature_type;
+                            }
+                            if (lastParsedData.size) {
+                                document.getElementById('preview-size').textContent = lastParsedData.size;
+                            }
+                            if (lastParsedData.ac) {
+                                document.getElementById('preview-ac').textContent = lastParsedData.ac;
+                            }
+                            if (lastParsedData.hp) {
+                                document.getElementById('preview-hp').textContent = lastParsedData.hp;
+                            }
+                        }
+                        
+                        resultsContainer.style.display = 'block';
+                        noResultsMessage.style.display = 'none';
+                        
+                        // Hide commit button if already saved
+                        if (job.creature_id) {
+                            actionButtons.classList.remove('show');
+                        } else {
+                            actionButtons.classList.add('show');
+                        }
+                        break;
+                    
+                    case 'failed':
+                        statusText += `✗ Failed: ${job.error_message || 'Unknown error'}`;
+                        statusType = 'error';
+                        if (pollIntervalId) clearInterval(pollIntervalId);
+                        currentJobId = null;
+                        break;
+                }
+
+                showStatus(statusText, statusType);
+
+            } catch (error) {
+                console.error('Poll error:', error);
+                // Don't show error for network issues, just keep polling
+            }
+        }
+
+        function displayResults(parsedData) {
+            // Pretty-print the parsed data
+            const formattedJson = JSON.stringify(parsedData, null, 2);
+            formattedOutput.textContent = formattedJson;
+            rawOutput.textContent = formattedJson;
+        }
+
+        // Commit to DB button (only shown if job didn't auto-save)
+        commitBtn.addEventListener('click', async () => {
+            if (!currentJobId) {
+                showStatus('No job to commit', 'error');
+                return;
+            }
+
+            // The job already committed if creature_id is set
+            // This button is just for manual commit if needed
+
+            commitBtn.disabled = true;
+            showStatus('Job already processed', 'success');
+            commitBtn.disabled = false;
+            
+            setTimeout(() => {
+                clearBtn.click();
+            }, 1500);
+        });
+
+        // Change button text to Queue
+        parseBtn.textContent = 'Queue for Processing';
+
+        // Auto-focus on load
+        statblockInput.focus();
+    </script>
+</body>
+</html>

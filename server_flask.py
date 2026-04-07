@@ -13,6 +13,7 @@ sys.path.insert(0, str(Path(__file__).parent / 'lib'))
 import json
 import sqlite3
 from parse_dungeon import DungeonHTMLParser
+from parse_statblock import StatBlockParser
 from flask import Flask, jsonify, send_from_directory, request
 import webbrowser
 
@@ -54,10 +55,10 @@ def parse_json_field(json_str):
 
 def enrich_numerics_with_abilities(numerics, conn=None):
     """
-    Enrich numerics array with ability metadata (id, code, name, emoji, color, type).
+    Enrich numerics array with ability metadata (code, name, emoji, color).
 
-    Input: [34, 39] or [{"code": "dex"}] or ["dex", "sam"]
-    Output: [{"id": 34, "code": "dex", "type": "stat", "name": "Dexterity", "emoji": "⚡", "color": "#f39c12"}, ...]
+    Input: [{"code": "dex"}] or ["dex", "sam"] or [{"code": "strength"}]
+    Output: [{"code": "dex", "name": "Dexterity", "emoji": "⚡", "color": "#f39c12"}, ...]
     """
     if not numerics or not isinstance(numerics, list):
         return numerics
@@ -72,47 +73,24 @@ def enrich_numerics_with_abilities(numerics, conn=None):
     enriched = []
     try:
         for item in numerics:
-            ability_id = None
             code = None
             
-            # Handle integer IDs (e.g., 34, 39)
-            if isinstance(item, int):
-                ability_id = item
             # Handle string codes (e.g., "dex", "sam")
-            elif isinstance(item, str):
+            if isinstance(item, str):
                 code = item
             # Handle dict with code field
             elif isinstance(item, dict) and 'code' in item:
                 code = item['code']
+            # Skip integer IDs since abilities table uses code as PK
+            elif isinstance(item, int):
+                enriched.append(item)
+                continue
             
-            if ability_id is not None:
-                # Look up by ID
-                cursor = conn.cursor()
-                cursor.execute("""
-                    SELECT id, code, type, name, emoji, color 
-                    FROM abilities 
-                    WHERE id = ?
-                """, (ability_id,))
-                ability = cursor.fetchone()
-                
-                if ability:
-                    ability_dict = dict(ability)
-                    enriched.append({
-                        'id': ability_dict['id'],
-                        'code': ability_dict['code'],
-                        'type': ability_dict['type'],
-                        'name': ability_dict['name'],
-                        'emoji': ability_dict['emoji'],
-                        'color': ability_dict['color']
-                    })
-                else:
-                    # Fallback if ability not found
-                    enriched.append({'id': ability_id})
-            elif code:
+            if code:
                 # Look up by code
                 cursor = conn.cursor()
                 cursor.execute("""
-                    SELECT id, code, type, name, emoji, color 
+                    SELECT code, name, emoji, color 
                     FROM abilities 
                     WHERE code = ?
                 """, (code,))
@@ -121,9 +99,7 @@ def enrich_numerics_with_abilities(numerics, conn=None):
                 if ability:
                     ability_dict = dict(ability)
                     enriched.append({
-                        'id': ability_dict['id'],
                         'code': ability_dict['code'],
-                        'type': ability_dict['type'],
                         'name': ability_dict['name'],
                         'emoji': ability_dict['emoji'],
                         'color': ability_dict['color']
@@ -142,10 +118,10 @@ def enrich_numerics_with_abilities(numerics, conn=None):
 
 def enrich_damage_types(damage_type_ids, conn=None):
     """
-    Enrich damage_type_ids array with damage_types table metadata (emoji, color).
+    Enrich damage_type_ids array with damage_types table metadata (code, name, emoji, color).
 
-    Input: [4, 3]  (numeric IDs) or ["fire", "cold"] (string codes)
-    Output: [{"id": 4, "code": "fire", "name": "Fire", "emoji": "🔥", "color": "#e74c3c"}, ...]
+    Input: ["fire", "cold"] (string codes)
+    Output: [{"code": "fire", "name": "Fire", "emoji": "🔥", "color": "#e74c3c"}, ...]
     """
     if not damage_type_ids or not isinstance(damage_type_ids, list):
         return damage_type_ids
@@ -160,33 +136,11 @@ def enrich_damage_types(damage_type_ids, conn=None):
     enriched = []
     try:
         for damage_item in damage_type_ids:
-            if isinstance(damage_item, int):
-                # Look up damage type metadata by ID
-                cursor = conn.cursor()
-                cursor.execute("""
-                    SELECT id, code, name, emoji, color 
-                    FROM damage_types 
-                    WHERE id = ?
-                """, (damage_item,))
-                damage_type = cursor.fetchone()
-
-                if damage_type:
-                    damage_dict = dict(damage_type)
-                    enriched.append({
-                        'id': damage_dict['id'],
-                        'code': damage_dict['code'],
-                        'name': damage_dict['name'],
-                        'emoji': damage_dict['emoji'],
-                        'color': damage_dict['color']
-                    })
-                else:
-                    # Fallback if damage type not found
-                    enriched.append(damage_item)
-            elif isinstance(damage_item, str):
+            if isinstance(damage_item, str):
                 # Look up damage type metadata by code
                 cursor = conn.cursor()
                 cursor.execute("""
-                    SELECT id, code, name, emoji, color 
+                    SELECT code, name, emoji, color 
                     FROM damage_types 
                     WHERE code = ?
                 """, (damage_item,))
@@ -195,7 +149,6 @@ def enrich_damage_types(damage_type_ids, conn=None):
                 if damage_type:
                     damage_dict = dict(damage_type)
                     enriched.append({
-                        'id': damage_dict['id'],
                         'code': damage_dict['code'],
                         'name': damage_dict['name'],
                         'emoji': damage_dict['emoji'],
@@ -203,8 +156,9 @@ def enrich_damage_types(damage_type_ids, conn=None):
                     })
                 else:
                     # Fallback if damage type not found
-                    enriched.append(damage_item if isinstance(damage_item, dict) else damage_item)
+                    enriched.append(damage_item)
             else:
+                # Skip integers since damage_types table uses code as PK
                 enriched.append(damage_item)
 
         return enriched
@@ -254,8 +208,65 @@ def enrich_creature_type(creature_type_code, conn=None):
             conn.close()
 
 
+def get_damage_type_metadata(damage_type_code, conn):
+    """
+    Get enriched metadata for a damage type code.
+    
+    Input: "piercing"
+    Output: {"code": "piercing", "name": "Piercing", "emoji": "🗡️", "color": "#..."}
+    """
+    if not isinstance(damage_type_code, str):
+        return None
+    
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT code, name, emoji, color 
+            FROM damage_types 
+            WHERE code = ?
+        """, (damage_type_code,))
+        damage_type = cursor.fetchone()
+        
+        if damage_type:
+            return {
+                'code': damage_type[0],
+                'name': damage_type[1],
+                'emoji': damage_type[2],
+                'color': damage_type[3]
+            }
+    except Exception as e:
+        print(f"Error enriching damage type {damage_type_code}: {e}")
+    
+    return None
+
+
+def enrich_roll_mappings(roll_mappings, conn):
+    """
+    Enrich roll mappings [{"1d4": "piercing"}, ...] by enriching damage type metadata.
+    
+    Input: [{"1d4": "piercing"}, {"2d6": "cold"}]
+    Output: [{"1d4": {"code": "piercing", "name": "Piercing", "emoji": "🗡️", "color": "#..."}}, ...]
+    """
+    if not isinstance(roll_mappings, list):
+        return roll_mappings
+    
+    enriched = []
+    for mapping in roll_mappings:
+        if isinstance(mapping, dict):
+            enriched_mapping = {}
+            for dice_notation, damage_type_code in mapping.items():
+                # Enrich the damage type with metadata
+                damage_metadata = get_damage_type_metadata(damage_type_code, conn)
+                enriched_mapping[dice_notation] = damage_metadata if damage_metadata else damage_type_code
+            enriched.append(enriched_mapping)
+        else:
+            enriched.append(mapping)
+    
+    return enriched
+
+
 def enrich_roll_object(roll_obj, conn):
-    """Enrich a single roll object by adding ability metadata to numerics and damage type metadata to type_ids."""
+    """Enrich a single roll object by adding ability metadata and enriching damage types from roll mappings."""
     if not isinstance(roll_obj, dict):
         return roll_obj
 
@@ -267,10 +278,20 @@ def enrich_roll_object(roll_obj, conn):
         enriched_roll['numerics'] = enrich_numerics_with_abilities(
             roll_obj['numerics'], conn)
 
-    # Enrich type_ids with damage type metadata
-    if 'type_ids' in enriched_roll:
+    # Handle new roll format: [{"1d4": "piercing"}, ...]
+    if 'roll' in enriched_roll and isinstance(enriched_roll['roll'], list):
+        enriched_roll['roll'] = enrich_roll_mappings(
+            roll_obj['roll'], conn)
+    
+    # Legacy support: Handle old type_ids format
+    elif 'type_ids' in enriched_roll:
         enriched_roll['type_ids'] = enrich_damage_types(
             roll_obj['type_ids'], conn)
+    
+    # Legacy support: Handle old types format
+    elif 'types' in enriched_roll:
+        enriched_roll['types'] = enrich_damage_types(
+            roll_obj['types'], conn)
 
     return enriched_roll
 
@@ -457,17 +478,29 @@ def convert_db_creature_to_api_format(creature_row, conn=None):
                 roll_name = to_hit_roll.get('name', None) if isinstance(
                     to_hit_roll, dict) else None
 
-                # Use number emoji for paired rolls
-                emoji = number_map.get(roll_name, '1️⃣')
+                # Use attack name if available, otherwise fall back to number emoji
+                if roll_name and roll_name != 'A':
+                    label_prefix = roll_name
+                else:
+                    label_prefix = number_map.get(roll_name, '1️⃣')
 
-                # Add roll
+                # Add roll with attack name
                 enriched_roll = enrich_roll_object(to_hit_roll, conn)
-                details.append({"label": f"{emoji} To Hit:",
+                details.append({"label": f"🎲 {label_prefix}:",
                                "content": enriched_roll})
 
-                # Add paired damage
+                # Add paired damage - use damage type emoji if available
                 enriched_damage = enrich_roll_object(damage_roll, conn)
-                details.append({"label": f"{emoji} Damage:",
+                # Try to extract damage type emoji for label
+                damage_emoji = "💥"
+                if enriched_damage and isinstance(enriched_damage, dict) and enriched_damage.get('type_ids'):
+                    type_ids = enriched_damage.get('type_ids')
+                    if isinstance(type_ids, list) and len(type_ids) > 0:
+                        first_type = type_ids[0]
+                        if isinstance(first_type, dict) and first_type.get('emoji'):
+                            damage_emoji = first_type.get('emoji')
+                
+                details.append({"label": f"{damage_emoji} {label_prefix}:",
                                "content": enriched_damage})
         else:
             # Add to_hit rolls separately (not paired)
@@ -475,28 +508,68 @@ def convert_db_creature_to_api_format(creature_row, conn=None):
                 if isinstance(attack_to_hit, list):
                     for i, roll_obj in enumerate(attack_to_hit):
                         enriched_roll = enrich_roll_object(roll_obj, conn)
-                        if len(attack_to_hit) > 1:
-                            details.append(
-                                {"label": "🎲 To Hit:", "content": enriched_roll})
+                        roll_name = roll_obj.get('name', None) if isinstance(roll_obj, dict) else None
+                        
+                        # Use attack name if available
+                        if roll_name and roll_name != 'A':
+                            label = f"🎲 {roll_name}:"
                         else:
-                            details.append(
-                                {"label": "🎲 To Hit:", "content": enriched_roll})
+                            label = "🎲 To Hit:"
+                        
+                        details.append({"label": label, "content": enriched_roll})
                 else:
                     enriched_roll = enrich_roll_object(attack_to_hit, conn)
-                    details.append(
-                        {"label": "🎲 To Hit:", "content": enriched_roll})
+                    roll_name = attack_to_hit.get('name', None) if isinstance(attack_to_hit, dict) else None
+                    
+                    if roll_name and roll_name != 'A':
+                        label = f"🎲 {roll_name}:"
+                    else:
+                        label = "🎲 To Hit:"
+                    
+                    details.append({"label": label, "content": enriched_roll})
 
             # Add damage rolls separately (not paired)
             if damage:
                 if isinstance(damage, list):
                     for i, roll_obj in enumerate(damage):
                         enriched_roll = enrich_roll_object(roll_obj, conn)
-                        if len(damage) > 1:
-                            details.append(
-                                {"label": "💥 Damage:", "content": enriched_roll})
+                        roll_name = roll_obj.get('name', None) if isinstance(roll_obj, dict) else None
+                        
+                        # Extract damage type emoji for label
+                        damage_emoji = "💥"
+                        if enriched_roll and isinstance(enriched_roll, dict) and enriched_roll.get('type_ids'):
+                            type_ids = enriched_roll.get('type_ids')
+                            if isinstance(type_ids, list) and len(type_ids) > 0:
+                                first_type = type_ids[0]
+                                if isinstance(first_type, dict) and first_type.get('emoji'):
+                                    damage_emoji = first_type.get('emoji')
+                        
+                        # Use attack name if available
+                        if roll_name and roll_name != 'A':
+                            label = f"{damage_emoji} {roll_name}:"
                         else:
-                            details.append(
-                                {"label": "💥 Damage:", "content": enriched_roll})
+                            label = "💥 Damage:"
+                        
+                        details.append({"label": label, "content": enriched_roll})
+                else:
+                    enriched_roll = enrich_roll_object(damage, conn)
+                    roll_name = damage.get('name', None) if isinstance(damage, dict) else None
+                    
+                    # Extract damage type emoji for label
+                    damage_emoji = "💥"
+                    if enriched_roll and isinstance(enriched_roll, dict) and enriched_roll.get('type_ids'):
+                        type_ids = enriched_roll.get('type_ids')
+                        if isinstance(type_ids, list) and len(type_ids) > 0:
+                            first_type = type_ids[0]
+                            if isinstance(first_type, dict) and first_type.get('emoji'):
+                                damage_emoji = first_type.get('emoji')
+                    
+                    if roll_name and roll_name != 'A':
+                        label = f"{damage_emoji} {roll_name}:"
+                    else:
+                        label = "💥 Damage:"
+                    
+                    details.append({"label": label, "content": enriched_roll})
 
     # Add HP and AC stats grid (similar to saves_grid)
     if stats_grid_data:
@@ -1295,6 +1368,433 @@ def get_trap_by_id(trap_id):
         return jsonify(dict(row))
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+# ============================================================================
+# STATBLOCK QUEUE ENDPOINTS
+# ============================================================================
+
+@app.route('/api/queue/submit', methods=['POST'])
+def queue_submit_job():
+    """
+    API endpoint: POST /api/queue/submit
+    Submit a new stat block for AI parsing via the queue.
+    
+    Request JSON:
+    {
+        "statblock": "Goblin\nSmall Humanoid...",
+        "model_path": "/path/to/model.gguf"  // Optional
+    }
+    
+    Response:
+    {
+        "success": true,
+        "job_id": 42,
+        "status": "pending"
+    }
+    """
+    try:
+        data = request.get_json()
+        if not data or 'statblock' not in data:
+            return jsonify({"error": "Missing 'statblock' field"}), 400
+        
+        statblock_text = data['statblock'].strip()
+        model_path = data.get('model_path', '')
+        
+        if not statblock_text:
+            return jsonify({"error": "Statblock cannot be empty"}), 400
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Insert new job with status='pending'
+        cursor.execute("""
+            INSERT INTO statblock_jobs (status, statblock, model_path)
+            VALUES (?, ?, ?)
+        """, ('pending', statblock_text, model_path if model_path else None))
+        
+        conn.commit()
+        job_id = cursor.lastrowid
+        conn.close()
+        
+        print(f"[API] Job #{job_id} submitted to queue")
+        
+        return jsonify({
+            "success": True,
+            "job_id": job_id,
+            "status": "pending"
+        }), 201
+    
+    except Exception as e:
+        print(f"[API] Error submitting job: {e}")
+        return jsonify({"error": str(e), "success": False}), 500
+
+
+@app.route('/api/queue/<int:job_id>', methods=['GET'])
+def queue_get_job(job_id):
+    """
+    API endpoint: GET /api/queue/<job_id>
+    Get the status and details of a job.
+    
+    Response:
+    {
+        "id": 42,
+        "status": "completed",  // pending, processing, completed, failed
+        "parsed_data": {...},
+        "creature_id": 15,
+        "error_message": null,
+        "progress_percent": 100,
+        "elapsed_seconds": 23,
+        "created_at": "2026-04-07T12:34:56",
+        "started_at": "2026-04-07T12:34:58",
+        "completed_at": "2026-04-07T12:35:21"
+    }
+    """
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT id, status, parsed_data, creature_id, error_message,
+                   progress_percent, elapsed_seconds, 
+                   created_at, started_at, completed_at
+            FROM statblock_jobs
+            WHERE id = ?
+        """, (job_id,))
+        
+        row = cursor.fetchone()
+        conn.close()
+        
+        if not row:
+            return jsonify({"error": f"Job {job_id} not found"}), 404
+        
+        job_dict = dict(row)
+        
+        # Parse JSON fields
+        if job_dict['parsed_data']:
+            try:
+                job_dict['parsed_data'] = json.loads(job_dict['parsed_data'])
+            except json.JSONDecodeError:
+                job_dict['parsed_data'] = None
+        
+        return jsonify(job_dict), 200
+    
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/queue/stats', methods=['GET'])
+def queue_get_stats():
+    """
+    API endpoint: GET /api/queue/stats
+    Get current queue statistics.
+    
+    Response:
+    {
+        "pending": 3,
+        "processing": 1,
+        "completed": 42,
+        "failed": 2,
+        "avg_parse_time": 23,
+        "current_job_id": 42,
+        "current_job_progress": 45
+    }
+    """
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Get counts by status
+        cursor.execute("SELECT COUNT(*) FROM statblock_jobs WHERE status='pending'")
+        pending = cursor.fetchone()[0]
+        
+        cursor.execute("SELECT COUNT(*) FROM statblock_jobs WHERE status='processing'")
+        processing = cursor.fetchone()[0]
+        
+        cursor.execute("SELECT COUNT(*) FROM statblock_jobs WHERE status='completed'")
+        completed = cursor.fetchone()[0]
+        
+        cursor.execute("SELECT COUNT(*) FROM statblock_jobs WHERE status='failed'")
+        failed = cursor.fetchone()[0]
+        
+        # Get average parse time
+        cursor.execute("""
+            SELECT AVG(elapsed_seconds) 
+            FROM statblock_jobs 
+            WHERE status='completed' AND elapsed_seconds > 0
+        """)
+        avg_result = cursor.fetchone()
+        avg_time = int(avg_result[0]) if avg_result[0] else 0
+        
+        # Get current processing job
+        cursor.execute("""
+            SELECT id, progress_percent
+            FROM statblock_jobs
+            WHERE status='processing'
+            LIMIT 1
+        """)
+        current = cursor.fetchone()
+        
+        conn.close()
+        
+        return jsonify({
+            "pending": pending,
+            "processing": processing,
+            "completed": completed,
+            "failed": failed,
+            "avg_parse_time": avg_time,
+            "current_job_id": current['id'] if current else None,
+            "current_job_progress": current['progress_percent'] if current else 0
+        }), 200
+    
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/queue/recent', methods=['GET'])
+def queue_get_recent():
+    """
+    API endpoint: GET /api/queue/recent?limit=10
+    Get recent jobs (default last 10).
+    
+    Response:
+    [
+        {
+            "id": 42,
+            "status": "completed",
+            "creature_title": "Goblin",
+            "creature_id": 15,
+            "elapsed_seconds": 23,
+            "completed_at": "2026-04-07T12:35:21"
+        },
+        ...
+    ]
+    """
+    try:
+        limit = request.args.get('limit', 10, type=int)
+        if limit > 100:
+            limit = 100  # Cap at 100
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT id, status, creature_id, elapsed_seconds, completed_at, parsed_data
+            FROM statblock_jobs
+            ORDER BY created_at DESC
+            LIMIT ?
+        """, (limit,))
+        
+        rows = cursor.fetchall()
+        conn.close()
+        
+        jobs = []
+        for row in rows:
+            job_dict = dict(row)
+            
+            # Extract creature title from parsed_data
+            creature_title = "Unknown"
+            if job_dict['parsed_data']:
+                try:
+                    parsed = json.loads(job_dict['parsed_data'])
+                    creature_title = parsed.get('title', 'Unknown')
+                except json.JSONDecodeError:
+                    pass
+            
+            jobs.append({
+                "id": job_dict['id'],
+                "status": job_dict['status'],
+                "creature_title": creature_title,
+                "creature_id": job_dict['creature_id'],
+                "elapsed_seconds": job_dict['elapsed_seconds'],
+                "completed_at": job_dict['completed_at']
+            })
+        
+        return jsonify(jobs), 200
+    
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ============================================================================
+# STATBLOCK PARSER ENDPOINTS
+# ============================================================================
+
+@app.route('/api/parse-statblock', methods=['POST'])
+def parse_statblock():
+    """
+    API endpoint: POST /api/parse-statblock
+    
+    Parse a D&D 5e stat block and optionally insert into database.
+    
+    Request JSON:
+    {
+        "statblock": "Goblin\nSmall Humanoid...",
+        "insert": true,  // Optional: if true, inserts creature into DB
+        "model_path": "path/to/model.gguf"  // Optional: custom model path
+    }
+    
+    Response:
+    {
+        "success": true,
+        "parsed": {
+            "title": "Goblin",
+            "icon": "👹",
+            "size": "Small",
+            "creature_type": "humanoid",
+            "hp": 7,
+            "ac": 15,
+            ...
+        },
+        "inserted_id": 42,  // If insert=true
+        "inserted": true
+    }
+    """
+    try:
+        data = request.get_json()
+        if not data or 'statblock' not in data:
+            return jsonify({"error": "Missing 'statblock' field in request body"}), 400
+        
+        statblock_text = data['statblock']
+        should_insert = data.get('insert', False)
+        model_path = data.get('model_path', None)
+        
+        # Initialize parser
+        print(f"[PARSE] Initializing StatBlockParser...")
+        parser = StatBlockParser(model_path)
+        
+        # Parse the stat block
+        print(f"[PARSE] Parsing stat block: {statblock_text[:100]}...")
+        raw_response = parser.parse_and_format_for_db(statblock_text)
+        
+        result = {
+            "success": True,
+            "raw_response": raw_response,
+            "inserted": False
+        }
+        
+        # Handle insertion if requested
+        should_insert = data.get('insert', False)
+        if should_insert:
+            try:
+                # Parse the raw JSON response if it's a string
+                if isinstance(raw_response, str):
+                    parsed_data = json.loads(raw_response)
+                else:
+                    parsed_data = raw_response
+                
+                # Prepare database record
+                conn = get_db_connection()
+                cursor = conn.cursor()
+                
+                # Look up creature_type_id from code
+                creature_type_code = parsed_data.get('creature_type', 'humanoid').lower()
+                cursor.execute(
+                    "SELECT id FROM creature_types WHERE code = ?",
+                    (creature_type_code,)
+                )
+                type_row = cursor.fetchone()
+                creature_type_id = type_row[0] if type_row else None
+                
+                # Convert special array to JSON string if needed
+                special_json = json.dumps(parsed_data.get('special', []))
+                
+                # Check if creature already exists by title
+                creature_title = parsed_data.get('title', 'Unknown')
+                cursor.execute("SELECT id FROM creatures WHERE title = ?", (creature_title,))
+                existing = cursor.fetchone()
+                
+                if existing:
+                    # Update existing creature
+                    creature_id = existing[0]
+                    cursor.execute("""
+                        UPDATE creatures 
+                        SET icon = ?, size = ?, creature_type_id = ?, hp = ?, ac = ?, 
+                            explanation = ?, attack_to_hit = ?, damage = ?, special = ?, stats = ?
+                        WHERE id = ?
+                    """, (
+                        parsed_data.get('icon', '?'),
+                        parsed_data.get('size', 'Medium'),
+                        creature_type_id,
+                        parsed_data.get('hp', 1),
+                        parsed_data.get('ac', 10),
+                        parsed_data.get('explanation', ''),
+                        json.dumps(parsed_data.get('attack_to_hit', [])),
+                        json.dumps(parsed_data.get('damage', [])),
+                        special_json,
+                        json.dumps(parsed_data.get('stats', {})),
+                        creature_id
+                    ))
+                    conn.commit()
+                    result['inserted'] = True
+                    result['inserted_id'] = creature_id
+                    result['inserted_creature_name'] = creature_title
+                    result['updated'] = True
+                    print(f"[PARSE] ✓ Updated '{creature_title}' (ID {creature_id}) in database")
+                else:
+                    # Insert new creature
+                    cursor.execute("""
+                        INSERT INTO creatures 
+                        (title, icon, size, creature_type_id, hp, ac, explanation, 
+                         attack_to_hit, damage, special, stats)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """, (
+                        creature_title,
+                        parsed_data.get('icon', '?'),
+                        parsed_data.get('size', 'Medium'),
+                        creature_type_id,
+                        parsed_data.get('hp', 1),
+                        parsed_data.get('ac', 10),
+                        parsed_data.get('explanation', ''),
+                        json.dumps(parsed_data.get('attack_to_hit', [])),
+                        json.dumps(parsed_data.get('damage', [])),
+                        special_json,
+                        json.dumps(parsed_data.get('stats', {}))
+                    ))
+                    conn.commit()
+                    creature_id = cursor.lastrowid
+                    result['inserted'] = True
+                    result['inserted_id'] = creature_id
+                    result['inserted_creature_name'] = creature_title
+                    print(f"[PARSE] ✓ Inserted '{creature_title}' (ID {creature_id}) into database")
+                
+                conn.close()
+                
+            except json.JSONDecodeError as e:
+                print(f"[PARSE] ✗ JSON parse error: {e}")
+                return jsonify({
+                    "error": f"Could not parse model response as JSON",
+                    "raw_response": raw_response,
+                    "success": True
+                }), 400
+            except sqlite3.IntegrityError as e:
+                print(f"[PARSE] ✗ Integrity error: {e}")
+                return jsonify({
+                    "error": f"Creature already exists in database",
+                    "success": False
+                }), 409
+            except Exception as e:
+                print(f"[PARSE] ✗ Database error: {e}")
+                import traceback
+                traceback.print_exc()
+                return jsonify({
+                    "error": f"Database error: {str(e)}",
+                    "success": False
+                }), 500
+        
+        return jsonify(result), 200
+        
+    except ValueError as e:
+        print(f"[PARSE] ✗ Parse error: {e}")
+        return jsonify({"error": str(e), "success": False}), 400
+    except RuntimeError as e:
+        print(f"[PARSE] ✗ Runtime error: {e}")
+        return jsonify({"error": str(e), "success": False}), 500
+    except Exception as e:
+        print(f"[PARSE] ✗ Unexpected error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e), "success": False}), 500
 
 
 @app.route('/')

@@ -125,6 +125,21 @@ function renderContentWithPlaceholders(contentStr, boxText = 'SAM', rollObj = nu
   
   // Build a map of damage type codes to their metadata
   const damageTypeMetadata = {};
+  
+  // Extract from new roll format: [{"1d4": {code: "piercing", ...}}]
+  if (rollObj && rollObj.roll && Array.isArray(rollObj.roll)) {
+    for (let rollMap of rollObj.roll) {
+      if (typeof rollMap === 'object') {
+        for (let [dice, damageType] of Object.entries(rollMap)) {
+          if (damageType && typeof damageType === 'object' && damageType.code) {
+            damageTypeMetadata[damageType.code] = damageType;
+          }
+        }
+      }
+    }
+  }
+  
+  // Legacy: Extract from old type_ids format
   if (rollObj && rollObj.type_ids && Array.isArray(rollObj.type_ids)) {
     for (let damageType of rollObj.type_ids) {
       if (damageType && typeof damageType === 'object' && damageType.code) {
@@ -352,11 +367,37 @@ function reconstructDatabaseRoll(rollObj) {
   
   if (!rollObj.roll) return 'none';
   
-  // Start with roll notation, add modifier if present
-  let rollPart = rollObj.roll;
-  if (rollObj.mod !== null && rollObj.mod !== undefined && rollObj.mod !== 0) {
-    const sign = rollObj.mod > 0 ? '+' : '';
-    rollPart = `${rollObj.roll} ${sign} ${rollObj.mod}`;
+  let rollPart;
+  let damageTypes = [];
+  
+  // Handle new format: roll is an array of {dice: type} mappings
+  if (Array.isArray(rollObj.roll) && rollObj.roll.length > 0) {
+    const rollMap = rollObj.roll[0]; // First mapping object
+    if (typeof rollMap === 'object') {
+      // Extract dice notation and damage type from first key-value pair
+      for (let [dice, damageType] of Object.entries(rollMap)) {
+        rollPart = dice;
+        
+        // damageType could be a string code or enriched object
+        if (typeof damageType === 'object' && damageType.code) {
+          damageTypes.push(`[DAMAGE:${damageType.code}]`);
+        } else if (typeof damageType === 'string') {
+          damageTypes.push(damageType);
+        }
+        break; // Only use first mapping
+      }
+    }
+  } else if (typeof rollObj.roll === 'string') {
+    // Handle old format: roll is a simple string like "1d4"
+    rollPart = rollObj.roll;
+    
+    // Add modifier if present
+    if (rollObj.mod !== null && rollObj.mod !== undefined && rollObj.mod !== 0) {
+      const sign = rollObj.mod > 0 ? '+' : '';
+      rollPart = `${rollObj.roll} ${sign} ${rollObj.mod}`;
+    }
+  } else {
+    return 'none';
   }
   
   let parts = [rollPart];
@@ -379,10 +420,15 @@ function reconstructDatabaseRoll(rollObj) {
     }));
   }
   
-  // Build descriptor string - only include type_ids and shape, NOT actor or save (those go in label)
+  // Build descriptor string - include damage types and shape, NOT actor or save (those go in label)
   const descriptors = [];
   
-  // Add damage types/descriptors (check if it's actually an array/list, not empty string)
+  // Add damage types from new roll format
+  if (damageTypes.length > 0) {
+    descriptors.push(damageTypes.join(', '));
+  }
+  
+  // Legacy: Add damage types from old type_ids format (check if it's actually an array/list, not empty string)
   if (rollObj.type_ids && (Array.isArray(rollObj.type_ids) ? rollObj.type_ids.length > 0 : typeof rollObj.type_ids === 'string' && rollObj.type_ids.trim() !== '')) {
     // Map type_ids to include emoji if available (from enriched damage_types)
     let typesList = Array.isArray(rollObj.type_ids) ? rollObj.type_ids : rollObj.type_ids.split(',').map(t => t.trim());
@@ -400,6 +446,11 @@ function reconstructDatabaseRoll(rollObj) {
   // Add shape/AOE if present
   if (rollObj.shape) {
     descriptors.push(rollObj.shape);
+  }
+  
+  // Add Special effects if present
+  if (rollObj.Special && typeof rollObj.Special === 'string') {
+    descriptors.push(rollObj.Special);
   }
   
   // Combine: "1d4" + "+ [SAD]" = "1d4 + [SAD]"

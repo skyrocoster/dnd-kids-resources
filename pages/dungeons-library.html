@@ -977,6 +977,249 @@
             return null;
         }
 
+        // Create and show creature card popup on hover
+        function showCreatureCardPopup(creature, triggerElement) {
+            // Remove any existing popup
+            const existing = document.getElementById('creature-card-popup');
+            if (existing) {
+                existing.remove();
+            }
+
+            // Create popup container
+            const popup = document.createElement('div');
+            popup.id = 'creature-card-popup';
+            popup.style.cssText = `
+                position: fixed;
+                z-index: 10000;
+                background: white;
+                border-radius: 8px;
+                box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+                max-width: 320px;
+                max-height: 500px;
+                overflow-y: auto;
+                padding: 12px;
+                font-family: 'Nunito', sans-serif;
+                pointer-events: auto;
+                font-size: 13px;
+            `;
+
+            // Build card HTML
+            let cardHtml = `
+                <div style="margin-bottom: 8px; padding-bottom: 8px; border-bottom: 2px solid #4a90e2;">
+                    <div style="font-size: 16px; margin-bottom: 4px;">
+                        <span style="font-size: 18px; margin-right: 4px;">${creature.icon || ''}</span>
+                        <span style="font-weight: bold; color: #333;">${creature.title}</span>
+                    </div>
+                </div>
+            `;
+
+            // Add explanation
+            if (creature.explanation) {
+                cardHtml += `
+                    <div style="font-style: italic; color: #666; margin-bottom: 8px; font-size: 12px; line-height: 1.4;">
+                        ${creature.explanation}
+                    </div>
+                `;
+            }
+
+            // Add details
+            if (creature.details && Array.isArray(creature.details)) {
+                for (const detail of creature.details) {
+                    // Handle stats_grid specially (render as colored boxes)
+                    if (detail.type === 'stats_grid' && Array.isArray(detail.content)) {
+                        cardHtml += `<div style="display: grid; grid-template-columns: ${detail.content.length === 1 ? '1fr' : 'repeat(2, 1fr)'}; gap: 6px; margin: 8px 0; line-height: 1.2;">`;
+                        
+                        detail.content.forEach(stat => {
+                            const bgColor = stat.color || '#ccc';
+                            cardHtml += `
+                                <div style="display: flex; flex-direction: row; align-items: center; justify-content: center; background-color: ${bgColor}; color: white; padding: 4px 6px; border-radius: 3px; font-size: 11px; font-weight: 600; gap: 2px;">
+                                    <span style="font-size: 12px;">${stat.emoji || ''}</span>
+                                    <span>${stat.value}</span>
+                                </div>
+                            `;
+                        });
+                        
+                        cardHtml += `</div>`;
+                        continue;  // Skip to next detail
+                    }
+                    
+                    // Handle saves_grid (ability scores) - display as a 3-column grid of ability boxes
+                    if (detail.type === 'saves_grid' && Array.isArray(detail.content)) {
+                        cardHtml += `<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin: 6px 0; line-height: 1.1;">`;
+                        
+                        detail.content.forEach(save => {
+                            const bgColor = save.color || '#ccc';
+                            cardHtml += `
+                                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: ${bgColor}; color: white; padding: 3px 4px; border-radius: 3px; font-size: 10px; font-weight: 600;">
+                                    <span style="font-size: 11px; margin-bottom: 1px;">${save.emoji || ''}</span>
+                                    <span style="font-size: 8px; text-align: center;">${save.name || ''}</span>
+                                    <span style="font-size: 10px; font-weight: 700; margin-top: 1px;">${save.modifier >= 0 ? '+' : ''}${save.modifier}</span>
+                                </div>
+                            `;
+                        });
+                        
+                        cardHtml += `</div>`;
+                        continue;  // Skip to next detail
+                    }
+
+                    let contentHtml = '';
+                    
+                    // Check if content is a roll object (has 'roll' property)
+                    if (detail.content && typeof detail.content === 'object' && (detail.content.roll !== undefined || detail.content.numerics || detail.content.type_ids)) {
+                        // This is a roll object - format it with full details
+                        if (Array.isArray(detail.content)) {
+                            // Multiple rolls
+                            const rollStrs = detail.content.map(roll => formatRollForPopup(roll)).filter(s => s);
+                            contentHtml = rollStrs.join(' or ');
+                        } else {
+                            // Single roll object
+                            contentHtml = formatRollForPopup(detail.content);
+                        }
+                    } else if (typeof detail.content === 'string') {
+                        contentHtml = detail.content;
+                    } else if (Array.isArray(detail.content)) {
+                        contentHtml = detail.content.map(c => {
+                            if (typeof c === 'object' && c.name) {
+                                return c.name;
+                            }
+                            return String(c);
+                        }).join(', ');
+                    } else if (detail.content && typeof detail.content === 'object') {
+                        // Fallback for other objects - try to extract name
+                        if (detail.content.name) {
+                            contentHtml = detail.content.name;
+                        } else {
+                            contentHtml = String(detail.content);
+                        }
+                    } else {
+                        contentHtml = String(detail.content);
+                    }
+
+                    if (contentHtml && contentHtml !== 'none') {
+                        // Add color for special labels
+                        let labelColor = '#4a90e2';
+                        if (detail.label && detail.label.includes('🎲')) {
+                            labelColor = '#2471a3';  // Darker blue for attack rolls
+                        } else if (detail.label && (detail.label.includes('🗡️') || detail.label.includes('🔨') || detail.label.includes('💥'))) {
+                            labelColor = '#c0392b';  // Red for damage
+                        }
+                        
+                        cardHtml += `
+                            <div style="margin: 6px 0; line-height: 1.4;">
+                                <span style="font-weight: 600; color: ${labelColor};">${detail.label}</span>
+                                <span style="color: #333;"> ${contentHtml}</span>
+                            </div>
+                        `;
+                    }
+                }
+            }
+
+            // Add footer
+            if (creature.footer_info) {
+                cardHtml += `
+                    <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #eee; font-size: 11px; color: #666; font-weight: 600;">
+                        ${creature.footer_info}
+                    </div>
+                `;
+            }
+
+            popup.innerHTML = cardHtml;
+
+            // Position popup near the trigger element
+            document.body.appendChild(popup);
+            
+            const rect = triggerElement.getBoundingClientRect();
+            let leftPos = rect.left;
+            let topPos = rect.bottom + 8;
+
+            // Adjust if popup goes off-screen
+            if (leftPos + popup.offsetWidth > window.innerWidth) {
+                leftPos = window.innerWidth - popup.offsetWidth - 10;
+            }
+            if (topPos + popup.offsetHeight > window.innerHeight) {
+                topPos = rect.top - popup.offsetHeight - 8;
+            }
+
+            popup.style.left = Math.max(10, leftPos) + 'px';
+            popup.style.top = Math.max(10, topPos) + 'px';
+
+            // Remove popup on mouse leave
+            triggerElement.addEventListener('mouseleave', function() {
+                const pop = document.getElementById('creature-card-popup');
+                if (pop) pop.remove();
+            });
+
+            // Also remove if clicking elsewhere
+            document.addEventListener('click', function removePopup(e) {
+                if (e.target !== triggerElement && !popup.contains(e.target)) {
+                    const pop = document.getElementById('creature-card-popup');
+                    if (pop) {
+                        pop.remove();
+                        document.removeEventListener('click', removePopup);
+                    }
+                }
+            });
+        }
+
+        // Format a single roll object for popup display (matching creature card style)
+        function formatRollForPopup(rollObj) {
+            if (!rollObj || typeof rollObj !== 'object') return '';
+            
+            if (!rollObj.roll) return '';
+            
+            // Start with roll notation
+            let rollPart = rollObj.roll;
+            if (rollObj.mod !== null && rollObj.mod !== undefined && rollObj.mod !== 0) {
+                const sign = rollObj.mod > 0 ? '+' : '';
+                rollPart = `${rollObj.roll} ${sign}${rollObj.mod}`;
+            }
+            
+            let parts = [rollPart];
+            
+            // Add numeric modifiers with emojis
+            if (rollObj.numerics && Array.isArray(rollObj.numerics) && rollObj.numerics.length > 0) {
+                parts.push(...rollObj.numerics.map(ability => {
+                    if (typeof ability === 'object' && ability.emoji && ability.name) {
+                        return `${ability.emoji} ${ability.name}`;
+                    } else if (typeof ability === 'object' && ability.name) {
+                        return ability.name;
+                    }
+                    return String(ability);
+                }));
+            }
+            
+            // Build descriptor string with damage types
+            const descriptors = [];
+            
+            // Add damage types with emojis
+            if (rollObj.type_ids && Array.isArray(rollObj.type_ids) && rollObj.type_ids.length > 0) {
+                const typeDisplays = rollObj.type_ids.map(type => {
+                    if (typeof type === 'object' && type.emoji && type.name) {
+                        return `${type.emoji} ${type.name}`;
+                    } else if (typeof type === 'object' && type.name) {
+                        return type.name;
+                    }
+                    return String(type);
+                });
+                descriptors.push(typeDisplays.join(', '));
+            }
+            
+            // Add shape/AOE if present
+            if (rollObj.shape) {
+                descriptors.push(rollObj.shape);
+            }
+            
+            // Combine
+            let result = parts.join(' + ');
+            
+            // Add descriptors in parentheses
+            if (descriptors.length > 0) {
+                result += ` (${descriptors.join(', ')})`;
+            }
+            
+            return result.trim();
+        }
+
         // Enhance monster displays with creature details from DB
         async function enrichMonsterDisplay() {
             const monsters = document.querySelectorAll('.entry.monster');
@@ -991,28 +1234,14 @@
                 const creature = await getCreatureDetails(titleText);
                 if (!creature) continue;
                 
-                // Build creature details HTML - show stats and type info
-                let details = [];
+                // Add hover listeners for creature card popup
+                titleEl.style.cursor = 'pointer';
+                titleEl.style.textDecoration = 'underline dotted';
+                titleEl.style.textDecorationColor = 'rgba(74, 144, 226, 0.5)';
                 
-                // Add HP and AC (format like "HP 13 / AC 12")
-                if (creature.stats_line) {
-                    details.push(creature.stats_line);
-                }
-                
-                // Add type and size info from footer_info (format like "🧟 Undead • Medium")
-                if (creature.footer_info) {
-                    details.push(creature.footer_info);
-                }
-                
-                // Skip if only stats_line (no type info)
-                if (details.length <= 1) continue;
-                
-                const detailsHtml = `<div class="entry-meta" style="margin-top: 6px; color: #666; font-size: 0.95em;">
-                    ${details.join(' • ')}
-                </div>`;
-                
-                // Insert after entry title
-                titleEl.insertAdjacentHTML('afterend', detailsHtml);
+                titleEl.addEventListener('mouseenter', function() {
+                    showCreatureCardPopup(creature, this);
+                });
             }
         }
 

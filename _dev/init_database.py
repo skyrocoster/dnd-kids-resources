@@ -1,6 +1,13 @@
 #!/usr/bin/env python3
 """
-Initialize D&D Kids Resources database with schema and default data
+PHASE 1: Database Schema Initialization
+
+This script creates the database tables with proper schema.
+It does NOT populate data - use seed_database.py for that.
+
+Workflow:
+  1. python _dev/init_database.py        # Create tables
+  2. python _dev/seed_database.py        # Load seed data from JSON files
 """
 
 import sqlite3
@@ -10,29 +17,37 @@ DB_PATH = Path(__file__).parent.parent / "dnd_kids_resources.db"
 
 
 def init_database():
-    """Create database tables and populate with default data"""
+    """Create database tables only (schema setup)"""
     conn = sqlite3.connect(str(DB_PATH))
     cursor = conn.cursor()
 
-    print("Creating database schema...")
+    print("="*60)
+    print("PHASE 1: DATABASE SCHEMA INITIALIZATION")
+    print("="*60)
+    print("\nCreating database schema...")
 
-    # Create abilities table
+    # Create abilities table (with ID for seed_database.py compatibility)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS abilities (
-            code TEXT PRIMARY KEY,
+            id INTEGER PRIMARY KEY,
+            code TEXT NOT NULL UNIQUE,
             name TEXT NOT NULL,
             emoji TEXT NOT NULL UNIQUE,
-            color TEXT NOT NULL
+            color TEXT NOT NULL,
+            type TEXT NOT NULL DEFAULT 'stat',
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     """)
 
-    # Create damage_types table
+    # Create damage_types table (with ID for seed_database.py compatibility)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS damage_types (
-            code TEXT PRIMARY KEY,
+            id INTEGER PRIMARY KEY,
+            code TEXT NOT NULL UNIQUE,
             name TEXT NOT NULL,
             emoji TEXT NOT NULL,
-            color TEXT NOT NULL
+            color TEXT NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     """)
 
@@ -71,13 +86,14 @@ def init_database():
         )
     """)
 
-    # Create creature_types lookup table
+    # Create creature_types lookup table (with ID for seed_database.py compatibility)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS creature_types (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id INTEGER PRIMARY KEY,
             code TEXT NOT NULL UNIQUE,
             emoji TEXT NOT NULL,
-            color TEXT NOT NULL
+            color TEXT NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     """)
 
@@ -103,6 +119,31 @@ def init_database():
 
     cursor.execute(
         "CREATE INDEX IF NOT EXISTS idx_creatures_creature_type_id ON creatures(creature_type_id)")
+
+    # Create statblock_jobs table (for queue-based AI parsing)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS statblock_jobs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            status TEXT DEFAULT 'pending',
+            statblock TEXT NOT NULL,
+            model_path TEXT,
+            parsed_data TEXT,
+            raw_ai_output TEXT,
+            creature_id INTEGER,
+            error_message TEXT,
+            progress_percent INTEGER DEFAULT 0,
+            elapsed_seconds INTEGER DEFAULT 0,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            started_at DATETIME,
+            completed_at DATETIME,
+            FOREIGN KEY (creature_id) REFERENCES creatures(id)
+        )
+    """)
+
+    cursor.execute(
+        "CREATE INDEX IF NOT EXISTS idx_statblock_jobs_status ON statblock_jobs(status)")
+    cursor.execute(
+        "CREATE INDEX IF NOT EXISTS idx_statblock_jobs_created_at ON statblock_jobs(created_at)")
 
     # Create traps table
     cursor.execute("""
@@ -154,7 +195,6 @@ def init_database():
         CREATE TABLE IF NOT EXISTS wild_shapes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             card_id INTEGER NOT NULL UNIQUE,
-            creature_type TEXT,
             FOREIGN KEY (card_id) REFERENCES cards(id) ON DELETE CASCADE
         )
     """)
@@ -172,69 +212,19 @@ def init_database():
     """)
 
     print("[OK] Tables created")
-
-    # Populate abilities if empty
-    cursor.execute("SELECT COUNT(*) FROM abilities")
-    if cursor.fetchone()[0] == 0:
-        print("Populating abilities...")
-        abilities = [
-            ('str', 'Strength', '💪', '#e74c3c'),
-            ('dex', 'Dexterity', '⚡', '#f39c12'),
-            ('con', 'Constitution', '❤️', '#c0392b'),
-            ('int', 'Intelligence', '🧠', '#3498db'),
-            ('wis', 'Wisdom', '👁️', '#27ae60'),
-            ('cha', 'Charisma', '✨', '#8e44ad'),
-            ('sam', 'Spellcasting Attack Modifier', '🎯', '#9b59b6'),
-            ('sad', 'Spellcasting Ability Difference', '📊', '#34495e'),
-        ]
-        cursor.executemany(
-            "INSERT INTO abilities (code, name, emoji, color) VALUES (?, ?, ?, ?)", abilities)
-        print(f"  [OK] Added {len(abilities)} abilities")
-
-    # Populate damage_types if empty
-    cursor.execute("SELECT COUNT(*) FROM damage_types")
-    if cursor.fetchone()[0] == 0:
-        print("Populating damage types...")
-        damage_types = [
-            ('fire', 'Fire', '🔥', '#e74c3c'),
-            ('cold', 'Cold', '❄️', '#3498db'),
-            ('acid', 'Acid', '💧', '#16a085'),
-            ('poison', 'Poison', '☠️', '#9b59b6'),
-            ('slashing', 'Slashing', '⚔️', '#7f8c8d'),
-            ('piercing', 'Piercing', '🗡️', '#95a5a6'),
-            ('bludgeoning', 'Bludgeoning', '🔨', '#e67e22'),
-            ('thunder', 'Thunder', '⚡', '#f39c12'),
-            ('lightning', 'Lightning', '⚡', '#f1c40f'),
-            ('necrotic', 'Necrotic', '💀', '#2c3e50'),
-            ('radiant', 'Radiant', '☀️', '#f39c12'),
-            ('psychic', 'Psychic', '🧠', '#8e44ad'),
-            ('force', 'Force', '✨', '#3498db'),
-        ]
-        cursor.executemany(
-            "INSERT INTO damage_types (code, name, emoji, color) VALUES (?, ?, ?, ?)", damage_types)
-        print(f"  [OK] Added {len(damage_types)} damage types")
-
-    # Populate creature_types if empty
-    cursor.execute("SELECT COUNT(*) FROM creature_types")
-    if cursor.fetchone()[0] == 0:
-        print("Populating creature types...")
-        creature_types = [
-            ('beast', '🐾', '#8B4513'),
-            ('elemental', '🌊', '#1E90FF'),
-            ('fey', '🧚', '#DA70D6'),
-            ('humanoid', '👤', '#D3D3D3'),
-            ('monstrosity', '👹', '#FF00FF'),
-            ('ooze', '🟢', '#32CD32'),
-        ]
-        cursor.executemany(
-            "INSERT INTO creature_types (code, emoji, color) VALUES (?, ?, ?)", creature_types)
-        print(f"  [OK] Added {len(creature_types)} creature types")
-
+    
     conn.commit()
     conn.close()
 
     print(f"\n[SUCCESS] Database initialized: {DB_PATH}")
     print(f"   Size: {DB_PATH.stat().st_size / 1024:.1f} KB")
+    print("\n" + "="*60)
+    print("NEXT STEP: Run seed_database.py to populate data")
+    print("="*60)
+    print("\nUsage:")
+    print("  python _dev/seed_database.py              # Load all seed data")
+    print("  python _dev/seed_database.py --spells     # Load only spells")
+    print("  python _dev/seed_database.py --force      # Reload (clear existing data)")
 
 
 if __name__ == '__main__':
