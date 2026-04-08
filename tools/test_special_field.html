@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Special Field Test</title>
+</head>
+<body>
+  <h2>Special Field Rendering Test</h2>
+  <div id="test-output"></div>
+  
+  <script src="/js/card-generator.js"></script>
+  <script>
+    // Test the reconstructDatabaseRoll function with Special field
+    const damageRoll = {
+      "roll": [{"2d6": {"code": "piercing", "emoji": "🗡️", "name": "Piercing", "color": "#95a5a6"}}],
+      "name": "Bite",
+      "Special": "reduced AC by 1"
+    };
+    
+    const result = reconstructDatabaseRoll(damageRoll);
+    const output = `
+      <h3>Test Result:</h3>
+      <p><strong>Input:</strong> Damage roll with Special field</p>
+      <p><strong>Output:</strong> ${result}</p>
+      <p><strong>Expected:</strong> 2d6 (piercing, reduced AC by 1)</p>
+      <p><strong>Result:</strong> ${result === "2d6 (piercing, reduced AC by 1)" ? "✅ PASS" : "❌ FAIL"}</p>
+    `;
+    document.getElementById('test-output').innerHTML = output;
+    console.log('Result:', result);
+  </script>
+</body>
+</html>

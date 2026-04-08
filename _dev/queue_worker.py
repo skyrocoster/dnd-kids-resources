@@ -27,7 +27,8 @@ from datetime import datetime
 sys.path.insert(0, str(Path(__file__).parent / 'lib'))
 sys.path.insert(0, str(Path(__file__).parent.parent / 'lib'))
 
-from parse_statblock import StatBlockParser, clean_json_string
+from parse_statblock import StatBlockParser, clean_json_string  # type: ignore
+from spell_validators import normalize_spell_level  # type: ignore
 
 # Database path
 DB_PATH = Path(__file__).parent.parent / "dnd_kids_resources.db"
@@ -42,6 +43,42 @@ def get_db_connection():
     conn.row_factory = sqlite3.Row
     conn.execute('PRAGMA foreign_keys = ON')
     return conn
+
+
+def validate_and_fix_spell_data(spell_data):
+    """
+    Validate and fix common spell parsing errors.
+    
+    - Detects if level and school are swapped
+    - Fixes level format if necessary (converts "evocation" to proper school)
+    
+    Returns: Fixed spell_data dict
+    """
+    # List of valid school values
+    valid_schools = {'abjuration', 'conjuration', 'divination', 'enchantment', 'evocation', 
+                     'illusion', 'necromancy', 'transmutation'}
+    
+    # List of valid level values
+    valid_levels = {'cantrip', 'level1', 'level2', 'level3', 'level4', 'level5', 'level6', 'level7', 'level8', 'level9'}
+    
+    level = spell_data.get('level', '').lower()
+    school = spell_data.get('school', '').lower()
+    
+    # Check if level contains a school name (the bug)
+    if level in valid_schools and school not in valid_schools:
+        print(f"  [SPELL VALIDATION] DETECTED: level='{level}' is a school, school='{school}' invalid")
+        print(f"  [SPELL VALIDATION] FIXING: Swapping level and school values")
+        spell_data['level'] = school
+        spell_data['school'] = level
+    
+    # Validate final values
+    if spell_data.get('level', '') not in valid_levels:
+        print(f"  [SPELL VALIDATION] WARNING: level='{spell_data.get('level')}' is not valid. Valid values: {valid_levels}")
+    
+    if spell_data.get('school', '') not in valid_schools:
+        print(f"  [SPELL VALIDATION] WARNING: school='{spell_data.get('school')}' is not valid. Valid values: {valid_schools}")
+    
+    return spell_data
 
 
 def upsert_creature(creature_data, conn):
@@ -134,19 +171,104 @@ def upsert_creature(creature_data, conn):
         return None
 
 
-def process_job(job_id, statblock_text, parser):
+def upsert_spell(spell_data, conn):
+    """
+    Insert or update a spell in the database.
+    Validates spell level format before storing.
+    
+    Returns: spell_id (int) on success, None on failure
+    """
+    try:
+        cursor = conn.cursor()
+        spell_title = spell_data.get('title', '').strip()
+        
+        if not spell_title:
+            return None
+        
+        # Normalize and validate spell level
+        raw_level = spell_data.get('level', 'cantrip')
+        try:
+            normalized_level = normalize_spell_level(raw_level)
+        except ValueError as e:
+            print(f"  [WARN] {spell_title}: {e}. Using 'cantrip' as default")
+            normalized_level = 'cantrip'
+        
+        # Prepare JSON fields
+        to_hit_json = json.dumps(spell_data.get('to_hit', []))
+        damage_json = json.dumps(spell_data.get('damage', []))
+        heal_json = json.dumps(spell_data.get('heal', []))
+        range_json = json.dumps(spell_data.get('range', {}))
+        
+        # Check if spell already exists
+        cursor.execute(
+            "SELECT id FROM spells WHERE title = ?",
+            (spell_title,)
+        )
+        existing = cursor.fetchone()
+        
+        if existing:
+            # UPDATE existing spell
+            spell_id = existing[0]
+            cursor.execute("""
+                UPDATE spells 
+                SET icon = ?, level = ?, school = ?, explanation = ?, 
+                    to_hit = ?, damage = ?, heal = ?, range = ?
+                WHERE id = ?
+            """, (
+                spell_data.get('icon', '✨'),
+                normalized_level,
+                spell_data.get('school', ''),
+                spell_data.get('explanation', ''),
+                to_hit_json,
+                damage_json,
+                heal_json,
+                range_json,
+                spell_id
+            ))
+            conn.commit()
+            print(f"  [UPSERT] Updated spell '{spell_title}' (ID {spell_id}) - level: {normalized_level}")
+            return spell_id
+        else:
+            # INSERT new spell
+            cursor.execute("""
+                INSERT INTO spells 
+                (title, icon, level, school, explanation, to_hit, damage, heal, range)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                spell_title,
+                spell_data.get('icon', '✨'),
+                normalized_level,
+                spell_data.get('school', ''),
+                spell_data.get('explanation', ''),
+                to_hit_json,
+                damage_json,
+                heal_json,
+                range_json
+            ))
+            conn.commit()
+            spell_id = cursor.lastrowid
+            print(f"  [UPSERT] Inserted spell '{spell_title}' (ID {spell_id}) - level: {normalized_level}")
+            return spell_id
+    
+    except Exception as e:
+        print(f"  [UPSERT] Error: {e}")
+        return None
+
+
+def process_job(job_id, statblock_text, parser, job_type='creature'):
     """
     Process a single job:
-    1. Parse the stat block using AI (using pre-loaded parser)
+    1. Parse the stat block/spell using AI (using pre-loaded parser)
     2. Store raw AI output for debugging failed jobs
     3. Store parsed_data in DB
-    4. Attempt to upsert creature
+    4. Attempt to upsert creature or spell
     5. Update job status
     
     Args:
         job_id: Job ID from database
-        statblock_text: Raw stat block text
+        statblock_text: Raw stat block or spell text
         parser: Pre-loaded StatBlockParser instance (model already loaded)
+        job_type: 'creature' or 'spell'
     
     Returns: True if successful, False if failed
     """
@@ -163,11 +285,15 @@ def process_job(job_id, statblock_text, parser):
             ('processing', datetime.now().isoformat(), job_id)
         )
         conn.commit()
-        print(f"\n[JOB #{job_id}] Starting processing...")
+        print(f"\n[JOB #{job_id}] Starting processing ({job_type})...")
         
-        # Parse stat block using pre-loaded model
-        print(f"[JOB #{job_id}] Parsing stat block (using loaded model)...")
-        raw_response = parser.parse_and_format_for_db(statblock_text)
+        # Parse using appropriate method based on job_type
+        if job_type == 'spell':
+            print(f"[JOB #{job_id}] Parsing spell (using loaded model)...")
+            raw_response = parser.parse_spell_and_format_for_db(statblock_text)
+        else:  # 'creature' or default
+            print(f"[JOB #{job_id}] Parsing statblock (using loaded model)...")
+            raw_response = parser.parse_and_format_for_db(statblock_text)
         
         # Store raw AI output for debugging
         raw_ai_output = raw_response if isinstance(raw_response, str) else json.dumps(raw_response)
@@ -191,27 +317,44 @@ def process_job(job_id, statblock_text, parser):
             (json.dumps(parsed_data), job_id)
         )
         conn.commit()
-        print(f"[JOB #{job_id}] Parsing complete, attempting database upsert...")
+        print(f"[JOB #{job_id}] Parsing complete, validating data...")
         
-        # Attempt to upsert creature
-        creature_id = upsert_creature(parsed_data, conn)
+        # Validate spell-specific fields
+        if job_type == 'spell':
+            parsed_data = validate_and_fix_spell_data(parsed_data)
+            # Update with validated data
+            cursor.execute(
+                "UPDATE statblock_jobs SET parsed_data=? WHERE id=?",
+                (json.dumps(parsed_data), job_id)
+            )
+            conn.commit()
         
-        if creature_id is not None:
+        print(f"[JOB #{job_id}] Validation complete, attempting database upsert...")
+        
+        # Attempt to upsert based on job_type
+        if job_type == 'spell':
+            resource_id = upsert_spell(parsed_data, conn)
+            id_column = 'spell_id'
+        else:  # 'creature'
+            resource_id = upsert_creature(parsed_data, conn)
+            id_column = 'creature_id'
+        
+        if resource_id is not None:
             # Success
             elapsed = int(time.time() - start_time)
-            cursor.execute("""
+            cursor.execute(f"""
                 UPDATE statblock_jobs 
-                SET status=?, creature_id=?, completed_at=?, elapsed_seconds=?
+                SET status=?, {id_column}=?, completed_at=?, elapsed_seconds=?
                 WHERE id=?
-            """, ('completed', creature_id, datetime.now().isoformat(), elapsed, job_id))
+            """, ('completed', resource_id, datetime.now().isoformat(), elapsed, job_id))
             conn.commit()
-            creature_title = parsed_data.get('title', 'Unknown')
-            print(f"[JOB #{job_id}] ✓ Complete! '{creature_title}' → Creature #{creature_id} ({elapsed}s)")
+            resource_name = parsed_data.get('title', 'Unknown')
+            print(f"[JOB #{job_id}] ✓ Complete! '{resource_name}' → {job_type.capitalize()} #{resource_id} ({elapsed}s)")
             conn.close()
             return True
         else:
             # Upsert failed
-            raise Exception("Failed to upsert creature (see error above)")
+            raise Exception(f"Failed to upsert {job_type} (see error above)")
     
     except json.JSONDecodeError as e:
         error_msg = f"Invalid JSON response from parser: {str(e)}"
@@ -242,6 +385,65 @@ def process_job(job_id, statblock_text, parser):
             conn.close()
 
 
+def detect_job_type(statblock_text: str) -> str:
+    """
+    Auto-detect whether statblock_text is a spell or creature based on content.
+    
+    Heuristics:
+    - If text contains spell-level keywords (cantrip, 1st level, 2nd level, etc.) -> 'spell'
+    - If text contains spell school keywords (evocation, conjuration, abjuration, etc.) -> 'spell'
+    - If text contains creature-specific keywords (CR, Hit Points, Armor Class in stat block format) -> 'creature'
+    - Otherwise, default to 'creature'
+    
+    Args:
+        statblock_text: The raw text to analyze
+        
+    Returns:
+        'spell' or 'creature'
+    """
+    text_lower = statblock_text.lower()
+    
+    # Spell-level keywords (cantrip and numbered levels)
+    spell_level_keywords = [
+        'cantrip',
+        '1st level', '1st-level',
+        '2nd level', '2nd-level',
+        '3rd level', '3rd-level',
+        '4th level', '4th-level',
+        '5th level', '5th-level',
+        '6th level', '6th-level',
+        '7th level', '7th-level',
+        '8th level', '8th-level',
+        '9th level', '9th-level'
+    ]
+    
+    # School of magic keywords
+    spell_school_keywords = [
+        'abjuration', 'conjuration', 'divination', 'enchantment',
+        'evocation', 'illusion', 'necromancy', 'transmutation'
+    ]
+    
+    # Creature-specific keywords
+    creature_keywords = [
+        'challenge', 'hit points', 'armor class', 
+        'str ', 'dex ', 'con ', 'int ', 'wis ', 'cha ',
+        'saving throws', 'skills ', 'abilities ', 'actions'
+    ]
+    
+    # Check for spell keywords
+    for keyword in spell_level_keywords:
+        if keyword in text_lower:
+            return 'spell'
+    
+    for keyword in spell_school_keywords:
+        if keyword in text_lower:
+            return 'spell'
+    
+    # If we found spell indicators, return 'spell'
+    # Otherwise default to creature
+    return 'creature'
+
+
 def get_next_pending_job():
     """Get the oldest pending job from the queue."""
     conn = get_db_connection()
@@ -249,7 +451,7 @@ def get_next_pending_job():
     
     try:
         cursor.execute("""
-            SELECT id, statblock, model_path
+            SELECT id, statblock, model_path, job_type
             FROM statblock_jobs
             WHERE status = 'pending'
             ORDER BY created_at ASC
@@ -260,10 +462,19 @@ def get_next_pending_job():
         conn.close()
         
         if row:
+            job_type = row['job_type']
+            
+            # If job_type is not set (NULL), auto-detect based on content
+            if not job_type:
+                detected_type = detect_job_type(row['statblock'])
+                job_type = detected_type
+                print(f"[AUTO-DETECT] Job #{row['id']}: detected as '{detected_type}'")
+            
             return {
                 'id': row['id'],
                 'statblock': row['statblock'],
-                'model_path': row['model_path']
+                'model_path': row['model_path'],
+                'job_type': job_type
             }
         return None
     
@@ -357,7 +568,7 @@ def worker_loop(interval=2, verbose=False):
                         continue
                 
                 # Process the job using loaded parser
-                success = process_job(job['id'], job['statblock'], parser)
+                success = process_job(job['id'], job['statblock'], parser, job_type=job['job_type'])
             else:
                 # No jobs - unload model if loaded (free memory)
                 if parser is not None:

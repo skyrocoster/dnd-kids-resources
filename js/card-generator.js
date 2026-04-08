@@ -509,7 +509,14 @@ function reconstructCreatureAttack(attackObj) {
 
 function createCardElement(data, onHideCallback) {
   const card = document.createElement('div');
-  card.className = `card ${data.level}`;
+  
+  // Normalize spell level for CSS class (convert "1" to "level1", keep "cantrip" as-is)
+  let levelClass = data.level;
+  if (data.level && /^\d+$/.test(data.level)) {
+    levelClass = `level${data.level}`;
+  }
+  
+  card.className = `card ${levelClass}`;
   
   // Add card ID for hide functionality (use spell/card ID if available, otherwise use title)
   if (data.id) {
@@ -643,15 +650,6 @@ function createCardElement(data, onHideCallback) {
     detailRow.style.display = 'block';
     detailRow.style.marginBottom = '3px';
     detailRow.style.lineHeight = '1.4';
-    
-    // Apply background color if detail has color metadata (e.g., for creature types)
-    if (detail.color) {
-      detailRow.style.backgroundColor = detail.color;
-      detailRow.style.color = '#fff';
-      detailRow.style.padding = '2px 3px';
-      detailRow.style.borderRadius = '3px';
-      detailRow.style.fontWeight = '600';
-    }
     
     const label = document.createElement('span');
     label.className = 'label';
@@ -862,16 +860,6 @@ function createCardElement(data, onHideCallback) {
     detailsDiv.appendChild(friendEnemyDiv);
   }
   
-  body.appendChild(detailsDiv);
-  
-  // Add draw box (skip for creatures - they have saving throws instead)
-  if (!data.footer_info) {
-    // Only add draw box for cards that don't have footer_info (creatures have this)
-    const drawBox = document.createElement('div');
-    drawBox.className = 'draw-box';
-    body.appendChild(drawBox);
-  }
-  
   card.appendChild(body);
   
   // Card footer
@@ -932,6 +920,15 @@ function renderPaginatedCards(containerSelector, cardsData, cardsPerPage = 9, pa
   
   const totalPages = Math.ceil(cardsData.length / cardsPerPage);
   
+  // Determine grid columns based on cardsPerPage
+  let gridCols = 3;
+  if (cardsPerPage === 12) {
+    gridCols = 3;  // 3x4 grid
+  } else if (cardsPerPage === 15) {
+    gridCols = 3;  // 3x5 grid
+  }
+  // Default is 3x3 for 9 cards
+  
   // Create pages
   for (let pageNum = 0; pageNum < totalPages; pageNum++) {
     const page = document.createElement('div');
@@ -946,6 +943,8 @@ function renderPaginatedCards(containerSelector, cardsData, cardsPerPage = 9, pa
     // Add grid
     const grid = document.createElement('div');
     grid.className = 'cards-grid';
+    grid.style.gridTemplateColumns = `repeat(${gridCols}, 63.5mm)`;
+    grid.style.gridAutoRows = '88.9mm';
     
     // Add cards for this page
     const startIdx = pageNum * cardsPerPage;

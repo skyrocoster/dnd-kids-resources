@@ -30,6 +30,7 @@ from PyQt5.QtGui import QFont, QColor, QIcon
 from PyQt5.QtNetwork import QNetworkAccessManager
 import urllib.request
 import urllib.error
+import threading
 
 
 # Paths
@@ -44,6 +45,7 @@ class StatusSignals(QObject):
     recent_jobs_updated = pyqtSignal(list)
     server_status_changed = pyqtSignal(bool)
     worker_status_changed = pyqtSignal(bool)
+    log_message = pyqtSignal(str, str)  # (message, level)
 
 
 class FetchStatsWorker(QThread):
@@ -88,8 +90,13 @@ class QueueManagerApp(QMainWindow):
         self.worker_process = None
         self.worker_logs = []
         
+        # Thread management
+        self.active_threads = []
+        self.reader_thread = None
+        
         # Signals
         self.signals = StatusSignals()
+        self.signals.log_message.connect(self.log_worker)
         
         # Setup UI
         self.setup_ui()
@@ -123,6 +130,9 @@ class QueueManagerApp(QMainWindow):
         # Server Controls Panel
         main_layout.addWidget(self.create_controls_panel())
         
+        # Model Status Panel
+        main_layout.addWidget(self.create_model_status_panel())
+        
         # Queue Status Panel
         main_layout.addWidget(self.create_stats_panel())
         
@@ -133,7 +143,124 @@ class QueueManagerApp(QMainWindow):
         main_layout.addWidget(tabs)
     
     def create_controls_panel(self):
-        """Create the worker controls panel (server managed separately)."""
+        """Create the worker controls panel."""
+        panel = QGroupBox("Queue Worker Controls")
+        layout = QHBoxLayout()
+        
+        # Title and font
+        control_font = QFont()
+        control_font.setPointSize(10)
+        control_font.setBold(True)
+        
+        # Worker Controls
+        worker_label = QLabel("⚙️ Queue Worker")
+        worker_label.setFont(control_font)
+        
+        self.worker_status_label = QLabel("● Stopped")
+        self.worker_status_label.setStyleSheet("color: red; font-weight: bold;")
+        
+        self.btn_worker_start = QPushButton("Start")
+        self.btn_worker_start.clicked.connect(self.start_worker)
+        
+        self.btn_worker_stop = QPushButton("Stop")
+        self.btn_worker_stop.clicked.connect(self.stop_worker)
+        self.btn_worker_stop.setEnabled(False)
+        
+        self.btn_worker_restart = QPushButton("Restart")
+        self.btn_worker_restart.clicked.connect(self.restart_worker)
+        self.btn_worker_restart.setEnabled(False)
+        
+        layout.addWidget(worker_label)
+        layout.addWidget(self.worker_status_label)
+        layout.addWidget(self.btn_worker_start)
+        layout.addWidget(self.btn_worker_stop)
+        layout.addWidget(self.btn_worker_restart)
+        
+        layout.addStretch()
+        
+        # Note about server being managed separately
+        note_label = QLabel("(Flask Server managed separately)")
+        note_label.setStyleSheet("color: #666; font-style: italic;")
+        layout.addWidget(note_label)
+        
+        panel.setLayout(layout)
+        return panel
+    
+    def create_model_status_panel(self):
+        """Create the model status panel."""
+        panel = QGroupBox("AI Model Status")
+        layout = QHBoxLayout()
+        
+        # Title and font
+        model_font = QFont()
+        model_font.setPointSize(10)
+        model_font.setBold(True)
+        
+        # Model Label
+        model_label = QLabel("🧠 Model")
+        model_label.setFont(model_font)
+        
+        self.model_status_label = QLabel("● Unloaded")
+        self.model_status_label.setStyleSheet("color: gray; font-weight: bold;")
+        
+        # Model name
+        self.model_name_label = QLabel("Checking...")
+        self.model_name_label.setStyleSheet("color: #666; font-size: 9pt;")
+        
+        layout.addWidget(model_label)
+        layout.addWidget(self.model_status_label)
+        layout.addSpacing(20)
+        layout.addWidget(self.model_name_label)
+        layout.addStretch()
+        
+        panel.setLayout(layout)
+        
+        # Start timers to update status
+        self.model_status_timer = QTimer()
+        self.model_status_timer.timeout.connect(self.update_model_status)
+        self.model_status_timer.start(1000)  # Update every second
+        
+        return panel
+    
+    def update_model_status(self):
+        """Update model status based on worker and job state."""
+        if self.worker_process is None or self.worker_process.poll() is not None:
+            # Worker is not running
+            status_text = "● Unloaded (Worker Stopped)"
+            status_color = "gray"
+        else:
+            # Worker is running - check if there are pending jobs
+            # If there are pending jobs, model will load on-demand
+            status_text = "◐ Running (On-Demand Loading)"
+            status_color = "orange"
+        
+        self.model_status_label.setText(status_text)
+        self.model_status_label.setStyleSheet(f"color: {status_color}; font-weight: bold;")
+        
+        # Check for model file
+        model_candidates = [
+            APP_ROOT / "models" / "mistral.gguf",
+            APP_ROOT / "models" / "mistral-7b-instruct-v0.1.Q4_K_M.gguf",
+            APP_ROOT / "models" / "tinyllama.gguf",
+            APP_ROOT / "models" / "tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf"
+        ]
+        
+        model_file = None
+        for candidate in model_candidates:
+            if candidate.exists():
+                model_file = candidate
+                break
+        
+        if model_file:
+            size_mb = model_file.stat().st_size / (1024 * 1024)
+            self.model_name_label.setText(f"{model_file.name} ({size_mb:.1f} MB)")
+        else:
+            self.model_name_label.setText("⚠️ No model file found")
+            self.model_name_label.setStyleSheet("color: red; font-size: 9pt;")
+    
+    
+    def create_controls_panel(self):
+        """Create the worker controls panel."""
         panel = QGroupBox("Queue Worker Controls")
         layout = QHBoxLayout()
         
@@ -257,7 +384,7 @@ class QueueManagerApp(QMainWindow):
         if self.worker_process is not None:
             return
         
-        self.log_worker("[LAUNCHER] Starting queue worker...", "info")
+        self.signals.log_message.emit("[LAUNCHER] Starting queue worker...", "info")
         
         try:
             # Build command with venv activation
@@ -282,20 +409,21 @@ class QueueManagerApp(QMainWindow):
             self.btn_worker_stop.setEnabled(True)
             self.btn_worker_restart.setEnabled(True)
             
-            self.log_worker("[LAUNCHER] ✓ Queue worker started (PID: {})".format(self.worker_process.pid), "success")
+            self.signals.log_message.emit("[LAUNCHER] ✓ Queue worker started (PID: {})".format(self.worker_process.pid), "success")
             
-            # Start output reader
-            self.read_worker_output()
+            # Start output reader in a daemon thread
+            self.reader_thread = threading.Thread(target=self.read_worker_output, daemon=True)
+            self.reader_thread.start()
         
         except Exception as e:
-            self.log_worker(f"[LAUNCHER] ✗ Failed to start worker: {e}", "error")
+            self.signals.log_message.emit(f"[LAUNCHER] ✗ Failed to start worker: {e}", "error")
     
     def stop_worker(self):
         """Stop the queue worker."""
         if self.worker_process is None:
             return
         
-        self.log_worker("[LAUNCHER] Stopping queue worker...", "info")
+        self.signals.log_message.emit("[LAUNCHER] Stopping queue worker...", "info")
         
         try:
             self.worker_process.terminate()
@@ -312,7 +440,7 @@ class QueueManagerApp(QMainWindow):
             self.btn_worker_stop.setEnabled(False)
             self.btn_worker_restart.setEnabled(False)
             
-            self.log_worker("[LAUNCHER] ✓ Queue worker stopped", "success")
+            self.signals.log_message.emit("[LAUNCHER] ✓ Queue worker stopped", "success")
     
     def restart_worker(self):
         """Restart the queue worker."""
@@ -323,11 +451,15 @@ class QueueManagerApp(QMainWindow):
     def read_worker_output(self):
         """Read worker output in a thread."""
         if self.worker_process:
-            for line in self.worker_process.stdout:
-                self.log_worker(line.strip(), "output")
+            try:
+                for line in self.worker_process.stdout:
+                    if line.strip():
+                        self.signals.log_message.emit(line.strip(), "output")
+            except Exception as e:
+                self.signals.log_message.emit(f"[ERROR] Failed to read output: {e}", "error")
     
     def log_worker(self, message, level="info"):
-        """Add message to worker logs."""
+        """Add message to worker logs (called from main thread via signal)."""
         timestamp = datetime.now().strftime("%H:%M:%S")
         formatted = f"[{timestamp}] {message}"
         
@@ -344,7 +476,14 @@ class QueueManagerApp(QMainWindow):
         """Fetch queue statistics from API."""
         worker = FetchStatsWorker()
         worker.stats_ready.connect(self.update_stats)
+        worker.error_occurred.connect(self.on_fetch_stats_error)
+        worker.finished.connect(lambda: self.cleanup_thread(worker))
+        self.active_threads.append(worker)
         worker.start()
+    
+    def on_fetch_stats_error(self, error):
+        """Handle stats fetch errors silently."""
+        pass  # Silently ignore network errors during polling
     
     def update_stats(self, stats):
         """Update stats display."""
@@ -369,7 +508,19 @@ class QueueManagerApp(QMainWindow):
         """Fetch recent jobs from API."""
         worker = FetchRecentJobsWorker()
         worker.jobs_ready.connect(self.update_recent_jobs)
+        worker.error_occurred.connect(self.on_fetch_jobs_error)
+        worker.finished.connect(lambda: self.cleanup_thread(worker))
+        self.active_threads.append(worker)
         worker.start()
+    
+    def on_fetch_jobs_error(self, error):
+        """Handle jobs fetch errors silently."""
+        pass  # Silently ignore network errors during polling
+    
+    def cleanup_thread(self, worker):
+        """Remove finished thread from tracking list."""
+        if worker in self.active_threads:
+            self.active_threads.remove(worker)
     
     def update_recent_jobs(self, jobs):
         """Update recent jobs table."""
@@ -412,11 +563,23 @@ class QueueManagerApp(QMainWindow):
         """Clean up on window close."""
         self.stats_timer.stop()
         self.jobs_timer.stop()
+        self.model_status_timer.stop()
         
         # Stop worker if running
         if self.worker_process:
             self.stop_worker()
         
+        # Wait for reader thread to finish
+        if self.reader_thread and self.reader_thread.is_alive():
+            self.reader_thread.join(timeout=2)
+        
+        # Wait for active worker threads to finish
+        for worker in self.active_threads:
+            if worker.isRunning():
+                worker.quit()
+                worker.wait(timeout=2000)
+        
+        self.active_threads.clear()
         event.accept()
 
 

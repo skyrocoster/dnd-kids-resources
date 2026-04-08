@@ -24,11 +24,45 @@ def init_database():
     print("="*60)
     print("PHASE 1: DATABASE SCHEMA INITIALIZATION")
     print("="*60)
+    
+    # Disable foreign key constraints temporarily to allow table drops
+    cursor.execute("PRAGMA foreign_keys = OFF")
+    
+    # Drop all existing tables in reverse dependency order
+    print("\nCleaning up existing tables...")
+    tables_to_drop = [
+        "statblock_jobs",
+        "weapons",
+        "wild_shapes",
+        "creatures",
+        "creature_types",
+        "spells",
+        "conditions",
+        "damage_types",
+        "abilities",
+        "traps",
+        "dungeons",
+        "icons",
+        "skills"
+    ]
+    
+    for table in tables_to_drop:
+        try:
+            cursor.execute(f"DROP TABLE IF EXISTS {table}")
+        except Exception as e:
+            print(f"  [INFO]  Could not drop {table}: {e}")
+    
+    conn.commit()
+    
+    # Re-enable foreign key constraints
+    cursor.execute("PRAGMA foreign_keys = ON")
+    
+    print("[OK] Cleaned up existing tables")
     print("\nCreating database schema...")
 
     # Create abilities table (with ID for seed_database.py compatibility)
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS abilities (
+        CREATE TABLE abilities (
             id INTEGER PRIMARY KEY,
             code TEXT NOT NULL UNIQUE,
             name TEXT NOT NULL,
@@ -41,7 +75,7 @@ def init_database():
 
     # Create damage_types table (with ID for seed_database.py compatibility)
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS damage_types (
+        CREATE TABLE damage_types (
             id INTEGER PRIMARY KEY,
             code TEXT NOT NULL UNIQUE,
             name TEXT NOT NULL,
@@ -53,7 +87,7 @@ def init_database():
 
     # Create spells table
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS spells (
+        CREATE TABLE spells (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             title TEXT NOT NULL UNIQUE,
             icon TEXT NOT NULL,
@@ -63,7 +97,9 @@ def init_database():
             to_hit TEXT,
             damage TEXT,
             heal TEXT,
-            range TEXT
+            range TEXT,
+            special TEXT,
+            higher_levels TEXT
         )
     """)
 
@@ -76,7 +112,7 @@ def init_database():
 
     # Create conditions table
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS conditions (
+        CREATE TABLE conditions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             title TEXT NOT NULL UNIQUE,
             icon TEXT NOT NULL,
@@ -88,7 +124,7 @@ def init_database():
 
     # Create creature_types lookup table (with ID for seed_database.py compatibility)
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS creature_types (
+        CREATE TABLE creature_types (
             id INTEGER PRIMARY KEY,
             code TEXT NOT NULL UNIQUE,
             emoji TEXT NOT NULL,
@@ -99,7 +135,7 @@ def init_database():
 
     # Create creatures table
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS creatures (
+        CREATE TABLE creatures (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             title TEXT NOT NULL UNIQUE,
             icon TEXT,
@@ -122,21 +158,24 @@ def init_database():
 
     # Create statblock_jobs table (for queue-based AI parsing)
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS statblock_jobs (
+        CREATE TABLE statblock_jobs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             status TEXT DEFAULT 'pending',
+            job_type TEXT DEFAULT 'creature',
             statblock TEXT NOT NULL,
             model_path TEXT,
             parsed_data TEXT,
             raw_ai_output TEXT,
             creature_id INTEGER,
+            spell_id INTEGER,
             error_message TEXT,
             progress_percent INTEGER DEFAULT 0,
             elapsed_seconds INTEGER DEFAULT 0,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             started_at DATETIME,
             completed_at DATETIME,
-            FOREIGN KEY (creature_id) REFERENCES creatures(id)
+            FOREIGN KEY (creature_id) REFERENCES creatures(id),
+            FOREIGN KEY (spell_id) REFERENCES spells(id)
         )
     """)
 
@@ -147,28 +186,16 @@ def init_database():
 
     # Create traps table
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS traps (
+        CREATE TABLE traps (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL UNIQUE,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     """)
 
-    # Create skills table
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS skills (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            title TEXT NOT NULL,
-            icon TEXT NOT NULL,
-            level TEXT NOT NULL,
-            explanation TEXT,
-            details TEXT NOT NULL
-        )
-    """)
-
     # Create dungeons table
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS dungeons (
+        CREATE TABLE dungeons (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             title TEXT NOT NULL UNIQUE,
             original_html TEXT NOT NULL,
@@ -180,7 +207,7 @@ def init_database():
 
     # Create weapons table (legacy)
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS weapons (
+        CREATE TABLE weapons (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             card_id INTEGER NOT NULL UNIQUE,
             type TEXT,
@@ -192,7 +219,7 @@ def init_database():
 
     # Create wild_shapes table (legacy)
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS wild_shapes (
+        CREATE TABLE wild_shapes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             card_id INTEGER NOT NULL UNIQUE,
             FOREIGN KEY (card_id) REFERENCES cards(id) ON DELETE CASCADE
@@ -201,7 +228,7 @@ def init_database():
 
     # Create icons table (legacy)
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS icons (
+        CREATE TABLE icons (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             symbol TEXT NOT NULL UNIQUE,
             description TEXT NOT NULL,

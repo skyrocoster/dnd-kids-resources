@@ -34,6 +34,7 @@ SEEDS_DIR = Path(__file__).parent.parent / "data"
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from lib.parse_dungeon import DungeonHTMLParser
+from lib.spell_validators import normalize_spell_level
 
 def load_json_file(filepath):
     """Load and parse a JSON seed file."""
@@ -158,28 +159,40 @@ def populate_spells(cursor, conn, force=False):
     
     for spell in seeds:
         try:
+            # Normalize and validate spell level
+            raw_level = spell.get('level', 'cantrip')
+            try:
+                normalized_level = normalize_spell_level(raw_level)
+            except ValueError:
+                # Fallback if validation fails
+                normalized_level = raw_level if raw_level else 'cantrip'
+            
             # Convert lists to JSON strings
             to_hit = json.dumps(spell.get('to_hit')) if spell.get('to_hit') else None
             damage = json.dumps(spell.get('damage')) if spell.get('damage') else None
             heal = json.dumps(spell.get('heal')) if spell.get('heal') else None
             range_data = json.dumps(spell.get('range')) if spell.get('range') else None
+            special = json.dumps(spell.get('special')) if spell.get('special') else None
+            higher_levels = json.dumps(spell.get('higher_levels')) if spell.get('higher_levels') else None
             
             cursor.execute("""
                 INSERT INTO spells 
-                (title, icon, level, school, explanation, to_hit, damage, heal, range)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (title, icon, level, school, explanation, to_hit, damage, heal, range, special, higher_levels)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 spell.get('title'),
                 spell.get('icon', '✨'),
-                spell.get('level', 'cantrip'),
+                normalized_level,
                 spell.get('school', 'Evocation'),
                 spell.get('explanation', ''),
                 to_hit,
                 damage,
                 heal,
-                range_data
+                range_data,
+                special,
+                higher_levels
             ))
-            print(f"  [CHECK] {spell.get('title')}")
+            print(f"  [CHECK] {spell.get('title')} (level: {normalized_level})")
         except sqlite3.IntegrityError as e:
             print(f"  [WARNING]  Duplicate or error: {spell.get('title')} - {e}")
     
@@ -668,7 +681,8 @@ def main():
     
     try:
         conn = sqlite3.connect(str(DB_PATH))
-        conn.execute('PRAGMA foreign_keys = ON')
+        # DISABLE foreign keys during schema operations (dropping/creating tables)
+        conn.execute('PRAGMA foreign_keys = OFF')
         cursor = conn.cursor()
         
         if args.force:

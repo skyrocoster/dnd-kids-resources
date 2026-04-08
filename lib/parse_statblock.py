@@ -190,6 +190,190 @@ CRITICAL OUTPUT RULES:
         
         # Just return the raw response - client can parse it as needed
         return response_text
+    
+    def parse_spell(self, spell_text: str) -> str:
+        """
+        Parse a D&D 5e spell description and return structured JSON.
+        
+        Args:
+            spell_text: Raw spell text (e.g., from Player's Handbook, D&D Beyond, or structured format)
+            
+        Returns:
+            Raw model response string with parsed spell data
+        """
+        
+        prompt = f"""[INST] You are a D&D 5e spell parser. Extract ALL spell metadata and data from the input.
+
+SPELL TEXT (may be structured with metadata table or prose):
+{spell_text}
+
+EXTRACT AND OUTPUT ONLY THIS VALID, UNESCAPED JSON (absolutely no backslashes, no escape characters, no markdown):
+{{
+  "title": "spell name",
+  "icon": "emoji related to spell",
+  "level": "cantrip or 1-9",
+  "school": "abjuration|conjuration|divination|enchantment|evocation|illusion|necromancy|transmutation",
+  "explanation": "one sentence describing spell effect",
+  "to_hit": [],
+  "damage": [],
+  "heal": [],
+  "range": {{}},
+  "special": [],
+  "higher_levels": []
+}}
+
+DETAILED FIELD RULES:
+
+"title": Exact spell name from TEXT. MUST match the spell being parsed, never copy example names.
+
+"icon": ONE emoji matching spell mechanics:
+  - Fire-based spells: 🔥
+  - Cold/ice spells: ❄️
+  - Lightning spells: ⚡
+  - Healing spells: 💚
+  - Force/magic spells: ✨
+  - Dark/necrotic: 💀
+  - Protective/abjuration: 🛡️
+  - Transmutation/change: 🔄
+  CRITICAL: Choose based on ACTUAL spell in input, not examples
+
+"level": SPELL LEVEL - numeric level (cantrip or 1-9). CRITICAL: NEVER put school name (abjuration, evocation, etc.) here!
+  - "Cantrip" → "cantrip"
+  - "1st level" or "1st" → 1
+  - "2nd level" or "2nd" → 2
+  - "3rd level" or "3rd" → 3
+  - "4th level" or "4th" → 4
+  - "5th level" or "5th" → 5
+  - "6th level" or "6th" → 6
+  - "7th level" or "7th" → 7
+  - "8th level" or "8th" → 8
+  - "9th level" or "9th" → 9
+  - VALIDATION: "level" MUST be one of: "cantrip", 1, 2, ..., 9 - NEVER a school name!
+  
+"school": SCHOOL OF MAGIC - exactly one of these 8 schools (lowercase). CRITICAL: Do NOT confuse with level!
+  - abjuration (protection/warding)
+  - conjuration (summoning/creation)
+  - divination (knowledge/sensing)
+  - enchantment (mind-affecting)
+  - evocation (energy/damage)
+  - illusion (deception/perception)
+  - necromancy (death/undead)
+  - transmutation (transformation/change)
+  - VALIDATION: "school" MUST be exactly one of: abjuration, conjuration, divination, enchantment, evocation, illusion, necromancy, transmutation
+  - NEVER use level/circle number (like "3") or spell name as school
+
+"explanation": One sentence (about 10-15 words) describing what the spell ACTUALLY does. Extract from description, not from examples.
+
+"to_hit": Array of attack/save rolls for this spell
+  - ALWAYS include ALL attack rolls and saving throws
+  - Each entry represents one type of roll in the spell
+  - CRITICAL: Link to_hit and damage by matching "name" fields
+  - FORMAT: [{{"name": "target", "roll": "1d20+bonus", "numerics": ["dex"], "save": false}}, {{"name": "aoe", "roll": "1d20+modifier", "numerics": ["dex"], "save": true}}, ...]
+  - "save": false for attack rolls, true for saving throws
+  - "numerics": Array of ability modifiers (dex, str, wis, con, int, cha) - lowercase
+  
+"damage": Array of damage effects this spell deals
+  - CRITICAL: Match "name" field to corresponding to_hit entry
+  - Each effect: {{"name": "matched_name", "roll": [{{"dice": "type"}}, ...], "Special": "optional notes"}}
+  - Only include if spell does damage
+  - Multiple damage types in one effect: [{{"1d10": "type1"}}, {{"2d6": "type2"}}]
+
+NAMING RULES (how to pick "name" field):
+Use these names based on spell mechanics:
+  - "target": Single-target spell (attack one creature or creature chooses target)
+    * Examples: Fire Bolt (1d20 attack), Cure Wounds (1d20 healing roll)
+    * Use when: Spell explicitly targets "one creature"
+  - "aoe": Area-of-effect spell (affects multiple creatures in radius/cone/line)
+    * Examples: Shatter (10-ft sphere affecting all creatures), Thunderwave (15-ft cube)
+    * Use when: Spell says "all creatures in [shape]" or "each creature within X feet"
+  - "multi-part" spells get multiple entries:
+    * Ice Knife: "target" (attack roll) + "aoe" (save for explosion)
+    * Use matching "name" in BOTH to_hit AND damage arrays
+    
+EXAMPLES:
+- Fire Bolt (single-target attack): to_hit name="target", damage name="target"
+- Shatter (pure AOE save): to_hit name="aoe", damage name="aoe"  
+- Ice Knife (target + AOE): to_hit has "target" + "aoe", damage has "target" + "aoe"
+
+"heal": Array of healing effects
+  - FORMAT: [{{"name": "healing", "roll": [{{"dice": "healing"}}]}}]
+  - Only include if spell heals HP
+
+"range": Object with distance/shape (only include fields that apply)
+  - "distance": "self" | "touch" | "short" | "medium" | "long" | "very long"
+    * self = no range (Self)
+    * touch = melee touch distance
+    * short = ≤30 feet
+    * medium = 31-60 feet  
+    * long = 61-120 feet
+    * very long = >120 feet
+  - "shape": "sphere" | "cone" | "cube" | "line" | "circle" | "radius" | "null"
+  - "size": "small" | "medium" | "large" | "huge" | "null"
+  - "target": "single" | "multiple" | "null"
+
+"special": Array of special effects, conditions, or mechanics
+  - FORMAT: [{{text: "descriptive text"}}, ...]
+  - Only include if spell has special rules (e.g., disadvantage on certain creatures, object damage, immunity effects)
+  - Extract text describing special cases or additional effects
+  - Do NOT include base damage or attack information (those go in to_hit/damage)
+  - EXAMPLE (Shatter): [{{text: "A creature made of inorganic material such as stone, crystal, or metal has disadvantage on this saving throw"}}, {{text: "A nonmagical object that isn't being worn or carried also takes the damage if it's in the spell's area"}}]
+
+"higher_levels": Array of scaling information
+  - FORMAT: [{{text: "description of what happens at higher level slots"}}]
+  - Only include if spell text contains "At Higher Levels" section
+  - Extract word-for-word from spell text
+  - EXAMPLE (Shatter): [{{text: "When you cast this spell using a spell slot of 3rd level or higher, the damage increases by 1d8 for each slot level above 2nd."}}]
+
+CRITICAL RULES:
+1. NEVER output the example spell names (Ice Knife, Fire Bolt, etc). Parse the ACTUAL spell from input.
+2. NEVER use escape characters - output clean JSON with NO backslashes
+3. MUST output ONLY valid JSON, no markdown, no code blocks
+4. Match all values to the ACTUAL spell text provided, not to examples
+5. If spell text is incomplete, output best-effort parse with empty arrays for unknown fields
+6. Do not hallucinate fields - only include fields that exist in the spell description
+7. LEVEL vs SCHOOL VALIDATION (ABSOLUTELY CRITICAL):
+   - "level" must ALWAYS be: "cantrip" or 1 through 9 - NEVER a school name like "evocation"!
+   - "school" must ALWAYS be ONE of the 8 schools: abjuration, conjuration, divination, enchantment, evocation, illusion, necromancy, transmutation
+   - If you see "3 evocation" in the text: "3" indicates level (→ 3) and "evocation" is the school ("evocation")
+   - NEVER swap them or put school value in level field
+8. NAMING CONSISTENCY (CRITICAL): to_hit and damage arrays MUST BE LINKED by matching "name" fields:
+   - Apply the NAMING RULES above to determine appropriate names ("target", "aoe", etc.)
+   - EVERY to_hit[n] MUST have a matching damage[n] with the SAME "name" field
+   - Every "name" value must appear in BOTH arrays or not at all
+   - Do NOT invent random names - use only "target", "aoe", and other standard names from NAMING RULES
+   - This ensures rolls are correctly grouped during card generation [/INST]"""
+        
+        logger.info("Sending spell to model for parsing...")
+        
+        response = self.model(
+            prompt,
+            temperature=0.0,  # Lower temperature for consistent JSON output
+            max_tokens=8000,
+            top_p=0.9
+        )
+        
+        response_text = response["choices"][0]["text"].strip()
+        
+        logger.info(f"Model response length: {len(response_text)} characters")
+        logger.info(f"Full response:\n{response_text}")
+        
+        # Clean up escaped underscores that the model sometimes adds
+        response_text = response_text.replace('\\"', '"').replace('\\_', '_')
+        
+        # Return the raw response for review
+        return response_text
+    
+    def parse_spell_and_format_for_db(self, spell_text: str) -> str:
+        """
+        Parse spell text and return raw response for review.
+        
+        Returns:
+            Raw model response string
+        """
+        response_text = self.parse_spell(spell_text)
+        
+        # Just return the raw response - client can parse it as needed
+        return response_text
 
 
 def get_parser(model_path: Optional[str] = None) -> StatBlockParser:

@@ -12,8 +12,8 @@ sys.path.insert(0, str(Path(__file__).parent / 'lib'))
 
 import json
 import sqlite3
-from parse_dungeon import DungeonHTMLParser
-from parse_statblock import StatBlockParser
+from parse_dungeon import DungeonHTMLParser  # type: ignore
+from parse_statblock import StatBlockParser  # type: ignore
 from flask import Flask, jsonify, send_from_directory, request
 import webbrowser
 
@@ -650,6 +650,37 @@ def convert_db_creature_to_api_format(creature_row, conn=None):
     return result
 
 
+def format_element_name(name):
+    """Format element name for display (e.g., 'target' -> 'Target', 'aoe' -> 'AOE')"""
+    if not name:
+        return "Effect"
+    # Special case: aoe should be AOE (all caps abbreviation)
+    if name.lower() == 'aoe':
+        return "AOE"
+    # Otherwise capitalize first letter
+    return name.capitalize()
+
+
+def get_spell_level_color(level):
+    """Get hex color for spell level (matching CSS color classes)"""
+    level_colors = {
+        'cantrip': '#f39c12',      # Gold
+        '0': '#f39c12',            # Gold (cantrip numeric)
+        '1': '#e74c3c',            # Red
+        '2': '#9b59b6',            # Purple
+        '3': '#3498db',            # Blue
+        '4': '#1abc9c',            # Teal
+        '5': '#2ecc71',            # Green
+        '6': '#f1c40f',            # Yellow
+        '7': '#e67e22',            # Orange
+        '8': '#95a5a6',            # Grey
+        '9': '#34495e'             # Dark Blue-Grey
+    }
+    # Normalize level string (strip 'level' prefix if present)
+    normalized = level.lower().replace('level', '').strip()
+    return level_colors.get(normalized, '#95a5a6')  # Default to grey
+
+
 def convert_db_spell_to_api_format(spell_row, conn=None):
     """
     Convert database spell to API format.
@@ -659,9 +690,8 @@ def convert_db_spell_to_api_format(spell_row, conn=None):
 
     Features:
     - Detects paired rolls (multiple to_hit/damage with same count) and interleaves them
-    - Uses "To Hit" or "Save" labels based on roll's save field
-    - Maps roll name field (A, B, C) to number emojis (1️⃣, 2️⃣, 3️⃣) for visual pairing
-    - Single-roll spells use traditional emojis (🎲, 💥, 💚)
+    - Uses element names (target, aoe, etc.) with (Attack) or (Save) indicators
+    - Colors details by spell level
     - Enriches rolls with ability/damage type metadata
 
     Returns:
@@ -672,20 +702,20 @@ def convert_db_spell_to_api_format(spell_row, conn=None):
       "school": "Evocation",
       "explanation": "...",
       "details": [
-        {"label": "🎲 To Hit:", "content": {...}},
-        {"label": "💥 Damage:", "content": {...}},
-        {"label": "🎯 Range:", "content": {...}}
+        {"label": "Target (Attack)", "color": "#f39c12", "content": {...}},
+        {"label": "Target (Damage)", "color": "#f39c12", "content": {...}},
+        {"label": "Range", "color": "#f39c12", "content": {...}}
       ]
     }
 
-    For spells with paired rolls (e.g., Ice Knife):
+    For spells with multiple elements (e.g., Ice Knife):
     {
       "details": [
-        {"label": "1️⃣ To Hit:", "content": {...}},
-        {"label": "1️⃣ Damage:", "content": {...}},
-        {"label": "2️⃣ Save:", "content": {...}},
-        {"label": "2️⃣ Damage:", "content": {...}},
-        {"label": "🎯 Range:", "content": {...}}
+        {"label": "Target (Attack)", "color": "#e74c3c", "content": {...}},
+        {"label": "Target (Damage)", "color": "#e74c3c", "content": {...}},
+        {"label": "AOE (Save)", "color": "#e74c3c", "content": {...}},
+        {"label": "AOE (Damage)", "color": "#e74c3c", "content": {...}},
+        {"label": "Range", "color": "#e74c3c", "content": {...}}
       ]
     }
     """
@@ -697,6 +727,10 @@ def convert_db_spell_to_api_format(spell_row, conn=None):
         should_close = True
     else:
         should_close = False
+
+    # Get spell level and calculate detail color
+    spell_level = spell_dict.get('level', 'cantrip')
+    detail_color = get_spell_level_color(spell_level)
 
     # Parse the database JSON fields
     to_hit_data = parse_json_field(spell_dict.get('to_hit'))
@@ -723,23 +757,21 @@ def convert_db_spell_to_api_format(spell_row, conn=None):
         for i, (to_hit_roll, damage_roll) in enumerate(zip(to_hit_data, damage_data)):
             roll_name = to_hit_roll.get('name', None) if isinstance(
                 to_hit_roll, dict) else None
+            element_name = format_element_name(roll_name)
 
             # Determine if this is a save or attack roll
             is_save = to_hit_roll.get('save', False) if isinstance(
                 to_hit_roll, dict) else False
-            roll_label = "Save" if is_save else "To Hit"
+            roll_type = "Save" if is_save else "Attack"
 
-            # Use number emoji for paired rolls
-            emoji = number_map.get(roll_name, '1️⃣')
-
-            # Add roll
+            # Add roll with element name and type
             enriched_roll = enrich_roll_object(to_hit_roll, conn)
-            details.append({"label": f"{emoji} {roll_label}:",
+            details.append({"label": f"{element_name} ({roll_type}):", "color": detail_color,
                            "content": enriched_roll})
 
             # Add paired damage
             enriched_damage = enrich_roll_object(damage_roll, conn)
-            details.append({"label": f"{emoji} Damage:",
+            details.append({"label": f"{element_name} (Damage):", "color": detail_color,
                            "content": enriched_damage})
     else:
         # Add to_hit rolls separately (not paired)
@@ -748,26 +780,24 @@ def convert_db_spell_to_api_format(spell_row, conn=None):
                 for i, roll_obj in enumerate(to_hit_data):
                     roll_name = roll_obj.get('name', None) if isinstance(
                         roll_obj, dict) else None
+                    element_name = format_element_name(roll_name)
 
                     # Determine if this is a save or attack roll
                     is_save = roll_obj.get('save', False) if isinstance(
                         roll_obj, dict) else False
-                    roll_label = "Save" if is_save else "To Hit"
+                    roll_type = "Save" if is_save else "Attack"
 
-                    if len(to_hit_data) > 1 and roll_name:
-                        emoji = number_map.get(roll_name, '🎲')
-                        label = f"{emoji} {roll_label}:"
-                    else:
-                        label = f"🎲 {roll_label}:"
+                    label = f"{element_name} ({roll_type}):"
 
                     enriched_roll = enrich_roll_object(roll_obj, conn)
-                    details.append({"label": label, "content": enriched_roll})
+                    details.append({"label": label, "color": detail_color, "content": enriched_roll})
             else:
-                enriched_roll = enrich_roll_object(to_hit_data, conn)
+                element_name = format_element_name(None)
                 is_save = to_hit_data.get('save', False) if isinstance(
                     to_hit_data, dict) else False
-                roll_label = "Save" if is_save else "To Hit"
-                details.append({"label": f"🎲 {roll_label}:",
+                roll_type = "Save" if is_save else "Attack"
+                enriched_roll = enrich_roll_object(to_hit_data, conn)
+                details.append({"label": f"{element_name} ({roll_type}):", "color": detail_color,
                                "content": enriched_roll})
 
         # Add damage rolls separately (not paired)
@@ -776,19 +806,17 @@ def convert_db_spell_to_api_format(spell_row, conn=None):
                 for i, roll_obj in enumerate(damage_data):
                     roll_name = roll_obj.get('name', None) if isinstance(
                         roll_obj, dict) else None
+                    element_name = format_element_name(roll_name)
 
-                    if len(damage_data) > 1 and roll_name:
-                        emoji = number_map.get(roll_name, '💥')
-                        label = f"{emoji} Damage:"
-                    else:
-                        label = "💥 Damage:"
+                    label = f"{element_name} (Damage):"
 
                     enriched_roll = enrich_roll_object(roll_obj, conn)
-                    details.append({"label": label, "content": enriched_roll})
+                    details.append({"label": label, "color": detail_color, "content": enriched_roll})
             else:
+                element_name = format_element_name(None)
                 enriched_roll = enrich_roll_object(damage_data, conn)
                 details.append(
-                    {"label": "💥 Damage:", "content": enriched_roll})
+                    {"label": f"{element_name} (Damage):", "color": detail_color, "content": enriched_roll})
 
     # Add heal rolls (enrich with ability metadata)
     if heal_data:
@@ -796,31 +824,29 @@ def convert_db_spell_to_api_format(spell_row, conn=None):
             for i, roll_obj in enumerate(heal_data):
                 roll_name = roll_obj.get('name', None) if isinstance(
                     roll_obj, dict) else None
+                element_name = format_element_name(roll_name)
                 heal_type = roll_obj.get('type', 'normal') if isinstance(
                     roll_obj, dict) else 'normal'
 
                 # Determine heal label based on type
                 heal_text = "Max HP" if heal_type == 'max_hp' else "Heal"
 
-                if len(heal_data) > 1 and roll_name:
-                    emoji = number_map.get(roll_name, '💚')
-                    label = f"{emoji} {heal_text}:"
-                else:
-                    label = f"💚 {heal_text}:"
+                label = f"{element_name} ({heal_text}):"
 
                 enriched_roll = enrich_roll_object(roll_obj, conn)
-                details.append({"label": label, "content": enriched_roll})
+                details.append({"label": label, "color": detail_color, "content": enriched_roll})
         else:
+            element_name = format_element_name(None)
             heal_type = heal_data.get('type', 'normal') if isinstance(
                 heal_data, dict) else 'normal'
             heal_text = "Max HP" if heal_type == 'max_hp' else "Heal"
             enriched_roll = enrich_roll_object(heal_data, conn)
-            details.append({"label": f"💚 {heal_text}:",
+            details.append({"label": f"{element_name} ({heal_text}):", "color": detail_color,
                            "content": enriched_roll})
 
     # Add range ALWAYS at the end (from spells.range column)
     if range_data:
-        details.append({"label": "🎯 Range:", "content": range_data})
+        details.append({"label": "Range:", "color": detail_color, "content": range_data})
 
     # Return in API format
     result = {
@@ -1378,11 +1404,12 @@ def get_trap_by_id(trap_id):
 def queue_submit_job():
     """
     API endpoint: POST /api/queue/submit
-    Submit a new stat block for AI parsing via the queue.
+    Submit a new stat block or spell for AI parsing via the queue.
     
     Request JSON:
     {
         "statblock": "Goblin\nSmall Humanoid...",
+        "job_type": "creature",  // Optional: "creature" (default) or "spell"
         "model_path": "/path/to/model.gguf"  // Optional
     }
     
@@ -1390,7 +1417,8 @@ def queue_submit_job():
     {
         "success": true,
         "job_id": 42,
-        "status": "pending"
+        "status": "pending",
+        "job_type": "creature"
     }
     """
     try:
@@ -1400,33 +1428,117 @@ def queue_submit_job():
         
         statblock_text = data['statblock'].strip()
         model_path = data.get('model_path', '')
+        job_type = data.get('job_type', 'creature').lower()  # Default to 'creature'
+        
+        # Validate job_type
+        if job_type not in ['creature', 'spell']:
+            return jsonify({"error": "job_type must be 'creature' or 'spell'"}), 400
         
         if not statblock_text:
             return jsonify({"error": "Statblock cannot be empty"}), 400
         
+        # Warn if content appears to be mismatched with job_type
+        text_lower = statblock_text.lower()
+        spell_indicators = any(x in text_lower for x in ['cantrip', 'evocation', 'abjuration', 'conjuration', 'divination', 
+                                                           'enchantment', 'illusion', 'necromancy', 'transmutation',
+                                                           '1st level', '2nd level', '3rd level', '4th level', '5th level',
+                                                           '6th level', '7th level', '8th level', '9th level'])
+        
+        warning = None
+        if spell_indicators and job_type == 'creature':
+            warning = "Content appears to be a spell (contains spell school or level keywords), but job_type='creature'. Consider using job_type='spell' or the /api/queue/submit/spell endpoint."
+            print(f"[API] WARNING: {warning}")
+        elif not spell_indicators and job_type == 'spell':
+            warning = "Content may not be a spell (missing spell school/level keywords), but job_type='spell'. Verify you meant to submit this as a spell."
+            print(f"[API] WARNING: {warning}")
+        
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        # Insert new job with status='pending'
+        # Insert new job with status='pending' and job_type
         cursor.execute("""
-            INSERT INTO statblock_jobs (status, statblock, model_path)
-            VALUES (?, ?, ?)
-        """, ('pending', statblock_text, model_path if model_path else None))
+            INSERT INTO statblock_jobs (status, job_type, statblock, model_path)
+            VALUES (?, ?, ?, ?)
+        """, ('pending', job_type, statblock_text, model_path if model_path else None))
         
         conn.commit()
         job_id = cursor.lastrowid
         conn.close()
         
-        print(f"[API] Job #{job_id} submitted to queue")
+        print(f"[API] Job #{job_id} ({job_type}) submitted to queue")
+        
+        response = {
+            "success": True,
+            "job_id": job_id,
+            "status": "pending",
+            "job_type": job_type
+        }
+        
+        if warning:
+            response["warning"] = warning
+        
+        return jsonify(response), 201
+    
+    except Exception as e:
+        print(f"[API] Error submitting job: {e}")
+        return jsonify({"error": str(e), "success": False}), 500
+
+
+@app.route('/api/queue/submit/spell', methods=['POST'])
+def queue_submit_spell_job():
+    """
+    API endpoint: POST /api/queue/submit/spell
+    Submit a spell description for AI parsing via the queue.
+    
+    Request JSON:
+    {
+        "spell": "Fire Bolt\nCantrip evocation spell...",
+        "model_path": "/path/to/model.gguf"  // Optional
+    }
+    
+    Response:
+    {
+        "success": true,
+        "job_id": 42,
+        "status": "pending",
+        "job_type": "spell"
+    }
+    """
+    try:
+        data = request.get_json()
+        if not data or 'spell' not in data:
+            return jsonify({"error": "Missing 'spell' field"}), 400
+        
+        spell_text = data['spell'].strip()
+        model_path = data.get('model_path', '')
+        
+        if not spell_text:
+            return jsonify({"error": "Spell cannot be empty"}), 400
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Insert new job with status='pending' and job_type='spell'
+        cursor.execute("""
+            INSERT INTO statblock_jobs (status, job_type, statblock, model_path)
+            VALUES (?, ?, ?, ?)
+        """, ('pending', 'spell', spell_text, model_path if model_path else None))
+        
+        conn.commit()
+        job_id = cursor.lastrowid
+        conn.close()
+        
+        print(f"[API] Spell job #{job_id} submitted to queue")
         
         return jsonify({
             "success": True,
             "job_id": job_id,
-            "status": "pending"
+            "status": "pending",
+            "job_type": "spell"
         }), 201
     
     except Exception as e:
-        print(f"[API] Error submitting job: {e}")
+        print(f"[API] Error submitting spell job: {e}")
         return jsonify({"error": str(e), "success": False}), 500
 
 
@@ -1440,8 +1552,10 @@ def queue_get_job(job_id):
     {
         "id": 42,
         "status": "completed",  // pending, processing, completed, failed
+        "job_type": "creature",  // creature or spell
         "parsed_data": {...},
         "creature_id": 15,
+        "spell_id": null,
         "error_message": null,
         "progress_percent": 100,
         "elapsed_seconds": 23,
@@ -1455,8 +1569,8 @@ def queue_get_job(job_id):
         cursor = conn.cursor()
         
         cursor.execute("""
-            SELECT id, status, parsed_data, creature_id, error_message,
-                   progress_percent, elapsed_seconds, 
+            SELECT id, status, job_type, parsed_data, creature_id, spell_id, 
+                   error_message, progress_percent, elapsed_seconds, 
                    created_at, started_at, completed_at
             FROM statblock_jobs
             WHERE id = ?
