@@ -33,3 +33,7 @@ dnd_kids_resources.db
 
 # Database backups (old versions)
 *.db.backup.*
+
+# Large model files (GGUF quantized models - regenerate locally or download)
+*.gguf
+models/*.gguf
