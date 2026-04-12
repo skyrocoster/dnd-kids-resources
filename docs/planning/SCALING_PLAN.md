@@ -2,6 +2,8 @@
 
 **Strategic implementation roadmap for multi-user, dynamic content management system.**
 
+> NOTE: This document is a strategic planning note. Some page and script references in this file reflect earlier design drafts and may not match the current branch exactly.
+
 > **AI NOTE:** This document tracks implementation progress across multiple AI sessions. Update the status sections as work progresses. Add notes in the "Progress" columns and mark completed items with ✅.
 
 ---
@@ -485,10 +487,12 @@ async function loadSpells() {
 
 **Testing:**
 1. Backend running: `npm start` (in backend folder)
-2. Frontend running: Open `http://localhost:8000/pages/spell-cards.html`
+2. Frontend running: Open `http://localhost:8000/spell-cards-list.html`
 3. Toggle `USE_BACKEND_API = false` → cards load from JSON ✅
 4. Toggle `USE_BACKEND_API = true` → cards load from API ✅
 5. Both look identical? If yes, integration works!
+
+*Note: this section is a planning note. The current branch uses `data/5eAPI/spells.json` as the spell source and `pages/spell-cards-list.html` for the spell UI.*
 
 **Time:** 20 minutes  
 **Status:** ⬜ Not Started
@@ -887,15 +891,16 @@ loadCards('spells', 'Spell Cards', 'Reference Cards for D&D Spells');
 **Testing (Critical):**
 1. Stop and restart backend: `npm start`
 2. Open each card page in browser:
-   - http://localhost:8000/pages/spell-cards.html
-   - http://localhost:8000/pages/weapon-cards.html
-   - http://localhost:8000/pages/condition-cards.html
+   - http://localhost:8000/pages/spell-cards-list.html
+   - current weapon and condition pages are not present in this branch
    - (etc. for all card types)
 3. Verify cards load and look correct
 4. Check browser console for errors
 5. If all pages work:
    - ✅ You can now **delete the JSON files** (keep backup copy first)
    - ✅ Database is now source of truth
+
+*Note: this plan section is historical and may reference earlier page paths.*
 
 **Time:** 30 minutes  
 **Status:** ⬜ Not Started

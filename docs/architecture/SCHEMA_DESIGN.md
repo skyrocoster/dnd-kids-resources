@@ -8,11 +8,11 @@
 ## Overview
 
 The database stores card data and metadata for:
-- **Spells** (54 spell cards with mechanics)
-- **Conditions** (19 status effects and conditions)
-- **Creatures** (6 druid wild shape forms)
+- **Spells** (319 spells available from `data/5eAPI/spells.json`)
+- **Conditions** (15 status effects and conditions)
+- **Creatures** (3 druid wild shape forms)
 - **Skills** (18 skill reference cards)
-- **Weapons** (42+ weapons, mostly JSON-based)
+- **Weapons** (42+ weapons, JSON-based)
 - **Metadata** (abilities & damage types with emojis and colors)
 
 ---
@@ -24,15 +24,27 @@ The database stores card data and metadata for:
 ```sql
 CREATE TABLE spells (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  title TEXT NOT NULL,                -- Spell name (stored lowercase)
+  spell_name TEXT NOT NULL UNIQUE,    -- Spell name
   icon TEXT NOT NULL,                 -- Emoji icon (e.g., "🔥", "❄️")
   level TEXT NOT NULL,                -- CSS class: "cantrip", "level1"–"level9"
   school TEXT,                        -- Type: "Evocation", "Abjuration", "Transmutation", etc.
-  explanation TEXT,                   -- Kid-friendly spell description
-  to_hit TEXT,                        -- JSON array of attack/save roll objects (or NULL)
+  spell_text TEXT,                    -- Kid-friendly spell description stored as JSON or text
   damage TEXT,                        -- JSON array of damage roll objects (or NULL)
   heal TEXT,                          -- JSON array of healing roll objects (or NULL)
-  range TEXT                          -- JSON with range information (distance, unit, target)
+  heal_at_higher_levels TEXT,         -- Optional scaling healing values
+  range TEXT,                         -- JSON with range information (distance, unit, target)
+  higher_levels TEXT,                 -- JSON string for higher-level scaling
+  casting_time TEXT,
+  duration TEXT,
+  concentration BOOLEAN DEFAULT 0,
+  ritual BOOLEAN DEFAULT 0,
+  components TEXT,
+  materials TEXT,
+  attack_type TEXT,
+  area_of_effect TEXT,
+  classes TEXT,
+  subclasses TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX idx_spells_title ON spells(title);

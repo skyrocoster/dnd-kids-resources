@@ -16,7 +16,8 @@ import contextlib
 
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-    QPushButton, QTextEdit, QLabel, QTabWidget, QGroupBox, QStatusBar
+    QPushButton, QTextEdit, QLabel, QTabWidget, QGroupBox, QStatusBar,
+    QInputDialog
 )
 from PyQt5.QtCore import Qt, QThread, pyqtSignal, QTimer
 from PyQt5.QtGui import QFont, QTextCursor, QColor
@@ -43,24 +44,58 @@ class CommandRunner(QThread):
             env = os.environ.copy()
             env['PYTHONIOENCODING'] = 'utf-8'
             
-            self.process = subprocess.Popen(
-                self.command_list,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                text=True,
-                encoding='utf-8',
-                errors='replace',
-                shell=False,
-                cwd=self.cwd,
-                creationflags=creation_flags,
-                env=env
-            )
+            commands = self.command_list
+            if isinstance(commands, (list, tuple)) and commands and isinstance(commands[0], (list, tuple)):
+                return_code = 0
+                for command in commands:
+                    self.process = subprocess.Popen(
+                        command,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.STDOUT,
+                        text=True,
+                        encoding='utf-8',
+                        errors='replace',
+                        shell=False,
+                        cwd=self.cwd,
+                        creationflags=creation_flags,
+                        env=env
+                    )
 
-            for line in self.process.stdout:
-                self.output_signal.emit(line.rstrip('\n'))
+                    if self.process and self.process.stdout:
+                        for line in self.process.stdout:
+                            self.output_signal.emit(line.rstrip('\n'))
+                        self.process.wait()
+                        return_code = self.process.returncode
+                        if return_code != 0:
+                            break
+                    else:
+                        self.error_signal.emit("Error: Process failed to start or no stdout available.")
+                        return_code = -1
+                        break
 
-            self.process.wait()
-            self.finished_signal.emit(self.process.returncode)
+                self.finished_signal.emit(return_code)
+            else:
+                self.process = subprocess.Popen(
+                    self.command_list,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    text=True,
+                    encoding='utf-8',
+                    errors='replace',
+                    shell=False,
+                    cwd=self.cwd,
+                    creationflags=creation_flags,
+                    env=env
+                )
+
+                if self.process and self.process.stdout:
+                    for line in self.process.stdout:
+                        self.output_signal.emit(line.rstrip('\n'))
+                    self.process.wait()
+                    self.finished_signal.emit(self.process.returncode)
+                else:
+                    self.error_signal.emit("Error: Process failed to start or no stdout available.")
+                    self.finished_signal.emit(-1)
         except Exception as e:
             self.error_signal.emit(f"Error: {str(e)}")
             self.finished_signal.emit(-1)
@@ -78,110 +113,6 @@ class CommandRunner(QThread):
                     pass
 
 
-class QueueWorkerRunner(QThread):
-    """Run the queue worker directly in a thread with full threading support."""
-    output_signal = pyqtSignal(str)
-    finished_signal = pyqtSignal(int)
-    error_signal = pyqtSignal(str)
-
-    def __init__(self, cwd=None):
-        super().__init__()
-        self.cwd = cwd or str(Path(__file__).parent)
-        self.should_stop = False
-        # Set thread priority to normal (doesn't block GUI)
-        self.setPriority(QThread.NormalPriority)
-
-    def run(self):
-        """Run the queue worker directly with full threading support."""
-        try:
-            # Change to workspace directory FIRST (before any imports)
-            os.chdir(self.cwd)
-            
-            # Add the workspace to path
-            sys.path.insert(0, self.cwd)
-            sys.path.insert(0, str(Path(self.cwd) / 'lib'))
-            sys.path.insert(0, str(Path(self.cwd) / '_dev'))
-            
-            # Check model file and validate
-            model_dir = Path(self.cwd) / "models"
-            model_file = None
-            
-            if model_dir.exists():
-                for candidate in [
-                    model_dir / "mistral-7b-instruct-v0.1.Q4_K_M.gguf",
-                    model_dir / "mistral.gguf",
-                    model_dir / "tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf",
-                    model_dir / "tinyllama.gguf"
-                ]:
-                    if candidate.exists():
-                        model_file = candidate
-                        size_mb = candidate.stat().st_size / (1024*1024)
-                        self.output_signal.emit(f"✓ Found model: {candidate.name} ({size_mb:.1f} MB)")
-                        break
-            
-            if not model_file:
-                self.output_signal.emit("❌ ERROR: No GGUF model files found in models/ directory")
-                self.output_signal.emit(f"Expected location: {model_dir}")
-                self.output_signal.emit("")
-                self.output_signal.emit("To fix:")
-                self.output_signal.emit("1. Place a GGUF model file in the models/ directory")
-                self.output_signal.emit("2. Recommended: mistral-7b-instruct-v0.1.Q4_K_M.gguf")
-                self.output_signal.emit("3. Or any other GGUF format model")
-                self.finished_signal.emit(-1)
-                return
-            
-            # Redirect stdout to capture print statements
-            class OutputCapture:
-                def __init__(self, signal):
-                    self.signal = signal
-                
-                def write(self, text):
-                    if text:
-                        self.signal.emit(text.rstrip('\n'))
-                
-                def flush(self):
-                    pass
-            
-            old_stdout = sys.stdout
-            sys.stdout = OutputCapture(self.output_signal)
-            
-            try:
-                # Import and run the queue worker loop
-                from _dev.queue_worker import worker_loop
-                
-                self.output_signal.emit("="*60)
-                self.output_signal.emit("Queue Worker: Starting...")
-                self.output_signal.emit("="*60)
-                self.output_signal.emit(f"Working directory: {self.cwd}")
-                self.output_signal.emit(f"Model file: {model_file.name}")
-                self.output_signal.emit("Running with full threading support for AI model")
-                self.output_signal.emit("")
-                
-                # Run the worker loop - it can freely spawn threads for the AI model
-                worker_loop(interval=2, verbose=True)
-                self.finished_signal.emit(0)
-            finally:
-                sys.stdout = old_stdout
-        except KeyboardInterrupt:
-            self.output_signal.emit("Queue Worker: Stopped by user")
-            self.finished_signal.emit(0)
-        except Exception as e:
-            self.error_signal.emit(f"Queue Worker Error: {str(e)}")
-            self.output_signal.emit(f"Error: {str(e)}")
-            import traceback
-            self.output_signal.emit(traceback.format_exc())
-            self.finished_signal.emit(-1)
-
-    def stop_worker(self):
-        """Stop the worker gracefully."""
-        self.should_stop = True
-        # Give it a moment to shut down gracefully
-        self.quit()
-        self.wait(timeout=5000)  # Wait up to 5 seconds
-        # Force terminate if still running
-        if self.isRunning():
-            self.terminate()
-            self.wait()
 
 
 class LauncherGUI(QMainWindow):
@@ -202,7 +133,7 @@ class LauncherGUI(QMainWindow):
         
         self._check_running_on_startup()
 
-    def closeEvent(self, event):
+    def closeEvent(self, a0):
         """Handle window close event - stop all running processes."""
         self.poll_timer.stop()
         
@@ -221,7 +152,8 @@ class LauncherGUI(QMainWindow):
             worker_runner.wait(timeout=3000)
         
         # Accept the close event
-        event.accept()
+            if a0 is not None:
+                a0.accept()
 
     def init_ui(self):
         """Initialize the user interface."""
@@ -253,14 +185,13 @@ class LauncherGUI(QMainWindow):
         flask_layout.addWidget(self._create_flask_section())
         tabs.addTab(flask_tab, "Flask Server")
 
-        # Queue Worker Tab
-        worker_tab = QWidget()
-        worker_layout = QVBoxLayout(worker_tab)
-        worker_layout.addWidget(self._create_worker_section())
-        tabs.addTab(worker_tab, "Queue Worker")
+        # Git Operations Tab
+        git_tab = QWidget()
+        git_layout = QVBoxLayout(git_tab)
+        git_layout.addWidget(self._create_git_section())
+        tabs.addTab(git_tab, "Git")
 
-        # Status Bar
-        self.statusBar().showMessage("Ready")
+        # Status Bar removed for compatibility
 
     def _create_db_controls(self):
         """Create database control section with terminal output."""
@@ -339,46 +270,6 @@ class LauncherGUI(QMainWindow):
         group.setLayout(layout)
         return group
 
-    def _create_worker_section(self):
-        """Create Queue Worker section with status and terminal."""
-        group = QGroupBox("Background AI Worker (Queue Processing)")
-        layout = QVBoxLayout()
-
-        # Status and controls
-        controls_layout = QHBoxLayout()
-        self.worker_status_label = QLabel("Status: ⚫ Stopped")
-        status_font = QFont()
-        status_font.setPointSize(10)
-        status_font.setBold(True)
-        self.worker_status_label.setFont(status_font)
-        controls_layout.addWidget(self.worker_status_label)
-
-        self.worker_start_btn = QPushButton("⚙️ Start")
-        self.worker_start_btn.clicked.connect(self._start_worker)
-        controls_layout.addWidget(self.worker_start_btn)
-
-        self.worker_stop_btn = QPushButton("⏹️ Stop")
-        self.worker_stop_btn.clicked.connect(self._stop_worker)
-        self.worker_stop_btn.setEnabled(False)
-        controls_layout.addWidget(self.worker_stop_btn)
-
-        controls_layout.addStretch()
-        layout.addLayout(controls_layout)
-
-        # Terminal
-        self.worker_terminal = QTextEdit()
-        self.worker_terminal.setReadOnly(True)
-        self.worker_terminal.setFont(QFont("Courier", 9))
-        self.worker_terminal.setStyleSheet("background-color: #1e1e1e; color: #d4d4d4;")
-        layout.addWidget(self.worker_terminal)
-
-        # Clear button
-        clear_btn = QPushButton("Clear Output")
-        clear_btn.clicked.connect(self.worker_terminal.clear)
-        layout.addWidget(clear_btn)
-
-        group.setLayout(layout)
-        return group
 
     def _log_to_terminal(self, terminal, message, task_name=""):
         """Log message to terminal."""
@@ -395,8 +286,7 @@ class LauncherGUI(QMainWindow):
         """Run a command and display output."""
         self.running_tasks[task_name] = True
         self._log_to_terminal(terminal, f"Starting: {task_name}", task_name)
-        self.statusBar().showMessage(f"Running: {task_name}")
-
+        # Status bar usage removed for compatibility
         runner = CommandRunner(command_list, cwd=str(self.workspace_root))
         runner.output_signal.connect(lambda msg: self._on_output(msg, task_name, terminal))
         runner.finished_signal.connect(lambda code: self._on_command_done(code, task_name, terminal))
@@ -496,6 +386,84 @@ class LauncherGUI(QMainWindow):
         script = self.workspace_root / "_dev" / "seed_database.py"
         command_list = [sys.executable, str(script), "--force"]
         self._run_command(command_list, "Reseed DB", self.db_terminal)
+
+    def _create_git_section(self):
+        """Create Git control section with commit and push buttons."""
+        group = QGroupBox("Git Operations")
+        layout = QVBoxLayout()
+
+        controls_layout = QHBoxLayout()
+
+        self.git_commit_btn = QPushButton("🧾 Commit")
+        self.git_commit_btn.setToolTip("Stage all changes and commit with a message")
+        self.git_commit_btn.clicked.connect(self._commit_changes)
+        controls_layout.addWidget(self.git_commit_btn)
+
+        self.git_push_btn = QPushButton("📤 Push")
+        self.git_push_btn.setToolTip("Push committed changes to GitHub")
+        self.git_push_btn.clicked.connect(self._push_changes)
+        controls_layout.addWidget(self.git_push_btn)
+
+        self.git_commit_push_btn = QPushButton("🔁 Commit + Push")
+        self.git_commit_push_btn.setToolTip("Stage, commit, and push changes in one step")
+        self.git_commit_push_btn.clicked.connect(self._commit_and_push)
+        controls_layout.addWidget(self.git_commit_push_btn)
+
+        controls_layout.addStretch()
+        layout.addLayout(controls_layout)
+
+        self.git_terminal = QTextEdit()
+        self.git_terminal.setReadOnly(True)
+        self.git_terminal.setFont(QFont("Courier", 9))
+        self.git_terminal.setStyleSheet("background-color: #1e1e1e; color: #d4d4d4;")
+        layout.addWidget(self.git_terminal)
+
+        clear_btn = QPushButton("Clear Output")
+        clear_btn.clicked.connect(self.git_terminal.clear)
+        layout.addWidget(clear_btn)
+
+        group.setLayout(layout)
+        return group
+
+    def _prompt_commit_message(self):
+        message, ok = QInputDialog.getText(self, "Commit message", "Enter commit message:")
+        if ok:
+            return message.strip()
+        return None
+
+    def _commit_changes(self):
+        commit_message = self._prompt_commit_message()
+        if not commit_message:
+            self._log_to_terminal(self.git_terminal, "Commit canceled: no message provided.", "Git")
+            return
+
+        self.git_terminal.clear()
+        self._log_to_terminal(self.git_terminal, f"Staging changes and committing: {commit_message}", "Git")
+        commands = [
+            ["git", "add", "-A"],
+            ["git", "commit", "-m", commit_message]
+        ]
+        self._run_command(commands, "Git Commit", self.git_terminal)
+
+    def _push_changes(self):
+        self._log_to_terminal(self.git_terminal, "Pushing commits to GitHub...", "Git")
+        command_list = ["git", "push"]
+        self._run_command(command_list, "Git Push", self.git_terminal)
+
+    def _commit_and_push(self):
+        commit_message = self._prompt_commit_message()
+        if not commit_message:
+            self._log_to_terminal(self.git_terminal, "Commit + Push canceled: no message provided.", "Git")
+            return
+
+        self.git_terminal.clear()
+        self._log_to_terminal(self.git_terminal, f"Staging, committing, and pushing: {commit_message}", "Git")
+        commands = [
+            ["git", "add", "-A"],
+            ["git", "commit", "-m", commit_message],
+            ["git", "push"]
+        ]
+        self._run_command(commands, "Git Commit + Push", self.git_terminal)
 
     def _create_temp_output_window(self, title):
         """Create a temporary output window for database operations."""

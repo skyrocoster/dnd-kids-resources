@@ -59,6 +59,8 @@ def init_database():
     
     print("[OK] Cleaned up existing tables")
     print("\nCreating database schema...")
+    print("  - Creating tables with new spell metadata fields (Option 1)...")
+    print("  - Creating class system for spell availability...")
 
     # Create abilities table (with ID for seed_database.py compatibility)
     cursor.execute("""
@@ -89,35 +91,27 @@ def init_database():
     cursor.execute("""
         CREATE TABLE spells (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            title TEXT NOT NULL UNIQUE,
+            spell_name TEXT NOT NULL UNIQUE,
             icon TEXT NOT NULL,
             level TEXT NOT NULL,
             school TEXT,
-            explanation TEXT,
-            to_hit TEXT,
+            spell_text TEXT,
+            spell_alt_text TEXT,
             damage TEXT,
             heal TEXT,
+            heal_at_higher_levels TEXT,
             range TEXT,
-            special TEXT,
-            higher_levels TEXT
-        )
-    """)
-
-    cursor.execute(
-        "CREATE INDEX IF NOT EXISTS idx_spells_title ON spells(title)")
-    cursor.execute(
-        "CREATE INDEX IF NOT EXISTS idx_spells_level ON spells(level)")
-    cursor.execute(
-        "CREATE INDEX IF NOT EXISTS idx_spells_school ON spells(school)")
-
-    # Create conditions table
-    cursor.execute("""
-        CREATE TABLE conditions (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            title TEXT NOT NULL UNIQUE,
-            icon TEXT NOT NULL,
-            explanation TEXT NOT NULL,
-            details TEXT,
+            higher_levels TEXT,
+            casting_time TEXT,
+            duration TEXT,
+            concentration BOOLEAN DEFAULT 0,
+            ritual BOOLEAN DEFAULT 0,
+            components TEXT,
+            materials TEXT,
+            attack_type TEXT,
+            area_of_effect TEXT,
+            classes TEXT,
+            subclasses TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     """)
@@ -156,33 +150,8 @@ def init_database():
     cursor.execute(
         "CREATE INDEX IF NOT EXISTS idx_creatures_creature_type_id ON creatures(creature_type_id)")
 
-    # Create statblock_jobs table (for queue-based AI parsing)
-    cursor.execute("""
-        CREATE TABLE statblock_jobs (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            status TEXT DEFAULT 'pending',
-            job_type TEXT DEFAULT 'creature',
-            statblock TEXT NOT NULL,
-            model_path TEXT,
-            parsed_data TEXT,
-            raw_ai_output TEXT,
-            creature_id INTEGER,
-            spell_id INTEGER,
-            error_message TEXT,
-            progress_percent INTEGER DEFAULT 0,
-            elapsed_seconds INTEGER DEFAULT 0,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            started_at DATETIME,
-            completed_at DATETIME,
-            FOREIGN KEY (creature_id) REFERENCES creatures(id),
-            FOREIGN KEY (spell_id) REFERENCES spells(id)
-        )
-    """)
-
-    cursor.execute(
-        "CREATE INDEX IF NOT EXISTS idx_statblock_jobs_status ON statblock_jobs(status)")
-    cursor.execute(
-        "CREATE INDEX IF NOT EXISTS idx_statblock_jobs_created_at ON statblock_jobs(created_at)")
+    # [REMOVED - April 10, 2026] Old queue-based AI job system
+    # Replaced with custom lightweight model approach
 
     # Create traps table
     cursor.execute("""
@@ -245,6 +214,11 @@ def init_database():
 
     print(f"\n[SUCCESS] Database initialized: {DB_PATH}")
     print(f"   Size: {DB_PATH.stat().st_size / 1024:.1f} KB")
+    print("\nNEW SCHEMA (Option 1) Features:")
+    print("  [OK] Spells table: 23 columns (includes 'classes' and 'subclasses' JSON fields)")
+    print("    - Original: spell_name, icon, level, school, spell_text, to_hit, damage, heal, range, special, higher_levels")
+    print("    - NEW: casting_time, duration, concentration, ritual, components, materials, attack_type, area_of_effect, classes (JSON), subclasses (JSON), heal_at_higher_levels")
+    print("  [OK] Classes stored directly in spells table as JSON array (e.g., ['wizard', 'sorcerer'])")
     print("\n" + "="*60)
     print("NEXT STEP: Run seed_database.py to populate data")
     print("="*60)

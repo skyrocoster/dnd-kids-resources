@@ -294,96 +294,85 @@ The spell cards page includes interactive level filtering, allowing users to sel
 
 ### Implementation
 
-**HTML** (`pages/spell-cards.html`):
+**HTML** (`pages/spell-cards-list.html`):
 ```html
-<div id="level-filter">
-  <div class="filter-title">Filter by Spell Level</div>
-  <div class="filter-buttons" id="level-buttons"></div>
-  <div class="filter-controls">
-    <button class="filter-btn" id="select-all-btn">Select All</button>
-    <button class="filter-btn" id="select-none-btn">Select None</button>
-  </div>
+<div id="print-options">
+  <div class="print-options-title">Print Options</div>
+  <div id="class-buttons" class="filter-buttons"></div>
 </div>
 
 <div id="page-container"></div>
 ```
 
-The CSS hides the filter in print mode:
-```css
-@media print {
-  #level-filter {
-    display: none !important;
-  }
-}
-```
+The page currently uses a list-style layout rather than the older card grid template.
 
-**JavaScript** (`js/spells.js`):
+**JavaScript** (`js/spells-list.js`):
 
-1. **Load spells** from `/api/spells` endpoint
-2. **Extract unique levels** from spell data and normalize them:
-   - `"cantrip"` → `0`
-   - `"level1"` → `1`
-   - `"level2"` → `2`, etc.
-3. **Create button** for each level with click handlers
-4. **Filter and re-render** when buttons are clicked using `updateSpellDisplay()`
+1. Load spells from the `/api/spells` endpoint
+2. Extract distinct spell levels and class filters from the response
+3. Create filter controls for classes and page rendering options
+4. Re-render the list when filters change
 
 ### Example Usage
 
 ```javascript
-// Normalize different spell level formats to numbers
-function normalizeLevel(level) {
-  if (typeof level === 'number') return level;
-  if (level === 'cantrip') return 0;
-  const match = level.match(/\d+/);
-  return match ? parseInt(match[0]) : NaN;
-}
-
-// Filter spells based on selected levels
-function updateSpellDisplay(allSpells, selectedLevels, normalizeLevel) {
-  const filteredSpells = allSpells.filter(spell => 
-    selectedLevels.has(normalizeLevel(spell.level))
-  );
-  
-  renderPaginatedCards('#page-container', filteredSpells, 9, 
-    '✨ Spell Cards ✨', 'Description');
+async function loadSpellList() {
+  const response = await fetch('/api/spells');
+  const spells = await response.json();
+  const levels = [...new Set(spells.map(spell => normalizeLevel(spell.level)))]
+  renderPaginatedCards('#page-container', spells, 9, '✨ Spell Cards ✨', 'Spell reference cards');
 }
 ```
 
 ### Extending to Other Card Types
 
-To add level filtering to other card types (e.g., weapons by rarity), follow this pattern:
+The same pattern works for other card sets:
 
-1. Add filter UI to HTML page (similar to spell-filter div)
-2. Extract unique filter values from data
-3. Create buttons for each value
-4. Re-render when buttons are clicked
-5. Hide filter controls in print mode with CSS
+1. Add filter UI to the page template
+2. Load data from the appropriate API or JSON source
+3. Generate filter controls from data values
+4. Re-render the page when selections change
 
 ---
 
 ## File Organization
 
 ```
-data/                          # Card data (JSON)
-├── weapons.json               # 42+ weapons
-└── ...                        # Other static card data
+data/                          # Seed and source data
+├── 5eAPI/spells.json          # Spell metadata source
+├── seed_conditions.json       # Condition seeds
+├── seed_creatures.json        # Creature/wild-shape seeds
+├── seed_abilities.json        # Abilities, skills, modifiers
+└── seed_damage_types.json     # Damage type metadata
+```
 
-(Spells, Conditions, and Creatures are stored in the database and loaded via `/api/spells`, `/api/conditions`, and `/api/creatures` endpoints)
+- Spells are seeded from `data/5eAPI/spells.json`
+- Conditions, creatures, abilities, and damage types are seeded from individual JSON files in `data/`
 
+```
 js/                            # JavaScript
-├── card-generator.js          # Core system (don't modify)
-├── spells.js                  # Fetch from API & render
-├── conditions.js              # Fetch from API & render
-├── creatures.js               # Fetch creatures from API & render
-├── skills.js                  # Fetch from API & render
-└── weapons.js
+├── card-generator.js          # Core card rendering engine
+├── spells-list.js             # Spell list / print view logic
+├── spells-v2.js               # Alternate spell UI logic
+├── bw-mode-toggle.js          # B&W print preview toggle
+├── character-sheet.js         # Character sheet support
+├── hp-tracker.js              # HP tracker logic
+├── turn-order.js              # Initiative tracker logic
+├── queue-helper.js            # Queue UI helper functions
+├── spell-slots.js             # Spell slot tracker logic
+└── wild-shapes.js             # Druid wild shape creature rendering
+```
 
-pages/                         # HTML pages for each tool
-├── spell-cards.html
-├── condition-cards.html
-├── creatures.html
-├── skill-cards.html
-└── weapon-cards.html
+```
+pages/                         # Browser-accessible tools
+├── resources.html              # Resource hub and admin page
+├── spell-cards-list.html       # Spell card list view
+├── stat-block-parser.html      # Parser and queue UI
+├── character-sheet.html        # Printable character sheet
+├── hp-tracker.html             # Health tracker
+├── turn-order-tracker.html     # Initiative tracker
+├── spell-slots.html            # Spell slot tracker
+└── dungeons-library.html       # Dungeon upload/library
 ```
 
 ---
@@ -420,65 +409,76 @@ pages/                         # HTML pages for each tool
 
 ## Working with Spells (Database)
 
-**Important:** Spells are now stored in the SQLite database (`dnd_kids_resources.db`), not in a JSON file.
+**Important:** Spell data is seeded from `data/5eAPI/spells.json` and loaded into the SQLite database via `_dev/seed_database.py`.
 
 ### Updating Spell Data
 
-To modify existing spells or add new spells:
+To modify spell content:
 
-1. **Edit the database directly** (via CLI or DB browser):
+1. Edit `data/5eAPI/spells.json` directly.
+2. Rebuild the database:
    ```bash
-   sqlite3 dnd_kids_resources.db
+   python _dev/init_database.py
+   python _dev/seed_database.py --force
    ```
 
-2. **Or use the migration scripts** in `_dev/`:
-   - Modify `_dev/migrate_spells.py` to import spell data from a JSON source
-   - Run the migration script to update the database
+### Database Workflow
 
-### Database Schema for Spells
+- The current seed workflow uses `data/5eAPI/spells.json` as the primary spell source.
+- `_dev/seed_database.py` transforms that JSON into the `spells` table.
+- There is no `data/seed_spells.json` file in this branch.
 
-The spells table is now self-contained with all card metadata:
+### Current Spell Schema
+
+The current `spells` table stores the core spell card metadata:
 
 ```sql
--- Main spells table (consolidated from previous cards + spells)
-spells (
-  id              INTEGER PRIMARY KEY,
-  title           TEXT NOT NULL,         -- Spell name
-  icon            TEXT NOT NULL,         -- Emoji icon
-  level           TEXT NOT NULL,         -- "cantrip", "level1"–"level9"
-  school          TEXT,                  -- "Evocation", "Transmutation", etc.
-  explanation     TEXT,                  -- Kid-friendly description
-  to_hit          TEXT,                  -- JSON: {roll, numerics, types, save}
-  damage          TEXT,                  -- JSON: {roll, numerics, types}
-  heal            TEXT,                  -- JSON: {roll, numerics}
-  range           TEXT                   -- JSON: {distance, target, area}
-)
-
--- Detail entries for additional information (scaling, etc.)
-detail_entries (
-  id              INTEGER PRIMARY KEY,
-  spell_id        INTEGER NOT NULL,      -- FK to spells.id
-  label           TEXT NOT NULL,         -- "⬆️ Scaling", etc.
-  content_text    TEXT,                  -- Description or value
-  sequence_order  INTEGER DEFAULT 0      -- Display order
-  FOREIGN KEY (spell_id) REFERENCES spells(id) ON DELETE CASCADE
-)
+CREATE TABLE spells (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  spell_name TEXT NOT NULL UNIQUE,
+  icon TEXT NOT NULL,
+  level TEXT NOT NULL,
+  school TEXT,
+  spell_text TEXT,
+  damage TEXT,
+  heal TEXT,
+  heal_at_higher_levels TEXT,
+  range TEXT,
+  higher_levels TEXT,
+  casting_time TEXT,
+  duration TEXT,
+  concentration BOOLEAN DEFAULT 0,
+  ritual BOOLEAN DEFAULT 0,
+  components TEXT,
+  materials TEXT,
+  attack_type TEXT,
+  area_of_effect TEXT,
+  classes TEXT,
+  subclasses TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
 ```
 
-**Important:** The previous `cards` table has been removed. All spell metadata is now stored directly in the `spells` table.
+### Editing the Database Directly
+
+If you need to inspect the database directly, use a SQLite client:
+
+```bash
+sqlite3 dnd_kids_resources.db
+```
+
+Or use a GUI tool such as DB Browser for SQLite.
 
 ### Testing Spell Changes
 
-1. **Start the Flask server:**
+1. Start the Flask server:
    ```bash
    python server_flask.py
    ```
-
-2. **Visit Spell Cards page:** `http://localhost:8000/pages/spell-cards.html`
-
-3. **Verify changes appear** in the rendered cards
-
-4. **Check browser console** for any API errors or warnings
+2. Visit the spell card list page:
+   `http://localhost:8000/spell-cards-list`
+3. Confirm the updated spell appears in the card rendering.
+4. Check browser console for any API or fetch errors.
 
 ---
 

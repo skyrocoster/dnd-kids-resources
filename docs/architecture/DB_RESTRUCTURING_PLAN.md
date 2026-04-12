@@ -1,6 +1,6 @@
 # Database Restructuring Plan
 
-> **📋 HISTORICAL DOCUMENT** — Completed April 2026. This documents schema cleanup work that was performed. For current schema, see [SCHEMA_DESIGN.md](SCHEMA_DESIGN.md).
+> **📋 HISTORICAL DOCUMENT** — Completed April 2026. This documents schema cleanup work that was performed. The current branch may have diverged from older seed paths such as `data/seed_spells.json`. For current schema, see [SCHEMA_DESIGN.md](SCHEMA_DESIGN.md).
 
 ## Executive Summary
 

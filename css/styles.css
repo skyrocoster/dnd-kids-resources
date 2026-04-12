@@ -13,7 +13,6 @@ body {
   font-family: 'OpenDyslexic', 'Nunito', sans-serif;
   color: var(--ink);
 }
-}
 
 .page {
   width: 210mm;
@@ -31,7 +30,7 @@ body {
   padding-top: 2mm;
 }
 .page-header h1 {
-  font-family: 'Fredoka One', cursive;
+  font-family: 'OpenDyslexic', 'Nunito', sans-serif;
   font-size: 22pt;
   color: #c0392b;
   text-shadow: 2px 2px 0 #f5cba7, 3px 3px 0 var(--border);
@@ -53,6 +52,44 @@ body {
   grid-auto-rows: 88.9mm;
   gap: 3mm;
   justify-content: center;
+}
+
+.cards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5mm;
+  align-items: center;
+  padding: 10px 0;
+}
+
+.cards-list-group {
+  width: 100%;
+}
+
+@media print {
+  .cards-list-group.level-break {
+    page-break-before: always;
+    break-before: page;
+  }
+}
+
+.cards-list .card {
+  width: min(190mm, 100%);
+  max-width: 100%;
+  min-height: auto;
+  margin-bottom: 5mm;
+}
+
+.cards-list .card:last-child {
+  margin-bottom: 0;
+}
+
+.page-list {
+  width: 100%;
+  max-width: 210mm;
+  margin: 0 auto;
+  background: var(--parchment);
+  padding: 16px;
 }
 
 .card {
@@ -82,7 +119,7 @@ body {
   flex-shrink: 0;
 }
 .card-title {
-  font-family: 'Fredoka One', cursive;
+  font-family: 'OpenDyslexic', 'Nunito', sans-serif;
   font-size: 11pt;
   color: white;
   line-height: 1.2;
@@ -104,34 +141,66 @@ body {
 }
 
 .simple-explanation {
-  font-family: 'Fredoka One', cursive;
+  font-family: 'OpenDyslexic', 'Nunito', sans-serif;
   font-size: 9pt;
   color: var(--ink);
   line-height: 1.3;
   border-bottom: 1.5px dashed #c4a47a;
   padding-bottom: 2mm;
+  text-align: justify;
+}
+.simple-explanation p {
+  margin: 0 0 0.75em;
 }
 
 .spell-details {
-  font-size: 8pt;
-  font-weight: 700;
+  font-size: 12pt;
+  font-weight: normal;
   color: #5a3e2b;
   line-height: 1.3;
-  display: flex;
-  flex-direction: column;
-  gap: 2.5mm;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 4mm;
+  row-gap: 2.5mm;
   flex: 0 0 auto;
 }
-.spell-details div {
+.spell-details .card-detail-row {
   display: flex;
-  align-items: center;
-  gap: 0;
+  align-items: flex-start;
+  gap: 4px;
 }
-.spell-details .label {
-  font-weight: 800;
+.spell-details .detail-label {
+  min-width: 58px;
   color: var(--wbl);
-  margin-right: 0;
+  font-weight: 800;
   flex-shrink: 0;
+}
+.spell-details .detail-value {
+  color: #3d2c1a;
+  line-height: 1.35;
+  white-space: pre-wrap;
+}
+.spell-details .detail-value p {
+  margin: 0 0 0.35em;
+}
+
+.card-preview-popup {
+  position: fixed;
+  z-index: 10000;
+  background: var(--parchment);
+  border: 3px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 14px 28px rgba(0,0,0,0.35);
+  padding: 8px;
+  max-width: 320px;
+  width: min(320px, calc(100vw - 20px));
+}
+.card-preview-popup .card {
+  width: 100%;
+  max-width: 100%;
+}
+.card-preview-popup .card-body {
+  padding: 1mm 2mm 1.5mm;
 }
 
 .friend-enemy-section {
@@ -357,46 +426,96 @@ body.bw-mode .page {
 }
 
 @media print {
-  * { margin: 0; padding: 0; }
-  body { background: white; margin: 0; padding: 0; }
-  .page {
-    width: 210mm;
-    height: 297mm;
+  html, body {
+    width: 100%;
+    height: 100%;
     margin: 0;
-    padding: 4mm;
+    padding: 0;
     background: white;
+  }
+
+  .page {
+    width: calc(210mm - 20mm);
+    min-height: calc(297mm - 20mm);
+    margin: 10mm auto;
+    padding: 10mm;
+    background: white;
+    border: 1px solid #333;
+    box-sizing: border-box;
     page-break-after: always;
     break-after: page;
+    overflow: visible;
   }
+
   .page:last-child {
     page-break-after: avoid;
   }
-  #bw-toggle-btn { display: none !important; }
-  .bw-toggle { display: none !important; }
-}
+
+  .page-header {
+    min-height: 16mm;
+    margin-bottom: 2mm;
+    box-sizing: border-box;
+  }
+
+  .page:not(:first-child) .page-header {
+    visibility: hidden;
+  }
+
+  .page:not(:first-child) .page-header h1,
+  .page:not(:first-child) .page-header p {
+    margin: 0;
+    padding: 0;
+  }
+
+  #bw-toggle-btn,
+  #print-options,
+  .bw-toggle,
+  .demo-header,
+  .preview-links,
+  #page-status,
+  .no-print {
+    display: none !important;
+  }
+
   .page::before,
   .page::after {
-    display: none;
+    display: none !important;
   }
+
   .page-header {
     margin-bottom: 2mm;
     padding-top: 0;
   }
+
   .page-header h1 {
     font-size: 16pt;
   }
+
   .page-header p {
     font-size: 5.5pt;
   }
+
   .cards-grid {
     gap: 1.5mm;
     margin-bottom: 1mm;
   }
-  .card { -webkit-print-color-adjust: exact; print-color-adjust: exact; break-inside: avoid; }
-  .card-header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .card-footer { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .card-body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .cut-hint { display: none; }
-  .card-hide-checkbox { display: none; }
-  @page { margin: 0; size: A4; }
+
+  .card,
+  .card-header,
+  .card-body,
+  .card-footer {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    break-inside: avoid;
+  }
+
+  .cut-hint,
+  .card-hide-checkbox {
+    display: none !important;
+  }
+
+  @page {
+    margin: 0;
+    size: A4;
+  }
 }

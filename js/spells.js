@@ -29,8 +29,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Set initial values in UI
     const densitySelect = document.getElementById('card-density');
     const strategySelect = document.getElementById('pagination-strategy');
+    const rangeDisplaySelect = document.getElementById('range-display-mode');
+    const rangeDisplayMode = localStorage.getItem('range_display_mode') || 'standard';
     if (densitySelect) densitySelect.value = cardDensity;
     if (strategySelect) strategySelect.value = paginationStrategy;
+    if (rangeDisplaySelect) rangeDisplaySelect.value = rangeDisplayMode;
     
     // Listen to print option changes
     if (densitySelect) {
@@ -48,16 +51,29 @@ document.addEventListener('DOMContentLoaded', async function() {
         updateSpellDisplay(allSpells, selectedLevels, normalizeLevel);
       });
     }
+
+    if (rangeDisplaySelect) {
+      rangeDisplaySelect.addEventListener('change', function(e) {
+        localStorage.setItem('range_display_mode', this.value);
+        updateSpellDisplay(allSpells, selectedLevels, normalizeLevel);
+      });
+    }
     
     // Get unique spell levels and sort them
     const spellLevels = [...new Set(allSpells.map(spell => normalizeLevel(spell.level)))].filter(lv => !isNaN(lv)).sort((a, b) => a - b);
     console.log(`✓ Found spell levels:`, spellLevels);
-    
-    // Track selected levels (default: all selected)
+
+    // Get unique class codes and sort them alphabetically
+    const classCodes = [...new Set(allSpells.flatMap(spell => Array.isArray(spell.classes) ? spell.classes : []))].sort();
+    console.log(`✓ Found spell classes:`, classCodes);
+
+    // Track selected levels and classes (default: all selected)
     const selectedLevels = new Set(spellLevels);
+    const selectedClasses = new Set(classCodes);
     
     // Create filter buttons
     const filterContainer = document.getElementById('level-buttons');
+    const classContainer = document.getElementById('class-buttons');
     const levelFilter = document.getElementById('level-filter');
     
     console.log(`Filter container found:`, filterContainer !== null);
@@ -95,6 +111,38 @@ document.addEventListener('DOMContentLoaded', async function() {
         filterContainer.appendChild(btn);
         console.log(`Created button for level ${level}`);
       });
+
+      if (classCodes.length > 0 && classContainer) {
+        const classTitle = document.createElement('div');
+        classTitle.className = 'filter-title';
+        classTitle.style.marginTop = '18px';
+        classTitle.textContent = 'Filter by Spell Class';
+        classContainer.appendChild(classTitle);
+
+        classCodes.forEach(cls => {
+          const classBtn = document.createElement('button');
+          classBtn.className = 'level-btn active';
+          classBtn.textContent = cls.charAt(0).toUpperCase() + cls.slice(1);
+          classBtn.setAttribute('data-class', cls);
+          classBtn.type = 'button';
+
+          classBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const classCode = this.getAttribute('data-class');
+            if (selectedClasses.has(classCode)) {
+              selectedClasses.delete(classCode);
+              this.classList.remove('active');
+            } else {
+              selectedClasses.add(classCode);
+              this.classList.add('active');
+            }
+            updateSpellDisplay(allSpells, selectedLevels, normalizeLevel);
+          });
+
+          classContainer.appendChild(classBtn);
+          console.log(`Created button for class ${cls}`);
+        });
+      }
       
       // Add "Select All" and "Select None" buttons
       const selectAllBtn = document.getElementById('select-all-btn');
@@ -105,6 +153,7 @@ document.addEventListener('DOMContentLoaded', async function() {
           e.preventDefault();
           console.log('Select All clicked');
           spellLevels.forEach(level => selectedLevels.add(level));
+          classCodes.forEach(cls => selectedClasses.add(cls));
           document.querySelectorAll('.level-btn').forEach(btn => btn.classList.add('active'));
           updateSpellDisplay(allSpells, selectedLevels, normalizeLevel);
         });
@@ -115,6 +164,7 @@ document.addEventListener('DOMContentLoaded', async function() {
           e.preventDefault();
           console.log('Select None clicked');
           selectedLevels.clear();
+          selectedClasses.clear();
           document.querySelectorAll('.level-btn').forEach(btn => btn.classList.remove('active'));
           updateSpellDisplay(allSpells, selectedLevels, normalizeLevel);
         });
@@ -183,8 +233,10 @@ function updateSpellDisplay(allSpells, selectedLevels, normalizeLevel) {
   // Filter out hidden cards
   const hiddenCards = JSON.parse(localStorage.getItem('hidden_cards') || '[]');
   const visibleSpells = filteredSpells.filter(spell => {
+    const spellClasses = Array.isArray(spell.classes) ? spell.classes : [];
+    const matchesClass = selectedClasses.size === 0 || spellClasses.some(cls => selectedClasses.has(cls));
     const cardId = spell.id ? `card-${spell.id}` : `card-${spell.title.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
-    return !hiddenCards.includes(cardId);
+    return matchesClass && !hiddenCards.includes(cardId);
   });
   
   // Sort by level first (cantrip = 0), then alphabetically by title

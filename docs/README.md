@@ -2,40 +2,37 @@
 
 This is the central documentation hub for the D&D Kids Resources project.
 
-## Quick Start
+## Start Here
 
-**New to the project?** Start here:
-- [Getting Started Guide](guides/GETTING_STARTED.md) - How to run the project
-- [File Structure](guides/FILE_STRUCTURE.md) - Project organization
+If you are new to the repo, begin with:
+- [Getting Started Guide](guides/GETTING_STARTED.md) — Setup and project launch
+- [File Structure](guides/FILE_STRUCTURE.md) — How the repository is organized
+- [System Architecture](architecture/ARCHITECTURE.md) — How the app works
 
 ## Documentation by Topic
 
 ### 📐 Architecture & Design
-Learn how the system works:
-- [System Architecture](architecture/ARCHITECTURE.md) - Component overview and data flow
-- [Database Schema](architecture/SCHEMA_DESIGN.md) - Data model and relationships
-- [Schema Reference](architecture/schema_view.txt) - Full SQL schema dump
-- [Database Restructuring Notes](architecture/DB_RESTRUCTURING_PLAN.md) - **HISTORICAL** - Schema cleanup completed (April 2026)
+- [System Architecture](architecture/ARCHITECTURE.md) — Component overview and data flow
+- [Database Schema](architecture/SCHEMA_DESIGN.md) — Current table structure and seed sources
+- [Schema Reference](architecture/schema_view.txt) — Full SQL schema dump
+- [Database Restructuring Notes](architecture/DB_RESTRUCTURING_PLAN.md) — Historical cleanup work
 
 ### 🛠️ Development
-Contributing and configuring:
-- [Contributing Guidelines](development/CONTRIBUTING.md) - How to add new features
-- [Color System & Configuration](development/COLORS.md) - Styling and color codes
+- [Contributing Guidelines](development/CONTRIBUTING.md) — How to add cards and features
+- [Color System & Configuration](development/COLORS.md) — Styling and class references
 
-### 📋 Planning & Migration
-Project history and future plans:
-- [Completed Phases](planning/PHASE_1_2_COMPLETE.md) - **HISTORICAL** - What was accomplished in phases 1-2 (April 2026)
-- [Abilities & Skills Integration](planning/ABILITIES_WITH_SKILLS.md) - **HISTORICAL** - Database integration notes (completed)
-- [Abilities Migration](planning/ABILITIES_ID_MIGRATION.md) - **HISTORICAL** - Database migration log
-- [Database Restructuring](planning/DB_RESTRUCTURING_PLAN.md) - **HISTORICAL** - Schema cleanup notes
-- [Queue System Design](planning/QUEUE_SYSTEM.md) - **ACTIVE** - Current job queue system for AI parsing
-- [Scaling Plan](planning/SCALING_PLAN.md) - **IN PROGRESS** - Future scaling and feature roadmap
+### 📋 Planning & Design Notes
+- [Completed Phases](planning/PHASE_1_2_COMPLETE.md) — Historical summary of past work
+- [Abilities & Skills Integration](planning/ABILITIES_WITH_SKILLS.md) — Historical notes on the abilities model
+- [Abilities Migration](planning/ABILITIES_ID_MIGRATION.md) — Historical migration log
+- [Queue System Design](planning/QUEUE_SYSTEM.md) — Design notes for AI parsing queue integration
+- [Scaling Plan](planning/SCALING_PLAN.md) — Future project and architecture ideas
 
-## File Organization
+## Repo Structure Summary
 
 ```
 docs/
-├── README.md (you are here)
+├── README.md
 ├── guides/
 │   ├── GETTING_STARTED.md
 │   └── FILE_STRUCTURE.md
@@ -55,14 +52,8 @@ docs/
     └── SCALING_PLAN.md
 ```
 
-## Need Help?
+## Notes
 
-- **How do I run this?** → [Getting Started](guides/GETTING_STARTED.md)
-- **How is the code organized?** → [File Structure](guides/FILE_STRUCTURE.md)
-- **How does the database work?** → [Database Schema](architecture/SCHEMA_DESIGN.md)
-- **How do I add a new feature?** → [Contributing](development/CONTRIBUTING.md)
-- **What's been completed?** → [Completed Phases](planning/PHASE_1_2_COMPLETE.md)
-
----
-
-**All documentation is kept in this `/docs` directory to keep everything organized in one place.**
+- `/docs` is the canonical documentation location.
+- The top-level `README.md` is the project summary; detailed technical instructions belong in `/docs`.
+- The `/docs/planning` folder contains design and historical notes, not always current implementation details.

@@ -1,6 +1,8 @@
 # Abilities System - Skills Integration & Type Flags
 
-> **📋 HISTORICAL DOCUMENT** — Completed April 2026. This documents the integration of the abilities system with skills. For current state, see the abilities system real-time setup in [CONTRIBUTING.md](../development/CONTRIBUTING.md) and database schema in [SCHEMA_DESIGN.md](../architecture/SCHEMA_DESIGN.md).
+> **📋 HISTORICAL DOCUMENT** — Completed April 2026. This describes a past abilities/skills integration effort. The current branch uses `data/seed_abilities.json` and may not follow all older seed path examples.
+
+> For current state, see the abilities system real-time setup in [CONTRIBUTING.md](../development/CONTRIBUTING.md) and database schema in [SCHEMA_DESIGN.md](../architecture/SCHEMA_DESIGN.md).
 
 ## Overview
 Successfully consolidated all game abilities (stats, modifiers, and skills) into a single `abilities` table with type categorization. All 26 D&D 5e abilities are now available in a unified system.

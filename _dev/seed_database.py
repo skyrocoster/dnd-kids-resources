@@ -7,7 +7,7 @@ It's designed to be safe and idempotent (can run multiple times).
 
 Seed files:
 - data/seed_abilities.json
-- data/seed_spells.json
+- data/5eAPI/spells.json
 - data/seed_conditions.json
 - data/seed_creatures.json
 - data/seed_damage_types.json
@@ -34,7 +34,6 @@ SEEDS_DIR = Path(__file__).parent.parent / "data"
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from lib.parse_dungeon import DungeonHTMLParser
-from lib.spell_validators import normalize_spell_level
 
 def load_json_file(filepath):
     """Load and parse a JSON seed file."""
@@ -50,30 +49,18 @@ def load_json_file(filepath):
         return []
 
 def populate_abilities(cursor, conn, force=False):
-    """Populate abilities table from seed_abilities.json - drops and recreates if force"""
+    """Populate abilities table from seed_abilities.json. Requires schema created by init_database.py."""
     print("\n[BRAIN] Loading abilities...")
     
     if force:
-        # Drop the entire table and recreate fresh
+        # Clear existing abilities data, but do not manage schema here
         try:
-            cursor.execute("DROP TABLE IF EXISTS abilities")
-            print(f"  [TRASH]  Dropped existing abilities table")
+            cursor.execute("DELETE FROM abilities")
+            print("  [TRASH]  Cleared existing abilities data")
         except Exception as e:
-            print(f"  [WARNING]  Error dropping table: {e}")
-        
-        # Create fresh table with explicit ID column
-        cursor.execute("""
-            CREATE TABLE abilities (
-                id INTEGER PRIMARY KEY,
-                code TEXT NOT NULL UNIQUE,
-                name TEXT NOT NULL,
-                emoji TEXT NOT NULL UNIQUE,
-                color TEXT NOT NULL,
-                type TEXT NOT NULL DEFAULT 'stat',
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        print("  [OK] Created fresh abilities table")
+            print(f"  [WARNING]  Error clearing abilities data: {e}")
+            print("  [ERROR]  abilities table may not exist. Run _dev/init_database.py first.")
+            return
     else:
         # Check if table exists and has data
         try:
@@ -83,19 +70,8 @@ def populate_abilities(cursor, conn, force=False):
                 print(f"  [INFO]  Abilities table already has {count} records. Skip (use --force to override)")
                 return
         except Exception:
-            # Table doesn't exist, create it
-            cursor.execute("""
-                CREATE TABLE abilities (
-                    id INTEGER PRIMARY KEY,
-                    code TEXT NOT NULL UNIQUE,
-                    name TEXT NOT NULL,
-                    emoji TEXT NOT NULL UNIQUE,
-                    color TEXT NOT NULL,
-                    type TEXT NOT NULL DEFAULT 'stat',
-                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-            print("  [OK] Created abilities table")
+            print("  [ERROR]  Abilities table does not exist. Run _dev/init_database.py first.")
+            return
     
     seeds = load_json_file(SEEDS_DIR / "seed_abilities.json")
     if not seeds:
@@ -137,82 +113,147 @@ def populate_abilities(cursor, conn, force=False):
 
 
 def populate_spells(cursor, conn, force=False):
-    """Populate spells table from seed_spells.json"""
-    print("\n[BOOKS] Loading spells...")
+    """Populate spells table from data/5eAPI/spells.json with all new metadata fields"""
+    print("\n[BOOKS] Loading spells from 5eAPI...")
     
     # Check if already populated
-    cursor.execute("SELECT COUNT(*) FROM spells")
-    count = cursor.fetchone()[0]
+    try:
+        cursor.execute("SELECT COUNT(*) FROM spells")
+        count = cursor.fetchone()[0]
+    except sqlite3.OperationalError:
+        # Table doesn't exist (was dropped in force mode), that's fine
+        count = 0
     
     if count > 0 and not force:
         print(f"  [INFO]  Spells table already has {count} records. Skip (use --force to override)")
         return
     
-    if force and count > 0:
-        cursor.execute("DELETE FROM spells")
-        print(f"  [TRASH]  Cleared {count} existing spells")
+    # Create spells table if it doesn't exist (or recreate if force)
+    if force or count == 0:
+        # Spells schema must be created by init_database.py
+        try:
+            cursor.execute("SELECT 1 FROM spells LIMIT 1")
+        except Exception:
+            print("  [ERROR]  Spells table does not exist. Run _dev/init_database.py first.")
+            return
     
-    seeds = load_json_file(SEEDS_DIR / "seed_spells.json")
+    seeds = load_json_file(SEEDS_DIR / "5eAPI" / "spells.json")
     if not seeds:
-        print("  [WARNING]  No spell seeds found")
+        print("  [WARNING]  No 5eAPI spell seeds found")
         return
     
     for spell in seeds:
         try:
             # Normalize and validate spell level
-            raw_level = spell.get('level', 'cantrip')
-            try:
-                normalized_level = normalize_spell_level(raw_level)
-            except ValueError:
-                # Fallback if validation fails
-                normalized_level = raw_level if raw_level else 'cantrip'
-            
-            # Convert lists to JSON strings
-            to_hit = json.dumps(spell.get('to_hit')) if spell.get('to_hit') else None
-            damage = json.dumps(spell.get('damage')) if spell.get('damage') else None
-            heal = json.dumps(spell.get('heal')) if spell.get('heal') else None
+            raw_level = spell.get('level', 0)
+            normalized_level = str(raw_level) if raw_level is not None else '0'
+
+            # Parse heal fields
+            heal_data = spell.get('heal_at_slot_level', {}) or {}
+            heal_amount = ''
+            heal_at_higher_levels_list = []
+            if isinstance(heal_data, dict):
+                heal_amount = next(iter(heal_data.values()), '')
+                heal_at_higher_levels_list = list(heal_data.values())
+
+            heal_field = heal_amount
+            if "+ MOD" in heal_amount:
+                heal_field = {
+                    'amount': heal_amount.replace(' + MOD', '').strip(),
+                    'MOD': 'SAbM'
+                }
+
+            # Convert lists and objects to JSON strings for DB storage
+            damage_data = spell.get('damage', {}) or {}
+            damage_amount = ''
+            if isinstance(damage_data.get('damage_at_slot_level'), dict):
+                damage_amount = next(iter(damage_data['damage_at_slot_level'].values()), '')
+            elif isinstance(damage_data.get('damage_at_character_level'), dict):
+                damage_amount = next(iter(damage_data['damage_at_character_level'].values()), '')
+            damage = json.dumps([
+                {
+                    'name': 'initial',
+                    'type': damage_data.get('damage_type', {}).get('index', ''),
+                    'amount': damage_amount,
+                    'save_success': (spell.get('dc', {}) or {}).get('dc_success', '')
+                }
+            ]) if damage_data else None
+            heal = json.dumps(heal_field) if heal_field else None
             range_data = json.dumps(spell.get('range')) if spell.get('range') else None
-            special = json.dumps(spell.get('special')) if spell.get('special') else None
-            higher_levels = json.dumps(spell.get('higher_levels')) if spell.get('higher_levels') else None
-            
+            higher_levels = json.dumps(spell.get('higher_level')) if spell.get('higher_level') else None
+            components = json.dumps(spell.get('components')) if spell.get('components') else None
+            classes = json.dumps([c.get('index', '') for c in spell.get('classes', []) if isinstance(c, dict)]) if spell.get('classes') else None
+            subclasses = json.dumps([s.get('index', '') for s in spell.get('subclasses', []) if isinstance(s, dict)]) if spell.get('subclasses') else None
+            area_of_effect = None
+            aoe = spell.get('area_of_effect', {}) or {}
+            if aoe:
+                aoe_type = aoe.get('type', '')
+                aoe_size = aoe.get('size', '')
+                if aoe_type or aoe_size:
+                    area_of_effect = f"[{aoe_type}:{aoe_size}]"
+
             cursor.execute("""
                 INSERT INTO spells 
-                (title, icon, level, school, explanation, to_hit, damage, heal, range, special, higher_levels)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (spell_name, icon, level, school, spell_text, damage, heal, heal_at_higher_levels, range, higher_levels,
+                 casting_time, duration, concentration, ritual, components, materials, attack_type, area_of_effect, classes, subclasses)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
-                spell.get('title'),
+                spell.get('name'),
                 spell.get('icon', '✨'),
                 normalized_level,
-                spell.get('school', 'Evocation'),
-                spell.get('explanation', ''),
-                to_hit,
+                spell.get('school', {}).get('index', ''),
+                json.dumps(spell.get('desc', [])),
                 damage,
                 heal,
+                json.dumps(heal_at_higher_levels_list) if heal_at_higher_levels_list else None,
                 range_data,
-                special,
-                higher_levels
+                higher_levels,
+                spell.get('casting_time'),
+                spell.get('duration'),
+                bool(spell.get('concentration', False)),
+                bool(spell.get('ritual', False)),
+                components,
+                spell.get('material', ''),
+                json.dumps([
+                    {
+                        'name': 'initial',
+                        'type': spell.get('attack_type', ''),
+                        'save': (spell.get('dc', {}) or {}).get('dc_type', {}).get('index', '')
+                    }
+                ]),
+                area_of_effect,
+                classes,
+                subclasses
             ))
-            print(f"  [CHECK] {spell.get('title')} (level: {normalized_level})")
+            print(f"  [CHECK] {spell.get('name')} (level: {normalized_level}, classes: {', '.join([c.get('index', '') for c in spell.get('classes', []) if isinstance(c, dict)]) if spell.get('classes') else 'none'})")
         except sqlite3.IntegrityError as e:
-            print(f"  [WARNING]  Duplicate or error: {spell.get('title')} - {e}")
-    
+            print(f"  [WARNING]  Duplicate or error: {spell.get('name')} - {e}")
+
     conn.commit()
     print(f"  [OK] Loaded {len(seeds)} spells")
+
 
 def populate_conditions(cursor, conn, force=False):
     """Populate conditions table from seed_conditions.json"""
     print("\n[WARNING]  Loading conditions...")
     
-    cursor.execute("SELECT COUNT(*) FROM conditions")
-    count = cursor.fetchone()[0]
+    try:
+        cursor.execute("SELECT COUNT(*) FROM conditions")
+        count = cursor.fetchone()[0]
+    except sqlite3.OperationalError:
+        count = 0
     
     if count > 0 and not force:
         print(f"  [INFO]  Conditions table already has {count} records. Skip (use --force to override)")
         return
     
-    if force and count > 0:
-        cursor.execute("DELETE FROM conditions")
-        print(f"  [TRASH]  Cleared {count} existing conditions")
+    # Conditions schema must be created by init_database.py
+    if force or count == 0:
+        try:
+            cursor.execute("SELECT 1 FROM conditions LIMIT 1")
+        except Exception:
+            print("  [ERROR]  Conditions table does not exist. Run _dev/init_database.py first.")
+            return
     
     seeds = load_json_file(SEEDS_DIR / "seed_conditions.json")
     if not seeds:
@@ -244,16 +285,24 @@ def populate_creatures(cursor, conn, force=False):
     """Populate creatures table from seed_creatures.json using all provided data"""
     print("\n[LION] Loading creatures...")
     
-    cursor.execute("SELECT COUNT(*) FROM creatures")
-    count = cursor.fetchone()[0]
+    try:
+        cursor.execute("SELECT COUNT(*) FROM creatures")
+        count = cursor.fetchone()[0]
+    except sqlite3.OperationalError:
+        count = 0
     
     if count > 0 and not force:
         print(f"  [INFO]  Creatures table already has {count} records. Skip (use --force to override)")
         return
     
-    if force and count > 0:
-        cursor.execute("DELETE FROM creatures")
-        print(f"  [TRASH]  Cleared {count} existing creatures")
+    # Create creatures table if it doesn't exist (or recreate if force)
+    if force or count == 0:
+        # Creatures schema must be created by init_database.py
+        try:
+            cursor.execute("SELECT 1 FROM creatures LIMIT 1")
+        except Exception:
+            print("  [ERROR]  Creatures table does not exist. Run _dev/init_database.py first.")
+            return
     
     seeds = load_json_file(SEEDS_DIR / "seed_creatures.json")
     if not seeds:
@@ -301,29 +350,18 @@ def populate_creatures(cursor, conn, force=False):
     print(f"  [OK] Loaded {len(seeds)} creatures")
 
 def populate_damage_types(cursor, conn, force=False):
-    """Populate damage_types table from seed_damage_types.json - drops and recreates if force"""
+    """Populate damage_types table from seed_damage_types.json. Requires schema created by init_database.py."""
     print("\n[BOOM] Loading damage types...")
     
     if force:
-        # Drop the entire table and recreate fresh
+        # Clear existing damage types data, but do not manage schema here
         try:
-            cursor.execute("DROP TABLE IF EXISTS damage_types")
-            print(f"  [TRASH]  Dropped existing damage_types table")
+            cursor.execute("DELETE FROM damage_types")
+            print("  [TRASH]  Cleared existing damage_types data")
         except Exception as e:
-            print(f"  [WARNING]  Error dropping table: {e}")
-        
-        # Create fresh table with explicit ID column
-        cursor.execute("""
-            CREATE TABLE damage_types (
-                id INTEGER PRIMARY KEY,
-                code TEXT NOT NULL UNIQUE,
-                name TEXT NOT NULL,
-                emoji TEXT NOT NULL,
-                color TEXT NOT NULL,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        print("  [OK] Created fresh damage_types table")
+            print(f"  [WARNING]  Error clearing damage_types data: {e}")
+            print("  [ERROR]  damage_types table may not exist. Run _dev/init_database.py first.")
+            return
     else:
         # Check if table exists and has data
         try:
@@ -333,18 +371,8 @@ def populate_damage_types(cursor, conn, force=False):
                 print(f"  [INFO]  Damage types table already has {count} records. Skip (use --force to override)")
                 return
         except Exception:
-            # Table doesn't exist, create it
-            cursor.execute("""
-                CREATE TABLE damage_types (
-                    id INTEGER PRIMARY KEY,
-                    code TEXT NOT NULL UNIQUE,
-                    name TEXT NOT NULL,
-                    emoji TEXT NOT NULL,
-                    color TEXT NOT NULL,
-                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-            print("  [OK] Created damage_types table")
+            print("  [ERROR]  Damage types table does not exist. Run _dev/init_database.py first.")
+            return
     
     seeds = load_json_file(SEEDS_DIR / "seed_damage_types.json")
     if not seeds:
@@ -376,26 +404,18 @@ def populate_damage_types(cursor, conn, force=False):
 
 
 def populate_traps(cursor, conn, force=False):
-    """Populate traps table from seed_traps.json - drops and recreates if force"""
+    """Populate traps table from seed_traps.json. Requires schema created by init_database.py."""
     print("\n[TRAP] Loading traps...")
     
     if force:
-        # Drop the entire table and recreate fresh
+        # Clear existing traps data, but do not manage schema here
         try:
-            cursor.execute("DROP TABLE IF EXISTS traps")
-            print(f"  [TRASH]  Dropped existing traps table")
+            cursor.execute("DELETE FROM traps")
+            print("  [TRASH]  Cleared existing traps data")
         except Exception as e:
-            print(f"  [WARNING]  Error dropping table: {e}")
-        
-        # Create fresh table
-        cursor.execute("""
-            CREATE TABLE traps (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL UNIQUE,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        print("  [OK] Created fresh traps table")
+            print(f"  [WARNING]  Error clearing traps data: {e}")
+            print("  [ERROR]  traps table may not exist. Run _dev/init_database.py first.")
+            return
     else:
         # Check if table exists and has data
         try:
@@ -405,15 +425,8 @@ def populate_traps(cursor, conn, force=False):
                 print(f"  [INFO]  Traps table already has {count} records. Skip (use --force to override)")
                 return
         except Exception:
-            # Table doesn't exist, create it
-            cursor.execute("""
-                CREATE TABLE traps (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    name TEXT NOT NULL UNIQUE,
-                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-            print("  [OK] Created traps table")
+            print("  [ERROR]  Traps table does not exist. Run _dev/init_database.py first.")
+            return
     
     seeds = load_json_file(SEEDS_DIR / "seed_traps.json")
     if not seeds:
@@ -443,8 +456,12 @@ def populate_creature_types(cursor, conn, force=False):
     print("\n[LION] Loading creature types...")
     
     # Check if already populated
-    cursor.execute("SELECT COUNT(*) FROM creature_types")
-    count = cursor.fetchone()[0]
+    try:
+        cursor.execute("SELECT COUNT(*) FROM creature_types")
+        count = cursor.fetchone()[0]
+    except sqlite3.OperationalError:
+        # Table doesn't exist, that's fine
+        count = 0
     
     if count > 0 and not force:
         print(f"  [INFO]  Creature types table already has {count} records. Skip (use --force to override)")
@@ -460,22 +477,14 @@ def populate_creature_types(cursor, conn, force=False):
                 print(f"  [TRASH]  Cleared {creature_count} creatures (referenced creature_types)")
         except Exception:
             pass  # creatures table may not exist yet
-        
-        cursor.execute("DROP TABLE IF EXISTS creature_types")
-        print(f"  [TRASH]  Dropped existing creature_types table")
     
-    if force:
-        cursor.execute("""
-            CREATE TABLE creature_types (
-                id INTEGER PRIMARY KEY,
-                code TEXT NOT NULL UNIQUE,
-                emoji TEXT NOT NULL,
-                color TEXT NOT NULL,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_creature_types_code ON creature_types(code)")
-        print("  [OK] Created fresh creature_types table")
+    if force or count == 0:
+        # Creature types schema must be created by init_database.py
+        try:
+            cursor.execute("SELECT 1 FROM creature_types LIMIT 1")
+        except Exception:
+            print("  [ERROR]  Creature types table does not exist. Run _dev/init_database.py first.")
+            return
     else:
         # Check if table exists and has data
         try:
@@ -485,18 +494,8 @@ def populate_creature_types(cursor, conn, force=False):
                 print(f"  [INFO]  Creature types table already has {count} records. Skip (use --force to override)")
                 return
         except Exception:
-            # Table doesn't exist, create it
-            cursor.execute("""
-                CREATE TABLE creature_types (
-                    id INTEGER PRIMARY KEY,
-                    code TEXT NOT NULL UNIQUE,
-                    emoji TEXT NOT NULL,
-                    color TEXT NOT NULL,
-                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_creature_types_code ON creature_types(code)")
-            print("  [OK] Created creature_types table")
+            print("  [ERROR]  Creature types table does not exist. Run _dev/init_database.py first.")
+            return
     
     seeds = load_json_file(SEEDS_DIR / "seed_creature_types.json")
     if not seeds:
@@ -530,8 +529,11 @@ def populate_dungeons(cursor, conn, force=False):
     print("\n[CASTLE] Loading dungeons...")
     
     # Check if already populated
-    cursor.execute("SELECT COUNT(*) FROM dungeons")
-    count = cursor.fetchone()[0]
+    try:
+        cursor.execute("SELECT COUNT(*) FROM dungeons")
+        count = cursor.fetchone()[0]
+    except sqlite3.OperationalError:
+        count = 0
     
     if count > 0 and not force:
         print(f"  [INFO]  Dungeons table already has {count} records. Skip (use --force to override)")
@@ -542,18 +544,13 @@ def populate_dungeons(cursor, conn, force=False):
         print(f"  [TRASH]  Cleared {count} existing dungeons")
     
     if force:
-        cursor.execute("DROP TABLE IF EXISTS dungeons")
-        cursor.execute("""
-            CREATE TABLE dungeons (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                title TEXT NOT NULL UNIQUE,
-                original_html TEXT NOT NULL,
-                parsed_json TEXT NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        print("  [OK] Created fresh dungeons table")
+        try:
+            cursor.execute("DELETE FROM dungeons")
+            print(f"  [TRASH]  Cleared {count} existing dungeons")
+        except Exception as e:
+            print(f"  [WARNING]  Error clearing dungeons data: {e}")
+            print("  [ERROR]  dungeons table may not exist. Run _dev/init_database.py first.")
+            return
     else:
         # Check if table exists and has data
         try:
@@ -563,18 +560,8 @@ def populate_dungeons(cursor, conn, force=False):
                 print(f"  [INFO]  Dungeons table already has {count} records. Skip (use --force to override)")
                 return
         except Exception:
-            # Table doesn't exist, create it
-            cursor.execute("""
-                CREATE TABLE dungeons (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    title TEXT NOT NULL UNIQUE,
-                    original_html TEXT NOT NULL,
-                    parsed_json TEXT NOT NULL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-            print("  [OK] Created dungeons table")
+            print("  [ERROR]  Dungeons table does not exist. Run _dev/init_database.py first.")
+            return
     
     seeds = load_json_file(SEEDS_DIR / "seed_dungeons.json")
     if not seeds:
@@ -654,6 +641,43 @@ def reparse_all_dungeons():
         traceback.print_exc()
 
 
+def clear_all_tables(cursor, conn):
+    """Drop all tables in dependency order to avoid FK constraint violations"""
+    print("\n[FORCE] Clearing all existing table data in dependency order...")
+    
+    # Disable FK constraints during table operations
+    cursor.execute("PRAGMA foreign_keys = OFF")
+    
+    tables_to_clear = [
+        "statblock_jobs",
+        "weapons",
+        "wild_shapes",
+        "creatures",
+        "creature_types",
+        "spells",
+        "conditions",
+        "damage_types",
+        "abilities",
+        "traps",
+        "dungeons",
+        "icons",
+        "skills"
+    ]
+    
+    for table in tables_to_clear:
+        try:
+            cursor.execute(f"DELETE FROM {table}")
+            print(f"  [TRASH]  Cleared {table}")
+        except Exception:
+            # Table might not exist, that's okay
+            pass
+    
+    conn.commit()
+    # Re-enable FK constraints
+    cursor.execute("PRAGMA foreign_keys = ON")
+    print("[OK] All table data cleared")
+
+
 def main():
     parser = argparse.ArgumentParser(description='Populate database from seed JSON files')
     parser.add_argument('--abilities', action='store_true', help='Load only abilities')
@@ -687,6 +711,8 @@ def main():
         
         if args.force:
             print("\n[WARNING]  FORCE MODE: Will overwrite existing data\n")
+            # Clear all tables in dependency order first to avoid FK constraint issues
+            clear_all_tables(cursor, conn)
         
         if load_all or args.abilities:
             populate_abilities(cursor, conn, args.force)
@@ -722,7 +748,7 @@ def main():
         print("  3. Check: Start Flask server and test API endpoints")
         print("\nSeed files:")
         print("  - data/seed_abilities.json")
-        print("  - data/seed_spells.json")
+        print("  - data/5eAPI/spells.json")
         print("  - data/seed_conditions.json")
         print("  - data/seed_creatures.json")
         print("  - data/seed_damage_types.json")

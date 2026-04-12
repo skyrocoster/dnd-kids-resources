@@ -1,8 +1,10 @@
 # Stat Block Queue System - Setup & Usage Guide
 
+> NOTE: This document describes planned queue architecture and design. The repository currently includes queue API endpoints in `server_flask.py`, but the separate worker script and GUI launch helpers are not present in this branch.
+
 ## Overview
 
-The new Queue Management System allows you to queue up AI stat block parsing jobs without blocking the web server. Jobs run in the background and are processed sequentially by a dedicated worker process.
+This design note explains how stat block parsing jobs could be enqueued and processed without blocking the web server.
 
 ## System Architecture
 
@@ -25,8 +27,8 @@ User Input → Queue API → Database Job Table
 ### 1. First Time Setup
 
 ```bash
-# Install PyQt5 (if not already done)
-install_pyqt5.bat
+# NOTE: GUI helper scripts are not included in this branch
+# Use the queue API endpoints in server_flask.py for reference instead.
 ```
 
 ### 2. Start Flask Server
@@ -80,13 +82,13 @@ If you prefer to manage everything from the terminal without the control panel:
 # Terminal 1: Start Flask Server
 python server_flask.py
 
-# Terminal 2: Start Queue Worker
+# Terminal 2: Start Queue Worker (conceptual example)
 python _dev\queue_worker.py --verbose
 ```
 
-Or use the convenience launcher:
+Or use the convenience launcher (conceptual example):
 ```bash
-# This opens two separate terminals automatically
+# This would open two separate terminals automatically
 start_manual.bat
 ```
 
@@ -213,22 +215,14 @@ Response:
 
 ## Queue Worker Options
 
-The worker script (`_dev/queue_worker.py`) supports several command-line options:
+This section documents a conceptual worker that would process queue jobs. The repository currently does not include `_dev/queue_worker.py`, so these commands are design notes rather than active instructions.
 
 ```bash
-# Start with default 2-second poll interval
+# Conceptual examples only — worker file not included in current branch
 python _dev/queue_worker.py
-
-# Custom poll interval (seconds between job checks)
 python _dev/queue_worker.py --interval 5
-
-# Verbose output (shows status even when idle)
 python _dev/queue_worker.py --verbose
-
-# Custom model path
 python _dev/queue_worker.py --model-path "/path/to/model.gguf"
-
-# Combine options
 python _dev/queue_worker.py --interval 2 --verbose --model-path "models/mistral.gguf"
 ```
 
@@ -299,20 +293,18 @@ python -m pip install PyQt5==5.15.9
 
 ## File Structure
 
+The following block describes an earlier queue integration design. The current branch may not include all of these helper scripts.
+
 ```
 F:\DND\Kids Resources\
-├── launch_manager.bat          ← Click this to start
-├── start_manual.bat            ← Alternative: separate terminals
-├── install_pyqt5.bat           ← Install PyQt5 dependency
-├── server_flask.py             ← Main web server (unchanged)
-├── dnd_kids_resources.db       ← Database (now with statblock_jobs table)
+├── server_flask.py             ← Main web server
+├── dnd_kids_resources.db       ← Database (queue API endpoints present)
 ├── _dev\
-│   ├── queue_worker.py         ← NEW: Background job processor
-│   ├── launcher_app.py         ← NEW: PyQt5 control panel
-│   └── init_database.py        ← UPDATED: New table schema
+│   ├── init_database.py        ← Current database schema initializer
+│   └── seed_database.py        ← Seed loader for JSON sources
 ├── pages\
-│   └── stat-block-parser.html  ← UPDATED: Now uses queue API
-└── requirements.txt            ← UPDATED: Added PyQt5
+│   └── stat-block-parser.html  ← Queue API client UI
+└── requirements.txt            ← Project dependencies
 ```
 
 ---

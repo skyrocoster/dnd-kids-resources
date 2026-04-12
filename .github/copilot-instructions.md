@@ -1,6 +1,6 @@
 # D&D Kids Resources - Copilot Instructions
 
-Guidelines for working with the D&D card generation system.
+Guidelines for working with the D&D card generation system in this repository.
 
 ## Quick Reference
 
@@ -13,105 +13,123 @@ Guidelines for working with the D&D card generation system.
 
 ## System Architecture
 
-**Data Flow:** Database/JSON → Flask API → JavaScript rendering → CSS styling
+**Data Flow:** JSON/Database → Flask API → JavaScript rendering → CSS styling
 
 **Data Storage:**
 - **SQLite database** (`dnd_kids_resources.db`): Spells, Conditions, Creatures, Abilities, Damage Types, Skills, Wild Shapes, Dungeons
-- **JSON files** (`data/`): Weapons (currently empty—cards are HTML/JS driven)
-- **Flask API** (`server_flask.py`): Runs on port 8000, endpoints at `/api/{spells,conditions,creatures,abilities,damage_types,etc}`
+- **JSON files** (`data/`): Seed and source data (spells, conditions, creatures, abilities, damage types, traps, dungeons)
+- **Flask API** (`server_flask.py`): Runs on port 8000, endpoints at `/api/{spells,conditions,creatures,abilities,damage_types,dungeons,...}`
 
-**Rendering:** Card generation centralized in `js/card-generator.js`, styling in `css/styles.css`
+**Rendering:** Card generation is driven by `js/card-generator.js`, with page-specific initializers under `js/`.
 
 **File Structure:**
-- `pages/` - HTML templates (load JS initializers)
-- `js/` - Card initializers + `card-generator.js` (shared), `bw-mode-toggle.js` (print preview)
-- `css/` - All styling (print-optimized, A4 9-card grid)
-- `_dev/` - Dev utilities: `init_database.py` (schema setup), `reparse_dungeons.py`
+- `pages/` - Browser-accessible tool pages (resources, spell list, parser, trackers)
+- `js/` - Page logic and shared rendering helpers
+- `css/` - Global styles and print layout
+- `_dev/` - Development utilities for database setup, import, and testing
 
 ## Card Development Workflow
 
 ### Adding Database-Driven Cards (Spells, Conditions, Creatures)
 
 **Data Storage Pattern:**
-- Store text fields as **lowercase** in database (e.g., "blinded", "wizard", "frost")
-- API response capitalizes for display (e.g., "Blinded", "Wizard", "Frost")
-- Use lowercase version as `level` field for CSS class selection (prevents case-sensitivity bugs)
+- Store normalized values in the database
+- Use the API to fetch data for the browser pages
+- Keep presentation styling separate from raw data
 
 **Steps:**
-1. Insert data into appropriate table (`spells`, `conditions`, `creatures`, etc)
-2. Create `.html` template in `pages/` (copy existing, modify title)
-3. Create `.js` initializer in `js/` to fetch from `/api/endpoint`
-4. Add to `index.html` tools grid
-5. Test: Start Flask server (`python server_flask.py`), verify API response format, check rendering and print layout
+1. Add or update seed/source data in `data/`
+2. If needed, update `_dev/seed_database.py` to load the new data into SQLite
+3. Create a `pages/` template or reuse an existing page
+4. Add a page-specific initializer in `js/`
+5. Test with `python server_flask.py`, then verify the page loads and renders correctly
 
-### Adding JSON-Based Cards (Weapons)
+### Adding JSON-Based Cards
 
-1. Create JSON file in `data/` directory
-2. Create `.html` template in `pages/`
-3. Create `.js` initializer to load JSON data
-4. Add to `index.html` tools grid
-5. Test: Check browser console, verify rendering, print layout
+1. Create JSON source in `data/`
+2. Create an HTML page under `pages/`
+3. Add a JS initializer that loads the JSON and renders cards
+4. Add the page to navigation if needed
+5. Test in a browser and check the JS console for errors
 
 ## Color System
 
-**Card styling:** CSS classes in `css/styles.css` control header/footer colors. Set `data.level` to class name (e.g., `"wizard"`, `"level1"`).
+**Card styling:** CSS classes in `css/styles.css` control header/footer colors. Use semantic class names such as `cantrip`, `level1`, `wizard`, `blinded`, etc.
 
-**Ability & Damage Type colors:** Stored in database (`abilities` and `damage_types` tables) with emoji and hex color values.
+**Ability & Damage Type Colors:** Stored in the database and used by the UI to enrich display.
 
 ## Print Optimization
 
-All cards are A4 9-card grid optimized (63.5mm × 88.9mm per card).
+This project is optimized for A4 printing.
 
 **Features:**
-- B&W preview toggle: Click "📄 Print B&W" button to preview grayscale. Preference saved to localStorage.
-- Color accuracy: CSS uses `print-color-adjust: exact` to preserve colors
-- Page breaks: CSS prevents card splitting across pages
-- Availability: Button implemented on all card pages (spells, conditions, creatures, skills, weapons)
+- B&W preview toggle in supported pages
+- `print-color-adjust: exact` for ink/color fidelity
+- Page-safe card layout and print-friendly spacing
+- Print-specific UI hiding for non-print controls
 
-**To print:** Enable "Background graphics" in browser print dialog, use A4 paper size.
+**To print:** enable background graphics and use A4 paper size.
 
 ## Common Tasks
 
-Detailed workflows: See [CONTRIBUTING.md](CONTRIBUTING.md) for adding card types, data formats, and templates.
-
-Architecture details: See [ARCHITECTURE.md](ARCHITECTURE.md) for card-generator.js, JavaScript patterns, and deployment.
+Detailed workflows are in the repo docs:
+- [CONTRIBUTING.md](CONTRIBUTING.md)
+- [ARCHITECTURE.md](ARCHITECTURE.md)
 
 Key files to avoid modifying carelessly:
-- `js/card-generator.js` - Core rendering (affects all cards)
-- `css/styles.css` - All styling (affects all cards)
-- `index.html` - Navigation hub
+- `js/card-generator.js` — core rendering
+- `css/styles.css` — styling and print rules
+- `index.html` — landing/navigation hub
 
-## Development Environment (Windows PowerShell)
+## Windows Development Environment
 
 **Environment Setup:**
 - OS: Windows 10/11
-- Python: 3.12.7 (installed)
-- Virtual environment: `.venv/` (activate with `& ".venv\Scripts\Activate.ps1"`)
-- Flask: Development server on port 8000
-- Database: SQLite3 (`dnd_kids_resources.db`)
+- Python: 3.12.x
+- Virtual environment: `.venv`
+- Flask server: `server_flask.py`
+- Database: `dnd_kids_resources.db`
 
-**Start Development:**
-1. Activate venv: `& ".venv\Scripts\Activate.ps1"`
-2. Run server: `python server_flask.py`
-3. Open browser: `http://127.0.0.1:8000`
-4. Test API: `Invoke-WebRequest -Uri "http://127.0.0.1:8000/api/spells" -UseBasicParsing`
+**Activate venv (PowerShell):**
+```powershell
+& ".\.venv\Scripts\Activate.ps1"
+```
+
+**Activate venv (CMD):**
+```cmd
+.\.venv\Scripts\activate.bat
+```
+
+**Common commands:**
+```powershell
+python _dev/init_database.py
+python _dev/seed_database.py
+python server_flask.py
+```
+
+**Verify API:**
+```powershell
+Invoke-WebRequest -Uri "http://127.0.0.1:8000/api/spells" -UseBasicParsing
+```
+
+## Windows-friendly guidance
 
 **Works on Windows:**
-- PowerShell cmdlets: `Get-ChildItem`, `Test-Path`, `Move-Item`, `Remove-Item`
-- `Invoke-WebRequest` for HTTP requests (NOT `curl`)
-- `python` command for scripts
-- `sqlite3` CLI for database queries
-- Virtual environments and pip packages
-- File operations native to PowerShell
+- `Get-ChildItem`, `Test-Path`, `Move-Item`, `Remove-Item`
+- `Invoke-WebRequest` (prefer over `curl` aliases)
+- `python` for scripts
+- `sqlite3` for DB inspection
+- `.venv` activation via PowerShell or CMD
+- File paths with backslashes and quotes
 
-**Does NOT work:**
-- Unix tools: `ls`, `cat`, `grep`, `head`, `tail`, `sed`
-- Bash/sh syntax or Unix heredocs
-- `curl` command (PowerShell aliases it differently)
-- Shell redirections like `2>/dev/null` (use PowerShell `-ErrorAction` instead)
+**Avoid on Windows:**
+- Unix shell commands: `ls`, `cat`, `grep`, `head`, `tail`, `sed`
+- Bash/sh syntax and Unix-specific redirection
+- `curl` alias behavior in PowerShell
+- shell redirections like `2>/dev/null` — use PowerShell `-ErrorAction` instead
 
-**PowerShell Tips:**
+**PowerShell tips:**
 - Use `Get-Content file.txt` instead of `cat`
 - Use `Select-String -Pattern "term" file.txt` instead of `grep`
-- Use double quotes for paths with spaces: `"C:\Path With Spaces\file.txt"`
-- For background processes use `isBackground=true` in terminal or `Start-Process` cmdlet
+- Quote paths with spaces: `"C:\Path With Spaces\file.txt"`
+- For background tasks, prefer `Start-Process` or terminal `isBackground=true`

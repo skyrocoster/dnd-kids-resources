@@ -2,102 +2,70 @@
 
 Scripts and tools for development, testing, and database management. These are **not needed** for the webpages to operate—they're only for local development and data migration.
 
-**⚠️ Production Code Location:** Core production modules like dungeon parsing are stored in `lib/`, NOT here. The `_dev` folder is exclusively for testing and utility scripts.
+**⚠️ Production Code Location:** Core production modules like dungeon parsing are stored in `lib/`, NOT here. The `_dev` folder is for supporting development workflows only.
 
 ---
 
 ## Active Tools
 
-### Flask Web Server
-- **`server_flask.py`** ⭐ **PRIMARY TOOL** - Flask API server serving spells from SQLite database (located in root)
-  - Runs on `http://localhost:8000`
-  - Provides `/api/spells` endpoint with enriched metadata (emoji, colors)
-  - Usage: `python server_flask.py`
+### Database Setup
+- `init_database.py` — Create the SQLite schema for the app
+- `seed_database.py` — Load JSON seed/source files into the database
 
-### Testing & Validation
-- `test_api.py` - Tests Flask API endpoints
-- `debug_api.py` - Interactive debugging of API responses
-- `test_variants.py` - Tests weapon variant logic
-- `test_rendering.js` - Client-side card rendering tests
-- `check_templates.py` - Validate JSON template structure
-- `check_ranges.py` - Validate range data integrity
+### Spell Data Utilities
+- `extract_5eapi_spells.py` — Fetch raw spell JSON from the D&D 5e API for ingestion
+- `parse_spells_api.py` — Convert 5eAPI spell payloads into the app schema
+- `test_spell_parsing.py` — Parser test harness for spell ingestion experiments
+- `view_abilities.py` — Inspect ability metadata and validate ability lookup data
 
-### Database Inspection
-- `show_all_spells.py` - List all spells with details
-- `verify_spells.py` - Verify spell data integrity
-- `verify_spells_complete.py` - Check for missing spell data
-- `update_spell_icons.py` - Batch update spell icons
-
-### Standards
-- `CONTENT_STANDARDS.md` - Guidelines for card content and formatting
-
-### Dungeon Parsing Testing
-- **`dungeon_parsing_test/`** - Test cases and examples for the dungeon HTML parser
-  - Test HTML files: `The Secret Catacombs of Mepha 01.html`, `The_Forsaken_Dungeon_of_Annihilation_01.html`
-  - Test outputs: JSON results of parsing
-  - Debugging: `debug_entries.py` for entry-level debugging
-  - **Note:** The core parser `parse_dungeon.py` is in `lib/` (production code used by Flask), this folder is for testing it
+### Dungeon & Data Maintenance
+- `reparse_dungeons.py` — Reparse dungeon HTML input for updated dungeon content
+- `CONTENT_STANDARDS.md` — Guidelines for card content and formatting
+- `CREATURE_JSON_FORMAT.md` — Creature JSON schema and formatting reference
+- `dungeon_parsing_test/` — Example cases and regression tests for dungeon parsing
 
 ---
 
-## Quality Assurance & Recent Fixes
+## Notes
 
-### Validation Scripts
-- `check_spell_grammar.py` - Grammar and content review for spell descriptions
-- `check_ice_knife.py` - Verify multi-roll spell formatting
-- `find_multi_rolls.py` - Locate and validate all spells with multiple roll entries
-- `verify_roll_names.py` - Ensure multi-roll spells use standard A/B/C naming
-- `check_heal_field.py` - Validate heal field structure consistency
-
-### Recent Database Corrections
-1. **Spell 55 (Wither and Bloom):** Removed non-standard `types` field from heal JSON to match other heal values
-2. **Spell 21 (Ice Knife):** Fixed multi-roll naming from "primary"/"secondary" to "A"/"B" for proper number emoji display
-3. **Damage type emoji rendering:** Fixed CSS property typo (`gaps` → `gap`) and added space before emoji in damage displays
+- `_dev/init_database.py` and `_dev/seed_database.py` are the primary dev utilities needed to rebuild the app database.
+- The other scripts in `_dev/` are support utilities for migration, import, and validation.
+- Legacy one-time migration scripts such as `migrate_*.py` are no longer present in this branch.
+- The website itself runs without any of these tools—they are purely for local development.
 
 ---
 
-## Archived Tools
+## Getting Started
 
-All one-time-use scripts and legacy tools have been moved to `archive/`:
+### Initialize the database
+```bash
+python _dev/init_database.py
+python _dev/seed_database.py
+```
 
-- **Migrations:** All `migrate_*.py` scripts (database is fully initialized)
-- **Legacy utilities:** `abstract_rolls.py`, `refactor_modifiers.py`, `simplify_prefix.py`, `update_boxes.py`
-- **Legacy server:** `server.py` (replaced by Flask)
-- **Schema inspection:** `schema_inspection.txt`, `view_schema.py`
-
-**Setup Tools (in `_dev/` for initialization only):**
-- `init_database.py` - One-time database initialization script (only needed if rebuilding database from scratch)
-
-See `archive/` if you need to reference historical migration logic or recover deleted functionality.
-
----
-
-## Setup & Running
-
-### Start Flask Server
+### Run the Flask server
 ```bash
 python server_flask.py
-# Server will run at http://localhost:8000
-# API endpoint: GET /api/spells
 ```
 
-### Test the API
+### Inspect or test spell ingestion
 ```bash
-python test_api.py
-# or use debug_api.py for interactive testing
-```
-
-### Inspect Database
-```bash
-python show_all_spells.py
-python verify_spells_complete.py
+python _dev/test_spell_parsing.py
+python _dev/view_abilities.py
 ```
 
 ---
 
-## Note
+## Current `_dev` files
 
-- The Flask server is the **primary development tool** for testing cards
-- Migrations are archived for reference; no new migrations are needed unless schema changes
-- All active tools require Python 3.12 and the Flask package
-- The website itself runs without any of these tools—they're purely for development
+- `CONTENT_STANDARDS.md`
+- `CREATURE_JSON_FORMAT.md`
+- `dungeon_parsing_test/`
+- `extract_5eapi_spells.py`
+- `init_database.py`
+- `parse_spells_api.py`
+- `reparse_dungeons.py`
+- `seed_database.py`
+- `test_spell_parsing.py`
+- `view_abilities.py`
+`

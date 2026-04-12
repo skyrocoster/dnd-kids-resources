@@ -2,144 +2,141 @@
 
 ## What Is This?
 
-D&D Kids Resources is a web-based toolkit for creating printable D&D 5th Edition reference cards. All cards are designed for standard A4 printing (9 cards per page, 63.5mm × 88.9mm each).
+D&D Kids Resources is a local web toolkit for generating printable D&D 5th Edition reference cards, trackers, and utilities aimed at younger players.
 
-Perfect for:
-- Kids learning D&D mechanics
-- Quick in-game reference cards  
-- Cutout-and-keep card sets
-- Interactive digital cards
+The app is built to work with both offline pages and a Flask-backed API for database-driven content.
 
 ## Prerequisites
 
-- Python 3.8+ (with pip)
-- A modern web browser
-- Virtual environment (recommended)
+- Python 3.8+ with pip
+- A modern browser (Chrome, Edge, Firefox, Safari)
+- Optional: a local Python virtual environment
 
 ## Quick Start
 
-### 1. Set Up Python Environment
+### 1. Create and activate a Python environment
 
 ```bash
-# Create virtual environment
 python -m venv .venv
+```
 
-# Activate virtual environment
-# On Windows:
-.venv\Scripts\activate
+On Windows PowerShell:
 
-# On Mac/Linux:
+```powershell
+& ".\.venv\Scripts\Activate.ps1"
+```
+
+On Windows CMD:
+
+```cmd
+.venv\Scripts\activate.bat
+```
+
+On macOS/Linux:
+
+```bash
 source .venv/bin/activate
 ```
 
-### 2. Install Dependencies
+### 2. Install dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 3. Run the Flask Server
+### 3. Initialize the database
 
-```bash
-python server_flask.py
-# OR use the launcher:
-launchers/start-server.ps1  (PowerShell on Windows)
-```
-
-Visit `http://localhost:8000` in your browser.
-
-The Flask server provides:
-- ✅ Spell cards (from database)
-- ✅ Condition cards (from database)
-- ✅ Creature cards (with stat blocks)
-- ✅ Skill cards
-- ✅ Weapon cards (JSON)
-- ✅ Character sheet & trackers
-
-### 4. (Optional) Start Queue Worker for AI Parsing
-
-If you want to use the AI-powered stat block parser:
-
-```bash
-# Using launcher:
-launchers/launch_queue_monitor.bat
-
-# OR manually:
-python _dev/queue_worker.py --verbose
-```
-
-This starts the GUI monitor for the parsing queue.
-
-## Launching Without Flask
-
-For basic features (weapons, character sheet, trackers) that don't need the database:
-
-```bash
-# Option 1: Python's built-in server
-python -m http.server 8000
-
-# Option 2: Node.js http-server
-npx http-server
-
-# Option 3: VS Code Live Server extension
-# Right-click index.html → "Open with Live Server"
-```
-
-Then open `http://localhost:8000`
-
-## Project Structure
-
-For the complete file organization, see [File Structure](FILE_STRUCTURE.md)
-
-Key directories:
-- `pages/` - HTML card templates
-- `js/` - Card generators and utilities
-- `css/` - All styling (print-optimized)
-- `data/` - Seed JSON files
-- `_dev/` - Database initialization and utilities
-- `launchers/` - Startup scripts
-- `tools/` - Development utilities
-
-## Database
-
-The project uses SQLite (`dnd_kids_resources.db`):
-
-**Initialize database:**
 ```bash
 python _dev/init_database.py
 python _dev/seed_database.py
 ```
 
-**Add or modify spells** in `data/seed_spells.json`, then reseed:
+### 4. Run the Flask server
+
 ```bash
+python server_flask.py
+```
+
+Then open `http://localhost:8000`.
+
+### What works with the Flask server?
+
+- ✅ Spell cards
+- ✅ Condition cards
+- ✅ Creature cards
+- ✅ Skill/ability references
+- ✅ Weapon cards
+- ✅ Printable trackers and character sheet
+- ✅ Dungeon library and stat-block parser pages
+
+### 5. Open the app
+
+- `index.html` — main entry point
+- `pages/resources.html` — resource hub with quick links and admin actions
+- `http://localhost:8000/spell-cards-list` — spell card list view
+- `pages/stat-block-parser.html` — queue-based parser UI
+
+## Development server alternatives
+
+If you want to preview static pages without Flask:
+
+```bash
+python -m http.server 8000
+```
+
+Then open `http://localhost:8000`.
+
+## Database sources
+
+The project seeds data from:
+
+- `data/5eAPI/spells.json` — spell metadata
+- `data/seed_conditions.json` — conditions
+- `data/seed_creatures.json` — creature/wild-shape data
+- `data/seed_abilities.json` — abilities, skills, and modifiers
+- `data/seed_damage_types.json` — damage type metadata
+
+## Updating cards and data
+
+To rebuild the database from the seed files:
+
+```bash
+python _dev/init_database.py
 python _dev/seed_database.py --force
 ```
 
+For spell data updates, edit `data/5eAPI/spells.json` or the seed file used by your workflow.
+
+## Notes
+
+- The canonical docs are in `/docs`.
+- The `/docs/planning` section contains design and historical notes; not every file reflects the current runtime state.
+- If you see broken routes or missing files, check `docs/guides/FILE_STRUCTURE.md` and `docs/architecture/ARCHITECTURE.md` for the current implementation.
+
 ## Troubleshooting
 
-**Flask server won't start:**
-- Check Python is installed: `python --version`
-- Check virtual environment is activated
-- Check port 8000 isn't in use: `lsof -i :8000` (Mac/Linux) or `netstat -ano | findstr :8000` (Windows)
+**Server fails to start**
+- Confirm Python is installed: `python --version`
+- Confirm virtual environment is active
+- Confirm port 8000 is free on your machine
 
-**Cards not loading:**
-- Make sure Flask server is running (`http://localhost:8000`)
-- Check browser console for errors (F12)
-- Verify database exists: `dnd_kids_resources.db`
+**Cards fail to load**
+- Make sure the Flask server is running
+- Check browser console for fetch errors
+- Verify `dnd_kids_resources.db` exists after seeding
 
-**Need to reset everything:**
+**Database reset**
+
 ```bash
-# Remove database and recreate
 del dnd_kids_resources.db
 python _dev/init_database.py
 python _dev/seed_database.py
 ```
 
-## Next Steps
+## Next steps
 
-- **Add spells:** Edit `data/seed_spells.json` and reseed
-- **Customize colors:** See [Color Configuration](../development/COLORS.md)
-- **Add features:** See [Contributing Guide](../development/CONTRIBUTING.md)
-- **Understand architecture:** See [System Architecture](../architecture/ARCHITECTURE.md)
+- Add new card content via `data/` and `_dev/seed_database.py`
+- See [docs/development/CONTRIBUTING.md](../development/CONTRIBUTING.md)
+- See [docs/architecture/ARCHITECTURE.md](../architecture/ARCHITECTURE.md)
 
-For full documentation, see [Documentation Hub](../README.md)
+For the full documentation hub, see [../README.md](../README.md).

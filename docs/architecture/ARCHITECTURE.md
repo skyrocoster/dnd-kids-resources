@@ -123,50 +123,47 @@ dnd_kids_resources.db
 
 | Endpoint | Method | Returns | Purpose |
 |----------|--------|---------|---------|
-| `/api/spells` | GET | Array of all spells | Used by spell-cards.html |
-| `/api/spells/<title>` | GET | Single spell by title | Can fetch individual spells |
-| `/api/skills` | GET | Array of all skills | Used by skill-cards.html |
-| `/api/skills/<title>` | GET | Single skill by title | Can fetch individual skills |
-| `/api/conditions` | GET | Array of all conditions | Used by condition-cards.html |
-| `/api/conditions/<title>` | GET | Single condition by title | Can fetch individual conditions |
-| `/api/creatures` | GET | Array of all creatures | Used by creatures.html |
-| `/api/creatures/<title>` | GET | Single creature by title | Can fetch individual creatures |
-| `/api/abilities` | GET | Array of all abilities with metadata | Returns ability codes, names, emojis, colors (used for enrichment) |
-| `/api/traps` | GET | Array of all traps | Used by trap-cards.html |
-| `/api/traps/<trap_id>` | GET | Single trap by ID | Can fetch individual traps |
+| `/api/spells` | GET | Array of all spells | Used by spell card views and print rendering |
+| `/api/spells/<title>` | GET | Single spell by title | Fetch an individual spell record |
+| `/api/skills` | GET | Array of all skills | Provides skill/ability metadata for UI rendering |
+| `/api/skills/<title>` | GET | Single skill by title | Fetch an individual skill record |
+| `/api/conditions` | GET | Array of all conditions | Provides condition/status effect cards |
+| `/api/conditions/<title>` | GET | Single condition by title | Fetch an individual condition record |
+| `/api/creatures` | GET | Array of all creatures | Provides creature/wild-shape card data |
+| `/api/creatures/<title>` | GET | Single creature by title | Fetch an individual creature record |
+| `/api/abilities` | GET | Array of all abilities with metadata | Returns ability codes, names, emojis, and colors |
 
 **Dungeon Management (Advanced)**
 
 | Endpoint | Method | Returns | Purpose |
 |----------|--------|---------|---------|
 | `/api/dungeons` | GET | Array of all dungeons | Lists available dungeon modules |
-| `/api/dungeons/<dungeon_id>` | GET | Single dungeon data | Retrieves dungeon detail (encounters, rooms, etc.) |
+| `/api/dungeons/<dungeon_id>` | GET | Single dungeon data | Retrieves dungeon detail and parsed content |
 | `/api/dungeons/<dungeon_id>` | PUT | Updated dungeon | Updates dungeon information |
-| `/api/dungeons/upload` | POST | Job ID | Uploads dungeon HTML/PDF for AI parsing |
-| `/api/rebuild-database` | POST | Status | Rebuilds database from seed files (admin utility) |
+| `/api/dungeons/upload` | POST | Job status | Uploads dungeon HTML for parsing |
+| `/api/rebuild-database` | POST | Status | Rebuilds the database from seed data |
 
 **Queue System (Job Management for AI Parsing)**
 
+The queue API endpoints are defined in `server_flask.py`, but the separate queue worker script is not present in this repository branch.
+
 | Endpoint | Method | Returns | Purpose |
 |----------|--------|---------|---------|
-| `/api/queue/submit` | POST | Job ID | Submits a parsing job for dungeon/creature data |
-| `/api/queue/submit/spell` | POST | Job ID | Submits a parsing job for spell data |
-| `/api/queue/<job_id>` | GET | Job status & result | Polls job status and retrieves parsed results |
-| `/api/queue/stats` | GET | Queue statistics | Returns queue metrics and system status |
-| `/api/queue/recent` | GET | Recent jobs | Returns list of recently completed/failed jobs |
+| `/api/queue/submit` | POST | Job ID | Enqueue a parsing job for creature or dungeon content |
+| `/api/queue/submit/spell` | POST | Job ID | Enqueue a parsing job for spell content |
+| `/api/queue/<job_id>` | GET | Job status & result | Poll job status and retrieve job output |
+| `/api/queue/stats` | GET | Queue statistics | Returns current queue metrics |
+| `/api/queue/recent` | GET | Recent jobs | Lists recently submitted jobs |
 
 **Query Logic:**
-Spells are now queried directly from the `spells` table (no JOIN with cards table needed):
+The current schema stores spell metadata directly in the `spells` table. Example query:
 ```sql
-SELECT id, title, icon, level, school, explanation, 
-       to_hit, damage, heal, range FROM spells ORDER BY title
+SELECT spell_name, icon, level, school, spell_text, damage, heal, range
+FROM spells
+ORDER BY spell_name
 ```
 
-Detail entries are fetched separately by spell_id:
-```sql
-SELECT label, content_text FROM detail_entries 
-WHERE spell_id = ? ORDER BY sequence_order
-```
+The current implementation does not use a separate `detail_entries` table for spell metadata in this branch.
 
 **Data Transformation:**
 1. Queries spell/condition/creature metadata directly from appropriate table
@@ -673,14 +670,17 @@ dnd-kids-resources/
 │   ├── ARCHITECTURE.md             # This file
 │   ├── COLORS.md                   # Color reference
 │   ├── CONTRIBUTING.md             # Developer guide
-│   └── WORKSPACE_GUIDE.md          # Navigation guide
+│   └── planning/                   # Historical and design notes
 │
 ├── pages/                          # HTML card page templates
-│   ├── spell-cards.html
-│   ├── condition-cards.html
-│   ├── creatures.html
-│   ├── skill-cards.html
-│   └── weapon-cards.html
+│   ├── resources.html
+│   ├── spell-cards-list.html
+│   ├── stat-block-parser.html
+│   ├── character-sheet.html
+│   ├── hp-tracker.html
+│   ├── turn-order-tracker.html
+│   ├── spell-slots.html
+│   └── dungeons-library.html
 │
 ├── data/                           # JSON data sources
 │   └── (static card data would go here)
@@ -689,12 +689,15 @@ dnd-kids-resources/
 │
 ├── js/                             # JavaScript modules
 │   ├── card-generator.js           # Core rendering engine
-│   ├── spells.js
-│   ├── conditions.js
-│   ├── creatures.js
-│   ├── skills.js
-│   ├── weapons.js
-│   └── bw-mode-toggle.js
+│   ├── spells-list.js
+│   ├── spells-v2.js
+│   ├── bw-mode-toggle.js
+│   ├── character-sheet.js
+│   ├── hp-tracker.js
+│   ├── turn-order.js
+│   ├── queue-helper.js
+│   ├── spell-slots.js
+│   └── wild-shapes.js
 │
 ├── css/
 │   └── styles.css                  # All styling
@@ -704,7 +707,8 @@ dnd-kids-resources/
 │
 └── _dev/                           # Development utilities
     ├── init_database.py
-    ├── reparse_dungeons.py
+    ├── seed_database.py
+    ├── parse_spells_api.py
     └── README.md
 ```
 
@@ -717,26 +721,33 @@ dnd-kids-resources/
 - `card-generator.js` (core), then one for each data type
 - `spells.js`, `conditions.js`, `weapons.js`
 
-**HTML Pages:** Plural of card type, lowercase, hyphenated
-- `pages/spell-cards.html`, `condition-cards.html`, `weapon-cards.html`
+**HTML Pages:** Plural, lowercase, hyphenated
+- `pages/resources.html`
+- `pages/spell-cards-list.html`
+- `pages/stat-block-parser.html`
+- `pages/character-sheet.html`
+- `pages/hp-tracker.html`
+- `pages/turn-order-tracker.html`
+- `pages/spell-slots.html`
+- `pages/dungeons-library.html`
 
 **CSS Classes:** Lowercase, hyphenated, semantic
 - `.card`, `.card-header`, `.card-body`, `.card-footer`
 - `.page`, `.page-header`, `.page-title`
-- Color classes: `.level1`, `.wizard`, `.blinded`, `.simple-melee`
+- Color classes: `.level1`, `.cantrip`, `.blinded`, `.simple-melee`
 
 ---
 
 ## Data Flow Diagram
 
 ```
-User opens pages/spell-cards.html
+User opens pages/spell-cards-list.html
              ↓
 Browser loads HTML + CSS + JavaScript
              ↓
-spells.js DOMContentLoaded event fires
+spells-list.js DOMContentLoaded event fires
              ↓
-fetch('../data/spells.json') with 3 fallback paths
+fetch('/api/spells') from the Flask server
              ↓
 JSON parsed into array of spell objects
              ↓

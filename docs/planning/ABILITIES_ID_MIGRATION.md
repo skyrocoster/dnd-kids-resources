@@ -1,6 +1,6 @@
 # Abilities ID System Migration - Complete
 
-> **📋 HISTORICAL DOCUMENT** — Completed April 2026. This documents the migration to ID-based abilities references. For current abilities system, see [ABILITIES_WITH_SKILLS.md](ABILITIES_WITH_SKILLS.md) or the abilities table schema in [SCHEMA_DESIGN.md](../architecture/SCHEMA_DESIGN.md).
+> **📋 HISTORICAL DOCUMENT** — Completed April 2026. This documents the migration to ID-based abilities references. The current branch may no longer use the older `data/seed_spells.json` path. For current abilities system, see [ABILITIES_WITH_SKILLS.md](ABILITIES_WITH_SKILLS.md) or the abilities table schema in [SCHEMA_DESIGN.md](../architecture/SCHEMA_DESIGN.md).
 
 ## Overview
 Successfully migrated the abilities system from code-based references to ID-based references. This allows better data integrity and flexibility in the seed system.

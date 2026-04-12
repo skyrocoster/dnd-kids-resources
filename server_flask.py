@@ -15,13 +15,6 @@ import re
 import sqlite3
 from parse_dungeon import DungeonHTMLParser  # type: ignore
 
-try:
-    from parse_statblock import StatBlockParser  # type: ignore
-except ImportError as exc:
-    StatBlockParser = None  # type: ignore
-    print('[WARNING] parse_statblock module not available; /api/parse-statblock is disabled.', file=sys.stderr)
-    print(f'[WARNING] ImportError: {exc}', file=sys.stderr)
-
 from flask import Flask, jsonify, send_from_directory, request
 import webbrowser
 
@@ -312,8 +305,10 @@ def enrich_roll_object(roll_obj, conn):
 
     # Always enrich explicit damage type strings via damage_types metadata.
     if 'type' in enriched_roll and isinstance(enriched_roll['type'], str) and enriched_roll['type'].strip():
-        enriched_roll['type_ids'] = enrich_damage_types(
-            [enriched_roll['type'].strip()], conn)
+        type_code = enriched_roll['type'].strip().lower()
+        if type_code not in ['melee', 'ranged']:
+            enriched_roll['type_ids'] = enrich_damage_types(
+                [enriched_roll['type'].strip()], conn)
 
     if 'type_ids' in enriched_roll:
         enriched_roll['type_ids'] = enrich_damage_types(
@@ -494,17 +489,19 @@ def convert_db_creature_to_api_format(creature_row, conn=None):
     number_map = {'A': '1️⃣', 'B': '2️⃣', 'C': '3️⃣', 'D': '4️⃣',
                   'E': '5️⃣', '1': '1️⃣', '2': '2️⃣', '3': '3️⃣'}
 
+    attack_to_hit_list = attack_to_hit if isinstance(attack_to_hit, list) else []
+    damage_list = damage if isinstance(damage, list) else []
+
     # Check if we have paired rolls (multiple to_hit and damage with same count)
     has_paired_rolls = (
-        isinstance(attack_to_hit, list) and isinstance(damage, list) and
-        len(attack_to_hit) > 1 and len(damage) > 1 and
-        len(attack_to_hit) == len(damage)
+        len(attack_to_hit_list) > 1 and len(damage_list) > 1 and
+        len(attack_to_hit_list) == len(damage_list)
     )
 
     if attack_to_hit or damage:
         if has_paired_rolls:
             # Pair rolls and damages together: roll1, damage1, roll2, damage2, etc.
-            for i, (to_hit_roll, damage_roll) in enumerate(zip(attack_to_hit, damage)):
+            for i, (to_hit_roll, damage_roll) in enumerate(zip(attack_to_hit_list, damage_list)):
                 roll_name = to_hit_roll.get('name', None) if isinstance(
                     to_hit_roll, dict) else None
 
@@ -512,7 +509,7 @@ def convert_db_creature_to_api_format(creature_row, conn=None):
                 if roll_name and roll_name != 'A':
                     label_prefix = roll_name
                 else:
-                    label_prefix = number_map.get(roll_name, '1️⃣')
+                    label_prefix = number_map.get(roll_name if isinstance(roll_name, str) else 'A', '1️⃣')
 
                 # Add roll with attack name
                 enriched_roll = enrich_roll_object(to_hit_roll, conn)
@@ -648,7 +645,7 @@ def convert_db_creature_to_api_format(creature_row, conn=None):
             })
 
     # Get lowercased title (for CSS class) and capitalize for display
-    title_lower = creature_dict.get('title', 'unknown')
+    title_lower = str(creature_dict.get('title', 'unknown'))
     title_display = title_lower.capitalize()
 
     # Use creature type as level for card coloring (CSS will style .card.beast, .card.humanoid, etc.)
@@ -658,10 +655,10 @@ def convert_db_creature_to_api_format(creature_row, conn=None):
     # Build footer info with type and size
     footer_info = []
     size = creature_dict.get('size', '')
-    if size and creature_type_emoji:
+    if size and creature_type_emoji and creature_type_code:
         footer_info.append(
             f"{creature_type_emoji} {creature_type_code.capitalize()}")
-        footer_info.append(size.capitalize())
+        footer_info.append(str(size).capitalize())
 
     result = {
         "icon": creature_dict.get('icon', '🦁'),
@@ -845,16 +842,18 @@ def convert_db_spell_to_api_format(spell_row, conn=None):
     # Number emoji mapping
     number_map = {'A': '1️⃣', 'B': '2️⃣', 'C': '3️⃣', 'D': '4️⃣', 'E': '5️⃣'}
 
+    to_hit_data_list = to_hit_data if isinstance(to_hit_data, list) else []
+    damage_data_list = damage_data if isinstance(damage_data, list) else []
+
     # Check if we have paired rolls (multiple to_hit and damage with same count)
     has_paired_rolls = (
-        isinstance(to_hit_data, list) and isinstance(damage_data, list) and
-        len(to_hit_data) > 1 and len(damage_data) > 1 and
-        len(to_hit_data) == len(damage_data)
+        len(to_hit_data_list) > 1 and len(damage_data_list) > 1 and
+        len(to_hit_data_list) == len(damage_data_list)
     )
 
     if has_paired_rolls:
         # Pair rolls and damages together: roll1, damage1, roll2, damage2, etc.
-        for i, (to_hit_roll, damage_roll) in enumerate(zip(to_hit_data, damage_data)):
+        for i, (to_hit_roll, damage_roll) in enumerate(zip(to_hit_data_list, damage_data_list)):
             element_name = None
             if has_meaningful_spell_roll(to_hit_roll):
                 roll_name = to_hit_roll.get('name', None) if isinstance(
@@ -967,12 +966,16 @@ def convert_db_spell_to_api_format(spell_row, conn=None):
         details.append({"label": "Range:", "color": detail_color, "content": range_data})
 
     # Return in API format
+    # Parse spell_text into a structured explanation if it is stored as JSON
+    spell_text_data = parse_json_field(spell_dict.get('spell_text'))
+    explanation_content = spell_text_data if spell_text_data is not None else spell_dict.get('spell_text') or spell_dict.get('explanation', '')
+
     result = {
         "icon": spell_dict.get('icon', '✨'),
         "level": spell_dict.get('level', 'cantrip'),
         "school": spell_dict.get('school', 'Evocation'),
         "title": spell_dict.get('spell_name') or spell_dict.get('title', 'Unknown'),
-        "explanation": spell_dict.get('spell_text') or spell_dict.get('explanation', ''),
+        "explanation": explanation_content,
         "details": details,
         "classes": parse_json_field(spell_dict.get('classes')) or [],
         "casting_time": casting_time_text or ''
@@ -1859,193 +1862,6 @@ def queue_get_recent():
     
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
-
-# ============================================================================
-# STATBLOCK PARSER ENDPOINTS
-# ============================================================================
-
-@app.route('/api/parse-statblock', methods=['POST'])
-def parse_statblock():
-    """
-    API endpoint: POST /api/parse-statblock
-    
-    Parse a D&D 5e stat block and optionally insert into database.
-    
-    Request JSON:
-    {
-        "statblock": "Goblin\nSmall Humanoid...",
-        "insert": true,  // Optional: if true, inserts creature into DB
-        "model_path": "path/to/model.gguf"  // Optional: custom model path
-    }
-    
-    Response:
-    {
-        "success": true,
-        "parsed": {
-            "title": "Goblin",
-            "icon": "👹",
-            "size": "Small",
-            "creature_type": "humanoid",
-            "hp": 7,
-            "ac": 15,
-            ...
-        },
-        "inserted_id": 42,  // If insert=true
-        "inserted": true
-    }
-    """
-    try:
-        data = request.get_json()
-        if not data or 'statblock' not in data:
-            return jsonify({"error": "Missing 'statblock' field in request body"}), 400
-        
-        statblock_text = data['statblock']
-        should_insert = data.get('insert', False)
-        model_path = data.get('model_path', None)
-        
-        if StatBlockParser is None:
-            return jsonify({
-                "error": "StatBlockParser is not installed or parse_statblock.py is missing.",
-                "installed": False
-            }), 503
-
-        # Initialize parser
-        print(f"[PARSE] Initializing StatBlockParser...")
-        parser = StatBlockParser(model_path)
-        
-        # Parse the stat block
-        print(f"[PARSE] Parsing stat block: {statblock_text[:100]}...")
-        raw_response = parser.parse_and_format_for_db(statblock_text)
-        
-        result = {
-            "success": True,
-            "raw_response": raw_response,
-            "inserted": False
-        }
-        
-        # Handle insertion if requested
-        should_insert = data.get('insert', False)
-        if should_insert:
-            try:
-                # Parse the raw JSON response if it's a string
-                if isinstance(raw_response, str):
-                    parsed_data = json.loads(raw_response)
-                else:
-                    parsed_data = raw_response
-                
-                # Prepare database record
-                conn = get_db_connection()
-                cursor = conn.cursor()
-                
-                # Look up creature_type_id from code
-                creature_type_code = parsed_data.get('creature_type', 'humanoid').lower()
-                cursor.execute(
-                    "SELECT id FROM creature_types WHERE code = ?",
-                    (creature_type_code,)
-                )
-                type_row = cursor.fetchone()
-                creature_type_id = type_row[0] if type_row else None
-                
-                # Convert special array to JSON string if needed
-                special_json = json.dumps(parsed_data.get('special', []))
-                
-                # Check if creature already exists by title
-                creature_title = parsed_data.get('title', 'Unknown')
-                cursor.execute("SELECT id FROM creatures WHERE title = ?", (creature_title,))
-                existing = cursor.fetchone()
-                
-                if existing:
-                    # Update existing creature
-                    creature_id = existing[0]
-                    cursor.execute("""
-                        UPDATE creatures 
-                        SET icon = ?, size = ?, creature_type_id = ?, hp = ?, ac = ?, 
-                            explanation = ?, attack_to_hit = ?, damage = ?, special = ?, stats = ?
-                        WHERE id = ?
-                    """, (
-                        parsed_data.get('icon', '?'),
-                        parsed_data.get('size', 'Medium'),
-                        creature_type_id,
-                        parsed_data.get('hp', 1),
-                        parsed_data.get('ac', 10),
-                        parsed_data.get('explanation', ''),
-                        json.dumps(parsed_data.get('attack_to_hit', [])),
-                        json.dumps(parsed_data.get('damage', [])),
-                        special_json,
-                        json.dumps(parsed_data.get('stats', {})),
-                        creature_id
-                    ))
-                    conn.commit()
-                    result['inserted'] = True
-                    result['inserted_id'] = creature_id
-                    result['inserted_creature_name'] = creature_title
-                    result['updated'] = True
-                    print(f"[PARSE] ✓ Updated '{creature_title}' (ID {creature_id}) in database")
-                else:
-                    # Insert new creature
-                    cursor.execute("""
-                        INSERT INTO creatures 
-                        (title, icon, size, creature_type_id, hp, ac, explanation, 
-                         attack_to_hit, damage, special, stats)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """, (
-                        creature_title,
-                        parsed_data.get('icon', '?'),
-                        parsed_data.get('size', 'Medium'),
-                        creature_type_id,
-                        parsed_data.get('hp', 1),
-                        parsed_data.get('ac', 10),
-                        parsed_data.get('explanation', ''),
-                        json.dumps(parsed_data.get('attack_to_hit', [])),
-                        json.dumps(parsed_data.get('damage', [])),
-                        special_json,
-                        json.dumps(parsed_data.get('stats', {}))
-                    ))
-                    conn.commit()
-                    creature_id = cursor.lastrowid
-                    result['inserted'] = True
-                    result['inserted_id'] = creature_id
-                    result['inserted_creature_name'] = creature_title
-                    print(f"[PARSE] ✓ Inserted '{creature_title}' (ID {creature_id}) into database")
-                
-                conn.close()
-                
-            except json.JSONDecodeError as e:
-                print(f"[PARSE] ✗ JSON parse error: {e}")
-                return jsonify({
-                    "error": f"Could not parse model response as JSON",
-                    "raw_response": raw_response,
-                    "success": True
-                }), 400
-            except sqlite3.IntegrityError as e:
-                print(f"[PARSE] ✗ Integrity error: {e}")
-                return jsonify({
-                    "error": f"Creature already exists in database",
-                    "success": False
-                }), 409
-            except Exception as e:
-                print(f"[PARSE] ✗ Database error: {e}")
-                import traceback
-                traceback.print_exc()
-                return jsonify({
-                    "error": f"Database error: {str(e)}",
-                    "success": False
-                }), 500
-        
-        return jsonify(result), 200
-        
-    except ValueError as e:
-        print(f"[PARSE] ✗ Parse error: {e}")
-        return jsonify({"error": str(e), "success": False}), 400
-    except RuntimeError as e:
-        print(f"[PARSE] ✗ Runtime error: {e}")
-        return jsonify({"error": str(e), "success": False}), 500
-    except Exception as e:
-        print(f"[PARSE] ✗ Unexpected error: {e}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({"error": str(e), "success": False}), 500
 
 
 @app.route('/spell-cards-list')

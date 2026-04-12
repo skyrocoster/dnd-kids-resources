@@ -203,7 +203,6 @@ function renderContentWithPlaceholders(contentStr, boxText = 'SAM', rollObj = nu
           nameSpan.textContent = damageType.name || damageCode;
           if (damageType.color) {
             nameSpan.style.color = damageType.color;
-            nameSpan.style.fontWeight = 'bold';
           }
           damageSpan.appendChild(nameSpan);
           
@@ -457,14 +456,14 @@ function reconstructDatabaseRoll(rollObj) {
     });
     damageTypes.push(...typeDisplays);
   } else if (rollObj.type && typeof rollObj.type === 'string' && rollObj.type.trim()) {
-    damageTypes.push(`[DAMAGE:${rollObj.type.trim()}]`);
+    damageTypes.push(`[DAMAGE:${rollObj.type.trim().toLowerCase()}]`);
   }
   
   let parts = [rollPart];
   
   // Add damage types immediately after the dice notation
   if (damageTypes.length > 0) {
-    parts.push(...damageTypes);
+    parts.push(`(${damageTypes.join(', ')})`);
   }
   
   // Add numeric modifiers with ability enrichment from database
@@ -497,7 +496,13 @@ function reconstructDatabaseRoll(rollObj) {
   }
   
   // Combine: "1d4" + "+ [SAD]" = "1d4 + [SAD]"
-  let result = parts.join(' + ');
+  let result;
+  const lastPart = parts[parts.length - 1];
+  if (parts.length > 1 && lastPart.startsWith('(') && lastPart.endsWith(')')) {
+    result = parts.slice(0, -1).join(' + ') + ' ' + lastPart;
+  } else {
+    result = parts.join(' + ');
+  }
   
   // Add descriptors in parentheses ONLY if present (don't add empty parens)
   if (descriptors.length > 0) {
@@ -573,13 +578,13 @@ function renderDetailContent(detail) {
       }
     }
 
-    if (content.includes('<') && !content.includes('[STAT:') && !content.includes('[SAM]') && !content.includes('[SAD]') && !content.includes('[DAMAGE:]') && !content.includes('[BOX]')) {
+    if (content.includes('<') && !content.includes('[STAT:') && !content.includes('[SAM]') && !content.includes('[SAD]') && !content.includes('[DAMAGE:') && !content.includes('[BOX]')) {
       const span = document.createElement('span');
       span.innerHTML = content;
       return span;
     }
 
-    if (content.includes('[BOX]') || content.includes('[STAT:') || content.includes('[SAD]') || content.includes('[SAM]') || content.includes('[DAMAGE:]')) {
+    if (content.includes('[BOX]') || content.includes('[STAT:') || content.includes('[SAD]') || content.includes('[SAM]') || content.includes('[DAMAGE:')) {
       const rollObj = detail.content && typeof detail.content === 'object' ? detail.content : detail;
       const boxText = detail.hands ? 'BtH' : 'SAM';
       const fragment = renderContentWithPlaceholders(content, boxText, rollObj);
@@ -593,17 +598,16 @@ function renderDetailContent(detail) {
 
   if (Array.isArray(content)) {
     const fragment = document.createDocumentFragment();
-    content.forEach((item, index) => {
-      fragment.appendChild(renderDetailContent({ content: item }));
-      if (index < content.length - 1) {
-        fragment.appendChild(document.createTextNode(' '));
-      }
+    content.forEach((item) => {
+      const paragraph = document.createElement('p');
+      paragraph.appendChild(renderDetailContent({ content: item }));
+      fragment.appendChild(paragraph);
     });
     return fragment;
   }
 
   if (content && typeof content === 'object') {
-    if (content.roll !== undefined || content.numerics !== undefined || content.type_ids !== undefined || content.types !== undefined) {
+    if (content.roll !== undefined || content.numerics !== undefined || content.types !== undefined || (content.type_ids !== undefined && content.roll !== undefined)) {
       const displayText = reconstructDatabaseRoll(content);
       const fragment = renderContentWithPlaceholders(displayText, content.hands ? 'BtH' : 'SAM', content);
       if (fragment) return fragment;
@@ -612,7 +616,7 @@ function renderDetailContent(detail) {
 
     if (content.amount !== undefined || content.type !== undefined || content.save !== undefined || content.save_success !== undefined) {
       const formatted = formatSpellDetailObject(content);
-      if (formatted.includes('[STAT:') || formatted.includes('[SAD]') || formatted.includes('[SAM]') || formatted.includes('[BOX]') || formatted.includes('[DAMAGE:]')) {
+      if (formatted.includes('[STAT:') || formatted.includes('[SAD]') || formatted.includes('[SAM]') || formatted.includes('[BOX]') || formatted.includes('[DAMAGE:')) {
         return renderContentWithPlaceholders(formatted, content.hands ? 'BtH' : 'SAM', content);
       }
       return document.createTextNode(formatted);
@@ -637,16 +641,23 @@ function formatSpellDetailObject(detailObj) {
     return 'none';
   }
 
-  // Spell attack objects with only type should display a default spell attack roll
-  if ((detailObj.type === 'ranged' || detailObj.type === 'melee') && (detailObj.amount === undefined || detailObj.amount === null || detailObj.amount === '')) {
-    return '1d20 + [SAM]';
+  // Spell attack objects should display a default spell attack roll using SAM
+  if (detailObj.type === 'ranged' || detailObj.type === 'melee') {
+    const amountText = detailObj.amount !== undefined && detailObj.amount !== null ? String(detailObj.amount).trim() : '';
+    const typeLabel = ` (${String(detailObj.type).trim().toLowerCase()})`;
+    if (!amountText || amountText.toLowerCase() === '1d20') {
+      return `1d20 + [SAM]${typeLabel}`;
+    }
+    if (amountText.startsWith('1d20') && !amountText.includes('[SAM]') && !amountText.includes('[SAD]')) {
+      return `${amountText} + [SAM]${typeLabel}`;
+    }
   }
 
   const parts = [];
   if (detailObj.amount !== undefined && detailObj.amount !== null && detailObj.amount !== '') {
     parts.push(String(detailObj.amount));
   }
-  if (detailObj.type !== undefined && detailObj.type !== null && detailObj.type !== '') {
+  if ((detailObj.amount === undefined || detailObj.amount === '') && detailObj.type !== undefined && detailObj.type !== null && detailObj.type !== '') {
     parts.push(String(detailObj.type));
   }
   if ((detailObj.amount === undefined || detailObj.amount === '') && detailObj.save) {
@@ -657,8 +668,26 @@ function formatSpellDetailObject(detailObj) {
       parts.push(String(saveValue).toUpperCase());
     }
   }
+
+  if (detailObj.MOD !== undefined && detailObj.MOD !== null && detailObj.MOD !== '') {
+    const modCode = String(detailObj.MOD).trim().toUpperCase();
+    if (parts.length > 0) {
+      parts.push('+');
+    }
+    parts.push(`[STAT:${modCode}]`);
+  }
+
   if (detailObj.save_success !== undefined && detailObj.save_success !== null && detailObj.save_success !== '' && detailObj.save_success !== 'none') {
     parts.push(`save ${detailObj.save_success}`);
+  }
+
+  if (detailObj.type !== undefined && detailObj.type !== null && detailObj.type !== '') {
+    const damagePlaceholder = `[DAMAGE:${String(detailObj.type).trim().toLowerCase()}]`;
+    if (detailObj.amount !== undefined && detailObj.amount !== null && detailObj.amount !== '') {
+      parts.push(`(${damagePlaceholder})`);
+    } else {
+      parts.push(damagePlaceholder);
+    }
   }
 
   if (parts.length > 0) {
@@ -728,7 +757,7 @@ function buildDetailRow(detail) {
   label.textContent = detail.label || '';
   detailRow.appendChild(label);
 
-  const value = document.createElement('span');
+  const value = document.createElement('div');
   value.className = 'detail-value';
 
   let detailToRender = detail;
@@ -879,7 +908,7 @@ function createCardElement(data, onHideCallback, options = {}) {
   const body = document.createElement('div');
   body.className = 'card-body';
   
-  const explanation = document.createElement('p');
+  const explanation = document.createElement('div');
   explanation.className = 'simple-explanation';
   
   // For custom cards, add writable space instead of text
@@ -891,17 +920,30 @@ function createCardElement(data, onHideCallback, options = {}) {
   } else {
     let explanationContent = tryParseJsonString(data.explanation);
     if (Array.isArray(explanationContent)) {
-      explanationContent = explanationContent.filter(Boolean).join(' ');
-    } else if (typeof explanationContent === 'object' && explanationContent !== null) {
-      explanationContent = JSON.stringify(explanationContent);
+      explanationContent.filter(Boolean).forEach(item => {
+        const paragraph = document.createElement('p');
+        const text = item === null || item === undefined ? '' : String(item);
+        if (text.includes('***')) {
+          paragraph.appendChild(renderStringWithLineBreaks(text));
+        } else {
+          paragraph.textContent = text;
+        }
+        explanation.appendChild(paragraph);
+      });
     } else {
-      explanationContent = explanationContent || '';
-    }
+      if (typeof explanationContent === 'object' && explanationContent !== null) {
+        explanationContent = JSON.stringify(explanationContent);
+      } else {
+        explanationContent = explanationContent || '';
+      }
 
-    if (typeof explanationContent === 'string' && explanationContent.includes('***')) {
-      explanation.appendChild(renderStringWithLineBreaks(explanationContent));
-    } else {
-      explanation.textContent = explanationContent;
+      const paragraph = document.createElement('p');
+      if (typeof explanationContent === 'string' && explanationContent.includes('***')) {
+        paragraph.appendChild(renderStringWithLineBreaks(explanationContent));
+      } else {
+        paragraph.textContent = explanationContent;
+      }
+      explanation.appendChild(paragraph);
     }
   }
   body.appendChild(explanation);

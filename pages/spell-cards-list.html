@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spell Cards List View - D&D Kids Resources</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@600;700;800&family=OpenDyslexic&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/styles.css">
+  <style>
+    body {
+      background: #c9a97a;
+      margin: 0;
+      min-height: 100vh;
+    }
+    .page-container-shell {
+      width: 100%;
+      max-width: 220mm;
+      margin: 0 auto;
+      padding: 10px;
+    }
+    .notes-bar {
+      background: #fdf3e3;
+      border: 2px solid #8b5e3c;
+      border-radius: 12px;
+      padding: 16px 18px;
+      margin-bottom: 14px;
+      color: #2c1810;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    #print-options {
+      background: #f0e8d8;
+      border: 2px solid #8b5e3c;
+      border-radius: 10px;
+      padding: 15px 20px;
+      margin-bottom: 16px;
+    }
+
+    .print-options-title {
+      font-weight: 700;
+      margin-bottom: 12px;
+      color: #2c1810;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .print-options-group {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 15px;
+    }
+
+    .print-option {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .print-option label {
+      font-weight: 600;
+      color: #2c1810;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .print-option select {
+      padding: 8px 10px;
+      border: 2px solid #8b5e3c;
+      background: white;
+      color: #2c1810;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 12px;
+      font-family: 'Nunito', sans-serif;
+    }
+
+    .print-option select:hover {
+      border-color: #6b4423;
+    }
+
+    .print-option select:focus {
+      outline: none;
+      border-color: #c0392b;
+      box-shadow: 0 0 4px rgba(192, 57, 43, 0.3);
+    }
+
+    .filter-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .level-btn {
+      padding: 8px 12px;
+      border: 2px solid #8b5e3c;
+      background: white;
+      color: #2c1810;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 12px;
+      transition: all 0.2s ease;
+    }
+
+    .level-btn:hover {
+      background: #e8dcc8;
+      transform: translateY(-1px);
+    }
+
+    .level-btn.active {
+      background: #c0392b;
+      color: white;
+      border-color: #a93226;
+    }
+    .notes-bar strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+
+    @page {
+      margin: 12mm;
+      size: A4;
+    }
+
+    @media print {
+      body {
+        background: white;
+      }
+      .notes-bar {
+        display: none;
+      }
+      .page-list {
+        padding-top: 18mm;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page-container-shell">
+    <div class="notes-bar">
+      <strong>List-style test page</strong>
+      Cards are rendered in a flexible vertical list with a wide A4-friendly width.
+    </div>
+    <div id="print-options">
+      <div class="print-options-title">Print Options</div>
+      <div class="print-options-group">
+        <div class="print-option">
+          <label for="range-display-mode">Range Display</label>
+          <select id="range-display-mode">
+            <option value="standard">Standard</option>
+            <option value="simple">Simple</option>
+          </select>
+        </div>
+        <div class="print-option">
+          <label>Spell Classes</label>
+          <div id="class-buttons" class="filter-buttons"></div>
+        </div>
+      </div>
+    </div>
+    <div id="page-container"></div>
+  </div>
+
+  <script src="../js/card-generator.js"></script>
+  <script src="../js/spells-list.js"></script>
+</body>
+</html>

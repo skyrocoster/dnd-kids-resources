@@ -1,6 +1,6 @@
 # Database Restructuring - Phase 1 & 2 Complete ✅
 
-> **📋 HISTORICAL DOCUMENT** — Completed April 2026. This documents work that is now in the past. For current database schema, see [SCHEMA_DESIGN.md](../architecture/SCHEMA_DESIGN.md).
+> **📋 HISTORICAL DOCUMENT** — Completed April 2026. This documents work that is now in the past. The current branch may use different seed files and page routes than the examples shown here. For current database schema, see [SCHEMA_DESIGN.md](../architecture/SCHEMA_DESIGN.md).
 
 ## Summary
 

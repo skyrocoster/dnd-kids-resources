@@ -1,150 +1,146 @@
 # File Structure Organization
 
 ## Root Directory
-Core application and entry points only:
-- `server_flask.py` - Main Flask server
-- `index.html` - Web application entry point
-- `requirements.txt` - Python dependencies
-- `README.md` - Project intro (points to /docs/)
-- `dnd_kids_resources.db` - SQLite database
+Key entry points and scripts:
+- `server_flask.py` — Main Flask server
+- `index.html` — Primary browser landing page
+- `launcher_gui.py` — Local GUI launcher and monitor helper
+- `requirements.txt` — Python dependencies
+- `README.md` — Project overview and quick start
+- `docs/` — Central documentation hub
 
 ## `/launchers`
-Startup scripts for the application:
-- `start-server.ps1` - Start Flask server (PowerShell)
-- `start_manual.bat` - Start queue worker manually (Batch)
-- `launch_manager.bat` - Database manager app (Batch)
-- `launch_queue_monitor.bat` - Start GUI queue monitor
+Startup helpers:
+- `launch_gui.bat` — Launch the GUI helper on Windows
+- `launch_gui.ps1` — Launch the GUI helper in PowerShell
+- `start-server.ps1` — Start the Flask server in PowerShell
 
 ## `/server`
-Server utilities:
-- `queue_monitor.py` - GUI application for monitoring/managing parsing queue
+Support code and server utilities for production or development
 
 ## `/tools`
-Development utilities and testing scripts:
-- `check_db_schema.py` - Inspect database schema
-- `check_spell.py` - Query and test spell data
-- `test_special_field.html` - HTML test page
+Developer utilities and helpers:
+- `check_db_schema.py` — Inspect database schema
+- `check_spell.py` — Query or validate spell data
+- `test_special_field.html` — Local page for HTML/CSS testing
 
 ## `/logs`
 Application logs (auto-generated at runtime):
-- `server.log` - Flask server logs
-- `flask_test.log` - Test logs
-- `server_test.log` - Server test logs
+- `server.log` — Flask server logs
+- `flask_test.log` — Test logs
+- `server_test.log` — Server test logs
 
 ## `/docs`
 **Central documentation hub** (organized by topic):
 
-### `/docs/guides` - Getting Started
-- `README.md` - Docs index and navigation hub
-- `GETTING_STARTED.md` - Setup and running the project
-- `FILE_STRUCTURE.md` - This file
+### `/docs/guides`
+- `README.md` — Docs index and navigation hub
+- `GETTING_STARTED.md` — Setup and running the project
+- `FILE_STRUCTURE.md` — This file
 
-### `/docs/architecture` - System Design
-- `ARCHITECTURE.md` - Component overview and data flow
-- `SCHEMA_DESIGN.md` - Database schema and data model
-- `schema_view.txt` - Full SQL schema dump
-- `DB_RESTRUCTURING_PLAN.md` - Database migration notes
+### `/docs/architecture`
+- `ARCHITECTURE.md` — Component overview and data flow
+- `SCHEMA_DESIGN.md` — Current database schema and seed sources
+- `schema_view.txt` — Full SQL schema dump
+- `DB_RESTRUCTURING_PLAN.md` — Historical schema cleanup notes
 
-### `/docs/development` - Contributing
-- `CONTRIBUTING.md` - How to add new features and cards
-- `COLORS.md` - Color system and styling reference
+### `/docs/development`
+- `CONTRIBUTING.md` — How to add cards and features
+- `COLORS.md` — Color and styling reference
 
-### `/docs/planning` - Project History
-- `PHASE_1_2_COMPLETE.md` - Completed work summary
-- `ABILITIES_WITH_SKILLS.md` - Skills integration notes
-- `ABILITIES_ID_MIGRATION.md` - Database migration history
-- `QUEUE_SYSTEM.md` - Job queue system design
-- `SCALING_PLAN.md` - Future scaling strategies
+### `/docs/planning`
+- `PHASE_1_2_COMPLETE.md` — Completed work summary
+- `ABILITIES_WITH_SKILLS.md` — Historical abilities integration notes
+- `ABILITIES_ID_MIGRATION.md` — Historical migration history
+- `QUEUE_SYSTEM.md` — Queue/AI parsing design notes
+- `SCALING_PLAN.md` — Future strategy and architecture ideas
 
 ## `/pages`
-HTML templates for card types and tools:
-- `spell-cards.html` - Spell card template
-- `condition-cards.html` - Condition card template
-- `creatures.html` - Creature card template
-- `skill-cards.html` - Skill card template
-- `weapon-cards.html` - Weapon card template
-- `character-sheet.html` - Character sheet
-- `hp-tracker.html` - HP tracking tool
-- `turn-order-tracker.html` - Turn order tracker
-- And others...
+Current browser pages and tools:
+- `resources.html` — Main resource hub and admin page
+- `spell-cards-list.html` — Spell cards list view
+- `stat-block-parser.html` — AI parser and queue UI
+- `character-sheet.html` — Printable character sheet
+- `hp-tracker.html` — Health tracker
+- `turn-order-tracker.html` — Initiative tracker
+- `spell-slots.html` — Spell slot tracker
+- `dungeons-library.html` — Dungeon upload/library
 
 ## `/js`
-JavaScript for interactive features:
-- `card-generator.js` - Core card rendering logic
-- `spells.js` - Spell card initializer
-- `conditions.js` - Condition card initializer
-- `creatures.js` - Creature card initializer
-- `skills.js` - Skill card initializer
-- `weapons.js` - Weapon card initializer
-- `bw-mode-toggle.js` - Black & white print preview toggle
-- `character-sheet.js` - Character sheet functionality
-- `hp-tracker.js` - HP tracker functionality
-- `turn-order.js` - Turn order tracker functionality
-- And other utilities...
+Client-side scripts:
+- `card-generator.js` — Core rendering engine
+- `spells-list.js` — Spell cards list view logic
+- `spells-v2.js` — Alternate spell cards UI
+- `bw-mode-toggle.js` — B&W print preview toggle
+- `character-sheet.js` — Character sheet behavior
+- `hp-tracker.js` — HP tracker logic
+- `turn-order.js` — Initiative tracker logic
+- `wild-shapes.js` — Wild shape card rendering
+- `queue-helper.js` — Queue support utilities
+- `spell-slots.js` — Spell slot tracker
 
 ## `/css`
-Styling (all in one main file):
-- `styles.css` - All styles (print-optimized for A4 9-card grid)
+- `styles.css` — Styling and print optimization for A4 card layout
 
 ## `/data`
-Seed data for database initialization:
-- `seed_spells.json` - Spell definitions
-- `seed_conditions.json` - Condition definitions
-- `seed_creatures.json` - Creature definitions
-- `seed_creature_types.json` - Creature types
-- `seed_damage_types.json` - Damage types
-- `seed_abilities.json` - Abilities and modifiers
-- `seed_traps.json` - Trap definitions
-- `seed_dungeons.json` - Dungeon definitions
+Seed and source data files:
+- `5eAPI/spells.json` — Spell metadata source
+- `seed_conditions.json` — Condition card seeds
+- `seed_creature_types.json` — Creature type metadata
+- `seed_creatures.json` — Creature/wild-shape seeds
+- `seed_damage_types.json` — Damage type metadata
+- `seed_abilities.json` — Abilities, skills, and modifiers
+- `seed_traps.json` — Trap definitions
+- `seed_dungeons.json` — Dungeon module seeds
 
 ## `/_dev`
 Development utilities for database and testing:
-- `init_database.py` - Create database schema
-- `seed_database.py` - Load seed data
-- `queue_worker.py` - Background job processor for AI parsing
-- Migration scripts and testing utilities
+- `init_database.py` — Create the SQLite schema
+- `seed_database.py` — Populate the database from JSON sources
+- `extract_5eapi_spells.py` — Spell parsing helper
+- `parse_spells_api.py` — Convert 5eAPI spell data to app schema
+- `reparse_dungeons.py` — Reparse dungeon HTML data
+- `test_spell_parsing.py` — Parser test harness
+- `view_abilities.py` — Ability metadata inspection
 
 ## `/lib`
-Python library code for parsing and utilities:
-- `parse_statblock.py` - AI-powered stat block parser
-- `parse_dungeon.py` - Dungeon parsing logic
-- And other utilities
+Python library code:
+- `parse_dungeon.py` — Dungeon HTML parser
+- Other utility modules
 
 ## `/models`
 AI model files:
-- `mistral-7b-instruct-v0.1.Q4_K_M.gguf` - Local LLM for parsing
+- `mistral-7b-instruct-v0.1.Q4_K_M.gguf` — Local model file
 
 ## Hidden/System Directories
 
-- `.venv/` - Python virtual environment (git-ignored)
-- `.git/` - Git repository
-- `.github/` - GitHub workflow files
-- `.vscode/` - VS Code settings
-- `__pycache__/` - Python bytecode cache
-- `.gitignore` - Git ignore rules
+- `.venv/` — Python virtual environment (git-ignored)
+- `.git/` — Git repository
+- `.github/` — GitHub workflow files
+- `.vscode/` — VS Code settings
+- `__pycache__/` — Python bytecode cache
+- `.gitignore` — Git ignore rules
 
 ## Quick Navigation
 
 **To start the app:**
-- `launchers/start-server.ps1` (PowerShell on Windows)
+- `launchers/start-server.ps1`
 
 **To see documentation:**
-- `docs/README.md` - Full documentation hub
+- `docs/README.md`
 
-**To manage database:**
-- `_dev/init_database.py` - Create schema
-- `_dev/seed_database.py` - Load data
-- `tools/check_db_schema.py` - Inspect schema
+**To rebuild the database:**
+- `python _dev/init_database.py`
+- `python _dev/seed_database.py --force`
 
-**To add new spells:**
-- Edit `data/seed_spells.json`
-- Run `python _dev/seed_database.py --force`
+**To inspect the schema:**
+- `tools/check_db_schema.py`
 
 ---
 
-All code is organized with a clear separation of concerns:
-- **Frontend** (pages, js, css, data)
-- **Backend** (server_flask.py, lib/)
-- **Tools** (tools, launchers)
-- **Development** (_dev)
-- **Documentation** (docs)
+The repo is organized around a clear separation of concerns:
+- **Frontend**: pages, js, css, data
+- **Backend**: server_flask.py, lib/
+- **Data**: data/, dnd_kids_resources.db
+- **Developer tools**: _dev/, tools/, launchers/
+- **Documentation**: docs/
