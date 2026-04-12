@@ -148,6 +148,7 @@ function renderContentWithPlaceholders(contentStr, boxText = 'SAM', rollObj = nu
     }
   }
   
+  
   // Fallback emoji mappings
   const defaultEmojis = {
     'str': '💪', 'dex': '⚡', 'con': '❤️', 'int': '🧠', 'wis': '👁️', 'cha': '✨'
@@ -215,7 +216,7 @@ function renderContentWithPlaceholders(contentStr, boxText = 'SAM', rollObj = nu
     } else if (part.startsWith('[STAT:')) {
       const match = part.match(/\[STAT:(\w+)\]/);
       if (match) {
-        const abilityCode = match[1];
+        const abilityCode = match[1].toLowerCase();
         const ability = abilityMetadata[abilityCode];
         if (ability) {
           const emoji = document.createElement('span');
@@ -226,11 +227,22 @@ function renderContentWithPlaceholders(contentStr, boxText = 'SAM', rollObj = nu
           if (ability.color) boxElement.style.backgroundColor = ability.color;
           fragment.appendChild(boxElement);
         } else {
-          const abilitySpan = document.createElement('span');
-          abilitySpan.className = `ability-${abilityCode}`;
+          const boxElement = createModifierBox(abilityCode.toUpperCase());
           const emoji = defaultEmojis[abilityCode] || '';
-          abilitySpan.textContent = `${emoji} ${abilityCode.toUpperCase()}`;
-          fragment.appendChild(abilitySpan);
+          if (emoji) {
+            const emojiSpan = document.createElement('span');
+            emojiSpan.textContent = `${emoji} `;
+            fragment.appendChild(emojiSpan);
+          }
+          const abilityColors = {
+            'str': '#c0392b', 'dex': '#1e8449', 'con': '#e67e22',
+            'int': '#2471a3', 'wis': '#8e44ad', 'cha': '#f39c12'
+          };
+          const bgColor = abilityColors[abilityCode];
+          if (bgColor) {
+            boxElement.style.backgroundColor = bgColor;
+          }
+          fragment.appendChild(boxElement);
         }
       }
     } else {
@@ -362,13 +374,47 @@ function formatRangeObject(rangeObj) {
   return result || 'none';
 }
 
+function getRangeDisplayMode() {
+  return localStorage.getItem('range_display_mode') || 'standard';
+}
+
+function simplifyRangeString(rangeText) {
+  if (typeof rangeText !== 'string') return rangeText;
+  const clean = rangeText.trim().toLowerCase();
+
+  if (clean.includes('touch')) {
+    return 'Touch';
+  }
+  if (clean.includes('self') || clean.includes('sight') || clean.includes('unlimited') || clean.includes('special')) {
+    return 'Very Long';
+  }
+
+  const match = clean.match(/(\d+)\s*feet/);
+  if (match) {
+    const feet = parseInt(match[1], 10);
+    if (feet <= 30) return 'Short';
+    if (feet <= 60) return 'Medium';
+    if (feet <= 120) return 'Long';
+    return 'Very Long';
+  }
+
+  return 'Very Long';
+}
+
 function reconstructDatabaseRoll(rollObj) {
   if (!rollObj || typeof rollObj !== 'object') return 'none';
   
-  if (!rollObj.roll) return 'none';
-  
   let rollPart;
   let damageTypes = [];
+  
+  if (!rollObj.roll) {
+    // Legacy damage object format: {amount: "1d8", type: "lightning"}
+    if (rollObj.amount !== undefined && rollObj.amount !== null && rollObj.amount !== '') {
+      rollPart = String(rollObj.amount);
+    } else {
+      return 'none';
+    }
+  }
   
   // Handle new format: roll is an array of {dice: type} mappings
   if (Array.isArray(rollObj.roll) && rollObj.roll.length > 0) {
@@ -382,7 +428,7 @@ function reconstructDatabaseRoll(rollObj) {
         if (typeof damageType === 'object' && damageType.code) {
           damageTypes.push(`[DAMAGE:${damageType.code}]`);
         } else if (typeof damageType === 'string') {
-          damageTypes.push(damageType);
+          damageTypes.push(`[DAMAGE:${damageType}]`);
         }
         break; // Only use first mapping
       }
@@ -396,11 +442,30 @@ function reconstructDatabaseRoll(rollObj) {
       const sign = rollObj.mod > 0 ? '+' : '';
       rollPart = `${rollObj.roll} ${sign} ${rollObj.mod}`;
     }
-  } else {
-    return 'none';
+  }
+
+  if (rollObj.type_ids && (Array.isArray(rollObj.type_ids) ? rollObj.type_ids.length > 0 : typeof rollObj.type_ids === 'string' && rollObj.type_ids.trim() !== '')) {
+    // Map type_ids to include emoji if available (from enriched damage_types)
+    let typesList = Array.isArray(rollObj.type_ids) ? rollObj.type_ids : rollObj.type_ids.split(',').map(t => t.trim());
+    const typeDisplays = typesList.map(type => {
+      if (typeof type === 'object' && type.code) {
+        // Enriched damage type - always create placeholder even if emoji is missing
+        return `[DAMAGE:${type.code}]`;  // Placeholder that will be replaced during rendering
+      }
+      // Fallback for plain string
+      return `[DAMAGE:${type}]`;
+    });
+    damageTypes.push(...typeDisplays);
+  } else if (rollObj.type && typeof rollObj.type === 'string' && rollObj.type.trim()) {
+    damageTypes.push(`[DAMAGE:${rollObj.type.trim()}]`);
   }
   
   let parts = [rollPart];
+  
+  // Add damage types immediately after the dice notation
+  if (damageTypes.length > 0) {
+    parts.push(...damageTypes);
+  }
   
   // Add numeric modifiers with ability enrichment from database
   // Abilities now come with {code, name, emoji, color} from the API
@@ -420,30 +485,8 @@ function reconstructDatabaseRoll(rollObj) {
     }));
   }
   
-  // Build descriptor string - include damage types and shape, NOT actor or save (those go in label)
-  const descriptors = [];
-  
-  // Add damage types from new roll format
-  if (damageTypes.length > 0) {
-    descriptors.push(damageTypes.join(', '));
-  }
-  
-  // Legacy: Add damage types from old type_ids format (check if it's actually an array/list, not empty string)
-  if (rollObj.type_ids && (Array.isArray(rollObj.type_ids) ? rollObj.type_ids.length > 0 : typeof rollObj.type_ids === 'string' && rollObj.type_ids.trim() !== '')) {
-    // Map type_ids to include emoji if available (from enriched damage_types)
-    let typesList = Array.isArray(rollObj.type_ids) ? rollObj.type_ids : rollObj.type_ids.split(',').map(t => t.trim());
-    const typeDisplays = typesList.map(type => {
-      if (typeof type === 'object' && type.code) {
-        // Enriched damage type - always create placeholder even if emoji is missing
-        return `[DAMAGE:${type.code}]`;  // Placeholder that will be replaced during rendering
-      }
-      // Fallback for plain string
-      return typeof type === 'string' ? type : String(type);
-    });
-    descriptors.push(typeDisplays.join(', '));
-  }
-  
   // Add shape/AOE if present
+  const descriptors = [];
   if (rollObj.shape) {
     descriptors.push(rollObj.shape);
   }
@@ -506,17 +549,274 @@ function reconstructCreatureAttack(attackObj) {
   return parts.join(' / ');
 }
 
+function isSpellCard(data) {
+  return data && (data.level !== undefined || data.school !== undefined || data.explanation !== undefined);
+}
 
-function createCardElement(data, onHideCallback) {
+function renderDetailContent(detail) {
+  const content = detail && detail.content !== undefined ? detail.content : '';
+
+  if (typeof content === 'string') {
+      if (content.includes('***')) {
+        return renderStringWithLineBreaks(content);
+      }
+
+    const trimmed = content.trim();
+    if ((trimmed.startsWith('[') && trimmed.endsWith(']')) || (trimmed.startsWith('{') && trimmed.endsWith('}'))) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (parsed !== null && typeof parsed !== 'string') {
+          return renderDetailContent({ content: parsed });
+        }
+      } catch (e) {
+        // Not valid JSON, continue rendering as text
+      }
+    }
+
+    if (content.includes('<') && !content.includes('[STAT:') && !content.includes('[SAM]') && !content.includes('[SAD]') && !content.includes('[DAMAGE:]') && !content.includes('[BOX]')) {
+      const span = document.createElement('span');
+      span.innerHTML = content;
+      return span;
+    }
+
+    if (content.includes('[BOX]') || content.includes('[STAT:') || content.includes('[SAD]') || content.includes('[SAM]') || content.includes('[DAMAGE:]')) {
+      const rollObj = detail.content && typeof detail.content === 'object' ? detail.content : detail;
+      const boxText = detail.hands ? 'BtH' : 'SAM';
+      const fragment = renderContentWithPlaceholders(content, boxText, rollObj);
+      if (fragment) return fragment;
+    }
+
+    const span = document.createElement('span');
+    span.textContent = content;
+    return span;
+  }
+
+  if (Array.isArray(content)) {
+    const fragment = document.createDocumentFragment();
+    content.forEach((item, index) => {
+      fragment.appendChild(renderDetailContent({ content: item }));
+      if (index < content.length - 1) {
+        fragment.appendChild(document.createTextNode(' '));
+      }
+    });
+    return fragment;
+  }
+
+  if (content && typeof content === 'object') {
+    if (content.roll !== undefined || content.numerics !== undefined || content.type_ids !== undefined || content.types !== undefined) {
+      const displayText = reconstructDatabaseRoll(content);
+      const fragment = renderContentWithPlaceholders(displayText, content.hands ? 'BtH' : 'SAM', content);
+      if (fragment) return fragment;
+      return document.createTextNode(displayText);
+    }
+
+    if (content.amount !== undefined || content.type !== undefined || content.save !== undefined || content.save_success !== undefined) {
+      const formatted = formatSpellDetailObject(content);
+      if (formatted.includes('[STAT:') || formatted.includes('[SAD]') || formatted.includes('[SAM]') || formatted.includes('[BOX]') || formatted.includes('[DAMAGE:]')) {
+        return renderContentWithPlaceholders(formatted, content.hands ? 'BtH' : 'SAM', content);
+      }
+      return document.createTextNode(formatted);
+    }
+
+    if (content.distance !== undefined || content.target !== undefined || content.shape !== undefined) {
+      return document.createTextNode(formatRangeObject(content));
+    }
+
+    if (content.name !== undefined) {
+      return document.createTextNode(content.name);
+    }
+
+    return document.createTextNode(JSON.stringify(content));
+  }
+
+  return document.createTextNode(String(content || ''));
+}
+
+function formatSpellDetailObject(detailObj) {
+  if (!detailObj || typeof detailObj !== 'object') {
+    return 'none';
+  }
+
+  // Spell attack objects with only type should display a default spell attack roll
+  if ((detailObj.type === 'ranged' || detailObj.type === 'melee') && (detailObj.amount === undefined || detailObj.amount === null || detailObj.amount === '')) {
+    return '1d20 + [SAM]';
+  }
+
+  const parts = [];
+  if (detailObj.amount !== undefined && detailObj.amount !== null && detailObj.amount !== '') {
+    parts.push(String(detailObj.amount));
+  }
+  if (detailObj.type !== undefined && detailObj.type !== null && detailObj.type !== '') {
+    parts.push(String(detailObj.type));
+  }
+  if ((detailObj.amount === undefined || detailObj.amount === '') && detailObj.save) {
+    const saveValue = detailObj.save;
+    if (typeof saveValue === 'string' && /^[a-z]{3}$/i.test(saveValue.trim())) {
+      parts.push(`[STAT:${saveValue.trim().toUpperCase()}]`);
+    } else {
+      parts.push(String(saveValue).toUpperCase());
+    }
+  }
+  if (detailObj.save_success !== undefined && detailObj.save_success !== null && detailObj.save_success !== '' && detailObj.save_success !== 'none') {
+    parts.push(`save ${detailObj.save_success}`);
+  }
+
+  if (parts.length > 0) {
+    return parts.join(' ');
+  }
+
+  if (detailObj.name !== undefined && detailObj.name !== null) {
+    return String(detailObj.name);
+  }
+
+  return 'none';
+}
+
+function renderStringWithLineBreaks(text) {
+  if (typeof text !== 'string' || !text.includes('***')) {
+    return document.createTextNode(text || '');
+  }
+
+  const fragment = document.createDocumentFragment();
+  const parts = text.split('***');
+
+  parts.forEach((part, index) => {
+    fragment.appendChild(document.createTextNode(part));
+
+    // A delimiter exists between this part and the next.
+    // Only odd-numbered delimiters should become line breaks.
+    if (index < parts.length - 1) {
+      const delimiterIndex = index + 1; // 1-based delimiter count
+      if (delimiterIndex % 2 === 1) {
+        fragment.appendChild(document.createElement('br'));
+      }
+    }
+  });
+
+  return fragment;
+}
+
+function tryParseJsonString(value) {
+  if (typeof value !== 'string') return value;
+  const trimmed = value.trim();
+  if ((trimmed.startsWith('[') && trimmed.endsWith(']')) || (trimmed.startsWith('{') && trimmed.endsWith('}'))) {
+    try {
+      return JSON.parse(trimmed);
+    } catch (e) {
+      return value;
+    }
+  }
+  return value;
+}
+
+function renderPlainTextContent(content) {
+  if (Array.isArray(content)) {
+    return content.map(item => renderPlainTextContent(item)).join(' ').trim();
+  }
+  if (typeof content === 'object' && content !== null) {
+    return JSON.stringify(content);
+  }
+  return String(content || '');
+}
+
+function buildDetailRow(detail) {
+  const detailRow = document.createElement('div');
+  detailRow.className = 'card-detail-row';
+
+  const label = document.createElement('span');
+  label.className = 'detail-label';
+  label.textContent = detail.label || '';
+  detailRow.appendChild(label);
+
+  const value = document.createElement('span');
+  value.className = 'detail-value';
+
+  let detailToRender = detail;
+  if (typeof detail.label === 'string' && detail.label.toLowerCase().startsWith('range') && typeof detail.content === 'string' && getRangeDisplayMode() === 'simple') {
+    detailToRender = { ...detail, content: simplifyRangeString(detail.content) };
+  }
+
+  value.appendChild(renderDetailContent(detailToRender));
+  detailRow.appendChild(value);
+
+  return detailRow;
+}
+
+function hideCardPreview() {
+  const existing = document.getElementById('card-preview-popup');
+  if (existing) {
+    existing.remove();
+  }
+}
+
+function showCardPreview(cardData, triggerElement) {
+  if (!cardData || !triggerElement) return;
+
+  hideCardPreview();
+
+  const popup = document.createElement('div');
+  popup.id = 'card-preview-popup';
+  popup.className = 'card-preview-popup';
+
+  const card = createCardElement(cardData, null, { preview: true });
+  popup.appendChild(card);
+  document.body.appendChild(popup);
+
+  const rect = triggerElement.getBoundingClientRect();
+  let left = rect.left;
+  let top = rect.bottom + 8;
+
+  if (left + popup.offsetWidth > window.innerWidth - 10) {
+    left = window.innerWidth - popup.offsetWidth - 10;
+  }
+  if (top + popup.offsetHeight > window.innerHeight - 10) {
+    top = rect.top - popup.offsetHeight - 8;
+  }
+
+  popup.style.left = Math.max(10, left) + 'px';
+  popup.style.top = Math.max(10, top) + 'px';
+
+  triggerElement.addEventListener('mouseleave', hideCardPreview, { once: true });
+  document.addEventListener('click', function removeOnClick(e) {
+    if (!popup.contains(e.target) && e.target !== triggerElement) {
+      hideCardPreview();
+      document.removeEventListener('click', removeOnClick);
+    }
+  });
+}
+
+function attachCardPreviewHover(targetElement, cardDataOrLoader) {
+  if (!targetElement) return;
+
+  targetElement.addEventListener('mouseenter', async function() {
+    try {
+      const cardData = typeof cardDataOrLoader === 'function' ? await cardDataOrLoader() : cardDataOrLoader;
+      showCardPreview(cardData, this);
+    } catch (error) {
+      console.warn('Card preview failed to load:', error);
+    }
+  });
+
+  targetElement.addEventListener('mouseleave', hideCardPreview);
+}
+
+function createCardElement(data, onHideCallback, options = {}) {
   const card = document.createElement('div');
   
-  // Normalize spell level for CSS class (convert "1" to "level1", keep "cantrip" as-is)
+  // Normalize spell level for CSS class (convert numeric levels to levelN and keep cantrip as-is)
   let levelClass = data.level;
-  if (data.level && /^\d+$/.test(data.level)) {
-    levelClass = `level${data.level}`;
+  if (data.level !== undefined && data.level !== null) {
+    if (String(data.level) === '0') {
+      levelClass = 'cantrip';
+    } else if (/^\d+$/.test(String(data.level))) {
+      levelClass = `level${data.level}`;
+    }
   }
   
   card.className = `card ${levelClass}`;
+  if (options.preview) {
+    card.classList.add('preview-card');
+  }
   
   // Add card ID for hide functionality (use spell/card ID if available, otherwise use title)
   if (data.id) {
@@ -524,44 +824,46 @@ function createCardElement(data, onHideCallback) {
   } else if (data.title) {
     card.id = `card-${data.title.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
   }
-  
-  // Add hide checkbox
-  const checkbox = document.createElement('input');
-  checkbox.type = 'checkbox';
-  checkbox.className = 'card-hide-checkbox';
-  checkbox.title = 'Hide this card';
-  checkbox.addEventListener('change', function() {
-    // Add to hidden list
+
+  if (!options.preview) {
+    // Add hide checkbox
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.className = 'card-hide-checkbox';
+    checkbox.title = 'Hide this card';
+    checkbox.addEventListener('change', function() {
+      // Add to hidden list
+      const hiddenCards = JSON.parse(localStorage.getItem('hidden_cards') || '[]');
+      if (this.checked) {
+        if (!hiddenCards.includes(card.id)) {
+          hiddenCards.push(card.id);
+        }
+      } else {
+        const index = hiddenCards.indexOf(card.id);
+        if (index > -1) {
+          hiddenCards.splice(index, 1);
+        }
+      }
+      localStorage.setItem('hidden_cards', JSON.stringify(hiddenCards));
+      
+      // Call the callback to re-render
+      if (onHideCallback) {
+        onHideCallback();
+      }
+      
+      // Show/hide reset button
+      const resetBtn = document.getElementById('reset-hidden-btn');
+      if (resetBtn) {
+        resetBtn.style.display = hiddenCards.length > 0 ? 'inline-block' : 'none';
+      }
+    });
+    card.appendChild(checkbox);
+    
+    // Set checkbox to checked if this card is currently hidden
     const hiddenCards = JSON.parse(localStorage.getItem('hidden_cards') || '[]');
-    if (this.checked) {
-      if (!hiddenCards.includes(card.id)) {
-        hiddenCards.push(card.id);
-      }
-    } else {
-      const index = hiddenCards.indexOf(card.id);
-      if (index > -1) {
-        hiddenCards.splice(index, 1);
-      }
+    if (hiddenCards.includes(card.id)) {
+      checkbox.checked = true;
     }
-    localStorage.setItem('hidden_cards', JSON.stringify(hiddenCards));
-    
-    // Call the callback to re-render
-    if (onHideCallback) {
-      onHideCallback();
-    }
-    
-    // Show/hide reset button
-    const resetBtn = document.getElementById('reset-hidden-btn');
-    if (resetBtn) {
-      resetBtn.style.display = hiddenCards.length > 0 ? 'inline-block' : 'none';
-    }
-  });
-  card.appendChild(checkbox);
-  
-  // Set checkbox to checked if this card is currently hidden
-  const hiddenCards = JSON.parse(localStorage.getItem('hidden_cards') || '[]');
-  if (hiddenCards.includes(card.id)) {
-    checkbox.checked = true;
   }
   
   // Card header
@@ -587,7 +889,20 @@ function createCardElement(data, onHideCallback) {
     explanation.style.alignItems = 'flex-end';
     explanation.textContent = '';
   } else {
-    explanation.textContent = data.explanation;
+    let explanationContent = tryParseJsonString(data.explanation);
+    if (Array.isArray(explanationContent)) {
+      explanationContent = explanationContent.filter(Boolean).join(' ');
+    } else if (typeof explanationContent === 'object' && explanationContent !== null) {
+      explanationContent = JSON.stringify(explanationContent);
+    } else {
+      explanationContent = explanationContent || '';
+    }
+
+    if (typeof explanationContent === 'string' && explanationContent.includes('***')) {
+      explanation.appendChild(renderStringWithLineBreaks(explanationContent));
+    } else {
+      explanation.textContent = explanationContent;
+    }
   }
   body.appendChild(explanation);
   
@@ -606,7 +921,11 @@ function createCardElement(data, onHideCallback) {
       detailRow.style.display = 'block';
       detailRow.style.marginBottom = '3px';
       detailRow.style.lineHeight = '1.4';
-      detailRow.textContent = data.details;
+      if (data.details.includes('***')) {
+        detailRow.appendChild(renderStringWithLineBreaks(data.details));
+      } else {
+        detailRow.textContent = data.details;
+      }
       detailsDiv.appendChild(detailRow);
     } else if (Array.isArray(data.details)) {
       // Check if it's the new format (with labels)
@@ -646,98 +965,9 @@ function createCardElement(data, onHideCallback) {
   });
   
   detailsToRender.forEach(detail => {
-    const detailRow = document.createElement('div');
-    detailRow.style.display = 'block';
-    detailRow.style.marginBottom = '3px';
-    detailRow.style.lineHeight = '1.4';
-    
-    const label = document.createElement('span');
-    label.className = 'label';
-    label.style.display = 'inline';
-    label.style.marginRight = '2px';
-    
-    // Use the label as provided by the API (Flask now handles To Hit vs Save)
-    label.textContent = detail.label;
-    detailRow.appendChild(label);
-    
-    // Reconstruct roll data if it's a structured roll object
-    let displayContent = detail.content;
-    let isHtmlContent = false;
-    
-    if (Array.isArray(detail.content)) {
-      // Handle arrays of roll objects (e.g., multiple damage rolls)
-      const reconstructedRolls = detail.content.map(roll => {
-        if (typeof roll === 'object' && roll !== null && 
-            (roll.roll !== undefined || roll.numerics !== undefined || 
-             roll.type_ids !== undefined || roll.types !== undefined || roll.save !== undefined)) {
-          return reconstructDatabaseRoll(roll);
-        }
-        return String(roll);
-      });
-      displayContent = reconstructedRolls.join(' or ');
-    } else if (typeof detail.content === 'object' && detail.content !== null && !Array.isArray(detail.content)) {
-      // Check if it's a creature attack {name, to_hit, damage}
-      if (detail.content.to_hit !== undefined || detail.content.damage !== undefined) {
-        displayContent = reconstructCreatureAttack(detail.content);
-      }
-      // Check if it's a range object {distance, target}
-      else if (detail.content.distance !== undefined || detail.content.target !== undefined) {
-        displayContent = formatRangeObject(detail.content);
-      }
-      // Check if it's the new database roll format (roll, numerics, type_ids, save)
-      else if (detail.content.roll !== undefined || detail.content.numerics !== undefined || 
-          detail.content.type_ids !== undefined || detail.content.types !== undefined || detail.content.save !== undefined) {
-        // It's the new database roll format - reconstruct it
-        displayContent = reconstructDatabaseRoll(detail.content);
-      }
-      // Check if it's the old structured roll object format (baseModifier, statModifier, applySpellModifier)
-      else if (detail.content.baseModifier !== undefined || detail.content.statModifier !== undefined || 
-          detail.content.applySpellModifier !== undefined || detail.content.rollActor !== undefined || 
-          detail.content.suffix !== undefined || detail.content.numDice !== undefined || 
-          detail.content.diceType || detail.content.modifier !== undefined) {
-        // It's the old structured roll format - reconstruct it
-        displayContent = reconstructStructuredRoll(detail.content);
-      }
-    } else if (typeof detail.content === 'string' && detail.content.includes('<')) {
-      // Content has HTML tags - mark it as HTML
-      isHtmlContent = true;
-    }
-    
-    // Check if content has HTML tags (from ability spans in modifiers)
-    if (typeof displayContent === 'string' && displayContent.includes('<')) {
-      isHtmlContent = true;
-    }
-    
-    // Check if content has [SAD], [SAM], [BOX], [STAT:xxx], or [DAMAGE:xxx] placeholders
-    if (typeof displayContent === 'string' && (displayContent.includes('[BOX]') || displayContent.includes('[STAT:') || 
-        displayContent.includes('[SAD]') || displayContent.includes('[SAM]') || displayContent.includes('[DAMAGE:'))) {
-      // Determine the box text based on card type (but [SAD]/[SAM] now embed their own text)
-      let boxText = 'SAM';  // Default: Spell Attack Modifier (for [BOX] legacy format)
-      if (data.hands) {
-        boxText = 'BtH';    // Weapons: Bonus to Hit
-      }
-      // Pass the original roll object so numerics/damage type metadata (emoji, color, name) is available
-      const rollObj = typeof detail.content === 'object' && (detail.content.numerics || detail.content.type_ids) ? detail.content : null;
-      const contentFragment = renderContentWithPlaceholders(displayContent, boxText, rollObj);
-      if (contentFragment) {
-        detailRow.appendChild(contentFragment);
-        isHtmlContent = false;  // Already rendered as HTML
-      }
-    } else if (isHtmlContent && !displayContent.includes('[')) {
-      // Create a span to hold HTML content (for spells with ability spans)
-      const contentSpan = document.createElement('span');
-      contentSpan.style.display = 'inline';
-      contentSpan.innerHTML = displayContent;
-      detailRow.appendChild(contentSpan);
-    } else {
-      // Render as plain text
-      const content = document.createTextNode(displayContent);
-      detailRow.appendChild(content);
-    }
-    
-    detailsDiv.appendChild(detailRow);
+    detailsDiv.appendChild(buildDetailRow(detail));
   });
-  
+
   // Render stats_grid (HP/AC) before details but after regular details
   if (statsGridDetail && Array.isArray(statsGridDetail.content)) {
     const gridContainer = document.createElement('div');
@@ -888,16 +1118,19 @@ function createCardElement(data, onHideCallback) {
     } else if (data.hands) {
       // Weapons: "Simple Melee · 1-handed"
       footerText = `${data.type} · ${data.hands}`;
-    } else if (data.level === 'cantrip' || /^\d+$/.test(data.level) || /^level\d+$/i.test(data.level)) {
+    } else if (data.level === 'cantrip' || data.level === 0 || data.level === '0' || /^\d+$/.test(String(data.level)) || /^level\d+$/i.test(String(data.level))) {
       // Spells: "Level 1 · Evocation" or "Cantrip · Evocation"
       let levelText;
-      if (data.level === 'cantrip') {
+      if (data.level === 'cantrip' || data.level === 0 || data.level === '0') {
         levelText = 'Cantrip';
       } else {
-        const match = data.level.match(/\d+/);
+        const match = String(data.level).match(/\d+/);
         levelText = match ? `Level ${match[0]}` : '';
       }
       footerText = levelText && data.school ? `${levelText} · ${data.school}` : (data.school || levelText || '');
+      if (typeof data.casting_time === 'string' && /bonus action/i.test(data.casting_time.trim())) {
+        footerText = footerText ? `${footerText} · Bonus Action` : 'Bonus Action';
+      }
     } else if (data.type && data.school) {
       // Magic Items: "Magic Item · Utility"
       footerText = `${data.type} · ${data.school}`;
@@ -957,6 +1190,58 @@ function renderPaginatedCards(containerSelector, cardsData, cardsPerPage = 9, pa
     page.appendChild(grid);
     container.appendChild(page);
   }
+}
+
+// Render list-style cards in a flexible vertical layout
+function renderListCards(containerSelector, cardsData, pageTitle = '✨ List Cards ✨', pageSubtitle = 'Flexible A4 list view', onHideCallback = null) {
+  const container = document.querySelector(containerSelector);
+  if (!container) return;
+
+  const page = document.createElement('div');
+  page.className = 'page page-list';
+
+  const header = document.createElement('div');
+  header.className = 'page-header';
+  header.innerHTML = `<h1>${pageTitle}</h1><p>${pageSubtitle}</p>`;
+  page.appendChild(header);
+
+  const list = document.createElement('div');
+  list.className = 'cards-list';
+
+  const groupedCards = [];
+  let currentLevelKey = null;
+  let currentGroup = null;
+
+  cardsData.forEach(cardData => {
+    const levelKey = cardData.level !== undefined && cardData.level !== null
+      ? String(cardData.level).toLowerCase()
+      : '__no-level__';
+
+    if (levelKey !== currentLevelKey) {
+      currentLevelKey = levelKey;
+      currentGroup = [];
+      groupedCards.push(currentGroup);
+    }
+
+    currentGroup.push(cardData);
+  });
+
+  groupedCards.forEach((group, groupIndex) => {
+    const groupWrapper = document.createElement('div');
+    groupWrapper.className = 'cards-list-group';
+    if (groupIndex > 0) {
+      groupWrapper.classList.add('level-break');
+    }
+
+    group.forEach(cardData => {
+      groupWrapper.appendChild(createCardElement(cardData, onHideCallback));
+    });
+
+    list.appendChild(groupWrapper);
+  });
+
+  page.appendChild(list);
+  container.appendChild(page);
 }
 
 // Toggle card hidden state and persist to localStorage

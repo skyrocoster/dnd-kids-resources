@@ -11,9 +11,17 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent / 'lib'))
 
 import json
+import re
 import sqlite3
 from parse_dungeon import DungeonHTMLParser  # type: ignore
-from parse_statblock import StatBlockParser  # type: ignore
+
+try:
+    from parse_statblock import StatBlockParser  # type: ignore
+except ImportError as exc:
+    StatBlockParser = None  # type: ignore
+    print('[WARNING] parse_statblock module not available; /api/parse-statblock is disabled.', file=sys.stderr)
+    print(f'[WARNING] ImportError: {exc}', file=sys.stderr)
+
 from flask import Flask, jsonify, send_from_directory, request
 import webbrowser
 
@@ -51,6 +59,25 @@ def parse_json_field(json_str):
         return json.loads(json_str)
     except (json.JSONDecodeError, TypeError):
         return None
+
+
+def parse_area_of_effect(aoe_str):
+    """Convert stored AoE value like [cube:30] into readable text."""
+    if not aoe_str or not isinstance(aoe_str, str):
+        return None
+    match = re.match(r'^\[([^:\]]+):([^\]]+)\]$', aoe_str)
+    if match:
+        aoe_type = match.group(1).capitalize()
+        aoe_size = match.group(2).strip()
+        # Normalize numeric sizes to feet
+        if aoe_size.isdigit():
+            aoe_size = f"{aoe_size} feet"
+        elif aoe_size.lower().endswith('ft'):
+            aoe_size = aoe_size[:-2].strip() + ' feet'
+        elif aoe_size.lower().endswith('feet'):
+            aoe_size = aoe_size
+        return f"{aoe_type} ({aoe_size})"
+    return aoe_str
 
 
 def enrich_numerics_with_abilities(numerics, conn=None):
@@ -282,16 +309,19 @@ def enrich_roll_object(roll_obj, conn):
     if 'roll' in enriched_roll and isinstance(enriched_roll['roll'], list):
         enriched_roll['roll'] = enrich_roll_mappings(
             roll_obj['roll'], conn)
-    
-    # Legacy support: Handle old type_ids format
-    elif 'type_ids' in enriched_roll:
+
+    # Always enrich explicit damage type strings via damage_types metadata.
+    if 'type' in enriched_roll and isinstance(enriched_roll['type'], str) and enriched_roll['type'].strip():
         enriched_roll['type_ids'] = enrich_damage_types(
-            roll_obj['type_ids'], conn)
-    
-    # Legacy support: Handle old types format
-    elif 'types' in enriched_roll:
+            [enriched_roll['type'].strip()], conn)
+
+    if 'type_ids' in enriched_roll:
+        enriched_roll['type_ids'] = enrich_damage_types(
+            enriched_roll.get('type_ids'), conn)
+
+    if 'types' in enriched_roll:
         enriched_roll['types'] = enrich_damage_types(
-            roll_obj['types'], conn)
+            enriched_roll.get('types'), conn)
 
     return enriched_roll
 
@@ -574,7 +604,7 @@ def convert_db_creature_to_api_format(creature_row, conn=None):
     # Add HP and AC stats grid (similar to saves_grid)
     if stats_grid_data:
         details.append({
-            "label": "Stats",
+            "label": "STATS",
             "content": stats_grid_data,
             "type": "stats_grid"  # Special type to signal grid rendering
         })
@@ -681,11 +711,76 @@ def get_spell_level_color(level):
     return level_colors.get(normalized, '#95a5a6')  # Default to grey
 
 
+def has_meaningful_spell_roll(roll_obj):
+    """Return True if a spell roll/save object contains renderable content."""
+    if not isinstance(roll_obj, dict):
+        return bool(roll_obj)
+
+    if roll_obj.get('roll'):
+        return True
+    if roll_obj.get('numerics'):
+        return True
+    if roll_obj.get('type_ids'):
+        return True
+    if roll_obj.get('types'):
+        return True
+    if roll_obj.get('amount'):
+        return True
+    if roll_obj.get('type'):
+        return True
+    if roll_obj.get('save') and str(roll_obj.get('save')).strip():
+        return True
+    if roll_obj.get('save_success') and str(roll_obj.get('save_success')).strip() and roll_obj.get('save_success') != 'none':
+        return True
+    return False
+
+
+def is_single_initial_attack_damage_pair(to_hit_data, damage_data):
+    def is_initial_attack(obj):
+        return isinstance(obj, dict) and obj.get('name', '').strip().lower() == 'initial'
+
+    if isinstance(to_hit_data, list) and isinstance(damage_data, list):
+        return len(to_hit_data) == 1 and len(damage_data) == 1 and is_initial_attack(to_hit_data[0]) and is_initial_attack(damage_data[0])
+
+    if isinstance(to_hit_data, dict) and isinstance(damage_data, dict):
+        return is_initial_attack(to_hit_data) and is_initial_attack(damage_data)
+
+    return False
+
+
+def is_single_initial_save(to_hit_data, damage_data):
+    if damage_data:
+        return False
+
+    if isinstance(to_hit_data, list) and len(to_hit_data) == 1 and isinstance(to_hit_data[0], dict):
+        role_obj = to_hit_data[0]
+        return role_obj.get('name', '').strip().lower() == 'initial' and bool(role_obj.get('save'))
+
+    if isinstance(to_hit_data, dict):
+        return to_hit_data.get('name', '').strip().lower() == 'initial' and bool(to_hit_data.get('save'))
+
+    return False
+
+
+def format_spell_detail_label(name, role, single_initial_pair=False, single_initial_save=False):
+    if single_initial_save and isinstance(name, str) and name.strip().lower() == 'initial' and role == 'Save':
+        return "Save:"
+
+    if single_initial_pair and isinstance(name, str) and name.strip().lower() == 'initial':
+        return f"{role}:"
+
+    formatted_name = format_element_name(name)
+    if role == 'Heal' and formatted_name == 'Effect':
+        return "Heal:"
+
+    return f"{formatted_name} ({role}):"
+
+
 def convert_db_spell_to_api_format(spell_row, conn=None):
     """
     Convert database spell to API format.
 
-    spell_row contains: id, title, icon, level, school, explanation,
+    spell_row contains: id, spell_name, icon, level, school, spell_text,
                        to_hit, damage, heal, range
 
     Features:
@@ -733,10 +828,15 @@ def convert_db_spell_to_api_format(spell_row, conn=None):
     detail_color = get_spell_level_color(spell_level)
 
     # Parse the database JSON fields
-    to_hit_data = parse_json_field(spell_dict.get('to_hit'))
+    to_hit_data = parse_json_field(spell_dict.get('attack_type') or spell_dict.get('to_hit'))
     damage_data = parse_json_field(spell_dict.get('damage'))
     heal_data = parse_json_field(spell_dict.get('heal'))
     range_data = parse_json_field(spell_dict.get('range'))
+    aoe_data = parse_area_of_effect(spell_dict.get('area_of_effect'))
+    casting_time_text = spell_dict.get('casting_time')
+
+    single_initial_pair = is_single_initial_attack_damage_pair(to_hit_data, damage_data)
+    single_initial_save = is_single_initial_save(to_hit_data, damage_data)
 
     # Build details array with database format
     # Order: paired rolls/damage (if applicable), then unpaired, range at end
@@ -755,29 +855,40 @@ def convert_db_spell_to_api_format(spell_row, conn=None):
     if has_paired_rolls:
         # Pair rolls and damages together: roll1, damage1, roll2, damage2, etc.
         for i, (to_hit_roll, damage_roll) in enumerate(zip(to_hit_data, damage_data)):
-            roll_name = to_hit_roll.get('name', None) if isinstance(
-                to_hit_roll, dict) else None
-            element_name = format_element_name(roll_name)
+            element_name = None
+            if has_meaningful_spell_roll(to_hit_roll):
+                roll_name = to_hit_roll.get('name', None) if isinstance(
+                    to_hit_roll, dict) else None
+                element_name = format_element_name(roll_name)
 
-            # Determine if this is a save or attack roll
-            is_save = to_hit_roll.get('save', False) if isinstance(
-                to_hit_roll, dict) else False
-            roll_type = "Save" if is_save else "Attack"
+                # Determine if this is a save or attack roll
+                is_save = to_hit_roll.get('save', False) if isinstance(
+                    to_hit_roll, dict) else False
+                roll_type = "Save" if is_save else "Attack"
 
-            # Add roll with element name and type
-            enriched_roll = enrich_roll_object(to_hit_roll, conn)
-            details.append({"label": f"{element_name} ({roll_type}):", "color": detail_color,
-                           "content": enriched_roll})
+                # Add roll with element name and type
+                label = format_spell_detail_label(roll_name, roll_type, single_initial_pair, single_initial_save)
+                enriched_roll = enrich_roll_object(to_hit_roll, conn)
+                details.append({"label": label, "color": detail_color,
+                               "content": enriched_roll})
 
-            # Add paired damage
-            enriched_damage = enrich_roll_object(damage_roll, conn)
-            details.append({"label": f"{element_name} (Damage):", "color": detail_color,
-                           "content": enriched_damage})
+            if has_meaningful_spell_roll(damage_roll):
+                if element_name is None:
+                    roll_name = damage_roll.get('name', None) if isinstance(
+                        damage_roll, dict) else None
+                    element_name = format_element_name(roll_name)
+                label = format_spell_detail_label(damage_roll.get('name', None) if isinstance(damage_roll, dict) else None, 'Damage', single_initial_pair)
+                enriched_damage = enrich_roll_object(damage_roll, conn)
+                details.append({"label": label, "color": detail_color,
+                               "content": enriched_damage})
     else:
         # Add to_hit rolls separately (not paired)
         if to_hit_data:
             if isinstance(to_hit_data, list):
                 for i, roll_obj in enumerate(to_hit_data):
+                    if not has_meaningful_spell_roll(roll_obj):
+                        continue
+
                     roll_name = roll_obj.get('name', None) if isinstance(
                         roll_obj, dict) else None
                     element_name = format_element_name(roll_name)
@@ -787,36 +898,41 @@ def convert_db_spell_to_api_format(spell_row, conn=None):
                         roll_obj, dict) else False
                     roll_type = "Save" if is_save else "Attack"
 
-                    label = f"{element_name} ({roll_type}):"
+                    label = format_spell_detail_label(roll_name, roll_type, single_initial_pair, single_initial_save)
 
                     enriched_roll = enrich_roll_object(roll_obj, conn)
                     details.append({"label": label, "color": detail_color, "content": enriched_roll})
             else:
-                element_name = format_element_name(None)
-                is_save = to_hit_data.get('save', False) if isinstance(
-                    to_hit_data, dict) else False
-                roll_type = "Save" if is_save else "Attack"
-                enriched_roll = enrich_roll_object(to_hit_data, conn)
-                details.append({"label": f"{element_name} ({roll_type}):", "color": detail_color,
-                               "content": enriched_roll})
+                if has_meaningful_spell_roll(to_hit_data):
+                    element_name = format_element_name(None)
+                    is_save = to_hit_data.get('save', False) if isinstance(
+                        to_hit_data, dict) else False
+                    roll_type = "Save" if is_save else "Attack"
+                    label = format_spell_detail_label(to_hit_data.get('name', None) if isinstance(to_hit_data, dict) else None, roll_type, single_initial_pair)
+                    enriched_roll = enrich_roll_object(to_hit_data, conn)
+                    details.append({"label": label, "color": detail_color,
+                                   "content": enriched_roll})
 
         # Add damage rolls separately (not paired)
         if damage_data:
             if isinstance(damage_data, list):
                 for i, roll_obj in enumerate(damage_data):
+                    if not has_meaningful_spell_roll(roll_obj):
+                        continue
+
                     roll_name = roll_obj.get('name', None) if isinstance(
                         roll_obj, dict) else None
                     element_name = format_element_name(roll_name)
 
-                    label = f"{element_name} (Damage):"
+                    label = format_spell_detail_label(roll_name, 'Damage', single_initial_pair)
 
                     enriched_roll = enrich_roll_object(roll_obj, conn)
                     details.append({"label": label, "color": detail_color, "content": enriched_roll})
             else:
-                element_name = format_element_name(None)
-                enriched_roll = enrich_roll_object(damage_data, conn)
-                details.append(
-                    {"label": f"{element_name} (Damage):", "color": detail_color, "content": enriched_roll})
+                if has_meaningful_spell_roll(damage_data):
+                    label = format_spell_detail_label(damage_data.get('name', None) if isinstance(damage_data, dict) else None, 'Damage', single_initial_pair)
+                    enriched_roll = enrich_roll_object(damage_data, conn)
+                    details.append({"label": label, "color": detail_color, "content": enriched_roll})
 
     # Add heal rolls (enrich with ability metadata)
     if heal_data:
@@ -824,25 +940,27 @@ def convert_db_spell_to_api_format(spell_row, conn=None):
             for i, roll_obj in enumerate(heal_data):
                 roll_name = roll_obj.get('name', None) if isinstance(
                     roll_obj, dict) else None
-                element_name = format_element_name(roll_name)
                 heal_type = roll_obj.get('type', 'normal') if isinstance(
                     roll_obj, dict) else 'normal'
 
                 # Determine heal label based on type
                 heal_text = "Max HP" if heal_type == 'max_hp' else "Heal"
 
-                label = f"{element_name} ({heal_text}):"
+                label = format_spell_detail_label(roll_name, heal_text, single_initial_pair)
 
                 enriched_roll = enrich_roll_object(roll_obj, conn)
                 details.append({"label": label, "color": detail_color, "content": enriched_roll})
         else:
-            element_name = format_element_name(None)
             heal_type = heal_data.get('type', 'normal') if isinstance(
                 heal_data, dict) else 'normal'
             heal_text = "Max HP" if heal_type == 'max_hp' else "Heal"
+            label = format_spell_detail_label(heal_data.get('name', None) if isinstance(heal_data, dict) else None, heal_text, single_initial_pair)
             enriched_roll = enrich_roll_object(heal_data, conn)
-            details.append({"label": f"{element_name} ({heal_text}):", "color": detail_color,
-                           "content": enriched_roll})
+            details.append({"label": label, "color": detail_color, "content": enriched_roll})
+
+    # Add AoE if present
+    if aoe_data:
+        details.append({"label": "Area:", "color": detail_color, "content": aoe_data})
 
     # Add range ALWAYS at the end (from spells.range column)
     if range_data:
@@ -853,9 +971,11 @@ def convert_db_spell_to_api_format(spell_row, conn=None):
         "icon": spell_dict.get('icon', '✨'),
         "level": spell_dict.get('level', 'cantrip'),
         "school": spell_dict.get('school', 'Evocation'),
-        "title": spell_dict.get('title', 'Unknown'),
-        "explanation": spell_dict.get('explanation', ''),
-        "details": details
+        "title": spell_dict.get('spell_name') or spell_dict.get('title', 'Unknown'),
+        "explanation": spell_dict.get('spell_text') or spell_dict.get('explanation', ''),
+        "details": details,
+        "classes": parse_json_field(spell_dict.get('classes')) or [],
+        "casting_time": casting_time_text or ''
     }
 
     # Close connection if we created it
@@ -878,10 +998,11 @@ def get_spells_api():
         # Get all spells directly
         cursor.execute("""
             SELECT 
-                id, title, icon, level, school, explanation,
-                to_hit, damage, heal, range
+                id, spell_name, icon, level, school, spell_text,
+                attack_type, damage, heal, range, area_of_effect, classes,
+                casting_time
             FROM spells
-            ORDER BY title
+            ORDER BY spell_name
         """)
 
         spells = []
@@ -914,10 +1035,11 @@ def get_spell_by_title(title):
         # Get spell by title (directly from spells table)
         cursor.execute("""
             SELECT 
-                id, title, icon, level, school, explanation,
-                to_hit, damage, heal, range
+                id, spell_name, icon, level, school, spell_text,
+                attack_type, damage, heal, range, area_of_effect, classes,
+                casting_time
             FROM spells
-            WHERE title = ?
+            WHERE spell_name = ?
         """, (title,))
 
         row = cursor.fetchone()
@@ -1409,7 +1531,8 @@ def queue_submit_job():
     Request JSON:
     {
         "statblock": "Goblin\nSmall Humanoid...",
-        "job_type": "creature",  // Optional: "creature" (default) or "spell"
+        "job_type": "creature",      // Optional: "creature" (default) or "spell"
+        "prompt_type": "full_parse",  // Optional: "full_parse" (default) or "damage_only"
         "model_path": "/path/to/model.gguf"  // Optional
     }
     
@@ -1418,7 +1541,8 @@ def queue_submit_job():
         "success": true,
         "job_id": 42,
         "status": "pending",
-        "job_type": "creature"
+        "job_type": "creature",
+        "prompt_type": "full_parse"
     }
     """
     try:
@@ -1428,6 +1552,8 @@ def queue_submit_job():
         
         statblock_text = data['statblock'].strip()
         model_path = data.get('model_path', '')
+        job_type = data.get('job_type', None)  # Will be auto-detected if not provided
+        prompt_type = data.get('prompt_type', 'full_parse')  # Defaults to full_parse
         job_type = data.get('job_type', 'creature').lower()  # Default to 'creature'
         
         # Validate job_type
@@ -1455,23 +1581,24 @@ def queue_submit_job():
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        # Insert new job with status='pending' and job_type
+        # Insert new job with status='pending', job_type, and prompt_type
         cursor.execute("""
-            INSERT INTO statblock_jobs (status, job_type, statblock, model_path)
-            VALUES (?, ?, ?, ?)
-        """, ('pending', job_type, statblock_text, model_path if model_path else None))
+            INSERT INTO statblock_jobs (status, job_type, prompt_type, statblock, model_path)
+            VALUES (?, ?, ?, ?, ?)
+        """, ('pending', job_type, prompt_type, statblock_text, model_path if model_path else None))
         
         conn.commit()
         job_id = cursor.lastrowid
         conn.close()
         
-        print(f"[API] Job #{job_id} ({job_type}) submitted to queue")
+        print(f"[API] Job #{job_id} ({job_type}, prompt: {prompt_type}) submitted to queue")
         
         response = {
             "success": True,
             "job_id": job_id,
             "status": "pending",
-            "job_type": job_type
+            "job_type": job_type,
+            "prompt_type": prompt_type
         }
         
         if warning:
@@ -1493,6 +1620,7 @@ def queue_submit_spell_job():
     Request JSON:
     {
         "spell": "Fire Bolt\nCantrip evocation spell...",
+        "prompt_type": "full_parse",  // Optional: "full_parse" (default) or "damage_only"
         "model_path": "/path/to/model.gguf"  // Optional
     }
     
@@ -1501,7 +1629,8 @@ def queue_submit_spell_job():
         "success": true,
         "job_id": 42,
         "status": "pending",
-        "job_type": "spell"
+        "job_type": "spell",
+        "prompt_type": "full_parse"
     }
     """
     try:
@@ -1511,6 +1640,7 @@ def queue_submit_spell_job():
         
         spell_text = data['spell'].strip()
         model_path = data.get('model_path', '')
+        prompt_type = data.get('prompt_type', 'full_parse')  # Defaults to full_parse
         
         if not spell_text:
             return jsonify({"error": "Spell cannot be empty"}), 400
@@ -1518,23 +1648,24 @@ def queue_submit_spell_job():
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        # Insert new job with status='pending' and job_type='spell'
+        # Insert new job with status='pending', job_type='spell', and prompt_type
         cursor.execute("""
-            INSERT INTO statblock_jobs (status, job_type, statblock, model_path)
-            VALUES (?, ?, ?, ?)
-        """, ('pending', 'spell', spell_text, model_path if model_path else None))
+            INSERT INTO statblock_jobs (status, job_type, prompt_type, statblock, model_path)
+            VALUES (?, ?, ?, ?, ?)
+        """, ('pending', 'spell', prompt_type, spell_text, model_path if model_path else None))
         
         conn.commit()
         job_id = cursor.lastrowid
         conn.close()
         
-        print(f"[API] Spell job #{job_id} submitted to queue")
+        print(f"[API] Spell job #{job_id} (prompt: {prompt_type}) submitted to queue")
         
         return jsonify({
             "success": True,
             "job_id": job_id,
             "status": "pending",
-            "job_type": "spell"
+            "job_type": "spell",
+            "prompt_type": prompt_type
         }), 201
     
     except Exception as e:
@@ -1773,6 +1904,12 @@ def parse_statblock():
         should_insert = data.get('insert', False)
         model_path = data.get('model_path', None)
         
+        if StatBlockParser is None:
+            return jsonify({
+                "error": "StatBlockParser is not installed or parse_statblock.py is missing.",
+                "installed": False
+            }), 503
+
         # Initialize parser
         print(f"[PARSE] Initializing StatBlockParser...")
         parser = StatBlockParser(model_path)
@@ -1909,6 +2046,18 @@ def parse_statblock():
         import traceback
         traceback.print_exc()
         return jsonify({"error": str(e), "success": False}), 500
+
+
+@app.route('/spell-cards-list')
+def spell_cards_list():
+    """Serve the spell card list-style demo page."""
+    return send_from_directory('.', 'pages/spell-cards-list.html')
+
+
+@app.route('/spell-cards-v2')
+def spell_cards_v2():
+    """Serve the new spell card demo page."""
+    return send_from_directory('.', 'pages/spell-cards-v2.html')
 
 
 @app.route('/')
