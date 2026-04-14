@@ -7,13 +7,14 @@ It's designed to be safe and idempotent (can run multiple times).
 
 Seed files:
 - data/seed_abilities.json
-- data/5eAPI/spells.json
 - data/seed_conditions.json
 - data/seed_creatures.json
 - data/seed_damage_types.json
 - data/seed_creature_types.json
 - data/seed_traps.json
 - data/seed_dungeons.json
+
+Spell data is now loaded from the new 5eTools staging workflow via `_dev/parse_spells_to_db.py`.
 
 Usage:
     python _dev/seed_database.py              # Load all seeds
@@ -24,6 +25,7 @@ Usage:
 
 import sqlite3
 import json
+import subprocess
 from pathlib import Path
 import argparse
 import sys
@@ -113,124 +115,23 @@ def populate_abilities(cursor, conn, force=False):
 
 
 def populate_spells(cursor, conn, force=False):
-    """Populate spells table from data/5eAPI/spells.json with all new metadata fields"""
-    print("\n[BOOKS] Loading spells from 5eAPI...")
-    
-    # Check if already populated
-    try:
-        cursor.execute("SELECT COUNT(*) FROM spells")
-        count = cursor.fetchone()[0]
-    except sqlite3.OperationalError:
-        # Table doesn't exist (was dropped in force mode), that's fine
-        count = 0
-    
-    if count > 0 and not force:
-        print(f"  [INFO]  Spells table already has {count} records. Skip (use --force to override)")
+    """Populate spells table using the new 5eTools staging workflow."""
+    print("\n[BOOKS] Loading spells using the new 5eTools staging workflow...")
+
+    parser_script = Path(__file__).parent / "parse_spells_to_db.py"
+    if not parser_script.exists():
+        print(f"  [ERROR] Missing parser: {parser_script}")
         return
-    
-    # Create spells table if it doesn't exist (or recreate if force)
-    if force or count == 0:
-        # Spells schema must be created by init_database.py
-        try:
-            cursor.execute("SELECT 1 FROM spells LIMIT 1")
-        except Exception:
-            print("  [ERROR]  Spells table does not exist. Run _dev/init_database.py first.")
-            return
-    
-    seeds = load_json_file(SEEDS_DIR / "5eAPI" / "spells.json")
-    if not seeds:
-        print("  [WARNING]  No 5eAPI spell seeds found")
-        return
-    
-    for spell in seeds:
-        try:
-            # Normalize and validate spell level
-            raw_level = spell.get('level', 0)
-            normalized_level = str(raw_level) if raw_level is not None else '0'
 
-            # Parse heal fields
-            heal_data = spell.get('heal_at_slot_level', {}) or {}
-            heal_amount = ''
-            heal_at_higher_levels_list = []
-            if isinstance(heal_data, dict):
-                heal_amount = next(iter(heal_data.values()), '')
-                heal_at_higher_levels_list = list(heal_data.values())
+    command = [sys.executable, str(parser_script)]
+    if force:
+        command.append("--force")
 
-            heal_field = heal_amount
-            if "+ MOD" in heal_amount:
-                heal_field = {
-                    'amount': heal_amount.replace(' + MOD', '').strip(),
-                    'MOD': 'SAbM'
-                }
-
-            # Convert lists and objects to JSON strings for DB storage
-            damage_data = spell.get('damage', {}) or {}
-            damage_amount = ''
-            if isinstance(damage_data.get('damage_at_slot_level'), dict):
-                damage_amount = next(iter(damage_data['damage_at_slot_level'].values()), '')
-            elif isinstance(damage_data.get('damage_at_character_level'), dict):
-                damage_amount = next(iter(damage_data['damage_at_character_level'].values()), '')
-            damage = json.dumps([
-                {
-                    'name': 'initial',
-                    'type': damage_data.get('damage_type', {}).get('index', ''),
-                    'amount': damage_amount,
-                    'save_success': (spell.get('dc', {}) or {}).get('dc_success', '')
-                }
-            ]) if damage_data else None
-            heal = json.dumps(heal_field) if heal_field else None
-            range_data = json.dumps(spell.get('range')) if spell.get('range') else None
-            higher_levels = json.dumps(spell.get('higher_level')) if spell.get('higher_level') else None
-            components = json.dumps(spell.get('components')) if spell.get('components') else None
-            classes = json.dumps([c.get('index', '') for c in spell.get('classes', []) if isinstance(c, dict)]) if spell.get('classes') else None
-            subclasses = json.dumps([s.get('index', '') for s in spell.get('subclasses', []) if isinstance(s, dict)]) if spell.get('subclasses') else None
-            area_of_effect = None
-            aoe = spell.get('area_of_effect', {}) or {}
-            if aoe:
-                aoe_type = aoe.get('type', '')
-                aoe_size = aoe.get('size', '')
-                if aoe_type or aoe_size:
-                    area_of_effect = f"[{aoe_type}:{aoe_size}]"
-
-            cursor.execute("""
-                INSERT INTO spells 
-                (spell_name, icon, level, school, spell_text, damage, heal, heal_at_higher_levels, range, higher_levels,
-                 casting_time, duration, concentration, ritual, components, materials, attack_type, area_of_effect, classes, subclasses)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                spell.get('name'),
-                spell.get('icon', '✨'),
-                normalized_level,
-                spell.get('school', {}).get('index', ''),
-                json.dumps(spell.get('desc', [])),
-                damage,
-                heal,
-                json.dumps(heal_at_higher_levels_list) if heal_at_higher_levels_list else None,
-                range_data,
-                higher_levels,
-                spell.get('casting_time'),
-                spell.get('duration'),
-                bool(spell.get('concentration', False)),
-                bool(spell.get('ritual', False)),
-                components,
-                spell.get('material', ''),
-                json.dumps([
-                    {
-                        'name': 'initial',
-                        'type': spell.get('attack_type', ''),
-                        'save': (spell.get('dc', {}) or {}).get('dc_type', {}).get('index', '')
-                    }
-                ]),
-                area_of_effect,
-                classes,
-                subclasses
-            ))
-            print(f"  [CHECK] {spell.get('name')} (level: {normalized_level}, classes: {', '.join([c.get('index', '') for c in spell.get('classes', []) if isinstance(c, dict)]) if spell.get('classes') else 'none'})")
-        except sqlite3.IntegrityError as e:
-            print(f"  [WARNING]  Duplicate or error: {spell.get('name')} - {e}")
-
-    conn.commit()
-    print(f"  [OK] Loaded {len(seeds)} spells")
+    result = subprocess.run(command, capture_output=True, text=True)
+    print(result.stdout)
+    if result.returncode != 0:
+        print(result.stderr)
+        raise RuntimeError(f"Spell import failed with exit code {result.returncode}")
 
 
 def populate_conditions(cursor, conn, force=False):
@@ -748,7 +649,7 @@ def main():
         print("  3. Check: Start Flask server and test API endpoints")
         print("\nSeed files:")
         print("  - data/seed_abilities.json")
-        print("  - data/5eAPI/spells.json")
+        print("  - data/5eTools/extracted/data/spells/spells-merged-clean-range-text.json")
         print("  - data/seed_conditions.json")
         print("  - data/seed_creatures.json")
         print("  - data/seed_damage_types.json")

@@ -84,7 +84,7 @@ Client-side scripts:
 
 ## `/data`
 Seed and source data files:
-- `5eAPI/spells.json` — Spell metadata source
+- `data/5eTools/extracted/data/spells/spells-merged-clean-range-text.json` — Spell metadata source
 - `seed_conditions.json` — Condition card seeds
 - `seed_creature_types.json` — Creature type metadata
 - `seed_creatures.json` — Creature/wild-shape seeds
@@ -98,7 +98,7 @@ Development utilities for database and testing:
 - `init_database.py` — Create the SQLite schema
 - `seed_database.py` — Populate the database from JSON sources
 - `extract_5eapi_spells.py` — Spell parsing helper
-- `parse_spells_api.py` — Convert 5eAPI spell data to app schema
+- `parse_spells_to_db.py` — Convert 5eTools spell JSON to app schema
 - `reparse_dungeons.py` — Reparse dungeon HTML data
 - `test_spell_parsing.py` — Parser test harness
 - `view_abilities.py` — Ability metadata inspection

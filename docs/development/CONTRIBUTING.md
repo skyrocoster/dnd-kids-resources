@@ -339,14 +339,14 @@ The same pattern works for other card sets:
 
 ```
 data/                          # Seed and source data
-├── 5eAPI/spells.json          # Spell metadata source
+├── 5eTools/extracted/data/spells/spells-merged-clean-range-text.json  # Spell metadata source
 ├── seed_conditions.json       # Condition seeds
 ├── seed_creatures.json        # Creature/wild-shape seeds
 ├── seed_abilities.json        # Abilities, skills, modifiers
 └── seed_damage_types.json     # Damage type metadata
 ```
 
-- Spells are seeded from `data/5eAPI/spells.json`
+- Spells are seeded from `data/5eTools/extracted/data/spells/spells-merged-clean-range-text.json`
 - Conditions, creatures, abilities, and damage types are seeded from individual JSON files in `data/`
 
 ```
@@ -409,24 +409,24 @@ pages/                         # Browser-accessible tools
 
 ## Working with Spells (Database)
 
-**Important:** Spell data is seeded from `data/5eAPI/spells.json` and loaded into the SQLite database via `_dev/seed_database.py`.
+**Important:** Spell data is now loaded from `data/5eTools/extracted/data/spells/spells-merged-clean-range-text.json` via `_dev/parse_spells_to_db.py`.
 
 ### Updating Spell Data
 
 To modify spell content:
 
-1. Edit `data/5eAPI/spells.json` directly.
+1. Update the 5eTools source JSON in `data/5eTools/extracted/data/spells/spells-merged-clean-range-text.json`.
 2. Rebuild the database:
    ```bash
    python _dev/init_database.py
-   python _dev/seed_database.py --force
+   python _dev/parse_spells_to_db.py --force
    ```
 
 ### Database Workflow
 
-- The current seed workflow uses `data/5eAPI/spells.json` as the primary spell source.
-- `_dev/seed_database.py` transforms that JSON into the `spells` table.
-- There is no `data/seed_spells.json` file in this branch.
+- The current spell workflow uses `data/5eTools/extracted/data/spells/spells-merged-clean-range-text.json` as the primary source.
+- `_dev/parse_spells_to_db.py` loads that JSON directly into the `spells` table using the staging schema.
+- The legacy 5eAPI parser and `data/5eAPI` payloads are archived under `data/archive/5eAPI` and `_dev/archive/parse_spells_api.py`.
 
 ### Current Spell Schema
 

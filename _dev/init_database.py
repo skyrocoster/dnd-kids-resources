@@ -87,7 +87,7 @@ def init_database():
         )
     """)
 
-    # Create spells table
+    # Create spells table using the new staging schema
     cursor.execute("""
         CREATE TABLE spells (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -99,9 +99,10 @@ def init_database():
             spell_alt_text TEXT,
             damage TEXT,
             heal TEXT,
-            heal_at_higher_levels TEXT,
+            heal_at_spell_slots TEXT,
             range TEXT,
             higher_levels TEXT,
+            damage_at_higher_levels TEXT,
             casting_time TEXT,
             duration TEXT,
             concentration BOOLEAN DEFAULT 0,
@@ -215,9 +216,9 @@ def init_database():
     print(f"\n[SUCCESS] Database initialized: {DB_PATH}")
     print(f"   Size: {DB_PATH.stat().st_size / 1024:.1f} KB")
     print("\nNEW SCHEMA (Option 1) Features:")
-    print("  [OK] Spells table: 23 columns (includes 'classes' and 'subclasses' JSON fields)")
-    print("    - Original: spell_name, icon, level, school, spell_text, to_hit, damage, heal, range, special, higher_levels")
-    print("    - NEW: casting_time, duration, concentration, ritual, components, materials, attack_type, area_of_effect, classes (JSON), subclasses (JSON), heal_at_higher_levels")
+    print("  [OK] Spells table: 23 columns (staging-based schema for 5eTools spell ingestion)")
+    print("    - Staging schema: spell_name, icon, level, school, spell_text, spell_alt_text, damage, heal, heal_at_spell_slots, range, higher_levels")
+    print("    - NEW: casting_time, duration, concentration, ritual, components, materials, attack_type, area_of_effect, classes (JSON), subclasses (JSON), damage_at_higher_levels")
     print("  [OK] Classes stored directly in spells table as JSON array (e.g., ['wizard', 'sorcerer'])")
     print("\n" + "="*60)
     print("NEXT STEP: Run seed_database.py to populate data")

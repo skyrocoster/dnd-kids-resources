@@ -122,6 +122,17 @@ function renderContentWithPlaceholders(contentStr, boxText = 'SAM', rollObj = nu
       }
     }
   }
+  if (rollObj && rollObj.save) {
+    const saveEntries = Array.isArray(rollObj.save) ? rollObj.save : [rollObj.save];
+    for (let saveCode of saveEntries) {
+      if (typeof saveCode === 'string' && /^[a-z]{3}$/i.test(saveCode.trim())) {
+        const code = saveCode.trim().toLowerCase();
+        if (!abilityMetadata[code]) {
+          abilityMetadata[code] = { code };
+        }
+      }
+    }
+  }
   
   // Build a map of damage type codes to their metadata
   const damageTypeMetadata = {};
@@ -147,6 +158,15 @@ function renderContentWithPlaceholders(contentStr, boxText = 'SAM', rollObj = nu
       }
     }
   }
+
+  // Spell details may carry enriched damage metadata in `types`.
+  if (rollObj && rollObj.types && Array.isArray(rollObj.types)) {
+    for (let damageType of rollObj.types) {
+      if (damageType && typeof damageType === 'object' && damageType.code) {
+        damageTypeMetadata[damageType.code] = damageType;
+      }
+    }
+  }
   
   
   // Fallback emoji mappings
@@ -164,17 +184,17 @@ function renderContentWithPlaceholders(contentStr, boxText = 'SAM', rollObj = nu
     if (part === '[SAD]' || part === '[SAM]') {
       const code = part.slice(1, -1).toLowerCase();
       const ability = abilityMetadata[code];
-      if (ability) {
+      const emojiText = (ability && ability.emoji) || defaultEmojis[code] || '';
+      if (emojiText) {
         const emoji = document.createElement('span');
-        emoji.textContent = `${ability.emoji || ''} `;
+        emoji.textContent = `${emojiText} `;
         fragment.appendChild(emoji);
-        const boxElement = createModifierBox(code);
-        boxElement.setAttribute('data-box-text', code.toUpperCase());
-        if (ability.color) boxElement.style.backgroundColor = ability.color;
-        fragment.appendChild(boxElement);
-      } else {
-        fragment.appendChild(createModifierBox(code.toUpperCase()));
       }
+      const boxText = ability && ability.name ? ability.name : code.toUpperCase();
+      const boxElement = createModifierBox(boxText);
+      boxElement.setAttribute('data-box-text', boxText);
+      if (ability && ability.color) boxElement.style.backgroundColor = ability.color;
+      fragment.appendChild(boxElement);
     } else if (part === '[BOX]') {
       fragment.appendChild(createModifierBox(boxText));
     } else if (part.startsWith('[DAMAGE:')) {
@@ -183,11 +203,14 @@ function renderContentWithPlaceholders(contentStr, boxText = 'SAM', rollObj = nu
         const damageCode = match[1];
         const damageType = damageTypeMetadata[damageCode];
         if (damageType) {
-          // Create a span for the damage type with emoji and color
+          // Render damage as one combined token: emoji + damage type text.
           const damageSpan = document.createElement('span');
           damageSpan.style.display = 'inline-flex';
           damageSpan.style.alignItems = 'center';
-          damageSpan.style.gap = '3px';
+          damageSpan.style.gap = '0';
+          if (damageType.color) {
+            damageSpan.style.color = damageType.color;
+          }
           
           // Add emoji
           if (damageType.emoji) {
@@ -198,12 +221,10 @@ function renderContentWithPlaceholders(contentStr, boxText = 'SAM', rollObj = nu
             damageSpan.appendChild(emojiSpan);
           }
           
-          // Add damage type name with optional color
+          // Add damage type name immediately after the emoji.
           const nameSpan = document.createElement('span');
           nameSpan.textContent = damageType.name || damageCode;
-          if (damageType.color) {
-            nameSpan.style.color = damageType.color;
-          }
+          nameSpan.style.marginLeft = '0';
           damageSpan.appendChild(nameSpan);
           
           fragment.appendChild(damageSpan);
@@ -217,32 +238,16 @@ function renderContentWithPlaceholders(contentStr, boxText = 'SAM', rollObj = nu
       if (match) {
         const abilityCode = match[1].toLowerCase();
         const ability = abilityMetadata[abilityCode];
-        if (ability) {
+        const emojiText = (ability && ability.emoji) || defaultEmojis[abilityCode] || '';
+        if (emojiText) {
           const emoji = document.createElement('span');
-          emoji.textContent = `${ability.emoji || ''} `;
+          emoji.textContent = `${emojiText} `;
           fragment.appendChild(emoji);
-          const boxElement = createModifierBox(abilityCode);
-          boxElement.setAttribute('data-box-text', abilityCode.toUpperCase());
-          if (ability.color) boxElement.style.backgroundColor = ability.color;
-          fragment.appendChild(boxElement);
-        } else {
-          const boxElement = createModifierBox(abilityCode.toUpperCase());
-          const emoji = defaultEmojis[abilityCode] || '';
-          if (emoji) {
-            const emojiSpan = document.createElement('span');
-            emojiSpan.textContent = `${emoji} `;
-            fragment.appendChild(emojiSpan);
-          }
-          const abilityColors = {
-            'str': '#c0392b', 'dex': '#1e8449', 'con': '#e67e22',
-            'int': '#2471a3', 'wis': '#8e44ad', 'cha': '#f39c12'
-          };
-          const bgColor = abilityColors[abilityCode];
-          if (bgColor) {
-            boxElement.style.backgroundColor = bgColor;
-          }
-          fragment.appendChild(boxElement);
         }
+        const boxElement = createModifierBox(abilityCode);
+        boxElement.setAttribute('data-box-text', abilityCode.toUpperCase());
+        if (ability && ability.color) boxElement.style.backgroundColor = ability.color;
+        fragment.appendChild(boxElement);
       }
     } else {
       fragment.appendChild(document.createTextNode(part));
@@ -607,19 +612,19 @@ function renderDetailContent(detail) {
   }
 
   if (content && typeof content === 'object') {
+    if (content.amount !== undefined || content.damage !== undefined || content.type !== undefined || content.save !== undefined || content.save_success !== undefined) {
+      const formatted = formatSpellDetailObject(content, detail && detail.label ? detail.label : '');
+      if (formatted.includes('[STAT:') || formatted.includes('[SAD]') || formatted.includes('[SAM]') || formatted.includes('[BOX]') || formatted.includes('[DAMAGE:')) {
+        return renderContentWithPlaceholders(formatted, content.hands ? 'BtH' : 'SAM', content);
+      }
+      return document.createTextNode(formatted);
+    }
+
     if (content.roll !== undefined || content.numerics !== undefined || content.types !== undefined || (content.type_ids !== undefined && content.roll !== undefined)) {
       const displayText = reconstructDatabaseRoll(content);
       const fragment = renderContentWithPlaceholders(displayText, content.hands ? 'BtH' : 'SAM', content);
       if (fragment) return fragment;
       return document.createTextNode(displayText);
-    }
-
-    if (content.amount !== undefined || content.type !== undefined || content.save !== undefined || content.save_success !== undefined) {
-      const formatted = formatSpellDetailObject(content);
-      if (formatted.includes('[STAT:') || formatted.includes('[SAD]') || formatted.includes('[SAM]') || formatted.includes('[BOX]') || formatted.includes('[DAMAGE:')) {
-        return renderContentWithPlaceholders(formatted, content.hands ? 'BtH' : 'SAM', content);
-      }
-      return document.createTextNode(formatted);
     }
 
     if (content.distance !== undefined || content.target !== undefined || content.shape !== undefined) {
@@ -636,14 +641,45 @@ function renderDetailContent(detail) {
   return document.createTextNode(String(content || ''));
 }
 
-function formatSpellDetailObject(detailObj) {
+function formatSpellDetailObject(detailObj, detailLabel = '') {
   if (!detailObj || typeof detailObj !== 'object') {
     return 'none';
   }
 
+  const amountValue = detailObj.amount !== undefined && detailObj.amount !== null && detailObj.amount !== ''
+    ? String(detailObj.amount)
+    : (detailObj.damage !== undefined && detailObj.damage !== null && detailObj.damage !== '' ? String(detailObj.damage) : '');
+
+  const damagePlaceholderParts = [];
+  if (Array.isArray(detailObj.types) && detailObj.types.length > 0) {
+    detailObj.types.forEach(type => {
+      if (type && typeof type === 'object' && type.code) {
+        damagePlaceholderParts.push(`[DAMAGE:${type.code}]`);
+      } else if (typeof type === 'string' && type.trim()) {
+        damagePlaceholderParts.push(`[DAMAGE:${type.trim().toLowerCase()}]`);
+      }
+    });
+  } else if (Array.isArray(detailObj.type_ids) && detailObj.type_ids.length > 0) {
+    detailObj.type_ids.forEach(type => {
+      if (type && typeof type === 'object' && type.code) {
+        damagePlaceholderParts.push(`[DAMAGE:${type.code}]`);
+      } else if (typeof type === 'string' && type.trim()) {
+        damagePlaceholderParts.push(`[DAMAGE:${type.trim().toLowerCase()}]`);
+      }
+    });
+  } else if (Array.isArray(detailObj.type) && detailObj.type.length > 0) {
+    detailObj.type.forEach(type => {
+      if (typeof type === 'string' && type.trim()) {
+        damagePlaceholderParts.push(`[DAMAGE:${type.trim().toLowerCase()}]`);
+      }
+    });
+  } else if (detailObj.type !== undefined && detailObj.type !== null && detailObj.type !== '') {
+    damagePlaceholderParts.push(`[DAMAGE:${String(detailObj.type).trim().toLowerCase()}]`);
+  }
+
   // Spell attack objects should display a default spell attack roll using SAM
   if (detailObj.type === 'ranged' || detailObj.type === 'melee') {
-    const amountText = detailObj.amount !== undefined && detailObj.amount !== null ? String(detailObj.amount).trim() : '';
+    const amountText = amountValue.trim();
     const typeLabel = ` (${String(detailObj.type).trim().toLowerCase()})`;
     if (!amountText || amountText.toLowerCase() === '1d20') {
       return `1d20 + [SAM]${typeLabel}`;
@@ -654,15 +690,21 @@ function formatSpellDetailObject(detailObj) {
   }
 
   const parts = [];
-  if (detailObj.amount !== undefined && detailObj.amount !== null && detailObj.amount !== '') {
-    parts.push(String(detailObj.amount));
-  }
-  if ((detailObj.amount === undefined || detailObj.amount === '') && detailObj.type !== undefined && detailObj.type !== null && detailObj.type !== '') {
-    parts.push(String(detailObj.type));
+  if (amountValue) {
+    parts.push(amountValue);
   }
   if ((detailObj.amount === undefined || detailObj.amount === '') && detailObj.save) {
     const saveValue = detailObj.save;
-    if (typeof saveValue === 'string' && /^[a-z]{3}$/i.test(saveValue.trim())) {
+    if (Array.isArray(saveValue)) {
+      saveValue.forEach((value, index) => {
+        if (index > 0) parts.push('/');
+        if (typeof value === 'string' && /^[a-z]{3}$/i.test(value.trim())) {
+          parts.push(`[STAT:${value.trim().toUpperCase()}]`);
+        } else {
+          parts.push(String(value).toUpperCase());
+        }
+      });
+    } else if (typeof saveValue === 'string' && /^[a-z]{3}$/i.test(saveValue.trim())) {
       parts.push(`[STAT:${saveValue.trim().toUpperCase()}]`);
     } else {
       parts.push(String(saveValue).toUpperCase());
@@ -681,9 +723,9 @@ function formatSpellDetailObject(detailObj) {
     parts.push(`save ${detailObj.save_success}`);
   }
 
-  if (detailObj.type !== undefined && detailObj.type !== null && detailObj.type !== '') {
-    const damagePlaceholder = `[DAMAGE:${String(detailObj.type).trim().toLowerCase()}]`;
-    if (detailObj.amount !== undefined && detailObj.amount !== null && detailObj.amount !== '') {
+  if (damagePlaceholderParts.length > 0) {
+    const damagePlaceholder = damagePlaceholderParts.join(', ');
+    if (amountValue) {
       parts.push(`(${damagePlaceholder})`);
     } else {
       parts.push(damagePlaceholder);

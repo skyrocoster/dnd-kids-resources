@@ -90,7 +90,7 @@ Then open `http://localhost:8000`.
 
 The project seeds data from:
 
-- `data/5eAPI/spells.json` — spell metadata
+- `data/5eTools/extracted/data/spells/spells-merged-clean-range-text.json` — spell metadata source
 - `data/seed_conditions.json` — conditions
 - `data/seed_creatures.json` — creature/wild-shape data
 - `data/seed_abilities.json` — abilities, skills, and modifiers
@@ -105,7 +105,7 @@ python _dev/init_database.py
 python _dev/seed_database.py --force
 ```
 
-For spell data updates, edit `data/5eAPI/spells.json` or the seed file used by your workflow.
+For spell data updates, use `_dev/parse_spells_to_db.py` and the new 5eTools JSON source.
 
 ## Notes
 

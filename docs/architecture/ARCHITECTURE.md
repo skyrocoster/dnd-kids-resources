@@ -708,7 +708,7 @@ dnd-kids-resources/
 └── _dev/                           # Development utilities
     ├── init_database.py
     ├── seed_database.py
-    ├── parse_spells_api.py
+    ├── parse_spells_to_db.py
     └── README.md
 ```
 

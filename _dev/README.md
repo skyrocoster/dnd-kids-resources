@@ -13,8 +13,8 @@ Scripts and tools for development, testing, and database management. These are *
 - `seed_database.py` — Load JSON seed/source files into the database
 
 ### Spell Data Utilities
-- `extract_5eapi_spells.py` — Fetch raw spell JSON from the D&D 5e API for ingestion
-- `parse_spells_api.py` — Convert 5eAPI spell payloads into the app schema
+- `extract_5eapi_spells.py` — Fetch raw spell JSON from the D&D 5e API for ingestion (archived source)
+- `parse_spells_to_db.py` — Convert 5eTools spell JSON into the app schema
 - `test_spell_parsing.py` — Parser test harness for spell ingestion experiments
 - `view_abilities.py` — Inspect ability metadata and validate ability lookup data
 
@@ -63,9 +63,10 @@ python _dev/view_abilities.py
 - `dungeon_parsing_test/`
 - `extract_5eapi_spells.py`
 - `init_database.py`
-- `parse_spells_api.py`
+- `parse_spells_to_db.py`
 - `reparse_dungeons.py`
 - `seed_database.py`
 - `test_spell_parsing.py`
 - `view_abilities.py`
+- `archive/parse_spells_api.py` (archived legacy parser)
 `

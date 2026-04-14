@@ -26,8 +26,10 @@ parsed_spells = []
 for spell in api_spells:
     damage_data = spell.get("damage", {}) or {}
     damage_amount = ""
+    damage_at_higher_levels = []
     if isinstance(damage_data.get("damage_at_slot_level"), dict):
         damage_amount = next(iter(damage_data["damage_at_slot_level"].values()), "")
+        damage_at_higher_levels = list(damage_data["damage_at_slot_level"].values())
     elif isinstance(damage_data.get("damage_at_character_level"), dict):
         damage_amount = next(iter(damage_data["damage_at_character_level"].values()), "")
 
@@ -69,6 +71,7 @@ for spell in api_spells:
         "area_of_effect": aoe_value,
         "heal": json.dumps(heal_field) if isinstance(heal_field, dict) else heal_field,
         "heal_at_higher_levels": json.dumps(heal_at_higher_levels),
+        "damage_at_higher_levels": json.dumps(damage_at_higher_levels),
         "attack_type": json.dumps([
             {
                 "name": "initial",

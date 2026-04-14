@@ -25,7 +25,21 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     const rangeDisplayMode = localStorage.getItem('range_display_mode') || 'standard';
-    const classCodes = [...new Set(spells.flatMap(spell => Array.isArray(spell.classes) ? spell.classes : []))].sort();
+
+    function normalizeSpellClasses(classes) {
+      if (Array.isArray(classes)) {
+        return classes.map(cls => typeof cls === 'string' ? cls.trim() : '').filter(Boolean);
+      }
+      if (typeof classes === 'string') {
+        return classes
+          .split(/[,|;]+/)
+          .map(cls => cls.trim())
+          .filter(Boolean);
+      }
+      return [];
+    }
+
+    const classCodes = [...new Set(spells.flatMap(spell => normalizeSpellClasses(spell.classes)))].sort();
     const selectedClasses = new Set(classCodes);
 
     const rangeSelect = document.getElementById('range-display-mode');
@@ -117,7 +131,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
       const hiddenCards = getHiddenCardIds();
       const filteredSpells = sortedSpells.filter(spell => {
-        const spellClasses = Array.isArray(spell.classes) ? spell.classes : [];
+        const spellClasses = normalizeSpellClasses(spell.classes);
         const spellId = getSpellCardId(spell);
         const matchesClass = classCodes.length === 0 || selectedClasses.size === 0
           ? false

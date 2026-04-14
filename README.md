@@ -57,7 +57,7 @@ Current repo features:
 
 ## Data Sources
 
-- `data/5eAPI/spells.json` — Spell metadata source
+- `data/5eTools/extracted/data/spells/spells-merged-clean-range-text.json` — Spell metadata source
 - `data/seed_conditions.json` — Condition seeds
 - `data/seed_creatures.json` — Druid/wild shape creature seeds
 - `data/seed_abilities.json` — Abilities, skills, and modifiers

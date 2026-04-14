@@ -54,22 +54,82 @@ def parse_json_field(json_str):
         return None
 
 
-def parse_area_of_effect(aoe_str):
-    """Convert stored AoE value like [cube:30] into readable text."""
-    if not aoe_str or not isinstance(aoe_str, str):
+def parse_json_array_field(value):
+    """Parse a JSON array or normalize a plain string into a list."""
+    if isinstance(value, list):
+        return value
+    if isinstance(value, str):
+        cleaned = value.strip()
+        if not cleaned:
+            return []
+        try:
+            parsed = json.loads(cleaned)
+            if isinstance(parsed, list):
+                return parsed
+            if isinstance(parsed, str):
+                return [parsed]
+            return []
+        except json.JSONDecodeError:
+            # Normalize plain strings like "wizard, sorcerer" or "wizard|sorcerer"
+            if re.search(r"[,|;]", cleaned):
+                return [part.strip() for part in re.split(r"[,|;]+", cleaned) if part.strip()]
+            return [cleaned]
+    return []
+
+
+def format_area_of_effect_object(aoe_obj):
+    """Convert structured AoE data like {"line": 100} into readable text."""
+    if not isinstance(aoe_obj, dict) or not aoe_obj:
         return None
-    match = re.match(r'^\[([^:\]]+):([^\]]+)\]$', aoe_str)
-    if match:
-        aoe_type = match.group(1).capitalize()
-        aoe_size = match.group(2).strip()
-        # Normalize numeric sizes to feet
-        if aoe_size.isdigit():
-            aoe_size = f"{aoe_size} feet"
-        elif aoe_size.lower().endswith('ft'):
-            aoe_size = aoe_size[:-2].strip() + ' feet'
-        elif aoe_size.lower().endswith('feet'):
-            aoe_size = aoe_size
-        return f"{aoe_type} ({aoe_size})"
+
+    parts = []
+    for aoe_type, aoe_size in aoe_obj.items():
+        type_text = str(aoe_type).replace('_', ' ').strip().title()
+        if aoe_size is None or aoe_size == '':
+            parts.append(type_text)
+            continue
+
+        size_text = str(aoe_size).strip()
+        if size_text.isdigit():
+            size_text = f"{size_text} feet"
+        elif size_text.lower().endswith('ft'):
+            size_text = size_text[:-2].strip() + ' feet'
+
+        parts.append(f"{type_text} - {size_text}")
+
+    return ' / '.join(parts) if parts else None
+
+
+def parse_area_of_effect(aoe_str):
+    """Convert stored AoE value like [cube:30] or JSON into readable text."""
+    if not aoe_str:
+        return None
+
+    if isinstance(aoe_str, dict):
+        return format_area_of_effect_object(aoe_str)
+
+    if isinstance(aoe_str, str):
+        parsed = parse_json_field(aoe_str)
+        if isinstance(parsed, dict):
+            return format_area_of_effect_object(parsed)
+        if isinstance(parsed, list):
+            if not parsed:
+                return None
+            return json.dumps(parsed, ensure_ascii=False)
+
+        match = re.match(r'^\[([^:\]]+):([^\]]+)\]$', aoe_str)
+        if match:
+            aoe_type = match.group(1).capitalize()
+            aoe_size = match.group(2).strip()
+            # Normalize numeric sizes to feet
+            if aoe_size.isdigit():
+                aoe_size = f"{aoe_size} feet"
+            elif aoe_size.lower().endswith('ft'):
+                aoe_size = aoe_size[:-2].strip() + ' feet'
+            elif aoe_size.lower().endswith('feet'):
+                aoe_size = aoe_size
+            return f"{aoe_type} ({aoe_size})"
+
     return aoe_str
 
 
@@ -298,6 +358,17 @@ def enrich_roll_object(roll_obj, conn):
         enriched_roll['numerics'] = enrich_numerics_with_abilities(
             roll_obj['numerics'], conn)
 
+    # If save data is present but numerics metadata is missing, enrich save codes too.
+    if 'save' in enriched_roll and 'numerics' not in enriched_roll:
+        save_codes = []
+        if isinstance(enriched_roll['save'], str):
+            save_codes = [enriched_roll['save']]
+        elif isinstance(enriched_roll['save'], list):
+            save_codes = [code for code in enriched_roll['save'] if isinstance(code, str)]
+
+        if save_codes:
+            enriched_roll['numerics'] = enrich_numerics_with_abilities(save_codes, conn)
+
     # Handle new roll format: [{"1d4": "piercing"}, ...]
     if 'roll' in enriched_roll and isinstance(enriched_roll['roll'], list):
         enriched_roll['roll'] = enrich_roll_mappings(
@@ -309,6 +380,10 @@ def enrich_roll_object(roll_obj, conn):
         if type_code not in ['melee', 'ranged']:
             enriched_roll['type_ids'] = enrich_damage_types(
                 [enriched_roll['type'].strip()], conn)
+
+    if 'type' in enriched_roll and isinstance(enriched_roll['type'], list):
+        enriched_roll['types'] = enrich_damage_types(
+            enriched_roll['type'], conn)
 
     if 'type_ids' in enriched_roll:
         enriched_roll['type_ids'] = enrich_damage_types(
@@ -759,9 +834,36 @@ def is_single_initial_save(to_hit_data, damage_data):
     return False
 
 
-def format_spell_detail_label(name, role, single_initial_pair=False, single_initial_save=False):
-    if single_initial_save and isinstance(name, str) and name.strip().lower() == 'initial' and role == 'Save':
+def is_single_primary_damage(damage_data):
+    if isinstance(damage_data, list):
+        meaningful_damage = [
+            roll_obj for roll_obj in damage_data
+            if isinstance(roll_obj, dict) and has_meaningful_spell_roll(roll_obj)
+        ]
+        return len(meaningful_damage) == 1 and meaningful_damage[0].get('name', '').strip().lower() == 'primary'
+
+    if isinstance(damage_data, dict):
+        return damage_data.get('name', '').strip().lower() == 'primary' and has_meaningful_spell_roll(damage_data)
+
+    return False
+
+
+def format_spell_detail_label(name, role, single_initial_pair=False, single_initial_save=False, single_primary_damage=False):
+    if isinstance(name, str) and name.strip().lower() == 'initial' and role == 'Save':
         return "Save:"
+
+    if isinstance(name, str) and name.strip().lower() == 'initial' and role == 'Attack':
+        return "Attack:"
+
+    if single_primary_damage and isinstance(name, str) and name.strip().lower() == 'primary' and role == 'Damage':
+        return "Damage:"
+
+    if isinstance(name, str) and role == 'Damage':
+        normalized_name = name.strip().lower()
+        if normalized_name == 'primary':
+            return "Damage (1):"
+        if normalized_name == 'secondary':
+            return "Damage (2):"
 
     if single_initial_pair and isinstance(name, str) and name.strip().lower() == 'initial':
         return f"{role}:"
@@ -829,11 +931,16 @@ def convert_db_spell_to_api_format(spell_row, conn=None):
     damage_data = parse_json_field(spell_dict.get('damage'))
     heal_data = parse_json_field(spell_dict.get('heal'))
     range_data = parse_json_field(spell_dict.get('range'))
+    if range_data is None:
+        range_data = spell_dict.get('range')
+    if isinstance(range_data, str) and not range_data.strip():
+        range_data = None
     aoe_data = parse_area_of_effect(spell_dict.get('area_of_effect'))
     casting_time_text = spell_dict.get('casting_time')
 
     single_initial_pair = is_single_initial_attack_damage_pair(to_hit_data, damage_data)
     single_initial_save = is_single_initial_save(to_hit_data, damage_data)
+    single_primary_damage = is_single_primary_damage(damage_data)
 
     # Build details array with database format
     # Order: paired rolls/damage (if applicable), then unpaired, range at end
@@ -876,7 +983,7 @@ def convert_db_spell_to_api_format(spell_row, conn=None):
                     roll_name = damage_roll.get('name', None) if isinstance(
                         damage_roll, dict) else None
                     element_name = format_element_name(roll_name)
-                label = format_spell_detail_label(damage_roll.get('name', None) if isinstance(damage_roll, dict) else None, 'Damage', single_initial_pair)
+                label = format_spell_detail_label(damage_roll.get('name', None) if isinstance(damage_roll, dict) else None, 'Damage', single_initial_pair, single_initial_save, single_primary_damage)
                 enriched_damage = enrich_roll_object(damage_roll, conn)
                 details.append({"label": label, "color": detail_color,
                                "content": enriched_damage})
@@ -907,7 +1014,7 @@ def convert_db_spell_to_api_format(spell_row, conn=None):
                     is_save = to_hit_data.get('save', False) if isinstance(
                         to_hit_data, dict) else False
                     roll_type = "Save" if is_save else "Attack"
-                    label = format_spell_detail_label(to_hit_data.get('name', None) if isinstance(to_hit_data, dict) else None, roll_type, single_initial_pair)
+                    label = format_spell_detail_label(to_hit_data.get('name', None) if isinstance(to_hit_data, dict) else None, roll_type, single_initial_pair, single_initial_save, single_primary_damage)
                     enriched_roll = enrich_roll_object(to_hit_data, conn)
                     details.append({"label": label, "color": detail_color,
                                    "content": enriched_roll})
@@ -923,13 +1030,13 @@ def convert_db_spell_to_api_format(spell_row, conn=None):
                         roll_obj, dict) else None
                     element_name = format_element_name(roll_name)
 
-                    label = format_spell_detail_label(roll_name, 'Damage', single_initial_pair)
+                    label = format_spell_detail_label(roll_name, 'Damage', single_initial_pair, single_initial_save, single_primary_damage)
 
                     enriched_roll = enrich_roll_object(roll_obj, conn)
                     details.append({"label": label, "color": detail_color, "content": enriched_roll})
             else:
                 if has_meaningful_spell_roll(damage_data):
-                    label = format_spell_detail_label(damage_data.get('name', None) if isinstance(damage_data, dict) else None, 'Damage', single_initial_pair)
+                    label = format_spell_detail_label(damage_data.get('name', None) if isinstance(damage_data, dict) else None, 'Damage', single_initial_pair, single_initial_save, single_primary_damage)
                     enriched_roll = enrich_roll_object(damage_data, conn)
                     details.append({"label": label, "color": detail_color, "content": enriched_roll})
 
@@ -977,7 +1084,7 @@ def convert_db_spell_to_api_format(spell_row, conn=None):
         "title": spell_dict.get('spell_name') or spell_dict.get('title', 'Unknown'),
         "explanation": explanation_content,
         "details": details,
-        "classes": parse_json_field(spell_dict.get('classes')) or [],
+        "classes": parse_json_array_field(spell_dict.get('classes')),
         "casting_time": casting_time_text or ''
     }
 

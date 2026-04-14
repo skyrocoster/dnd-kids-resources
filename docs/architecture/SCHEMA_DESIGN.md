@@ -8,7 +8,7 @@
 ## Overview
 
 The database stores card data and metadata for:
-- **Spells** (319 spells available from `data/5eAPI/spells.json`)
+- **Spells** (data loaded from `data/5eTools/extracted/data/spells/spells-merged-clean-range-text.json`; legacy 5eAPI files archived in `data/archive/5eAPI`)
 - **Conditions** (15 status effects and conditions)
 - **Creatures** (3 druid wild shape forms)
 - **Skills** (18 skill reference cards)
