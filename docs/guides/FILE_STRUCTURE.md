@@ -3,6 +3,7 @@
 ## Root Directory
 Key entry points and scripts:
 - `server_flask.py` — Main Flask server
+- `dnd_kids_resources.db` — Local SQLite database
 - `index.html` — Primary browser landing page
 - `launcher_gui.py` — Local GUI launcher and monitor helper
 - `requirements.txt` — Python dependencies
@@ -18,12 +19,6 @@ Startup helpers:
 ## `/server`
 Support code and server utilities for production or development
 
-## `/tools`
-Developer utilities and helpers:
-- `check_db_schema.py` — Inspect database schema
-- `check_spell.py` — Query or validate spell data
-- `test_special_field.html` — Local page for HTML/CSS testing
-
 ## `/logs`
 Application logs (auto-generated at runtime):
 - `server.log` — Flask server logs
@@ -35,25 +30,15 @@ Application logs (auto-generated at runtime):
 
 ### `/docs/guides`
 - `README.md` — Docs index and navigation hub
-- `GETTING_STARTED.md` — Setup and running the project
 - `FILE_STRUCTURE.md` — This file
 
-### `/docs/architecture`
-- `ARCHITECTURE.md` — Component overview and data flow
-- `SCHEMA_DESIGN.md` — Current database schema and seed sources
-- `schema_view.txt` — Full SQL schema dump
-- `DB_RESTRUCTURING_PLAN.md` — Historical schema cleanup notes
-
 ### `/docs/development`
-- `CONTRIBUTING.md` — How to add cards and features
-- `COLORS.md` — Color and styling reference
+- (currently empty)
+
+> Additional architecture and contributing docs are not currently available in this repository.
 
 ### `/docs/planning`
-- `PHASE_1_2_COMPLETE.md` — Completed work summary
-- `ABILITIES_WITH_SKILLS.md` — Historical abilities integration notes
-- `ABILITIES_ID_MIGRATION.md` — Historical migration history
-- `QUEUE_SYSTEM.md` — Queue/AI parsing design notes
-- `SCALING_PLAN.md` — Future strategy and architecture ideas
+- (currently empty)
 
 ## `/pages`
 Current browser pages and tools:
@@ -108,10 +93,6 @@ Python library code:
 - `parse_dungeon.py` — Dungeon HTML parser
 - Other utility modules
 
-## `/models`
-AI model files:
-- `mistral-7b-instruct-v0.1.Q4_K_M.gguf` — Local model file
-
 ## Hidden/System Directories
 
 - `.venv/` — Python virtual environment (git-ignored)
@@ -142,5 +123,7 @@ The repo is organized around a clear separation of concerns:
 - **Frontend**: pages, js, css, data
 - **Backend**: server_flask.py, lib/
 - **Data**: data/, dnd_kids_resources.db
-- **Developer tools**: _dev/, tools/, launchers/
+- **Developer tools**: _dev/, tools/, launchers/, tempscripts/
 - **Documentation**: docs/
+
+Use `tools/` for stable, reusable utilities and repo tooling. Use `tempscripts/` for temporary or experimental scripts that are not intended to remain long-term.

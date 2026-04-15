@@ -25,6 +25,51 @@ app = Flask(__name__, static_folder='.', static_url_path='')
 # Get absolute path to database (same directory as server_flask.py)
 DB_PATH = str(Path(__file__).parent / "dnd_kids_resources.db")
 
+@app.route('/api/classes', methods=['GET'])
+def get_classes_api():
+    """API endpoint: GET /api/classes - Returns all class codes, names, emoji, and color as JSON."""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT code, name, emoji, color
+            FROM classes
+            ORDER BY name
+        """)
+        classes = []
+        for row in cursor.fetchall():
+            classes.append({
+                'code': row['code'],
+                'name': row['name'],
+                'emoji': row['emoji'],
+                'color': row['color']
+            })
+        conn.close()
+        return jsonify(classes)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/spell-components', methods=['GET'])
+def get_spell_components_api():
+    """API endpoint: GET /api/spell-components - Returns all distinct component values in the spells table."""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT components FROM spells")
+        component_values = set()
+        rows = cursor.fetchall()
+        for row in rows:
+            raw = row['components'] if isinstance(row, sqlite3.Row) else row[0]
+            values = parse_json_array_field(raw)
+            if isinstance(values, list):
+                for value in values:
+                    if isinstance(value, str):
+                        component_values.add(value)
+        conn.close()
+        return jsonify(sorted(component_values))
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 # Enable CORS headers for development
 
 
@@ -98,6 +143,67 @@ def format_area_of_effect_object(aoe_obj):
         parts.append(f"{type_text} - {size_text}")
 
     return ' / '.join(parts) if parts else None
+
+
+SPELL_EDITABLE_FIELDS = [
+    'spell_name', 'icon', 'level', 'school', 'spell_text', 'spell_alt_text',
+    'damage', 'heal', 'heal_at_spell_slots', 'range', 'higher_levels',
+    'damage_at_higher_levels', 'casting_time', 'duration', 'concentration',
+    'ritual', 'components', 'materials', 'attack_type', 'area_of_effect',
+    'classes', 'subclasses'
+]
+
+SPELL_BOOLEAN_FIELDS = {'concentration', 'ritual'}
+
+SPELL_JSON_EDITOR_FIELDS = {
+    'damage', 'heal', 'heal_at_spell_slots', 'higher_levels',
+    'damage_at_higher_levels', 'attack_type', 'area_of_effect',
+    'classes', 'subclasses'
+}
+
+
+def format_spell_field_for_editor(field_name, value):
+    """Prepare DB field values for the spell edit modal."""
+    if field_name in SPELL_BOOLEAN_FIELDS:
+        return bool(value)
+
+    if value is None:
+        return ''
+
+    if field_name in SPELL_JSON_EDITOR_FIELDS:
+        parsed = parse_json_field(value)
+        if parsed is not None:
+            return json.dumps(parsed, ensure_ascii=False, indent=2)
+
+    return value
+
+
+def normalize_spell_editor_value(field_name, value):
+    """Normalize edited spell field values before saving to SQLite."""
+    if field_name in SPELL_BOOLEAN_FIELDS:
+        if isinstance(value, bool):
+            return 1 if value else 0
+        if isinstance(value, str):
+            return 1 if value.strip().lower() in {'1', 'true', 'yes', 'on'} else 0
+        return 1 if value else 0
+
+    if value is None:
+        return None
+
+    if isinstance(value, str):
+        cleaned = value.strip()
+        return cleaned if cleaned else None
+
+    return value
+
+
+def convert_db_spell_to_editor_format(spell_row):
+    """Return a raw editable spell payload for the frontend modal."""
+    spell_dict = dict(spell_row)
+    result = {'id': spell_dict.get('id')}
+    for field_name in SPELL_EDITABLE_FIELDS:
+        result[field_name] = format_spell_field_for_editor(field_name, spell_dict.get(field_name))
+    return result
 
 
 def parse_area_of_effect(aoe_str):
@@ -1078,6 +1184,7 @@ def convert_db_spell_to_api_format(spell_row, conn=None):
     explanation_content = spell_text_data if spell_text_data is not None else spell_dict.get('spell_text') or spell_dict.get('explanation', '')
 
     result = {
+        "id": spell_dict.get('id'),
         "icon": spell_dict.get('icon', '✨'),
         "level": spell_dict.get('level', 'cantrip'),
         "school": spell_dict.get('school', 'Evocation'),
@@ -1161,6 +1268,63 @@ def get_spell_by_title(title):
 
         conn.close()
         return jsonify(spell_json)
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/spells/id/<int:spell_id>/raw', methods=['GET'])
+def get_spell_by_id_raw(spell_id):
+    """API endpoint: GET /api/spells/id/<spell_id>/raw - Returns raw spell data for editing."""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(f"SELECT id, {', '.join(SPELL_EDITABLE_FIELDS)} FROM spells WHERE id = ?", (spell_id,))
+        row = cursor.fetchone()
+
+        if not row:
+            conn.close()
+            return jsonify({"error": f"Spell id '{spell_id}' not found"}), 404
+
+        spell_json = convert_db_spell_to_editor_format(row)
+        conn.close()
+        return jsonify(spell_json)
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/spells/id/<int:spell_id>', methods=['PUT'])
+def update_spell_by_id(spell_id):
+    """API endpoint: PUT /api/spells/id/<spell_id> - Updates editable spell fields."""
+    try:
+        payload = request.get_json(silent=True) or {}
+        updates = []
+        values = []
+
+        for field_name in SPELL_EDITABLE_FIELDS:
+            if field_name in payload:
+                updates.append(f"{field_name} = ?")
+                values.append(normalize_spell_editor_value(field_name, payload.get(field_name)))
+
+        if not updates:
+            return jsonify({"error": "No valid spell fields provided"}), 400
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        values.append(spell_id)
+        cursor.execute(f"UPDATE spells SET {', '.join(updates)} WHERE id = ?", values)
+
+        if cursor.rowcount == 0:
+            conn.close()
+            return jsonify({"error": f"Spell id '{spell_id}' not found"}), 404
+
+        conn.commit()
+        cursor.execute(f"SELECT id, {', '.join(SPELL_EDITABLE_FIELDS)} FROM spells WHERE id = ?", (spell_id,))
+        updated_row = cursor.fetchone()
+        result = convert_db_spell_to_editor_format(updated_row) if updated_row else {"id": spell_id}
+        conn.close()
+        return jsonify({"success": True, "spell": result})
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500

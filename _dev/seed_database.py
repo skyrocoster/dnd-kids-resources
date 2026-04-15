@@ -1,3 +1,47 @@
+def populate_classes(cursor, conn, force=False):
+    """Populate classes table from seed_classes.json. Requires schema created by init_database.py."""
+    print("\n[HAT] Loading classes...")
+    if force:
+        try:
+            cursor.execute("DELETE FROM classes")
+            print("  [TRASH]  Cleared existing classes data")
+        except Exception as e:
+            print(f"  [WARNING]  Error clearing classes data: {e}")
+            print("  [ERROR]  classes table may not exist. Run _dev/init_database.py first.")
+            return
+    else:
+        try:
+            cursor.execute("SELECT COUNT(*) FROM classes")
+            count = cursor.fetchone()[0]
+            if count > 0:
+                print(f"  [INFO]  Classes table already has {count} records. Skip (use --force to override)")
+                return
+        except Exception:
+            print("  [ERROR]  Classes table does not exist. Run _dev/init_database.py first.")
+            return
+    seeds = load_json_file(SEEDS_DIR / "seed_classes.json")
+    if not seeds:
+        print("  [WARNING]  No class seeds found")
+        return
+    for cls in seeds:
+        try:
+            cursor.execute("""
+                INSERT INTO classes (id, code, name, emoji, color)
+                VALUES (?, ?, ?, ?, ?)
+            """, (
+                cls.get('id'),
+                cls.get('code'),
+                cls.get('name'),
+                cls.get('emoji', '❓'),
+                cls.get('color', '#95a5a6')
+            ))
+            print(f"  [CHECK] {cls.get('code').upper()} - {cls.get('name')}")
+        except sqlite3.IntegrityError as e:
+            print(f"  [WARNING]  Error: {cls.get('code')} - {e}")
+    conn.commit()
+    cursor.execute("SELECT COUNT(*) FROM classes")
+    final_count = cursor.fetchone()[0]
+    print(f"  [OK] Classes table now has {final_count} records")
 #!/usr/bin/env python3
 """
 Phase 2: Seed System - Populate Database from JSON Files
@@ -589,12 +633,13 @@ def main():
     parser.add_argument('--creature-types', action='store_true', help='Load only creature types')
     parser.add_argument('--traps', action='store_true', help='Load only traps')
     parser.add_argument('--dungeons', action='store_true', help='Load only dungeons')
+    parser.add_argument('--classes', action='store_true', help='Load only classes')
     parser.add_argument('--force', action='store_true', help='Force reload (clear existing data first)')
     
     args = parser.parse_args()
     
     # If no specific tables selected, load all
-    load_all = not any([args.abilities, args.spells, args.conditions, args.creatures, args.damage_types, args.creature_types, args.traps, args.dungeons])
+    load_all = not any([args.abilities, args.spells, args.conditions, args.creatures, args.damage_types, args.creature_types, args.traps, args.dungeons, args.classes])
     
     print("="*60)
     print("PHASE 2: DATABASE SEEDING")
@@ -631,6 +676,8 @@ def main():
             populate_traps(cursor, conn, args.force)
         if load_all or args.dungeons:
             populate_dungeons(cursor, conn, args.force)
+        if load_all or args.classes:
+            populate_classes(cursor, conn, args.force)
         
         conn.close()
         

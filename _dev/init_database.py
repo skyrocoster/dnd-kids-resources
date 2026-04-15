@@ -117,6 +117,20 @@ def init_database():
         )
     """)
 
+
+    # Create classes table (new)
+
+    cursor.execute("""
+        CREATE TABLE classes (
+            id INTEGER PRIMARY KEY,
+            code TEXT NOT NULL UNIQUE,
+            name TEXT NOT NULL,
+            emoji TEXT NOT NULL,
+            color TEXT NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
     # Create creature_types lookup table (with ID for seed_database.py compatibility)
     cursor.execute("""
         CREATE TABLE creature_types (

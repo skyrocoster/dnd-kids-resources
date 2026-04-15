@@ -27,6 +27,8 @@ Guidelines for working with the D&D card generation system in this repository.
 - `js/` - Page logic and shared rendering helpers
 - `css/` - Global styles and print layout
 - `_dev/` - Development utilities for database setup, import, and testing
+- `tools/` - Persistent repo utilities and stable development tools
+- `tempscripts/` - Temporary or disposable scripts for experiments and one-off tasks
 
 ## Card Development Workflow
 
@@ -71,6 +73,8 @@ This project is optimized for A4 printing.
 **To print:** enable background graphics and use A4 paper size.
 
 ## Common Tasks
+
+Whenever a change affects repository conventions, folder layout, or developer workflows, ask whether the documentation should be updated and keep docs in sync.
 
 Detailed workflows are in the repo docs:
 - [CONTRIBUTING.md](CONTRIBUTING.md)
@@ -127,6 +131,7 @@ Invoke-WebRequest -Uri "http://127.0.0.1:8000/api/spells" -UseBasicParsing
 - Bash/sh syntax and Unix-specific redirection
 - `curl` alias behavior in PowerShell
 - shell redirections like `2>/dev/null` — use PowerShell `-ErrorAction` instead
+- Execute python directly whenever possible
 
 **PowerShell tips:**
 - Use `Get-Content file.txt` instead of `cat`
