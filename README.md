@@ -53,13 +53,17 @@ The current documentation set is limited to:
 
 Seed and source data used by the app:
 - `data/5eTools/extracted/data/spells/spells-merged-clean-range-text.json` — spell metadata
-- `data/seed_abilities.json` — abilities, skills, and modifiers
-- `data/seed_damage_types.json` — damage type metadata
-- `data/seed_conditions.json` — condition seeds
-- `data/seed_creature_types.json` — creature type metadata
-- `data/seed_creatures.json` — creature and wild shape seeds
-- `data/seed_traps.json` — trap definitions
-- `data/seed_dungeons.json` — dungeon seed data
+- `data/seeds/seed_abilities.json` — abilities, skills, and modifiers
+- `data/seeds/seed_damage_types.json` — damage type metadata
+- `data/seeds/seed_conditions.json` — condition seeds
+- `data/seeds/seed_creature_types.json` — creature type metadata
+- `data/seeds/seed_creatures.json` — creature and wild shape seeds
+- `data/seeds/seed_traps.json` — trap definitions
+- `data/seeds/seed_dungeons.json` — dungeon seed data
+- `data/seeds/seed_spells.json` — optional spell seed fallback
+
+Seed export workflow:
+- `python _dev/export_db_seeds.py` — archive legacy seed files into `data/seeds/archive` and export current DB data to `data/seeds/`
 
 ---
 

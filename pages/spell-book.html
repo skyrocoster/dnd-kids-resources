@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Spell Book — D&D Kids Resources</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@600;700;800&family=OpenDyslexic&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/styles.css">
+  <style>
+    body {
+      min-height: 100vh;
+      background: linear-gradient(180deg, #8a5a2c 0%, #d9b58a 100%);
+      color: var(--ink);
+      padding: 0;
+      margin: 0;
+    }
+    .spell-book-shell {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      justify-content: flex-start;
+    }
+    .spell-book-topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(253, 243, 227, 0.96);
+      border-bottom: 3px solid var(--border);
+      padding: 18px 18px 12px;
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.16);
+    }
+    .spell-book-title-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .spell-book-title {
+      font-family: 'Fredoka One', cursive;
+      margin: 0;
+      font-size: 2rem;
+      color: #5a3210;
+      line-height: 1.05;
+    }
+    .spell-book-subtitle {
+      margin: 6px 0 0;
+      color: #6b4423;
+      font-size: 0.95rem;
+      letter-spacing: 0.6px;
+    }
+    .spell-book-toolbar {
+      margin-top: 14px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+    }
+    .spell-book-toolbar > * {
+      min-width: 0;
+    }
+    .character-select-field,
+    .search-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      color: var(--ink);
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+    }
+    .character-select-field select,
+    .search-field input {
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 1rem;
+      background: #fffdf7;
+      color: var(--ink);
+    }
+    .character-select-field select:focus,
+    .search-field input:focus {
+      outline: none;
+      border-color: #c0392b;
+      box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.12);
+    }
+    .search-field {
+      margin-bottom: 0;
+    }
+    .search-field input {
+      width: 100%;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 1rem;
+      background: #fffdf7;
+      color: var(--ink);
+    }
+    .search-field input:focus {
+      outline: none;
+      border-color: #c0392b;
+      box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.12);
+    }
+    .spell-book-toolbar.spell-book-top-row {
+      grid-template-columns: minmax(220px, 1fr) minmax(260px, 2fr) auto;
+      gap: 12px;
+      align-items: end;
+    }
+    .spell-book-toolbar .toolbar-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+    }
+    .spell-book-toolbar .selected-player-pill {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      padding: 12px 16px;
+      border-radius: 999px;
+      border: 2px solid var(--border);
+      background: #fffdf7;
+      color: #5a3210;
+      font-weight: 800;
+      box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.04);
+    }
+    .reset-button {
+      border: 3px solid #8b5e3c;
+      background: linear-gradient(135deg, #a8e6ff, #6bbaff);
+      color: #2c1810;
+      font-weight: 800;
+      padding: 14px 18px;
+      border-radius: 999px;
+      min-width: 140px;
+      cursor: pointer;
+      transition: transform 0.18s ease, filter 0.18s ease;
+    }
+    .reset-button:hover:not(:disabled) {
+      transform: translateY(-1px);
+      filter: brightness(1.05);
+    }
+    .reset-button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      background: #e8edf2;
+      border-color: #b0b7c1;
+    }
+    .spell-slot-overview {
+      margin-top: 14px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+    }
+    .spell-slot-card {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 14px 14px 16px;
+      border-radius: 18px;
+      background: #fffdf7;
+      border: 3px solid var(--border);
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
+      position: relative;
+      overflow: hidden;
+    }
+    .spell-slot-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 6px;
+      background: linear-gradient(90deg, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0));
+    }
+    .spell-slot-card.empty {
+      opacity: 0.48;
+    }
+    .slot-level {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 0.95rem;
+      font-weight: 900;
+      color: #2c1810;
+    }
+    .slot-bubble {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      font-weight: 900;
+      color: white;
+      font-size: 0.95rem;
+    }
+    .spell-slot-card.level-1 .slot-bubble { background: #f39c12; }
+    .spell-slot-card.level-2 .slot-bubble { background: #3498db; }
+    .spell-slot-card.level-3 .slot-bubble { background: #9b59b6; }
+    .spell-slot-card.level-4 .slot-bubble { background: #1abc9c; }
+    .spell-slot-card.level-5 .slot-bubble { background: #2ecc71; }
+    .spell-slot-card.level-6 .slot-bubble { background: #f1c40f; }
+    .spell-slot-card.level-7 .slot-bubble { background: #e67e22; }
+    .spell-slot-card.level-8 .slot-bubble { background: #95a5a6; }
+    .spell-slot-card.level-9 .slot-bubble { background: #34495e; }
+    .slot-count {
+      font-size: 1.35rem;
+      font-weight: 900;
+      color: #34312a;
+      line-height: 1;
+    }
+    .slot-caption {
+      font-size: 0.78rem;
+      color: #7a5643;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+    .slot-meter {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 4px;
+    }
+    .slot-meter span {
+      display: block;
+      width: 100%;
+      height: 8px;
+      border-radius: 999px;
+      background: #f3e2c3;
+    }
+    .slot-meter span.filled { background: #c0392b; }
+    .spell-book-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      justify-content: flex-end;
+      color: #5a3210;
+      font-weight: 700;
+      font-size: 0.95rem;
+    }
+    .spell-slot-overview {
+      margin-top: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .spell-slot-pill {
+      border: 2px solid var(--border);
+      border-radius: 999px;
+      background: #fffdf7;
+      color: #5a3210;
+      padding: 8px 12px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .spell-slot-pill.empty {
+      opacity: 0.45;
+    }
+    .level-filter-row {
+      margin-top: 14px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+    .filter-button {
+      border: 2px solid var(--border);
+      background: #fffdf7;
+      color: var(--ink);
+      border-radius: 999px;
+      padding: 10px 14px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: 700;
+      transition: transform 0.2s ease, background 0.2s ease;
+    }
+    .filter-button:hover {
+      transform: translateY(-1px);
+      background: #f5e0c1;
+    }
+    .filter-button.active {
+      background: #c0392b;
+      color: white;
+      border-color: #992d22;
+    }
+    .cast-button {
+      border: 3px solid #8b5e3c;
+      background: linear-gradient(135deg, #ffd688, #f39237);
+      color: #2c1810;
+      padding: 14px 20px;
+      border-radius: 999px;
+      font-size: 1rem;
+      font-weight: 800;
+      box-shadow: 0 10px 22px rgba(0, 0, 0, 0.17);
+      transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.25s ease;
+      min-width: 140px;
+    }
+    .cast-button:hover:not(:disabled) {
+      transform: translateY(-1px) scale(1.03);
+      background: linear-gradient(135deg, #ffe29b, #f7ab5f);
+    }
+    .cast-button:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      background: #e6d3b5;
+      border-color: #b0855c;
+    }
+    .spell-cast-effect {
+      animation: spell-cast-flash 5s ease forwards;
+    }
+    .spell-cast-toast {
+      position: fixed;
+      left: 50%;
+      top: 18px;
+      transform: translateX(-50%) translateY(-100%);
+      padding: 14px 22px;
+      border-radius: 999px;
+      background: rgba(255, 220, 115, 0.98);
+      color: #2c1810;
+      font-weight: 800;
+      font-size: 1rem;
+      border: 3px solid #8b5e3c;
+      box-shadow: 0 14px 32px rgba(0, 0, 0, 0.18);
+      opacity: 0;
+      pointer-events: none;
+      z-index: 30;
+      transition: transform 0.35s ease, opacity 0.35s ease;
+    }
+    .spell-cast-toast.visible {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+    .spell-cast-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.4rem;
+      color: #fff9e3;
+      text-shadow: 0 0 20px rgba(255, 255, 255, 0.95);
+      opacity: 0;
+      animation: spell-cast-burst 5s ease forwards;
+    }
+    @keyframes spell-cast-flash {
+      0% { transform: scale(1); box-shadow: 0 0 0 rgba(255,255,255,0); }
+      20% { transform: scale(1.04); box-shadow: 0 0 24px rgba(255, 218, 131, 0.75); }
+      50% { transform: scale(1); box-shadow: 0 0 18px rgba(255, 218, 131, 0.55); }
+      100% { transform: scale(1); box-shadow: 0 0 0 rgba(255,255,255,0); }
+    }
+    @keyframes spell-cast-burst {
+      0% { opacity: 1; transform: scale(0.85); }
+      25% { opacity: 1; transform: scale(1.05); }
+      75% { opacity: 0.9; transform: scale(1.15); }
+      100% { opacity: 0; transform: scale(1.35); }
+    }
+    #spell-book-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: 18px 16px 24px;
+    }
+    .spell-book-list {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      width: 100%;
+      max-width: 920px;
+      margin: 0 auto;
+    }
+    .spell-book-list .card {
+      width: 100%;
+      min-height: auto;
+    }
+    .spell-book-list .card .card-body {
+      padding: 16px;
+    }
+    .spell-book-list .card-header {
+      padding: 14px 16px;
+    }
+    .spell-book-list .card-title {
+      font-size: 1.1rem;
+    }
+    .spell-book-backlink {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      color: var(--ink);
+      text-decoration: none;
+      font-weight: 700;
+      margin-top: 10px;
+    }
+    @media (max-width: 780px) {
+      .spell-book-toolbar {
+        grid-template-columns: 1fr;
+      }
+      .spell-book-toolbar.spell-book-top-row {
+        grid-template-columns: 1fr;
+      }
+      .spell-book-meta {
+        justify-content: flex-start;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="spell-book-shell">
+    <div class="spell-book-topbar">
+      <div class="spell-book-title-row">
+        <div>
+          <h1 class="spell-book-title">Spell Book</h1>
+          <p class="spell-book-subtitle">Portrait-first spell reference for Surface Pro.</p>
+        </div>
+        <a href="resources.html" class="spell-book-backlink">← Back to Resources</a>
+      </div>
+
+      <div class="spell-book-toolbar spell-book-top-row">
+        <label class="character-select-field select-field">
+          Select player
+          <select id="character-select"></select>
+        </label>
+        <label class="search-field">
+          Search spells
+          <input id="search-input" type="search" placeholder="Search by name, school, or text" autocomplete="off">
+        </label>
+        <div class="toolbar-actions">
+          <button id="reset-spell-slots-btn" class="reset-button" type="button">Refill Slots</button>
+        </div>
+      </div>
+      <div class="spell-book-toolbar">
+        <div class="selected-player-pill" id="selected-player-name">No player selected</div>
+        <div class="spell-book-meta" id="spell-book-meta">Loading spells…</div>
+      </div>
+      <div class="spell-slot-overview" id="spell-slot-overview"></div>
+      <div class="level-filter-row" id="level-filters"></div>
+    </div>
+
+    <div id="spell-cast-toast" class="spell-cast-toast" aria-live="polite"></div>
+    <main id="spell-book-container"></main>
+  </div>
+  <script src="../js/card-generator.js"></script>
+  <script src="../js/spells-book.js"></script>
+</body>
+</html>

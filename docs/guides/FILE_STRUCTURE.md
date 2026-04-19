@@ -70,13 +70,17 @@ Client-side scripts:
 ## `/data`
 Seed and source data files:
 - `data/5eTools/extracted/data/spells/spells-merged-clean-range-text.json` — Spell metadata source
-- `seed_conditions.json` — Condition card seeds
-- `seed_creature_types.json` — Creature type metadata
-- `seed_creatures.json` — Creature/wild-shape seeds
-- `seed_damage_types.json` — Damage type metadata
-- `seed_abilities.json` — Abilities, skills, and modifiers
-- `seed_traps.json` — Trap definitions
-- `seed_dungeons.json` — Dungeon module seeds
+- `data/seeds/seed_conditions.json` — Condition card seeds
+- `data/seeds/seed_creature_types.json` — Creature type metadata
+- `data/seeds/seed_creatures.json` — Creature/wild-shape seeds
+- `data/seeds/seed_damage_types.json` — Damage type metadata
+- `data/seeds/seed_abilities.json` — Abilities, skills, and modifiers
+- `data/seeds/seed_traps.json` — Trap definitions
+- `data/seeds/seed_dungeons.json` — Dungeon module seeds
+- `data/seeds/seed_spells.json` — Optional spell seed fallback
+
+Developer seed export workflow:
+- `python _dev/export_db_seeds.py` — archive legacy `data/seed_*.json` files into `data/seeds/archive` and export current DB contents to `data/seeds/`
 
 ## `/_dev`
 Development utilities for database and testing:

@@ -32,17 +32,17 @@ def init_database():
     print("\nCleaning up existing tables...")
     tables_to_drop = [
         "statblock_jobs",
-        "weapons",
-        "wild_shapes",
+        "player_spells",
+        "players",
         "creatures",
         "creature_types",
+        "classes",
         "spells",
         "conditions",
         "damage_types",
         "abilities",
         "traps",
         "dungeons",
-        "icons",
         "skills"
     ]
     
@@ -117,6 +117,17 @@ def init_database():
         )
     """)
 
+    # Create conditions table
+    cursor.execute("""
+        CREATE TABLE conditions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL UNIQUE,
+            icon TEXT NOT NULL DEFAULT '⚠️',
+            explanation TEXT,
+            details TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
 
     # Create classes table (new)
 
@@ -189,36 +200,30 @@ def init_database():
         )
     """)
 
-    # Create weapons table (legacy)
+    # Create players table for persistent character records
     cursor.execute("""
-        CREATE TABLE weapons (
+        CREATE TABLE players (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            card_id INTEGER NOT NULL UNIQUE,
-            type TEXT,
-            hands TEXT,
-            removable INTEGER,
-            FOREIGN KEY (card_id) REFERENCES cards(id) ON DELETE CASCADE
-        )
-    """)
-
-    # Create wild_shapes table (legacy)
-    cursor.execute("""
-        CREATE TABLE wild_shapes (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            card_id INTEGER NOT NULL UNIQUE,
-            FOREIGN KEY (card_id) REFERENCES cards(id) ON DELETE CASCADE
-        )
-    """)
-
-    # Create icons table (legacy)
-    cursor.execute("""
-        CREATE TABLE icons (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            symbol TEXT NOT NULL UNIQUE,
-            description TEXT NOT NULL,
-            purpose TEXT NOT NULL,
+            name TEXT NOT NULL DEFAULT 'Unnamed Player',
+            class TEXT,
+            level INTEGER,
+            total_spell_slots TEXT DEFAULT '{}',
+            current_spell_slots TEXT DEFAULT '{}',
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    # Create player_spells table for spell assignments
+    cursor.execute("""
+        CREATE TABLE player_spells (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            player_id INTEGER NOT NULL,
+            spell_id INTEGER NOT NULL,
+            added_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(player_id, spell_id),
+            FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE,
+            FOREIGN KEY (spell_id) REFERENCES spells(id) ON DELETE CASCADE
         )
     """)
 

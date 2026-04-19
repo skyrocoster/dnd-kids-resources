@@ -50,15 +50,18 @@ This script loads seed data from JSON files and populates empty database tables.
 It's designed to be safe and idempotent (can run multiple times).
 
 Seed files:
-- data/seed_abilities.json
-- data/seed_conditions.json
-- data/seed_creatures.json
-- data/seed_damage_types.json
-- data/seed_creature_types.json
-- data/seed_traps.json
-- data/seed_dungeons.json
+- data/seeds/seed_abilities.json
+- data/seeds/seed_conditions.json
+- data/seeds/seed_creatures.json
+- data/seeds/seed_damage_types.json
+- data/seeds/seed_creature_types.json
+- data/seeds/seed_traps.json
+- data/seeds/seed_dungeons.json
+- data/seeds/seed_spells.json (optional, JSON fallback)
 
-Spell data is now loaded from the new 5eTools staging workflow via `_dev/parse_spells_to_db.py`.
+Seed files are now loaded from the new `data/seeds/` directory.
+Legacy seed files under `data/` are still supported for compatibility, but new files should be stored in `data/seeds/`.
+Use `_dev/export_db_seeds.py` to archive old root seed files into `data/seeds/archive` and export current DB tables as new seed JSON.
 
 Usage:
     python _dev/seed_database.py              # Load all seeds
@@ -75,7 +78,8 @@ import argparse
 import sys
 
 DB_PATH = Path(__file__).parent.parent / "dnd_kids_resources.db"
-SEEDS_DIR = Path(__file__).parent.parent / "data"
+SEEDS_DIR = Path(__file__).parent.parent / "data" / "seeds"
+LEGACY_SEEDS_DIR = Path(__file__).parent.parent / "data"
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -84,8 +88,12 @@ from lib.parse_dungeon import DungeonHTMLParser
 def load_json_file(filepath):
     """Load and parse a JSON seed file."""
     if not filepath.exists():
-        print(f"[WARNING]  Seed file not found: {filepath}")
-        return []
+        alternate = LEGACY_SEEDS_DIR / filepath.name
+        if alternate.exists():
+            filepath = alternate
+        else:
+            print(f"[WARNING]  Seed file not found: {filepath}")
+            return []
     
     try:
         with open(filepath, 'r', encoding='utf-8') as f:
@@ -158,10 +166,88 @@ def populate_abilities(cursor, conn, force=False):
         print(f"     • {ability_type.upper()}: {count}")
 
 
-def populate_spells(cursor, conn, force=False):
-    """Populate spells table using the new 5eTools staging workflow."""
-    print("\n[BOOKS] Loading spells using the new 5eTools staging workflow...")
+def serialize_for_db(value):
+    if value is None:
+        return None
+    if isinstance(value, (dict, list)):
+        return json.dumps(value, ensure_ascii=False)
+    return str(value)
 
+
+def insert_spell(cursor, spell_data):
+    cursor.execute(
+        """
+        INSERT INTO spells
+        (spell_name, icon, level, school, spell_text, spell_alt_text, damage, heal, heal_at_spell_slots, range,
+         higher_levels, damage_at_higher_levels, casting_time, duration, concentration, ritual, components, materials,
+         attack_type, area_of_effect, classes, subclasses)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            serialize_for_db(spell_data.get("spell_name")),
+            serialize_for_db(spell_data.get("icon", "✨")),
+            serialize_for_db(spell_data.get("level")),
+            serialize_for_db(spell_data.get("school")),
+            serialize_for_db(spell_data.get("spell_text")),
+            serialize_for_db(spell_data.get("spell_alt_text")),
+            serialize_for_db(spell_data.get("damage")),
+            serialize_for_db(spell_data.get("heal")),
+            serialize_for_db(spell_data.get("heal_at_spell_slots")),
+            serialize_for_db(spell_data.get("range")),
+            serialize_for_db(spell_data.get("higher_levels")),
+            serialize_for_db(spell_data.get("damage_at_higher_levels")),
+            serialize_for_db(spell_data.get("casting_time")),
+            serialize_for_db(spell_data.get("duration")),
+            int(bool(spell_data.get("concentration", False))),
+            int(bool(spell_data.get("ritual", False))),
+            serialize_for_db(spell_data.get("components")),
+            serialize_for_db(spell_data.get("materials")),
+            serialize_for_db(spell_data.get("attack_type")),
+            serialize_for_db(spell_data.get("area_of_effect")),
+            serialize_for_db(spell_data.get("classes")),
+            serialize_for_db(spell_data.get("subclasses")),
+        )
+    )
+
+
+def populate_spells(cursor, conn, force=False):
+    """Populate spells table using the new 5eTools staging workflow or JSON seed fallback."""
+    print("\n[BOOKS] Loading spells...")
+
+    seed_file = SEEDS_DIR / "seed_spells.json"
+    if seed_file.exists():
+        try:
+            cursor.execute("SELECT COUNT(*) FROM spells")
+            count = cursor.fetchone()[0]
+        except Exception:
+            count = 0
+
+        if count > 0 and not force:
+            print(f"  [INFO] Spells table already has {count} records. Skip (use --force to override)")
+            return
+
+        if force:
+            cursor.execute("DELETE FROM spells")
+            print("  [TRASH]  Cleared existing spells data")
+
+        print(f"  [INFO] Loading spell seeds from {seed_file}")
+        seeds = load_json_file(seed_file)
+        if not seeds:
+            print("  [WARNING]  No spell seeds found")
+            return
+
+        for spell in seeds:
+            try:
+                insert_spell(cursor, spell)
+                print(f"  [CHECK] {spell.get('spell_name')}")
+            except sqlite3.IntegrityError as e:
+                print(f"  [WARNING]  Duplicate or error: {spell.get('spell_name')} - {e}")
+
+        conn.commit()
+        print(f"  [OK] Loaded {len(seeds)} spells from JSON seed file")
+        return
+
+    print("  [INFO] No seed_spells.json file found; falling back to legacy 5eTools parser")
     parser_script = Path(__file__).parent / "parse_spells_to_db.py"
     if not parser_script.exists():
         print(f"  [ERROR] Missing parser: {parser_script}")
@@ -523,13 +609,13 @@ def populate_dungeons(cursor, conn, force=False):
             """, (
                 dungeon.get('id'),
                 dungeon.get('title'),
-                dungeon.get('original_html', ''),
-                dungeon.get('parsed_json', '{}')  # Already JSON string in seed file
+                serialize_for_db(dungeon.get('original_html', '')),
+                serialize_for_db(dungeon.get('parsed_json', {}))
             ))
             print(f"  [CHECK] {dungeon.get('title')}")
         except sqlite3.IntegrityError as e:
             print(f"  [WARNING]  Error: {dungeon.get('title')} - {e}")
-    
+
     conn.commit()
     cursor.execute("SELECT COUNT(*) FROM dungeons")
     final_count = cursor.fetchone()[0]
@@ -595,8 +681,6 @@ def clear_all_tables(cursor, conn):
     
     tables_to_clear = [
         "statblock_jobs",
-        "weapons",
-        "wild_shapes",
         "creatures",
         "creature_types",
         "spells",
@@ -605,7 +689,6 @@ def clear_all_tables(cursor, conn):
         "abilities",
         "traps",
         "dungeons",
-        "icons",
         "skills"
     ]
     
@@ -691,18 +774,19 @@ def main():
         print("[OK] PHASE 2 COMPLETE!")
         print("="*60)
         print("\nNext Steps:")
-        print("  1. Edit seed files in data/ to add more data")
+        print("  1. Edit seed files in data/seeds/ to add more data")
         print("  2. Run: python _dev/seed_database.py --force")
         print("  3. Check: Start Flask server and test API endpoints")
         print("\nSeed files:")
-        print("  - data/seed_abilities.json")
+        print("  - data/seeds/seed_abilities.json")
+        print("  - data/seeds/seed_spells.json")
         print("  - data/5eTools/extracted/data/spells/spells-merged-clean-range-text.json")
-        print("  - data/seed_conditions.json")
-        print("  - data/seed_creatures.json")
-        print("  - data/seed_damage_types.json")
-        print("  - data/seed_creature_types.json")
-        print("  - data/seed_traps.json")
-        print("  - data/seed_dungeons.json")
+        print("  - data/seeds/seed_conditions.json")
+        print("  - data/seeds/seed_creatures.json")
+        print("  - data/seeds/seed_damage_types.json")
+        print("  - data/seeds/seed_creature_types.json")
+        print("  - data/seeds/seed_traps.json")
+        print("  - data/seeds/seed_dungeons.json")
         
         return True
         

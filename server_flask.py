@@ -122,6 +122,246 @@ def parse_json_array_field(value):
     return []
 
 
+def convert_db_player_to_api_format(player_row, conn=None, include_spells=False):
+    player = dict(player_row)
+    result = {
+        'id': player.get('id'),
+        'name': player.get('name'),
+        'class': player.get('class'),
+        'level': player.get('level'),
+        'total_spell_slots': parse_json_field(player.get('total_spell_slots')) or {},
+        'current_spell_slots': parse_json_field(player.get('current_spell_slots')) or {},
+        'created_at': player.get('created_at'),
+        'updated_at': player.get('updated_at')
+    }
+
+    if include_spells:
+        if conn is None:
+            conn = get_db_connection()
+            should_close = True
+        else:
+            should_close = False
+
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT spell_id FROM player_spells WHERE player_id = ? ORDER BY added_at",
+            (player.get('id'),)
+        )
+        result['spells'] = [row['spell_id'] for row in cursor.fetchall()]
+
+        if should_close:
+            conn.close()
+    else:
+        result['spells'] = []
+
+    return result
+
+
+def get_player_by_id(player_id, include_spells=False):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, name, class, level, total_spell_slots, current_spell_slots, created_at, updated_at FROM players WHERE id = ?", (player_id,))
+    row = cursor.fetchone()
+    if not row:
+        conn.close()
+        return None
+    player = convert_db_player_to_api_format(row, conn if include_spells else None, include_spells=include_spells)
+    conn.close()
+    return player
+
+
+def get_all_players(include_spells=False):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, name, class, level, total_spell_slots, current_spell_slots, created_at, updated_at FROM players ORDER BY name")
+    players = []
+    rows = cursor.fetchall()
+    for row in rows:
+        players.append(convert_db_player_to_api_format(row, conn if include_spells else None, include_spells=include_spells))
+    conn.close()
+    return players
+
+
+def validate_spell_slot_block(value):
+    if value is None:
+        return True
+    if isinstance(value, dict):
+        return all(
+            isinstance(key, (str, int)) and str(key).isdigit() and 1 <= int(key) <= 9 and
+            (isinstance(val, int) or (isinstance(val, str) and str(val).isdigit()))
+            for key, val in value.items()
+        )
+    if isinstance(value, str):
+        parsed = parse_json_field(value)
+        return isinstance(parsed, dict) and validate_spell_slot_block(parsed)
+    return False
+
+
+def validate_player_payload(payload):
+    if not isinstance(payload, dict):
+        return False
+    if 'name' in payload and payload.get('name') is not None and not isinstance(payload.get('name'), str):
+        return False
+    if 'class' in payload and payload.get('class') is not None and not isinstance(payload.get('class'), str):
+        return False
+    if 'level' in payload and payload.get('level') is not None:
+        try:
+            int(payload.get('level'))
+        except (ValueError, TypeError):
+            return False
+    if 'total_spell_slots' in payload and not validate_spell_slot_block(payload.get('total_spell_slots')):
+        return False
+    if 'current_spell_slots' in payload and not validate_spell_slot_block(payload.get('current_spell_slots')):
+        return False
+    return True
+
+
+def normalize_spell_slot_block(value):
+    if value is None:
+        return {}
+    if isinstance(value, str):
+        parsed = parse_json_field(value)
+        if isinstance(parsed, dict):
+            value = parsed
+        else:
+            return {}
+    if not isinstance(value, dict):
+        return {}
+    normalized = {}
+    for key, rawVal in value.items():
+        if rawVal is None or rawVal == '':
+            continue
+        try:
+            slotValue = int(rawVal)
+        except (TypeError, ValueError):
+            continue
+        levelKey = str(key).strip()
+        if levelKey.isdigit() and 1 <= int(levelKey) <= 9:
+            normalized[levelKey] = slotValue
+    return normalized
+
+
+def sanitize_player_payload(payload):
+    if not isinstance(payload, dict):
+        return {}
+    result = {}
+    if 'name' in payload:
+        result['name'] = str(payload['name']).strip() if payload['name'] is not None else 'Unnamed Player'
+    if 'class' in payload:
+        result['class'] = str(payload['class']).strip() if payload['class'] is not None else None
+    if 'level' in payload:
+        try:
+            result['level'] = int(payload['level']) if payload['level'] not in (None, '') else None
+        except (TypeError, ValueError):
+            result['level'] = None
+    if 'total_spell_slots' in payload:
+        result['total_spell_slots'] = json.dumps(normalize_spell_slot_block(payload['total_spell_slots']))
+    if 'current_spell_slots' in payload:
+        result['current_spell_slots'] = json.dumps(normalize_spell_slot_block(payload['current_spell_slots']))
+    return result
+
+
+def create_player(player_data):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO players (name, class, level, total_spell_slots, current_spell_slots) VALUES (?, ?, ?, ?, ?)",
+        (
+            player_data.get('name', 'Unnamed Player'),
+            player_data.get('class'),
+            player_data.get('level'),
+            player_data.get('total_spell_slots', '{}'),
+            player_data.get('current_spell_slots', '{}')
+        )
+    )
+    conn.commit()
+    player_id = cursor.lastrowid
+    conn.close()
+    return get_player_by_id(player_id, include_spells=True)
+
+
+def update_player(player_id, player_data):
+    fields = []
+    values = []
+    for key in ['name', 'class', 'level', 'total_spell_slots', 'current_spell_slots']:
+        if key in player_data:
+            fields.append(f"{key} = ?")
+            values.append(player_data[key])
+    if not fields:
+        return None
+    values.append(player_id)
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute(f"UPDATE players SET {', '.join(fields)}, updated_at = CURRENT_TIMESTAMP WHERE id = ?", values)
+    conn.commit()
+    conn.close()
+    return get_player_by_id(player_id, include_spells=True)
+
+
+def delete_player(player_id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM players WHERE id = ?", (player_id,))
+    deleted = cursor.rowcount
+    conn.commit()
+    conn.close()
+    return deleted > 0
+
+
+def add_spell_to_player(player_id, spell_id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id FROM players WHERE id = ?", (player_id,))
+    if not cursor.fetchone():
+        conn.close()
+        return None
+    cursor.execute("SELECT id FROM spells WHERE id = ?", (spell_id,))
+    if not cursor.fetchone():
+        conn.close()
+        return None
+    try:
+        cursor.execute(
+            "INSERT OR IGNORE INTO player_spells (player_id, spell_id) VALUES (?, ?)",
+            (player_id, spell_id)
+        )
+        conn.commit()
+    except Exception:
+        pass
+    conn.close()
+    return get_player_by_id(player_id, include_spells=True)
+
+
+def remove_spell_from_player(player_id, spell_id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM player_spells WHERE player_id = ? AND spell_id = ?", (player_id, spell_id))
+    deleted = cursor.rowcount
+    conn.commit()
+    conn.close()
+    return deleted > 0
+
+
+def get_player_spell_ids(player_id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT spell_id FROM player_spells WHERE player_id = ? ORDER BY added_at", (player_id,))
+    spell_ids = [row['spell_id'] for row in cursor.fetchall()]
+    conn.close()
+    return spell_ids
+
+
+def get_spells_by_ids(spell_ids):
+    if not spell_ids:
+        return []
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    placeholders = ','.join(['?'] * len(spell_ids))
+    cursor.execute(f"SELECT id, spell_name, icon, level, school, spell_text, attack_type, damage, heal, range, area_of_effect, classes, casting_time FROM spells WHERE id IN ({placeholders}) ORDER BY spell_name", tuple(spell_ids))
+    spells = [convert_db_spell_to_api_format(row, conn) for row in cursor.fetchall()]
+    conn.close()
+    return spells
+
+
 def format_area_of_effect_object(aoe_obj):
     """Convert structured AoE data like {"line": 100} into readable text."""
     if not isinstance(aoe_obj, dict) or not aoe_obj:
@@ -1269,6 +1509,116 @@ def get_spell_by_title(title):
         conn.close()
         return jsonify(spell_json)
 
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/players', methods=['GET'])
+def get_players_api():
+    """API endpoint: GET /api/players - Returns all players."""
+    try:
+        players = get_all_players(include_spells=False)
+        return jsonify(players)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/players/<int:player_id>', methods=['GET'])
+def get_player_api(player_id):
+    """API endpoint: GET /api/players/<player_id> - Returns one player and assigned spells."""
+    try:
+        player = get_player_by_id(player_id, include_spells=True)
+        if not player:
+            return jsonify({"error": f"Player id '{player_id}' not found"}), 404
+        return jsonify(player)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/players', methods=['POST'])
+def create_player_api():
+    """API endpoint: POST /api/players - Creates a new player."""
+    try:
+        payload = request.get_json(silent=True) or {}
+        if not validate_player_payload(payload):
+            return jsonify({"error": "Invalid player payload"}), 400
+        player_data = sanitize_player_payload(payload)
+        player = create_player(player_data)
+        return jsonify(player), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/players/<int:player_id>', methods=['PUT'])
+def update_player_api(player_id):
+    """API endpoint: PUT /api/players/<player_id> - Updates a player."""
+    try:
+        payload = request.get_json(silent=True) or {}
+        if not validate_player_payload(payload):
+            return jsonify({"error": "Invalid player payload"}), 400
+        player_data = sanitize_player_payload(payload)
+        player = update_player(player_id, player_data)
+        if not player:
+            return jsonify({"error": f"Player id '{player_id}' not found"}), 404
+        return jsonify(player)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/players/<int:player_id>', methods=['DELETE'])
+def delete_player_api(player_id):
+    """API endpoint: DELETE /api/players/<player_id> - Deletes a player."""
+    try:
+        deleted = delete_player(player_id)
+        if not deleted:
+            return jsonify({"error": f"Player id '{player_id}' not found"}), 404
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/players/<int:player_id>/spells', methods=['GET'])
+def get_player_spells_api(player_id):
+    """API endpoint: GET /api/players/<player_id>/spells - Returns assigned spell IDs."""
+    try:
+        if not get_player_by_id(player_id):
+            return jsonify({"error": f"Player id '{player_id}' not found"}), 404
+        spell_ids = get_player_spell_ids(player_id)
+        return jsonify(spell_ids)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/players/<int:player_id>/spells', methods=['POST'])
+def add_player_spell_api(player_id):
+    """API endpoint: POST /api/players/<player_id>/spells - Assign a spell to a player."""
+    try:
+        payload = request.get_json(silent=True) or {}
+        spell_id = payload.get('spell_id')
+        if spell_id is None:
+            return jsonify({"error": "Missing spell_id"}), 400
+        try:
+            spell_id = int(spell_id)
+        except (TypeError, ValueError):
+            return jsonify({"error": "Invalid spell_id"}), 400
+        player = add_spell_to_player(player_id, spell_id)
+        if player is None:
+            return jsonify({"error": "Player or spell not found"}), 404
+        return jsonify(player)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/players/<int:player_id>/spells/<int:spell_id>', methods=['DELETE'])
+def remove_player_spell_api(player_id, spell_id):
+    """API endpoint: DELETE /api/players/<player_id>/spells/<spell_id> - Remove a spell assignment."""
+    try:
+        if not get_player_by_id(player_id):
+            return jsonify({"error": f"Player id '{player_id}' not found"}), 404
+        removed = remove_spell_from_player(player_id, spell_id)
+        if not removed:
+            return jsonify({"error": "Spell assignment not found"}), 404
+        return jsonify({"success": True})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
