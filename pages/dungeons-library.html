@@ -571,6 +571,62 @@
             min-height: 100px;
         }
 
+        .monster-search-shell {
+            position: relative;
+        }
+
+        .monster-search-shell input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: inherit;
+        }
+
+        .monster-search-results {
+            position: absolute;
+            top: calc(100% + 0.25rem);
+            left: 0;
+            right: 0;
+            max-height: 220px;
+            overflow-y: auto;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.12);
+            z-index: 15;
+        }
+
+        .monster-search-item {
+            padding: 0.75rem;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+        }
+
+        .monster-search-item:last-child {
+            border-bottom: none;
+        }
+
+        .monster-search-item:hover,
+        .monster-search-item.selected {
+            background: #f0f7ff;
+        }
+
+        .monster-search-item-title {
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .monster-search-item-subtitle {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .monster-search-placeholder {
+            padding: 0.75rem;
+            color: #777;
+        }
+
         .modal-buttons {
             display: flex;
             gap: 1rem;
@@ -629,6 +685,9 @@
                         Upload Dungeon
                     </button>
                 </form>
+                <button class="btn" style="background: #4a90e2; padding: 0.75rem 1.5rem; border: none; color: white; border-radius: 4px; cursor: pointer; margin-top: 1rem;" onclick="createBlankDungeon()">
+                    Create Blank Dungeon
+                </button>
                 <div id="uploadStatus" style="margin-top: 1rem; display: none;"></div>
             </div>
         </div>
@@ -647,6 +706,7 @@
                 <div class="viewer-controls">
                     <div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 1rem;">
                         <button class="back-btn" onclick="showListView()">← Back to List</button>
+                        <button class="add-room-btn" onclick="createRoom()">➕ Add Room</button>
                         <button class="add-feature-btn" onclick="openAddFeatureModal()">➕ Add Feature</button>
                         <button id="editModeBtn" class="edit-mode-toggle" onclick="toggleEditMode()" style="margin-bottom: 0;">✎ Edit Mode OFF</button>
                     </div>
@@ -686,9 +746,11 @@
                 </div>
                 <div class="modal-field field-monster-selector hidden">
                     <label>Monster:</label>
-                    <select id="featureMonster" required>
-                        <option value="">Loading monsters...</option>
-                    </select>
+                    <div class="monster-search-shell">
+                        <input type="search" id="featureMonsterSearch" placeholder="Type a monster name..." autocomplete="off">
+                        <div id="featureMonsterResults" class="monster-search-results"></div>
+                    </div>
+                    <input type="hidden" id="featureMonster">
                 </div>
                 <div class="modal-field">
                     <label>Description:</label>
@@ -699,8 +761,8 @@
                     <input type="number" id="featureCount" value="1" min="1">
                 </div>
                 <div class="modal-field field-door hidden">
-                    <label>Leads to Room #:</label>
-                    <input type="number" id="featureLeadsTo" min="1">
+                    <label>Leads to Room Title:</label>
+                    <select id="featureLeadsTo" onchange="onRoomTargetChange()"></select>
                 </div>
                 <div class="modal-field field-door hidden">
                     <label>Door Mechanics (unlock DC, break DC, HP, etc.):</label>
@@ -746,6 +808,8 @@
         let currentEntryIdx = null;
         let isEditingEntry = false;
         let editModeEnabled = false;
+        let modalMonsters = [];
+        let selectedModalMonsterId = null;
 
         // Initialize page based on URL hash
         let isResizing = false;
@@ -754,6 +818,16 @@
         const resizeHandle = document.getElementById('resizeHandle');
         const layout = document.getElementById('viewerView');
         const mapPanel = document.getElementById('mapPanel');
+        const monsterSearchInput = document.getElementById('featureMonsterSearch');
+
+        if (monsterSearchInput) {
+            monsterSearchInput.addEventListener('input', (event) => {
+                selectedModalMonsterId = null;
+                const monsterInput = document.getElementById('featureMonster');
+                if (monsterInput) monsterInput.value = '';
+                renderModalMonsterResults(event.target.value);
+            });
+        }
 
         resizeHandle.addEventListener('mousedown', () => {
             isResizing = true;
@@ -903,6 +977,14 @@
 
             // Populate room selector
             const selector = document.getElementById('roomSelector');
+            if (rooms.length === 0) {
+                selector.innerHTML = '<option value="">No rooms yet</option>';
+                document.getElementById('roomDetailsDisplay').innerHTML = '<div class="empty-state">This dungeon is blank. Create a room to start building.</div>';
+                document.getElementById('mapDisplay').innerHTML = '';
+                document.getElementById('mapDetailsDisplay').innerHTML = '';
+                return;
+            }
+
             selector.innerHTML = rooms.map((room, idx) => 
                 `<option value="${idx}">${room.title}</option>`
             ).join('');
@@ -946,21 +1028,28 @@
             displayRoom(roomIdx);
         }
 
-        function goToRoom(roomId) {
+        function goToRoom(roomTarget) {
             const data = currentDungeon.parsed_json;
             const rooms = data.rooms || [];
-            
-            // The displayed room numbers are 1-indexed (Room #1, Room #2, etc.)
-            // but array indices are 0-indexed, so subtract 1
-            const roomIdx = roomId - 1;
-            
-            // Validate the index is within bounds
+
+            const target = String(roomTarget || '').trim();
+            if (!target) return;
+
+            // Try to match the room title first.
+            let roomIdx = rooms.findIndex(room => String(room.title || '').trim() === target);
+            if (roomIdx === -1) {
+                // Fallback to numeric room index for legacy data.
+                const numericValue = parseInt(target, 10);
+                if (!Number.isNaN(numericValue)) {
+                    roomIdx = numericValue - 1;
+                }
+            }
+
             if (roomIdx >= 0 && roomIdx < rooms.length) {
-                // Update selector and display
                 document.getElementById('roomSelector').value = roomIdx;
                 displayRoom(roomIdx);
             } else {
-                console.warn(`Room #${roomId} not found`);
+                console.warn(`Room "${roomTarget}" not found`);
             }
         }
 
@@ -1056,11 +1145,34 @@
                         
                         detail.content.forEach(save => {
                             const bgColor = save.color || '#ccc';
+                            const saveValue = typeof save.modifier === 'number'
+                                ? `${save.modifier >= 0 ? '+' : ''}${save.modifier}`
+                                : String(save.modifier !== undefined && save.modifier !== null ? save.modifier : save.value || '');
                             cardHtml += `
                                 <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: ${bgColor}; color: white; padding: 3px 4px; border-radius: 3px; font-size: 10px; font-weight: 600;">
-                                    <span style="font-size: 11px; margin-bottom: 1px;">${save.emoji || ''}</span>
+                                    <span style="font-size: 10px; font-weight: 700; margin-bottom: 2px;">${saveValue} ${save.emoji || ''}</span>
                                     <span style="font-size: 8px; text-align: center;">${save.name || ''}</span>
-                                    <span style="font-size: 10px; font-weight: 700; margin-top: 1px;">${save.modifier >= 0 ? '+' : ''}${save.modifier}</span>
+                                </div>
+                            `;
+                        });
+                        
+                        cardHtml += `</div>`;
+                        continue;  // Skip to next detail
+                    }
+
+                    // Handle skills_grid (skill proficiencies) - display as a 3-column grid of skill boxes
+                    if (detail.type === 'skills_grid' && Array.isArray(detail.content)) {
+                        cardHtml += `<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin: 6px 0; line-height: 1.1;">`;
+                        
+                        detail.content.forEach(skill => {
+                            const bgColor = skill.color || '#ccc';
+                            const skillValue = typeof skill.modifier === 'number'
+                                ? `${skill.modifier >= 0 ? '+' : ''}${skill.modifier}`
+                                : String(skill.modifier !== undefined && skill.modifier !== null ? skill.modifier : skill.value || '');
+                            cardHtml += `
+                                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: ${bgColor}; color: white; padding: 3px 4px; border-radius: 3px; font-size: 10px; font-weight: 600;">
+                                    <span style="font-size: 10px; font-weight: 700; margin-bottom: 2px;">${skillValue} ${skill.emoji || ''}</span>
+                                    <span style="font-size: 8px; text-align: center;">${skill.name || ''}</span>
                                 </div>
                             `;
                         });
@@ -1234,7 +1346,7 @@
                     showMonsterCardPopup(monster, this);
                 });
                 titleEl.addEventListener('click', function() {
-                    const url = `monster-detail.html?title=${encodeURIComponent(titleText)}`;
+                    const url = `monster-book.html?title=${encodeURIComponent(titleText)}`;
                     window.open(url, '_blank');
                 });
             }
@@ -1450,7 +1562,8 @@
                                 roomDetailsHtml += ` <span style="color: #999;">(${entry.count}x)</span>`;
                             }
                             if (entry.leads_to !== null && entry.leads_to !== undefined) {
-                                roomDetailsHtml += ` → <a href="#" onclick="goToRoom(${entry.leads_to}); return false;" class="room-link">Room #${entry.leads_to}</a>`;
+                                const targetTitle = String(entry.leads_to).trim();
+                                roomDetailsHtml += ` → <a href="#" onclick="goToRoom('${escapeJsString(targetTitle)}'); return false;" class="room-link">${escapeHtml(targetTitle)}</a>`;
                             }
                             
                             roomDetailsHtml += `</div>`;
@@ -1554,10 +1667,226 @@
             }
         });
 
+        function createBlankDungeon() {
+            const title = prompt('Enter a name for your new blank dungeon:', 'Untitled Dungeon');
+            if (title === null) {
+                return;
+            }
+
+            const trimmedTitle = title.trim() || 'Untitled Dungeon';
+            const statusDiv = document.getElementById('uploadStatus');
+            statusDiv.style.display = 'block';
+            statusDiv.innerHTML = '<div class="loading">Creating blank dungeon...</div>';
+
+            fetch('/api/dungeons', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title: trimmedTitle })
+            })
+            .then(async res => {
+                const result = await res.json();
+                if (res.ok) {
+                    statusDiv.innerHTML = `
+                        <div style="background: #d4edda; color: #155724; padding: 1rem; border-radius: 4px; border: 1px solid #c3e6cb;">
+                            ✓ Blank dungeon created: <strong>${escapeHtml(result.title)}</strong>
+                        </div>
+                    `;
+                    setTimeout(() => {
+                        loadDungeonsList();
+                        viewDungeon(result.id);
+                    }, 800);
+                } else {
+                    statusDiv.innerHTML = `
+                        <div class="error-message">
+                            Error: ${escapeHtml(result.error || 'Unable to create blank dungeon')}
+                        </div>
+                    `;
+                }
+            })
+            .catch(err => {
+                statusDiv.innerHTML = `
+                    <div class="error-message">
+                        Error: ${escapeHtml(err.message)}
+                    </div>
+                `;
+            });
+        }
+
+        function normalizeRoomTitle(title) {
+            return String(title || '').trim().toLowerCase();
+        }
+
+        function isRoomTitleTaken(title) {
+            const data = currentDungeon?.parsed_json;
+            const rooms = data?.rooms || [];
+            const normalized = normalizeRoomTitle(title);
+            return rooms.some(room => normalizeRoomTitle(room.title) === normalized);
+        }
+
+        function getRoomTargets(currentRoomIdx = null) {
+            const data = currentDungeon?.parsed_json;
+            const rooms = data?.rooms || [];
+            return rooms
+                .map((room, idx) => ({
+                    title: String(room.title || '').trim(),
+                    idx
+                }))
+                .filter((room, idx) => idx !== currentRoomIdx && room.title.length > 0);
+        }
+
+        function loadRoomTargets(currentRoomIdx = null, selectedValue = '') {
+            const select = document.getElementById('featureLeadsTo');
+            select.innerHTML = '';
+
+            const targets = getRoomTargets(currentRoomIdx);
+            select.appendChild(new Option('Select a room...', '', true, false));
+
+            targets.forEach(room => {
+                const option = new Option(room.title, room.title, false, room.title === selectedValue);
+                select.appendChild(option);
+            });
+
+            select.appendChild(new Option('Create new room...', '__create_new_room__', false, false));
+
+            if (selectedValue && !targets.some(room => room.title === selectedValue)) {
+                const custom = new Option(selectedValue, selectedValue, true, true);
+                select.insertBefore(custom, select.children[1] || select.firstChild);
+            }
+        }
+
+        function onRoomTargetChange() {
+            const select = document.getElementById('featureLeadsTo');
+            if (select.value === '__create_new_room__') {
+                const newRoomTitle = prompt('New room name:');
+                if (!newRoomTitle) {
+                    select.value = '';
+                    return;
+                }
+
+                const trimmedTitle = newRoomTitle.trim();
+                if (!trimmedTitle) {
+                    alert('Room title cannot be blank.');
+                    select.value = '';
+                    return;
+                }
+
+                if (isRoomTitleTaken(trimmedTitle)) {
+                    alert('A room with that title already exists. Please choose a different title.');
+                    select.value = '';
+                    return;
+                }
+
+                const room = addRoomWithTitle(trimmedTitle);
+                loadRoomTargets(currentRoomIdx, trimmedTitle);
+                select.value = trimmedTitle;
+                displayDungeonViewer();
+                displayRoom(room.idx);
+            }
+        }
+
+        function addRoomWithTitle(title) {
+            const data = currentDungeon.parsed_json;
+            data.rooms = data.rooms || [];
+            const nextRoomId = data.rooms.reduce((maxId, room) => Math.max(maxId, room.room_id || 0), 0) + 1;
+            const newRoom = { room_id: nextRoomId, title, entries: [] };
+            data.rooms.push(newRoom);
+            saveDungeonChanges();
+            return { room: newRoom, idx: data.rooms.length - 1 };
+        }
+
+        function findRoomIndexByTitle(title) {
+            const data = currentDungeon?.parsed_json;
+            const rooms = data?.rooms || [];
+            const target = normalizeRoomTitle(title);
+            return rooms.findIndex(room => normalizeRoomTitle(room.title) === target);
+        }
+
+        function createDoorReciprocalEntry(sourceRoomTitle, doorMechanics, trapIds) {
+            return {
+                entry_type: 'door',
+                title: `Door to ${sourceRoomTitle}`,
+                content: null,
+                count: null,
+                creature_index: null,
+                creature_total: null,
+                monster_id: null,
+                leads_to: sourceRoomTitle,
+                door_mechanics: doorMechanics || null,
+                trap_ids: trapIds || [],
+                is_hidden: false,
+                hidden_dc: null,
+                container: null,
+                container_mechanics: null,
+                treasure_contents: []
+            };
+        }
+
+        function ensureReciprocalDoor(sourceRoomIdx, targetRoomIdx, sourceRoomTitle, doorMechanics, trapIds) {
+            if (targetRoomIdx === sourceRoomIdx) return;
+            const data = currentDungeon.parsed_json;
+            const targetRoom = data.rooms[targetRoomIdx];
+            if (!targetRoom || !targetRoom.entries) return;
+
+            const reciprocalExists = targetRoom.entries.some(entry =>
+                entry.entry_type === 'door' &&
+                normalizeRoomTitle(entry.leads_to) === normalizeRoomTitle(sourceRoomTitle)
+            );
+
+            if (!reciprocalExists) {
+                targetRoom.entries.push(createDoorReciprocalEntry(sourceRoomTitle, doorMechanics, trapIds));
+            }
+        }
+
+        function createRoom() {
+            if (!currentDungeon) {
+                alert('Open a dungeon before creating a room.');
+                return;
+            }
+
+            const data = currentDungeon.parsed_json;
+            data.rooms = data.rooms || [];
+            const defaultTitle = `Room ${data.rooms.length + 1}`;
+            let trimmedTitle = '';
+
+            while (true) {
+                const title = prompt('Room name:', defaultTitle);
+                if (title === null) {
+                    return;
+                }
+
+                trimmedTitle = title.trim() || defaultTitle;
+                if (isRoomTitleTaken(trimmedTitle)) {
+                    alert('A room with that title already exists. Please choose a different title.');
+                    continue;
+                }
+                break;
+            }
+
+            const nextRoomId = data.rooms.reduce((maxId, room) => Math.max(maxId, room.room_id || 0), 0) + 1;
+            data.rooms.push({
+                room_id: nextRoomId,
+                title: trimmedTitle,
+                entries: []
+            });
+
+            saveDungeonChanges();
+            displayDungeonViewer();
+            document.getElementById('roomSelector').value = data.rooms.length - 1;
+            displayRoom(data.rooms.length - 1);
+        }
+
         function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
+        }
+
+        function escapeJsString(text) {
+            return String(text || '')
+                .replace(/\\/g, '\\\\')
+                .replace(/'/g, "\\'")
+                .replace(/\n/g, '\\n')
+                .replace(/\r/g, '\\r');
         }
 
         function parseJsonValue(value) {
@@ -1609,7 +1938,6 @@
         function openAddFeatureModal() {
             if (!currentDungeon) return;
             isEditingEntry = false;
-            currentRoomIdx = null;
             currentEntryIdx = null;
             document.getElementById('modalTitle').textContent = 'Add New Feature to Room';
             document.getElementById('featureModal').classList.add('active');
@@ -1618,7 +1946,10 @@
             document.getElementById('featureTitle').value = '';
             document.getElementById('featureContent').value = '';
             document.getElementById('featureCount').value = '1';
-            document.getElementById('featureLeadsTo').value = '';
+            clearModalMonsterSelection();
+            const selectedRoom = parseInt(document.getElementById('roomSelector').value);
+            currentRoomIdx = Number.isNaN(selectedRoom) ? null : selectedRoom;
+            loadRoomTargets(currentRoomIdx, '');
             document.getElementById('doorMechanics').value = '';
             
             // Reset trap single-select
@@ -1659,8 +1990,17 @@
             document.getElementById('featureTitle').value = entry.title || '';
             document.getElementById('featureContent').value = entry.content || '';
             document.getElementById('featureCount').value = entry.count || '1';
-            document.getElementById('featureLeadsTo').value = entry.leads_to || '';
             document.getElementById('doorMechanics').value = entry.door_mechanics || '';
+            loadRoomTargets(roomIdx, entry.leads_to || '');
+            if (entry.entry_type === 'monster') {
+                selectedModalMonsterId = entry.monster_id ? String(entry.monster_id) : null;
+                const monsterSearch = document.getElementById('featureMonsterSearch');
+                const monsterInput = document.getElementById('featureMonster');
+                if (monsterInput) monsterInput.value = entry.monster_id || '';
+                if (monsterSearch) monsterSearch.value = entry.title || '';
+                renderModalMonsterResults(entry.title || '');
+            }
+
             // Set trap single-select
             const doorTrapSelect = document.getElementById('doorTrapIds');
             doorTrapSelect.value = '';
@@ -1715,16 +2055,82 @@
             try {
                 const response = await fetch('/api/monsters');
                 if (response.ok) {
-                    const monsters = await response.json();
-                    const selector = document.getElementById('featureMonster');
-                    selector.innerHTML = '<option value="">Select a monster...</option>' + 
-                        monsters.map(m => `<option value="${m.id}">${m.title}</option>`).join('');
+                    modalMonsters = await response.json();
+                    modalMonsters.sort((a, b) => String(a.title || '').localeCompare(String(b.title || ''), undefined, { sensitivity: 'base' }));
+                    renderModalMonsterResults(document.getElementById('featureMonsterSearch')?.value || '');
                 }
             } catch (e) {
                 console.error('Error loading monsters:', e);
-                document.getElementById('featureMonster').innerHTML = 
-                    '<option value="">Error loading monsters</option>';
+                const results = document.getElementById('featureMonsterResults');
+                if (results) {
+                    results.innerHTML = '<div class="monster-search-placeholder">Error loading monsters</div>';
+                }
             }
+        }
+
+        function renderModalMonsterResults(query) {
+            const results = document.getElementById('featureMonsterResults');
+            if (!results) return;
+            results.style.display = 'block';
+            results.innerHTML = '';
+
+            const normalizedQuery = String(query || '').trim().toLowerCase();
+            let matches = normalizedQuery
+                ? modalMonsters.filter(monster => String(monster.title || '').toLowerCase().includes(normalizedQuery))
+                : modalMonsters.slice(0, 15);
+
+            if (!normalizedQuery && selectedModalMonsterId) {
+                const selectedIndex = matches.findIndex(monster => String(monster.id) === String(selectedModalMonsterId));
+                if (selectedIndex === -1) {
+                    const selectedMonster = modalMonsters.find(monster => String(monster.id) === String(selectedModalMonsterId));
+                    if (selectedMonster) {
+                        matches = [selectedMonster, ...matches].slice(0, 15);
+                    }
+                }
+            }
+
+            if (matches.length === 0) {
+                results.innerHTML = '<div class="monster-search-placeholder">No monsters found.</div>';
+                return;
+            }
+
+            matches.slice(0, 15).forEach(monster => {
+                const item = document.createElement('div');
+                item.className = 'monster-search-item' + (selectedModalMonsterId === String(monster.id) ? ' selected' : '');
+                item.dataset.id = monster.id;
+                item.dataset.title = monster.title;
+                item.innerHTML = `
+                    <div class="monster-search-item-title">${escapeHtml(monster.title)}</div>
+                    <div class="monster-search-item-subtitle">${escapeHtml(monster.explanation || monster.type || '')}</div>
+                `;
+                item.addEventListener('click', () => selectModalMonster(String(monster.id), monster.title));
+                results.appendChild(item);
+            });
+        }
+
+        function selectModalMonster(id, title) {
+            selectedModalMonsterId = id;
+            const monsterInput = document.getElementById('featureMonster');
+            const monsterSearch = document.getElementById('featureMonsterSearch');
+            const results = document.getElementById('featureMonsterResults');
+            if (monsterInput) monsterInput.value = id;
+            if (monsterSearch) monsterSearch.value = title || '';
+            if (results) {
+                results.style.display = 'none';
+            }
+        }
+
+        function clearModalMonsterSelection() {
+            selectedModalMonsterId = null;
+            const monsterInput = document.getElementById('featureMonster');
+            const monsterSearch = document.getElementById('featureMonsterSearch');
+            const results = document.getElementById('featureMonsterResults');
+            if (monsterInput) monsterInput.value = '';
+            if (monsterSearch) monsterSearch.value = '';
+            if (results) {
+                results.style.display = 'block';
+            }
+            renderModalMonsterResults('');
         }
 
         async function loadTrapsForModal() {
@@ -1733,7 +2139,8 @@
                 if (response.ok) {
                     const traps = await response.json();
                     const selector = document.getElementById('doorTrapIds');
-                    selector.innerHTML = traps.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+                    selector.innerHTML = '<option value="">No trap</option>' +
+                        traps.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
                 }
             } catch (e) {
                 console.error('Error loading traps:', e);
@@ -1803,6 +2210,8 @@
                 document.querySelectorAll('.modal-field.field-door').forEach(field => {
                     field.classList.remove('hidden');
                 });
+                const selectedRoomIdx = currentRoomIdx !== null ? currentRoomIdx : null;
+                loadRoomTargets(selectedRoomIdx, document.getElementById('featureLeadsTo').value);
             } else if (featureType === 'treasure') {
                 document.querySelectorAll('.modal-field.field-treasure').forEach(field => {
                     field.classList.remove('hidden');
@@ -1831,17 +2240,15 @@
             let monsterId = null;
             
             if (type === 'monster') {
-                // For monsters, get from monster selector
-                const monsterSelector = document.getElementById('featureMonster');
-                monsterId = monsterSelector.value;
-                
-                if (!monsterId) {
+                const monsterInput = document.getElementById('featureMonster');
+                const monsterSearch = document.getElementById('featureMonsterSearch');
+                monsterId = monsterInput.value;
+                title = monsterSearch.value.trim();
+
+                if (!monsterId || !title) {
                     alert('Please select a monster');
                     return;
                 }
-                
-                const selectedOption = monsterSelector.options[monsterSelector.selectedIndex];
-                title = selectedOption.textContent;
             } else {
                 // For other types, use title input
                 title = document.getElementById('featureTitle').value.trim();
@@ -1853,9 +2260,15 @@
 
             const content = document.getElementById('featureContent').value.trim();
             const count = parseInt(document.getElementById('featureCount').value) || 1;
-            const leadsTo = document.getElementById('featureLeadsTo').value ? parseInt(document.getElementById('featureLeadsTo').value) : null;
+            const leadsToValue = document.getElementById('featureLeadsTo').value;
+            const leadsTo = leadsToValue && leadsToValue !== '__create_new_room__' ? leadsToValue.trim() : null;
             const doorMechanics = document.getElementById('doorMechanics').value.trim();
             
+            if (type === 'door' && !leadsTo) {
+                alert('Please select or create a target room for the door.');
+                return;
+            }
+
             // Get selected trap ID from single-select
             const doorTrapSelect = document.getElementById('doorTrapIds');
             const doorTrapId = doorTrapSelect.value ? parseInt(doorTrapSelect.value) : null;
@@ -1863,6 +2276,7 @@
 
             const data = currentDungeon.parsed_json;
             const room = data.rooms[roomIdx];
+            const sourceRoomTitle = room.title || '';
 
             // Create new entry
             if (type === 'monster' && count > 1) {
@@ -1951,6 +2365,15 @@
                     container_mechanics: null,
                     treasure_contents: []
                 });
+
+                if (type === 'door' && leadsTo) {
+                    const targetRoomIdx = findRoomIndexByTitle(leadsTo);
+                    if (targetRoomIdx === -1) {
+                        console.warn(`Target room not found for door lead: ${leadsTo}`);
+                    } else {
+                        ensureReciprocalDoor(roomIdx, targetRoomIdx, sourceRoomTitle, doorMechanics, doorTrapIds);
+                    }
+                }
             }
 
             // Refresh display and save
@@ -1979,21 +2402,36 @@
             const doorTrapId = doorTrapSelect.value ? parseInt(doorTrapSelect.value) : null;
             const doorTrapIds = doorTrapId ? [doorTrapId] : [];
             entry.content = content;
-            entry.leads_to = document.getElementById('featureLeadsTo').value ? parseInt(document.getElementById('featureLeadsTo').value) : null;
+            entry.leads_to = document.getElementById('featureLeadsTo').value.trim() || null;
             entry.trap_ids = doorTrapIds;
+
+            if (entryType === 'door' && !entry.leads_to) {
+                alert('Please select or create a target room for the door.');
+                return;
+            }
 
             // Update type-specific fields
             if (entryType === 'monster') {
                 const count = parseInt(document.getElementById('featureCount').value) || 1;
-                const monsterSelector = document.getElementById('featureMonster');
-                const monsterId = monsterSelector.value;
-                const selectedOption = monsterSelector.options[monsterSelector.selectedIndex];
-                
+                const monsterInput = document.getElementById('featureMonster');
+                const monsterSearch = document.getElementById('featureMonsterSearch');
+                const monsterId = monsterInput.value;
+                const monsterTitle = monsterSearch.value.trim();
+
+                if (!monsterId || !monsterTitle) {
+                    alert('Please select a monster');
+                    return;
+                }
+
                 entry.count = count;
                 entry.monster_id = monsterId;
-                entry.title = selectedOption.textContent;
+                entry.title = monsterTitle;
             } else if (entryType === 'door') {
                 entry.door_mechanics = doorMechanics || null;
+                const targetRoomIdx = entry.leads_to ? findRoomIndexByTitle(entry.leads_to) : -1;
+                if (targetRoomIdx !== -1) {
+                    ensureReciprocalDoor(currentRoomIdx, targetRoomIdx, room.title || '', doorMechanics, entry.trap_ids || []);
+                }
             } else if (entryType === 'treasure') {
                 const container = document.getElementById('treasureContainer').value.trim();
                 const mechanics = document.getElementById('treasureMechanics').value.trim();

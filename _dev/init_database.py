@@ -40,6 +40,7 @@ def init_database():
         "classes",
         "spells",
         "conditions",
+        "actions",
         "damage_types",
         "abilities",
         "traps",
@@ -124,6 +125,19 @@ def init_database():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             title TEXT NOT NULL UNIQUE,
             icon TEXT NOT NULL DEFAULT '⚠️',
+            explanation TEXT,
+            details TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    # Create actions table for basic D&D action rules
+    cursor.execute("""
+        CREATE TABLE actions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL UNIQUE,
+            icon TEXT NOT NULL DEFAULT '⚔️',
+            category TEXT NOT NULL DEFAULT 'Action',
             explanation TEXT,
             details TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP

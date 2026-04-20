@@ -77,6 +77,7 @@ Seed and source data files:
 - `data/seeds/seed_abilities.json` — Abilities, skills, and modifiers
 - `data/seeds/seed_traps.json` — Trap definitions
 - `data/seeds/seed_dungeons.json` — Dungeon module seeds
+- `data/seeds/seed_actions.json` — Basic action definitions and rule explanations
 - `data/seeds/seed_spells.json` — Optional spell seed fallback
 
 Developer seed export workflow:

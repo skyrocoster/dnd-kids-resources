@@ -132,14 +132,14 @@
     .save-card .stat-name {
       display: block;
       font-size: 0.75rem;
-      color: #677185;
+      color: inherit;
       margin-bottom: 0.2rem;
     }
     .stat-card .stat-value,
     .save-card .stat-value {
       font-size: 1rem;
       font-weight: 700;
-      color: #1f2937;
+      color: inherit;
     }
     .notes {
       color: #5f6f89;
@@ -254,12 +254,14 @@
       detail.content.forEach(stat => {
         const card = document.createElement('div');
         card.className = 'stat-card';
+        card.style.backgroundColor = stat.color || '#7f8c8d';
+        card.style.color = 'white';
         const name = document.createElement('span');
         name.className = 'stat-name';
         name.textContent = stat.name || stat.code || '';
         const value = document.createElement('span');
         value.className = 'stat-value';
-        value.textContent = stat.value || '';
+        value.textContent = `${stat.emoji ? stat.emoji + ' ' : ''}${stat.value || ''}`;
         card.appendChild(name);
         card.appendChild(value);
         container.appendChild(card);
@@ -274,12 +276,52 @@
       detail.content.forEach(save => {
         const card = document.createElement('div');
         card.className = 'save-card';
+        card.style.backgroundColor = save.color || '#7f8c8d';
+        card.style.color = 'white';
         const name = document.createElement('span');
         name.className = 'stat-name';
-        name.textContent = save.name || '';
+        name.textContent = save.name || save.code || '';
         const value = document.createElement('span');
         value.className = 'stat-value';
-        value.textContent = save.modifier !== undefined ? `${save.modifier >= 0 ? '+' : ''}${save.modifier}` : '';
+        let displayText = '';
+        if (typeof save.modifier === 'number') {
+          displayText = `${save.modifier >= 0 ? '+' : ''}${save.modifier} ${save.emoji || ''}`.trim();
+        } else if (save.modifier !== undefined && save.modifier !== null) {
+          displayText = `${String(save.modifier)} ${save.emoji || ''}`.trim();
+        } else {
+          displayText = `${String(save.value || '')} ${save.emoji || ''}`.trim();
+        }
+        value.textContent = displayText;
+        card.appendChild(name);
+        card.appendChild(value);
+        container.appendChild(card);
+      });
+      return container.outerHTML;
+    }
+
+    function renderSkillsGrid(detail) {
+      if (!Array.isArray(detail.content)) return '';
+      const container = document.createElement('div');
+      container.className = 'save-grid';
+      detail.content.forEach(skill => {
+        const card = document.createElement('div');
+        card.className = 'save-card';
+        card.style.backgroundColor = skill.color || '#7f8c8d';
+        card.style.color = 'white';
+        const name = document.createElement('span');
+        name.className = 'stat-name';
+        name.textContent = skill.name || skill.code || '';
+        const value = document.createElement('span');
+        value.className = 'stat-value';
+        let displayText = '';
+        if (typeof skill.modifier === 'number') {
+          displayText = `${skill.modifier >= 0 ? '+' : ''}${skill.modifier} ${skill.emoji || ''}`.trim();
+        } else if (skill.modifier !== undefined && skill.modifier !== null) {
+          displayText = `${String(skill.modifier)} ${skill.emoji || ''}`.trim();
+        } else {
+          displayText = `${String(skill.value || '')} ${skill.emoji || ''}`.trim();
+        }
+        value.textContent = displayText;
         card.appendChild(name);
         card.appendChild(value);
         container.appendChild(card);
@@ -302,6 +344,8 @@
         value.innerHTML = renderStatsGrid(detail);
       } else if (detail.type === 'saves_grid') {
         value.innerHTML = renderSavesGrid(detail);
+      } else if (detail.type === 'skills_grid') {
+        value.innerHTML = renderSkillsGrid(detail);
       } else {
         value.textContent = formatDisplayValue(detail.content);
       }
@@ -603,7 +647,12 @@
         });
     }
 
-    document.addEventListener('DOMContentLoaded', loadMonsterDetail);
+    const title = getQueryParam('title');
+    if (title) {
+      window.location.replace(`monster-book.html?title=${encodeURIComponent(title)}`);
+    } else {
+      window.location.replace('monster-book.html');
+    }
   </script>
 </body>
 </html>

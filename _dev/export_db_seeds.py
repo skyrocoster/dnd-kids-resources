@@ -35,6 +35,10 @@ EXPORT_DEFINITIONS = {
         "file": "seed_conditions.json",
         "query": "SELECT title, icon, explanation, details FROM conditions ORDER BY title",
     },
+    "actions": {
+        "file": "seed_actions.json",
+        "query": "SELECT name, icon, category, explanation, details FROM actions ORDER BY name",
+    },
     "monsters": {
         "file": "seed_monsters.json",
         "query": "SELECT name, alias, size, \"group\", alignment, type, ac, hp, speed, stats, save, skill, resist, vulnerable, senses, languages, action, reaction, traits, spellcasting, bonus, legendary, legendaryHeader, mythic, mythicHeader, reactionRules, soundClip, cr, cr_details FROM monsters ORDER BY name",

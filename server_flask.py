@@ -1294,10 +1294,122 @@ def convert_db_monster_to_api_format(monster_row, conn=None):
             return ', '.join(formatted)
         return str(value)
 
-    if save:
-        details.append({'label': 'Saves:', 'content': save})
-    if skill:
-        details.append({'label': 'Skills:', 'content': skill})
+    def normalize_skill_code(skill_name):
+        if not isinstance(skill_name, str):
+            return None
+        return skill_name.strip().lower().replace(' ', '_').replace('-', '_')
+
+    def build_save_grid(save_obj):
+        if not isinstance(save_obj, dict):
+            return []
+        save_grid = []
+        cursor = conn.cursor()
+        for ability_code in ['str', 'dex', 'con', 'int', 'wis', 'cha']:
+            if ability_code not in save_obj:
+                continue
+            raw_value = save_obj.get(ability_code)
+            if raw_value is None or raw_value == '':
+                continue
+            try:
+                modifier = int(raw_value)
+            except (TypeError, ValueError):
+                continue
+
+            cursor.execute(
+                "SELECT code, name, emoji, color FROM abilities WHERE code = ?",
+                (ability_code,)
+            )
+            ability = cursor.fetchone()
+            if ability:
+                ability_dict = dict(ability)
+                save_grid.append({
+                    'code': ability_dict['code'],
+                    'name': ability_dict['name'],
+                    'emoji': ability_dict['emoji'],
+                    'color': ability_dict['color'],
+                    'modifier': modifier
+                })
+            else:
+                save_grid.append({
+                    'code': ability_code,
+                    'name': ability_code.upper(),
+                    'emoji': '',
+                    'color': '#7f8c8d',
+                    'modifier': modifier
+                })
+        return save_grid
+
+    def build_skill_grid(skill_obj):
+        if not isinstance(skill_obj, dict):
+            return [], None
+        skill_grid = []
+        other_skills = []
+        passive_perception = None
+        cursor = conn.cursor()
+
+        for skill_name, raw_value in skill_obj.items():
+            if skill_name is None:
+                continue
+            key = skill_name.strip().lower()
+            if key == 'passive perception':
+                passive_perception = raw_value
+                continue
+            if raw_value is None or raw_value == '':
+                continue
+
+            skill_code = normalize_skill_code(skill_name)
+            if not skill_code:
+                continue
+
+            cursor.execute(
+                "SELECT code, name, emoji, color FROM abilities WHERE code = ? AND type = 'skill'",
+                (skill_code,)
+            )
+            ability = cursor.fetchone()
+            if ability:
+                ability_dict = dict(ability)
+                try:
+                    modifier = int(raw_value)
+                except (TypeError, ValueError):
+                    modifier = raw_value
+                skill_grid.append({
+                    'code': ability_dict['code'],
+                    'name': ability_dict['name'],
+                    'emoji': ability_dict['emoji'],
+                    'color': ability_dict['color'],
+                    'modifier': modifier
+                })
+            else:
+                other_skills.append(f"{skill_name}: {raw_value}")
+
+        if other_skills:
+            skill_grid.append({
+                'code': 'other',
+                'name': 'Other Skills',
+                'emoji': '❓',
+                'color': '#95a5a6',
+                'modifier': ', '.join(other_skills)
+            })
+
+        return skill_grid, passive_perception
+
+    save_grid = build_save_grid(save)
+    if save_grid:
+        details.append({
+            'label': '💪 Saves:',
+            'content': save_grid,
+            'type': 'saves_grid'
+        })
+
+    skill_grid, passive_perception = build_skill_grid(skill)
+    if skill_grid:
+        details.append({
+            'label': '🛠️ Skills:',
+            'content': skill_grid,
+            'type': 'skills_grid'
+        })
+    if passive_perception is not None and passive_perception != '':
+        details.append({'label': 'Passive Perception:', 'content': passive_perception})
     if senses:
         senses_str = format_senses_value(senses)
         if senses_str:
@@ -1337,15 +1449,31 @@ def convert_db_monster_to_api_format(monster_row, conn=None):
 
     if isinstance(stats, dict) and stats:
         stats_grid_data = []
+        cursor = conn.cursor()
         for ability_code in ['str', 'dex', 'con', 'int', 'wis', 'cha']:
             if ability_code in stats and isinstance(stats[ability_code], int):
-                stats_grid_data.append({
-                    'code': ability_code,
-                    'name': ability_code.upper(),
-                    'emoji': ability_code.upper(),
-                    'color': '#7f8c8d',
-                    'value': stats[ability_code]
-                })
+                cursor.execute(
+                    "SELECT code, name, emoji, color FROM abilities WHERE code = ?",
+                    (ability_code,)
+                )
+                ability = cursor.fetchone()
+                if ability:
+                    ability_dict = dict(ability)
+                    stats_grid_data.append({
+                        'code': ability_dict['code'],
+                        'name': ability_dict['name'],
+                        'emoji': ability_dict['emoji'],
+                        'color': ability_dict['color'],
+                        'value': stats[ability_code]
+                    })
+                else:
+                    stats_grid_data.append({
+                        'code': ability_code,
+                        'name': ability_code.upper(),
+                        'emoji': ability_code.upper(),
+                        'color': '#7f8c8d',
+                        'value': stats[ability_code]
+                    })
         if stats_grid_data:
             details.append({
                 'label': 'STATS',
@@ -2198,6 +2326,55 @@ def list_dungeons():
         dungeons = [dict(row) for row in cursor.fetchall()]
         conn.close()
         return jsonify(dungeons)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/dungeons', methods=['POST'])
+def create_dungeon():
+    """Create a new blank dungeon"""
+    try:
+        data = request.get_json(silent=True) or {}
+        title = (data.get('title') or 'Untitled Dungeon').strip()
+
+        if not title:
+            title = 'Untitled Dungeon'
+
+        blank_dungeon = {
+            'general_info': {
+                'title': title,
+                'size': None,
+                'walls': None,
+                'floor': None,
+                'temperature': None,
+                'illumination': None
+            },
+            'map_image': None,
+            'map_image_length': 0,
+            'corridors': [],
+            'rooms': []
+        }
+
+        parsed_json = json.dumps(blank_dungeon)
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("""
+                INSERT INTO dungeons (title, original_html, parsed_json)
+                VALUES (?, ?, ?)
+            """, (title, '', parsed_json))
+            conn.commit()
+            dungeon_id = cursor.lastrowid
+            conn.close()
+            return jsonify({
+                'id': dungeon_id,
+                'title': title,
+                'message': 'Blank dungeon created successfully'
+            }), 201
+        except sqlite3.IntegrityError:
+            conn.close()
+            return jsonify({"error": f"Dungeon '{title}' already exists."}), 409
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

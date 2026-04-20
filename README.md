@@ -60,6 +60,7 @@ Seed and source data used by the app:
 - `data/seeds/seed_creatures.json` — creature and wild shape seeds
 - `data/seeds/seed_traps.json` — trap definitions
 - `data/seeds/seed_dungeons.json` — dungeon seed data
+- `data/seeds/seed_actions.json` — basic actions and rule explanations
 - `data/seeds/seed_spells.json` — optional spell seed fallback
 
 Seed export workflow:

@@ -56,6 +56,7 @@ Seed files:
 - data/seeds/seed_damage_types.json
 - data/seeds/seed_traps.json
 - data/seeds/seed_dungeons.json
+- data/seeds/seed_actions.json
 - data/seeds/seed_spells.json (optional, JSON fallback)
 
 Seed files are now loaded from the new `data/seeds/` directory.
@@ -310,6 +311,56 @@ def populate_conditions(cursor, conn, force=False):
     
     conn.commit()
     print(f"  [OK] Loaded {len(seeds)} conditions")
+
+
+def populate_actions(cursor, conn, force=False):
+    """Populate actions table from seed_actions.json"""
+    print("\n[ACTION] Loading actions...")
+    
+    try:
+        cursor.execute("SELECT COUNT(*) FROM actions")
+        count = cursor.fetchone()[0]
+    except sqlite3.OperationalError:
+        count = 0
+    
+    if count > 0 and not force:
+        print(f"  [INFO]  Actions table already has {count} records. Skip (use --force to override)")
+        return
+    
+    if force or count == 0:
+        try:
+            cursor.execute("SELECT 1 FROM actions LIMIT 1")
+        except Exception:
+            print("  [ERROR]  Actions table does not exist. Run _dev/init_database.py first.")
+            return
+    
+    seeds = load_json_file(SEEDS_DIR / "seed_actions.json")
+    if not seeds:
+        print("  [WARNING]  No action seeds found")
+        return
+    
+    for action in seeds:
+        try:
+            details = json.dumps(action.get('details', [])) if action.get('details') else None
+            
+            cursor.execute("""
+                INSERT INTO actions 
+                (name, icon, category, explanation, details)
+                VALUES (?, ?, ?, ?, ?)
+            """, (
+                action.get('name'),
+                action.get('icon', '⚔️'),
+                action.get('category', 'Action'),
+                action.get('explanation', ''),
+                details
+            ))
+            print(f"  [CHECK] {action.get('name')}")
+        except sqlite3.IntegrityError as e:
+            print(f"  [WARNING]  Duplicate or error: {action.get('name')} - {e}")
+    
+    conn.commit()
+    print(f"  [OK] Loaded {len(seeds)} actions")
+
 
 def populate_monsters(cursor, conn, force=False):
     """Populate monsters table from seed_monsters.json using normalized monster data"""
@@ -619,6 +670,7 @@ def clear_all_tables(cursor, conn):
         "creature_types",
         "spells",
         "conditions",
+        "actions",
         "damage_types",
         "abilities",
         "traps",
@@ -650,11 +702,12 @@ def main():
     parser.add_argument('--traps', action='store_true', help='Load only traps')
     parser.add_argument('--dungeons', action='store_true', help='Load only dungeons')
     parser.add_argument('--classes', action='store_true', help='Load only classes')
+    parser.add_argument('--actions', action='store_true', help='Load only actions')
     parser.add_argument('--force', action='store_true', help='Force reload (clear existing data first)')
     
     args = parser.parse_args()
     # If no specific tables selected, load all
-    load_all = not any([args.abilities, args.spells, args.conditions, args.monsters, args.damage_types, args.traps, args.dungeons, args.classes])
+    load_all = not any([args.abilities, args.spells, args.conditions, args.monsters, args.damage_types, args.traps, args.dungeons, args.classes, args.actions])
     
     print("="*60)
     print("PHASE 2: DATABASE SEEDING")
@@ -685,6 +738,8 @@ def main():
             populate_spells(cursor, conn, args.force)
         if load_all or args.conditions:
             populate_conditions(cursor, conn, args.force)
+        if load_all or args.actions:
+            populate_actions(cursor, conn, args.force)
         if load_all or args.traps:
             populate_traps(cursor, conn, args.force)
         if load_all or args.dungeons:
@@ -713,6 +768,7 @@ def main():
         print("  - data/seeds/seed_spells.json")
         print("  - data/5eTools/extracted/data/spells/spells-merged-clean-range-text.json")
         print("  - data/seeds/seed_conditions.json")
+        print("  - data/seeds/seed_actions.json")
         print("  - data/seeds/seed_damage_types.json")
         print("  - data/seeds/seed_traps.json")
         print("  - data/seeds/seed_dungeons.json")
