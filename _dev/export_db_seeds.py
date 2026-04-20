@@ -35,14 +35,6 @@ EXPORT_DEFINITIONS = {
         "file": "seed_conditions.json",
         "query": "SELECT title, icon, explanation, details FROM conditions ORDER BY title",
     },
-    "creature_types": {
-        "file": "seed_creature_types.json",
-        "query": "SELECT id, code, emoji, color FROM creature_types ORDER BY id",
-    },
-    "creatures": {
-        "file": "seed_creatures.json",
-        "query": "SELECT c.title, c.icon, c.size, ct.code AS creature_type, c.hp, c.ac, c.explanation, c.attack_to_hit, c.damage, c.special, c.stats FROM creatures c LEFT JOIN creature_types ct ON c.creature_type_id = ct.id ORDER BY c.title",
-    },
     "monsters": {
         "file": "seed_monsters.json",
         "query": "SELECT name, alias, size, \"group\", alignment, type, ac, hp, speed, stats, save, skill, resist, vulnerable, senses, languages, action, reaction, traits, spellcasting, bonus, legendary, legendaryHeader, mythic, mythicHeader, reactionRules, soundClip, cr, cr_details FROM monsters ORDER BY name",

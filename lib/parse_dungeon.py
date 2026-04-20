@@ -95,7 +95,7 @@ class DungeonData:
 
 
 # ============================================================================
-# Database Management Functions for Creatures
+# Database Management Functions for Monsters
 # ============================================================================
 
 def get_db_connection() -> Optional[sqlite3.Connection]:
@@ -103,7 +103,7 @@ def get_db_connection() -> Optional[sqlite3.Connection]:
     db_path = Path(__file__).parent.parent / "dnd_kids_resources.db"
     
     if not db_path.exists():
-        print(f"⚠️  Warning: Database not found at {db_path}. Creatures won't be stored.")
+        print(f"⚠️  Warning: Database not found at {db_path}. Monsters won't be stored.")
         return None
     
     try:
@@ -115,47 +115,46 @@ def get_db_connection() -> Optional[sqlite3.Connection]:
         return None
 
 
-def get_or_create_creature(creature_name: str, db_conn: sqlite3.Connection) -> Optional[int]:
+def get_or_create_monster(monster_name: str, db_conn: sqlite3.Connection) -> Optional[int]:
     """
-    Check if creature exists in database, create if not.
-    Returns the creature ID, or None if database operation failed.
+    Check if monster exists in database, create if not.
+    Returns the monster ID, or None if database operation failed.
     
     Args:
-        creature_name: Name of the creature
+        monster_name: Name of the monster
         db_conn: Database connection
         
     Returns:
-        Creature ID (int) or None if operation failed
+        Monster ID (int) or None if operation failed
     """
     try:
         cursor = db_conn.cursor()
         
-        # Check if creature already exists (case-insensitive)
+        # Check if monster already exists (case-insensitive)
         cursor.execute(
-            "SELECT id FROM creatures WHERE LOWER(title) = LOWER(?)",
-            (creature_name,)
+            "SELECT id FROM monsters WHERE LOWER(name) = LOWER(?)",
+            (monster_name,)
         )
         existing = cursor.fetchone()
         
         if existing:
-            creature_id = existing[0]
-            print(f"        ✓ Found creature in DB: {creature_name} (ID: {creature_id})")
-            return creature_id
+            monster_id = existing[0]
+            print(f"        ✓ Found monster in DB: {monster_name} (ID: {monster_id})")
+            return monster_id
         
-        # Creature doesn't exist, create it with only the name
-        # Other details can be filled in later via the API
+        # Monster doesn't exist, create it with only the name
         cursor.execute("""
-            INSERT INTO creatures (title)
+            INSERT INTO monsters (name)
             VALUES (?)
-        """, (creature_name,))
+        """, (monster_name,))
         
         db_conn.commit()
-        creature_id = cursor.lastrowid
-        print(f"        ✓ Added creature to DB: {creature_name} (ID: {creature_id})")
-        return creature_id
+        monster_id = cursor.lastrowid
+        print(f"        ✓ Added monster to DB: {monster_name} (ID: {monster_id})")
+        return monster_id
         
     except sqlite3.Error as e:
-        print(f"        ✗ Database error while processing {creature_name}: {e}")
+        print(f"        ✗ Database error while processing {monster_name}: {e}")
         return None
 
 
@@ -592,13 +591,13 @@ class DungeonHTMLParser:
                     if len(potential_name) > 1:
                         creature_name = potential_name
 
-                # Get or create creature in database
-                # (Ensures creature exists for lookup by title later)
+                # Get or create monster in database
+                # (Ensures monster exists for lookup by title later)
                 if self.db_conn:
-                    get_or_create_creature(creature_name, self.db_conn)
+                    get_or_create_monster(creature_name, self.db_conn)
 
                 # Create a single entry with count information (don't create separate per-instance entries)
-                # Note: creature_id not stored; use title to look up creature details via API
+                # Note: monster_id not stored; use title to look up monster details via API
                 entry = RoomEntry(
                     entry_type='monster',
                     title=creature_name,  # Just the creature name, count is in the count field

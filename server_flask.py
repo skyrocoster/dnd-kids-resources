@@ -593,47 +593,6 @@ def enrich_damage_types(damage_type_ids, conn=None):
             conn.close()
 
 
-def enrich_creature_type(creature_type_code, conn=None):
-    """
-    Enrich a creature type code with creature_types table metadata (emoji, color).
-
-    Input: "beast"
-    Output: {"code": "beast", "emoji": "🦁", "color": "#8B4513"}
-    """
-    if not creature_type_code or not isinstance(creature_type_code, str):
-        return creature_type_code
-
-    # If no connection provided, use the new one
-    if conn is None:
-        conn = get_db_connection()
-        should_close = True
-    else:
-        should_close = False
-
-    try:
-        cursor = conn.cursor()
-        cursor.execute("""
-            SELECT code, emoji, color 
-            FROM creature_types 
-            WHERE code = ?
-        """, (creature_type_code,))
-        creature_type = cursor.fetchone()
-
-        if creature_type:
-            creature_type_dict = dict(creature_type)
-            return {
-                'code': creature_type_dict['code'],
-                'emoji': creature_type_dict['emoji'],
-                'color': creature_type_dict['color']
-            }
-        else:
-            # Fallback if creature type not found
-            return creature_type_code
-    finally:
-        if should_close:
-            conn.close()
-
-
 def get_damage_type_metadata(damage_type_code, conn):
     """
     Get enriched metadata for a damage type code.
@@ -803,7 +762,7 @@ def convert_db_condition_to_api_format(condition_row):
     }
 
 
-def convert_db_creature_to_api_format(creature_row, conn=None):
+def convert_db_creature_to_api_format_deprecated(creature_row, conn=None):
     """
     Convert database creature to API format.
 
@@ -1092,6 +1051,128 @@ def convert_db_creature_to_api_format(creature_row, conn=None):
     }
 
     # Close connection if we created it
+    if should_close:
+        conn.close()
+
+    return result
+
+
+def convert_db_monster_to_api_format(monster_row, conn=None):
+    """
+    Convert a database monster row to API format for the dungeon UI.
+    """
+    monster_dict = dict(monster_row)
+
+    if conn is None:
+        conn = get_db_connection()
+        should_close = True
+    else:
+        should_close = False
+
+    def parse_field(value):
+        if value is None:
+            return None
+        if isinstance(value, str):
+            parsed = parse_json_field(value)
+            return parsed if parsed is not None else value
+        return value
+
+    def format_value(value):
+        if value is None or value == '':
+            return ''
+        if isinstance(value, dict):
+            if 'avg' in value:
+                return str(value['avg'])
+            if 'value' in value:
+                return str(value['value'])
+            return json.dumps(value, ensure_ascii=False)
+        if isinstance(value, list):
+            return ', '.join(str(item) for item in value)
+        return str(value)
+
+    name = monster_dict.get('name', 'Unknown')
+    title_display = str(name)
+    icon = monster_dict.get('icon', '👹')
+    size = monster_dict.get('size', '') or ''
+
+    type_info = parse_field(monster_dict.get('type')) or {}
+    type_name = ''
+    if isinstance(type_info, dict):
+        type_name = type_info.get('name', '') or ''
+        subtype = type_info.get('subtype')
+        if subtype:
+            type_name = f"{type_name} ({subtype})" if type_name else str(subtype)
+    elif type_info:
+        type_name = str(type_info)
+
+    alignment_info = parse_field(monster_dict.get('alignment')) or ''
+    if isinstance(alignment_info, list):
+        alignment = ', '.join(str(item) for item in alignment_info if item)
+    else:
+        alignment = str(alignment_info or '')
+
+    hp = parse_field(monster_dict.get('hp'))
+    ac = parse_field(monster_dict.get('ac'))
+    speed = parse_field(monster_dict.get('speed'))
+    stats = parse_field(monster_dict.get('stats')) or {}
+
+    details = []
+    if size:
+        details.append({'label': 'Size:', 'content': size})
+    if type_name:
+        details.append({'label': 'Type:', 'content': type_name})
+    if alignment:
+        details.append({'label': 'Alignment:', 'content': alignment})
+
+    hp_str = format_value(hp)
+    if hp_str:
+        details.append({'label': 'HP:', 'content': hp_str})
+
+    ac_str = format_value(ac)
+    if ac_str:
+        details.append({'label': 'AC:', 'content': ac_str})
+
+    speed_str = format_value(speed)
+    if speed_str:
+        details.append({'label': 'Speed:', 'content': speed_str})
+
+    if isinstance(stats, dict) and stats:
+        stats_grid_data = []
+        for ability_code in ['str', 'dex', 'con', 'int', 'wis', 'cha']:
+            if ability_code in stats and isinstance(stats[ability_code], int):
+                stats_grid_data.append({
+                    'code': ability_code,
+                    'name': ability_code.upper(),
+                    'emoji': ability_code.upper(),
+                    'color': '#7f8c8d',
+                    'value': stats[ability_code]
+                })
+        if stats_grid_data:
+            details.append({
+                'label': 'STATS',
+                'content': stats_grid_data,
+                'type': 'stats_grid'
+            })
+
+    footer_info = []
+    if type_name:
+        footer_info.append(type_name)
+    if size:
+        footer_info.append(size)
+
+    explanation = type_name or ''
+    if alignment:
+        explanation = f"{explanation}, {alignment}" if explanation else alignment
+
+    result = {
+        'icon': icon,
+        'level': type_name or size or str(name).lower(),
+        'title': title_display,
+        'explanation': explanation,
+        'details': details,
+        'footer_info': ' • '.join(footer_info) if footer_info else ''
+    }
+
     if should_close:
         conn.close()
 
@@ -1837,31 +1918,31 @@ def get_abilities_api():
         return jsonify({"error": str(e)}), 500
 
 
-@app.route('/api/creatures', methods=['GET'])
-def get_creatures_api():
-    """API endpoint: GET /api/creatures - Returns all creatures as JSON."""
+@app.route('/api/monsters', methods=['GET'])
+def get_monsters_api():
+    """API endpoint: GET /api/monsters - Returns monster summaries as JSON."""
     try:
         print(
-            f"[API] GET /api/creatures - DB Path: {DB_PATH}, exists: {Path(DB_PATH).exists()}")
+            f"[API] GET /api/monsters - DB Path: {DB_PATH}, exists: {Path(DB_PATH).exists()}")
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        # Get all creatures
         cursor.execute("""
-            SELECT id, title, icon, size, creature_type_id, hp, ac, explanation,
-                   attack_to_hit, damage, special, stats
-            FROM creatures
-            ORDER BY title
+            SELECT id, name
+            FROM monsters
+            ORDER BY name
         """)
 
-        creatures = []
+        monsters = []
         for row in cursor.fetchall():
-            creature_json = convert_db_creature_to_api_format(row, conn)
-            creatures.append(creature_json)
+            monsters.append({
+                'id': row['id'],
+                'title': row['name']
+            })
 
-        print(f"[API] Successfully loaded {len(creatures)} creatures")
+        print(f"[API] Successfully loaded {len(monsters)} monsters")
         conn.close()
-        return jsonify(creatures)
+        return jsonify(monsters)
 
     except Exception as e:
         print(f"[API] ERROR: {e}")
@@ -1870,28 +1951,26 @@ def get_creatures_api():
         return jsonify({"error": str(e)}), 500
 
 
-@app.route('/api/creatures/<title>', methods=['GET'])
-def get_creature_by_title(title):
-    """API endpoint: GET /api/creatures/<title> - Returns a single creature by title."""
+@app.route('/api/monsters/<title>', methods=['GET'])
+def get_monster_by_title(title):
+    """API endpoint: GET /api/monsters/<title> - Returns a single monster by title."""
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        # Get creature by title (search case-insensitive)
         cursor.execute("""
-            SELECT id, title, icon, size, creature_type_id, hp, ac, explanation,
-                   attack_to_hit, damage, special, stats
-            FROM creatures
-            WHERE LOWER(title) = LOWER(?)
+            SELECT *
+            FROM monsters
+            WHERE LOWER(name) = LOWER(?)
         """, (title,))
 
         row = cursor.fetchone()
         if not row:
-            return jsonify({"error": f"Creature '{title}' not found"}), 404
+            return jsonify({"error": f"Monster '{title}' not found"}), 404
 
-        creature_json = convert_db_creature_to_api_format(row, conn)
+        monster_json = convert_db_monster_to_api_format(row, conn)
         conn.close()
-        return jsonify(creature_json)
+        return jsonify(monster_json)
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -2524,8 +2603,8 @@ def start_server(port=8000):
     print(f"   - GET /api/skills/<title> (single skill)")
     print(f"   - GET /api/conditions     (all conditions)")
     print(f"   - GET /api/conditions/<title> (single condition)")
-    print(f"   - GET /api/creatures      (all creatures)")
-    print(f"   - GET /api/creatures/<title> (single creature)")
+    print(f"   - GET /api/monsters      (all monsters)")
+    print(f"   - GET /api/monsters/<title> (single monster)")
     print(f"   - GET /api/dungeons       (all dungeons)")
     print(f"   - GET /api/dungeons/<id>  (single dungeon)")
     print(f"   - POST /api/dungeons/<id> (save dungeon)")

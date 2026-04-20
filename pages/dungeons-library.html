@@ -684,10 +684,10 @@
                     <label>Title:</label>
                     <input type="text" id="featureTitle" placeholder="e.g., Treasure Chest" required>
                 </div>
-                <div class="modal-field field-creature hidden">
-                    <label>Creature:</label>
-                    <select id="featureCreature" required>
-                        <option value="">Loading creatures...</option>
+                <div class="modal-field field-monster-selector hidden">
+                    <label>Monster:</label>
+                    <select id="featureMonster" required>
+                        <option value="">Loading monsters...</option>
                     </select>
                 </div>
                 <div class="modal-field">
@@ -964,30 +964,30 @@
             }
         }
 
-        // Fetch creature details from DB by title (case-insensitive)
-        async function getCreatureDetails(title) {
+        // Fetch monster details from DB by title (case-insensitive)
+        async function getMonsterDetails(title) {
             try {
-                const response = await fetch(`/api/creatures/${encodeURIComponent(title)}`);
+                const response = await fetch(`/api/monsters/${encodeURIComponent(title)}`);
                 if (response.ok) {
                     return await response.json();
                 }
             } catch (e) {
-                console.warn(`Could not fetch creature details for ${title}:`, e);
+                console.warn(`Could not fetch monster details for ${title}:`, e);
             }
             return null;
         }
 
-        // Create and show creature card popup on hover
-        function showCreatureCardPopup(creature, triggerElement) {
+        // Create and show monster card popup on hover
+        function showMonsterCardPopup(monster, triggerElement) {
             // Remove any existing popup
-            const existing = document.getElementById('creature-card-popup');
+            const existing = document.getElementById('monster-card-popup');
             if (existing) {
                 existing.remove();
             }
 
             // Create popup container
             const popup = document.createElement('div');
-            popup.id = 'creature-card-popup';
+            popup.id = 'monster-card-popup';
             popup.style.cssText = `
                 position: fixed;
                 z-index: 10000;
@@ -1007,24 +1007,24 @@
             let cardHtml = `
                 <div style="margin-bottom: 8px; padding-bottom: 8px; border-bottom: 2px solid #4a90e2;">
                     <div style="font-size: 16px; margin-bottom: 4px;">
-                        <span style="font-size: 18px; margin-right: 4px;">${creature.icon || ''}</span>
-                        <span style="font-weight: bold; color: #333;">${creature.title}</span>
+                        <span style="font-size: 18px; margin-right: 4px;">${monster.icon || ''}</span>
+                        <span style="font-weight: bold; color: #333;">${monster.title}</span>
                     </div>
                 </div>
             `;
 
             // Add explanation
-            if (creature.explanation) {
+            if (monster.explanation) {
                 cardHtml += `
                     <div style="font-style: italic; color: #666; margin-bottom: 8px; font-size: 12px; line-height: 1.4;">
-                        ${creature.explanation}
+                        ${monster.explanation}
                     </div>
                 `;
             }
 
             // Add details
-            if (creature.details && Array.isArray(creature.details)) {
-                for (const detail of creature.details) {
+            if (monster.details && Array.isArray(monster.details)) {
+                for (const detail of monster.details) {
                     // Handle stats_grid specially (render as colored boxes)
                     if (detail.type === 'stats_grid' && Array.isArray(detail.content)) {
                         cardHtml += `<div style="display: grid; grid-template-columns: ${detail.content.length === 1 ? '1fr' : 'repeat(2, 1fr)'}; gap: 6px; margin: 8px 0; line-height: 1.2;">`;
@@ -1115,10 +1115,10 @@
             }
 
             // Add footer
-            if (creature.footer_info) {
+            if (monster.footer_info) {
                 cardHtml += `
                     <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #eee; font-size: 11px; color: #666; font-weight: 600;">
-                        ${creature.footer_info}
+                        ${monster.footer_info}
                     </div>
                 `;
             }
@@ -1145,14 +1145,13 @@
 
             // Remove popup on mouse leave
             triggerElement.addEventListener('mouseleave', function() {
-                const pop = document.getElementById('creature-card-popup');
-                if (pop) pop.remove();
+                const pop = document.getElementById('monster-card-popup');
             });
 
             // Also remove if clicking elsewhere
             document.addEventListener('click', function removePopup(e) {
                 if (e.target !== triggerElement && !popup.contains(e.target)) {
-                    const pop = document.getElementById('creature-card-popup');
+                    const pop = document.getElementById('monster-card-popup');
                     if (pop) {
                         pop.remove();
                         document.removeEventListener('click', removePopup);
@@ -1161,7 +1160,7 @@
             });
         }
 
-        // Format a single roll object for popup display (matching creature card style)
+        // Format a single roll object for popup display (matching monster card style)
         function formatRollForPopup(rollObj) {
             if (!rollObj || typeof rollObj !== 'object') return '';
             
@@ -1220,27 +1219,27 @@
             return result.trim();
         }
 
-        // Enhance monster displays with creature details from DB
+        // Enhance monster displays with monster details from DB
         async function enrichMonsterDisplay() {
             const monsters = document.querySelectorAll('.entry.monster');
             for (const monsterEl of monsters) {
                 const titleEl = monsterEl.querySelector('.entry-title');
                 if (!titleEl) continue;
                 
-                // Extract creature name from title (before count if present)
+                // Extract monster name from title (before count if present)
                 const titleText = titleEl.textContent.trim().split('(')[0].trim();
                 
-                // Fetch creature details
-                const creature = await getCreatureDetails(titleText);
-                if (!creature) continue;
+                // Fetch monster details
+                const monster = await getMonsterDetails(titleText);
+                if (!monster) continue;
                 
-                // Add hover listeners for creature card popup
+                // Add hover listeners for monster card popup
                 titleEl.style.cursor = 'pointer';
                 titleEl.style.textDecoration = 'underline dotted';
                 titleEl.style.textDecorationColor = 'rgba(74, 144, 226, 0.5)';
                 
                 titleEl.addEventListener('mouseenter', function() {
-                    showCreatureCardPopup(creature, this);
+                    showMonsterCardPopup(monster, this);
                 });
             }
         }
@@ -1378,7 +1377,7 @@
                 // Display grouped entries
                 const typeLabels = {
                     door: '🚪 Doors',
-                    monster: '👹 Creatures',
+                    monster: '👹 Monsters',
                     feature: '✨ Features',
                     trap: '⚠️ Traps',
                     treasure: '💎 Treasure',
@@ -1392,7 +1391,7 @@
                     roomDetailsHtml += `<div class="entry-group">`;
                     roomDetailsHtml += `<div class="entry-group-title">${typeLabels[type] || type}</div>`;
 
-                    // For monsters, deduplicate by title (show each creature type once)
+                    // For monsters, deduplicate by title (show each monster type once)
                     let entriesToDisplay = entries;
                     if (type === 'monster') {
                         const seenMonsters = new Set();
@@ -1505,7 +1504,7 @@
                 }
             }
             
-            // Enhance monster displays with creature details from database
+            // Enhance monster displays with monster details from database
             enrichMonsterDisplay();
             
             // Enhance trap displays with trap names from database
@@ -1590,7 +1589,7 @@
             document.getElementById('treasureIsHidden').checked = false;
             document.getElementById('treasureHiddenDC').value = '';
             document.getElementById('treasureItems').value = '';
-            loadCreaturesForModal();
+            loadMonstersForModal();
             loadTrapsForModal();
             updateFeatureFields();
             document.getElementById('featureTitle').focus();
@@ -1646,12 +1645,12 @@
                 document.getElementById('treasureItems').value = '';
             }
             
-            // Set creature selector if it's a monster
-            if (entry.entry_type === 'monster' && entry.creature_id) {
-                document.getElementById('featureCreature').value = entry.creature_id;
+            // Set monster selector if it's a monster
+            if (entry.entry_type === 'monster' && (entry.monster_id || entry.creature_id)) {
+                document.getElementById('featureMonster').value = entry.monster_id || entry.creature_id;
             }
             
-            loadCreaturesForModal();
+            loadMonstersForModal();
             loadTrapsForModal();
             updateFeatureFields();
             document.getElementById('featureTitle').focus();
@@ -1670,20 +1669,20 @@
             }
         }
 
-        // Load creatures from DB for the creature selector
-        async function loadCreaturesForModal() {
+        // Load monsters from DB for the monster selector
+        async function loadMonstersForModal() {
             try {
-                const response = await fetch('/api/creatures');
+                const response = await fetch('/api/monsters');
                 if (response.ok) {
-                    const creatures = await response.json();
-                    const selector = document.getElementById('featureCreature');
-                    selector.innerHTML = '<option value="">Select a creature...</option>' + 
-                        creatures.map(c => `<option value="${c.id}">${c.title}</option>`).join('');
+                    const monsters = await response.json();
+                    const selector = document.getElementById('featureMonster');
+                    selector.innerHTML = '<option value="">Select a monster...</option>' + 
+                        monsters.map(m => `<option value="${m.id}">${m.title}</option>`).join('');
                 }
             } catch (e) {
-                console.error('Error loading creatures:', e);
-                document.getElementById('featureCreature').innerHTML = 
-                    '<option value="">Error loading creatures</option>';
+                console.error('Error loading monsters:', e);
+                document.getElementById('featureMonster').innerHTML = 
+                    '<option value="">Error loading monsters</option>';
             }
         }
 
@@ -1724,7 +1723,7 @@
             document.getElementById('featureType').value = 'feature';
             document.getElementById('featureType').disabled = false;
             document.getElementById('featureTitle').value = '';
-            document.getElementById('featureCreature').value = '';
+            document.getElementById('featureMonster').value = '';
             document.getElementById('featureContent').value = '';
             document.getElementById('featureCount').value = '1';
             document.getElementById('featureLeadsTo').value = '';
@@ -1746,7 +1745,7 @@
             const featureType = document.getElementById('featureType').value;
             
             // Hide all conditional fields
-            document.querySelectorAll('.modal-field.field-monster, .modal-field.field-door, .modal-field.field-creature, .modal-field.field-title, .modal-field.field-treasure').forEach(field => {
+            document.querySelectorAll('.modal-field.field-monster, .modal-field.field-door, .modal-field.field-monster-selector, .modal-field.field-title, .modal-field.field-treasure').forEach(field => {
                 field.classList.add('hidden');
             });
             
@@ -1757,7 +1756,7 @@
             
             // Show fields based on type
             if (featureType === 'monster') {
-                document.querySelector('.modal-field.field-creature').classList.remove('hidden');
+                document.querySelector('.modal-field.field-monster-selector').classList.remove('hidden');
                 document.querySelector('.modal-field.field-monster').classList.remove('hidden');
             } else if (featureType === 'door') {
                 document.querySelectorAll('.modal-field.field-door').forEach(field => {
@@ -1788,19 +1787,19 @@
             
             // Get title based on feature type
             let title = '';
-            let creatureId = null;
+            let monsterId = null;
             
             if (type === 'monster') {
-                // For monsters, get from creature selector
-                const creatureSelector = document.getElementById('featureCreature');
-                creatureId = creatureSelector.value;
+                // For monsters, get from monster selector
+                const monsterSelector = document.getElementById('featureMonster');
+                monsterId = monsterSelector.value;
                 
-                if (!creatureId) {
-                    alert('Please select a creature');
+                if (!monsterId) {
+                    alert('Please select a monster');
                     return;
                 }
                 
-                const selectedOption = creatureSelector.options[creatureSelector.selectedIndex];
+                const selectedOption = monsterSelector.options[monsterSelector.selectedIndex];
                 title = selectedOption.textContent;
             } else {
                 // For other types, use title input
@@ -1835,7 +1834,7 @@
                         count: count,
                         creature_index: i,
                         creature_total: count,
-                        creature_id: creatureId,
+                        monster_id: monsterId,
                         leads_to: leadsTo,
                         trap_ids: [],
                         is_hidden: false,
@@ -1884,7 +1883,7 @@
                     count: null,
                     creature_index: null,
                     creature_total: null,
-                    creature_id: null,
+                    monster_id: null,
                     leads_to: null,
                     trap_ids: [],
                     is_hidden: isHidden,
@@ -1901,7 +1900,7 @@
                     count: type === 'monster' ? count : null,
                     creature_index: type === 'monster' ? 1 : null,
                     creature_total: type === 'monster' ? count : null,
-                    creature_id: creatureId,
+                    monster_id: monsterId,
                     leads_to: leadsTo,
                     door_mechanics: type === 'door' ? (doorMechanics || null) : null,
                     trap_ids: type === 'door' ? doorTrapIds : [],
@@ -1945,12 +1944,12 @@
             // Update type-specific fields
             if (entryType === 'monster') {
                 const count = parseInt(document.getElementById('featureCount').value) || 1;
-                const creatureSelector = document.getElementById('featureCreature');
-                const creatureId = creatureSelector.value;
-                const selectedOption = creatureSelector.options[creatureSelector.selectedIndex];
+                const monsterSelector = document.getElementById('featureMonster');
+                const monsterId = monsterSelector.value;
+                const selectedOption = monsterSelector.options[monsterSelector.selectedIndex];
                 
                 entry.count = count;
-                entry.creature_id = creatureId;
+                entry.monster_id = monsterId;
                 entry.title = selectedOption.textContent;
             } else if (entryType === 'door') {
                 entry.door_mechanics = doorMechanics || null;

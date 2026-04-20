@@ -52,10 +52,8 @@ It's designed to be safe and idempotent (can run multiple times).
 Seed files:
 - data/seeds/seed_abilities.json
 - data/seeds/seed_conditions.json
-- data/seeds/seed_creatures.json
 - data/seeds/seed_monsters.json
 - data/seeds/seed_damage_types.json
-- data/seeds/seed_creature_types.json
 - data/seeds/seed_traps.json
 - data/seeds/seed_dungeons.json
 - data/seeds/seed_spells.json (optional, JSON fallback)
@@ -313,75 +311,6 @@ def populate_conditions(cursor, conn, force=False):
     conn.commit()
     print(f"  [OK] Loaded {len(seeds)} conditions")
 
-def populate_creatures(cursor, conn, force=False):
-    """Populate creatures table from seed_creatures.json using all provided data"""
-    print("\n[LION] Loading creatures...")
-    
-    try:
-        cursor.execute("SELECT COUNT(*) FROM creatures")
-        count = cursor.fetchone()[0]
-    except sqlite3.OperationalError:
-        count = 0
-    
-    if count > 0 and not force:
-        print(f"  [INFO]  Creatures table already has {count} records. Skip (use --force to override)")
-        return
-    
-    # Create creatures table if it doesn't exist (or recreate if force)
-    if force or count == 0:
-        # Creatures schema must be created by init_database.py
-        try:
-            cursor.execute("SELECT 1 FROM creatures LIMIT 1")
-        except Exception:
-            print("  [ERROR]  Creatures table does not exist. Run _dev/init_database.py first.")
-            return
-    
-    seeds = load_json_file(SEEDS_DIR / "seed_creatures.json")
-    if not seeds:
-        print("  [WARNING]  No creature seeds found")
-        return
-    
-    for creature in seeds:
-        try:
-            # Get creature_type_id from code
-            creature_type_code = creature.get('creature_type', 'humanoid')
-            cursor.execute(
-                "SELECT id FROM creature_types WHERE code = ?",
-                (creature_type_code,)
-            )
-            type_row = cursor.fetchone()
-            creature_type_id = type_row[0] if type_row else None
-            
-            # Serialize JSON fields
-            attack_to_hit = json.dumps(creature.get('attack_to_hit')) if creature.get('attack_to_hit') else None
-            damage = json.dumps(creature.get('damage')) if creature.get('damage') else None
-            stats = json.dumps(creature.get('stats')) if creature.get('stats') else None
-            
-            cursor.execute("""
-                INSERT INTO creatures 
-                (title, icon, size, creature_type_id, hp, ac, explanation, attack_to_hit, damage, special, stats)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                creature.get('title'),
-                creature.get('icon'),
-                creature.get('size'),
-                creature_type_id,
-                creature.get('hp'),
-                creature.get('ac'),
-                creature.get('explanation'),
-                attack_to_hit,
-                damage,
-                creature.get('special'),
-                stats
-            ))
-            print(f"  [CHECK] {creature.get('title')}")
-        except sqlite3.IntegrityError as e:
-            print(f"  [WARNING]  Duplicate or error: {creature.get('title')} - {e}")
-    
-    conn.commit()
-    print(f"  [OK] Loaded {len(seeds)} creatures")
-
-
 def populate_monsters(cursor, conn, force=False):
     """Populate monsters table from seed_monsters.json using normalized monster data"""
     print("\n[DRAGON] Loading monsters...")
@@ -558,79 +487,6 @@ def populate_traps(cursor, conn, force=False):
     print(f"  [OK] Traps table now has {final_count} records")
 
 
-def populate_creature_types(cursor, conn, force=False):
-    """Populate creature_types table from seed_creature_types.json"""
-    print("\n[LION] Loading creature types...")
-    
-    # Check if already populated
-    try:
-        cursor.execute("SELECT COUNT(*) FROM creature_types")
-        count = cursor.fetchone()[0]
-    except sqlite3.OperationalError:
-        # Table doesn't exist, that's fine
-        count = 0
-    
-    if count > 0 and not force:
-        print(f"  [INFO]  Creature types table already has {count} records. Skip (use --force to override)")
-        return
-    
-    if force and count > 0:
-        # With FK constraints enabled, must delete creatures first (they reference creature_types)
-        try:
-            cursor.execute("SELECT COUNT(*) FROM creatures")
-            creature_count = cursor.fetchone()[0]
-            if creature_count > 0:
-                cursor.execute("DELETE FROM creatures")
-                print(f"  [TRASH]  Cleared {creature_count} creatures (referenced creature_types)")
-        except Exception:
-            pass  # creatures table may not exist yet
-    
-    if force or count == 0:
-        # Creature types schema must be created by init_database.py
-        try:
-            cursor.execute("SELECT 1 FROM creature_types LIMIT 1")
-        except Exception:
-            print("  [ERROR]  Creature types table does not exist. Run _dev/init_database.py first.")
-            return
-    else:
-        # Check if table exists and has data
-        try:
-            cursor.execute("SELECT COUNT(*) FROM creature_types")
-            count = cursor.fetchone()[0]
-            if count > 0:
-                print(f"  [INFO]  Creature types table already has {count} records. Skip (use --force to override)")
-                return
-        except Exception:
-            print("  [ERROR]  Creature types table does not exist. Run _dev/init_database.py first.")
-            return
-    
-    seeds = load_json_file(SEEDS_DIR / "seed_creature_types.json")
-    if not seeds:
-        print("  [WARNING]  No creature type seeds found")
-        return
-    
-    for creature_type in seeds:
-        try:
-            cursor.execute("""
-                INSERT INTO creature_types 
-                (id, code, emoji, color)
-                VALUES (?, ?, ?, ?)
-            """, (
-                creature_type.get('id'),
-                creature_type.get('code'),
-                creature_type.get('emoji', '?'),
-                creature_type.get('color', '#95a5a6')
-            ))
-            print(f"  [CHECK] {creature_type.get('code').upper()}")
-        except sqlite3.IntegrityError as e:
-            print(f"  [WARNING]  Error: {creature_type.get('code')} - {e}")
-    
-    conn.commit()
-    cursor.execute("SELECT COUNT(*) FROM creature_types")
-    final_count = cursor.fetchone()[0]
-    print(f"  [OK] Creature types table now has {final_count} records")
-
-
 def populate_dungeons(cursor, conn, force=False):
     """Populate dungeons table from seed_dungeons.json"""
     print("\n[CASTLE] Loading dungeons...")
@@ -790,9 +646,7 @@ def main():
     parser.add_argument('--spells', action='store_true', help='Load only spells')
     parser.add_argument('--conditions', action='store_true', help='Load only conditions')
     parser.add_argument('--monsters', action='store_true', help='Load only monsters')
-    parser.add_argument('--creatures', action='store_true', help='Load only creatures')
     parser.add_argument('--damage-types', action='store_true', help='Load only damage types')
-    parser.add_argument('--creature-types', action='store_true', help='Load only creature types')
     parser.add_argument('--traps', action='store_true', help='Load only traps')
     parser.add_argument('--dungeons', action='store_true', help='Load only dungeons')
     parser.add_argument('--classes', action='store_true', help='Load only classes')
@@ -800,7 +654,7 @@ def main():
     
     args = parser.parse_args()
     # If no specific tables selected, load all
-    load_all = not any([args.abilities, args.spells, args.conditions, args.creatures, args.monsters, args.damage_types, args.creature_types, args.traps, args.dungeons, args.classes])
+    load_all = not any([args.abilities, args.spells, args.conditions, args.monsters, args.damage_types, args.traps, args.dungeons, args.classes])
     
     print("="*60)
     print("PHASE 2: DATABASE SEEDING")
@@ -825,12 +679,8 @@ def main():
             populate_abilities(cursor, conn, args.force)
         if load_all or args.damage_types:
             populate_damage_types(cursor, conn, args.force)
-        if load_all or args.creature_types:
-            populate_creature_types(cursor, conn, args.force)
         if load_all or args.monsters:
             populate_monsters(cursor, conn, args.force)
-        if load_all or args.creatures:
-            populate_creatures(cursor, conn, args.force)
         if load_all or args.spells:
             populate_spells(cursor, conn, args.force)
         if load_all or args.conditions:
@@ -863,9 +713,7 @@ def main():
         print("  - data/seeds/seed_spells.json")
         print("  - data/5eTools/extracted/data/spells/spells-merged-clean-range-text.json")
         print("  - data/seeds/seed_conditions.json")
-        print("  - data/seeds/seed_creatures.json")
         print("  - data/seeds/seed_damage_types.json")
-        print("  - data/seeds/seed_creature_types.json")
         print("  - data/seeds/seed_traps.json")
         print("  - data/seeds/seed_dungeons.json")
         

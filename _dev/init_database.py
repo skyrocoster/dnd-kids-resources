@@ -143,40 +143,6 @@ def init_database():
         )
     """)
 
-    # Create creature_types lookup table (with ID for seed_database.py compatibility)
-    cursor.execute("""
-        CREATE TABLE creature_types (
-            id INTEGER PRIMARY KEY,
-            code TEXT NOT NULL UNIQUE,
-            emoji TEXT NOT NULL,
-            color TEXT NOT NULL,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-
-    # Create creatures table
-    cursor.execute("""
-        CREATE TABLE creatures (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            title TEXT NOT NULL UNIQUE,
-            icon TEXT,
-            size TEXT,
-            creature_type_id INTEGER,
-            hp INTEGER,
-            ac INTEGER,
-            explanation TEXT,
-            attack_to_hit TEXT,
-            damage TEXT,
-            special TEXT,
-            stats TEXT,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (creature_type_id) REFERENCES creature_types(id)
-        )
-    """)
-
-    cursor.execute(
-        "CREATE INDEX IF NOT EXISTS idx_creatures_creature_type_id ON creatures(creature_type_id)")
-
     # Create monsters table using the normalized merged structure
     cursor.execute("""
         CREATE TABLE monsters (

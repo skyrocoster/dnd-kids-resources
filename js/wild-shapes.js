@@ -1,21 +1,21 @@
 document.addEventListener('DOMContentLoaded', async function() {
   try {
-    // Fetch creatures from API
-    const response = await fetch('/api/creatures');
+    // Fetch monsters from API
+    const response = await fetch('/api/monsters');
     
     if (!response.ok) {
-      throw new Error(`Failed to load creatures from API: ${response.statusText}`);
+      throw new Error(`Failed to load monsters from API: ${response.statusText}`);
     }
     
     const data = await response.json();
-    console.log(`✓ Loaded ${data.length} creatures from API`);
+    console.log(`✓ Loaded ${data.length} monsters from API`);
     
     renderPaginatedCards(
       '#page-container',
       data,
       9,
-      '🐺 Creatures 🦅',
-      'Friendly creatures for every adventure'
+      '🐺 Monsters 🦅',
+      'Friendly monsters for every adventure'
     );
   } catch (error) {
     console.error('Error loading cards:', error);
