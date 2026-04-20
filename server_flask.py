@@ -1081,6 +1081,8 @@ def convert_db_monster_to_api_format(monster_row, conn=None):
         if value is None or value == '':
             return ''
         if isinstance(value, dict):
+            if 'average' in value:
+                return str(value['average'])
             if 'avg' in value:
                 return str(value['avg'])
             if 'value' in value:
@@ -1089,6 +1091,80 @@ def convert_db_monster_to_api_format(monster_row, conn=None):
         if isinstance(value, list):
             return ', '.join(str(item) for item in value)
         return str(value)
+
+    def format_hp_value(value):
+        if value is None or value == '':
+            return ''
+        if isinstance(value, dict):
+            if 'average' in value:
+                return str(value['average'])
+            if 'avg' in value:
+                return str(value['avg'])
+            if 'value' in value:
+                return str(value['value'])
+            return ''
+        if isinstance(value, list):
+            for item in value:
+                if isinstance(item, dict):
+                    if 'average' in item:
+                        return str(item['average'])
+                    if 'avg' in item:
+                        return str(item['avg'])
+                    if 'value' in item:
+                        return str(item['value'])
+            return ''
+        return ''
+
+    def format_ac_value(value):
+        if value is None or value == '':
+            return ''
+        if isinstance(value, dict):
+            pairs = []
+            for ac_key, ac_note in value.items():
+                ac_text = str(ac_key).strip()
+                if ac_text == '':
+                    continue
+                if ac_note is None or ac_note == '':
+                    pairs.append(ac_text)
+                else:
+                    pairs.append(f"{ac_text} ({str(ac_note).strip()})")
+            return ', '.join(pairs)
+        if isinstance(value, list):
+            formatted = []
+            for item in value:
+                if isinstance(item, dict):
+                    if 'value' in item:
+                        item_text = str(item['value']).strip()
+                        note = ''
+                        if 'note' in item and item['note']:
+                            note = str(item['note']).strip()
+                        elif 'special' in item and item['special']:
+                            note = str(item['special']).strip()
+                        if item_text:
+                            formatted.append(item_text if not note else f"{item_text} ({note})")
+                else:
+                    formatted.append(str(item))
+            return ', '.join(formatted)
+        return str(value)
+
+    def format_speed_value(value):
+        if value is None or value == '':
+            return ''
+        if isinstance(value, dict):
+            walk = value.get('walk')
+            return str(walk).strip() if walk is not None and walk != '' else ''
+        if isinstance(value, str):
+            return value.strip()
+        return ''
+
+    def format_speed_tooltip(value):
+        if not isinstance(value, dict):
+            return ''
+        parts = []
+        for speed_type, speed_val in value.items():
+            if speed_type and speed_val is not None and speed_val != '':
+                parts.append(f"{speed_type}: {speed_val}")
+        return ', '.join(parts)
 
     name = monster_dict.get('name', 'Unknown')
     title_display = str(name)
@@ -1105,15 +1181,23 @@ def convert_db_monster_to_api_format(monster_row, conn=None):
     elif type_info:
         type_name = str(type_info)
 
-    alignment_info = parse_field(monster_dict.get('alignment')) or ''
-    if isinstance(alignment_info, list):
-        alignment = ', '.join(str(item) for item in alignment_info if item)
-    else:
-        alignment = str(alignment_info or '')
-
     hp = parse_field(monster_dict.get('hp'))
     ac = parse_field(monster_dict.get('ac'))
     speed = parse_field(monster_dict.get('speed'))
+    save = parse_field(monster_dict.get('save')) or {}
+    skill = parse_field(monster_dict.get('skill')) or {}
+    resist = parse_field(monster_dict.get('resist')) or []
+    vulnerable = parse_field(monster_dict.get('vulnerable')) or []
+    senses = parse_field(monster_dict.get('senses')) or []
+    languages = parse_field(monster_dict.get('languages')) or []
+    action = parse_field(monster_dict.get('action')) or []
+    reaction = parse_field(monster_dict.get('reaction')) or []
+    traits = parse_field(monster_dict.get('traits')) or []
+    bonus = parse_field(monster_dict.get('bonus')) or []
+    legendary = parse_field(monster_dict.get('legendary')) or []
+    mythic = parse_field(monster_dict.get('mythic')) or []
+    spellcasting = parse_field(monster_dict.get('spellcasting')) or []
+    cr = monster_dict.get('cr') or ''
     stats = parse_field(monster_dict.get('stats')) or {}
 
     details = []
@@ -1121,20 +1205,135 @@ def convert_db_monster_to_api_format(monster_row, conn=None):
         details.append({'label': 'Size:', 'content': size})
     if type_name:
         details.append({'label': 'Type:', 'content': type_name})
-    if alignment:
-        details.append({'label': 'Alignment:', 'content': alignment})
+    if cr:
+        details.append({'label': 'CR:', 'content': cr})
 
-    hp_str = format_value(hp)
+    hp_str = format_hp_value(hp)
     if hp_str:
         details.append({'label': 'HP:', 'content': hp_str})
 
-    ac_str = format_value(ac)
+    ac_str = format_ac_value(ac)
     if ac_str:
         details.append({'label': 'AC:', 'content': ac_str})
 
-    speed_str = format_value(speed)
+    speed_str = format_speed_value(speed)
     if speed_str:
-        details.append({'label': 'Speed:', 'content': speed_str})
+        speed_tooltip = format_speed_tooltip(speed)
+        details.append({
+            'label': 'Speed:',
+            'content': speed_str,
+            'tooltip': speed_tooltip
+        })
+
+    def format_resistance_entries(entries):
+        if not isinstance(entries, list) or len(entries) == 0:
+            return []
+        formatted = []
+        for entry in entries:
+            if not isinstance(entry, dict):
+                continue
+            if entry.get('type') == 'resist':
+                damage_type = entry.get('damage_type') or entry.get('type_name')
+                if not damage_type:
+                    continue
+                parts = [str(damage_type)]
+                note = entry.get('note')
+                if note:
+                    parts.append(str(note))
+                formatted.append(' '.join(parts))
+        return formatted
+
+    def format_damage_immunities(entries):
+        if not isinstance(entries, list) or len(entries) == 0:
+            return []
+        formatted = []
+        for entry in entries:
+            if not isinstance(entry, dict):
+                continue
+            if entry.get('type') == 'damageImmune':
+                damage_type = entry.get('damage_type') or entry.get('type_name')
+                if damage_type:
+                    formatted.append(str(damage_type))
+        return formatted
+
+    def format_condition_immunities(entries):
+        if not isinstance(entries, list) or len(entries) == 0:
+            return []
+        formatted = []
+        for entry in entries:
+            if not isinstance(entry, dict):
+                continue
+            if entry.get('type') == 'conditionImmune':
+                immune_type = entry.get('immune_type') or entry.get('condition') or entry.get('type_name')
+                if immune_type:
+                    formatted.append(str(immune_type))
+        return formatted
+
+    def format_senses_value(value):
+        if value is None or value == '':
+            return ''
+        if isinstance(value, dict):
+            range_val = value.get('range') or value.get('distance') or value.get('value')
+            sense_type = value.get('type') or value.get('sense')
+            if range_val and sense_type:
+                return f"{range_val} ({sense_type})"
+            if range_val:
+                return str(range_val)
+            if sense_type:
+                return str(sense_type)
+            return json.dumps(value, ensure_ascii=False)
+        if isinstance(value, list):
+            formatted = []
+            for item in value:
+                if isinstance(item, dict):
+                    item_text = format_senses_value(item)
+                    if item_text:
+                        formatted.append(item_text)
+                elif item is not None and item != '':
+                    formatted.append(str(item))
+            return ', '.join(formatted)
+        return str(value)
+
+    if save:
+        details.append({'label': 'Saves:', 'content': save})
+    if skill:
+        details.append({'label': 'Skills:', 'content': skill})
+    if senses:
+        senses_str = format_senses_value(senses)
+        if senses_str:
+            details.append({'label': 'Senses:', 'content': senses_str})
+    if languages:
+        details.append({'label': 'Languages:', 'content': languages})
+
+    resist_entries = format_resistance_entries(resist)
+    if resist_entries:
+        details.append({'label': 'Resistances:', 'content': resist_entries})
+
+    damage_immunities = format_damage_immunities(resist)
+    if damage_immunities:
+        details.append({'label': 'Damage Immunities:', 'content': damage_immunities})
+
+    condition_immunities = format_condition_immunities(resist)
+    if condition_immunities:
+        details.append({'label': 'Condition Immunities:', 'content': condition_immunities})
+
+    if vulnerable:
+        details.append({'label': 'Vulnerabilities:', 'content': vulnerable})
+    if traits:
+        details.append({'label': 'Traits:', 'content': f'{len(traits)} entries'})
+    if action:
+        details.append({'label': 'Actions:', 'content': f'{len(action)} entries'})
+    if reaction:
+        details.append({'label': 'Reactions:', 'content': f'{len(reaction)} entries'})
+    if bonus:
+        details.append({'label': 'Bonus Actions:', 'content': f'{len(bonus)} entries'})
+    if legendary:
+        details.append({'label': 'Legendary:', 'content': f'{len(legendary)} entries'})
+    if mythic:
+        details.append({'label': 'Mythic:', 'content': f'{len(mythic)} entries'})
+    if spellcasting:
+        spellcasting_count = len(spellcasting) if isinstance(spellcasting, (list, tuple)) else 1
+        details.append({'label': 'Spellcasting:', 'content': f'{spellcasting_count} entries'})
 
     if isinstance(stats, dict) and stats:
         stats_grid_data = []
@@ -1161,8 +1360,6 @@ def convert_db_monster_to_api_format(monster_row, conn=None):
         footer_info.append(size)
 
     explanation = type_name or ''
-    if alignment:
-        explanation = f"{explanation}, {alignment}" if explanation else alignment
 
     result = {
         'icon': icon,
@@ -1170,7 +1367,14 @@ def convert_db_monster_to_api_format(monster_row, conn=None):
         'title': title_display,
         'explanation': explanation,
         'details': details,
-        'footer_info': ' • '.join(footer_info) if footer_info else ''
+        'footer_info': ' • '.join(footer_info) if footer_info else '',
+        'traits': traits,
+        'actions': action,
+        'reactions': reaction,
+        'bonus_actions': bonus,
+        'legendary_actions': legendary,
+        'mythic_actions': mythic,
+        'spellcasting': spellcasting
     }
 
     if should_close:

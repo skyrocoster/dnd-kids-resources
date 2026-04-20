@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Monster Detail — D&D Kids Resources</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@600;700;800&family=OpenDyslexic&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/styles.css">
+  <script src="../js/card-generator.js"></script>
+  <style>
+    body {
+      min-height: 100vh;
+      margin: 0;
+      padding: 0;
+      background: #f4f4f8;
+      color: #222;
+      font-family: 'Nunito', sans-serif;
+    }
+    .detail-shell {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 1.5rem;
+    }
+    .detail-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    .detail-title-group {
+      min-width: 0;
+    }
+    .detail-title {
+      margin: 0;
+      font-size: 2.25rem;
+      color: #333;
+      line-height: 1.05;
+    }
+    .detail-icon {
+      font-size: 2.5rem;
+    }
+    .detail-subtitle {
+      margin: 0.35rem 0 0;
+      color: #555;
+      font-size: 1rem;
+    }
+    .detail-grid {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .detail-panel {
+      background: white;
+      border-radius: 12px;
+      padding: 1.25rem;
+      box-shadow: 0 10px 28px rgba(0,0,0,0.08);
+      border: 1px solid #e3e3e8;
+    }
+    .detail-panel h2 {
+      margin-top: 0;
+      margin-bottom: 0.75rem;
+      font-size: 1.2rem;
+      color: #2d3a4a;
+    }
+    .detail-row {
+      margin-bottom: 0.75rem;
+    }
+    .detail-label {
+      font-weight: 700;
+      color: #34495e;
+      display: block;
+      margin-bottom: 0.25rem;
+    }
+    .detail-item {
+      margin-bottom: 1rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid #ebeff6;
+    }
+    .detail-item:last-child {
+      margin-bottom: 0;
+      padding-bottom: 0;
+      border-bottom: none;
+    }
+    .detail-item-title {
+      font-weight: 800;
+      color: #1f2937;
+      margin-bottom: 0.35rem;
+    }
+    .detail-item-text {
+      color: #4b5563;
+      line-height: 1.65;
+      white-space: pre-wrap;
+    }
+    .detail-item-list {
+      margin: 0.35rem 0 0 0;
+      padding-left: 1.25rem;
+      color: #4b5563;
+    }
+    .detail-item-list li {
+      margin-bottom: 0.35rem;
+    }
+    .spell-link {
+      color: #1a73e8;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+    .spell-link:hover {
+      color: #0f4db2;
+    }
+    .detail-value {
+      color: #444;
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+    .stat-grid,
+    .save-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+      gap: 0.75rem;
+    }
+    .stat-card,
+    .save-card {
+      background: #f7f9fc;
+      border-radius: 8px;
+      padding: 0.85rem;
+      text-align: center;
+      border: 1px solid #e6e9ef;
+    }
+    .stat-card .stat-name,
+    .save-card .stat-name {
+      display: block;
+      font-size: 0.75rem;
+      color: #677185;
+      margin-bottom: 0.2rem;
+    }
+    .stat-card .stat-value,
+    .save-card .stat-value {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #1f2937;
+    }
+    .notes {
+      color: #5f6f89;
+      margin-top: 0.25rem;
+      font-size: 0.95rem;
+    }
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      color: #1a73e8;
+      text-decoration: none;
+      font-weight: 700;
+    }
+    .back-link:hover {
+      text-decoration: underline;
+    }
+    .loading,
+    .error-message {
+      padding: 1.25rem;
+      background: white;
+      border-radius: 12px;
+      border: 1px solid #e3e3e8;
+      box-shadow: 0 10px 28px rgba(0,0,0,0.05);
+      max-width: 800px;
+      margin: 2rem auto;
+      text-align: center;
+      color: #333;
+    }
+    @media (max-width: 640px) {
+      .detail-header {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .detail-title {
+        font-size: 1.9rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="detail-shell">
+    <div class="detail-header">
+      <div class="detail-title-group">
+        <div id="monsterIcon" class="detail-icon">👹</div>
+        <h1 id="monsterTitle" class="detail-title">Monster Detail</h1>
+        <p id="monsterSubtitle" class="detail-subtitle">Loading monster details...</p>
+      </div>
+      <a href="dungeons-library.html" class="back-link">← Back to dungeon library</a>
+    </div>
+
+    <div id="monsterContent" class="detail-grid">
+      <div class="loading">Loading monster details…</div>
+    </div>
+  </div>
+
+  <script>
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function parseJsonValue(value) {
+      if (typeof value !== 'string') return value;
+      const trimmed = value.trim();
+      if ((trimmed.startsWith('[') && trimmed.endsWith(']')) || (trimmed.startsWith('{') && trimmed.endsWith('}'))) {
+        try {
+          return JSON.parse(trimmed);
+        } catch (e) {
+          return value;
+        }
+      }
+      return value;
+    }
+
+    function formatObjectValue(obj) {
+      if (!obj || typeof obj !== 'object') return '';
+      if (obj.name) return String(obj.name);
+
+      const parts = [];
+      for (const [key, value] of Object.entries(obj)) {
+        if (value === null || value === undefined || value === '') continue;
+        if (Array.isArray(value)) {
+          const formatted = value.map(item => formatDisplayValue(item)).filter(Boolean).join(', ');
+          if (formatted) parts.push(`${key}: ${formatted}`);
+        } else if (typeof value === 'object') {
+          const formatted = formatObjectValue(value);
+          if (formatted) parts.push(`${key}: ${formatted}`);
+        } else {
+          parts.push(`${key}: ${value}`);
+        }
+      }
+      return parts.join(', ');
+    }
+
+    function formatDisplayValue(value) {
+      const parsed = parseJsonValue(value);
+      if (Array.isArray(parsed)) {
+        return parsed.map(item => formatDisplayValue(item)).filter(Boolean).join(', ');
+      }
+      if (parsed && typeof parsed === 'object') {
+        return formatObjectValue(parsed);
+      }
+      return String(parsed || '');
+    }
+
+    function renderStatsGrid(detail) {
+      if (!Array.isArray(detail.content)) return '';
+      const container = document.createElement('div');
+      container.className = 'stat-grid';
+      detail.content.forEach(stat => {
+        const card = document.createElement('div');
+        card.className = 'stat-card';
+        const name = document.createElement('span');
+        name.className = 'stat-name';
+        name.textContent = stat.name || stat.code || '';
+        const value = document.createElement('span');
+        value.className = 'stat-value';
+        value.textContent = stat.value || '';
+        card.appendChild(name);
+        card.appendChild(value);
+        container.appendChild(card);
+      });
+      return container.outerHTML;
+    }
+
+    function renderSavesGrid(detail) {
+      if (!Array.isArray(detail.content)) return '';
+      const container = document.createElement('div');
+      container.className = 'save-grid';
+      detail.content.forEach(save => {
+        const card = document.createElement('div');
+        card.className = 'save-card';
+        const name = document.createElement('span');
+        name.className = 'stat-name';
+        name.textContent = save.name || '';
+        const value = document.createElement('span');
+        value.className = 'stat-value';
+        value.textContent = save.modifier !== undefined ? `${save.modifier >= 0 ? '+' : ''}${save.modifier}` : '';
+        card.appendChild(name);
+        card.appendChild(value);
+        container.appendChild(card);
+      });
+      return container.outerHTML;
+    }
+
+    function renderDetail(detail) {
+      const row = document.createElement('div');
+      row.className = 'detail-row';
+      const label = document.createElement('span');
+      label.className = 'detail-label';
+      label.textContent = detail.label || '';
+      row.appendChild(label);
+
+      const value = document.createElement('div');
+      value.className = 'detail-value';
+
+      if (detail.type === 'stats_grid') {
+        value.innerHTML = renderStatsGrid(detail);
+      } else if (detail.type === 'saves_grid') {
+        value.innerHTML = renderSavesGrid(detail);
+      } else {
+        value.textContent = formatDisplayValue(detail.content);
+      }
+
+      row.appendChild(value);
+      return row;
+    }
+
+    function createTextBlock(text) {
+      const block = document.createElement('div');
+      block.className = 'detail-item-text';
+      block.textContent = String(text);
+      return block;
+    }
+
+    function createListBlock(label, items, isSpellList = false) {
+      const wrapper = document.createElement('div');
+      if (label) {
+        const title = document.createElement('div');
+        title.className = 'detail-item-title';
+        title.textContent = label;
+        wrapper.appendChild(title);
+      }
+
+      const list = document.createElement('ul');
+      list.className = 'detail-item-list';
+      const normalized = Array.isArray(items) ? items : [items];
+      normalized.flat().forEach(entry => {
+        if (entry === null || entry === undefined || entry === '') {
+          return;
+        }
+        const li = document.createElement('li');
+        if (isSpellList && typeof entry === 'string') {
+          li.appendChild(createSpellNameElement(entry));
+        } else {
+          li.textContent = formatDisplayValue(entry);
+        }
+        list.appendChild(li);
+      });
+      if (list.children.length > 0) {
+        wrapper.appendChild(list);
+        return wrapper;
+      }
+      return null;
+    }
+
+    async function loadSpellCard(spellName) {
+      const exactResponse = await fetch(`/api/spells/${encodeURIComponent(spellName)}`);
+      if (exactResponse.ok) {
+        return await exactResponse.json();
+      }
+
+      const parentheticalMatch = spellName.match(/^(.+?)\s*\(/);
+      if (parentheticalMatch) {
+        const fallbackName = parentheticalMatch[1].trim();
+        if (fallbackName && fallbackName !== spellName) {
+          const fallbackResponse = await fetch(`/api/spells/${encodeURIComponent(fallbackName)}`);
+          if (fallbackResponse.ok) {
+            return await fallbackResponse.json();
+          }
+        }
+      }
+
+      throw new Error(`Spell '${spellName}' not found`);
+    }
+
+    function createSpellNameElement(spellName) {
+      const link = document.createElement('a');
+      link.className = 'spell-link';
+      link.href = `spell-detail.html?title=${encodeURIComponent(spellName)}`;
+      link.textContent = String(spellName);
+      link.addEventListener('click', function(event) {
+        event.stopPropagation();
+      });
+      attachCardPreviewHover(link, () => loadSpellCard(spellName));
+      return link;
+    }
+
+    function renderSectionItem(item) {
+      if (item === null || item === undefined || item === '') {
+        return null;
+      }
+
+      const parsed = parseJsonValue(item);
+      if (Array.isArray(parsed)) {
+        const wrapper = document.createElement('div');
+        parsed.forEach(subItem => {
+          const child = renderSectionItem(subItem);
+          if (child) wrapper.appendChild(child);
+        });
+        return wrapper.children.length ? wrapper : null;
+      }
+
+      const itemContainer = document.createElement('div');
+      itemContainer.className = 'detail-item';
+
+      if (typeof parsed === 'string' || typeof parsed === 'number' || typeof parsed === 'boolean') {
+        itemContainer.appendChild(createTextBlock(parsed));
+        return itemContainer;
+      }
+
+      if (typeof parsed === 'object') {
+        const values = [];
+
+        if (parsed.name) {
+          const title = document.createElement('div');
+          title.className = 'detail-item-title';
+          title.textContent = parsed.name;
+          itemContainer.appendChild(title);
+        }
+
+        if (parsed.header) {
+          itemContainer.appendChild(createTextBlock(parsed.header));
+        }
+
+        if (parsed.desc) {
+          itemContainer.appendChild(createTextBlock(parsed.desc));
+        }
+
+        if (parsed.text) {
+          itemContainer.appendChild(createTextBlock(parsed.text));
+        }
+
+        if (parsed.type === 'spellcasting') {
+          if (parsed.ability) {
+            itemContainer.appendChild(createTextBlock(`Ability: ${formatDisplayValue(parsed.ability)}`));
+          }
+          if (parsed.headerEntries) {
+            const headerEntries = Array.isArray(parsed.headerEntries) ? parsed.headerEntries : [parsed.headerEntries];
+            headerEntries.forEach(entry => {
+              if (entry !== null && entry !== undefined && entry !== '') {
+                itemContainer.appendChild(createTextBlock(formatDisplayValue(entry)));
+              }
+            });
+          }
+          if (parsed.will) {
+            const willBlock = createListBlock('Will', parsed.will, true);
+            if (willBlock) itemContainer.appendChild(willBlock);
+          }
+          if (parsed.daily) {
+            if (typeof parsed.daily === 'object' && !Array.isArray(parsed.daily)) {
+              for (const [key, value] of Object.entries(parsed.daily)) {
+                const label = `${formatDisplayValue(key)}:`;
+                const listBlock = createListBlock(label, Array.isArray(value) ? value : [value], true);
+                if (listBlock) itemContainer.appendChild(listBlock);
+              }
+            } else {
+              const dailyBlock = createListBlock('Daily', parsed.daily, true);
+              if (dailyBlock) itemContainer.appendChild(dailyBlock);
+            }
+          }
+          if (parsed.spells) {
+            const spellsBlock = createListBlock('Spells', parsed.spells, true);
+            if (spellsBlock) itemContainer.appendChild(spellsBlock);
+          }
+        }
+
+        const otherItems = [];
+        for (const [key, value] of Object.entries(parsed)) {
+          if (['name', 'header', 'desc', 'text', 'spells', 'type', 'ability', 'headerEntries', 'will', 'daily'].includes(key)) {
+            continue;
+          }
+          if (value === null || value === undefined || value === '') {
+            continue;
+          }
+          const formattedValue = formatDisplayValue(value);
+          if (formattedValue) {
+            otherItems.push(`${key}: ${formattedValue}`);
+          }
+        }
+
+        if (otherItems.length) {
+          itemContainer.appendChild(createTextBlock(otherItems.join(' · ')));
+        }
+
+        if (!itemContainer.children.length) {
+          itemContainer.appendChild(createTextBlock(JSON.stringify(parsed, null, 2)));
+        }
+
+        return itemContainer;
+      }
+
+      return null;
+    }
+
+    function renderSectionPanel(title, items) {
+      if (!items || !Array.isArray(items) || items.length === 0) {
+        return null;
+      }
+
+      const panel = document.createElement('div');
+      panel.className = 'detail-panel';
+      const heading = document.createElement('h2');
+      heading.textContent = title;
+      panel.appendChild(heading);
+
+      items.forEach(item => {
+        const itemNode = renderSectionItem(item);
+        if (itemNode) {
+          panel.appendChild(itemNode);
+        }
+      });
+
+      return panel;
+    }
+
+    function displayMonster(monster) {
+      const content = document.getElementById('monsterContent');
+      content.innerHTML = '';
+      document.getElementById('monsterIcon').textContent = monster.icon || '👹';
+      document.getElementById('monsterTitle').textContent = monster.title || 'Unknown Monster';
+      document.getElementById('monsterSubtitle').textContent = monster.explanation || '';
+
+      const mainPanel = document.createElement('div');
+      mainPanel.className = 'detail-panel';
+      const heading = document.createElement('h2');
+      heading.textContent = 'Details';
+      mainPanel.appendChild(heading);
+
+      if (monster.details && Array.isArray(monster.details) && monster.details.length > 0) {
+        monster.details.forEach(detail => {
+          mainPanel.appendChild(renderDetail(detail));
+        });
+      } else {
+        const empty = document.createElement('div');
+        empty.className = 'detail-value';
+        empty.textContent = 'No details available.';
+        mainPanel.appendChild(empty);
+      }
+
+      content.appendChild(mainPanel);
+
+      const sectionPanels = [
+        { title: 'Traits', items: monster.traits },
+        { title: 'Actions', items: monster.actions },
+        { title: 'Bonus Actions', items: monster.bonus_actions },
+        { title: 'Reactions', items: monster.reactions },
+        { title: 'Legendary Actions', items: monster.legendary_actions },
+        { title: 'Mythic Actions', items: monster.mythic_actions },
+        { title: 'Spellcasting', items: monster.spellcasting }
+      ];
+
+      sectionPanels.forEach(section => {
+        const sectionPanel = renderSectionPanel(section.title, section.items);
+        if (sectionPanel) {
+          content.appendChild(sectionPanel);
+        }
+      });
+
+      if (monster.footer_info) {
+        const footerPanel = document.createElement('div');
+        footerPanel.className = 'detail-panel';
+        const footerHeading = document.createElement('h2');
+        footerHeading.textContent = 'Footer Information';
+        footerPanel.appendChild(footerHeading);
+        const footerValue = document.createElement('div');
+        footerValue.className = 'detail-value';
+        footerValue.textContent = monster.footer_info;
+        footerPanel.appendChild(footerValue);
+        content.appendChild(footerPanel);
+      }
+    }
+
+    function showLoading(message) {
+      const content = document.getElementById('monsterContent');
+      content.innerHTML = `<div class="loading">${escapeHtml(message)}</div>`;
+    }
+
+    function showError(message) {
+      const content = document.getElementById('monsterContent');
+      content.innerHTML = `<div class="error-message">${escapeHtml(message)}</div>`;
+    }
+
+    function getQueryParam(name) {
+      const params = new URLSearchParams(window.location.search);
+      return params.get(name);
+    }
+
+    function loadMonsterDetail() {
+      const title = getQueryParam('title');
+      if (!title) {
+        showError('No monster specified.');
+        return;
+      }
+
+      showLoading(`Loading ${title}...`);
+      fetch(`/api/monsters/${encodeURIComponent(title)}`)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`Monster not found: ${title}`);
+          }
+          return response.json();
+        })
+        .then(data => {
+          displayMonster(data);
+        })
+        .catch(err => {
+          showError(err.message || 'Error loading monster details.');
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', loadMonsterDetail);
+  </script>
+</body>
+</html>
