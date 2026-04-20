@@ -12,6 +12,14 @@ document.addEventListener('DOMContentLoaded', async function() {
   const assignedSpellsEl = document.getElementById('assigned-spells');
   const spellSearchInput = document.getElementById('spell-search');
   const spellSearchResultsEl = document.getElementById('spell-search-results');
+  const playerCreateActions = document.getElementById('player-create-actions');
+  const playerEditView = document.getElementById('player-edit-view');
+  const playerDetailsSection = document.getElementById('player-details-section');
+  const playerSlotsSection = document.getElementById('player-slots-section');
+  const toggleDetailsBtn = document.getElementById('toggle-details-btn');
+  const toggleSlotsBtn = document.getElementById('toggle-slots-btn');
+  const confirmPlayerBtn = document.getElementById('confirm-player-btn');
+  const cancelCreateBtn = document.getElementById('cancel-create-btn');
 
   const API_BASE = '/api';
   let players = [];
@@ -34,6 +42,23 @@ document.addEventListener('DOMContentLoaded', async function() {
 
   function getSelectedPlayer() {
     return selectedPlayer;
+  }
+
+  function setSectionState(section, button, expanded) {
+    if (!section || !button) return;
+    if (expanded) {
+      section.classList.remove('collapsed');
+      button.textContent = 'Hide';
+    } else {
+      section.classList.add('collapsed');
+      button.textContent = 'Show';
+    }
+  }
+
+  function toggleSection(section, button) {
+    if (!section || !button) return;
+    const expanded = section.classList.contains('collapsed');
+    setSectionState(section, button, expanded);
   }
 
   function renderPlayerList() {
@@ -79,16 +104,28 @@ document.addEventListener('DOMContentLoaded', async function() {
       detailFieldsEl.hidden = true;
       emptySelectionEl.hidden = false;
       detailTitleEl.textContent = 'Select a player to edit';
+      deletePlayerBtn.hidden = true;
       return;
     }
 
     detailFieldsEl.hidden = false;
     emptySelectionEl.hidden = true;
-    detailTitleEl.textContent = `Editing ${selectedPlayer.name || 'Unnamed Player'}`;
-
     playerNameInput.value = selectedPlayer.name || '';
     playerClassInput.value = selectedPlayer.class || '';
     playerLevelInput.value = selectedPlayer.level || '';
+
+    if (selectedPlayer.isNew) {
+      detailTitleEl.textContent = 'Create new player';
+      playerCreateActions.hidden = false;
+      playerEditView.hidden = true;
+      deletePlayerBtn.hidden = true;
+      return;
+    }
+
+    detailTitleEl.textContent = `Editing ${selectedPlayer.name || 'Unnamed Player'}`;
+    playerCreateActions.hidden = true;
+    playerEditView.hidden = false;
+    deletePlayerBtn.hidden = false;
 
     assignedSpellsEl.innerHTML = '';
     if (!selectedPlayer.spells || selectedPlayer.spells.length === 0) {
@@ -260,9 +297,6 @@ document.addEventListener('DOMContentLoaded', async function() {
   async function fetchPlayers() {
     try {
       players = await apiFetch('/players');
-      if (players.length > 0 && !selectedPlayer) {
-        await selectPlayer(players[0].id);
-      }
     } catch (error) {
       console.error('Failed to load players:', error);
       players = [];
@@ -285,12 +319,31 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
   }
 
-  async function createPlayer() {
+  function beginCreatePlayer() {
+    selectedPlayer = {
+      isNew: true,
+      name: '',
+      class: '',
+      level: '',
+      total_spell_slots: {},
+      current_spell_slots: {},
+      spells: []
+    };
+    renderPlayerList();
+    renderPlayerDetail();
+  }
+
+  async function confirmCreatePlayer() {
+    if (!selectedPlayer || !selectedPlayer.isNew) return;
     try {
       const player = await apiFetch('/players', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: 'Unnamed Player', class: '', level: null })
+        body: JSON.stringify({
+          name: selectedPlayer.name || 'Unnamed Player',
+          class: selectedPlayer.class || '',
+          level: selectedPlayer.level || null
+        })
       });
       players.unshift(player);
       selectedPlayer = player;
@@ -301,8 +354,20 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
   }
 
+  function cancelCreatePlayer() {
+    selectedPlayer = null;
+    renderPlayerList();
+    renderPlayerDetail();
+  }
+
   async function updatePlayerField(field, value) {
     if (!selectedPlayer) return;
+    if (selectedPlayer.isNew) {
+      selectedPlayer[field] = value;
+      renderPlayerDetail();
+      return;
+    }
+
     try {
       const payload = { [field]: value };
       selectedPlayer = await apiFetch(`/players/${selectedPlayer.id}`, {
@@ -371,12 +436,20 @@ document.addEventListener('DOMContentLoaded', async function() {
   }
 
   addPlayerBtn.addEventListener('click', function() {
-    createPlayer();
+    beginCreatePlayer();
   });
 
   deletePlayerBtn.addEventListener('click', function() {
     if (!selectedPlayer) return;
     deletePlayer(selectedPlayer.id);
+  });
+
+  toggleDetailsBtn.addEventListener('click', function() {
+    toggleSection(playerDetailsSection, toggleDetailsBtn);
+  });
+
+  toggleSlotsBtn.addEventListener('click', function() {
+    toggleSection(playerSlotsSection, toggleSlotsBtn);
   });
 
   playerNameInput.addEventListener('input', function(event) {
@@ -389,6 +462,14 @@ document.addEventListener('DOMContentLoaded', async function() {
 
   playerLevelInput.addEventListener('input', function(event) {
     updatePlayerField('level', event.target.value);
+  });
+
+  confirmPlayerBtn.addEventListener('click', function() {
+    confirmCreatePlayer();
+  });
+
+  cancelCreateBtn.addEventListener('click', function() {
+    cancelCreatePlayer();
   });
 
   spellSearchInput.addEventListener('input', function() {

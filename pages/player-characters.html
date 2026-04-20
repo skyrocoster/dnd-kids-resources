@@ -185,6 +185,38 @@
       display: grid;
       gap: 14px;
     }
+    .player-section {
+      border: 2px solid #d8c3a5;
+      border-radius: 16px;
+      background: #fffdf7;
+      padding: 14px;
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,0.04);
+    }
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+    .section-header strong {
+      font-size: 1rem;
+      color: #5a3210;
+      letter-spacing: 0.4px;
+    }
+    .section-toggle {
+      border: 2px solid #b0865a;
+      background: #fff3e6;
+      color: #6b4423;
+      border-radius: 999px;
+      padding: 10px 14px;
+      font-size: 0.8rem;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    .section-body.collapsed {
+      display: none;
+    }
     .spell-slot-grid {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -338,33 +370,53 @@
         </div>
 
         <div id="player-detail-fields" class="player-detail" hidden>
-          <div class="field-group">
-            <label>Name
-              <input id="player-name" type="text" placeholder="Character name">
-            </label>
-            <label>Class
-              <input id="player-class" type="text" placeholder="Wizard, Cleric, etc.">
-            </label>
-            <label>Level
-              <input id="player-level" type="number" min="1" placeholder="1">
-            </label>
+          <div class="player-section">
+            <div class="section-header">
+              <strong>Character Details</strong>
+              <button id="toggle-details-btn" class="section-toggle" type="button">Hide</button>
+            </div>
+            <div id="player-details-section" class="section-body">
+              <div class="field-group">
+                <label>Name
+                  <input id="player-name" type="text" placeholder="Character name">
+                </label>
+                <label>Class
+                  <input id="player-class" type="text" placeholder="Wizard, Cleric, etc.">
+                </label>
+                <label>Level
+                  <input id="player-level" type="number" min="1" placeholder="1">
+                </label>
+              </div>
+            </div>
           </div>
 
-          <div class="spell-section">
-            <div>
-              <div class="section-label">Spell Slot Tracking</div>
-              <div id="spell-slot-grid" class="spell-slot-grid"></div>
+          <div id="player-create-actions" class="detail-actions" hidden>
+            <button id="confirm-player-btn" class="action-button">Create Player</button>
+            <button id="cancel-create-btn" class="action-button" style="background:#fbe9e7; border-color:#c0392b; color:#8b1a1a;">Cancel</button>
+          </div>
+
+          <div id="player-edit-view" hidden>
+            <div class="player-section">
+              <div class="section-header">
+                <strong>Spell Slot Tracking</strong>
+                <button id="toggle-slots-btn" class="section-toggle" type="button">Hide</button>
+              </div>
+              <div id="player-slots-section" class="section-body">
+                <div id="spell-slot-grid" class="spell-slot-grid"></div>
+              </div>
             </div>
 
-            <div>
-              <div class="section-label">Assigned Spell Book</div>
-              <div id="assigned-spells" class="assigned-spells"></div>
-            </div>
+            <div class="spell-section">
+              <div>
+                <div class="section-label">Assigned Spell Book</div>
+                <div id="assigned-spells" class="assigned-spells"></div>
+              </div>
 
-            <div class="spell-search">
-              <div class="section-label">Add Spells</div>
-              <input id="spell-search" type="search" placeholder="Search spells by name, school, or text">
-              <div id="spell-search-results" class="spell-search-results"></div>
+              <div class="spell-search">
+                <div class="section-label">Add Spells</div>
+                <input id="spell-search" type="search" placeholder="Search spells by name, school, or text">
+                <div id="spell-search-results" class="spell-search-results"></div>
+              </div>
             </div>
           </div>
         </div>

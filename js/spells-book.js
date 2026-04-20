@@ -1,13 +1,14 @@
 document.addEventListener('DOMContentLoaded', async function() {
   const container = document.getElementById('spell-book-container');
   const searchInput = document.getElementById('search-input');
-  const levelFilters = document.getElementById('level-filters');
   const characterSelect = document.getElementById('character-select');
-  const metaText = document.getElementById('spell-book-meta');
   const slotOverview = document.getElementById('spell-slot-overview');
   const castToast = document.getElementById('spell-cast-toast');
-  const selectedPlayerName = document.getElementById('selected-player-name');
+  const playerSelectPanel = document.getElementById('player-select-panel');
+  const togglePlayerSelectBtn = document.getElementById('toggle-player-select-btn');
   const resetSlotsButton = document.getElementById('reset-spell-slots-btn');
+  const metaText = document.getElementById('spell-book-meta');
+  const spellBookTitle = document.getElementById('spell-book-title');
   let castToastTimeout = null;
 
   const API_BASE = '/api';
@@ -15,22 +16,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   let players = [];
   let selectedPlayerId = null;
   let selectedPlayer = null;
-  let activeLevel = 'all';
   let searchTerm = '';
-
-  const levelOptions = [
-    { label: 'All', value: 'all' },
-    { label: 'Cantrips', value: 'cantrip' },
-    { label: '1', value: '1' },
-    { label: '2', value: '2' },
-    { label: '3', value: '3' },
-    { label: '4', value: '4' },
-    { label: '5', value: '5' },
-    { label: '6', value: '6' },
-    { label: '7', value: '7' },
-    { label: '8', value: '8' },
-    { label: '9', value: '9' }
-  ];
 
   async function apiFetch(path, options = {}) {
     const response = await fetch(`${API_BASE}${path}`, options);
@@ -48,18 +34,18 @@ document.addEventListener('DOMContentLoaded', async function() {
     return `${name} ${school} ${String(description)}`.toLowerCase();
   }
 
-  function matchesLevel(spell) {
-    if (activeLevel === 'all') {
-      return true;
-    }
-    if (activeLevel === 'cantrip') {
-      return String(spell.level).toLowerCase() === 'cantrip' || String(spell.level) === '0';
-    }
-    return String(spell.level) === activeLevel;
-  }
 
   function getAssignedSpellIds() {
     return selectedPlayer?.spells?.map(id => String(id)) || [];
+  }
+
+  function getSpellSortKey(spell) {
+    const levelString = String(spell.level || '').toLowerCase();
+    if (levelString === 'cantrip' || levelString === '0' || levelString === 'cantrip') {
+      return 0;
+    }
+    const numeric = parseInt(levelString, 10);
+    return Number.isFinite(numeric) ? numeric : 99;
   }
 
   function filterSpells() {
@@ -72,33 +58,55 @@ document.addEventListener('DOMContentLoaded', async function() {
       return [];
     }
 
-    return spells.filter(spell => {
-      if (!assignedIds.includes(String(spell.id))) {
-        return false;
-      }
-      if (!matchesLevel(spell)) {
-        return false;
-      }
-      if (!searchTerm) {
-        return true;
-      }
-      return normalizeSpellText(spell).includes(searchTerm);
-    });
+    return spells
+      .filter(spell => {
+        if (!assignedIds.includes(String(spell.id))) {
+          return false;
+        }
+        if (!searchTerm) {
+          return true;
+        }
+        return normalizeSpellText(spell).includes(searchTerm);
+      })
+      .sort((a, b) => {
+        const keyA = getSpellSortKey(a);
+        const keyB = getSpellSortKey(b);
+        if (keyA !== keyB) {
+          return keyA - keyB;
+        }
+        return String(a.title || a.name || '').localeCompare(String(b.title || b.name || ''), undefined, { sensitivity: 'base' });
+      });
   }
 
   function updateMeta(count) {
+    if (!metaText) return;
     const playerName = selectedPlayer ? selectedPlayer.name || 'Selected player' : 'No player selected';
     metaText.textContent = `${playerName}: ${count} spell${count === 1 ? '' : 's'} available`;
   }
 
-  function updatePlayerHeader() {
+  function updatePlayerTitle() {
+    if (!spellBookTitle) return;
     if (selectedPlayer) {
-      selectedPlayerName.textContent = selectedPlayer.name || 'Unnamed player';
+      const playerName = selectedPlayer.name || 'Player';
+      const titleText = `${playerName}'s Spell Book`;
+      spellBookTitle.textContent = titleText;
+      document.title = `${titleText} — D&D Kids Resources`;
       resetSlotsButton.disabled = false;
     } else {
-      selectedPlayerName.textContent = 'No player selected';
+      spellBookTitle.textContent = 'Spell Book';
+      document.title = 'Spell Book — D&D Kids Resources';
       resetSlotsButton.disabled = true;
     }
+  }
+
+  function togglePlayerSelectPanel() {
+    if (!playerSelectPanel || !togglePlayerSelectBtn) return;
+    const collapsed = playerSelectPanel.classList.toggle('collapsed');
+    togglePlayerSelectBtn.textContent = collapsed ? 'Show player' : 'Hide player';
+  }
+
+  function updatePlayerHeader() {
+    updatePlayerTitle();
   }
 
   function getPlayerSlotBlock(blockName) {
@@ -137,31 +145,9 @@ document.addEventListener('DOMContentLoaded', async function() {
 
       const levelRow = document.createElement('div');
       levelRow.className = 'slot-level';
-      levelRow.innerHTML = `<span>Level ${level}</span><span class="slot-bubble">${level}</span>`;
-
-      const count = document.createElement('div');
-      count.className = 'slot-count';
-      count.textContent = `${current}/${total}`;
-
-      const caption = document.createElement('div');
-      caption.className = 'slot-caption';
-      caption.textContent = total > 0 ? 'Slots left' : 'No slots assigned';
-
-      const meter = document.createElement('div');
-      meter.className = 'slot-meter';
-      const filled = total > 0 ? Math.min(5, Math.round((current / total) * 5)) : 0;
-      for (let i = 0; i < 5; i++) {
-        const bar = document.createElement('span');
-        if (i < filled) {
-          bar.classList.add('filled');
-        }
-        meter.appendChild(bar);
-      }
+      levelRow.innerHTML = `<span class="slot-bubble">${level}</span><span class="slot-count">${current}/${total}</span>`;
 
       card.appendChild(levelRow);
-      card.appendChild(count);
-      card.appendChild(caption);
-      card.appendChild(meter);
       slotOverview.appendChild(card);
     }
   }
@@ -235,33 +221,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     container.appendChild(list);
   }
 
-  function createLevelButton(option) {
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'filter-button';
-    button.textContent = option.label;
-    button.dataset.level = option.value;
-    if (option.value === activeLevel) {
-      button.classList.add('active');
-    }
-
-    button.addEventListener('click', () => {
-      activeLevel = option.value;
-      Array.from(levelFilters.children).forEach(child => {
-        child.classList.toggle('active', child.dataset.level === activeLevel);
-      });
-      renderSpellBook();
-    });
-
-    return button;
-  }
-
-  function renderLevelFilters() {
-    levelFilters.innerHTML = '';
-    levelOptions.forEach(option => {
-      levelFilters.appendChild(createLevelButton(option));
-    });
-  }
 
   function canCastSpell(spell) {
     const level = parseInt(spell.level, 10);
@@ -406,6 +365,10 @@ document.addEventListener('DOMContentLoaded', async function() {
     await loadSelectedPlayer(selectedPlayerId);
   });
 
+  if (togglePlayerSelectBtn) {
+    togglePlayerSelectBtn.addEventListener('click', togglePlayerSelectPanel);
+  }
+
   resetSlotsButton.addEventListener('click', resetSpellSlots);
 
   async function loadSpells() {
@@ -453,7 +416,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     } else {
       renderSpellBook();
     }
-    renderLevelFilters();
   } catch (error) {
     console.error('Spell Book load failed:', error);
     clearContainer();

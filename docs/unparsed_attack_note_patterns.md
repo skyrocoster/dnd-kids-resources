@@ -43,7 +43,7 @@ This document captures one representative note for each remaining pattern in `da
 ```
 
 ### 3. Range with `range N/N ft.`
-`{@atk rw} {@hit 7} to hit, range 30/60 ft., one creature. {@h}The target has the {@condition restrained} condition. As an action, a {@condition restrained} target can make a {@dc 13} Strength check, bursting the webbing on a successful check. The webbing can also be destroyed (AC 10; 5 hit points; vulnerability to fire damage; immunity to acid, bludgeoning, poison, and psychic damage).`
+`{@atk rw} {@hit 7} to hit, range 30/60 ft., one creature. {@h}The target has the {@condition restrained} condition. As an action, a {@condition restrained} target can make a DC13 Strength check, bursting the webbing on a successful check. The webbing can also be destroyed (AC 10; 5 hit points; vulnerability to fire damage; immunity to acid, bludgeoning, poison, and psychic damage).`
 
 **Guessed parse:**
 ```json
@@ -144,7 +144,7 @@ This document captures one representative note for each remaining pattern in `da
 ```
 
 ### 9. No damage phrase after `{@h}`
-`{@atk mw} {@hit 4} to hit, reach 5 ft., one Medium or smaller creature. {@h}The target is {@condition grappled} (escape {@dc 12}). Until this grapple ends, the target is {@condition restrained}, and the grippli can't grab another creature.`
+`{@atk mw} {@hit 4} to hit, reach 5 ft., one Medium or smaller creature. {@h}The target is {@condition grappled} (escape DC12). Until this grapple ends, the target is {@condition restrained}, and the grippli can't grab another creature.`
 
 **Guessed parse:**
 ```json

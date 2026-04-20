@@ -34,6 +34,7 @@ def init_database():
         "statblock_jobs",
         "player_spells",
         "players",
+        "monsters",
         "creatures",
         "creature_types",
         "classes",
@@ -175,6 +176,48 @@ def init_database():
 
     cursor.execute(
         "CREATE INDEX IF NOT EXISTS idx_creatures_creature_type_id ON creatures(creature_type_id)")
+
+    # Create monsters table using the normalized merged structure
+    cursor.execute("""
+        CREATE TABLE monsters (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL UNIQUE,
+            alias TEXT NOT NULL DEFAULT '[]',
+            size TEXT,
+            "group" TEXT NOT NULL DEFAULT '[]',
+            alignment TEXT NOT NULL DEFAULT '[]',
+            type TEXT NOT NULL DEFAULT '{}',
+            ac TEXT NOT NULL DEFAULT '{}',
+            hp TEXT NOT NULL DEFAULT '{}',
+            speed TEXT NOT NULL DEFAULT '{}',
+            stats TEXT NOT NULL DEFAULT '{}',
+            save TEXT NOT NULL DEFAULT '{}',
+            skill TEXT NOT NULL DEFAULT '{}',
+            resist TEXT NOT NULL DEFAULT '[]',
+            vulnerable TEXT NOT NULL DEFAULT '[]',
+            senses TEXT NOT NULL DEFAULT '[]',
+            languages TEXT NOT NULL DEFAULT '[]',
+            action TEXT NOT NULL DEFAULT '[]',
+            reaction TEXT NOT NULL DEFAULT '[]',
+            traits TEXT NOT NULL DEFAULT '[]',
+            spellcasting TEXT NOT NULL DEFAULT '[]',
+            bonus TEXT NOT NULL DEFAULT '[]',
+            legendary TEXT NOT NULL DEFAULT '[]',
+            legendaryHeader TEXT,
+            mythic TEXT NOT NULL DEFAULT '[]',
+            mythicHeader TEXT,
+            reactionRules TEXT NOT NULL DEFAULT '[]',
+            soundClip TEXT NOT NULL DEFAULT '{}',
+            cr TEXT,
+            cr_details TEXT NOT NULL DEFAULT '{}',
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    cursor.execute(
+        "CREATE INDEX IF NOT EXISTS idx_monsters_cr ON monsters(cr)"
+    )
 
     # [REMOVED - April 10, 2026] Old queue-based AI job system
     # Replaced with custom lightweight model approach

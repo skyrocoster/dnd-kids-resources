@@ -43,6 +43,10 @@ EXPORT_DEFINITIONS = {
         "file": "seed_creatures.json",
         "query": "SELECT c.title, c.icon, c.size, ct.code AS creature_type, c.hp, c.ac, c.explanation, c.attack_to_hit, c.damage, c.special, c.stats FROM creatures c LEFT JOIN creature_types ct ON c.creature_type_id = ct.id ORDER BY c.title",
     },
+    "monsters": {
+        "file": "seed_monsters.json",
+        "query": "SELECT name, alias, size, \"group\", alignment, type, ac, hp, speed, stats, save, skill, resist, vulnerable, senses, languages, action, reaction, traits, spellcasting, bonus, legendary, legendaryHeader, mythic, mythicHeader, reactionRules, soundClip, cr, cr_details FROM monsters ORDER BY name",
+    },
     "damage_types": {
         "file": "seed_damage_types.json",
         "query": "SELECT id, code, name, emoji, color FROM damage_types ORDER BY id",
@@ -121,6 +125,14 @@ def transform_record(record, table_name):
         return record
     if table_name == "creatures":
         for field in ["attack_to_hit", "damage", "stats"]:
+            record[field] = parse_json_value(record.get(field))
+        return record
+    if table_name == "monsters":
+        for field in [
+            "alias", "size", "group", "alignment", "type", "ac", "hp", "speed", "stats", "save", "skill",
+            "resist", "vulnerable", "senses", "languages", "action", "reaction", "traits", "spellcasting",
+            "bonus", "legendary", "legendaryHeader", "mythic", "mythicHeader", "reactionRules", "soundClip", "cr", "cr_details"
+        ]:
             record[field] = parse_json_value(record.get(field))
         return record
     if table_name == "dungeons":

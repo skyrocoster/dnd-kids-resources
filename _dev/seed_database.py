@@ -53,6 +53,7 @@ Seed files:
 - data/seeds/seed_abilities.json
 - data/seeds/seed_conditions.json
 - data/seeds/seed_creatures.json
+- data/seeds/seed_monsters.json
 - data/seeds/seed_damage_types.json
 - data/seeds/seed_creature_types.json
 - data/seeds/seed_traps.json
@@ -380,6 +381,81 @@ def populate_creatures(cursor, conn, force=False):
     conn.commit()
     print(f"  [OK] Loaded {len(seeds)} creatures")
 
+
+def populate_monsters(cursor, conn, force=False):
+    """Populate monsters table from seed_monsters.json using normalized monster data"""
+    print("\n[DRAGON] Loading monsters...")
+    try:
+        cursor.execute("SELECT COUNT(*) FROM monsters")
+        count = cursor.fetchone()[0]
+    except sqlite3.OperationalError:
+        count = 0
+    if count > 0 and not force:
+        print(f"  [INFO]  Monsters table already has {count} records. Skip (use --force to override)")
+        return
+    if force or count == 0:
+        try:
+            cursor.execute("SELECT 1 FROM monsters LIMIT 1")
+        except Exception:
+            print("  [ERROR]  Monsters table does not exist. Run _dev/init_database.py first.")
+            return
+    seeds = load_json_file(SEEDS_DIR / "seed_monsters.json")
+    if not seeds:
+        print("  [WARNING]  No monster seeds found")
+        return
+    def serialize(value):
+        if value is None:
+            return None
+        if isinstance(value, (list, dict)):
+            return json.dumps(value, ensure_ascii=False)
+        return value
+
+    for monster in seeds:
+        try:
+            cursor.execute("""
+                INSERT INTO monsters
+                (name, alias, size, "group", alignment, type, ac, hp, speed, stats, save, skill, resist, vulnerable,
+                 senses, languages, action, reaction, traits, spellcasting, bonus, legendary, legendaryHeader, mythic,
+                 mythicHeader, reactionRules, soundClip, cr, cr_details)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                monster.get('name'),
+                serialize(monster.get('alias', [])),
+                serialize(monster.get('size')),
+                serialize(monster.get('group', [])),
+                serialize(monster.get('alignment', [])),
+                serialize(monster.get('type', {})),
+                serialize(monster.get('ac', {})),
+                serialize(monster.get('hp', {})),
+                serialize(monster.get('speed', {})),
+                serialize(monster.get('stats', {})),
+                serialize(monster.get('save', {})),
+                serialize(monster.get('skill', {})),
+                serialize(monster.get('resist', [])),
+                serialize(monster.get('vulnerable', [])),
+                serialize(monster.get('senses', [])),
+                serialize(monster.get('languages', [])),
+                serialize(monster.get('action', [])),
+                serialize(monster.get('reaction', [])),
+                serialize(monster.get('traits', [])),
+                serialize(monster.get('spellcasting', [])),
+                serialize(monster.get('bonus', [])),
+                serialize(monster.get('legendary', [])),
+                serialize(monster.get('legendaryHeader')),
+                serialize(monster.get('mythic', [])),
+                serialize(monster.get('mythicHeader')),
+                serialize(monster.get('reactionRules', [])),
+                serialize(monster.get('soundClip', {})),
+                serialize(monster.get('cr')),
+                serialize(monster.get('cr_details', {}))
+            ))
+            print(f"  [CHECK] {monster.get('name')}")
+        except sqlite3.IntegrityError as e:
+            print(f"  [WARNING]  Duplicate or error: {monster.get('name')} - {e}")
+    conn.commit()
+    print(f"  [OK] Loaded {len(seeds)} monsters")
+
+
 def populate_damage_types(cursor, conn, force=False):
     """Populate damage_types table from seed_damage_types.json. Requires schema created by init_database.py."""
     print("\n[BOOM] Loading damage types...")
@@ -681,6 +757,8 @@ def clear_all_tables(cursor, conn):
     
     tables_to_clear = [
         "statblock_jobs",
+        "monsters",
+        "monsters",
         "creatures",
         "creature_types",
         "spells",
@@ -711,6 +789,7 @@ def main():
     parser.add_argument('--abilities', action='store_true', help='Load only abilities')
     parser.add_argument('--spells', action='store_true', help='Load only spells')
     parser.add_argument('--conditions', action='store_true', help='Load only conditions')
+    parser.add_argument('--monsters', action='store_true', help='Load only monsters')
     parser.add_argument('--creatures', action='store_true', help='Load only creatures')
     parser.add_argument('--damage-types', action='store_true', help='Load only damage types')
     parser.add_argument('--creature-types', action='store_true', help='Load only creature types')
@@ -720,9 +799,8 @@ def main():
     parser.add_argument('--force', action='store_true', help='Force reload (clear existing data first)')
     
     args = parser.parse_args()
-    
     # If no specific tables selected, load all
-    load_all = not any([args.abilities, args.spells, args.conditions, args.creatures, args.damage_types, args.creature_types, args.traps, args.dungeons, args.classes])
+    load_all = not any([args.abilities, args.spells, args.conditions, args.creatures, args.monsters, args.damage_types, args.creature_types, args.traps, args.dungeons, args.classes])
     
     print("="*60)
     print("PHASE 2: DATABASE SEEDING")
@@ -749,6 +827,8 @@ def main():
             populate_damage_types(cursor, conn, args.force)
         if load_all or args.creature_types:
             populate_creature_types(cursor, conn, args.force)
+        if load_all or args.monsters:
+            populate_monsters(cursor, conn, args.force)
         if load_all or args.creatures:
             populate_creatures(cursor, conn, args.force)
         if load_all or args.spells:
@@ -779,6 +859,7 @@ def main():
         print("  3. Check: Start Flask server and test API endpoints")
         print("\nSeed files:")
         print("  - data/seeds/seed_abilities.json")
+        print("  - data/seeds/seed_monsters.json")
         print("  - data/seeds/seed_spells.json")
         print("  - data/5eTools/extracted/data/spells/spells-merged-clean-range-text.json")
         print("  - data/seeds/seed_conditions.json")
