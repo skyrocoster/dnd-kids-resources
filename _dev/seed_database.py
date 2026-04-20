@@ -605,6 +605,66 @@ def populate_dungeons(cursor, conn, force=False):
     print(f"  [OK] Dungeons table now has {final_count} records")
 
 
+def populate_deities(cursor, conn, force=False):
+    """Populate deities table from seed_deities.json"""
+    print("[DIVINE] Loading deities...")
+
+    try:
+        cursor.execute("SELECT COUNT(*) FROM deities")
+        count = cursor.fetchone()[0]
+    except sqlite3.OperationalError:
+        count = 0
+
+    if count > 0 and not force:
+        print(f"  [INFO]  Deities table already has {count} records. Skip (use --force to override)")
+        return
+
+    if force:
+        try:
+            cursor.execute("DELETE FROM deities")
+            print("  [TRASH]  Cleared existing deities data")
+        except Exception as e:
+            print(f"  [WARNING]  Error clearing deities data: {e}")
+            print("  [ERROR]  deities table may not exist. Run _dev/init_database.py first.")
+            return
+
+    seeds = load_json_file(SEEDS_DIR / "seed_deities.json")
+    if not seeds:
+        print("  [WARNING]  No deity seeds found")
+        return
+
+    deity_records = seeds.get('deity') if isinstance(seeds, dict) else seeds
+    if not deity_records:
+        print("  [WARNING]  Deity seed file contains no records")
+        return
+
+    for deity in deity_records:
+        try:
+            cursor.execute("""
+                INSERT INTO deities
+                (name, pantheon, alignment, category, domains, symbol, title, alt_names, entries)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                serialize_for_db(deity.get('name')),
+                serialize_for_db(deity.get('pantheon')),
+                serialize_for_db(deity.get('alignment')),
+                serialize_for_db(deity.get('category')),
+                serialize_for_db(deity.get('domains')),
+                serialize_for_db(deity.get('symbol')),
+                serialize_for_db(deity.get('title')),
+                serialize_for_db(deity.get('altNames')),
+                serialize_for_db(deity.get('entries')),
+            ))
+            print(f"  [CHECK] {deity.get('name')}")
+        except sqlite3.IntegrityError as e:
+            print(f"  [WARNING]  Duplicate or error: {deity.get('name')} - {e}")
+
+    conn.commit()
+    cursor.execute("SELECT COUNT(*) FROM deities")
+    final_count = cursor.fetchone()[0]
+    print(f"  [OK] Loaded {final_count} deities")
+
+
 def reparse_all_dungeons():
     """Re-parse all dungeons in the database to populate trap_ids and other references"""
     try:
@@ -675,6 +735,7 @@ def clear_all_tables(cursor, conn):
         "abilities",
         "traps",
         "dungeons",
+        "deities",
         "skills"
     ]
     
@@ -701,13 +762,14 @@ def main():
     parser.add_argument('--damage-types', action='store_true', help='Load only damage types')
     parser.add_argument('--traps', action='store_true', help='Load only traps')
     parser.add_argument('--dungeons', action='store_true', help='Load only dungeons')
+    parser.add_argument('--deities', action='store_true', help='Load only deities')
     parser.add_argument('--classes', action='store_true', help='Load only classes')
     parser.add_argument('--actions', action='store_true', help='Load only actions')
     parser.add_argument('--force', action='store_true', help='Force reload (clear existing data first)')
     
     args = parser.parse_args()
     # If no specific tables selected, load all
-    load_all = not any([args.abilities, args.spells, args.conditions, args.monsters, args.damage_types, args.traps, args.dungeons, args.classes, args.actions])
+    load_all = not any([args.abilities, args.spells, args.conditions, args.monsters, args.damage_types, args.traps, args.dungeons, args.deities, args.classes, args.actions])
     
     print("="*60)
     print("PHASE 2: DATABASE SEEDING")
@@ -744,6 +806,8 @@ def main():
             populate_traps(cursor, conn, args.force)
         if load_all or args.dungeons:
             populate_dungeons(cursor, conn, args.force)
+        if load_all or args.deities:
+            populate_deities(cursor, conn, args.force)
         if load_all or args.classes:
             populate_classes(cursor, conn, args.force)
         
@@ -765,6 +829,7 @@ def main():
         print("\nSeed files:")
         print("  - data/seeds/seed_abilities.json")
         print("  - data/seeds/seed_monsters.json")
+        print("  - data/seeds/seed_deities.json")
         print("  - data/seeds/seed_spells.json")
         print("  - data/5eTools/extracted/data/spells/spells-merged-clean-range-text.json")
         print("  - data/seeds/seed_conditions.json")

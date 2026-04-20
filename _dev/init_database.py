@@ -45,6 +45,7 @@ def init_database():
         "abilities",
         "traps",
         "dungeons",
+        "deities",
         "skills"
     ]
     
@@ -220,6 +221,24 @@ def init_database():
             parsed_json TEXT NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    # Create deities table for deity metadata storage
+    cursor.execute("""
+        CREATE TABLE deities (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL UNIQUE,
+            pantheon TEXT,
+            alignment TEXT,
+            category TEXT,
+            domains TEXT,
+            symbol TEXT,
+            title TEXT,
+            alt_names TEXT,
+            entries TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     """)
 

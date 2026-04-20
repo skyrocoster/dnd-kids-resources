@@ -55,6 +55,10 @@ EXPORT_DEFINITIONS = {
         "file": "seed_dungeons.json",
         "query": "SELECT id, title, original_html, parsed_json FROM dungeons ORDER BY id",
     },
+    "deities": {
+        "file": "seed_deities.json",
+        "query": "SELECT name, pantheon, alignment, category, domains, symbol, title, alt_names, entries FROM deities ORDER BY name",
+    },
     "spells": {
         "file": "seed_spells.json",
         "query": "SELECT spell_name, icon, level, school, spell_text, spell_alt_text, damage, heal, heal_at_spell_slots, range, higher_levels, damage_at_higher_levels, casting_time, duration, concentration, ritual, components, materials, attack_type, area_of_effect, classes, subclasses FROM spells ORDER BY spell_name",
@@ -134,6 +138,10 @@ def transform_record(record, table_name):
     if table_name == "dungeons":
         record["parsed_json"] = parse_json_value(record.get("parsed_json"))
         return record
+    if table_name == "deities":
+        for field in ["alignment", "domains", "alt_names", "entries"]:
+            record[field] = parse_json_value(record.get(field))
+        return record
     if table_name == "spells":
         for field in ["damage", "classes", "subclasses", "attack_type"]:
             record[field] = parse_json_value(record.get(field))
@@ -158,7 +166,8 @@ def export_table(cursor, table_name, dry_run=False):
     if rows is None:
         return
     transformed = [transform_record(row, table_name) for row in rows]
-    write_json_file(file_path, transformed, dry_run=dry_run)
+    data = {"deity": transformed} if table_name == "deities" else transformed
+    write_json_file(file_path, data, dry_run=dry_run)
 
 
 def parse_table_list(value):
