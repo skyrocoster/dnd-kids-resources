@@ -53,6 +53,7 @@ Seed files:
 - data/seeds/seed_abilities.json
 - data/seeds/seed_conditions.json
 - data/seeds/seed_monsters.json
+- data/seeds/seed_npcs.json
 - data/seeds/seed_damage_types.json
 - data/seeds/seed_traps.json
 - data/seeds/seed_dungeons.json
@@ -436,6 +437,64 @@ def populate_monsters(cursor, conn, force=False):
     print(f"  [OK] Loaded {len(seeds)} monsters")
 
 
+def populate_npcs(cursor, conn, force=False):
+    """Populate npcs table from seed_npcs.json."""
+    print("\n[NPC] Loading NPCs...")
+    try:
+        cursor.execute("SELECT COUNT(*) FROM npcs")
+        count = cursor.fetchone()[0]
+    except sqlite3.OperationalError:
+        count = 0
+
+    if count > 0 and not force:
+        print(f"  [INFO] NPCs table already has {count} records. Skip (use --force to override)")
+        return
+
+    if force or count == 0:
+        try:
+            cursor.execute("SELECT 1 FROM npcs LIMIT 1")
+        except Exception:
+            print("  [ERROR] NPCs table does not exist. Run _dev/init_database.py first.")
+            return
+
+    seeds = load_json_file(SEEDS_DIR / "seed_npcs.json")
+    if not seeds:
+        print("  [WARNING]  No NPC seeds found")
+        return
+
+    for npc in seeds:
+        try:
+            cursor.execute("""
+                INSERT INTO npcs
+                (id, name, race, gender, background, size, stats, armor_class, hit_points, speed,
+                 saving_throws, skills, senses, languages, appearance, notes)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                npc.get('npc_id'),
+                npc.get('name'),
+                npc.get('race'),
+                npc.get('gender'),
+                npc.get('background'),
+                npc.get('size'),
+                serialize_for_db(npc.get('stats')),
+                npc.get('armor_class'),
+                npc.get('hit_points'),
+                npc.get('speed'),
+                serialize_for_db(npc.get('saving_throws')),
+                serialize_for_db(npc.get('skills')),
+                serialize_for_db(npc.get('senses')),
+                npc.get('languages'),
+                serialize_for_db(npc.get('appearance')),
+                npc.get('notes')
+            ))
+            print(f"  [CHECK] {npc.get('name')}")
+        except sqlite3.IntegrityError as e:
+            print(f"  [WARNING]  Duplicate or error: {npc.get('name')} - {e}")
+
+    conn.commit()
+    print(f"  [OK] Loaded {len(seeds)} NPCs")
+
+
 def populate_damage_types(cursor, conn, force=False):
     """Populate damage_types table from seed_damage_types.json. Requires schema created by init_database.py."""
     print("\n[BOOM] Loading damage types...")
@@ -488,6 +547,71 @@ def populate_damage_types(cursor, conn, force=False):
     cursor.execute("SELECT COUNT(*) FROM damage_types")
     final_count = cursor.fetchone()[0]
     print(f"  [OK] Damage types table now has {final_count} records")
+
+
+def populate_weapon_properties(cursor, conn, force=False):
+    """Populate weapon_properties table from seed_weapon_properties.json."""
+    print("[ARMS] Loading weapon properties...")
+    
+    if force:
+        try:
+            cursor.execute("DELETE FROM weapon_properties")
+            print("  [TRASH]  Cleared existing weapon_properties data")
+        except Exception as e:
+            print(f"  [WARNING]  Error clearing weapon_properties data: {e}")
+            print("  [ERROR]  weapon_properties table may not exist. Run _dev/init_database.py first.")
+            return
+    else:
+        try:
+            cursor.execute("SELECT COUNT(*) FROM weapon_properties")
+            count = cursor.fetchone()[0]
+            if count > 0:
+                print(f"  [INFO]  Weapon properties table already has {count} records. Skip (use --force to override)")
+                return
+        except Exception:
+            print("  [ERROR]  weapon_properties table does not exist. Run _dev/init_database.py first.")
+            return
+    
+    seeds = load_json_file(SEEDS_DIR / "seed_weapon_properties.json")
+    if not seeds:
+        print("  [WARNING]  No weapon property seeds found")
+        return
+    
+    property_items = []
+    if isinstance(seeds, dict):
+        for code, payload in seeds.items():
+            if not isinstance(payload, dict):
+                continue
+            property_items.append({
+                'code': code,
+                'name': payload.get('name'),
+                'description': payload.get('description')
+            })
+    elif isinstance(seeds, list):
+        property_items = seeds
+    else:
+        print("  [WARNING]  Unexpected seed format for weapon properties")
+        return
+    
+    for prop in property_items:
+        try:
+            cursor.execute("""
+                INSERT INTO weapon_properties
+                (code, name, description)
+                VALUES (?, ?, ?)
+            """, (
+                prop.get('code'),
+                prop.get('name'),
+                prop.get('description')
+            ))
+            print(f"  [CHECK] {prop.get('code').upper()}: {prop.get('name')}")
+        except sqlite3.IntegrityError as e:
+            print(f"  [WARNING]  Duplicate or error: {prop.get('code')} - {e}")
+    
+    conn.commit()
+    cursor.execute("SELECT COUNT(*) FROM weapon_properties")
+    final_count = cursor.fetchone()[0]
+    print(f"  [OK] Weapon properties table now has {final_count} records")
 
 
 def populate_traps(cursor, conn, force=False):
@@ -725,13 +849,14 @@ def clear_all_tables(cursor, conn):
     tables_to_clear = [
         "statblock_jobs",
         "monsters",
-        "monsters",
+        "npcs",
         "creatures",
         "creature_types",
         "spells",
         "conditions",
         "actions",
         "damage_types",
+        "weapon_properties",
         "abilities",
         "traps",
         "dungeons",
@@ -760,16 +885,18 @@ def main():
     parser.add_argument('--conditions', action='store_true', help='Load only conditions')
     parser.add_argument('--monsters', action='store_true', help='Load only monsters')
     parser.add_argument('--damage-types', action='store_true', help='Load only damage types')
+    parser.add_argument('--weapon-properties', action='store_true', help='Load only weapon properties')
     parser.add_argument('--traps', action='store_true', help='Load only traps')
     parser.add_argument('--dungeons', action='store_true', help='Load only dungeons')
     parser.add_argument('--deities', action='store_true', help='Load only deities')
     parser.add_argument('--classes', action='store_true', help='Load only classes')
     parser.add_argument('--actions', action='store_true', help='Load only actions')
+    parser.add_argument('--npcs', action='store_true', help='Load only NPCs')
     parser.add_argument('--force', action='store_true', help='Force reload (clear existing data first)')
     
     args = parser.parse_args()
     # If no specific tables selected, load all
-    load_all = not any([args.abilities, args.spells, args.conditions, args.monsters, args.damage_types, args.traps, args.dungeons, args.deities, args.classes, args.actions])
+    load_all = not any([args.abilities, args.spells, args.conditions, args.monsters, args.npcs, args.damage_types, args.weapon_properties, args.traps, args.dungeons, args.deities, args.classes, args.actions])
     
     print("="*60)
     print("PHASE 2: DATABASE SEEDING")
@@ -794,8 +921,12 @@ def main():
             populate_abilities(cursor, conn, args.force)
         if load_all or args.damage_types:
             populate_damage_types(cursor, conn, args.force)
+        if load_all or args.weapon_properties:
+            populate_weapon_properties(cursor, conn, args.force)
         if load_all or args.monsters:
             populate_monsters(cursor, conn, args.force)
+        if load_all or args.npcs:
+            populate_npcs(cursor, conn, args.force)
         if load_all or args.spells:
             populate_spells(cursor, conn, args.force)
         if load_all or args.conditions:
@@ -829,9 +960,9 @@ def main():
         print("\nSeed files:")
         print("  - data/seeds/seed_abilities.json")
         print("  - data/seeds/seed_monsters.json")
+        print("  - data/seeds/seed_npcs.json")
         print("  - data/seeds/seed_deities.json")
         print("  - data/seeds/seed_spells.json")
-        print("  - data/5eTools/extracted/data/spells/spells-merged-clean-range-text.json")
         print("  - data/seeds/seed_conditions.json")
         print("  - data/seeds/seed_actions.json")
         print("  - data/seeds/seed_damage_types.json")

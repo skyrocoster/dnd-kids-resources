@@ -35,6 +35,7 @@ def init_database():
         "player_spells",
         "players",
         "monsters",
+        "npcs",
         "creatures",
         "creature_types",
         "classes",
@@ -42,6 +43,7 @@ def init_database():
         "conditions",
         "actions",
         "damage_types",
+        "weapon_properties",
         "abilities",
         "traps",
         "dungeons",
@@ -86,6 +88,17 @@ def init_database():
             name TEXT NOT NULL,
             emoji TEXT NOT NULL,
             color TEXT NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    # Create weapon_properties table for seed weapon property metadata
+    cursor.execute("""
+        CREATE TABLE weapon_properties (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            code TEXT NOT NULL UNIQUE,
+            name TEXT NOT NULL,
+            description TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     """)
@@ -191,6 +204,29 @@ def init_database():
             soundClip TEXT NOT NULL DEFAULT '{}',
             cr TEXT,
             cr_details TEXT NOT NULL DEFAULT '{}',
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    cursor.execute("""
+        CREATE TABLE npcs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL UNIQUE,
+            race TEXT,
+            gender TEXT,
+            background TEXT,
+            size TEXT,
+            stats JSON NOT NULL DEFAULT '{}',
+            armor_class INTEGER,
+            hit_points INTEGER,
+            speed TEXT,
+            saving_throws JSON DEFAULT '{}',
+            skills JSON DEFAULT '{}',
+            senses JSON DFEFAULT '[{}]',
+            languages TEXT,
+            appearance JSON DEFAULT '{}',
+            notes TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
