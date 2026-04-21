@@ -122,7 +122,7 @@ def parse_json_array_field(value):
     return []
 
 
-def convert_db_player_to_api_format(player_row, conn=None, include_spells=False):
+def convert_db_player_to_api_format(player_row, conn=None, include_spells=False, include_weapons=False):
     player = dict(player_row)
     result = {
         'id': player.get('id'),
@@ -135,29 +135,43 @@ def convert_db_player_to_api_format(player_row, conn=None, include_spells=False)
         'updated_at': player.get('updated_at')
     }
 
-    if include_spells:
+    if include_spells or include_weapons:
         if conn is None:
             conn = get_db_connection()
             should_close = True
         else:
             should_close = False
 
-        cursor = conn.cursor()
-        cursor.execute(
-            "SELECT spell_id FROM player_spells WHERE player_id = ? ORDER BY added_at",
-            (player.get('id'),)
-        )
-        result['spells'] = [row['spell_id'] for row in cursor.fetchall()]
+        if include_spells:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT spell_id FROM player_spells WHERE player_id = ? ORDER BY added_at",
+                (player.get('id'),)
+            )
+            result['spells'] = [row['spell_id'] for row in cursor.fetchall()]
+        else:
+            result['spells'] = []
+
+        if include_weapons:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT weapon_id FROM player_weapons WHERE player_id = ? ORDER BY added_at",
+                (player.get('id'),)
+            )
+            result['weapons'] = [row['weapon_id'] for row in cursor.fetchall()]
+        else:
+            result['weapons'] = []
 
         if should_close:
             conn.close()
     else:
         result['spells'] = []
+        result['weapons'] = []
 
     return result
 
 
-def get_player_by_id(player_id, include_spells=False):
+def get_player_by_id(player_id, include_spells=False, include_weapons=False):
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT id, name, class, level, total_spell_slots, current_spell_slots, created_at, updated_at FROM players WHERE id = ?", (player_id,))
@@ -165,19 +179,19 @@ def get_player_by_id(player_id, include_spells=False):
     if not row:
         conn.close()
         return None
-    player = convert_db_player_to_api_format(row, conn if include_spells else None, include_spells=include_spells)
+    player = convert_db_player_to_api_format(row, conn if include_spells or include_weapons else None, include_spells=include_spells, include_weapons=include_weapons)
     conn.close()
     return player
 
 
-def get_all_players(include_spells=False):
+def get_all_players(include_spells=False, include_weapons=False):
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT id, name, class, level, total_spell_slots, current_spell_slots, created_at, updated_at FROM players ORDER BY name")
     players = []
     rows = cursor.fetchall()
     for row in rows:
-        players.append(convert_db_player_to_api_format(row, conn if include_spells else None, include_spells=include_spells))
+        players.append(convert_db_player_to_api_format(row, conn if include_spells or include_weapons else None, include_spells=include_spells, include_weapons=include_weapons))
     conn.close()
     return players
 
@@ -277,7 +291,7 @@ def create_player(player_data):
     conn.commit()
     player_id = cursor.lastrowid
     conn.close()
-    return get_player_by_id(player_id, include_spells=True)
+    return get_player_by_id(player_id, include_spells=True, include_weapons=True)
 
 
 def update_player(player_id, player_data):
@@ -295,7 +309,7 @@ def update_player(player_id, player_data):
     cursor.execute(f"UPDATE players SET {', '.join(fields)}, updated_at = CURRENT_TIMESTAMP WHERE id = ?", values)
     conn.commit()
     conn.close()
-    return get_player_by_id(player_id, include_spells=True)
+    return get_player_by_id(player_id, include_spells=True, include_weapons=True)
 
 
 def delete_player(player_id):
@@ -328,7 +342,7 @@ def add_spell_to_player(player_id, spell_id):
     except Exception:
         pass
     conn.close()
-    return get_player_by_id(player_id, include_spells=True)
+    return get_player_by_id(player_id, include_spells=True, include_weapons=True)
 
 
 def remove_spell_from_player(player_id, spell_id):
@@ -339,6 +353,48 @@ def remove_spell_from_player(player_id, spell_id):
     conn.commit()
     conn.close()
     return deleted > 0
+
+
+def add_weapon_to_player(player_id, weapon_id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id FROM players WHERE id = ?", (player_id,))
+    if not cursor.fetchone():
+        conn.close()
+        return None
+    cursor.execute("SELECT id FROM weapons WHERE id = ?", (weapon_id,))
+    if not cursor.fetchone():
+        conn.close()
+        return None
+    try:
+        cursor.execute(
+            "INSERT OR IGNORE INTO player_weapons (player_id, weapon_id) VALUES (?, ?)",
+            (player_id, weapon_id)
+        )
+        conn.commit()
+    except Exception:
+        pass
+    conn.close()
+    return get_player_by_id(player_id, include_spells=True, include_weapons=True)
+
+
+def remove_weapon_from_player(player_id, weapon_id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM player_weapons WHERE player_id = ? AND weapon_id = ?", (player_id, weapon_id))
+    deleted = cursor.rowcount
+    conn.commit()
+    conn.close()
+    return deleted > 0
+
+
+def get_player_weapon_ids(player_id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT weapon_id FROM player_weapons WHERE player_id = ? ORDER BY added_at", (player_id,))
+    weapon_ids = [row['weapon_id'] for row in cursor.fetchall()]
+    conn.close()
+    return weapon_ids
 
 
 def get_player_spell_ids(player_id):
@@ -2021,7 +2077,7 @@ def get_spell_by_title(title):
 def get_players_api():
     """API endpoint: GET /api/players - Returns all players."""
     try:
-        players = get_all_players(include_spells=False)
+        players = get_all_players(include_spells=True, include_weapons=True)
         return jsonify(players)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -2029,9 +2085,9 @@ def get_players_api():
 
 @app.route('/api/players/<int:player_id>', methods=['GET'])
 def get_player_api(player_id):
-    """API endpoint: GET /api/players/<player_id> - Returns one player and assigned spells."""
+    """API endpoint: GET /api/players/<player_id> - Returns one player and assigned spells and weapons."""
     try:
-        player = get_player_by_id(player_id, include_spells=True)
+        player = get_player_by_id(player_id, include_spells=True, include_weapons=True)
         if not player:
             return jsonify({"error": f"Player id '{player_id}' not found"}), 404
         return jsonify(player)
@@ -2122,6 +2178,52 @@ def remove_player_spell_api(player_id, spell_id):
         removed = remove_spell_from_player(player_id, spell_id)
         if not removed:
             return jsonify({"error": "Spell assignment not found"}), 404
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/players/<int:player_id>/weapons', methods=['GET'])
+def get_player_weapons_api(player_id):
+    """API endpoint: GET /api/players/<player_id>/weapons - Returns assigned weapon IDs."""
+    try:
+        if not get_player_by_id(player_id):
+            return jsonify({"error": f"Player id '{player_id}' not found"}), 404
+        weapon_ids = get_player_weapon_ids(player_id)
+        return jsonify(weapon_ids)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/players/<int:player_id>/weapons', methods=['POST'])
+def add_player_weapon_api(player_id):
+    """API endpoint: POST /api/players/<player_id>/weapons - Assign a weapon to a player."""
+    try:
+        payload = request.get_json(silent=True) or {}
+        weapon_id = payload.get('weapon_id')
+        if weapon_id is None:
+            return jsonify({"error": "Missing weapon_id"}), 400
+        try:
+            weapon_id = int(weapon_id)
+        except (TypeError, ValueError):
+            return jsonify({"error": "Invalid weapon_id"}), 400
+        player = add_weapon_to_player(player_id, weapon_id)
+        if player is None:
+            return jsonify({"error": "Player or weapon not found"}), 404
+        return jsonify(player)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/players/<int:player_id>/weapons/<int:weapon_id>', methods=['DELETE'])
+def remove_player_weapon_api(player_id, weapon_id):
+    """API endpoint: DELETE /api/players/<player_id>/weapons/<weapon_id> - Remove a weapon assignment."""
+    try:
+        if not get_player_by_id(player_id):
+            return jsonify({"error": f"Player id '{player_id}' not found"}), 404
+        removed = remove_weapon_from_player(player_id, weapon_id)
+        if not removed:
+            return jsonify({"error": "Weapon assignment not found"}), 404
         return jsonify({"success": True})
     except Exception as e:
         return jsonify({"error": str(e)}), 500

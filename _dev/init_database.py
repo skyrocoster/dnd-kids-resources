@@ -343,6 +343,19 @@ def init_database():
         )
     """)
 
+    # Create player_weapons table for weapon assignments
+    cursor.execute("""
+        CREATE TABLE player_weapons (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            player_id INTEGER NOT NULL,
+            weapon_id INTEGER NOT NULL,
+            added_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(player_id, weapon_id),
+            FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE,
+            FOREIGN KEY (weapon_id) REFERENCES weapons(id) ON DELETE CASCADE
+        )
+    """)
+
     print("[OK] Tables created")
     
     conn.commit()

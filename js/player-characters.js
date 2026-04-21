@@ -10,8 +10,11 @@ document.addEventListener('DOMContentLoaded', async function() {
   const playerClassInput = document.getElementById('player-class');
   const playerLevelInput = document.getElementById('player-level');
   const assignedSpellsEl = document.getElementById('assigned-spells');
+  const assignedWeaponsEl = document.getElementById('assigned-weapons');
   const spellSearchInput = document.getElementById('spell-search');
   const spellSearchResultsEl = document.getElementById('spell-search-results');
+  const weaponSearchInput = document.getElementById('weapon-search');
+  const weaponSearchResultsEl = document.getElementById('weapon-search-results');
   const playerCreateActions = document.getElementById('player-create-actions');
   const playerEditView = document.getElementById('player-edit-view');
   const playerDetailsSection = document.getElementById('player-details-section');
@@ -24,8 +27,10 @@ document.addEventListener('DOMContentLoaded', async function() {
   const API_BASE = '/api';
   let players = [];
   let spells = [];
+  let weapons = [];
   let selectedPlayer = null;
   let spellIndex = [];
+  let weaponIndex = [];
 
   async function apiFetch(path, options = {}) {
     const response = await fetch(`${API_BASE}${path}`, options);
@@ -78,7 +83,7 @@ document.addEventListener('DOMContentLoaded', async function() {
       const title = document.createElement('h2');
       title.textContent = player.name || 'Unnamed Player';
       const subtitle = document.createElement('p');
-      subtitle.innerHTML = `${player.class || 'No class'} · Level ${player.level || '—'}<br><small>${player.spells?.length || 0} spell${(player.spells?.length || 0) === 1 ? '' : 's'} in book</small>`;
+      subtitle.innerHTML = `${player.class || 'No class'} · Level ${player.level || '—'}<br><small>${player.spells?.length || 0} spell${(player.spells?.length || 0) === 1 ? '' : 's'} · ${player.weapons?.length || 0} weapon${(player.weapons?.length || 0) === 1 ? '' : 's'}</small>`;
       left.appendChild(title);
       left.appendChild(subtitle);
 
@@ -152,8 +157,34 @@ document.addEventListener('DOMContentLoaded', async function() {
       });
     }
 
+    assignedWeaponsEl.innerHTML = '';
+    if (!selectedPlayer.weapons || selectedPlayer.weapons.length === 0) {
+      const placeholder = document.createElement('div');
+      placeholder.className = 'empty-state';
+      placeholder.textContent = 'No weapons assigned yet. Use the search below to add weapons to this character.';
+      assignedWeaponsEl.appendChild(placeholder);
+    } else {
+      selectedPlayer.weapons.forEach(weaponId => {
+        const weapon = weapons.find(item => Number(item.id) === Number(weaponId));
+        const row = document.createElement('div');
+        row.className = 'assigned-spell';
+        const title = document.createElement('div');
+        title.innerHTML = `<span>${weapon?.name || weapon?.title || weaponId}</span><small>${weapon?.weapon_category || weapon?.category || ''}</small>`;
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.textContent = 'Remove';
+        removeBtn.addEventListener('click', async () => {
+          await removeWeaponFromPlayer(Number(weaponId));
+        });
+        row.appendChild(title);
+        row.appendChild(removeBtn);
+        assignedWeaponsEl.appendChild(row);
+      });
+    }
+
     renderSpellSlotGrid();
     renderSpellSearch();
+    renderWeaponSearch();
   }
 
   function buildSpellResult(spell) {
@@ -177,6 +208,27 @@ document.addEventListener('DOMContentLoaded', async function() {
     return row;
   }
 
+  function buildWeaponResult(weapon) {
+    const row = document.createElement('div');
+    row.className = 'spell-result';
+
+    const title = document.createElement('div');
+    title.innerHTML = `<strong>${weapon.title || weapon.name || ''}</strong><br><small>${weapon.category || weapon.school || ''}${weapon.rarity ? ` · ${weapon.rarity}` : ''}</small>`;
+
+    const owned = selectedPlayer?.weapons?.some(id => Number(id) === Number(weapon.id));
+    const addBtn = document.createElement('button');
+    addBtn.type = 'button';
+    addBtn.textContent = owned ? 'Added' : 'Add';
+    addBtn.disabled = !!owned;
+    addBtn.addEventListener('click', async () => {
+      await addWeaponToPlayer(Number(weapon.id));
+    });
+
+    row.appendChild(title);
+    row.appendChild(addBtn);
+    return row;
+  }
+
   function buildSpellIndex(items) {
     return items.map(spell => ({
       id: String(spell.id),
@@ -184,6 +236,16 @@ document.addEventListener('DOMContentLoaded', async function() {
       school: spell.school || '',
       level: spell.level !== undefined && spell.level !== null ? String(spell.level) : 'Unknown',
       text: `${spell.title || ''} ${spell.school || ''} ${String(spell.explanation || spell.details || spell.desc || '')}`.toLowerCase()
+    }));
+  }
+
+  function buildWeaponIndex(items) {
+    return items.map(weapon => ({
+      id: String(weapon.id),
+      title: weapon.name || weapon.title || '',
+      category: weapon.weapon_category || weapon.weaponCategory || '',
+      rarity: weapon.rarity || '',
+      text: `${weapon.name || weapon.title || ''} ${weapon.weapon_category || weapon.weaponCategory || ''} ${weapon.rarity || ''} ${String(weapon.property || '')} ${String(weapon.entries || '')}`.toLowerCase()
     }));
   }
 
@@ -283,6 +345,26 @@ document.addEventListener('DOMContentLoaded', async function() {
     });
   }
 
+  function renderWeaponSearch() {
+    const query = String(weaponSearchInput.value || '').trim().toLowerCase();
+    const matches = weaponIndex
+      .filter(weapon => weapon.text.includes(query))
+      .slice(0, 20);
+
+    weaponSearchResultsEl.innerHTML = '';
+    if (matches.length === 0) {
+      const noResult = document.createElement('div');
+      noResult.className = 'empty-state';
+      noResult.textContent = 'No weapons match your search. Try a different keyword.';
+      weaponSearchResultsEl.appendChild(noResult);
+      return;
+    }
+
+    matches.forEach(weapon => {
+      weaponSearchResultsEl.appendChild(buildWeaponResult(weapon));
+    });
+  }
+
   async function fetchSpells() {
     try {
       spells = await apiFetch('/spells');
@@ -291,6 +373,17 @@ document.addEventListener('DOMContentLoaded', async function() {
       console.error('Failed to load spells:', error);
       spells = [];
       spellIndex = [];
+    }
+  }
+
+  async function fetchWeapons() {
+    try {
+      weapons = await apiFetch('/weapons');
+      weaponIndex = buildWeaponIndex(weapons);
+    } catch (error) {
+      console.error('Failed to load weapons:', error);
+      weapons = [];
+      weaponIndex = [];
     }
   }
 
@@ -419,6 +512,25 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
   }
 
+  async function addWeaponToPlayer(weaponId) {
+    if (!selectedPlayer) return;
+    try {
+      selectedPlayer = await apiFetch(`/players/${selectedPlayer.id}/weapons`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ weapon_id: weaponId })
+      });
+      const index = players.findIndex(player => Number(player.id) === Number(selectedPlayer.id));
+      if (index !== -1) {
+        players[index] = selectedPlayer;
+      }
+      renderPlayerList();
+      renderPlayerDetail();
+    } catch (error) {
+      console.error('Failed to add weapon to player:', error);
+    }
+  }
+
   async function removeSpellFromPlayer(spellId) {
     if (!selectedPlayer) return;
     try {
@@ -432,6 +544,22 @@ document.addEventListener('DOMContentLoaded', async function() {
       renderPlayerDetail();
     } catch (error) {
       console.error('Failed to remove spell from player:', error);
+    }
+  }
+
+  async function removeWeaponFromPlayer(weaponId) {
+    if (!selectedPlayer) return;
+    try {
+      await apiFetch(`/players/${selectedPlayer.id}/weapons/${weaponId}`, { method: 'DELETE' });
+      selectedPlayer.weapons = selectedPlayer.weapons.filter(id => Number(id) !== Number(weaponId));
+      const index = players.findIndex(player => Number(player.id) === Number(selectedPlayer.id));
+      if (index !== -1) {
+        players[index] = selectedPlayer;
+      }
+      renderPlayerList();
+      renderPlayerDetail();
+    } catch (error) {
+      console.error('Failed to remove weapon from player:', error);
     }
   }
 
@@ -476,6 +604,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     renderSpellSearch();
   });
 
+  weaponSearchInput.addEventListener('input', function() {
+    renderWeaponSearch();
+  });
+
   await fetchSpells();
+  await fetchWeapons();
   await fetchPlayers();
 });
