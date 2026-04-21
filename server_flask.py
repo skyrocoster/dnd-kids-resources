@@ -1855,6 +1855,97 @@ def convert_db_spell_to_api_format(spell_row, conn=None):
     return result
 
 
+def convert_db_weapon_to_api_format(weapon_row):
+    """Convert a database weapon row to API format."""
+    weapon_dict = dict(weapon_row)
+
+    def parse_field(value):
+        if value is None:
+            return None
+        if isinstance(value, str):
+            parsed = parse_json_field(value)
+            return parsed if parsed is not None else value
+        return value
+
+    return {
+        'id': weapon_dict.get('id'),
+        'name': weapon_dict.get('name') or '',
+        'base_weapon': parse_field(weapon_dict.get('base_weapon')),
+        'baseitems': bool(weapon_dict.get('baseitems')),
+        'rarity': parse_field(weapon_dict.get('rarity')),
+        'weapon_category': parse_field(weapon_dict.get('weapon_category')),
+        'weight': weapon_dict.get('weight'),
+        'req_attune': parse_field(weapon_dict.get('req_attune')),
+        'sentient': bool(weapon_dict.get('sentient')),
+        'curse': bool(weapon_dict.get('curse')),
+        'resist': parse_field(weapon_dict.get('resist')) or [],
+        'property': parse_field(weapon_dict.get('property')) or [],
+        'focus': parse_field(weapon_dict.get('focus')) or [],
+        'spells': parse_field(weapon_dict.get('spells')) or [],
+        'attack': parse_field(weapon_dict.get('attack')) or [],
+        'recharge': parse_field(weapon_dict.get('recharge')) or {},
+        'light': parse_field(weapon_dict.get('light')) or [],
+        'entries': parse_field(weapon_dict.get('entries')) or [],
+        'tier': parse_field(weapon_dict.get('tier')),
+        'grants_language': bool(weapon_dict.get('grants_language')),
+        'bonus_spell_attack': weapon_dict.get('bonus_spell_attack'),
+        'bonus_spell_save_dc': weapon_dict.get('bonus_spell_save_dc'),
+        'bonus_ac': weapon_dict.get('bonus_ac'),
+        'bonus_saving_throw': weapon_dict.get('bonus_saving_throw'),
+        'crit_threshold': weapon_dict.get('crit_threshold'),
+        'ammo_type': parse_field(weapon_dict.get('ammo_type')),
+        'grants_proficiency': bool(weapon_dict.get('grants_proficiency')),
+        'modify_speed': parse_field(weapon_dict.get('modify_speed')) or {},
+        'ability': parse_field(weapon_dict.get('ability')) or {}
+    }
+
+
+@app.route('/api/weapons', methods=['GET'])
+def get_weapons_api():
+    """API endpoint: GET /api/weapons - Returns all weapons as JSON."""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT *
+            FROM weapons
+            ORDER BY name
+        """)
+
+        weapons = []
+        for row in cursor.fetchall():
+            weapons.append(convert_db_weapon_to_api_format(row))
+
+        conn.close()
+        return jsonify(weapons)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/weapons/<title>', methods=['GET'])
+def get_weapon_by_title(title):
+    """API endpoint: GET /api/weapons/<title> - Returns a single weapon by title."""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT *
+            FROM weapons
+            WHERE LOWER(name) = LOWER(?)
+        """, (title,))
+
+        row = cursor.fetchone()
+        if not row:
+            conn.close()
+            return jsonify({"error": f"Weapon '{title}' not found"}), 404
+
+        weapon_json = convert_db_weapon_to_api_format(row)
+        conn.close()
+        return jsonify(weapon_json)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route('/api/spells', methods=['GET'])
 def get_spells_api():
     """API endpoint: GET /api/spells - Returns all spells as JSON."""
@@ -2984,6 +3075,8 @@ def start_server(port=8000):
     print(f"   - GET /api/skills/<title> (single skill)")
     print(f"   - GET /api/conditions     (all conditions)")
     print(f"   - GET /api/conditions/<title> (single condition)")
+    print(f"   - GET /api/weapons        (all weapons)")
+    print(f"   - GET /api/weapons/<title> (single weapon)")
     print(f"   - GET /api/monsters      (all monsters)")
     print(f"   - GET /api/monsters/<title> (single monster)")
     print(f"   - GET /api/dungeons       (all dungeons)")

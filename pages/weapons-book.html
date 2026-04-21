@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Weapons Book — D&D Kids Resources</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@600;700;800&family=OpenDyslexic&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/styles.css">
+  <style>
+    body {
+      min-height: 100vh;
+      background: linear-gradient(180deg, #3c5a34 0%, #b6d4a1 100%);
+      color: #1f2937;
+      margin: 0;
+      font-family: 'Nunito', sans-serif;
+    }
+    .weapons-book-shell {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .weapons-book-topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(249, 250, 241, 0.96);
+      border-bottom: 3px solid #d1d5db;
+      padding: 18px;
+      box-shadow: 0 10px 28px rgba(15, 23, 42, 0.12);
+    }
+    .weapons-book-title-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .weapons-book-title {
+      margin: 0;
+      font-family: 'Fredoka One', cursive;
+      font-size: 2rem;
+      color: #1d433f;
+      line-height: 1.05;
+    }
+    .weapons-book-subtitle {
+      margin: 6px 0 0;
+      color: #334155;
+      font-size: 0.95rem;
+      letter-spacing: 0.4px;
+    }
+    .weapons-book-toolbar {
+      margin-top: 16px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: end;
+    }
+    .search-field,
+    .weapon-count {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .search-field label {
+      font-size: 0.75rem;
+      color: #334155;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+    }
+    .search-field input {
+      width: 100%;
+      border: 2px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 1rem;
+      background: #ffffff;
+      color: #102a43;
+    }
+    .search-field input:focus {
+      outline: none;
+      border-color: #1d4ed8;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.16);
+    }
+    .weapon-book-meta {
+      color: #334155;
+      font-size: 0.95rem;
+      font-weight: 700;
+      align-self: flex-start;
+    }
+    .reader-layout {
+      display: grid;
+      grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+      gap: 18px;
+      width: 100%;
+      padding: 18px;
+      box-sizing: border-box;
+    }
+    .weapon-list {
+      display: grid;
+      gap: 10px;
+    }
+    .weapon-list-item {
+      background: #ffffff;
+      border: 2px solid #cbd5e1;
+      border-radius: 14px;
+      padding: 14px 16px;
+      cursor: pointer;
+      transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+    }
+    .weapon-list-item:hover,
+    .weapon-list-item.selected {
+      border-color: #1d4ed8;
+      box-shadow: 0 12px 26px rgba(15, 23, 42, 0.12);
+      transform: translateY(-1px);
+    }
+    .weapon-list-item-title {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 700;
+      color: #102a43;
+    }
+    .weapon-list-item-subtitle {
+      margin: 6px 0 0;
+      color: #64748b;
+      font-size: 0.87rem;
+      line-height: 1.4;
+    }
+    .weapon-detail-shell,
+    .detail-shell {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    .detail-panel {
+      background: #ffffff;
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12);
+      border: 1px solid #cbd5e1;
+    }
+    .detail-shell h1 {
+      margin: 0;
+      font-size: 2rem;
+      color: #102a43;
+      line-height: 1.05;
+    }
+    .detail-subtitle {
+      margin: 0.5rem 0 0;
+      color: #475569;
+      font-size: 0.95rem;
+    }
+    .detail-row {
+      margin-bottom: 0.75rem;
+    }
+    .detail-label {
+      font-weight: 700;
+      color: #34495e;
+      display: block;
+      margin-bottom: 0.25rem;
+    }
+    .detail-value {
+      color: #4b5563;
+      line-height: 1.65;
+      white-space: pre-wrap;
+    }
+    .detail-item {
+      margin-bottom: 1rem;
+    }
+    .detail-item-text {
+      color: #4b5563;
+      line-height: 1.65;
+      white-space: pre-wrap;
+    }
+    .detail-item-title {
+      font-weight: 800;
+      color: #1f2937;
+      margin-bottom: 0.35rem;
+    }
+    .weapon-detail-placeholder {
+      padding: 24px;
+      text-align: center;
+      color: #475569;
+      font-size: 1rem;
+      background: #f8fafc;
+      border-radius: 14px;
+      border: 1px dashed #cbd5e1;
+    }
+    @media (max-width: 980px) {
+      .reader-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="weapons-book-shell">
+    <div class="weapons-book-topbar">
+      <div class="weapons-book-title-row">
+        <div>
+          <h1 class="weapons-book-title">Weapons Book</h1>
+          <p class="weapons-book-subtitle">Search weapons and inspect one full detail view at a time.</p>
+        </div>
+        <a href="resources.html" class="spell-book-backlink">← Back to Resources</a>
+      </div>
+      <div class="weapons-book-toolbar">
+        <div class="search-field">
+          <label for="search-input">Weapon search</label>
+          <input id="search-input" type="search" placeholder="Search by name, type, rarity, or property" autocomplete="off">
+        </div>
+        <div id="weapon-count" class="weapon-book-meta">Loading weapons…</div>
+      </div>
+    </div>
+
+    <div class="reader-layout">
+      <div>
+        <div id="weapon-list" class="weapon-list"></div>
+      </div>
+      <div class="weapon-detail-shell" id="weapon-detail-shell">
+        <div class="weapon-detail-placeholder">Search or select a weapon to view its full details.</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/weapons-book.js?v=1"></script>
+</body>
+</html>
