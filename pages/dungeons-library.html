@@ -7,6 +7,81 @@
     <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@600;700;800&family=OpenDyslexic&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../css/styles.css">
     <style>
+        :root {
+            color-scheme: light dark;
+        }
+
+        body.dark-mode {
+            background: #111;
+            color: #eee;
+        }
+
+        body.dark-mode .site-header,
+        body.dark-mode .viewer-controls,
+        body.dark-mode .map-panel,
+        body.dark-mode .dungeon-card,
+        body.dark-mode .dungeon-content,
+        body.dark-mode .entry,
+        body.dark-mode .viewer-sidebar,
+        body.dark-mode .info-tab,
+        body.dark-mode .info-tab-content,
+        body.dark-mode .modal-content {
+            background: #1f2732;
+            color: #eee;
+            border-color: #2c3a46;
+        }
+
+        body.dark-mode .dungeon-card:hover {
+            border-color: #4a90e2;
+            box-shadow: 0 4px 12px rgba(74, 144, 226, 0.25);
+        }
+
+        body.dark-mode .dungeon-card p,
+        body.dark-mode .entry-content,
+        body.dark-mode .entry-meta,
+        body.dark-mode .door-mechanics,
+        body.dark-mode .entry-traps,
+        body.dark-mode .treasure-hidden,
+        body.dark-mode .treasure-items,
+        body.dark-mode .monster-search-item-subtitle,
+        body.dark-mode .info-value {
+            color: #cdd3db;
+        }
+
+        body.dark-mode .btn,
+        body.dark-mode .back-btn,
+        body.dark-mode .add-room-btn,
+        body.dark-mode .add-feature-btn,
+        body.dark-mode .entry-edit-btn,
+        body.dark-mode .entry-delete-btn,
+        body.dark-mode .edit-mode-toggle,
+        body.dark-mode .modal-buttons .save-btn,
+        body.dark-mode .modal-buttons .cancel-btn {
+            background: #2c3a46;
+            color: #eee;
+            border-color: transparent;
+        }
+
+        body.dark-mode .btn:hover,
+        body.dark-mode .back-btn:hover,
+        body.dark-mode .add-room-btn:hover,
+        body.dark-mode .add-feature-btn:hover,
+        body.dark-mode .entry-edit-btn:hover,
+        body.dark-mode .entry-delete-btn:hover,
+        body.dark-mode .edit-mode-toggle:hover,
+        body.dark-mode .modal-buttons .save-btn:hover,
+        body.dark-mode .modal-buttons .cancel-btn:hover {
+            background: #3b4a57;
+        }
+
+        body.dark-mode input,
+        body.dark-mode select,
+        body.dark-mode textarea {
+            background: #16202b;
+            color: #eee;
+            border-color: #2c3a46;
+        }
+
         .dungeons-container {
             max-width: 1200px;
             margin: 2rem auto;
@@ -66,6 +141,27 @@
 
         .dungeon-card .btn:hover {
             background: #357abd;
+        }
+
+        .dark-mode-toggle {
+            background: #4a90e2;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background 0.3s ease;
+            margin-left: 1rem;
+        }
+
+        .dark-mode-toggle.active {
+            background: #f1c40f;
+            color: #111;
+        }
+
+        .dark-mode-toggle:hover {
+            background: #2c80d4;
         }
 
         .dungeon-viewer-layout {
@@ -664,8 +760,13 @@
 </head>
 <body>
     <header class="site-header">
-        <h1>🗺️ Dungeon Library</h1>
-        <p>Explore and manage D&D dungeons</p>
+        <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+            <div>
+                <h1>🗺️ Dungeon Library</h1>
+                <p>Explore and manage D&D dungeons</p>
+            </div>
+            <button id="darkModeToggle" class="dark-mode-toggle" onclick="toggleDarkMode()">🌙 Dark Mode</button>
+        </div>
     </header>
 
     <div class="dungeons-container">
@@ -863,6 +964,7 @@
         }
 
         function initPage() {
+            loadDarkModePreference();
             loadDungeonsList();
             
             // Check if a dungeon ID is in the URL hash
@@ -2127,6 +2229,29 @@
 
 
         // Add Feature Modal Functions
+        function toggleDarkMode() {
+            const enabled = !document.body.classList.contains('dark-mode');
+            document.body.classList.toggle('dark-mode', enabled);
+            const toggle = document.getElementById('darkModeToggle');
+            if (toggle) {
+                toggle.classList.toggle('active', enabled);
+                toggle.textContent = enabled ? '☀️ Light Mode' : '🌙 Dark Mode';
+            }
+            localStorage.setItem('dungeonLibraryDarkMode', enabled ? 'true' : 'false');
+        }
+
+        function loadDarkModePreference() {
+            const preferred = localStorage.getItem('dungeonLibraryDarkMode');
+            if (preferred === 'true') {
+                document.body.classList.add('dark-mode');
+                const toggle = document.getElementById('darkModeToggle');
+                if (toggle) {
+                    toggle.classList.add('active');
+                    toggle.textContent = '☀️ Light Mode';
+                }
+            }
+        }
+
         function openAddFeatureModal() {
             if (!currentDungeon) return;
             isEditingEntry = false;
