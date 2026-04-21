@@ -806,6 +806,7 @@
         let dungeons = [];
         let currentRoomIdx = null;
         let currentEntryIdx = null;
+        let currentDoorId = null;
         let isEditingEntry = false;
         let editModeEnabled = false;
         let modalMonsters = [];
@@ -972,6 +973,10 @@
         function displayDungeonViewer() {
             if (!currentDungeon) return;
 
+            if (ensureDoorIdsAssigned()) {
+                saveDungeonChanges();
+            }
+
             const data = currentDungeon.parsed_json;
             const rooms = data.rooms || [];
 
@@ -985,9 +990,11 @@
                 return;
             }
 
-            selector.innerHTML = rooms.map((room, idx) => 
-                `<option value="${idx}">${room.title}</option>`
-            ).join('');
+            selector.innerHTML = rooms.map((room, idx) => {
+                const roomId = room.room_id !== undefined && room.room_id !== null ? room.room_id : idx;
+                const roomLabel = room.title ? `${room.title} (Room ${roomId})` : `Room ${roomId}`;
+                return `<option value="${idx}">${escapeHtml(roomLabel)}</option>`;
+            }).join('');
 
             // Add keyboard navigation to room selector
             selector.addEventListener('keydown', function(e) {
@@ -1031,18 +1038,19 @@
         function goToRoom(roomTarget) {
             const data = currentDungeon.parsed_json;
             const rooms = data.rooms || [];
+            if (roomTarget === null || roomTarget === undefined) return;
 
-            const target = String(roomTarget || '').trim();
-            if (!target) return;
+            const targetValue = String(roomTarget).trim();
+            if (!targetValue) return;
 
-            // Try to match the room title first.
-            let roomIdx = rooms.findIndex(room => String(room.title || '').trim() === target);
+            let roomIdx = -1;
+            const numericId = parseInt(targetValue, 10);
+            if (!Number.isNaN(numericId)) {
+                roomIdx = findRoomIndexById(numericId);
+            }
+
             if (roomIdx === -1) {
-                // Fallback to numeric room index for legacy data.
-                const numericValue = parseInt(target, 10);
-                if (!Number.isNaN(numericValue)) {
-                    roomIdx = numericValue - 1;
-                }
+                roomIdx = rooms.findIndex(room => String(room.title || '').trim() === targetValue);
             }
 
             if (roomIdx >= 0 && roomIdx < rooms.length) {
@@ -1456,43 +1464,65 @@
             }
 
             // Section 3: Room Details
+            const displayRoomId = room.room_id !== undefined && room.room_id !== null ? room.room_id : roomIdx;
+            const roomLabel = room.title ? `${room.title} (Room ${displayRoomId})` : `Room ${displayRoomId}`;
             roomDetailsHtml += `<div class="room-content">`;
-            roomDetailsHtml += `<div class="room-title">${escapeHtml(room.title)}</div>`;
+            roomDetailsHtml += `<div class="room-title">${escapeHtml(roomLabel)}</div>`;
 
-            if (!room.entries || room.entries.length === 0) {
+            const roomEntries = Array.isArray(room.entries) ? room.entries : [];
+            const relevantDoorEntries = (data.doors || []).filter(door => {
+                if (!door || door.entry_type !== 'door' || door.leads_to == null) return false;
+                if (Array.isArray(door.leads_to)) {
+                    return door.leads_to.some(id => Number(id) === Number(displayRoomId));
+                }
+                return Number(door.leads_to) === Number(displayRoomId);
+            });
+
+            const roomDoorIds = roomEntries
+                .filter(entry => entry.entry_type === 'door' && entry.door_id != null)
+                .map(entry => String(entry.door_id));
+
+            const uniqueRelevantDoors = relevantDoorEntries.filter(door => !roomDoorIds.includes(String(door.door_id)));
+            const nonDoorRoomEntries = roomEntries.filter(entry => entry.entry_type !== 'door');
+
+            // Group entries by type
+            const grouped = {
+                door: [],
+                monster: [],
+                feature: [],
+                trap: [],
+                treasure: [],
+                trick: [],
+                other: [],
+                empty: []
+            };
+
+            nonDoorRoomEntries.forEach(entry => {
+                if (grouped.hasOwnProperty(entry.entry_type)) {
+                    grouped[entry.entry_type].push(entry);
+                } else {
+                    grouped.other.push(entry);
+                }
+            });
+
+            // Add top-level doors for this room
+            grouped.door.push(...uniqueRelevantDoors);
+
+            // Display grouped entries
+            const typeLabels = {
+                door: '🚪 Doors',
+                monster: '👹 Monsters',
+                feature: '✨ Features',
+                trap: '⚠️ Traps',
+                treasure: '💎 Treasure',
+                trick: '🎭 Tricks',
+                other: '❓ Other'
+            };
+
+            const hasAnyEntries = Object.values(grouped).some(entries => entries.length > 0);
+            if (!hasAnyEntries) {
                 roomDetailsHtml += '<p style="color: #999;">This room is empty.</p>';
             } else {
-                // Group entries by type
-                const grouped = {
-                    door: [],
-                    monster: [],
-                    feature: [],
-                    trap: [],
-                    treasure: [],
-                    trick: [],
-                    other: [],
-                    empty: []
-                };
-
-                room.entries.forEach(entry => {
-                    if (grouped.hasOwnProperty(entry.entry_type)) {
-                        grouped[entry.entry_type].push(entry);
-                    } else {
-                        grouped.other.push(entry);
-                    }
-                });
-
-                // Display grouped entries
-                const typeLabels = {
-                    door: '🚪 Doors',
-                    monster: '👹 Monsters',
-                    feature: '✨ Features',
-                    trap: '⚠️ Traps',
-                    treasure: '💎 Treasure',
-                    trick: '🎭 Tricks',
-                    other: '❓ Other'
-                };
-
                 Object.entries(grouped).forEach(([type, entries]) => {
                     if (entries.length === 0) return;
 
@@ -1513,7 +1543,9 @@
                     }
 
                     entriesToDisplay.forEach((entry, entryIdx) => {
-                        const realEntryIdx = room.entries.indexOf(entry);
+                        const realEntryIdx = roomEntries.indexOf(entry);
+                        const isTopLevelDoor = type === 'door' && !roomEntries.includes(entry);
+
                         // Handle treasure entries
                         if (entry.entry_type === 'treasure') {
                             roomDetailsHtml += `<div class="entry ${entry.entry_type}" data-entry-idx="${realEntryIdx}">`;
@@ -1556,14 +1588,16 @@
                         } else {
                             // Standard entry display for non-treasure entries
                             roomDetailsHtml += `<div class="entry ${entry.entry_type}" data-entry-idx="${realEntryIdx}">`;
-                            roomDetailsHtml += `<div class="entry-title">${escapeHtml(entry.title)}`;
+                            const entryTitle = entry.entry_type === 'door' ? getDoorDisplayName(entry) : entry.title;
+                            roomDetailsHtml += `<div class="entry-title">${escapeHtml(entryTitle)}`;
                             
                             if (entry.count) {
                                 roomDetailsHtml += ` <span style="color: #999;">(${entry.count}x)</span>`;
                             }
-                            if (entry.leads_to !== null && entry.leads_to !== undefined) {
-                                const targetTitle = String(entry.leads_to).trim();
-                                roomDetailsHtml += ` → <a href="#" onclick="goToRoom('${escapeJsString(targetTitle)}'); return false;" class="room-link">${escapeHtml(targetTitle)}</a>`;
+
+                            const leadsToHtml = formatLeadsToDisplay(entry.leads_to, displayRoomId);
+                            if (leadsToHtml) {
+                                roomDetailsHtml += ` → ${leadsToHtml}`;
                             }
                             
                             roomDetailsHtml += `</div>`;
@@ -1582,10 +1616,17 @@
                                 roomDetailsHtml += `<div class="entry-traps" data-trap-ids="${trapIdsList}">⚠️ Loading traps...</div>`;
                             }
                             
-                            roomDetailsHtml += `<div class="entry-actions">`;
-                            roomDetailsHtml += `<button class="entry-edit-btn" onclick="openEditEntryModal(${roomIdx}, ${realEntryIdx})">✏️ Edit</button>`;
-                            roomDetailsHtml += `<button class="entry-delete-btn" onclick="deleteEntry(${roomIdx}, ${realEntryIdx})">🗑️ Delete</button>`;
-                            roomDetailsHtml += `</div>`;
+                            if (!isTopLevelDoor) {
+                                roomDetailsHtml += `<div class="entry-actions">`;
+                                roomDetailsHtml += `<button class="entry-edit-btn" onclick="openEditEntryModal(${roomIdx}, ${realEntryIdx})">✏️ Edit</button>`;
+                                roomDetailsHtml += `<button class="entry-delete-btn" onclick="deleteEntry(${roomIdx}, ${realEntryIdx})">🗑️ Delete</button>`;
+                                roomDetailsHtml += `</div>`;
+                            } else {
+                                roomDetailsHtml += `<div class="entry-actions">`;
+                                roomDetailsHtml += `<button class="entry-edit-btn" onclick="openEditDoorModal(${entry.door_id}, ${roomIdx})">✏️ Edit</button>`;
+                                roomDetailsHtml += `<button class="entry-delete-btn" onclick="deleteDoor(${entry.door_id})">🗑️ Delete</button>`;
+                                roomDetailsHtml += `</div>`;
+                            }
                         }
 
                         roomDetailsHtml += `</div>`;
@@ -1723,13 +1764,94 @@
             return rooms.some(room => normalizeRoomTitle(room.title) === normalized);
         }
 
+        function getRoomDisplayName(room, fallbackIdx = null) {
+            if (!room) return '';
+            const roomId = room.room_id != null ? room.room_id : fallbackIdx;
+            const title = String(room.title || '').trim();
+            return title ? `${title} (Room ${roomId})` : `Room ${roomId}`;
+        }
+
+        function getNextDoorId() {
+            const data = currentDungeon?.parsed_json;
+            const rooms = data?.rooms || [];
+            const doors = data?.doors || [];
+            let maxId = 0;
+            rooms.forEach(room => {
+                if (!room.entries) return;
+                room.entries.forEach(entry => {
+                    if (entry.entry_type === 'door' && entry.door_id != null) {
+                        const numeric = parseInt(entry.door_id, 10);
+                        if (!Number.isNaN(numeric)) {
+                            maxId = Math.max(maxId, numeric);
+                        }
+                    }
+                });
+            });
+            doors.forEach(door => {
+                if (door.entry_type === 'door' && door.door_id != null) {
+                    const numeric = parseInt(door.door_id, 10);
+                    if (!Number.isNaN(numeric)) {
+                        maxId = Math.max(maxId, numeric);
+                    }
+                }
+            });
+            return maxId + 1;
+        }
+
+        function ensureDoorIdsAssigned() {
+            const data = currentDungeon?.parsed_json;
+            const rooms = data?.rooms || [];
+            const doors = data?.doors || [];
+            let nextId = getNextDoorId();
+            let changed = false;
+            rooms.forEach(room => {
+                if (!room.entries) return;
+                room.entries.forEach(entry => {
+                    if (entry.entry_type === 'door' && entry.door_id == null) {
+                        entry.door_id = nextId++;
+                        changed = true;
+                    }
+                });
+            });
+            doors.forEach(door => {
+                if (door.entry_type === 'door' && door.door_id == null) {
+                    door.door_id = nextId++;
+                    changed = true;
+                }
+            });
+            return changed;
+        }
+
+        function getDoorDisplayName(entry) {
+            if (!entry) return '';
+            const doorId = entry.door_id != null ? entry.door_id : getNextDoorId();
+            const title = String(entry.title || '').trim();
+            return title ? `${title} (Door ${doorId})` : `Door ${doorId}`;
+        }
+
+        function formatLeadsToDisplay(leadsTo, currentRoomId) {
+            if (leadsTo == null) return '';
+            const targets = Array.isArray(leadsTo) ? leadsTo : [leadsTo];
+            const targetLabels = targets
+                .map(id => {
+                    const numericId = parseInt(id, 10);
+                    if (Number.isNaN(numericId) || numericId === Number(currentRoomId)) return null;
+                    const room = getRoomById(numericId);
+                    const label = room ? getRoomDisplayName(room) : `Room ${numericId}`;
+                    return `<a href="#" onclick="goToRoom('${escapeJsString(String(numericId))}'); return false;" class="room-link">${escapeHtml(label)}</a>`;
+                })
+                .filter(Boolean);
+            return targetLabels.join(', ');
+        }
+
         function getRoomTargets(currentRoomIdx = null) {
             const data = currentDungeon?.parsed_json;
             const rooms = data?.rooms || [];
             return rooms
                 .map((room, idx) => ({
                     title: String(room.title || '').trim(),
-                    idx
+                    room_id: room.room_id != null ? room.room_id : idx,
+                    displayName: getRoomDisplayName(room, idx)
                 }))
                 .filter((room, idx) => idx !== currentRoomIdx && room.title.length > 0);
         }
@@ -1742,13 +1864,13 @@
             select.appendChild(new Option('Select a room...', '', true, false));
 
             targets.forEach(room => {
-                const option = new Option(room.title, room.title, false, room.title === selectedValue);
+                const option = new Option(room.displayName, room.room_id, false, String(room.room_id) === String(selectedValue));
                 select.appendChild(option);
             });
 
             select.appendChild(new Option('Create new room...', '__create_new_room__', false, false));
 
-            if (selectedValue && !targets.some(room => room.title === selectedValue)) {
+            if (selectedValue && !targets.some(room => String(room.room_id) === String(selectedValue))) {
                 const custom = new Option(selectedValue, selectedValue, true, true);
                 select.insertBefore(custom, select.children[1] || select.firstChild);
             }
@@ -1777,8 +1899,8 @@
                 }
 
                 const room = addRoomWithTitle(trimmedTitle);
-                loadRoomTargets(currentRoomIdx, trimmedTitle);
-                select.value = trimmedTitle;
+                loadRoomTargets(currentRoomIdx, room.room.room_id);
+                select.value = String(room.room.room_id);
                 displayDungeonViewer();
                 displayRoom(room.idx);
             }
@@ -1794,6 +1916,28 @@
             return { room: newRoom, idx: data.rooms.length - 1 };
         }
 
+        function getRoomById(roomId) {
+            const data = currentDungeon?.parsed_json;
+            const rooms = data?.rooms || [];
+            const numericId = parseInt(roomId, 10);
+            if (Number.isNaN(numericId)) return null;
+            return rooms.find((room, idx) => {
+                const actualId = room.room_id != null ? room.room_id : idx;
+                return actualId === numericId;
+            }) || null;
+        }
+
+        function findRoomIndexById(roomId) {
+            const data = currentDungeon?.parsed_json;
+            const rooms = data?.rooms || [];
+            const numericId = parseInt(roomId, 10);
+            if (Number.isNaN(numericId)) return -1;
+            return rooms.findIndex((room, idx) => {
+                const actualId = room.room_id != null ? room.room_id : idx;
+                return actualId === numericId;
+            });
+        }
+
         function findRoomIndexByTitle(title) {
             const data = currentDungeon?.parsed_json;
             const rooms = data?.rooms || [];
@@ -1801,16 +1945,28 @@
             return rooms.findIndex(room => normalizeRoomTitle(room.title) === target);
         }
 
-        function createDoorReciprocalEntry(sourceRoomTitle, doorMechanics, trapIds) {
+        function findRoomIndexByTarget(target) {
+            if (target === null || target === undefined) return -1;
+            const numericId = parseInt(String(target).trim(), 10);
+            if (!Number.isNaN(numericId)) {
+                const byId = findRoomIndexById(numericId);
+                if (byId !== -1) return byId;
+            }
+            return findRoomIndexByTitle(String(target));
+        }
+
+        function createDoorReciprocalEntry(sourceRoomId, sourceRoomTitle, doorMechanics, trapIds) {
+            const displayTitle = sourceRoomTitle || `Room ${sourceRoomId}`;
             return {
                 entry_type: 'door',
-                title: `Door to ${sourceRoomTitle}`,
+                door_id: getNextDoorId(),
+                title: `Door to ${displayTitle}`,
                 content: null,
                 count: null,
                 creature_index: null,
                 creature_total: null,
                 monster_id: null,
-                leads_to: sourceRoomTitle,
+                leads_to: sourceRoomId,
                 door_mechanics: doorMechanics || null,
                 trap_ids: trapIds || [],
                 is_hidden: false,
@@ -1821,20 +1977,56 @@
             };
         }
 
-        function ensureReciprocalDoor(sourceRoomIdx, targetRoomIdx, sourceRoomTitle, doorMechanics, trapIds) {
+        function isDoorEntryTargetingRoom(entry, roomId, roomTitle) {
+            if (!entry || entry.entry_type !== 'door' || entry.leads_to == null) return false;
+            if (entry.leads_to === roomId) return true;
+            if (typeof entry.leads_to === 'number' && typeof roomId === 'string') {
+                return entry.leads_to === parseInt(roomId, 10);
+            }
+            if (typeof entry.leads_to === 'string') {
+                const numericLead = parseInt(entry.leads_to, 10);
+                if (!Number.isNaN(numericLead) && Number(numericLead) === Number(roomId)) return true;
+                if (roomTitle) {
+                    return normalizeRoomTitle(entry.leads_to) === normalizeRoomTitle(roomTitle);
+                }
+            }
+            return false;
+        }
+
+        function ensureReciprocalDoor(sourceRoomIdx, targetRoomIdx, sourceRoomId, sourceRoomTitle, doorMechanics, trapIds) {
             if (targetRoomIdx === sourceRoomIdx) return;
             const data = currentDungeon.parsed_json;
             const targetRoom = data.rooms[targetRoomIdx];
             if (!targetRoom || !targetRoom.entries) return;
 
-            const reciprocalExists = targetRoom.entries.some(entry =>
-                entry.entry_type === 'door' &&
-                normalizeRoomTitle(entry.leads_to) === normalizeRoomTitle(sourceRoomTitle)
-            );
+            const reciprocalExists = targetRoom.entries.some(entry => {
+                if (entry.entry_type !== 'door') return false;
+                if (entry.leads_to === sourceRoomId) return true;
+                if (typeof entry.leads_to === 'string' && sourceRoomTitle) {
+                    return normalizeRoomTitle(entry.leads_to) === normalizeRoomTitle(sourceRoomTitle);
+                }
+                return false;
+            });
 
             if (!reciprocalExists) {
-                targetRoom.entries.push(createDoorReciprocalEntry(sourceRoomTitle, doorMechanics, trapIds));
+                targetRoom.entries.push(createDoorReciprocalEntry(sourceRoomId, sourceRoomTitle, doorMechanics, trapIds));
             }
+        }
+
+        function removeReciprocalDoor(sourceRoomIdx, doorEntry) {
+            if (!doorEntry || doorEntry.entry_type !== 'door') return;
+            const data = currentDungeon.parsed_json;
+            const sourceRoom = data.rooms[sourceRoomIdx];
+            if (!sourceRoom) return;
+            const sourceRoomId = sourceRoom.room_id != null ? sourceRoom.room_id : sourceRoomIdx;
+            const sourceRoomTitle = sourceRoom.title || '';
+            const targetRoomIdx = findRoomIndexByTarget(doorEntry.leads_to);
+            if (targetRoomIdx === -1) return;
+
+            const targetRoom = data.rooms[targetRoomIdx];
+            if (!targetRoom || !targetRoom.entries) return;
+
+            targetRoom.entries = targetRoom.entries.filter(entry => !isDoorEntryTargetingRoom(entry, sourceRoomId, sourceRoomTitle));
         }
 
         function createRoom() {
@@ -1980,6 +2172,7 @@
             isEditingEntry = true;
             currentRoomIdx = roomIdx;
             currentEntryIdx = entryIdx;
+            currentDoorId = null;
             
             document.getElementById('modalTitle').textContent = 'Edit Feature';
             document.getElementById('featureModal').classList.add('active');
@@ -2037,6 +2230,55 @@
             document.getElementById('featureTitle').focus();
         }
 
+        function openEditDoorModal(doorId, roomIdx) {
+            if (!currentDungeon) return;
+            const data = currentDungeon.parsed_json;
+            const door = (data.doors || []).find(d => String(d.door_id) === String(doorId));
+            if (!door) return;
+
+            isEditingEntry = true;
+            currentRoomIdx = roomIdx;
+            currentEntryIdx = null;
+            currentDoorId = doorId;
+
+            document.getElementById('modalTitle').textContent = 'Edit Door';
+            document.getElementById('featureModal').classList.add('active');
+            document.getElementById('featureType').value = 'door';
+            document.getElementById('featureType').disabled = true;
+            document.getElementById('featureTitle').value = door.title || '';
+            document.getElementById('featureContent').value = door.content || '';
+            document.getElementById('featureCount').value = door.count || '1';
+            document.getElementById('doorMechanics').value = door.door_mechanics || '';
+            const otherRoomId = Array.isArray(door.leads_to)
+                ? door.leads_to.find(id => Number(id) !== Number(getRoomIdFromIndex(roomIdx)))
+                : door.leads_to;
+            loadRoomTargets(roomIdx, otherRoomId || '');
+            document.getElementById('doorTrapIds').value = (door.trap_ids && door.trap_ids.length > 0) ? door.trap_ids[0] : '';
+            document.getElementById('treasureContainer').value = '';
+            document.getElementById('treasureMechanics').value = '';
+            document.getElementById('treasureIsHidden').checked = false;
+            document.getElementById('treasureHiddenDC').value = '';
+            document.getElementById('treasureItems').value = '';
+            loadMonstersForModal();
+            loadTrapsForModal();
+            updateFeatureFields();
+            document.getElementById('featureTitle').focus();
+        }
+
+        function getRoomIdFromIndex(roomIdx) {
+            const data = currentDungeon?.parsed_json;
+            const room = data?.rooms?.[roomIdx];
+            return room && room.room_id != null ? room.room_id : roomIdx;
+        }
+
+        function deleteDoor(doorId) {
+            if (!confirm('Are you sure you want to delete this door?')) return;
+            const data = currentDungeon.parsed_json;
+            data.doors = (data.doors || []).filter(door => String(door.door_id) !== String(doorId));
+            displayRoom(currentRoomIdx != null ? currentRoomIdx : 0);
+            saveDungeonChanges();
+        }
+
         function deleteEntry(roomIdx, entryIdx) {
             if (!confirm('Are you sure you want to delete this entry?')) return;
             
@@ -2044,6 +2286,10 @@
             const room = data.rooms[roomIdx];
             
             if (room && room.entries && room.entries[entryIdx]) {
+                const entry = room.entries[entryIdx];
+                if (entry.entry_type === 'door') {
+                    removeReciprocalDoor(roomIdx, entry);
+                }
                 room.entries.splice(entryIdx, 1);
                 displayRoom(roomIdx);
                 saveDungeonChanges();
@@ -2167,6 +2413,7 @@
             isEditingEntry = false;
             currentRoomIdx = null;
             currentEntryIdx = null;
+            currentDoorId = null;
             // Reset form
             document.getElementById('featureType').value = 'feature';
             document.getElementById('featureType').disabled = false;
@@ -2261,7 +2508,9 @@
             const content = document.getElementById('featureContent').value.trim();
             const count = parseInt(document.getElementById('featureCount').value) || 1;
             const leadsToValue = document.getElementById('featureLeadsTo').value;
-            const leadsTo = leadsToValue && leadsToValue !== '__create_new_room__' ? leadsToValue.trim() : null;
+            const leadsTo = leadsToValue && leadsToValue !== '__create_new_room__'
+                ? (isNaN(parseInt(leadsToValue, 10)) ? leadsToValue.trim() : parseInt(leadsToValue, 10))
+                : null;
             const doorMechanics = document.getElementById('doorMechanics').value.trim();
             
             if (type === 'door' && !leadsTo) {
@@ -2277,6 +2526,7 @@
             const data = currentDungeon.parsed_json;
             const room = data.rooms[roomIdx];
             const sourceRoomTitle = room.title || '';
+            const sourceRoomId = room.room_id != null ? room.room_id : roomIdx;
 
             // Create new entry
             if (type === 'monster' && count > 1) {
@@ -2348,31 +2598,50 @@
                     treasure_contents: treasureContents
                 });
             } else {
-                room.entries.push({
-                    entry_type: type,
-                    title: title,
-                    content: content,
-                    count: type === 'monster' ? count : null,
-                    creature_index: type === 'monster' ? 1 : null,
-                    creature_total: type === 'monster' ? count : null,
-                    monster_id: monsterId,
-                    leads_to: leadsTo,
-                    door_mechanics: type === 'door' ? (doorMechanics || null) : null,
-                    trap_ids: type === 'door' ? doorTrapIds : [],
-                    is_hidden: false,
-                    hidden_dc: null,
-                    container: null,
-                    container_mechanics: null,
-                    treasure_contents: []
-                });
-
-                if (type === 'door' && leadsTo) {
-                    const targetRoomIdx = findRoomIndexByTitle(leadsTo);
-                    if (targetRoomIdx === -1) {
-                        console.warn(`Target room not found for door lead: ${leadsTo}`);
-                    } else {
-                        ensureReciprocalDoor(roomIdx, targetRoomIdx, sourceRoomTitle, doorMechanics, doorTrapIds);
+                if (type === 'door') {
+                    const targetRoomId = parseInt(leadsTo, 10);
+                    if (Number.isNaN(targetRoomId) || targetRoomId === sourceRoomId) {
+                        alert('Please select a different target room for the door.');
+                        return;
                     }
+                    data.doors = data.doors || [];
+                    data.doors.push({
+                        entry_type: 'door',
+                        door_id: getNextDoorId(),
+                        title: title,
+                        content: content,
+                        count: null,
+                        creature_index: null,
+                        creature_total: null,
+                        monster_id: null,
+                        leads_to: [sourceRoomId, targetRoomId],
+                        door_mechanics: doorMechanics || null,
+                        trap_ids: doorTrapIds,
+                        is_hidden: false,
+                        hidden_dc: null,
+                        container: null,
+                        container_mechanics: null,
+                        treasure_contents: []
+                    });
+                } else {
+                    room.entries.push({
+                        entry_type: type,
+                        door_id: null,
+                        title: title,
+                        content: content,
+                        count: type === 'monster' ? count : null,
+                        creature_index: type === 'monster' ? 1 : null,
+                        creature_total: type === 'monster' ? count : null,
+                        monster_id: monsterId,
+                        leads_to: leadsTo,
+                        door_mechanics: null,
+                        trap_ids: [],
+                        is_hidden: false,
+                        hidden_dc: null,
+                        container: null,
+                        container_mechanics: null,
+                        treasure_contents: []
+                    });
                 }
             }
 
@@ -2383,27 +2652,52 @@
         }
 
         function saveEditedEntry() {
-            if (!isEditingEntry || currentRoomIdx === null || currentEntryIdx === null) {
+            if (!isEditingEntry || currentRoomIdx === null) {
                 return saveNewFeature();
             }
 
             const data = currentDungeon.parsed_json;
             const room = data.rooms[currentRoomIdx];
-            const entry = room.entries[currentEntryIdx];
+            const selectedLeadsTo = document.getElementById('featureLeadsTo').value;
+            const leadsTo = selectedLeadsTo && selectedLeadsTo !== '__create_new_room__'
+                ? (isNaN(parseInt(selectedLeadsTo, 10)) ? selectedLeadsTo.trim() : parseInt(selectedLeadsTo, 10))
+                : null;
+            const doorMechanics = document.getElementById('doorMechanics').value.trim();
+            const doorTrapSelect = document.getElementById('doorTrapIds');
+            const doorTrapId = doorTrapSelect.value ? parseInt(doorTrapSelect.value) : null;
+            const doorTrapIds = doorTrapId ? [doorTrapId] : [];
 
+            if (currentDoorId != null) {
+                const door = (data.doors || []).find(d => String(d.door_id) === String(currentDoorId));
+                if (!door) return;
+                const sourceRoomId = getRoomIdFromIndex(currentRoomIdx);
+                const targetRoomId = parseInt(leadsTo, 10);
+                if (!leadsTo || Number.isNaN(targetRoomId) || targetRoomId === sourceRoomId) {
+                    alert('Please select a different target room for the door.');
+                    return;
+                }
+                const title = document.getElementById('featureTitle').value.trim();
+                door.title = title || door.title;
+                door.content = document.getElementById('featureContent').value.trim();
+                door.door_mechanics = doorMechanics || null;
+                door.trap_ids = doorTrapIds;
+                door.leads_to = [sourceRoomId, targetRoomId];
+
+                displayRoom(currentRoomIdx);
+                saveDungeonChanges();
+                closeAddFeatureModal();
+                return;
+            }
+
+            const entry = room.entries[currentEntryIdx];
             if (!entry) return;
 
             const entryType = entry.entry_type;
             const content = document.getElementById('featureContent').value.trim();
-            const doorMechanics = document.getElementById('doorMechanics').value.trim();
-
-            // Get selected trap ID from single-select
-            const doorTrapSelect = document.getElementById('doorTrapIds');
-            const doorTrapId = doorTrapSelect.value ? parseInt(doorTrapSelect.value) : null;
-            const doorTrapIds = doorTrapId ? [doorTrapId] : [];
             entry.content = content;
-            entry.leads_to = document.getElementById('featureLeadsTo').value.trim() || null;
             entry.trap_ids = doorTrapIds;
+            entry.door_mechanics = doorMechanics || null;
+            entry.leads_to = leadsTo;
 
             if (entryType === 'door' && !entry.leads_to) {
                 alert('Please select or create a target room for the door.');
@@ -2428,9 +2722,10 @@
                 entry.title = monsterTitle;
             } else if (entryType === 'door') {
                 entry.door_mechanics = doorMechanics || null;
-                const targetRoomIdx = entry.leads_to ? findRoomIndexByTitle(entry.leads_to) : -1;
+                const targetRoomIdx = entry.leads_to ? findRoomIndexByTarget(entry.leads_to) : -1;
+                const sourceRoomId = room.room_id != null ? room.room_id : currentRoomIdx;
                 if (targetRoomIdx !== -1) {
-                    ensureReciprocalDoor(currentRoomIdx, targetRoomIdx, room.title || '', doorMechanics, entry.trap_ids || []);
+                    ensureReciprocalDoor(currentRoomIdx, targetRoomIdx, sourceRoomId, room.title || '', doorMechanics, entry.trap_ids || []);
                 }
             } else if (entryType === 'treasure') {
                 const container = document.getElementById('treasureContainer').value.trim();

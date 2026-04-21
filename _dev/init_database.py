@@ -33,6 +33,7 @@ def init_database():
     tables_to_drop = [
         "statblock_jobs",
         "player_spells",
+        "player_weapons",
         "players",
         "monsters",
         "npcs",

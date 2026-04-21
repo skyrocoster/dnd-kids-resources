@@ -890,55 +890,55 @@ def populate_deities(cursor, conn, force=False):
     print(f"  [OK] Loaded {final_count} deities")
 
 
-def reparse_all_dungeons():
-    """Re-parse all dungeons in the database to populate trap_ids and other references"""
-    try:
-        conn = sqlite3.connect(str(DB_PATH))
-        cursor = conn.cursor()
-
-        # Get all dungeons
-        cursor.execute('SELECT id, title, original_html FROM dungeons ORDER BY id')
-        dungeons = cursor.fetchall()
-
-        if not dungeons:
-            print("  [INFO] No dungeons found to re-parse")
-            conn.close()
-            return
-
-        print(f"\n  Found {len(dungeons)} dungeon(s) to re-parse\n")
-
-        for dungeon_id, title, original_html in dungeons:
-            print(f"  🔄 Re-parsing: {title} (ID: {dungeon_id})")
-
-            try:
-                # Parse the HTML
-                parser = DungeonHTMLParser(original_html)
-                dungeon_data = parser.parse()
-
-                # Convert to JSON
-                json_output = json.dumps(dungeon_data.to_dict(), indent=2)
-
-                # Update the database
-                cursor.execute(
-                    'UPDATE dungeons SET parsed_json = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-                    (json_output, dungeon_id)
-                )
-                conn.commit()
-
-                print(f"    ✓ Successfully re-parsed and updated\n")
-
-            except Exception as e:
-                print(f"    ✗ Error: {e}\n")
-                conn.rollback()
-
-        conn.close()
-        print("  ✓ Re-parsing complete!")
-        
-    except Exception as e:
-        print(f"  [ERROR] Re-parsing failed: {e}")
-        import traceback
-        traceback.print_exc()
-
+# def reparse_all_dungeons():
+#     """Re-parse all dungeons in the database to populate trap_ids and other references"""
+#     try:
+#         conn = sqlite3.connect(str(DB_PATH))
+#         cursor = conn.cursor()
+#
+#         # Get all dungeons
+#         cursor.execute('SELECT id, title, original_html FROM dungeons ORDER BY id')
+#         dungeons = cursor.fetchall()
+#
+#         if not dungeons:
+#             print("  [INFO] No dungeons found to re-parse")
+#             conn.close()
+#             return
+#
+#         print(f"\n  Found {len(dungeons)} dungeon(s) to re-parse\n")
+#
+#         for dungeon_id, title, original_html in dungeons:
+#             print(f"  🔄 Re-parsing: {title} (ID: {dungeon_id})")
+#
+#             try:
+#                 # Parse the HTML
+#                 parser = DungeonHTMLParser(original_html)
+#                 dungeon_data = parser.parse()
+#
+#                 # Convert to JSON
+#                 json_output = json.dumps(dungeon_data.to_dict(), indent=2)
+#
+#                 # Update the database
+#                 cursor.execute(
+#                     'UPDATE dungeons SET parsed_json = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+#                     (json_output, dungeon_id)
+#                 )
+#                 conn.commit()
+#
+#                 print(f"    ✓ Successfully re-parsed and updated\n")
+#
+#             except Exception as e:
+#                 print(f"    ✗ Error: {e}\n")
+#                 conn.rollback()
+#
+#         conn.close()
+#         print("  ✓ Re-parsing complete!")
+#         
+#     except Exception as e:
+#         print(f"  [ERROR] Re-parsing failed: {e}")
+#         import traceback
+#         traceback.print_exc()
+#
 
 def clear_all_tables(cursor, conn):
     """Drop all tables in dependency order to avoid FK constraint violations"""
@@ -1049,11 +1049,11 @@ def main():
         
         conn.close()
         
-        # Re-parse dungeons to populate trap_ids and other references
-        print("\n" + "="*60)
-        print("[REPARSE] Starting dungeon re-parsing...")
-        print("="*60)
-        reparse_all_dungeons()
+        # Dungeon re-parsing has been disabled. Dungeon records are still loaded from seeds.
+        # print("\n" + "="*60)
+        # print("[REPARSE] Starting dungeon re-parsing...")
+        # print("="*60)
+        # reparse_all_dungeons()
         
         print("\n" + "="*60)
         print("[OK] PHASE 2 COMPLETE!")
