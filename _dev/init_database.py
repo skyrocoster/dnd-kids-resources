@@ -44,6 +44,7 @@ def init_database():
         "actions",
         "damage_types",
         "weapon_properties",
+        "weapons",
         "abilities",
         "traps",
         "dungeons",
@@ -100,6 +101,43 @@ def init_database():
             name TEXT NOT NULL,
             description TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    # Create weapons table for normalized weapon storage
+    cursor.execute("""
+        CREATE TABLE weapons (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL UNIQUE,
+            base_weapon TEXT,
+            baseitems BOOLEAN NOT NULL DEFAULT 0,
+            rarity TEXT,
+            weapon_category TEXT,
+            weight REAL,
+            req_attune TEXT,
+            sentient BOOLEAN NOT NULL DEFAULT 0,
+            curse BOOLEAN NOT NULL DEFAULT 0,
+            resist TEXT NOT NULL DEFAULT '[]',
+            property TEXT NOT NULL DEFAULT '[]',
+            focus TEXT NOT NULL DEFAULT '[]',
+            spells TEXT NOT NULL DEFAULT '[]',
+            attack TEXT NOT NULL DEFAULT '[]',
+            recharge TEXT NOT NULL DEFAULT '{}',
+            light TEXT NOT NULL DEFAULT '[]',
+            entries TEXT NOT NULL DEFAULT '[]',
+            tier TEXT,
+            grants_language BOOLEAN NOT NULL DEFAULT 0,
+            bonus_spell_attack INTEGER,
+            bonus_spell_save_dc INTEGER,
+            bonus_ac INTEGER,
+            bonus_saving_throw INTEGER,
+            crit_threshold INTEGER,
+            ammo_type TEXT,
+            grants_proficiency BOOLEAN NOT NULL DEFAULT 0,
+            modify_speed TEXT NOT NULL DEFAULT '{}',
+            ability TEXT NOT NULL DEFAULT '{}',
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     """)
 

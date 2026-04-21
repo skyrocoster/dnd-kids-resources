@@ -55,6 +55,10 @@ EXPORT_DEFINITIONS = {
         "file": "seed_weapon_properties.json",
         "query": "SELECT code, name, description FROM weapon_properties ORDER BY code",
     },
+    "weapons": {
+        "file": "seed_weapons.json",
+        "query": "SELECT name, base_weapon, baseitems, rarity, weapon_category, weight, req_attune, sentient, curse, resist, property, focus, spells, attack, recharge, light, entries, tier, grants_language, bonus_spell_attack, bonus_spell_save_dc, bonus_ac, bonus_saving_throw, crit_threshold, ammo_type, grants_proficiency, modify_speed, ability FROM weapons ORDER BY name",
+    },
     "traps": {
         "file": "seed_traps.json",
         "query": "SELECT name FROM traps ORDER BY name",
@@ -156,6 +160,13 @@ def transform_record(record, table_name):
         return record
     if table_name == "spells":
         for field in ["damage", "classes", "subclasses", "attack_type"]:
+            record[field] = parse_json_value(record.get(field))
+        return record
+    if table_name == "weapons":
+        for field in [
+            "resist", "property", "focus", "spells", "attack", "recharge",
+            "light", "entries", "modify_speed", "ability"
+        ]:
             record[field] = parse_json_value(record.get(field))
         return record
     return record

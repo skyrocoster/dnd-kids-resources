@@ -614,6 +614,107 @@ def populate_weapon_properties(cursor, conn, force=False):
     print(f"  [OK] Weapon properties table now has {final_count} records")
 
 
+def populate_weapons(cursor, conn, force=False):
+    """Populate weapons table from seed_weapons.json."""
+    print("[ARMS] Loading weapons...")
+
+    if force:
+        try:
+            cursor.execute("DELETE FROM weapons")
+            print("  [TRASH]  Cleared existing weapons data")
+        except Exception as e:
+            print(f"  [WARNING]  Error clearing weapons data: {e}")
+            print("  [ERROR]  weapons table may not exist. Run _dev/init_database.py first.")
+            return
+    else:
+        try:
+            cursor.execute("SELECT COUNT(*) FROM weapons")
+            count = cursor.fetchone()[0]
+            if count > 0:
+                print(f"  [INFO] Weapons table already has {count} records. Skip (use --force to override)")
+                return
+        except Exception:
+            print("  [ERROR]  weapons table does not exist. Run _dev/init_database.py first.")
+            return
+
+    seeds = load_json_file(SEEDS_DIR / "seed_weapons.json")
+    if not seeds:
+        print("  [WARNING]  No weapon seeds found")
+        return
+
+    if isinstance(seeds, dict) and 'item' in seeds:
+        records = seeds.get('item', [])
+    else:
+        records = seeds if isinstance(seeds, list) else []
+
+    def parse_bool(value):
+        if isinstance(value, bool):
+            return int(value)
+        if isinstance(value, str):
+            return int(value.strip().lower() in ['true', '1', '+1', 'yes'])
+        return 0
+
+    def serialize_json_field(value, default):
+        if value is None:
+            return json.dumps(default, ensure_ascii=False)
+        return serialize_for_db(value)
+
+    def get_field(*keys):
+        for key in keys:
+            if key in weapon:
+                return weapon.get(key)
+        return None
+
+    for weapon in records:
+        try:
+            cursor.execute("""
+                INSERT INTO weapons
+                (name, base_weapon, baseitems, rarity, weapon_category, weight, req_attune,
+                 sentient, curse, resist, property, focus, spells, attack, recharge, light,
+                 entries, tier, grants_language, bonus_spell_attack, bonus_spell_save_dc,
+                 bonus_ac, bonus_saving_throw, crit_threshold, ammo_type,
+                 grants_proficiency, modify_speed, ability)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                serialize_for_db(get_field('name')),
+                serialize_for_db(get_field('baseWeapon', 'base_weapon')),
+                parse_bool(get_field('baseitems', 'base_items')),
+                serialize_for_db(get_field('rarity')),
+                serialize_for_db(get_field('weaponCategory', 'weapon_category')),
+                get_field('weight'),
+                serialize_for_db(get_field('reqAttune', 'req_attune')),
+                int(bool(get_field('sentient', False))),
+                int(bool(get_field('curse', False))),
+                serialize_json_field(get_field('resist'), []),
+                serialize_json_field(get_field('property'), []),
+                serialize_json_field(get_field('focus'), []),
+                serialize_json_field(get_field('spells'), []),
+                serialize_json_field(get_field('attack'), []),
+                serialize_json_field(get_field('recharge'), {}),
+                serialize_json_field(get_field('light'), []),
+                serialize_json_field(get_field('entries'), []),
+                serialize_for_db(get_field('tier')),
+                int(bool(get_field('grantsLanguage', 'grants_language', False))),
+                get_field('bonusSpellAttack', 'bonus_spell_attack'),
+                get_field('bonusSpellSaveDc', 'bonus_spell_save_dc'),
+                get_field('bonusAc', 'bonus_ac'),
+                get_field('bonusSavingThrow', 'bonus_saving_throw'),
+                get_field('critThreshold', 'crit_threshold'),
+                serialize_for_db(get_field('ammoType', 'ammo_type')),
+                int(bool(get_field('grantsProficiency', 'grants_proficiency', False))),
+                serialize_json_field(get_field('modifySpeed', 'modify_speed'), {}),
+                serialize_json_field(get_field('ability'), {}),
+            ))
+            print(f"  [CHECK] {weapon.get('name')}")
+        except sqlite3.IntegrityError as e:
+            print(f"  [WARNING]  Duplicate or error: {weapon.get('name')} - {e}")
+
+    conn.commit()
+    cursor.execute("SELECT COUNT(*) FROM weapons")
+    final_count = cursor.fetchone()[0]
+    print(f"  [OK] Loaded {final_count} weapons")
+
+
 def populate_traps(cursor, conn, force=False):
     """Populate traps table from seed_traps.json. Requires schema created by init_database.py."""
     print("\n[TRAP] Loading traps...")
@@ -857,6 +958,7 @@ def clear_all_tables(cursor, conn):
         "actions",
         "damage_types",
         "weapon_properties",
+        "weapons",
         "abilities",
         "traps",
         "dungeons",
@@ -886,6 +988,7 @@ def main():
     parser.add_argument('--monsters', action='store_true', help='Load only monsters')
     parser.add_argument('--damage-types', action='store_true', help='Load only damage types')
     parser.add_argument('--weapon-properties', action='store_true', help='Load only weapon properties')
+    parser.add_argument('--weapons', action='store_true', help='Load only weapons')
     parser.add_argument('--traps', action='store_true', help='Load only traps')
     parser.add_argument('--dungeons', action='store_true', help='Load only dungeons')
     parser.add_argument('--deities', action='store_true', help='Load only deities')
@@ -896,7 +999,7 @@ def main():
     
     args = parser.parse_args()
     # If no specific tables selected, load all
-    load_all = not any([args.abilities, args.spells, args.conditions, args.monsters, args.npcs, args.damage_types, args.weapon_properties, args.traps, args.dungeons, args.deities, args.classes, args.actions])
+    load_all = not any([args.abilities, args.spells, args.conditions, args.monsters, args.npcs, args.damage_types, args.weapon_properties, args.weapons, args.traps, args.dungeons, args.deities, args.classes, args.actions])
     
     print("="*60)
     print("PHASE 2: DATABASE SEEDING")
@@ -923,6 +1026,8 @@ def main():
             populate_damage_types(cursor, conn, args.force)
         if load_all or args.weapon_properties:
             populate_weapon_properties(cursor, conn, args.force)
+        if load_all or args.weapons:
+            populate_weapons(cursor, conn, args.force)
         if load_all or args.monsters:
             populate_monsters(cursor, conn, args.force)
         if load_all or args.npcs:
@@ -966,6 +1071,8 @@ def main():
         print("  - data/seeds/seed_conditions.json")
         print("  - data/seeds/seed_actions.json")
         print("  - data/seeds/seed_damage_types.json")
+        print("  - data/seeds/seed_weapon_properties.json")
+        print("  - data/seeds/seed_weapons.json")
         print("  - data/seeds/seed_traps.json")
         print("  - data/seeds/seed_dungeons.json")
         
