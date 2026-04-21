@@ -211,6 +211,11 @@ class LauncherGUI(QMainWindow):
         reseed_btn.clicked.connect(self._reseed_db)
         controls_layout.addWidget(reseed_btn)
 
+        export_btn = QPushButton("🗂️ Export Seeds")
+        export_btn.setToolTip("Export current database seed tables to data/seeds")
+        export_btn.clicked.connect(self._export_seed_files)
+        controls_layout.addWidget(export_btn)
+
         controls_layout.addStretch()
         layout.addLayout(controls_layout)
 
@@ -386,6 +391,14 @@ class LauncherGUI(QMainWindow):
         script = self.workspace_root / "_dev" / "seed_database.py"
         command_list = [sys.executable, str(script), "--force"]
         self._run_command(command_list, "Reseed DB", self.db_terminal)
+
+    def _export_seed_files(self):
+        """Export current DB seed tables to JSON files."""
+        self.db_terminal.clear()
+        self._log_to_terminal(self.db_terminal, "Exporting seed files from database...", "Database")
+        script = self.workspace_root / "_dev" / "export_db_seeds.py"
+        command_list = [sys.executable, str(script)]
+        self._run_command(command_list, "Export Seeds", self.db_terminal)
 
     def _create_git_section(self):
         """Create Git control section with commit and push buttons."""
