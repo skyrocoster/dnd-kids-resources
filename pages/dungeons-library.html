@@ -144,6 +144,10 @@
         }
 
         .dark-mode-toggle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 110px;
             background: #4a90e2;
             color: white;
             border: none;
@@ -151,8 +155,10 @@
             border-radius: 4px;
             cursor: pointer;
             font-size: 0.9rem;
-            transition: background 0.3s ease;
+            transition: background 0.3s ease, transform 0.2s ease;
             margin-left: 1rem;
+            position: relative;
+            z-index: 10;
         }
 
         .dark-mode-toggle.active {
@@ -162,6 +168,57 @@
 
         .dark-mode-toggle:hover {
             background: #2c80d4;
+        }
+
+        .map-controls {
+            display: flex;
+            justify-content: space-between;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+
+        .map-controls-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            width: 100%;
+        }
+
+        .map-controls .field-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            min-width: 180px;
+            width: 100%;
+            max-width: 320px;
+        }
+
+        .toggle-map-btn {
+            background: #f0f2f5;
+            color: #2f4858;
+            border: 1px solid #d1d9e0;
+            padding: 0.75rem 1rem;
+            border-radius: 0.75rem;
+            transition: background 0.3s ease, transform 0.2s ease;
+            cursor: pointer;
+        }
+
+        .toggle-map-btn:hover {
+            background: #e2e8f0;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .map-panel.collapsed {
+            display: block;
+            width: 0 !important;
+            min-width: 0 !important;
+            padding: 0 !important;
+            border: none !important;
+            overflow: hidden !important;
         }
 
         .dungeon-viewer-layout {
@@ -202,8 +259,17 @@
             background: #ccc;
             cursor: col-resize;
             user-select: none;
+            touch-action: none;
             transition: background 0.2s ease;
             z-index: 10;
+        }
+
+        @media (pointer: coarse), (hover: none) {
+            .resize-handle {
+                width: 20px;
+                right: -7px;
+                background: rgba(204, 204, 204, 0.95);
+            }
         }
 
         .resize-handle:hover {
@@ -284,6 +350,15 @@
 
         .room-content {
             margin-bottom: 2rem;
+        }
+
+        .room-title-header {
+            font-size: 1.5rem;
+            color: #333;
+            margin: 0.5rem 0 1.25rem 0;
+            padding-bottom: 0.35rem;
+            border-bottom: 2px solid #4a90e2;
+            line-height: 1.2;
         }
 
         .room-title {
@@ -584,7 +659,8 @@
             color: #666;
         }
 
-        .add-feature-btn {
+        .add-feature-btn,
+        .add-room-btn {
             background: #27ae60;
             color: white;
             border: none;
@@ -592,10 +668,162 @@
             border-radius: 4px;
             cursor: pointer;
             font-size: 0.95rem;
-            transition: background 0.3s ease;
+            transition: background 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
         }
 
-        .add-feature-btn:hover {
+        .add-feature-btn:hover,
+        .add-room-btn:hover,
+        .edit-mode-toggle:hover {
+            background: #229954;
+            transform: translateY(-1px);
+        }
+
+        .action-panel-wrapper {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .tools-toggle {
+            width: 36px;
+            height: 36px;
+            border-radius: 999px;
+            border: 1px solid #d1d9e0;
+            background: #ffffff;
+            color: #4b5563;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            transition: background 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+        }
+
+        .tools-toggle:hover {
+            background: #f8fafc;
+            transform: translateY(-1px);
+        }
+
+        .tools-toggle.active {
+            background: #27ae60;
+            color: white;
+            border-color: #219653;
+        }
+
+        .action-panel {
+            background: #ffffff;
+            border: 1px solid #e6f2e9;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(16, 24, 40, 0.08);
+            padding: 1rem;
+            flex: 1;
+        }
+
+        .action-panel.collapsed {
+            display: none;
+        }
+
+        .action-panel-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            align-items: center;
+        }
+
+        .edit-mode-toggle {
+            background: #f0f2f5;
+            color: #2f4858;
+            border: 1px solid #d1d9e0;
+            padding: 0.75rem 1.25rem;
+            transition: background 0.3s ease, transform 0.2s ease, border-color 0.3s ease;
+        }
+
+        .edit-mode-toggle.active {
+            background: #f6e8d1;
+            color: #8a5b22;
+            border-color: #f3d6a4;
+        }
+
+        .edit-mode-toggle:hover {
+            background: #e9f0ff;
+        }
+
+        .add-feature-btn:disabled,
+        .save-btn:disabled {
+            background: #95a5a6;
+            color: #ececec;
+            cursor: not-allowed;
+            box-shadow: none;
+            opacity: 0.6;
+            transform: none;
+        }
+
+        .stairs-section {
+            background: #f7faf7;
+            border: 1px solid #d8e8d8;
+            border-radius: 12px;
+            padding: 1rem;
+        }
+
+        .stairs-section-header {
+            margin-bottom: 0.75rem;
+            font-weight: 700;
+            color: #236a36;
+            letter-spacing: 0.01em;
+        }
+
+        .stairs-room-field {
+            background: white;
+            border: 1px solid #d9e5db;
+            border-radius: 10px;
+            padding: 0.85rem 1rem;
+            margin-bottom: 0.75rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05);
+        }
+
+        .remove-entry-btn {
+            background: #fff1f0;
+            color: #b02a37;
+            border: 1px solid #f5c2c2;
+            border-radius: 999px;
+            padding: 0.55rem 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.2s ease, transform 0.2s ease;
+        }
+
+        .remove-entry-btn:hover {
+            background: #ffe3e3;
+            transform: translateY(-1px);
+        }
+
+        .stairs-helper-text {
+            font-size: 0.95rem;
+            color: #334155;
+            background: #eff6ff;
+            border: 1px solid #dbeafe;
+            border-radius: 10px;
+            padding: 0.9rem 1rem;
+        }
+
+        .modal-buttons .save-btn,
+        #addStairsPairBtn {
+            border-radius: 4px;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            cursor: pointer;
+            background: #27ae60;
+            color: white;
+            transition: background 0.3s ease, transform 0.2s ease;
+        }
+
+        .modal-buttons .save-btn:hover,
+        #addStairsPairBtn:hover {
             background: #229954;
         }
 
@@ -639,6 +867,10 @@
 
         .modal-field {
             margin: 1rem 0;
+        }
+
+        .hidden {
+            display: none !important;
         }
 
         .modal-field.hidden {
@@ -760,12 +992,11 @@
 </head>
 <body>
     <header class="site-header">
-        <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
             <div>
                 <h1>🗺️ Dungeon Library</h1>
                 <p>Explore and manage D&D dungeons</p>
             </div>
-            <button id="darkModeToggle" class="dark-mode-toggle" onclick="toggleDarkMode()">🌙 Dark Mode</button>
         </div>
     </header>
 
@@ -798,6 +1029,20 @@
             <!-- Fixed Left Panel: Map and Map Details -->
             <div id="mapPanel" class="map-panel">
                 <div id="resizeHandle" class="resize-handle"></div>
+                <div class="map-controls">
+                    <div class="map-controls-row">
+                        <div class="field-group">
+                            <label for="floorSelector">Floor:</label>
+                            <select id="floorSelector" class="room-selector" style="display: none; min-width: 180px;" onchange="onFloorSelectionChange()"></select>
+                        </div>
+                        <div class="field-group">
+                            <label for="roomSelector">Room:</label>
+                            <select id="roomSelector" class="room-selector" onchange="displaySelectedRoom()">
+                                <option value="">Loading...</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
                 <div id="mapDisplay" class="map-display"></div>
                 <div id="mapDetailsDisplay" class="map-details-display"></div>
             </div>
@@ -805,21 +1050,54 @@
             <!-- Right Panel: Controls and Scrollable Room Details -->
             <div class="dungeon-viewer-right">
                 <div class="viewer-controls">
-                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;">
-                        <button class="back-btn" onclick="showListView()">← Back to List</button>
-                        <button class="add-room-btn" onclick="createRoom()">➕ Add Room</button>
-                        <button class="add-room-btn" onclick="createFloor()">🏗️ Add Floor</button>
-                        <button class="add-feature-btn" onclick="openAddFeatureModal()">➕ Add Feature</button>
-                        <button id="editModeBtn" class="edit-mode-toggle" onclick="toggleEditMode()" style="margin-bottom: 0;">✎ Edit Mode OFF</button>
+                    <div class="action-panel-wrapper">
+                        <button id="actionPanelToggle" class="tools-toggle" onclick="toggleActionPanel()" aria-expanded="false" title="Toggle tools panel">⚙️</button>
+                        <button id="showMapPanelBtn" class="toggle-map-btn hidden" onclick="expandMapPanel()" title="Show left map panel">🗺️ Show Map</button>
+                        <div class="action-panel collapsed" id="actionPanel">
+                            <div class="action-panel-row">
+                                <button class="back-btn" onclick="showListView()">← Back to List</button>
+                                <button id="expandMapBtn" class="toggle-map-btn hidden" onclick="toggleMapPanel()" title="Show map panel">🗺️ Show Map</button>
+                                <button class="add-room-btn add-feature-btn" onclick="createRoom()">➕ Add Room</button>
+                                <button class="add-room-btn add-feature-btn" onclick="createFloor()">🏗️ Add Floor</button>
+                                <button class="add-room-btn add-feature-btn" onclick="openStairsCreator()">➕ Add Stairs</button>
+                                <button class="add-feature-btn" onclick="openAddFeatureModal()">➕ Add Feature</button>
+                                <button id="darkModeToggle" class="dark-mode-toggle" onclick="toggleDarkMode()">🌙 Dark Mode</button>
+                                <button id="editModeBtn" class="edit-mode-toggle" onclick="toggleEditMode()">✎ Edit Mode OFF</button>
+                            </div>
+                        </div>
                     </div>
-                    <h3>Rooms</h3>
-                    <div style="display: flex; gap: 0.75rem; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap;">
-                        <label for="floorSelector" style="font-weight: 700; color: #334155; margin: 0;">Floor:</label>
-                        <select id="floorSelector" class="room-selector" style="display: none; min-width: 180px;" onchange="onFloorSelectionChange()"></select>
+                    <div id="roomTitleHeader" class="room-title-header">Select a room</div>
+                </div>
+
+                <div id="stairsCreatorPanel" class="modal">
+                    <div class="modal-content">
+                        <h3 style="margin-top: 0;">Create Stairs</h3>
+                        <div class="modal-field">
+                            <label>Title:</label>
+                            <input type="text" id="stairsTitle" placeholder="e.g. Stone Stairs" oninput="updateStairsButtonStates()">
+                        </div>
+                        <div class="modal-field">
+                            <label>Choose a floor:</label>
+                            <select id="stairsAddFloor" onchange="onStairsCreationFloorChange()">
+                                <option value="">Select a floor...</option>
+                            </select>
+                        </div>
+                        <div class="modal-field">
+                            <label>Choose a room on that floor:</label>
+                            <select id="stairsAddRoom" onchange="updateStairsButtonStates()">
+                                <option value="">Select a floor first</option>
+                            </select>
+                        </div>
+                        <button type="button" id="addStairsPairBtn" class="add-feature-btn" onclick="addStairsCreationPair()" disabled style="margin-bottom: 1rem;">➕ Add Floor/Room Pair</button>
+                        <div class="stairs-section" style="margin-bottom: 1rem;">
+                            <div class="stairs-section-header">Added Stair Connections</div>
+                            <div id="stairsCreationPairs"></div>
+                        </div>
+                        <div class="modal-buttons" style="justify-content: flex-end;">
+                            <button id="saveStairsBtn" class="save-btn" onclick="saveStairsCreation()" disabled>Save Stairs</button>
+                            <button class="cancel-btn" onclick="cancelStairsCreation()">Cancel</button>
+                        </div>
                     </div>
-                    <select id="roomSelector" class="room-selector" onchange="displaySelectedRoom()">
-                        <option value="">Loading...</option>
-                    </select>
                 </div>
 
                 <div class="dungeon-content" style="overflow-y: auto;">
@@ -841,7 +1119,6 @@
                         <option value="monster">Monster</option>
                         <option value="treasure">Treasure</option>
                         <option value="door">Door</option>
-                        <option value="stairs">Stairs</option>
                         <option value="npc">NPC</option>
                         <option value="trap">Trap</option>
                         <option value="trick">Trick</option>
@@ -879,14 +1156,6 @@
                 <div class="modal-field field-door hidden">
                     <label>Leads to Room Title:</label>
                     <select id="featureLeadsTo" onchange="onRoomTargetChange()"></select>
-                </div>
-                <div class="modal-field field-stairs hidden">
-                    <label>Stairs connect rooms:</label>
-                    <select id="stairsRooms" multiple size="5"></select>
-                </div>
-                <div class="modal-field field-stairs hidden">
-                    <label>Stairs connect floors:</label>
-                    <select id="stairsFloors" multiple size="5"></select>
                 </div>
                 <div class="modal-field field-access hidden">
                     <label>Mechanics (optional):</label>
@@ -954,6 +1223,12 @@
         let currentEntryIdx = null;
         let currentDoorId = null;
         let currentFloorIdx = 0;
+        let stairsCreationActive = false;
+        let stairsCreationPairs = [];
+        let stairsCreationTitle = '';
+        let stairsCreationSourceRoomId = null;
+        let stairsCreationSourceFloorId = null;
+        let floorModalAfterSaveCallback = null;
         let isEditingEntry = false;
         let editModeEnabled = false;
         let modalMonsters = [];
@@ -990,36 +1265,94 @@
             });
         }
 
-        resizeHandle.addEventListener('mousedown', () => {
+        const expandMapBtn = document.getElementById('expandMapBtn');
+        const showMapPanelBtn = document.getElementById('showMapPanelBtn');
+
+        function collapseMapPanel() {
+            layout.style.gridTemplateColumns = '0 1fr';
+            mapPanel.classList.add('collapsed');
+            mapPanel.style.width = '0';
+            mapPanel.style.minWidth = '0';
+            document.body.style.cursor = '';
+            if (expandMapBtn) expandMapBtn.classList.remove('hidden');
+            if (showMapPanelBtn) showMapPanelBtn.classList.remove('hidden');
+            localStorage.setItem('dungeonMapPanelCollapsed', 'true');
+        }
+
+        function expandMapPanel() {
+            mapPanel.classList.remove('collapsed');
+            mapPanel.style.width = '';
+            mapPanel.style.minWidth = '';
+            const savedWidth = parseInt(localStorage.getItem('dungeonMapPanelWidth'), 10) || 350;
+            const maxWidth = window.innerWidth * 0.7;
+            const width = Math.min(Math.max(savedWidth, 300), maxWidth);
+            layout.style.gridTemplateColumns = `${width}px 1fr`;
+            if (expandMapBtn) expandMapBtn.classList.add('hidden');
+            if (showMapPanelBtn) showMapPanelBtn.classList.add('hidden');
+            localStorage.setItem('dungeonMapPanelCollapsed', 'false');
+        }
+
+        function toggleMapPanel() {
+            if (mapPanel.classList.contains('collapsed')) {
+                expandMapPanel();
+            } else {
+                collapseMapPanel();
+            }
+        }
+
+        function startResize(e) {
             isResizing = true;
             document.body.style.userSelect = 'none';
             document.body.style.cursor = 'col-resize';
-        });
+            if (e.pointerId) {
+                resizeHandle.setPointerCapture(e.pointerId);
+            }
+            e.preventDefault();
+        }
 
-        document.addEventListener('mousemove', (e) => {
+        function updateResize(e) {
             if (!isResizing) return;
 
             const newWidth = e.clientX;
-            const minWidth = 250;
+            const collapseThreshold = 240;
+            const minWidth = 300;
             const maxWidth = window.innerWidth * 0.7;
 
-            if (newWidth > minWidth && newWidth < maxWidth) {
-                layout.style.gridTemplateColumns = `${newWidth}px 1fr`;
-                // Store preference
-                localStorage.setItem('dungeonMapPanelWidth', newWidth);
+            if (newWidth <= collapseThreshold) {
+                collapseMapPanel();
+                isResizing = false;
+                document.body.style.userSelect = '';
+                return;
             }
-        });
 
-        document.addEventListener('mouseup', () => {
+            const width = Math.min(Math.max(newWidth, minWidth), maxWidth);
+            layout.style.gridTemplateColumns = `${width}px 1fr`;
+            localStorage.setItem('dungeonMapPanelWidth', width);
+        }
+
+        function stopResize() {
             isResizing = false;
             document.body.style.userSelect = '';
             document.body.style.cursor = '';
-        });
+        }
 
-        // Load saved width preference
+        resizeHandle.addEventListener('pointerdown', startResize);
+        resizeHandle.addEventListener('touchstart', startResize, { passive: false });
+        document.addEventListener('pointermove', updateResize);
+        document.addEventListener('touchmove', updateResize, { passive: false });
+        document.addEventListener('pointerup', stopResize);
+        document.addEventListener('touchend', stopResize);
+        document.addEventListener('pointercancel', stopResize);
+
+        // Load saved width preference and collapsed state
         const savedWidth = localStorage.getItem('dungeonMapPanelWidth');
-        if (savedWidth) {
-            layout.style.gridTemplateColumns = `${savedWidth}px 1fr`;
+        const savedCollapsed = localStorage.getItem('dungeonMapPanelCollapsed') === 'true';
+        if (savedCollapsed) {
+            collapseMapPanel();
+        } else if (savedWidth) {
+            const width = Math.min(Math.max(parseInt(savedWidth, 10), 300), window.innerWidth * 0.7);
+            layout.style.gridTemplateColumns = `${width}px 1fr`;
+            if (showMapPanelBtn) showMapPanelBtn.classList.add('hidden');
         }
 
         function initPage() {
@@ -1234,9 +1567,19 @@
                 return `<option value="${idx}">${escapeHtml(roomLabel)}</option>`;
             }).join('');
 
-            const selectedValue = selector.value || roomIndices[0];
+            let selectedValue = null;
+            const currentRoomIndex = currentRoomIdx != null ? Number(currentRoomIdx) : NaN;
+            if (!Number.isNaN(currentRoomIndex) && roomIndices.includes(currentRoomIndex)) {
+                selectedValue = currentRoomIndex;
+            } else if (selector.value && roomIndices.includes(parseInt(selector.value, 10))) {
+                selectedValue = selector.value;
+            } else {
+                selectedValue = roomIndices[0];
+            }
+
             selector.value = selectedValue;
-            displayRoom(parseInt(selectedValue, 10));
+            currentRoomIdx = parseInt(selectedValue, 10);
+            displayRoom(currentRoomIdx);
         }
 
         function onFloorSelectionChange() {
@@ -1248,6 +1591,9 @@
         function displaySelectedRoom() {
             const selector = document.getElementById('roomSelector');
             const roomIdx = parseInt(selector.value);
+            if (!Number.isNaN(roomIdx)) {
+                currentRoomIdx = roomIdx;
+            }
             displayRoom(roomIdx);
         }
 
@@ -1804,6 +2150,7 @@
             const room = rooms[roomIdx];
 
             if (!room) return;
+            currentRoomIdx = roomIdx;
 
             let mapContainerHtml = '';
             let mapDetailsHtml = '';
@@ -1843,9 +2190,7 @@
                     if (info.floor) mapDetailsHtml += `<div class="info-row"><div class="info-label">Floor:</div><div class="info-value">${escapeHtml(info.floor)}</div></div>`;
                     const floors = data.floors || [];
                     if (floors.length) {
-                        const selectedFloor = floors[currentFloorIdx] || floors[0];
                         mapDetailsHtml += `<div class="info-row"><div class="info-label">Floors:</div><div class="info-value">${floors.length}</div></div>`;
-                        mapDetailsHtml += `<div class="info-row"><div class="info-label">Current Floor:</div><div class="info-value">${escapeHtml(selectedFloor.title || `Floor ${selectedFloor.floor_id || currentFloorIdx + 1}`)}</div></div>`;
                     }
                     if (info.temperature) mapDetailsHtml += `<div class="info-row"><div class="info-label">Temperature:</div><div class="info-value">${escapeHtml(info.temperature)}</div></div>`;
                     if (info.illumination) mapDetailsHtml += `<div class="info-row"><div class="info-label">Illumination:</div><div class="info-value">${escapeHtml(info.illumination)}</div></div>`;
@@ -1872,7 +2217,6 @@
             const displayRoomId = room.room_id !== undefined && room.room_id !== null ? room.room_id : roomIdx;
             const roomLabel = room.title ? `${room.title} (Room ${displayRoomId})` : `Room ${displayRoomId}`;
             roomDetailsHtml += `<div class="room-content">`;
-            roomDetailsHtml += `<div class="room-title">${escapeHtml(roomLabel)}</div>`;
 
             const roomEntries = Array.isArray(room.entries) ? room.entries : [];
             const relevantDoorEntries = (data.doors || []).filter(door => {
@@ -1883,9 +2227,17 @@
                 return Number(door.leads_to) === Number(displayRoomId);
             });
 
+            const adjacentFloorIds = getAdjacentFloorIdsForRoom(displayRoomId);
             const relevantStairEntries = (data.stairs || []).filter(stair => {
-                if (!stair || stair.entry_type !== 'stairs') return false;
-                return Array.isArray(stair.leads_to_rooms) && stair.leads_to_rooms.some(id => Number(id) === Number(displayRoomId));
+                if (!stair || stair.stair_id == null) return false;
+                if (!Array.isArray(stair.leads_to_rooms) || !stair.leads_to_rooms.some(id => Number(id) === Number(displayRoomId))) {
+                    return false;
+                }
+
+                // Only show stair connections to rooms on adjacent floors.
+                const targetRoomIds = stair.leads_to_rooms
+                    .filter(id => Number(id) !== Number(displayRoomId));
+                return targetRoomIds.some(id => isRoomOnAdjacentFloor(id, adjacentFloorIds));
             });
 
             const roomDoorIds = roomEntries
@@ -2028,7 +2380,8 @@
                             // Standard entry display for non-treasure entries
                             roomDetailsHtml += `<div class="entry ${entry.entry_type}" data-entry-idx="${realEntryIdx}">`;
                             const entryTitle = entry.entry_type === 'door' ? getDoorDisplayName(entry) : entry.title;
-                            roomDetailsHtml += `<div class="entry-title">${escapeHtml(entryTitle)}`;
+                            const entryTooltip = entry.entry_type === 'stairs' ? getStairFloorTooltip(entry, displayRoomId) : '';
+                            roomDetailsHtml += `<div class="entry-title"${entryTooltip ? ` title="${escapeHtml(entryTooltip)}"` : ''}>${escapeHtml(entryTitle)}`;
                             
                             if (entry.count) {
                                 roomDetailsHtml += ` <span style="color: #999;">(${entry.count}x)</span>`;
@@ -2085,6 +2438,10 @@
             document.getElementById('mapDisplay').innerHTML = mapContainerHtml;
             document.getElementById('mapDetailsDisplay').innerHTML = mapDetailsHtml;
             document.getElementById('roomDetailsDisplay').innerHTML = roomDetailsHtml;
+            const roomTitleHeader = document.getElementById('roomTitleHeader');
+            if (roomTitleHeader) {
+                roomTitleHeader.textContent = roomLabel;
+            }
             
             // Update edit mode button state
             const editModeBtn = document.getElementById('editModeBtn');
@@ -2247,7 +2604,7 @@
             const stairs = data?.stairs || [];
             let maxId = 0;
             stairs.forEach(stair => {
-                if (stair.entry_type === 'stairs' && stair.stair_id != null) {
+                if (stair.stair_id != null) {
                     const numeric = parseInt(stair.stair_id, 10);
                     if (!Number.isNaN(numeric)) {
                         maxId = Math.max(maxId, numeric);
@@ -2288,6 +2645,37 @@
             return title ? `${title} (Door ${doorId})` : `Door ${doorId}`;
         }
 
+        function getRoomDirectionArrow(currentRoomId, targetRoomId) {
+            if (currentRoomId == null || targetRoomId == null) return '';
+            const currentFloorId = findFloorIdForRoom(currentRoomId);
+            const targetFloorId = findFloorIdForRoom(targetRoomId);
+            if (currentFloorId == null || targetFloorId == null || currentFloorId === targetFloorId) return '';
+            const currentFloor = getFloorById(currentFloorId);
+            if (!currentFloor) return '';
+
+            const visited = new Set();
+            let next = currentFloor;
+            while (next && next.floor_above != null && !visited.has(Number(next.floor_id))) {
+                if (Number(next.floor_above) === Number(targetFloorId)) {
+                    return '↑';
+                }
+                visited.add(Number(next.floor_id));
+                next = getFloorById(next.floor_above);
+            }
+
+            const visitedDown = new Set();
+            next = currentFloor;
+            while (next && next.floor_below != null && !visitedDown.has(Number(next.floor_id))) {
+                if (Number(next.floor_below) === Number(targetFloorId)) {
+                    return '↓';
+                }
+                visitedDown.add(Number(next.floor_id));
+                next = getFloorById(next.floor_below);
+            }
+
+            return '';
+        }
+
         function formatTargetLinks(targets, currentRoomId) {
             if (!targets) return '';
             const ids = Array.isArray(targets) ? targets : [targets];
@@ -2297,13 +2685,45 @@
                     if (Number.isNaN(numericId) || numericId === Number(currentRoomId)) return null;
                     const room = getRoomById(numericId);
                     const label = room ? getRoomDisplayName(room) : `Room ${numericId}`;
-                    return `<a href="#" onclick="goToRoom('${escapeJsString(String(numericId))}'); return false;" class="room-link">${escapeHtml(label)}</a>`;
+                    const arrow = getRoomDirectionArrow(currentRoomId, numericId);
+                    const displayLabel = arrow ? `${arrow} ${label}` : label;
+                    return `<a href="#" onclick="goToRoom('${escapeJsString(String(numericId))}'); return false;" class="room-link">${escapeHtml(displayLabel)}</a>`;
                 })
                 .filter(Boolean);
             return targetLabels.join(', ');
         }
 
-        function formatFloorLabels(floorIds) {
+        function getFloorDirectionArrow(currentRoomId, targetFloorId) {
+            if (currentRoomId == null || targetFloorId == null) return '';
+            const currentFloorId = findFloorIdForRoom(currentRoomId);
+            if (currentFloorId == null) return '';
+            const currentFloor = getFloorById(currentFloorId);
+            if (!currentFloor) return '';
+
+            const visited = new Set();
+            let next = currentFloor;
+            while (next && next.floor_above != null && !visited.has(Number(next.floor_id))) {
+                if (Number(next.floor_above) === Number(targetFloorId)) {
+                    return '↑';
+                }
+                visited.add(Number(next.floor_id));
+                next = getFloorById(next.floor_above);
+            }
+
+            const visitedDown = new Set();
+            next = currentFloor;
+            while (next && next.floor_below != null && !visitedDown.has(Number(next.floor_id))) {
+                if (Number(next.floor_below) === Number(targetFloorId)) {
+                    return '↓';
+                }
+                visitedDown.add(Number(next.floor_id));
+                next = getFloorById(next.floor_below);
+            }
+
+            return '';
+        }
+
+        function formatFloorLabels(floorIds, currentRoomId) {
             if (!floorIds) return '';
             const ids = Array.isArray(floorIds) ? floorIds : [floorIds];
             const labels = ids
@@ -2311,10 +2731,47 @@
                     const numericId = parseInt(id, 10);
                     if (Number.isNaN(numericId)) return null;
                     const floor = getFloorById(numericId);
-                    return floor ? escapeHtml(floor.title || `Floor ${floor.floor_id}`) : `Floor ${numericId}`;
+                    if (!floor) return `Floor ${numericId}`;
+                    const title = escapeHtml(floor.title || `Floor ${floor.floor_id}`);
+                    const arrow = getFloorDirectionArrow(currentRoomId, numericId);
+                    return arrow ? `${arrow} ${title}` : title;
                 })
                 .filter(Boolean);
             return labels.join(', ');
+        }
+
+        function getFilteredStairTargets(entry, currentRoomId) {
+            if (!entry || (!entry.leads_to_rooms && !entry.leads_to_floors)) {
+                return { leads_to_rooms: [], leads_to_floors: [] };
+            }
+
+            const adjacentFloorIds = getAdjacentFloorIdsForRoom(currentRoomId);
+            if (!adjacentFloorIds.length) {
+                return { leads_to_rooms: [], leads_to_floors: [] };
+            }
+
+            const filteredRoomIds = Array.isArray(entry.leads_to_rooms)
+                ? entry.leads_to_rooms.filter(id => isRoomOnAdjacentFloor(id, adjacentFloorIds))
+                : [];
+
+            const filteredFloorIds = Array.isArray(entry.leads_to_floors)
+                ? entry.leads_to_floors
+                    .map(id => Number(id))
+                    .filter(id => adjacentFloorIds.some(adj => Number(adj) === id))
+                : [];
+
+            return {
+                leads_to_rooms: filteredRoomIds,
+                leads_to_floors: filteredFloorIds
+            };
+        }
+
+        function getStairFloorTooltip(entry, currentRoomId) {
+            if (!entry || entry.stair_id == null) return '';
+            const filtered = getFilteredStairTargets(entry, currentRoomId);
+            if (!filtered.leads_to_floors || !filtered.leads_to_floors.length) return '';
+            const floorLabels = formatFloorLabels(filtered.leads_to_floors, currentRoomId);
+            return floorLabels ? `Floors: ${floorLabels}` : '';
         }
 
         function formatEntryLeadsToDisplay(entry, currentRoomId) {
@@ -2324,13 +2781,21 @@
                 const roomLinks = formatTargetLinks(entry.leads_to, currentRoomId);
                 if (roomLinks) parts.push(roomLinks);
             }
-            if (entry.leads_to_rooms && entry.leads_to_rooms.length) {
-                const roomLinks = formatTargetLinks(entry.leads_to_rooms, currentRoomId);
-                if (roomLinks) parts.push(roomLinks);
-            }
-            if (entry.leads_to_floors && entry.leads_to_floors.length) {
-                const floorLabels = formatFloorLabels(entry.leads_to_floors);
-                if (floorLabels) parts.push(`Floors: ${floorLabels}`);
+            if (entry.stair_id != null) {
+                const filtered = getFilteredStairTargets(entry, currentRoomId);
+                if (filtered.leads_to_rooms && filtered.leads_to_rooms.length) {
+                    const roomLinks = formatTargetLinks(filtered.leads_to_rooms, currentRoomId);
+                    if (roomLinks) parts.push(roomLinks);
+                }
+            } else {
+                if (entry.leads_to_rooms && entry.leads_to_rooms.length) {
+                    const roomLinks = formatTargetLinks(entry.leads_to_rooms, currentRoomId);
+                    if (roomLinks) parts.push(roomLinks);
+                }
+                if (entry.leads_to_floors && entry.leads_to_floors.length) {
+                    const floorLabels = formatFloorLabels(entry.leads_to_floors, currentRoomId);
+                    if (floorLabels) parts.push(`Floors: ${floorLabels}`);
+                }
             }
             return parts.join(' | ');
         }
@@ -2355,6 +2820,36 @@
                 .filter((room, idx) => idx !== currentRoomIdx && room.title.length > 0);
         }
 
+        function findFloorIdForRoom(roomId) {
+            const data = currentDungeon?.parsed_json;
+            const floors = data?.floors || [];
+            const normalizedRoomId = String(roomId).trim();
+            return floors.find(floor => Array.isArray(floor.room_ids) && floor.room_ids.some(id => String(id).trim() === normalizedRoomId))?.floor_id || null;
+        }
+
+        function getAdjacentFloorIdsForRoom(roomId) {
+            const data = currentDungeon?.parsed_json;
+            const floorId = findFloorIdForRoom(roomId);
+            if (floorId == null) return [];
+            const floor = getFloorById(floorId);
+            if (!floor) return [];
+            const adjacent = [];
+            if (floor.floor_above != null) {
+                adjacent.push(Number(floor.floor_above));
+            }
+            if (floor.floor_below != null) {
+                adjacent.push(Number(floor.floor_below));
+            }
+            return adjacent.filter(id => !Number.isNaN(id));
+        }
+
+        function isRoomOnAdjacentFloor(roomId, adjacentFloorIds) {
+            if (!Array.isArray(adjacentFloorIds) || adjacentFloorIds.length === 0) return false;
+            const roomFloorId = findFloorIdForRoom(roomId);
+            if (roomFloorId == null) return false;
+            return adjacentFloorIds.some(adj => Number(adj) === Number(roomFloorId));
+        }
+
         function loadRoomTargets(currentRoomIdx = null, selectedValue = '') {
             const select = document.getElementById('featureLeadsTo');
             select.innerHTML = '';
@@ -2375,40 +2870,248 @@
             }
         }
 
-        function loadFloorOptions(selectedValues = []) {
+        function openStairsCreator() {
+            if (!currentDungeon) {
+                alert('Open a dungeon before creating stairs.');
+                return;
+            }
+            const selectedRoomValue = document.getElementById('roomSelector')?.value;
+            if (currentRoomIdx === null || currentRoomIdx === undefined || Number.isNaN(currentRoomIdx)) {
+                const parsed = selectedRoomValue !== undefined ? parseInt(selectedRoomValue, 10) : NaN;
+                if (!Number.isNaN(parsed)) {
+                    currentRoomIdx = parsed;
+                } else {
+                    const selector = document.getElementById('roomSelector');
+                    if (selector && selector.options.length) {
+                        const firstValue = selector.options[0].value;
+                        const fallback = firstValue !== undefined ? parseInt(firstValue, 10) : NaN;
+                        if (!Number.isNaN(fallback)) {
+                            currentRoomIdx = fallback;
+                        } else {
+                            currentRoomIdx = 0;
+                        }
+                    } else {
+                        currentRoomIdx = 0;
+                    }
+                }
+            }
+
+            const data = currentDungeon.parsed_json;
+            console.log('openStairsCreator currentFloorIdx', currentFloorIdx, 'currentRoomIdx', currentRoomIdx, 'floors', data?.floors);
+            const room = data.rooms?.[currentRoomIdx];
+            if (!room) {
+                alert('Select a room before adding stairs.');
+                return;
+            }
+
+            stairsCreationPairs = [];
+            stairsCreationTitle = '';
+            stairsCreationSourceRoomId = room.room_id != null ? room.room_id : currentRoomIdx;
+            const currentFloor = data.floors?.[currentFloorIdx];
+            const floorFromCurrentIndex = currentFloor ? Number(currentFloor.floor_id) : null;
+            const roomFloorId = findFloorIdForRoom(stairsCreationSourceRoomId);
+            stairsCreationSourceFloorId = roomFloorId != null ? roomFloorId : floorFromCurrentIndex;
+            if (stairsCreationSourceFloorId != null) {
+                stairsCreationPairs.push({ floor_id: stairsCreationSourceFloorId, room_id: stairsCreationSourceRoomId, source: true });
+            } else {
+                alert('The selected room is not assigned to a floor. Add it to a floor first.');
+                return;
+            }
+
+            document.getElementById('stairsTitle').value = '';
+            const stairsModal = document.getElementById('stairsCreatorPanel');
+            if (stairsModal) {
+                stairsModal.classList.add('active');
+            }
+            renderStairsCreationPanel();
+        }
+
+        function cancelStairsCreation() {
+            const panel = document.getElementById('stairsCreatorPanel');
+            if (panel) {
+                panel.classList.remove('active');
+            }
+            stairsCreationPairs = [];
+            stairsCreationTitle = '';
+            stairsCreationSourceRoomId = null;
+            stairsCreationSourceFloorId = null;
+        }
+
+        function renderStairsCreationPanel() {
+            const floorSelect = document.getElementById('stairsAddFloor');
+            const roomSelect = document.getElementById('stairsAddRoom');
+            const pairsContainer = document.getElementById('stairsCreationPairs');
+            if (!floorSelect || !roomSelect || !pairsContainer) return;
+
             const data = currentDungeon?.parsed_json;
             const floors = data?.floors || [];
-            const selectRooms = document.getElementById('stairsRooms');
-            const selectFloors = document.getElementById('stairsFloors');
-            if (!selectRooms || !selectFloors) return;
+            const availableFloors = floors.filter(floor => !stairsCreationPairs.some(pair => Number(pair.floor_id) === Number(floor.floor_id)));
+            console.log('renderStairsCreationPanel', { floors, availableFloors, stairsCreationPairs });
 
-            const selectedStrings = Array.isArray(selectedValues) ? selectedValues.map(String) : [];
-            selectRooms.innerHTML = '';
-            selectFloors.innerHTML = '';
-
-            const roomTargets = getRoomTargets(currentRoomIdx);
-            roomTargets.forEach(room => {
-                const option = document.createElement('option');
-                option.value = room.room_id;
-                option.text = room.displayName;
-                option.selected = selectedStrings.includes(String(room.room_id));
-                selectRooms.appendChild(option);
-            });
-
-            const floorOptions = ['<option value="">None</option>'];
-            floors.forEach(floor => {
-                const label = `${escapeHtml(floor.title || `Floor ${floor.floor_id}`)} (ID ${floor.floor_id})`;
-                floorOptions.push(`<option value="${floor.floor_id}">${label}</option>`);
-            });
-            selectFloors.innerHTML = floorOptions.join('');
-
-            if (selectedStrings.length > 0) {
-                Array.from(selectFloors.options).forEach(option => {
-                    if (selectedStrings.includes(option.value)) {
-                        option.selected = true;
-                    }
-                });
+            if (!floors.length) {
+                floorSelect.innerHTML = '<option value="">No floors exist yet</option>';
+                floorSelect.disabled = true;
+                roomSelect.innerHTML = '<option value="">No floors exist yet</option>';
+                roomSelect.disabled = true;
+            } else if (!availableFloors.length) {
+                const noMoreFloorsText = floors.length === 1
+                    ? 'You need at least two floors to create stairs. Add another floor first.'
+                    : 'All existing floors are already part of this stairs connection.';
+                floorSelect.innerHTML = `<option value="">${escapeHtml(noMoreFloorsText)}</option>`;
+                floorSelect.disabled = true;
+                roomSelect.innerHTML = `<option value="">${escapeHtml(noMoreFloorsText)}</option>`;
+                roomSelect.disabled = true;
+            } else {
+                floorSelect.disabled = false;
+                floorSelect.innerHTML = '<option value="">Select a floor...</option>' + availableFloors.map(floor => {
+                    const label = `${floor.title || `Floor ${floor.floor_id}`} (ID ${floor.floor_id})`;
+                    return `<option value="${escapeHtml(String(floor.floor_id))}">${escapeHtml(label)}</option>`;
+                }).join('');
+                roomSelect.disabled = true;
+                roomSelect.innerHTML = '<option value="">Select a floor first</option>';
             }
+
+            renderStairsCreationPairs();
+            updateStairsButtonStates();
+        }
+
+        function updateStairsButtonStates() {
+            const floorSelect = document.getElementById('stairsAddFloor');
+            const roomSelect = document.getElementById('stairsAddRoom');
+            const titleInput = document.getElementById('stairsTitle');
+            const addPairBtn = document.getElementById('addStairsPairBtn');
+            const saveBtn = document.getElementById('saveStairsBtn');
+            const canAddPair = floorSelect && roomSelect && floorSelect.value && roomSelect.value && roomSelect.value !== '';
+            if (addPairBtn) {
+                addPairBtn.disabled = !canAddPair;
+            }
+            const hasTitle = titleInput && titleInput.value.trim().length > 0;
+            const canSave = hasTitle && stairsCreationPairs.length > 0;
+            if (saveBtn) {
+                saveBtn.disabled = !canSave;
+            }
+        }
+
+        function onStairsCreationFloorChange() {
+            const floorSelect = document.getElementById('stairsAddFloor');
+            const roomSelect = document.getElementById('stairsAddRoom');
+            if (!floorSelect || !roomSelect) return;
+
+            const floorId = parseInt(floorSelect.value, 10);
+            if (Number.isNaN(floorId)) {
+                roomSelect.disabled = true;
+                roomSelect.innerHTML = '<option value="">Select a floor first</option>';
+                updateStairsButtonStates();
+                return;
+            }
+
+            const data = currentDungeon?.parsed_json;
+            const floor = (data?.floors || []).find(f => Number(f.floor_id) === floorId);
+            const roomIds = Array.isArray(floor?.room_ids) ? floor.room_ids : [];
+            const availableRooms = roomIds.map(roomId => getRoomById(roomId)).filter(Boolean);
+
+            if (!availableRooms.length) {
+                roomSelect.disabled = true;
+                roomSelect.innerHTML = '<option value="">No rooms on this floor</option>';
+                updateStairsButtonStates();
+                return;
+            }
+
+            roomSelect.disabled = false;
+            roomSelect.innerHTML = '<option value="">Select a room...</option>' + availableRooms.map(room => {
+                const label = `${room.title || `Room ${room.room_id}`} (ID ${room.room_id})`;
+                return `<option value="${escapeHtml(String(room.room_id))}">${escapeHtml(label)}</option>`;
+            }).join('');
+        }
+
+        function addStairsCreationPair() {
+            const floorSelect = document.getElementById('stairsAddFloor');
+            const roomSelect = document.getElementById('stairsAddRoom');
+            if (!floorSelect || !roomSelect) return;
+
+            const floorId = parseInt(floorSelect.value, 10);
+            const roomId = parseInt(roomSelect.value, 10);
+            if (Number.isNaN(floorId)) {
+                alert('Please select a floor.');
+                return;
+            }
+            if (Number.isNaN(roomId)) {
+                alert('Please select a room.');
+                return;
+            }
+            if (stairsCreationPairs.some(pair => Number(pair.floor_id) === floorId)) {
+                alert('That floor has already been added.');
+                return;
+            }
+
+            stairsCreationPairs.push({ floor_id: floorId, room_id: roomId });
+            renderStairsCreationPanel();
+        }
+
+        function renderStairsCreationPairs() {
+            const pairsContainer = document.getElementById('stairsCreationPairs');
+            if (!pairsContainer) return;
+
+            if (!stairsCreationPairs.length) {
+                pairsContainer.innerHTML = '<div class="stairs-helper-text">The current room and floor are auto-added. Pick another floor and room to expand the stairs.</div>';
+                return;
+            }
+
+            const data = currentDungeon?.parsed_json;
+            const floors = data?.floors || [];
+            pairsContainer.innerHTML = '';
+
+            stairsCreationPairs.forEach((pair, index) => {
+                const floor = floors.find(f => Number(f.floor_id) === Number(pair.floor_id));
+                const room = getRoomById(pair.room_id);
+                const floorLabel = floor ? floor.title || `Floor ${floor.floor_id}` : `Floor ${pair.floor_id}`;
+                const roomLabel = room ? room.title || `Room ${pair.room_id}` : `Room ${pair.room_id}`;
+
+                const row = document.createElement('div');
+                row.className = 'stairs-room-field';
+                row.style.display = 'flex';
+                row.style.justifyContent = 'space-between';
+                row.style.alignItems = 'center';
+                row.style.marginBottom = '0.5rem';
+                row.innerHTML = `
+                    <div><strong>${escapeHtml(floorLabel)}</strong>: ${escapeHtml(roomLabel)}</div>
+                    <button type="button" class="remove-entry-btn" onclick="removeStairsCreationPair(${index})">Remove</button>
+                `;
+                pairsContainer.appendChild(row);
+            });
+        }
+
+        function removeStairsCreationPair(index) {
+            if (index < 0 || index >= stairsCreationPairs.length) return;
+            stairsCreationPairs.splice(index, 1);
+            renderStairsCreationPanel();
+        }
+
+        function saveStairsCreation() {
+            const title = document.getElementById('stairsTitle').value.trim();
+            if (!title) {
+                alert('Please enter a title for the stairs.');
+                return;
+            }
+            if (!stairsCreationPairs.length) {
+                alert('Please add at least one floor/room pair.');
+                return;
+            }
+
+            const data = currentDungeon.parsed_json;
+            data.stairs = data.stairs || [];
+            const roomIds = Array.from(new Set(stairsCreationPairs.map(pair => Number(pair.room_id))));
+            const floorIds = Array.from(new Set(stairsCreationPairs.map(pair => Number(pair.floor_id))));
+            data.stairs.push({
+                stair_id: getNextStairId(),
+                title: title,
+                leads_to_rooms: roomIds,
+                leads_to_floors: floorIds
+            });
+
+            saveDungeonChanges();
+            displayDungeonViewer();
+            cancelStairsCreation();
         }
 
         function getSelectedValues(selectId) {
@@ -2619,7 +3322,7 @@
             openCreateFloorModal();
         }
 
-        function openCreateFloorModal() {
+        function openCreateFloorModal(callback) {
             if (!currentDungeon) {
                 alert('Open a dungeon before creating a floor.');
                 return;
@@ -2628,6 +3331,7 @@
             const data = currentDungeon.parsed_json;
             data.floors = data.floors || [];
 
+            floorModalAfterSaveCallback = callback || null;
             document.getElementById('floorModalTitle').textContent = 'Add New Floor';
             document.getElementById('floorTitle').value = `Floor ${data.floors.length + 1}`;
             loadFloorModalOptions();
@@ -2697,6 +3401,11 @@
             closeCreateFloorModal();
             displayDungeonViewer();
             document.getElementById('floorSelector').value = currentFloorIdx;
+            if (floorModalAfterSaveCallback) {
+                const callback = floorModalAfterSaveCallback;
+                floorModalAfterSaveCallback = null;
+                callback();
+            }
         }
 
         function connectFloorNeighbors(newFloor) {
@@ -2730,6 +3439,7 @@
             if (modal) {
                 modal.classList.remove('active');
             }
+            floorModalAfterSaveCallback = null;
         }
 
         function escapeHtml(text) {
@@ -2790,6 +3500,14 @@
             return String(parsed || '');
         }
 
+        function toggleActionPanel() {
+            const panel = document.getElementById('actionPanel');
+            const toggle = document.getElementById('actionPanelToggle');
+            if (!panel || !toggle) return;
+            const collapsed = panel.classList.toggle('collapsed');
+            toggle.classList.toggle('active', !collapsed);
+            toggle.setAttribute('aria-expanded', String(!collapsed));
+        }
 
         // Add Feature Modal Functions
         function toggleDarkMode() {
@@ -2889,21 +3607,6 @@
                 if (npcInput) npcInput.value = entry.npc_id || '';
                 if (npcSearch) npcSearch.value = entry.npc_name || entry.title || '';
                 renderModalNpcResults(entry.npc_name || entry.title || '');
-            } else if (entry.entry_type === 'stairs') {
-                const stairsRooms = document.getElementById('stairsRooms');
-                const stairsFloors = document.getElementById('stairsFloors');
-                loadRoomTargets(roomIdx, '');
-                loadFloorOptions([]);
-                if (stairsRooms && Array.isArray(entry.leads_to_rooms)) {
-                    Array.from(stairsRooms.options).forEach(option => {
-                        option.selected = entry.leads_to_rooms.includes(parseInt(option.value, 10));
-                    });
-                }
-                if (stairsFloors && Array.isArray(entry.leads_to_floors)) {
-                    Array.from(stairsFloors.options).forEach(option => {
-                        option.selected = entry.leads_to_floors.includes(parseInt(option.value, 10));
-                    });
-                }
             }
 
             // Set trap single-select
@@ -3286,16 +3989,6 @@
                 });
                 const selectedRoomIdx = currentRoomIdx !== null ? currentRoomIdx : null;
                 loadRoomTargets(selectedRoomIdx, document.getElementById('featureLeadsTo').value);
-            } else if (featureType === 'stairs') {
-                document.querySelectorAll('.modal-field.field-stairs').forEach(field => {
-                    field.classList.remove('hidden');
-                });
-                document.querySelectorAll('.modal-field.field-access').forEach(field => {
-                    field.classList.remove('hidden');
-                });
-                const selectedRoomIdx = currentRoomIdx !== null ? currentRoomIdx : null;
-                loadRoomTargets(selectedRoomIdx, '');
-                loadFloorOptions([]);
             } else if (featureType === 'treasure') {
                 document.querySelectorAll('.modal-field.field-treasure').forEach(field => {
                     field.classList.remove('hidden');
@@ -3350,15 +4043,8 @@
                 : null;
             const doorMechanics = document.getElementById('doorMechanics').value.trim();
             
-            const stairsRooms = getSelectedValues('stairsRooms');
-            const stairsFloors = getSelectedValues('stairsFloors');
-            
             if (type === 'door' && !leadsTo) {
                 alert('Please select or create a target room for the door.');
-                return;
-            }
-            if (type === 'stairs' && !stairsRooms.length && !stairsFloors.length) {
-                alert('Please select at least one room or one floor for the stairs.');
                 return;
             }
 
@@ -3458,21 +4144,6 @@
                     container: container || null,
                     container_mechanics: mechanics || null,
                     treasure_contents: treasureContents
-                });
-            } else if (type === 'stairs') {
-                data.stairs = data.stairs || [];
-                const roomIds = Array.from(new Set([sourceRoomId, ...stairsRooms.map(val => Number(val))]));
-                data.stairs.push({
-                    entry_type: 'stairs',
-                    stair_id: getNextStairId(),
-                    title: title || 'Stairs',
-                    content: content,
-                    leads_to_rooms: roomIds,
-                    leads_to_floors: stairsFloors.length ? stairsFloors.map(val => Number(val)) : [],
-                    door_mechanics: doorMechanics || null,
-                    trap_ids: doorTrapIds,
-                    is_hidden: false,
-                    hidden_dc: null
                 });
             } else {
                 if (type === 'door') {
@@ -3597,18 +4268,6 @@
                 if (targetRoomIdx !== -1) {
                     ensureReciprocalDoor(currentRoomIdx, targetRoomIdx, sourceRoomId, room.title || '', doorMechanics, entry.trap_ids || []);
                 }
-            } else if (entryType === 'stairs') {
-                const selectedRooms = getSelectedValues('stairsRooms').map(val => Number(val));
-                const selectedFloors = getSelectedValues('stairsFloors').map(val => Number(val));
-                if (!selectedRooms.length && !selectedFloors.length) {
-                    alert('Please select at least one room or one floor for the stairs.');
-                    return;
-                }
-                const sourceRoomId = getRoomIdFromIndex(currentRoomIdx);
-                entry.leads_to_rooms = Array.from(new Set([sourceRoomId, ...selectedRooms]));
-                entry.leads_to_floors = selectedFloors;
-                entry.door_mechanics = doorMechanics || null;
-                entry.trap_ids = doorTrapIds;
             } else if (entryType === 'npc') {
                 const npcInput = document.getElementById('featureNpc');
                 const npcSearch = document.getElementById('featureNpcSearch');
@@ -3701,11 +4360,15 @@
         document.addEventListener('click', (e) => {
             const featureModal = document.getElementById('featureModal');
             const floorModal = document.getElementById('floorModal');
+            const stairsModal = document.getElementById('stairsCreatorPanel');
             if (e.target === featureModal) {
                 closeAddFeatureModal();
             }
             if (e.target === floorModal) {
                 closeCreateFloorModal();
+            }
+            if (e.target === stairsModal) {
+                cancelStairsCreation();
             }
         });
 
