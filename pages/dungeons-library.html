@@ -194,6 +194,12 @@
             max-width: 320px;
         }
 
+        .floor-plan-note {
+            font-size: 0.9rem;
+            color: #555;
+            margin-top: 0.35rem;
+        }
+
         .toggle-map-btn {
             background: #f0f2f5;
             color: #2f4858;
@@ -1042,6 +1048,13 @@
                             </select>
                         </div>
                     </div>
+                    <div class="map-controls-row">
+                        <div class="field-group">
+                            <label for="floorPlanUpload">Floor Plan:</label>
+                            <input id="floorPlanUpload" type="file" accept="image/*" onchange="uploadFloorPlanImage(event)">
+                            <div id="floorPlanNote" class="floor-plan-note">Upload an image to use as the map for the selected floor.</div>
+                        </div>
+                    </div>
                 </div>
                 <div id="mapDisplay" class="map-display"></div>
                 <div id="mapDetailsDisplay" class="map-details-display"></div>
@@ -1061,6 +1074,7 @@
                                 <button class="add-room-btn add-feature-btn" onclick="createFloor()">🏗️ Add Floor</button>
                                 <button class="add-room-btn add-feature-btn" onclick="openStairsCreator()">➕ Add Stairs</button>
                                 <button class="add-feature-btn" onclick="openAddFeatureModal()">➕ Add Feature</button>
+                                <button class="add-feature-btn" onclick="openEditDungeonInfoModal()">✏️ Edit Dungeon Info</button>
                                 <button id="darkModeToggle" class="dark-mode-toggle" onclick="toggleDarkMode()">🌙 Dark Mode</button>
                                 <button id="editModeBtn" class="edit-mode-toggle" onclick="toggleEditMode()">✎ Edit Mode OFF</button>
                             </div>
@@ -1211,6 +1225,40 @@
                 <div class="modal-buttons">
                     <button class="cancel-btn" onclick="closeCreateFloorModal()">Cancel</button>
                     <button class="save-btn" onclick="saveFloorModal()">Save Floor</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="dungeonInfoModal" class="modal">
+            <div class="modal-content">
+                <h3>Edit Dungeon Info</h3>
+                <div class="modal-field">
+                    <label for="dungeonInfoTitle">Title:</label>
+                    <input type="text" id="dungeonInfoTitle" placeholder="Dungeon title">
+                </div>
+                <div class="modal-field">
+                    <label for="dungeonInfoSize">Size:</label>
+                    <input type="text" id="dungeonInfoSize" placeholder="e.g. 40x60 ft">
+                </div>
+                <div class="modal-field">
+                    <label for="dungeonInfoWalls">Walls:</label>
+                    <input type="text" id="dungeonInfoWalls" placeholder="e.g. Stone, wooden">
+                </div>
+                <div class="modal-field">
+                    <label for="dungeonInfoFloor">Floor:</label>
+                    <input type="text" id="dungeonInfoFloor" placeholder="e.g. Basement level">
+                </div>
+                <div class="modal-field">
+                    <label for="dungeonInfoTemperature">Temperature:</label>
+                    <input type="text" id="dungeonInfoTemperature" placeholder="e.g. Cold, warm">
+                </div>
+                <div class="modal-field">
+                    <label for="dungeonInfoIllumination">Illumination:</label>
+                    <input type="text" id="dungeonInfoIllumination" placeholder="e.g. Dim, bright">
+                </div>
+                <div class="modal-buttons">
+                    <button class="cancel-btn" onclick="closeEditDungeonInfoModal()">Cancel</button>
+                    <button class="save-btn" onclick="saveDungeonInfoModal()">Save Info</button>
                 </div>
             </div>
         </div>
@@ -1586,6 +1634,41 @@
             const selector = document.getElementById('floorSelector');
             currentFloorIdx = parseInt(selector.value, 10) || 0;
             populateRoomSelector();
+            updateFloorPlanNote();
+        }
+
+        function uploadFloorPlanImage(event) {
+            const file = event.target.files?.[0];
+            if (!file || !currentDungeon) return;
+
+            const floors = currentDungeon.parsed_json.floors || [];
+            const selectedFloor = floors[currentFloorIdx];
+            if (!selectedFloor) {
+                alert('Select a floor before uploading a floor plan.');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (loadEvent) => {
+                selectedFloor.map_image = loadEvent.target.result;
+                saveDungeonChanges();
+                displayRoom(currentRoomIdx != null ? currentRoomIdx : 0);
+                updateFloorPlanNote();
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function updateFloorPlanNote() {
+            const note = document.getElementById('floorPlanNote');
+            const data = currentDungeon?.parsed_json;
+            if (!note || !data) return;
+
+            const selectedFloor = (data.floors || [])[currentFloorIdx];
+            if (selectedFloor?.map_image) {
+                note.textContent = 'Floor plan assigned to this floor and will be used when selected.';
+            } else {
+                note.textContent = 'Upload an image to use as the map for the selected floor.';
+            }
         }
 
         function displaySelectedRoom() {
@@ -1595,6 +1678,37 @@
                 currentRoomIdx = roomIdx;
             }
             displayRoom(roomIdx);
+        }
+
+        function openEditDungeonInfoModal() {
+            if (!currentDungeon) return;
+            const info = currentDungeon.parsed_json.general_info || {};
+            document.getElementById('dungeonInfoTitle').value = info.title || '';
+            document.getElementById('dungeonInfoSize').value = info.size || '';
+            document.getElementById('dungeonInfoWalls').value = info.walls || '';
+            document.getElementById('dungeonInfoFloor').value = info.floor || '';
+            document.getElementById('dungeonInfoTemperature').value = info.temperature || '';
+            document.getElementById('dungeonInfoIllumination').value = info.illumination || '';
+            document.getElementById('dungeonInfoModal').classList.add('active');
+        }
+
+        function closeEditDungeonInfoModal() {
+            document.getElementById('dungeonInfoModal').classList.remove('active');
+        }
+
+        function saveDungeonInfoModal() {
+            if (!currentDungeon) return;
+            const info = currentDungeon.parsed_json.general_info || {};
+            info.title = document.getElementById('dungeonInfoTitle').value.trim() || null;
+            info.size = document.getElementById('dungeonInfoSize').value.trim() || null;
+            info.walls = document.getElementById('dungeonInfoWalls').value.trim() || null;
+            info.floor = document.getElementById('dungeonInfoFloor').value.trim() || null;
+            info.temperature = document.getElementById('dungeonInfoTemperature').value.trim() || null;
+            info.illumination = document.getElementById('dungeonInfoIllumination').value.trim() || null;
+            currentDungeon.parsed_json.general_info = info;
+            saveDungeonChanges();
+            displayRoom(currentRoomIdx != null ? currentRoomIdx : 0);
+            closeEditDungeonInfoModal();
         }
 
         function goToRoom(roomTarget) {
@@ -1616,7 +1730,23 @@
             }
 
             if (roomIdx >= 0 && roomIdx < rooms.length) {
-                document.getElementById('roomSelector').value = roomIdx;
+                const targetRoom = rooms[roomIdx];
+                const targetRoomId = targetRoom.room_id != null ? targetRoom.room_id : roomIdx;
+                const targetFloorId = findFloorIdForRoom(targetRoomId);
+                if (targetFloorId != null) {
+                    const targetFloorIdx = findFloorIndexById(targetFloorId);
+                    if (targetFloorIdx !== -1 && targetFloorIdx !== currentFloorIdx) {
+                        currentFloorIdx = targetFloorIdx;
+                    }
+                }
+
+                currentRoomIdx = roomIdx;
+                renderFloorSelector();
+                populateRoomSelector();
+                const roomSelector = document.getElementById('roomSelector');
+                if (roomSelector) {
+                    roomSelector.value = roomIdx;
+                }
                 displayRoom(roomIdx);
             } else {
                 console.warn(`Room "${roomTarget}" not found`);
@@ -2157,9 +2287,12 @@
             let roomDetailsHtml = '';
 
             // Section 1: Map Container
-            if (data.map_image) {
+            const selectedFloor = (data.floors || [])[currentFloorIdx];
+            const floorMap = selectedFloor?.map_image;
+            const mapSource = floorMap || data.map_image;
+            if (mapSource) {
                 mapContainerHtml += '<div class="map-container">';
-                mapContainerHtml += `<img src="${data.map_image}" alt="Dungeon Map">`;
+                mapContainerHtml += `<img src="${mapSource}" alt="Dungeon Map">`;
                 mapContainerHtml += '</div>';
             }
 
@@ -2442,6 +2575,7 @@
             if (roomTitleHeader) {
                 roomTitleHeader.textContent = roomLabel;
             }
+            updateFloorPlanNote();
             
             // Update edit mode button state
             const editModeBtn = document.getElementById('editModeBtn');
@@ -3182,6 +3316,14 @@
                 const actualId = room.room_id != null ? room.room_id : idx;
                 return actualId === numericId;
             });
+        }
+
+        function findFloorIndexById(floorId) {
+            const data = currentDungeon?.parsed_json;
+            const floors = data?.floors || [];
+            const numericId = parseInt(floorId, 10);
+            if (Number.isNaN(numericId)) return -1;
+            return floors.findIndex(floor => Number(floor.floor_id) === numericId);
         }
 
         function findRoomIndexByTitle(title) {
@@ -4369,6 +4511,10 @@
             }
             if (e.target === stairsModal) {
                 cancelStairsCreation();
+            }
+            const dungeonInfoModal = document.getElementById('dungeonInfoModal');
+            if (e.target === dungeonInfoModal) {
+                closeEditDungeonInfoModal();
             }
         });
 
