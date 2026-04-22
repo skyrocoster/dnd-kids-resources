@@ -1,5 +1,6 @@
 document.addEventListener('DOMContentLoaded', async function() {
-  const API_DATA_PATH = '/data/seeds/seed_npcs.json';
+  const API_DATA_PATH = '/api/npcs';
+  const FALLBACK_DATA_PATH = '/data/seeds/seed_npcs.json';
   const searchInput = document.getElementById('search-input');
   const npcListEl = document.getElementById('npc-list');
   const npcCountEl = document.getElementById('npc-count');
@@ -30,7 +31,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   };
 
   function getNpcKey(npc) {
-    return npc.npc_id != null ? `npc-${npc.npc_id}` : `temp-${npc.temp_id}`;
+    return npc.id != null ? `npc-${npc.id}` : `temp-${npc.temp_id}`;
   }
 
   function labelFor(key) {
@@ -239,6 +240,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         </div>
       </div>
       <div class="button-row" style="margin-top: 18px; gap: 12px;">
+        <button id="save-npc-btn" class="reset-button">Save NPC</button>
         <button id="delete-npc-btn" class="reset-button">Delete NPC</button>
       </div>
       <div class="message-banner"></div>
@@ -357,6 +359,10 @@ document.addEventListener('DOMContentLoaded', async function() {
     document.getElementById('npc-notes').addEventListener('input', syncForm);
     document.getElementById('add-sense-btn').addEventListener('click', () => addSense(npc));
 
+    document.getElementById('save-npc-btn').addEventListener('click', () => {
+      saveNpc(getNpcKey(npc));
+    });
+
     document.getElementById('delete-npc-btn').addEventListener('click', () => {
       deleteNpc(getNpcKey(npc));
     });
@@ -470,6 +476,67 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (subtitle) subtitle.textContent = formatListSubtitle(npc) || 'Fill the form to create a character.';
   }
 
+  function buildNpcPayload(npc) {
+    return {
+      name: npc.name || null,
+      race: npc.race || null,
+      gender: npc.gender || null,
+      background: npc.background || null,
+      size: npc.size || null,
+      stats: npc.stats || {},
+      armor_class: npc.armor_class != null ? npc.armor_class : null,
+      hit_points: npc.hit_points != null ? npc.hit_points : null,
+      speed: npc.speed || null,
+      saving_throws: npc.saving_throws || {},
+      skills: npc.skills || {},
+      senses: npc.senses || [],
+      languages: npc.languages || null,
+      appearance: npc.appearance || {},
+      notes: npc.notes || null
+    };
+  }
+
+  async function saveNpc(key) {
+    const npc = findNpcByKey(key);
+    if (!npc) return;
+    if (!npc.name) {
+      showMessage('NPC must have a name before saving.');
+      return;
+    }
+
+    const payload = buildNpcPayload(npc);
+    const method = npc.id != null ? 'PUT' : 'POST';
+    const endpoint = npc.id != null ? `${API_DATA_PATH}/${npc.id}` : API_DATA_PATH;
+
+    try {
+      const response = await fetch(endpoint, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        const errorBody = await response.json().catch(() => null);
+        const message = errorBody?.error || `Unable to save NPC (${response.status}).`;
+        showMessage(message);
+        return;
+      }
+
+      const savedNpc = await response.json();
+      if (npc.id == null) {
+        delete npc.temp_id;
+      }
+      Object.assign(npc, savedNpc);
+      selectedNpcId = getNpcKey(npc);
+      renderNpcList();
+      buildDetailShell(npc);
+      showMessage('NPC saved.');
+    } catch (error) {
+      console.error(error);
+      showMessage('Unable to save NPC.');
+    }
+  }
+
   function selectNpc(key) {
     selectedNpcId = key;
     renderNpcList();
@@ -481,14 +548,29 @@ document.addEventListener('DOMContentLoaded', async function() {
     buildDetailShell(npc);
   }
 
-  function deleteNpc(key) {
+  async function deleteNpc(key) {
     const index = npcs.findIndex(npc => getNpcKey(npc) === key);
     if (index === -1) return;
+    const npc = npcs[index];
+    if (npc.id != null) {
+      try {
+        const response = await fetch(`${API_DATA_PATH}/${npc.id}`, { method: 'DELETE' });
+        if (!response.ok) {
+          const error = await response.json().catch(() => null);
+          showMessage(error?.error || 'Unable to delete NPC.');
+          return;
+        }
+      } catch (err) {
+        console.error(err);
+        showMessage('Unable to delete NPC.');
+        return;
+      }
+    }
     npcs.splice(index, 1);
     selectedNpcId = null;
     renderNpcList();
     npcDetailShell.innerHTML = '<div class="placeholder">Select or add an NPC to edit its fields.</div>';
-    showMessage('NPC deleted from this session.');
+    showMessage('NPC deleted.');
   }
 
   function addNewNpc() {
@@ -542,11 +624,14 @@ document.addEventListener('DOMContentLoaded', async function() {
 
   async function loadNpcs() {
     try {
-      const response = await fetch(API_DATA_PATH);
+      let response = await fetch(API_DATA_PATH);
+      if (!response.ok) {
+        response = await fetch(FALLBACK_DATA_PATH);
+      }
       if (!response.ok) throw new Error(`Failed to load NPC data: ${response.status}`);
       npcs = await response.json();
       npcs.forEach(npc => {
-        if (npc.npc_id == null) {
+        if (npc.id == null) {
           npc.temp_id = nextTempId++;
         }
       });

@@ -805,13 +805,18 @@
             <!-- Right Panel: Controls and Scrollable Room Details -->
             <div class="dungeon-viewer-right">
                 <div class="viewer-controls">
-                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;">
                         <button class="back-btn" onclick="showListView()">← Back to List</button>
                         <button class="add-room-btn" onclick="createRoom()">➕ Add Room</button>
+                        <button class="add-room-btn" onclick="createFloor()">🏗️ Add Floor</button>
                         <button class="add-feature-btn" onclick="openAddFeatureModal()">➕ Add Feature</button>
                         <button id="editModeBtn" class="edit-mode-toggle" onclick="toggleEditMode()" style="margin-bottom: 0;">✎ Edit Mode OFF</button>
                     </div>
                     <h3>Rooms</h3>
+                    <div style="display: flex; gap: 0.75rem; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap;">
+                        <label for="floorSelector" style="font-weight: 700; color: #334155; margin: 0;">Floor:</label>
+                        <select id="floorSelector" class="room-selector" style="display: none; min-width: 180px;" onchange="onFloorSelectionChange()"></select>
+                    </div>
                     <select id="roomSelector" class="room-selector" onchange="displaySelectedRoom()">
                         <option value="">Loading...</option>
                     </select>
@@ -836,6 +841,8 @@
                         <option value="monster">Monster</option>
                         <option value="treasure">Treasure</option>
                         <option value="door">Door</option>
+                        <option value="stairs">Stairs</option>
+                        <option value="npc">NPC</option>
                         <option value="trap">Trap</option>
                         <option value="trick">Trick</option>
                         <option value="other">Other</option>
@@ -853,6 +860,14 @@
                     </div>
                     <input type="hidden" id="featureMonster">
                 </div>
+                <div class="modal-field field-npc-selector hidden">
+                    <label>NPC:</label>
+                    <div class="monster-search-shell">
+                        <input type="search" id="featureNpcSearch" placeholder="Type an NPC name..." autocomplete="off">
+                        <div id="featureNpcResults" class="monster-search-results"></div>
+                    </div>
+                    <input type="hidden" id="featureNpc">
+                </div>
                 <div class="modal-field">
                     <label>Description:</label>
                     <textarea id="featureContent" placeholder="Describe this feature..."></textarea>
@@ -865,11 +880,19 @@
                     <label>Leads to Room Title:</label>
                     <select id="featureLeadsTo" onchange="onRoomTargetChange()"></select>
                 </div>
-                <div class="modal-field field-door hidden">
-                    <label>Door Mechanics (unlock DC, break DC, HP, etc.):</label>
+                <div class="modal-field field-stairs hidden">
+                    <label>Stairs connect rooms:</label>
+                    <select id="stairsRooms" multiple size="5"></select>
+                </div>
+                <div class="modal-field field-stairs hidden">
+                    <label>Stairs connect floors:</label>
+                    <select id="stairsFloors" multiple size="5"></select>
+                </div>
+                <div class="modal-field field-access hidden">
+                    <label>Mechanics (optional):</label>
                     <input type="text" id="doorMechanics" placeholder="e.g., DC 20 to open, DC 25 to break; 60 hp">
                 </div>
-                <div class="modal-field field-door hidden">
+                <div class="modal-field field-access hidden">
                     <label>Associated Trap:</label>
                     <select id="doorTrapIds">
                         <option value="">Select a trap...</option>
@@ -900,6 +923,28 @@
                 </div>
             </div>
         </div>
+
+        <div id="floorModal" class="modal">
+            <div class="modal-content">
+                <h3 id="floorModalTitle">Add New Floor</h3>
+                <div class="modal-field">
+                    <label for="floorTitle">Floor Name:</label>
+                    <input type="text" id="floorTitle" placeholder="e.g., Ground Floor">
+                </div>
+                <div class="modal-field">
+                    <label for="floorAbove">Floor Above:</label>
+                    <select id="floorAbove"></select>
+                </div>
+                <div class="modal-field">
+                    <label for="floorBelow">Floor Below:</label>
+                    <select id="floorBelow"></select>
+                </div>
+                <div class="modal-buttons">
+                    <button class="cancel-btn" onclick="closeCreateFloorModal()">Cancel</button>
+                    <button class="save-btn" onclick="saveFloorModal()">Save Floor</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -908,10 +953,14 @@
         let currentRoomIdx = null;
         let currentEntryIdx = null;
         let currentDoorId = null;
+        let currentFloorIdx = 0;
         let isEditingEntry = false;
         let editModeEnabled = false;
         let modalMonsters = [];
         let selectedModalMonsterId = null;
+        let modalNpcs = [];
+        let selectedModalNpcId = null;
+        let cachedNpcs = null;
 
         // Initialize page based on URL hash
         let isResizing = false;
@@ -921,6 +970,7 @@
         const layout = document.getElementById('viewerView');
         const mapPanel = document.getElementById('mapPanel');
         const monsterSearchInput = document.getElementById('featureMonsterSearch');
+        const npcSearchInput = document.getElementById('featureNpcSearch');
 
         if (monsterSearchInput) {
             monsterSearchInput.addEventListener('input', (event) => {
@@ -928,6 +978,15 @@
                 const monsterInput = document.getElementById('featureMonster');
                 if (monsterInput) monsterInput.value = '';
                 renderModalMonsterResults(event.target.value);
+            });
+        }
+
+        if (npcSearchInput) {
+            npcSearchInput.addEventListener('input', (event) => {
+                selectedModalNpcId = null;
+                const npcInput = document.getElementById('featureNpc');
+                if (npcInput) npcInput.value = '';
+                renderModalNpcResults(event.target.value);
             });
         }
 
@@ -1081,25 +1140,17 @@
 
             const data = currentDungeon.parsed_json;
             const rooms = data.rooms || [];
-
-            // Populate room selector
-            const selector = document.getElementById('roomSelector');
-            if (rooms.length === 0) {
-                selector.innerHTML = '<option value="">No rooms yet</option>';
-                document.getElementById('roomDetailsDisplay').innerHTML = '<div class="empty-state">This dungeon is blank. Create a room to start building.</div>';
-                document.getElementById('mapDisplay').innerHTML = '';
-                document.getElementById('mapDetailsDisplay').innerHTML = '';
-                return;
+            if (currentFloorIdx == null || currentFloorIdx < 0) {
+                currentFloorIdx = 0;
             }
 
-            selector.innerHTML = rooms.map((room, idx) => {
-                const roomId = room.room_id !== undefined && room.room_id !== null ? room.room_id : idx;
-                const roomLabel = room.title ? `${room.title} (Room ${roomId})` : `Room ${roomId}`;
-                return `<option value="${idx}">${escapeHtml(roomLabel)}</option>`;
-            }).join('');
+            // Render floor selector if floors exist
+            renderFloorSelector();
+            populateRoomSelector();
 
             // Add keyboard navigation to room selector
-            selector.addEventListener('keydown', function(e) {
+            const selector = document.getElementById('roomSelector');
+            selector.onkeydown = function(e) {
                 // Only handle letter keys
                 if (e.key.length === 1 && /[a-zA-Z]/.test(e.key)) {
                     e.preventDefault();
@@ -1123,12 +1174,75 @@
                         }
                     }
                 }
-            });
+            };
 
-            // Display first room
-            if (rooms.length > 0) {
-                displayRoom(0);
+        }
+
+        function getRoomIndicesForSelectedFloor() {
+            const data = currentDungeon?.parsed_json;
+            const rooms = data?.rooms || [];
+            const floors = data?.floors || [];
+            if (!floors.length) {
+                return rooms.map((_, idx) => idx);
             }
+
+            const selectedFloor = floors[currentFloorIdx] || floors[0];
+            const roomIds = Array.isArray(selectedFloor.room_ids) ? selectedFloor.room_ids : [];
+            return roomIds
+                .map(roomId => findRoomIndexById(roomId))
+                .filter(idx => idx !== -1);
+        }
+
+        function renderFloorSelector() {
+            const data = currentDungeon?.parsed_json;
+            const floors = data?.floors || [];
+            const floorSelector = document.getElementById('floorSelector');
+            if (!floorSelector) return;
+
+            if (!floors.length) {
+                floorSelector.style.display = 'none';
+                return;
+            }
+
+            currentFloorIdx = Math.min(currentFloorIdx, floors.length - 1);
+            floorSelector.style.display = 'inline-block';
+            floorSelector.innerHTML = floors.map((floor, idx) => {
+                const label = floor.title || `Floor ${floor.floor_id || idx + 1}`;
+                return `<option value="${idx}">${escapeHtml(label)}</option>`;
+            }).join('');
+            floorSelector.value = currentFloorIdx;
+        }
+
+        function populateRoomSelector() {
+            const selector = document.getElementById('roomSelector');
+            const data = currentDungeon?.parsed_json;
+            const rooms = data?.rooms || [];
+            const roomIndices = getRoomIndicesForSelectedFloor();
+
+            if (roomIndices.length === 0) {
+                selector.innerHTML = '<option value="">No rooms on this floor</option>';
+                document.getElementById('roomDetailsDisplay').innerHTML = '<div class="empty-state">No rooms exist for this floor.</div>';
+                document.getElementById('mapDisplay').innerHTML = '';
+                document.getElementById('mapDetailsDisplay').innerHTML = '';
+                return;
+            }
+
+            selector.innerHTML = roomIndices.map(idx => {
+                const room = rooms[idx];
+                const roomId = room.room_id !== undefined && room.room_id !== null ? room.room_id : idx;
+                const roomLabel = room.title ? `${room.title} (Room ${roomId})` : `Room ${roomId}`;
+                return `<option value="${idx}">${escapeHtml(roomLabel)}</option>`;
+            }).join('');
+
+            const selectedValue = selector.value || roomIndices[0];
+            selector.value = selectedValue;
+            displayRoom(parseInt(selectedValue, 10));
+        }
+
+        function onFloorSelectionChange() {
+            const selector = document.getElementById('floorSelector');
+            currentFloorIdx = parseInt(selector.value, 10) || 0;
+            populateRoomSelector();
         }
 
         function displaySelectedRoom() {
@@ -1174,6 +1288,38 @@
                 console.warn(`Could not fetch monster details for ${title}:`, e);
             }
             return null;
+        }
+
+        async function getNpcDetails(name) {
+            if (!name) return null;
+            const normalized = String(name).trim().toLowerCase();
+
+            async function loadCachedNpcs() {
+                if (cachedNpcs) return cachedNpcs;
+                try {
+                    const response = await fetch('/api/npcs');
+                    if (!response.ok) return [];
+                    cachedNpcs = await response.json();
+                } catch (e) {
+                    console.warn(`Could not load NPC list for hover lookup:`, e);
+                    cachedNpcs = [];
+                }
+                return cachedNpcs;
+            }
+
+            const npcs = await loadCachedNpcs();
+            if (!Array.isArray(npcs) || npcs.length === 0) {
+                return null;
+            }
+
+            let npc = npcs.find(item => String(item.name || '').trim().toLowerCase() === normalized);
+            if (!npc) {
+                npc = npcs.find(item => String(item.name || '').trim().toLowerCase().includes(normalized));
+            }
+            if (!npc) {
+                npc = npcs.find(item => normalized.includes(String(item.name || '').trim().toLowerCase()));
+            }
+            return npc || null;
         }
 
         // Create and show monster card popup on hover
@@ -1374,6 +1520,114 @@
             });
         }
 
+        function showNpcCardPopup(npc, triggerElement) {
+            const existing = document.getElementById('npc-card-popup');
+            if (existing) {
+                existing.remove();
+            }
+
+            const popup = document.createElement('div');
+            popup.id = 'npc-card-popup';
+            popup.style.cssText = `
+                position: fixed;
+                z-index: 10000;
+                background: white;
+                border-radius: 8px;
+                box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+                width: auto;
+                min-width: 280px;
+                max-width: min(90vw, 420px);
+                max-height: 500px;
+                overflow-y: auto;
+                padding: 12px;
+                font-family: 'Nunito', sans-serif;
+                pointer-events: auto;
+                font-size: 13px;
+            `;
+
+            let cardHtml = `
+                <div style="margin-bottom: 8px; padding-bottom: 8px; border-bottom: 2px solid #4a90e2;">
+                    <div style="font-size: 16px; margin-bottom: 4px;">
+                        <span style="font-size: 18px; margin-right: 4px;">👤</span>
+                        <span style="font-weight: bold; color: #333;">${escapeHtml(npc.name)}</span>
+                    </div>
+                </div>
+            `;
+
+            const meta = [];
+            if (npc.race) meta.push(escapeHtml(npc.race));
+            if (npc.background) meta.push(escapeHtml(npc.background));
+            if (npc.size) meta.push(escapeHtml(npc.size));
+            if (npc.speed) meta.push(`Speed: ${escapeHtml(npc.speed)}`);
+            if (npc.armor_class != null) meta.push(`AC: ${escapeHtml(String(npc.armor_class))}`);
+            if (npc.hit_points != null) meta.push(`HP: ${escapeHtml(String(npc.hit_points))}`);
+            if (npc.languages) meta.push(`Lang: ${escapeHtml(npc.languages)}`);
+            if (meta.length) {
+                cardHtml += `
+                    <div style="color: #666; margin-bottom: 8px; font-size: 12px; line-height: 1.4;">
+                        ${meta.join(' · ')}
+                    </div>
+                `;
+            }
+
+            if (npc.explanation) {
+                cardHtml += `
+                    <div style="font-style: italic; color: #666; margin-bottom: 8px; font-size: 12px; line-height: 1.4;">
+                        ${escapeHtml(npc.explanation)}
+                    </div>
+                `;
+            }
+
+            const details = [];
+            if (npc.stats && typeof npc.stats === 'object' && Object.keys(npc.stats).length) {
+                const scores = Object.entries(npc.stats).map(([key, value]) => `${escapeHtml(key.charAt(0).toUpperCase() + key.slice(1))}: ${escapeHtml(String(value))}`);
+                details.push(`<div style="margin-bottom: 6px; font-size: 12px; color: #333;">${scores.join(' · ')}</div>`);
+            }
+            if (npc.saving_throws && typeof npc.saving_throws === 'object' && Object.keys(npc.saving_throws).length) {
+                const saves = Object.entries(npc.saving_throws).map(([key, value]) => `${escapeHtml(labelFor(key))}: ${escapeHtml(String(value))}`);
+                details.push(`<div style="margin-bottom: 6px; font-size: 12px; color: #333;"><strong>Saves:</strong> ${saves.join(', ')}</div>`);
+            }
+            if (npc.skills && typeof npc.skills === 'object' && Object.keys(npc.skills).length) {
+                const skills = Object.entries(npc.skills).map(([key, value]) => `${escapeHtml(labelFor(key))}: ${escapeHtml(String(value))}`);
+                details.push(`<div style="margin-bottom: 6px; font-size: 12px; color: #333;"><strong>Skills:</strong> ${skills.join(', ')}</div>`);
+            }
+            if (npc.appearance && typeof npc.appearance === 'object' && Object.keys(npc.appearance).length) {
+                const appearance = Object.entries(npc.appearance).map(([key, value]) => `${escapeHtml(labelFor(key))}: ${escapeHtml(String(value))}`);
+                details.push(`<div style="margin-bottom: 6px; font-size: 12px; color: #333;"><strong>Appearance:</strong> ${appearance.join(', ')}</div>`);
+            }
+            if (npc.notes) {
+                details.push(`<div style="margin-top: 6px; font-size: 12px; color: #333; line-height: 1.4;"><strong>Notes:</strong> ${escapeHtml(npc.notes)}</div>`);
+            }
+            if (details.length) {
+                cardHtml += details.join('');
+            }
+
+            popup.innerHTML = cardHtml;
+            document.body.appendChild(popup);
+
+            const rect = triggerElement.getBoundingClientRect();
+            let leftPos = rect.left;
+            let topPos = rect.bottom + 8;
+            if (leftPos + popup.offsetWidth > window.innerWidth) {
+                leftPos = window.innerWidth - popup.offsetWidth - 10;
+            }
+            if (topPos + popup.offsetHeight > window.innerHeight) {
+                topPos = rect.top - popup.offsetHeight - 8;
+            }
+            popup.style.left = Math.max(10, leftPos) + 'px';
+            popup.style.top = Math.max(10, topPos) + 'px';
+
+            document.addEventListener('click', function removePopup(e) {
+                if (e.target !== triggerElement && !popup.contains(e.target)) {
+                    const pop = document.getElementById('npc-card-popup');
+                    if (pop) {
+                        pop.remove();
+                        document.removeEventListener('click', removePopup);
+                    }
+                }
+            });
+        }
+
         // Format a single roll object for popup display (matching monster card style)
         function formatRollForPopup(rollObj) {
             if (!rollObj || typeof rollObj !== 'object') return '';
@@ -1462,6 +1716,49 @@
             }
         }
 
+        async function enrichNpcDisplay() {
+            const npcEntries = document.querySelectorAll('.entry.npc');
+            for (const npcEl of npcEntries) {
+                const titleEl = npcEl.querySelector('.entry-title');
+                if (!titleEl) continue;
+                const npcName = titleEl.textContent.replace(/^👤\s*/, '').trim();
+                if (!npcName) continue;
+
+                const npc = await getNpcDetails(npcName);
+                const hoverTarget = titleEl || npcEl;
+                hoverTarget.style.cursor = 'pointer';
+                titleEl.style.textDecoration = 'underline dotted';
+                titleEl.style.textDecorationColor = 'rgba(74, 144, 226, 0.5)';
+
+                hoverTarget.addEventListener('mouseenter', function() {
+                    if (npc) {
+                        showNpcCardPopup(npc, this);
+                    } else {
+                        showNpcCardPopup({
+                            name: npcName,
+                            race: null,
+                            background: null,
+                            size: null,
+                            speed: null,
+                            armor_class: null,
+                            hit_points: null,
+                            languages: null,
+                            stats: {},
+                            saving_throws: {},
+                            skills: {},
+                            appearance: {},
+                            notes: null,
+                            explanation: 'NPC details not found in the database.'
+                        }, this);
+                    }
+                });
+                hoverTarget.addEventListener('click', function() {
+                    const searchUrl = `npc-editor.html`;
+                    window.open(searchUrl, '_blank');
+                });
+            }
+        }
+
         async function enrichTrapDisplay() {
             // Build a map of trap IDs to names for caching
             const trapCache = {};
@@ -1544,6 +1841,12 @@
                     if (info.size) mapDetailsHtml += `<div class="info-row"><div class="info-label">Size:</div><div class="info-value">${escapeHtml(formatDisplayValue(info.size))}</div></div>`;
                     if (info.walls) mapDetailsHtml += `<div class="info-row"><div class="info-label">Walls:</div><div class="info-value">${escapeHtml(info.walls)}</div></div>`;
                     if (info.floor) mapDetailsHtml += `<div class="info-row"><div class="info-label">Floor:</div><div class="info-value">${escapeHtml(info.floor)}</div></div>`;
+                    const floors = data.floors || [];
+                    if (floors.length) {
+                        const selectedFloor = floors[currentFloorIdx] || floors[0];
+                        mapDetailsHtml += `<div class="info-row"><div class="info-label">Floors:</div><div class="info-value">${floors.length}</div></div>`;
+                        mapDetailsHtml += `<div class="info-row"><div class="info-label">Current Floor:</div><div class="info-value">${escapeHtml(selectedFloor.title || `Floor ${selectedFloor.floor_id || currentFloorIdx + 1}`)}</div></div>`;
+                    }
                     if (info.temperature) mapDetailsHtml += `<div class="info-row"><div class="info-label">Temperature:</div><div class="info-value">${escapeHtml(info.temperature)}</div></div>`;
                     if (info.illumination) mapDetailsHtml += `<div class="info-row"><div class="info-label">Illumination:</div><div class="info-value">${escapeHtml(info.illumination)}</div></div>`;
                     mapDetailsHtml += '</div>';
@@ -1580,6 +1883,11 @@
                 return Number(door.leads_to) === Number(displayRoomId);
             });
 
+            const relevantStairEntries = (data.stairs || []).filter(stair => {
+                if (!stair || stair.entry_type !== 'stairs') return false;
+                return Array.isArray(stair.leads_to_rooms) && stair.leads_to_rooms.some(id => Number(id) === Number(displayRoomId));
+            });
+
             const roomDoorIds = roomEntries
                 .filter(entry => entry.entry_type === 'door' && entry.door_id != null)
                 .map(entry => String(entry.door_id));
@@ -1590,7 +1898,9 @@
             // Group entries by type
             const grouped = {
                 door: [],
+                stairs: [],
                 monster: [],
+                npc: [],
                 feature: [],
                 trap: [],
                 treasure: [],
@@ -1607,16 +1917,36 @@
                 }
             });
 
-            // Add top-level doors for this room
+            // Add NPCs from the room-level NPC list
+            const roomNpcs = Array.isArray(room.npcs) ? room.npcs.filter(name => name && String(name).trim()) : [];
+            const existingNpcNames = new Set(roomEntries
+                .filter(entry => entry.entry_type === 'npc' && entry.npc_name)
+                .map(entry => String(entry.npc_name))
+            );
+            roomNpcs.forEach(npcName => {
+                const normalizedName = String(npcName);
+                if (!existingNpcNames.has(normalizedName)) {
+                    grouped.npc.push({
+                        entry_type: 'npc',
+                        npc_name: normalizedName,
+                        title: normalizedName
+                    });
+                }
+            });
+
+            // Add top-level doors/stairs for this room
             grouped.door.push(...uniqueRelevantDoors);
+            grouped.stairs.push(...relevantStairEntries);
 
             // Display grouped entries
             const typeLabels = {
                 door: '🚪 Doors',
+                stairs: '🪜 Stairs',
                 monster: '👹 Monsters',
                 feature: '✨ Features',
                 trap: '⚠️ Traps',
                 treasure: '💎 Treasure',
+                npc: '🧑‍🤝‍🧑 NPCs',
                 trick: '🎭 Tricks',
                 other: '❓ Other'
             };
@@ -1687,6 +2017,13 @@
                             roomDetailsHtml += `<button class="entry-delete-btn" onclick="deleteEntry(${roomIdx}, ${realEntryIdx})">🗑️ Delete</button>`;
                             roomDetailsHtml += `</div>`;
                             roomDetailsHtml += `</div>`;
+                        } else if (entry.entry_type === 'npc') {
+                            roomDetailsHtml += `<div class="entry npc" data-npc-name="${escapeHtml(entry.npc_name || entry.title || '')}">`;
+                            roomDetailsHtml += `<div class="entry-title">👤 ${escapeHtml(entry.npc_name || entry.title || 'NPC')}</div>`;
+                            roomDetailsHtml += `<div class="entry-actions">`;
+                            roomDetailsHtml += `<button class="entry-delete-btn" onclick="deleteNpcFromRoom(${roomIdx}, ${JSON.stringify(entry.npc_name || entry.title || '')})">🗑️ Remove</button>`;
+                            roomDetailsHtml += `</div>`;
+                            roomDetailsHtml += `</div>`;
                         } else {
                             // Standard entry display for non-treasure entries
                             roomDetailsHtml += `<div class="entry ${entry.entry_type}" data-entry-idx="${realEntryIdx}">`;
@@ -1697,7 +2034,7 @@
                                 roomDetailsHtml += ` <span style="color: #999;">(${entry.count}x)</span>`;
                             }
 
-                            const leadsToHtml = formatLeadsToDisplay(entry.leads_to, displayRoomId);
+                            const leadsToHtml = formatEntryLeadsToDisplay(entry, displayRoomId);
                             if (leadsToHtml) {
                                 roomDetailsHtml += ` → ${leadsToHtml}`;
                             }
@@ -1718,7 +2055,11 @@
                                 roomDetailsHtml += `<div class="entry-traps" data-trap-ids="${trapIdsList}">⚠️ Loading traps...</div>`;
                             }
                             
-                            if (!isTopLevelDoor) {
+                            if (type === 'stairs' && !roomEntries.includes(entry)) {
+                                roomDetailsHtml += `<div class="entry-actions">`;
+                                roomDetailsHtml += `<button class="entry-delete-btn" onclick="deleteStairs(${entry.stair_id})">🗑️ Delete</button>`;
+                                roomDetailsHtml += `</div>`;
+                            } else if (!isTopLevelDoor) {
                                 roomDetailsHtml += `<div class="entry-actions">`;
                                 roomDetailsHtml += `<button class="entry-edit-btn" onclick="openEditEntryModal(${roomIdx}, ${realEntryIdx})">✏️ Edit</button>`;
                                 roomDetailsHtml += `<button class="entry-delete-btn" onclick="deleteEntry(${roomIdx}, ${realEntryIdx})">🗑️ Delete</button>`;
@@ -1758,6 +2099,7 @@
             
             // Enhance monster displays with monster details from database
             enrichMonsterDisplay();
+            enrichNpcDisplay();
             
             // Enhance trap displays with trap names from database
             enrichTrapDisplay();
@@ -1900,6 +2242,21 @@
             return maxId + 1;
         }
 
+        function getNextStairId() {
+            const data = currentDungeon?.parsed_json;
+            const stairs = data?.stairs || [];
+            let maxId = 0;
+            stairs.forEach(stair => {
+                if (stair.entry_type === 'stairs' && stair.stair_id != null) {
+                    const numeric = parseInt(stair.stair_id, 10);
+                    if (!Number.isNaN(numeric)) {
+                        maxId = Math.max(maxId, numeric);
+                    }
+                }
+            });
+            return maxId + 1;
+        }
+
         function ensureDoorIdsAssigned() {
             const data = currentDungeon?.parsed_json;
             const rooms = data?.rooms || [];
@@ -1931,10 +2288,10 @@
             return title ? `${title} (Door ${doorId})` : `Door ${doorId}`;
         }
 
-        function formatLeadsToDisplay(leadsTo, currentRoomId) {
-            if (leadsTo == null) return '';
-            const targets = Array.isArray(leadsTo) ? leadsTo : [leadsTo];
-            const targetLabels = targets
+        function formatTargetLinks(targets, currentRoomId) {
+            if (!targets) return '';
+            const ids = Array.isArray(targets) ? targets : [targets];
+            const targetLabels = ids
                 .map(id => {
                     const numericId = parseInt(id, 10);
                     if (Number.isNaN(numericId) || numericId === Number(currentRoomId)) return null;
@@ -1944,6 +2301,46 @@
                 })
                 .filter(Boolean);
             return targetLabels.join(', ');
+        }
+
+        function formatFloorLabels(floorIds) {
+            if (!floorIds) return '';
+            const ids = Array.isArray(floorIds) ? floorIds : [floorIds];
+            const labels = ids
+                .map(id => {
+                    const numericId = parseInt(id, 10);
+                    if (Number.isNaN(numericId)) return null;
+                    const floor = getFloorById(numericId);
+                    return floor ? escapeHtml(floor.title || `Floor ${floor.floor_id}`) : `Floor ${numericId}`;
+                })
+                .filter(Boolean);
+            return labels.join(', ');
+        }
+
+        function formatEntryLeadsToDisplay(entry, currentRoomId) {
+            if (!entry) return '';
+            const parts = [];
+            if (entry.leads_to != null) {
+                const roomLinks = formatTargetLinks(entry.leads_to, currentRoomId);
+                if (roomLinks) parts.push(roomLinks);
+            }
+            if (entry.leads_to_rooms && entry.leads_to_rooms.length) {
+                const roomLinks = formatTargetLinks(entry.leads_to_rooms, currentRoomId);
+                if (roomLinks) parts.push(roomLinks);
+            }
+            if (entry.leads_to_floors && entry.leads_to_floors.length) {
+                const floorLabels = formatFloorLabels(entry.leads_to_floors);
+                if (floorLabels) parts.push(`Floors: ${floorLabels}`);
+            }
+            return parts.join(' | ');
+        }
+
+        function getFloorById(floorId) {
+            const data = currentDungeon?.parsed_json;
+            const floors = data?.floors || [];
+            const numericId = parseInt(floorId, 10);
+            if (Number.isNaN(numericId)) return null;
+            return floors.find(floor => Number(floor.floor_id) === numericId) || null;
         }
 
         function getRoomTargets(currentRoomIdx = null) {
@@ -1976,6 +2373,50 @@
                 const custom = new Option(selectedValue, selectedValue, true, true);
                 select.insertBefore(custom, select.children[1] || select.firstChild);
             }
+        }
+
+        function loadFloorOptions(selectedValues = []) {
+            const data = currentDungeon?.parsed_json;
+            const floors = data?.floors || [];
+            const selectRooms = document.getElementById('stairsRooms');
+            const selectFloors = document.getElementById('stairsFloors');
+            if (!selectRooms || !selectFloors) return;
+
+            const selectedStrings = Array.isArray(selectedValues) ? selectedValues.map(String) : [];
+            selectRooms.innerHTML = '';
+            selectFloors.innerHTML = '';
+
+            const roomTargets = getRoomTargets(currentRoomIdx);
+            roomTargets.forEach(room => {
+                const option = document.createElement('option');
+                option.value = room.room_id;
+                option.text = room.displayName;
+                option.selected = selectedStrings.includes(String(room.room_id));
+                selectRooms.appendChild(option);
+            });
+
+            const floorOptions = ['<option value="">None</option>'];
+            floors.forEach(floor => {
+                const label = `${escapeHtml(floor.title || `Floor ${floor.floor_id}`)} (ID ${floor.floor_id})`;
+                floorOptions.push(`<option value="${floor.floor_id}">${label}</option>`);
+            });
+            selectFloors.innerHTML = floorOptions.join('');
+
+            if (selectedStrings.length > 0) {
+                Array.from(selectFloors.options).forEach(option => {
+                    if (selectedStrings.includes(option.value)) {
+                        option.selected = true;
+                    }
+                });
+            }
+        }
+
+        function getSelectedValues(selectId) {
+            const select = document.getElementById(selectId);
+            if (!select) return [];
+            return Array.from(select.selectedOptions || [])
+                .map(option => option.value)
+                .filter(value => value !== '');
         }
 
         function onRoomTargetChange() {
@@ -2064,18 +2505,11 @@
                 door_id: getNextDoorId(),
                 title: `Door to ${displayTitle}`,
                 content: null,
-                count: null,
-                creature_index: null,
-                creature_total: null,
-                monster_id: null,
                 leads_to: sourceRoomId,
                 door_mechanics: doorMechanics || null,
                 trap_ids: trapIds || [],
                 is_hidden: false,
-                hidden_dc: null,
-                container: null,
-                container_mechanics: null,
-                treasure_contents: []
+                hidden_dc: null
             };
         }
 
@@ -2157,16 +2591,145 @@
             }
 
             const nextRoomId = data.rooms.reduce((maxId, room) => Math.max(maxId, room.room_id || 0), 0) + 1;
-            data.rooms.push({
+            const newRoom = {
                 room_id: nextRoomId,
                 title: trimmedTitle,
                 entries: []
-            });
+            };
+
+            data.rooms.push(newRoom);
+
+            // If floors are defined, add the new room to the currently selected floor.
+            data.floors = data.floors || [];
+            if (data.floors.length) {
+                const selectedFloor = data.floors[currentFloorIdx] || data.floors[0];
+                selectedFloor.room_ids = Array.isArray(selectedFloor.room_ids) ? selectedFloor.room_ids : [];
+                if (!selectedFloor.room_ids.includes(nextRoomId)) {
+                    selectedFloor.room_ids.push(nextRoomId);
+                }
+            }
 
             saveDungeonChanges();
             displayDungeonViewer();
             document.getElementById('roomSelector').value = data.rooms.length - 1;
             displayRoom(data.rooms.length - 1);
+        }
+
+        function createFloor() {
+            openCreateFloorModal();
+        }
+
+        function openCreateFloorModal() {
+            if (!currentDungeon) {
+                alert('Open a dungeon before creating a floor.');
+                return;
+            }
+
+            const data = currentDungeon.parsed_json;
+            data.floors = data.floors || [];
+
+            document.getElementById('floorModalTitle').textContent = 'Add New Floor';
+            document.getElementById('floorTitle').value = `Floor ${data.floors.length + 1}`;
+            loadFloorModalOptions();
+            document.getElementById('floorAbove').value = '';
+            const floorBelowSelect = document.getElementById('floorBelow');
+            if (floorBelowSelect && data.floors[currentFloorIdx]) {
+                floorBelowSelect.value = data.floors[currentFloorIdx].floor_id || '';
+            } else if (floorBelowSelect) {
+                floorBelowSelect.value = '';
+            }
+            document.getElementById('floorModal').classList.add('active');
+            document.getElementById('floorTitle').focus();
+        }
+
+        function loadFloorModalOptions() {
+            const data = currentDungeon?.parsed_json;
+            const floors = data?.floors || [];
+            const aboveSelect = document.getElementById('floorAbove');
+            const belowSelect = document.getElementById('floorBelow');
+            if (!aboveSelect || !belowSelect) return;
+
+            const options = ['<option value="">None</option>'];
+            floors.forEach(floor => {
+                const label = `${escapeHtml(floor.title || `Floor ${floor.floor_id}`)} (ID ${floor.floor_id})`;
+                options.push(`<option value="${floor.floor_id}">${label}</option>`);
+            });
+            aboveSelect.innerHTML = options.join('');
+            belowSelect.innerHTML = options.join('');
+        }
+
+        function saveFloorModal() {
+            const titleInput = document.getElementById('floorTitle');
+            const aboveSelect = document.getElementById('floorAbove');
+            const belowSelect = document.getElementById('floorBelow');
+            if (!titleInput || !aboveSelect || !belowSelect) return;
+
+            const data = currentDungeon.parsed_json;
+            data.floors = data.floors || [];
+            const trimmedTitle = titleInput.value.trim() || `Floor ${data.floors.length + 1}`;
+            const normalized = normalizeRoomTitle(trimmedTitle);
+            if (data.floors.some(floor => normalizeRoomTitle(floor.title) === normalized)) {
+                alert('A floor with that title already exists. Please choose a different name.');
+                return;
+            }
+
+            const aboveId = aboveSelect.value ? parseInt(aboveSelect.value, 10) : null;
+            const belowId = belowSelect.value ? parseInt(belowSelect.value, 10) : null;
+            if (aboveId && belowId && aboveId === belowId) {
+                alert('Floor above and floor below cannot be the same floor.');
+                return;
+            }
+
+            const nextFloorId = data.floors.reduce((maxId, floor) => Math.max(maxId, floor.floor_id || 0), 0) + 1;
+            const newFloor = {
+                floor_id: nextFloorId,
+                title: trimmedTitle,
+                room_ids: [],
+                floor_above: aboveId,
+                floor_below: belowId
+            };
+
+            data.floors.push(newFloor);
+            connectFloorNeighbors(newFloor);
+
+            currentFloorIdx = data.floors.length - 1;
+            saveDungeonChanges();
+            closeCreateFloorModal();
+            displayDungeonViewer();
+            document.getElementById('floorSelector').value = currentFloorIdx;
+        }
+
+        function connectFloorNeighbors(newFloor) {
+            const data = currentDungeon?.parsed_json;
+            const floors = data?.floors || [];
+            if (!newFloor.floor_above) {
+                if (newFloor.floor_below) {
+                    const belowFloor = floors.find(f => Number(f.floor_id) === Number(newFloor.floor_below));
+                    if (belowFloor) {
+                        belowFloor.floor_above = newFloor.floor_id;
+                    }
+                }
+                return;
+            }
+
+            const aboveFloor = floors.find(f => Number(f.floor_id) === Number(newFloor.floor_above));
+            if (aboveFloor) {
+                aboveFloor.floor_below = newFloor.floor_id;
+            }
+
+            if (newFloor.floor_below) {
+                const belowFloor = floors.find(f => Number(f.floor_id) === Number(newFloor.floor_below));
+                if (belowFloor) {
+                    belowFloor.floor_above = newFloor.floor_id;
+                }
+            }
+        }
+
+        function closeCreateFloorModal() {
+            const modal = document.getElementById('floorModal');
+            if (modal) {
+                modal.classList.remove('active');
+            }
         }
 
         function escapeHtml(text) {
@@ -2264,6 +2827,7 @@
             document.getElementById('featureContent').value = '';
             document.getElementById('featureCount').value = '1';
             clearModalMonsterSelection();
+            clearModalNpcSelection();
             const selectedRoom = parseInt(document.getElementById('roomSelector').value);
             currentRoomIdx = Number.isNaN(selectedRoom) ? null : selectedRoom;
             loadRoomTargets(currentRoomIdx, '');
@@ -2279,6 +2843,7 @@
             document.getElementById('treasureHiddenDC').value = '';
             document.getElementById('treasureItems').value = '';
             loadMonstersForModal();
+            loadNpcsForModal();
             loadTrapsForModal();
             updateFeatureFields();
             document.getElementById('featureTitle').focus();
@@ -2317,6 +2882,28 @@
                 if (monsterInput) monsterInput.value = entry.monster_id || '';
                 if (monsterSearch) monsterSearch.value = entry.title || '';
                 renderModalMonsterResults(entry.title || '');
+            } else if (entry.entry_type === 'npc') {
+                selectedModalNpcId = entry.npc_id ? String(entry.npc_id) : null;
+                const npcSearch = document.getElementById('featureNpcSearch');
+                const npcInput = document.getElementById('featureNpc');
+                if (npcInput) npcInput.value = entry.npc_id || '';
+                if (npcSearch) npcSearch.value = entry.npc_name || entry.title || '';
+                renderModalNpcResults(entry.npc_name || entry.title || '');
+            } else if (entry.entry_type === 'stairs') {
+                const stairsRooms = document.getElementById('stairsRooms');
+                const stairsFloors = document.getElementById('stairsFloors');
+                loadRoomTargets(roomIdx, '');
+                loadFloorOptions([]);
+                if (stairsRooms && Array.isArray(entry.leads_to_rooms)) {
+                    Array.from(stairsRooms.options).forEach(option => {
+                        option.selected = entry.leads_to_rooms.includes(parseInt(option.value, 10));
+                    });
+                }
+                if (stairsFloors && Array.isArray(entry.leads_to_floors)) {
+                    Array.from(stairsFloors.options).forEach(option => {
+                        option.selected = entry.leads_to_floors.includes(parseInt(option.value, 10));
+                    });
+                }
             }
 
             // Set trap single-select
@@ -2350,6 +2937,7 @@
             }
             
             loadMonstersForModal();
+            loadNpcsForModal();
             loadTrapsForModal();
             updateFeatureFields();
             document.getElementById('featureTitle').focus();
@@ -2404,6 +2992,14 @@
             saveDungeonChanges();
         }
 
+        function deleteStairs(stairId) {
+            if (!confirm('Are you sure you want to delete these stairs?')) return;
+            const data = currentDungeon.parsed_json;
+            data.stairs = (data.stairs || []).filter(stair => String(stair.stair_id) !== String(stairId));
+            displayRoom(currentRoomIdx != null ? currentRoomIdx : 0);
+            saveDungeonChanges();
+        }
+
         function deleteEntry(roomIdx, entryIdx) {
             if (!confirm('Are you sure you want to delete this entry?')) return;
             
@@ -2421,6 +3017,23 @@
             }
         }
 
+        function deleteNpcFromRoom(roomIdx, npcName) {
+            if (!confirm('Are you sure you want to remove this NPC from the room?')) return;
+            const data = currentDungeon.parsed_json;
+            const room = data.rooms[roomIdx];
+            if (!room) return;
+            if (Array.isArray(room.npcs)) {
+                room.npcs = room.npcs.filter(name => String(name) !== String(npcName));
+            }
+            if (Array.isArray(room.entries)) {
+                room.entries = room.entries.filter(entry => {
+                    return !(entry.entry_type === 'npc' && String(entry.npc_name || entry.title || '') === String(npcName));
+                });
+            }
+            displayRoom(roomIdx);
+            saveDungeonChanges();
+        }
+
         // Load monsters from DB for the monster selector
         async function loadMonstersForModal() {
             try {
@@ -2435,6 +3048,23 @@
                 const results = document.getElementById('featureMonsterResults');
                 if (results) {
                     results.innerHTML = '<div class="monster-search-placeholder">Error loading monsters</div>';
+                }
+            }
+        }
+
+        async function loadNpcsForModal() {
+            try {
+                const response = await fetch('/api/npcs');
+                if (response.ok) {
+                    modalNpcs = await response.json();
+                    modalNpcs.sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), undefined, { sensitivity: 'base' }));
+                    renderModalNpcResults(document.getElementById('featureNpcSearch')?.value || '');
+                }
+            } catch (e) {
+                console.error('Error loading NPCs:', e);
+                const results = document.getElementById('featureNpcResults');
+                if (results) {
+                    results.innerHTML = '<div class="monster-search-placeholder">Error loading NPCs</div>';
                 }
             }
         }
@@ -2477,6 +3107,71 @@
                 item.addEventListener('click', () => selectModalMonster(String(monster.id), monster.title));
                 results.appendChild(item);
             });
+        }
+
+        function renderModalNpcResults(query) {
+            const results = document.getElementById('featureNpcResults');
+            if (!results) return;
+            results.style.display = 'block';
+            results.innerHTML = '';
+
+            const normalizedQuery = String(query || '').trim().toLowerCase();
+            let matches = normalizedQuery
+                ? modalNpcs.filter(npc => String(npc.name || '').toLowerCase().includes(normalizedQuery))
+                : modalNpcs.slice(0, 15);
+
+            if (!normalizedQuery && selectedModalNpcId) {
+                const selectedIndex = matches.findIndex(npc => String(npc.id) === String(selectedModalNpcId));
+                if (selectedIndex === -1) {
+                    const selectedNpc = modalNpcs.find(npc => String(npc.id) === String(selectedModalNpcId));
+                    if (selectedNpc) {
+                        matches = [selectedNpc, ...matches].slice(0, 15);
+                    }
+                }
+            }
+
+            if (matches.length === 0) {
+                results.innerHTML = '<div class="monster-search-placeholder">No NPCs found.</div>';
+                return;
+            }
+
+            matches.slice(0, 15).forEach(npc => {
+                const item = document.createElement('div');
+                item.className = 'monster-search-item' + (selectedModalNpcId === String(npc.id) ? ' selected' : '');
+                item.dataset.id = npc.id;
+                item.dataset.title = npc.name;
+                item.innerHTML = `
+                    <div class="monster-search-item-title">${escapeHtml(npc.name)}</div>
+                    <div class="monster-search-item-subtitle">${escapeHtml(npc.background || npc.race || '')}</div>
+                `;
+                item.addEventListener('click', () => selectModalNpc(String(npc.id), npc.name));
+                results.appendChild(item);
+            });
+        }
+
+        function selectModalNpc(id, name) {
+            selectedModalNpcId = id;
+            const npcInput = document.getElementById('featureNpc');
+            const npcSearch = document.getElementById('featureNpcSearch');
+            const results = document.getElementById('featureNpcResults');
+            if (npcInput) npcInput.value = id;
+            if (npcSearch) npcSearch.value = name || '';
+            if (results) {
+                results.style.display = 'none';
+            }
+        }
+
+        function clearModalNpcSelection() {
+            selectedModalNpcId = null;
+            const npcInput = document.getElementById('featureNpc');
+            const npcSearch = document.getElementById('featureNpcSearch');
+            const results = document.getElementById('featureNpcResults');
+            if (npcInput) npcInput.value = '';
+            if (npcSearch) npcSearch.value = '';
+            if (results) {
+                results.style.display = 'block';
+            }
+            renderModalNpcResults('');
         }
 
         function selectModalMonster(id, title) {
@@ -2544,6 +3239,8 @@
             document.getElementById('featureType').disabled = false;
             document.getElementById('featureTitle').value = '';
             document.getElementById('featureMonster').value = '';
+            document.getElementById('featureNpc').value = '';
+            document.getElementById('featureNpcSearch').value = '';
             document.getElementById('featureContent').value = '';
             document.getElementById('featureCount').value = '1';
             document.getElementById('featureLeadsTo').value = '';
@@ -2565,12 +3262,12 @@
             const featureType = document.getElementById('featureType').value;
             
             // Hide all conditional fields
-            document.querySelectorAll('.modal-field.field-monster, .modal-field.field-door, .modal-field.field-monster-selector, .modal-field.field-title, .modal-field.field-treasure').forEach(field => {
+            document.querySelectorAll('.modal-field.field-monster, .modal-field.field-door, .modal-field.field-stairs, .modal-field.field-access, .modal-field.field-monster-selector, .modal-field.field-npc-selector, .modal-field.field-title, .modal-field.field-treasure').forEach(field => {
                 field.classList.add('hidden');
             });
             
-            // Show title field for non-monster types
-            if (featureType !== 'monster') {
+            // Show title field for non-monster and non-NPC types
+            if (featureType !== 'monster' && featureType !== 'npc') {
                 document.querySelector('.modal-field.field-title').classList.remove('hidden');
             }
             
@@ -2578,12 +3275,27 @@
             if (featureType === 'monster') {
                 document.querySelector('.modal-field.field-monster-selector').classList.remove('hidden');
                 document.querySelector('.modal-field.field-monster').classList.remove('hidden');
+            } else if (featureType === 'npc') {
+                document.querySelector('.modal-field.field-npc-selector').classList.remove('hidden');
             } else if (featureType === 'door') {
                 document.querySelectorAll('.modal-field.field-door').forEach(field => {
                     field.classList.remove('hidden');
                 });
+                document.querySelectorAll('.modal-field.field-access').forEach(field => {
+                    field.classList.remove('hidden');
+                });
                 const selectedRoomIdx = currentRoomIdx !== null ? currentRoomIdx : null;
                 loadRoomTargets(selectedRoomIdx, document.getElementById('featureLeadsTo').value);
+            } else if (featureType === 'stairs') {
+                document.querySelectorAll('.modal-field.field-stairs').forEach(field => {
+                    field.classList.remove('hidden');
+                });
+                document.querySelectorAll('.modal-field.field-access').forEach(field => {
+                    field.classList.remove('hidden');
+                });
+                const selectedRoomIdx = currentRoomIdx !== null ? currentRoomIdx : null;
+                loadRoomTargets(selectedRoomIdx, '');
+                loadFloorOptions([]);
             } else if (featureType === 'treasure') {
                 document.querySelectorAll('.modal-field.field-treasure').forEach(field => {
                     field.classList.remove('hidden');
@@ -2624,7 +3336,7 @@
             } else {
                 // For other types, use title input
                 title = document.getElementById('featureTitle').value.trim();
-                if (!title && type !== 'treasure') {
+                if (!title && type !== 'treasure' && type !== 'npc') {
                     alert('Please enter a title');
                     return;
                 }
@@ -2632,14 +3344,21 @@
 
             const content = document.getElementById('featureContent').value.trim();
             const count = parseInt(document.getElementById('featureCount').value) || 1;
-            const leadsToValue = document.getElementById('featureLeadsTo').value;
+            const leadsToValue = document.getElementById('featureLeadsTo') ? document.getElementById('featureLeadsTo').value : '';
             const leadsTo = leadsToValue && leadsToValue !== '__create_new_room__'
                 ? (isNaN(parseInt(leadsToValue, 10)) ? leadsToValue.trim() : parseInt(leadsToValue, 10))
                 : null;
             const doorMechanics = document.getElementById('doorMechanics').value.trim();
             
+            const stairsRooms = getSelectedValues('stairsRooms');
+            const stairsFloors = getSelectedValues('stairsFloors');
+            
             if (type === 'door' && !leadsTo) {
                 alert('Please select or create a target room for the door.');
+                return;
+            }
+            if (type === 'stairs' && !stairsRooms.length && !stairsFloors.length) {
+                alert('Please select at least one room or one floor for the stairs.');
                 return;
             }
 
@@ -2674,6 +3393,24 @@
                         treasure_contents: []
                     });
                 }
+            } else if (type === 'npc') {
+                const npcInput = document.getElementById('featureNpc');
+                const npcSearch = document.getElementById('featureNpcSearch');
+                const npcId = npcInput.value;
+                const npcName = npcSearch.value.trim();
+
+                if (!npcId || !npcName) {
+                    alert('Please select an NPC');
+                    return;
+                }
+
+                room.npcs = Array.isArray(room.npcs) ? room.npcs : [];
+                if (room.npcs.includes(npcName)) {
+                    alert('This NPC is already in the room.');
+                    return;
+                }
+
+                room.npcs.push(npcName);
             } else if (type === 'treasure') {
                 // Handle treasure entries
                 const container = document.getElementById('treasureContainer').value.trim();
@@ -2722,6 +3459,21 @@
                     container_mechanics: mechanics || null,
                     treasure_contents: treasureContents
                 });
+            } else if (type === 'stairs') {
+                data.stairs = data.stairs || [];
+                const roomIds = Array.from(new Set([sourceRoomId, ...stairsRooms.map(val => Number(val))]));
+                data.stairs.push({
+                    entry_type: 'stairs',
+                    stair_id: getNextStairId(),
+                    title: title || 'Stairs',
+                    content: content,
+                    leads_to_rooms: roomIds,
+                    leads_to_floors: stairsFloors.length ? stairsFloors.map(val => Number(val)) : [],
+                    door_mechanics: doorMechanics || null,
+                    trap_ids: doorTrapIds,
+                    is_hidden: false,
+                    hidden_dc: null
+                });
             } else {
                 if (type === 'door') {
                     const targetRoomId = parseInt(leadsTo, 10);
@@ -2735,18 +3487,11 @@
                         door_id: getNextDoorId(),
                         title: title,
                         content: content,
-                        count: null,
-                        creature_index: null,
-                        creature_total: null,
-                        monster_id: null,
                         leads_to: [sourceRoomId, targetRoomId],
                         door_mechanics: doorMechanics || null,
                         trap_ids: doorTrapIds,
                         is_hidden: false,
-                        hidden_dc: null,
-                        container: null,
-                        container_mechanics: null,
-                        treasure_contents: []
+                        hidden_dc: null
                     });
                 } else {
                     room.entries.push({
@@ -2852,6 +3597,36 @@
                 if (targetRoomIdx !== -1) {
                     ensureReciprocalDoor(currentRoomIdx, targetRoomIdx, sourceRoomId, room.title || '', doorMechanics, entry.trap_ids || []);
                 }
+            } else if (entryType === 'stairs') {
+                const selectedRooms = getSelectedValues('stairsRooms').map(val => Number(val));
+                const selectedFloors = getSelectedValues('stairsFloors').map(val => Number(val));
+                if (!selectedRooms.length && !selectedFloors.length) {
+                    alert('Please select at least one room or one floor for the stairs.');
+                    return;
+                }
+                const sourceRoomId = getRoomIdFromIndex(currentRoomIdx);
+                entry.leads_to_rooms = Array.from(new Set([sourceRoomId, ...selectedRooms]));
+                entry.leads_to_floors = selectedFloors;
+                entry.door_mechanics = doorMechanics || null;
+                entry.trap_ids = doorTrapIds;
+            } else if (entryType === 'npc') {
+                const npcInput = document.getElementById('featureNpc');
+                const npcSearch = document.getElementById('featureNpcSearch');
+                const npcId = npcInput.value;
+                const npcName = npcSearch.value.trim();
+
+                if (!npcId || !npcName) {
+                    alert('Please select an NPC');
+                    return;
+                }
+
+                const previousNpcName = entry.npc_name || entry.title || '';
+                entry.npc_name = npcName;
+                entry.title = npcName;
+                room.npcs = Array.isArray(room.npcs) ? room.npcs.filter(name => String(name) !== String(previousNpcName)) : [];
+                if (!room.npcs.includes(npcName)) {
+                    room.npcs.push(npcName);
+                }
             } else if (entryType === 'treasure') {
                 const container = document.getElementById('treasureContainer').value.trim();
                 const mechanics = document.getElementById('treasureMechanics').value.trim();
@@ -2924,9 +3699,13 @@
 
         // Close modal when clicking outside of it
         document.addEventListener('click', (e) => {
-            const modal = document.getElementById('featureModal');
-            if (e.target === modal) {
+            const featureModal = document.getElementById('featureModal');
+            const floorModal = document.getElementById('floorModal');
+            if (e.target === featureModal) {
                 closeAddFeatureModal();
+            }
+            if (e.target === floorModal) {
+                closeCreateFloorModal();
             }
         });
 

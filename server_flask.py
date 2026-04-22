@@ -397,6 +397,232 @@ def get_player_weapon_ids(player_id):
     return weapon_ids
 
 
+def convert_db_npc_to_api_format(npc_row):
+    npc = dict(npc_row)
+    return {
+        'id': npc.get('id'),
+        'name': npc.get('name'),
+        'race': npc.get('race'),
+        'gender': npc.get('gender'),
+        'background': npc.get('background'),
+        'size': npc.get('size'),
+        'stats': parse_json_field(npc.get('stats')) or {},
+        'armor_class': npc.get('armor_class'),
+        'hit_points': npc.get('hit_points'),
+        'speed': npc.get('speed'),
+        'saving_throws': parse_json_field(npc.get('saving_throws')) or {},
+        'skills': parse_json_field(npc.get('skills')) or {},
+        'senses': parse_json_field(npc.get('senses')) or [],
+        'languages': npc.get('languages'),
+        'appearance': parse_json_field(npc.get('appearance')) or {},
+        'notes': npc.get('notes'),
+        'created_at': npc.get('created_at'),
+        'updated_at': npc.get('updated_at')
+    }
+
+
+def get_npc_by_id(npc_id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT id, name, race, gender, background, size, stats, armor_class, hit_points, speed, saving_throws, skills, senses, languages, appearance, notes, created_at, updated_at FROM npcs WHERE id = ?",
+        (npc_id,)
+    )
+    row = cursor.fetchone()
+    if not row:
+        conn.close()
+        return None
+    npc = convert_db_npc_to_api_format(row)
+    conn.close()
+    return npc
+
+
+def get_all_npcs():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT id, name, race, gender, background, size, stats, armor_class, hit_points, speed, saving_throws, skills, senses, languages, appearance, notes, created_at, updated_at FROM npcs ORDER BY name"
+    )
+    npcs = [convert_db_npc_to_api_format(row) for row in cursor.fetchall()]
+    conn.close()
+    return npcs
+
+
+def validate_npc_payload(payload):
+    if not isinstance(payload, dict):
+        return False
+    if 'name' in payload and payload.get('name') is not None and not isinstance(payload.get('name'), str):
+        return False
+    if 'race' in payload and payload.get('race') is not None and not isinstance(payload.get('race'), str):
+        return False
+    if 'gender' in payload and payload.get('gender') is not None and not isinstance(payload.get('gender'), str):
+        return False
+    if 'background' in payload and payload.get('background') is not None and not isinstance(payload.get('background'), str):
+        return False
+    if 'size' in payload and payload.get('size') is not None and not isinstance(payload.get('size'), str):
+        return False
+    if 'speed' in payload and payload.get('speed') is not None and not isinstance(payload.get('speed'), str):
+        return False
+    if 'languages' in payload and payload.get('languages') is not None and not isinstance(payload.get('languages'), str):
+        return False
+    if 'notes' in payload and payload.get('notes') is not None and not isinstance(payload.get('notes'), str):
+        return False
+    for int_field in ['armor_class', 'hit_points']:
+        if int_field in payload and payload.get(int_field) not in (None, ''):
+            try:
+                int(payload.get(int_field))
+            except (TypeError, ValueError):
+                return False
+    for json_field in ['stats', 'saving_throws', 'skills', 'appearance']:
+        if json_field in payload and payload.get(json_field) is not None:
+            value = payload.get(json_field)
+            if isinstance(value, str):
+                parsed = parse_json_field(value)
+                if not isinstance(parsed, dict):
+                    return False
+            elif not isinstance(value, dict):
+                return False
+    if 'senses' in payload and payload.get('senses') is not None:
+        value = payload.get('senses')
+        if isinstance(value, str):
+            parsed = parse_json_field(value)
+            if not isinstance(parsed, list):
+                return False
+        elif not isinstance(value, list):
+            return False
+    return True
+
+
+def normalize_npc_json_object(value):
+    if value is None or value == '':
+        return {}
+    if isinstance(value, str):
+        parsed = parse_json_field(value)
+        if isinstance(parsed, dict):
+            value = parsed
+        else:
+            return {}
+    if not isinstance(value, dict):
+        return {}
+    normalized = {}
+    for key, raw_val in value.items():
+        if raw_val is None or raw_val == '':
+            continue
+        if isinstance(raw_val, str):
+            normalized[key] = raw_val.strip()
+            if normalized[key].isdigit():
+                normalized[key] = int(normalized[key])
+        else:
+            normalized[key] = raw_val
+    return normalized
+
+
+def normalize_npc_senses(value):
+    if value is None or value == '':
+        return []
+    if isinstance(value, str):
+        parsed = parse_json_field(value)
+        if isinstance(parsed, list):
+            value = parsed
+        else:
+            return []
+    if not isinstance(value, list):
+        return []
+    result = []
+    for item in value:
+        if isinstance(item, dict):
+            result.append(item)
+    return result
+
+
+def sanitize_npc_payload(payload):
+    if not isinstance(payload, dict):
+        return {}
+    result = {}
+    for text_field in ['name', 'race', 'gender', 'background', 'size', 'speed', 'languages', 'notes']:
+        if text_field in payload:
+            result[text_field] = str(payload[text_field]).strip() if payload[text_field] is not None else None
+    if 'armor_class' in payload:
+        try:
+            result['armor_class'] = int(payload['armor_class']) if payload['armor_class'] not in (None, '') else None
+        except (TypeError, ValueError):
+            result['armor_class'] = None
+    if 'hit_points' in payload:
+        try:
+            result['hit_points'] = int(payload['hit_points']) if payload['hit_points'] not in (None, '') else None
+        except (TypeError, ValueError):
+            result['hit_points'] = None
+    if 'stats' in payload:
+        result['stats'] = json.dumps(normalize_npc_json_object(payload['stats']))
+    if 'saving_throws' in payload:
+        result['saving_throws'] = json.dumps(normalize_npc_json_object(payload['saving_throws']))
+    if 'skills' in payload:
+        result['skills'] = json.dumps(normalize_npc_json_object(payload['skills']))
+    if 'appearance' in payload:
+        result['appearance'] = json.dumps(normalize_npc_json_object(payload['appearance']))
+    if 'senses' in payload:
+        result['senses'] = json.dumps(normalize_npc_senses(payload['senses']))
+    return result
+
+
+def create_npc(npc_data):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO npcs (name, race, gender, background, size, stats, armor_class, hit_points, speed, saving_throws, skills, senses, languages, appearance, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (
+            npc_data.get('name', 'Unnamed NPC'),
+            npc_data.get('race'),
+            npc_data.get('gender'),
+            npc_data.get('background'),
+            npc_data.get('size'),
+            npc_data.get('stats', '{}'),
+            npc_data.get('armor_class'),
+            npc_data.get('hit_points'),
+            npc_data.get('speed'),
+            npc_data.get('saving_throws', '{}'),
+            npc_data.get('skills', '{}'),
+            npc_data.get('senses', '[]'),
+            npc_data.get('languages'),
+            npc_data.get('appearance', '{}'),
+            npc_data.get('notes')
+        )
+    )
+    conn.commit()
+    npc_id = cursor.lastrowid
+    conn.close()
+    return get_npc_by_id(npc_id)
+
+
+def update_npc(npc_id, npc_data):
+    fields = []
+    values = []
+    allowed_keys = ['name', 'race', 'gender', 'background', 'size', 'stats', 'armor_class', 'hit_points', 'speed', 'saving_throws', 'skills', 'senses', 'languages', 'appearance', 'notes']
+    for key in allowed_keys:
+        if key in npc_data:
+            fields.append(f"{key} = ?")
+            values.append(npc_data[key])
+    if not fields:
+        return None
+    values.append(npc_id)
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute(f"UPDATE npcs SET {', '.join(fields)}, updated_at = CURRENT_TIMESTAMP WHERE id = ?", values)
+    conn.commit()
+    conn.close()
+    return get_npc_by_id(npc_id)
+
+
+def delete_npc(npc_id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM npcs WHERE id = ?", (npc_id,))
+    deleted = cursor.rowcount
+    conn.commit()
+    conn.close()
+    return deleted > 0
+
+
 def get_player_spell_ids(player_id):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -2132,6 +2358,69 @@ def delete_player_api(player_id):
         deleted = delete_player(player_id)
         if not deleted:
             return jsonify({"error": f"Player id '{player_id}' not found"}), 404
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/npcs', methods=['GET'])
+def get_npcs_api():
+    """API endpoint: GET /api/npcs - Returns all NPCs."""
+    try:
+        return jsonify(get_all_npcs())
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/npcs/<int:npc_id>', methods=['GET'])
+def get_npc_api(npc_id):
+    """API endpoint: GET /api/npcs/<npc_id> - Returns one NPC."""
+    try:
+        npc = get_npc_by_id(npc_id)
+        if not npc:
+            return jsonify({"error": "NPC not found"}), 404
+        return jsonify(npc)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/npcs', methods=['POST'])
+def create_npc_api():
+    """API endpoint: POST /api/npcs - Creates a new NPC."""
+    try:
+        payload = request.get_json(silent=True) or {}
+        if not validate_npc_payload(payload):
+            return jsonify({"error": "Invalid NPC payload"}), 400
+        npc_data = sanitize_npc_payload(payload)
+        npc = create_npc(npc_data)
+        return jsonify(npc), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/npcs/<int:npc_id>', methods=['PUT'])
+def update_npc_api(npc_id):
+    """API endpoint: PUT /api/npcs/<npc_id> - Updates an NPC."""
+    try:
+        payload = request.get_json(silent=True) or {}
+        if not validate_npc_payload(payload):
+            return jsonify({"error": "Invalid NPC payload"}), 400
+        npc_data = sanitize_npc_payload(payload)
+        npc = update_npc(npc_id, npc_data)
+        if not npc:
+            return jsonify({"error": f"NPC id '{npc_id}' not found"}), 404
+        return jsonify(npc)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/npcs/<int:npc_id>', methods=['DELETE'])
+def delete_npc_api(npc_id):
+    """API endpoint: DELETE /api/npcs/<npc_id> - Deletes an NPC."""
+    try:
+        deleted = delete_npc(npc_id)
+        if not deleted:
+            return jsonify({"error": f"NPC id '{npc_id}' not found"}), 404
         return jsonify({"success": True})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
