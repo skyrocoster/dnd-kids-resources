@@ -193,7 +193,6 @@ def init_database():
             icon TEXT NOT NULL DEFAULT '⚔️',
             category TEXT NOT NULL DEFAULT 'Action',
             explanation TEXT,
-            details TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     """)
