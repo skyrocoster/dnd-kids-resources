@@ -346,8 +346,8 @@ def populate_actions(cursor, conn, force=False):
             
             cursor.execute("""
                 INSERT INTO actions 
-                (name, icon, category, explanation, details)
-                VALUES (?, ?, ?, ?, ?)
+                (name, icon, category, explanation)
+                VALUES (?, ?, ?, ?)
             """, (
                 action.get('name'),
                 action.get('icon', '⚔️'),
