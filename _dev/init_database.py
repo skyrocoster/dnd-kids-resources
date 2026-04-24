@@ -37,6 +37,7 @@ def init_database():
         "players",
         "monsters",
         "npcs",
+        "quests",
         "creatures",
         "creature_types",
         "classes",
@@ -268,6 +269,23 @@ def init_database():
             notes TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    cursor.execute("""
+        CREATE TABLE quests (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL UNIQUE,
+            summary TEXT,
+            reward TEXT NOT NULL DEFAULT '[]',
+            objectives TEXT NOT NULL DEFAULT '[]',
+            details TEXT NOT NULL DEFAULT '[]',
+            quest_giver INTEGER,
+            dungeon_id INTEGER,
+            location TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (quest_giver) REFERENCES npcs(id) ON DELETE SET NULL
         )
     """)
 

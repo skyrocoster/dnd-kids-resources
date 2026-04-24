@@ -33,19 +33,23 @@ EXPORT_DEFINITIONS = {
     },
     "conditions": {
         "file": "seed_conditions.json",
-        "query": "SELECT title, icon, explanation, details FROM conditions ORDER BY title",
+        "query": "SELECT id, title, icon, explanation, details FROM conditions ORDER BY title",
     },
     "actions": {
         "file": "seed_actions.json",
-        "query": "SELECT name, icon, category, explanation, details FROM actions ORDER BY name",
+        "query": "SELECT id, name, icon, category, explanation, details FROM actions ORDER BY name",
     },
     "monsters": {
         "file": "seed_monsters.json",
-        "query": "SELECT name, alias, size, \"group\", alignment, type, ac, hp, speed, stats, save, skill, resist, vulnerable, senses, languages, action, reaction, traits, spellcasting, bonus, legendary, legendaryHeader, mythic, mythicHeader, reactionRules, soundClip, cr, cr_details FROM monsters ORDER BY name",
+        "query": "SELECT id, name, alias, size, \"group\", alignment, type, ac, hp, speed, stats, save, skill, resist, vulnerable, senses, languages, action, reaction, traits, spellcasting, bonus, legendary, legendaryHeader, mythic, mythicHeader, reactionRules, soundClip, cr, cr_details FROM monsters ORDER BY name",
     },
     "npcs": {
         "file": "seed_npcs.json",
         "query": "SELECT id, name, race, gender, background, size, stats, armor_class, hit_points, speed, saving_throws, skills, senses, languages, appearance, notes FROM npcs ORDER BY id",
+    },
+    "quests": {
+        "file": "seed_quests.json",
+        "query": "SELECT id, name, summary, reward, objectives, details, quest_giver, dungeon_id, location FROM quests ORDER BY id",
     },
     "damage_types": {
         "file": "seed_damage_types.json",
@@ -53,15 +57,15 @@ EXPORT_DEFINITIONS = {
     },
     "weapon_properties": {
         "file": "seed_weapon_properties.json",
-        "query": "SELECT code, name, description FROM weapon_properties ORDER BY code",
+        "query": "SELECT id, code, name, description FROM weapon_properties ORDER BY code",
     },
     "weapons": {
         "file": "seed_weapons.json",
-        "query": "SELECT name, base_weapon, baseitems, rarity, weapon_category, weight, req_attune, sentient, curse, resist, property, focus, spells, attack, recharge, light, entries, tier, grants_language, bonus_spell_attack, bonus_spell_save_dc, bonus_ac, bonus_saving_throw, crit_threshold, ammo_type, grants_proficiency, modify_speed, ability FROM weapons ORDER BY name",
+        "query": "SELECT id, name, base_weapon, baseitems, rarity, weapon_category, weight, req_attune, sentient, curse, resist, property, focus, spells, attack, recharge, light, entries, tier, grants_language, bonus_spell_attack, bonus_spell_save_dc, bonus_ac, bonus_saving_throw, crit_threshold, ammo_type, grants_proficiency, modify_speed, ability FROM weapons ORDER BY name",
     },
     "traps": {
         "file": "seed_traps.json",
-        "query": "SELECT name FROM traps ORDER BY name",
+        "query": "SELECT id, name FROM traps ORDER BY name",
     },
     "dungeons": {
         "file": "seed_dungeons.json",
@@ -69,11 +73,11 @@ EXPORT_DEFINITIONS = {
     },
     "deities": {
         "file": "seed_deities.json",
-        "query": "SELECT name, pantheon, alignment, category, domains, symbol, title, alt_names, entries FROM deities ORDER BY name",
+        "query": "SELECT id, name, pantheon, alignment, category, domains, symbol, title, alt_names, entries FROM deities ORDER BY name",
     },
     "spells": {
         "file": "seed_spells.json",
-        "query": "SELECT spell_name, icon, level, school, spell_text, spell_alt_text, damage, heal, heal_at_spell_slots, range, higher_levels, damage_at_higher_levels, casting_time, duration, concentration, ritual, components, materials, attack_type, area_of_effect, classes, subclasses FROM spells ORDER BY spell_name",
+        "query": "SELECT id, spell_name, icon, level, school, spell_text, spell_alt_text, damage, heal, heal_at_spell_slots, range, higher_levels, damage_at_higher_levels, casting_time, duration, concentration, ritual, components, materials, attack_type, area_of_effect, classes, subclasses FROM spells ORDER BY spell_name",
     },
     "players": {
         "file": "seed_players.json",
@@ -168,6 +172,10 @@ def transform_record(record, table_name):
         return record
     if table_name == "deities":
         for field in ["alignment", "domains", "alt_names", "entries"]:
+            record[field] = parse_json_value(record.get(field))
+        return record
+    if table_name == "quests":
+        for field in ["reward", "objectives", "details"]:
             record[field] = parse_json_value(record.get(field))
         return record
     if table_name == "spells":

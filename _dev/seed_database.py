@@ -495,6 +495,56 @@ def populate_npcs(cursor, conn, force=False):
     print(f"  [OK] Loaded {len(seeds)} NPCs")
 
 
+def populate_quests(cursor, conn, force=False):
+    """Populate quests table from seed_quests.json."""
+    print("\n[QUEST] Loading quests...")
+    try:
+        cursor.execute("SELECT COUNT(*) FROM quests")
+        count = cursor.fetchone()[0]
+    except sqlite3.OperationalError:
+        count = 0
+
+    if count > 0 and not force:
+        print(f"  [INFO] Quests table already has {count} records. Skip (use --force to override)")
+        return
+
+    if force or count == 0:
+        try:
+            cursor.execute("SELECT 1 FROM quests LIMIT 1")
+        except Exception:
+            print("  [ERROR] Quests table does not exist. Run _dev/init_database.py first.")
+            return
+
+    seeds = load_json_file(SEEDS_DIR / "seed_quests.json")
+    if not seeds:
+        print("  [WARNING]  No quest seeds found")
+        return
+
+    for quest in seeds:
+        try:
+            cursor.execute("""
+                INSERT INTO quests
+                (id, name, summary, reward, objectives, details, quest_giver, dungeon_id, location)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                quest.get('id'),
+                quest.get('name'),
+                quest.get('summary'),
+                serialize_for_db(quest.get('reward') or []),
+                serialize_for_db(quest.get('objectives') or []),
+                serialize_for_db(quest.get('details') or []),
+                quest.get('quest_giver'),
+                quest.get('dungeon_id'),
+                quest.get('location')
+            ))
+            print(f"  [CHECK] {quest.get('name')}")
+        except sqlite3.IntegrityError as e:
+            print(f"  [WARNING]  Duplicate or error: {quest.get('name')} - {e}")
+
+    conn.commit()
+    print(f"  [OK] Loaded {len(seeds)} quests")
+
+
 def populate_damage_types(cursor, conn, force=False):
     """Populate damage_types table from seed_damage_types.json. Requires schema created by init_database.py."""
     print("\n[BOOM] Loading damage types...")
@@ -951,6 +1001,7 @@ def clear_all_tables(cursor, conn):
         "statblock_jobs",
         "monsters",
         "npcs",
+        "quests",
         "creatures",
         "creature_types",
         "spells",
@@ -974,6 +1025,14 @@ def clear_all_tables(cursor, conn):
             # Table might not exist, that's okay
             pass
     
+    # Reset AUTOINCREMENT counters so explicit IDs can be reused after force reload.
+    try:
+        cursor.execute("DELETE FROM sqlite_sequence")
+        print("  [OK] Reset sqlite_sequence")
+    except sqlite3.OperationalError:
+        # sqlite_sequence does not exist until a table with AUTOINCREMENT is created
+        pass
+
     conn.commit()
     # Re-enable FK constraints
     cursor.execute("PRAGMA foreign_keys = ON")
@@ -986,6 +1045,7 @@ def main():
     parser.add_argument('--spells', action='store_true', help='Load only spells')
     parser.add_argument('--conditions', action='store_true', help='Load only conditions')
     parser.add_argument('--monsters', action='store_true', help='Load only monsters')
+    parser.add_argument('--quests', action='store_true', help='Load only quests')
     parser.add_argument('--damage-types', action='store_true', help='Load only damage types')
     parser.add_argument('--weapon-properties', action='store_true', help='Load only weapon properties')
     parser.add_argument('--weapons', action='store_true', help='Load only weapons')
@@ -999,7 +1059,7 @@ def main():
     
     args = parser.parse_args()
     # If no specific tables selected, load all
-    load_all = not any([args.abilities, args.spells, args.conditions, args.monsters, args.npcs, args.damage_types, args.weapon_properties, args.weapons, args.traps, args.dungeons, args.deities, args.classes, args.actions])
+    load_all = not any([args.abilities, args.spells, args.conditions, args.monsters, args.quests, args.npcs, args.damage_types, args.weapon_properties, args.weapons, args.traps, args.dungeons, args.deities, args.classes, args.actions])
     
     print("="*60)
     print("PHASE 2: DATABASE SEEDING")
@@ -1032,6 +1092,8 @@ def main():
             populate_monsters(cursor, conn, args.force)
         if load_all or args.npcs:
             populate_npcs(cursor, conn, args.force)
+        if load_all or args.quests:
+            populate_quests(cursor, conn, args.force)
         if load_all or args.spells:
             populate_spells(cursor, conn, args.force)
         if load_all or args.conditions:

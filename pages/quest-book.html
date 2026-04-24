@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Quest Book — D&D Kids Resources</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@600;700;800&family=OpenDyslexic&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/styles.css">
+  <style>
+    body {
+      min-height: 100vh;
+      background: linear-gradient(180deg, #334155 0%, #8293a4 100%);
+      color: #1f2937;
+      margin: 0;
+      font-family: 'Nunito', sans-serif;
+    }
+    .quest-book-shell {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .quest-book-topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(248, 250, 252, 0.96);
+      border-bottom: 3px solid #cbd5e1;
+      padding: 18px;
+      box-shadow: 0 10px 28px rgba(15, 23, 42, 0.12);
+    }
+    .quest-book-title-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .quest-book-title {
+      margin: 0;
+      font-family: 'Fredoka One', cursive;
+      font-size: 2rem;
+      color: #102a43;
+      line-height: 1.05;
+    }
+    .quest-book-subtitle {
+      margin: 6px 0 0;
+      color: #334155;
+      font-size: 0.95rem;
+      letter-spacing: 0.4px;
+    }
+    .quest-book-toolbar {
+      margin-top: 16px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: end;
+    }
+    .search-field,
+    .quest-count {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .search-field label {
+      font-size: 0.75rem;
+      color: #334155;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+    }
+    .search-field input {
+      width: 100%;
+      border: 2px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 1rem;
+      background: #ffffff;
+      color: #102a43;
+    }
+    .search-field input:focus {
+      outline: none;
+      border-color: #1d4ed8;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.16);
+    }
+    .quest-count {
+      color: #334155;
+      font-size: 0.95rem;
+      font-weight: 700;
+      align-self: flex-start;
+    }
+    .reader-layout {
+      display: grid;
+      grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+      gap: 18px;
+      width: 100%;
+      padding: 18px;
+      box-sizing: border-box;
+    }
+    .quest-list {
+      display: grid;
+      gap: 10px;
+    }
+    .quest-list-item {
+      background: #ffffff;
+      border: 2px solid #cbd5e1;
+      border-radius: 14px;
+      padding: 14px 16px;
+      cursor: pointer;
+      transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+      text-align: left;
+    }
+    .quest-list-item:hover,
+    .quest-list-item.selected {
+      border-color: #1d4ed8;
+      box-shadow: 0 12px 26px rgba(15, 23, 42, 0.12);
+      transform: translateY(-1px);
+    }
+    .quest-list-item-title {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 700;
+      color: #102a43;
+    }
+    .quest-list-item-subtitle {
+      margin: 6px 0 0;
+      color: #64748b;
+      font-size: 0.87rem;
+      line-height: 1.4;
+    }
+    .quest-detail-shell,
+    .detail-shell {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    .detail-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 0;
+    }
+    .detail-title-group {
+      min-width: 0;
+    }
+    .detail-title {
+      margin: 0;
+      font-size: 2rem;
+      color: #102a43;
+      line-height: 1.05;
+    }
+    .detail-subtitle {
+      margin: 0.35rem 0 0;
+      color: #475569;
+      font-size: 0.95rem;
+    }
+    .detail-grid {
+      display: grid;
+      gap: 18px;
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .detail-panel {
+      background: #ffffff;
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12);
+      border: 1px solid #cbd5e1;
+    }
+    .quest-detail-placeholder {
+      padding: 24px;
+      text-align: center;
+      color: #475569;
+      font-size: 1rem;
+      background: #f8fafc;
+      border-radius: 14px;
+      border: 1px dashed #cbd5e1;
+    }
+    .detail-row {
+      margin-bottom: 0.75rem;
+    }
+    .detail-label {
+      font-weight: 700;
+      color: #34495e;
+      display: block;
+      margin-bottom: 0.25rem;
+    }
+    .detail-item {
+      margin-bottom: 1rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid #ebeff6;
+    }
+    .detail-item:last-child {
+      margin-bottom: 0;
+      padding-bottom: 0;
+      border-bottom: none;
+    }
+    .detail-item-title {
+      font-weight: 800;
+      color: #1f2937;
+      margin-bottom: 0.35rem;
+    }
+    .detail-item-text {
+      color: #4b5563;
+      line-height: 1.65;
+      white-space: pre-wrap;
+    }
+    .detail-item-list {
+      margin: 0.35rem 0 0 0;
+      padding-left: 1.25rem;
+      color: #4b5563;
+    }
+    .detail-item-list li {
+      margin-bottom: 0.35rem;
+    }
+    .detail-value {
+      color: #444;
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+    .detail-panel h2 {
+      margin-top: 0;
+      margin-bottom: 0.75rem;
+      font-size: 1.2rem;
+      color: #2d3a4a;
+    }
+    .tag-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: #e2e8f0;
+      color: #334155;
+      font-size: 0.82rem;
+      margin-right: 6px;
+      margin-bottom: 6px;
+    }
+
+    .create-quest-btn {
+      align-self: flex-end;
+      background: #3b82f6;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 0.85rem 1rem;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: background 0.2s ease;
+      margin-left: 1rem;
+      white-space: nowrap;
+    }
+
+    .create-quest-btn:hover {
+      background: #2563eb;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.45);
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 1rem;
+    }
+
+    .modal.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: white;
+      border-radius: 16px;
+      width: min(760px, 100%);
+      max-height: min(90vh, 960px);
+      overflow-y: auto;
+      padding: 1.5rem;
+      box-shadow: 0 24px 52px rgba(15, 23, 42, 0.18);
+    }
+
+    .modal-content h2 {
+      margin-top: 0;
+      margin-bottom: 1rem;
+      font-size: 1.4rem;
+    }
+
+    .modal-field {
+      margin-bottom: 1rem;
+    }
+
+    .modal-field label {
+      display: block;
+      margin-bottom: 0.4rem;
+      font-weight: 700;
+    }
+
+    .modal-field input,
+    .modal-field textarea {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid #d1d5db;
+      border-radius: 0.75rem;
+      font-family: inherit;
+      font-size: 0.95rem;
+    }
+
+    .modal-field textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+
+    .modal-buttons {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.75rem;
+      margin-top: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .modal-buttons button {
+      cursor: pointer;
+      border: none;
+      border-radius: 10px;
+      padding: 0.85rem 1.2rem;
+      font-size: 0.95rem;
+      transition: background 0.2s ease;
+    }
+
+    .modal-buttons .cancel-btn {
+      background: #e5e7eb;
+      color: #111827;
+    }
+
+    .modal-buttons .create-btn {
+      background: #10b981;
+      color: white;
+    }
+
+    .modal-buttons .create-btn:hover {
+      background: #059669;
+    }
+
+    .modal-buttons .cancel-btn:hover {
+      background: #d1d5db;
+    }
+
+    @media (max-width: 980px) {
+      .reader-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="quest-book-shell">
+    <div class="quest-book-topbar">
+      <div class="quest-book-title-row">
+        <div>
+          <h1 class="quest-book-title">Quest Book</h1>
+          <p class="quest-book-subtitle">Search quests and view one quest at a time.</p>
+        </div>
+        <a href="resources.html" class="spell-book-backlink">← Back to Resources</a>
+      </div>
+      <div class="quest-book-toolbar">
+        <div class="search-field">
+          <label for="search-input">Quest search</label>
+          <input id="search-input" type="search" placeholder="Type a quest name or keyword..." autocomplete="off">
+        </div>
+        <button id="create-quest-button" class="create-quest-btn" type="button">+ New Quest</button>
+        <div id="quest-count" class="quest-count">Loading quests…</div>
+      </div>
+    </div>
+
+    <div class="reader-layout">
+      <div>
+        <div id="quest-list" class="quest-list"></div>
+      </div>
+      <div class="quest-detail-shell" id="quest-detail-shell">
+        <div class="quest-detail-placeholder">Search or select a quest to view its full details.</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="createQuestModal" class="modal" aria-hidden="true">
+    <div class="modal-content">
+      <h2>Create New Quest</h2>
+      <div class="modal-field">
+        <label for="new-quest-name">Name</label>
+        <input id="new-quest-name" type="text" placeholder="Quest name" required>
+      </div>
+      <div class="modal-field">
+        <label for="new-quest-summary">Summary</label>
+        <textarea id="new-quest-summary" placeholder="Short quest summary"></textarea>
+      </div>
+      <div class="modal-field">
+        <label for="new-quest-location">Location</label>
+        <input id="new-quest-location" type="text" placeholder="Village, Forest, Dungeon...">
+      </div>
+      <div class="modal-field">
+        <label for="new-quest-dungeon">Related Dungeon</label>
+        <select id="new-quest-dungeon">
+          <option value="">Select a dungeon...</option>
+        </select>
+      </div>
+      <div class="modal-field">
+        <label for="new-quest-giver">Quest Giver</label>
+        <select id="new-quest-giver">
+          <option value="">Select an NPC...</option>
+        </select>
+      </div>
+      <div class="modal-field">
+        <label for="new-quest-reward">Reward (one item per line)</label>
+        <textarea id="new-quest-reward" placeholder="e.g. 5 gp\na thank-you pie"></textarea>
+      </div>
+      <div class="modal-field">
+        <label for="new-quest-objectives">Objectives (one per line)</label>
+        <textarea id="new-quest-objectives" placeholder="Talk to the village elder\nSearch the orchard"></textarea>
+      </div>
+      <div class="modal-field">
+        <label for="new-quest-details">Details (one per line)</label>
+        <textarea id="new-quest-details" placeholder="The puppy is small and muddy."></textarea>
+      </div>
+      <div class="modal-field">
+        <label for="new-quest-notes">Notes</label>
+        <textarea id="new-quest-notes" placeholder="Optional behind-the-scenes notes"></textarea>
+      </div>
+      <div class="modal-buttons">
+        <button type="button" class="cancel-btn" id="cancel-create-quest">Cancel</button>
+        <button type="button" class="create-btn" id="submit-create-quest">Create Quest</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/quest-book.js"></script>
+</body>
+</html>

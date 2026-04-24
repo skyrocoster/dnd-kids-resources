@@ -218,11 +218,13 @@ def validate_player_payload(payload):
         return False
     if 'class' in payload and payload.get('class') is not None and not isinstance(payload.get('class'), str):
         return False
-    if 'level' in payload and payload.get('level') is not None:
-        try:
-            int(payload.get('level'))
-        except (ValueError, TypeError):
-            return False
+    if 'level' in payload:
+        level_value = payload.get('level')
+        if level_value is not None:
+            try:
+                int(level_value)
+            except (ValueError, TypeError):
+                return False
     if 'total_spell_slots' in payload and not validate_spell_slot_block(payload.get('total_spell_slots')):
         return False
     if 'current_spell_slots' in payload and not validate_spell_slot_block(payload.get('current_spell_slots')):
@@ -468,11 +470,13 @@ def validate_npc_payload(payload):
     if 'notes' in payload and payload.get('notes') is not None and not isinstance(payload.get('notes'), str):
         return False
     for int_field in ['armor_class', 'hit_points']:
-        if int_field in payload and payload.get(int_field) not in (None, ''):
-            try:
-                int(payload.get(int_field))
-            except (TypeError, ValueError):
-                return False
+        if int_field in payload:
+            field_value = payload.get(int_field)
+            if field_value not in (None, ''):
+                try:
+                    int(field_value)
+                except (TypeError, ValueError):
+                    return False
     for json_field in ['stats', 'saving_throws', 'skills', 'appearance']:
         if json_field in payload and payload.get(json_field) is not None:
             value = payload.get(json_field)
@@ -904,6 +908,40 @@ def get_damage_type_metadata(damage_type_code, conn):
     except Exception as e:
         print(f"Error enriching damage type {damage_type_code}: {e}")
     
+    return None
+
+
+def enrich_creature_type(creature_type_code, conn=None):
+    """Lookup creature type metadata for a creature type code."""
+    if not isinstance(creature_type_code, str):
+        return None
+
+    if conn is None:
+        conn = get_db_connection()
+        should_close = True
+    else:
+        should_close = False
+
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT code, name, emoji, color FROM creature_types WHERE code = ?",
+            (creature_type_code,)
+        )
+        creature_type = cursor.fetchone()
+        if creature_type:
+            return {
+                'code': creature_type[0],
+                'name': creature_type[1],
+                'emoji': creature_type[2],
+                'color': creature_type[3]
+            }
+    except Exception as e:
+        print(f"Error enriching creature type {creature_type_code}: {e}")
+    finally:
+        if should_close:
+            conn.close()
+
     return None
 
 
@@ -2790,6 +2828,69 @@ def get_monster_by_title(title):
         return jsonify({"error": str(e)}), 500
 
 
+def load_quests_data():
+    quest_file = Path(__file__).parent / 'data' / 'quests.json'
+    if quest_file.exists():
+        with quest_file.open('r', encoding='utf-8') as f:
+            return json.load(f)
+
+    seed_file = Path(__file__).parent / 'data' / 'seeds' / 'seed_quests.json'
+    if seed_file.exists():
+        with seed_file.open('r', encoding='utf-8') as f:
+            return json.load(f)
+
+    return []
+
+
+def save_quests_data(quests):
+    quest_file = Path(__file__).parent / 'data' / 'quests.json'
+    quest_file.parent.mkdir(parents=True, exist_ok=True)
+    with quest_file.open('w', encoding='utf-8') as f:
+        json.dump(quests, f, indent=2, ensure_ascii=False)
+    return quest_file
+
+
+@app.route('/api/quests', methods=['GET'])
+def get_quests_api():
+    """API endpoint: GET /api/quests - Returns quest summaries as JSON."""
+    try:
+        quests = load_quests_data()
+
+        summaries = []
+        for quest in quests:
+            summaries.append({
+                'id': quest.get('id'),
+                'name': quest.get('name'),
+                'title': quest.get('name') or quest.get('title'),
+                'summary': quest.get('summary'),
+                'location': quest.get('location'),
+                'dungeon_id': quest.get('dungeon_id')
+            })
+
+        return jsonify(summaries)
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/quests/<quest_id>', methods=['GET'])
+def get_quest_by_id(quest_id):
+    """API endpoint: GET /api/quests/<quest_id> - Returns a single quest by id or title."""
+    try:
+        quests = load_quests_data()
+
+        key = quest_id.strip().lower()
+        for quest in quests:
+            if (str(quest.get('id') or '').strip().lower() == key or
+                    str(quest.get('name') or quest.get('title') or '').strip().lower() == key):
+                return jsonify(quest)
+
+        return jsonify({"error": f"Quest '{quest_id}' not found"}), 404
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 # ============================================================================
 # DUNGEON ENDPOINTS
 # ============================================================================
@@ -2808,6 +2909,66 @@ def list_dungeons():
         dungeons = [dict(row) for row in cursor.fetchall()]
         conn.close()
         return jsonify(dungeons)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/quests', methods=['POST'])
+def create_quest_api():
+    """API endpoint: POST /api/quests - Creates a new quest."""
+    try:
+        data = request.get_json(silent=True) or {}
+        name = (data.get('name') or '').strip()
+        if not name:
+            return jsonify({"error": "Quest name is required."}), 400
+
+        summary = (data.get('summary') or '').strip() or None
+        location = (data.get('location') or '').strip() or None
+        dungeon_id = data.get('dungeon_id')
+        if dungeon_id is not None:
+            try:
+                dungeon_id = int(dungeon_id)
+            except (TypeError, ValueError):
+                dungeon_id = None
+        quest_giver = data.get('quest_giver')
+        if quest_giver is not None:
+            try:
+                quest_giver = int(quest_giver)
+            except (TypeError, ValueError):
+                quest_giver = None
+
+        def normalize_list(value):
+            if value is None:
+                return []
+            if isinstance(value, list):
+                return [str(item).strip() for item in value if str(item).strip()]
+            return [line.strip() for line in str(value).splitlines() if line.strip()]
+
+        reward = normalize_list(data.get('reward'))
+        objectives = normalize_list(data.get('objectives'))
+        details = normalize_list(data.get('details'))
+        notes = (data.get('notes') or '').strip() or None
+
+        quests = load_quests_data()
+        existing_ids = [int(q.get('id')) for q in quests if q.get('id') is not None and str(q.get('id')).isdigit()]
+        next_id = max(existing_ids or [0]) + 1
+
+        new_quest = {
+            'id': next_id,
+            'name': name,
+            'summary': summary,
+            'location': location,
+            'dungeon_id': dungeon_id,
+            'quest_giver': quest_giver,
+            'reward': reward,
+            'objectives': objectives,
+            'details': details,
+            'notes': notes
+        }
+
+        quests.append(new_quest)
+        save_quests_data(quests)
+        return jsonify(new_quest), 201
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

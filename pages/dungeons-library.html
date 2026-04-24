@@ -1766,9 +1766,24 @@
             return null;
         }
 
-        async function getNpcDetails(name) {
-            if (!name) return null;
-            const normalized = String(name).trim().toLowerCase();
+        async function getNpcDetails(identifier) {
+            if (!identifier) return null;
+            const normalizedInput = String(identifier).trim();
+            const numericId = parseInt(normalizedInput, 10);
+            const isExactId = !Number.isNaN(numericId) && String(numericId) === normalizedInput;
+
+            if (isExactId) {
+                try {
+                    const response = await fetch(`/api/npcs/${numericId}`);
+                    if (response.ok) {
+                        return await response.json();
+                    }
+                } catch (e) {
+                    console.warn(`Could not fetch NPC details for id ${numericId}:`, e);
+                }
+            }
+
+            const normalized = normalizedInput.toLowerCase();
 
             async function loadCachedNpcs() {
                 if (cachedNpcs) return cachedNpcs;
@@ -2197,14 +2212,20 @@
             for (const npcEl of npcEntries) {
                 const titleEl = npcEl.querySelector('.entry-title');
                 if (!titleEl) continue;
+                const npcId = npcEl.dataset.npcId;
                 const npcName = titleEl.textContent.replace(/^👤\s*/, '').trim();
-                if (!npcName) continue;
+                const lookupKey = npcId || npcName;
+                if (!lookupKey) continue;
 
-                const npc = await getNpcDetails(npcName);
+                const npc = await getNpcDetails(lookupKey);
                 const hoverTarget = titleEl || npcEl;
                 hoverTarget.style.cursor = 'pointer';
                 titleEl.style.textDecoration = 'underline dotted';
                 titleEl.style.textDecorationColor = 'rgba(74, 144, 226, 0.5)';
+
+                if (npc && npc.name && npc.name !== npcName) {
+                    titleEl.textContent = `👤 ${npc.name}`;
+                }
 
                 hoverTarget.addEventListener('mouseenter', function() {
                     if (npc) {
@@ -2403,19 +2424,38 @@
             });
 
             // Add NPCs from the room-level NPC list
-            const roomNpcs = Array.isArray(room.npcs) ? room.npcs.filter(name => name && String(name).trim()) : [];
+            const roomNpcs = Array.isArray(room.npcs)
+                ? room.npcs.map(item => item == null ? '' : String(item).trim()).filter(ref => ref)
+                : [];
+            const existingNpcIds = new Set(roomEntries
+                .filter(entry => entry.entry_type === 'npc' && entry.npc_id != null)
+                .map(entry => String(entry.npc_id))
+            );
             const existingNpcNames = new Set(roomEntries
                 .filter(entry => entry.entry_type === 'npc' && entry.npc_name)
                 .map(entry => String(entry.npc_name))
             );
-            roomNpcs.forEach(npcName => {
-                const normalizedName = String(npcName);
-                if (!existingNpcNames.has(normalizedName)) {
-                    grouped.npc.push({
-                        entry_type: 'npc',
-                        npc_name: normalizedName,
-                        title: normalizedName
-                    });
+            roomNpcs.forEach(npcRef => {
+                const numericId = parseInt(npcRef, 10);
+                const isId = !Number.isNaN(numericId) && String(numericId) === npcRef;
+                if (isId) {
+                    if (!existingNpcIds.has(String(numericId))) {
+                        grouped.npc.push({
+                            entry_type: 'npc',
+                            npc_id: numericId,
+                            npc_name: null,
+                            title: null
+                        });
+                    }
+                } else {
+                    if (!existingNpcNames.has(npcRef)) {
+                        grouped.npc.push({
+                            entry_type: 'npc',
+                            npc_id: null,
+                            npc_name: npcRef,
+                            title: npcRef
+                        });
+                    }
                 }
             });
 
@@ -2503,10 +2543,13 @@
                             roomDetailsHtml += `</div>`;
                             roomDetailsHtml += `</div>`;
                         } else if (entry.entry_type === 'npc') {
-                            roomDetailsHtml += `<div class="entry npc" data-npc-name="${escapeHtml(entry.npc_name || entry.title || '')}">`;
-                            roomDetailsHtml += `<div class="entry-title">👤 ${escapeHtml(entry.npc_name || entry.title || 'NPC')}</div>`;
+                            const npcLabel = entry.npc_name || entry.title || (entry.npc_id ? `NPC #${entry.npc_id}` : 'NPC');
+                            const npcIdAttr = entry.npc_id != null ? ` data-npc-id="${escapeHtml(String(entry.npc_id))}"` : '';
+                            const deleteArg = entry.npc_id != null ? String(entry.npc_id) : String(entry.npc_name || entry.title || '');
+                            roomDetailsHtml += `<div class="entry npc"${npcIdAttr} data-npc-name="${escapeHtml(entry.npc_name || entry.title || '')}">`;
+                            roomDetailsHtml += `<div class="entry-title">👤 ${escapeHtml(npcLabel)}</div>`;
                             roomDetailsHtml += `<div class="entry-actions">`;
-                            roomDetailsHtml += `<button class="entry-delete-btn" onclick="deleteNpcFromRoom(${roomIdx}, ${JSON.stringify(entry.npc_name || entry.title || '')})">🗑️ Remove</button>`;
+                            roomDetailsHtml += `<button class="entry-delete-btn" onclick="deleteNpcFromRoom(${roomIdx}, ${JSON.stringify(deleteArg)})">🗑️ Remove</button>`;
                             roomDetailsHtml += `</div>`;
                             roomDetailsHtml += `</div>`;
                         } else {
@@ -3748,7 +3791,7 @@
                 const npcInput = document.getElementById('featureNpc');
                 if (npcInput) npcInput.value = entry.npc_id || '';
                 if (npcSearch) npcSearch.value = entry.npc_name || entry.title || '';
-                renderModalNpcResults(entry.npc_name || entry.title || '');
+                renderModalNpcResults(selectedModalNpcId || entry.npc_name || entry.title || '');
             }
 
             // Set trap single-select
@@ -3862,17 +3905,38 @@
             }
         }
 
-        function deleteNpcFromRoom(roomIdx, npcName) {
+        function deleteNpcFromRoom(roomIdx, npcIdentifier) {
             if (!confirm('Are you sure you want to remove this NPC from the room?')) return;
             const data = currentDungeon.parsed_json;
             const room = data.rooms[roomIdx];
             if (!room) return;
+
+            const identifier = String(npcIdentifier || '').trim();
+            const normalizedNpcId = parseInt(identifier, 10);
+            const isId = !Number.isNaN(normalizedNpcId) && String(normalizedNpcId) === identifier;
+
             if (Array.isArray(room.npcs)) {
-                room.npcs = room.npcs.filter(name => String(name) !== String(npcName));
+                room.npcs = room.npcs.filter(item => {
+                    if (item == null) return false;
+                    const candidate = String(item).trim();
+                    const candidateId = parseInt(candidate, 10);
+                    if (isId && !Number.isNaN(candidateId)) {
+                        return candidateId !== normalizedNpcId;
+                    }
+                    return candidate !== identifier;
+                });
             }
             if (Array.isArray(room.entries)) {
                 room.entries = room.entries.filter(entry => {
-                    return !(entry.entry_type === 'npc' && String(entry.npc_name || entry.title || '') === String(npcName));
+                    if (entry.entry_type !== 'npc') return true;
+                    if (isId && entry.npc_id != null) {
+                        return Number(entry.npc_id) !== normalizedNpcId;
+                    }
+                    const nameToCompare = entry.npc_name || entry.title || '';
+                    if (!isId) {
+                        return String(nameToCompare) !== identifier;
+                    }
+                    return true;
                 });
             }
             displayRoom(roomIdx);
@@ -3961,8 +4025,12 @@
             results.innerHTML = '';
 
             const normalizedQuery = String(query || '').trim().toLowerCase();
+            const possibleId = parseInt(normalizedQuery, 10);
+            const isIdQuery = normalizedQuery && !Number.isNaN(possibleId) && String(possibleId) === normalizedQuery;
             let matches = normalizedQuery
-                ? modalNpcs.filter(npc => String(npc.name || '').toLowerCase().includes(normalizedQuery))
+                ? modalNpcs.filter(npc => isIdQuery
+                    ? String(npc.id) === normalizedQuery || String(npc.name || '').toLowerCase().includes(normalizedQuery)
+                    : String(npc.name || '').toLowerCase().includes(normalizedQuery))
                 : modalNpcs.slice(0, 15);
 
             if (!normalizedQuery && selectedModalNpcId) {
@@ -4233,12 +4301,20 @@
                 }
 
                 room.npcs = Array.isArray(room.npcs) ? room.npcs : [];
-                if (room.npcs.includes(npcName)) {
+                const normalizedNpcId = parseInt(npcId, 10);
+                const alreadyPresent = room.npcs.some(item => {
+                    if (item == null) return false;
+                    const candidate = String(item).trim();
+                    const candidateId = parseInt(candidate, 10);
+                    return (!Number.isNaN(normalizedNpcId) && !Number.isNaN(candidateId) && candidateId === normalizedNpcId)
+                        || candidate === npcName;
+                });
+                if (alreadyPresent) {
                     alert('This NPC is already in the room.');
                     return;
                 }
 
-                room.npcs.push(npcName);
+                room.npcs.push(Number.isNaN(normalizedNpcId) ? npcName : normalizedNpcId);
             } else if (type === 'treasure') {
                 // Handle treasure entries
                 const container = document.getElementById('treasureContainer').value.trim();
@@ -4421,12 +4497,25 @@
                     return;
                 }
 
-                const previousNpcName = entry.npc_name || entry.title || '';
+                const normalizedNpcId = parseInt(npcId, 10);
+                entry.npc_id = Number.isNaN(normalizedNpcId) ? null : normalizedNpcId;
                 entry.npc_name = npcName;
                 entry.title = npcName;
-                room.npcs = Array.isArray(room.npcs) ? room.npcs.filter(name => String(name) !== String(previousNpcName)) : [];
-                if (!room.npcs.includes(npcName)) {
-                    room.npcs.push(npcName);
+                room.npcs = Array.isArray(room.npcs) ? room.npcs : [];
+                room.npcs = room.npcs.filter(item => {
+                    if (item == null) return false;
+                    const candidate = String(item).trim();
+                    const candidateId = parseInt(candidate, 10);
+                    if (!Number.isNaN(normalizedNpcId) && !Number.isNaN(candidateId)) {
+                        return candidateId !== normalizedNpcId;
+                    }
+                    return candidate !== npcName;
+                });
+                if (!room.npcs.some(item => {
+                    const candidateId = parseInt(String(item).trim(), 10);
+                    return !Number.isNaN(normalizedNpcId) && !Number.isNaN(candidateId) && candidateId === normalizedNpcId;
+                })) {
+                    room.npcs.push(Number.isNaN(normalizedNpcId) ? npcName : normalizedNpcId);
                 }
             } else if (entryType === 'treasure') {
                 const container = document.getElementById('treasureContainer').value.trim();
