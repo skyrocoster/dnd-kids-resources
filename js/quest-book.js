@@ -1,5 +1,7 @@
 document.addEventListener('DOMContentLoaded', async function() {
-  const API_BASE = '/api';
+  const { apiFetch } = ApiHelpers;
+  const { escapeHtml } = DomUtils;
+  const { getQueryParam } = DataUtils;
   const searchInput = document.getElementById('search-input');
   const createQuestButton = document.getElementById('create-quest-button');
   const createQuestModal = document.getElementById('createQuestModal');
@@ -14,26 +16,6 @@ document.addEventListener('DOMContentLoaded', async function() {
   let dungeonList = [];
   const npcNameCache = {};
   const dungeonTitleCache = {};
-
-  async function apiFetch(path) {
-    const response = await fetch(`${API_BASE}${path}`);
-    if (!response.ok) {
-      const body = await response.json().catch(() => ({}));
-      throw new Error(body.error || `Failed to load ${path}`);
-    }
-    return await response.json();
-  }
-
-  function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = String(text);
-    return div.innerHTML;
-  }
-
-  function getQueryParam(name) {
-    const params = new URLSearchParams(window.location.search);
-    return params.get(name);
-  }
 
   function formatQuestSubtitle(quest) {
     const parts = [];

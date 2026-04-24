@@ -6,6 +6,7 @@
   <title>Spell Book — D&D Kids Resources</title>
   <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@600;700;800&family=OpenDyslexic&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/styles.css">
+  <link rel="stylesheet" href="../css/page-layout.css">
   <style>
     body {
       min-height: 100vh;
@@ -14,144 +15,45 @@
       padding: 0;
       margin: 0;
     }
-    .spell-book-shell {
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: stretch;
-      justify-content: flex-start;
-    }
-    .spell-book-topbar {
-      position: sticky;
-      top: 0;
-      z-index: 20;
-      background: rgba(253, 243, 227, 0.96);
-      border-bottom: 3px solid var(--border);
-      padding: 18px 18px 12px;
-      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.16);
-    }
-    .spell-book-title-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .spell-book-title {
-      font-family: 'Fredoka One', cursive;
-      margin: 0;
-      font-size: 2rem;
-      color: #5a3210;
-      line-height: 1.05;
-    }
-    .spell-book-player-title {
-      margin: 6px 0 0;
-      color: #5a3210;
-      font-size: 1rem;
-      font-weight: 800;
-      letter-spacing: 0.6px;
-    }
-    .spell-book-subtitle {
-      margin: 6px 0 0;
-      color: #6b4423;
-      font-size: 0.95rem;
-      letter-spacing: 0.6px;
-    }
     .spell-book-toolbar {
-      margin-top: 14px;
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: 12px;
-      align-items: center;
-    }
-    .spell-book-toolbar > * {
-      min-width: 0;
-    }
-    .spell-book-player-bar {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: 12px;
-      align-items: center;
-      width: 100%;
-    }
-    .player-select-panel {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: 10px;
-      align-items: center;
-    }
-    .player-select-panel.collapsed {
       display: none;
-    }
-    .character-select-field,
-    .search-field {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      color: var(--ink);
-      font-size: 0.8rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.6px;
-    }
-    .character-select-field,
-    .search-field,
-    .player-select-toggle {
-      width: 100%;
-    }
-    .player-select-toggle {
-      justify-self: end;
-      border: 2px solid var(--border);
-      background: #fffdf7;
-      color: var(--ink);
-      border-radius: 10px;
-      padding: 12px 14px;
-      font-size: 0.9rem;
-      font-weight: 700;
-      cursor: pointer;
-    }
-    .character-select-field select,
-    .search-field input {
-      border: 2px solid var(--border);
-      border-radius: 10px;
-      padding: 12px 14px;
-      font-size: 1rem;
-      background: #fffdf7;
-      color: var(--ink);
-    }
-    .character-select-field select:focus,
-    .search-field input:focus {
-      outline: none;
-      border-color: #c0392b;
-      box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.12);
-    }
-    .search-field {
-      margin-bottom: 0;
-    }
-    .search-field input {
-      width: 100%;
-      border: 2px solid var(--border);
-      border-radius: 10px;
-      padding: 10px 12px;
-      font-size: 0.95rem;
-      background: #fffdf7;
-      color: var(--ink);
-    }
-    .search-field input:focus {
-      outline: none;
-      border-color: #c0392b;
-      box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.12);
-    }
-    .spell-book-toolbar.spell-book-top-row {
-      grid-template-columns: minmax(220px, 1fr) minmax(260px, 2fr) auto;
-      gap: 12px;
-      align-items: end;
     }
     .spell-book-toolbar .toolbar-actions {
       display: flex;
       gap: 10px;
       justify-content: flex-end;
       flex-wrap: wrap;
+    }
+    .viewer-sidebar .panel-section {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    .viewer-sidebar + .viewer-sidebar {
+      margin-top: 1rem;
+    }
+    /* Spell slots panel container */
+    .spell-slots-panel {
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: 0 12px 30px var(--panel-shadow);
+      margin-bottom: 1rem;
+    }
+    .spell-slots-panel h3 {
+      margin: 0 0 1rem 0;
+      font-size: 1rem;
+      color: var(--text-normal);
+    }
+    .spell-slots-panel .spell-slot-overview {
+      margin: 0 0 1rem 0;
+    }
+    .spell-slots-panel .toolbar-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
     }
     .spell-book-toolbar .selected-player-pill {
       display: inline-flex;
@@ -164,33 +66,6 @@
       color: #5a3210;
       font-weight: 800;
       box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.04);
-    }
-    .reset-button {
-      border: 3px solid #8b5e3c;
-      background: linear-gradient(135deg, #a8e6ff, #6bbaff);
-      color: #2c1810;
-      font-weight: 800;
-      padding: 14px 18px;
-      border-radius: 999px;
-      min-width: 140px;
-      cursor: pointer;
-      transition: transform 0.18s ease, filter 0.18s ease;
-    }
-    .reset-button:hover:not(:disabled) {
-      transform: translateY(-1px);
-      filter: brightness(1.05);
-    }
-    .reset-button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-      background: #e8edf2;
-      border-color: #b0b7c1;
-    }
-    .spell-slot-overview {
-      margin-top: 14px;
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-      gap: 12px;
     }
     .spell-slot-card {
       display: flex;
@@ -251,21 +126,11 @@
       color: #34312a;
       line-height: 1;
     }
-    .spell-book-meta {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      align-items: center;
-      justify-content: flex-end;
-      color: #5a3210;
-      font-weight: 700;
-      font-size: 0.95rem;
-    }
     .spell-slot-overview {
-      margin-top: 12px;
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
+      margin: 0;
     }
     .spell-slot-pill {
       border: 2px solid var(--border);
@@ -309,81 +174,8 @@
       color: white;
       border-color: #992d22;
     }
-    .cast-button {
-      border: 3px solid #8b5e3c;
-      background: linear-gradient(135deg, #ffd688, #f39237);
-      color: #2c1810;
-      padding: 14px 20px;
-      border-radius: 999px;
-      font-size: 1rem;
-      font-weight: 800;
-      box-shadow: 0 10px 22px rgba(0, 0, 0, 0.17);
-      transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.25s ease;
-      min-width: 140px;
-    }
-    .cast-button:hover:not(:disabled) {
-      transform: translateY(-1px) scale(1.03);
-      background: linear-gradient(135deg, #ffe29b, #f7ab5f);
-    }
-    .cast-button:disabled {
-      opacity: 0.55;
-      cursor: not-allowed;
-      background: #e6d3b5;
-      border-color: #b0855c;
-    }
-    .spell-cast-effect {
-      animation: spell-cast-flash 5s ease forwards;
-    }
-    .spell-cast-toast {
-      position: fixed;
-      left: 50%;
-      top: 18px;
-      transform: translateX(-50%) translateY(-100%);
-      padding: 14px 22px;
-      border-radius: 999px;
-      background: rgba(255, 220, 115, 0.98);
-      color: #2c1810;
-      font-weight: 800;
-      font-size: 1rem;
-      border: 3px solid #8b5e3c;
-      box-shadow: 0 14px 32px rgba(0, 0, 0, 0.18);
-      opacity: 0;
-      pointer-events: none;
-      z-index: 30;
-      transition: transform 0.35s ease, opacity 0.35s ease;
-    }
-    .spell-cast-toast.visible {
-      transform: translateX(-50%) translateY(0);
-      opacity: 1;
-    }
-    .spell-cast-overlay {
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 2.4rem;
-      color: #fff9e3;
-      text-shadow: 0 0 20px rgba(255, 255, 255, 0.95);
-      opacity: 0;
-      animation: spell-cast-burst 5s ease forwards;
-    }
-    @keyframes spell-cast-flash {
-      0% { transform: scale(1); box-shadow: 0 0 0 rgba(255,255,255,0); }
-      20% { transform: scale(1.04); box-shadow: 0 0 24px rgba(255, 218, 131, 0.75); }
-      50% { transform: scale(1); box-shadow: 0 0 18px rgba(255, 218, 131, 0.55); }
-      100% { transform: scale(1); box-shadow: 0 0 0 rgba(255,255,255,0); }
-    }
-    @keyframes spell-cast-burst {
-      0% { opacity: 1; transform: scale(0.85); }
-      25% { opacity: 1; transform: scale(1.05); }
-      75% { opacity: 0.9; transform: scale(1.15); }
-      100% { opacity: 0; transform: scale(1.35); }
-    }
+    /* Spell container */
     #spell-book-container {
-      flex: 1;
-      overflow-y: auto;
       padding: 18px 16px 24px;
     }
     .spell-book-list {
@@ -407,60 +199,89 @@
     .spell-book-list .card-title {
       font-size: 1.1rem;
     }
-    .spell-book-backlink {
-      display: inline-flex;
-      gap: 8px;
-      align-items: center;
-      color: var(--ink);
-      text-decoration: none;
-      font-weight: 700;
-      margin-top: 10px;
-    }
-    @media (max-width: 780px) {
-      .spell-book-toolbar {
-        grid-template-columns: 1fr;
-      }
-      .spell-book-toolbar.spell-book-top-row {
-        grid-template-columns: 1fr;
-      }
-      .spell-book-meta {
-        justify-content: flex-start;
-      }
-    }
   </style>
 </head>
 <body>
-  <div class="spell-book-shell">
-    <div class="spell-book-topbar">
-      <div class="spell-book-title-row">
-        <div>
-          <h1 id="spell-book-title" class="spell-book-title">Spell Book</h1>
-        </div>
-        <a href="resources.html" class="spell-book-backlink">← Back to Resources</a>
+  <header class="site-header">
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
+      <div>
+        <h1>📚 Spell Book</h1>
+        <p>Spell lists and slot tracking for spell-casting characters</p>
       </div>
+    </div>
+  </header>
 
-      <div class="spell-book-toolbar spell-book-top-row">
-        <div class="player-select-panel" id="player-select-panel">
+  <div id="viewerView" class="dungeon-viewer-layout active">
+
+    <!-- Left panel: spell controls viewer + tools viewer -->
+    <div id="mapPanel" class="map-panel">
+      <div id="resizeHandle" class="resize-handle"></div>
+      <div class="viewer-sidebar spell-controls-sidebar">
+        <h3>Spell controls</h3>
+        <div class="panel-section">
           <label class="character-select-field select-field">
             Select player
             <select id="character-select"></select>
           </label>
-          <button id="toggle-player-select-btn" class="player-select-toggle" type="button">Hide player</button>
-        </div>
-        <label class="search-field compact-search">
-          Search spells
-          <input id="search-input" type="search" placeholder="Search by name, school, or text" autocomplete="off">
-        </label>
-        <div class="toolbar-actions">
-          <button id="reset-spell-slots-btn" class="reset-button" type="button">Refill Slots</button>
+          <label class="search-field compact-search">
+            Search spells
+            <input id="search-input" type="search" placeholder="Search by name, school, or text" autocomplete="off">
+          </label>
+          <fieldset class="select-field level-filter-section">
+            <legend>Filter spell levels</legend>
+            <div class="level-filter-row" id="level-filter-row">
+              <label class="level-filter"><input type="checkbox" value="0" checked> Cantrip</label>
+              <label class="level-filter"><input type="checkbox" value="1" checked> 1</label>
+              <label class="level-filter"><input type="checkbox" value="2" checked> 2</label>
+              <label class="level-filter"><input type="checkbox" value="3" checked> 3</label>
+              <label class="level-filter"><input type="checkbox" value="4" checked> 4</label>
+              <label class="level-filter"><input type="checkbox" value="5" checked> 5</label>
+              <label class="level-filter"><input type="checkbox" value="6" checked> 6</label>
+              <label class="level-filter"><input type="checkbox" value="7" checked> 7</label>
+              <label class="level-filter"><input type="checkbox" value="8" checked> 8</label>
+              <label class="level-filter"><input type="checkbox" value="9" checked> 9</label>
+            </div>
+          </fieldset>
         </div>
       </div>
-      <div class="spell-slot-overview" id="spell-slot-overview"></div>
     </div>
 
-    <div id="spell-cast-toast" class="spell-cast-toast" aria-live="polite"></div>
-    <main id="spell-book-container"></main>
+    <!-- Right panel: controls bar + spell list -->
+    <div class="dungeon-viewer-right">
+      <div class="viewer-controls">
+        <button id="showListPanelBtn" class="toggle-list-btn hidden" onclick="expandListPanel()">→</button>
+        <a href="resources.html" class="back-btn">← Resources</a>
+      </div>
+      <div class="dungeon-content">
+        <div class="spell-slots-panel">
+          <h3>Spell Slots</h3>
+          <div class="spell-slot-overview" id="spell-slot-overview"></div>
+          <div class="toolbar-actions">
+            <button id="reset-spell-slots-btn" class="reset-button" type="button">Refill Slots</button>
+          </div>
+        </div>
+
+        <div id="spell-book-container" class="spell-book-list"></div>
+      </div>
+    </div>
+
   </div>
+
+  <div id="spell-cast-toast" class="spell-cast-toast" aria-live="polite"></div>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/dom-utils.js"></script>
+  <script src="../js/data-utils.js"></script>
+  <script src="../js/page-base.js"></script>
+  <script src="../js/pane-resize.js"></script>
+  <script>
+    PageBase.autoInitializeViewerPane('spellBook', {
+      defaultWidth: 220,
+      minWidth: 180,
+      maxWidthFraction: 0.4,
+      collapseThreshold: 150
+    });
+  </script>
   <script src="../js/card-generator.js"></script>
   <script src="../js/spells-book.js"></script>
 </body>

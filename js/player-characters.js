@@ -24,22 +24,13 @@ document.addEventListener('DOMContentLoaded', async function() {
   const confirmPlayerBtn = document.getElementById('confirm-player-btn');
   const cancelCreateBtn = document.getElementById('cancel-create-btn');
 
-  const API_BASE = '/api';
+  const { apiFetch } = ApiHelpers;
   let players = [];
   let spells = [];
   let weapons = [];
   let selectedPlayer = null;
   let spellIndex = [];
   let weaponIndex = [];
-
-  async function apiFetch(path, options = {}) {
-    const response = await fetch(`${API_BASE}${path}`, options);
-    const body = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      throw new Error(body.error || `API request failed: ${response.status}`);
-    }
-    return body;
-  }
 
   function updatePlayerCount() {
     playerCountEl.textContent = `${players.length} player${players.length === 1 ? '' : 's'}`;

@@ -4,28 +4,22 @@ document.addEventListener('DOMContentLoaded', async function() {
   const characterSelect = document.getElementById('character-select');
   const slotOverview = document.getElementById('spell-slot-overview');
   const castToast = document.getElementById('spell-cast-toast');
-  const playerSelectPanel = document.getElementById('player-select-panel');
-  const togglePlayerSelectBtn = document.getElementById('toggle-player-select-btn');
   const resetSlotsButton = document.getElementById('reset-spell-slots-btn');
-  const metaText = document.getElementById('spell-book-meta');
-  const spellBookTitle = document.getElementById('spell-book-title');
+  const actionPanel = document.getElementById('actionPanel');
+  const levelFilterRow = document.getElementById('level-filter-row');
   let castToastTimeout = null;
 
-  const API_BASE = '/api';
+  // Tool buttons will be created dynamically
+  let sidebarRefillSlots = null;
+  let sidebarClearSearch = null;
+
+  const { apiFetch } = ApiHelpers;
   let spells = [];
   let players = [];
   let selectedPlayerId = null;
   let selectedPlayer = null;
   let searchTerm = '';
-
-  async function apiFetch(path, options = {}) {
-    const response = await fetch(`${API_BASE}${path}`, options);
-    const body = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      throw new Error(body.error || `API request failed: ${response.status}`);
-    }
-    return body;
-  }
+  const selectedSpellLevels = new Set(['0','1','2','3','4','5','6','7','8','9']);
 
   function normalizeSpellText(spell) {
     const name = spell.title || spell.name || '';
@@ -34,6 +28,17 @@ document.addEventListener('DOMContentLoaded', async function() {
     return `${name} ${school} ${String(description)}`.toLowerCase();
   }
 
+  function normalizeSpellLevel(spell) {
+    const levelString = String(spell.level || '').trim().toLowerCase();
+    if (levelString === 'cantrip' || levelString === '0') {
+      return '0';
+    }
+    const numeric = parseInt(levelString, 10);
+    if (Number.isFinite(numeric) && numeric >= 1 && numeric <= 9) {
+      return String(numeric);
+    }
+    return null;
+  }
 
   function getAssignedSpellIds() {
     return selectedPlayer?.spells?.map(id => String(id)) || [];
@@ -63,6 +68,12 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (!assignedIds.includes(String(spell.id))) {
           return false;
         }
+
+        const spellLevel = normalizeSpellLevel(spell);
+        if (spellLevel !== null && !selectedSpellLevels.has(spellLevel)) {
+          return false;
+        }
+
         if (!searchTerm) {
           return true;
         }
@@ -79,30 +90,51 @@ document.addEventListener('DOMContentLoaded', async function() {
   }
 
   function updateMeta(count) {
-    if (!metaText) return;
-    const playerName = selectedPlayer ? selectedPlayer.name || 'Selected player' : 'No player selected';
-    metaText.textContent = `${playerName}: ${count} spell${count === 1 ? '' : 's'} available`;
+    // Meta text display no longer used in new layout
   }
 
   function updatePlayerTitle() {
-    if (!spellBookTitle) return;
+    // Page title updates moved to shared header
     if (selectedPlayer) {
       const playerName = selectedPlayer.name || 'Player';
       const titleText = `${playerName}'s Spell Book`;
-      spellBookTitle.textContent = titleText;
       document.title = `${titleText} — D&D Kids Resources`;
       resetSlotsButton.disabled = false;
     } else {
-      spellBookTitle.textContent = 'Spell Book';
       document.title = 'Spell Book — D&D Kids Resources';
       resetSlotsButton.disabled = true;
     }
   }
 
-  function togglePlayerSelectPanel() {
-    if (!playerSelectPanel || !togglePlayerSelectBtn) return;
-    const collapsed = playerSelectPanel.classList.toggle('collapsed');
-    togglePlayerSelectBtn.textContent = collapsed ? 'Show player' : 'Hide player';
+  function onLevelFilterChange(event) {
+    const levelValue = event.target.value;
+    if (event.target.checked) {
+      selectedSpellLevels.add(levelValue);
+    } else {
+      selectedSpellLevels.delete(levelValue);
+    }
+    renderSpellBook();
+  }
+
+  function initLevelFilterControls() {
+    if (!levelFilterRow) return;
+    const inputs = levelFilterRow.querySelectorAll('input[type="checkbox"]');
+    inputs.forEach(input => {
+      input.addEventListener('change', onLevelFilterChange);
+    });
+  }
+
+  function toggleActionPanel() {
+    if (!actionPanel || !actionPanelToggle) return;
+    const collapsed = actionPanel.classList.toggle('collapsed');
+    actionPanelToggle.setAttribute('aria-expanded', String(!collapsed));
+  }
+
+  function clearSearch() {
+    if (!searchInput) return;
+    searchInput.value = '';
+    searchTerm = '';
+    renderSpellBook();
   }
 
   function updatePlayerHeader() {
@@ -152,6 +184,13 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
   }
 
+  function createEmptyState(message) {
+    const emptyState = document.createElement('div');
+    emptyState.className = 'empty-state';
+    emptyState.textContent = message;
+    return emptyState;
+  }
+
   function clearContainer() {
     container.innerHTML = '';
   }
@@ -160,35 +199,20 @@ document.addEventListener('DOMContentLoaded', async function() {
     clearContainer();
     updatePlayerHeader();
     if (!players.length) {
-      const noPlayers = document.createElement('div');
-      noPlayers.style.padding = '28px 14px';
-      noPlayers.style.textAlign = 'center';
-      noPlayers.style.color = '#5a3210';
-      noPlayers.textContent = 'No player characters found. Create players first on the Player Characters page.';
-      container.appendChild(noPlayers);
+      container.appendChild(createEmptyState('No player characters found. Create players first on the Player Characters page.'));
       updateMeta(0);
       return;
     }
 
     if (!selectedPlayer) {
-      const noSelection = document.createElement('div');
-      noSelection.style.padding = '28px 14px';
-      noSelection.style.textAlign = 'center';
-      noSelection.style.color = '#5a3210';
-      noSelection.textContent = 'Select a player to view their assigned spell book.';
-      container.appendChild(noSelection);
+      container.appendChild(createEmptyState('Select a player to view their assigned spell book.'));
       updateMeta(0);
       return;
     }
 
     const assignedIds = getAssignedSpellIds();
     if (assignedIds.length === 0) {
-      const emptyState = document.createElement('div');
-      emptyState.style.padding = '28px 14px';
-      emptyState.style.textAlign = 'center';
-      emptyState.style.color = '#5a3210';
-      emptyState.textContent = 'This player has no assigned spells yet. Add spells in the Player Characters page.';
-      container.appendChild(emptyState);
+      container.appendChild(createEmptyState('This player has no assigned spells yet. Add spells in the Player Characters page.'));
       updateMeta(0);
       return;
     }
@@ -198,12 +222,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     renderSlotOverview();
 
     if (visible.length === 0) {
-      const emptyState = document.createElement('div');
-      emptyState.style.padding = '28px 14px';
-      emptyState.style.textAlign = 'center';
-      emptyState.style.color = '#5a3210';
-      emptyState.textContent = 'No spells matched your search. Try a different term or reset the level filter.';
-      container.appendChild(emptyState);
+      container.appendChild(createEmptyState('No spells matched your search. Try a different term or reset the level filter.'));
       return;
     }
 
@@ -365,10 +384,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     await loadSelectedPlayer(selectedPlayerId);
   });
 
-  if (togglePlayerSelectBtn) {
-    togglePlayerSelectBtn.addEventListener('click', togglePlayerSelectPanel);
-  }
+  // Create tool buttons dynamically
+  sidebarRefillSlots = PageBase.addToolButton('Refill Spell Slots', 'sidebar-refill-slots', resetSpellSlots);
+  sidebarClearSearch = PageBase.addToolButton('Clear Search', 'sidebar-clear-search', clearSearch);
 
+  initLevelFilterControls();
   resetSlotsButton.addEventListener('click', resetSpellSlots);
 
   async function loadSpells() {

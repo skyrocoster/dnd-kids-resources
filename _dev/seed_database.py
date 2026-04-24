@@ -352,8 +352,7 @@ def populate_actions(cursor, conn, force=False):
                 action.get('name'),
                 action.get('icon', '⚔️'),
                 action.get('category', 'Action'),
-                action.get('explanation', ''),
-                details
+                action.get('explanation', '')
             ))
             print(f"  [CHECK] {action.get('name')}")
         except sqlite3.IntegrityError as e:

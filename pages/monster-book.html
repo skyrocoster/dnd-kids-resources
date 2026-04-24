@@ -6,228 +6,84 @@
   <title>Monster Lookup — D&D Kids Resources</title>
   <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@600;700;800&family=OpenDyslexic&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/styles.css">
+  <link rel="stylesheet" href="../css/page-layout.css">
   <style>
-    body {
-      min-height: 100vh;
-      background: linear-gradient(180deg, #334155 0%, #8293a4 100%);
-      color: #1f2937;
-      margin: 0;
-      font-family: 'Nunito', sans-serif;
-    }
-    .monster-book-shell {
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
-    .monster-book-topbar {
-      position: sticky;
-      top: 0;
-      z-index: 20;
-      background: rgba(248, 250, 252, 0.96);
-      border-bottom: 3px solid #cbd5e1;
-      padding: 18px;
-      box-shadow: 0 10px 28px rgba(15, 23, 42, 0.12);
-    }
-    .monster-book-title-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .monster-book-title {
-      margin: 0;
-      font-family: 'Fredoka One', cursive;
-      font-size: 2rem;
-      color: #102a43;
-      line-height: 1.05;
-    }
-    .monster-book-subtitle {
-      margin: 6px 0 0;
-      color: #334155;
-      font-size: 0.95rem;
-      letter-spacing: 0.4px;
-    }
-    .monster-book-toolbar {
-      margin-top: 16px;
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: 12px;
-      align-items: end;
-    }
-    .search-field,
-    .monster-count {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-    .search-field label {
-      font-size: 0.75rem;
-      color: #334155;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.6px;
-    }
-    .search-field input {
-      width: 100%;
-      border: 2px solid #cbd5e1;
-      border-radius: 10px;
-      padding: 12px 14px;
-      font-size: 1rem;
-      background: #ffffff;
-      color: #102a43;
-    }
-    .search-field input:focus {
-      outline: none;
-      border-color: #1d4ed8;
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.16);
-    }
-    .monster-book-meta {
-      color: #334155;
-      font-size: 0.95rem;
-      font-weight: 700;
-      align-self: flex-start;
-    }
-    .reader-layout {
-      display: grid;
-      grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
-      gap: 18px;
-      width: 100%;
-      padding: 18px;
-      box-sizing: border-box;
-    }
-    .monster-list {
-      display: grid;
-      gap: 10px;
-    }
+    /* Monster list */
+    .monster-list { display: grid; gap: 8px; }
     .monster-list-item {
       background: #ffffff;
-      border: 2px solid #cbd5e1;
-      border-radius: 14px;
-      padding: 14px 16px;
+      border: 2px solid #e0e0e0;
+      border-radius: 6px;
+      padding: 10px 14px;
       cursor: pointer;
       transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
     }
     .monster-list-item:hover,
     .monster-list-item.selected {
-      border-color: #1d4ed8;
-      box-shadow: 0 12px 26px rgba(15, 23, 42, 0.12);
+      border-color: #4a90e2;
+      box-shadow: 0 4px 12px rgba(74,144,226,0.2);
       transform: translateY(-1px);
     }
     .monster-list-item-title {
       margin: 0;
-      font-size: 1rem;
+      font-size: 0.95rem;
       font-weight: 700;
-      color: #102a43;
+      color: #333;
     }
     .monster-list-item-subtitle {
-      margin: 6px 0 0;
-      color: #64748b;
-      font-size: 0.87rem;
+      margin: 4px 0 0;
+      color: #666;
+      font-size: 0.83rem;
       line-height: 1.4;
     }
-    .monster-detail-shell {
-      display: flex;
-      flex-direction: column;
-      gap: 18px;
+
+    /* Monster count */
+    .monster-book-meta {
+      font-size: 0.85rem;
+      color: #555;
+      font-weight: 700;
+      margin-bottom: 0.75rem;
     }
-    .detail-shell {
-      display: flex;
-      flex-direction: column;
-      gap: 18px;
-    }
+
+    /* Monster detail */
+    .monster-detail-shell,
+    .detail-shell { display: flex; flex-direction: column; gap: 18px; }
     .detail-header {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      gap: 1rem;
-      margin-bottom: 0;
+      display: flex; flex-wrap: wrap;
+      align-items: center; justify-content: space-between;
+      gap: 1rem; margin-bottom: 0;
     }
-    .detail-title-group {
-      min-width: 0;
-    }
-    .detail-title {
-      margin: 0;
-      font-size: 2rem;
-      color: #102a43;
-      line-height: 1.05;
-    }
-    .detail-subtitle {
-      margin: 0.35rem 0 0;
-      color: #475569;
-      font-size: 0.95rem;
-    }
-    .detail-grid {
-      display: grid;
-      gap: 18px;
-      grid-template-columns: minmax(0, 1fr);
-    }
+    .detail-title-group { min-width: 0; }
+    .detail-title { margin: 0; font-size: 2rem; color: #102a43; line-height: 1.05; }
+    .detail-subtitle { margin: 0.35rem 0 0; color: #475569; font-size: 0.95rem; }
+    .detail-grid { display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr); }
     .monster-detail-panel,
     .detail-panel {
       background: #ffffff;
-      border-radius: 18px;
+      border-radius: 8px;
       padding: 18px;
-      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12);
-      border: 1px solid #cbd5e1;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      border: 1px solid #ddd;
     }
     .monster-detail-placeholder {
-      padding: 24px;
-      text-align: center;
-      color: #475569;
-      font-size: 1rem;
-      background: #f8fafc;
-      border-radius: 14px;
-      border: 1px dashed #cbd5e1;
+      padding: 24px; text-align: center;
+      color: #666; font-size: 1rem;
+      background: #f9f9f9; border-radius: 6px;
+      border: 1px dashed #ccc;
     }
-    .detail-row {
-      margin-bottom: 0.75rem;
-    }
-    .detail-label {
-      font-weight: 700;
-      color: #34495e;
-      display: block;
-      margin-bottom: 0.25rem;
-    }
+    .detail-row { margin-bottom: 0.75rem; }
+    .detail-label { font-weight: 700; color: #34495e; display: block; margin-bottom: 0.25rem; }
     .detail-item {
-      margin-bottom: 1rem;
-      padding-bottom: 0.75rem;
+      margin-bottom: 1rem; padding-bottom: 0.75rem;
       border-bottom: 1px solid #ebeff6;
     }
-    .detail-item:last-child {
-      margin-bottom: 0;
-      padding-bottom: 0;
-      border-bottom: none;
-    }
-    .detail-item-title {
-      font-weight: 800;
-      color: #1f2937;
-      margin-bottom: 0.35rem;
-    }
-    .detail-item-text {
-      color: #4b5563;
-      line-height: 1.65;
-      white-space: pre-wrap;
-    }
-    .detail-item-list {
-      margin: 0.35rem 0 0 0;
-      padding-left: 1.25rem;
-      color: #4b5563;
-    }
-    .detail-item-list li {
-      margin-bottom: 0.35rem;
-    }
-    .detail-value {
-      color: #444;
-      line-height: 1.6;
-      white-space: pre-wrap;
-    }
-    .detail-panel h2 {
-      margin-top: 0;
-      margin-bottom: 0.75rem;
-      font-size: 1.2rem;
-      color: #2d3a4a;
-    }
+    .detail-item:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+    .detail-item-title { font-weight: 800; color: #1f2937; margin-bottom: 0.35rem; }
+    .detail-item-text { color: #4b5563; line-height: 1.65; white-space: pre-wrap; }
+    .detail-item-list { margin: 0.35rem 0 0 0; padding-left: 1.25rem; color: #4b5563; }
+    .detail-item-list li { margin-bottom: 0.35rem; }
+    .detail-value { color: #444; line-height: 1.6; white-space: pre-wrap; }
+    .detail-panel h2 { margin-top: 0; margin-bottom: 0.75rem; font-size: 1.2rem; color: #2d3a4a; }
     .stat-grid,
     .save-grid {
       display: grid;
@@ -236,78 +92,86 @@
     }
     .stat-card,
     .save-card {
-      background: #f7f9fc;
-      border-radius: 8px;
-      padding: 0.85rem;
-      text-align: center;
-      border: 1px solid #e6e9ef;
+      background: #f7f9fc; border-radius: 8px;
+      padding: 0.85rem; text-align: center; border: 1px solid #e6e9ef;
     }
     .stat-card .stat-name,
-    .save-card .stat-name {
-      display: block;
-      font-size: 0.75rem;
-      color: inherit;
-      margin-bottom: 0.2rem;
-    }
+    .save-card .stat-name { display: block; font-size: 0.75rem; color: inherit; margin-bottom: 0.2rem; }
     .stat-card .stat-value,
-    .save-card .stat-value {
-      font-size: 1rem;
-      font-weight: 700;
-      color: inherit;
-    }
-    .notes {
-      color: #5f6f89;
-      margin-top: 0.25rem;
-      font-size: 0.95rem;
-    }
+    .save-card .stat-value { font-size: 1rem; font-weight: 700; color: inherit; }
+    .notes { color: #5f6f89; margin-top: 0.25rem; font-size: 0.95rem; }
     .loading,
     .error-message {
-      padding: 1.25rem;
-      background: white;
-      border-radius: 12px;
-      border: 1px solid #e3e3e8;
-      box-shadow: 0 10px 28px rgba(0,0,0,0.05);
-      max-width: 100%;
-      margin: 0;
-      text-align: left;
+      padding: 1.25rem; background: white; border-radius: 6px;
+      border: 1px solid #ddd; color: #333;
+    }
+
+    /* Viewer controls bar */
+    .monster-title-header {
+      font-size: 1rem;
+      font-weight: 700;
       color: #333;
     }
-    @media (max-width: 980px) {
-      .reader-layout {
-        grid-template-columns: 1fr;
-      }
+    .back-btn {
+      background: #7f8c8d; color: white; border: none;
+      padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer;
+      font-size: 0.9rem; text-decoration: none;
+      transition: background 0.2s ease;
     }
+    .back-btn:hover { background: #687f8c; }
   </style>
 </head>
 <body>
-  <div class="monster-book-shell">
-    <div class="monster-book-topbar">
-      <div class="monster-book-title-row">
-        <div>
-          <h1 class="monster-book-title">Monster Lookup</h1>
-          <p class="monster-book-subtitle">Search monsters and inspect one full monster at a time.</p>
-        </div>
-        <a href="resources.html" class="spell-book-backlink">← Back to Resources</a>
+  <header class="site-header">
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
+      <div>
+        <h1>👾 Monster Lookup</h1>
+        <p>Browse and inspect D&amp;D monsters</p>
       </div>
-      <div class="monster-book-toolbar">
-        <div class="search-field">
-          <label for="search-input">Monster search</label>
-          <input id="search-input" type="search" placeholder="Type a monster name..." autocomplete="off">
+    </div>
+  </header>
+
+  <div id="viewerView" class="dungeon-viewer-layout active">
+
+    <!-- Left panel: search + monster list -->
+    <div id="mapPanel" class="map-panel">
+      <div id="resizeHandle" class="resize-handle"></div>
+      <label class="search-field">
+        <span>Search monsters</span>
+        <input id="search-input" type="search" placeholder="Type a monster name..." autocomplete="off">
+      </label>
+      <div id="monster-count" class="monster-book-meta">Loading monsters…</div>
+      <div id="monster-list" class="monster-list"></div>
+    </div>
+
+    <!-- Right panel: controls bar + scrollable detail -->
+    <div class="dungeon-viewer-right">
+      <div class="viewer-controls controls-row">
+        <button id="showListPanelBtn" class="toggle-list-btn hidden" onclick="expandListPanel()">→</button>
+        <a href="resources.html" class="back-btn">← Resources</a>
+        <span id="monster-title-header" class="monster-title-header">Select a monster</span>
+      </div>
+      <div class="dungeon-content">
+        <div id="monster-detail-shell" class="monster-detail-shell">
+          <div class="monster-detail-placeholder">Search or select a monster to view its full details.</div>
         </div>
-        <div id="monster-count" class="monster-book-meta">Loading monsters…</div>
       </div>
     </div>
 
-    <div class="reader-layout">
-      <div>
-        <div id="monster-list" class="monster-list"></div>
-      </div>
-      <div class="monster-detail-shell" id="monster-detail-shell">
-        <div class="monster-detail-placeholder">Search or select a monster to view its full details.</div>
-      </div>
-    </div>
   </div>
 
+  <script src="../js/api.js"></script>
+  <script src="../js/dom-utils.js"></script>
+  <script src="../js/data-utils.js"></script>
+  <script src="../js/page-base.js"></script>
+  <script src="../js/pane-resize.js"></script>
+  <script>
+    PageBase.autoInitializeViewerPane('monster', {
+      defaultWidth: 350,
+      maxWidthFraction: 0.6,
+      collapseThreshold: 200
+    });
+  </script>
   <script src="../js/monster-book.js"></script>
 </body>
 </html>

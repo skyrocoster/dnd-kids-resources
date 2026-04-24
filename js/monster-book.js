@@ -1,5 +1,8 @@
 document.addEventListener('DOMContentLoaded', async function() {
-  const API_BASE = '/api';
+  const { apiFetch } = ApiHelpers;
+  const { escapeHtml } = DomUtils;
+  const { parseJsonValue, formatDisplayValue, normalizeSearchText, getQueryParam } = DataUtils;
+
   const searchInput = document.getElementById('search-input');
   const monsterListEl = document.getElementById('monster-list');
   const monsterDetailShell = document.getElementById('monster-detail-shell');
@@ -8,65 +11,6 @@ document.addEventListener('DOMContentLoaded', async function() {
   let monsters = [];
   let selectedMonsterTitle = null;
   let suppressInputChange = false;
-
-  async function apiFetch(path) {
-    const response = await fetch(`${API_BASE}${path}`);
-    if (!response.ok) {
-      const body = await response.json().catch(() => ({}));
-      throw new Error(body.error || `Failed to load ${path}`);
-    }
-    return await response.json();
-  }
-
-  function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = String(text);
-    return div.innerHTML;
-  }
-
-  function parseJsonValue(value) {
-    if (typeof value !== 'string') return value;
-    const trimmed = value.trim();
-    if ((trimmed.startsWith('[') && trimmed.endsWith(']')) || (trimmed.startsWith('{') && trimmed.endsWith('}'))) {
-      try {
-        return JSON.parse(trimmed);
-      } catch (e) {
-        return value;
-      }
-    }
-    return value;
-  }
-
-  function formatObjectValue(obj) {
-    if (!obj || typeof obj !== 'object') return '';
-    if (obj.name) return String(obj.name);
-
-    const parts = [];
-    for (const [key, value] of Object.entries(obj)) {
-      if (value === null || value === undefined || value === '') continue;
-      if (Array.isArray(value)) {
-        const formatted = value.map(item => formatDisplayValue(item)).filter(Boolean).join(', ');
-        if (formatted) parts.push(`${key}: ${formatted}`);
-      } else if (typeof value === 'object') {
-        const formatted = formatObjectValue(value);
-        if (formatted) parts.push(`${key}: ${formatted}`);
-      } else {
-        parts.push(`${key}: ${value}`);
-      }
-    }
-    return parts.join(', ');
-  }
-
-  function formatDisplayValue(value) {
-    const parsed = parseJsonValue(value);
-    if (Array.isArray(parsed)) {
-      return parsed.map(item => formatDisplayValue(item)).filter(Boolean).join(', ');
-    }
-    if (parsed && typeof parsed === 'object') {
-      return formatObjectValue(parsed);
-    }
-    return String(parsed || '');
-  }
 
   function formatAttackDescription(attack) {
     if (!attack || typeof attack !== 'object') return '';
@@ -425,11 +369,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     } else {
       monsterCount.textContent = fallback || 'Type a monster name to begin.';
     }
-  }
-
-  function getQueryParam(name) {
-    const params = new URLSearchParams(window.location.search);
-    return params.get(name);
   }
 
   function filterMonsters(term) {

@@ -6,6 +6,7 @@
     <title>Dungeon Library - D&D Kids Resources</title>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@600;700;800&family=OpenDyslexic&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../css/styles.css">
+    <link rel="stylesheet" href="../css/page-layout.css">
     <style>
         :root {
             color-scheme: light dark;
@@ -218,70 +219,6 @@
             display: none !important;
         }
 
-        .map-panel.collapsed {
-            display: block;
-            width: 0 !important;
-            min-width: 0 !important;
-            padding: 0 !important;
-            border: none !important;
-            overflow: hidden !important;
-        }
-
-        .dungeon-viewer-layout {
-            display: none;
-            grid-template-columns: 350px 1fr;
-            gap: 0;
-            width: 100vw;
-            height: 100vh;
-            margin: 0;
-            padding: 0;
-            position: fixed;
-            top: 0;
-            left: 0;
-            z-index: 100;
-        }
-
-        .dungeon-viewer-layout.active {
-            display: grid;
-        }
-
-        .map-panel {
-            background: #f5f5f5;
-            padding: 1.5rem;
-            border-radius: 0;
-            overflow-y: scroll;
-            height: 100%;
-            position: relative;
-            border-right: 1px solid #ddd;
-            padding-right: calc(1.5rem + 5px);
-        }
-
-        .resize-handle {
-            position: absolute;
-            right: 0;
-            top: 0;
-            width: 5px;
-            height: 100%;
-            background: #ccc;
-            cursor: col-resize;
-            user-select: none;
-            touch-action: none;
-            transition: background 0.2s ease;
-            z-index: 10;
-        }
-
-        @media (pointer: coarse), (hover: none) {
-            .resize-handle {
-                width: 20px;
-                right: -7px;
-                background: rgba(204, 204, 204, 0.95);
-            }
-        }
-
-        .resize-handle:hover {
-            background: #999;
-        }
-
         .map-display {
             margin-bottom: 1.5rem;
         }
@@ -301,31 +238,17 @@
             width: 100%;
         }
 
-        .dungeon-viewer-right {
-            display: flex;
-            flex-direction: column;
-            background: white;
-            height: 100%;
-            overflow: hidden;
-        }
-
         .viewer-controls {
             background: #f5f5f5;
             padding: 1.5rem;
             border-bottom: 1px solid #ddd;
             flex-shrink: 0;
+            display: block;
         }
 
         .viewer-controls h3 {
             margin-top: 1rem;
             margin-bottom: 0.5rem;
-        }
-
-        .dungeon-content {
-            flex: 1;
-            overflow-y: auto;
-            padding: 2rem;
-            min-height: 0;
         }
 
         .dungeon-viewer {
@@ -1264,6 +1187,7 @@
         </div>
     </div>
 
+    <script src="../js/pane-resize.js"></script>
     <script>
         let currentDungeon = null;
         let dungeons = [];
@@ -1285,13 +1209,41 @@
         let selectedModalNpcId = null;
         let cachedNpcs = null;
 
-        // Initialize page based on URL hash
-        let isResizing = false;
-
-        // Initialize resize handle
-        const resizeHandle = document.getElementById('resizeHandle');
+        // Panel resize — managed by PaneResize (js/pane-resize.js)
         const layout = document.getElementById('viewerView');
         const mapPanel = document.getElementById('mapPanel');
+        const expandMapBtn = document.getElementById('expandMapBtn');
+
+        const _mapPane = PaneResize.init({
+            storagePrefix:     'dungeonMapPanel',
+            layoutId:          'viewerView',
+            panelId:           'mapPanel',
+            handleId:          'resizeHandle',
+            showBtnId:         'showMapPanelBtn',
+            defaultWidth:      350,
+            minWidth:          300,
+            maxWidthFraction:  0.7,
+            collapseThreshold: 240
+        });
+
+        function collapseMapPanel() {
+            _mapPane.collapse();
+            if (expandMapBtn) expandMapBtn.classList.remove('hidden');
+        }
+
+        function expandMapPanel() {
+            _mapPane.expand();
+            if (expandMapBtn) expandMapBtn.classList.add('hidden');
+        }
+
+        function toggleMapPanel() {
+            if (mapPanel && mapPanel.classList.contains('collapsed')) {
+                expandMapPanel();
+            } else {
+                collapseMapPanel();
+            }
+        }
+
         const monsterSearchInput = document.getElementById('featureMonsterSearch');
         const npcSearchInput = document.getElementById('featureNpcSearch');
 
@@ -1311,96 +1263,6 @@
                 if (npcInput) npcInput.value = '';
                 renderModalNpcResults(event.target.value);
             });
-        }
-
-        const expandMapBtn = document.getElementById('expandMapBtn');
-        const showMapPanelBtn = document.getElementById('showMapPanelBtn');
-
-        function collapseMapPanel() {
-            layout.style.gridTemplateColumns = '0 1fr';
-            mapPanel.classList.add('collapsed');
-            mapPanel.style.width = '0';
-            mapPanel.style.minWidth = '0';
-            document.body.style.cursor = '';
-            if (expandMapBtn) expandMapBtn.classList.remove('hidden');
-            if (showMapPanelBtn) showMapPanelBtn.classList.remove('hidden');
-            localStorage.setItem('dungeonMapPanelCollapsed', 'true');
-        }
-
-        function expandMapPanel() {
-            mapPanel.classList.remove('collapsed');
-            mapPanel.style.width = '';
-            mapPanel.style.minWidth = '';
-            const savedWidth = parseInt(localStorage.getItem('dungeonMapPanelWidth'), 10) || 350;
-            const maxWidth = window.innerWidth * 0.7;
-            const width = Math.min(Math.max(savedWidth, 300), maxWidth);
-            layout.style.gridTemplateColumns = `${width}px 1fr`;
-            if (expandMapBtn) expandMapBtn.classList.add('hidden');
-            if (showMapPanelBtn) showMapPanelBtn.classList.add('hidden');
-            localStorage.setItem('dungeonMapPanelCollapsed', 'false');
-        }
-
-        function toggleMapPanel() {
-            if (mapPanel.classList.contains('collapsed')) {
-                expandMapPanel();
-            } else {
-                collapseMapPanel();
-            }
-        }
-
-        function startResize(e) {
-            isResizing = true;
-            document.body.style.userSelect = 'none';
-            document.body.style.cursor = 'col-resize';
-            if (e.pointerId) {
-                resizeHandle.setPointerCapture(e.pointerId);
-            }
-            e.preventDefault();
-        }
-
-        function updateResize(e) {
-            if (!isResizing) return;
-
-            const newWidth = e.clientX;
-            const collapseThreshold = 240;
-            const minWidth = 300;
-            const maxWidth = window.innerWidth * 0.7;
-
-            if (newWidth <= collapseThreshold) {
-                collapseMapPanel();
-                isResizing = false;
-                document.body.style.userSelect = '';
-                return;
-            }
-
-            const width = Math.min(Math.max(newWidth, minWidth), maxWidth);
-            layout.style.gridTemplateColumns = `${width}px 1fr`;
-            localStorage.setItem('dungeonMapPanelWidth', width);
-        }
-
-        function stopResize() {
-            isResizing = false;
-            document.body.style.userSelect = '';
-            document.body.style.cursor = '';
-        }
-
-        resizeHandle.addEventListener('pointerdown', startResize);
-        resizeHandle.addEventListener('touchstart', startResize, { passive: false });
-        document.addEventListener('pointermove', updateResize);
-        document.addEventListener('touchmove', updateResize, { passive: false });
-        document.addEventListener('pointerup', stopResize);
-        document.addEventListener('touchend', stopResize);
-        document.addEventListener('pointercancel', stopResize);
-
-        // Load saved width preference and collapsed state
-        const savedWidth = localStorage.getItem('dungeonMapPanelWidth');
-        const savedCollapsed = localStorage.getItem('dungeonMapPanelCollapsed') === 'true';
-        if (savedCollapsed) {
-            collapseMapPanel();
-        } else if (savedWidth) {
-            const width = Math.min(Math.max(parseInt(savedWidth, 10), 300), window.innerWidth * 0.7);
-            layout.style.gridTemplateColumns = `${width}px 1fr`;
-            if (showMapPanelBtn) showMapPanelBtn.classList.add('hidden');
         }
 
         function initPage() {

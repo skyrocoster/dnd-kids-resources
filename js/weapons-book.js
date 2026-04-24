@@ -1,11 +1,6 @@
 document.addEventListener('DOMContentLoaded', async function() {
-  const API_BASE = (window.location.protocol === 'file:' || !window.location.origin)
-    ? 'http://127.0.0.1:8000'
-    : window.location.origin;
-  console.log('Weapons Book API_BASE:', API_BASE);
-  if (window.location.protocol === 'file:' || !window.location.origin) {
-    console.warn('Weapons Book loaded from file://; using http://127.0.0.1:8000 for backend calls.');
-  }
+  const { apiFetch } = ApiHelpers;
+  const { parseJsonValue, formatDisplayValue } = DataUtils;
   const searchInput = document.getElementById('search-input');
   const weaponList = document.getElementById('weapon-list');
   const weaponDetailShell = document.getElementById('weapon-detail-shell');
@@ -13,54 +8,6 @@ document.addEventListener('DOMContentLoaded', async function() {
 
   let weapons = [];
   let selectedWeaponId = null;
-
-  async function apiFetch(path) {
-    try {
-      const response = await fetch(`${API_BASE}${path}`);
-      const body = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        throw new Error(body.error || `Failed to load ${path} (${response.status})`);
-      }
-      return body;
-    } catch (error) {
-      throw new Error(`Failed to load ${path}: ${error.message}`);
-    }
-  }
-
-  function parseJsonValue(value) {
-    if (typeof value !== 'string') return value;
-    const raw = value.trim();
-    if ((raw.startsWith('[') && raw.endsWith(']')) || (raw.startsWith('{') && raw.endsWith('}'))) {
-      try {
-        return JSON.parse(raw);
-      } catch (e) {
-        return value;
-      }
-    }
-    return value;
-  }
-
-  function formatDisplayValue(value) {
-    if (value === null || value === undefined || value === '') {
-      return '';
-    }
-    if (Array.isArray(value)) {
-      return value.map(formatDisplayValue).filter(Boolean).join(', ');
-    }
-    if (typeof value === 'object') {
-      if (value.name) {
-        return String(value.name);
-      }
-      return Object.entries(value)
-        .map(([key, item]) => {
-          const formatted = formatDisplayValue(item);
-          return formatted ? `${key}: ${formatted}` : '';
-        })
-        .filter(Boolean)
-        .join(', ');
-    }
-    return String(value);
-  }
 
   function normalizeWeaponText(weapon) {
     const fields = [
