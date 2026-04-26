@@ -23,6 +23,39 @@ document.addEventListener('DOMContentLoaded', async function() {
   const toggleSlotsBtn = document.getElementById('toggle-slots-btn');
   const confirmPlayerBtn = document.getElementById('confirm-player-btn');
   const cancelCreateBtn = document.getElementById('cancel-create-btn');
+  const spellCreateModal = document.getElementById('spell-create-modal');
+  const spellCreateTitle = document.getElementById('spell-create-title');
+  const spellCreateStatus = document.getElementById('spell-create-status');
+  const spellCreateForm = document.getElementById('spell-create-form');
+  const spellCreateClose = document.getElementById('spell-create-close');
+  const spellCreateCancel = document.getElementById('spell-create-cancel');
+  const spellCreateSave = document.getElementById('spell-create-save');
+  const spellCreateName = document.getElementById('spell-create-name');
+  const spellCreateIcon = document.getElementById('spell-create-icon');
+  const spellCreateSchool = document.getElementById('spell-create-school');
+  const spellCreateLevel = document.getElementById('spell-create-level');
+  const spellCreateCastingTime = document.getElementById('spell-create-casting-time');
+  const spellCreateDuration = document.getElementById('spell-create-duration');
+  const spellCreateRange = document.getElementById('spell-create-range');
+  const spellCreateAction = document.getElementById('spell-create-action');
+  const spellCreateConcentration = document.getElementById('spell-create-concentration');
+  const spellCreateRitual = document.getElementById('spell-create-ritual');
+  const spellCreateComponents = document.getElementById('spell-create-components');
+  const spellCreateMaterials = document.getElementById('spell-create-materials');
+  const spellCreateClasses = document.getElementById('spell-create-classes');
+  const spellCreateSubclasses = document.getElementById('spell-create-subclasses');
+  const spellCreateAltText = document.getElementById('spell-create-alt-text');
+  const spellCreateArea = document.getElementById('spell-create-area');
+  const spellCreateAttack = document.getElementById('spell-create-attack');
+  const spellCreateDamage = document.getElementById('spell-create-damage');
+  const spellCreateHeal = document.getElementById('spell-create-heal');
+  const spellCreateHealAtSpellSlots = document.getElementById('spell-create-heal-at-spell-slots');
+  const spellCreateHigherLevels = document.getElementById('spell-create-higher-levels');
+  const spellCreateDamageAtHigherLevels = document.getElementById('spell-create-damage-at-higher-levels');
+  const spellCreateText = document.getElementById('spell-create-text');
+
+  const mapPanel = document.getElementById('mapPanel');
+  const playerSlotsWrapper = document.getElementById('player-slots-section')?.closest('.player-section');
 
   const { apiFetch } = ApiHelpers;
   let players = [];
@@ -31,6 +64,31 @@ document.addEventListener('DOMContentLoaded', async function() {
   let selectedPlayer = null;
   let spellIndex = [];
   let weaponIndex = [];
+  let editMode = false;
+  let editModeButton = null;
+
+  const openNewSpellModal = () => {
+    if (!spellCreateModal) return;
+    spellCreateTitle.textContent = 'Add New Spell';
+    setSpellCreateStatus('Create a new spell and save it to the database.', '');
+    spellCreateForm?.reset();
+    spellCreateModal.classList.add('visible');
+    spellCreateModal.setAttribute('aria-hidden', 'false');
+    if (spellCreateName) {
+      spellCreateName.focus();
+    }
+  };
+
+  if (window.PageBase && typeof window.PageBase.autoInitializeViewerPane === 'function') {
+    window.PageBase.autoInitializeViewerPane('playerCharacters');
+    window.PageBase.addToolButton('New Spell', 'addNewSpellBtn', openNewSpellModal);
+    editModeButton = window.PageBase.addToolButton('Edit Mode', 'toggleEditModeBtn', () => {
+      setEditMode(!editMode);
+    });
+    if (editModeButton) {
+      setEditMode(false);
+    }
+  }
 
   function updatePlayerCount() {
     playerCountEl.textContent = `${players.length} player${players.length === 1 ? '' : 's'}`;
@@ -55,6 +113,121 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (!section || !button) return;
     const expanded = section.classList.contains('collapsed');
     setSectionState(section, button, expanded);
+  }
+
+  function closeSpellCreateModal() {
+    if (!spellCreateModal) return;
+    spellCreateModal.classList.remove('visible');
+    spellCreateModal.setAttribute('aria-hidden', 'true');
+    setSpellCreateStatus('', '');
+    if (spellCreateSave) {
+      spellCreateSave.disabled = false;
+    }
+  }
+
+  function setSpellCreateStatus(message, status) {
+    if (!spellCreateStatus) return;
+    spellCreateStatus.textContent = String(message);
+    spellCreateStatus.classList.toggle('error', status === 'error');
+    spellCreateStatus.classList.toggle('success', status === 'success');
+  }
+
+  async function saveNewSpell(event) {
+    event.preventDefault();
+    if (!spellCreateForm || !spellCreateSave) return;
+
+    const name = spellCreateName?.value.trim() || '';
+    if (!name) {
+      setSpellCreateStatus('Spell name is required.', 'error');
+      return;
+    }
+
+    const payload = {
+      spell_name: name,
+      icon: spellCreateIcon?.value.trim() || '✨',
+      level: spellCreateLevel?.value || '0',
+      school: spellCreateSchool?.value.trim() || '',
+      spell_text: spellCreateText?.value.trim() || '',
+      spell_alt_text: spellCreateAltText?.value.trim() || null,
+      damage: spellCreateDamage?.value.trim() || null,
+      heal: spellCreateHeal?.value.trim() || null,
+      heal_at_spell_slots: spellCreateHealAtSpellSlots?.value.trim() || null,
+      range: spellCreateRange?.value.trim() || '',
+      higher_levels: spellCreateHigherLevels?.value.trim() || null,
+      damage_at_higher_levels: spellCreateDamageAtHigherLevels?.value.trim() || null,
+      casting_time: spellCreateCastingTime?.value.trim() || '',
+      duration: spellCreateDuration?.value.trim() || '',
+      concentration: spellCreateConcentration?.checked ? 1 : 0,
+      ritual: spellCreateRitual?.checked ? 1 : 0,
+      components: spellCreateComponents?.value.trim() || '',
+      materials: spellCreateMaterials?.value.trim() || null,
+      attack_type: spellCreateAttack?.value.trim() || null,
+      action: spellCreateAction?.value.trim() || null,
+      area_of_effect: spellCreateArea?.value.trim() || '',
+      classes: spellCreateClasses?.value.trim() || null,
+      subclasses: spellCreateSubclasses?.value.trim() || null
+    };
+
+    spellCreateSave.disabled = true;
+    setSpellCreateStatus('Saving spell...', '');
+
+    try {
+      const newSpell = await apiFetch('/spells', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      spells.unshift(newSpell);
+      spellIndex = buildSpellIndex(spells);
+      renderSpellSearch();
+      setSpellCreateStatus('Spell saved and available in search.', 'success');
+      setTimeout(closeSpellCreateModal, 600);
+    } catch (error) {
+      setSpellCreateStatus(error.message || 'Failed to save spell.', 'error');
+      spellCreateSave.disabled = false;
+      console.error('Failed to save spell:', error);
+    }
+  }
+
+  function setEditMode(enabled) {
+    editMode = Boolean(enabled);
+    if (editModeButton) {
+      editModeButton.textContent = editMode ? 'View Mode' : 'Edit Mode';
+      editModeButton.classList.toggle('active', editMode);
+    }
+
+    if (playerSlotsWrapper) {
+      playerSlotsWrapper.hidden = !editMode;
+    }
+
+    updateEditControls();
+  }
+
+  function updateEditControls() {
+    const playerFieldsEditable = selectedPlayer && (selectedPlayer.isNew || editMode);
+    const slotEditable = selectedPlayer && editMode;
+    const actionControlsEnabled = Boolean(selectedPlayer);
+
+    if (playerNameInput) playerNameInput.disabled = !playerFieldsEditable;
+    if (playerClassInput) playerClassInput.disabled = !playerFieldsEditable;
+    if (playerLevelInput) playerLevelInput.disabled = !playerFieldsEditable;
+    if (spellSearchInput) spellSearchInput.disabled = !actionControlsEnabled;
+    if (weaponSearchInput) weaponSearchInput.disabled = !actionControlsEnabled;
+
+    const slotInputs = document.querySelectorAll('#spell-slot-grid input');
+    slotInputs.forEach(input => {
+      input.disabled = !slotEditable;
+    });
+
+    const removeButtons = document.querySelectorAll('#assigned-spells button, #assigned-weapons button');
+    removeButtons.forEach(button => {
+      button.disabled = !actionControlsEnabled;
+    });
+
+    const addButtons = document.querySelectorAll('.spell-result button');
+    addButtons.forEach(button => {
+      button.disabled = !actionControlsEnabled || button.disabled;
+    });
   }
 
   function renderPlayerList() {
@@ -115,6 +288,7 @@ document.addEventListener('DOMContentLoaded', async function() {
       playerCreateActions.hidden = false;
       playerEditView.hidden = true;
       deletePlayerBtn.hidden = true;
+      updateEditControls();
       return;
     }
 
@@ -130,20 +304,56 @@ document.addEventListener('DOMContentLoaded', async function() {
       placeholder.textContent = 'No spells assigned yet. Use the search below to add spells to this character.';
       assignedSpellsEl.appendChild(placeholder);
     } else {
+      const assignments = selectedPlayer.spell_assignments || [];
       selectedPlayer.spells.forEach(spellId => {
         const spell = spells.find(item => Number(item.id) === Number(spellId));
+        const assignment = assignments.find(a => Number(a.spell_id) === Number(spellId)) || { at_will: false };
         const row = document.createElement('div');
         row.className = 'assigned-spell';
         const title = document.createElement('div');
-        title.innerHTML = `<span>${spell?.title || spellId}</span><small>${spell?.school || ''}</small>`;
+
+        if (spell && spell.title) {
+          const link = createSpellLink(spell.title, spell.title);
+          link.style.fontWeight = '700';
+          title.appendChild(link);
+
+          const subtitle = document.createElement('small');
+          subtitle.textContent = spell.school || '';
+          title.appendChild(subtitle);
+        } else {
+          title.innerHTML = `<span>${spellId}</span>`;
+        }
+
+        const controls = document.createElement('div');
+        controls.style.display = 'flex';
+        controls.style.flexDirection = 'column';
+        controls.style.alignItems = 'flex-end';
+        controls.style.gap = '6px';
+
+        const atWillLabel = document.createElement('label');
+        atWillLabel.style.display = 'flex';
+        atWillLabel.style.alignItems = 'center';
+        atWillLabel.style.gap = '6px';
+        const atWillCheckbox = document.createElement('input');
+        atWillCheckbox.type = 'checkbox';
+        atWillCheckbox.checked = Boolean(assignment.at_will);
+        atWillCheckbox.addEventListener('change', async () => {
+          await setSpellAtWill(Number(spellId), atWillCheckbox.checked);
+        });
+        atWillLabel.appendChild(atWillCheckbox);
+        atWillLabel.appendChild(document.createTextNode('At-Will'));
+        controls.appendChild(atWillLabel);
+
         const removeBtn = document.createElement('button');
         removeBtn.type = 'button';
         removeBtn.textContent = 'Remove';
         removeBtn.addEventListener('click', async () => {
           await removeSpellFromPlayer(Number(spellId));
         });
+        controls.appendChild(removeBtn);
+
         row.appendChild(title);
-        row.appendChild(removeBtn);
+        row.appendChild(controls);
         assignedSpellsEl.appendChild(row);
       });
     }
@@ -176,6 +386,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     renderSpellSlotGrid();
     renderSpellSearch();
     renderWeaponSearch();
+    updateEditControls();
   }
 
   function buildSpellResult(spell) {
@@ -183,7 +394,15 @@ document.addEventListener('DOMContentLoaded', async function() {
     row.className = 'spell-result';
 
     const title = document.createElement('div');
-    title.innerHTML = `<strong>${spell.title}</strong><br><small>${spell.school || ''} · Level ${spell.level}</small>`;
+    const spellLink = createSpellLink(spell.title, spell.title);
+    spellLink.style.fontWeight = '700';
+    spellLink.style.display = 'inline-block';
+    spellLink.style.marginBottom = '2px';
+    title.appendChild(spellLink);
+
+    const subtitle = document.createElement('small');
+    subtitle.textContent = `${spell.school || ''} · Level ${spell.level}`;
+    title.appendChild(subtitle);
 
     const owned = selectedPlayer?.spells?.some(id => Number(id) === Number(spell.id));
     const addBtn = document.createElement('button');
@@ -285,7 +504,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     grid.innerHTML = '';
 
     const totalSlots = getSpellSlotBlock('total_spell_slots');
-    const currentSlots = getSpellSlotBlock('current_spell_slots');
 
     for (let level = 1; level <= 9; level++) {
       const row = document.createElement('div');
@@ -299,19 +517,11 @@ document.addEventListener('DOMContentLoaded', async function() {
       totalGroup.className = 'slot-input-group';
       totalGroup.innerHTML = `<label>Total Slots<input class="slot-input" type="number" min="0" data-slot-level="${level}" data-slot-block="total" value="${totalSlots[String(level)]}"></label>`;
 
-      const currentGroup = document.createElement('div');
-      currentGroup.className = 'slot-input-group';
-      currentGroup.innerHTML = `<label>Current<input class="slot-input" type="number" min="0" data-slot-level="${level}" data-slot-block="current" value="${currentSlots[String(level)]}"></label>`;
-
       const totalInput = totalGroup.querySelector('input');
-      const currentInput = currentGroup.querySelector('input');
-
       totalInput.addEventListener('change', () => updateSpellSlotValue(level, 'total', totalInput.value));
-      currentInput.addEventListener('change', () => updateSpellSlotValue(level, 'current', currentInput.value));
 
       row.appendChild(label);
       row.appendChild(totalGroup);
-      row.appendChild(currentGroup);
       grid.appendChild(row);
     }
   }
@@ -353,6 +563,19 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     matches.forEach(weapon => {
       weaponSearchResultsEl.appendChild(buildWeaponResult(weapon));
+    });
+  }
+
+  function switchPlayerTab(tabName) {
+    const tabs = document.querySelectorAll('.player-tab');
+    const contents = document.querySelectorAll('.player-tab-content');
+    tabs.forEach(tab => {
+      const active = tab.dataset.tab === tabName;
+      tab.classList.toggle('active', active);
+      tab.setAttribute('aria-selected', active ? 'true' : 'false');
+    });
+    contents.forEach(content => {
+      content.classList.toggle('active', content.id === tabName);
     });
   }
 
@@ -527,6 +750,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     try {
       await apiFetch(`/players/${selectedPlayer.id}/spells/${spellId}`, { method: 'DELETE' });
       selectedPlayer.spells = selectedPlayer.spells.filter(id => Number(id) !== Number(spellId));
+      selectedPlayer.spell_assignments = (selectedPlayer.spell_assignments || []).filter(a => Number(a.spell_id) !== Number(spellId));
       const index = players.findIndex(player => Number(player.id) === Number(selectedPlayer.id));
       if (index !== -1) {
         players[index] = selectedPlayer;
@@ -535,6 +759,25 @@ document.addEventListener('DOMContentLoaded', async function() {
       renderPlayerDetail();
     } catch (error) {
       console.error('Failed to remove spell from player:', error);
+    }
+  }
+
+  async function setSpellAtWill(spellId, atWill) {
+    if (!selectedPlayer) return;
+    try {
+      selectedPlayer = await apiFetch(`/players/${selectedPlayer.id}/spells`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ spell_id: spellId, at_will: atWill })
+      });
+      const index = players.findIndex(player => Number(player.id) === Number(selectedPlayer.id));
+      if (index !== -1) {
+        players[index] = selectedPlayer;
+      }
+      renderPlayerList();
+      renderPlayerDetail();
+    } catch (error) {
+      console.error('Failed to update at-will spell status:', error);
     }
   }
 
@@ -589,6 +832,29 @@ document.addEventListener('DOMContentLoaded', async function() {
 
   cancelCreateBtn.addEventListener('click', function() {
     cancelCreatePlayer();
+  });
+
+  if (spellCreateClose) {
+    spellCreateClose.addEventListener('click', closeSpellCreateModal);
+  }
+  if (spellCreateCancel) {
+    spellCreateCancel.addEventListener('click', closeSpellCreateModal);
+  }
+  if (spellCreateForm) {
+    spellCreateForm.addEventListener('submit', saveNewSpell);
+  }
+  if (spellCreateModal) {
+    spellCreateModal.addEventListener('click', function(event) {
+      if (event.target === spellCreateModal) {
+        closeSpellCreateModal();
+      }
+    });
+  }
+
+  document.querySelectorAll('.player-tab').forEach(tab => {
+    tab.addEventListener('click', function() {
+      switchPlayerTab(this.dataset.tab);
+    });
   });
 
   spellSearchInput.addEventListener('input', function() {

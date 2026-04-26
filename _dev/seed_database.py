@@ -59,6 +59,9 @@ Seed files:
 - data/seeds/seed_dungeons.json
 - data/seeds/seed_actions.json
 - data/seeds/seed_spells.json (optional, JSON fallback)
+- data/seeds/seed_players.json
+- data/seeds/seed_player_spells.json
+- data/seeds/seed_player_weapons.json
 
 Seed files are now loaded from the new `data/seeds/` directory.
 Legacy seed files under `data/` are still supported for compatibility, but new files should be stored in `data/seeds/`.
@@ -181,8 +184,8 @@ def insert_spell(cursor, spell_data):
         INSERT INTO spells
         (spell_name, icon, level, school, spell_text, spell_alt_text, damage, heal, heal_at_spell_slots, range,
          higher_levels, damage_at_higher_levels, casting_time, duration, concentration, ritual, components, materials,
-         attack_type, area_of_effect, classes, subclasses)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         attack_type, action, area_of_effect, classes, subclasses)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             serialize_for_db(spell_data.get("spell_name")),
@@ -204,6 +207,7 @@ def insert_spell(cursor, spell_data):
             serialize_for_db(spell_data.get("components")),
             serialize_for_db(spell_data.get("materials")),
             serialize_for_db(spell_data.get("attack_type")),
+            serialize_for_db(spell_data.get("action")),
             serialize_for_db(spell_data.get("area_of_effect")),
             serialize_for_db(spell_data.get("classes")),
             serialize_for_db(spell_data.get("subclasses")),
@@ -879,6 +883,158 @@ def populate_dungeons(cursor, conn, force=False):
     print(f"  [OK] Dungeons table now has {final_count} records")
 
 
+def populate_players(cursor, conn, force=False):
+    """Populate players table from seed_players.json."""
+    print("\n[HERO] Loading players...")
+    try:
+        cursor.execute("SELECT COUNT(*) FROM players")
+        count = cursor.fetchone()[0]
+    except sqlite3.OperationalError:
+        count = 0
+
+    if count > 0 and not force:
+        print(f"  [INFO] Players table already has {count} records. Skip (use --force to override)")
+        return
+
+    if force:
+        try:
+            cursor.execute("DELETE FROM players")
+            print("  [TRASH]  Cleared existing players data")
+        except Exception as e:
+            print(f"  [WARNING]  Error clearing players data: {e}")
+            print("  [ERROR]  players table may not exist. Run _dev/init_database.py first.")
+            return
+
+    seeds = load_json_file(SEEDS_DIR / "seed_players.json")
+    if not seeds:
+        print("  [WARNING]  No player seeds found")
+        return
+
+    for player in seeds:
+        try:
+            cursor.execute("""
+                INSERT INTO players
+                (id, name, class, level, total_spell_slots, current_spell_slots, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                player.get('id'),
+                player.get('name'),
+                player.get('class'),
+                player.get('level'),
+                serialize_for_db(player.get('total_spell_slots')),
+                serialize_for_db(player.get('current_spell_slots')),
+                player.get('created_at'),
+                player.get('updated_at')
+            ))
+            print(f"  [CHECK] {player.get('name')}")
+        except sqlite3.IntegrityError as e:
+            print(f"  [WARNING]  Duplicate or error: {player.get('name')} - {e}")
+
+    conn.commit()
+    cursor.execute("SELECT COUNT(*) FROM players")
+    final_count = cursor.fetchone()[0]
+    print(f"  [OK] Loaded {final_count} players")
+
+
+def populate_player_spells(cursor, conn, force=False):
+    """Populate player_spells table from seed_player_spells.json."""
+    print("\n[SPELLBOOK] Loading player spells...")
+    try:
+        cursor.execute("SELECT COUNT(*) FROM player_spells")
+        count = cursor.fetchone()[0]
+    except sqlite3.OperationalError:
+        count = 0
+
+    if count > 0 and not force:
+        print(f"  [INFO] Player spells table already has {count} records. Skip (use --force to override)")
+        return
+
+    if force:
+        try:
+            cursor.execute("DELETE FROM player_spells")
+            print("  [TRASH]  Cleared existing player spells data")
+        except Exception as e:
+            print(f"  [WARNING]  Error clearing player spells data: {e}")
+            print("  [ERROR]  player_spells table may not exist. Run _dev/init_database.py first.")
+            return
+
+    seeds = load_json_file(SEEDS_DIR / "seed_player_spells.json")
+    if not seeds:
+        print("  [WARNING]  No player spell seeds found")
+        return
+
+    for entry in seeds:
+        try:
+            cursor.execute("""
+                INSERT INTO player_spells
+                (id, player_id, spell_id, at_will, added_at)
+                VALUES (?, ?, ?, ?, ?)
+            """, (
+                entry.get('id'),
+                entry.get('player_id'),
+                entry.get('spell_id'),
+                int(bool(entry.get('at_will', False))),
+                entry.get('added_at')
+            ))
+            print(f"  [CHECK] Player {entry.get('player_id')} spell {entry.get('spell_id')}")
+        except sqlite3.IntegrityError as e:
+            print(f"  [WARNING]  Duplicate or error: player_id={entry.get('player_id')} spell_id={entry.get('spell_id')} - {e}")
+
+    conn.commit()
+    cursor.execute("SELECT COUNT(*) FROM player_spells")
+    final_count = cursor.fetchone()[0]
+    print(f"  [OK] Loaded {final_count} player spells")
+
+
+def populate_player_weapons(cursor, conn, force=False):
+    """Populate player_weapons table from seed_player_weapons.json."""
+    print("\n[ARMS] Loading player weapons...")
+    try:
+        cursor.execute("SELECT COUNT(*) FROM player_weapons")
+        count = cursor.fetchone()[0]
+    except sqlite3.OperationalError:
+        count = 0
+
+    if count > 0 and not force:
+        print(f"  [INFO] Player weapons table already has {count} records. Skip (use --force to override)")
+        return
+
+    if force:
+        try:
+            cursor.execute("DELETE FROM player_weapons")
+            print("  [TRASH]  Cleared existing player weapons data")
+        except Exception as e:
+            print(f"  [WARNING]  Error clearing player weapons data: {e}")
+            print("  [ERROR]  player_weapons table may not exist. Run _dev/init_database.py first.")
+            return
+
+    seeds = load_json_file(SEEDS_DIR / "seed_player_weapons.json")
+    if not seeds:
+        print("  [WARNING]  No player weapon seeds found")
+        return
+
+    for entry in seeds:
+        try:
+            cursor.execute("""
+                INSERT INTO player_weapons
+                (id, player_id, weapon_id, added_at)
+                VALUES (?, ?, ?, ?)
+            """, (
+                entry.get('id'),
+                entry.get('player_id'),
+                entry.get('weapon_id'),
+                entry.get('added_at')
+            ))
+            print(f"  [CHECK] Player {entry.get('player_id')} weapon {entry.get('weapon_id')}")
+        except sqlite3.IntegrityError as e:
+            print(f"  [WARNING]  Duplicate or error: player_id={entry.get('player_id')} weapon_id={entry.get('weapon_id')} - {e}")
+
+    conn.commit()
+    cursor.execute("SELECT COUNT(*) FROM player_weapons")
+    final_count = cursor.fetchone()[0]
+    print(f"  [OK] Loaded {final_count} player weapons")
+
+
 def populate_deities(cursor, conn, force=False):
     """Populate deities table from seed_deities.json"""
     print("[DIVINE] Loading deities...")
@@ -998,6 +1154,9 @@ def clear_all_tables(cursor, conn):
     
     tables_to_clear = [
         "statblock_jobs",
+        "player_spells",
+        "player_weapons",
+        "players",
         "monsters",
         "npcs",
         "quests",
@@ -1054,11 +1213,19 @@ def main():
     parser.add_argument('--classes', action='store_true', help='Load only classes')
     parser.add_argument('--actions', action='store_true', help='Load only actions')
     parser.add_argument('--npcs', action='store_true', help='Load only NPCs')
+    parser.add_argument('--players', action='store_true', help='Load only players')
+    parser.add_argument('--player-spells', action='store_true', help='Load only player spell assignments')
+    parser.add_argument('--player-weapons', action='store_true', help='Load only player weapon assignments')
     parser.add_argument('--force', action='store_true', help='Force reload (clear existing data first)')
     
     args = parser.parse_args()
     # If no specific tables selected, load all
-    load_all = not any([args.abilities, args.spells, args.conditions, args.monsters, args.quests, args.npcs, args.damage_types, args.weapon_properties, args.weapons, args.traps, args.dungeons, args.deities, args.classes, args.actions])
+    load_all = not any([
+        args.abilities, args.spells, args.conditions, args.monsters, args.quests,
+        args.npcs, args.players, args.player_spells, args.player_weapons,
+        args.damage_types, args.weapon_properties, args.weapons, args.traps,
+        args.dungeons, args.deities, args.classes, args.actions
+    ])
     
     print("="*60)
     print("PHASE 2: DATABASE SEEDING")
@@ -1103,6 +1270,12 @@ def main():
             populate_traps(cursor, conn, args.force)
         if load_all or args.dungeons:
             populate_dungeons(cursor, conn, args.force)
+        if load_all or args.players:
+            populate_players(cursor, conn, args.force)
+        if load_all or args.player_spells:
+            populate_player_spells(cursor, conn, args.force)
+        if load_all or args.player_weapons:
+            populate_player_weapons(cursor, conn, args.force)
         if load_all or args.deities:
             populate_deities(cursor, conn, args.force)
         if load_all or args.classes:
@@ -1134,6 +1307,9 @@ def main():
         print("  - data/seeds/seed_damage_types.json")
         print("  - data/seeds/seed_weapon_properties.json")
         print("  - data/seeds/seed_weapons.json")
+        print("  - data/seeds/seed_players.json")
+        print("  - data/seeds/seed_player_spells.json")
+        print("  - data/seeds/seed_player_weapons.json")
         print("  - data/seeds/seed_traps.json")
         print("  - data/seeds/seed_dungeons.json")
         

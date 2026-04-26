@@ -167,6 +167,7 @@ def init_database():
             materials TEXT,
             attack_type TEXT,
             area_of_effect TEXT,
+            action TEXT,
             classes TEXT,
             subclasses TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -354,6 +355,7 @@ def init_database():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             player_id INTEGER NOT NULL,
             spell_id INTEGER NOT NULL,
+            at_will BOOLEAN NOT NULL DEFAULT 0,
             added_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             UNIQUE(player_id, spell_id),
             FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE,

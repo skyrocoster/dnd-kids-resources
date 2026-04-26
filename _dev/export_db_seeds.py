@@ -77,7 +77,7 @@ EXPORT_DEFINITIONS = {
     },
     "spells": {
         "file": "seed_spells.json",
-        "query": "SELECT id, spell_name, icon, level, school, spell_text, spell_alt_text, damage, heal, heal_at_spell_slots, range, higher_levels, damage_at_higher_levels, casting_time, duration, concentration, ritual, components, materials, attack_type, area_of_effect, classes, subclasses FROM spells ORDER BY spell_name",
+        "query": "SELECT id, spell_name, icon, level, school, spell_text, spell_alt_text, damage, heal, heal_at_spell_slots, range, higher_levels, damage_at_higher_levels, casting_time, duration, concentration, ritual, components, materials, attack_type, action, area_of_effect, classes, subclasses FROM spells ORDER BY spell_name",
     },
     "players": {
         "file": "seed_players.json",
@@ -85,7 +85,7 @@ EXPORT_DEFINITIONS = {
     },
     "player_spells": {
         "file": "seed_player_spells.json",
-        "query": "SELECT id, player_id, spell_id, added_at FROM player_spells ORDER BY player_id, added_at",
+        "query": "SELECT id, player_id, spell_id, at_will, added_at FROM player_spells ORDER BY player_id, added_at",
     },
     "player_weapons": {
         "file": "seed_player_weapons.json",
@@ -128,8 +128,16 @@ def load_json_schema(cursor, query, file_name):
     try:
         cursor.execute(query)
     except sqlite3.OperationalError as exc:
-        print(f"[WARNING] Skipping export for {file_name}: {exc}")
-        return None
+        if file_name == 'seed_player_spells.json' and 'at_will' in str(exc):
+            fallback_query = query.replace('spell_id, at_will, added_at', 'spell_id, added_at')
+            try:
+                cursor.execute(fallback_query)
+            except sqlite3.OperationalError as exc2:
+                print(f"[WARNING] Skipping export for {file_name}: {exc2}")
+                return None
+        else:
+            print(f"[WARNING] Skipping export for {file_name}: {exc}")
+            return None
     rows = cursor.fetchall()
     columns = [desc[0] for desc in cursor.description]
     results = [dict(zip(columns, row)) for row in rows]
@@ -181,6 +189,10 @@ def transform_record(record, table_name):
     if table_name == "spells":
         for field in ["damage", "classes", "subclasses", "attack_type"]:
             record[field] = parse_json_value(record.get(field))
+        return record
+    if table_name == "player_spells":
+        if 'at_will' not in record:
+            record['at_will'] = False
         return record
     if table_name == "players":
         for field in ["total_spell_slots", "current_spell_slots"]:

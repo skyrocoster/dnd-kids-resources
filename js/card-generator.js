@@ -1215,6 +1215,13 @@ function createCardElement(data, onHideCallback, options = {}) {
       if (typeof data.casting_time === 'string' && /bonus action/i.test(data.casting_time.trim())) {
         footerText = footerText ? `${footerText} · Bonus Action` : 'Bonus Action';
       }
+      if (data.action) {
+        const actionValue = typeof data.action === 'string' ? data.action : (data.action.action || '');
+        const formattedAction = String(actionValue || '').trim();
+        if (formattedAction) {
+          footerText = footerText ? `${footerText} · ${formattedAction.replace(/\b\w/g, m => m.toUpperCase())}` : formattedAction.replace(/\b\w/g, m => m.toUpperCase());
+        }
+      }
     } else if (data.type && data.school) {
       // Magic Items: "Magic Item · Utility"
       footerText = `${data.type} · ${data.school}`;
@@ -1359,4 +1366,118 @@ function toggleCardHidden(cardId, isHidden) {
   if (resetBtn) {
     resetBtn.style.display = hiddenCards.length > 0 ? 'inline-block' : 'none';
   }
+}
+
+// ─── Spell Hover Preview System ──────────────────────────────────────────────
+// A reusable hover system that shows a spell card popup when hovering over any
+// element. Uses a local cache to avoid redundant API requests.
+
+const _spellPreviewCache = new Map();
+
+async function _fetchSpellForPreview(spellName) {
+  if (_spellPreviewCache.has(spellName)) {
+    return _spellPreviewCache.get(spellName);
+  }
+
+  const apiFn = window.ApiHelpers && window.ApiHelpers.apiFetch;
+
+  async function doFetch(name) {
+    if (apiFn) {
+      return apiFn(`/spells/${encodeURIComponent(name)}`);
+    }
+    const res = await fetch(`/api/spells/${encodeURIComponent(name)}`);
+    if (!res.ok) throw new Error(res.status);
+    return res.json();
+  }
+
+  try {
+    const data = await doFetch(spellName);
+    _spellPreviewCache.set(spellName, data);
+    return data;
+  } catch (e) {
+    // Try stripping a parenthetical qualifier, e.g. "Blight (Druid)" → "Blight"
+    const match = spellName.match(/^(.+?)\s*\(/);
+    if (match) {
+      const fallback = match[1].trim();
+      if (fallback && fallback !== spellName) {
+        const data = await doFetch(fallback);
+        _spellPreviewCache.set(spellName, data);
+        _spellPreviewCache.set(fallback, data);
+        return data;
+      }
+    }
+    throw e;
+  }
+}
+
+/**
+ * Attaches a spell card hover preview to any element.
+ * Shows the full spell card (matching the spell-cards-list design) after a
+ * short delay. Cleans up correctly if the pointer leaves before fetch completes.
+ *
+ * @param {Element} element   - The DOM element to watch
+ * @param {string}  spellName - Name of the spell to load from the API
+ */
+function attachSpellHover(element, spellName) {
+  if (!element || !spellName) return;
+
+  let hoverTimer = null;
+  let active = false;
+
+  element.addEventListener('mouseenter', function () {
+    active = true;
+    const trigger = this;
+    hoverTimer = setTimeout(async () => {
+      try {
+        const cardData = await _fetchSpellForPreview(spellName);
+        if (active) showCardPreview(cardData, trigger);
+      } catch (err) {
+        console.warn(`Spell hover failed for "${spellName}":`, err);
+      }
+    }, 350);
+  });
+
+  element.addEventListener('mouseleave', function () {
+    active = false;
+    clearTimeout(hoverTimer);
+    hoverTimer = null;
+    hideCardPreview();
+  });
+}
+
+/**
+ * Creates a styled anchor element whose text is the spell name with an
+ * attached spell card hover preview.
+ *
+ * @param {string}  spellName - The spell name (used for the API lookup)
+ * @param {string}  [text]    - Override display text (defaults to spellName)
+ * @param {string}  [href]    - Override link href (defaults to spell-detail page)
+ * @returns {HTMLAnchorElement}
+ */
+function createSpellLink(spellName, text, href) {
+  const link = document.createElement('a');
+  link.className = 'spell-link';
+  link.href = href || `spell-detail.html?title=${encodeURIComponent(spellName)}`;
+  link.textContent = text != null ? text : spellName;
+  link.addEventListener('click', function (e) { e.stopPropagation(); });
+  attachSpellHover(link, spellName);
+  return link;
+}
+
+/**
+ * Scans a container for elements with [data-spell-hover="Spell Name"] and
+ * attaches a spell hover preview to each one. Safe to call multiple times —
+ * already-initialised elements are skipped.
+ *
+ * @param {Element|Document} [container] - Search scope (defaults to document)
+ */
+function initSpellHovers(container) {
+  const root = container || document;
+  root.querySelectorAll('[data-spell-hover]').forEach(function (el) {
+    const name = el.dataset.spellHover;
+    if (name && !el.dataset.spellHoverInit) {
+      el.dataset.spellHoverInit = '1';
+      attachSpellHover(el, name);
+    }
+  });
 }

@@ -21,6 +21,11 @@ document.addEventListener('DOMContentLoaded', async function() {
   let availableClassOptions = [];
   let availableComponentOptions = [];
 
+  if (window.PageBase && typeof window.PageBase.autoInitializeViewerPane === 'function') {
+    window.PageBase.autoInitializeViewerPane('spellCardsList');
+    window.PageBase.addToolButton('New Spell', 'addNewSpellBtn', openNewSpellModal);
+  }
+
   const editorFields = [
     { key: 'spell_name', label: 'Spell Name', type: 'text' },
     { key: 'icon', label: 'Icon', type: 'text' },
@@ -28,6 +33,12 @@ document.addEventListener('DOMContentLoaded', async function() {
     { key: 'school', label: 'School', type: 'text' },
     { key: 'casting_time', label: 'Casting Time', type: 'text' },
     { key: 'duration', label: 'Duration', type: 'text' },
+    { key: 'action', label: 'Action', type: 'select', options: [
+      { value: '', label: 'None' },
+      { value: 'action', label: 'Action' },
+      { value: 'bonus action', label: 'Bonus Action' },
+      { value: 'reaction', label: 'Reaction' }
+    ] },
     { key: 'concentration', label: 'Concentration', type: 'checkbox' },
     { key: 'ritual', label: 'Ritual', type: 'checkbox' },
     { key: 'range', label: 'Range', type: 'textarea', rows: 2 },
@@ -85,6 +96,19 @@ document.addEventListener('DOMContentLoaded', async function() {
       if (field.type === 'textarea') {
         input = document.createElement('textarea');
         input.rows = field.rows || 3;
+      } else if (field.type === 'select') {
+        input = document.createElement('select');
+        field.options.forEach(optionData => {
+          const option = document.createElement('option');
+          if (typeof optionData === 'string') {
+            option.value = optionData;
+            option.textContent = optionData;
+          } else {
+            option.value = optionData.value;
+            option.textContent = optionData.label;
+          }
+          input.appendChild(option);
+        });
       } else {
         input = document.createElement('input');
         input.type = field.type === 'checkbox' ? 'checkbox' : 'text';
@@ -596,6 +620,51 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
   }
 
+  function openNewSpellModal() {
+    editingSpellId = null;
+    modalTitle.textContent = 'Add New Spell';
+    setModalStatus('Create a new spell and save it to the database.', '');
+    modal.classList.add('visible');
+    modal.setAttribute('aria-hidden', 'false');
+    modalForm.reset();
+    ['attack_type', 'damage', 'heal'].forEach(clearRollRows);
+
+    editorFields.forEach(field => {
+      const input = modalForm.querySelector(`[data-field-key="${field.key}"]`);
+      if (!input) return;
+      if (field.type === 'checkbox') {
+        input.checked = false;
+      } else {
+        input.value = '';
+      }
+    });
+
+    const classesSelect = modalForm.querySelector('[data-structured-field="classes"]');
+    if (classesSelect && classesSelect.tagName === 'SELECT') {
+      Array.from(classesSelect.options).forEach(opt => { opt.selected = false; });
+    } else if (classesSelect) {
+      classesSelect.value = '';
+    }
+
+    const subclassesInput = modalForm.querySelector('[data-structured-field="subclasses"]');
+    if (subclassesInput) subclassesInput.value = '';
+
+    const componentCheckboxes = modalForm.querySelectorAll('[data-components-checkbox]');
+    if (componentCheckboxes.length > 0) {
+      componentCheckboxes.forEach(checkbox => { checkbox.checked = false; });
+    } else {
+      const componentsInput = modalForm.querySelector('[data-structured-field="components"]');
+      if (componentsInput) componentsInput.value = '';
+    }
+
+    const areaShapeInput = modalForm.querySelector('[data-area-field="shape"]');
+    const areaSizeInput = modalForm.querySelector('[data-area-field="size"]');
+    if (areaShapeInput) areaShapeInput.value = '';
+    if (areaSizeInput) areaSizeInput.value = '';
+
+    modalSave.disabled = false;
+  }
+
   function closeEditModal() {
     editingSpellId = null;
     modal.classList.remove('visible');
@@ -799,16 +868,22 @@ document.addEventListener('DOMContentLoaded', async function() {
   }
 
   async function saveSpellEdits() {
-    if (!editingSpellId) return;
-
     modalSave.disabled = true;
     setModalStatus('Saving spell...', '');
 
+    const payload = collectEditFormData();
+    payload.spell_name = payload.spell_name || 'New Spell';
+    payload.icon = payload.icon || '✨';
+    payload.level = payload.level || '0';
+
+    const url = editingSpellId ? `/api/spells/id/${editingSpellId}` : '/api/spells';
+    const method = editingSpellId ? 'PUT' : 'POST';
+
     try {
-      const response = await fetch(`/api/spells/id/${editingSpellId}`, {
-        method: 'PUT',
+      const response = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(collectEditFormData())
+        body: JSON.stringify(payload)
       });
 
       const result = await response.json();

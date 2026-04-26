@@ -263,20 +263,6 @@
             display: grid;
         }
 
-        .viewer-sidebar {
-            background: #f5f5f5;
-            padding: 1rem 1.5rem;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            flex-wrap: wrap;
-        }
-
-        .viewer-sidebar h3 {
-            display: none;
-        }
-
         .room-content {
             margin-bottom: 2rem;
         }
@@ -607,59 +593,6 @@
             transform: translateY(-1px);
         }
 
-        .action-panel-wrapper {
-            display: flex;
-            align-items: flex-start;
-            gap: 0.75rem;
-            margin-bottom: 1rem;
-        }
-
-        .tools-toggle {
-            width: 36px;
-            height: 36px;
-            border-radius: 999px;
-            border: 1px solid #d1d9e0;
-            background: #ffffff;
-            color: #4b5563;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 16px;
-            transition: background 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
-        }
-
-        .tools-toggle:hover {
-            background: #f8fafc;
-            transform: translateY(-1px);
-        }
-
-        .tools-toggle.active {
-            background: #27ae60;
-            color: white;
-            border-color: #219653;
-        }
-
-        .action-panel {
-            background: #ffffff;
-            border: 1px solid #e6f2e9;
-            border-radius: 16px;
-            box-shadow: 0 20px 60px rgba(16, 24, 40, 0.08);
-            padding: 1rem;
-            flex: 1;
-        }
-
-        .action-panel.collapsed {
-            display: none;
-        }
-
-        .action-panel-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.75rem;
-            align-items: center;
-        }
-
         .edit-mode-toggle {
             background: #f0f2f5;
             color: #2f4858;
@@ -756,13 +689,6 @@
             background: #229954;
         }
 
-        .room-selector {
-            width: 100%;
-            padding: 0.5rem;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-
         .modal {
             display: none;
             position: fixed;
@@ -814,13 +740,27 @@
         }
 
         .modal-field input,
-        .modal-field select,
         .modal-field textarea {
             width: 100%;
             padding: 0.75rem;
             border: 1px solid #ddd;
             border-radius: 4px;
             font-family: inherit;
+        }
+
+        .modal-field select {
+            border: 2px solid var(--panel-border);
+            border-radius: 10px;
+            padding: 12px 14px;
+            font-size: 1rem;
+            background: #fffdf7;
+            color: var(--text-normal);
+        }
+
+        .modal-field select:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.16);
         }
 
         .modal-field textarea {
@@ -960,16 +900,16 @@
                 <div id="resizeHandle" class="resize-handle"></div>
                 <div class="map-controls">
                     <div class="map-controls-row">
-                        <div class="field-group">
-                            <label for="floorSelector">Floor:</label>
-                            <select id="floorSelector" class="room-selector" style="display: none; min-width: 180px;" onchange="onFloorSelectionChange()"></select>
-                        </div>
-                        <div class="field-group">
-                            <label for="roomSelector">Room:</label>
-                            <select id="roomSelector" class="room-selector" onchange="displaySelectedRoom()">
+                        <label class="character-select-field select-field">
+                            Floor:
+                            <select id="floorSelector" style="display: none; min-width: 180px;" onchange="onFloorSelectionChange()"></select>
+                        </label>
+                        <label class="character-select-field select-field">
+                            Room:
+                            <select id="roomSelector" onchange="displaySelectedRoom()">
                                 <option value="">Loading...</option>
                             </select>
-                        </div>
+                        </label>
                     </div>
                     <div class="map-controls-row">
                         <div class="field-group">
@@ -985,24 +925,9 @@
 
             <!-- Right Panel: Controls and Scrollable Room Details -->
             <div class="dungeon-viewer-right">
-                <div class="viewer-controls">
-                    <div class="action-panel-wrapper">
-                        <button id="actionPanelToggle" class="tools-toggle" onclick="toggleActionPanel()" aria-expanded="false" title="Toggle tools panel">⚙️</button>
-                        <button id="showMapPanelBtn" class="toggle-map-btn hidden" onclick="expandMapPanel()" title="Show left map panel">🗺️ Show Map</button>
-                        <div class="action-panel collapsed" id="actionPanel">
-                            <div class="action-panel-row">
-                                <button class="back-btn" onclick="showListView()">← Back to List</button>
-                                <button id="expandMapBtn" class="toggle-map-btn hidden" onclick="toggleMapPanel()" title="Show map panel">🗺️ Show Map</button>
-                                <button class="add-room-btn add-feature-btn" onclick="createRoom()">➕ Add Room</button>
-                                <button class="add-room-btn add-feature-btn" onclick="createFloor()">🏗️ Add Floor</button>
-                                <button class="add-room-btn add-feature-btn" onclick="openStairsCreator()">➕ Add Stairs</button>
-                                <button class="add-feature-btn" onclick="openAddFeatureModal()">➕ Add Feature</button>
-                                <button class="add-feature-btn" onclick="openEditDungeonInfoModal()">✏️ Edit Dungeon Info</button>
-                                <button id="darkModeToggle" class="dark-mode-toggle" onclick="toggleDarkMode()">🌙 Dark Mode</button>
-                                <button id="editModeBtn" class="edit-mode-toggle" onclick="toggleEditMode()">✎ Edit Mode OFF</button>
-                            </div>
-                        </div>
-                    </div>
+                <div class="viewer-controls controls-row">
+                    <button id="showListPanelBtn" class="toggle-list-btn hidden" onclick="expandListPanel()">→</button>
+                    <button class="back-btn" onclick="showListView()">← Back to List</button>
                     <div id="roomTitleHeader" class="room-title-header">Select a room</div>
                 </div>
 
@@ -1014,16 +939,20 @@
                             <input type="text" id="stairsTitle" placeholder="e.g. Stone Stairs" oninput="updateStairsButtonStates()">
                         </div>
                         <div class="modal-field">
-                            <label>Choose a floor:</label>
-                            <select id="stairsAddFloor" onchange="onStairsCreationFloorChange()">
-                                <option value="">Select a floor...</option>
-                            </select>
+                            <label class="character-select-field select-field">
+                                Choose a floor:
+                                <select id="stairsAddFloor" onchange="onStairsCreationFloorChange()">
+                                    <option value="">Select a floor...</option>
+                                </select>
+                            </label>
                         </div>
                         <div class="modal-field">
-                            <label>Choose a room on that floor:</label>
-                            <select id="stairsAddRoom" onchange="updateStairsButtonStates()">
-                                <option value="">Select a floor first</option>
-                            </select>
+                            <label class="character-select-field select-field">
+                                Choose a room on that floor:
+                                <select id="stairsAddRoom" onchange="updateStairsButtonStates()">
+                                    <option value="">Select a floor first</option>
+                                </select>
+                            </label>
                         </div>
                         <button type="button" id="addStairsPairBtn" class="add-feature-btn" onclick="addStairsCreationPair()" disabled style="margin-bottom: 1rem;">➕ Add Floor/Room Pair</button>
                         <div class="stairs-section" style="margin-bottom: 1rem;">
@@ -1050,17 +979,19 @@
             <div class="modal-content">
                 <h3 id="modalTitle">Add New Feature to Room</h3>
                 <div class="modal-field">
-                    <label>Feature Type:</label>
-                    <select id="featureType" onchange="updateFeatureFields()">
-                        <option value="feature">Feature</option>
-                        <option value="monster">Monster</option>
-                        <option value="treasure">Treasure</option>
-                        <option value="door">Door</option>
-                        <option value="npc">NPC</option>
-                        <option value="trap">Trap</option>
-                        <option value="trick">Trick</option>
-                        <option value="other">Other</option>
-                    </select>
+                    <label class="character-select-field select-field">
+                        Feature Type:
+                        <select id="featureType" onchange="updateFeatureFields()">
+                            <option value="feature">Feature</option>
+                            <option value="monster">Monster</option>
+                            <option value="treasure">Treasure</option>
+                            <option value="door">Door</option>
+                            <option value="npc">NPC</option>
+                            <option value="trap">Trap</option>
+                            <option value="trick">Trick</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </label>
                 </div>
                 <div class="modal-field field-title">
                     <label>Title:</label>
@@ -1091,18 +1022,22 @@
                     <input type="number" id="featureCount" value="1" min="1">
                 </div>
                 <div class="modal-field field-door hidden">
-                    <label>Leads to Room Title:</label>
-                    <select id="featureLeadsTo" onchange="onRoomTargetChange()"></select>
+                    <label class="character-select-field select-field">
+                        Leads to Room Title:
+                        <select id="featureLeadsTo" onchange="onRoomTargetChange()"></select>
+                    </label>
                 </div>
                 <div class="modal-field field-access hidden">
                     <label>Mechanics (optional):</label>
                     <input type="text" id="doorMechanics" placeholder="e.g., DC 20 to open, DC 25 to break; 60 hp">
                 </div>
                 <div class="modal-field field-access hidden">
-                    <label>Associated Trap:</label>
-                    <select id="doorTrapIds">
-                        <option value="">Select a trap...</option>
-                    </select>
+                    <label class="character-select-field select-field">
+                        Associated Trap:
+                        <select id="doorTrapIds">
+                            <option value="">Select a trap...</option>
+                        </select>
+                    </label>
                 </div>
                 <div class="modal-field field-treasure hidden">
                     <label>Container Name:</label>
@@ -1138,12 +1073,16 @@
                     <input type="text" id="floorTitle" placeholder="e.g., Ground Floor">
                 </div>
                 <div class="modal-field">
-                    <label for="floorAbove">Floor Above:</label>
-                    <select id="floorAbove"></select>
+                    <label class="character-select-field select-field">
+                        Floor Above:
+                        <select id="floorAbove"></select>
+                    </label>
                 </div>
                 <div class="modal-field">
-                    <label for="floorBelow">Floor Below:</label>
-                    <select id="floorBelow"></select>
+                    <label class="character-select-field select-field">
+                        Floor Below:
+                        <select id="floorBelow"></select>
+                    </label>
                 </div>
                 <div class="modal-buttons">
                     <button class="cancel-btn" onclick="closeCreateFloorModal()">Cancel</button>
@@ -1187,7 +1126,19 @@
         </div>
     </div>
 
+    <script src="../js/api.js"></script>
+    <script src="../js/dom-utils.js"></script>
+    <script src="../js/data-utils.js"></script>
+    <script src="../js/page-base.js"></script>
     <script src="../js/pane-resize.js"></script>
+    <script>
+        PageBase.autoInitializeViewerPane('dungeon', {
+            defaultWidth: 350,
+            minWidth: 300,
+            maxWidthFraction: 0.7,
+            collapseThreshold: 240
+        });
+    </script>
     <script>
         let currentDungeon = null;
         let dungeons = [];
@@ -1208,41 +1159,6 @@
         let modalNpcs = [];
         let selectedModalNpcId = null;
         let cachedNpcs = null;
-
-        // Panel resize — managed by PaneResize (js/pane-resize.js)
-        const layout = document.getElementById('viewerView');
-        const mapPanel = document.getElementById('mapPanel');
-        const expandMapBtn = document.getElementById('expandMapBtn');
-
-        const _mapPane = PaneResize.init({
-            storagePrefix:     'dungeonMapPanel',
-            layoutId:          'viewerView',
-            panelId:           'mapPanel',
-            handleId:          'resizeHandle',
-            showBtnId:         'showMapPanelBtn',
-            defaultWidth:      350,
-            minWidth:          300,
-            maxWidthFraction:  0.7,
-            collapseThreshold: 240
-        });
-
-        function collapseMapPanel() {
-            _mapPane.collapse();
-            if (expandMapBtn) expandMapBtn.classList.remove('hidden');
-        }
-
-        function expandMapPanel() {
-            _mapPane.expand();
-            if (expandMapBtn) expandMapBtn.classList.add('hidden');
-        }
-
-        function toggleMapPanel() {
-            if (mapPanel && mapPanel.classList.contains('collapsed')) {
-                expandMapPanel();
-            } else {
-                collapseMapPanel();
-            }
-        }
 
         const monsterSearchInput = document.getElementById('featureMonsterSearch');
         const npcSearchInput = document.getElementById('featureNpcSearch');
@@ -1268,7 +1184,16 @@
         function initPage() {
             loadDarkModePreference();
             loadDungeonsList();
-            
+
+            // Register tool buttons in the generic tools panel
+            PageBase.addToolButton('➕ Add Room', 'sidebarAddRoom', createRoom);
+            PageBase.addToolButton('🏗️ Add Floor', 'sidebarAddFloor', createFloor);
+            PageBase.addToolButton('➕ Add Stairs', 'sidebarAddStairs', openStairsCreator);
+            PageBase.addToolButton('➕ Add Feature', 'sidebarAddFeature', openAddFeatureModal);
+            PageBase.addToolButton('✏️ Edit Dungeon Info', 'sidebarEditInfo', openEditDungeonInfoModal);
+            PageBase.addToolButton('🌙 Dark Mode', 'darkModeToggle', toggleDarkMode);
+            PageBase.addToolButton('✎ Edit Mode OFF', 'editModeBtn', toggleEditMode);
+
             // Check if a dungeon ID is in the URL hash
             const hash = window.location.hash.slice(1); // Remove # prefix
             if (hash.startsWith('dungeon/')) {
@@ -3545,15 +3470,6 @@
                 return formatObjectValue(parsed);
             }
             return String(parsed || '');
-        }
-
-        function toggleActionPanel() {
-            const panel = document.getElementById('actionPanel');
-            const toggle = document.getElementById('actionPanelToggle');
-            if (!panel || !toggle) return;
-            const collapsed = panel.classList.toggle('collapsed');
-            toggle.classList.toggle('active', !collapsed);
-            toggle.setAttribute('aria-expanded', String(!collapsed));
         }
 
         // Add Feature Modal Functions

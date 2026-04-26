@@ -450,28 +450,54 @@
   </style>
 </head>
 <body>
-  <div class="page-container-shell">
-    <div class="notes-bar">
-      <strong>List-style test page</strong>
-      Cards are rendered in a flexible vertical list with a wide A4-friendly width.
+  <header class="site-header">
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
+      <div>
+        <h1>📚 Spell Cards List</h1>
+        <p>List-style spell cards with print and edit options</p>
+      </div>
     </div>
-    <div id="print-options">
-      <div class="print-options-title">Print Options</div>
-      <div class="print-options-group">
-        <div class="print-option">
-          <label for="range-display-mode">Range Display</label>
-          <select id="range-display-mode">
-            <option value="standard">Standard</option>
-            <option value="simple">Simple</option>
-          </select>
-        </div>
-        <div class="print-option">
-          <label>Spell Editing</label>
-          <button id="spell-edit-mode-btn" class="edit-mode-toggle" type="button">✎ Edit Mode OFF</button>
+  </header>
+
+  <div id="viewerView" class="dungeon-viewer-layout active">
+    <div id="mapPanel" class="map-panel">
+      <div id="resizeHandle" class="resize-handle"></div>
+      <div class="viewer-sidebar">
+        <h3>Print Options</h3>
+        <div class="panel-section">
+          <div class="notes-bar">
+            <strong>List-style test page</strong>
+            Cards are rendered in a flexible vertical list with a wide A4-friendly width.
+          </div>
+          <div id="print-options">
+            <div class="print-options-title">Print Options</div>
+            <div class="print-options-group">
+              <div class="print-option">
+                <label for="range-display-mode">Range Display</label>
+                <select id="range-display-mode">
+                  <option value="standard">Standard</option>
+                  <option value="simple">Simple</option>
+                </select>
+              </div>
+              <div class="print-option">
+                <label>Spell Editing</label>
+                <button id="spell-edit-mode-btn" class="edit-mode-toggle" type="button">✎ Edit Mode OFF</button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
-    <div id="page-container"></div>
+
+    <div class="dungeon-viewer-right">
+      <div class="viewer-controls">
+        <button id="showListPanelBtn" class="toggle-list-btn hidden" onclick="expandListPanel()">→</button>
+        <a href="resources.html" class="back-btn">← Resources</a>
+      </div>
+      <div class="dungeon-content">
+        <div id="page-container"></div>
+      </div>
+    </div>
   </div>
 
   <div id="spell-edit-modal" class="spell-edit-modal" aria-hidden="true">
@@ -492,6 +518,8 @@
   </div>
 
   <script src="../js/card-generator.js"></script>
+  <script src="../js/pane-resize.js"></script>
+  <script src="../js/page-base.js"></script>
   <script src="../js/spells-list.js"></script>
 </body>
 </html>

@@ -15,91 +15,25 @@
       background: linear-gradient(180deg, #d9cbb0 0%, #c19f73 100%);
       color: var(--ink);
     }
-    .players-shell {
+    /* Left panel controls section */
+    .viewer-sidebar .panel-section {
       display: flex;
       flex-direction: column;
-      min-height: 100vh;
-      padding: 16px;
-      gap: 16px;
+      gap: 1rem;
+      margin-bottom: 1rem;
     }
-    .page-topbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 12px;
-      background: rgba(253, 243, 227, 0.95);
-      border: 3px solid var(--border);
-      border-radius: 18px;
-      padding: 18px 20px;
-      box-shadow: 0 12px 30px rgba(0,0,0,0.14);
-      position: sticky;
-      top: 0;
-      z-index: 10;
-    }
-    .page-title {
-      margin: 0;
-      font-family: 'Fredoka One', cursive;
-      font-size: 2rem;
-      color: #6b4423;
-      line-height: 1.05;
-    }
-    .page-subtitle {
-      margin: 10px 0 0;
-      color: #5a3210;
-      font-size: 0.95rem;
-      max-width: 56ch;
-      line-height: 1.5;
-    }
-    .topbar-actions {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      align-items: center;
-    }
-    .action-button {
-      border: 2px solid var(--border);
-      border-radius: 12px;
-      background: white;
-      color: var(--ink);
-      padding: 12px 16px;
-      font-size: 0.95rem;
+    .player-meta {
+      font-size: 0.85rem;
+      color: #555;
       font-weight: 700;
-      cursor: pointer;
-      transition: transform 0.2s ease, background 0.2s ease;
-      min-width: 160px;
-      text-align: center;
+      margin-bottom: 0.75rem;
     }
-    .action-button:hover {
-      transform: translateY(-1px);
-      background: #f5e0c1;
-    }
-    .page-grid {
-      display: grid;
-      grid-template-columns: 300px minmax(0, 1fr);
-      gap: 16px;
-      align-items: start;
-    }
-    .panel {
-      background: rgba(253, 243, 227, 0.95);
-      border: 3px solid var(--border);
-      border-radius: 18px;
-      padding: 18px;
-      box-shadow: 0 10px 24px rgba(0,0,0,0.12);
-    }
-    .panel-header {
-      font-size: 1.05rem;
-      font-weight: 800;
-      margin-bottom: 14px;
-      display: flex;
-      justify-content: space-between;
-      gap: 10px;
-      align-items: center;
-    }
+    /* Player list styling */
     .player-list {
       display: flex;
       flex-direction: column;
       gap: 10px;
-      max-height: calc(100vh - 240px);
+      max-height: calc(100vh - 420px);
       overflow-y: auto;
       padding-right: 4px;
     }
@@ -145,10 +79,33 @@
       font-size: 0.85rem;
       cursor: pointer;
     }
+    /* Right panel detail styling */
+    .detail-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 2px solid #d8c3a5;
+    }
+    .detail-toolbar h2 {
+      margin: 0;
+      font-size: 1.5rem;
+      color: #2c1810;
+    }
     .player-detail {
       display: flex;
       flex-direction: column;
       gap: 18px;
+      padding: 18px 16px 24px;
+      overflow-y: auto;
+    }
+    #player-detail-fields[hidden],
+    #player-create-actions[hidden],
+    #player-edit-view[hidden],
+    #empty-selection[hidden] {
+      display: none !important;
     }
     .player-detail .field-group {
       display: grid;
@@ -172,15 +129,56 @@
       background: #fffef7;
       color: var(--ink);
     }
-    .player-detail textarea {
-      min-height: 90px;
-      resize: vertical;
-      padding: 12px;
-      border: 2px solid #b0865a;
+    .action-button {
+      border: 2px solid var(--border);
       border-radius: 12px;
-      background: #fffef7;
+      background: white;
       color: var(--ink);
-      font-family: inherit;
+      padding: 12px 16px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.2s ease, background 0.2s ease;
+    }
+    .action-button:hover {
+      transform: translateY(-1px);
+      background: #f5e0c1;
+    }
+    .player-tabs {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .player-tabs-bar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 0;
+    }
+    .player-tab {
+      border: 2px solid var(--border);
+      background: #fffdf7;
+      color: var(--ink);
+      border-radius: 999px;
+      padding: 10px 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+    }
+    .player-tab:hover {
+      transform: translateY(-1px);
+      background: #f5e0c1;
+    }
+    .player-tab.active {
+      background: #c0392b;
+      color: white;
+      border-color: #992d22;
+    }
+    .player-tab-content {
+      display: none;
+    }
+    .player-tab-content.active {
+      display: block;
     }
     .spell-section {
       display: grid;
@@ -218,6 +216,94 @@
     .section-body.collapsed {
       display: none;
     }
+    .spell-create-modal {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      background: rgba(15, 11, 6, 0.55);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+      z-index: 1000;
+    }
+    .spell-create-modal.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .spell-create-dialog {
+      width: min(540px, 100%);
+      background: #fffef7;
+      border: 2px solid #b0865a;
+      border-radius: 18px;
+      padding: 20px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.18);
+    }
+    .spell-create-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .spell-create-header h2 {
+      margin: 0;
+      font-size: 1.3rem;
+      color: #2c1810;
+    }
+    .spell-create-close {
+      border: none;
+      background: transparent;
+      color: #8b1a1a;
+      font-size: 1.5rem;
+      cursor: pointer;
+      line-height: 1;
+    }
+    .spell-create-form {
+      display: grid;
+      gap: 14px;
+    }
+    .spell-create-form label {
+      display: grid;
+      gap: 8px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #5a3210;
+    }
+    .spell-create-form input,
+    .spell-create-form textarea,
+    .spell-create-form select {
+      width: 100%;
+      border: 2px solid #b0865a;
+      border-radius: 12px;
+      padding: 10px 12px;
+      background: #fffef7;
+      color: var(--ink);
+      font-size: 0.95rem;
+    }
+    .spell-create-status {
+      min-height: 22px;
+      color: #2c1810;
+      font-size: 0.92rem;
+      margin-bottom: 12px;
+    }
+    .spell-create-status.error {
+      color: #8b1a1a;
+    }
+    .spell-create-status.success {
+      color: #2f6b33;
+    }
+    .spell-create-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .spell-create-actions button {
+      min-width: 120px;
+    }
     .spell-slot-grid {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -226,7 +312,7 @@
     }
     .slot-row {
       display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
+      grid-template-columns: 160px minmax(0, 1fr);
       gap: 8px;
       align-items: center;
       padding: 12px;
@@ -310,20 +396,6 @@
       opacity: 0.4;
       cursor: not-allowed;
     }
-    .spell-search input {
-      width: 100%;
-      border: 2px solid #b0865a;
-      border-radius: 12px;
-      padding: 12px 14px;
-      font-size: 1rem;
-      background: #fffef7;
-      color: var(--ink);
-    }
-    .spell-search input:focus {
-      outline: none;
-      border-color: #c0392b;
-      box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.12);
-    }
     .empty-state {
       color: #5a3210;
       padding: 18px;
@@ -333,9 +405,6 @@
       text-align: center;
     }
     @media (max-width: 1040px) {
-      .page-grid {
-        grid-template-columns: 1fr;
-      }
       .player-detail .field-group {
         grid-template-columns: 1fr;
       }
@@ -343,34 +412,43 @@
   </style>
 </head>
 <body>
-  <div class="players-shell">
-    <div class="page-topbar">
+  <header class="site-header">
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
       <div>
-        <h1 class="page-title">Player Characters</h1>
-        <p class="page-subtitle">Create player records, assign spells, and keep each character's spell book ready. This is a high-level starting point for building more tables later.</p>
+        <h1>👥 Player Characters</h1>
+        <p>Create player records, assign spells, and keep each character's spell book ready</p>
       </div>
-      <div class="topbar-actions">
-        <button id="add-player-btn" class="action-button">+ Add Player</button>
-        <a href="resources.html" class="action-button">← Back to Resources</a>
+    </div>
+  </header>
+
+  <div id="viewerView" class="dungeon-viewer-layout active">
+
+    <!-- Left panel: player list -->
+    <div id="mapPanel" class="map-panel">
+      <div id="resizeHandle" class="resize-handle"></div>
+      <div class="viewer-sidebar">
+        <h3>Players</h3>
+        <div class="panel-section">
+          <button id="add-player-btn" class="action-button">+ Add Player</button>
+        </div>
+        <div id="player-count" class="player-meta">0 players</div>
+        <div id="players-list" class="player-list"></div>
       </div>
     </div>
 
-    <div class="page-grid">
-      <div class="panel">
-        <div class="panel-header">
-          <span>Players</span>
-          <span id="player-count">0 players</span>
-        </div>
-        <div id="players-list" class="player-list"></div>
+    <!-- Right panel: player detail -->
+    <div class="dungeon-viewer-right">
+      <div class="viewer-controls">
+        <button id="showListPanelBtn" class="toggle-list-btn hidden" onclick="expandListPanel()">👥 Show Players</button>
+        <a href="resources.html" class="back-btn">← Resources</a>
       </div>
-
-      <div class="panel player-detail">
-        <div class="panel-header">
-          <span id="detail-title">Select a player to edit</span>
-          <button id="delete-player-btn" class="action-button" style="background:#fbe9e7; border-color:#c0392b; color:#8b1a1a;">Delete</button>
-        </div>
-
+      <div class="dungeon-content">
         <div id="player-detail-fields" class="player-detail" hidden>
+          <div class="detail-toolbar">
+            <h2 id="detail-title">Select a player to edit</h2>
+            <button id="delete-player-btn" class="action-button" style="background:#fbe9e7; border-color:#c0392b; color:#8b1a1a;">Delete</button>
+          </div>
+
           <div class="player-section">
             <div class="section-header">
               <strong>Character Details</strong>
@@ -407,45 +485,203 @@
               </div>
             </div>
 
-            <div class="spell-section">
-              <div>
-                <div class="section-label">Assigned Spell Book</div>
-                <div id="assigned-spells" class="assigned-spells"></div>
+            <div class="player-tabs">
+              <div class="player-tabs-bar">
+                <button type="button" class="player-tab active" data-tab="spellsTab">Spells</button>
+                <button type="button" class="player-tab" data-tab="weaponsTab">Weapons</button>
               </div>
+              <div id="spellsTab" class="player-tab-content active">
+                <div class="spell-section">
+                  <div>
+                    <div class="section-label">Assigned Spell Book</div>
+                    <div id="assigned-spells" class="assigned-spells"></div>
+                  </div>
 
-              <div class="spell-search">
-                <div class="section-label">Add Spells</div>
-                <input id="spell-search" type="search" placeholder="Search spells by name, school, or text">
-                <div id="spell-search-results" class="spell-search-results"></div>
+                  <div class="spell-search">
+                    <label class="search-field">
+                      Add Spells
+                      <input id="spell-search" type="search" placeholder="Search spells by name, school, or text">
+                    </label>
+                    <div id="spell-search-results" class="spell-search-results"></div>
+                  </div>
+                </div>
               </div>
-            </div>
+              <div id="weaponsTab" class="player-tab-content">
+                <div class="spell-section">
+                  <div>
+                    <div class="section-label">Assigned Weapons</div>
+                    <div id="assigned-weapons" class="assigned-spells"></div>
+                  </div>
 
-            <div class="spell-section">
-              <div>
-                <div class="section-label">Assigned Weapons</div>
-                <div id="assigned-weapons" class="assigned-spells"></div>
-              </div>
-
-              <div class="spell-search">
-                <div class="section-label">Add Weapons</div>
-                <input id="weapon-search" type="search" placeholder="Search weapons by name, type, or property">
-                <div id="weapon-search-results" class="spell-search-results"></div>
+                  <div class="spell-search">
+                    <label class="search-field">
+                      Add Weapons
+                      <input id="weapon-search" type="search" placeholder="Search weapons by name, type, or property">
+                    </label>
+                    <div id="weapon-search-results" class="spell-search-results"></div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
         <div id="empty-selection" class="empty-state">
-          No player selected yet. Add a player or choose one from the list to assign spells.
+          No player selected yet. Add a player or choose one from the list to edit.
         </div>
       </div>
     </div>
+
   </div>
-  <script src="../js/card-generator.js"></script>
+
+  <div id="spell-create-modal" class="spell-create-modal" aria-hidden="true">
+    <div class="spell-create-dialog">
+      <div class="spell-create-header">
+        <h2 id="spell-create-title">Add New Spell</h2>
+        <button id="spell-create-close" class="spell-create-close" type="button" aria-label="Close spell creator">×</button>
+      </div>
+      <div id="spell-create-status" class="spell-create-status"></div>
+      <form id="spell-create-form" class="spell-create-form">
+        <div class="form-row">
+          <label>
+            Spell Name
+            <input id="spell-create-name" type="text" placeholder="Spell name" required>
+          </label>
+          <label>
+            Icon
+            <input id="spell-create-icon" type="text" placeholder="✨">
+          </label>
+        </div>
+        <div class="form-row">
+          <label>
+            School
+            <input id="spell-create-school" type="text" placeholder="Evocation, Necromancy, etc.">
+          </label>
+          <label>
+            Level
+            <select id="spell-create-level">
+              <option value="0">Cantrip / 0</option>
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="7">7</option>
+              <option value="8">8</option>
+              <option value="9">9</option>
+            </select>
+          </label>
+        </div>
+        <div class="form-row">
+          <label>
+            Casting Time
+            <input id="spell-create-casting-time" type="text" placeholder="1 action">
+          </label>
+          <label>
+            Duration
+            <input id="spell-create-duration" type="text" placeholder="Instantaneous">
+          </label>
+        </div>
+        <div class="form-row">
+          <label>
+            Range
+            <input id="spell-create-range" type="text" placeholder="150 feet">
+          </label>
+          <label>
+            Action
+            <input id="spell-create-action" type="text" placeholder="Action, Bonus Action, Reaction">
+          </label>
+        </div>
+        <div class="form-row">
+          <label>
+            Components
+            <input id="spell-create-components" type="text" placeholder='["V", "S", "M"] or V, S, M'>
+          </label>
+          <label>
+            Materials
+            <input id="spell-create-materials" type="text" placeholder="a bit of sponge">
+          </label>
+        </div>
+        <div class="form-row">
+          <label>
+            <input id="spell-create-concentration" type="checkbox">
+            Concentration
+          </label>
+          <label>
+            <input id="spell-create-ritual" type="checkbox">
+            Ritual
+          </label>
+        </div>
+        <label>
+          Classes
+          <input id="spell-create-classes" type="text" placeholder='["Wizard", "Sorcerer"] or wizard'>
+        </label>
+        <label>
+          Subclasses
+          <input id="spell-create-subclasses" type="text" placeholder='["School of Evocation"]'>
+        </label>
+        <label>
+          Alt Text
+          <input id="spell-create-alt-text" type="text" placeholder="Alternative description">
+        </label>
+        <label>
+          Spell Text
+          <textarea id="spell-create-text" rows="5" placeholder="Describe the spell effect"></textarea>
+        </label>
+        <label>
+          Area of Effect JSON
+          <textarea id="spell-create-area" rows="3" placeholder='{"cube": null}'></textarea>
+        </label>
+        <label>
+          Attack Type JSON
+          <textarea id="spell-create-attack" rows="3" placeholder='[{"name":"initial","type":"","save":["con"]}]'></textarea>
+        </label>
+        <label>
+          Damage JSON
+          <textarea id="spell-create-damage" rows="3" placeholder='[{"name":"primary","damage":"1d6"}]'></textarea>
+        </label>
+        <label>
+          Heal JSON
+          <textarea id="spell-create-heal" rows="3" placeholder='[{"name":"primary","amount":"1d8"}]'></textarea>
+        </label>
+        <label>
+          Heal at Spell Slots
+          <textarea id="spell-create-heal-at-spell-slots" rows="2" placeholder='{"1":"2d8"}'></textarea>
+        </label>
+        <label>
+          Higher Levels
+          <textarea id="spell-create-higher-levels" rows="2" placeholder="Text shown at higher levels"></textarea>
+        </label>
+        <label>
+          Damage at Higher Levels
+          <textarea id="spell-create-damage-at-higher-levels" rows="2" placeholder='{"1":"1d6","2":"2d6"}'></textarea>
+        </label>
+        <div class="spell-create-actions">
+          <button type="button" id="spell-create-cancel" class="action-button" style="background:#fbe9e7; border-color:#c0392b; color:#8b1a1a;">Cancel</button>
+          <button type="submit" id="spell-create-save" class="action-button">Save Spell</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script src="../js/api.js"></script>
   <script src="../js/dom-utils.js"></script>
   <script src="../js/data-utils.js"></script>
   <script src="../js/page-base.js"></script>
+  <script src="../js/pane-resize.js"></script>
+  <script>
+    var _pane = PaneResize.init({
+      storagePrefix: 'playerCharactersPanel',
+      defaultWidth: 260,
+      minWidth: 200,
+      maxWidthFraction: 0.5,
+      collapseThreshold: 150,
+      showBtnId: 'showListPanelBtn'
+    });
+    function expandListPanel() { _pane.expand(); }
+  </script>
+  <script src="../js/card-generator.js"></script>
   <script src="../js/player-characters.js"></script>
 </body>
 </html>

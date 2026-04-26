@@ -89,6 +89,44 @@ def get_db_connection():
     return conn
 
 
+def ensure_player_spells_has_at_will():
+    """Add at_will column to player_spells if missing."""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    try:
+        cursor.execute("PRAGMA table_info(player_spells)")
+        columns = [row[1] for row in cursor.fetchall()]
+        if 'at_will' not in columns:
+            cursor.execute("ALTER TABLE player_spells ADD COLUMN at_will BOOLEAN NOT NULL DEFAULT 0")
+            conn.commit()
+    except sqlite3.OperationalError:
+        # Table does not exist or database is not initialized yet.
+        pass
+    finally:
+        conn.close()
+
+
+def ensure_spells_have_action_column():
+    """Add action column to spells if missing."""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    try:
+        cursor.execute("PRAGMA table_info(spells)")
+        columns = [row[1] for row in cursor.fetchall()]
+        if 'action' not in columns:
+            cursor.execute("ALTER TABLE spells ADD COLUMN action TEXT")
+            conn.commit()
+    except sqlite3.OperationalError:
+        # Table does not exist or database is not initialized yet.
+        pass
+    finally:
+        conn.close()
+
+
+ensure_player_spells_has_at_will()
+ensure_spells_have_action_column()
+
+
 def parse_json_field(json_str):
     """Parse a JSON field from database, return None if invalid."""
     if not json_str:
@@ -144,13 +182,39 @@ def convert_db_player_to_api_format(player_row, conn=None, include_spells=False,
 
         if include_spells:
             cursor = conn.cursor()
-            cursor.execute(
-                "SELECT spell_id FROM player_spells WHERE player_id = ? ORDER BY added_at",
-                (player.get('id'),)
-            )
-            result['spells'] = [row['spell_id'] for row in cursor.fetchall()]
+            try:
+                cursor.execute(
+                    "SELECT spell_id, at_will, added_at FROM player_spells WHERE player_id = ? ORDER BY added_at",
+                    (player.get('id'),)
+                )
+                rows = cursor.fetchall()
+                result['spells'] = [row['spell_id'] for row in rows]
+                result['spell_assignments'] = [
+                    {
+                        'spell_id': row['spell_id'],
+                        'at_will': bool(row['at_will']),
+                        'added_at': row['added_at']
+                    }
+                    for row in rows
+                ]
+            except sqlite3.OperationalError:
+                cursor.execute(
+                    "SELECT spell_id, added_at FROM player_spells WHERE player_id = ? ORDER BY added_at",
+                    (player.get('id'),)
+                )
+                rows = cursor.fetchall()
+                result['spells'] = [row['spell_id'] for row in rows]
+                result['spell_assignments'] = [
+                    {
+                        'spell_id': row['spell_id'],
+                        'at_will': False,
+                        'added_at': row['added_at']
+                    }
+                    for row in rows
+                ]
         else:
             result['spells'] = []
+            result['spell_assignments'] = []
 
         if include_weapons:
             cursor = conn.cursor()
@@ -324,7 +388,7 @@ def delete_player(player_id):
     return deleted > 0
 
 
-def add_spell_to_player(player_id, spell_id):
+def add_spell_to_player(player_id, spell_id, at_will=False):
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT id FROM players WHERE id = ?", (player_id,))
@@ -337,10 +401,20 @@ def add_spell_to_player(player_id, spell_id):
         return None
     try:
         cursor.execute(
-            "INSERT OR IGNORE INTO player_spells (player_id, spell_id) VALUES (?, ?)",
-            (player_id, spell_id)
+            "INSERT INTO player_spells (player_id, spell_id, at_will) VALUES (?, ?, ?) "
+            "ON CONFLICT(player_id, spell_id) DO UPDATE SET at_will = excluded.at_will",
+            (player_id, spell_id, int(bool(at_will)))
         )
         conn.commit()
+    except sqlite3.OperationalError:
+        try:
+            cursor.execute(
+                "INSERT OR IGNORE INTO player_spells (player_id, spell_id) VALUES (?, ?)",
+                (player_id, spell_id)
+            )
+            conn.commit()
+        except Exception:
+            pass
     except Exception:
         pass
     conn.close()
@@ -636,6 +710,25 @@ def get_player_spell_ids(player_id):
     return spell_ids
 
 
+def get_player_spell_assignments(player_id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT spell_id, at_will, added_at FROM player_spells WHERE player_id = ? ORDER BY added_at",
+        (player_id,)
+    )
+    assignments = [
+        {
+            'spell_id': row['spell_id'],
+            'at_will': bool(row['at_will']),
+            'added_at': row['added_at']
+        }
+        for row in cursor.fetchall()
+    ]
+    conn.close()
+    return assignments
+
+
 def get_spells_by_ids(spell_ids):
     if not spell_ids:
         return []
@@ -675,7 +768,7 @@ SPELL_EDITABLE_FIELDS = [
     'spell_name', 'icon', 'level', 'school', 'spell_text', 'spell_alt_text',
     'damage', 'heal', 'heal_at_spell_slots', 'range', 'higher_levels',
     'damage_at_higher_levels', 'casting_time', 'duration', 'concentration',
-    'ritual', 'components', 'materials', 'attack_type', 'area_of_effect',
+    'ritual', 'components', 'materials', 'attack_type', 'action', 'area_of_effect',
     'classes', 'subclasses'
 ]
 
@@ -683,7 +776,7 @@ SPELL_BOOLEAN_FIELDS = {'concentration', 'ritual'}
 
 SPELL_JSON_EDITOR_FIELDS = {
     'damage', 'heal', 'heal_at_spell_slots', 'higher_levels',
-    'damage_at_higher_levels', 'attack_type', 'area_of_effect',
+    'damage_at_higher_levels', 'attack_type', 'action', 'area_of_effect',
     'classes', 'subclasses'
 }
 
@@ -695,6 +788,12 @@ def format_spell_field_for_editor(field_name, value):
 
     if value is None:
         return ''
+
+    if field_name == 'action':
+        parsed = parse_json_field(value)
+        if isinstance(parsed, dict) and 'action' in parsed:
+            return parsed.get('action')
+        return value if value is not None else ''
 
     if field_name in SPELL_JSON_EDITOR_FIELDS:
         parsed = parse_json_field(value)
@@ -717,6 +816,9 @@ def normalize_spell_editor_value(field_name, value):
         return None
 
     if isinstance(value, str):
+        if field_name == 'action':
+            cleaned = value.strip()
+            return json.dumps({'action': cleaned}) if cleaned else None
         cleaned = value.strip()
         return cleaned if cleaned else None
 
@@ -2165,7 +2267,8 @@ def convert_db_spell_to_api_format(spell_row, conn=None):
         "explanation": explanation_content,
         "details": details,
         "classes": parse_json_array_field(spell_dict.get('classes')),
-        "casting_time": casting_time_text or ''
+        "casting_time": casting_time_text or '',
+        "action": parse_json_field(spell_dict.get('action')) if spell_dict.get('action') else None
     }
 
     # Close connection if we created it
@@ -2281,7 +2384,7 @@ def get_spells_api():
             SELECT 
                 id, spell_name, icon, level, school, spell_text,
                 attack_type, damage, heal, range, area_of_effect, classes,
-                casting_time
+                casting_time, action
             FROM spells
             ORDER BY spell_name
         """)
@@ -2301,8 +2404,42 @@ def get_spells_api():
         import traceback
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
-        import traceback
-        traceback.print_exc()
+
+
+@app.route('/api/spells', methods=['POST'])
+def create_spell_api():
+    """API endpoint: POST /api/spells - Creates a new spell."""
+    try:
+        payload = request.get_json(silent=True) or {}
+        values = {}
+
+        for field_name in SPELL_EDITABLE_FIELDS:
+            if field_name in payload:
+                values[field_name] = normalize_spell_editor_value(field_name, payload.get(field_name))
+
+        values.setdefault('spell_name', f"New Spell {datetime.now().strftime('%Y%m%d%H%M%S')}")
+        values.setdefault('icon', '✨')
+        values.setdefault('level', '0')
+
+        fields = ', '.join(values.keys())
+        placeholders = ', '.join('?' for _ in values)
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            f"INSERT INTO spells ({fields}) VALUES ({placeholders})",
+            tuple(values.values())
+        )
+        spell_id = cursor.lastrowid
+        conn.commit()
+        cursor.execute(f"SELECT id, {', '.join(SPELL_EDITABLE_FIELDS)} FROM spells WHERE id = ?", (spell_id,))
+        row = cursor.fetchone()
+        result = convert_db_spell_to_editor_format(row) if row else {'id': spell_id}
+        conn.close()
+        return jsonify({"success": True, "spell": result})
+
+    except sqlite3.IntegrityError as exc:
+        return jsonify({"error": str(exc)}), 400
+    except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 
@@ -2318,7 +2455,7 @@ def get_spell_by_title(title):
             SELECT 
                 id, spell_name, icon, level, school, spell_text,
                 attack_type, damage, heal, range, area_of_effect, classes,
-                casting_time
+                casting_time, action
             FROM spells
             WHERE spell_name = ?
         """, (title,))
@@ -2466,12 +2603,12 @@ def delete_npc_api(npc_id):
 
 @app.route('/api/players/<int:player_id>/spells', methods=['GET'])
 def get_player_spells_api(player_id):
-    """API endpoint: GET /api/players/<player_id>/spells - Returns assigned spell IDs."""
+    """API endpoint: GET /api/players/<player_id>/spells - Returns assigned spell details."""
     try:
         if not get_player_by_id(player_id):
             return jsonify({"error": f"Player id '{player_id}' not found"}), 404
-        spell_ids = get_player_spell_ids(player_id)
-        return jsonify(spell_ids)
+        assignments = get_player_spell_assignments(player_id)
+        return jsonify(assignments)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -2488,7 +2625,8 @@ def add_player_spell_api(player_id):
             spell_id = int(spell_id)
         except (TypeError, ValueError):
             return jsonify({"error": "Invalid spell_id"}), 400
-        player = add_spell_to_player(player_id, spell_id)
+        at_will = bool(payload.get('at_will', False))
+        player = add_spell_to_player(player_id, spell_id, at_will=at_will)
         if player is None:
             return jsonify({"error": "Player or spell not found"}), 404
         return jsonify(player)

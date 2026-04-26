@@ -61,8 +61,9 @@ Seed and source data used by the app:
 - `data/seeds/seed_traps.json` — trap definitions
 - `data/seeds/seed_dungeons.json` — dungeon seed data
 - `data/seeds/seed_actions.json` — basic actions and rule explanations
-- `data/seeds/seed_spells.json` — optional spell seed fallback
-
+- `data/seeds/seed_spells.json` — optional spell seed fallback- data/seeds/seed_players.json — player character seed data
+- data/seeds/seed_player_spells.json — player spell assignments
+- data/seeds/seed_player_weapons.json — player weapon assignments
 Seed export workflow:
 - `python _dev/export_db_seeds.py` — archive legacy seed files into `data/seeds/archive` and export current DB data to `data/seeds/`
 

@@ -149,6 +149,7 @@ def rebuild_spells_table(cursor):
             components TEXT,
             materials TEXT,
             attack_type TEXT,
+            action TEXT,
             area_of_effect TEXT,
             classes TEXT,
             subclasses TEXT,
@@ -164,8 +165,8 @@ def insert_spell(cursor, spell_data):
         INSERT INTO spells
         (spell_name, icon, level, school, spell_text, spell_alt_text, damage, heal, heal_at_spell_slots, range,
          higher_levels, damage_at_higher_levels, casting_time, duration, concentration, ritual, components, materials,
-         attack_type, area_of_effect, classes, subclasses)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         attack_type, action, area_of_effect, classes, subclasses)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             spell_data["spell_name"],
@@ -187,6 +188,7 @@ def insert_spell(cursor, spell_data):
             spell_data["components"],
             spell_data["materials"],
             spell_data["attack_type"],
+            spell_data.get("action"),
             spell_data["area_of_effect"],
             spell_data["classes"],
             spell_data["subclasses"],
