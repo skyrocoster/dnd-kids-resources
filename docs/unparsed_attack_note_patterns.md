@@ -1,5 +1,8 @@
 # Remaining Unparsed Attack Note Patterns
 
+This document lists representative attack note patterns that are not yet fully parsed by the current parser. For the latest parser status, see the code in lib/ and recent commits.
+
+
 This document captures one representative note for each remaining pattern in `data/5eTools/extracted/data/bestiary/monsters_merged.json` where `action.notes` still contains attack syntax but no parsed `attack` object.
 
 ## Summary

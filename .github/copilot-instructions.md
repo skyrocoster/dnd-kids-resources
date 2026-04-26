@@ -14,6 +14,8 @@
   - Windows: `launchers/launch_gui.ps1` or `launchers/launch_gui.bat`
 - **Run a single test:**
   - Example: `python _dev/test_spell_parsing.py` (runs spell parsing workflow test)
+- **Check for browser JS errors:**
+  - `python tools/browser_error_checker.py` (requires Playwright; see script for install instructions)
 - **Database setup:**
   - Init schema: `python _dev/init_database.py`
   - Seed data: `python _dev/seed_database.py --force`
@@ -24,7 +26,7 @@
 - **Frontend:** Static HTML (`pages/`), JS (`js/`), CSS (`css/`), and data files (`data/`).
 - **Backend:** `server_flask.py` (Flask API), `lib/` (production Python modules, e.g., `parse_dungeon.py`).
 - **Database:** SQLite file `dnd_kids_resources.db` (schema and seed managed via `_dev/` scripts).
-- **Developer Tools:** `_dev/` (DB/test utilities), `tools/` (stable utilities), `launchers/` (startup scripts).
+- **Developer Tools:** `_dev/` (DB/test utilities), `tools/` (stable utilities, e.g., `tools/browser_error_checker.py` for automated browser error checking), `launchers/` (startup scripts).
 - **Docs:** `docs/` (see `docs/guides/FILE_STRUCTURE.md` for structure).
 
 ## Key Conventions

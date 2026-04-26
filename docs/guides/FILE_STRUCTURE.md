@@ -1,5 +1,8 @@
 # File Structure Organization
 
+This guide describes the current directory structure, key scripts, and conventions for the D&D Kids Resources repository. For the latest updates, see the main README.md and docs/README.md.
+
+
 ## Root Directory
 Key entry points and scripts:
 - `server_flask.py` — Main Flask server

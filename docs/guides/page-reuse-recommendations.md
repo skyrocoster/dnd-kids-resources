@@ -1,5 +1,8 @@
 # Page Reuse & Shared Structure Recommendations
 
+This guide explains the shared UI layout shell, reusable CSS/JS modules, and migration plan for aligning all pages to the current two-pane pattern. See docs/README.md for the full documentation index.
+
+
 ## Overview
 
 The repository now has a reusable page shell pattern centered on the `dungeons-library` layout. A shared layout stylesheet and a shared pane resize module are in place, so new pages can use the same two-pane shell and avoid duplicated HTML/CSS/JS.
