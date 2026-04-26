@@ -1,4 +1,14 @@
 (function(window) {
+  /**
+   * PageBase: Utility methods for DOM manipulation with design-aware enhancements
+   * 
+   * Features:
+   * - DOM query and manipulation helpers
+   * - Animation-ready element creation
+   * - Viewer pane lifecycle management
+   * - Design-aware markup with semantic structure
+   * - Theming hooks via CSS custom properties
+   */
   const PageBase = {
     onReady(callback) {
       if (typeof callback !== 'function') {
@@ -21,9 +31,18 @@
       }
     },
 
+    /**
+     * Create a placeholder element with animation-ready structure
+     * @param {string} message - Placeholder text
+     * @param {string} className - CSS class
+     * @returns {HTMLElement} Placeholder div with animation hooks
+     */
     createPlaceholder(message, className = 'detail-placeholder') {
       const placeholder = document.createElement('div');
       placeholder.className = className;
+      placeholder.setAttribute('role', 'status');
+      placeholder.setAttribute('aria-live', 'polite');
+      placeholder.setAttribute('data-animation', 'fade-in');
       placeholder.textContent = String(message);
       return placeholder;
     },
@@ -54,6 +73,10 @@
       }
     },
 
+    /**
+     * Inject tools panel with animation-ready markup
+     * Supports collapsible state with smooth transitions
+     */
     injectToolsPanel() {
       const mapPanel = document.querySelector('.map-panel');
       if (!mapPanel) return;
@@ -62,29 +85,46 @@
       if (document.getElementById('toolsPanel')) return;
 
       const toolsHTML = `
-        <div class="viewer-sidebar tools-sidebar" id="toolsPanel">
+        <div class="viewer-sidebar tools-sidebar" id="toolsPanel" data-animation="slide-in-left">
           <div class="action-panel-wrapper">
-            <h3>Tools</h3>
-            <button id="actionPanelToggle" class="tools-toggle" type="button" aria-expanded="false" title="Toggle tools panel">⚙️ Tools</button>
+            <h3 class="tools-title">Tools</h3>
+            <button 
+              id="actionPanelToggle" 
+              class="tools-toggle" 
+              type="button" 
+              aria-expanded="false" 
+              aria-controls="actionPanel"
+              title="Toggle tools panel"
+              data-animation="scale-in">⚙️ Tools</button>
           </div>
-          <div class="action-panel collapsed" id="actionPanel"></div>
+          <div class="action-panel collapsed" id="actionPanel" role="region" aria-label="Tools panel"></div>
         </div>
       `;
 
       // Insert at the beginning of map-panel
       mapPanel.insertAdjacentHTML('afterbegin', toolsHTML);
 
-      // Wire up toggle
+      // Wire up toggle with animation support
       const toggle = document.getElementById('actionPanelToggle');
       const panel = document.getElementById('actionPanel');
       if (toggle && panel) {
         toggle.addEventListener('click', () => {
-          const collapsed = panel.classList.toggle('collapsed');
-          toggle.setAttribute('aria-expanded', String(!collapsed));
+          const isCollapsed = panel.classList.contains('collapsed');
+          panel.classList.toggle('collapsed');
+          toggle.setAttribute('aria-expanded', String(isCollapsed));
+          // Signal to CSS that animation should play
+          panel.setAttribute('data-animation-state', isCollapsed ? 'expanding' : 'collapsing');
         });
       }
     },
 
+    /**
+     * Add a tool button with design-aware markup
+     * @param {string} buttonText - Button label
+     * @param {string} buttonId - Button ID for styling/selection
+     * @param {Function} clickCallback - Click handler
+     * @returns {HTMLElement} Button element
+     */
     addToolButton(buttonText, buttonId, clickCallback) {
       const actionPanel = document.getElementById('actionPanel');
       if (!actionPanel) {
@@ -97,6 +137,7 @@
       button.className = 'toolbox-button';
       button.type = 'button';
       button.textContent = buttonText;
+      button.setAttribute('data-animation', 'fade-in-up');
       button.addEventListener('click', clickCallback);
       actionPanel.appendChild(button);
       return button;

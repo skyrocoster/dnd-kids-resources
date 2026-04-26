@@ -223,6 +223,16 @@
 }
 
 /* Shared panel/detail styles */
+
+.npc-detail-actions {
+  margin-top: 18px;
+  gap: 12px;
+  display: flex;
+}
+.npc-add-sense-btn {
+  margin-top: 12px;
+}
+
 .detail-shell,
 .section-shell,
 .page-content {
@@ -230,6 +240,19 @@
   flex-direction: column;
   gap: 18px;
 }
+
+.detail-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0;
+}
+.detail-title-group { min-width: 0; }
+.detail-title { margin: 0; font-size: 2rem; color: #102a43; line-height: 1.05; }
+.detail-subtitle { margin: 0.35rem 0 0; color: #475569; font-size: 0.95rem; }
+.detail-grid { display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr); }
 
 .detail-panel,
 .info-panel,
@@ -242,6 +265,42 @@
   padding: 18px;
   box-shadow: 0 12px 30px var(--panel-shadow);
   border: 1px solid var(--panel-border);
+}
+
+/* Stat and save grid styles (from monster-book) */
+.stat-grid,
+.save-grid,
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 0.75rem;
+}
+.stat-card,
+.save-card {
+  background: #f7f9fc;
+  border-radius: 8px;
+  padding: 0.85rem;
+  text-align: center;
+  border: 1px solid #e6e9ef;
+}
+.stat-card .stat-name,
+.save-card .stat-name { display: block; font-size: 0.75rem; color: inherit; margin-bottom: 0.2rem; }
+.stat-card .stat-value,
+.save-card .stat-value { font-size: 1rem; font-weight: 700; color: inherit; }
+
+/* Field row/group for NPC editor */
+.field-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.field-group {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 160px;
+  min-width: 120px;
+  gap: 0.25rem;
 }
 
 .detail-row,
@@ -559,6 +618,10 @@
 .no-results,
 .detail-placeholder,
 .weapon-detail-placeholder,
+.monster-detail-placeholder, .monster-detail-panel {
+  /* .monster-detail-panel is an alias for .detail-panel */
+}
+
 .monster-detail-placeholder {
   padding: 20px;
   border-radius: 14px;

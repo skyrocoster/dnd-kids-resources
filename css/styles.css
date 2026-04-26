@@ -292,6 +292,77 @@ body {
 .ability-wis { color: #8e44ad; font-weight: 700; vertical-align: middle; } /* Purple - Wisdom */
 .ability-cha { color: #f39c12; font-weight: 700; vertical-align: middle; } /* Gold - Charisma */
 
+/* Monster Book Shared Styles */
+.monster-list {
+  display: grid;
+  gap: 8px;
+}
+.monster-list-item {
+  background: #fff;
+  border: 2px solid #e0e0e0;
+  border-radius: 6px;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+}
+.monster-list-item:hover,
+.monster-list-item.selected {
+  border-color: var(--accent, #4a90e2);
+  box-shadow: 0 4px 12px rgba(74,144,226,0.2);
+  transform: translateY(-1px);
+}
+.monster-list-item-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #333;
+}
+.monster-list-item-subtitle {
+  margin: 4px 0 0;
+  color: #666;
+  font-size: 0.83rem;
+  line-height: 1.4;
+}
+.monster-book-meta {
+  font-size: 0.85rem;
+  color: #555;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+}
+.monster-title-header {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #333;
+}
+.back-btn {
+  background: #7f8c8d;
+  color: #fff;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  text-decoration: none;
+  transition: background 0.2s ease;
+}
+.back-btn:hover {
+  background: #687f8c;
+}
+.notes {
+  color: #5f6f89;
+  margin-top: 0.25rem;
+  font-size: 0.95rem;
+}
+.loading,
+.error-message {
+  padding: 1.25rem;
+  background: #fff;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+  color: #333;
+}
+
+
 .card-footer {
   padding: 1.5mm 3mm;
   font-size: 6.5pt;

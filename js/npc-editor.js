@@ -1,12 +1,23 @@
-document.addEventListener('DOMContentLoaded', async function() {
+PageBase.onReady(async function() {
+  const { escapeHtml } = window.DomUtils;
+  // Initialize resizable sidebar using PageBase utility
+  PageBase.initializeViewerPane('npcEditor', {
+    layoutId: 'page-pane-layout',
+    panelId: 'viewer-sidebar',
+    handleId: 'resizeHandle',
+    defaultWidth: 320,
+    minWidth: 220,
+    maxWidthFraction: 0.5,
+    collapseThreshold: 120
+  });
   const API_DATA_PATH = '/api/npcs';
   const FALLBACK_DATA_PATH = '/data/seeds/seed_npcs.json';
-  const searchInput = document.getElementById('search-input');
-  const npcListEl = document.getElementById('npc-list');
-  const npcCountEl = document.getElementById('npc-count');
-  const npcDetailShell = document.getElementById('npc-detail-shell');
-  const newNpcBtn = document.getElementById('new-npc-btn');
-  const exportNpcsBtn = document.getElementById('export-npcs-btn');
+  const searchInput = PageBase.getElement('search-input');
+  const npcListEl = PageBase.getElement('npc-list');
+  const npcCountEl = PageBase.getElement('npc-count');
+  const npcDetailShell = PageBase.getElement('npc-detail-shell');
+  const newNpcBtn = PageBase.getElement('new-npc-btn');
+  const exportNpcsBtn = PageBase.getElement('export-npcs-btn');
 
   let npcs = [];
   let selectedNpcId = null;
@@ -161,37 +172,54 @@ document.addEventListener('DOMContentLoaded', async function() {
 
   function renderNpcList() {
     const visible = filterNpcs();
-    npcCountEl.textContent = `${visible.length} NPC${visible.length === 1 ? '' : 's'}`;
+    npcCountEl.textContent = `${visible.length} NPC${visible.length === 1 ? '' : 's'} available`;
+npcCountEl.className = 'monster-book-meta';
     npcListEl.innerHTML = '';
-
+    // Show loading spinner if NPCs are still loading
+    if (npcs.length === 0 && npcCountEl.textContent.includes('Loading')) {
+      const loading = document.createElement('div');
+      loading.className = 'placeholder';
+      loading.textContent = 'Loading NPCs...';
+      npcListEl.appendChild(loading);
+      return;
+    }
     if (!visible.length) {
+      npcCountEl.textContent = '0 NPCs';
       const placeholder = document.createElement('div');
       placeholder.className = 'placeholder';
       placeholder.textContent = 'No NPCs match your search. Add a new NPC or try a different term.';
       npcListEl.appendChild(placeholder);
+      renderPlaceholder('No NPCs match your search.');
       return;
     }
 
     visible.forEach(npc => {
-      const item = document.createElement('div');
-      item.className = 'npc-list-item';
+      const item = document.createElement('button');
+      item.type = 'button';
+      item.className = 'monster-list-item';
       const key = getNpcKey(npc);
       if (key === selectedNpcId) {
         item.classList.add('selected');
+        item.setAttribute('aria-current', 'true');
+      } else {
+        item.classList.remove('selected');
+        item.removeAttribute('aria-current');
       }
       item.dataset.key = key;
 
-      const title = document.createElement('h2');
-      title.className = 'npc-list-item-title';
-      title.textContent = npc.name || 'New NPC';
-
-      const subtitle = document.createElement('p');
-      subtitle.className = 'npc-list-item-subtitle';
-      subtitle.textContent = formatListSubtitle(npc);
-
-      item.appendChild(title);
-      item.appendChild(subtitle);
+      item.innerHTML = `
+        <div class="monster-list-item-title">${escapeHtml(npc.name || 'New NPC')}</div>
+        <div class="monster-list-item-subtitle">${escapeHtml(formatListSubtitle(npc))}</div>
+      `;
+      item.tabIndex = 0;
+      item.setAttribute('role', 'button');
+      item.setAttribute('aria-label', npc.name || 'New NPC');
       item.addEventListener('click', () => selectNpc(key));
+      item.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          selectNpc(key);
+        }
+      });
       npcListEl.appendChild(item);
     });
   }
@@ -201,6 +229,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (!banner) return;
     banner.textContent = message;
     banner.style.display = 'block';
+    banner.setAttribute('aria-live', 'assertive');
+    banner.setAttribute('role', 'alert');
     clearTimeout(window.npcEditorMessageTimeout);
     window.npcEditorMessageTimeout = setTimeout(() => {
       banner.style.display = 'none';
@@ -235,11 +265,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     headerPanel.innerHTML = `
       <div class="detail-header">
         <div class="detail-title-group">
-          <h1 class="detail-title">${npc.name || 'New NPC'}</h1>
-          <p class="detail-subtitle">${formatListSubtitle(npc) || 'Fill the form to create a character.'}</p>
+          <h1 class="detail-title">${escapeHtml(npc.name || 'New NPC')}</h1>
+          <p class="detail-subtitle">${escapeHtml(formatListSubtitle(npc) || 'Fill the form to create a character.')}</p>
         </div>
       </div>
-      <div class="button-row" style="margin-top: 18px; gap: 12px;">
+      <div class="button-row npc-detail-actions">
         <button id="save-npc-btn" class="reset-button">Save NPC</button>
         <button id="delete-npc-btn" class="reset-button">Delete NPC</button>
       </div>
@@ -250,6 +280,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     const form = document.createElement('div');
     form.className = 'npc-form';
+    // Modularize: could break out each section as a function if desired
     form.innerHTML = `
       <div class="field-row">
         <div class="field-group">
@@ -300,7 +331,7 @@ document.addEventListener('DOMContentLoaded', async function() {
       <div>
         <div class="detail-label">Senses</div>
         <div id="npc-senses-list"></div>
-        <button id="add-sense-btn" type="button" class="reset-button" style="margin-top: 12px;">Add Sense</button>
+        <button id="add-sense-btn" type="button" class="reset-button npc-add-sense-btn">Add Sense</button>
       </div>
       <div>
         <div class="detail-label">Ability Scores</div>
@@ -356,12 +387,25 @@ document.addEventListener('DOMContentLoaded', async function() {
     npcDetailShell.appendChild(wrapper);
 
     form.querySelectorAll('input').forEach(input => input.addEventListener('input', syncForm));
-    document.getElementById('npc-notes').addEventListener('input', syncForm);
-    document.getElementById('add-sense-btn').addEventListener('click', () => addSense(npc));
+document.getElementById('npc-notes').addEventListener('input', syncForm);
+document.getElementById('add-sense-btn').addEventListener('click', () => addSense(npc));
+// Accessibility: focus on name input when detail shell is built
+setTimeout(() => {
+  const nameInput = document.getElementById('npc-name');
+  if (nameInput) nameInput.focus();
+}, 0);
 
-    document.getElementById('save-npc-btn').addEventListener('click', () => {
-      saveNpc(getNpcKey(npc));
-    });
+    const saveBtn = document.getElementById('save-npc-btn');
+saveBtn.addEventListener('click', () => {
+  saveNpc(getNpcKey(npc));
+});
+// Disable save button if name is empty
+const nameInput = document.getElementById('npc-name');
+function updateSaveBtnState() {
+  saveBtn.disabled = !nameInput.value.trim();
+}
+nameInput.addEventListener('input', updateSaveBtnState);
+updateSaveBtnState();
 
     document.getElementById('delete-npc-btn').addEventListener('click', () => {
       deleteNpc(getNpcKey(npc));
@@ -542,7 +586,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     renderNpcList();
     const npc = findNpcByKey(key);
     if (!npc) {
-      npcDetailShell.innerHTML = '';
+      renderPlaceholder('Select or add an NPC to edit its fields.');
       return;
     }
     buildDetailShell(npc);
@@ -552,6 +596,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     const index = npcs.findIndex(npc => getNpcKey(npc) === key);
     if (index === -1) return;
     const npc = npcs[index];
+    if (!window.confirm('Are you sure you want to delete this NPC? This action cannot be undone.')) {
+      return;
+    }
     if (npc.id != null) {
       try {
         const response = await fetch(`${API_DATA_PATH}/${npc.id}`, { method: 'DELETE' });
@@ -569,7 +616,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     npcs.splice(index, 1);
     selectedNpcId = null;
     renderNpcList();
-    npcDetailShell.innerHTML = '<div class="placeholder">Select or add an NPC to edit its fields.</div>';
+    renderPlaceholder('Select or add an NPC to edit its fields.');
     showMessage('NPC deleted.');
   }
 
@@ -618,8 +665,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     showMessage('NPC list exported as JSON.');
   }
 
-  function renderPlaceholder() {
-    npcDetailShell.innerHTML = '<div class="placeholder">Select or add an NPC to edit its fields.</div>';
+  function renderPlaceholder(message) {
+    npcDetailShell.innerHTML = `<div class="placeholder">${escapeHtml(message || 'Select or add an NPC to edit its fields.')}</div>`;
   }
 
   async function loadNpcs() {
@@ -636,14 +683,25 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
       });
       renderNpcList();
-      renderPlaceholder();
+      renderPlaceholder('Select or add an NPC to edit its fields.');
     } catch (error) {
-      npcListEl.innerHTML = `<div class="placeholder">Unable to load NPC data. ${error.message}</div>`;
+      npcListEl.innerHTML = `<div class="placeholder">Unable to load NPC data. ${escapeHtml(error.message)}</div>`;
       npcCountEl.textContent = '0 NPCs';
     }
   }
 
-  searchInput.addEventListener('input', renderNpcList);
+  searchInput.addEventListener('input', () => {
+    renderNpcList();
+    // If the selected NPC is not in the filtered list, clear the detail panel
+    const visible = filterNpcs();
+    if (!visible.find(npc => getNpcKey(npc) === selectedNpcId)) {
+      if (visible.length) {
+        selectNpc(getNpcKey(visible[0]));
+      } else {
+        renderPlaceholder('No NPCs match your search.');
+      }
+    }
+  });
   newNpcBtn.addEventListener('click', addNewNpc);
   exportNpcsBtn.addEventListener('click', exportNpcs);
 

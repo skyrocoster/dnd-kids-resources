@@ -7,214 +7,64 @@
   <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@600;700;800&family=OpenDyslexic&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/styles.css">
   <link rel="stylesheet" href="../css/page-layout.css">
-  <style>
-    body {
-      min-height: 100vh;
-      background: linear-gradient(180deg, #3d4a54 0%, #7d8b97 100%);
-      color: #1f2937;
-      margin: 0;
-      font-family: 'Nunito', sans-serif;
-    }
-    .npc-editor-shell {
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
-    .npc-editor-topbar {
-      position: sticky;
-      top: 0;
-      z-index: 20;
-      background: rgba(248, 250, 252, 0.96);
-      border-bottom: 3px solid #cbd5e1;
-      padding: 18px;
-      box-shadow: 0 10px 28px rgba(15, 23, 42, 0.12);
-    }
-    .npc-editor-title-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .npc-editor-title {
-      margin: 0;
-      font-family: 'Fredoka One', cursive;
-      font-size: 2rem;
-      color: #102a43;
-      line-height: 1.05;
-    }
-    .npc-editor-subtitle {
-      margin: 6px 0 0;
-      color: #475569;
-      font-size: 0.95rem;
-      letter-spacing: 0.4px;
-    }
-    .npc-editor-toolbar {
-      margin-top: 16px;
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: 12px;
-      align-items: end;
-    }
-    .search-field,
-    .npc-count,
-    .button-row {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-    .button-row {
-      flex-direction: row;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: flex-end;
-    }
-    .button-row button {
-      min-width: 120px;
-    }
-    .npc-list-item {
-      background: #ffffff;
-      border: 2px solid #cbd5e1;
-      border-radius: 14px;
-      padding: 14px 16px;
-      cursor: pointer;
-      transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
-    }
-    .npc-list-item:hover,
-    .npc-list-item.selected {
-      border-color: #1d4ed8;
-      box-shadow: 0 12px 26px rgba(15, 23, 42, 0.12);
-      transform: translateY(-1px);
-    }
-    .npc-list-item-title {
-      margin: 0;
-      font-size: 1rem;
-      font-weight: 700;
-      color: #102a43;
-    }
-    .npc-list-item-subtitle {
-      margin: 6px 0 0;
-      color: #64748b;
-      font-size: 0.87rem;
-      line-height: 1.4;
-    }
-    .npc-controls {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 18px;
-      width: 100%;
-      padding: 18px;
-      box-sizing: border-box;
-    }
-    .npc-detail-panel,
-    .npc-list-panel {
-      background: #ffffff;
-      border-radius: 18px;
-      padding: 18px;
-      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12);
-      border: 1px solid #cbd5e1;
-    }
-    .npc-list-panel {
-      max-height: calc(100vh - 230px);
-      overflow: auto;
-    }
-    .npc-form {
-      display: grid;
-      gap: 18px;
-    }
-    .field-group {
-      display: grid;
-      gap: 12px;
-    }
-    .field-group label {
-      font-size: 0.85rem;
-      font-weight: 700;
-      color: #334155;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    .field-group input,
-    .field-group textarea,
-    .field-group select {
-      width: 100%;
-      border: 2px solid #cbd5e1;
-      border-radius: 12px;
-      padding: 12px 14px;
-      font-size: 0.95rem;
-      color: #102a43;
-      background: #f8fafc;
-    }
-    .field-row {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: 12px;
-    }
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-      gap: 12px;
-    }
-    .stats-grid .field-group {
-      margin-bottom: 0;
-    }
-    .placeholder {
-      padding: 24px;
-      text-align: center;
-      color: #475569;
-      font-size: 1rem;
-      background: #f8fafc;
-      border-radius: 14px;
-      border: 1px dashed #cbd5e1;
-    }
-    .message-banner {
-      display: none;
-      padding: 14px 18px;
-      border-radius: 14px;
-      background: #e0f2fe;
-      color: #0c4a6e;
-      border: 1px solid #7dd3fc;
-      margin-top: 12px;
-    }
-  </style>
+  
 </head>
 <body>
-  <div class="npc-editor-shell">
-    <div class="npc-editor-topbar">
-      <div class="npc-editor-title-row">
-        <div>
-          <h1 class="npc-editor-title">NPC Editor</h1>
-          <p class="npc-editor-subtitle">Browse NPCs, edit details, and add new characters in a kid-friendly interface.</p>
-        </div>
-      </div>
-      <div class="npc-editor-toolbar">
-        <div class="search-field">
-          <label for="search-input">Search NPCs</label>
-          <input id="search-input" type="search" placeholder="Search by name, race, or role" />
-        </div>
-        <div class="button-row">
-          <button id="new-npc-btn" class="reset-button">+ New NPC</button>
-          <button id="export-npcs-btn" class="reset-button">Export JSON</button>
-        </div>
+  <header class="site-header">
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
+      <div>
+        <h1>🧑‍🎤 NPC Editor</h1>
+        <p>Browse NPCs, edit details, and add new characters in a kid-friendly interface.</p>
       </div>
     </div>
+  </header>
 
-    <div class="npc-controls">
-      <section class="npc-list-panel">
-        <div class="field-row" style="align-items: end; margin-bottom: 12px;">
-          <div>
-            <div class="npc-count" style="font-size: 0.95rem; font-weight: 700; color: #334155;">NPCs</div>
-            <div id="npc-count">Loading...</div>
-          </div>
-        </div>
-        <div id="npc-list" class="monster-list"></div>
-      </section>
-
-      <section class="npc-detail-panel">
-        <div id="npc-detail-shell"></div>
-      </section>
-    </div>
+  <div id="page-pane-layout" class="dungeon-viewer-layout active">
+  <!-- The sidebar toggle button is now included for accessibility and responsive navigation -->
+  <!-- Left panel: search + NPC list -->
+  <div id="viewer-sidebar" class="map-panel">
+    <div id="resizeHandle" class="resize-handle" aria-label="Resize sidebar" tabindex="0" role="separator" aria-orientation="vertical"></div>
+    <button id="showListPanelBtn" class="toggle-list-btn hidden" onclick="expandListPanel()" aria-label="Expand NPC list sidebar" tabindex="0">→</button>
+    <label class="search-field" for="search-input">
+      <span>Search NPCs</span>
+      <input id="search-input" type="search" placeholder="Type an NPC name..." autocomplete="off" aria-label="Search NPCs" />
+    </label>
+    <div class="monster-book-meta">NPCs</div>
+    <div id="npc-count" class="monster-book-meta" aria-live="polite">Loading...</div>
+    <div id="npc-list" class="monster-list" aria-live="polite"></div>
   </div>
 
-  <script src="../js/npc-editor.js"></script>
+  <!-- Right panel: controls bar + scrollable detail -->
+  <div class="dungeon-viewer-right">
+    <div class="viewer-controls controls-row" aria-label="NPC controls" role="toolbar">
+      <a href="resources.html" class="back-btn">← Resources</a>
+      <span id="npc-title-header" class="monster-title-header">Select or create an NPC</span>
+      <button id="new-npc-btn" class="back-btn" style="background: #4a90e2; margin-left: 0.5rem;" aria-label="Add new NPC">+ New NPC</button>
+      <button id="export-npcs-btn" class="back-btn" style="background: #7f8c8d; margin-left: 0.5rem;" aria-label="Export NPCs as JSON">Export JSON</button>
+    </div>
+    <div class="dungeon-content">
+      <div id="npc-detail-shell" class="monster-detail-shell">
+        <div class="placeholder" role="status" aria-live="polite">Search, select, or create an NPC to view or edit details.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+  <script src="../js/dom-utils.js"></script>
+<script src="../js/data-utils.js"></script>
+<script src="../js/pane-resize.js"></script>
+<script src="../js/page-base.js"></script>
+<script>
+  PageBase.autoInitializeViewerPane('npcEditor', {
+    defaultWidth: 350,
+    maxWidthFraction: 0.6,
+    collapseThreshold: 200,
+    showBtnId: 'showListPanelBtn',
+    layoutId: 'page-pane-layout',
+    panelId: 'viewer-sidebar',
+    handleId: 'resizeHandle'
+  });
+</script>
+<script src="../js/npc-editor.js"></script>
 </body>
 </html>
