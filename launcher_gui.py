@@ -191,6 +191,12 @@ class LauncherGUI(QMainWindow):
         git_layout.addWidget(self._create_git_section())
         tabs.addTab(git_tab, "Git")
 
+        # Browser Error Checker Tab
+        checker_tab = QWidget()
+        checker_layout = QVBoxLayout(checker_tab)
+        checker_layout.addWidget(self._create_checker_section())
+        tabs.addTab(checker_tab, "Browser Error Checker")
+
         # Status Bar removed for compatibility
 
     def _create_db_controls(self):
@@ -399,6 +405,39 @@ class LauncherGUI(QMainWindow):
         script = self.workspace_root / "_dev" / "export_db_seeds.py"
         command_list = [sys.executable, str(script)]
         self._run_command(command_list, "Export Seeds", self.db_terminal)
+
+    def _create_checker_section(self):
+        """Create Browser Error Checker section with run button and terminal output."""
+        group = QGroupBox("Browser Error Checker")
+        layout = QVBoxLayout()
+
+        controls_layout = QHBoxLayout()
+        self.checker_run_btn = QPushButton("▶️ Run Error Checker")
+        self.checker_run_btn.setToolTip("Run tools/browser_error_checker.py using the current venv")
+        self.checker_run_btn.clicked.connect(self._run_checker)
+        controls_layout.addWidget(self.checker_run_btn)
+        controls_layout.addStretch()
+        layout.addLayout(controls_layout)
+
+        self.checker_terminal = QTextEdit()
+        self.checker_terminal.setReadOnly(True)
+        self.checker_terminal.setFont(QFont("Courier", 9))
+        self.checker_terminal.setStyleSheet("background-color: #1e1e1e; color: #d4d4d4;")
+        layout.addWidget(self.checker_terminal)
+
+        clear_btn = QPushButton("Clear Output")
+        clear_btn.clicked.connect(self.checker_terminal.clear)
+        layout.addWidget(clear_btn)
+
+        group.setLayout(layout)
+        return group
+
+    def _run_checker(self):
+        """Run the browser error checker script in the current venv."""
+        self.checker_terminal.clear()
+        script = self.workspace_root / "tools" / "browser_error_checker.py"
+        command_list = [sys.executable, str(script)]
+        self._run_command(command_list, "Browser Error Checker", self.checker_terminal)
 
     def _create_git_section(self):
         """Create Git control section with commit and push buttons."""

@@ -1,41 +1,66 @@
+/**
+ * PageBase: Modern UI utility library for reusable, accessible, and animated web interfaces
+ *
+ * Features:
+ * - DOM query/manipulation helpers
+ * - Animation/data-animation hooks
+ * - Placeholder/empty state helpers
+ * - Theming and ARIA helpers
+ * - Clean, maintainable, and documented APIs
+ *
+ * API:
+ *   PageBase.onReady(callback)
+ *   PageBase.getElement(id)
+ *   PageBase.query(selector)
+ *   PageBase.clearElement(element)
+ *   PageBase.createPlaceholder(message, className)
+ *   PageBase.showEmptyState(target, message, className)
+ *   PageBase.setTheme(themeName)
+ *   PageBase.setAria(element, attrs)
+ *   PageBase.animate(element, animationName, cb)
+ *   PageBase.initializeViewerPane(pageName, overrides)
+ *   PageBase.autoInitializeViewerPane(pageName, overrides)
+ *   PageBase.injectToolsPanel()
+ *   PageBase.addToolButton(buttonText, buttonId, clickCallback)
+ */
 (function(window) {
-  /**
-   * PageBase: Utility methods for DOM manipulation with design-aware enhancements
-   * 
-   * Features:
-   * - DOM query and manipulation helpers
-   * - Animation-ready element creation
-   * - Viewer pane lifecycle management
-   * - Design-aware markup with semantic structure
-   * - Theming hooks via CSS custom properties
-   */
   const PageBase = {
+    /**
+     * Run callback on DOMContentLoaded
+     */
     onReady(callback) {
-      if (typeof callback !== 'function') {
-        return;
-      }
-      document.addEventListener('DOMContentLoaded', callback);
-    },
-
-    getElement(id) {
-      return document.getElementById(id);
-    },
-
-    query(selector) {
-      return document.querySelector(selector);
-    },
-
-    clearElement(element) {
-      if (element) {
-        element.innerHTML = '';
+      if (typeof callback === 'function') {
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', callback);
+        } else {
+          callback();
+        }
       }
     },
 
     /**
-     * Create a placeholder element with animation-ready structure
-     * @param {string} message - Placeholder text
-     * @param {string} className - CSS class
-     * @returns {HTMLElement} Placeholder div with animation hooks
+     * Get element by ID
+     */
+    getElement(id) {
+      return document.getElementById(id);
+    },
+
+    /**
+     * Query selector
+     */
+    query(selector) {
+      return document.querySelector(selector);
+    },
+
+    /**
+     * Remove all children from element
+     */
+    clearElement(element) {
+      if (element) element.innerHTML = '';
+    },
+
+    /**
+     * Create a placeholder/empty state element with animation and ARIA
      */
     createPlaceholder(message, className = 'detail-placeholder') {
       const placeholder = document.createElement('div');
@@ -45,6 +70,49 @@
       placeholder.setAttribute('data-animation', 'fade-in');
       placeholder.textContent = String(message);
       return placeholder;
+    },
+
+    /**
+     * Show an empty state/placeholder in a target element
+     */
+    showEmptyState(target, message = 'No data', className = 'empty-state') {
+      if (!target) return;
+      this.clearElement(target);
+      target.appendChild(this.createPlaceholder(message, className));
+    },
+
+    /**
+     * Set a theme by adding a class to <body> and updating CSS variables
+     */
+    setTheme(themeName) {
+      document.body.classList.forEach(cls => {
+        if (cls.startsWith('theme-')) document.body.classList.remove(cls);
+      });
+      document.body.classList.add('theme-' + themeName);
+      // Optionally update CSS variables here
+    },
+
+    /**
+     * Set ARIA attributes on an element
+     */
+    setAria(element, attrs = {}) {
+      if (!element) return;
+      Object.entries(attrs).forEach(([k, v]) => {
+        element.setAttribute('aria-' + k, v);
+      });
+    },
+
+    /**
+     * Animate an element by setting data-animation and listening for animationend
+     */
+    animate(element, animationName, cb) {
+      if (!element) return;
+      element.setAttribute('data-animation', animationName);
+      const handler = () => {
+        element.removeEventListener('animationend', handler);
+        if (typeof cb === 'function') cb();
+      };
+      element.addEventListener('animationend', handler);
     },
 
     initializeViewerPane(pageName, overrides = {}) {
@@ -146,3 +214,21 @@
 
   window.PageBase = window.PageBase || PageBase;
 })(window);
+
+/**
+ * API Documentation:
+ *
+ * - onReady(callback): Run callback on DOMContentLoaded or immediately if already loaded.
+ * - getElement(id): Get element by ID.
+ * - query(selector): Query selector.
+ * - clearElement(element): Remove all children from element.
+ * - createPlaceholder(message, className): Create a placeholder/empty state element.
+ * - showEmptyState(target, message, className): Show an empty state in a target element.
+ * - setTheme(themeName): Set a theme by adding a class to <body>.
+ * - setAria(element, attrs): Set ARIA attributes on an element.
+ * - animate(element, animationName, cb): Animate an element and run callback on animation end.
+ * - initializeViewerPane(pageName, overrides): Initialize a resizable viewer pane.
+ * - autoInitializeViewerPane(pageName, overrides): Auto-initialize viewer pane if layout exists.
+ * - injectToolsPanel(): Inject tools panel with animation-ready markup.
+ * - addToolButton(buttonText, buttonId, clickCallback): Add a tool button to the tools panel.
+ */

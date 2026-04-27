@@ -1,0 +1,81 @@
+/* Custom overrides for landing page theming and layout */
+:root {
+  --page-bg: #fdf3e3;
+  --panel-bg: #fdf3e3;
+  --panel-border: #8b5e3c;
+  --accent: #c0392b;
+  --text-normal: #2c1810;
+  --text-muted: #8b5e3c;
+  --font-family-base: 'Nunito', sans-serif;
+  --font-family-title: 'Fredoka One', cursive;
+}
+
+.page-shell__header, .page-shell__footer {
+  background: var(--panel-bg);
+  border-radius: 15px;
+  border: 3px solid var(--panel-border);
+}
+
+.page-title {
+  font-family: var(--font-family-title);
+  color: var(--accent);
+  text-shadow: 2px 2px 0 #f5cba7, 3px 3px 0 var(--panel-border);
+}
+
+.page-subtitle {
+  color: var(--panel-border);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.hero {
+  background: var(--panel-bg);
+  border-radius: 15px;
+  border: 3px solid var(--panel-border);
+  padding: 40px;
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.hero .cta {
+  display: inline-block;
+  background: var(--accent);
+  color: var(--panel-bg);
+  border: 3px solid var(--text-normal);
+  padding: 20px 50px;
+  border-radius: 10px;
+  font-family: var(--font-family-title);
+  font-size: 24px;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.hero .cta:hover {
+  background: var(--text-normal);
+  color: var(--panel-bg);
+}
+
+.features, .resources {
+  background: var(--panel-bg);
+  border-radius: 15px;
+  border: 3px solid var(--panel-border);
+  padding: 30px;
+  margin-bottom: 40px;
+}
+
+.quick-links a {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 700;
+  padding: 10px 20px;
+  border: 2px solid var(--accent);
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  margin: 5px;
+}
+
+.quick-links a:hover {
+  background: var(--accent);
+  color: var(--panel-bg);
+}
