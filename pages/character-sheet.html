@@ -542,10 +542,10 @@
         // Color header pills from database
         colorHeaderPills();
       } else {
-        console.error('Failed to fetch abilities');
+        console.warn('Failed to fetch abilities');
       }
     } catch (error) {
-      console.error('Error fetching abilities:', error);
+      console.warn('Error fetching abilities:', error);
     }
     
     // ─── Update emojis from database ───
