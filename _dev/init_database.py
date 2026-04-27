@@ -51,7 +51,8 @@ def init_database():
         "traps",
         "dungeons",
         "deities",
-        "skills"
+        "skills",
+        "encounter"
     ]
     
     for table in tables_to_drop:
@@ -286,6 +287,17 @@ def init_database():
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (quest_giver) REFERENCES npcs(id) ON DELETE SET NULL
+        )
+    """)
+
+    # Create encounter table for combat encounter management
+    cursor.execute("""
+        CREATE TABLE encounter (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            name       TEXT    NOT NULL,
+            units      TEXT    NOT NULL DEFAULT '[]',
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     """)
 

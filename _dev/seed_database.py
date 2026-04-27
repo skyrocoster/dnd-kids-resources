@@ -883,6 +883,53 @@ def populate_dungeons(cursor, conn, force=False):
     print(f"  [OK] Dungeons table now has {final_count} records")
 
 
+def populate_encounters(cursor, conn, force=False):
+    """Populate encounter table from seed_encounters.json."""
+    print("\n[ENCOUNTER] Loading encounters...")
+    try:
+        cursor.execute("SELECT COUNT(*) FROM encounter")
+        count = cursor.fetchone()[0]
+    except sqlite3.OperationalError:
+        count = 0
+
+    if count > 0 and not force:
+        print(f"  [INFO] Encounter table already has {count} records. Skip (use --force to override)")
+        return
+
+    if force:
+        try:
+            cursor.execute("DELETE FROM encounter")
+            print("  [TRASH]  Cleared existing encounter data")
+        except Exception as e:
+            print(f"  [WARNING]  Error clearing encounter data: {e}")
+            print("  [ERROR]  encounter table may not exist. Run _dev/init_database.py first.")
+            return
+
+    seeds = load_json_file(SEEDS_DIR / "seed_encounters.json")
+    if not seeds:
+        print("  [WARNING]  No encounter seeds found")
+        return
+
+    for encounter in seeds:
+        try:
+            cursor.execute("""
+                INSERT INTO encounter (id, name, units)
+                VALUES (?, ?, ?)
+            """, (
+                encounter.get('id'),
+                encounter.get('name'),
+                serialize_for_db(encounter.get('units', [])),
+            ))
+            print(f"  [CHECK] {encounter.get('name')}")
+        except sqlite3.IntegrityError as e:
+            print(f"  [WARNING]  Duplicate or error: {encounter.get('name')} - {e}")
+
+    conn.commit()
+    cursor.execute("SELECT COUNT(*) FROM encounter")
+    final_count = cursor.fetchone()[0]
+    print(f"  [OK] Loaded {final_count} encounters")
+
+
 def populate_players(cursor, conn, force=False):
     """Populate players table from seed_players.json."""
     print("\n[HERO] Loading players...")
@@ -1171,6 +1218,7 @@ def clear_all_tables(cursor, conn):
         "abilities",
         "traps",
         "dungeons",
+        "encounter",
         "deities",
         "skills"
     ]
@@ -1209,6 +1257,7 @@ def main():
     parser.add_argument('--weapons', action='store_true', help='Load only weapons')
     parser.add_argument('--traps', action='store_true', help='Load only traps')
     parser.add_argument('--dungeons', action='store_true', help='Load only dungeons')
+    parser.add_argument('--encounters', action='store_true', help='Load only encounters')
     parser.add_argument('--deities', action='store_true', help='Load only deities')
     parser.add_argument('--classes', action='store_true', help='Load only classes')
     parser.add_argument('--actions', action='store_true', help='Load only actions')
@@ -1224,7 +1273,7 @@ def main():
         args.abilities, args.spells, args.conditions, args.monsters, args.quests,
         args.npcs, args.players, args.player_spells, args.player_weapons,
         args.damage_types, args.weapon_properties, args.weapons, args.traps,
-        args.dungeons, args.deities, args.classes, args.actions
+        args.dungeons, args.encounters, args.deities, args.classes, args.actions
     ])
     
     print("="*60)
@@ -1270,6 +1319,8 @@ def main():
             populate_traps(cursor, conn, args.force)
         if load_all or args.dungeons:
             populate_dungeons(cursor, conn, args.force)
+        if load_all or args.encounters:
+            populate_encounters(cursor, conn, args.force)
         if load_all or args.players:
             populate_players(cursor, conn, args.force)
         if load_all or args.player_spells:
@@ -1307,6 +1358,7 @@ def main():
         print("  - data/seeds/seed_damage_types.json")
         print("  - data/seeds/seed_weapon_properties.json")
         print("  - data/seeds/seed_weapons.json")
+        print("  - data/seeds/seed_encounters.json")
         print("  - data/seeds/seed_players.json")
         print("  - data/seeds/seed_player_spells.json")
         print("  - data/seeds/seed_player_weapons.json")
