@@ -448,8 +448,6 @@ document.addEventListener('DOMContentLoaded', async function() {
   loadEncounters();
 
   // --- Monster browser functionality ---
-  let monsters = [];
-  let monsterFiltered = [];
   const monsterSearchInput = document.getElementById('monster-search-input');
   const monsterBrowser = document.getElementById('monster-browser');
   const monsterCountEl = document.getElementById('monster-count');
@@ -459,6 +457,8 @@ document.addEventListener('DOMContentLoaded', async function() {
   let monsterPage = 1;
   const monsterPageSize = 8;
   let monsterSearchTimer = null;
+  let monsterTotal = 0;
+  let monsterQuery = '';
 
   function extractStatFromDetails(details, label) {
     if (!Array.isArray(details)) return '';
@@ -473,27 +473,26 @@ document.addEventListener('DOMContentLoaded', async function() {
     return m ? parseInt(m[1], 10) : null;
   }
 
-  function renderMonsterListPage() {
+  function renderMonsterListPage(items, page, totalPages) {
     if (!monsterBrowser) return;
     monsterBrowser.innerHTML = '';
-    const start = (monsterPage - 1) * monsterPageSize;
-    const pageItems = monsterFiltered.slice(start, start + monsterPageSize);
-    if (!pageItems.length) {
+    if (!items || !items.length) {
       monsterBrowser.innerHTML = '<div class="monster-detail-placeholder">No monsters found.</div>';
       if (monsterCountEl) monsterCountEl.textContent = '0 monsters';
       if (monsterPageInfo) monsterPageInfo.textContent = '';
+      if (monsterPrevBtn) monsterPrevBtn.disabled = true;
+      if (monsterNextBtn) monsterNextBtn.disabled = true;
       return;
     }
-    pageItems.forEach(monster => {
+    items.forEach(monster => {
       const title = monster.title || monster.name || monster.title_display || '';
-      // Extract simple hp/ac/cr
-      const hpText = extractStatFromDetails(monster.details, 'HP:') || monster.stats_line || '';
+      const hpText = (monster.hp != null) ? monster.hp : (extractStatFromDetails(monster.details, 'HP:') || monster.stats_line || '');
       const acText = extractStatFromDetails(monster.details, 'AC:') || '';
       const crText = (monster.cr || extractStatFromDetails(monster.details, 'CR:')) || '';
 
       const item = document.createElement('div');
       item.className = 'monster-list-item';
-      item.setAttribute('role','listitem');
+      item.setAttribute('role', 'listitem');
       item.innerHTML = `
         <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
           <div style="flex:1; min-width:0;">
@@ -505,39 +504,30 @@ document.addEventListener('DOMContentLoaded', async function() {
           </div>
         </div>
       `;
-      // Hook add button
       const addBtn = item.querySelector('.add-monster-btn');
       if (addBtn) addBtn.addEventListener('click', () => { handleAddMonster(monster); });
       monsterBrowser.appendChild(item);
     });
 
-    const totalPages = Math.max(1, Math.ceil(monsterFiltered.length / monsterPageSize));
-    if (monsterPageInfo) monsterPageInfo.textContent = `Page ${monsterPage} of ${totalPages}`;
-    if (monsterCountEl) monsterCountEl.textContent = `${monsterFiltered.length} monster${monsterFiltered.length === 1 ? '' : 's'}`;
-    if (monsterPrevBtn) monsterPrevBtn.disabled = monsterPage <= 1;
-    if (monsterNextBtn) monsterNextBtn.disabled = monsterPage >= totalPages;
+    if (monsterPageInfo) monsterPageInfo.textContent = `Page ${page} of ${totalPages}`;
+    if (monsterCountEl) monsterCountEl.textContent = `${monsterTotal} monster${monsterTotal === 1 ? '' : 's'}`;
+    if (monsterPrevBtn) monsterPrevBtn.disabled = page <= 1;
+    if (monsterNextBtn) monsterNextBtn.disabled = page >= totalPages;
   }
 
-  function filterMonsters(query) {
-    const q = (query || '').trim().toLowerCase();
-    if (!q) return monsters.slice();
-    return monsters.filter(m => {
-      const title = (m.title || m.name || '').toString().toLowerCase();
-      const cr = (m.cr || '').toString().toLowerCase();
-      const dets = JSON.stringify(m.details || []).toLowerCase();
-      return title.includes(q) || cr.includes(q) || dets.includes(q);
-    });
-  }
-
-  async function loadMonsters() {
+  async function fetchMonsters(query, page) {
     try {
-      const resp = await fetch('/api/monsters');
+      const q = (query || '').trim();
+      const url = `/api/monsters?q=${encodeURIComponent(q)}&page=${page}&per_page=${monsterPageSize}`;
+      const resp = await fetch(url);
       if (!resp.ok) throw new Error('Network error');
       const data = await resp.json();
-      monsters = extractMonsterResults(data);
-      monsterFiltered = monsters.slice();
-      monsterPage = 1;
-      renderMonsterListPage();
+      const results = extractMonsterResults(data);
+      monsterTotal = (data && data.total != null) ? data.total : results.length;
+      monsterPage = page;
+      monsterQuery = q;
+      const totalPages = Math.max(1, Math.ceil(monsterTotal / monsterPageSize));
+      renderMonsterListPage(results, page, totalPages);
     } catch (err) {
       if (monsterBrowser) monsterBrowser.innerHTML = '<div class="error-message">Could not load monsters.</div>';
       if (monsterCountEl) monsterCountEl.textContent = 'Error loading monsters';
@@ -550,10 +540,8 @@ document.addEventListener('DOMContentLoaded', async function() {
       return;
     }
     // Build unit object
-    const hpText = extractStatFromDetails(monster.details, 'HP:') || monster.stats_line || '';
-    const acText = extractStatFromDetails(monster.details, 'AC:') || '';
-    const hpVal = parseNumberFromLabel(hpText) || null;
-    const acVal = parseNumberFromLabel(acText) || null;
+    const hpVal = (typeof monster.hp === 'number') ? monster.hp : (parseNumberFromLabel(extractStatFromDetails(monster.details, 'HP:') || monster.stats_line || '') || null);
+    const acVal = parseNumberFromLabel(extractStatFromDetails(monster.details, 'AC:') || '') || null;
     const unit = {
       monster_id: monster.id,
       name: monster.title || monster.name || 'Monster',
@@ -580,7 +568,7 @@ document.addEventListener('DOMContentLoaded', async function() {
       div.dataset.unitIdx = idx;
       div.dataset.monsterId = monster.id ?? '';
       div.innerHTML = `
-        <input type="text" name="unit-name-${idx}" value="${unit.name}"placeholder="Unit Name" class="field-value" style="width:120px;" />
+        <input type="text" name="unit-name-${idx}" value="${unit.name}" placeholder="Unit Name" class="field-value" style="width:120px;" />
         <input type="number" name="unit-hp-${idx}" value="${unit.hp_current ?? ''}" placeholder="HP" class="field-value" style="width:60px;" min="0" />
         <input type="number" name="unit-ac-${idx}" value="${unit.ac ?? ''}" placeholder="AC" class="field-value" style="width:50px;" min="0" />
         <input type="text" name="unit-status-${idx}" value="${unit.status}" placeholder="Status" class="field-value" style="width:80px;" />
@@ -593,17 +581,11 @@ document.addEventListener('DOMContentLoaded', async function() {
 
   // Pagination handlers
   if (monsterPrevBtn) monsterPrevBtn.addEventListener('click', () => {
-    if (monsterPage > 1) {
-      monsterPage -= 1;
-      renderMonsterListPage();
-    }
+    if (monsterPage > 1) fetchMonsters(monsterQuery, monsterPage - 1);
   });
   if (monsterNextBtn) monsterNextBtn.addEventListener('click', () => {
-    const totalPages = Math.ceil(monsterFiltered.length / monsterPageSize) || 1;
-    if (monsterPage < totalPages) {
-      monsterPage += 1;
-      renderMonsterListPage();
-    }
+    const totalPages = Math.max(1, Math.ceil(monsterTotal / monsterPageSize));
+    if (monsterPage < totalPages) fetchMonsters(monsterQuery, monsterPage + 1);
   });
 
   // Debounced search input
@@ -611,14 +593,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     monsterSearchInput.addEventListener('input', (e) => {
       clearTimeout(monsterSearchTimer);
       monsterSearchTimer = setTimeout(() => {
-        const q = monsterSearchInput.value || '';
-        monsterFiltered = filterMonsters(q);
-        monsterPage = 1;
-        renderMonsterListPage();
+        fetchMonsters(monsterSearchInput.value || '', 1);
       }, 300);
     });
   }
 
   // Load monsters initially
-  loadMonsters();
+  fetchMonsters('', 1);
 });
