@@ -229,7 +229,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             </div>
             <div id="units-list">
               ${(encounter.units || []).map((unit, idx) => `
-                <div class="field-row" data-unit-idx="${idx}">
+                <div class="field-row" data-unit-idx="${idx}" data-monster-id="${unit.monster_id || ''}">
                   <input type="text" name="unit-name-${idx}" value="${escapeHtml(unit.name || '')}" placeholder="Unit Name" class="field-value" style="width:120px;" />
                   <input type="number" name="unit-hp-${idx}" value="${unit.hp_current ?? unit.hp_max ?? ''}" placeholder="HP" class="field-value" style="width:60px;" min="0" />
                   <input type="number" name="unit-ac-${idx}" value="${unit.ac ?? ''}" placeholder="AC" class="field-value" style="width:50px;" min="0" />
@@ -288,6 +288,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         const units = [];
         const rows = form.querySelectorAll('#units-list .field-row');
         rows.forEach((row, idx) => {
+          const monsterId = row.dataset.monsterId ? parseInt(row.dataset.monsterId) : null;
           const unitName = form.querySelector(`[name="unit-name-${idx}"]`)?.value?.trim();
           const hp = form.querySelector(`[name="unit-hp-${idx}"]`)?.value;
           const ac = form.querySelector(`[name="unit-ac-${idx}"]`)?.value;
@@ -295,6 +296,7 @@ document.addEventListener('DOMContentLoaded', async function() {
           const conditions = form.querySelector(`[name="unit-conditions-${idx}"]`)?.value?.trim()?.split(',').map(c => c.trim()).filter(c => c) || [];
           if (unitName) {
             units.push({
+              monster_id: monsterId,
               name: unitName,
               hp_current: hp ? parseInt(hp) : null,
               hp_max: hp ? parseInt(hp) : null,
@@ -400,6 +402,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         const units = [];
         const rows = form.querySelectorAll('#units-list .field-row');
         rows.forEach((row, idx) => {
+          const monsterId = row.dataset.monsterId ? parseInt(row.dataset.monsterId) : null;
           const unitName = form.querySelector(`[name="unit-name-${idx}"]`)?.value?.trim();
           const hp = form.querySelector(`[name="unit-hp-${idx}"]`)?.value;
           const ac = form.querySelector(`[name="unit-ac-${idx}"]`)?.value;
@@ -407,6 +410,7 @@ document.addEventListener('DOMContentLoaded', async function() {
           const conditions = form.querySelector(`[name="unit-conditions-${idx}"]`)?.value?.trim()?.split(',').map(c => c.trim()).filter(c => c) || [];
           if (unitName) {
             units.push({
+              monster_id: monsterId,
               name: unitName,
               hp_current: hp ? parseInt(hp) : null,
               hp_max: hp ? parseInt(hp) : null,
@@ -574,8 +578,9 @@ document.addEventListener('DOMContentLoaded', async function() {
       const div = document.createElement('div');
       div.className = 'field-row';
       div.dataset.unitIdx = idx;
+      div.dataset.monsterId = monster.id ?? '';
       div.innerHTML = `
-        <input type="text" name="unit-name-${idx}" value="${unit.name}" placeholder="Unit Name" class="field-value" style="width:120px;" />
+        <input type="text" name="unit-name-${idx}" value="${unit.name}"placeholder="Unit Name" class="field-value" style="width:120px;" />
         <input type="number" name="unit-hp-${idx}" value="${unit.hp_current ?? ''}" placeholder="HP" class="field-value" style="width:60px;" min="0" />
         <input type="number" name="unit-ac-${idx}" value="${unit.ac ?? ''}" placeholder="AC" class="field-value" style="width:50px;" min="0" />
         <input type="text" name="unit-status-${idx}" value="${unit.status}" placeholder="Status" class="field-value" style="width:80px;" />
