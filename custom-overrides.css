@@ -8,6 +8,26 @@
   --text-muted: #8b5e3c;
   --font-family-base: 'Nunito', sans-serif;
   --font-family-title: 'Fredoka One', cursive;
+
+  /* Color Palette Extensions for Spell Book */
+  --gradient-dark: #8a5a2c;
+  --gradient-light: #d9b58a;
+  --button-bg: #fffdf7;
+  --button-hover-bg: #f5e0c1;
+  --text-dark-label: #5a3210;
+  --accent-dark: #992d22;
+  --panel-shadow: rgba(0, 0, 0, 0.15);
+
+  /* Spell Level Colors (1-9) */
+  --spell-level-1-color: #f39c12;
+  --spell-level-2-color: #3498db;
+  --spell-level-3-color: #9b59b6;
+  --spell-level-4-color: #1abc9c;
+  --spell-level-5-color: #2ecc71;
+  --spell-level-6-color: #f1c40f;
+  --spell-level-7-color: #e67e22;
+  --spell-level-8-color: #95a5a6;
+  --spell-level-9-color: #34495e;
 }
 
 .page-shell__header, .page-shell__footer {

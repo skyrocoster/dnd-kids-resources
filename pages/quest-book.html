@@ -8,378 +8,177 @@
   <link rel="stylesheet" href="../css/styles.css">
   <link rel="stylesheet" href="../css/page-layout.css">
   <style>
-    body {
-      min-height: 100vh;
-      background: linear-gradient(180deg, #334155 0%, #8293a4 100%);
-      color: #1f2937;
-      margin: 0;
-      font-family: 'Nunito', sans-serif;
-    }
-    .quest-book-shell {
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
-    .quest-book-topbar {
-      position: sticky;
-      top: 0;
-      z-index: 20;
-      background: rgba(248, 250, 252, 0.96);
-      border-bottom: 3px solid #cbd5e1;
-      padding: 18px;
-      box-shadow: 0 10px 28px rgba(15, 23, 42, 0.12);
-    }
-    .quest-book-title-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .quest-book-title {
-      margin: 0;
-      font-family: 'Fredoka One', cursive;
-      font-size: 2rem;
-      color: #102a43;
-      line-height: 1.05;
-    }
-    .quest-book-subtitle {
-      margin: 6px 0 0;
-      color: #334155;
-      font-size: 0.95rem;
-      letter-spacing: 0.4px;
-    }
-    .quest-book-toolbar {
-      margin-top: 16px;
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: 12px;
-      align-items: end;
-    }
-    .search-field,
-    .quest-count {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-    .search-field label {
-      font-size: 0.75rem;
-      color: #334155;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.6px;
-    }
-    .search-field input {
-      width: 100%;
-      border: 2px solid #cbd5e1;
-      border-radius: 10px;
-      padding: 12px 14px;
-      font-size: 1rem;
-      background: #ffffff;
-      color: #102a43;
-    }
-    .search-field input:focus {
-      outline: none;
-      border-color: #1d4ed8;
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.16);
-    }
-    .quest-count {
-      color: #334155;
-      font-size: 0.95rem;
-      font-weight: 700;
-      align-self: flex-start;
-    }
-    .reader-layout {
-      display: grid;
-      grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
-      gap: 18px;
-      width: 100%;
-      padding: 18px;
-      box-sizing: border-box;
-    }
-    .quest-list {
-      display: grid;
-      gap: 10px;
-    }
-    .quest-list-item {
-      background: #ffffff;
-      border: 2px solid #cbd5e1;
-      border-radius: 14px;
-      padding: 14px 16px;
-      cursor: pointer;
-      transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+    .site-header {
+      background: var(--md-sys-color-surface);
+      padding: 2rem 1rem;
       text-align: left;
-    }
-    .quest-list-item:hover,
-    .quest-list-item.selected {
-      border-color: #1d4ed8;
-      box-shadow: 0 12px 26px rgba(15, 23, 42, 0.12);
-      transform: translateY(-1px);
-    }
-    .quest-list-item-title {
-      margin: 0;
-      font-size: 1rem;
-      font-weight: 700;
-      color: #102a43;
-    }
-    .quest-list-item-subtitle {
-      margin: 6px 0 0;
-      color: #64748b;
-      font-size: 0.87rem;
-      line-height: 1.4;
-    }
-    .quest-detail-shell,
-    .detail-shell {
-      display: flex;
-      flex-direction: column;
-      gap: 18px;
-    }
-    .detail-header {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      gap: 1rem;
-      margin-bottom: 0;
-    }
-    .detail-title-group {
-      min-width: 0;
-    }
-    .detail-title {
-      margin: 0;
-      font-size: 2rem;
-      color: #102a43;
-      line-height: 1.05;
-    }
-    .detail-subtitle {
-      margin: 0.35rem 0 0;
-      color: #475569;
-      font-size: 0.95rem;
-    }
-    .detail-grid {
-      display: grid;
-      gap: 18px;
-      grid-template-columns: minmax(0, 1fr);
-    }
-    .detail-panel {
-      background: #ffffff;
-      border-radius: 18px;
-      padding: 18px;
-      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12);
-      border: 1px solid #cbd5e1;
-    }
-    .quest-detail-placeholder {
-      padding: 24px;
-      text-align: center;
-      color: #475569;
-      font-size: 1rem;
-      background: #f8fafc;
-      border-radius: 14px;
-      border: 1px dashed #cbd5e1;
-    }
-    .detail-row {
-      margin-bottom: 0.75rem;
-    }
-    .detail-label {
-      font-weight: 700;
-      color: #34495e;
-      display: block;
-      margin-bottom: 0.25rem;
-    }
-    .detail-item {
-      margin-bottom: 1rem;
-      padding-bottom: 0.75rem;
-      border-bottom: 1px solid #ebeff6;
-    }
-    .detail-item:last-child {
-      margin-bottom: 0;
-      padding-bottom: 0;
-      border-bottom: none;
-    }
-    .detail-item-title {
-      font-weight: 800;
-      color: #1f2937;
-      margin-bottom: 0.35rem;
-    }
-    .detail-item-text {
-      color: #4b5563;
-      line-height: 1.65;
-      white-space: pre-wrap;
-    }
-    .detail-item-list {
-      margin: 0.35rem 0 0 0;
-      padding-left: 1.25rem;
-      color: #4b5563;
-    }
-    .detail-item-list li {
-      margin-bottom: 0.35rem;
-    }
-    .detail-value {
-      color: #444;
-      line-height: 1.6;
-      white-space: pre-wrap;
-    }
-    .detail-panel h2 {
-      margin-top: 0;
-      margin-bottom: 0.75rem;
-      font-size: 1.2rem;
-      color: #2d3a4a;
-    }
-    .tag-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 6px 10px;
-      border-radius: 999px;
-      background: #e2e8f0;
-      color: #334155;
-      font-size: 0.82rem;
-      margin-right: 6px;
-      margin-bottom: 6px;
+      border-bottom: 1px solid var(--md-sys-color-outline);
     }
 
-    .create-quest-btn {
-      align-self: flex-end;
-      background: #3b82f6;
-      color: white;
+    .site-header h1 {
+      margin: 0 0 0.25rem 0;
+      font-size: 2rem;
+      color: var(--md-sys-color-on-surface);
+    }
+
+    .site-header p {
+      margin: 0;
+      color: var(--md-sys-color-on-surface-variant);
+      font-size: 0.95rem;
+    }
+
+    .quests-container {
+      max-width: 1200px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+    }
+
+    .quests-controls {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .quests-controls input {
+      flex: 1;
+      min-width: 250px;
+      padding: 0.75rem;
+      border: 1px solid var(--md-sys-color-outline);
+      border-radius: 8px;
+      background: var(--md-sys-color-surface);
+      color: var(--md-sys-color-on-surface);
+      font-size: 0.95rem;
+    }
+
+    .quests-controls input::placeholder {
+      color: var(--md-sys-color-on-surface-variant);
+    }
+
+    .quests-controls button {
+      padding: 0.75rem 1.5rem;
+      background: var(--md-sys-color-primary);
+      color: var(--md-sys-color-on-primary);
       border: none;
       border-radius: 8px;
-      padding: 0.85rem 1rem;
-      font-size: 0.95rem;
       cursor: pointer;
+      font-weight: 600;
       transition: background 0.2s ease;
-      margin-left: 1rem;
-      white-space: nowrap;
     }
 
-    .create-quest-btn:hover {
-      background: #2563eb;
+    .quests-controls button:hover {
+      background: var(--md-sys-color-primary-dim);
     }
 
-    .modal {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(15, 23, 42, 0.45);
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-      padding: 1rem;
+    #questCount {
+      color: var(--md-sys-color-on-surface-variant);
+      font-size: 0.9rem;
     }
 
-    .modal.active {
-      display: flex;
+    .quest-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1.5rem;
     }
 
-    .modal-content {
-      background: white;
-      border-radius: 16px;
-      width: min(760px, 100%);
-      max-height: min(90vh, 960px);
-      overflow-y: auto;
+    .quest-card {
+      border: 1px solid var(--md-sys-color-outline);
+      border-radius: 12px;
       padding: 1.5rem;
-      box-shadow: 0 24px 52px rgba(15, 23, 42, 0.18);
+      cursor: pointer;
+      background: var(--md-sys-color-surface);
+      transition: all 0.3s ease;
     }
 
-    .modal-content h2 {
-      margin-top: 0;
-      margin-bottom: 1rem;
-      font-size: 1.4rem;
+    .quest-card:hover {
+      border-color: var(--md-sys-color-primary);
+      box-shadow: 0 4px 12px rgba(128, 203, 196, 0.25);
+      transform: translateY(-2px);
     }
 
-    .modal-field {
-      margin-bottom: 1rem;
+    .quest-card h3 {
+      margin: 0 0 0.5rem 0;
+      color: var(--md-sys-color-on-surface);
+      font-size: 1.2rem;
     }
 
-    .modal-field label {
-      display: block;
-      margin-bottom: 0.4rem;
-      font-weight: 700;
-    }
-
-    .modal-field input,
-    .modal-field textarea {
-      width: 100%;
-      padding: 0.75rem;
-      border: 1px solid #d1d5db;
-      border-radius: 0.75rem;
-      font-family: inherit;
-      font-size: 0.95rem;
-    }
-
-    .modal-field textarea {
-      min-height: 120px;
-      resize: vertical;
-    }
-
-    .modal-buttons {
+    .quest-card .quest-meta {
       display: flex;
-      justify-content: flex-end;
-      gap: 0.75rem;
-      margin-top: 1rem;
+      gap: 1rem;
+      margin-bottom: 0.75rem;
       flex-wrap: wrap;
     }
 
-    .modal-buttons button {
-      cursor: pointer;
+    .quest-card .meta-item {
+      font-size: 0.85rem;
+      color: var(--md-sys-color-on-surface-variant);
+    }
+
+    .quest-card p {
+      margin: 0.5rem 0 0 0;
+      color: var(--md-sys-color-on-surface-variant);
+      font-size: 0.9rem;
+      line-height: 1.4;
+      max-height: 4.5em;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .quest-card .card-footer {
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--md-sys-color-outline);
+      text-align: right;
+    }
+
+    .quest-card .view-btn {
+      background: var(--md-sys-color-secondary);
+      color: var(--md-sys-color-on-secondary);
       border: none;
-      border-radius: 10px;
-      padding: 0.85rem 1.2rem;
-      font-size: 0.95rem;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.9rem;
       transition: background 0.2s ease;
     }
 
-    .modal-buttons .cancel-btn {
-      background: #e5e7eb;
-      color: #111827;
+    .quest-card .view-btn:hover {
+      background: var(--md-sys-color-secondary-dim);
     }
 
-    .modal-buttons .create-btn {
-      background: #10b981;
-      color: white;
+    .empty-state {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: var(--md-sys-color-on-surface-variant);
     }
 
-    .modal-buttons .create-btn:hover {
-      background: #059669;
+    .empty-state p {
+      margin: 0;
+      font-size: 1rem;
     }
 
-    .modal-buttons .cancel-btn:hover {
-      background: #d1d5db;
-    }
-
-    @media (max-width: 980px) {
-      .reader-layout {
-        grid-template-columns: 1fr;
-      }
-    }
   </style>
 </head>
 <body>
-  <div class="quest-book-shell">
-    <div class="quest-book-topbar">
-      <div class="quest-book-title-row">
-        <div>
-          <h1 class="quest-book-title">Quest Book</h1>
-          <p class="quest-book-subtitle">Search quests and view one quest at a time.</p>
-        </div>
-        <a href="resources.html" class="spell-book-backlink">← Back to Resources</a>
-      </div>
-      <div class="quest-book-toolbar">
-        <div class="search-field">
-          <label for="search-input">Quest search</label>
-          <input id="search-input" type="search" placeholder="Type a quest name or keyword..." autocomplete="off">
-        </div>
-        <button id="create-quest-button" class="create-quest-btn" type="button">+ New Quest</button>
-        <div id="quest-count" class="quest-count">Loading quests…</div>
+  <header class="site-header">
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
+      <div>
+        <h1>📜 Quest Book</h1>
+        <p>Create and manage quests</p>
       </div>
     </div>
+  </header>
 
-    <div class="reader-layout">
-      <div>
-        <div id="quest-list" class="quest-list"></div>
-      </div>
-      <div class="quest-detail-shell" id="quest-detail-shell">
-        <div class="quest-detail-placeholder">Search or select a quest to view its full details.</div>
+  <div class="quests-container">
+    <div class="quests-controls">
+      <input type="text" id="questSearch" placeholder="Search quests...">
+      <button id="createQuestBtn">+ Create Quest</button>
+      <span id="questCount">0 quests</span>
+    </div>
+    <div id="questList" class="quest-list">
+      <div class="empty-state">
+        <p>Type a quest name to begin searching...</p>
       </div>
     </div>
   </div>
@@ -437,7 +236,6 @@
   <script src="../js/api.js"></script>
   <script src="../js/dom-utils.js"></script>
   <script src="../js/data-utils.js"></script>
-  <script src="../js/page-base.js"></script>
   <script src="../js/quest-book.js"></script>
 </body>
 </html>

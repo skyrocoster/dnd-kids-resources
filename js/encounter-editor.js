@@ -20,116 +20,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     return [];
   }
 
-  // Setup add-monster autocomplete controls inside the encounter detail form
-  function setupAddMonsterControls() {
-    document.querySelectorAll('.add-monster-control').forEach(control => {
-      const input = control.querySelector('#add-monster-input');
-      const btn = control.querySelector('#add-monster-btn');
-      if (!input || !btn || input._initDone) return;
-      input._initDone = true;
-      let timer = null;
-      let selected = null;
-      const suggestionBox = document.createElement('div');
-      suggestionBox.className = 'suggestions-box';
-      suggestionBox.style.position = 'absolute';
-      suggestionBox.style.zIndex = '1000';
-      suggestionBox.style.left = '0';
-      suggestionBox.style.right = '0';
-      suggestionBox.style.background = '#fff';
-      suggestionBox.style.border = '1px solid #ccc';
-      suggestionBox.style.maxHeight = '200px';
-      suggestionBox.style.overflow = 'auto';
-      control.style.position = 'relative';
-      control.appendChild(suggestionBox);
-
-      input.addEventListener('input', () => {
-        clearTimeout(timer);
-        timer = setTimeout(async () => {
-          const q = input.value.trim();
-          selected = null;
-          suggestionBox.innerHTML = '';
-          if (!q) return;
-          try {
-            const resp = await fetch('/api/monsters?q=' + encodeURIComponent(q) + '&page=1&per_page=8');
-            if (!resp.ok) return;
-            const data = await resp.json();
-            const results = extractMonsterResults(data);
-            if (!results.length) {
-              suggestionBox.innerHTML = '<div class="suggestion-item" style="padding:6px;">No matches</div>';
-              return;
-            }
-            results.forEach(m => {
-              const it = document.createElement('div');
-              it.className = 'suggestion-item';
-              it.style.padding = '6px';
-              it.style.cursor = 'pointer';
-              it.textContent = m.title || m.name || '';
-              it.addEventListener('click', () => {
-                input.value = it.textContent;
-                selected = m;
-                suggestionBox.innerHTML = '';
-              });
-              suggestionBox.appendChild(it);
-            });
-          } catch (e) {
-            // ignore network errors for autocomplete
-          }
-        }, 250);
-      });
-
-      document.addEventListener('click', (ev) => {
-        if (!control.contains(ev.target)) {
-          suggestionBox.innerHTML = '';
-        }
-      });
-
-      btn.addEventListener('click', async () => {
-        const name = input.value.trim();
-        if (!name) { alert('Please choose a monster to add'); return; }
-        let monster = selected;
-        if (!monster) {
-          try {
-            const resp = await fetch('/api/monsters?q=' + encodeURIComponent(name) + '&page=1&per_page=1');
-            if (resp.ok) { const arr = extractMonsterResults(await resp.json()); if (arr.length) monster = arr[0]; }
-          } catch (e) {}
-        }
-        if (!monster) { alert('No matching monster found. Please pick from suggestions.'); return; }
-        if (!selectedEncounterId) { alert('Please select or create an encounter first.'); return; }
-        const enc = encounters.find(e => e.id == selectedEncounterId);
-        if (!enc) { alert('Selected encounter not found.'); return; }
-        enc.units = enc.units || [];
-        enc.units.push({ monster_id: monster.id, name: monster.title || monster.name || 'Monster', count: 1 });
-        // Persist changes
-        try {
-          const url = `/api/encounters/${selectedEncounterId}`;
-          const resp = await fetch(url, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: enc.name, units: enc.units }) });
-          if (resp.ok) {
-            const saved = await resp.json();
-            const idx = encounters.findIndex(e => e.id == saved.id);
-            if (idx >= 0) encounters[idx] = saved; else encounters.push(saved);
-            // Re-render detail pane
-            selectEncounter(saved.id);
-          } else {
-            const txt = await resp.text();
-            alert('Failed to save encounter: ' + (txt || resp.statusText));
-          }
-        } catch (err) {
-          alert('Error saving encounter: ' + err.message);
-        }
-      });
-
-    });
-  }
-
-  // Observe detail shell and wire controls when form is rendered
-  (function(){
-    const detailShellEl = document.getElementById('encounter-detail-shell');
-    if (detailShellEl) {
-      const observer = new MutationObserver(() => { setupAddMonsterControls(); });
-      observer.observe(detailShellEl, { childList: true, subtree: true });
-    }
-  })();
-
   function renderEncounterList(items) {
     encounterListEl.innerHTML = '';
     if (!items.length) {
@@ -223,21 +113,22 @@ document.addEventListener('DOMContentLoaded', async function() {
         <div class="detail-grid">
           <div class="detail-panel">
             <h2>Units</h2>
-            <div class="add-monster-control" style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
-              <input id="add-monster-input" type="search" placeholder="Add monster..." autocomplete="off" style="flex:1; padding:6px;" />
-              <button type="button" id="add-monster-btn" class="btn">Add</button>
-            </div>
             <div id="units-list">
-              ${(encounter.units || []).map((unit, idx) => `
+              ${(encounter.units || []).map((unit, idx) => {
+                const origName = escapeHtml(unit.original_name || unit.name || '');
+                const custName = escapeHtml(unit.name || '');
+                return `
                 <div class="field-row" data-unit-idx="${idx}" data-monster-id="${unit.monster_id || ''}">
-                  <input type="text" name="unit-name-${idx}" value="${escapeHtml(unit.name || '')}" placeholder="Unit Name" class="field-value" style="width:120px;" />
+                  <span class="unit-original-name" style="display:inline-flex; align-items:center; background:#f0f0f0; border:1px solid #ccc; border-radius:4px; padding:4px 6px; font-weight:700; white-space:nowrap;" title="Original monster name">${origName}</span>
+                  <input type="hidden" name="unit-original-name-${idx}" value="${origName}" />
+                  <input type="text" name="unit-name-${idx}" value="${custName}" placeholder="Custom name" class="field-value" style="width:110px;" />
                   <input type="number" name="unit-hp-${idx}" value="${unit.hp_current ?? unit.hp_max ?? ''}" placeholder="HP" class="field-value" style="width:60px;" min="0" />
                   <input type="number" name="unit-ac-${idx}" value="${unit.ac ?? ''}" placeholder="AC" class="field-value" style="width:50px;" min="0" />
                   <input type="text" name="unit-status-${idx}" value="${escapeHtml(unit.status || '')}" placeholder="Status" class="field-value" style="width:80px;" />
                   <input type="text" name="unit-conditions-${idx}" value="${escapeHtml((unit.conditions||[]).join(', '))}" placeholder="Conditions" class="field-value" style="width:120px;" />
                   <button type="button" class="btn remove-unit-btn" data-remove-unit="${idx}">Remove</button>
-                </div>
-              `).join('')}
+                </div>`;
+              }).join('')}
             </div>
             <button type="button" id="add-unit-btn" class="btn">+ Add Unit</button>
           </div>
@@ -290,6 +181,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         rows.forEach((row, idx) => {
           const monsterId = row.dataset.monsterId ? parseInt(row.dataset.monsterId) : null;
           const unitName = form.querySelector(`[name="unit-name-${idx}"]`)?.value?.trim();
+          const originalName = form.querySelector(`[name="unit-original-name-${idx}"]`)?.value?.trim() || null;
           const hp = form.querySelector(`[name="unit-hp-${idx}"]`)?.value;
           const ac = form.querySelector(`[name="unit-ac-${idx}"]`)?.value;
           const status = form.querySelector(`[name="unit-status-${idx}"]`)?.value?.trim() || 'alive';
@@ -297,6 +189,7 @@ document.addEventListener('DOMContentLoaded', async function() {
           if (unitName) {
             units.push({
               monster_id: monsterId,
+              original_name: originalName,
               name: unitName,
               hp_current: hp ? parseInt(hp) : null,
               hp_max: hp ? parseInt(hp) : null,
@@ -348,10 +241,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         <div class="detail-grid">
           <div class="detail-panel">
             <h2>Units</h2>
-            <div class="add-monster-control" style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
-              <input id="add-monster-input" type="search" placeholder="Add monster..." autocomplete="off" style="flex:1; padding:6px;" />
-              <button type="button" id="add-monster-btn" class="btn">Add</button>
-            </div>
             <div id="units-list"></div>
             <button type="button" id="add-unit-btn" class="btn">+ Add Unit</button>
           </div>
@@ -404,6 +293,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         rows.forEach((row, idx) => {
           const monsterId = row.dataset.monsterId ? parseInt(row.dataset.monsterId) : null;
           const unitName = form.querySelector(`[name="unit-name-${idx}"]`)?.value?.trim();
+          const originalName = form.querySelector(`[name="unit-original-name-${idx}"]`)?.value?.trim() || null;
           const hp = form.querySelector(`[name="unit-hp-${idx}"]`)?.value;
           const ac = form.querySelector(`[name="unit-ac-${idx}"]`)?.value;
           const status = form.querySelector(`[name="unit-status-${idx}"]`)?.value?.trim() || 'alive';
@@ -411,6 +301,7 @@ document.addEventListener('DOMContentLoaded', async function() {
           if (unitName) {
             units.push({
               monster_id: monsterId,
+              original_name: originalName,
               name: unitName,
               hp_current: hp ? parseInt(hp) : null,
               hp_max: hp ? parseInt(hp) : null,
@@ -500,7 +391,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             <div class="monster-list-item-subtitle">CR: ${crText} &nbsp; • &nbsp; AC: ${acText} &nbsp; • &nbsp; HP: ${hpText}</div>
           </div>
           <div style="flex:0 0 auto; margin-left:8px;">
-            <button type="button" class="btn add-monster-btn" data-monster-id="${monster.id}" aria-label="Add ${title} to encounter">Add</button>
+            <button type="button" class="btn add-monster-btn" data-monster-id="${monster.id}" aria-label="Add ${title} to encounter" style="font-size:1.2rem; padding:2px 10px;">+</button>
           </div>
         </div>
       `;
@@ -539,11 +430,11 @@ document.addEventListener('DOMContentLoaded', async function() {
       alert('Please select or create an encounter first.');
       return;
     }
-    // Build unit object
     const hpVal = (typeof monster.hp === 'number') ? monster.hp : (parseNumberFromLabel(extractStatFromDetails(monster.details, 'HP:') || monster.stats_line || '') || null);
     const acVal = parseNumberFromLabel(extractStatFromDetails(monster.details, 'AC:') || '') || null;
     const unit = {
       monster_id: monster.id,
+      original_name: monster.title || monster.name || 'Monster',
       name: monster.title || monster.name || 'Monster',
       hp_max: hpVal,
       hp_current: hpVal,
@@ -551,7 +442,6 @@ document.addEventListener('DOMContentLoaded', async function() {
       status: 'alive',
       conditions: []
     };
-    // Update in-memory encounter
     const enc = encounters.find(e => e.id == selectedEncounterId);
     if (!enc) {
       alert('Selected encounter not found in memory.');
@@ -559,24 +449,25 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
     enc.units = enc.units || [];
     enc.units.push(unit);
-    // Update UI: append to units-list if present
-    const unitsList = document.getElementById('units-list');
-    if (unitsList) {
-      const idx = unitsList.children.length;
-      const div = document.createElement('div');
-      div.className = 'field-row';
-      div.dataset.unitIdx = idx;
-      div.dataset.monsterId = monster.id ?? '';
-      div.innerHTML = `
-        <input type="text" name="unit-name-${idx}" value="${unit.name}" placeholder="Unit Name" class="field-value" style="width:120px;" />
-        <input type="number" name="unit-hp-${idx}" value="${unit.hp_current ?? ''}" placeholder="HP" class="field-value" style="width:60px;" min="0" />
-        <input type="number" name="unit-ac-${idx}" value="${unit.ac ?? ''}" placeholder="AC" class="field-value" style="width:50px;" min="0" />
-        <input type="text" name="unit-status-${idx}" value="${unit.status}" placeholder="Status" class="field-value" style="width:80px;" />
-        <input type="text" name="unit-conditions-${idx}" value="" placeholder="Conditions" class="field-value" style="width:120px;" />
-        <button type="button" class="btn remove-unit-btn" data-remove-unit="${idx}">Remove</button>
-      `;
-      unitsList.appendChild(div);
-    }
+    fetch(`/api/encounters/${selectedEncounterId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: enc.name, units: enc.units })
+    }).then(async resp => {
+      if (resp.ok) {
+        const saved = await resp.json();
+        const idx = encounters.findIndex(e => e.id == saved.id);
+        if (idx >= 0) encounters[idx] = saved; else encounters.push(saved);
+        selectEncounter(saved.id);
+      } else {
+        enc.units.pop();
+        const txt = await resp.text();
+        alert('Failed to add monster: ' + (txt || resp.statusText));
+      }
+    }).catch(err => {
+      enc.units.pop();
+      alert('Error adding monster: ' + err.message);
+    });
   }
 
   // Pagination handlers

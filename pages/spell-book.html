@@ -7,11 +7,12 @@
   <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@600;700;800&family=OpenDyslexic&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/styles.css">
   <link rel="stylesheet" href="../css/page-layout.css">
+  <link rel="stylesheet" href="../css/spell-book-custom.css">
   <style>
     body {
       min-height: 100vh;
-      background: linear-gradient(180deg, #8a5a2c 0%, #d9b58a 100%);
-      color: var(--ink);
+      background: var(--md-sys-color-background);
+      color: var(--md-sys-color-on-background);
       padding: 0;
       margin: 0;
     }
@@ -33,146 +34,12 @@
     .viewer-sidebar + .viewer-sidebar {
       margin-top: 1rem;
     }
-    /* Spell slots panel container */
-    .spell-slots-panel {
-      background: var(--panel-bg);
-      border: 1px solid var(--panel-border);
-      border-radius: 18px;
-      padding: 18px;
-      box-shadow: 0 12px 30px var(--panel-shadow);
-      margin-bottom: 1rem;
-    }
-    .spell-slots-panel h3 {
-      margin: 0 0 1rem 0;
-      font-size: 1rem;
-      color: var(--text-normal);
-    }
-    .spell-slots-panel .spell-slot-overview {
-      margin: 0 0 1rem 0;
-    }
-    .spell-slots-panel .toolbar-actions {
-      display: flex;
-      gap: 10px;
-      justify-content: center;
-    }
-    .spell-book-toolbar .selected-player-pill {
-      display: inline-flex;
-      gap: 8px;
-      align-items: center;
-      padding: 12px 16px;
-      border-radius: 999px;
-      border: 2px solid var(--border);
-      background: #fffdf7;
-      color: #5a3210;
-      font-weight: 800;
-      box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.04);
-    }
-    .spell-slot-card {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      padding: 14px 14px 16px;
-      border-radius: 18px;
-      background: #fffdf7;
-      border: 3px solid var(--border);
-      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
-      position: relative;
-      overflow: hidden;
-    }
-    .spell-slot-card::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 6px;
-      background: linear-gradient(90deg, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0));
-    }
-    .spell-slot-card.empty {
-      opacity: 0.48;
-    }
-    .slot-level {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-      font-size: 0.95rem;
-      font-weight: 900;
-      color: #2c1810;
-    }
-    .slot-bubble {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      font-weight: 900;
-      color: white;
-      font-size: 0.95rem;
-    }
-    .spell-slot-card.level-1 .slot-bubble { background: #f39c12; }
-    .spell-slot-card.level-2 .slot-bubble { background: #3498db; }
-    .spell-slot-card.level-3 .slot-bubble { background: #9b59b6; }
-    .spell-slot-card.level-4 .slot-bubble { background: #1abc9c; }
-    .spell-slot-card.level-5 .slot-bubble { background: #2ecc71; }
-    .spell-slot-card.level-6 .slot-bubble { background: #f1c40f; }
-    .spell-slot-card.level-7 .slot-bubble { background: #e67e22; }
-    .spell-slot-card.level-8 .slot-bubble { background: #95a5a6; }
-    .spell-slot-card.level-9 .slot-bubble { background: #34495e; }
-    .slot-count {
-      font-size: 1.35rem;
-      font-weight: 900;
-      color: #34312a;
-      line-height: 1;
-    }
-    .spell-slot-overview {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin: 0;
-    }
-    .spell-slot-pill {
-      border: 2px solid var(--border);
-      border-radius: 999px;
-      background: #fffdf7;
-      color: #5a3210;
-      padding: 8px 12px;
-      font-size: 0.85rem;
-      font-weight: 700;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .spell-slot-pill.empty {
-      opacity: 0.45;
-    }
     .level-filter-row {
       margin-top: 14px;
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
       align-items: center;
-    }
-    .filter-button {
-      border: 2px solid var(--border);
-      background: #fffdf7;
-      color: var(--ink);
-      border-radius: 999px;
-      padding: 10px 14px;
-      cursor: pointer;
-      font-size: 0.85rem;
-      font-weight: 700;
-      transition: transform 0.2s ease, background 0.2s ease;
-    }
-    .filter-button:hover {
-      transform: translateY(-1px);
-      background: #f5e0c1;
-    }
-    .filter-button.active {
-      background: #c0392b;
-      color: white;
-      border-color: #992d22;
     }
     /* Spell container */
     #spell-book-container {

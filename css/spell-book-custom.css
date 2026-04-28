@@ -1,0 +1,164 @@
+/* Spell Book Component Styles
+ * Reusable component-level styles for spell-casting features
+ * Uses Material 3 dark mode color system for consistency with other pages
+ */
+
+/* Spell slots panel container */
+.spell-slots-panel {
+  background: var(--md-sys-color-surface-variant);
+  border: 1px solid var(--md-sys-color-outline);
+  border-radius: 18px;
+  padding: 18px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+  margin-bottom: 1rem;
+}
+
+.spell-slots-panel h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
+  color: var(--md-sys-color-on-surface);
+}
+
+.spell-slots-panel .spell-slot-overview {
+  margin: 0 0 1rem 0;
+}
+
+.spell-slots-panel .toolbar-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+/* Spell slot card component */
+.spell-slot-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 14px 16px;
+  border-radius: 18px;
+  background: var(--md-sys-color-surface);
+  border: 3px solid var(--md-sys-color-outline);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
+  position: relative;
+  overflow: hidden;
+}
+
+.spell-slot-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 6px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0));
+}
+
+.spell-slot-card.empty {
+  opacity: 0.48;
+}
+
+/* Slot level display */
+.slot-level {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.95rem;
+  font-weight: 900;
+  color: var(--md-sys-color-on-surface);
+}
+
+/* Slot bubble (level indicator) */
+.slot-bubble {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-weight: 900;
+  color: white;
+  font-size: 0.95rem;
+}
+
+.spell-slot-card.level-1 .slot-bubble { background: var(--spell-level-1-color); }
+.spell-slot-card.level-2 .slot-bubble { background: var(--spell-level-2-color); }
+.spell-slot-card.level-3 .slot-bubble { background: var(--spell-level-3-color); }
+.spell-slot-card.level-4 .slot-bubble { background: var(--spell-level-4-color); }
+.spell-slot-card.level-5 .slot-bubble { background: var(--spell-level-5-color); }
+.spell-slot-card.level-6 .slot-bubble { background: var(--spell-level-6-color); }
+.spell-slot-card.level-7 .slot-bubble { background: var(--spell-level-7-color); }
+.spell-slot-card.level-8 .slot-bubble { background: var(--spell-level-8-color); }
+.spell-slot-card.level-9 .slot-bubble { background: var(--spell-level-9-color); }
+
+/* Slot count display */
+.slot-count {
+  font-size: 1.35rem;
+  font-weight: 900;
+  color: var(--md-sys-color-on-surface);
+  line-height: 1;
+}
+
+/* Spell slot overview (flex layout for multiple slots) */
+.spell-slot-overview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+}
+
+/* Pill-shaped slot indicator */
+.spell-slot-pill {
+  border: 2px solid var(--md-sys-color-outline);
+  border-radius: 999px;
+  background: var(--md-sys-color-surface);
+  color: var(--md-sys-color-on-surface);
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.spell-slot-pill.empty {
+  opacity: 0.45;
+}
+
+/* Filter button for spell levels */
+.filter-button {
+  border: 2px solid var(--md-sys-color-outline);
+  background: var(--md-sys-color-surface);
+  color: var(--md-sys-color-on-surface);
+  border-radius: 999px;
+  padding: 10px 14px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 700;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.filter-button:hover {
+  transform: translateY(-1px);
+  background: var(--md-sys-color-surface-variant);
+}
+
+.filter-button.active {
+  background: var(--md-sys-color-primary);
+  color: var(--md-sys-color-on-primary);
+  border-color: var(--md-sys-color-primary);
+}
+
+/* Player selection pill */
+.spell-book-toolbar .selected-player-pill {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  padding: 12px 16px;
+  border-radius: 999px;
+  border: 2px solid var(--md-sys-color-outline);
+  background: var(--md-sys-color-surface);
+  color: var(--md-sys-color-on-surface);
+  font-weight: 800;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.04);
+}

@@ -1,13 +1,59 @@
 :root {
-  --page-bg: #f8fafc;
-  --panel-bg: #ffffff;
-  --panel-border: #cbd5e1;
-  --panel-shadow: rgba(15, 23, 42, 0.12);
-  --text-normal: #102a43;
-  --text-muted: #475569;
-  --text-strong: #34495e;
-  --accent: #1d4ed8;
-  --border-color: #8b5e3c;
+  /* Material 3 Dark Mode Core Roles
+   * 
+   * This color system follows Google's Material Design 3 (Material You) dark mode palette
+   * for accessibility and consistency. All UI colors are defined as CSS variables using
+   * semantic roles that describe their purpose in the interface.
+   * 
+   * Color Roles:
+   * - Primary: Main brand color (#80CBC4 - Teal). Used for primary actions, headers, highlights.
+   * - Secondary: Complementary color (#B2DFDB - Light Teal). Used for secondary actions, supporting elements.
+   * - Tertiary: Accent color (#FFE082 - Amber). Used for warnings, special states, highlights.
+   * - Background: Page/canvas background (#191C1C - Very Dark Gray). Main surface for content.
+   * - Surface: Card/container background (#191C1C - Very Dark Gray). Used for panels, cards.
+   * - Error: Semantic red (#FFB4A9 - Light Red). Used for errors, destructive actions.
+   * - Outline: Border/divider color (#899391 - Medium Gray). Used for borders, dividers.
+   * 
+   * On* variants are text colors that provide sufficient contrast when placed on their paired role:
+   * - On-Primary: Text on primary backgrounds (#003632 - Very Dark Teal)
+   * - On-Surface: Text on surface/main backgrounds (#E0E3E2 - Light Gray)
+   * - On-Error: Text on error backgrounds (#680003 - Very Dark Red)
+   * 
+   * *Container variants provide additional hierarchy levels for complex layouts.
+   * 
+   * Usage:
+   * - Background colors: Use background, surface, or container roles
+   * - Text colors: Use on-background, on-surface, or on-error roles
+   * - Borders/dividers: Use outline role
+   * - Interactive states: Use primary, secondary, or error roles
+   * 
+   * Dark Mode Default:
+   * All colors are optimized for dark mode viewing. Light mode can be implemented via
+   * CSS media queries or theme switching by redefining these variables.
+   */
+  --md-sys-color-primary: #80CBC4;
+  --md-sys-color-on-primary: #003632;
+  --md-sys-color-primary-container: #004F4B;
+  --md-sys-color-on-primary-container: #B2DFDB;
+  --md-sys-color-secondary: #B2DFDB;
+  --md-sys-color-on-secondary: #003632;
+  --md-sys-color-secondary-container: #004F4B;
+  --md-sys-color-on-secondary-container: #B2DFDB;
+  --md-sys-color-tertiary: #FFE082;
+  --md-sys-color-on-tertiary: #594200;
+  --md-sys-color-tertiary-container: #654A00;
+  --md-sys-color-on-tertiary-container: #FFECB3;
+  --md-sys-color-background: #191C1C;
+  --md-sys-color-on-background: #E0E3E2;
+  --md-sys-color-surface: #191C1C;
+  --md-sys-color-on-surface: #E0E3E2;
+  --md-sys-color-surface-variant: #404947;
+  --md-sys-color-on-surface-variant: #BEC9C4;
+  --md-sys-color-outline: #899391;
+  --md-sys-color-error: #FFB4A9;
+  --md-sys-color-on-error: #680003;
+  --md-sys-color-error-container: #930006;
+  --md-sys-color-on-error-container: #FFDAD4;
 }
 
 /* Modern responsive shell layout */
@@ -51,7 +97,7 @@ hp-tracker-topbar,
   position: sticky;
   top: 0;
   z-index: 20;
-  background: rgba(246, 248, 250, 0.98);
+  background: rgba(25, 28, 28, 0.98);
   border-bottom: 2px solid var(--panel-border);
   padding: var(--space-md) var(--space-lg);
   box-shadow: var(--shadow-sm);
@@ -98,14 +144,14 @@ hp-tracker-topbar,
 
 .page-main-header {
   padding-bottom: 12px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--md-sys-color-surface-variant);
 }
 
 .pane-header {
   display: grid;
   gap: 10px;
   padding-bottom: 10px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--md-sys-color-surface-variant);
 }
 .page-toolbar.spell-book-top-row,
 .toolbar.spell-book-top-row,
@@ -144,7 +190,7 @@ hp-tracker-topbar,
   border-radius: 10px;
   padding: 12px 14px;
   font-size: 1rem;
-  background: #fffdf7;
+  background: var(--md-sys-color-surface-variant);
   color: var(--text-normal);
 }
 
@@ -154,7 +200,120 @@ hp-tracker-topbar,
 .filter-field input:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.16);
+  box-shadow: 0 0 0 3px rgba(178, 223, 219, 0.25);
+}
+
+/* Shared modal theme */
+.modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.7);
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.modal.active {
+  display: flex;
+}
+
+.modal-content {
+  width: min(760px, 100%);
+  max-height: min(90vh, 960px);
+  overflow-y: auto;
+  padding: 1.5rem;
+  border-radius: 16px;
+  background: var(--md-sys-color-surface);
+  border: 1px solid var(--md-sys-color-outline);
+  box-shadow: 0 24px 52px rgba(0, 0, 0, 0.35);
+  color: var(--md-sys-color-on-surface);
+}
+
+.modal-content h2,
+.modal-content h3 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  color: var(--text-normal);
+}
+
+.modal-field {
+  margin-bottom: 1rem;
+}
+
+.modal-field label {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-weight: 700;
+  color: var(--text-normal);
+}
+
+.modal-field input,
+.modal-field textarea,
+.modal-field select {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--md-sys-color-outline);
+  border-radius: 0.75rem;
+  font-family: inherit;
+  font-size: 0.95rem;
+  background: var(--md-sys-color-surface-variant);
+  color: var(--text-normal);
+}
+
+.modal-field textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.modal-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+.modal-buttons button {
+  cursor: pointer;
+  border: none;
+  border-radius: 10px;
+  padding: 0.85rem 1.2rem;
+  font-size: 0.95rem;
+  transition: background 0.2s ease;
+}
+
+.modal-buttons .cancel-btn,
+.modal-buttons .close-btn {
+  background: var(--md-sys-color-surface-variant);
+  color: var(--text-normal);
+  border: 1px solid var(--md-sys-color-outline);
+}
+
+.modal-buttons .cancel-btn:hover,
+.modal-buttons .close-btn:hover {
+  background: var(--md-sys-color-surface);
+}
+
+.modal-buttons .create-btn,
+.modal-buttons .save-btn {
+  background: var(--md-sys-color-primary);
+  color: var(--md-sys-color-on-primary);
+}
+
+.modal-buttons .create-btn:hover,
+.modal-buttons .save-btn:hover {
+  background: var(--md-sys-color-primary-container);
+}
+
+.modal-buttons .delete-btn {
+  background: var(--md-sys-color-error);
+  color: var(--md-sys-color-on-error);
+}
+
+.modal-buttons .delete-btn:hover {
+  background: var(--md-sys-color-error-container);
 }
 
 /**
@@ -193,7 +352,7 @@ hp-tracker-topbar,
   padding: 12px 14px;
   border: 2px solid var(--panel-border);
   border-radius: 14px;
-  background: #fffdf7;
+  background: var(--md-sys-color-surface);
   color: var(--text-normal);
   font-size: 0.95rem;
   font-weight: 700;
@@ -205,7 +364,7 @@ hp-tracker-topbar,
 .level-filter input {
   width: 18px;
   height: 18px;
-  accent-color: #2c6fdb;
+  accent-color: var(--md-sys-color-primary);
 }
 
 /**
@@ -244,8 +403,8 @@ hp-tracker-topbar,
   margin-bottom: 0;
 }
 .detail-title-group { min-width: 0; }
-.detail-title { margin: 0; font-size: 2rem; color: #102a43; line-height: 1.05; }
-.detail-subtitle { margin: 0.35rem 0 0; color: #475569; font-size: 0.95rem; }
+.detail-title { margin: 0; font-size: 2rem; color: var(--md-sys-color-on-surface); line-height: 1.05; }
+.detail-subtitle { margin: 0.35rem 0 0; color: var(--md-sys-color-on-surface-variant); font-size: 0.95rem; }
 .detail-grid { display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr); }
 
 .detail-panel,
@@ -271,11 +430,11 @@ hp-tracker-topbar,
 }
 .stat-card,
 .save-card {
-  background: #f7f9fc;
+  background: var(--md-sys-color-surface);
   border-radius: 8px;
   padding: 0.85rem;
   text-align: center;
-  border: 1px solid #e6e9ef;
+  border: 1px solid var(--md-sys-color-outline);
 }
 .stat-card .stat-name,
 .save-card .stat-name { display: block; font-size: 0.75rem; color: inherit; margin-bottom: 0.2rem; }
@@ -317,7 +476,7 @@ hp-tracker-topbar,
 .field-value {
   margin-bottom: 1rem;
   padding-bottom: 0.75rem;
-  border-bottom: 1px solid #ebeff6;
+  border-bottom: 1px solid var(--md-sys-color-outline);
   color: var(--text-muted);
   line-height: 1.65;
   white-space: pre-wrap;
@@ -470,7 +629,7 @@ hp-tracker-topbar,
   justify-content: center;
   gap: 0.5rem;
   border: 2px solid var(--panel-border);
-  background: #fffdf7;
+  background: var(--md-sys-color-surface);
   color: var(--text-normal);
   border-radius: 999px;
   padding: 10px 14px;
@@ -483,7 +642,7 @@ hp-tracker-topbar,
 .sidebar-toggle:hover,
 .toolbox-button:hover {
   transform: translateY(-1px);
-  background: #f5f5f0;
+  background: var(--md-sys-color-surface-variant);
 }
 
 /**
@@ -572,7 +731,7 @@ hp-tracker-topbar,
 .entity-subtitle,
 .panel-subtitle {
   margin: 6px 0 0;
-  color: #64748b;
+  color: var(--md-sys-color-on-surface-variant);
   font-size: 0.87rem;
   line-height: 1.4;
 }
@@ -586,7 +745,7 @@ hp-tracker-topbar,
 .toggle-button {
   border: none;
   background: linear-gradient(90deg, var(--accent) 60%, var(--accent-hover) 100%);
-  color: #fff;
+  color: var(--md-sys-color-on-surface);
   font-weight: 700;
   padding: var(--space-sm) var(--space-lg);
   border-radius: 999px;
@@ -621,8 +780,8 @@ hp-tracker-topbar,
 .toggle-button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-  background: #e5e7eb;
-  color: #a1a1aa;
+  background: var(--md-sys-color-outline);
+  color: var(--md-sys-color-on-surface-variant);
 }
 
 /* Shared empty state / placeholder styles */
@@ -638,7 +797,7 @@ hp-tracker-topbar,
 .monster-detail-placeholder {
   padding: 20px;
   border-radius: 14px;
-  background: #f8fafc;
+  background: var(--md-sys-color-surface-variant);
   color: var(--text-muted);
   text-align: center;
 }
@@ -677,7 +836,7 @@ hp-tracker-topbar,
 }
 
 .map-panel {
-  background: #f5f5f5;
+  background: var(--md-sys-color-surface);
   padding: 1.5rem;
   padding-right: calc(1.5rem + 5px);
   border-radius: 0;
@@ -685,7 +844,7 @@ hp-tracker-topbar,
   height: 100%;
   box-sizing: border-box;
   position: relative;
-  border-right: 1px solid #ddd;
+  border-right: 1px solid var(--md-sys-color-outline);
 }
 
 .map-panel .resize-handle {
@@ -694,7 +853,7 @@ hp-tracker-topbar,
   top: 0;
   width: 5px;
   height: 100%;
-  background: #ccc;
+  background: var(--md-sys-color-outline);
   cursor: col-resize;
   user-select: none;
   touch-action: none;
@@ -706,12 +865,12 @@ hp-tracker-topbar,
   .map-panel .resize-handle {
     width: 20px;
     right: -7px;
-    background: rgba(204, 204, 204, 0.95);
+    background: rgba(64, 73, 71, 0.95);
   }
 }
 
 .map-panel .resize-handle:hover {
-  background: #999;
+  background: var(--md-sys-color-outline);
 }
 
 .map-panel.collapsed {
@@ -726,15 +885,15 @@ hp-tracker-topbar,
 .dungeon-viewer-right {
   display: flex;
   flex-direction: column;
-  background: white;
+  background: var(--md-sys-color-background);
   height: 100%;
   overflow: hidden;
 }
 
 .viewer-controls {
-  background: #f5f5f5;
+  background: var(--md-sys-color-surface);
   padding: 1rem 1.5rem;
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px solid var(--md-sys-color-outline);
   flex-shrink: 0;
 }
 
@@ -772,8 +931,8 @@ hp-tracker-topbar,
   width: 40px;
   height: 40px;
   padding: 0;
-  background: #ffffff;
-  border: 1px solid #ddd;
+  background: var(--md-sys-color-surface);
+  border: 1px solid var(--md-sys-color-outline);
   border-left: none;
   border-radius: 0 6px 6px 0;
   cursor: pointer;
@@ -783,6 +942,6 @@ hp-tracker-topbar,
 }
 
 .dungeon-viewer-layout .map-panel.collapsed ~ .dungeon-viewer-right .toggle-list-btn:hover {
-  background: #f5f5f5;
-  border-color: #bbb;
+  background: var(--md-sys-color-surface-variant);
+  border-color: var(--md-sys-color-outline);
 }

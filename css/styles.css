@@ -1,24 +1,73 @@
 :root {
-  --parchment: #fdf3e3;
-  --ink: #2c1810;
-  --border: #8b5e3c;
-  --wb: #fffef7;
-  --wbl: #b0865a;
-  --muted: #8b5e3c;
+  /* Material 3 Dark Mode Core Roles
+   * 
+   * This color system follows Google's Material Design 3 (Material You) dark mode palette
+   * for accessibility and consistency. All UI colors are defined as CSS variables using
+   * semantic roles that describe their purpose in the interface.
+   * 
+   * Color Roles:
+   * - Primary: Main brand color (#80CBC4 - Teal). Used for primary actions, headers, highlights.
+   * - Secondary: Complementary color (#B2DFDB - Light Teal). Used for secondary actions, supporting elements.
+   * - Tertiary: Accent color (#FFE082 - Amber). Used for warnings, special states, highlights.
+   * - Background: Page/canvas background (#191C1C - Very Dark Gray). Main surface for content.
+   * - Surface: Card/container background (#191C1C - Very Dark Gray). Used for panels, cards.
+   * - Error: Semantic red (#FFB4A9 - Light Red). Used for errors, destructive actions.
+   * - Outline: Border/divider color (#899391 - Medium Gray). Used for borders, dividers.
+   * 
+   * On* variants are text colors that provide sufficient contrast when placed on their paired role:
+   * - On-Primary: Text on primary backgrounds (#003632 - Very Dark Teal)
+   * - On-Surface: Text on surface/main backgrounds (#E0E3E2 - Light Gray)
+   * - On-Error: Text on error backgrounds (#680003 - Very Dark Red)
+   * 
+   * *Container variants provide additional hierarchy levels for complex layouts.
+   * 
+   * Usage:
+   * - Background colors: Use background, surface, or container roles
+   * - Text colors: Use on-background, on-surface, or on-error roles
+   * - Borders/dividers: Use outline role
+   * - Interactive states: Use primary, secondary, or error roles
+   * 
+   * Dark Mode Default:
+   * All colors are optimized for dark mode viewing. Light mode can be implemented via
+   * CSS media queries or theme switching by redefining these variables.
+   */
+  --md-sys-color-primary: #80CBC4;
+  --md-sys-color-on-primary: #003632;
+  --md-sys-color-primary-container: #004F4B;
+  --md-sys-color-on-primary-container: #B2DFDB;
+  --md-sys-color-secondary: #B2DFDB;
+  --md-sys-color-on-secondary: #003632;
+  --md-sys-color-secondary-container: #004F4B;
+  --md-sys-color-on-secondary-container: #B2DFDB;
+  --md-sys-color-tertiary: #FFE082;
+  --md-sys-color-on-tertiary: #594200;
+  --md-sys-color-tertiary-container: #654A00;
+  --md-sys-color-on-tertiary-container: #FFECB3;
+  --md-sys-color-background: #191C1C;
+  --md-sys-color-on-background: #E0E3E2;
+  --md-sys-color-surface: #191C1C;
+  --md-sys-color-on-surface: #E0E3E2;
+  --md-sys-color-surface-variant: #404947;
+  --md-sys-color-on-surface-variant: #BEC9C4;
+  --md-sys-color-outline: #899391;
+  --md-sys-color-error: #FFB4A9;
+  --md-sys-color-on-error: #680003;
+  --md-sys-color-error-container: #930006;
+  --md-sys-color-on-error-container: #FFDAD4;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
-  background: #c9a97a;
+  background: var(--md-sys-color-background);
   font-family: 'OpenDyslexic', 'Nunito', sans-serif;
-  color: var(--ink);
+  color: var(--md-sys-color-on-background);
 }
 
 .page {
   width: 210mm;
   min-height: 297mm;
   margin: 0 auto;
-  background: var(--parchment);
+  background: var(--md-sys-color-surface);
   padding: 8mm;
   position: relative;
 }
@@ -32,7 +81,7 @@ body {
 .page-header h1 {
   font-family: 'OpenDyslexic', 'Nunito', sans-serif;
   font-size: 22pt;
-  color: #c0392b;
+  color: var(--md-sys-color-error);
   text-shadow: 2px 2px 0 #f5cba7, 3px 3px 0 var(--border);
   line-height: 1;
 }
@@ -94,8 +143,8 @@ body {
 
 .card {
   border-radius: 10px;
-  border: 3px solid var(--border);
-  background: var(--wb);
+  border: 3px solid var(--md-sys-color-outline);
+  background: var(--md-sys-color-surface-variant);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -112,6 +161,8 @@ body {
   flex-wrap: nowrap;
   white-space: nowrap;
   overflow: hidden;
+  background: var(--md-sys-color-primary);
+  color: var(--md-sys-color-on-primary);
 }
 .card-icon {
   font-size: 20pt;
@@ -121,7 +172,7 @@ body {
 .card-title {
   font-family: 'OpenDyslexic', 'Nunito', sans-serif;
   font-size: 11pt;
-  color: white;
+  color: var(--md-sys-color-on-primary);
   line-height: 1.2;
   text-shadow: 1px 1px 0 rgba(0,0,0,0.2);
   flex-shrink: 1;
@@ -138,6 +189,8 @@ body {
   display: flex;
   flex-direction: column;
   gap: 2mm;
+  background: var(--md-sys-color-surface);
+  color: var(--md-sys-color-on-surface);
 }
 
 .simple-explanation {
@@ -145,7 +198,7 @@ body {
   font-size: 9pt;
   color: var(--ink);
   line-height: 1.3;
-  border-bottom: 1.5px dashed #c4a47a;
+  border-bottom: 1.5px dashed var(--md-sys-color-outline);
   padding-bottom: 2mm;
   text-align: justify;
 }
@@ -156,7 +209,7 @@ body {
 .spell-details {
   font-size: 12pt;
   font-weight: normal;
-  color: #5a3e2b;
+  color: var(--md-sys-color-tertiary-container);
   line-height: 1.3;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -176,7 +229,7 @@ body {
   flex-shrink: 0;
 }
 .spell-details .detail-value {
-  color: #3d2c1a;
+  color: var(--md-sys-color-tertiary-container);
   line-height: 1.35;
   white-space: pre-wrap;
 }
@@ -211,7 +264,7 @@ body {
 
 /* Global spell name link style used by createSpellLink() and attachSpellHover() */
 .spell-link {
-  color: #8b3a1a;
+  color: var(--md-sys-color-error);
   font-weight: 700;
   cursor: pointer;
   text-decoration: underline;
@@ -220,8 +273,8 @@ body {
   transition: color 0.15s ease, text-decoration-color 0.15s ease;
 }
 .spell-link:hover {
-  color: #c0392b;
-  text-decoration-color: rgba(192, 57, 43, 0.7);
+  color: var(--md-sys-color-error);
+  text-decoration-color: rgba(255, 180, 169, 0.7);
 }
 @media print {
   .spell-link {
@@ -246,7 +299,7 @@ body {
   height: 18px;
   border: 1.5px solid black;
   border-radius: 3px;
-  background: #e3f2fd;
+  background: var(--md-sys-color-surface-variant);
   position: relative;
   font-size: 7pt;
   font-weight: 700;
@@ -269,7 +322,7 @@ body {
   height: 18px;
   border: 1.5px solid black;
   border-radius: 3px;
-  background: #ffe0b2;
+  background: var(--md-sys-color-tertiary-container);
   position: relative;
   font-size: 7pt;
   font-weight: 700;
@@ -285,12 +338,12 @@ body {
 }
 
 /* Ability Score Colors */
-.ability-str { color: #c0392b; font-weight: 700; vertical-align: middle; } /* Red - Strength */
-.ability-dex { color: #1e8449; font-weight: 700; vertical-align: middle; } /* Green - Dexterity */
-.ability-con { color: #e67e22; font-weight: 700; vertical-align: middle; } /* Orange - Constitution */
-.ability-int { color: #2471a3; font-weight: 700; vertical-align: middle; } /* Blue - Intelligence */
-.ability-wis { color: #8e44ad; font-weight: 700; vertical-align: middle; } /* Purple - Wisdom */
-.ability-cha { color: #f39c12; font-weight: 700; vertical-align: middle; } /* Gold - Charisma */
+.ability-str { color: var(--md-sys-color-error); font-weight: 700; vertical-align: middle; } /* Red - Strength */
+.ability-dex { color: var(--md-sys-color-secondary); font-weight: 700; vertical-align: middle; } /* Green - Dexterity */
+.ability-con { color: var(--md-sys-color-tertiary); font-weight: 700; vertical-align: middle; } /* Orange - Constitution */
+.ability-int { color: var(--md-sys-color-primary); font-weight: 700; vertical-align: middle; } /* Blue - Intelligence */
+.ability-wis { color: var(--md-sys-color-tertiary-container); font-weight: 700; vertical-align: middle; } /* Purple - Wisdom */
+.ability-cha { color: var(--md-sys-color-tertiary); font-weight: 700; vertical-align: middle; } /* Gold - Charisma */
 
 /* Monster Book Shared Styles */
 .monster-list {
@@ -298,8 +351,8 @@ body {
   gap: 8px;
 }
 .monster-list-item {
-  background: #fff;
-  border: 2px solid #e0e0e0;
+  background: var(--md-sys-color-surface);
+  border: 2px solid var(--md-sys-color-outline);
   border-radius: 6px;
   padding: 10px 14px;
   cursor: pointer;
@@ -315,28 +368,28 @@ body {
   margin: 0;
   font-size: 0.95rem;
   font-weight: 700;
-  color: #333;
+  color: var(--md-sys-color-on-surface);
 }
 .monster-list-item-subtitle {
   margin: 4px 0 0;
-  color: #666;
+  color: var(--md-sys-color-on-surface-variant);
   font-size: 0.83rem;
   line-height: 1.4;
 }
 .monster-book-meta {
   font-size: 0.85rem;
-  color: #555;
+  color: var(--md-sys-color-on-surface-variant);
   font-weight: 700;
   margin-bottom: 0.75rem;
 }
 .monster-title-header {
   font-size: 1rem;
   font-weight: 700;
-  color: #333;
+  color: var(--md-sys-color-on-surface);
 }
 .back-btn {
-  background: #7f8c8d;
-  color: #fff;
+  background: var(--md-sys-color-outline);
+  color: var(--md-sys-color-on-surface);
   border: none;
   padding: 0.5rem 1rem;
   border-radius: 4px;
@@ -346,20 +399,20 @@ body {
   transition: background 0.2s ease;
 }
 .back-btn:hover {
-  background: #687f8c;
+  background: var(--md-sys-color-outline);
 }
 .notes {
-  color: #5f6f89;
+  color: var(--md-sys-color-on-surface-variant);
   margin-top: 0.25rem;
   font-size: 0.95rem;
 }
 .loading,
 .error-message {
   padding: 1.25rem;
-  background: #fff;
+  background: var(--md-sys-color-surface);
   border-radius: 6px;
-  border: 1px solid #ddd;
-  color: #333;
+  border: 1px solid var(--md-sys-color-outline);
+  color: var(--md-sys-color-on-surface);
 }
 
 
@@ -369,97 +422,98 @@ body {
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  color: white;
+  color: var(--md-sys-color-on-primary);
+  background: var(--md-sys-color-primary);
   text-align: center;
   opacity: 0.9;
 }
 
 /* Spell level colours */
-.card.cantrip .card-header,     .card.cantrip .card-footer     { background: #f39c12; }
-.card.level1 .card-header,      .card.level1 .card-footer      { background: #e74c3c; }
-.card.level2 .card-header,      .card.level2 .card-footer      { background: #9b59b6; }
-.card.level3 .card-header,      .card.level3 .card-footer      { background: #3498db; }
-.card.level4 .card-header,      .card.level4 .card-footer      { background: #1abc9c; }
-.card.level5 .card-header,      .card.level5 .card-footer      { background: #2ecc71; }
-.card.level6 .card-header,      .card.level6 .card-footer      { background: #f1c40f; }
-.card.level7 .card-header,      .card.level7 .card-footer      { background: #e67e22; }
-.card.level8 .card-header,      .card.level8 .card-footer      { background: #95a5a6; }
-.card.level9 .card-header,      .card.level9 .card-footer      { background: #34495e; }
+.card.cantrip .card-header,     .card.cantrip .card-footer     { background: var(--md-sys-color-tertiary); color: var(--md-sys-color-on-tertiary); }
+.card.level1 .card-header,      .card.level1 .card-footer      { background: var(--md-sys-color-error); color: var(--md-sys-color-on-error); }
+.card.level2 .card-header,      .card.level2 .card-footer      { background: var(--md-sys-color-tertiary); color: var(--md-sys-color-on-tertiary); }
+.card.level3 .card-header,      .card.level3 .card-footer      { background: var(--md-sys-color-secondary); color: var(--md-sys-color-on-secondary); }
+.card.level4 .card-header,      .card.level4 .card-footer      { background: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); }
+.card.level5 .card-header,      .card.level5 .card-footer      { background: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container); }
+.card.level6 .card-header,      .card.level6 .card-footer      { background: var(--md-sys-color-tertiary-container); color: var(--md-sys-color-on-tertiary-container); }
+.card.level7 .card-header,      .card.level7 .card-footer      { background: var(--md-sys-color-outline); color: var(--md-sys-color-on-surface-variant); }
+.card.level8 .card-header,      .card.level8 .card-footer      { background: var(--md-sys-color-surface-variant); color: var(--md-sys-color-on-surface-variant); }
+.card.level9 .card-header,      .card.level9 .card-footer      { background: var(--md-sys-color-background); color: var(--md-sys-color-on-background); }
 
 /* Condition colours */
-.card.blinded .card-header,       .card.blinded .card-footer       { background: #4a4a6a; }
-.card.charmed .card-header,       .card.charmed .card-footer       { background: #9b59b6; }
-.card.deafened .card-header,      .card.deafened .card-footer      { background: #7f8c8d; }
-.card.frightened .card-header,    .card.frightened .card-footer    { background: #c0392b; }
-.card.grappled .card-header,      .card.grappled .card-footer      { background: #d35400; }
-.card.incapacitated .card-header, .card.incapacitated .card-footer { background: #2c3e50; }
-.card.invisible .card-header,     .card.invisible .card-footer     { background: #1a6b8a; }
-.card.paralyzed .card-header,     .card.paralyzed .card-footer     { background: #16a085; }
-.card.poisoned .card-header,      .card.poisoned .card-footer      { background: #27ae60; }
-.card.prone .card-header,         .card.prone .card-footer         { background: #8b5e3c; }
-.card.stunned .card-header,       .card.stunned .card-footer       { background: #f39c12; }
-.card.unconscious .card-header,   .card.unconscious .card-footer   { background: #2c2c2c; }
-.card.inspiration .card-header,   .card.inspiration .card-footer   { background: #c9a90a; }
-.card.advantage .card-header,     .card.advantage .card-footer     { background: #1e8449; }
-.card.disadvantage .card-header,  .card.disadvantage .card-footer  { background: #c0392b; }
-.card.concentration .card-header, .card.concentration .card-footer { background: #7d3c98; }
-.card.restrained .card-header,    .card.restrained .card-footer    { background: #ca6f1e; }
-.card.hidden .card-header,        .card.hidden .card-footer        { background: #34495e; }
-.card.turn .card-header,          .card.turn .card-footer          { background: #2471a3; }
+.card.blinded .card-header,       .card.blinded .card-footer       { background: var(--md-sys-color-surface-variant); color: var(--md-sys-color-on-surface-variant); }
+.card.charmed .card-header,       .card.charmed .card-footer       { background: var(--md-sys-color-tertiary); color: var(--md-sys-color-on-tertiary); }
+.card.deafened .card-header,      .card.deafened .card-footer      { background: var(--md-sys-color-outline); color: var(--md-sys-color-on-surface-variant); }
+.card.frightened .card-header,    .card.frightened .card-footer    { background: var(--md-sys-color-error); color: var(--md-sys-color-on-error); }
+.card.grappled .card-header,      .card.grappled .card-footer      { background: var(--md-sys-color-outline); color: var(--md-sys-color-on-surface-variant); }
+.card.incapacitated .card-header, .card.incapacitated .card-footer { background: var(--md-sys-color-background); color: var(--md-sys-color-on-background); }
+.card.invisible .card-header,     .card.invisible .card-footer     { background: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); }
+.card.paralyzed .card-header,     .card.paralyzed .card-footer     { background: var(--md-sys-color-primary); color: var(--md-sys-color-on-primary); }
+.card.poisoned .card-header,      .card.poisoned .card-footer      { background: var(--md-sys-color-secondary); color: var(--md-sys-color-on-secondary); }
+.card.prone .card-header,         .card.prone .card-footer         { background: var(--md-sys-color-outline); color: var(--md-sys-color-on-surface-variant); }
+.card.stunned .card-header,       .card.stunned .card-footer       { background: var(--md-sys-color-tertiary); color: var(--md-sys-color-on-tertiary); }
+.card.unconscious .card-header,   .card.unconscious .card-footer   { background: var(--md-sys-color-background); color: var(--md-sys-color-on-background); }
+.card.inspiration .card-header,   .card.inspiration .card-footer   { background: var(--md-sys-color-tertiary-container); color: var(--md-sys-color-on-tertiary-container); }
+.card.advantage .card-header,     .card.advantage .card-footer     { background: var(--md-sys-color-secondary); color: var(--md-sys-color-on-secondary); }
+.card.disadvantage .card-header,  .card.disadvantage .card-footer  { background: var(--md-sys-color-error); color: var(--md-sys-color-on-error); }
+.card.concentration .card-header, .card.concentration .card-footer { background: var(--md-sys-color-tertiary); color: var(--md-sys-color-on-tertiary); }
+.card.restrained .card-header,    .card.restrained .card-footer    { background: var(--md-sys-color-tertiary-container); color: var(--md-sys-color-on-tertiary-container); }
+.card.hidden .card-header,        .card.hidden .card-footer        { background: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); }
+.card.turn .card-header,          .card.turn .card-footer          { background: var(--md-sys-color-primary); color: var(--md-sys-color-on-primary); }
 
 /* Weapon colours */
-.card.simple-melee .card-header,   .card.simple-melee .card-footer   { background: #7e5e4f; }
-.card.simple-ranged .card-header,  .card.simple-ranged .card-footer  { background: #5a7a7a; }
-.card.martial-melee .card-header,  .card.martial-melee .card-footer  { background: #8b3a1a; }
-.card.martial-ranged .card-header, .card.martial-ranged .card-footer { background: #3a5a8b; }
+.card.simple-melee .card-header,   .card.simple-melee .card-footer   { background: var(--md-sys-color-outline); color: var(--md-sys-color-on-surface-variant); }
+.card.simple-ranged .card-header,  .card.simple-ranged .card-footer  { background: var(--md-sys-color-outline); color: var(--md-sys-color-on-surface-variant); }
+.card.martial-melee .card-header,  .card.martial-melee .card-footer  { background: var(--md-sys-color-error); color: var(--md-sys-color-on-error); }
+.card.martial-ranged .card-header, .card.martial-ranged .card-footer { background: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); }
 
 /* Custom/Blank card colour */
-.card.custom .card-header, .card.custom .card-footer { background: #c0c0c0; }
+.card.custom .card-header, .card.custom .card-footer { background: var(--md-sys-color-surface-variant); color: var(--md-sys-color-on-surface-variant); }
 
 /* Magic item colours */
-.card.magic-utility .card-header, .card.magic-utility .card-footer { background: #6a5a9a; }
-.card.magic-combat .card-header,  .card.magic-combat .card-footer  { background: #b53a2a; }
+.card.magic-utility .card-header, .card.magic-utility .card-footer { background: var(--md-sys-color-tertiary); color: var(--md-sys-color-on-tertiary); }
+.card.magic-combat .card-header,  .card.magic-combat .card-footer  { background: var(--md-sys-color-error); color: var(--md-sys-color-on-error); }
 
 /* NPC profession colours */
-.card.wizard .card-header,    .card.wizard .card-footer    { background: #6a4fa3; }
-.card.rogue .card-header,     .card.rogue .card-footer     { background: #2c3e50; }
-.card.fighter .card-header,   .card.fighter .card-footer   { background: #8b3a1a; }
-.card.cleric .card-header,    .card.cleric .card-footer    { background: #e67e22; }
-.card.barbarian .card-header, .card.barbarian .card-footer { background: #c0392b; }
-.card.ranger .card-header,    .card.ranger .card-footer    { background: #27ae60; }
-.card.druid .card-header,     .card.druid .card-footer     { background: #16a085; }
-.card.paladin .card-header,   .card.paladin .card-footer   { background: #f39c12; }
-.card.bard .card-header,      .card.bard .card-footer      { background: #9b59b6; }
+.card.wizard .card-header,    .card.wizard .card-footer    { background: var(--md-sys-color-tertiary); color: var(--md-sys-color-on-tertiary); }
+.card.rogue .card-header,     .card.rogue .card-footer     { background: var(--md-sys-color-primary); color: var(--md-sys-color-on-primary); }
+.card.fighter .card-header,   .card.fighter .card-footer   { background: var(--md-sys-color-error); color: var(--md-sys-color-on-error); }
+.card.cleric .card-header,    .card.cleric .card-footer    { background: var(--md-sys-color-tertiary-container); color: var(--md-sys-color-on-tertiary-container); }
+.card.barbarian .card-header, .card.barbarian .card-footer { background: var(--md-sys-color-error); color: var(--md-sys-color-on-error); }
+.card.ranger .card-header,    .card.ranger .card-footer    { background: var(--md-sys-color-secondary); color: var(--md-sys-color-on-secondary); }
+.card.druid .card-header,     .card.druid .card-footer     { background: var(--md-sys-color-primary); color: var(--md-sys-color-on-primary); }
+.card.paladin .card-header,   .card.paladin .card-footer   { background: var(--md-sys-color-tertiary); color: var(--md-sys-color-on-tertiary); }
+.card.bard .card-header,      .card.bard .card-footer      { background: var(--md-sys-color-tertiary-container); color: var(--md-sys-color-on-tertiary-container); }
 
 /* Location card colours */
-.card.location-building .card-header, .card.location-building .card-footer { background: #8b6f47; }
-.card.location-city .card-header,     .card.location-city .card-footer     { background: #d4a574; }
-.card.location-region .card-header,   .card.location-region .card-footer   { background: #2d8659; }
-.card.location-world .card-header,    .card.location-world .card-footer    { background: #2c5aa0; }
-.card.location-npc .card-header,      .card.location-npc .card-footer      { background: #6a4fa3; }
+.card.location-building .card-header, .card.location-building .card-footer { background: var(--md-sys-color-outline); color: var(--md-sys-color-on-surface-variant); }
+.card.location-city .card-header,     .card.location-city .card-footer     { background: var(--md-sys-color-tertiary-container); color: var(--md-sys-color-on-tertiary-container); }
+.card.location-region .card-header,   .card.location-region .card-footer   { background: var(--md-sys-color-secondary); color: var(--md-sys-color-on-secondary); }
+.card.location-world .card-header,    .card.location-world .card-footer    { background: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); }
+.card.location-npc .card-header,      .card.location-npc .card-footer      { background: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container); }
 
 /* Wild shape size colours */
-.card.tiny .card-header,      .card.tiny .card-footer      { background: #f39c12; }
-.card.medium .card-header,    .card.medium .card-footer    { background: #16a085; }
+.card.tiny .card-header,      .card.tiny .card-footer      { background: var(--md-sys-color-tertiary); color: var(--md-sys-color-on-tertiary); }
+.card.medium .card-header,    .card.medium .card-footer    { background: var(--md-sys-color-primary); color: var(--md-sys-color-on-primary); }
 
 /* Creature type colours */
-.card.beast .card-header,       .card.beast .card-footer       { background: #8B4513; }
-.card.humanoid .card-header,    .card.humanoid .card-footer    { background: #4472C4; }
-.card.dragon .card-header,      .card.dragon .card-footer      { background: #FF6B35; }
-.card.undead .card-header,      .card.undead .card-footer      { background: #6B5B95; }
-.card.elemental .card-header,   .card.elemental .card-footer   { background: #FFD700; color: #000; }
-.card.fey .card-header,         .card.fey .card-footer         { background: #FF69B4; }
-.card.giant .card-header,       .card.giant .card-footer       { background: #DC143C; }
-.card.goblinoid .card-header,   .card.goblinoid .card-footer   { background: #228B22; }
-.card.monstrosity .card-header, .card.monstrosity .card-footer { background: #8B0000; }
-.card.ooze .card-header,        .card.ooze .card-footer        { background: #00CED1; }
-.card.plant .card-header,       .card.plant .card-footer       { background: #32CD32; color: #000; }
-.card.construct .card-header,   .card.construct .card-footer   { background: #A9A9A9; }
+.card.beast .card-header,       .card.beast .card-footer       { background: var(--md-sys-color-tertiary-container); color: var(--md-sys-color-on-tertiary-container); }
+.card.humanoid .card-header,    .card.humanoid .card-footer    { background: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); }
+.card.dragon .card-header,      .card.dragon .card-footer      { background: var(--md-sys-color-error); color: var(--md-sys-color-on-error); }
+.card.undead .card-header,      .card.undead .card-footer      { background: var(--md-sys-color-secondary); color: var(--md-sys-color-on-secondary); }
+.card.elemental .card-header,   .card.elemental .card-footer   { background: var(--md-sys-color-tertiary); color: var(--md-sys-color-on-tertiary); }
+.card.fey .card-header,         .card.fey .card-footer         { background: var(--md-sys-color-tertiary-container); color: var(--md-sys-color-on-tertiary-container); }
+.card.giant .card-header,       .card.giant .card-footer       { background: var(--md-sys-color-error); color: var(--md-sys-color-on-error); }
+.card.goblinoid .card-header,   .card.goblinoid .card-footer   { background: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container); }
+.card.monstrosity .card-header, .card.monstrosity .card-footer { background: var(--md-sys-color-error-container); color: var(--md-sys-color-on-error-container); }
+.card.ooze .card-header,        .card.ooze .card-footer        { background: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); }
+.card.plant .card-header,       .card.plant .card-footer       { background: var(--md-sys-color-secondary); color: var(--md-sys-color-on-secondary); }
+.card.construct .card-header,   .card.construct .card-footer   { background: var(--md-sys-color-outline); color: var(--md-sys-color-on-surface-variant); }
 
 /* Action card colours */
-.card.action .card-header,  .card.action .card-footer  { background: #27ae60; }
-.card.talk .card-header,    .card.talk .card-footer    { background: #f39c12; }
-.card.either .card-header,  .card.either .card-footer  { background: #1abc9c; }
+.card.action .card-header,  .card.action .card-footer  { background: var(--md-sys-color-secondary); color: var(--md-sys-color-on-secondary); }
+.card.talk .card-header,    .card.talk .card-footer    { background: var(--md-sys-color-tertiary); color: var(--md-sys-color-on-tertiary); }
+.card.either .card-header,  .card.either .card-footer  { background: var(--md-sys-color-primary); color: var(--md-sys-color-on-primary); }
 
 /* cut line hint */
 .cut-hint {
@@ -492,7 +546,7 @@ body {
 /* B&W Print Mode */
 body.bw-mode {
   filter: grayscale(100%);
-  background: #f5f5f5;
+  background: var(--md-sys-color-surface-variant);
 }
 
 body.bw-mode .page {
@@ -504,7 +558,7 @@ body.bw-mode .page {
   top: 20px;
   right: 20px;
   padding: 10px 15px;
-  background: #34495e;
+  background: var(--md-sys-color-secondary-container);
   color: white;
   border: none;
   border-radius: 6px;
@@ -516,11 +570,11 @@ body.bw-mode .page {
 }
 
 #bw-toggle-btn:hover {
-  background: #2c3e50;
+  background: var(--md-sys-color-primary);
 }
 
 #bw-toggle-btn.active {
-  background: #27ae60;
+  background: var(--md-sys-color-secondary);
 }
 
 @media print {
@@ -538,7 +592,7 @@ body.bw-mode .page {
     margin: 10mm auto;
     padding: 10mm;
     background: white;
-    border: 1px solid #333;
+    border: 1px solid var(--md-sys-color-on-surface);
     box-sizing: border-box;
     page-break-after: always;
     break-after: page;
@@ -617,3 +671,17 @@ body.bw-mode .page {
     size: A4;
   }
 }
+
+/* Small adjustments for encounter editor monster browser */
+#monster-browser .monster-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.add-monster-btn {
+  padding: 6px 10px;
+  font-size: 0.9rem;
+  border-radius: 8px;
+}
+
