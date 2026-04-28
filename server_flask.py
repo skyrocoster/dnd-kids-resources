@@ -70,6 +70,147 @@ def get_spell_components_api():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
+@app.route('/api/monsters', methods=['GET'])
+def get_monsters_api():
+    """API endpoint: GET /api/monsters - Returns lightweight monster records for the editor.
+
+    Query params supported for the frontend dropdown/autocomplete:
+      - q: partial search (case-insensitive) matches name OR cr
+      - page: 1-based page number (default 1)
+      - per_page: items per page (default 50, max 200)
+      - cr_min, cr_max: optional CR range (accepts fractions like '1/4')
+
+    Returns JSON: { total: <int>, page: <int>, per_page: <int>, results: [ {id,name,cr,hp}, ... ] }
+    """
+    try:
+        q = (request.args.get('q') or '').strip()
+
+        try:
+            page = int(request.args.get('page', 1))
+        except (TypeError, ValueError):
+            return jsonify({"error": "Invalid 'page' parameter"}), 400
+        page = max(1, page)
+
+        try:
+            per_page = int(request.args.get('per_page', 50))
+        except (TypeError, ValueError):
+            return jsonify({"error": "Invalid 'per_page' parameter"}), 400
+        per_page = max(1, min(per_page, 200))
+
+        # Convert to limit/offset for SQL
+        limit = per_page
+        offset = (page - 1) * per_page
+
+        cr_min_raw = request.args.get('cr_min')
+        cr_max_raw = request.args.get('cr_max')
+
+        def cr_to_float(value):
+            if value is None:
+                return None
+            try:
+                v = str(value).strip()
+                if v == '':
+                    return None
+                if '/' in v:
+                    parts = v.split('/')
+                    if len(parts) == 2:
+                        try:
+                            return float(parts[0]) / float(parts[1])
+                        except Exception:
+                            return None
+                # fallback to float conversion
+                return float(v)
+            except Exception:
+                return None
+
+        cr_min = cr_to_float(cr_min_raw)
+        cr_max = cr_to_float(cr_max_raw)
+
+        def extract_hp_average(raw_hp):
+            parsed = parse_json_field(raw_hp)
+            if isinstance(parsed, dict):
+                avg = parsed.get('average')
+                try:
+                    return int(avg) if avg is not None else None
+                except Exception:
+                    try:
+                        return int(float(avg))
+                    except Exception:
+                        return None
+            # try direct numeric
+            try:
+                return int(raw_hp)
+            except Exception:
+                return None
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        params = []
+        where_clause = "1=1"
+        if q:
+            # search both name and cr fields for simple autocomplete
+            where_clause += " AND (name LIKE ? COLLATE NOCASE OR cr LIKE ? COLLATE NOCASE)"
+            params.extend([f"%{q}%", f"%{q}%"])
+
+        # If CR filters are not provided, let SQL do LIMIT/OFFSET and COUNT for efficiency
+        if cr_min is None and cr_max is None:
+            count_q = f"SELECT COUNT(*) as cnt FROM monsters WHERE {where_clause}"
+            cursor.execute(count_q, params)
+            total = cursor.fetchone()['cnt']
+
+            select_q = f"SELECT id, name, hp, cr FROM monsters WHERE {where_clause} ORDER BY name LIMIT ? OFFSET ?"
+            cursor.execute(select_q, params + [limit, offset])
+            rows = cursor.fetchall()
+
+            results = []
+            for row in rows:
+                hp_val = extract_hp_average(row['hp'])
+                results.append({
+                    'id': row['id'],
+                    'name': row['name'],
+                    'cr': row['cr'],
+                    'hp': hp_val
+                })
+
+            conn.close()
+            return jsonify({'total': total, 'page': page, 'per_page': per_page, 'results': results})
+
+        # If CR range filters are provided, we must filter in Python because CR is stored as freeform text
+        select_q = f"SELECT id, name, hp, cr FROM monsters WHERE {where_clause} ORDER BY name"
+        cursor.execute(select_q, params)
+        all_rows = cursor.fetchall()
+
+        filtered = []
+        for row in all_rows:
+            row_cr = row['cr']
+            row_cr_float = cr_to_float(row_cr)
+            if row_cr_float is None:
+                continue
+            if cr_min is not None and row_cr_float < cr_min:
+                continue
+            if cr_max is not None and row_cr_float > cr_max:
+                continue
+            filtered.append(row)
+
+        total = len(filtered)
+        sliced = filtered[offset:offset + limit]
+        results = []
+        for row in sliced:
+            hp_val = extract_hp_average(row['hp'])
+            results.append({
+                'id': row['id'],
+                'name': row['name'],
+                'cr': row['cr'],
+                'hp': hp_val
+            })
+
+        conn.close()
+        return jsonify({'total': total, 'page': page, 'per_page': per_page, 'results': results})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 # Enable CORS headers for development
 
 
@@ -2908,39 +3049,6 @@ def get_abilities_api():
         return jsonify({"error": str(e)}), 500
 
 
-@app.route('/api/monsters', methods=['GET'])
-def get_monsters_api():
-    """API endpoint: GET /api/monsters - Returns monster summaries as JSON."""
-    try:
-        print(
-            f"[API] GET /api/monsters - DB Path: {DB_PATH}, exists: {Path(DB_PATH).exists()}")
-        conn = get_db_connection()
-        cursor = conn.cursor()
-
-        cursor.execute("""
-            SELECT id, name
-            FROM monsters
-            ORDER BY name
-        """)
-
-        monsters = []
-        for row in cursor.fetchall():
-            monsters.append({
-                'id': row['id'],
-                'title': row['name']
-            })
-
-        print(f"[API] Successfully loaded {len(monsters)} monsters")
-        conn.close()
-        return jsonify(monsters)
-
-    except Exception as e:
-        print(f"[API] ERROR: {e}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
-
-
 @app.route('/api/monsters/<title>', methods=['GET'])
 def get_monster_by_title(title):
     """API endpoint: GET /api/monsters/<title> - Returns a single monster by title."""
@@ -3379,6 +3487,157 @@ def get_trap_by_id(trap_id):
             return jsonify({"error": f"Trap with ID {trap_id} not found"}), 404
         
         return jsonify(dict(row))
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ============================================================================
+# ENCOUNTER ENDPOINTS
+# ============================================================================
+
+@app.route('/api/encounters', methods=['GET'])
+def get_all_encounters():
+    """API endpoint: GET /api/encounters - Returns all encounters"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT id, name, units, created_at, updated_at
+            FROM encounter
+            ORDER BY name
+        """)
+        encounters = []
+        for row in cursor.fetchall():
+            encounter = dict(row)
+            encounter['units'] = parse_json_field(encounter.get('units', '[]')) or []
+            encounters.append(encounter)
+        conn.close()
+        return jsonify(encounters)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/encounters/<int:encounter_id>', methods=['GET'])
+def get_encounter_by_id(encounter_id):
+    """API endpoint: GET /api/encounters/<id> - Returns a single encounter by ID"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT id, name, units, created_at, updated_at
+            FROM encounter
+            WHERE id = ?
+        """, (encounter_id,))
+        row = cursor.fetchone()
+        conn.close()
+        
+        if not row:
+            return jsonify({"error": f"Encounter with ID {encounter_id} not found"}), 404
+        
+        encounter = dict(row)
+        encounter['units'] = parse_json_field(encounter.get('units', '[]')) or []
+        return jsonify(encounter)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/encounters', methods=['POST'])
+def create_encounter():
+    """API endpoint: POST /api/encounters - Create a new encounter"""
+    try:
+        payload = request.get_json()
+        if not isinstance(payload, dict):
+            return jsonify({"error": "Invalid JSON payload"}), 400
+        
+        name = str(payload.get('name', 'Unnamed Encounter')).strip()
+        units = payload.get('units', [])
+        if not isinstance(units, list):
+            units = []
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        try:
+            units_serialized = json.dumps(units)
+        except (TypeError, ValueError) as e:
+            conn.close()
+            return jsonify({"error": "Units must be JSON-serializable", "details": str(e)}), 400
+        cursor.execute("""
+            INSERT INTO encounter (name, units)
+            VALUES (?, ?)
+        """, (name, units_serialized))
+        conn.commit()
+        encounter_id = cursor.lastrowid
+        conn.close()
+        
+        return get_encounter_by_id(encounter_id)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/encounters/<int:encounter_id>', methods=['PUT'])
+def update_encounter(encounter_id):
+    """API endpoint: PUT /api/encounters/<id> - Update an encounter"""
+    try:
+        payload = request.get_json()
+        if not isinstance(payload, dict):
+            return jsonify({"error": "Invalid JSON payload"}), 400
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Check if encounter exists
+        cursor.execute("SELECT id FROM encounter WHERE id = ?", (encounter_id,))
+        if not cursor.fetchone():
+            conn.close()
+            return jsonify({"error": f"Encounter with ID {encounter_id} not found"}), 404
+        
+        # Update fields
+        fields = []
+        values = []
+        if 'name' in payload:
+            fields.append("name = ?")
+            values.append(str(payload['name']).strip() if payload['name'] else 'Unnamed Encounter')
+        if 'units' in payload:
+            units = payload['units']
+            if not isinstance(units, list):
+                units = []
+            try:
+                units_serialized = json.dumps(units)
+            except (TypeError, ValueError) as e:
+                conn.close()
+                return jsonify({"error": "Units must be JSON-serializable", "details": str(e)}), 400
+            fields.append("units = ?")
+            values.append(units_serialized)
+        
+        if not fields:
+            conn.close()
+            return jsonify({"error": "No fields to update"}), 400
+        
+        values.append(encounter_id)
+        cursor.execute(f"UPDATE encounter SET {', '.join(fields)}, updated_at = CURRENT_TIMESTAMP WHERE id = ?", values)
+        conn.commit()
+        conn.close()
+        
+        return get_encounter_by_id(encounter_id)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/encounters/<int:encounter_id>', methods=['DELETE'])
+def delete_encounter(encounter_id):
+    """API endpoint: DELETE /api/encounters/<id> - Delete an encounter"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM encounter WHERE id = ?", (encounter_id,))
+        deleted = cursor.rowcount
+        conn.commit()
+        conn.close()
+        
+        if deleted == 0:
+            return jsonify({"error": f"Encounter with ID {encounter_id} not found"}), 404
+        
+        return jsonify({"message": "Encounter deleted successfully"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
