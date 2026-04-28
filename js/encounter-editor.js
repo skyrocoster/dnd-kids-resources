@@ -14,6 +14,12 @@ document.addEventListener('DOMContentLoaded', async function() {
   let selectedEncounterId = null;
   let suppressInputChange = false;
 
+  function extractMonsterResults(data) {
+    if (Array.isArray(data)) return data;
+    if (data && Array.isArray(data.results)) return data.results;
+    return [];
+  }
+
   // Setup add-monster autocomplete controls inside the encounter detail form
   function setupAddMonsterControls() {
     document.querySelectorAll('.add-monster-control').forEach(control => {
@@ -47,11 +53,12 @@ document.addEventListener('DOMContentLoaded', async function() {
             const resp = await fetch('/api/monsters?q=' + encodeURIComponent(q) + '&page=1&per_page=8');
             if (!resp.ok) return;
             const data = await resp.json();
-            if (!Array.isArray(data) || data.length === 0) {
+            const results = extractMonsterResults(data);
+            if (!results.length) {
               suggestionBox.innerHTML = '<div class="suggestion-item" style="padding:6px;">No matches</div>';
               return;
             }
-            data.forEach(m => {
+            results.forEach(m => {
               const it = document.createElement('div');
               it.className = 'suggestion-item';
               it.style.padding = '6px';
@@ -83,7 +90,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (!monster) {
           try {
             const resp = await fetch('/api/monsters?q=' + encodeURIComponent(name) + '&page=1&per_page=1');
-            if (resp.ok) { const arr = await resp.json(); if (Array.isArray(arr) && arr.length) monster = arr[0]; }
+            if (resp.ok) { const arr = extractMonsterResults(await resp.json()); if (arr.length) monster = arr[0]; }
           } catch (e) {}
         }
         if (!monster) { alert('No matching monster found. Please pick from suggestions.'); return; }
@@ -523,7 +530,7 @@ document.addEventListener('DOMContentLoaded', async function() {
       const resp = await fetch('/api/monsters');
       if (!resp.ok) throw new Error('Network error');
       const data = await resp.json();
-      monsters = Array.isArray(data) ? data : [];
+      monsters = extractMonsterResults(data);
       monsterFiltered = monsters.slice();
       monsterPage = 1;
       renderMonsterListPage();
