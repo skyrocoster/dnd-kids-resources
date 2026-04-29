@@ -13,6 +13,7 @@ sys.path.insert(0, str(Path(__file__).parent / 'lib'))
 import json
 import re
 import sqlite3
+from datetime import datetime
 from parse_dungeon import DungeonHTMLParser  # type: ignore
 
 from flask import Flask, jsonify, send_from_directory, request
@@ -2902,19 +2903,28 @@ def get_skills_api():
         print(f"[API] Database connection established")
         cursor = conn.cursor()
 
-        # Get all skills
-        cursor.execute("""
-            SELECT id, title, icon, level, explanation, details
-            FROM skills
-            ORDER BY title
-        """)
+        # Get all skills (handle missing table gracefully)
+        try:
+            cursor.execute("""
+                SELECT id, title, icon, level, explanation, details
+                FROM skills
+                ORDER BY title
+            """)
 
-        skills = []
-        for row in cursor.fetchall():
-            skill_json = convert_db_skill_to_api_format(row)
-            skills.append(skill_json)
+            skills = []
+            for row in cursor.fetchall():
+                skill_json = convert_db_skill_to_api_format(row)
+                skills.append(skill_json)
 
-        print(f"[API] Successfully loaded {len(skills)} skills")
+            print(f"[API] Successfully loaded {len(skills)} skills")
+        except sqlite3.OperationalError as db_err:
+            # skills table doesn't exist - return empty list
+            if 'no such table' in str(db_err).lower():
+                print(f"[API] Skills table not initialized, returning empty list")
+                skills = []
+            else:
+                raise
+        
         conn.close()
         return jsonify(skills)
 
