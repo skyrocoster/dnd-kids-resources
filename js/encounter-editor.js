@@ -120,11 +120,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                 <div class="field-row" data-unit-idx="${idx}" data-monster-id="${unit.monster_id || ''}">
                   <span class="unit-original-name" style="display:inline-flex; align-items:center; background:#f0f0f0; border:1px solid #ccc; border-radius:4px; padding:4px 6px; font-weight:700; white-space:nowrap;" title="Original monster name">${origName}</span>
                   <input type="hidden" name="unit-original-name-${idx}" value="${origName}" />
-                  <input type="text" name="unit-name-${idx}" value="${custName}" placeholder="Custom name" class="field-value" style="width:110px;" />
-                  <input type="number" name="unit-hp-${idx}" value="${unit.hp_current ?? unit.hp_max ?? ''}" placeholder="HP" class="field-value" style="width:60px;" min="0" />
-                  <input type="number" name="unit-ac-${idx}" value="${unit.ac ?? ''}" placeholder="AC" class="field-value" style="width:50px;" min="0" />
-                  <input type="text" name="unit-status-${idx}" value="${escapeHtml(unit.status || '')}" placeholder="Status" class="field-value" style="width:80px;" />
-                  <input type="text" name="unit-conditions-${idx}" value="${escapeHtml((unit.conditions||[]).join(', '))}" placeholder="Conditions" class="field-value" style="width:120px;" />
+                  <input type="text" name="unit-name-${idx}" value="${custName}" placeholder="Custom name" class="field-input" style="width:110px;" />
+                  <input type="number" name="unit-hp-${idx}" value="${unit.hp_current ?? unit.hp_max ?? ''}" placeholder="HP" class="field-input" style="width:60px;" min="0" />
+                  <input type="number" name="unit-ac-${idx}" value="${unit.ac ?? ''}" placeholder="AC" class="field-input" style="width:50px;" min="0" />
+                  <input type="text" name="unit-status-${idx}" value="${escapeHtml(unit.status || '')}" placeholder="Status" class="field-input" style="width:80px;" />
+                  <input type="text" name="unit-conditions-${idx}" value="${escapeHtml((unit.conditions||[]).join(', '))}" placeholder="Conditions" class="field-input" style="width:120px;" />
                   <button type="button" class="btn remove-unit-btn" data-remove-unit="${idx}">Remove</button>
                 </div>`;
               }).join('')}
@@ -149,11 +149,11 @@ document.addEventListener('DOMContentLoaded', async function() {
         div.className = 'field-row';
         div.dataset.unitIdx = idx;
         div.innerHTML = `
-          <input type="text" name="unit-name-${idx}" placeholder="Unit Name" class="field-value" style="width:120px;" />
-          <input type="number" name="unit-hp-${idx}" placeholder="HP" class="field-value" style="width:60px;" min="0" />
-          <input type="number" name="unit-ac-${idx}" placeholder="AC" class="field-value" style="width:50px;" min="0" />
-          <input type="text" name="unit-status-${idx}" placeholder="Status" class="field-value" style="width:80px;" />
-          <input type="text" name="unit-conditions-${idx}" placeholder="Conditions" class="field-value" style="width:120px;" />
+          <input type="text" name="unit-name-${idx}" placeholder="Unit Name" class="field-input field-input--name" />
+          <input type="number" name="unit-hp-${idx}" placeholder="HP" class="field-input field-input--hp" min="0" />
+          <input type="number" name="unit-ac-${idx}" placeholder="AC" class="field-input field-input--ac" min="0" />
+          <input type="text" name="unit-status-${idx}" placeholder="Status" class="field-input field-input--status" />
+          <input type="text" name="unit-conditions-${idx}" placeholder="Conditions" class="field-input field-input--conditions" />
           <button type="button" class="btn remove-unit-btn" data-remove-unit="${idx}">Remove</button>
         `;
         unitsList.appendChild(div);
@@ -255,11 +255,11 @@ document.addEventListener('DOMContentLoaded', async function() {
         div.className = 'field-row';
         div.dataset.unitIdx = idx;
         div.innerHTML = `
-          <input type="text" name="unit-name-${idx}" placeholder="Unit Name" class="field-value" style="width:120px;" />
-          <input type="number" name="unit-hp-${idx}" placeholder="HP" class="field-value" style="width:60px;" min="0" />
-          <input type="number" name="unit-ac-${idx}" placeholder="AC" class="field-value" style="width:50px;" min="0" />
-          <input type="text" name="unit-status-${idx}" placeholder="Status" class="field-value" style="width:80px;" />
-          <input type="text" name="unit-conditions-${idx}" placeholder="Conditions" class="field-value" style="width:120px;" />
+          <input type="text" name="unit-name-${idx}" placeholder="Unit Name" class="field-input" style="width:120px;" />
+          <input type="number" name="unit-hp-${idx}" placeholder="HP" class="field-input" style="width:60px;" min="0" />
+          <input type="number" name="unit-ac-${idx}" placeholder="AC" class="field-input" style="width:50px;" min="0" />
+          <input type="text" name="unit-status-${idx}" placeholder="Status" class="field-input" style="width:80px;" />
+          <input type="text" name="unit-conditions-${idx}" placeholder="Conditions" class="field-input" style="width:120px;" />
           <button type="button" class="btn remove-unit-btn" data-remove-unit="${idx}">Remove</button>
         `;
         unitsList.appendChild(div);
