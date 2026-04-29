@@ -136,11 +136,7 @@
 
       showLoading(`Loading ${title}...`);
       try {
-        const response = await fetch(`/api/spells/${encodeURIComponent(title)}`);
-        if (!response.ok) {
-          throw new Error(`Spell not found: ${title}`);
-        }
-        const data = await response.json();
+        const data = await ApiHelpers.ApiService.getSpellByTitle(title);
         displaySpell(data);
       } catch (error) {
         showError(error.message || 'Error loading spell details.');

@@ -394,23 +394,22 @@
     }
 
     async function loadSpellCard(spellName) {
-      const exactResponse = await fetch(`/api/spells/${encodeURIComponent(spellName)}`);
-      if (exactResponse.ok) {
-        return await exactResponse.json();
-      }
-
-      const parentheticalMatch = spellName.match(/^(.+?)\s*\(/);
-      if (parentheticalMatch) {
-        const fallbackName = parentheticalMatch[1].trim();
-        if (fallbackName && fallbackName !== spellName) {
-          const fallbackResponse = await fetch(`/api/spells/${encodeURIComponent(fallbackName)}`);
-          if (fallbackResponse.ok) {
-            return await fallbackResponse.json();
+      try {
+        return await ApiHelpers.ApiService.getSpellByTitle(spellName);
+      } catch (error) {
+        const parentheticalMatch = spellName.match(/^(.+?)\s*\(/);
+        if (parentheticalMatch) {
+          const fallbackName = parentheticalMatch[1].trim();
+          if (fallbackName && fallbackName !== spellName) {
+            try {
+              return await ApiHelpers.ApiService.getSpellByTitle(fallbackName);
+            } catch (fallbackError) {
+              throw new Error(`Spell '${spellName}' not found`);
+            }
           }
         }
+        throw new Error(`Spell '${spellName}' not found`);
       }
-
-      throw new Error(`Spell '${spellName}' not found`);
     }
 
     function createSpellNameElement(spellName) {
@@ -625,7 +624,7 @@
       return params.get(name);
     }
 
-    function loadMonsterDetail() {
+    async function loadMonsterDetail() {
       const title = getQueryParam('title');
       if (!title) {
         showError('No monster specified.');
@@ -633,19 +632,12 @@
       }
 
       showLoading(`Loading ${title}...`);
-      fetch(`/api/monsters/${encodeURIComponent(title)}`)
-        .then(response => {
-          if (!response.ok) {
-            throw new Error(`Monster not found: ${title}`);
-          }
-          return response.json();
-        })
-        .then(data => {
-          displayMonster(data);
-        })
-        .catch(err => {
-          showError(err.message || 'Error loading monster details.');
-        });
+      try {
+        const data = await ApiHelpers.ApiService.getMonsterByTitle(title);
+        displayMonster(data);
+      } catch (err) {
+        showError(err.message || 'Error loading monster details.');
+      }
     }
 
     const title = getQueryParam('title');

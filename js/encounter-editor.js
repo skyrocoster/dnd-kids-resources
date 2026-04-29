@@ -79,8 +79,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
   async function loadEncounters() {
     try {
-      const resp = await fetch('/api/encounters');
-      encounters = await resp.json();
+      encounters = await ApiHelpers.ApiService.getEncounters();
       encounters.sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), undefined, { sensitivity: 'base' }));
       renderEncounterList(encounters);
       updateEncounterCount(encounters.length);
@@ -201,22 +200,16 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
         const payload = { name, units };
         try {
-          const url = selectedEncounterId ? `/api/encounters/${selectedEncounterId}` : '/api/encounters';
-          const method = selectedEncounterId ? 'PUT' : 'POST';
-          const resp = await fetch(url, {
-            method: method,
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-          });
-          if (resp.ok) {
-            const saved = await resp.json();
-            selectedEncounterId = saved.id;
-            alert('Encounter saved successfully!');
-            loadEncounters();
-            selectEncounter(saved.id);
+          let saved;
+          if (selectedEncounterId) {
+            saved = await ApiHelpers.ApiService.updateEncounter(selectedEncounterId, payload);
           } else {
-            alert('Error saving encounter');
+            saved = await ApiHelpers.ApiService.createEncounter(payload);
           }
+          selectedEncounterId = saved.id;
+          alert('Encounter saved successfully!');
+          loadEncounters();
+          selectEncounter(saved.id);
         } catch (error) {
           alert('Error saving encounter: ' + error.message);
         }
@@ -313,22 +306,16 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
         const payload = { name, units };
         try {
-          const url = selectedEncounterId ? `/api/encounters/${selectedEncounterId}` : '/api/encounters';
-          const method = selectedEncounterId ? 'PUT' : 'POST';
-          const resp = await fetch(url, {
-            method: method,
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-          });
-          if (resp.ok) {
-            const saved = await resp.json();
-            selectedEncounterId = saved.id;
-            alert('Encounter saved successfully!');
-            loadEncounters();
-            selectEncounter(saved.id);
+          let saved;
+          if (selectedEncounterId) {
+            saved = await ApiHelpers.ApiService.updateEncounter(selectedEncounterId, payload);
           } else {
-            alert('Error saving encounter');
+            saved = await ApiHelpers.ApiService.createEncounter(payload);
           }
+          selectedEncounterId = saved.id;
+          alert('Encounter saved successfully!');
+          loadEncounters();
+          selectEncounter(saved.id);
         } catch (error) {
           alert('Error saving encounter: ' + error.message);
         }
@@ -409,10 +396,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   async function fetchMonsters(query, page) {
     try {
       const q = (query || '').trim();
-      const url = `/api/monsters?q=${encodeURIComponent(q)}&page=${page}&per_page=${monsterPageSize}`;
-      const resp = await fetch(url);
-      if (!resp.ok) throw new Error('Network error');
-      const data = await resp.json();
+      const data = await ApiHelpers.ApiService.getMonsters(q, page, monsterPageSize);
       const results = extractMonsterResults(data);
       monsterTotal = (data && data.total != null) ? data.total : results.length;
       monsterPage = page;
@@ -449,25 +433,16 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
     enc.units = enc.units || [];
     enc.units.push(unit);
-    fetch(`/api/encounters/${selectedEncounterId}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: enc.name, units: enc.units })
-    }).then(async resp => {
-      if (resp.ok) {
-        const saved = await resp.json();
+    ApiHelpers.ApiService.updateEncounter(selectedEncounterId, { name: enc.name, units: enc.units })
+      .then(saved => {
         const idx = encounters.findIndex(e => e.id == saved.id);
         if (idx >= 0) encounters[idx] = saved; else encounters.push(saved);
         selectEncounter(saved.id);
-      } else {
+      })
+      .catch(err => {
         enc.units.pop();
-        const txt = await resp.text();
-        alert('Failed to add monster: ' + (txt || resp.statusText));
-      }
-    }).catch(err => {
-      enc.units.pop();
-      alert('Error adding monster: ' + err.message);
-    });
+        alert('Error adding monster: ' + err.message);
+      });
   }
 
   // Pagination handlers

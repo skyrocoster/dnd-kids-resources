@@ -1379,15 +1379,8 @@ async function _fetchSpellForPreview(spellName) {
     return _spellPreviewCache.get(spellName);
   }
 
-  const apiFn = window.ApiHelpers && window.ApiHelpers.apiFetch;
-
   async function doFetch(name) {
-    if (apiFn) {
-      return apiFn(`/spells/${encodeURIComponent(name)}`);
-    }
-    const res = await fetch(`/api/spells/${encodeURIComponent(name)}`);
-    if (!res.ok) throw new Error(res.status);
-    return res.json();
+    return ApiHelpers.apiFetch(`/spells/${encodeURIComponent(name)}`);
   }
 
   try {

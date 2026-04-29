@@ -527,23 +527,18 @@
     // ─── Fetch abilities from database ───
     let abilitiesMap = {};
     try {
-      const response = await fetch('/api/abilities');
-      if (response.ok) {
-        const abilities = await response.json();
-        // Create a map of ability codes to their data
-        abilities.forEach(ability => {
-          abilitiesMap[ability.code] = ability;
-        });
-        console.log('Loaded abilities from database:', abilitiesMap);
-        
-        // Update emoji divs with database icons
-        updateIconsFromDatabase();
-        
-        // Color header pills from database
-        colorHeaderPills();
-      } else {
-        console.warn('Failed to fetch abilities');
-      }
+      const abilities = await ApiHelpers.ApiService.getAbilities();
+      // Create a map of ability codes to their data
+      abilities.forEach(ability => {
+        abilitiesMap[ability.code] = ability;
+      });
+      console.log('Loaded abilities from database:', abilitiesMap);
+      
+      // Update emoji divs with database icons
+      updateIconsFromDatabase();
+      
+      // Color header pills from database
+      colorHeaderPills();
     } catch (error) {
       console.warn('Error fetching abilities:', error);
     }

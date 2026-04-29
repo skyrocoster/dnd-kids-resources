@@ -2,6 +2,7 @@
 let allQuests = [];
 let displayedQuests = [];
 const apiFetch = window.ApiHelpers?.apiFetch;
+const ApiService = window.ApiHelpers?.ApiService;
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', initQuestBook);
@@ -10,6 +11,10 @@ async function initQuestBook() {
   setupEventListeners();
   await loadQuests();
 }
+
+let questFormOptionsLoaded = false;
+let npcOptions = [];
+let dungeonOptions = [];
 
 function setupEventListeners() {
   const searchInput = document.getElementById('questSearch');
@@ -23,10 +28,57 @@ function setupEventListeners() {
   submitBtn.addEventListener('click', submitCreateQuest);
 }
 
+async function loadQuestFormOptions() {
+  if (questFormOptionsLoaded) return;
+  if (!ApiService) return;
+
+  try {
+    npcOptions = await ApiService.getNpcs();
+  } catch (error) {
+    console.error('Unable to load NPC options:', error);
+    npcOptions = [];
+  }
+
+  try {
+    dungeonOptions = await ApiService.getDungeons();
+  } catch (error) {
+    console.error('Unable to load dungeon options:', error);
+    dungeonOptions = [];
+  }
+
+  populateQuestGiverSelect();
+  populateDungeonSelect();
+  questFormOptionsLoaded = true;
+}
+
+function populateQuestGiverSelect() {
+  const select = document.getElementById('new-quest-giver');
+  if (!select) return;
+  select.innerHTML = '<option value="">Select an NPC...</option>';
+  npcOptions.forEach(npc => {
+    const option = document.createElement('option');
+    option.value = npc.id || '';
+    option.textContent = npc.name || `NPC ${npc.id}`;
+    select.appendChild(option);
+  });
+}
+
+function populateDungeonSelect() {
+  const select = document.getElementById('new-quest-dungeon');
+  if (!select) return;
+  select.innerHTML = '<option value="">Select a dungeon...</option>';
+  dungeonOptions.forEach(dungeon => {
+    const option = document.createElement('option');
+    option.value = dungeon.id || '';
+    option.textContent = dungeon.title || `Dungeon ${dungeon.id}`;
+    select.appendChild(option);
+  });
+}
+
 async function loadQuests() {
   try {
-    if (!apiFetch) throw new Error('API helper not available');
-    allQuests = await apiFetch('/quests');
+    if (!ApiService) throw new Error('API service not available');
+    allQuests = await ApiService.getQuests();
     updateQuestCount();
     renderQuestList(allQuests);
   } catch (error) {
@@ -92,8 +144,8 @@ function renderQuestList(quests) {
 
 async function selectQuest(questId) {
   try {
-    if (!apiFetch) throw new Error('API helper not available');
-    const quest = await apiFetch(`/quests/${questId}`);
+    if (!ApiService) throw new Error('API service not available');
+    const quest = await ApiService.getQuestById(questId);
     displayQuestDetails(quest);
   } catch (error) {
     console.error('Error loading quest details:', error);
@@ -175,7 +227,8 @@ function closeQuestDetailModal() {
   if (modal) modal.remove();
 }
 
-function openCreateQuestModal() {
+async function openCreateQuestModal() {
+  await loadQuestFormOptions();
   document.getElementById('createQuestModal').classList.add('active');
   document.getElementById('createQuestModal').setAttribute('aria-hidden', 'false');
 }
@@ -213,12 +266,8 @@ async function submitCreateQuest() {
   };
 
   try {
-    if (!apiFetch) throw new Error('API helper not available');
-    await apiFetch('/quests', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(questData)
-    });
+    if (!ApiService) throw new Error('API service not available');
+    await ApiService.createQuest(questData);
 
     closeCreateQuestModal();
     await loadQuests();

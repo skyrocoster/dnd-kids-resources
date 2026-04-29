@@ -50,15 +50,7 @@ class QueueHelper {
             };
 
             // Submit job to queue
-            const response = await fetch('/api/queue/submit', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(payload)
-            });
-
-            const data = await response.json();
+            const data = await ApiHelpers.ApiService.submitQueue(payload);
 
             if (data.success && data.job_id) {
                 this.currentJobId = data.job_id;
@@ -99,8 +91,7 @@ class QueueHelper {
         if (!this.currentJobId) return;
 
         try {
-            const response = await fetch(`/api/queue/${this.currentJobId}`);
-            const job = await response.json();
+            const job = await ApiHelpers.ApiService.getQueueStatus(this.currentJobId);
 
             if (job.error) {
                 this.showStatus(`Job #${this.currentJobId} not found: ${job.error}`, 'error');

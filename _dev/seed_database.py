@@ -1350,6 +1350,7 @@ def main():
         print("\nSeed files:")
         print("  - data/seeds/seed_abilities.json")
         print("  - data/seeds/seed_monsters.json")
+        print("  - data/seeds/seed_quests.json")
         print("  - data/seeds/seed_npcs.json")
         print("  - data/seeds/seed_deities.json")
         print("  - data/seeds/seed_spells.json")

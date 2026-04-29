@@ -2,13 +2,7 @@
 document.addEventListener('DOMContentLoaded', async function() {
   try {
     // Load spells from Flask API
-    const response = await fetch('/api/spells');
-    
-    if (!response.ok) {
-      throw new Error(`Failed to load spells from API: ${response.status}`);
-    }
-    
-    const allSpells = await response.json();
+    const allSpells = await ApiHelpers.ApiService.getSpells();
     console.log(`✓ Loaded ${allSpells.length} spells from API`);
     
     // Helper to normalize spell level (converts "level1" → 1, "cantrip" → 0, etc.)

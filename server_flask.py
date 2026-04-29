@@ -3643,347 +3643,271 @@ def delete_encounter(encounter_id):
 
 
 # ============================================================================
-# STATBLOCK QUEUE ENDPOINTS
+# QUEST ENDPOINTS (JSON file-based)
 # ============================================================================
 
-@app.route('/api/queue/submit', methods=['POST'])
-def queue_submit_job():
-    """
-    API endpoint: POST /api/queue/submit
-    Submit a new stat block or spell for AI parsing via the queue.
-    
-    Request JSON:
-    {
-        "statblock": "Goblin\nSmall Humanoid...",
-        "job_type": "creature",      // Optional: "creature" (default) or "spell"
-        "prompt_type": "full_parse",  // Optional: "full_parse" (default) or "damage_only"
-        "model_path": "/path/to/model.gguf"  // Optional
-    }
-    
-    Response:
-    {
-        "success": true,
-        "job_id": 42,
-        "status": "pending",
-        "job_type": "creature",
-        "prompt_type": "full_parse"
-    }
-    """
+@app.route('/api/quests/<quest_id>', methods=['PUT'])
+def update_quest_api(quest_id):
+    """API endpoint: PUT /api/quests/<quest_id> - Updates a quest."""
     try:
-        data = request.get_json()
-        if not data or 'statblock' not in data:
-            return jsonify({"error": "Missing 'statblock' field"}), 400
+        data = request.get_json(silent=True) or {}
+        quests = load_quests_data()
         
-        statblock_text = data['statblock'].strip()
-        model_path = data.get('model_path', '')
-        job_type = data.get('job_type', None)  # Will be auto-detected if not provided
-        prompt_type = data.get('prompt_type', 'full_parse')  # Defaults to full_parse
-        job_type = data.get('job_type', 'creature').lower()  # Default to 'creature'
+        quest_key = quest_id.strip().lower()
+        quest_index = None
+        for i, quest in enumerate(quests):
+            if (str(quest.get('id') or '').strip().lower() == quest_key or
+                    str(quest.get('name') or quest.get('title') or '').strip().lower() == quest_key):
+                quest_index = i
+                break
         
-        # Validate job_type
-        if job_type not in ['creature', 'spell']:
-            return jsonify({"error": "job_type must be 'creature' or 'spell'"}), 400
+        if quest_index is None:
+            return jsonify({"error": f"Quest '{quest_id}' not found"}), 404
         
-        if not statblock_text:
-            return jsonify({"error": "Statblock cannot be empty"}), 400
+        quest = quests[quest_index]
         
-        # Warn if content appears to be mismatched with job_type
-        text_lower = statblock_text.lower()
-        spell_indicators = any(x in text_lower for x in ['cantrip', 'evocation', 'abjuration', 'conjuration', 'divination', 
-                                                           'enchantment', 'illusion', 'necromancy', 'transmutation',
-                                                           '1st level', '2nd level', '3rd level', '4th level', '5th level',
-                                                           '6th level', '7th level', '8th level', '9th level'])
-        
-        warning = None
-        if spell_indicators and job_type == 'creature':
-            warning = "Content appears to be a spell (contains spell school or level keywords), but job_type='creature'. Consider using job_type='spell' or the /api/queue/submit/spell endpoint."
-            print(f"[API] WARNING: {warning}")
-        elif not spell_indicators and job_type == 'spell':
-            warning = "Content may not be a spell (missing spell school/level keywords), but job_type='spell'. Verify you meant to submit this as a spell."
-            print(f"[API] WARNING: {warning}")
-        
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        
-        # Insert new job with status='pending', job_type, and prompt_type
-        cursor.execute("""
-            INSERT INTO statblock_jobs (status, job_type, prompt_type, statblock, model_path)
-            VALUES (?, ?, ?, ?, ?)
-        """, ('pending', job_type, prompt_type, statblock_text, model_path if model_path else None))
-        
-        conn.commit()
-        job_id = cursor.lastrowid
-        conn.close()
-        
-        print(f"[API] Job #{job_id} ({job_type}, prompt: {prompt_type}) submitted to queue")
-        
-        response = {
-            "success": True,
-            "job_id": job_id,
-            "status": "pending",
-            "job_type": job_type,
-            "prompt_type": prompt_type
-        }
-        
-        if warning:
-            response["warning"] = warning
-        
-        return jsonify(response), 201
-    
-    except Exception as e:
-        print(f"[API] Error submitting job: {e}")
-        return jsonify({"error": str(e), "success": False}), 500
-
-
-@app.route('/api/queue/submit/spell', methods=['POST'])
-def queue_submit_spell_job():
-    """
-    API endpoint: POST /api/queue/submit/spell
-    Submit a spell description for AI parsing via the queue.
-    
-    Request JSON:
-    {
-        "spell": "Fire Bolt\nCantrip evocation spell...",
-        "prompt_type": "full_parse",  // Optional: "full_parse" (default) or "damage_only"
-        "model_path": "/path/to/model.gguf"  // Optional
-    }
-    
-    Response:
-    {
-        "success": true,
-        "job_id": 42,
-        "status": "pending",
-        "job_type": "spell",
-        "prompt_type": "full_parse"
-    }
-    """
-    try:
-        data = request.get_json()
-        if not data or 'spell' not in data:
-            return jsonify({"error": "Missing 'spell' field"}), 400
-        
-        spell_text = data['spell'].strip()
-        model_path = data.get('model_path', '')
-        prompt_type = data.get('prompt_type', 'full_parse')  # Defaults to full_parse
-        
-        if not spell_text:
-            return jsonify({"error": "Spell cannot be empty"}), 400
-        
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        
-        # Insert new job with status='pending', job_type='spell', and prompt_type
-        cursor.execute("""
-            INSERT INTO statblock_jobs (status, job_type, prompt_type, statblock, model_path)
-            VALUES (?, ?, ?, ?, ?)
-        """, ('pending', 'spell', prompt_type, spell_text, model_path if model_path else None))
-        
-        conn.commit()
-        job_id = cursor.lastrowid
-        conn.close()
-        
-        print(f"[API] Spell job #{job_id} (prompt: {prompt_type}) submitted to queue")
-        
-        return jsonify({
-            "success": True,
-            "job_id": job_id,
-            "status": "pending",
-            "job_type": "spell",
-            "prompt_type": prompt_type
-        }), 201
-    
-    except Exception as e:
-        print(f"[API] Error submitting spell job: {e}")
-        return jsonify({"error": str(e), "success": False}), 500
-
-
-@app.route('/api/queue/<int:job_id>', methods=['GET'])
-def queue_get_job(job_id):
-    """
-    API endpoint: GET /api/queue/<job_id>
-    Get the status and details of a job.
-    
-    Response:
-    {
-        "id": 42,
-        "status": "completed",  // pending, processing, completed, failed
-        "job_type": "creature",  // creature or spell
-        "parsed_data": {...},
-        "creature_id": 15,
-        "spell_id": null,
-        "error_message": null,
-        "progress_percent": 100,
-        "elapsed_seconds": 23,
-        "created_at": "2026-04-07T12:34:56",
-        "started_at": "2026-04-07T12:34:58",
-        "completed_at": "2026-04-07T12:35:21"
-    }
-    """
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        
-        cursor.execute("""
-            SELECT id, status, job_type, parsed_data, creature_id, spell_id, 
-                   error_message, progress_percent, elapsed_seconds, 
-                   created_at, started_at, completed_at
-            FROM statblock_jobs
-            WHERE id = ?
-        """, (job_id,))
-        
-        row = cursor.fetchone()
-        conn.close()
-        
-        if not row:
-            return jsonify({"error": f"Job {job_id} not found"}), 404
-        
-        job_dict = dict(row)
-        
-        # Parse JSON fields
-        if job_dict['parsed_data']:
+        if 'name' in data and data.get('name') is not None:
+            quest['name'] = str(data['name']).strip()
+        if 'summary' in data:
+            quest['summary'] = str(data['summary']).strip() if data['summary'] else None
+        if 'location' in data:
+            quest['location'] = str(data['location']).strip() if data['location'] else None
+        if 'dungeon_id' in data:
             try:
-                job_dict['parsed_data'] = json.loads(job_dict['parsed_data'])
-            except json.JSONDecodeError:
-                job_dict['parsed_data'] = None
+                quest['dungeon_id'] = int(data['dungeon_id']) if data['dungeon_id'] not in (None, '') else None
+            except (TypeError, ValueError):
+                quest['dungeon_id'] = None
+        if 'quest_giver' in data:
+            try:
+                quest['quest_giver'] = int(data['quest_giver']) if data['quest_giver'] not in (None, '') else None
+            except (TypeError, ValueError):
+                quest['quest_giver'] = None
         
-        return jsonify(job_dict), 200
-    
+        def normalize_list(value):
+            if value is None:
+                return []
+            if isinstance(value, list):
+                return [str(item).strip() for item in value if str(item).strip()]
+            return [line.strip() for line in str(value).splitlines() if line.strip()]
+        
+        if 'reward' in data:
+            quest['reward'] = normalize_list(data.get('reward'))
+        if 'objectives' in data:
+            quest['objectives'] = normalize_list(data.get('objectives'))
+        if 'details' in data:
+            quest['details'] = normalize_list(data.get('details'))
+        if 'notes' in data:
+            quest['notes'] = str(data['notes']).strip() if data['notes'] else None
+        
+        quests[quest_index] = quest
+        save_quests_data(quests)
+        return jsonify(quest)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 
-@app.route('/api/queue/stats', methods=['GET'])
-def queue_get_stats():
-    """
-    API endpoint: GET /api/queue/stats
-    Get current queue statistics.
-    
-    Response:
-    {
-        "pending": 3,
-        "processing": 1,
-        "completed": 42,
-        "failed": 2,
-        "avg_parse_time": 23,
-        "current_job_id": 42,
-        "current_job_progress": 45
-    }
-    """
+@app.route('/api/quests/<quest_id>', methods=['DELETE'])
+def delete_quest_api(quest_id):
+    """API endpoint: DELETE /api/quests/<quest_id> - Deletes a quest."""
+    try:
+        quests = load_quests_data()
+        
+        quest_key = quest_id.strip().lower()
+        quest_index = None
+        for i, quest in enumerate(quests):
+            if (str(quest.get('id') or '').strip().lower() == quest_key or
+                    str(quest.get('name') or quest.get('title') or '').strip().lower() == quest_key):
+                quest_index = i
+                break
+        
+        if quest_index is None:
+            return jsonify({"error": f"Quest '{quest_id}' not found"}), 404
+        
+        quests.pop(quest_index)
+        save_quests_data(quests)
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ============================================================================
+# DUNGEON ENDPOINTS (continued)
+# ============================================================================
+
+@app.route('/api/dungeons/<int:dungeon_id>', methods=['DELETE'])
+def delete_dungeon_api(dungeon_id):
+    """API endpoint: DELETE /api/dungeons/<dungeon_id> - Deletes a dungeon."""
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        # Get counts by status
-        cursor.execute("SELECT COUNT(*) FROM statblock_jobs WHERE status='pending'")
-        pending = cursor.fetchone()[0]
+        cursor.execute("SELECT id FROM dungeons WHERE id = ?", (dungeon_id,))
+        if not cursor.fetchone():
+            conn.close()
+            return jsonify({"error": f"Dungeon '{dungeon_id}' not found"}), 404
         
-        cursor.execute("SELECT COUNT(*) FROM statblock_jobs WHERE status='processing'")
-        processing = cursor.fetchone()[0]
-        
-        cursor.execute("SELECT COUNT(*) FROM statblock_jobs WHERE status='completed'")
-        completed = cursor.fetchone()[0]
-        
-        cursor.execute("SELECT COUNT(*) FROM statblock_jobs WHERE status='failed'")
-        failed = cursor.fetchone()[0]
-        
-        # Get average parse time
-        cursor.execute("""
-            SELECT AVG(elapsed_seconds) 
-            FROM statblock_jobs 
-            WHERE status='completed' AND elapsed_seconds > 0
-        """)
-        avg_result = cursor.fetchone()
-        avg_time = int(avg_result[0]) if avg_result[0] else 0
-        
-        # Get current processing job
-        cursor.execute("""
-            SELECT id, progress_percent
-            FROM statblock_jobs
-            WHERE status='processing'
-            LIMIT 1
-        """)
-        current = cursor.fetchone()
-        
+        cursor.execute("DELETE FROM dungeons WHERE id = ?", (dungeon_id,))
+        deleted = cursor.rowcount
+        conn.commit()
         conn.close()
         
-        return jsonify({
-            "pending": pending,
-            "processing": processing,
-            "completed": completed,
-            "failed": failed,
-            "avg_parse_time": avg_time,
-            "current_job_id": current['id'] if current else None,
-            "current_job_progress": current['progress_percent'] if current else 0
-        }), 200
-    
+        if deleted == 0:
+            return jsonify({"error": f"Dungeon '{dungeon_id}' not found"}), 404
+        
+        return jsonify({"success": True})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 
-@app.route('/api/queue/recent', methods=['GET'])
-def queue_get_recent():
-    """
-    API endpoint: GET /api/queue/recent?limit=10
-    Get recent jobs (default last 10).
-    
-    Response:
-    [
-        {
-            "id": 42,
-            "status": "completed",
-            "creature_title": "Goblin",
-            "creature_id": 15,
-            "elapsed_seconds": 23,
-            "completed_at": "2026-04-07T12:35:21"
-        },
-        ...
-    ]
-    """
+# ============================================================================
+# SPELL ENDPOINTS (continued)
+# ============================================================================
+
+@app.route('/api/spells/<int:spell_id>', methods=['DELETE'])
+def delete_spell_api(spell_id):
+    """API endpoint: DELETE /api/spells/<spell_id> - Deletes a spell."""
     try:
-        limit = request.args.get('limit', 10, type=int)
-        if limit > 100:
-            limit = 100  # Cap at 100
-        
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        cursor.execute("""
-            SELECT id, status, creature_id, elapsed_seconds, completed_at, parsed_data
-            FROM statblock_jobs
-            ORDER BY created_at DESC
-            LIMIT ?
-        """, (limit,))
+        cursor.execute("SELECT id FROM spells WHERE id = ?", (spell_id,))
+        if not cursor.fetchone():
+            conn.close()
+            return jsonify({"error": f"Spell '{spell_id}' not found"}), 404
         
-        rows = cursor.fetchall()
+        cursor.execute("DELETE FROM spells WHERE id = ?", (spell_id,))
+        deleted = cursor.rowcount
+        conn.commit()
         conn.close()
         
-        jobs = []
-        for row in rows:
-            job_dict = dict(row)
-            
-            # Extract creature title from parsed_data
-            creature_title = "Unknown"
-            if job_dict['parsed_data']:
-                try:
-                    parsed = json.loads(job_dict['parsed_data'])
-                    creature_title = parsed.get('title', 'Unknown')
-                except json.JSONDecodeError:
-                    pass
-            
-            jobs.append({
-                "id": job_dict['id'],
-                "status": job_dict['status'],
-                "creature_title": creature_title,
-                "creature_id": job_dict['creature_id'],
-                "elapsed_seconds": job_dict['elapsed_seconds'],
-                "completed_at": job_dict['completed_at']
-            })
+        if deleted == 0:
+            return jsonify({"error": f"Spell '{spell_id}' not found"}), 404
         
-        return jsonify(jobs), 200
-    
+        return jsonify({"success": True})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
+# ============================================================================
+# TRAPS ENDPOINTS (continued)
+# ============================================================================
+
+def validate_trap_payload(payload):
+    """Validate trap payload."""
+    if not isinstance(payload, dict):
+        return False
+    if 'name' in payload and payload.get('name') is not None and not isinstance(payload.get('name'), str):
+        return False
+    return True
+
+
+def sanitize_trap_payload(payload):
+    """Sanitize trap payload."""
+    if not isinstance(payload, dict):
+        return {}
+    result = {}
+    if 'name' in payload:
+        result['name'] = str(payload['name']).strip() if payload['name'] is not None else 'Unnamed Trap'
+    return result
+
+
+def create_trap(trap_data):
+    """Create a new trap in the database."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO traps (name) VALUES (?)",
+        (trap_data.get('name', 'Unnamed Trap'),)
+    )
+    conn.commit()
+    trap_id = cursor.lastrowid
+    conn.close()
+    return get_trap_by_id_db(trap_id)
+
+
+def get_trap_by_id_db(trap_id):
+    """Get trap by ID from database."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, name, created_at FROM traps WHERE id = ?", (trap_id,))
+    row = cursor.fetchone()
+    conn.close()
+    if not row:
+        return None
+    return dict(row)
+
+
+def update_trap(trap_id, trap_data):
+    """Update a trap in the database."""
+    fields = []
+    values = []
+    allowed_keys = ['name']
+    for key in allowed_keys:
+        if key in trap_data:
+            fields.append(f"{key} = ?")
+            values.append(trap_data[key])
+    if not fields:
+        return None
+    values.append(trap_id)
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute(f"UPDATE traps SET {', '.join(fields)} WHERE id = ?", values)
+    conn.commit()
+    conn.close()
+    return get_trap_by_id_db(trap_id)
+
+
+def delete_trap(trap_id):
+    """Delete a trap from the database."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM traps WHERE id = ?", (trap_id,))
+    deleted = cursor.rowcount
+    conn.commit()
+    conn.close()
+    return deleted > 0
+
+
+@app.route('/api/traps', methods=['POST'])
+def create_trap_api():
+    """API endpoint: POST /api/traps - Creates a new trap."""
+    try:
+        payload = request.get_json(silent=True) or {}
+        if not validate_trap_payload(payload):
+            return jsonify({"error": "Invalid trap payload"}), 400
+        trap_data = sanitize_trap_payload(payload)
+        trap = create_trap(trap_data)
+        return jsonify(trap), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/traps/<int:trap_id>', methods=['PUT'])
+def update_trap_api(trap_id):
+    """API endpoint: PUT /api/traps/<trap_id> - Updates a trap."""
+    try:
+        payload = request.get_json(silent=True) or {}
+        if not validate_trap_payload(payload):
+            return jsonify({"error": "Invalid trap payload"}), 400
+        trap_data = sanitize_trap_payload(payload)
+        trap = update_trap(trap_id, trap_data)
+        if not trap:
+            return jsonify({"error": f"Trap id '{trap_id}' not found"}), 404
+        return jsonify(trap)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/traps/<int:trap_id>', methods=['DELETE'])
+def delete_trap_api(trap_id):
+    """API endpoint: DELETE /api/traps/<trap_id> - Deletes a trap."""
+    try:
+        deleted = delete_trap(trap_id)
+        if not deleted:
+            return jsonify({"error": f"Trap id '{trap_id}' not found"}), 404
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/spell-cards-list')
 def spell_cards_list():

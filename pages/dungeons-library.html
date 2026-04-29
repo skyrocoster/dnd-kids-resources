@@ -54,7 +54,7 @@
         body.dark-mode .add-room-btn,
         body.dark-mode .add-feature-btn,
         body.dark-mode .entry-edit-btn,
-        body.dark-mode .entry-delete-btn,
+        body.dark-mode .btn-delete-text,
         body.dark-mode .edit-mode-toggle,
         body.dark-mode .modal-buttons .save-btn,
         body.dark-mode .modal-buttons .cancel-btn {
@@ -68,7 +68,7 @@
         body.dark-mode .add-room-btn:hover,
         body.dark-mode .add-feature-btn:hover,
         body.dark-mode .entry-edit-btn:hover,
-        body.dark-mode .entry-delete-btn:hover,
+        body.dark-mode .btn-delete-text:hover,
         body.dark-mode .edit-mode-toggle:hover,
         body.dark-mode .modal-buttons .save-btn:hover,
         body.dark-mode .modal-buttons .cancel-btn:hover {
@@ -496,12 +496,12 @@
             background: #2980b9;
         }
 
-        .entry-delete-btn {
+        .btn-delete-text {
             background: #e74c3c;
             color: white;
         }
 
-        .entry-delete-btn:hover {
+        .btn-delete-text:hover {
             background: #c0392b;
         }
 
@@ -1226,29 +1226,21 @@
             initPage();
         }
 
-        function loadDungeonsList() {
-            console.log('Loading dungeons...');
-            fetch('/api/dungeons')
-                .then(res => {
-                    console.log('Response:', res.status);
-                    if (!res.ok) {
-                        throw new Error(`HTTP ${res.status}`);
-                    }
-                    return res.json();
-                })
-                .then(data => {
-                    console.log('Dungeons loaded:', data);
-                    if (!Array.isArray(data)) {
-                        throw new Error('API returned invalid data format');
-                    }
-                    dungeons = data;
-                    displayDungeonsList();
-                })
-                .catch(err => {
-                    console.error('Error loading dungeons:', err);
-                    document.getElementById('dungeonList').innerHTML = 
-                        '<div class="error-message">Error loading dungeons: ' + err.message + '</div>';
-                });
+        async function loadDungeonsList() {
+            try {
+                console.log('Loading dungeons...');
+                const data = await ApiHelpers.ApiService.getDungeons();
+                console.log('Dungeons loaded:', data);
+                if (!Array.isArray(data)) {
+                    throw new Error('API returned invalid data format');
+                }
+                dungeons = data;
+                displayDungeonsList();
+            } catch (err) {
+                console.error('Error loading dungeons:', err);
+                document.getElementById('dungeonList').innerHTML = 
+                    '<div class="error-message">Error loading dungeons: ' + err.message + '</div>';
+            }
         }
 
         function displayDungeonsList() {
@@ -1270,21 +1262,18 @@
             `).join('');
         }
 
-        function viewDungeon(dungeonId) {
-            // Set URL hash to preserve state on refresh
+        async function viewDungeon(dungeonId) {
             window.location.hash = `dungeon/${dungeonId}`;
             
-            fetch(`/api/dungeons/${dungeonId}`)
-                .then(res => res.json())
-                .then(data => {
-                    currentDungeon = data;
-                    showViewerView();
-                    displayDungeonViewer();
-                })
-                .catch(err => {
-                    console.error('Error loading dungeon:', err);
-                    alert('Error loading dungeon: ' + err.message);
-                });
+            try {
+                const data = await ApiHelpers.ApiService.getDungeonById(dungeonId);
+                currentDungeon = data;
+                showViewerView();
+                displayDungeonViewer();
+            } catch (err) {
+                console.error('Error loading dungeon:', err);
+                alert('Error loading dungeon: ' + err.message);
+            }
         }
 
         function showViewerView() {
@@ -1543,10 +1532,7 @@
         // Fetch monster details from DB by title (case-insensitive)
         async function getMonsterDetails(title) {
             try {
-                const response = await fetch(`/api/monsters/${encodeURIComponent(title)}`);
-                if (response.ok) {
-                    return await response.json();
-                }
+                return await ApiHelpers.ApiService.getMonsterByTitle(title);
             } catch (e) {
                 console.warn(`Could not fetch monster details for ${title}:`, e);
             }
@@ -1561,10 +1547,7 @@
 
             if (isExactId) {
                 try {
-                    const response = await fetch(`/api/npcs/${numericId}`);
-                    if (response.ok) {
-                        return await response.json();
-                    }
+                    return await ApiHelpers.ApiService.getNpcById(numericId);
                 } catch (e) {
                     console.warn(`Could not fetch NPC details for id ${numericId}:`, e);
                 }
@@ -1575,9 +1558,8 @@
             async function loadCachedNpcs() {
                 if (cachedNpcs) return cachedNpcs;
                 try {
-                    const response = await fetch('/api/npcs');
-                    if (!response.ok) return [];
-                    cachedNpcs = await response.json();
+                    cachedNpcs = await ApiHelpers.ApiService.getNpcs();
+                    if (!Array.isArray(cachedNpcs)) cachedNpcs = [];
                 } catch (e) {
                     console.warn(`Could not load NPC list for hover lookup:`, e);
                     cachedNpcs = [];
@@ -2063,12 +2045,9 @@
                         trapNames.push(trapCache[trapId]);
                     } else {
                         try {
-                            const response = await fetch(`/api/traps/${trapId}`);
-                            if (response.ok) {
-                                const trap = await response.json();
-                                trapCache[trapId] = trap.name;
-                                trapNames.push(trap.name);
-                            }
+                            const trap = await ApiHelpers.ApiService.getTrapById(trapId);
+                            trapCache[trapId] = trap.name;
+                            trapNames.push(trap.name);
                         } catch (error) {
                             console.error(`Failed to fetch trap ${trapId}:`, error);
                         }
@@ -2315,7 +2294,7 @@
                             
                             roomDetailsHtml += `<div class="entry-actions">`;
                             roomDetailsHtml += `<button class="entry-edit-btn" onclick="openEditEntryModal(${roomIdx}, ${realEntryIdx})">✏️ Edit</button>`;
-                            roomDetailsHtml += `<button class="entry-delete-btn" onclick="deleteEntry(${roomIdx}, ${realEntryIdx})">🗑️ Delete</button>`;
+                            roomDetailsHtml += `<button class="btn-delete-text" onclick="deleteEntry(${roomIdx}, ${realEntryIdx})">🗑️ Delete</button>`;
                             roomDetailsHtml += `</div>`;
                             roomDetailsHtml += `</div>`;
                         } else if (entry.entry_type === 'trap' && entry.trap_ids && entry.trap_ids.length > 0) {
@@ -2326,7 +2305,7 @@
                             
                             roomDetailsHtml += `<div class="entry-actions">`;
                             roomDetailsHtml += `<button class="entry-edit-btn" onclick="openEditEntryModal(${roomIdx}, ${realEntryIdx})">✏️ Edit</button>`;
-                            roomDetailsHtml += `<button class="entry-delete-btn" onclick="deleteEntry(${roomIdx}, ${realEntryIdx})">🗑️ Delete</button>`;
+                            roomDetailsHtml += `<button class="btn-delete-text" onclick="deleteEntry(${roomIdx}, ${realEntryIdx})">🗑️ Delete</button>`;
                             roomDetailsHtml += `</div>`;
                             roomDetailsHtml += `</div>`;
                         } else if (entry.entry_type === 'npc') {
@@ -2336,7 +2315,7 @@
                             roomDetailsHtml += `<div class="entry npc"${npcIdAttr} data-npc-name="${escapeHtml(entry.npc_name || entry.title || '')}">`;
                             roomDetailsHtml += `<div class="entry-title">👤 ${escapeHtml(npcLabel)}</div>`;
                             roomDetailsHtml += `<div class="entry-actions">`;
-                            roomDetailsHtml += `<button class="entry-delete-btn" onclick="deleteNpcFromRoom(${roomIdx}, ${JSON.stringify(deleteArg)})">🗑️ Remove</button>`;
+                            roomDetailsHtml += `<button class="btn-delete-text" onclick="deleteNpcFromRoom(${roomIdx}, ${JSON.stringify(deleteArg)})">🗑️ Remove</button>`;
                             roomDetailsHtml += `</div>`;
                             roomDetailsHtml += `</div>`;
                         } else {
@@ -2373,17 +2352,17 @@
                             
                             if (type === 'stairs' && !roomEntries.includes(entry)) {
                                 roomDetailsHtml += `<div class="entry-actions">`;
-                                roomDetailsHtml += `<button class="entry-delete-btn" onclick="deleteStairs(${entry.stair_id})">🗑️ Delete</button>`;
+                                roomDetailsHtml += `<button class="btn-delete-text" onclick="deleteStairs(${entry.stair_id})">🗑️ Delete</button>`;
                                 roomDetailsHtml += `</div>`;
                             } else if (!isTopLevelDoor) {
                                 roomDetailsHtml += `<div class="entry-actions">`;
                                 roomDetailsHtml += `<button class="entry-edit-btn" onclick="openEditEntryModal(${roomIdx}, ${realEntryIdx})">✏️ Edit</button>`;
-                                roomDetailsHtml += `<button class="entry-delete-btn" onclick="deleteEntry(${roomIdx}, ${realEntryIdx})">🗑️ Delete</button>`;
+                                roomDetailsHtml += `<button class="btn-delete-text" onclick="deleteEntry(${roomIdx}, ${realEntryIdx})">🗑️ Delete</button>`;
                                 roomDetailsHtml += `</div>`;
                             } else {
                                 roomDetailsHtml += `<div class="entry-actions">`;
                                 roomDetailsHtml += `<button class="entry-edit-btn" onclick="openEditDoorModal(${entry.door_id}, ${roomIdx})">✏️ Edit</button>`;
-                                roomDetailsHtml += `<button class="entry-delete-btn" onclick="deleteDoor(${entry.door_id})">🗑️ Delete</button>`;
+                                roomDetailsHtml += `<button class="btn-delete-text" onclick="deleteDoor(${entry.door_id})">🗑️ Delete</button>`;
                                 roomDetailsHtml += `</div>`;
                             }
                         }
@@ -3724,12 +3703,9 @@
         // Load monsters from DB for the monster selector
         async function loadMonstersForModal() {
             try {
-                const response = await fetch('/api/monsters');
-                if (response.ok) {
-                    modalMonsters = await response.json();
-                    modalMonsters.sort((a, b) => String(a.title || '').localeCompare(String(b.title || ''), undefined, { sensitivity: 'base' }));
-                    renderModalMonsterResults(document.getElementById('featureMonsterSearch')?.value || '');
-                }
+                modalMonsters = await ApiHelpers.ApiService.getMonsters();
+                modalMonsters.sort((a, b) => String(a.title || '').localeCompare(String(b.title || ''), undefined, { sensitivity: 'base' }));
+                renderModalMonsterResults(document.getElementById('featureMonsterSearch')?.value || '');
             } catch (e) {
                 console.error('Error loading monsters:', e);
                 const results = document.getElementById('featureMonsterResults');
@@ -3741,12 +3717,9 @@
 
         async function loadNpcsForModal() {
             try {
-                const response = await fetch('/api/npcs');
-                if (response.ok) {
-                    modalNpcs = await response.json();
-                    modalNpcs.sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), undefined, { sensitivity: 'base' }));
-                    renderModalNpcResults(document.getElementById('featureNpcSearch')?.value || '');
-                }
+                modalNpcs = await ApiHelpers.ApiService.getNpcs();
+                modalNpcs.sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), undefined, { sensitivity: 'base' }));
+                renderModalNpcResults(document.getElementById('featureNpcSearch')?.value || '');
             } catch (e) {
                 console.error('Error loading NPCs:', e);
                 const results = document.getElementById('featureNpcResults');
@@ -3892,13 +3865,10 @@
 
         async function loadTrapsForModal() {
             try {
-                const response = await fetch('/api/traps');
-                if (response.ok) {
-                    const traps = await response.json();
-                    const selector = document.getElementById('doorTrapIds');
-                    selector.innerHTML = '<option value="">No trap</option>' +
-                        traps.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
-                }
+                const traps = await ApiHelpers.ApiService.getTraps();
+                const selector = document.getElementById('doorTrapIds');
+                selector.innerHTML = '<option value="">No trap</option>' +
+                    traps.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
             } catch (e) {
                 console.error('Error loading traps:', e);
                 document.getElementById('doorTrapIds').innerHTML = 
@@ -4343,26 +4313,19 @@
             closeAddFeatureModal();
         }
 
-        function saveDungeonChanges() {
+        async function saveDungeonChanges() {
             if (!currentDungeon) return;
 
             const dungeonId = currentDungeon.id;
             const updatedJson = JSON.stringify(currentDungeon.parsed_json);
 
-            // Save to database
-            fetch(`/api/dungeons/${dungeonId}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ parsed_json: updatedJson })
-            })
-            .then(res => res.json())
-            .then(data => {
+            try {
+                await ApiHelpers.ApiService.updateDungeon(dungeonId, { parsed_json: updatedJson });
                 console.log('✓ Changes saved');
-            })
-            .catch(err => {
+            } catch (err) {
                 console.error('Error saving changes:', err);
                 alert('Error saving changes: ' + err.message);
-            });
+            }
         }
 
         // Close modal when clicking outside of it

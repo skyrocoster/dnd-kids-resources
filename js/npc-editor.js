@@ -553,20 +553,13 @@ updateSaveBtnState();
     const endpoint = npc.id != null ? `${API_DATA_PATH}/${npc.id}` : API_DATA_PATH;
 
     try {
-      const response = await fetch(endpoint, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      if (!response.ok) {
-        const errorBody = await response.json().catch(() => null);
-        const message = errorBody?.error || `Unable to save NPC (${response.status}).`;
-        showMessage(message);
-        return;
+      let savedNpc;
+      if (npc.id != null) {
+        savedNpc = await window.ApiHelpers.ApiService.updateNpc(npc.id, payload);
+      } else {
+        savedNpc = await window.ApiHelpers.ApiService.createNpc(payload);
       }
 
-      const savedNpc = await response.json();
       if (npc.id == null) {
         delete npc.temp_id;
       }
@@ -601,12 +594,7 @@ updateSaveBtnState();
     }
     if (npc.id != null) {
       try {
-        const response = await fetch(`${API_DATA_PATH}/${npc.id}`, { method: 'DELETE' });
-        if (!response.ok) {
-          const error = await response.json().catch(() => null);
-          showMessage(error?.error || 'Unable to delete NPC.');
-          return;
-        }
+        await window.ApiHelpers.ApiService.deleteNpc(npc.id);
       } catch (err) {
         console.error(err);
         showMessage('Unable to delete NPC.');
@@ -671,12 +659,15 @@ updateSaveBtnState();
 
   async function loadNpcs() {
     try {
-      let response = await fetch(API_DATA_PATH);
-      if (!response.ok) {
-        response = await fetch(FALLBACK_DATA_PATH);
+      let npcData;
+      try {
+        npcData = await window.ApiHelpers.ApiService.getNpcs();
+      } catch (apiError) {
+        const fallbackResponse = await fetch(FALLBACK_DATA_PATH);
+        if (!fallbackResponse.ok) throw apiError;
+        npcData = await fallbackResponse.json();
       }
-      if (!response.ok) throw new Error(`Failed to load NPC data: ${response.status}`);
-      npcs = await response.json();
+      npcs = npcData;
       npcs.forEach(npc => {
         if (npc.id == null) {
           npc.temp_id = nextTempId++;

@@ -142,11 +142,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
   async function fetchClassOptions() {
     try {
-      const response = await fetch('/api/classes');
-      if (!response.ok) {
-        throw new Error('Failed to load class list');
-      }
-      availableClassOptions = await response.json();
+      availableClassOptions = await ApiHelpers.ApiService.getClasses();
       availableClassOptions.sort((a, b) => a.name.localeCompare(b.name));
     } catch (error) {
       availableClassOptions = [];
@@ -156,11 +152,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
   async function fetchComponentOptions() {
     try {
-      const response = await fetch('/api/spell-components');
-      if (!response.ok) {
-        throw new Error('Failed to load component list');
-      }
-      availableComponentOptions = await response.json();
+      availableComponentOptions = await ApiHelpers.ApiService.getSpellComponents();
       availableComponentOptions.sort((a, b) => String(a).localeCompare(String(b)));
     } catch (error) {
       availableComponentOptions = [];
@@ -492,12 +484,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   }
 
   async function loadSpells() {
-    const response = await fetch('/api/spells');
-    if (!response.ok) {
-      throw new Error(`Failed to load spells from API: ${response.status}`);
-    }
-
-    const nextSpells = await response.json();
+    const nextSpells = await ApiHelpers.ApiService.getSpells();
     if (!Array.isArray(nextSpells)) {
       throw new Error('Invalid spell data returned from API');
     }
@@ -607,12 +594,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     modal.setAttribute('aria-hidden', 'false');
 
     try {
-      const response = await fetch(`/api/spells/id/${spell.id}/raw`);
-      if (!response.ok) {
-        throw new Error(`Failed to load spell for editing: ${response.status}`);
-      }
-
-      const rawSpell = await response.json();
+      const rawSpell = await ApiHelpers.ApiService.getSpellRaw(spell.id);
       populateEditForm(rawSpell);
       setModalStatus('Editing database fields directly. JSON fields accept raw JSON.', '');
     } catch (error) {
@@ -880,15 +862,12 @@ document.addEventListener('DOMContentLoaded', async function() {
     const method = editingSpellId ? 'PUT' : 'POST';
 
     try {
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      const result = await response.json();
-      if (!response.ok) {
-        throw new Error(result.error || `Failed to save spell: ${response.status}`);
+      if (editingSpellId) {
+        // PUT request for updating existing spell
+        await ApiHelpers.ApiService.updateSpell(editingSpellId, payload);
+      } else {
+        // POST request for creating new spell
+        await ApiHelpers.ApiService.createSpell(payload);
       }
 
       setModalStatus('Spell saved. Reloading list...', 'success');

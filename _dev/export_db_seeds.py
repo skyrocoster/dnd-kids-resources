@@ -6,7 +6,7 @@ timestamped filename, then exports current DB rows to new seed files.
 
 Usage:
   python _dev/export_db_seeds.py
-  python _dev/export_db_seeds.py --tables abilities,conditions,creatures
+  python _dev/export_db_seeds.py --tables abilities,conditions,quests
   python _dev/export_db_seeds.py --dry-run
 """
 

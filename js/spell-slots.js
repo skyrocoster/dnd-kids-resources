@@ -19,20 +19,15 @@ document.addEventListener('DOMContentLoaded', async function() {
   // ─── Fetch ability colors from database ───
   let abilitiesMap = {};
   try {
-    const response = await fetch('/api/abilities');
-    if (response.ok) {
-      const abilities = await response.json();
-      // Create a map of ability codes to their data
-      abilities.forEach(ability => {
-        abilitiesMap[ability.code] = ability;
-      });
-      console.log('Loaded abilities from database:', abilitiesMap);
-      
-      // Apply colors to spell level rows
-      applySpellSlotColors();
-    } else {
-      console.error('Failed to fetch abilities');
-    }
+    const abilities = await ApiHelpers.ApiService.getAbilities();
+    // Create a map of ability codes to their data
+    abilities.forEach(ability => {
+      abilitiesMap[ability.code] = ability;
+    });
+    console.log('Loaded abilities from database:', abilitiesMap);
+    
+    // Apply colors to spell level rows
+    applySpellSlotColors();
   } catch (error) {
     console.error('Error fetching abilities:', error);
   }

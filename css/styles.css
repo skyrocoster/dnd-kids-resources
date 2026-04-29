@@ -685,3 +685,69 @@ body.bw-mode .page {
   border-radius: 8px;
 }
 
+/* ─── Delete Button ─── */
+.btn-delete-filled,
+.btn-delete-outlined,
+.btn-delete-text,
+.btn-delete-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 40px;
+  border-radius: 100px;
+  cursor: pointer;
+  font-family: 'OpenDyslexic', 'Nunito', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  position: relative;
+  overflow: hidden;
+  outline: none;
+  user-select: none;
+  transition: box-shadow 200ms ease;
+}
+
+.btn-delete-filled  { padding: 0 24px; border: none; background: var(--md-sys-color-error-container); color: var(--md-sys-color-on-error-container); }
+.btn-delete-outlined{ padding: 0 24px; border: 1px solid var(--md-sys-color-error); background: transparent; color: var(--md-sys-color-error); }
+.btn-delete-text    { padding: 0 12px; border: none; background: transparent; color: var(--md-sys-color-error); }
+.btn-delete-icon    { padding: 0; width: 40px; border: none; background: var(--md-sys-color-error-container); color: var(--md-sys-color-on-error-container); }
+
+.btn-delete-filled::before,
+.btn-delete-outlined::before,
+.btn-delete-text::before,
+.btn-delete-icon::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: transparent;
+  transition: background 200ms ease;
+}
+
+.btn-delete-filled:hover::before,
+.btn-delete-icon:hover::before    { background: rgba(255, 180, 169, 0.08); }
+.btn-delete-outlined:hover::before,
+.btn-delete-text:hover::before    { background: rgba(255, 180, 169, 0.08); }
+
+.btn-delete-filled:active::before,
+.btn-delete-outlined:active::before,
+.btn-delete-text:active::before,
+.btn-delete-icon:active::before   { background: rgba(255, 180, 169, 0.12); }
+
+.btn-delete-filled:focus-visible,
+.btn-delete-icon:focus-visible    { box-shadow: 0 0 0 3px rgba(255, 180, 169, 0.4); }
+.btn-delete-outlined:focus-visible,
+.btn-delete-text:focus-visible    { box-shadow: 0 0 0 3px rgba(255, 180, 169, 0.3); }
+
+.btn-delete-filled:disabled,
+.btn-delete-outlined:disabled,
+.btn-delete-text:disabled,
+.btn-delete-icon:disabled {
+  cursor: not-allowed;
+  background: rgba(224, 227, 226, 0.12);
+  color: rgba(224, 227, 226, 0.38);
+  border-color: transparent;
+  pointer-events: none;
+}
+.btn-delete-outlined:disabled { border-color: rgba(224, 227, 226, 0.12); }
