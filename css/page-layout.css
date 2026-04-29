@@ -398,6 +398,7 @@ hp-tracker-topbar,
   padding: 18px;
   box-shadow: none;
   border: 1px solid var(--md-sys-color-outline-variant);
+  margin-bottom: 2rem;
 }
 
 /* Stat and save grid styles (from monster-book) */
@@ -421,19 +422,38 @@ hp-tracker-topbar,
 .stat-card .stat-value,
 .save-card .stat-value { font-size: 1rem; font-weight: 700; color: inherit; }
 
-/* Field row/group for NPC editor */
+/* ─── Field row/group for NPC editor ─── */
+
 .field-row {
   display: flex;
   flex-wrap: wrap;
   gap: 1rem;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  border-radius: 12px;
+  background: var(--md-sys-color-surface-variant);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  transition: border-color 200ms ease, box-shadow 200ms ease;
 }
+
+.field-row:focus-within {
+  border-color: var(--md-sys-color-primary);
+  box-shadow: 0 0 0 3px rgba(128, 203, 196, 0.25);
+}
+
 .field-group {
   display: flex;
   flex-direction: column;
   flex: 1 1 160px;
-  min-width: 120px;
-  gap: 0.25rem;
+  min-width: 90px;
+  gap: 0.35rem;
+}
+
+.field-group label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--md-sys-color-on-surface-variant);
+  letter-spacing: 0.01em;
 }
 
 .detail-row,
@@ -573,6 +593,7 @@ hp-tracker-topbar,
   border-radius: 18px;
   padding: 18px;
   box-shadow: none;
+  margin-bottom: 2rem;
 }
 
 .viewer-sidebar h3,

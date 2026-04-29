@@ -18,61 +18,6 @@
             padding: 0 1rem;
         }
 
-        .dungeon-list {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-
-        .dungeon-card {
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            padding: 1.5rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            background: white;
-        }
-
-        .dungeon-card:hover {
-            border-color: #4a90e2;
-            box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);
-            transform: translateY(-2px);
-        }
-
-        .dungeon-card h3 {
-            margin: 0 0 0.5rem 0;
-            color: #333;
-        }
-
-        .dungeon-card p {
-            margin: 0.25rem 0;
-            color: #666;
-            font-size: 0.9rem;
-        }
-
-        .dungeon-card .meta {
-            margin-top: 1rem;
-            padding-top: 1rem;
-            border-top: 1px solid #eee;
-            text-align: right;
-        }
-
-        .dungeon-card .btn {
-            background: #4a90e2;
-            color: white;
-            border: none;
-            padding: 0.5rem 1rem;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            transition: background 0.3s ease;
-        }
-
-        .dungeon-card .btn:hover {
-            background: #357abd;
-        }
-
         .map-controls {
             display: flex;
             justify-content: space-between;
@@ -140,19 +85,6 @@
             width: 100%;
         }
 
-        /* .viewer-controls {
-            background: #f5f5f5;
-            padding: 1.5rem;
-            border-bottom: 1px solid #ddd;
-            flex-shrink: 0;
-            display: block;
-        } */
-
-        .viewer-controls h3 {
-            margin-top: 1rem;
-            margin-bottom: 0.5rem;
-        }
-
         .dungeon-viewer {
             display: none;
             grid-template-columns: 1fr;
@@ -167,62 +99,6 @@
 
         .room-content {
             margin-bottom: 2rem;
-        }
-
-        .room-title-header {
-            font-size: 1.5rem;
-            margin: 0.5rem 0 1.25rem 0;
-            padding-bottom: 0.35rem;
-            border-bottom: 2px solid #4a90e2;
-            line-height: 1.2;
-        }
-
-        .room-title {
-            font-size: 1.5rem;
-            color: #333;
-            margin: 1.5rem 0 1rem 0;
-            padding-bottom: 0.5rem;
-            border-bottom: 2px solid #4a90e2;
-        }
-
-        .entry-group {
-            margin: 1.5rem 0;
-        }
-
-        .entry-group-title {
-            font-weight: bold;
-            color: #4a90e2;
-            text-transform: uppercase;
-            font-size: 0.85rem;
-            margin: 1rem 0 0.5rem 0;
-            letter-spacing: 0.05em;
-        }
-
-        .entry {
-            background: var(--md-sys-color-surface-variant);
-            padding: 1rem;
-            margin: 0.5rem 0;
-            border-left: 3px solid var(--md-sys-color-primary);
-            border-radius: 4px;
-            color: var(--md-sys-color-on-surface);
-        }
-
-        .entry-title {
-            font-weight: bold;
-            margin: 0 0 0.5rem 0;
-        }
-
-        .entry-content {
-            color: #666;
-            margin: 0.5rem 0;
-            line-height: 1.5;
-        }
-
-        .entry-meta {
-            font-size: 0.85rem;
-            color: #999;
-            margin-top: 0.5rem;
-            font-style: italic;
         }
 
         .door-mechanics {
@@ -289,138 +165,6 @@
             border-bottom-color: #e67e22;
         }
 
-        .info-tabs {
-            display: flex;
-            gap: 0;
-            margin-bottom: 1rem;
-            border-bottom: 2px solid #ddd;
-        }
-
-        .info-tab {
-            padding: 0.75rem 1rem;
-            background: #f5f5f5;
-            border: none;
-            cursor: pointer;
-            font-weight: bold;
-            color: #666;
-            transition: all 0.2s ease;
-            border-bottom: 3px solid transparent;
-            margin-bottom: -2px;
-        }
-
-        .info-tab:hover {
-            background: #efefef;
-        }
-
-        .info-tab.active {
-            background: white;
-            color: #4a90e2;
-            border-bottom-color: #4a90e2;
-        }
-
-        .info-tab-content {
-            display: none;
-            padding: 1rem 0;
-        }
-
-        .info-tab-content.active {
-            display: block;
-        }
-
-        .info-tab-content h2 {
-            margin-top: 0;
-            color: #333;
-        }
-
-        .entry.monster {
-            border-left-color: #e74c3c;
-        }
-
-        .entry.door {
-            border-left-color: #f39c12;
-        }
-
-        .entry.trap {
-            border-left-color: #e74c3c;
-        }
-
-        .entry.feature {
-            border-left-color: #27ae60;
-        }
-
-        .entry.trick {
-            border-left-color: #9b59b6;
-        }
-
-        .back-btn {
-            background: #7f8c8d;
-            color: white;
-            border: none;
-            padding: 0.75rem 1.5rem;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.95rem;
-            transition: background 0.3s ease;
-        }
-
-        .back-btn:hover {
-            background: #687f8c;
-        }
-
-        .entry-actions {
-            display: none;
-            gap: 0.5rem;
-            margin-top: 0.75rem;
-            padding-top: 0.75rem;
-            border-top: 1px solid #ddd;
-        }
-
-        body.edit-mode .entry-actions {
-            display: flex;
-        }
-
-        .entry-actions button {
-            padding: 0.4rem 0.8rem;
-            font-size: 0.85rem;
-            border: none;
-            border-radius: 3px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .entry-edit-btn {
-            background: #3498db;
-            color: white;
-        }
-
-        .entry-edit-btn:hover {
-            background: #2980b9;
-        }
-
-        .edit-mode-toggle {
-            background: #95a5a6;
-            color: white;
-            border: none;
-            padding: 0.5rem 1rem;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            transition: all 0.2s ease;
-        }
-
-        .edit-mode-toggle:hover {
-            background: #7f8c8d;
-        }
-
-        .edit-mode-toggle.active {
-            background: #e67e22;
-            color: white;
-        }
-
-        .edit-mode-toggle.active:hover {
-            background: #d35400;
-        }
-
         .general-info {
             background: #f9f9f9;
             padding: 1.5rem;
@@ -466,20 +210,6 @@
             color: #666;
         }
 
-        .add-feature-btn,
-        .add-room-btn {
-            background: #27ae60;
-            color: white;
-            border: none;
-            padding: 0.75rem 1.5rem;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.95rem;
-            transition: background 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
-        }
-
-        .add-feature-btn:hover,
-        .add-room-btn:hover,
         .edit-mode-toggle:hover {
             background: #229954;
             transform: translateY(-1px);
@@ -503,33 +233,23 @@
             background: #e9f0ff;
         }
 
-        .add-feature-btn:disabled,
-        .save-btn:disabled {
-            background: #95a5a6;
-            color: #ececec;
-            cursor: not-allowed;
-            box-shadow: none;
-            opacity: 0.6;
-            transform: none;
-        }
-
-        .stairs-section {
-            background: #f7faf7;
-            border: 1px solid #d8e8d8;
+        .modal-list-panel {
+            background: var(--md-sys-color-surface-variant);
+            border: 1px solid var(--md-sys-color-outline-variant);
             border-radius: 12px;
             padding: 1rem;
         }
 
-        .stairs-section-header {
+        .modal-list-panel__heading {
             margin-bottom: 0.75rem;
             font-weight: 700;
-            color: #236a36;
+            color: var(--md-sys-color-primary);
             letter-spacing: 0.01em;
         }
 
-        .stairs-room-field {
-            background: white;
-            border: 1px solid #d9e5db;
+        .modal-list-panel__item {
+            background: var(--md-sys-color-surface);
+            border: 1px solid var(--md-sys-color-outline-variant);
             border-radius: 10px;
             padding: 0.85rem 1rem;
             margin-bottom: 0.75rem;
@@ -537,218 +257,18 @@
             justify-content: space-between;
             align-items: center;
             gap: 1rem;
-            box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05);
+            box-shadow: none;
         }
 
-        .remove-entry-btn {
-            background: #fff1f0;
-            color: #b02a37;
-            border: 1px solid #f5c2c2;
-            border-radius: 999px;
-            padding: 0.55rem 0.9rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: background 0.2s ease, transform 0.2s ease;
-        }
-
-        .remove-entry-btn:hover {
-            background: #ffe3e3;
-            transform: translateY(-1px);
-        }
-
-        .stairs-helper-text {
+        .modal-list-panel__hint {
             font-size: 0.95rem;
-            color: #334155;
-            background: #eff6ff;
-            border: 1px solid #dbeafe;
+            color: var(--md-sys-color-on-primary-container);
+            background: var(--md-sys-color-primary-container);
+            border: none;
             border-radius: 10px;
             padding: 0.9rem 1rem;
         }
 
-        /* .modal-buttons .save-btn,
-        #addStairsPairBtn {
-            border-radius: 4px;
-            padding: 0.75rem 1.5rem;
-            border: none;
-            cursor: pointer;
-            background: #27ae60;
-            color: white;
-            transition: background 0.3s ease, transform 0.2s ease;
-        }
-
-        .modal-buttons .save-btn:hover,
-        #addStairsPairBtn:hover {
-            background: #229954;
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-        }
-
-        .modal.active {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .modal-content {
-            background-color: white;
-            padding: 2rem;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-            width: 90%;
-            max-width: 500px;
-        }
-
-        .modal h3 {
-            margin-top: 0;
-            color: #333;
-        }
-
-        .modal-field {
-            margin: 1rem 0;
-        }
-
-        .hidden {
-            display: none !important;
-        }
-
-        .modal-field.hidden {
-            display: none;
-        }
-
-        .modal-field label {
-            display: block;
-            font-weight: bold;
-            margin-bottom: 0.5rem;
-            color: #333;
-        }
-
-        .modal-field input,
-        .modal-field textarea {
-            width: 100%;
-            padding: 0.75rem;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-family: inherit;
-        }
-
-        .modal-field select {
-            border: 2px solid var(--panel-border);
-            border-radius: 10px;
-            padding: 12px 14px;
-            font-size: 1rem;
-            background: #fffdf7;
-            color: var(--text-normal);
-        }
-
-        .modal-field select:focus {
-            outline: none;
-            border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.16);
-        }
-
-        .modal-field textarea {
-            resize: vertical;
-            min-height: 100px;
-        } */
-
-        .monster-search-shell {
-            position: relative;
-        }
-
-        .monster-search-shell input {
-            width: 100%;
-            padding: 0.75rem;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-family: inherit;
-        }
-
-        .monster-search-results {
-            position: absolute;
-            top: calc(100% + 0.25rem);
-            left: 0;
-            right: 0;
-            max-height: 220px;
-            overflow-y: auto;
-            background: white;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            box-shadow: 0 8px 16px rgba(0,0,0,0.12);
-            z-index: 15;
-        }
-
-        .monster-search-item {
-            padding: 0.75rem;
-            cursor: pointer;
-            border-bottom: 1px solid #eee;
-        }
-
-        .monster-search-item:last-child {
-            border-bottom: none;
-        }
-
-        .monster-search-item:hover,
-        .monster-search-item.selected {
-            background: #f0f7ff;
-        }
-
-        .monster-search-item-title {
-            font-weight: 700;
-            margin-bottom: 0.25rem;
-        }
-
-        .monster-search-item-subtitle {
-            color: #666;
-            font-size: 0.9rem;
-        }
-
-        .monster-search-placeholder {
-            padding: 0.75rem;
-            color: #777;
-        }
-
-        .modal-buttons {
-            display: flex;
-            gap: 1rem;
-            margin-top: 1.5rem;
-            justify-content: flex-end;
-        }
-
-        .modal-buttons button {
-            padding: 0.75rem 1.5rem;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.95rem;
-            transition: background 0.3s ease;
-        }
-
-        .modal-buttons .save-btn {
-            background: #4a90e2;
-            color: white;
-        }
-
-        .modal-buttons .save-btn:hover {
-            background: #357abd;
-        }
-
-        .modal-buttons .cancel-btn {
-            background: #ddd;
-            color: #333;
-        }
-
-        .modal-buttons .cancel-btn:hover {
-            background: #ccc;
-        }
     </style>
 </head>
 <body>
@@ -765,20 +285,12 @@
         <!-- List View -->
         <div id="listView">
             <h2>Available Dungeons</h2>
-            <div id="dungeonList" class="dungeon-list">
+            <div id="dungeonList" class="card-grid">
                 <div class="loading">Loading dungeons...</div>
             </div>
 
-            <!-- Upload Section -->
-            <div style="margin: 2rem 0; padding: 1.5rem; background: #f5f5f5; border-radius: 8px;">
-                <h3>Upload New Dungeon</h3>
-                <form id="uploadForm" enctype="multipart/form-data">
-                    <input type="file" id="dungeonFile" accept=".html" required style="padding: 0.5rem; margin: 0.5rem 0;">
-                    <button type="submit" class="btn" style="background: #27ae60; padding: 0.75rem 1.5rem; border: none; color: white; border-radius: 4px; cursor: pointer;">
-                        Upload Dungeon
-                    </button>
-                </form>
-                <button class="btn" style="background: #4a90e2; padding: 0.75rem 1.5rem; border: none; color: white; border-radius: 4px; cursor: pointer; margin-top: 1rem;" onclick="createBlankDungeon()">
+            <div class="upload-panel">
+                <button class="btn-upload" onclick="createBlankDungeon()">
                     Create Blank Dungeon
                 </button>
                 <div id="uploadStatus" style="margin-top: 1rem; display: none;"></div>
@@ -806,13 +318,16 @@
                     <div class="map-controls-row">
                         <div class="field-group">
                             <label for="floorPlanUpload">Floor Plan:</label>
-                            <input id="floorPlanUpload" type="file" accept="image/*" onchange="uploadFloorPlanImage(event)">
+                            <label for="floorPlanUpload" class="btn-upload">
+                                📎 Choose Image
+                            </label>
+                            <input id="floorPlanUpload" type="file" accept="image/*" onchange="uploadFloorPlanImage(event)" style="display:none">
                             <div id="floorPlanNote" class="floor-plan-note">Upload an image to use as the map for the selected floor.</div>
                         </div>
                     </div>
                 </div>
                 <div id="mapDisplay" class="map-display"></div>
-                <div id="mapDetailsDisplay" class="map-details-display"></div>
+                <div id="mapDetailsDisplay" class="html body div.dungeons-container div#viewerView.dungeon-viewer-layout.active div#mapPanel.map-panel div#mapDetailsDisplay.map-details-displays-display"></div>
             </div>
 
             <!-- Right Panel: Controls and Scrollable Room Details -->
@@ -820,7 +335,7 @@
                 <div class="viewer-controls controls-row">
                     <button id="showListPanelBtn" class="toggle-list-btn hidden" onclick="expandListPanel()">→</button>
                     <button class="back-btn" onclick="showListView()">← Back to List</button>
-                    <div id="roomTitleHeader" class="room-title-header">Select a room</div>
+                    <div id="roomTitleHeader" class="viewer-title">Select a room</div>
                 </div>
 
                 <div id="stairsCreatorPanel" class="modal">
@@ -846,9 +361,9 @@
                                 </select>
                             </label>
                         </div>
-                        <button type="button" id="addStairsPairBtn" class="add-feature-btn" onclick="addStairsCreationPair()" disabled style="margin-bottom: 1rem;">➕ Add Floor/Room Pair</button>
-                        <div class="stairs-section" style="margin-bottom: 1rem;">
-                            <div class="stairs-section-header">Added Stair Connections</div>
+                        <button type="button" id="addStairsPairBtn" class="toolbox-button" onclick="addStairsCreationPair()" disabled style="margin-bottom: 1rem;">➕ Add Floor/Room Pair</button>
+                        <div class="modal-list-panel" style="margin-bottom: 1rem;">
+                            <div class="modal-list-panel__heading">Added Stair Connections</div>
                             <div id="stairsCreationPairs"></div>
                         </div>
                         <div class="modal-buttons" style="justify-content: flex-end;">
@@ -891,17 +406,17 @@
                 </div>
                 <div class="modal-field field-monster-selector hidden">
                     <label>Monster:</label>
-                    <div class="monster-search-shell">
+                    <div class="search-shell">
                         <input type="search" id="featureMonsterSearch" placeholder="Type a monster name..." autocomplete="off">
-                        <div id="featureMonsterResults" class="monster-search-results"></div>
+                        <div id="featureMonsterResults" class="search-results"></div>
                     </div>
                     <input type="hidden" id="featureMonster">
                 </div>
                 <div class="modal-field field-npc-selector hidden">
                     <label>NPC:</label>
-                    <div class="monster-search-shell">
+                    <div class="search-shell">
                         <input type="search" id="featureNpcSearch" placeholder="Type an NPC name..." autocomplete="off">
-                        <div id="featureNpcResults" class="monster-search-results"></div>
+                        <div id="featureNpcResults" class="search-results"></div>
                     </div>
                     <input type="hidden" id="featureNpc">
                 </div>
@@ -1142,7 +657,7 @@
             }
 
             container.innerHTML = dungeons.map(dungeon => `
-                <div class="dungeon-card">
+                <div class="card-grid__item">
                     <h3>${escapeHtml(dungeon.title)}</h3>
                     <p><strong>Created:</strong> ${new Date(dungeon.created_at).toLocaleDateString()}</p>
                     <div class="meta">
@@ -2886,7 +2401,7 @@
             if (!pairsContainer) return;
 
             if (!stairsCreationPairs.length) {
-                pairsContainer.innerHTML = '<div class="stairs-helper-text">The current room and floor are auto-added. Pick another floor and room to expand the stairs.</div>';
+                pairsContainer.innerHTML = '<div class="modal-list-panel__hint">The current room and floor are auto-added. Pick another floor and room to expand the stairs.</div>';
                 return;
             }
 
@@ -2901,7 +2416,7 @@
                 const roomLabel = room ? room.title || `Room ${pair.room_id}` : `Room ${pair.room_id}`;
 
                 const row = document.createElement('div');
-                row.className = 'stairs-room-field';
+                row.className = 'modal-list-panel__item';
                 row.style.display = 'flex';
                 row.style.justifyContent = 'space-between';
                 row.style.alignItems = 'center';
@@ -3577,7 +3092,7 @@
                 console.error('Error loading monsters:', e);
                 const results = document.getElementById('featureMonsterResults');
                 if (results) {
-                    results.innerHTML = '<div class="monster-search-placeholder">Error loading monsters</div>';
+                    results.innerHTML = '<div class="search-placeholder">Error loading monsters</div>';
                 }
             }
         }
@@ -3591,7 +3106,7 @@
                 console.error('Error loading NPCs:', e);
                 const results = document.getElementById('featureNpcResults');
                 if (results) {
-                    results.innerHTML = '<div class="monster-search-placeholder">Error loading NPCs</div>';
+                    results.innerHTML = '<div class="search-placeholder">Error loading NPCs</div>';
                 }
             }
         }
@@ -3618,18 +3133,18 @@
             }
 
             if (matches.length === 0) {
-                results.innerHTML = '<div class="monster-search-placeholder">No monsters found.</div>';
+                results.innerHTML = '<div class="search-placeholder">No monsters found.</div>';
                 return;
             }
 
             matches.slice(0, 15).forEach(monster => {
                 const item = document.createElement('div');
-                item.className = 'monster-search-item' + (selectedModalMonsterId === String(monster.id) ? ' selected' : '');
+                item.className = 'search-item' + (selectedModalMonsterId === String(monster.id) ? ' selected' : '');
                 item.dataset.id = monster.id;
                 item.dataset.title = monster.name;
                 item.innerHTML = `
-                    <div class="monster-search-item-title">${escapeHtml(monster.name)}</div>
-                    <div class="monster-search-item-subtitle">${escapeHtml(monster.explanation || monster.type || '')}</div>
+                    <div class="search-item-title">${escapeHtml(monster.name)}</div>
+                    <div class="search-item-subtitle">${escapeHtml(monster.explanation || monster.type || '')}</div>
                 `;
                 item.addEventListener('click', () => selectModalMonster(String(monster.id), monster.name));
                 results.appendChild(item);
@@ -3662,18 +3177,18 @@
             }
 
             if (matches.length === 0) {
-                results.innerHTML = '<div class="monster-search-placeholder">No NPCs found.</div>';
+                results.innerHTML = '<div class="search-placeholder">No NPCs found.</div>';
                 return;
             }
 
             matches.slice(0, 15).forEach(npc => {
                 const item = document.createElement('div');
-                item.className = 'monster-search-item' + (selectedModalNpcId === String(npc.id) ? ' selected' : '');
+                item.className = 'search-item' + (selectedModalNpcId === String(npc.id) ? ' selected' : '');
                 item.dataset.id = npc.id;
                 item.dataset.title = npc.name;
                 item.innerHTML = `
-                    <div class="monster-search-item-title">${escapeHtml(npc.name)}</div>
-                    <div class="monster-search-item-subtitle">${escapeHtml(npc.background || npc.race || '')}</div>
+                    <div class="search-item-title">${escapeHtml(npc.name)}</div>
+                    <div class="search-item-subtitle">${escapeHtml(npc.background || npc.race || '')}</div>
                 `;
                 item.addEventListener('click', () => selectModalNpc(String(npc.id), npc.name));
                 results.appendChild(item);

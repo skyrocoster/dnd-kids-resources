@@ -134,8 +134,8 @@ function renderQuestList(quests) {
           <span class="meta-item">📍 ${escapeHtml(location)}</span>
         </div>
         <p>${escapeHtml(summary)}</p>
-        <div class="card-footer">
-          <button class="view-btn" onclick="event.stopPropagation(); selectQuest(${quest.id})">View Details</button>
+        <div class="meta">
+          <button class="btn" onclick="event.stopPropagation(); selectQuest(${quest.id})">View Details</button>
         </div>
       </div>
     `;

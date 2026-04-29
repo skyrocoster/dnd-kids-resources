@@ -76,77 +76,6 @@
       font-size: 0.9rem;
     }
 
-    .quest-list {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 1.5rem;
-    }
-
-    .quest-card {
-      border: 1px solid var(--md-sys-color-outline);
-      border-radius: 12px;
-      padding: 1.5rem;
-      cursor: pointer;
-      background: var(--md-sys-color-surface);
-      transition: all 0.3s ease;
-    }
-
-    .quest-card:hover {
-      border-color: var(--md-sys-color-primary);
-      box-shadow: 0 4px 12px rgba(128, 203, 196, 0.25);
-      transform: translateY(-2px);
-    }
-
-    .quest-card h3 {
-      margin: 0 0 0.5rem 0;
-      color: var(--md-sys-color-on-surface);
-      font-size: 1.2rem;
-    }
-
-    .quest-card .quest-meta {
-      display: flex;
-      gap: 1rem;
-      margin-bottom: 0.75rem;
-      flex-wrap: wrap;
-    }
-
-    .quest-card .meta-item {
-      font-size: 0.85rem;
-      color: var(--md-sys-color-on-surface-variant);
-    }
-
-    .quest-card p {
-      margin: 0.5rem 0 0 0;
-      color: var(--md-sys-color-on-surface-variant);
-      font-size: 0.9rem;
-      line-height: 1.4;
-      max-height: 4.5em;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .quest-card .card-footer {
-      margin-top: 1rem;
-      padding-top: 1rem;
-      border-top: 1px solid var(--md-sys-color-outline);
-      text-align: right;
-    }
-
-    .quest-card .view-btn {
-      background: var(--md-sys-color-secondary);
-      color: var(--md-sys-color-on-secondary);
-      border: none;
-      padding: 0.5rem 1rem;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 0.9rem;
-      transition: background 0.2s ease;
-    }
-
-    .quest-card .view-btn:hover {
-      background: var(--md-sys-color-secondary-dim);
-    }
-
     .empty-state {
       text-align: center;
       padding: 3rem 1rem;
@@ -176,7 +105,7 @@
       <button id="createQuestBtn">+ Create Quest</button>
       <span id="questCount">0 quests</span>
     </div>
-    <div id="questList" class="quest-list">
+    <div id="questList" class="card-grid">
       <div class="empty-state">
         <p>Type a quest name to begin searching...</p>
       </div>

@@ -5,77 +5,97 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Resources - D&D Kids Resources</title>
   <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@600;700;800&family=OpenDyslexic&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/styles.css">
   <style>
     :root {
-      --parchment: #fdf3e3;
-      --ink: #2c1810;
-      --border: #8b5e3c;
-      --accent: #c0392b;
+      --md-sys-color-primary:                #80CBC4;
+      --md-sys-color-on-primary:             #003632;
+      --md-sys-color-primary-container:      #004F4B;
+      --md-sys-color-on-primary-container:   #9EF2EB;
+      --md-sys-color-secondary:              #84CFCB;
+      --md-sys-color-on-secondary:           #003735;
+      --md-sys-color-secondary-container:    #1A4D4A;
+      --md-sys-color-on-secondary-container: #A0ECE8;
+      --md-sys-color-tertiary:               #FFE082;
+      --md-sys-color-on-tertiary:            #3D2C00;
+      --md-sys-color-tertiary-container:     #5C4200;
+      --md-sys-color-on-tertiary-container:  #FFECB3;
+      --md-sys-color-background:             #191C1C;
+      --md-sys-color-on-background:          #E0E3E2;
+      --md-sys-color-surface:                #191C1C;
+      --md-sys-color-on-surface:             #E0E3E2;
+      --md-sys-color-surface-variant:        #2E3533;
+      --md-sys-color-on-surface-variant:     #BEC9C4;
+      --md-sys-color-outline:                #899391;
+      --md-sys-color-outline-variant:        #3F4946;
+      --md-sys-color-error:                  #FFB4A9;
+      --md-sys-color-on-error:               #680003;
+      --md-sys-color-error-container:        #930006;
+      --md-sys-color-on-error-container:     #FFDAD4;
     }
-    
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    
+
     body {
-      background: linear-gradient(135deg, #c9a97a 0%, #d4b896 100%);
+      background: var(--md-sys-color-background);
       font-family: 'OpenDyslexic', 'Nunito', sans-serif;
-      color: var(--ink);
+      color: var(--md-sys-color-on-background);
       min-height: 100vh;
       padding: 20px;
     }
-    
+
     .container {
       max-width: 1000px;
       margin: 0 auto;
     }
-    
+
     header {
       text-align: center;
       margin-bottom: 40px;
-      background: var(--parchment);
+      background: var(--md-sys-color-surface-variant);
       padding: 30px;
       border-radius: 15px;
-      border: 3px solid var(--border);
+      border: 1px solid var(--md-sys-color-outline-variant);
     }
-    
+
     h1 {
       font-family: 'Fredoka One', cursive;
       font-size: 48px;
-      color: var(--accent);
-      text-shadow: 2px 2px 0 #f5cba7, 3px 3px 0 var(--border);
+      color: var(--md-sys-color-primary);
       margin-bottom: 10px;
     }
 
     .back-link {
       display: inline-block;
       margin-bottom: 20px;
-      color: var(--accent);
+      color: var(--md-sys-color-primary);
       text-decoration: none;
       font-weight: 700;
       transition: color 0.3s ease;
     }
 
     .back-link:hover {
-      color: var(--border);
+      color: var(--md-sys-color-on-primary-container);
     }
-    
+
     .subtitle {
       font-size: 14px;
-      color: var(--border);
+      color: var(--md-sys-color-on-surface-variant);
       font-weight: 800;
       text-transform: uppercase;
       letter-spacing: 2px;
     }
-    
+
     .tools-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
       gap: 20px;
       margin-bottom: 40px;
     }
-    
+
     .tool-card {
-      background: var(--parchment);
-      border: 3px solid var(--border);
+      background: var(--md-sys-color-surface-variant);
+      border: 1px solid var(--md-sys-color-outline-variant);
       border-radius: 15px;
       padding: 25px;
       text-decoration: none;
@@ -86,45 +106,113 @@
       align-items: center;
       text-align: center;
     }
-    
+
     .tool-card:hover {
       transform: translateY(-5px);
-      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-      border-color: var(--accent);
+      border-color: var(--md-sys-color-primary);
     }
-    
+
     .tool-icon {
       font-size: 48px;
       margin-bottom: 15px;
     }
-    
+
     .tool-name {
       font-family: 'Fredoka One', cursive;
       font-size: 20px;
-      color: var(--accent);
+      color: var(--md-sys-color-primary);
       margin-bottom: 10px;
     }
-    
+
     .tool-description {
       font-size: 13px;
-      color: #666;
+      color: var(--md-sys-color-on-surface-variant);
       line-height: 1.5;
       flex-grow: 1;
     }
-    
+
     h2 {
       font-family: 'Fredoka One', cursive;
-      color: var(--accent);
+      color: var(--md-sys-color-primary);
       text-align: center;
       margin-top: 50px;
       margin-bottom: 30px;
       font-size: 32px;
     }
-    
+
+    .admin-panel {
+      background: var(--md-sys-color-error-container);
+      border: 1px solid var(--md-sys-color-error);
+      border-radius: 10px;
+      padding: 25px;
+      margin: 40px 0;
+      text-align: center;
+    }
+
+    .admin-panel h3 {
+      font-family: 'Fredoka One', cursive;
+      color: var(--md-sys-color-on-error-container);
+      margin-bottom: 15px;
+    }
+
+    .admin-panel p {
+      color: var(--md-sys-color-on-error-container);
+      margin-bottom: 20px;
+      font-size: 13px;
+      opacity: 0.85;
+    }
+
+    .admin-panel .btn-rebuild {
+      background: var(--md-sys-color-error);
+      color: var(--md-sys-color-on-error);
+      border: none;
+      padding: 12px 30px;
+      border-radius: 100px;
+      font-family: 'Nunito', sans-serif;
+      font-weight: 700;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .admin-panel .btn-rebuild:hover {
+      background: var(--md-sys-color-on-error-container);
+      color: var(--md-sys-color-error-container);
+    }
+
+    .admin-panel .btn-rebuild:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .rebuild-status {
+      margin-top: 15px;
+      display: none;
+      padding: 15px;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+
+    .rebuild-status.success {
+      background: var(--md-sys-color-primary-container);
+      color: var(--md-sys-color-on-primary-container);
+    }
+
+    .rebuild-status.error {
+      background: var(--md-sys-color-surface-variant);
+      color: var(--md-sys-color-error);
+      border: 1px solid var(--md-sys-color-error);
+    }
+
+    .rebuild-status.loading {
+      background: var(--md-sys-color-surface-variant);
+      color: var(--md-sys-color-on-surface-variant);
+    }
+
     footer {
       text-align: center;
       padding: 20px;
-      color: #666;
+      color: var(--md-sys-color-on-surface-variant);
       font-size: 13px;
     }
   </style>
