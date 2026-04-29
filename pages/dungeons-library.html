@@ -12,77 +12,6 @@
             color-scheme: light dark;
         }
 
-        body.dark-mode {
-            background: #111;
-            color: #eee;
-        }
-
-        body.dark-mode .site-header,
-        body.dark-mode .viewer-controls,
-        body.dark-mode .map-panel,
-        body.dark-mode .dungeon-card,
-        body.dark-mode .dungeon-content,
-        body.dark-mode .entry,
-        body.dark-mode .viewer-sidebar,
-        body.dark-mode .info-tab,
-        body.dark-mode .info-tab-content,
-        body.dark-mode .modal-content {
-            background: #1f2732;
-            color: #eee;
-            border-color: #2c3a46;
-        }
-
-        body.dark-mode .dungeon-card:hover {
-            border-color: #4a90e2;
-            box-shadow: 0 4px 12px rgba(74, 144, 226, 0.25);
-        }
-
-        body.dark-mode .dungeon-card p,
-        body.dark-mode .entry-content,
-        body.dark-mode .entry-meta,
-        body.dark-mode .door-mechanics,
-        body.dark-mode .entry-traps,
-        body.dark-mode .treasure-hidden,
-        body.dark-mode .treasure-items,
-        body.dark-mode .monster-search-item-subtitle,
-        body.dark-mode .info-value {
-            color: #cdd3db;
-        }
-
-        body.dark-mode .btn,
-        body.dark-mode .back-btn,
-        body.dark-mode .add-room-btn,
-        body.dark-mode .add-feature-btn,
-        body.dark-mode .entry-edit-btn,
-        body.dark-mode .btn-delete-text,
-        body.dark-mode .edit-mode-toggle,
-        body.dark-mode .modal-buttons .save-btn,
-        body.dark-mode .modal-buttons .cancel-btn {
-            background: #2c3a46;
-            color: #eee;
-            border-color: transparent;
-        }
-
-        body.dark-mode .btn:hover,
-        body.dark-mode .back-btn:hover,
-        body.dark-mode .add-room-btn:hover,
-        body.dark-mode .add-feature-btn:hover,
-        body.dark-mode .entry-edit-btn:hover,
-        body.dark-mode .btn-delete-text:hover,
-        body.dark-mode .edit-mode-toggle:hover,
-        body.dark-mode .modal-buttons .save-btn:hover,
-        body.dark-mode .modal-buttons .cancel-btn:hover {
-            background: #3b4a57;
-        }
-
-        body.dark-mode input,
-        body.dark-mode select,
-        body.dark-mode textarea {
-            background: #16202b;
-            color: #eee;
-            border-color: #2c3a46;
-        }
-
         .dungeons-container {
             max-width: 1200px;
             margin: 2rem auto;
@@ -142,33 +71,6 @@
 
         .dungeon-card .btn:hover {
             background: #357abd;
-        }
-
-        .dark-mode-toggle {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            min-width: 110px;
-            background: #4a90e2;
-            color: white;
-            border: none;
-            padding: 0.5rem 1rem;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            transition: background 0.3s ease, transform 0.2s ease;
-            margin-left: 1rem;
-            position: relative;
-            z-index: 10;
-        }
-
-        .dark-mode-toggle.active {
-            background: #f1c40f;
-            color: #111;
-        }
-
-        .dark-mode-toggle:hover {
-            background: #2c80d4;
         }
 
         .map-controls {
@@ -238,13 +140,13 @@
             width: 100%;
         }
 
-        .viewer-controls {
+        /* .viewer-controls {
             background: #f5f5f5;
             padding: 1.5rem;
             border-bottom: 1px solid #ddd;
             flex-shrink: 0;
             display: block;
-        }
+        } */
 
         .viewer-controls h3 {
             margin-top: 1rem;
@@ -269,7 +171,6 @@
 
         .room-title-header {
             font-size: 1.5rem;
-            color: #333;
             margin: 0.5rem 0 1.25rem 0;
             padding-bottom: 0.35rem;
             border-bottom: 2px solid #4a90e2;
@@ -298,16 +199,16 @@
         }
 
         .entry {
-            background: #f9f9f9;
+            background: var(--md-sys-color-surface-variant);
             padding: 1rem;
             margin: 0.5rem 0;
-            border-left: 3px solid #4a90e2;
+            border-left: 3px solid var(--md-sys-color-primary);
             border-radius: 4px;
+            color: var(--md-sys-color-on-surface);
         }
 
         .entry-title {
             font-weight: bold;
-            color: #333;
             margin: 0 0 0.5rem 0;
         }
 
@@ -496,15 +397,6 @@
             background: #2980b9;
         }
 
-        .btn-delete-text {
-            background: #e74c3c;
-            color: white;
-        }
-
-        .btn-delete-text:hover {
-            background: #c0392b;
-        }
-
         .edit-mode-toggle {
             background: #95a5a6;
             color: white;
@@ -673,7 +565,7 @@
             padding: 0.9rem 1rem;
         }
 
-        .modal-buttons .save-btn,
+        /* .modal-buttons .save-btn,
         #addStairsPairBtn {
             border-radius: 4px;
             padding: 0.75rem 1.5rem;
@@ -766,7 +658,7 @@
         .modal-field textarea {
             resize: vertical;
             min-height: 100px;
-        }
+        } */
 
         .monster-search-shell {
             position: relative;
@@ -1182,7 +1074,6 @@
         }
 
         function initPage() {
-            loadDarkModePreference();
             loadDungeonsList();
 
             // Register tool buttons in the generic tools panel
@@ -1191,7 +1082,6 @@
             PageBase.addToolButton('➕ Add Stairs', 'sidebarAddStairs', openStairsCreator);
             PageBase.addToolButton('➕ Add Feature', 'sidebarAddFeature', openAddFeatureModal);
             PageBase.addToolButton('✏️ Edit Dungeon Info', 'sidebarEditInfo', openEditDungeonInfoModal);
-            PageBase.addToolButton('🌙 Dark Mode', 'darkModeToggle', toggleDarkMode);
             PageBase.addToolButton('✎ Edit Mode OFF', 'editModeBtn', toggleEditMode);
 
             // Check if a dungeon ID is in the URL hash
@@ -3452,29 +3342,6 @@
         }
 
         // Add Feature Modal Functions
-        function toggleDarkMode() {
-            const enabled = !document.body.classList.contains('dark-mode');
-            document.body.classList.toggle('dark-mode', enabled);
-            const toggle = document.getElementById('darkModeToggle');
-            if (toggle) {
-                toggle.classList.toggle('active', enabled);
-                toggle.textContent = enabled ? '☀️ Light Mode' : '🌙 Dark Mode';
-            }
-            localStorage.setItem('dungeonLibraryDarkMode', enabled ? 'true' : 'false');
-        }
-
-        function loadDarkModePreference() {
-            const preferred = localStorage.getItem('dungeonLibraryDarkMode');
-            if (preferred === 'true') {
-                document.body.classList.add('dark-mode');
-                const toggle = document.getElementById('darkModeToggle');
-                if (toggle) {
-                    toggle.classList.add('active');
-                    toggle.textContent = '☀️ Light Mode';
-                }
-            }
-        }
-
         function openAddFeatureModal() {
             if (!currentDungeon) return;
             isEditingEntry = false;
@@ -3704,7 +3571,7 @@
         async function loadMonstersForModal() {
             try {
                 modalMonsters = await ApiHelpers.ApiService.getMonsters();
-                modalMonsters.sort((a, b) => String(a.title || '').localeCompare(String(b.title || ''), undefined, { sensitivity: 'base' }));
+                modalMonsters.sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), undefined, { sensitivity: 'base' }));
                 renderModalMonsterResults(document.getElementById('featureMonsterSearch')?.value || '');
             } catch (e) {
                 console.error('Error loading monsters:', e);
@@ -3737,7 +3604,7 @@
 
             const normalizedQuery = String(query || '').trim().toLowerCase();
             let matches = normalizedQuery
-                ? modalMonsters.filter(monster => String(monster.title || '').toLowerCase().includes(normalizedQuery))
+                ? modalMonsters.filter(monster => String(monster.name || '').toLowerCase().includes(normalizedQuery))
                 : modalMonsters.slice(0, 15);
 
             if (!normalizedQuery && selectedModalMonsterId) {
@@ -3759,12 +3626,12 @@
                 const item = document.createElement('div');
                 item.className = 'monster-search-item' + (selectedModalMonsterId === String(monster.id) ? ' selected' : '');
                 item.dataset.id = monster.id;
-                item.dataset.title = monster.title;
+                item.dataset.title = monster.name;
                 item.innerHTML = `
-                    <div class="monster-search-item-title">${escapeHtml(monster.title)}</div>
+                    <div class="monster-search-item-title">${escapeHtml(monster.name)}</div>
                     <div class="monster-search-item-subtitle">${escapeHtml(monster.explanation || monster.type || '')}</div>
                 `;
-                item.addEventListener('click', () => selectModalMonster(String(monster.id), monster.title));
+                item.addEventListener('click', () => selectModalMonster(String(monster.id), monster.name));
                 results.appendChild(item);
             });
         }

@@ -1,59 +1,39 @@
 :root {
-  /* Material 3 Dark Mode Core Roles
-   * 
-   * This color system follows Google's Material Design 3 (Material You) dark mode palette
-   * for accessibility and consistency. All UI colors are defined as CSS variables using
-   * semantic roles that describe their purpose in the interface.
-   * 
-   * Color Roles:
-   * - Primary: Main brand color (#80CBC4 - Teal). Used for primary actions, headers, highlights.
-   * - Secondary: Complementary color (#B2DFDB - Light Teal). Used for secondary actions, supporting elements.
-   * - Tertiary: Accent color (#FFE082 - Amber). Used for warnings, special states, highlights.
-   * - Background: Page/canvas background (#191C1C - Very Dark Gray). Main surface for content.
-   * - Surface: Card/container background (#191C1C - Very Dark Gray). Used for panels, cards.
-   * - Error: Semantic red (#FFB4A9 - Light Red). Used for errors, destructive actions.
-   * - Outline: Border/divider color (#899391 - Medium Gray). Used for borders, dividers.
-   * 
-   * On* variants are text colors that provide sufficient contrast when placed on their paired role:
-   * - On-Primary: Text on primary backgrounds (#003632 - Very Dark Teal)
-   * - On-Surface: Text on surface/main backgrounds (#E0E3E2 - Light Gray)
-   * - On-Error: Text on error backgrounds (#680003 - Very Dark Red)
-   * 
-   * *Container variants provide additional hierarchy levels for complex layouts.
-   * 
-   * Usage:
-   * - Background colors: Use background, surface, or container roles
-   * - Text colors: Use on-background, on-surface, or on-error roles
-   * - Borders/dividers: Use outline role
-   * - Interactive states: Use primary, secondary, or error roles
-   * 
-   * Dark Mode Default:
-   * All colors are optimized for dark mode viewing. Light mode can be implemented via
-   * CSS media queries or theme switching by redefining these variables.
-   */
-  --md-sys-color-primary: #80CBC4;
-  --md-sys-color-on-primary: #003632;
-  --md-sys-color-primary-container: #004F4B;
-  --md-sys-color-on-primary-container: #B2DFDB;
-  --md-sys-color-secondary: #B2DFDB;
-  --md-sys-color-on-secondary: #003632;
-  --md-sys-color-secondary-container: #004F4B;
-  --md-sys-color-on-secondary-container: #B2DFDB;
-  --md-sys-color-tertiary: #FFE082;
-  --md-sys-color-on-tertiary: #594200;
-  --md-sys-color-tertiary-container: #654A00;
-  --md-sys-color-on-tertiary-container: #FFECB3;
-  --md-sys-color-background: #191C1C;
-  --md-sys-color-on-background: #E0E3E2;
-  --md-sys-color-surface: #191C1C;
-  --md-sys-color-on-surface: #E0E3E2;
-  --md-sys-color-surface-variant: #404947;
-  --md-sys-color-on-surface-variant: #BEC9C4;
-  --md-sys-color-outline: #899391;
-  --md-sys-color-error: #FFB4A9;
-  --md-sys-color-on-error: #680003;
-  --md-sys-color-error-container: #930006;
-  --md-sys-color-on-error-container: #FFDAD4;
+  /* Primary — Teal */
+  --md-sys-color-primary:                #80CBC4;
+  --md-sys-color-on-primary:             #003632;
+  --md-sys-color-primary-container:      #004F4B;
+  --md-sys-color-on-primary-container:   #9EF2EB;
+
+  /* Secondary — Muted Teal-Blue (distinct from primary) */
+  --md-sys-color-secondary:              #84CFCB;  /* was a clone — now shifted blue */
+  --md-sys-color-on-secondary:           #003735;
+  --md-sys-color-secondary-container:    #1A4D4A;  /* was identical to primary-container */
+  --md-sys-color-on-secondary-container: #A0ECE8;
+
+  /* Tertiary — Amber */
+  --md-sys-color-tertiary:               #FFE082;
+  --md-sys-color-on-tertiary:            #3D2C00;  /* darkened for better contrast */
+  --md-sys-color-tertiary-container:     #5C4200;  /* slightly deepened */
+  --md-sys-color-on-tertiary-container:  #FFECB3;
+
+  /* Background & Surface */
+  --md-sys-color-background:             #191C1C;
+  --md-sys-color-on-background:          #E0E3E2;
+  --md-sys-color-surface:                #191C1C;
+  --md-sys-color-on-surface:             #E0E3E2;
+  --md-sys-color-surface-variant:        #2E3533;  /* toned down — was too big a jump */
+  --md-sys-color-on-surface-variant:     #BEC9C4;
+
+  /* Outline */
+  --md-sys-color-outline:                #899391;
+  --md-sys-color-outline-variant:        #3F4946;  /* add this — useful for dividers */
+
+  /* Error */
+  --md-sys-color-error:                  #FFB4A9;
+  --md-sys-color-on-error:               #680003;
+  --md-sys-color-error-container:        #930006;
+  --md-sys-color-on-error-container:     #FFDAD4;
 }
 
 /* Modern responsive shell layout */
@@ -75,7 +55,7 @@
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  background: var(--page-bg);
+  background: var(--md-sys-color-background);
   margin: 0;
 }
 
@@ -98,9 +78,9 @@ hp-tracker-topbar,
   top: 0;
   z-index: 20;
   background: rgba(25, 28, 28, 0.98);
-  border-bottom: 2px solid var(--panel-border);
-  padding: var(--space-md) var(--space-lg);
-  box-shadow: var(--shadow-sm);
+  border-bottom: 2px solid var(--md-sys-color-outline);
+  padding: 0.75rem 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   backdrop-filter: blur(2px);
 }
 
@@ -109,7 +89,7 @@ hp-tracker-topbar,
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-sm);
+  gap: 0.5rem;
   justify-content: flex-end;
 }
 .page-title-row,
@@ -125,19 +105,19 @@ hp-tracker-topbar,
 
 .page-title-row {
   padding-bottom: 8px;
-  border-bottom: 1px solid var(--panel-border);
+  border-bottom: 1px solid var(--md-sys-color-outline);
 }
 
 .page-title {
   margin: 0;
   font-size: clamp(1.6rem, 2.7vw, 2.4rem);
   line-height: 1.05;
-  color: var(--text-normal);
+  color: var(--md-sys-color-on-surface);
 }
 
 .page-subtitle {
   margin: 0.45rem 0 0;
-  color: var(--text-muted);
+  color: var(--md-sys-color-on-surface-variant);
   font-size: 0.96rem;
   max-width: 70ch;
 }
@@ -167,7 +147,7 @@ hp-tracker-topbar,
   display: flex;
   flex-direction: column;
   gap: 6px;
-  color: var(--text-normal);
+  color: var(--md-sys-color-on-surface);
   font-size: 0.8rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -178,7 +158,7 @@ hp-tracker-topbar,
 .character-select-field label,
 .filter-field label {
   font-size: 0.75rem;
-  color: var(--text-normal);
+  color: var(--md-sys-color-on-surface);
   font-weight: 700;
 }
 
@@ -186,12 +166,12 @@ hp-tracker-topbar,
 .character-select-field select,
 .filter-field select,
 .filter-field input {
-  border: 2px solid var(--panel-border);
+  border: 2px solid var(--md-sys-color-outline);
   border-radius: 10px;
   padding: 12px 14px;
   font-size: 1rem;
   background: var(--md-sys-color-surface-variant);
-  color: var(--text-normal);
+  color: var(--md-sys-color-on-surface);
 }
 
 .search-field input:focus,
@@ -199,8 +179,8 @@ hp-tracker-topbar,
 .filter-field select:focus,
 .filter-field input:focus {
   outline: none;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(178, 223, 219, 0.25);
+  border-color: var(--md-sys-color-primary);
+  box-shadow: 0 0 0 3px rgba(128, 203, 196, 0.25);
 }
 
 /* Shared modal theme */
@@ -235,7 +215,7 @@ hp-tracker-topbar,
 .modal-content h3 {
   margin-top: 0;
   margin-bottom: 1rem;
-  color: var(--text-normal);
+  color: var(--md-sys-color-on-surface);
 }
 
 .modal-field {
@@ -246,7 +226,7 @@ hp-tracker-topbar,
   display: block;
   margin-bottom: 0.4rem;
   font-weight: 700;
-  color: var(--text-normal);
+  color: var(--md-sys-color-on-surface);
 }
 
 .modal-field input,
@@ -259,7 +239,7 @@ hp-tracker-topbar,
   font-family: inherit;
   font-size: 0.95rem;
   background: var(--md-sys-color-surface-variant);
-  color: var(--text-normal);
+  color: var(--md-sys-color-on-surface);
 }
 
 .modal-field textarea {
@@ -287,7 +267,7 @@ hp-tracker-topbar,
 .modal-buttons .cancel-btn,
 .modal-buttons .close-btn {
   background: var(--md-sys-color-surface-variant);
-  color: var(--text-normal);
+  color: var(--md-sys-color-on-surface);
   border: 1px solid var(--md-sys-color-outline);
 }
 
@@ -325,7 +305,7 @@ hp-tracker-topbar,
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  color: var(--text-normal);
+  color: var(--md-sys-color-on-surface);
   font-size: 0.8rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -337,7 +317,7 @@ hp-tracker-topbar,
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.6px;
-  color: var(--text-normal);
+  color: var(--md-sys-color-on-surface);
 }
 
 .level-filter-row {
@@ -350,10 +330,10 @@ hp-tracker-topbar,
   align-items: center;
   gap: 0.65rem;
   padding: 12px 14px;
-  border: 2px solid var(--panel-border);
+  border: 2px solid var(--md-sys-color-outline);
   border-radius: 14px;
   background: var(--md-sys-color-surface);
-  color: var(--text-normal);
+  color: var(--md-sys-color-on-surface);
   font-size: 0.95rem;
   font-weight: 700;
   cursor: pointer;
@@ -413,11 +393,11 @@ hp-tracker-topbar,
 .list-panel,
 .summary-panel,
 .dialog-panel {
-  background: var(--panel-bg);
+  background: var(--md-sys-color-surface-variant);
   border-radius: 18px;
   padding: 18px;
-  box-shadow: 0 12px 30px var(--panel-shadow);
-  border: 1px solid var(--panel-border);
+  box-shadow: none;
+  border: 1px solid var(--md-sys-color-outline-variant);
 }
 
 /* Stat and save grid styles (from monster-book) */
@@ -466,7 +446,7 @@ hp-tracker-topbar,
 .summary-label,
 .field-label {
   font-weight: 700;
-  color: var(--text-strong);
+  color: var(--md-sys-color-on-surface);
   display: block;
   margin-bottom: 0.25rem;
 }
@@ -477,7 +457,7 @@ hp-tracker-topbar,
   margin-bottom: 1rem;
   padding-bottom: 0.75rem;
   border-bottom: 1px solid var(--md-sys-color-outline);
-  color: var(--text-muted);
+  color: var(--md-sys-color-on-surface-variant);
   line-height: 1.65;
   white-space: pre-wrap;
 }
@@ -492,7 +472,7 @@ hp-tracker-topbar,
 .detail-item-text,
 .panel-text,
 .body-text {
-  color: var(--text-muted);
+  color: var(--md-sys-color-on-surface-variant);
   line-height: 1.65;
   white-space: pre-wrap;
 }
@@ -502,7 +482,7 @@ hp-tracker-topbar,
 .body-list {
   margin: 0.35rem 0 0 1.25rem;
   padding-left: 0;
-  color: var(--text-muted);
+  color: var(--md-sys-color-on-surface-variant);
 }
 
 .detail-item-list li,
@@ -588,11 +568,11 @@ hp-tracker-topbar,
 .viewer-sidebar,
 .sidebar-panel,
 .toolbox-panel {
-  background: var(--panel-bg);
-  border: 1px solid var(--panel-border);
+  background: var(--md-sys-color-surface-variant);
+  border: 1px solid var(--md-sys-color-outline-variant);
   border-radius: 18px;
   padding: 18px;
-  box-shadow: 0 12px 30px var(--panel-shadow);
+  box-shadow: none;
 }
 
 .viewer-sidebar h3,
@@ -600,7 +580,7 @@ hp-tracker-topbar,
   margin-top: 0;
   margin-bottom: 1rem;
   font-size: 1rem;
-  color: var(--text-normal);
+  color: var(--md-sys-color-on-surface);
 }
 
 .action-panel-wrapper {
@@ -628,9 +608,9 @@ hp-tracker-topbar,
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  border: 2px solid var(--panel-border);
+  border: 2px solid var(--md-sys-color-outline);
   background: var(--md-sys-color-surface);
-  color: var(--text-normal);
+  color: var(--md-sys-color-on-surface);
   border-radius: 999px;
   padding: 10px 14px;
   cursor: pointer;
@@ -674,7 +654,7 @@ hp-tracker-topbar,
 @media (max-width: 900px) {
   .page-body {
     grid-template-columns: 1fr;
-    padding: var(--space-md) var(--space-xs);
+    padding: 0.75rem 0.25rem;
   }
   .page-sidebar {
     position: relative;
@@ -688,12 +668,12 @@ hp-tracker-topbar,
 .entity-list-item,
 .row-item,
 .selection-item {
-  background: var(--panel-bg);
-  border: 2px solid var(--panel-border);
-  border-radius: var(--radius-sm);
-  padding: var(--space-md) var(--space-lg);
+  background: var(--md-sys-color-surface);
+  border: 2px solid var(--md-sys-color-outline);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
   cursor: pointer;
-  transition: box-shadow var(--transition), border-color var(--transition), transform var(--transition);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
 }
 .list-item:hover,
 .panel-item:hover,
@@ -704,8 +684,8 @@ hp-tracker-topbar,
 .panel-item.selected,
 .entity-list-item.selected,
 .selection-item.selected {
-  border-color: var(--accent);
-  box-shadow: var(--shadow-md);
+  border-color: var(--md-sys-color-primary);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   transform: translateY(-1px) scale(1.01);
 }
 .list-item:focus-visible,
@@ -714,8 +694,8 @@ hp-tracker-topbar,
 .row-item:focus-visible,
 .selection-item:focus-visible {
   outline: none;
-  border-color: var(--accent);
-  box-shadow: var(--focus-ring);
+  border-color: var(--md-sys-color-primary);
+  box-shadow: 0 0 0 3px rgba(128, 203, 196, 0.25);
 }
 
 .list-item-title,
@@ -724,7 +704,7 @@ hp-tracker-topbar,
   margin: 0;
   font-size: 1rem;
   font-weight: 700;
-  color: var(--text-normal);
+  color: var(--md-sys-color-on-surface);
 }
 
 .list-item-subtitle,
@@ -744,14 +724,14 @@ hp-tracker-topbar,
 .cta-button,
 .toggle-button {
   border: none;
-  background: linear-gradient(90deg, var(--accent) 60%, var(--accent-hover) 100%);
+  background: linear-gradient(90deg, var(--md-sys-color-primary) 60%, var(--md-sys-color-primary-container) 100%);
   color: var(--md-sys-color-on-surface);
   font-weight: 700;
-  padding: var(--space-sm) var(--space-lg);
+  padding: 0.5rem 1rem;
   border-radius: 999px;
   cursor: pointer;
-  box-shadow: var(--shadow-sm);
-  transition: background var(--transition), box-shadow var(--transition), transform var(--transition);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
   outline: none;
   font-size: 1rem;
 }
@@ -761,7 +741,7 @@ hp-tracker-topbar,
 .action-button:focus,
 .cta-button:focus,
 .toggle-button:focus {
-  box-shadow: var(--shadow-md), var(--focus-ring);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), 0 0 0 3px rgba(128, 203, 196, 0.25);
 }
 .button:hover:not(:disabled),
 .btn:hover:not(:disabled),
@@ -769,7 +749,7 @@ hp-tracker-topbar,
 .action-button:hover:not(:disabled),
 .cta-button:hover:not(:disabled),
 .toggle-button:hover:not(:disabled) {
-  background: linear-gradient(90deg, var(--accent-hover) 60%, var(--accent) 100%);
+  background: linear-gradient(90deg, var(--md-sys-color-primary-container) 60%, var(--md-sys-color-primary) 100%);
   transform: translateY(-2px) scale(1.03);
 }
 .button:disabled,
@@ -798,21 +778,21 @@ hp-tracker-topbar,
   padding: 20px;
   border-radius: 14px;
   background: var(--md-sys-color-surface-variant);
-  color: var(--text-muted);
+  color: var(--md-sys-color-on-surface-variant);
   text-align: center;
 }
 
 .back-link {
   display: inline-block;
   margin-bottom: 20px;
-  color: var(--accent);
+  color: var(--md-sys-color-primary);
   text-decoration: none;
   font-weight: 700;
   transition: color 0.3s ease;
 }
 
 .back-link:hover {
-  color: var(--panel-border);
+  color: var(--md-sys-color-outline);
 }
 
 /* ─── Two-pane fixed viewer layout (dungeons-library / monster-book) ─────── */

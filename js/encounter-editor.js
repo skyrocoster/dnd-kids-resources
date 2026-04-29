@@ -2,7 +2,7 @@
 // Handles sidebar list/search, encounter detail, and editing logic
 
 document.addEventListener('DOMContentLoaded', async function() {
-  const { apiFetch } = window.ApiHelpers || {};
+  const { apiFetch, API_BASE } = window.ApiHelpers || {};
   const { escapeHtml } = window.DomUtils || {};
   const searchInput = document.getElementById('search-encounter-input');
   const encounterListEl = document.getElementById('encounter-list');
@@ -79,7 +79,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
   async function loadEncounters() {
     try {
-      encounters = await ApiHelpers.ApiService.getEncounters();
+      encounters = await ApiHelpers.ApiService.getEncounters(); // Uses API_BASE + /encounters
       encounters.sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), undefined, { sensitivity: 'base' }));
       renderEncounterList(encounters);
       updateEncounterCount(encounters.length);
@@ -396,7 +396,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   async function fetchMonsters(query, page) {
     try {
       const q = (query || '').trim();
-      const data = await ApiHelpers.ApiService.getMonsters(q, page, monsterPageSize);
+      const data = await apiFetch(`/monsters?q=${encodeURIComponent(q)}&page=${page}&per_page=${monsterPageSize}`);
       const results = extractMonsterResults(data);
       monsterTotal = (data && data.total != null) ? data.total : results.length;
       monsterPage = page;
@@ -433,7 +433,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
     enc.units = enc.units || [];
     enc.units.push(unit);
-    ApiHelpers.ApiService.updateEncounter(selectedEncounterId, { name: enc.name, units: enc.units })
+    ApiHelpers.ApiService.updateEncounter(selectedEncounterId, { name: enc.name, units: enc.units }) // Uses API_BASE + /encounters
       .then(saved => {
         const idx = encounters.findIndex(e => e.id == saved.id);
         if (idx >= 0) encounters[idx] = saved; else encounters.push(saved);
@@ -465,5 +465,5 @@ document.addEventListener('DOMContentLoaded', async function() {
   }
 
   // Load monsters initially
-  fetchMonsters('', 1);
+  fetchMonsters('', 1); // Uses /api/monsters and API_BASE via apiFetch
 });

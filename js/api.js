@@ -1,7 +1,5 @@
 (function(window) {
-  const API_BASE = (window.location.protocol === 'file:' || !window.location.origin)
-    ? 'http://127.0.0.1:8000'
-    : '/api';
+  const API_BASE = '/api';
 
   async function apiFetch(path, options = {}) {
     const response = await fetch(`${API_BASE}${path}`, options);
@@ -189,6 +187,6 @@
     }),
     deleteEncounter: (id) => apiFetch(`/encounters/${id}`, {
       method: 'DELETE'
-    }),
+    }), // All encounter API calls use API_BASE and /encounters path consistently.
   };
 })(window);

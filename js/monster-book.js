@@ -353,12 +353,12 @@ document.addEventListener('DOMContentLoaded', async function() {
       const item = document.createElement('button');
       item.type = 'button';
       item.className = 'monster-list-item';
-      item.dataset.title = monster.title;
+      item.dataset.title = monster.name;
       item.innerHTML = `
-        <div class="monster-list-item-title">${escapeHtml(monster.title)}</div>
+        <div class="monster-list-item-title">${escapeHtml(monster.name)}</div>
         <div class="monster-list-item-subtitle">Click to view details</div>
       `;
-      item.addEventListener('click', () => selectMonster(monster.title, true));
+      item.addEventListener('click', () => selectMonster(monster.name, true));
       monsterListEl.appendChild(item);
     });
   }
@@ -374,7 +374,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   function filterMonsters(term) {
     const lower = term.trim().toLowerCase();
     if (!lower) return monsters;
-    return monsters.filter(monster => monster.title.toLowerCase().includes(lower));
+    return monsters.filter(monster => monster.name.toLowerCase().includes(lower));
   }
 
   searchInput.addEventListener('input', () => {
@@ -395,9 +395,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     const filtered = filterMonsters(query);
     renderMonsterList(filtered);
     updateMonsterCount(filtered.length);
-    if (!filtered.find(monster => monster.title === selectedMonsterTitle)) {
+    if (!filtered.find(monster => monster.name === selectedMonsterTitle)) {
       if (filtered.length) {
-        selectMonster(filtered[0].title);
+        selectMonster(filtered[0].name);
       } else {
         showPlaceholder('No monsters match your search.');
       }
@@ -407,7 +407,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   async function loadMonsters() {
     try {
       monsters = await apiFetch('/monsters');
-      monsters.sort((a, b) => String(a.title || '').localeCompare(String(b.title || ''), undefined, { sensitivity: 'base' }));
+      monsters.sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), undefined, { sensitivity: 'base' }));
       const requestedTitle = getQueryParam('title');
 
       if (requestedTitle) {
@@ -417,8 +417,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         updateMonsterCount(visibleMonsters.length);
 
         if (visibleMonsters.length > 0) {
-          const requestedMonster = visibleMonsters.find(monster => String(monster.title).toLowerCase() === String(requestedTitle).toLowerCase());
-          selectMonster(requestedMonster ? requestedMonster.title : visibleMonsters[0].title);
+          const requestedMonster = visibleMonsters.find(monster => String(monster.name).toLowerCase() === String(requestedTitle).toLowerCase());
+          selectMonster(requestedMonster ? requestedMonster.name : visibleMonsters[0].name);
         } else {
           showPlaceholder(`No monsters matched "${requestedTitle}".`);
         }

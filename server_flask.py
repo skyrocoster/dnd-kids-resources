@@ -74,34 +74,21 @@ def get_spell_components_api():
 
 @app.route('/api/monsters', methods=['GET'])
 def get_monsters_api():
-    """API endpoint: GET /api/monsters - Returns lightweight monster records for the editor.
+    """API endpoint: GET /api/monsters - Returns lightweight monster records.
 
-    Query params supported for the frontend dropdown/autocomplete:
+    Response format depends on whether pagination is requested:
+      - No 'page' param → flat JSON array [ {id,name,cr,hp}, ... ] (all matching results)
+      - 'page' param present → paginated object { total, page, per_page, results: [...] }
+
+    Query params:
       - q: partial search (case-insensitive) matches name OR cr
-      - page: 1-based page number (default 1)
-      - per_page: items per page (default 50, max 200)
-      - cr_min, cr_max: optional CR range (accepts fractions like '1/4')
-
-    Returns JSON: { total: <int>, page: <int>, per_page: <int>, results: [ {id,name,cr,hp}, ... ] }
+      - page: 1-based page number — presence triggers paginated response format
+      - per_page: items per page (default 50, max 200) — only used in paginated mode
+      - cr_min, cr_max: optional CR range filter (accepts fractions like '1/4')
     """
     try:
         q = (request.args.get('q') or '').strip()
-
-        try:
-            page = int(request.args.get('page', 1))
-        except (TypeError, ValueError):
-            return jsonify({"error": "Invalid 'page' parameter"}), 400
-        page = max(1, page)
-
-        try:
-            per_page = int(request.args.get('per_page', 50))
-        except (TypeError, ValueError):
-            return jsonify({"error": "Invalid 'per_page' parameter"}), 400
-        per_page = max(1, min(per_page, 200))
-
-        # Convert to limit/offset for SQL
-        limit = per_page
-        offset = (page - 1) * per_page
+        paginate = 'page' in request.args
 
         cr_min_raw = request.args.get('cr_min')
         cr_max_raw = request.args.get('cr_max')
@@ -120,7 +107,6 @@ def get_monsters_api():
                             return float(parts[0]) / float(parts[1])
                         except Exception:
                             return None
-                # fallback to float conversion
                 return float(v)
             except Exception:
                 return None
@@ -139,7 +125,6 @@ def get_monsters_api():
                         return int(float(avg))
                     except Exception:
                         return None
-            # try direct numeric
             try:
                 return int(raw_hp)
             except Exception:
@@ -151,11 +136,57 @@ def get_monsters_api():
         params = []
         where_clause = "1=1"
         if q:
-            # search both name and cr fields for simple autocomplete
             where_clause += " AND (name LIKE ? COLLATE NOCASE OR cr LIKE ? COLLATE NOCASE)"
             params.extend([f"%{q}%", f"%{q}%"])
 
-        # If CR filters are not provided, let SQL do LIMIT/OFFSET and COUNT for efficiency
+        def build_results(rows):
+            results = []
+            for row in rows:
+                results.append({
+                    'id': row['id'],
+                    'name': row['name'],
+                    'cr': row['cr'],
+                    'hp': extract_hp_average(row['hp'])
+                })
+            return results
+
+        # --- Flat array mode (no 'page' param) ---
+        if not paginate:
+            if cr_min is None and cr_max is None:
+                select_q = f"SELECT id, name, hp, cr FROM monsters WHERE {where_clause} ORDER BY name"
+                cursor.execute(select_q, params)
+                rows = cursor.fetchall()
+            else:
+                select_q = f"SELECT id, name, hp, cr FROM monsters WHERE {where_clause} ORDER BY name"
+                cursor.execute(select_q, params)
+                rows = [
+                    row for row in cursor.fetchall()
+                    if (lambda f: f is not None and
+                        (cr_min is None or f >= cr_min) and
+                        (cr_max is None or f <= cr_max)
+                    )(cr_to_float(row['cr']))
+                ]
+            conn.close()
+            return jsonify(build_results(rows))
+
+        # --- Paginated mode ('page' param present) ---
+        try:
+            page = int(request.args.get('page', 1))
+        except (TypeError, ValueError):
+            conn.close()
+            return jsonify({"error": "Invalid 'page' parameter"}), 400
+        page = max(1, page)
+
+        try:
+            per_page = int(request.args.get('per_page', 50))
+        except (TypeError, ValueError):
+            conn.close()
+            return jsonify({"error": "Invalid 'per_page' parameter"}), 400
+        per_page = max(1, min(per_page, 200))
+
+        limit = per_page
+        offset = (page - 1) * per_page
+
         if cr_min is None and cr_max is None:
             count_q = f"SELECT COUNT(*) as cnt FROM monsters WHERE {where_clause}"
             cursor.execute(count_q, params)
@@ -165,50 +196,26 @@ def get_monsters_api():
             cursor.execute(select_q, params + [limit, offset])
             rows = cursor.fetchall()
 
-            results = []
-            for row in rows:
-                hp_val = extract_hp_average(row['hp'])
-                results.append({
-                    'id': row['id'],
-                    'name': row['name'],
-                    'cr': row['cr'],
-                    'hp': hp_val
-                })
-
             conn.close()
-            return jsonify({'total': total, 'page': page, 'per_page': per_page, 'results': results})
+            return jsonify({'total': total, 'page': page, 'per_page': per_page, 'results': build_results(rows)})
 
-        # If CR range filters are provided, we must filter in Python because CR is stored as freeform text
+        # CR range filter requires Python-side filtering
         select_q = f"SELECT id, name, hp, cr FROM monsters WHERE {where_clause} ORDER BY name"
         cursor.execute(select_q, params)
         all_rows = cursor.fetchall()
 
-        filtered = []
-        for row in all_rows:
-            row_cr = row['cr']
-            row_cr_float = cr_to_float(row_cr)
-            if row_cr_float is None:
-                continue
-            if cr_min is not None and row_cr_float < cr_min:
-                continue
-            if cr_max is not None and row_cr_float > cr_max:
-                continue
-            filtered.append(row)
+        filtered = [
+            row for row in all_rows
+            if (lambda f: f is not None and
+                (cr_min is None or f >= cr_min) and
+                (cr_max is None or f <= cr_max)
+            )(cr_to_float(row['cr']))
+        ]
 
         total = len(filtered)
         sliced = filtered[offset:offset + limit]
-        results = []
-        for row in sliced:
-            hp_val = extract_hp_average(row['hp'])
-            results.append({
-                'id': row['id'],
-                'name': row['name'],
-                'cr': row['cr'],
-                'hp': hp_val
-            })
-
         conn.close()
-        return jsonify({'total': total, 'page': page, 'per_page': per_page, 'results': results})
+        return jsonify({'total': total, 'page': page, 'per_page': per_page, 'results': build_results(sliced)})
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
