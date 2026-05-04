@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
   let encounters = [];
   let selectedEncounterId = null;
+  let initialEncounterId = null;
   let suppressInputChange = false;
 
   function extractMonsterResults(data) {
@@ -54,6 +55,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     return encounters.filter(encounter => encounter.name.toLowerCase().includes(lower));
   }
 
+  (function parseInitialEncounterFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    initialEncounterId = params.get('id') || params.get('encounterId') || null;
+  })();
+
   searchInput.addEventListener('input', () => {
     if (suppressInputChange) {
       suppressInputChange = false;
@@ -83,6 +89,13 @@ document.addEventListener('DOMContentLoaded', async function() {
       encounters.sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), undefined, { sensitivity: 'base' }));
       renderEncounterList(encounters);
       updateEncounterCount(encounters.length);
+      if (initialEncounterId) {
+        const matching = encounters.find(encounter => String(encounter.id) === String(initialEncounterId));
+        if (matching) {
+          selectEncounter(matching.id, true);
+        }
+        initialEncounterId = null;
+      }
     } catch (error) {
       encounterListEl.innerHTML = '<div class="monster-detail-placeholder">Could not load encounters.</div>';
       encounterCount.textContent = 'Error loading encounters';
@@ -118,8 +131,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const custName = escapeHtml(unit.name || '');
                 return `
                 <div class="field-row" data-unit-idx="${idx}" data-monster-id="${unit.monster_id || ''}">
-                  <span class="unit-original-name" style="display:inline-flex; align-items:center; background:#f0f0f0; border:1px solid #ccc; border-radius:4px; padding:4px 6px; font-weight:700; white-space:nowrap;" title="Original monster name">${origName}</span>
-                  <input type="hidden" name="unit-original-name-${idx}" value="${origName}" />
+                  <span class="unit-original-name" style="display:inline-flex; align-items:center; border:1px solid #ccc; border-radius:4px; padding:4px 6px; font-weight:700; white-space:nowrap;" title="Original monster name">${origName}</span>
+                  <input type="hidden" class="field-readonly" name="unit-original-name-${idx}" value="${origName}" />
                   <input type="text" name="unit-name-${idx}" value="${custName}" placeholder="Custom name" class="field-input" style="width:110px;" />
                   <input type="number" name="unit-hp-${idx}" value="${unit.hp_current ?? unit.hp_max ?? ''}" placeholder="HP" class="field-input" style="width:60px;" min="0" />
                   <input type="number" name="unit-ac-${idx}" value="${unit.ac ?? ''}" placeholder="AC" class="field-input" style="width:50px;" min="0" />

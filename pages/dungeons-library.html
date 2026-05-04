@@ -394,11 +394,20 @@
                             <option value="treasure">Treasure</option>
                             <option value="door">Door</option>
                             <option value="npc">NPC</option>
+                            <option value="encounter">Encounter</option>
                             <option value="trap">Trap</option>
                             <option value="trick">Trick</option>
                             <option value="other">Other</option>
                         </select>
                     </label>
+                </div>
+                <div class="modal-field field-encounter-selector hidden">
+                    <label>Encounter:</label>
+                    <div class="search-shell">
+                        <input type="search" id="featureEncounterSearch" placeholder="Type an encounter name..." autocomplete="off">
+                        <div id="featureEncounterResults" class="search-results"></div>
+                    </div>
+                    <input type="hidden" id="featureEncounter">
                 </div>
                 <div class="modal-field field-title">
                     <label>Title:</label>
@@ -563,11 +572,14 @@
         let editModeEnabled = false;
         let modalMonsters = [];
         let selectedModalMonsterId = null;
+        let modalEncounters = [];
+        let selectedModalEncounterId = null;
         let modalNpcs = [];
         let selectedModalNpcId = null;
         let cachedNpcs = null;
 
         const monsterSearchInput = document.getElementById('featureMonsterSearch');
+        const encounterSearchInput = document.getElementById('featureEncounterSearch');
         const npcSearchInput = document.getElementById('featureNpcSearch');
 
         if (monsterSearchInput) {
@@ -576,6 +588,15 @@
                 const monsterInput = document.getElementById('featureMonster');
                 if (monsterInput) monsterInput.value = '';
                 renderModalMonsterResults(event.target.value);
+            });
+        }
+
+        if (encounterSearchInput) {
+            encounterSearchInput.addEventListener('input', (event) => {
+                selectedModalEncounterId = null;
+                const encounterInput = document.getElementById('featureEncounter');
+                if (encounterInput) encounterInput.value = '';
+                renderModalEncounterResults(event.target.value);
             });
         }
 
@@ -1578,6 +1599,7 @@
                 stairs: [],
                 monster: [],
                 npc: [],
+                encounter: [],
                 feature: [],
                 trap: [],
                 treasure: [],
@@ -1639,6 +1661,7 @@
                 door: '🚪 Doors',
                 stairs: '🪜 Stairs',
                 monster: '👹 Monsters',
+                encounter: '👥 Encounters',
                 feature: '✨ Features',
                 trap: '⚠️ Traps',
                 treasure: '💎 Treasure',
@@ -1726,9 +1749,16 @@
                         } else {
                             // Standard entry display for non-treasure entries
                             roomDetailsHtml += `<div class="entry ${entry.entry_type}" data-entry-idx="${realEntryIdx}">`;
-                            const entryTitle = entry.entry_type === 'door' ? getDoorDisplayName(entry) : entry.title;
+                            const entryTitle = entry.entry_type === 'door'
+                                ? getDoorDisplayName(entry)
+                                : entry.entry_type === 'encounter'
+                                    ? `👥 ${entry.title || 'Encounter'}`
+                                    : entry.title;
                             const entryTooltip = entry.entry_type === 'stairs' ? getStairFloorTooltip(entry, displayRoomId) : '';
-                            roomDetailsHtml += `<div class="entry-title"${entryTooltip ? ` title="${escapeHtml(entryTooltip)}"` : ''}>${escapeHtml(entryTitle)}`;
+                            const entryTitleHtml = entry.entry_type === 'encounter' && entry.encounter_id
+                                ? `<a href="encounter-editor.html?id=${encodeURIComponent(entry.encounter_id)}" target="_blank" rel="noopener noreferrer">${escapeHtml(entryTitle)}</a>`
+                                : escapeHtml(entryTitle);
+                            roomDetailsHtml += `<div class="entry-title"${entryTooltip ? ` title="${escapeHtml(entryTooltip)}"` : ''}>${entryTitleHtml}`;
                             
                             if (entry.count) {
                                 roomDetailsHtml += ` <span style="color: #999;">(${entry.count}x)</span>`;
@@ -2869,6 +2899,7 @@
             document.getElementById('featureContent').value = '';
             document.getElementById('featureCount').value = '1';
             clearModalMonsterSelection();
+            clearModalEncounterSelection();
             clearModalNpcSelection();
             const selectedRoom = parseInt(document.getElementById('roomSelector').value);
             currentRoomIdx = Number.isNaN(selectedRoom) ? null : selectedRoom;
@@ -2885,6 +2916,7 @@
             document.getElementById('treasureHiddenDC').value = '';
             document.getElementById('treasureItems').value = '';
             loadMonstersForModal();
+            loadEncountersForModal();
             loadNpcsForModal();
             loadTrapsForModal();
             updateFeatureFields();
@@ -2931,6 +2963,13 @@
                 if (npcInput) npcInput.value = entry.npc_id || '';
                 if (npcSearch) npcSearch.value = entry.npc_name || entry.title || '';
                 renderModalNpcResults(selectedModalNpcId || entry.npc_name || entry.title || '');
+            } else if (entry.entry_type === 'encounter') {
+                selectedModalEncounterId = entry.encounter_id ? String(entry.encounter_id) : null;
+                const encounterSearch = document.getElementById('featureEncounterSearch');
+                const encounterInput = document.getElementById('featureEncounter');
+                if (encounterInput) encounterInput.value = entry.encounter_id || '';
+                if (encounterSearch) encounterSearch.value = entry.title || '';
+                renderModalEncounterResults(selectedModalEncounterId || entry.title || '');
             }
 
             // Set trap single-select
@@ -2964,6 +3003,7 @@
             }
             
             loadMonstersForModal();
+            loadEncountersForModal();
             loadNpcsForModal();
             loadTrapsForModal();
             updateFeatureFields();
@@ -3245,6 +3285,88 @@
             renderModalMonsterResults('');
         }
 
+        async function loadEncountersForModal() {
+            try {
+                modalEncounters = await ApiHelpers.ApiService.getEncounters();
+                if (!Array.isArray(modalEncounters)) {
+                    modalEncounters = [];
+                }
+                modalEncounters.sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), undefined, { sensitivity: 'base' }));
+                renderModalEncounterResults(document.getElementById('featureEncounterSearch')?.value || '');
+            } catch (e) {
+                console.error('Error loading encounters for modal:', e);
+            }
+        }
+
+        function renderModalEncounterResults(query) {
+            const results = document.getElementById('featureEncounterResults');
+            if (!results) return;
+            results.style.display = 'block';
+            results.innerHTML = '';
+
+            const normalizedQuery = String(query || '').trim().toLowerCase();
+            const possibleId = parseInt(normalizedQuery, 10);
+            const isIdQuery = normalizedQuery && !Number.isNaN(possibleId) && String(possibleId) === normalizedQuery;
+            let matches = normalizedQuery
+                ? modalEncounters.filter(encounter => isIdQuery
+                    ? String(encounter.id) === normalizedQuery || String(encounter.name || '').toLowerCase().includes(normalizedQuery)
+                    : String(encounter.name || '').toLowerCase().includes(normalizedQuery))
+                : modalEncounters.slice(0, 15);
+
+            if (!normalizedQuery && selectedModalEncounterId) {
+                const selectedIndex = matches.findIndex(encounter => String(encounter.id) === String(selectedModalEncounterId));
+                if (selectedIndex === -1) {
+                    const selectedEncounter = modalEncounters.find(encounter => String(encounter.id) === String(selectedModalEncounterId));
+                    if (selectedEncounter) {
+                        matches = [selectedEncounter, ...matches].slice(0, 15);
+                    }
+                }
+            }
+
+            if (matches.length === 0) {
+                results.innerHTML = '<div class="search-placeholder">No encounters found.</div>';
+                return;
+            }
+
+            matches.slice(0, 15).forEach(encounter => {
+                const item = document.createElement('div');
+                item.className = 'search-item' + (selectedModalEncounterId === String(encounter.id) ? ' selected' : '');
+                item.dataset.id = encounter.id;
+                item.dataset.title = encounter.name;
+                item.innerHTML = `
+                    <div class="search-item-title">${escapeHtml(encounter.name)}</div>
+                    <div class="search-item-subtitle">${escapeHtml(encounter.description || encounter.notes || '')}</div>
+                `;
+                item.addEventListener('click', () => selectModalEncounter(String(encounter.id), encounter.name));
+                results.appendChild(item);
+            });
+        }
+
+        function selectModalEncounter(id, name) {
+            selectedModalEncounterId = id;
+            const encounterInput = document.getElementById('featureEncounter');
+            const encounterSearch = document.getElementById('featureEncounterSearch');
+            const results = document.getElementById('featureEncounterResults');
+            if (encounterInput) encounterInput.value = id;
+            if (encounterSearch) encounterSearch.value = name || '';
+            if (results) {
+                results.style.display = 'none';
+            }
+        }
+
+        function clearModalEncounterSelection() {
+            selectedModalEncounterId = null;
+            const encounterInput = document.getElementById('featureEncounter');
+            const encounterSearch = document.getElementById('featureEncounterSearch');
+            const results = document.getElementById('featureEncounterResults');
+            if (encounterInput) encounterInput.value = '';
+            if (encounterSearch) encounterSearch.value = '';
+            if (results) {
+                results.style.display = 'block';
+            }
+            renderModalEncounterResults('');
+        }
+
         async function loadTrapsForModal() {
             try {
                 const traps = await ApiHelpers.ApiService.getTraps();
@@ -3282,6 +3404,8 @@
             document.getElementById('featureType').disabled = false;
             document.getElementById('featureTitle').value = '';
             document.getElementById('featureMonster').value = '';
+            document.getElementById('featureEncounter').value = '';
+            document.getElementById('featureEncounterSearch').value = '';
             document.getElementById('featureNpc').value = '';
             document.getElementById('featureNpcSearch').value = '';
             document.getElementById('featureContent').value = '';
@@ -3305,7 +3429,7 @@
             const featureType = document.getElementById('featureType').value;
             
             // Hide all conditional fields
-            document.querySelectorAll('.modal-field.field-monster, .modal-field.field-door, .modal-field.field-stairs, .modal-field.field-access, .modal-field.field-monster-selector, .modal-field.field-npc-selector, .modal-field.field-title, .modal-field.field-treasure').forEach(field => {
+            document.querySelectorAll('.modal-field.field-monster, .modal-field.field-door, .modal-field.field-stairs, .modal-field.field-access, .modal-field.field-monster-selector, .modal-field.field-npc-selector, .modal-field.field-encounter-selector, .modal-field.field-title, .modal-field.field-treasure').forEach(field => {
                 field.classList.add('hidden');
             });
             
@@ -3320,6 +3444,8 @@
                 document.querySelector('.modal-field.field-monster').classList.remove('hidden');
             } else if (featureType === 'npc') {
                 document.querySelector('.modal-field.field-npc-selector').classList.remove('hidden');
+            } else if (featureType === 'encounter') {
+                document.querySelector('.modal-field.field-encounter-selector').classList.remove('hidden');
             } else if (featureType === 'door') {
                 document.querySelectorAll('.modal-field.field-door').forEach(field => {
                     field.classList.remove('hidden');
@@ -3512,6 +3638,32 @@
                         is_hidden: false,
                         hidden_dc: null
                     });
+                } else if (type === 'encounter') {
+                    const encounterInput = document.getElementById('featureEncounter');
+                    const encounterId = encounterInput ? encounterInput.value : '';
+                    const encounterTitle = document.getElementById('featureEncounterSearch').value.trim();
+                    if (!encounterId || !encounterTitle) {
+                        alert('Please select an encounter');
+                        return;
+                    }
+                    room.entries.push({
+                        entry_type: type,
+                        title: encounterTitle,
+                        content: content,
+                        count: null,
+                        creature_index: null,
+                        creature_total: null,
+                        monster_id: null,
+                        encounter_id: encounterId,
+                        leads_to: leadsTo,
+                        door_mechanics: null,
+                        trap_ids: [],
+                        is_hidden: false,
+                        hidden_dc: null,
+                        container: null,
+                        container_mechanics: null,
+                        treasure_contents: []
+                    });
                 } else {
                     room.entries.push({
                         entry_type: type,
@@ -3647,6 +3799,20 @@
                 })) {
                     room.npcs.push(Number.isNaN(normalizedNpcId) ? npcName : normalizedNpcId);
                 }
+            } else if (entryType === 'encounter') {
+                const encounterInput = document.getElementById('featureEncounter');
+                const encounterSearch = document.getElementById('featureEncounterSearch');
+                const encounterId = encounterInput ? encounterInput.value : '';
+                const encounterName = encounterSearch.value.trim();
+
+                if (!encounterId || !encounterName) {
+                    alert('Please select an encounter');
+                    return;
+                }
+
+                entry.encounter_id = encounterId;
+                entry.title = encounterName;
+                entry.content = content;
             } else if (entryType === 'treasure') {
                 const container = document.getElementById('treasureContainer').value.trim();
                 const mechanics = document.getElementById('treasureMechanics').value.trim();

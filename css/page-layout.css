@@ -946,3 +946,12 @@ hp-tracker-topbar,
   background: var(--md-sys-color-surface-variant);
   border-color: var(--md-sys-color-outline);
 }
+
+.field-readonly {
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--md-sys-color-outline);
+  color: var(--md-sys-color-surface-variant);
+  line-height: 1.65;
+  white-space: pre-wrap;
+}

@@ -37,7 +37,7 @@ EXPORT_DEFINITIONS = {
     },
     "actions": {
         "file": "seed_actions.json",
-        "query": "SELECT id, name, icon, category, explanation, details FROM actions ORDER BY name",
+        "query": "SELECT id, name, icon, category, explanation FROM actions ORDER BY name",
     },
     "monsters": {
         "file": "seed_monsters.json",
@@ -90,6 +90,10 @@ EXPORT_DEFINITIONS = {
     "player_weapons": {
         "file": "seed_player_weapons.json",
         "query": "SELECT id, player_id, weapon_id, added_at FROM player_weapons ORDER BY player_id, added_at",
+    },
+    "encounters": {
+        "file": "seed_encounters.json",
+        "query": "SELECT id, name, units, created_at, updated_at FROM encounter ORDER BY name",
     },
 }
 
@@ -197,6 +201,9 @@ def transform_record(record, table_name):
     if table_name == "players":
         for field in ["total_spell_slots", "current_spell_slots"]:
             record[field] = parse_json_value(record.get(field))
+        return record
+    if table_name == "encounters":
+        record["units"] = parse_json_value(record.get("units"))
         return record
     if table_name == "weapons":
         for field in [
