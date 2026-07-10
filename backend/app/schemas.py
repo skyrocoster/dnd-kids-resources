@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
+from datetime import datetime
 
 
 class Ability(BaseModel):
@@ -93,3 +94,146 @@ class SpellComponent(BaseModel):
     code: str
     name: str
     description: Optional[str] = None
+
+
+class Monster(BaseModel):
+    id: int
+    name: str
+    ac: Optional[Dict[str, Any]] = None
+    hp: Optional[Dict[str, Any]] = None
+    speed: Optional[Dict[str, Any]] = None
+    stats: Optional[Dict[str, Any]] = None
+    senses: Optional[str] = None
+    languages: Optional[str] = None
+    challenge: Optional[str] = None
+    action: Optional[List[Dict[str, Any]]] = None
+
+
+class MonsterCreate(BaseModel):
+    name: str
+    ac: Optional[Dict[str, Any]] = None
+    hp: Optional[Dict[str, Any]] = None
+    speed: Optional[Dict[str, Any]] = None
+    stats: Optional[Dict[str, Any]] = None
+    senses: Optional[str] = None
+    languages: Optional[str] = None
+    challenge: Optional[str] = None
+    action: Optional[List[Dict[str, Any]]] = None
+
+
+class MonsterUpdate(MonsterCreate):
+    pass
+
+
+class Weapon(BaseModel):
+    id: int
+    name: str
+    damage: Optional[str] = None
+    damage_type: Optional[str] = None
+    properties: Optional[List[str]] = None
+    rarity: Optional[str] = None
+
+
+class WeaponCreate(BaseModel):
+    name: str
+    damage: Optional[str] = None
+    damage_type: Optional[str] = None
+    properties: Optional[List[str]] = None
+    rarity: Optional[str] = None
+
+
+class WeaponUpdate(WeaponCreate):
+    pass
+
+
+class Player(BaseModel):
+    id: int
+    name: str
+    class_: Optional[str] = None
+    level: Optional[int] = None
+
+
+class PlayerCreate(BaseModel):
+    name: str
+    class_: Optional[str] = None
+    level: Optional[int] = None
+
+
+class PlayerUpdate(PlayerCreate):
+    pass
+
+
+class NPC(BaseModel):
+    id: int
+    name: str
+    role: Optional[str] = None
+    description: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class NPCCreate(BaseModel):
+    name: str
+    role: Optional[str] = None
+    description: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class NPCUpdate(NPCCreate):
+    pass
+
+
+class Quest(BaseModel):
+    id: int
+    title: str
+    description: Optional[str] = None
+    status: Optional[str] = None
+    reward: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class QuestCreate(BaseModel):
+    title: str
+    description: Optional[str] = None
+    status: Optional[str] = None
+    reward: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class QuestUpdate(QuestCreate):
+    pass
+
+
+class Encounter(BaseModel):
+    id: int
+    title: str
+    description: Optional[str] = None
+    difficulty: Optional[str] = None
+    creatures: Optional[List[str]] = None
+    notes: Optional[str] = None
+
+
+class EncounterCreate(BaseModel):
+    title: str
+    description: Optional[str] = None
+    difficulty: Optional[str] = None
+    creatures: Optional[List[str]] = None
+    notes: Optional[str] = None
+
+
+class EncounterUpdate(EncounterCreate):
+    pass
+
+
+class Dungeon(BaseModel):
+    id: int
+    title: str
+    data: Dict[str, Any]
+
+
+class DungeonCreate(BaseModel):
+    title: str
+    data: Dict[str, Any]
+
+
+class DungeonUpdate(DungeonCreate):
+    pass
