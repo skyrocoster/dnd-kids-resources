@@ -3066,6 +3066,28 @@ def get_abilities_api():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route('/api/damage_types', methods=['GET'])
+def get_damage_types_api():
+    """API endpoint: GET /api/damage_types - Returns all damage types with icons and colors."""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT id, code, name, emoji, color
+            FROM damage_types
+            ORDER BY name
+        """)
+        damage_types = [
+            {'id': row['id'], 'code': row['code'], 'name': row['name'],
+             'emoji': row['emoji'], 'color': row['color']}
+            for row in cursor.fetchall()
+        ]
+        conn.close()
+        return jsonify(damage_types)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route('/api/monsters/<title>', methods=['GET'])
 def get_monster_by_title(title):
     """API endpoint: GET /api/monsters/<title> - Returns a single monster by title."""

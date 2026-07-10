@@ -21,6 +21,9 @@
     // Abilities
     getAbilities: () => apiFetch('/abilities'),
 
+    // Damage Types
+    getDamageTypes: () => apiFetch('/damage_types'),
+
     // Spell Components
     getSpellComponents: () => apiFetch('/spell-components'),
 

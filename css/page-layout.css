@@ -955,3 +955,167 @@ hp-tracker-topbar,
   line-height: 1.65;
   white-space: pre-wrap;
 }
+
+/* ─── Reusable form components ───────────────────────────────────────────── */
+
+/**
+ * CHECK OPTION GROUP
+ * Flex-wrap list of labelled checkboxes. Used for multi-select fields like
+ * damage types or ability saves where each option is a checkbox + label pair.
+ *
+ * Structure:
+ *   <div class="check-option-group">
+ *     <label class="check-option"><input type="checkbox"> Label</label>
+ *   </div>
+ */
+.check-option-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin-top: 4px;
+}
+
+.check-option {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--md-sys-color-on-surface);
+  user-select: none;
+}
+
+.check-option input[type="checkbox"] {
+  margin: 0;
+  accent-color: var(--md-sys-color-primary);
+  width: 14px;
+  height: 14px;
+}
+
+/**
+ * BOOL ROW
+ * Inline flex row for small boolean toggles (e.g. "Temporary HP", "Max HP").
+ */
+.bool-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+/**
+ * DICE INPUT GROUP
+ * Structured dice roll input: [count▾] d [type▾] [+mod]
+ * Use data-dice-count, data-dice-type, data-dice-mod on child elements.
+ * Wrap in a container with data-dice-group="fieldKey".
+ *
+ * Structure:
+ *   <div class="dice-input-group" data-dice-group="damage">
+ *     <select class="dice-count-select" data-dice-count>…</select>
+ *     <span class="dice-sep">d</span>
+ *     <select class="dice-type-select" data-dice-type>…</select>
+ *     <input class="dice-mod-input" data-dice-mod placeholder="+0">
+ *   </div>
+ */
+.dice-input-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.dice-count-select,
+.dice-type-select {
+  border: 1px solid var(--md-sys-color-outline);
+  border-radius: 6px;
+  padding: 5px 4px;
+  font-size: 0.8rem;
+  font-family: inherit;
+  color: var(--md-sys-color-on-surface);
+  background: var(--md-sys-color-surface-variant);
+  cursor: pointer;
+}
+
+.dice-count-select { width: 58px; }
+.dice-type-select  { min-width: 64px; }
+
+.dice-sep {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.dice-mod-input {
+  border: 1px solid var(--md-sys-color-outline);
+  border-radius: 6px;
+  padding: 5px 6px;
+  font-size: 0.8rem;
+  font-family: inherit;
+  color: var(--md-sys-color-on-surface);
+  background: var(--md-sys-color-surface-variant);
+  width: 60px;
+}
+
+/**
+ * SUBFIELD SELECT
+ * Small inline select used inside compact row subfields (e.g. attack type).
+ */
+.subfield-select {
+  border: 1px solid var(--md-sys-color-outline);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 0.8rem;
+  font-family: inherit;
+  color: var(--md-sys-color-on-surface);
+  background: var(--md-sys-color-surface-variant);
+  cursor: pointer;
+  margin-top: 4px;
+  width: 100%;
+}
+
+/**
+ * SELECT CUSTOM FIELD
+ * A select with an optional free-text input revealed when the user picks
+ * "Custom..." (value "_custom"). Hidden/shown via JS.
+ *
+ * Structure:
+ *   <div class="select-custom-field">
+ *     <select data-field-key="…" data-field-type="select-custom">…</select>
+ *     <input class="custom-text-input" data-custom-text-for="…" type="text">
+ *   </div>
+ */
+.select-custom-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.select-custom-field select {
+  padding: 8px 10px;
+  border: 1px solid var(--md-sys-color-outline);
+  background: var(--md-sys-color-surface-variant);
+  color: var(--md-sys-color-on-surface);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-family: inherit;
+}
+
+.select-custom-field select:focus,
+.select-custom-field .custom-text-input:focus {
+  outline: none;
+  border-color: var(--md-sys-color-primary);
+  box-shadow: 0 0 0 2px rgba(128, 203, 196, 0.2);
+}
+
+.custom-text-input {
+  padding: 8px 10px;
+  border: 1px solid var(--md-sys-color-outline);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-family: inherit;
+  color: var(--md-sys-color-on-surface);
+  background: var(--md-sys-color-surface-variant);
+}

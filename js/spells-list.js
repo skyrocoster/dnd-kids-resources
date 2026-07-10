@@ -13,6 +13,88 @@ document.addEventListener('DOMContentLoaded', async function() {
   const modalCancel = document.getElementById('spell-edit-cancel');
   const modalSave = document.getElementById('spell-edit-save');
 
+  const ATTACK_TYPE_OPTIONS = [
+    { value: '', label: '— (save only)' },
+    { value: 'melee', label: 'Melee' },
+    { value: 'ranged', label: 'Ranged' },
+    { value: 'spell', label: 'Spell' }
+  ];
+
+  const LEVEL_OPTIONS = [
+    { value: '0', label: 'Cantrip' },
+    { value: '1', label: '1st Level' }, { value: '2', label: '2nd Level' },
+    { value: '3', label: '3rd Level' }, { value: '4', label: '4th Level' },
+    { value: '5', label: '5th Level' }, { value: '6', label: '6th Level' },
+    { value: '7', label: '7th Level' }, { value: '8', label: '8th Level' },
+    { value: '9', label: '9th Level' }
+  ];
+
+  const SCHOOL_OPTIONS = [
+    { value: '', label: '— (none)' },
+    { value: 'abjuration', label: 'Abjuration' },
+    { value: 'conjuration', label: 'Conjuration' },
+    { value: 'divination', label: 'Divination' },
+    { value: 'enchantment', label: 'Enchantment' },
+    { value: 'evocation', label: 'Evocation' },
+    { value: 'illusion', label: 'Illusion' },
+    { value: 'necromancy', label: 'Necromancy' },
+    { value: 'transmutation', label: 'Transmutation' }
+  ];
+
+  const RANGE_OPTIONS = [
+    { value: '', label: '— (none)' },
+    { value: 'Self', label: 'Self' },
+    { value: 'Touch', label: 'Touch' },
+    { value: '5 feet', label: '5 feet' },
+    { value: '10 feet', label: '10 feet' },
+    { value: '15 feet', label: '15 feet' },
+    { value: '20 feet', label: '20 feet' },
+    { value: '30 feet', label: '30 feet' },
+    { value: '60 feet', label: '60 feet' },
+    { value: '90 feet', label: '90 feet' },
+    { value: '120 feet', label: '120 feet' },
+    { value: '150 feet', label: '150 feet' },
+    { value: '300 feet', label: '300 feet' },
+    { value: '500 feet', label: '500 feet' },
+    { value: '1 mile', label: '1 mile' },
+    { value: 'Sight', label: 'Sight' },
+    { value: 'Unlimited', label: 'Unlimited' },
+    { value: '_custom', label: 'Custom...' }
+  ];
+
+  const CASTING_TIME_OPTIONS = [
+    { value: '', label: '— (none)' },
+    { value: '1 action', label: '1 action' },
+    { value: '1 bonus action', label: '1 bonus action' },
+    { value: '1 reaction', label: '1 reaction' },
+    { value: '1 minute', label: '1 minute' },
+    { value: '10 minutes', label: '10 minutes' },
+    { value: '1 hour', label: '1 hour' },
+    { value: '8 hours', label: '8 hours' },
+    { value: '12 hours', label: '12 hours' },
+    { value: '24 hours', label: '24 hours' },
+    { value: '_custom', label: 'Custom...' }
+  ];
+
+  const DURATION_OPTIONS = [
+    { value: '', label: '— (none)' },
+    { value: 'Instantaneous', label: 'Instantaneous' },
+    { value: '1 round', label: '1 round' },
+    { value: '6 rounds', label: '6 rounds' },
+    { value: '1 minute', label: '1 minute' },
+    { value: '10 minutes', label: '10 minutes' },
+    { value: '1 hour', label: '1 hour' },
+    { value: '2 hours', label: '2 hours' },
+    { value: '8 hours', label: '8 hours' },
+    { value: '24 hours', label: '24 hours' },
+    { value: '7 days', label: '7 days' },
+    { value: '10 days', label: '10 days' },
+    { value: '30 days', label: '30 days' },
+    { value: 'Until dispelled', label: 'Until dispelled' },
+    { value: 'Special', label: 'Special' },
+    { value: '_custom', label: 'Custom...' }
+  ];
+
   let spells = [];
   let editModeEnabled = false;
   let editingSpellId = null;
@@ -20,6 +102,8 @@ document.addEventListener('DOMContentLoaded', async function() {
   let structuredEditorsContainer = null;
   let availableClassOptions = [];
   let availableComponentOptions = [];
+  let availableDamageTypes = [];
+  let availableAbilities = [];
 
   if (window.PageBase && typeof window.PageBase.autoInitializeViewerPane === 'function') {
     window.PageBase.autoInitializeViewerPane('spellCardsList');
@@ -29,10 +113,10 @@ document.addEventListener('DOMContentLoaded', async function() {
   const editorFields = [
     { key: 'spell_name', label: 'Spell Name', type: 'text' },
     { key: 'icon', label: 'Icon', type: 'text' },
-    { key: 'level', label: 'Level', type: 'text' },
-    { key: 'school', label: 'School', type: 'text' },
-    { key: 'casting_time', label: 'Casting Time', type: 'text' },
-    { key: 'duration', label: 'Duration', type: 'text' },
+    { key: 'level', label: 'Level', type: 'select', options: LEVEL_OPTIONS },
+    { key: 'school', label: 'School', type: 'select', options: SCHOOL_OPTIONS },
+    { key: 'casting_time', label: 'Casting Time', type: 'select-custom', options: CASTING_TIME_OPTIONS },
+    { key: 'duration', label: 'Duration', type: 'select-custom', options: DURATION_OPTIONS },
     { key: 'action', label: 'Action', type: 'select', options: [
       { value: '', label: 'None' },
       { value: 'action', label: 'Action' },
@@ -41,7 +125,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     ] },
     { key: 'concentration', label: 'Concentration', type: 'checkbox' },
     { key: 'ritual', label: 'Ritual', type: 'checkbox' },
-    { key: 'range', label: 'Range', type: 'textarea', rows: 2 },
+    { key: 'range', label: 'Range', type: 'select-custom', options: RANGE_OPTIONS },
     { key: 'materials', label: 'Materials', type: 'textarea', rows: 2 },
     { key: 'heal_at_spell_slots', label: 'Heal At Spell Slots JSON', type: 'textarea', rows: 3 },
     { key: 'higher_levels', label: 'Higher Levels JSON', type: 'textarea', rows: 3 },
@@ -52,6 +136,8 @@ document.addEventListener('DOMContentLoaded', async function() {
 
   await fetchClassOptions();
   await fetchComponentOptions();
+  await fetchDamageTypes();
+  await fetchAbilities();
   buildEditorFields();
 
   try {
@@ -91,6 +177,41 @@ document.addEventListener('DOMContentLoaded', async function() {
       const label = document.createElement('label');
       label.setAttribute('for', inputId);
       label.textContent = field.label;
+
+      if (field.type === 'select-custom') {
+        const selectWrapper = document.createElement('div');
+        selectWrapper.className = 'select-custom-field';
+
+        const select = document.createElement('select');
+        select.id = inputId;
+        select.name = field.key;
+        select.setAttribute('data-field-key', field.key);
+        select.setAttribute('data-field-type', 'select-custom');
+        field.options.forEach(optionData => {
+          const option = document.createElement('option');
+          option.value = optionData.value;
+          option.textContent = optionData.label;
+          select.appendChild(option);
+        });
+
+        const customInput = document.createElement('input');
+        customInput.type = 'text';
+        customInput.className = 'custom-text-input';
+        customInput.setAttribute('data-custom-text-for', field.key);
+        customInput.placeholder = 'Enter custom value...';
+        customInput.style.display = 'none';
+
+        select.addEventListener('change', function() {
+          customInput.style.display = this.value === '_custom' ? '' : 'none';
+        });
+
+        selectWrapper.appendChild(select);
+        selectWrapper.appendChild(customInput);
+        wrapper.appendChild(label);
+        wrapper.appendChild(selectWrapper);
+        modalFields.appendChild(wrapper);
+        return;
+      }
 
       let input;
       if (field.type === 'textarea') {
@@ -137,7 +258,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     appendAreaEditor();
     appendRollSection('attack_type', 'Attack Rows', 'Split attack entries into one row per attack/save.', 'Add Attack');
     appendRollSection('damage', 'Damage Rows', 'Split damage entries into one row per damage roll.', 'Add Damage');
-    appendRollSection('heal', 'Heal Rows', 'Split heal entries into one row per heal definition.', 'Add Heal');
+    appendHealEditor();
   }
 
   async function fetchClassOptions() {
@@ -157,6 +278,24 @@ document.addEventListener('DOMContentLoaded', async function() {
     } catch (error) {
       availableComponentOptions = [];
       console.warn('Could not fetch component options:', error);
+    }
+  }
+
+  async function fetchDamageTypes() {
+    try {
+      availableDamageTypes = await ApiHelpers.ApiService.getDamageTypes();
+    } catch (error) {
+      availableDamageTypes = [];
+      console.warn('Could not fetch damage types:', error);
+    }
+  }
+
+  async function fetchAbilities() {
+    try {
+      availableAbilities = await ApiHelpers.ApiService.getAbilities();
+    } catch (error) {
+      availableAbilities = [];
+      console.warn('Could not fetch abilities:', error);
     }
   }
 
@@ -256,6 +395,40 @@ document.addEventListener('DOMContentLoaded', async function() {
     structuredEditorsContainer.appendChild(section);
   }
 
+  function appendHealEditor() {
+    const section = createSectionShell('Heal', 'Single heal entry. Leave Amount blank for no heal.');
+    const grid = document.createElement('div');
+    grid.className = 'spell-edit-inline-grid';
+    grid.appendChild(createDiceRollSubfield('Amount', 'amount', ''));
+    section.appendChild(grid);
+
+    const boolRow = document.createElement('div');
+    boolRow.className = 'bool-row';
+
+    const tempLabel = document.createElement('label');
+    tempLabel.className = 'spell-edit-checkbox';
+    const tempCb = document.createElement('input');
+    tempCb.type = 'checkbox';
+    tempCb.id = 'spell-edit-heal-temp-hp';
+    tempCb.setAttribute('data-heal-field', 'temp_hp');
+    tempLabel.appendChild(tempCb);
+    tempLabel.appendChild(document.createTextNode(' Temporary HP'));
+    boolRow.appendChild(tempLabel);
+
+    const maxLabel = document.createElement('label');
+    maxLabel.className = 'spell-edit-checkbox';
+    const maxCb = document.createElement('input');
+    maxCb.type = 'checkbox';
+    maxCb.id = 'spell-edit-heal-max-hp';
+    maxCb.setAttribute('data-heal-field', 'max_hp');
+    maxLabel.appendChild(maxCb);
+    maxLabel.appendChild(document.createTextNode(' Increases Max HP'));
+    boolRow.appendChild(maxLabel);
+
+    section.appendChild(boolRow);
+    structuredEditorsContainer.appendChild(section);
+  }
+
   function appendRollSection(key, title, note, buttonLabel) {
     const shell = createSectionShell(title, note, buttonLabel, function() {
       addRollRow(key);
@@ -329,10 +502,17 @@ document.addEventListener('DOMContentLoaded', async function() {
     const grid = document.createElement('div');
     grid.className = 'spell-edit-row-grid';
 
-    grid.appendChild(createRollRowField('Name', 'name', rowData.name || ''));
-    grid.appendChild(createRollRowField('Damage / Amount', 'damage', rowData.damage || rowData.amount || ''));
-    grid.appendChild(createRollRowField('Type', 'type', rollValueToInput(rowData.type)));
-    grid.appendChild(createRollRowField('Save', 'save', rollValueToInput(rowData.save)));
+    const spellNameInput = modalForm ? modalForm.querySelector('[data-field-key="spell_name"]') : null;
+    const defaultName = rowData.name || (spellNameInput ? spellNameInput.value.trim() : '');
+
+    grid.appendChild(createRollRowField('Name', 'name', defaultName));
+    grid.appendChild(createDiceRollSubfield('Damage / Amount', 'damage', rowData.damage || rowData.amount || ''));
+    if (sectionKey === 'damage') {
+      grid.appendChild(createDamageTypeField(rowData.type));
+    } else if (sectionKey === 'attack_type') {
+      grid.appendChild(createAttackTypeDropdown(rowData.type));
+      grid.appendChild(createSaveCheckboxField(rowData.save));
+    }
     grid.appendChild(createRollRowField('Save Success', 'save_success', rowData.save_success || ''));
     grid.appendChild(createRollRowField('Modifier / Extra', 'mod', rowData.MOD || rowData.mod || ''));
 
@@ -353,6 +533,10 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     clearEmptyState(sectionKey);
     rowList.appendChild(rowCard);
+
+    if (sectionKey === 'attack_type' && !rowData._isPaired) {
+      addRollRow('damage', { name: defaultName, _isPaired: true });
+    }
   }
 
   function createRollRowField(labelText, fieldKey, value) {
@@ -370,6 +554,177 @@ document.addEventListener('DOMContentLoaded', async function() {
     wrapper.appendChild(label);
     wrapper.appendChild(input);
     return wrapper;
+  }
+
+  function parseDiceString(value) {
+    if (!value) return { count: '', diceType: '', mod: '' };
+    const m = String(value).trim().match(/^(\d+)?d(\d+)([+-]\d+)?$/i);
+    if (!m) return { count: '', diceType: '', mod: String(value) };
+    return { count: m[1] || '1', diceType: m[2] || '', mod: m[3] || '' };
+  }
+
+  function createDiceRollSubfield(labelText, fieldKey, currentValue) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'spell-edit-subfield';
+
+    const label = document.createElement('label');
+    label.textContent = labelText;
+    wrapper.appendChild(label);
+
+    const group = document.createElement('div');
+    group.className = 'dice-input-group';
+    group.setAttribute('data-dice-group', fieldKey);
+
+    const { count, diceType, mod } = parseDiceString(currentValue);
+
+    const countSel = document.createElement('select');
+    countSel.className = 'dice-count-select';
+    countSel.setAttribute('data-dice-count', '');
+    [['', '—'], ['1','1'],['2','2'],['3','3'],['4','4'],['5','5'],['6','6'],
+     ['7','7'],['8','8'],['9','9'],['10','10'],['11','11'],['12','12'],['20','20']
+    ].forEach(([val, text]) => {
+      const opt = document.createElement('option');
+      opt.value = val; opt.textContent = text;
+      if (val === count) opt.selected = true;
+      countSel.appendChild(opt);
+    });
+
+    const sep = document.createElement('span');
+    sep.className = 'dice-sep';
+    sep.textContent = 'd';
+
+    const typeSel = document.createElement('select');
+    typeSel.className = 'dice-type-select';
+    typeSel.setAttribute('data-dice-type', '');
+    [['', '—'], ['4','d4'],['6','d6'],['8','d8'],['10','d10'],
+     ['12','d12'],['20','d20'],['100','d100']
+    ].forEach(([val, text]) => {
+      const opt = document.createElement('option');
+      opt.value = val; opt.textContent = text;
+      if (val === diceType) opt.selected = true;
+      typeSel.appendChild(opt);
+    });
+
+    const modInput = document.createElement('input');
+    modInput.type = 'text';
+    modInput.className = 'dice-mod-input';
+    modInput.setAttribute('data-dice-mod', '');
+    modInput.placeholder = '+0';
+    modInput.value = mod;
+
+    group.appendChild(countSel);
+    group.appendChild(sep);
+    group.appendChild(typeSel);
+    group.appendChild(modInput);
+    wrapper.appendChild(group);
+    return wrapper;
+  }
+
+  function createDamageTypeField(currentTypes) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'spell-edit-subfield';
+
+    const label = document.createElement('label');
+    label.textContent = 'Damage Type';
+    wrapper.appendChild(label);
+
+    const checkList = document.createElement('div');
+    checkList.className = 'check-option-group';
+
+    const selectedCodes = normalizeValueArray(currentTypes);
+    availableDamageTypes.forEach(dt => {
+      const optLabel = document.createElement('label');
+      optLabel.className = 'check-option';
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.value = dt.code;
+      cb.setAttribute('data-roll-field', 'type');
+      cb.checked = selectedCodes.includes(dt.code);
+      optLabel.appendChild(cb);
+      optLabel.appendChild(document.createTextNode(`${dt.emoji ? dt.emoji + ' ' : ''}${dt.name}`));
+      checkList.appendChild(optLabel);
+    });
+
+    if (availableDamageTypes.length === 0) {
+      const fallback = document.createElement('input');
+      fallback.type = 'text';
+      fallback.value = rollValueToInput(currentTypes);
+      fallback.setAttribute('data-roll-field', 'type');
+      fallback.placeholder = 'e.g. fire, cold';
+      checkList.appendChild(fallback);
+    }
+
+    wrapper.appendChild(checkList);
+    return wrapper;
+  }
+
+  function createAttackTypeDropdown(currentType) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'spell-edit-subfield';
+
+    const label = document.createElement('label');
+    label.textContent = 'Attack Type';
+    wrapper.appendChild(label);
+
+    const select = document.createElement('select');
+    select.setAttribute('data-roll-field', 'type');
+    select.className = 'subfield-select';
+    ATTACK_TYPE_OPTIONS.forEach(opt => {
+      const option = document.createElement('option');
+      option.value = opt.value;
+      option.textContent = opt.label;
+      option.selected = (opt.value === (currentType || ''));
+      select.appendChild(option);
+    });
+
+    wrapper.appendChild(select);
+    return wrapper;
+  }
+
+  function createSaveCheckboxField(currentSaves) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'spell-edit-subfield';
+
+    const label = document.createElement('label');
+    label.textContent = 'Save';
+    wrapper.appendChild(label);
+
+    const checkList = document.createElement('div');
+    checkList.className = 'check-option-group';
+
+    const selectedCodes = normalizeValueArray(currentSaves);
+    availableAbilities.forEach(ab => {
+      const optLabel = document.createElement('label');
+      optLabel.className = 'check-option';
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.value = ab.code;
+      cb.setAttribute('data-roll-field', 'save');
+      cb.checked = selectedCodes.includes(ab.code);
+      optLabel.appendChild(cb);
+      optLabel.appendChild(document.createTextNode(ab.name));
+      checkList.appendChild(optLabel);
+    });
+
+    if (availableAbilities.length === 0) {
+      const fallback = document.createElement('input');
+      fallback.type = 'text';
+      fallback.value = rollValueToInput(currentSaves);
+      fallback.setAttribute('data-roll-field', 'save');
+      fallback.placeholder = 'e.g. dex, str';
+      checkList.appendChild(fallback);
+    }
+
+    wrapper.appendChild(checkList);
+    return wrapper;
+  }
+
+  function normalizeValueArray(value) {
+    if (Array.isArray(value)) return value.map(v => String(v).trim().toLowerCase()).filter(Boolean);
+    if (typeof value === 'string' && value.trim()) {
+      return value.split(',').map(v => v.trim().toLowerCase()).filter(Boolean);
+    }
+    return [];
   }
 
   function rollValueToInput(value) {
@@ -602,6 +957,13 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
   }
 
+  function resetSelectCustomFields() {
+    editorFields.filter(f => f.type === 'select-custom').forEach(field => {
+      const customInput = modalForm.querySelector(`[data-custom-text-for="${field.key}"]`);
+      if (customInput) { customInput.style.display = 'none'; customInput.value = ''; }
+    });
+  }
+
   function openNewSpellModal() {
     editingSpellId = null;
     modalTitle.textContent = 'Add New Spell';
@@ -609,7 +971,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     modal.classList.add('visible');
     modal.setAttribute('aria-hidden', 'false');
     modalForm.reset();
-    ['attack_type', 'damage', 'heal'].forEach(clearRollRows);
+    resetSelectCustomFields();
+    ['attack_type', 'damage'].forEach(clearRollRows);
+    clearHealEditor();
 
     editorFields.forEach(field => {
       const input = modalForm.querySelector(`[data-field-key="${field.key}"]`);
@@ -652,13 +1016,16 @@ document.addEventListener('DOMContentLoaded', async function() {
     modal.classList.remove('visible');
     modal.setAttribute('aria-hidden', 'true');
     modalForm.reset();
+    resetSelectCustomFields();
     modalSave.disabled = false;
     setModalStatus('', '');
-    ['attack_type', 'damage', 'heal'].forEach(clearRollRows);
+    ['attack_type', 'damage'].forEach(clearRollRows);
+    clearHealEditor();
   }
 
   function populateEditForm(spellData) {
-    ['attack_type', 'damage', 'heal'].forEach(clearRollRows);
+    ['attack_type', 'damage'].forEach(clearRollRows);
+    clearHealEditor();
 
     editorFields.forEach(field => {
       const input = modalForm.querySelector(`[data-field-key="${field.key}"]`);
@@ -666,6 +1033,17 @@ document.addEventListener('DOMContentLoaded', async function() {
 
       if (field.type === 'checkbox') {
         input.checked = Boolean(spellData[field.key]);
+      } else if (input.getAttribute('data-field-type') === 'select-custom') {
+        const val = String(spellData[field.key] ?? '');
+        const optionValues = Array.from(input.options).map(o => o.value).filter(v => v !== '_custom');
+        const customInput = modalForm.querySelector(`[data-custom-text-for="${field.key}"]`);
+        if (optionValues.includes(val) || val === '') {
+          input.value = val;
+          if (customInput) { customInput.style.display = 'none'; customInput.value = ''; }
+        } else {
+          input.value = '_custom';
+          if (customInput) { customInput.style.display = ''; customInput.value = val; }
+        }
       } else {
         input.value = spellData[field.key] ?? '';
       }
@@ -726,7 +1104,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     populateRollSection('attack_type', spellData.attack_type);
     populateRollSection('damage', spellData.damage);
-    populateRollSection('heal', spellData.heal);
+    populateHealEditor(spellData.heal);
   }
 
   function clearRollRows(sectionKey) {
@@ -762,7 +1140,14 @@ document.addEventListener('DOMContentLoaded', async function() {
     editorFields.forEach(field => {
       const input = modalForm.querySelector(`[data-field-key="${field.key}"]`);
       if (!input) return;
-      payload[field.key] = field.type === 'checkbox' ? input.checked : input.value;
+      if (field.type === 'checkbox') {
+        payload[field.key] = input.checked;
+      } else if (field.type === 'select-custom' && input.value === '_custom') {
+        const customInput = modalForm.querySelector(`[data-custom-text-for="${field.key}"]`);
+        payload[field.key] = customInput ? customInput.value.trim() : '';
+      } else {
+        payload[field.key] = input.value;
+      }
     });
 
     const classesSelect = modalForm.querySelector('[data-structured-field="classes"]');
@@ -787,7 +1172,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     payload.area_of_effect = serializeAreaField();
     payload.attack_type = serializeRollSection('attack_type');
     payload.damage = serializeRollSection('damage');
-    payload.heal = serializeRollSection('heal');
+    payload.heal = serializeHealField();
 
     return payload;
   }
@@ -818,35 +1203,107 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     const rows = Array.from(rowList.querySelectorAll('[data-roll-section]'));
     const serialized = rows.map(row => {
-      const entry = {};
+      const groups = {};
       row.querySelectorAll('[data-roll-field]').forEach(input => {
         const fieldKey = input.getAttribute('data-roll-field');
-        const rawValue = input.value.trim();
-        if (!rawValue) return;
-
-        if (fieldKey === 'type' || fieldKey === 'save') {
-          const splitValues = rawValue.split(',').map(value => value.trim()).filter(Boolean);
-          if (splitValues.length > 1) {
-            entry[fieldKey] = splitValues;
-          } else {
-            entry[fieldKey] = splitValues.length === 1 ? splitValues[0] : rawValue;
-          }
-        } else if (fieldKey === 'damage') {
-          entry[sectionKey === 'heal' ? 'amount' : 'damage'] = rawValue;
-        } else if (fieldKey === 'mod') {
-          entry.MOD = rawValue;
+        if (!groups[fieldKey]) groups[fieldKey] = [];
+        if (input.type === 'checkbox') {
+          if (input.checked) groups[fieldKey].push(input.value);
+        } else if (input.tagName === 'SELECT') {
+          groups[fieldKey].push(input.value);
         } else {
-          entry[fieldKey] = rawValue;
+          const v = input.value.trim();
+          if (v) groups[fieldKey].push(v);
+        }
+      });
+
+      row.querySelectorAll('[data-dice-group]').forEach(diceGroup => {
+        const fieldKey = diceGroup.getAttribute('data-dice-group');
+        const typeEl = diceGroup.querySelector('[data-dice-type]');
+        if (!typeEl || !typeEl.value) return;
+        const countEl = diceGroup.querySelector('[data-dice-count]');
+        const modEl = diceGroup.querySelector('[data-dice-mod]');
+        const diceStr = `${countEl && countEl.value ? countEl.value : '1'}d${typeEl.value}${modEl ? modEl.value.trim() : ''}`;
+        if (!groups[fieldKey]) groups[fieldKey] = [];
+        groups[fieldKey].push(diceStr);
+      });
+
+      const entry = {};
+      Object.entries(groups).forEach(([fieldKey, values]) => {
+        if (fieldKey === 'type') {
+          if (sectionKey === 'attack_type') {
+            entry.type = values[0] !== undefined ? values[0] : '';
+          } else if (values.length > 0) {
+            entry.type = values.length === 1 ? values[0] : values;
+          }
+        } else if (fieldKey === 'save') {
+          if (values.length > 0) entry.save = values.length === 1 ? values[0] : values;
+        } else if (fieldKey === 'damage') {
+          if (values.length > 0) entry.damage = values[0];
+        } else if (fieldKey === 'mod') {
+          if (values.length > 0) entry.MOD = values[0];
+        } else {
+          if (values.length > 0) entry[fieldKey] = values[0];
         }
       });
       return entry;
     }).filter(entry => Object.keys(entry).length > 0);
 
-    if (serialized.length === 0) {
-      return '';
-    }
+    return serialized.length === 0 ? '' : JSON.stringify(serialized);
+  }
 
-    return JSON.stringify(serialized);
+  function serializeHealField() {
+    const diceGroup = modalForm.querySelector('[data-dice-group="amount"]');
+    let amount = '';
+    if (diceGroup) {
+      const typeEl = diceGroup.querySelector('[data-dice-type]');
+      if (typeEl && typeEl.value) {
+        const countEl = diceGroup.querySelector('[data-dice-count]');
+        const modEl = diceGroup.querySelector('[data-dice-mod]');
+        amount = `${countEl && countEl.value ? countEl.value : '1'}d${typeEl.value}${modEl ? modEl.value.trim() : ''}`;
+      }
+    }
+    if (!amount) return '';
+    const tempHp = modalForm.querySelector('[data-heal-field="temp_hp"]');
+    const maxHp = modalForm.querySelector('[data-heal-field="max_hp"]');
+    return JSON.stringify({
+      amount,
+      temp_hp: tempHp ? tempHp.checked : false,
+      max_hp: maxHp ? maxHp.checked : false
+    });
+  }
+
+  function populateHealEditor(rawValue) {
+    const parsed = parseJsonValue(rawValue, null);
+    const healObj = Array.isArray(parsed) ? parsed[0] : (parsed && typeof parsed === 'object' ? parsed : null);
+    const diceGroup = modalForm.querySelector('[data-dice-group="amount"]');
+    if (diceGroup) {
+      const { count, diceType, mod } = parseDiceString(healObj ? (healObj.amount || '') : '');
+      const countEl = diceGroup.querySelector('[data-dice-count]');
+      const typeEl = diceGroup.querySelector('[data-dice-type]');
+      const modEl = diceGroup.querySelector('[data-dice-mod]');
+      if (countEl) countEl.value = count;
+      if (typeEl) typeEl.value = diceType;
+      if (modEl) modEl.value = mod;
+    }
+    const tempHp = modalForm.querySelector('[data-heal-field="temp_hp"]');
+    const maxHp = modalForm.querySelector('[data-heal-field="max_hp"]');
+    if (tempHp) tempHp.checked = Boolean(healObj && healObj.temp_hp);
+    if (maxHp) maxHp.checked = Boolean(healObj && healObj.max_hp);
+  }
+
+  function clearHealEditor() {
+    const diceGroup = modalForm.querySelector('[data-dice-group="amount"]');
+    if (diceGroup) {
+      ['[data-dice-count]', '[data-dice-type]', '[data-dice-mod]'].forEach(sel => {
+        const el = diceGroup.querySelector(sel);
+        if (el) el.value = '';
+      });
+    }
+    const tempHp = modalForm.querySelector('[data-heal-field="temp_hp"]');
+    const maxHp = modalForm.querySelector('[data-heal-field="max_hp"]');
+    if (tempHp) tempHp.checked = false;
+    if (maxHp) maxHp.checked = false;
   }
 
   async function saveSpellEdits() {
