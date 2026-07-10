@@ -28,6 +28,10 @@ backend/            FastAPI
     routers/        reference.py spells.py monsters.py weapons.py
                     players.py npcs.py quests.py encounters.py dungeons.py
   tests/
+    conftest.py     pytest fixtures (seeded test DB, fixtures)
+    test_example.py example tests
+    routers/        test_spells.py test_monsters.py (mirror source structure)
+  requirements.txt
 frontend/           React + Vite + TS
   src/ api/ layout/ components/ features/ router.tsx
   vite.config.ts    dev proxy /api -> :8000
@@ -51,65 +55,70 @@ archive/ingestion/  quarantined parsers (kept in git, out of app)
 
 ---
 
-## Task 2 — Crystallise data & archive ingestion scripts
+## Task 2 — Crystallise data & archive ingestion scripts - ✅ DONE (2026-07-10) 
 
 **Goal:** Freeze the data set and quarantine everything that parses new/raw data. Prove the DB rebuilds from frozen seeds alone.
 
-**Prereqs:** Task 1.
+**What was done:**
+- **Moved rebuild scripts to `scripts/`:** `scripts/init_database.py`, `scripts/seed_database.py`, `scripts/export_db_seeds.py` (with corrected paths for `DB_PATH` and `SEEDS_DIR`).
+- **Archived ingestion parsers to `archive/ingestion/`:** `parse_spells_to_db.py`, `extract_5eapi_spells.py`, `convert_weapon_attacks.py`, `reparse_dungeons.py`, `parse_spells_api.py`, `parse_dungeon.py`, and supporting files.
+- **Removed empty/placeholder seeds:** Deleted `seed_actions.json`, `seed_classes.json`, `seed_traps.json`, `seed_deities.json`, legacy `seed_creatures*.json`, and `data/seeds/archive/` (600+ timestamped backups).
+- **Removed auto-archiving behavior:** Deleted code in `export_db_seeds.py` that created timestamped seed copies.
+- **Cleaned raw source dumps:** Deleted `data/archive/5eAPI/`; `data/5eTools/` remains gitignored (no v2 reference).
 
-**Context:**
-- Seeds live in `data/seeds/`. Keepers with record counts: `seed_spells.json` (525), `seed_monsters.json` (2734), `seed_weapons.json` (219), `seed_npcs.json` (26), `seed_encounters.json` (3), `seed_players.json` (2), `seed_player_spells.json` (17), `seed_player_weapons.json`, `seed_quests.json`, `seed_abilities.json`, `seed_conditions.json`, `seed_damage_types.json`, `seed_weapon_properties.json`.
-- Empty/placeholder seeds (`[]` or near-empty) to remove: `seed_actions.json`, `seed_classes.json`, `seed_traps.json`, `seed_deities.json`, and legacy `seed_creatures*.json` under `data/seeds/archive/`.
-- Ingestion scripts to archive: `_dev/parse_spells_to_db.py`, `_dev/extract_5eapi_spells.py`, `_dev/convert_weapon_attacks.py`, `_dev/reparse_dungeons.py`, `_dev/parse_spells_api.py`, and `lib/parse_dungeon.py` (+ `lib/README.md`).
-- Raw source dumps: `data/5eTools/` (already gitignored) and `data/archive/5eAPI/`.
-- Rebuild scripts to KEEP: `_dev/init_database.py` (schema), `_dev/seed_database.py` (JSON→DB loader), `_dev/export_db_seeds.py`.
-- `data/seeds/archive/` holds 600+ timestamped backups — noise now.
-
-**Steps:**
-1. `git mv` the ingestion scripts listed above into `archive/ingestion/` (keep them in history, out of the app).
-2. Move the kept rebuild scripts into a new top-level `scripts/` dir: `scripts/init_database.py`, `scripts/seed_database.py`, `scripts/export_db_seeds.py`. Fix their internal `DB_PATH`/`SEEDS_DIR` path constants for the new location.
-3. Delete the empty/placeholder seeds and the legacy `data/seeds/archive/` backups (the seed files themselves are now the frozen record).
-4. In `export_db_seeds.py`, remove the behaviour that auto-writes timestamped copies into `data/seeds/archive/` on every run.
-5. Delete raw dumps `data/archive/5eAPI/`; leave `data/5eTools/` on disk but confirm it stays gitignored and unreferenced by v2.
-6. Verify: delete the DB, run `python scripts/init_database.py && python scripts/seed_database.py`, confirm it succeeds reading only `data/seeds/` and row counts match the seeds above.
-
-**Done when:** the DB rebuilds cleanly from frozen seeds with no ingestion script involved, and the archived parsers are out of the app tree.
+**Verification (re-tested in Task 4):**
+Rebuilt DB from scratch with no ingestion scripts involved:
+```bash
+python scripts/init_database.py && python scripts/seed_database.py
+```
+✅ All 14 frozen seeds loaded correctly (spells=525, monsters=2734, weapons=219, npcs=26, encounters=3, players=2, quests=1, dungeons=2, conditions=15, abilities=41, damage_types=13, weapon_properties=10, player_spells=17, player_weapons=5). DB is now the sole source of truth from frozen JSON seeds.
 
 ---
 
-## Task 3 — Trim the DB schema to v2 tables
+## Task 3 — Trim the DB schema to v2 tables ✅ DONE (2026-07-10)
 
 **Goal:** Reduce the schema to only what v2 uses, shrinking the DB and removing dead surface.
 
-**Prereqs:** Task 2.
-
-**Context:** `scripts/init_database.py` creates 18 tables. v1 `dungeons` stores `original_html` + `parsed_json`; v2 uses hand-authored structured dungeons only (no HTML). Spell class-availability already lives in the `spells.classes` JSON column, so the empty `classes` table is redundant.
-
-**Steps:**
-1. In `scripts/init_database.py`, remove `CREATE TABLE` (and drop-list entries) for: `actions`, `traps`, `deities`, `classes`, `creatures`, `creature_types`, `statblock_jobs`. Keep: `abilities`, `damage_types`, `weapon_properties`, `weapons`, `spells`, `conditions`, `monsters`, `npcs`, `quests`, `encounter`, `dungeons`, `players`, `player_spells`, `player_weapons`.
-2. Reshape the `dungeons` table: drop `original_html`; keep `title` + a `rooms`/`data` JSON column holding the structured dungeon (from what was `parsed_json`). Produce a `seed_dungeons.json` for the 2 existing dungeons by extracting their `parsed_json` into the new shape, and add a loader for it in `scripts/seed_database.py`.
-3. Remove the corresponding `populate_*` functions in `scripts/seed_database.py` for dropped tables.
-4. Verify: rebuild the DB from scratch; confirm only v2 tables exist and the DB size dropped substantially (dungeon HTML blobs gone).
-
-**Done when:** a fresh rebuild yields exactly the v2 tables, dungeons load in the new structured shape, and no dropped-table code remains.
+**What was done:**
+- **Removed 4 CREATE TABLE statements** from `scripts/init_database.py` for: `actions`, `traps`, `deities`, `classes` (also removed `creatures`, `creature_types`, `statblock_jobs` from drop list).
+- **Reshaped `dungeons` table** in schema: removed `original_html` column, renamed `parsed_json` → `data` (v2: structured hand-authored dungeons only, no HTML blobs).
+- **Extracted 2 existing dungeons** from the old DB (Isly Castle, Greenhouse) and created `data/seeds/seed_dungeons.json` with the new shape (id, title, data).
+- **Updated `scripts/seed_database.py`**: removed `populate_actions()`, `populate_traps()`, `populate_deities()`, `populate_classes()`; updated `populate_dungeons()` to use new (id, title, data) schema.
+- **Verified fresh rebuild:** DB now has exactly **14 v2 tables** (down from 18): abilities, damage_types, weapon_properties, weapons, spells, conditions, monsters, npcs, quests, encounter, dungeons, players, player_spells, player_weapons. All row counts match seeds (spells=525, monsters=2734, weapons=219, npcs=26, etc.). DB is 9.1 MB.
 
 ---
 
-## Task 4 — Delete the v1 frontend & server
+## Task 4 — Delete the v1 frontend & server ✅ DONE (2026-07-10)
 
 **Goal:** Remove the vanilla-JS site and Flask monolith so `main` contains only data + rebuild scripts, ready for v2 scaffolding.
 
-**Prereqs:** Task 3 (DB rebuild proven independent of the old server).
+**What was done:**
+- **Deleted all v1 app files:** `index.html`, `server_flask.py`, `launcher_gui.py`, `custom-overrides.css`; entire `pages/`, `js/`, `launchers/`, `.launcher_pids/`, `server/`, `css/`, `lib/`, `tools/`, `_dev/` directories.
+- **Cleaned up docs:** Rewrote `README.md` for v2 (React + FastAPI quick start, dropped trackers/parser). Deleted `IMPLEMENTATION_COMPLETE.md`, `docs/development_plans/`, v1-specific guides (CSS theming, page checklist, spell-book migration), and `docs/unparsed_attack_note_patterns.md`. Kept `docs/FILE_STRUCTURE.md` for repo orientation.
+- **Updated `.gitignore`:** Added explicit entries for v2 frontend artifacts (`frontend/node_modules`, `frontend/dist`); kept DB and `data/5eTools/` ignored.
+- **Verified rebuild:** Fresh `init_database.py && seed_database.py` still succeeds with all seed data loaded (525 spells, 2734 monsters, etc.). Repo now contains only: `data/` (seeds), `scripts/` (init/seed/export), `archive/` (ingestion parsers), `docs/` (v2 plan), config files (CLAUDE.md, .gitignore, pyproject.toml, etc.), and `.git`.
 
-**Context:** v1 app files to remove: `index.html`; `pages/` (all 16 HTML files); `js/` (all 22 modules); `css/styles.css`, `css/page-layout.css`, `css/spell-book-custom.css`, root `custom-overrides.css`; `server_flask.py`; `launcher_gui.py`, `launchers/`, `.launcher_pids/`; empty `server/` dir; `tools/browser_error_checker.py`. Dead JS already noted (`spells.js`, `queue-helper.js`, stub `turn-order.js`/`character-sheet.js`) is covered by removing `js/`.
+---
+
+## Task 4.5 — Testing infrastructure
+
+**Goal:** Set up pytest for the backend and establish testing patterns before building endpoints.
+
+**Prereqs:** Task 4. Python 3.10+, pytest installed.
+
+**Context:** v2 is built with testing as a first-class concern. Every feature (endpoint, component, utility) must have tests. Backend uses pytest with a seeded test database; frontend will use vitest + React Testing Library (Task 7 scaffolds that).
+
+**What's been set up:**
+- `backend/requirements.txt`: pytest, pytest-asyncio, httpx for async test requests.
+- `backend/tests/conftest.py`: pytest fixtures for test DB creation, seeding, and connection access.
+- `backend/tests/test_example.py`: example tests showing JSON column parsing, DB relationships, and seeded-data assertions.
 
 **Steps:**
-1. Delete the files/dirs listed above. (They remain recoverable on `v1-archive`.)
-2. Clean up docs: reduce `docs/` and `README.md` to reflect v2 only — remove references to trackers, the stat-block parser, dungeon upload/parsing, and stale ingestion workflow. Delete `IMPLEMENTATION_COMPLETE.md` and outdated files under `docs/development_plans/` and `docs/guides/`.
-3. Update `.gitignore` if needed (keep DB + `data/5eTools/` ignored; add `frontend/node_modules`, `frontend/dist`).
-4. Verify: `python scripts/init_database.py && python scripts/seed_database.py` still works; the tree now holds only `data/`, `scripts/`, `archive/`, `docs/`, config files, and the DB.
+1. Install backend dependencies: `pip install -r backend/requirements.txt` (in a venv).
+2. Run the example tests: `pytest backend/tests/` — should pass 3 tests (weapons, spells, JSON parsing, relationships).
+3. Read `CLAUDE.md` (testing section) for conventions: test files mirror source paths, aim for >80% coverage on new code.
 
-**Done when:** v1 app/server code is gone from `main`, docs describe v2 only, and the data rebuild still passes.
+**Done when:** `pytest backend/tests/` passes with all 3 example tests green. From Task 5 onward, every endpoint and non-trivial function will include its own tests.
 
 ---
 

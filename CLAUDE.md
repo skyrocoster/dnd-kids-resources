@@ -21,6 +21,19 @@ This project is a printable D&D 5e resource site for kids. It has been **playtes
 - **Keep (rebuild):** content browsers (spells, monsters, weapons), campaign CRUD (players, NPCs, quests, encounters), dungeons.
 - **Dropped:** all trackers (HP, spell slots, turn order, printable character sheet); the donjon dungeon-HTML parser (`lib/parse_dungeon.py`) — v2 has **custom dungeons only**, no upload/parse.
 
+## Testing
+
+**All feature code must include tests.** This is not optional.
+
+- **Backend (FastAPI):** pytest. Use fixtures from `backend/tests/conftest.py` (seeded test DB, connection mocking). Every API endpoint gets a smoke test; routers with business logic get unit tests.
+- **Frontend (React):** vitest + React Testing Library. Components get render tests; hooks/utilities get unit tests.
+- **Run tests before committing:** `pytest` (backend) and `npm run test` (frontend, when task 7+).
+- **Coverage:** aim for >80% on new code. Coverage reports are checked locally (CI can enforce this later).
+
+Test files live alongside code: `backend/app/routers/spells.py` → `backend/tests/routers/test_spells.py`; `frontend/src/components/Card.tsx` → `frontend/src/components/__tests__/Card.test.tsx`.
+
+Task 4.5 set up pytest infrastructure and fixtures. Tasks 5+ inherit these patterns and are expected to add tests as they write endpoints/components.
+
 ## Conventions
 - Many DB columns are JSON-encoded text (e.g. spells' `damage`/`components`/`classes`, monsters' `ac`/`hp`/`action`) — `json.loads` on read, `json.dumps` on write.
 - Ingestion/parsing scripts are archived under `archive/ingestion/` and must stay out of the running app.
