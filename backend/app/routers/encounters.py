@@ -14,9 +14,8 @@ def _parse_encounter_row(row) -> dict:
     if encounter is None:
         return None
 
-    # Parse JSON columns
-    if encounter.get("creatures"):
-        encounter["creatures"] = parse_json_value(encounter["creatures"])
+    if encounter.get("units"):
+        encounter["units"] = parse_json_value(encounter["units"])
 
     return encounter
 
@@ -29,15 +28,11 @@ def list_encounters(
     """List all encounters."""
     with get_db() as conn:
         cursor = conn.cursor()
-
-        query = """
-            SELECT id, title, description, difficulty, creatures, notes
-            FROM encounter
-            ORDER BY title
-            LIMIT ? OFFSET ?
-        """
-
-        cursor.execute(query, (limit, offset))
+        cursor.execute(
+            """SELECT id, name as title, units as creatures FROM encounter
+               ORDER BY name LIMIT ? OFFSET ?""",
+            (limit, offset)
+        )
         rows = cursor.fetchall()
         return [_parse_encounter_row(row) for row in rows]
 
@@ -48,8 +43,7 @@ def get_encounter(encounter_id: int):
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute(
-            """SELECT id, title, description, difficulty, creatures, notes
-               FROM encounter WHERE id = ?""",
+            """SELECT id, name as title, units as creatures FROM encounter WHERE id = ?""",
             (encounter_id,)
         )
         row = cursor.fetchone()
@@ -66,14 +60,10 @@ def create_encounter(encounter: EncounterCreate):
 
         try:
             cursor.execute(
-                """INSERT INTO encounter (title, description, difficulty, creatures, notes)
-                   VALUES (?, ?, ?, ?, ?)""",
+                """INSERT INTO encounter (name, units) VALUES (?, ?)""",
                 (
                     encounter.title,
-                    encounter.description,
-                    encounter.difficulty,
                     json.dumps(encounter.creatures) if encounter.creatures else None,
-                    encounter.notes,
                 )
             )
             conn.commit()
@@ -83,8 +73,7 @@ def create_encounter(encounter: EncounterCreate):
             raise HTTPException(status_code=400, detail=f"Failed to create encounter: {str(e)}")
 
         cursor.execute(
-            """SELECT id, title, description, difficulty, creatures, notes
-               FROM encounter WHERE id = ?""",
+            """SELECT id, name as title, units as creatures FROM encounter WHERE id = ?""",
             (encounter_id,)
         )
         row = cursor.fetchone()
@@ -103,15 +92,10 @@ def update_encounter(encounter_id: int, encounter: EncounterUpdate):
 
         try:
             cursor.execute(
-                """UPDATE encounter
-                   SET title = ?, description = ?, difficulty = ?, creatures = ?, notes = ?
-                   WHERE id = ?""",
+                """UPDATE encounter SET name = ?, units = ? WHERE id = ?""",
                 (
                     encounter.title,
-                    encounter.description,
-                    encounter.difficulty,
                     json.dumps(encounter.creatures) if encounter.creatures else None,
-                    encounter.notes,
                     encounter_id,
                 )
             )
@@ -121,8 +105,7 @@ def update_encounter(encounter_id: int, encounter: EncounterUpdate):
             raise HTTPException(status_code=400, detail=f"Failed to update encounter: {str(e)}")
 
         cursor.execute(
-            """SELECT id, title, description, difficulty, creatures, notes
-               FROM encounter WHERE id = ?""",
+            """SELECT id, name as title, units as creatures FROM encounter WHERE id = ?""",
             (encounter_id,)
         )
         row = cursor.fetchone()

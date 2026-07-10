@@ -15,17 +15,14 @@ def test_create_player(test_client):
         "name": "Test Player",
         "class_": "Fighter",
         "level": 5,
-        "race": "Human",
-        "background": "Soldier",
     }
 
     response = test_client.post("/api/players", json=new_player)
     assert response.status_code == 201
     data = response.json()
     assert data["name"] == "Test Player"
-    assert data["class_"] == "Fighter"
+    assert data["level"] == 5
     assert data["id"] is not None
-    return data["id"]
 
 
 def test_get_player(test_client):

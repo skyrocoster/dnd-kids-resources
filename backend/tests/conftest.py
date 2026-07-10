@@ -125,6 +125,21 @@ def seeded_db(test_db_path):
         FOREIGN KEY(spell_id) REFERENCES spells(id) ON DELETE CASCADE
     )""")
 
+    cursor.execute("""CREATE TABLE player_weapons (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        player_id INTEGER NOT NULL,
+        weapon_id INTEGER NOT NULL,
+        FOREIGN KEY(player_id) REFERENCES players(id) ON DELETE CASCADE,
+        FOREIGN KEY(weapon_id) REFERENCES weapons(id) ON DELETE CASCADE
+    )""")
+
+    cursor.execute("""CREATE TABLE weapons (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL UNIQUE,
+        rarity TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )""")
+
     cursor.execute("""CREATE TABLE npcs (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL UNIQUE,
@@ -133,13 +148,16 @@ def seeded_db(test_db_path):
 
     cursor.execute("""CREATE TABLE quests (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        title TEXT NOT NULL UNIQUE,
+        name TEXT NOT NULL UNIQUE,
+        summary TEXT,
+        reward TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )""")
 
     cursor.execute("""CREATE TABLE encounter (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        title TEXT NOT NULL UNIQUE,
+        name TEXT NOT NULL UNIQUE,
+        units TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )""")
 
@@ -288,6 +306,21 @@ def test_client(monkeypatch, test_db_path):
         FOREIGN KEY(spell_id) REFERENCES spells(id) ON DELETE CASCADE
     )""")
 
+    cursor.execute("""CREATE TABLE player_weapons (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        player_id INTEGER NOT NULL,
+        weapon_id INTEGER NOT NULL,
+        FOREIGN KEY(player_id) REFERENCES players(id) ON DELETE CASCADE,
+        FOREIGN KEY(weapon_id) REFERENCES weapons(id) ON DELETE CASCADE
+    )""")
+
+    cursor.execute("""CREATE TABLE weapons (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL UNIQUE,
+        rarity TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )""")
+
     cursor.execute("""CREATE TABLE npcs (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL UNIQUE,
@@ -296,13 +329,16 @@ def test_client(monkeypatch, test_db_path):
 
     cursor.execute("""CREATE TABLE quests (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        title TEXT NOT NULL UNIQUE,
+        name TEXT NOT NULL UNIQUE,
+        summary TEXT,
+        reward TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )""")
 
     cursor.execute("""CREATE TABLE encounter (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        title TEXT NOT NULL UNIQUE,
+        name TEXT NOT NULL UNIQUE,
+        units TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )""")
 

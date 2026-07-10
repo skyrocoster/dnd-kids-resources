@@ -1,10 +1,25 @@
 from fastapi import APIRouter, HTTPException, Query
 from typing import List
+import json
 
 from ..db import get_db, dict_from_row, parse_json_value
 from ..schemas import Player, PlayerCreate, PlayerUpdate, Spell, Weapon
 
 router = APIRouter(prefix="/api", tags=["players"])
+
+
+def _parse_spell_row(row) -> dict:
+    """Convert a spell row, parsing JSON columns."""
+    spell = dict_from_row(row)
+    if spell is None:
+        return None
+
+    # Parse JSON columns
+    for field in ["components", "classes", "damage", "healing", "area_of_effect"]:
+        if spell.get(field):
+            spell[field] = parse_json_value(spell[field])
+
+    return spell
 
 
 def _parse_player_row(row) -> dict:
@@ -158,7 +173,7 @@ def get_player_spells(player_id: int):
             (player_id,)
         )
         rows = cursor.fetchall()
-        return [dict_from_row(row) for row in rows]
+        return [_parse_spell_row(row) for row in rows]
 
 
 @router.post("/players/{player_id}/spells/{spell_id}", status_code=201)
@@ -228,7 +243,7 @@ def get_player_weapons(player_id: int):
             raise HTTPException(status_code=404, detail="Player not found")
 
         cursor.execute(
-            """SELECT w.id, w.name, w.damage, w.damage_type, w.properties, w.rarity
+            """SELECT w.id, w.name, w.rarity
                FROM weapons w
                JOIN player_weapons pw ON w.id = pw.weapon_id
                WHERE pw.player_id = ?

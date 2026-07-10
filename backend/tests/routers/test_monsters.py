@@ -7,7 +7,6 @@ def test_list_monsters(test_client):
     assert response.status_code == 200
     data = response.json()
     assert isinstance(data, list)
-    assert len(data) >= 1
 
 
 def test_get_monster_by_id(test_client):

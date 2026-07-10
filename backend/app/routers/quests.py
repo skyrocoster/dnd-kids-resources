@@ -15,15 +15,11 @@ def list_quests(
     """List all quests."""
     with get_db() as conn:
         cursor = conn.cursor()
-
-        query = """
-            SELECT id, title, description, status, reward, notes
-            FROM quests
-            ORDER BY title
-            LIMIT ? OFFSET ?
-        """
-
-        cursor.execute(query, (limit, offset))
+        cursor.execute(
+            """SELECT id, name as title, summary as description, reward FROM quests
+               ORDER BY name LIMIT ? OFFSET ?""",
+            (limit, offset)
+        )
         rows = cursor.fetchall()
         return [dict_from_row(row) for row in rows]
 
@@ -34,7 +30,7 @@ def get_quest(quest_id: int):
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute(
-            """SELECT id, title, description, status, reward, notes FROM quests WHERE id = ?""",
+            """SELECT id, name as title, summary as description, reward FROM quests WHERE id = ?""",
             (quest_id,)
         )
         row = cursor.fetchone()
@@ -51,9 +47,8 @@ def create_quest(quest: QuestCreate):
 
         try:
             cursor.execute(
-                """INSERT INTO quests (title, description, status, reward, notes)
-                   VALUES (?, ?, ?, ?, ?)""",
-                (quest.title, quest.description, quest.status, quest.reward, quest.notes)
+                """INSERT INTO quests (name, summary, reward) VALUES (?, ?, ?)""",
+                (quest.title, quest.description, quest.reward)
             )
             conn.commit()
             quest_id = cursor.lastrowid
@@ -62,7 +57,7 @@ def create_quest(quest: QuestCreate):
             raise HTTPException(status_code=400, detail=f"Failed to create quest: {str(e)}")
 
         cursor.execute(
-            """SELECT id, title, description, status, reward, notes FROM quests WHERE id = ?""",
+            """SELECT id, name as title, summary as description, reward FROM quests WHERE id = ?""",
             (quest_id,)
         )
         row = cursor.fetchone()
@@ -81,10 +76,8 @@ def update_quest(quest_id: int, quest: QuestUpdate):
 
         try:
             cursor.execute(
-                """UPDATE quests
-                   SET title = ?, description = ?, status = ?, reward = ?, notes = ?
-                   WHERE id = ?""",
-                (quest.title, quest.description, quest.status, quest.reward, quest.notes, quest_id)
+                """UPDATE quests SET name = ?, summary = ?, reward = ? WHERE id = ?""",
+                (quest.title, quest.description, quest.reward, quest_id)
             )
             conn.commit()
         except Exception as e:
@@ -92,7 +85,7 @@ def update_quest(quest_id: int, quest: QuestUpdate):
             raise HTTPException(status_code=400, detail=f"Failed to update quest: {str(e)}")
 
         cursor.execute(
-            """SELECT id, title, description, status, reward, notes FROM quests WHERE id = ?""",
+            """SELECT id, name as title, summary as description, reward FROM quests WHERE id = ?""",
             (quest_id,)
         )
         row = cursor.fetchone()
