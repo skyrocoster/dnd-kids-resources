@@ -20,10 +20,12 @@ Thumbs.db
 
 # Project specific
 .env
-node_modules/
-dist/
 build/
 *.log
+
+# Frontend (v2)
+frontend/node_modules/
+frontend/dist/
 
 # Database files (regenerate from seed files instead)
 dnd_kids_resources.db

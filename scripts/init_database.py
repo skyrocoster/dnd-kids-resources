@@ -31,26 +31,19 @@ def init_database():
     # Drop all existing tables in reverse dependency order
     print("\nCleaning up existing tables...")
     tables_to_drop = [
-        "statblock_jobs",
         "player_spells",
         "player_weapons",
         "players",
         "monsters",
         "npcs",
         "quests",
-        "creatures",
-        "creature_types",
-        "classes",
         "spells",
         "conditions",
-        "actions",
         "damage_types",
         "weapon_properties",
         "weapons",
         "abilities",
-        "traps",
         "dungeons",
-        "deities",
         "skills",
         "encounter"
     ]
@@ -187,30 +180,6 @@ def init_database():
         )
     """)
 
-    # Create actions table for basic D&D action rules
-    cursor.execute("""
-        CREATE TABLE actions (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL UNIQUE,
-            icon TEXT NOT NULL DEFAULT '⚔️',
-            category TEXT NOT NULL DEFAULT 'Action',
-            explanation TEXT,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-
-    # Create classes table (new)
-
-    cursor.execute("""
-        CREATE TABLE classes (
-            id INTEGER PRIMARY KEY,
-            code TEXT NOT NULL UNIQUE,
-            name TEXT NOT NULL,
-            emoji TEXT NOT NULL,
-            color TEXT NOT NULL,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
 
     # Create monsters table using the normalized merged structure
     cursor.execute("""
@@ -305,45 +274,14 @@ def init_database():
         "CREATE INDEX IF NOT EXISTS idx_monsters_cr ON monsters(cr)"
     )
 
-    # [REMOVED - April 10, 2026] Old queue-based AI job system
-    # Replaced with custom lightweight model approach
-
-    # Create traps table
-    cursor.execute("""
-        CREATE TABLE traps (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL UNIQUE,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-
-    # Create dungeons table
+    # Create dungeons table (v2: structured hand-authored dungeons only, no HTML)
     cursor.execute("""
         CREATE TABLE dungeons (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             title TEXT NOT NULL UNIQUE,
-            original_html TEXT NOT NULL,
-            parsed_json TEXT NOT NULL,
+            data TEXT NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-
-    # Create deities table for deity metadata storage
-    cursor.execute("""
-        CREATE TABLE deities (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL UNIQUE,
-            pantheon TEXT,
-            alignment TEXT,
-            category TEXT,
-            domains TEXT,
-            symbol TEXT,
-            title TEXT,
-            alt_names TEXT,
-            entries TEXT,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     """)
 
@@ -389,24 +327,25 @@ def init_database():
     """)
 
     print("[OK] Tables created")
-    
+
     conn.commit()
     conn.close()
 
     print(f"\n[SUCCESS] Database initialized: {DB_PATH}")
     print(f"   Size: {DB_PATH.stat().st_size / 1024:.1f} KB")
-    print("\nNEW SCHEMA (Option 1) Features:")
-    print("  [OK] Spells table: 23 columns (staging-based schema for 5eTools spell ingestion)")
-    print("    - Staging schema: spell_name, icon, level, school, spell_text, spell_alt_text, damage, heal, heal_at_spell_slots, range, higher_levels")
-    print("    - NEW: casting_time, duration, concentration, ritual, components, materials, attack_type, area_of_effect, classes (JSON), subclasses (JSON), damage_at_higher_levels")
-    print("  [OK] Classes stored directly in spells table as JSON array (e.g., ['wizard', 'sorcerer'])")
+    print("\nV2 SCHEMA - 14 tables (reduced from 18 for v2):")
+    print("  [OK] abilities, damage_types, weapon_properties, weapons")
+    print("  [OK] spells (23 columns: spell_name, icon, level, school, spell_text, etc.)")
+    print("  [OK] conditions, monsters, npcs, quests, encounter")
+    print("  [OK] dungeons (id, title, data JSON for structured hand-authored dungeons)")
+    print("  [OK] players, player_spells, player_weapons")
     print("\n" + "="*60)
     print("NEXT STEP: Run seed_database.py to populate data")
     print("="*60)
     print("\nUsage:")
-    print("  python _dev/seed_database.py              # Load all seed data")
-    print("  python _dev/seed_database.py --spells     # Load only spells")
-    print("  python _dev/seed_database.py --force      # Reload (clear existing data)")
+    print("  python scripts/seed_database.py              # Load all seed data")
+    print("  python scripts/seed_database.py --spells     # Load only spells")
+    print("  python scripts/seed_database.py --force      # Reload (clear existing data)")
 
 
 if __name__ == '__main__':
