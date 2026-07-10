@@ -1,25 +1,20 @@
 #!/usr/bin/env python3
 """Export current database seed tables into JSON files under data/seeds.
 
-This script archives any existing seed JSON files into data/seeds/archive with a
-timestamped filename, then exports current DB rows to new seed files.
-
 Usage:
-  python _dev/export_db_seeds.py
-  python _dev/export_db_seeds.py --tables abilities,conditions,quests
-  python _dev/export_db_seeds.py --dry-run
+  python scripts/export_db_seeds.py
+  python scripts/export_db_seeds.py --tables abilities,conditions,quests
+  python scripts/export_db_seeds.py --dry-run
 """
 
 import argparse
 import json
 import sqlite3
-from datetime import datetime
 from pathlib import Path
 
 ROOT = Path(__file__).parent.parent
 DB_PATH = ROOT / "dnd_kids_resources.db"
 SEEDS_DIR = ROOT / "data" / "seeds"
-ARCHIVE_DIR = SEEDS_DIR / "archive"
 LEGACY_DATA_DIR = ROOT / "data"
 
 EXPORT_DEFINITIONS = {
@@ -98,34 +93,6 @@ EXPORT_DEFINITIONS = {
 }
 
 
-def ensure_directories():
-    SEEDS_DIR.mkdir(parents=True, exist_ok=True)
-    ARCHIVE_DIR.mkdir(parents=True, exist_ok=True)
-
-
-def timestamped_archive_name(file_path: Path) -> Path:
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    return ARCHIVE_DIR / f"{file_path.stem}_{timestamp}{file_path.suffix}"
-
-
-def archive_file(file_path: Path, dry_run=False):
-    target = timestamped_archive_name(file_path)
-    if dry_run:
-        print(f"[DRY RUN] Archive {file_path} -> {target}")
-        return target
-    print(f"Archiving {file_path} -> {target}")
-    file_path.replace(target)
-    return target
-
-
-def archive_existing_seeds(dry_run=False):
-    if not SEEDS_DIR.exists():
-        return
-
-    for source_dir in [SEEDS_DIR, LEGACY_DATA_DIR]:
-        for seed_file in source_dir.glob("seed_*.json"):
-            if seed_file.is_file():
-                archive_file(seed_file, dry_run=dry_run)
 
 
 def load_json_schema(cursor, query, file_name):
@@ -244,16 +211,12 @@ def main():
     parser = argparse.ArgumentParser(description="Export current database seed tables to data/seeds")
     parser.add_argument("--tables", type=parse_table_list, help="Comma-separated list of tables to export")
     parser.add_argument("--dry-run", action="store_true", help="Show actions without writing files")
-    parser.add_argument("--no-archive", action="store_true", help="Skip archiving existing seed files")
     args = parser.parse_args()
 
     if not DB_PATH.exists():
         raise FileNotFoundError(f"Database not found: {DB_PATH}")
 
-    ensure_directories()
-
-    if not args.no_archive:
-        archive_existing_seeds(dry_run=args.dry_run)
+    SEEDS_DIR.mkdir(parents=True, exist_ok=True)
 
     with sqlite3.connect(str(DB_PATH)) as conn:
         cursor = conn.cursor()
@@ -266,7 +229,6 @@ def main():
 
     print("\nExport complete.")
     print(f"Seed files are written to: {SEEDS_DIR}")
-    print(f"Archive location: {ARCHIVE_DIR}")
 
 
 if __name__ == "__main__":

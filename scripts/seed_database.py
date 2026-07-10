@@ -85,9 +85,6 @@ DB_PATH = Path(__file__).parent.parent / "dnd_kids_resources.db"
 SEEDS_DIR = Path(__file__).parent.parent / "data" / "seeds"
 LEGACY_SEEDS_DIR = Path(__file__).parent.parent / "data"
 
-# Add parent directory to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent))
-from lib.parse_dungeon import DungeonHTMLParser
 
 def load_json_file(filepath):
     """Load and parse a JSON seed file."""
