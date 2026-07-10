@@ -35,7 +35,7 @@ class Spell(BaseModel):
     school: Optional[str] = None
     spell_text: Optional[str] = None
     spell_alt_text: Optional[str] = None
-    damage: Optional[Dict[str, Any]] = None
+    damage: Optional[List[Dict[str, Any]]] = None
     heal: Optional[Dict[str, Any]] = None
     heal_at_spell_slots: Optional[Dict[str, Any]] = None
     range: Optional[str] = None
@@ -47,7 +47,7 @@ class Spell(BaseModel):
     ritual: Optional[bool] = None
     components: Optional[List[str]] = None
     materials: Optional[str] = None
-    attack_type: Optional[str] = None
+    attack_type: Optional[List[Dict[str, Any]]] = None
     area_of_effect: Optional[Dict[str, Any]] = None
     action: Optional[str] = None
     classes: Optional[List[str]] = None
@@ -61,7 +61,7 @@ class SpellCreate(BaseModel):
     school: Optional[str] = None
     spell_text: Optional[str] = None
     spell_alt_text: Optional[str] = None
-    damage: Optional[Dict[str, Any]] = None
+    damage: Optional[List[Dict[str, Any]]] = None
     heal: Optional[Dict[str, Any]] = None
     heal_at_spell_slots: Optional[Dict[str, Any]] = None
     range: Optional[str] = None
@@ -73,7 +73,7 @@ class SpellCreate(BaseModel):
     ritual: Optional[bool] = None
     components: Optional[List[str]] = None
     materials: Optional[str] = None
-    attack_type: Optional[str] = None
+    attack_type: Optional[List[Dict[str, Any]]] = None
     area_of_effect: Optional[Dict[str, Any]] = None
     action: Optional[str] = None
     classes: Optional[List[str]] = None
@@ -103,9 +103,9 @@ class Monster(BaseModel):
     hp: Optional[Dict[str, Any]] = None
     speed: Optional[Dict[str, Any]] = None
     stats: Optional[Dict[str, Any]] = None
-    senses: Optional[str] = None
-    languages: Optional[str] = None
-    challenge: Optional[str] = None
+    senses: Optional[List[Dict[str, Any]]] = None
+    languages: Optional[List[str]] = None
+    cr: Optional[str] = None
     action: Optional[List[Dict[str, Any]]] = None
 
 
@@ -128,18 +128,28 @@ class MonsterUpdate(MonsterCreate):
 class Weapon(BaseModel):
     id: int
     name: str
-    damage: Optional[str] = None
-    damage_type: Optional[str] = None
-    properties: Optional[List[str]] = None
+    base_weapon: Optional[str] = None
     rarity: Optional[str] = None
+    weapon_category: Optional[str] = None
+    weight: Optional[float] = None
+    req_attune: Optional[str] = None
+    property: Optional[List[str]] = None
+    focus: Optional[List[str]] = None
+    attack: Optional[List[Dict[str, Any]]] = None
+    entries: Optional[List[Any]] = None
 
 
 class WeaponCreate(BaseModel):
     name: str
-    damage: Optional[str] = None
-    damage_type: Optional[str] = None
-    properties: Optional[List[str]] = None
+    base_weapon: Optional[str] = None
     rarity: Optional[str] = None
+    weapon_category: Optional[str] = None
+    weight: Optional[float] = None
+    req_attune: Optional[str] = None
+    property: Optional[List[str]] = None
+    focus: Optional[List[str]] = None
+    attack: Optional[List[Dict[str, Any]]] = None
+    entries: Optional[List[Any]] = None
 
 
 class WeaponUpdate(WeaponCreate):

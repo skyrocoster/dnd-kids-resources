@@ -54,6 +54,19 @@ def parse_json_value(value):
     return value
 
 
+def parse_json_list(value):
+    """Parse a JSON column expected to hold a list. Falls back to comma-splitting
+    for legacy rows stored as a plain string (e.g. "V, S") instead of JSON."""
+    parsed = parse_json_value(value)
+    if parsed is None:
+        return None
+    if isinstance(parsed, list):
+        return parsed
+    if isinstance(parsed, str):
+        return [item.strip() for item in parsed.split(",") if item.strip()]
+    return [parsed]
+
+
 def dict_from_row(row):
     """Convert a sqlite3.Row to a dict, parsing JSON columns where needed."""
     if row is None:

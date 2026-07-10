@@ -1,10 +1,30 @@
 from fastapi import APIRouter, HTTPException, Query
 from typing import List
+import json
 
-from ..db import get_db, dict_from_row
+from ..db import get_db, dict_from_row, parse_json_value
 from ..schemas import Weapon, WeaponCreate, WeaponUpdate
 
 router = APIRouter(prefix="/api", tags=["weapons"])
+
+SELECT_COLUMNS = (
+    "id, name, base_weapon, rarity, weapon_category, weight, req_attune, "
+    "property, focus, attack, entries"
+)
+JSON_FIELDS = ["property", "focus", "attack", "entries"]
+
+
+def _parse_weapon_row(row) -> dict:
+    """Convert a weapon row, parsing JSON columns."""
+    weapon = dict_from_row(row)
+    if weapon is None:
+        return None
+
+    for field in JSON_FIELDS:
+        if weapon.get(field):
+            weapon[field] = parse_json_value(weapon[field])
+
+    return weapon
 
 
 @router.get("/weapons", response_model=List[Weapon])
@@ -16,11 +36,11 @@ def list_weapons(
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute(
-            """SELECT id, name, rarity FROM weapons ORDER BY name LIMIT ? OFFSET ?""",
+            f"SELECT {SELECT_COLUMNS} FROM weapons ORDER BY name LIMIT ? OFFSET ?",
             (limit, offset)
         )
         rows = cursor.fetchall()
-        return [dict_from_row(row) for row in rows]
+        return [_parse_weapon_row(row) for row in rows]
 
 
 @router.get("/weapons/{weapon_id}", response_model=Weapon)
@@ -28,11 +48,11 @@ def get_weapon(weapon_id: int):
     """Get a specific weapon by ID."""
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT id, name, rarity FROM weapons WHERE id = ?", (weapon_id,))
+        cursor.execute(f"SELECT {SELECT_COLUMNS} FROM weapons WHERE id = ?", (weapon_id,))
         row = cursor.fetchone()
         if not row:
             raise HTTPException(status_code=404, detail="Weapon not found")
-        return dict_from_row(row)
+        return _parse_weapon_row(row)
 
 
 @router.get("/weapons/by-name/{name}", response_model=Weapon)
@@ -40,11 +60,11 @@ def get_weapon_by_name(name: str):
     """Get a specific weapon by name."""
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT id, name, rarity FROM weapons WHERE name = ?", (name,))
+        cursor.execute(f"SELECT {SELECT_COLUMNS} FROM weapons WHERE name = ?", (name,))
         row = cursor.fetchone()
         if not row:
             raise HTTPException(status_code=404, detail="Weapon not found")
-        return dict_from_row(row)
+        return _parse_weapon_row(row)
 
 
 @router.post("/weapons", response_model=Weapon, status_code=201)
@@ -54,8 +74,22 @@ def create_weapon(weapon: WeaponCreate):
         cursor = conn.cursor()
         try:
             cursor.execute(
-                "INSERT INTO weapons (name, rarity) VALUES (?, ?)",
-                (weapon.name, weapon.rarity)
+                """INSERT INTO weapons
+                   (name, base_weapon, rarity, weapon_category, weight, req_attune,
+                    property, focus, attack, entries)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (
+                    weapon.name,
+                    weapon.base_weapon,
+                    weapon.rarity,
+                    weapon.weapon_category,
+                    weapon.weight,
+                    weapon.req_attune,
+                    json.dumps(weapon.property) if weapon.property else None,
+                    json.dumps(weapon.focus) if weapon.focus else None,
+                    json.dumps(weapon.attack) if weapon.attack else None,
+                    json.dumps(weapon.entries) if weapon.entries else None,
+                )
             )
             conn.commit()
             weapon_id = cursor.lastrowid
@@ -63,9 +97,9 @@ def create_weapon(weapon: WeaponCreate):
             conn.rollback()
             raise HTTPException(status_code=400, detail=f"Failed to create weapon: {str(e)}")
 
-        cursor.execute("SELECT id, name, rarity FROM weapons WHERE id = ?", (weapon_id,))
+        cursor.execute(f"SELECT {SELECT_COLUMNS} FROM weapons WHERE id = ?", (weapon_id,))
         row = cursor.fetchone()
-        return dict_from_row(row)
+        return _parse_weapon_row(row)
 
 
 @router.put("/weapons/{weapon_id}", response_model=Weapon)
@@ -79,17 +113,33 @@ def update_weapon(weapon_id: int, weapon: WeaponUpdate):
 
         try:
             cursor.execute(
-                "UPDATE weapons SET name = ?, rarity = ? WHERE id = ?",
-                (weapon.name, weapon.rarity, weapon_id)
+                """UPDATE weapons
+                   SET name = ?, base_weapon = ?, rarity = ?, weapon_category = ?,
+                       weight = ?, req_attune = ?, property = ?, focus = ?, attack = ?,
+                       entries = ?
+                   WHERE id = ?""",
+                (
+                    weapon.name,
+                    weapon.base_weapon,
+                    weapon.rarity,
+                    weapon.weapon_category,
+                    weapon.weight,
+                    weapon.req_attune,
+                    json.dumps(weapon.property) if weapon.property else None,
+                    json.dumps(weapon.focus) if weapon.focus else None,
+                    json.dumps(weapon.attack) if weapon.attack else None,
+                    json.dumps(weapon.entries) if weapon.entries else None,
+                    weapon_id,
+                )
             )
             conn.commit()
         except Exception as e:
             conn.rollback()
             raise HTTPException(status_code=400, detail=f"Failed to update weapon: {str(e)}")
 
-        cursor.execute("SELECT id, name, rarity FROM weapons WHERE id = ?", (weapon_id,))
+        cursor.execute(f"SELECT {SELECT_COLUMNS} FROM weapons WHERE id = ?", (weapon_id,))
         row = cursor.fetchone()
-        return dict_from_row(row)
+        return _parse_weapon_row(row)
 
 
 @router.delete("/weapons/{weapon_id}", status_code=204)

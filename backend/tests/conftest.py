@@ -104,7 +104,7 @@ def seeded_db(test_db_path):
         stats TEXT,
         senses TEXT,
         languages TEXT,
-        challenge TEXT,
+        cr TEXT,
         action TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )""")
@@ -136,7 +136,15 @@ def seeded_db(test_db_path):
     cursor.execute("""CREATE TABLE weapons (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL UNIQUE,
+        base_weapon TEXT,
         rarity TEXT,
+        weapon_category TEXT,
+        weight REAL,
+        req_attune TEXT,
+        property TEXT,
+        focus TEXT,
+        attack TEXT,
+        entries TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )""")
 
@@ -187,6 +195,20 @@ def seeded_db(test_db_path):
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         ("Fireball", "🔥", "3", "Evocation", "A ball of fire erupts", "1 action", "150 feet",
          json.dumps(["V", "S", "M"]), "Instantaneous", json.dumps(["Sorcerer", "Wizard"])))
+
+    cursor.execute("""INSERT INTO monsters
+        (name, ac, hp, speed, stats, senses, languages, cr, action)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        ("Owlbear", json.dumps({"13": None}), json.dumps({"average": 59, "formula": "7d10+21"}),
+         json.dumps({"walk": 40}), json.dumps({"str": 20, "dex": 12, "con": 17, "int": 3, "wis": 12, "cha": 7}),
+         json.dumps([{"type": "darkvision", "range": 60}]), json.dumps([]), "3",
+         json.dumps([{"name": "Beak", "attack": {"type": "melee", "mod": 7, "damage": "1d10+5", "damage_type": "piercing"}}])))
+
+    cursor.execute("""INSERT INTO weapons
+        (name, base_weapon, rarity, weapon_category, weight, req_attune, property, focus, attack, entries)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        ("Longsword", "Longsword", None, "martial", 3.0, None, json.dumps(["V"]), json.dumps([]),
+         json.dumps([{"type": "melee", "damage": "1d8", "damage_type": "slashing", "hands": 1}]), json.dumps([])))
 
     conn.commit()
     yield conn
@@ -285,7 +307,7 @@ def test_client(monkeypatch, test_db_path):
         stats TEXT,
         senses TEXT,
         languages TEXT,
-        challenge TEXT,
+        cr TEXT,
         action TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )""")
@@ -317,7 +339,15 @@ def test_client(monkeypatch, test_db_path):
     cursor.execute("""CREATE TABLE weapons (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL UNIQUE,
+        base_weapon TEXT,
         rarity TEXT,
+        weapon_category TEXT,
+        weight REAL,
+        req_attune TEXT,
+        property TEXT,
+        focus TEXT,
+        attack TEXT,
+        entries TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )""")
 
@@ -368,6 +398,20 @@ def test_client(monkeypatch, test_db_path):
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         ("Fireball", "🔥", "3", "Evocation", "A ball of fire erupts", "1 action", "150 feet",
          json.dumps(["V", "S", "M"]), "Instantaneous", json.dumps(["Sorcerer", "Wizard"])))
+
+    cursor.execute("""INSERT INTO monsters
+        (name, ac, hp, speed, stats, senses, languages, cr, action)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        ("Owlbear", json.dumps({"13": None}), json.dumps({"average": 59, "formula": "7d10+21"}),
+         json.dumps({"walk": 40}), json.dumps({"str": 20, "dex": 12, "con": 17, "int": 3, "wis": 12, "cha": 7}),
+         json.dumps([{"type": "darkvision", "range": 60}]), json.dumps([]), "3",
+         json.dumps([{"name": "Beak", "attack": {"type": "melee", "mod": 7, "damage": "1d10+5", "damage_type": "piercing"}}])))
+
+    cursor.execute("""INSERT INTO weapons
+        (name, base_weapon, rarity, weapon_category, weight, req_attune, property, focus, attack, entries)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        ("Longsword", "Longsword", None, "martial", 3.0, None, json.dumps(["V"]), json.dumps([]),
+         json.dumps([{"type": "melee", "damage": "1d8", "damage_type": "slashing", "hands": 1}]), json.dumps([])))
 
     conn.commit()
     conn.close()

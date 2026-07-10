@@ -15,7 +15,7 @@ def _parse_monster_row(row) -> dict:
         return None
 
     # Parse JSON columns
-    for field in ["ac", "hp", "speed", "stats", "action"]:
+    for field in ["ac", "hp", "speed", "stats", "senses", "languages", "action"]:
         if monster.get(field):
             monster[field] = parse_json_value(monster[field])
 
@@ -32,7 +32,7 @@ def list_monsters(
         cursor = conn.cursor()
 
         query = """
-            SELECT id, name, ac, hp, speed, stats, senses, languages, challenge, action
+            SELECT id, name, ac, hp, speed, stats, senses, languages, cr, action
             FROM monsters
             ORDER BY name
             LIMIT ? OFFSET ?
@@ -49,7 +49,7 @@ def get_monster(monster_id: int):
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute(
-            """SELECT id, name, ac, hp, speed, stats, senses, languages, challenge, action
+            """SELECT id, name, ac, hp, speed, stats, senses, languages, cr, action
                FROM monsters WHERE id = ?""",
             (monster_id,)
         )
@@ -65,7 +65,7 @@ def get_monster_by_name(name: str):
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute(
-            """SELECT id, name, ac, hp, speed, stats, senses, languages, challenge, action
+            """SELECT id, name, ac, hp, speed, stats, senses, languages, cr, action
                FROM monsters WHERE name = ?""",
             (name,)
         )

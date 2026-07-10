@@ -87,6 +87,26 @@ def test_spell_json_columns_parsed(test_client):
         assert "Wizard" in spell["classes"]
 
 
+def test_create_spell_with_attack_type_round_trips_as_list(test_client):
+    """attack_type must parse back as structured JSON, not a raw string (regression)."""
+    new_spell = {
+        "spell_name": "Scorching Ray",
+        "level": "2",
+        "school": "Evocation",
+        "attack_type": [{"name": "ray", "type": "spell"}],
+        "damage": [{"name": "ray", "damage": "2d6", "type": "fire"}],
+    }
+
+    response = test_client.post("/api/spells", json=new_spell)
+    assert response.status_code == 201
+    data = response.json()
+    assert isinstance(data["attack_type"], list)
+    assert data["attack_type"][0]["type"] == "spell"
+
+    response = test_client.get(f"/api/spells/{data['id']}")
+    assert isinstance(response.json()["attack_type"], list)
+
+
 def test_create_spell(test_client):
     """Test POST /api/spells to create a new spell."""
     new_spell = {

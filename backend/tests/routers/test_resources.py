@@ -34,6 +34,32 @@ def test_weapon_crud(test_client):
     assert response.status_code == 204
 
 
+def test_weapon_seed_data_has_attack_and_property(test_client):
+    """Seeded weapon should round-trip its structured attack/property JSON fields."""
+    response = test_client.get("/api/weapons")
+    assert response.status_code == 200
+    weapon = next(w for w in response.json() if w["name"] == "Longsword")
+    assert weapon["property"] == ["V"]
+    assert weapon["attack"][0]["damage"] == "1d8"
+
+
+def test_create_weapon_with_structured_fields(test_client):
+    """Test POST /api/weapons with attack/property/entries JSON fields."""
+    weapon = {
+        "name": "Test Greataxe",
+        "rarity": None,
+        "weapon_category": "martial",
+        "property": ["H", "2H"],
+        "attack": [{"type": "melee", "damage": "1d12", "damage_type": "slashing"}],
+        "entries": ["A brutal two-handed axe."],
+    }
+    response = test_client.post("/api/weapons", json=weapon)
+    assert response.status_code == 201
+    data = response.json()
+    assert data["property"] == ["H", "2H"]
+    assert data["attack"][0]["damage"] == "1d12"
+
+
 # NPCs
 def test_list_npcs(test_client):
     """Test GET /api/npcs."""

@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Query
 from typing import List, Optional
 import json
 
-from ..db import get_db, dict_from_row, parse_json_value
+from ..db import get_db, dict_from_row, parse_json_value, parse_json_list
 from ..schemas import Spell, SpellCreate, SpellUpdate
 
 router = APIRouter(prefix="/api", tags=["spells"])
@@ -15,9 +15,15 @@ def _parse_spell_row(row) -> dict:
         return None
 
     # Parse JSON columns
-    for field in ["damage", "heal", "heal_at_spell_slots", "components", "classes", "subclasses", "area_of_effect"]:
+    for field in ["damage", "heal", "heal_at_spell_slots", "area_of_effect", "attack_type"]:
         if spell.get(field):
             spell[field] = parse_json_value(spell[field])
+
+    # These are list-typed columns; some legacy rows store them as a plain
+    # comma-separated string instead of a JSON array.
+    for field in ["components", "classes", "subclasses"]:
+        if spell.get(field):
+            spell[field] = parse_json_list(spell[field])
 
     return spell
 
@@ -138,7 +144,7 @@ def create_spell(spell: SpellCreate):
                     spell.ritual,
                     json.dumps(spell.components) if spell.components else None,
                     spell.materials,
-                    spell.attack_type,
+                    json.dumps(spell.attack_type) if spell.attack_type else None,
                     json.dumps(spell.area_of_effect) if spell.area_of_effect else None,
                     spell.action,
                     json.dumps(spell.classes) if spell.classes else None,
@@ -205,7 +211,7 @@ def update_spell(spell_id: int, spell: SpellUpdate):
                     spell.ritual,
                     json.dumps(spell.components) if spell.components else None,
                     spell.materials,
-                    spell.attack_type,
+                    json.dumps(spell.attack_type) if spell.attack_type else None,
                     json.dumps(spell.area_of_effect) if spell.area_of_effect else None,
                     spell.action,
                     json.dumps(spell.classes) if spell.classes else None,

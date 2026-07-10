@@ -44,7 +44,7 @@ export interface Spell {
   school?: string | null
   spell_text?: string | null
   spell_alt_text?: string | null
-  damage?: Record<string, unknown> | null
+  damage?: Record<string, unknown>[] | null
   heal?: Record<string, unknown> | null
   heal_at_spell_slots?: Record<string, unknown> | null
   range?: string | null
@@ -56,7 +56,7 @@ export interface Spell {
   ritual?: boolean | null
   components?: string[] | null
   materials?: string | null
-  attack_type?: string | null
+  attack_type?: Record<string, unknown>[] | null
   area_of_effect?: Record<string, unknown> | null
   action?: string | null
   classes?: string[] | null
@@ -72,9 +72,9 @@ export interface Monster {
   hp?: Record<string, unknown> | null
   speed?: Record<string, unknown> | null
   stats?: Record<string, unknown> | null
-  senses?: string | null
-  languages?: string | null
-  challenge?: string | null
+  senses?: Record<string, unknown>[] | null
+  languages?: string[] | null
+  cr?: string | null
   action?: Record<string, unknown>[] | null
 }
 
@@ -83,10 +83,15 @@ export type MonsterInput = Omit<Monster, 'id'>
 export interface Weapon {
   id: number
   name: string
-  damage?: string | null
-  damage_type?: string | null
-  properties?: string[] | null
+  base_weapon?: string | null
   rarity?: string | null
+  weapon_category?: string | null
+  weight?: number | null
+  req_attune?: string | null
+  property?: string[] | null
+  focus?: string[] | null
+  attack?: Record<string, unknown>[] | null
+  entries?: unknown[] | null
 }
 
 export type WeaponInput = Omit<Weapon, 'id'>
