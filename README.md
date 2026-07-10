@@ -6,6 +6,17 @@
 
 ---
 
+> ## 🚧 v2 rebuild in progress
+>
+> This project is being rebuilt from the ground up. The **data is final and frozen** (`data/seeds/`); the app is moving to a new stack — **React + Vite** frontend and a **FastAPI + SQLite** backend — replacing the vanilla-JS pages and the `server_flask.py` monolith.
+>
+> - **The staged rebuild plan lives in [`docs/v2-rebuild-plan.md`](docs/v2-rebuild-plan.md)** — 11 self-contained tasks, done in order.
+> - **v1 is archived** on the `v1-archive` git branch. `main` is the v2 workspace and is being cleaned aggressively.
+> - **Dropped in v2:** all trackers (HP, spell slots, turn order, character sheet) and the donjon dungeon-HTML parser (custom dungeons only).
+> - The quick-start / feature list below describes **v1** and is stale until the rebuild lands.
+
+---
+
 ## Quick Start
 
 **Option 1: Open the browser UI**

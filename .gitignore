@@ -39,3 +39,7 @@ dnd_kids_resources.db
 
 data/seeds/archive/
 
+
+# Vendored AI tool skill dirs (not project code)
+.claude/skills/
+.cursor/skills/
