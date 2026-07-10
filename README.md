@@ -1,6 +1,6 @@
 # D&D Kids Resources — v2
 
-**Printable D&D 5th Edition tools and reference cards for kids.**
+**Online D&D 5th Edition tools and reference cards for kids, built for running games at the table.**
 
 🎲 Spell cards • 🗺️ Dungeon tools • 🧙 Campaign manager
 
@@ -70,7 +70,7 @@ Serves the built SPA + API from `http://localhost:8000`.
 - Browse hand-authored structured dungeons
 - Create and edit custom dungeons (no upload/parse)
 
-**Dropped in v2:** HP tracker, spell slot tracker, turn order, printable character sheet, dungeon HTML parser.
+**Dropped in v2:** HP tracker, spell slot tracker, turn order, character sheet, dungeon HTML parser.
 
 ---
 
@@ -96,6 +96,7 @@ python scripts/export_db_seeds.py
 ## Documentation
 
 - [`docs/v2-rebuild-plan.md`](docs/v2-rebuild-plan.md) — Full task breakdown
+- [`docs/design-system-dark-mode.md`](docs/design-system-dark-mode.md) — Material Design 3 dark-mode token system used by `frontend/src/theme.css` and every shared component in `frontend/src/components/`
 - [`docs/`](docs/) — Additional guides and architecture notes
 
 ---

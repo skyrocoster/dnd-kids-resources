@@ -1,0 +1,32 @@
+.split-pane {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+}
+
+.split-pane-left {
+  flex-shrink: 0;
+  overflow-y: auto;
+  background: var(--md-surface-1);
+  border-radius: 0.5rem 0 0 0.5rem;
+}
+
+.split-pane-handle {
+  flex-shrink: 0;
+  width: 4px;
+  cursor: col-resize;
+  background: var(--md-outline-variant);
+}
+
+.split-pane-handle:hover,
+.split-pane-handle:focus-visible {
+  background: var(--md-primary);
+}
+
+.split-pane-right {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  background: var(--md-surface-2);
+  border-radius: 0 0.5rem 0.5rem 0;
+}

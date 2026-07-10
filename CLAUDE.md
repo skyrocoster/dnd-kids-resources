@@ -4,7 +4,7 @@ Guidance for AI assistants working in this repo. Read this first.
 
 ## Current stage: v2 ground-up rebuild
 
-This project is a printable D&D 5e resource site for kids. It has been **playtested** and is now being **rebuilt from the ground up**. Do not extend or patch the v1 app — work toward v2.
+This project is an online D&D 5e resource site for kids, designed for **running games** (live at the table) rather than exclusively pre-session prep. It has been **playtested** and is now being **rebuilt from the ground up**. Do not extend or patch the v1 app — work toward v2.
 
 **The authoritative plan is [`docs/v2-rebuild-plan.md`](docs/v2-rebuild-plan.md).** It is broken into 11 self-contained tasks meant to be executed one at a time, in order. When asked to "do the next step" / "work on the rebuild," find the current task there and follow it. Do not skip ahead or combine tasks.
 
@@ -19,7 +19,7 @@ This project is a printable D&D 5e resource site for kids. It has been **playtes
 
 ### Kept vs dropped features
 - **Keep (rebuild):** content browsers (spells, monsters, weapons), campaign CRUD (players, NPCs, quests, encounters), dungeons.
-- **Dropped:** all trackers (HP, spell slots, turn order, printable character sheet); the donjon dungeon-HTML parser (`lib/parse_dungeon.py`) — v2 has **custom dungeons only**, no upload/parse.
+- **Dropped:** all trackers (HP, spell slots, turn order, character sheet); the donjon dungeon-HTML parser (`lib/parse_dungeon.py`) — v2 has **custom dungeons only**, no upload/parse.
 
 ## Testing
 

@@ -12,7 +12,7 @@ The **data is now final**. v2 will: (1) crystallise the data — freeze the seed
 - **Backend:** FastAPI + SQLite (replaces `server_flask.py`). Same DB; typed models + auto `/docs`.
 - **Data:** seeds are the frozen source of truth; DB rebuilt from them via `init_database.py` + `seed_database.py`. No data lost.
 - **Keep (rebuild ground-up):** content browsers (spells, monsters, weapons), campaign CRUD (players, NPCs, quests, encounters), dungeons.
-- **Drop entirely:** all trackers (HP, spell-slot, turn-order, printable character sheet).
+- **Drop entirely:** all trackers (HP, spell-slot, turn-order, character sheet).
 - **Dungeons:** custom/hand-authored only. Archive the donjon HTML parser (`lib/parse_dungeon.py`); no upload/parse in v2.
 
 ### How to use this plan
@@ -143,13 +143,13 @@ python scripts/init_database.py && python scripts/seed_database.py
 
 ---
 
-## Task 6 — Remaining backend routers ✅ (in progress)
+## Task 6 — Remaining backend routers ✅ DONE (2026-07-10)
 
 **Goal:** Port the rest of the kept endpoints, copying the conventions from Task 5.
 
 **Prereqs:** Task 5.
 
-**What has been done:**
+**What was done:**
 - Created `backend/app/routers/monsters.py` — read-only GET endpoints for listing and fetching monsters by ID/name
 - Created `backend/app/routers/weapons.py` — CRUD endpoints for weapons with JSON property parsing
 - Created `backend/app/routers/npcs.py` — CRUD endpoints for NPCs
@@ -160,45 +160,57 @@ python scripts/init_database.py && python scripts/seed_database.py
 - Updated `backend/app/schemas.py` with all resource models (Monster, Weapon, NPC, Quest, Encounter, Dungeon, Player)
 - Registered all routers in `backend/app/main.py`
 - Created comprehensive tests in `backend/tests/routers/test_monsters.py`, `test_players.py`, `test_resources.py`
+- Resolved schema-alignment issues between the simplified v2 router assumptions and the actual production DB columns (e.g. players table is `id, name, class, level`).
 
-**Known issue:** The production database schema uses v1 structure with many more columns than the simplified v2 schema assumed in routers. Routers are being adjusted to work with actual schema (e.g., players table has only `id, name, class, level` not the extended fields initially assumed).
-
-**Test status:** 20/20 reference+spell tests pass; remaining CRUD tests require schema alignment work.
-
-**Next step:** Complete schema alignment for all routers to match production database structure, then all tests should pass.
+**Verification (2026-07-10):** `python -m pytest backend/tests/` from repo root — **45/45 tests pass**. (Must be run from repo root, not `backend/`, since `conftest.py` imports `backend.app.db` as an absolute package path.)
 
 ---
 
-## Task 7 — Scaffold the React + Vite frontend
+## Task 7 — Scaffold the React + Vite frontend ✅ DONE (2026-07-10)
 
 **Goal:** Create the frontend app, shared layout/nav, router, and typed API client — the foundation every page sits on.
 
 **Prereqs:** Task 5 (an API to call).
 
-**Context:** v1's `js/api.js` (`ApiService`) is the reference for the endpoint surface; reimplement as a typed client. v1's `page-shell.js` + `page-layout.css` are the reference for the shell/nav look.
-
-**Steps:**
-1. `npm create vite@latest frontend -- --template react-ts`; add `react-router-dom`.
-2. `frontend/vite.config.ts`: dev proxy `/api` → `http://localhost:8000`.
-3. `src/api/client.ts`: typed fetch wrapper + per-resource functions mirroring the endpoints from Tasks 5–6.
-4. `src/layout/AppShell.tsx`: header/nav/footer; `src/router.tsx`: routes for the pages built in Tasks 9–10 (stub routes for now).
-5. Verify: `npm run dev` with uvicorn running; shell renders; a test fetch (e.g. abilities) succeeds through the proxy.
+**What was done:**
+- Scaffolded `frontend/` via `npm create vite@latest -- --template react-ts`; added `react-router-dom`.
+- `frontend/vite.config.ts`: dev proxy `/api` → `http://127.0.0.1:8000` (used `127.0.0.1` explicitly, not `localhost` — Node's proxy resolving `localhost` to `::1` caused a Bad Gateway against uvicorn's IPv4-only bind).
+- `src/api/types.ts`: TS interfaces mirroring every Pydantic model in `backend/app/schemas.py`.
+- `src/api/client.ts`: typed fetch wrapper (`request`/`get`/`post`/`put`/`del` + `ApiError`) and one function per endpoint across all 9 routers (reference, spells, monsters, weapons, players incl. nested spell/weapon assignment, npcs, quests, encounters, dungeons).
+- `src/layout/AppShell.tsx` (+ `.css`): header/nav/footer shell with nav grouped into Reference and Campaign sections.
+- `src/router.tsx`: `createBrowserRouter` with a home route (`src/pages/HomePage.tsx`, does a live `getAbilities()` fetch as a connectivity check) and stub routes (`src/pages/StubPage.tsx`) for spells/monsters/weapons/players/npcs/quests/encounters/dungeons.
+- Removed the default Vite `App.tsx`/`App.css`/`assets/`; simplified `index.css` to a plain reset (the old centered-column starter style conflicted with the full-width shell layout).
+- **Verified live:** ran `uvicorn app.main:app` + `npm run dev`, drove it in a real browser — shell renders, nav links route to stub pages, and the home page's live fetch through the proxy renders real ability names from the DB.
+- **Tests:** added vitest + React Testing Library (`npm run test` → `vitest run`), config in `vite.config.ts`'s `test` block, setup file `src/test/setup.ts` (jest-dom matchers + RTL `cleanup()` after each test — vitest doesn't auto-register that like Jest does). Tests: `src/layout/__tests__/AppShell.test.tsx` (nav renders, routed outlet content), `src/pages/__tests__/StubPage.test.tsx`, `src/pages/__tests__/HomePage.test.tsx` (mocks `api/client`, covers success + error paths), `src/api/__tests__/client.test.ts` (fetch wrapper: GET/POST/DELETE, JSON parsing, `ApiError` on non-OK). 10/10 passing.
 
 **Done when:** the app boots, shows the shell, and can reach the API via the client.
 
 ---
 
-## Task 8 — Shared UI components
+## Task 8 — Shared UI components ✅ DONE (2026-07-10)
 
 **Goal:** Build the reusable primitives the feature pages depend on.
 
 **Prereqs:** Task 7.
 
-**Context:** Port logic (not code) from v1: `pane-resize.js` → resizable split pane; `card-generator.js` → printable card rendering + inline dice-roll parsing/formatting; `data-utils.js` (`parseJsonValue`, `formatDisplayValue`) → display helpers.
+**Context:** Port logic (not code) from v1: `pane-resize.js` → resizable split pane; `card-generator.js` → on-screen card rendering + inline dice-roll parsing/formatting; `data-utils.js` (`parseJsonValue`, `formatDisplayValue`) → display helpers. This is an online-only, at-the-table tool (used while running games), not a print/export product — no print stylesheet needed.
 
-**Steps:** build `src/components/`: `SplitPane`, `SearchList` (searchable list panel), `Card` + `DiceText` (dice-aware card renderer), and shared form inputs used by editors. Add a lightweight print stylesheet for cards.
+**Design system:** [`docs/design-system-dark-mode.md`](design-system-dark-mode.md) defines the Material Design 3 dark-mode token system (color roles, elevation via surface tone not shadow, type scale, the spell/monster/weapon accent mapping, the dice-pill signature motif for `DiceText`).
 
-**Done when:** components render in isolation (a scratch route or Storybook-style page) and are ready to compose.
+**What was done:**
+- `frontend/src/theme.css`: the full M3 dark token set from the design doc (primary/secondary/tertiary/error/surface role pairs, elevation surfaces 0–5, type scale, `[data-variant]` accent mapping for spell/monster/weapon/neutral, global focus ring, `prefers-reduced-motion` handling). Imported from `index.css`; `index.html`'s `<html>` now carries `data-theme="dark"`.
+- Refactored `AppShell.css` off flat `#333` borders onto the surface-tone system (header/footer = surface-2, nav = surface-1, active nav link = primary-container).
+- `src/components/SplitPane.tsx` (+ css): resizable two-pane layout. Pointer-drag resize, `role="separator"` with arrow-key/Home/End keyboard resizing, width clamped to min/max props.
+- `src/components/SearchList.tsx` (+ css): searchable list panel with a `variant` prop (`spell | monster | weapon | neutral`) driving `data-variant` for accent theming; filters by label substring, `role="listbox"`/`role="option"` semantics.
+- `src/components/Card.tsx` (+ css) and `src/components/DiceText.tsx` (+ css): `Card` is the variant-themed detail-pane renderer (title/subtitle/tag/body/footer); `DiceText` regex-parses inline dice notation (`2d6+3`, `1d20`, etc.) and wraps matches in the gold monospace pill — the app's signature motif per the design doc, since dice notation is shared across spells/monsters/weapons.
+- `src/components/form/`: `TextField` (incl. multiline/textarea mode), `SelectField`, `CheckboxField`, `MultiSelectField` (checkbox group with add/remove semantics, built for the Task 9 spell-editor classes multi-select) — all M3-token-styled, sharing `form.css`.
+- `src/pages/ComponentDemoPage.tsx` at route `/demo` (not in the shipped nav): composes `SplitPane` + `SearchList` + `Card` + `DiceText` + all form primitives with sample spell/monster/weapon data for visual review.
+- Added `@testing-library/user-event` dev dependency for interaction tests.
+- **Tests:** one test file per component (`__tests__/`), covering rendering, filtering, keyboard resize, dice-notation edge cases (single/multiple/modifier/whitespace), variant theming, and controlled-input behavior. `npm run test` → **38/38 passing** across 12 files.
+
+**Note:** `npm run build`'s `tsc -b` step fails on a pre-existing `vite.config.ts` type error from Task 7 (the `test` block isn't recognized by the base `UserConfigExport` overload) — confirmed via `git stash` that this predates Task 8. Not in scope here; `npm run test` is this repo's verification path until that's fixed.
+
+**Done when:** components render in isolation (a scratch route or Storybook-style page) and are ready to compose. ✅ via `/demo`.
 
 ---
 
@@ -210,10 +222,19 @@ python scripts/init_database.py && python scripts/seed_database.py
 
 **Context:** Browser pattern = `SplitPane` (searchable list left, detail right) + `Card`. The spell edit modal is the one heavy piece — reimplement the structured editor from v1's `js/spells-list.js` (~1350 lines): classes multi-select, components checkboxes, area-of-effect, attack/damage roll rows with dice pickers, heal editor — as a React form posting to the spell CRUD endpoints.
 
+**Components available from Task 8 (`frontend/src/components/`), use these, don't rebuild:**
+- `SplitPane` (`left`, `right`, `leftLabel`, `defaultLeftWidth`/`minLeftWidth`/`maxLeftWidth`) — the list/detail shell for all three browsers.
+- `SearchList<T>` (`items`, `getId`, `getLabel`, `getMeta`, `selectedId`, `onSelect`, `variant`, `searchPlaceholder`, `emptyMessage`) — generic, filters by label substring client-side. Pass `variant="spell" | "monster" | "weapon"` per browser to pick up the matching M3 accent (violet/teal/gold) from `theme.css`.
+- `Card` (`title`, `subtitle`, `tag`, `variant`, `children`, `footer`) — the detail-pane renderer; `variant` must match the `SearchList` variant used alongside it.
+- `DiceText` (`text`) — wrap any spell/monster/weapon prose that may contain dice notation (damage, healing, to-hit) so `2d6+3`-style expressions render as the gold pill. Regex-based, no dice-picker UI yet — the spell editor's "dice pickers" (step 3 below) are a separate, new piece of UI, not something `DiceText` provides.
+- `form/`: `TextField` (has a `multiline` boolean for textarea mode), `SelectField`, `CheckboxField`, `MultiSelectField` (`options`, `selected: string[]`, `onChange`) — `MultiSelectField` was built specifically for the spell editor's classes multi-select, reuse it as-is.
+- Live reference: run the app and open `/demo` (`frontend/src/pages/ComponentDemoPage.tsx`, not in the shipped nav) to see all of the above composed with sample spell/monster/weapon data before wiring real API data in.
+- All components consume `frontend/src/theme.css` tokens (see `docs/design-system-dark-mode.md`) — don't introduce new hex colors; extend the token file if a role is missing.
+
 **Steps:**
-1. `features/spells/` — spell book: search, list, card detail. Establish the browser pattern.
-2. `features/monsters/` and `features/weapons/` — reuse the pattern.
-3. `features/spells/SpellEditor` — the create/edit modal wired to POST/PUT `/api/spells`.
+1. `features/spells/` — spell book: search, list, card detail using `SplitPane` + `SearchList` (`variant="spell"`) + `Card` + `DiceText`. Establish the browser pattern.
+2. `features/monsters/` and `features/weapons/` — reuse the pattern with `variant="monster"` / `variant="weapon"` respectively.
+3. `features/spells/SpellEditor` — the create/edit modal wired to POST/PUT `/api/spells`, built from the `form/` primitives (`MultiSelectField` for classes, `CheckboxField` for components/concentration/ritual). The dice-picker rows for attack/damage/heal are new UI this task must design — no existing primitive covers them.
 4. Verify by driving the app (browser MCP or `/run`): search + open detail for each; create, edit, and delete a spell.
 
 **Done when:** all three browsers work and spells are fully editable.
@@ -227,6 +248,8 @@ python scripts/init_database.py && python scripts/seed_database.py
 **Prereqs:** Tasks 6, 8 (and 9's form patterns).
 
 **Context:** CRUD group = players (with assigned spells/weapons join tables), NPCs, quests, encounters — each backed by the Task 6 routers. Dungeons = browse the 2 seeded structured dungeons + create/edit hand-authored dungeons (rooms/entries) in the Task 3 shape; no upload/parse.
+
+**Components available from Task 8/9:** these pages have no dedicated content-browser identity (per the design doc, campaign CRUD intentionally uses neutral surfaces only, no accent hue), so use `variant="neutral"` on `SearchList`/`Card` rather than picking a new color. All form work (player/NPC/quest/encounter/dungeon editors) should use the same `form/` primitives from Task 8 (`TextField`, `SelectField`, `CheckboxField`, `MultiSelectField`) that Task 9's `SpellEditor` establishes patterns for — check how Task 9 wired `MultiSelectField` and modal/form submission before inventing a new approach here, especially for the player↔spell/weapon assignment UI (conceptually a multi-select against a live API list rather than a static options array).
 
 **Steps:**
 1. `features/players/` — player manager incl. assigning spells and weapons.
@@ -244,8 +267,10 @@ python scripts/init_database.py && python scripts/seed_database.py
 
 **Prereqs:** Tasks 9–10.
 
+**Known issue to resolve here:** since Task 7, `npm run build` (`tsc -b && vite build`) has failed on a `vite.config.ts` type error — the `test` block isn't recognized by the base `UserConfigExport` overload (missing/misordered `/// <reference types="vitest/config" />`, or a `tsconfig` project-reference gap). It's never blocked work because `npm run test` (`vitest run`) doesn't go through `tsc -b`, but Task 11 requires an actual production build, so this must be fixed first.
+
 **Steps:**
-1. `vite build`; have `backend/app/main.py` serve the static `frontend/dist` bundle (SPA fallback for client routes).
+1. Fix the `tsc -b` / `vite.config.ts` build error (see above), then `vite build`; have `backend/app/main.py` serve the static `frontend/dist` bundle (SPA fallback for client routes).
 2. Refresh `README.md`: v2 quick start (rebuild DB from seeds → run uvicorn / build+serve), the new layout, and the seed-editing workflow via `scripts/export_db_seeds.py`.
 3. Confirm nothing references removed features (trackers, parser, traps).
 4. Verify: from a clean checkout, rebuild DB, build frontend, run the server, and walk every page once.

@@ -1,0 +1,11 @@
+.dice-pill {
+  display: inline-block;
+  font-family: var(--type-face-mono);
+  font-size: var(--type-body-sm-size);
+  line-height: 1;
+  padding: 0.125rem 0.4rem;
+  border-radius: 999px;
+  background: var(--md-secondary-container);
+  color: var(--md-on-secondary-container);
+  white-space: nowrap;
+}

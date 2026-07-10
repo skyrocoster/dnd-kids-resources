@@ -1,0 +1,86 @@
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--md-surface);
+  color: var(--md-on-surface);
+}
+
+.app-header {
+  padding: 1rem 1.5rem;
+  background: var(--md-surface-2);
+}
+
+.app-header h1 {
+  margin: 0;
+  font-size: var(--type-headline-size);
+  line-height: var(--type-headline-line);
+  font-weight: var(--type-headline-weight);
+}
+
+.app-body {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+.app-nav {
+  width: 200px;
+  flex-shrink: 0;
+  padding: 1rem;
+  background: var(--md-surface-1);
+}
+
+.app-nav-section h2 {
+  font-size: var(--type-caption-size);
+  line-height: var(--type-caption-line);
+  font-weight: var(--type-caption-weight);
+  text-transform: uppercase;
+  letter-spacing: var(--type-caption-tracking);
+  color: var(--md-on-surface-variant);
+  margin: 1rem 0 0.5rem;
+}
+
+.app-nav-section:first-child h2 {
+  margin-top: 0;
+}
+
+.app-nav-section ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.app-nav-section a {
+  display: block;
+  padding: 0.35rem 0.5rem;
+  margin: 0 -0.5rem;
+  border-radius: 0.25rem;
+  text-decoration: none;
+  font-size: var(--type-label-size);
+  line-height: var(--type-label-line);
+  font-weight: var(--type-label-weight);
+  color: var(--md-on-surface);
+}
+
+.app-nav-section a:hover {
+  background: var(--md-surface-3);
+}
+
+.app-nav-section a.active {
+  background: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+}
+
+.app-main {
+  flex: 1;
+  min-width: 0;
+  padding: 1.5rem;
+}
+
+.app-footer {
+  padding: 0.5rem 1.5rem;
+  font-size: var(--type-caption-size);
+  color: var(--md-on-surface-variant);
+  background: var(--md-surface-2);
+}

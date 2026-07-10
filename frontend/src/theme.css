@@ -1,0 +1,120 @@
+/*
+  Material Design 3 dark-theme tokens.
+  See docs/design-system-dark-mode.md for the full rationale (seed hues,
+  content-role mapping, elevation model). Don't hand-pick colors per
+  component — extend this file and consume the tokens.
+*/
+
+:root[data-theme='dark'] {
+  /* Primary (violet) — spells */
+  --md-primary: #d0bcff;
+  --md-on-primary: #381e72;
+  --md-primary-container: #4f378b;
+  --md-on-primary-container: #eaddff;
+
+  /* Secondary (old gold) — weapons */
+  --md-secondary: #e0c568;
+  --md-on-secondary: #3f2e00;
+  --md-secondary-container: #5c4600;
+  --md-on-secondary-container: #ffe08a;
+
+  /* Tertiary (forest teal) — monsters */
+  --md-tertiary: #a0d0be;
+  --md-on-tertiary: #05372a;
+  --md-tertiary-container: #1d4f40;
+  --md-on-tertiary-container: #bcecd9;
+
+  /* Error */
+  --md-error: #f2b8b5;
+  --md-on-error: #601410;
+  --md-error-container: #8c1d18;
+  --md-on-error-container: #f9dedc;
+
+  /* Neutral surfaces — violet-tinted near-black, elevation via tone step */
+  --md-surface: #1c1b1f;
+  --md-surface-1: #232128;
+  --md-surface-2: #28262e;
+  --md-surface-3: #2e2b35;
+  --md-surface-4: #302d38;
+  --md-surface-5: #34313c;
+  --md-on-surface: #e6e1e6;
+  --md-on-surface-variant: #cac4d0;
+  --md-outline: #948f99;
+  --md-outline-variant: #49454f;
+
+  /* Type scale */
+  --type-face: 'Roboto Flex', 'Segoe UI', system-ui, sans-serif;
+  --type-face-mono: 'Roboto Mono', ui-monospace, 'Consolas', monospace;
+
+  --type-headline-size: 1.5rem;
+  --type-headline-line: 2rem;
+  --type-headline-weight: 400;
+
+  --type-title-size: 1rem;
+  --type-title-line: 1.5rem;
+  --type-title-weight: 500;
+
+  --type-body-size: 1rem;
+  --type-body-line: 1.5rem;
+  --type-body-weight: 400;
+
+  --type-body-sm-size: 0.875rem;
+  --type-body-sm-line: 1.25rem;
+  --type-body-sm-weight: 400;
+
+  --type-label-size: 0.875rem;
+  --type-label-line: 1.25rem;
+  --type-label-weight: 500;
+
+  --type-caption-size: 0.6875rem;
+  --type-caption-line: 1rem;
+  --type-caption-weight: 500;
+  --type-caption-tracking: 0.05em;
+}
+
+/* Content-role variants: map spell/monster/weapon/neutral onto the
+   primary/tertiary/secondary/neutral roles above. Consumed via
+   data-variant="spell|monster|weapon|neutral" on Card/SearchList. */
+[data-variant='spell'] {
+  --variant-accent: var(--md-primary);
+  --variant-on-accent: var(--md-on-primary);
+  --variant-container: var(--md-primary-container);
+  --variant-on-container: var(--md-on-primary-container);
+}
+
+[data-variant='monster'] {
+  --variant-accent: var(--md-tertiary);
+  --variant-on-accent: var(--md-on-tertiary);
+  --variant-container: var(--md-tertiary-container);
+  --variant-on-container: var(--md-on-tertiary-container);
+}
+
+[data-variant='weapon'] {
+  --variant-accent: var(--md-secondary);
+  --variant-on-accent: var(--md-on-secondary);
+  --variant-container: var(--md-secondary-container);
+  --variant-on-container: var(--md-on-secondary-container);
+}
+
+[data-variant='neutral'] {
+  --variant-accent: var(--md-on-surface-variant);
+  --variant-on-accent: var(--md-surface);
+  --variant-container: var(--md-surface-3);
+  --variant-on-container: var(--md-on-surface);
+}
+
+/* Visible focus ring, everywhere, per the accessibility floor */
+:focus-visible {
+  outline: 2px solid var(--md-primary);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
