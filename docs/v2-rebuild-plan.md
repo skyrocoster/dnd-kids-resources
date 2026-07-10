@@ -214,7 +214,7 @@ python scripts/init_database.py && python scripts/seed_database.py
 
 ---
 
-## Task 9 — Content browser pages (spells → monsters → weapons)
+## Task 9 — Content browser pages (spells → monsters → weapons) ✅ DONE (2026-07-10)
 
 **Goal:** Build the three read/browse pages plus the spell edit/create modal.
 
@@ -238,6 +238,16 @@ python scripts/init_database.py && python scripts/seed_database.py
 4. Verify by driving the app (browser MCP or `/run`): search + open detail for each; create, edit, and delete a spell.
 
 **Done when:** all three browsers work and spells are fully editable.
+
+**What was done:**
+- **Fixed pre-existing backend bugs discovered while wiring real data** (masked by a hand-written test schema in `conftest.py` that had drifted from the real `init_database.py` schema): `GET /api/monsters` 500'd on the real DB (router selected a non-existent `challenge` column; real column is `cr`); `weapons` router only ever selected `id, name, rarity`, discarding all damage/property data; `attack_type` was never JSON-parsed despite being stored as JSON; `Spell.damage`/`Monster.senses` were typed too narrowly for the actual list-shaped data; `/api/abilities` returned 40+ generic trackable-resource rows instead of the six ability scores its docstring promised, and it plus `damage_types`/`weapon_properties` omitted the `code` column the spell/weapon data is actually keyed by. All fixed with regression tests; verified all 525 spells / 2734 monsters / 219 weapons serialize successfully via the real API (`backend/app/routers/{spells,monsters,weapons,reference}.py`, `backend/app/schemas.py`, `backend/app/db.py`, `backend/tests/`).
+- `frontend/src/features/spells/`: `SpellBrowserPage` (SplitPane + SearchList + Card + DiceText), `SpellEditor` (full create/edit modal — classes multi-select, components checkboxes, area-of-effect shape/size, attack/save rows with ability-save checkboxes, damage rows with a custom `DiceRollField` count/die-type/modifier picker, heal editor), `spellForm.ts` (form-state ⇄ API-payload serialization), `dice.ts`/`DiceRollField.tsx` (the dice-picker UI, new for this task), `constants.ts` (level/school/action/attack-type/class option lists).
+- `frontend/src/features/monsters/`: `MonsterBrowserPage`, read-only, renders AC/HP/speed/senses/languages/ability scores/actions with `DiceText`.
+- `frontend/src/features/weapons/`: `WeaponBrowserPage` + `WeaponEditor` (full CRUD — properties/focus multi-select, attack rows, entries), `weaponForm.ts` serialization.
+- Replaced `window.confirm()` delete-confirmation (a blocking native dialog — froze browser automation mid-verification) with a reusable `components/ConfirmDialog.tsx` in both browsers.
+- Wired `/spells`, `/monsters`, `/weapons` routes in `router.tsx`, replacing the `StubPage`s.
+- **Tests:** `spellForm.test.ts`, `weaponForm.test.ts` (serialization round-trips), `SpellBrowserPage.test.tsx`, `MonsterBrowserPage.test.tsx`, `WeaponBrowserPage.test.tsx` (list/select/error/editor-open flows, mocking `api/client`). 56/56 frontend tests, 49/49 backend tests passing.
+- **Verified live** (uvicorn + vite dev servers, driven via browser automation): searched and opened detail for spells/monsters/weapons; opened the spell editor on a real spell and confirmed save/damage-type checkboxes now correctly reflect stored data (`Dexterity` save, `Acid` damage type); created a new spell via the editor, confirmed it appeared in the list, then deleted it via the new `ConfirmDialog` and confirmed removal — full CRUD round-trip against the real dev DB.
 
 ---
 

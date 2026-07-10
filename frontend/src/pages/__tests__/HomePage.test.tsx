@@ -10,8 +10,8 @@ describe('HomePage', () => {
 
   it('renders abilities returned by the API', async () => {
     vi.spyOn(client, 'getAbilities').mockResolvedValue([
-      { id: 1, name: 'Strength', description: null },
-      { id: 2, name: 'Dexterity', description: null },
+      { id: 1, code: 'str', name: 'Strength', description: null },
+      { id: 2, code: 'dex', name: 'Dexterity', description: null },
     ])
 
     render(<HomePage />)

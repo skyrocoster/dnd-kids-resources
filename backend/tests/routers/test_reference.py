@@ -2,7 +2,7 @@
 
 
 def test_get_abilities(test_client):
-    """Test GET /api/abilities returns a list."""
+    """Test GET /api/abilities returns only the six core ability scores, with codes."""
     response = test_client.get("/api/abilities")
     assert response.status_code == 200
     data = response.json()
@@ -11,8 +11,10 @@ def test_get_abilities(test_client):
     # Verify structure
     ability = data[0]
     assert "id" in ability
+    assert "code" in ability
     assert "name" in ability
     assert "description" in ability
+    assert ability["code"] == ability["code"].lower()
 
 
 def test_get_conditions(test_client):
@@ -25,12 +27,13 @@ def test_get_conditions(test_client):
 
 
 def test_get_damage_types(test_client):
-    """Test GET /api/damage_types returns a list."""
+    """Test GET /api/damage_types returns a list, with codes matching spell/weapon data."""
     response = test_client.get("/api/damage_types")
     assert response.status_code == 200
     data = response.json()
     assert isinstance(data, list)
     assert len(data) > 0
+    assert "code" in data[0]
 
 
 def test_get_weapon_properties(test_client):

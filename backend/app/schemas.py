@@ -5,6 +5,7 @@ from datetime import datetime
 
 class Ability(BaseModel):
     id: int
+    code: str
     name: str
     description: Optional[str] = None
 
@@ -17,12 +18,14 @@ class Condition(BaseModel):
 
 class DamageType(BaseModel):
     id: int
+    code: str
     name: str
     description: Optional[str] = None
 
 
 class WeaponProperty(BaseModel):
     id: int
+    code: str
     name: str
     description: Optional[str] = None
 

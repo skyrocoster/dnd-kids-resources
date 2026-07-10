@@ -10,10 +10,13 @@ router = APIRouter(prefix="/api", tags=["reference"])
 
 @router.get("/abilities", response_model=List[Ability])
 def get_abilities():
-    """Get all ability scores (Strength, Dexterity, etc.)."""
+    """Get the six ability scores (Strength, Dexterity, etc.)."""
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT id, name FROM abilities ORDER BY name")
+        cursor.execute(
+            "SELECT id, code, name FROM abilities "
+            "WHERE code IN ('str', 'dex', 'con', 'int', 'wis', 'cha') ORDER BY name"
+        )
         rows = cursor.fetchall()
         return [dict_from_row(row) for row in rows]
 
@@ -33,7 +36,7 @@ def get_damage_types():
     """Get all damage types (Fire, Cold, Poison, etc.)."""
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT id, name FROM damage_types ORDER BY name")
+        cursor.execute("SELECT id, code, name FROM damage_types ORDER BY name")
         rows = cursor.fetchall()
         return [dict_from_row(row) for row in rows]
 
@@ -43,7 +46,7 @@ def get_weapon_properties():
     """Get all weapon properties (Finesse, Versatile, etc.)."""
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT id, name, description FROM weapon_properties ORDER BY name")
+        cursor.execute("SELECT id, code, name, description FROM weapon_properties ORDER BY name")
         rows = cursor.fetchall()
         return [dict_from_row(row) for row in rows]
 

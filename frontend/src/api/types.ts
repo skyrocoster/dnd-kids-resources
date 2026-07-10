@@ -2,6 +2,7 @@
 
 export interface Ability {
   id: number
+  code: string
   name: string
   description?: string | null
 }
@@ -14,12 +15,14 @@ export interface Condition {
 
 export interface DamageType {
   id: number
+  code: string
   name: string
   description?: string | null
 }
 
 export interface WeaponProperty {
   id: number
+  code: string
   name: string
   description?: string | null
 }

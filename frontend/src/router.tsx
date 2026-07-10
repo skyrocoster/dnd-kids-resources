@@ -1,4 +1,7 @@
 import { createBrowserRouter } from 'react-router-dom'
+import { MonsterBrowserPage } from './features/monsters/MonsterBrowserPage'
+import { SpellBrowserPage } from './features/spells/SpellBrowserPage'
+import { WeaponBrowserPage } from './features/weapons/WeaponBrowserPage'
 import { AppShell } from './layout/AppShell'
 import { ComponentDemoPage } from './pages/ComponentDemoPage'
 import { HomePage } from './pages/HomePage'
@@ -11,9 +14,9 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <HomePage /> },
       { path: 'demo', element: <ComponentDemoPage /> },
-      { path: 'spells', element: <StubPage title="Spells" /> },
-      { path: 'monsters', element: <StubPage title="Monsters" /> },
-      { path: 'weapons', element: <StubPage title="Weapons" /> },
+      { path: 'spells', element: <SpellBrowserPage /> },
+      { path: 'monsters', element: <MonsterBrowserPage /> },
+      { path: 'weapons', element: <WeaponBrowserPage /> },
       { path: 'players', element: <StubPage title="Players" /> },
       { path: 'npcs', element: <StubPage title="NPCs" /> },
       { path: 'quests', element: <StubPage title="Quests" /> },

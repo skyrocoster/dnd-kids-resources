@@ -178,7 +178,7 @@ def seeded_db(test_db_path):
 
     # Seed test data
     cursor.execute("INSERT INTO abilities (code, name, emoji, color, type) VALUES (?, ?, ?, ?, ?)",
-                   ("STR", "Strength", "💪", "#FF5733", "stat"))
+                   ("str", "Strength", "💪", "#FF5733", "stat"))
     cursor.execute("INSERT INTO conditions (title, icon, explanation) VALUES (?, ?, ?)",
                    ("Poisoned", "☠️", "A poisoned creature has disadvantage on attack rolls"))
     cursor.execute("INSERT INTO damage_types (code, name, emoji, color) VALUES (?, ?, ?, ?)",
@@ -381,7 +381,7 @@ def test_client(monkeypatch, test_db_path):
 
     # Seed test data
     cursor.execute("INSERT INTO abilities (code, name, emoji, color, type) VALUES (?, ?, ?, ?, ?)",
-                   ("STR", "Strength", "💪", "#FF5733", "stat"))
+                   ("str", "Strength", "💪", "#FF5733", "stat"))
     cursor.execute("INSERT INTO conditions (title, icon, explanation) VALUES (?, ?, ?)",
                    ("Poisoned", "☠️", "A poisoned creature has disadvantage on attack rolls"))
     cursor.execute("INSERT INTO damage_types (code, name, emoji, color) VALUES (?, ?, ?, ?)",

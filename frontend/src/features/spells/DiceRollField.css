@@ -1,0 +1,19 @@
+.dice-roll-group {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.dice-roll-count,
+.dice-roll-type {
+  width: 4.5rem;
+}
+
+.dice-roll-sep {
+  color: var(--md-on-surface-variant);
+  font-weight: var(--type-label-weight);
+}
+
+.dice-roll-mod {
+  width: 4.5rem;
+}

@@ -1,0 +1,66 @@
+.monster-browser-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.monster-browser-error {
+  color: var(--md-error);
+}
+
+.monster-browser-split {
+  flex: 1;
+  min-height: 420px;
+}
+
+.monster-browser-detail {
+  padding: 1rem;
+  overflow-y: auto;
+  height: 100%;
+}
+
+.monster-browser-meta {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.15rem 0.75rem;
+  margin: 0 0 1rem;
+}
+
+.monster-browser-meta dt {
+  color: var(--md-on-surface-variant);
+  font-size: var(--type-label-size);
+}
+
+.monster-browser-meta dd {
+  margin: 0;
+}
+
+.monster-browser-stats {
+  display: flex;
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.monster-browser-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--md-surface-2, var(--md-surface));
+  border-radius: 0.375rem;
+  padding: 0.4rem 0.6rem;
+  min-width: 3rem;
+}
+
+.monster-browser-stat-label {
+  font-size: var(--type-caption-size);
+  color: var(--md-on-surface-variant);
+}
+
+.monster-browser-actions h4 {
+  margin-bottom: 0.35rem;
+}
+
+.monster-browser-empty {
+  padding: 1rem;
+  color: var(--md-on-surface-variant);
+}
