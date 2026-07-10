@@ -38,21 +38,16 @@ archive/ingestion/  quarantined parsers (kept in git, out of app)
 
 ---
 
-## Task 1 — Branch v1 to GitHub, then set up the v2 working branch
+## Task 1 — Branch v1 to GitHub, then set up the v2 working branch ✅ DONE (2026-07-10)
 
 **Goal:** Preserve the entire current state as a recoverable GitHub branch before any deletion; establish `main` as the v2 workspace.
 
-**Prereqs:** none. Repo has uncommitted changes (see `git status`) and untracked `plan-missingData.prompt.md`, `test.md`.
+**What was done:**
+- v1 final snapshot committed (`8704239`) and branched to **`v1-archive`**, pushed to `origin` (https://github.com/skyrocoster/dnd-kids-resources). v1 is fully recoverable there.
+- `main` advanced with a signpost/cleanup commit (`c23acdb`): added `CLAUDE.md` + this plan, README v2 banner, removed scratch files (`test.md`, `plan-missingData.prompt.md`), and removed the vendored `.claude/skills/` + `.cursor/skills/` tool files (736 files) that had been committed by mistake — now gitignored.
+- `main` is synced with `origin/main`.
 
-**Context:** Git user `skyrocoster`. Current branch `main`. There is a GitHub remote (README references it). The 135 MB `dnd_kids_resources.db` is gitignored and must stay so.
-
-**Steps:**
-1. Commit or stash the current working-tree changes so the tree is clean (a "v1 final snapshot" commit is fine).
-2. Create and push branch `v1-archive` capturing this exact state: `git branch v1-archive && git push -u origin v1-archive`. Verify it exists on GitHub.
-3. Return to `main` (this is where v2 work happens).
-4. Delete the scratch files `plan-missingData.prompt.md` and `test.md`.
-
-**Done when:** `v1-archive` is visible on GitHub with the full v1 tree; `main` is clean and ready for cleanup.
+**Note for later tasks:** the `.gitignore` already excludes `.claude/skills/` and `.cursor/skills/`; the scratch-file deletion that Task 4 mentioned is already handled here.
 
 ---
 
