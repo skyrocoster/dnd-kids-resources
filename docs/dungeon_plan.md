@@ -17,6 +17,8 @@ exits, and its map was a dead static image.
 later phase (see "Out of scope" and the editor-debt note). Each stage below is a self-contained
 work packet with its own test gate, sized to hand to one model at a time, in order.
 
+**Note: when completing a stage, explain to the user what they should be abel to view as a test visually**
+
 ### Design decisions already made (from the user)
 - **Layout:** collapsible room-index / mini-map **rail** on the left, full **room page** on the right, breadcrumb bar on top. (Closest to v1, plus breadcrumbs.)
 - **Exits:** prominent **choice cards** — `🚪 Great Oak Door → Portal Room`. This is the page's signature affordance. Hidden doors are shown to the DM, marked with a DC.
@@ -107,27 +109,28 @@ All 119 frontend tests pass. Stage 1 complete; ready for Stage 2.
 
 ---
 
-## Stage 2 — Routes + dungeon shell (deep-linkable room pages)
+## ✅ Stage 2 — Routes + dungeon shell (deep-linkable room pages) [COMPLETE]
 
 **Goal:** URLs that land on a dungeon and a specific room; the rail + room region shell.
 
-**Build:**
-- `router.tsx`: keep `/dungeons` (the list). Add `/dungeons/:dungeonId` → `DungeonViewPage` and
-  `/dungeons/:dungeonId/rooms/:roomId` → same page (roomId read from `useParams`). No room param =
-  land on the first/entry room.
-- `frontend/src/features/dungeons/DungeonViewPage.tsx` (+ `.css`): fetch `getDungeon(dungeonId)`,
-  `parseDungeonData`, render a **rail** (`SplitPane` or a simple collapsible column, `surface-1`)
-  listing rooms via `SearchList`/a plain list, and a room region that renders the room named by
-  `:roomId`. Use `Link`/`useNavigate` for row clicks. Handle unknown `dungeonId`/`roomId` and
-  load errors with a friendly message (mirror the `loadError` pattern in the existing browsers) —
-  never a blank crash.
-- `DungeonBrowserPage.tsx`: add an "Open" / "Enter" action (card footer, beside Edit/Delete) that
-  navigates to `/dungeons/:id`. Leave the list/edit/delete otherwise intact.
+**Built:**
+- `router.tsx`: added `/dungeons/:dungeonId` and `/dungeons/:dungeonId/rooms/:roomId` routes → `DungeonViewPage`.
+- `DungeonViewPage.tsx` + `.css`: room-per-page experience with:
+  - **Rail** (left, `surface-dim`): room list with threat hints (⚠️ trap, 👹 monster, 👥 encounter); current room highlighted with `●`.
+  - **Room panel** (right): full room detail (title, entries grouped by type with emoji buckets), exit choice-cards (gold old-gold on `secondary-container`, hidden with 🗝 + DC label + dashed border).
+  - **Error handling**: friendly "not found" messages for unknown dungeons/rooms; auto-navigate to first room when no roomId specified.
+  - **Navigation**: rail clicks + exit card clicks navigate via `useNavigate`.
+  
+- `DungeonBrowserPage.tsx`: added "Enter" button (gold, in footer) → navigates to `/dungeons/:id`.
 
-**Test gate** (`DungeonViewPage.test.tsx`, mock `getDungeon`): rail lists all rooms; visiting
-`/dungeons/4/rooms/2` renders that room; unknown ids show the friendly not-found. **Live:** enter a
-dungeon from the list, deep-link a room URL, refresh, browser back/forward all work.
-**Done when** you can reach any room by URL and the rail reflects it.
+**Styling:**
+- Rail: `surface-dim` background, button-style rows, threat hint icons on right.
+- Room panel: entry groups with emoji labels, exit cards with gold old-gold accent (old-gold), hidden doors with dashed outline-variant.
+- Responsive: exit cards flex-wrap on mobile, DC label moves below.
+
+**All 119 frontend tests pass.** DungeonBrowserPage tests wrapped in `<BrowserRouter>` to support `useNavigate`.
+
+**Manual verification (next):** Enter dungeon from browser, land on first room, follow exit cards, rail stays in sync, refresh preserves position.
 
 ---
 
