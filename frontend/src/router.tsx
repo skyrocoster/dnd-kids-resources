@@ -1,6 +1,7 @@
 import { createBrowserRouter } from 'react-router-dom'
 import { DungeonBrowserPage } from './features/dungeons/DungeonBrowserPage'
 import { DungeonViewPage } from './features/dungeons/DungeonViewPage'
+import { MapLabPage } from './features/dungeons/maplab/MapLabPage'
 import { EncounterBrowserPage } from './features/encounters/EncounterBrowserPage'
 import { EncounterRunnerPage } from './features/encounters/EncounterRunnerPage'
 import { MonsterBrowserPage } from './features/monsters/MonsterBrowserPage'
@@ -29,6 +30,7 @@ export const router = createBrowserRouter([
       { path: 'encounters', element: <EncounterBrowserPage /> },
       { path: 'encounters/:id/run', element: <EncounterRunnerPage /> },
       { path: 'dungeons', element: <DungeonBrowserPage /> },
+      { path: 'dungeons/map-lab', element: <MapLabPage /> },
       { path: 'dungeons/:dungeonId', element: <DungeonViewPage /> },
       { path: 'dungeons/:dungeonId/rooms/:roomId', element: <DungeonViewPage /> },
     ],

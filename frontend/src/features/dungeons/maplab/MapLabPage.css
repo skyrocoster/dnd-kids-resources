@@ -1,0 +1,19 @@
+.maplab-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.5rem;
+}
+
+.maplab-title {
+  font-size: var(--type-headline);
+  font-weight: 500;
+  margin: 0;
+  color: var(--md-on-background);
+}
+
+.maplab-subtitle {
+  font-size: var(--type-body-sm);
+  margin: 0;
+  color: var(--md-on-surface-variant);
+}

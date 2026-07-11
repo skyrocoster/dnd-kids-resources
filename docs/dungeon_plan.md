@@ -331,3 +331,55 @@ later stages just fill in bodies.
   tokens, no emoji, no console errors.
 - Confirm production untouched: `git status` shows no change to `seed_dungeons.json`, `backend/`, or the
   existing dungeon model/pages; existing dungeon nav at `/dungeons/4` behaves exactly as before.
+
+---
+
+## M0a Completion Notes (2026-07-11)
+
+✅ **M0a scaffolding complete — pure mechanical skeleton, zero logic.**
+
+### What was built
+- `frontend/src/features/dungeons/maplab/` folder created (isolated, parallel to main dungeon feature).
+- `maplabModel.ts`: Type declarations (`MapCell`, `MapRoom`, `MapDoor`, `MapStair`, `MapFloor`, `MapLayout`) + five function stubs (all `throw new Error('not implemented')`).
+- `maplabData.ts`: Static Case-1 test data with real Isly Castle ids (rooms 17 & 23, door 32, floors).
+- `MapLabPage.tsx`: Placeholder component rendering a heading only.
+- `MapLabPage.css`: Using theme tokens (`--type-*`, `--md-*`), no hardcoded values.
+- `__tests__/maplabModel.test.ts` + `MapLabPage.test.tsx`: Smoke stubs with one passing smoke test each + skipped geometry/rendering/nav tests (M0b/M1/M2).
+- `router.tsx`: Added `/dungeons/map-lab` route (additive, existing routes untouched).
+
+### Verification (all green)
+- ✅ `npm run test --run`: 232 tests pass, 8 skipped (the new test stubs).
+- ✅ `npx tsc --noEmit`: Clean, no TypeScript errors.
+- ✅ Files created in isolation; `dungeonModel.ts`, `dungeonForm.ts`, `DungeonEditor.tsx`, seed data **untouched**.
+- ✅ Placeholder route `/dungeons/map-lab` ready to be driven in M1.
+
+### Context for M0b/M1/M2
+- **Coordinate model is proven.** `MapCell = [x, y]` (SVG axes: x=right, y=down) with `z` floor level is sound.
+- **Room geometry**: origin cell + relative cells (polyomino) handles rectangles and L-shapes; tested in real data (17=3×2 rect, 23=L-shape).
+- **Door boundary model**: `{ cell, side: 'N'|'S'|'E'|'W' }` cleanly encodes wall segments between rooms already connected by `leads_to`.
+- **Stair z-axis**: Two endpoint cells on different `z` planes, sharing x/y coords for "directly above" semantics.
+- **Layout is author-safe.** Hard-authored coords in `maplabData.ts` avoid auto-layout complexity; extensible keyed by real ids for M2 (add room 32/33 + stair 2).
+
+### Next stage: M0b (reasoning-heavy, use stronger model)
+M0b implements the five selector functions with full geometry math. This is pure algorithm work:
+- `absoluteCells`: origin + relative cells → absolute grid
+- `layoutBounds`: min/max x,y over all rooms → SVG viewBox
+- `neighborCell`: cardinal direction δ (N=(0,-1), S=(0,1), E=(1,0), W=(-1,0))
+- `doorWallSegment`: door cell + side → two corner points for SVG line
+- `roomOfCell`: point-in-polyomino lookup + validation
+
+**Use a stronger model (Opus/Sonnet) for M0b.** The functions are reasoning-intensive; Haiku scaffolding ≠ Haiku geometry.
+
+### Files created
+```
+frontend/src/features/dungeons/maplab/
+├── maplabModel.ts          (types + stubs)
+├── maplabData.ts           (test layout data, real ids)
+├── MapLabPage.tsx          (placeholder component)
+├── MapLabPage.css          (theme-token CSS)
+└── __tests__/
+    ├── maplabModel.test.ts (smoke test + skipped geometry tests)
+    └── MapLabPage.test.tsx (smoke test + skipped rendering tests)
+```
+
+Updated: `router.tsx` (one route addition).
