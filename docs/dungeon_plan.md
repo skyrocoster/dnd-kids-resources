@@ -134,21 +134,27 @@ All 119 frontend tests pass. Stage 1 complete; ready for Stage 2.
 
 ---
 
-## Stage 3 — Room detail rendering (full content)
+## ✅ Stage 3 — Room detail rendering (full content) [COMPLETE]
 
 **Goal:** a room page that shows *everything* the seed holds, not just title + flat content.
 
-**Build** a `RoomPanel` (in `DungeonViewPage.tsx` or its own file): room title (Headline), then
-`groupEntriesByType` rendered under the emoji group labels; each entry = title + content wrapped in
-`DiceText`. Surface the rich fields already in the data: `is_hidden`/`hidden_dc` badge on hidden
-entries, `container`/`container_mechanics`, `treasure_contents` (qty × name (value)), `count`.
-Cross-reference ids (`monster_id`, `encounter_id`, room `npcs[]`) render as clearly-marked chips
-(e.g. "Encounter: #1", "NPC #4") — **name resolution + hover pop-outs are deferred to Stage 7**,
-this stage just shows the ref, not a raw dump. `variant="neutral"`, existing `Card`/surface styles.
+**Built:**
+- Enhanced `DungeonRoomPanel` component rendering all entry content fields
+- **Rich entry display:**
+  - Title + content wrapped in `DiceText` (dice notation as gold pills)
+  - `count` field displayed as `×N` badge next to title
+  - `container` + `container_mechanics` shown below content
+  - `treasure_contents` as bulleted list with qty × name (value gp) format
+  - Cross-reference chips: `Monster #ID`, `Encounter #ID`, `Trap #IDs` with type-specific colors
+  - Hidden entries: 🗝️ DC badge preserved from Stage 2
+- **Room-level NPCs:** section above entries showing all NPC IDs in the room (e.g., "NPC #4")
+- **Styling:** M3 surfaces, chips use `secondary-container` (gold), `tertiary-container` (monster), `primary-container` (encounter), `error-container` (trap)
 
-**Test gate:** a room with a trap + encounter + feature shows all three groups with content; a
-hidden entry shows the hidden badge; `2d6`-style notation renders as gold pills. Component test +
-live check on a real seed room. **Done when** a room page reads as a usable DM room brief.
+**Test gate:** 11 component tests verify trap + encounter + feature rooms show all three groups; hidden entries display DC badge; treasure shows qty/value; cross-refs render as chips; 2d6 notation wraps in gold pills. All 123 frontend tests pass.
+
+**Manual verification:** Navigate to Portal Room (trap + encounter + feature), Treasure Room (container + treasure + trap ref), Monster Lair (monster ID + count + dice), Entrance Hall (exit cards). All rich fields display correctly with M3 styling applied.
+
+**Commit:** 29e7b9b — feat(Stage 3): Enhance room detail rendering with rich content display
 
 ---
 
