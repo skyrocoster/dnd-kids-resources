@@ -166,10 +166,25 @@ function DungeonRoomPanel({
   const parsed = parseDungeonData(dungeon.data)
   const exits = getExitsFromRoom(parsed, room.room_id)
   const grouped = groupEntriesByType(room)
+  const roomNpcs = Array.isArray(room.npcs) ? room.npcs : []
 
   return (
     <div className="dungeon-room-panel">
       <Card title={room.title} variant="neutral">
+        {/* Room-level NPCs */}
+        {roomNpcs.length > 0 && (
+          <div className="dungeon-room-npcs">
+            <p className="dungeon-room-npcs-label">NPCs present</p>
+            <div className="dungeon-chip-group">
+              {roomNpcs.map((npcId) => (
+                <span key={npcId} className="dungeon-chip">
+                  NPC #{npcId}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Entries grouped by type */}
         <div className="dungeon-room-entries">
           {Object.entries(grouped).length > 0 ? (
@@ -180,12 +195,71 @@ function DungeonRoomPanel({
                   <div key={i}>
                     {g.entries.map((entry, j) => (
                       <div key={j} className="dungeon-room-entry">
-                        {entry.title && <strong>{entry.title}</strong>}
+                        <div className="dungeon-room-entry-header">
+                          {entry.title && <strong>{entry.title}</strong>}
+                          {entry.count !== null && (
+                            <span className="dungeon-room-entry-count">×{entry.count}</span>
+                          )}
+                        </div>
+
                         {entry.content && (
                           <p className="dungeon-room-entry-content">
-                            <DiceText>{entry.content}</DiceText>
+                            <DiceText text={entry.content} />
                           </p>
                         )}
+
+                        {entry.container && (
+                          <div className="dungeon-room-entry-detail">
+                            <span className="dungeon-room-detail-label">Container:</span>
+                            {entry.container}
+                            {entry.container_mechanics && (
+                              <span className="dungeon-room-detail-mechanics">
+                                ({entry.container_mechanics})
+                              </span>
+                            )}
+                          </div>
+                        )}
+
+                        {entry.treasure_contents && entry.treasure_contents.length > 0 && (
+                          <div className="dungeon-room-entry-detail">
+                            <span className="dungeon-room-detail-label">Treasure:</span>
+                            <ul className="dungeon-treasure-list">
+                              {entry.treasure_contents.map((item, idx) => {
+                                const itemRecord = item && typeof item === 'object' ? (item as Record<string, unknown>) : {}
+                                const qty = itemRecord.quantity || itemRecord.qty || 1
+                                const name = itemRecord.name || itemRecord.title || String(item)
+                                const value = itemRecord.value || itemRecord.gold || null
+                                return (
+                                  <li key={idx}>
+                                    {qty > 1 && `${qty}× `}
+                                    {name}
+                                    {value && <span className="dungeon-treasure-value">({value}gp)</span>}
+                                  </li>
+                                )
+                              })}
+                            </ul>
+                          </div>
+                        )}
+
+                        {/* Cross-reference chips */}
+                        <div className="dungeon-room-entry-refs">
+                          {entry.monster_id !== null && (
+                            <span className="dungeon-chip dungeon-chip-monster">
+                              Monster #{entry.monster_id}
+                            </span>
+                          )}
+                          {entry.encounter_id !== null && (
+                            <span className="dungeon-chip dungeon-chip-encounter">
+                              Encounter #{entry.encounter_id}
+                            </span>
+                          )}
+                          {entry.trap_ids && entry.trap_ids.length > 0 && (
+                            <span className="dungeon-chip dungeon-chip-trap">
+                              Trap{entry.trap_ids.length > 1 ? 's' : ''} #{entry.trap_ids.join(', #')}
+                            </span>
+                          )}
+                        </div>
+
                         {entry.is_hidden && (
                           <span className="dungeon-room-entry-hidden" title={`Hidden, DC ${entry.hidden_dc ?? '?'}`}>
                             🗝️ DC {entry.hidden_dc ?? '?'}
