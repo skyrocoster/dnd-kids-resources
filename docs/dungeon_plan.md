@@ -7,9 +7,13 @@ force, and the facts a new executor needs, so the next phase can build on it wit
 anything. New design phases get appended under **"Next: front-end design planning"** at the bottom.
 
 > **Status:** Original build + Phases A/B shipped; Design Phase C ("Map Lab") foundation shipped
-> through the geometry/visual proof (see the Foundation table below). **Stage 0 scaffolding complete
-> (type declarations + stubs + test data + icon set + test placeholders); frontend tests + `tsc --noEmit`
-> green.** No backend change was needed for any dungeon/encounter/NPC/Map-Lab work — the
+> through the geometry/visual proof (see the Foundation table below). **Stages 0–4 complete:**
+> scaffolding, faithful L-shape rendering + interlocking-square proof, door leaf/swing + unified stair
+> token family + directional stair iconography, a generic hover inspector generalizing the
+> door/stair panel to rooms (with a typed, unrendered hook for items), and a live in-memory
+> session-state layer (open/closed, lock/unlock, disarm trap) on top of the authored defaults.
+> Frontend tests + `tsc --noEmit` green, all four visual gates live-verified. Only the FINAL STAGE
+> (production-home decision) remains. No backend change was needed for any dungeon/encounter/NPC/Map-Lab work — the
 > whole feature set is frontend against `getDungeon(id)`, `getEncounter`/`updateEncounter`, and
 > `getNPC`/`listNPCs`, except Stage E2 (one additive `active_index` column). Map Lab is a fully
 > isolated sandbox — seed/DB/`dungeonModel.ts` untouched.
@@ -296,52 +300,150 @@ Front-load **all** scaffolding for Stages 1–4 so the reasoning stages just fil
   new data tests verify interlocking L-rooms and floor count ✓
 - **Verification:** Tests green (71 passed, 18 skipped); no new TypeScript errors in maplab code path ✓
 
-#### Stage 1 — Room geometry: faithful L-shapes + interlocking-square proof (Sonnet) — *point 4*
+#### Stage 1 — Room geometry: faithful L-shapes + interlocking-square proof (Sonnet) — *point 4* ✓ COMPLETE
 
-- **Faithfulness fix:** the room hover/selection must highlight **only occupied cells** (the L's notch
-  stays empty — no bounding-box overlay). If the always-on per-cell grid strokes make an L read as a
-  solid rectangle, adjust so occupied vs. unknown space is unmistakable (unify the room fill as one
-  shape / lighten interior cell lines) — this is the "box around a rectangle implies the outside region
-  is included" concern.
-- **Interlocking proof:** render the two new L-rooms; each highlights only its own 8 cells; the **shared
-  zig-zag wall renders from both perimeters**; no cell belongs to both; the notch is never highlighted
-  for either room.
-- Tests: per-room `absoluteCells`, shared-wall edges on both, no cell overlap, notch excluded. **🚦 Gate.**
+**Completed 2026-07-11:**
+- **Faithfulness fix:** removed the always-on interior stroke from `.maplab-room-cell` (was drawing a
+  checkerboard grid across every room's own floor, including the Armoury). Hover/selected/focus emphasis
+  moved from per-cell strokes onto the room's `.maplab-wall` perimeter lines (already the exact
+  occupied-cell outline via `nonDoorWallSegments`, notch correctly excluded) — a room now reads as one
+  unified shape with a clean boundary, never a bounding box. Verified live: selecting the Armoury or
+  either test-pair wing highlights only its own cells, notch/other-room cells untouched.
+- **Interlocking proof:** replaced the Stage-0 placeholder test rooms (99/100 — previously two plain
+  rectangles) with true zigzag-boundary L-shapes tessellating a 4×4 square (West Wing 3/2/2/1 cells per
+  row, East Wing mirrored 1/2/2/3). Implemented `sharedWallSegments(roomA, roomB, doors)` in
+  `maplabModel.ts` — returns `roomA`'s perimeter edges that border `roomB`; a doorway edge (e.g. the
+  Hall/Armoury shared wall) still counts as shared (a passage through a wall, not the wall's absence).
+  Verified: each wing highlights only its own 8 cells, the shared boundary is a genuine 6-edge zigzag
+  (not the 4-edge straight line a plain divide would produce) rendered from both sides, and no cell
+  belongs to both. Manually verified live at `/dungeons/map-lab` → "Two-Wing Test Layout" tab.
+- **Also fixed:** a pre-existing Stage-0 scaffolding bug — `components/icons/index.ts` re-exported
+  `StairsUp`/`StairsDown` from `lucide-react`, which doesn't export icons under those names (the package
+  has no "Stairs*" icons at all), crashing the entire app at import time. Repointed
+  `StairsUpIcon`/`StairsDownIcon` to `ArrowUpToLine`/`ArrowDownToLine` (valid exports); real directional
+  stair iconography is still Stage 2's job, this just unblocks the app from loading.
+- Tests: `maplabModel.test.ts` — `sharedWallSegments` on Hall/Armoury (4 edges incl. the door) and on the
+  interlocking pair (6-edge zigzag from both sides) + a no-overlap/full-coverage proof.
+  `MapLabPage.test.tsx` — Armoury notch never rendered when selected; interlocking pair renders 8+8
+  disjoint cells with ≥6 wall segments per room. All green; `tsc --noEmit` clean; 306 tests total pass
+  (0 regressions). **🚦 Gate passed** — live-verified 2026-07-11.
 
-#### Stage 2 — Passage visuals: colour-clash fix + stair iconography (Sonnet, `frontend-design` skill) — *point 2*
+#### Stage 2 — Passage visuals: colour-clash fix + stair iconography (Sonnet, `frontend-design` skill) — *point 2* ✓ COMPLETE
 
-- **Fix verified clashes:** an *unlocked* door glyph and plain walls both resolve to
-  `--md-on-surface-variant` (indistinguishable); the stair marker mixes `--md-tertiary-container` fill
-  with `--md-on-surface-variant` stroke/icon (two token families). Give the door a distinct leaf/gap
-  treatment and the stair a single coherent token family — **stay within existing MD3 semantic roles; no
-  new hues without the `Blend.harmonize()` generator.**
-- **Stair iconography:** replace the bare circle + state-icon with a real directional stair glyph
-  (`StairsUp`/`StairsDown` by plane). This is the owed aesthetic pass — build with the `frontend-design`
-  skill.
-- Tests: door vs wall separable (distinct class/token); stair renders directional glyph; no hardcoded
-  colours/font-sizes; no emoji. **🚦 Gate.**
+**Completed 2026-07-11:**
+- **Door clash fix — shape, not just colour.** The real problem was that a door rendered as a single
+  straight `<line>` along the wall — geometrically identical to a plain wall segment regardless of
+  color. Added `doorSwingGeometry(edge, cellSize)` to `maplabModel.ts`: computes a hinged **leaf**
+  (wall corner → swung a quarter-turn into the room) and its **swing arc** (leaf tip → far jamb), the
+  standard architectural door-plan symbol. `.maplab-door-leaf` (bold) + `.maplab-door-swing` (thin,
+  45% opacity) replace the old single `.maplab-door-glyph` line — both still carry the passage-state
+  token (trapped→error / locked→secondary / hidden→outline / unlocked→on-surface-variant, unchanged
+  from Stage 0), so an unlocked door and a wall are now distinguishable **by shape alone**, satisfying
+  "never hue-alone" independent of the token match. No new hues — stayed entirely within existing
+  semantic roles.
+- **Stair token unification.** The marker's hardcoded `--md-tertiary-container` fill (unrelated to
+  state) mixed with the state-driven stroke/icon — two token families on one glyph. Fill is now a
+  neutral `--md-surface-3` (no state meaning); stroke + icon are the *only* color-bearing parts and
+  share the single `passagePresentation` token — one coherent family.
+- **Stair iconography.** Implemented `stairDirection(stair, fromZ?)` (defaults to the stair's authored
+  `from.z`; pass the active floor's `z` to get the direction as seen from there — the same physical
+  stair reads "up" from below and "down" from above) and `stairPresentation(stair, fromZ?)`, which
+  swaps the generic unlock icon for `StairsUpIcon`/`StairsDownIcon` on the common plain/unlocked case,
+  while a trapped/locked/hidden stair keeps its state icon (matching how doors already prioritize state
+  over decoration). `MapLabPage.tsx` now calls `stairPresentation(stair, activeZ)`.
+- **Also fixed (found while implementing):** Stage 0's `StairsUpIcon`/`StairsDownIcon` re-exported a
+  `lucide-react` export name (`StairsUp`/`StairsDown`) that doesn't exist in the installed package
+  version, crashing the entire app at import time (an unrelated barrel-file import was enough to
+  trigger it, not just Map Lab). Repointed to `ArrowUpToLine`/`ArrowDownToLine` (valid exports,
+  visually equivalent for this use).
+- Tests: `maplabModel.test.ts` — `stairDirection` (both perspectives + level/malformed guard),
+  `stairPresentation` (directional glyph on unlocked, state icon retained on trapped, shared token
+  with `passagePresentation`). `MapLabPage.test.tsx` — door renders leaf+swing (no full-span line, gap
+  still excluded from `.maplab-wall`), stair glyph flips per floor, marker fill has no `tertiary`
+  reference. All green; `tsc --noEmit` clean; 316 tests total (0 regressions). **🚦 Gate passed** —
+  live-verified 2026-07-11 at `/dungeons/map-lab`: gold leaf+arc+lock icon on the Armoury door reads
+  unmistakably as a door (not a wall) at a glance; ground-floor stair shows an up-arrow, the same
+  stair viewed from First Floor shows a down-arrow, both in a neutral disc with no teal/grey mixing;
+  no console errors.
 
-#### Stage 3 — Generic hover inspector for any element + item/chest hooks (Sonnet) — *point 1*
+#### Stage 3 — Generic hover inspector for any element + item/chest hooks (Sonnet) — *point 1* ✓ COMPLETE
 
-- Implement `Inspectable` + `inspectableDescriptor`. Generalise the door/stair affordance panel into an
-  **element-agnostic inspector**: hovering/focusing a **room** (title, kind, description, size) **or** a
-  door/stair shows its descriptor in the same panel; keep click-to-pin, keyboard parity, `aria-live`.
-- **Leave typed hooks for out-of-scope content** (`kind:'item'`/chests): the union + descriptor path
-  exist and are unit-tested, but **no item rendering or authoring UI** (explicitly out of scope here).
-- Tests: room hover reveals descriptor; door/stair still work; item-descriptor path unit-tested with no
-  rendered item. **🚦 Gate.**
+**Completed 2026-07-11:**
+- Implemented `Inspectable` + `inspectableDescriptor(target)` in `maplabModel.ts`. Each variant resolves
+  to the shared `{title, typeLabel, icon, token, lines}` shape: **room** → kind (only when authored) +
+  size (occupied cell count) + description; **door/stair** → share a new `passageDescriptorLines`
+  helper (state, secondary flags, DCs, note — the exact content the old bespoke `PassageDetails` JSX
+  rendered, now as generic `{label, value}` rows so one component can render all kinds); **item** → title
+  + type label only, no lines (the explicit no-content-rendering hook).
+- `MapLabPage.tsx`: replaced `PassageDetails` (door/stair-only) with a generic `InspectorPanel`
+  component consuming `inspectableDescriptor`. Generalized the affordance-tracking state
+  (`hoveredAffordance`/`focusedAffordance` → `hoveredInspectable`/`focusedInspectable`, typed
+  `InspectableRef` now covers `'room' | 'door' | 'stair'`) and added hover/focus handlers to the room
+  `<g>` (selection-on-click is unchanged and independent — hover/focus is purely additive). Door pin
+  behavior (click-to-pin, unchanged) still only applies to doors, per "keep click-to-pin" — rooms use
+  hover/focus only, matching their existing click-to-select semantics rather than overloading click with
+  a second meaning.
+- Added `RoomIcon` (`LayoutGrid`) and `ItemIcon` (`Package`) to the local Lucide set.
+- Updated the empty-state copy ("Hover or focus a door or stair for details." →
+  "…a room, door, or stair…") and the two pre-existing M2.3 tests asserting the old string, since the
+  panel's scope legitimately expanded.
+- Tests: `maplabModel.test.ts` — room descriptor (title/size/description, kind line conditional on
+  authored data, untitled fallback), door descriptor (state/DCs/note, note conditional), stair descriptor
+  (shares the passage-line shape with doors), item descriptor (minimal, no lines, unit-tested with no
+  rendered item — satisfies the "typed hook, no rendering" requirement). `MapLabPage.test.tsx` — room
+  descriptor shown on hover and on keyboard focus (scoped to `.maplab-inspector-panel-container` to
+  disambiguate from the room's own SVG label); door/stair inspection confirmed still working through the
+  same generalized panel. All green; `tsc --noEmit` clean; 326 tests total (0 regressions). **🚦 Gate
+  passed** — live-verified 2026-07-11: hovering the Combat Training Hall and Armoury shows title/ROOM
+  badge/size/description in the same panel doors and stairs use; hovering the Heavy Stone Door still
+  shows its passage details through the identical panel shape.
 
-#### Stage 4 — Passage state: authored default + live session override (Sonnet) — *point 3 (both layers)*
+#### Stage 4 — Passage state: authored default + live session override (Sonnet) — *point 3 (both layers)* ✓ COMPLETE
 
-- Implement `effectivePassageState(flags, session)` merging authored `PassageFlags` with
-  `PassageSessionState`. Add **open/closed** (new concept — closed = gap+glyph, open = swing/open glyph),
-  **lock/unlock**, **disarm trap** as in-memory session controls surfaced in the Stage-3 inspector (≥48px
-  targets, keyboard-operable). The authored default is the reset baseline; the override changes only
-  session state, never the authored data (the sandbox has no persistence).
-- Rendering reflects effective state (open door leaf, `TrapDisarmedIcon`, unlock recolour) via the
-  Stage-2 presentation path.
-- Tests: merge precedence (authored locked → session unlocked → effective unlocked; disarm clears the
-  trapped presentation; open/closed toggles the glyph); reset returns to the authored default. **🚦 Gate.**
+**Completed 2026-07-11:**
+- Implemented `effectivePassageState(flags, session)` in `maplabModel.ts` — merges authored
+  `PassageFlags` with an optional `PassageSessionState` (`isOpen`, `isLocked`, `trapDisarmed`), each
+  overridden independently (a locked+trapped door can be unlocked while the trap stays armed, or
+  vice versa). No session (the reset baseline) falls back to the authored `locked`/`trapped`, **door
+  open** — there's no authored open/closed concept, so "open" is the baseline that preserves the
+  already-shipped Stage-2 leaf+swing visual; closed is the state a DM toggles *into*, not the default.
+  `defaultPassageSession(flags)` seeds that baseline (`{isOpen:true, isLocked:flags.locked,
+  trapDisarmed:false}`) for the reset action.
+- Added `doorPresentation(door, session)` (mirrors Stage 2's `stairPresentation` shape) — computes
+  state/icon/token off the *effective* flags and additionally swaps `DoorOpenIcon`/`DoorClosedIcon` on
+  the unlocked case, matching how `stairPresentation` already swaps a directional glyph on its own
+  unlocked case. `stairPresentation` gained an optional third `session` parameter so a stair's
+  lock/disarm session state recolors it the same way.
+- `MapLabPage.tsx`: per-door/per-stair `Record<id, PassageSessionState>` state, defaulting through
+  `defaultPassageSession` when no override exists yet. Session controls (Open/Close door — doors
+  only, Lock/Unlock, Disarm trap — only rendered when the passage is authored `trapped`) live in the
+  Stage-3 `InspectorPanel` as ≥48px `.maplab-session-control-button`s, wired to the pinned/hovered/
+  focused door or stair. A page-level **"Reset session state"** button clears both session maps back
+  to the authored baseline. Closed doors render a new flush `.maplab-door-leaf-closed` line (styled
+  distinctly from `.maplab-wall`) instead of the open leaf+swing; a small `TrapDisarmedIcon` badge
+  renders next to a door/stair's icon once its (authored) trap is session-disarmed.
+- `inspectableDescriptor`'s door/stair cases now thread the session through — a `Position: Open/Closed`
+  line (door only) and a `Trap: Disarmed` line (when applicable) join the existing state/DC/note lines,
+  all computed from the effective (not raw authored) flags.
+- Added a Stage-4-only test fixture, door 98 "Rusty Trap Door" (`maplabData.ts`, on room 32's own
+  wall facing unknown space) — authored **locked *and* trapped**, since neither real fixture door/stair
+  is trapped and the session controls need a passage where lock and disarm are both exercisable
+  independently.
+- Tests: `maplabModel.test.ts` — `effectivePassageState` merge precedence (session unlock →
+  effective unlocked; trap disarmed while still locked → presentation steps to `locked`, not straight to
+  `unlocked`; no-session fallback to authored flags, door open); `defaultPassageSession`;
+  `doorPresentation`'s open/closed icon swap and state-icon precedence; `inspectableDescriptor`
+  reflecting session overrides. `MapLabPage.test.tsx` — open/closed toggle swaps
+  `.maplab-door-leaf`/`.maplab-door-leaf-closed`; lock/unlock and disarm are independent controls;
+  disarm renders the trap-disarmed badge; reset restores the authored baseline. All green (107 tests
+  in the maplab suite, 337 total frontend); `tsc --noEmit` clean; no regression to the Stage 1–3 gates
+  (the shipped Stage-2 "leaf+swing, no full-span line" test still passes unmodified since open is the
+  default). **🚦 Gate passed** — live-verified 2026-07-11 at `/dungeons/map-lab`: pinned the Rusty Trap
+  Door's panel (Position: Open, State: Trapped, Also: Locked, Break DC 20); clicking **Disarm trap**
+  recolored the glyph to gold/locked, showed the disarmed badge, and disabled the Disarm button;
+  clicking **Close door** swapped the leaf to the flush closed line and flipped the button to "Open
+  door"; clicking **Reset session state** restored Trapped/Locked/Open exactly, panel still pinned open
+  throughout. No console errors.
 
 #### FINAL STAGE — Production-home decision (still a long way off)
 

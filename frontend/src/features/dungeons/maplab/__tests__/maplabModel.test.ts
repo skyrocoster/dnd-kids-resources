@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { mapLabLayout } from '../maplabData'
+import { UnlockIcon, StairsUpIcon, StairsDownIcon } from '../../../../components/icons'
 import {
   absoluteCells,
   layoutBounds,
@@ -16,10 +17,18 @@ import {
   stairEndpointsForZ,
   passagePresentation,
   secondaryPassageStates,
+  sharedWallSegments,
+  stairDirection,
+  stairPresentation,
+  doorPresentation,
+  inspectableDescriptor,
+  effectivePassageState,
+  defaultPassageSession,
   type MapLayout,
   type MapRoom,
   type MapDoor,
   type MapStair,
+  type MapItem,
 } from '../maplabModel'
 
 const baseDoorFlags = { hidden: false, locked: false, trapped: false }
@@ -28,7 +37,7 @@ describe('maplabModel (M0a scaffold)', () => {
   it('layout data exists and is typed', () => {
     expect(mapLabLayout).toBeDefined()
     expect(mapLabLayout.rooms).toHaveLength(6) // 4 from Cases 1/2 + 2 test L-shapes (stage 0)
-    expect(mapLabLayout.doors).toHaveLength(1)
+    expect(mapLabLayout.doors).toHaveLength(2) // door 32 (Case 1) + door 98 (Stage 4 trapped test fixture)
     expect(mapLabLayout.floors).toHaveLength(3) // z:0, z:1, z:2 (stage 0)
   })
 
@@ -365,42 +374,273 @@ describe('maplabModel (Stage 0 data)', () => {
 })
 
 describe('maplabModel (Stage 1 geometry helpers)', () => {
-  it.skip('sharedWallSegments detects edges shared by two adjacent rooms', () => {
-    // Stage 1: Prove that rooms 17 and 23 share exactly the edge at [5,3] E / [6,3] W
-    // and that L-shapes (99a/99b) share their vertical boundary.
+  describe('sharedWallSegments', () => {
+    it('finds the full shared wall between the rectangular Hall and the L-shaped Armoury, including the door edge', () => {
+      const room17 = mapLabLayout.rooms.find((r) => r.room_id === 17)!
+      const room23 = mapLabLayout.rooms.find((r) => r.room_id === 23)!
+      // Rooms 17 and 23 are both 4 rows tall (y:0-3) and the Armoury's notch only removes its
+      // eastern cells (relative x:2-3), so the whole shared column faces room 17 — 4 edges,
+      // one of which (y=3) is the Heavy Stone Door.
+      expect(sharedWallSegments(room17, room23, mapLabLayout.doors)).toEqual([
+        { cell: [5, 0], side: 'E' },
+        { cell: [5, 1], side: 'E' },
+        { cell: [5, 2], side: 'E' },
+        { cell: [5, 3], side: 'E' },
+      ])
+      expect(sharedWallSegments(room23, room17, mapLabLayout.doors)).toEqual([
+        { cell: [6, 0], side: 'W' },
+        { cell: [6, 1], side: 'W' },
+        { cell: [6, 2], side: 'W' },
+        { cell: [6, 3], side: 'W' },
+      ])
+    })
+
+    it('finds the full zigzag boundary shared by the interlocking L-shaped test pair (99/100)', () => {
+      const west = mapLabLayout.rooms.find((r) => r.room_id === 99)!
+      const east = mapLabLayout.rooms.find((r) => r.room_id === 100)!
+      const fromWest = sharedWallSegments(west, east, [])
+      const fromEast = sharedWallSegments(east, west, [])
+
+      // A straight vertical divide would produce 4 edges; the boundary here steps twice
+      // (zigzag), producing 6 — proof the pair interlocks rather than sitting side by side.
+      expect(fromWest).toHaveLength(6)
+      expect(fromEast).toHaveLength(6)
+      expect(fromWest).toEqual(
+        expect.arrayContaining([
+          { cell: [2, 0], side: 'E' },
+          { cell: [2, 0], side: 'S' },
+          { cell: [1, 1], side: 'E' },
+          { cell: [1, 2], side: 'E' },
+          { cell: [1, 2], side: 'S' },
+          { cell: [0, 3], side: 'E' },
+        ]),
+      )
+      expect(fromEast).toEqual(
+        expect.arrayContaining([
+          { cell: [3, 0], side: 'W' },
+          { cell: [2, 1], side: 'N' },
+          { cell: [2, 1], side: 'W' },
+          { cell: [2, 2], side: 'W' },
+          { cell: [1, 3], side: 'N' },
+          { cell: [1, 3], side: 'W' },
+        ]),
+      )
+    })
+
+    it('proves the interlocking pair has no overlapping cells and covers the full 4x4 square', () => {
+      const west = mapLabLayout.rooms.find((r) => r.room_id === 99)!
+      const east = mapLabLayout.rooms.find((r) => r.room_id === 100)!
+      const westCells = absoluteCells(west).map(([x, y]) => `${x},${y}`)
+      const eastCells = absoluteCells(east).map(([x, y]) => `${x},${y}`)
+
+      expect(westCells).toHaveLength(8)
+      expect(eastCells).toHaveLength(8)
+      expect(westCells.filter((c) => eastCells.includes(c))).toEqual([])
+
+      const union = new Set([...westCells, ...eastCells])
+      expect(union.size).toBe(16)
+      for (let x = 0; x < 4; x++) {
+        for (let y = 0; y < 4; y++) {
+          expect(union.has(`${x},${y}`)).toBe(true)
+        }
+      }
+    })
   })
 })
 
 describe('maplabModel (Stage 2 stair presentation)', () => {
-  it.skip('stairDirection returns "up" when from.z < to.z', () => {
-    // Stage 2: Stair 2 goes from z:0 to z:1 → "up"
+  describe('stairDirection', () => {
+    const stair2 = mapLabLayout.stairs.find((s) => s.stair_id === 2)!
+
+    it('returns "up" when from.z < to.z (default: viewed from the authored from.z)', () => {
+      expect(stairDirection(stair2)).toBe('up')
+    })
+
+    it('returns "down" when viewed from the to.z endpoint — same stair, opposite perspective', () => {
+      expect(stairDirection(stair2, stair2.to.z)).toBe('down')
+    })
+
+    it('returns "level" for a same-z stair (malformed data, but must not throw)', () => {
+      const level: MapStair = {
+        stair_id: 99,
+        from: { z: 0, cell: [0, 0] },
+        to: { z: 0, cell: [1, 0] },
+        hidden: false,
+        locked: false,
+        trapped: false,
+      }
+      expect(stairDirection(level)).toBe('level')
+    })
   })
 
-  it.skip('stairPresentation returns directional glyph info', () => {
-    // Stage 2: StairsUp icon and MD3 semantic token for a going-up stair
+  describe('stairPresentation', () => {
+    const stair2 = mapLabLayout.stairs.find((s) => s.stair_id === 2)!
+
+    it('gives a plain (unlocked) stair a real directional glyph instead of the generic unlock icon', () => {
+      const p = stairPresentation(stair2, 0)
+      expect(p.direction).toBe('up')
+      expect(p.icon).toBe(StairsUpIcon)
+      expect(p.icon).not.toBe(UnlockIcon)
+    })
+
+    it('flips to the down glyph when viewed from the other endpoint', () => {
+      const p = stairPresentation(stair2, 1)
+      expect(p.direction).toBe('down')
+      expect(p.icon).toBe(StairsDownIcon)
+    })
+
+    it('keeps the state icon (not the directional glyph) for a trapped/locked/hidden stair', () => {
+      const trapped: MapStair = { ...stair2, trapped: true }
+      const p = stairPresentation(trapped, 0)
+      expect(p.state).toBe('trapped')
+      expect(p.icon).not.toBe(StairsUpIcon)
+      expect(p.icon).not.toBe(StairsDownIcon)
+    })
+
+    it('shares one token family between the base passage state and the stair presentation', () => {
+      const p = stairPresentation(stair2, 0)
+      expect(p.token).toBe(passagePresentation(stair2).token)
+    })
   })
 })
 
 describe('maplabModel (Stage 3 inspector)', () => {
-  it.skip('inspectableDescriptor produces a room descriptor with title, kind, description, size', () => {
-    // Stage 3: Room 17 has title "Combat Training Hall", description, kind inferred or explicit
+  describe('inspectableDescriptor — room', () => {
+    it('produces a descriptor with title, size, and description for room 17', () => {
+      const room17 = mapLabLayout.rooms.find((r) => r.room_id === 17)!
+      const d = inspectableDescriptor({ kind: 'room', room: room17 })
+
+      expect(d.title).toBe('Combat Training Hall')
+      expect(d.typeLabel).toBe('Room')
+      expect(d.icon).toBeDefined()
+      expect(d.lines).toContainEqual({ label: 'Size', value: '24 squares' })
+      expect(d.lines.some((l) => l.label === 'Description' && l.value.includes('training'))).toBe(true)
+    })
+
+    it('includes a Kind line only when the room has one authored', () => {
+      const room17 = mapLabLayout.rooms.find((r) => r.room_id === 17)!
+      expect(inspectableDescriptor({ kind: 'room', room: room17 }).lines.some((l) => l.label === 'Kind')).toBe(false)
+
+      const withKind: MapRoom = { ...room17, kind: 'training-hall' }
+      const d = inspectableDescriptor({ kind: 'room', room: withKind })
+      expect(d.lines).toContainEqual({ label: 'Kind', value: 'training-hall' })
+    })
+
+    it('falls back to "Room {id}" when untitled', () => {
+      const untitled: MapRoom = { room_id: 42, z: 0, origin: [0, 0], cells: [[0, 0]] }
+      expect(inspectableDescriptor({ kind: 'room', room: untitled }).title).toBe('Room 42')
+    })
   })
 
-  it.skip('inspectableDescriptor produces a door descriptor with state, DCs, and note', () => {
-    // Stage 3: Door 32 shows "Locked", Break DC 23, Pick DC 18, and any authored note
+  describe('inspectableDescriptor — door', () => {
+    it('produces a descriptor with state, Break DC, and Pick DC for door 32', () => {
+      const door32 = mapLabLayout.doors.find((d) => d.door_id === 32)!
+      const d = inspectableDescriptor({ kind: 'door', door: door32 })
+
+      expect(d.title).toBe('Heavy Stone Door')
+      expect(d.typeLabel).toBe('Door')
+      expect(d.token).toBe('--md-secondary') // locked
+      expect(d.lines).toContainEqual({ label: 'State', value: 'Locked' })
+      expect(d.lines).toContainEqual({ label: 'Break DC', value: '23' })
+      expect(d.lines).toContainEqual({ label: 'Pick DC', value: '18' })
+    })
+
+    it('includes a Note line only when one is authored', () => {
+      const door32 = mapLabLayout.doors.find((d) => d.door_id === 32)!
+      expect(inspectableDescriptor({ kind: 'door', door: door32 }).lines.some((l) => l.label === 'Note')).toBe(false)
+
+      const withNote: MapDoor = { ...door32, note: 'Splintered near the hinge.' }
+      const d = inspectableDescriptor({ kind: 'door', door: withNote })
+      expect(d.lines).toContainEqual({ label: 'Note', value: 'Splintered near the hinge.' })
+    })
   })
 
-  it.skip('inspectableDescriptor handles item descriptors without rendering content', () => {
-    // Stage 3: kind:'item' produces a descriptor (title, type label) but is unrendered
+  describe('inspectableDescriptor — stair', () => {
+    it('produces a descriptor for stair 2 sharing the same passage-line shape as a door', () => {
+      const stair2 = mapLabLayout.stairs.find((s) => s.stair_id === 2)!
+      const d = inspectableDescriptor({ kind: 'stair', stair: stair2 })
+
+      expect(d.title).toBe('Stone Stairs')
+      expect(d.typeLabel).toBe('Stair')
+      expect(d.lines).toContainEqual({ label: 'State', value: 'Unlocked' })
+    })
+  })
+
+  describe('inspectableDescriptor — item (typed hook, unrendered)', () => {
+    it('produces a minimal descriptor (title, type label) with no content lines', () => {
+      const item: MapItem = { item_id: 1, cell: [0, 0], title: 'Locked chest' }
+      const d = inspectableDescriptor({ kind: 'item', item })
+
+      expect(d.title).toBe('Locked chest')
+      expect(d.typeLabel).toBe('Item')
+      expect(d.icon).toBeDefined()
+      expect(d.lines).toEqual([])
+    })
   })
 })
 
 describe('maplabModel (Stage 4 session state)', () => {
-  it.skip('effectivePassageState merges authored flags with session overrides', () => {
-    // Stage 4: Authored locked + session isLocked:false → effective unlocked
+  it('effectivePassageState merges authored flags with session overrides', () => {
+    const flags = { hidden: false, locked: true, trapped: false }
+    const effective = effectivePassageState(flags, { isOpen: false, isLocked: false, trapDisarmed: false })
+
+    expect(effective.locked).toBe(false)
+    expect(passagePresentation(effective).state).toBe('unlocked')
   })
 
-  it.skip('effectivePassageState reflects disarmed traps in the presentation', () => {
-    // Stage 4: Authored trapped + session trapDisarmed:true → presentation steps to next flag
+  it('effectivePassageState reflects disarmed traps in the presentation', () => {
+    const flags = { hidden: false, locked: true, trapped: true }
+    const effective = effectivePassageState(flags, { isOpen: false, isLocked: true, trapDisarmed: true })
+
+    expect(effective.trapped).toBe(false)
+    expect(effective.trapDisarmed).toBe(true)
+    // Trap disarmed, but still locked — presentation steps to the next active flag, not straight
+    // to unlocked, since the flags are independent.
+    expect(passagePresentation(effective).state).toBe('locked')
+  })
+
+  it('effectivePassageState falls back to the authored defaults with no session (door open — the shipped Stage-2 baseline)', () => {
+    const flags = { hidden: false, locked: true, trapped: true }
+    const effective = effectivePassageState(flags)
+
+    expect(effective.locked).toBe(true)
+    expect(effective.trapped).toBe(true)
+    expect(effective.sessionOpen).toBe(true)
+  })
+
+  it('defaultPassageSession seeds the reset baseline from authored flags (open by default)', () => {
+    const flags = { hidden: false, locked: true, trapped: true }
+    expect(defaultPassageSession(flags)).toEqual({ isOpen: true, isLocked: true, trapDisarmed: false })
+  })
+
+  it('doorPresentation swaps in a closed/open glyph on the unlocked case', () => {
+    const door: MapDoor = { door_id: 1, cell: [0, 0], side: 'N', ...baseDoorFlags }
+
+    const open = doorPresentation(door, defaultPassageSession(door))
+    expect(open.state).toBe('unlocked')
+    expect(open.isOpen).toBe(true)
+    expect(open.icon).not.toBe(UnlockIcon)
+
+    const closed = doorPresentation(door, { isOpen: false, isLocked: false, trapDisarmed: false })
+    expect(closed.isOpen).toBe(false)
+    expect(closed.icon).not.toBe(open.icon)
+  })
+
+  it('doorPresentation keeps the state icon when trapped/locked/hidden, regardless of open/closed', () => {
+    const door: MapDoor = { door_id: 2, cell: [0, 0], side: 'N', hidden: false, locked: true, trapped: false }
+    const presentation = doorPresentation(door, { isOpen: true, isLocked: true, trapDisarmed: false })
+    expect(presentation.state).toBe('locked')
+  })
+
+  it('inspectableDescriptor reflects session overrides for a door', () => {
+    const door: MapDoor = { door_id: 3, cell: [0, 0], side: 'N', hidden: false, locked: true, trapped: true }
+    const d = inspectableDescriptor({
+      kind: 'door',
+      door,
+      session: { isOpen: true, isLocked: false, trapDisarmed: true },
+    })
+
+    expect(d.lines).toContainEqual({ label: 'Position', value: 'Open' })
+    expect(d.lines).toContainEqual({ label: 'Trap', value: 'Disarmed' })
   })
 })

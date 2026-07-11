@@ -3,7 +3,20 @@
  * Zero logic; pure type definitions to anchor later stages.
  */
 
-import { TrapIcon, LockIcon, UnlockIcon, HiddenIcon, type LucideIcon } from '../../../components/icons'
+import {
+  TrapIcon,
+  LockIcon,
+  UnlockIcon,
+  HiddenIcon,
+  StairsUpIcon,
+  StairsDownIcon,
+  StairsIcon,
+  RoomIcon,
+  ItemIcon,
+  DoorOpenIcon,
+  DoorClosedIcon,
+  type LucideIcon,
+} from '../../../components/icons'
 
 // ============================================================================
 // Type definitions
@@ -159,6 +172,38 @@ export function doorWallSegment(edge: WallEdge, cellSize: number): { x1: number;
     case 'W':
       return { x1: left, y1: top, x2: left, y2: bottom }
   }
+}
+
+/** A door drawn as a full-length line along the wall is geometrically identical in shape to a
+ * plain wall segment — the M2.3 "clash" where an unlocked door and a wall both read as
+ * `--md-on-surface-variant` was really this shape problem wearing a color problem's clothes. A
+ * real door symbol is a *gap* in the wall (which `nonDoorWallSegments` already produces, since it
+ * excludes the door's own edge) plus a hinged leaf and its swing arc — distinct from a wall by
+ * shape alone, independent of color, satisfying the "never hue-alone" accessibility floor too. */
+export interface DoorSwingGeometry {
+  hinge: { x: number; y: number }
+  leafTip: { x: number; y: number }
+  farJamb: { x: number; y: number }
+  radius: number
+  sweepFlag: 0 | 1
+}
+
+/** Computes the leaf (hinge → tip, swung a quarter-turn off the wall into the room) and its swing
+ * arc (tip → the far jamb) for a door's wall segment. `sweepFlag` is derived per-edge from the
+ * cross product of the wall vector and the inward normal — the four cardinal sides don't share one
+ * fixed handedness, so it can't be hardcoded. */
+export function doorSwingGeometry(edge: WallEdge, cellSize: number): DoorSwingGeometry {
+  const segment = doorWallSegment(edge, cellSize)
+  const hinge = { x: segment.x1, y: segment.y1 }
+  const farJamb = { x: segment.x2, y: segment.y2 }
+  const wallVec = { x: farJamb.x - hinge.x, y: farJamb.y - hinge.y }
+  const radius = Math.hypot(wallVec.x, wallVec.y)
+  const [dx, dy] = CARDINAL_DELTAS[edge.side]
+  const normal = { x: -dx, y: -dy } // inward: opposite the outward cell-to-neighbor direction
+  const leafTip = { x: hinge.x + normal.x * radius, y: hinge.y + normal.y * radius }
+  const cross = wallVec.x * normal.y - wallVec.y * normal.x
+  const sweepFlag: 0 | 1 = cross > 0 ? 1 : 0
+  return { hinge, leafTip, farJamb, radius, sweepFlag }
 }
 
 const OPPOSITE_SIDE: Record<CardinalSide, CardinalSide> = { N: 'S', S: 'N', E: 'W', W: 'E' }
@@ -318,13 +363,33 @@ export interface EffectivePassageState extends PassageFlags {
   trapDisarmed?: boolean
 }
 
-/** Merge authored PassageFlags with optional session state, producing the effective state.
- * STUB for Stage 4. */
+/** Merge authored PassageFlags with optional session state, producing the effective state. No
+ * session (the reset baseline) falls back to the authored `locked`/`trapped` as-is, door open
+ * (the shipped Stage-2 default — there's no authored open/closed concept, so "open" is the
+ * baseline a DM starts from and toggles shut), trap armed. A session overrides
+ * `locked`/`isOpen`/`trapDisarmed` independently of one another — a locked+trapped door can be
+ * unlocked while the trap stays armed, or vice versa. */
 export function effectivePassageState(
-  _flags: PassageFlags,
-  _session?: PassageSessionState,
+  flags: PassageFlags,
+  session?: PassageSessionState,
 ): EffectivePassageState {
-  throw new Error('not implemented')
+  const sessionOpen = session?.isOpen ?? true
+  const locked = session?.isLocked ?? flags.locked
+  const trapDisarmed = session?.trapDisarmed ?? false
+  return {
+    ...flags,
+    locked,
+    trapped: flags.trapped && !trapDisarmed,
+    sessionOpen,
+    sessionLocked: locked,
+    trapDisarmed,
+  }
+}
+
+/** The authored-default session state for a passage — the reset baseline every session control
+ * starts from and returns to. */
+export function defaultPassageSession(flags: PassageFlags): PassageSessionState {
+  return { isOpen: true, isLocked: flags.locked, trapDisarmed: false }
 }
 
 // ============================================================================
@@ -336,8 +401,8 @@ export function effectivePassageState(
  * (geometry-only hook for later expansion). */
 export type Inspectable =
   | { kind: 'room'; room: MapRoom }
-  | { kind: 'door'; door: MapDoor }
-  | { kind: 'stair'; stair: MapStair }
+  | { kind: 'door'; door: MapDoor; session?: PassageSessionState }
+  | { kind: 'stair'; stair: MapStair; session?: PassageSessionState }
   | { kind: 'item'; item: MapItem }
 
 /** Descriptor for an element: title, type label, icon, and structured detail rows.
@@ -350,10 +415,87 @@ export interface InspectableDescriptor {
   lines: { label: string; value: string }[]
 }
 
-/** Produce a descriptor for any inspectable element.
- * STUB for Stage 3. */
-export function inspectableDescriptor(_target: Inspectable): InspectableDescriptor {
-  throw new Error('not implemented')
+/** Shared line-builder for the two passage kinds (door/stair) — state, any secondary flags, DCs,
+ * and a free-text note. Previously duplicated inline in `MapLabPage.tsx`'s `PassageDetails`; the
+ * generic inspector needs the same content as plain `{label, value}` rows instead of bespoke JSX. */
+function passageDescriptorLines(passage: PassageFlags): { label: string; value: string }[] {
+  const presentation = passagePresentation(passage)
+  const lines: { label: string; value: string }[] = [{ label: 'State', value: presentation.label }]
+
+  const secondary = secondaryPassageStates(passage)
+  if (secondary.length > 0) {
+    lines.push({ label: 'Also', value: secondary.map((s) => s[0].toUpperCase() + s.slice(1)).join(', ') })
+  }
+  if (passage.breakDc !== undefined) lines.push({ label: 'Break DC', value: String(passage.breakDc) })
+  if (passage.pickDc !== undefined) lines.push({ label: 'Pick DC', value: String(passage.pickDc) })
+  if (passage.hiddenDc !== undefined) lines.push({ label: 'Perception DC', value: String(passage.hiddenDc) })
+  if (passage.note) lines.push({ label: 'Note', value: passage.note })
+
+  return lines
+}
+
+/** Produce a descriptor for any inspectable element — the generic form of the door/stair
+ * affordance panel, extended to rooms (and a typed, unrendered hook for items). A room carries no
+ * passage state, so its lines are kind/size/description instead; door and stair share
+ * `passageDescriptorLines`, since a stair is presented identically to a door throughout this
+ * feature. Items produce a minimal descriptor only — no content rendering, per the Stage-3 scope
+ * (item/chest authoring is deferred). */
+export function inspectableDescriptor(target: Inspectable): InspectableDescriptor {
+  switch (target.kind) {
+    case 'room': {
+      const { room } = target
+      const lines: { label: string; value: string }[] = []
+      if (room.kind) lines.push({ label: 'Kind', value: room.kind })
+      lines.push({ label: 'Size', value: `${absoluteCells(room).length} squares` })
+      if (room.description) lines.push({ label: 'Description', value: room.description })
+      return {
+        title: room.title ?? `Room ${room.room_id}`,
+        typeLabel: 'Room',
+        icon: RoomIcon,
+        token: '--md-on-surface-variant',
+        lines,
+      }
+    }
+    case 'door': {
+      const { door, session } = target
+      const presentation = doorPresentation(door, session)
+      const effective = effectivePassageState(door, session)
+      const lines = passageDescriptorLines(effective)
+      lines.unshift({ label: 'Position', value: effective.sessionOpen ? 'Open' : 'Closed' })
+      if (door.trapped && effective.trapDisarmed) lines.push({ label: 'Trap', value: 'Disarmed' })
+      return {
+        title: door.title ?? `Door ${door.door_id}`,
+        typeLabel: 'Door',
+        icon: presentation.icon,
+        token: presentation.token,
+        lines,
+      }
+    }
+    case 'stair': {
+      const { stair, session } = target
+      const effective = effectivePassageState(stair, session)
+      const presentation = passagePresentation(effective)
+      const lines = passageDescriptorLines(effective)
+      if (stair.trapped && effective.trapDisarmed) lines.push({ label: 'Trap', value: 'Disarmed' })
+      return {
+        title: stair.title ?? `Stair ${stair.stair_id}`,
+        typeLabel: 'Stair',
+        icon: presentation.icon,
+        token: presentation.token,
+        lines,
+      }
+    }
+    case 'item': {
+      const { item } = target
+      return {
+        title: item.title,
+        typeLabel: 'Item',
+        icon: ItemIcon,
+        token: '--md-on-surface-variant',
+        lines: [],
+      }
+    }
+  }
 }
 
 // ============================================================================
@@ -362,28 +504,74 @@ export function inspectableDescriptor(_target: Inspectable): InspectableDescript
 
 /** Wall segments shared by two specific rooms — both rooms must include the edge as a perimeter.
  * Used to verify that adjacent (L-shaped and rectangular) rooms share only the edge between them,
- * not overlapping cells. STUB for Stage 1. */
-export function sharedWallSegments(_roomA: MapRoom, _roomB: MapRoom, _doors: MapDoor[]): WallEdge[] {
-  throw new Error('not implemented')
+ * not overlapping cells. Returned from `roomA`'s perspective (its own `{cell, side}`); call again
+ * with the arguments swapped to get `roomB`'s mirrored edges. A shared edge is still "shared" even
+ * where a door sits — a doorway is a passage through a wall, not the absence of one — so `doors` is
+ * accepted for signature symmetry with the rest of the passage helpers but doesn't filter results. */
+export function sharedWallSegments(roomA: MapRoom, roomB: MapRoom, _doors: MapDoor[]): WallEdge[] {
+  const bCells = new Set(absoluteCells(roomB).map(cellKey))
+  return roomWallSegments(roomA).filter((edge) => bCells.has(cellKey(neighborCell(edge.cell, edge.side))))
 }
 
 // ============================================================================
 // Stage 2 presentation helpers (stair/door iconography)
 // ============================================================================
 
-/** Direction of a stair (up or down) based on the z-levels of its endpoints.
- * Returns 'up' if from.z < to.z, 'down' if from.z > to.z, 'level' if equal. */
-export function stairDirection(_stair: MapStair): 'up' | 'down' | 'level' {
-  throw new Error('not implemented')
+/** Direction of a stair, from the perspective of standing on `fromZ` (defaults to the stair's own
+ * authored `from.z`, so calling with one argument answers "does this stair rise or fall?"). A DM
+ * viewing the *other* endpoint sees the opposite travel direction — pass the active floor's `z` to
+ * get the direction as seen from there (e.g. a stair authored z0→z1 reads "up" from z0 but "down"
+ * from z1, the same physical stair). */
+export function stairDirection(stair: MapStair, fromZ: number = stair.from.z): 'up' | 'down' | 'level' {
+  const toZ = fromZ === stair.to.z ? stair.from.z : stair.to.z
+  if (toZ === fromZ) return 'level'
+  return toZ > fromZ ? 'up' : 'down'
 }
 
 /** Presentation for a stair including directional glyph information.
- * Extends PassagePresentation with stair-specific iconography (StairsUp vs StairsDown).
- * STUB for Stage 2. */
+ * Extends PassagePresentation with stair-specific iconography (StairsUp vs StairsDown). */
 export interface StairPresentation extends PassagePresentation {
   direction: 'up' | 'down' | 'level'
 }
 
-export function stairPresentation(_stair: MapStair): StairPresentation {
-  throw new Error('not implemented')
+/** A stair reuses `passagePresentation`'s state (trapped/locked/hidden/unlocked), computed on the
+ * *effective* (session-merged) flags when a session is given — a session-unlocked stair recolors
+ * exactly like an authored-unlocked one, and a disarmed trap steps to the next flag the same way
+ * `secondaryPassageStates` already handles multiple authored flags. The M2.3 marker mixed the state
+ * token with a hardcoded `--md-tertiary-container` fill, two unrelated color families on one glyph;
+ * the state token is now the marker's only color family (see `.maplab-stair-marker` in
+ * MapLabPage.css, which fills neutral and strokes from the token). The plain/unlocked case — the
+ * common one — swaps the generic unlock icon for a real directional glyph; a trapped/locked/hidden
+ * stair keeps its state icon, matching how doors already prioritize state over decoration. */
+export function stairPresentation(stair: MapStair, fromZ?: number, session?: PassageSessionState): StairPresentation {
+  const effective = effectivePassageState(stair, session)
+  const base = passagePresentation(effective)
+  const direction = stairDirection(stair, fromZ)
+  const icon =
+    base.state === 'unlocked'
+      ? direction === 'up'
+        ? StairsUpIcon
+        : direction === 'down'
+          ? StairsDownIcon
+          : StairsIcon
+      : base.icon
+  return { ...base, icon, direction }
+}
+
+/** Presentation for a door including its effective open/closed state. */
+export interface DoorPresentation extends PassagePresentation {
+  isOpen: boolean
+}
+
+/** A door reuses `passagePresentation`'s state on the *effective* (session-merged) flags — a
+ * session-unlocked door recolors exactly like an authored-unlocked one, and a disarmed trap steps
+ * to the next flag the same way `secondaryPassageStates` already handles multiple authored flags.
+ * The plain/unlocked case additionally swaps the generic unlock icon for an open/closed door glyph,
+ * mirroring how `stairPresentation` swaps in a directional glyph for its own unlocked case. */
+export function doorPresentation(door: MapDoor, session?: PassageSessionState): DoorPresentation {
+  const effective = effectivePassageState(door, session)
+  const base = passagePresentation(effective)
+  const isOpen = effective.sessionOpen ?? false
+  const icon = base.state === 'unlocked' ? (isOpen ? DoorOpenIcon : DoorClosedIcon) : base.icon
+  return { ...base, icon, isOpen }
 }

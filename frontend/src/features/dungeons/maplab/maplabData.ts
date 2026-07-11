@@ -55,6 +55,20 @@ const door32: MapDoor = {
   pickDc: 18,
 }
 
+/** Door 98 "Rusty Trap Door" — a Stage-4 test fixture on room 32's own wall (facing unknown space,
+ * no adjoining room), authored locked *and* trapped so the session-state controls (lock/unlock,
+ * disarm trap) have a real fixture to exercise both independent flags on. */
+const door98: MapDoor = {
+  door_id: 98,
+  cell: [11, 0],
+  side: 'N',
+  title: 'Rusty Trap Door',
+  hidden: false,
+  locked: true,
+  trapped: true,
+  breakDc: 20,
+}
+
 // ============================================================================
 // Case 2: Stairs — placed with a gap of unknown space east of the Armoury
 // ============================================================================
@@ -80,39 +94,44 @@ const room33: MapRoom = {
 }
 
 // ============================================================================
-// Stage 0 test pair: Two interlocking L-shaped rooms (z:2) tessellating a 4×4 square
+// Stage 1 test pair: Two interlocking L-shaped rooms (z:2) tessellating a 4×4 square
 // ============================================================================
+//
+// The boundary steps twice (a genuine zigzag, not a straight divide) so the pair proves
+// interlocking L-shapes rather than two plain rectangles: West gets a wide top (3 cells)
+// tapering to a narrow bottom (1 cell); East mirrors it, narrow top (1 cell) widening to a
+// wide bottom (3 cells). See the Stage-1 shared-wall test for the exact 6-edge boundary.
 
-/** Test room 99a "West Wing" — 8-cell L-shape, left half of a 4×4 square (20×20 ft).
- * Together with room 99b, fills a 4×4 grid perfectly with no overlap or gaps. */
+/** Test room 99a "West Wing" — 8-cell L-shape, left/upper portion of a 4×4 square (20×20 ft). */
 const room99a: MapRoom = {
   room_id: 99,
   z: 2,
   title: 'West Wing',
-  description: 'The western wing of a four-room complex. An L-shape filling the left side.',
+  description: 'The western wing of a four-room complex. An L-shape interlocking with the East Wing.',
   origin: [0, 0],
   cells: [
-    [0, 0], [1, 0],
+    [0, 0], [1, 0], [2, 0],
     [0, 1], [1, 1],
     [0, 2], [1, 2],
-    [0, 3], [1, 3],
+    [0, 3],
   ],
 }
 
-/** Test room 99b "East Wing" — 8-cell L-shape, right half of a 4×4 square (20×20 ft).
- * Together with room 99a, fills a 4×4 grid perfectly with no overlap or gaps. The mirrored
- * L proves that adjacent L-shapes render shared walls correctly and highlight only their own cells. */
+/** Test room 99b "East Wing" — 8-cell L-shape, right/lower portion of a 4×4 square (20×20 ft).
+ * Together with room 99a, fills a 4×4 grid perfectly with no overlap or gaps. The zigzag shared
+ * boundary proves that adjacent L-shapes render shared walls correctly and highlight only their
+ * own cells (the interlocking notch is never highlighted for either room). */
 const room99b: MapRoom = {
   room_id: 100,
   z: 2,
   title: 'East Wing',
-  description: 'The eastern wing of a four-room complex. An L-shape filling the right side.',
-  origin: [2, 0],
+  description: 'The eastern wing of a four-room complex. An L-shape interlocking with the West Wing.',
+  origin: [0, 0],
   cells: [
-    [0, 0], [1, 0],
-    [0, 1], [1, 1],
-    [0, 2], [1, 2],
-    [0, 3], [1, 3],
+    [3, 0],
+    [2, 1], [3, 1],
+    [2, 2], [3, 2],
+    [1, 3], [2, 3], [3, 3],
   ],
 }
 
@@ -135,7 +154,7 @@ const stair2: MapStair = {
 export const mapLabLayout: MapLayout = {
   meta: { cellSizeFt: 5, padding: 3 },
   rooms: [room17, room23, room32, room33, room99a, room99b],
-  doors: [door32],
+  doors: [door32, door98],
   stairs: [stair2],
   floors: [
     { z: 0, title: 'Ground Floor' },

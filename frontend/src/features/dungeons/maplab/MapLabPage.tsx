@@ -1,20 +1,26 @@
-import { useMemo, useState } from 'react'
+import { Fragment, useMemo, useState } from 'react'
 import './MapLabPage.css'
 import { mapLabLayout } from './maplabData'
+import { TrapDisarmedIcon } from '../../../components/icons'
 import {
   absoluteCells,
+  defaultPassageSession,
+  doorPresentation,
+  doorSwingGeometry,
   doorWallSegment,
   floorsInLayout,
+  inspectableDescriptor,
   nonDoorWallSegments,
   paddedBounds,
-  passagePresentation,
   roomOfCell,
   roomsOnZ,
-  secondaryPassageStates,
   stairEndpointsForZ,
+  stairPresentation,
+  type Inspectable,
+  type MapDoor,
   type MapRoom,
   type MapStair,
-  type PassageFlags,
+  type PassageSessionState,
 } from './maplabModel'
 
 const CELL_SIZE = 64
@@ -43,63 +49,72 @@ function otherFloorZ(stair: MapStair, currentZ: number): number {
   return stair.from.z === currentZ ? stair.to.z : stair.from.z
 }
 
-type AffordanceKind = 'door' | 'stair'
-interface AffordanceRef {
-  kind: AffordanceKind
+type InspectableKind = Inspectable['kind']
+interface InspectableRef {
+  kind: InspectableKind
   id: number
 }
 
-/** The Hall/Armoury door and Stone Stairs share one details readout: title, state (icon + token +
- * label), any secondary flags, DCs, and a free-text note — a door and a stair are both "passages"
- * from the DM's point of view. */
-function PassageDetails({ title, kind, passage }: { title: string; kind: string; passage: PassageFlags }) {
-  const presentation = passagePresentation(passage)
-  const Icon = presentation.icon
-  const secondary = secondaryPassageStates(passage)
-  const hasDcs = passage.breakDc !== undefined || passage.pickDc !== undefined || passage.hiddenDc !== undefined
+interface SessionControls {
+  onToggleOpen?: () => void
+  onToggleLocked?: () => void
+  onDisarmTrap?: () => void
+}
+
+/** Element-agnostic descriptor panel — a room, door, or stair all resolve through
+ * `inspectableDescriptor` to the same {title, typeLabel, icon, token, lines} shape, so one
+ * component renders all three (an `Inspectable['kind'] === 'item'` target is reachable through the
+ * same path but nothing in this page currently produces one — items aren't rendered yet). Doors and
+ * stairs additionally get live session controls (Stage 4) — rooms and items don't carry passage
+ * state, so `controls` is only passed for those two kinds. */
+function InspectorPanel({ target, controls }: { target: Inspectable; controls?: SessionControls }) {
+  const descriptor = inspectableDescriptor(target)
+  const Icon = descriptor.icon
+  const isTrapped = target.kind === 'door' ? target.door.trapped : target.kind === 'stair' ? target.stair.trapped : false
 
   return (
-    <div className="maplab-passage-details">
-      <div className="maplab-passage-details-header">
-        <Icon width={20} height={20} aria-hidden="true" style={{ color: `var(${presentation.token})` }} />
-        <span className="maplab-passage-details-title">{title}</span>
-        <span className="maplab-passage-details-kind">{kind}</span>
+    <div className="maplab-inspector-panel">
+      <div className="maplab-inspector-header">
+        <Icon width={20} height={20} aria-hidden="true" style={{ color: `var(${descriptor.token})` }} />
+        <span className="maplab-inspector-title">{descriptor.title}</span>
+        <span className="maplab-inspector-kind">{descriptor.typeLabel}</span>
       </div>
-      <p className="maplab-passage-details-state" style={{ color: `var(${presentation.token})` }}>
-        {presentation.label}
-      </p>
-      {secondary.length > 0 && (
-        <ul className="maplab-passage-details-chips">
-          {secondary.map((state) => (
-            <li key={state} className="maplab-passage-details-chip">
-              {state}
-            </li>
+      {descriptor.lines.length > 0 && (
+        <dl className="maplab-inspector-lines">
+          {descriptor.lines.map((line) => (
+            <Fragment key={line.label}>
+              <dt className="maplab-inspector-row">{line.label}</dt>
+              <dd>{line.value}</dd>
+            </Fragment>
           ))}
-        </ul>
-      )}
-      {hasDcs && (
-        <dl className="maplab-passage-details-dcs">
-          {passage.breakDc !== undefined && (
-            <>
-              <dt>Break DC</dt>
-              <dd>{passage.breakDc}</dd>
-            </>
-          )}
-          {passage.pickDc !== undefined && (
-            <>
-              <dt>Pick DC</dt>
-              <dd>{passage.pickDc}</dd>
-            </>
-          )}
-          {passage.hiddenDc !== undefined && (
-            <>
-              <dt>Perception DC</dt>
-              <dd>{passage.hiddenDc}</dd>
-            </>
-          )}
         </dl>
       )}
-      {passage.note && <p className="maplab-passage-details-note">{passage.note}</p>}
+      {controls && (
+        <div className="maplab-inspector-controls">
+          {target.kind === 'door' && controls.onToggleOpen && (
+            <button type="button" className="maplab-session-control-button" onClick={controls.onToggleOpen}>
+              {target.session?.isOpen ? 'Close door' : 'Open door'}
+            </button>
+          )}
+          {controls.onToggleLocked && (
+            <button type="button" className="maplab-session-control-button" onClick={controls.onToggleLocked}>
+              {(target.kind === 'door' || target.kind === 'stair') && target.session?.isLocked
+                ? 'Unlock'
+                : 'Lock'}
+            </button>
+          )}
+          {isTrapped && controls.onDisarmTrap && (
+            <button
+              type="button"
+              className="maplab-session-control-button"
+              disabled={(target.kind === 'door' || target.kind === 'stair') && target.session?.trapDisarmed}
+              onClick={controls.onDisarmTrap}
+            >
+              Disarm trap
+            </button>
+          )}
+        </div>
+      )}
     </div>
   )
 }
@@ -109,9 +124,11 @@ export function MapLabPage() {
   const floors = useMemo(() => floorsInLayout(mapLabLayout), [])
   const [activeZ, setActiveZ] = useState<number>(floors[0]?.z ?? 0)
   const [selectedRoomId, setSelectedRoomId] = useState<number | null>(null)
-  const [hoveredAffordance, setHoveredAffordance] = useState<AffordanceRef | null>(null)
-  const [focusedAffordance, setFocusedAffordance] = useState<AffordanceRef | null>(null)
+  const [hoveredInspectable, setHoveredInspectable] = useState<InspectableRef | null>(null)
+  const [focusedInspectable, setFocusedInspectable] = useState<InspectableRef | null>(null)
   const [pinnedDoorId, setPinnedDoorId] = useState<number | null>(null)
+  const [doorSessions, setDoorSessions] = useState<Record<number, PassageSessionState>>({})
+  const [stairSessions, setStairSessions] = useState<Record<number, PassageSessionState>>({})
 
   const rooms = useMemo(() => roomsOnZ(mapLabLayout, activeZ), [activeZ])
   const stairs = useMemo(() => stairEndpointsForZ(mapLabLayout, activeZ), [activeZ])
@@ -146,18 +163,84 @@ export function MapLabPage() {
     setPinnedDoorId((current) => (current === doorId ? null : doorId))
   }
 
+  function doorSession(door: MapDoor): PassageSessionState {
+    return doorSessions[door.door_id] ?? defaultPassageSession(door)
+  }
+
+  function stairSession(stair: MapStair): PassageSessionState {
+    return stairSessions[stair.stair_id] ?? defaultPassageSession(stair)
+  }
+
+  function toggleDoorOpen(door: MapDoor) {
+    setDoorSessions((current) => ({
+      ...current,
+      [door.door_id]: { ...doorSession(door), isOpen: !doorSession(door).isOpen },
+    }))
+  }
+
+  function toggleDoorLocked(door: MapDoor) {
+    setDoorSessions((current) => ({
+      ...current,
+      [door.door_id]: { ...doorSession(door), isLocked: !doorSession(door).isLocked },
+    }))
+  }
+
+  function disarmDoorTrap(door: MapDoor) {
+    setDoorSessions((current) => ({
+      ...current,
+      [door.door_id]: { ...doorSession(door), trapDisarmed: true },
+    }))
+  }
+
+  function toggleStairLocked(stair: MapStair) {
+    setStairSessions((current) => ({
+      ...current,
+      [stair.stair_id]: { ...stairSession(stair), isLocked: !stairSession(stair).isLocked },
+    }))
+  }
+
+  function disarmStairTrap(stair: MapStair) {
+    setStairSessions((current) => ({
+      ...current,
+      [stair.stair_id]: { ...stairSession(stair), trapDisarmed: true },
+    }))
+  }
+
+  function resetSessions() {
+    setDoorSessions({})
+    setStairSessions({})
+  }
+
   const activeFloor = floors.find((floor) => floor.z === activeZ)
 
-  const activeAffordance: AffordanceRef | null =
-    hoveredAffordance ?? focusedAffordance ?? (pinnedDoorId !== null ? { kind: 'door', id: pinnedDoorId } : null)
-  const activeDoor =
-    activeAffordance?.kind === 'door'
-      ? mapLabLayout.doors.find((door) => door.door_id === activeAffordance.id)
-      : undefined
-  const activeStair =
-    activeAffordance?.kind === 'stair'
-      ? mapLabLayout.stairs.find((stair) => stair.stair_id === activeAffordance.id)
-      : undefined
+  const activeRef: InspectableRef | null =
+    hoveredInspectable ?? focusedInspectable ?? (pinnedDoorId !== null ? { kind: 'door', id: pinnedDoorId } : null)
+
+  let activeInspectable: Inspectable | null = null
+  let activeControls: SessionControls | undefined
+  if (activeRef?.kind === 'door') {
+    const door = mapLabLayout.doors.find((d) => d.door_id === activeRef.id)
+    if (door) {
+      activeInspectable = { kind: 'door', door, session: doorSession(door) }
+      activeControls = {
+        onToggleOpen: () => toggleDoorOpen(door),
+        onToggleLocked: () => toggleDoorLocked(door),
+        onDisarmTrap: door.trapped ? () => disarmDoorTrap(door) : undefined,
+      }
+    }
+  } else if (activeRef?.kind === 'stair') {
+    const stair = mapLabLayout.stairs.find((s) => s.stair_id === activeRef.id)
+    if (stair) {
+      activeInspectable = { kind: 'stair', stair, session: stairSession(stair) }
+      activeControls = {
+        onToggleLocked: () => toggleStairLocked(stair),
+        onDisarmTrap: stair.trapped ? () => disarmStairTrap(stair) : undefined,
+      }
+    }
+  } else if (activeRef?.kind === 'room') {
+    const room = mapLabLayout.rooms.find((r) => r.room_id === activeRef.id)
+    if (room) activeInspectable = { kind: 'room', room }
+  }
 
   return (
     <div className="maplab-page">
@@ -177,6 +260,9 @@ export function MapLabPage() {
             {floor.title ?? `Floor ${floor.z}`}
           </button>
         ))}
+        <button type="button" className="maplab-session-reset-button" onClick={resetSessions}>
+          Reset session state
+        </button>
       </div>
 
       <div className="maplab-canvas">
@@ -235,6 +321,10 @@ export function MapLabPage() {
                     toggleSelect(room.room_id)
                   }
                 }}
+                onMouseEnter={() => setHoveredInspectable({ kind: 'room', id: room.room_id })}
+                onMouseLeave={() => setHoveredInspectable(null)}
+                onFocus={() => setFocusedInspectable({ kind: 'room', id: room.room_id })}
+                onBlur={() => setFocusedInspectable(null)}
               >
                 {absoluteCells(room).map(([x, y]) => (
                   <rect
@@ -267,13 +357,18 @@ export function MapLabPage() {
           })}
 
           {doors.map((door) => {
+            const session = doorSession(door)
             const segment = doorWallSegment(door, CELL_SIZE)
-            const presentation = passagePresentation(door)
+            const swing = doorSwingGeometry(door, CELL_SIZE)
+            const presentation = doorPresentation(door, session)
             const Icon = presentation.icon
             const midX = (segment.x1 + segment.x2) / 2
             const midY = (segment.y1 + segment.y2) / 2
             const isPinned = pinnedDoorId === door.door_id
-            const label = `${door.title ?? `Door ${door.door_id}`} — ${presentation.label}`
+            const openLabel = presentation.isOpen ? 'open' : 'closed'
+            const disarmedLabel = door.trapped && session.trapDisarmed ? ' — trap disarmed' : ''
+            const label = `${door.title ?? `Door ${door.door_id}`} — ${presentation.label}, ${openLabel}${disarmedLabel}`
+            const dasharray = presentation.state === 'hidden' ? '6 4' : undefined
             return (
               <g
                 key={door.door_id}
@@ -283,10 +378,10 @@ export function MapLabPage() {
                 tabIndex={0}
                 aria-pressed={isPinned}
                 aria-label={label}
-                onMouseEnter={() => setHoveredAffordance({ kind: 'door', id: door.door_id })}
-                onMouseLeave={() => setHoveredAffordance(null)}
-                onFocus={() => setFocusedAffordance({ kind: 'door', id: door.door_id })}
-                onBlur={() => setFocusedAffordance(null)}
+                onMouseEnter={() => setHoveredInspectable({ kind: 'door', id: door.door_id })}
+                onMouseLeave={() => setHoveredInspectable(null)}
+                onFocus={() => setFocusedInspectable({ kind: 'door', id: door.door_id })}
+                onBlur={() => setFocusedInspectable(null)}
                 onClick={() => togglePinnedDoor(door.door_id)}
                 onKeyDown={(event) => {
                   if (event.key === 'Enter' || event.key === ' ') {
@@ -296,15 +391,40 @@ export function MapLabPage() {
                 }}
               >
                 <title>{door.title ?? `Door ${door.door_id}`}</title>
-                <line
-                  className="maplab-door-glyph"
-                  x1={segment.x1}
-                  y1={segment.y1}
-                  x2={segment.x2}
-                  y2={segment.y2}
-                  style={{ stroke: `var(${presentation.token})` }}
-                  strokeDasharray={presentation.state === 'hidden' ? '6 4' : undefined}
-                />
+                {presentation.isOpen ? (
+                  <>
+                    {/* Leaf: hinge swung a quarter-turn off the wall — a door reads as a hinged
+                        panel in a gap, never as a straight run that could be mistaken for a wall. */}
+                    <line
+                      className="maplab-door-leaf"
+                      x1={swing.hinge.x}
+                      y1={swing.hinge.y}
+                      x2={swing.leafTip.x}
+                      y2={swing.leafTip.y}
+                      style={{ stroke: `var(${presentation.token})` }}
+                      strokeDasharray={dasharray}
+                    />
+                    {/* Swing arc: the leaf's travel path back to the far jamb, the other half of
+                        the same door-plan convention. */}
+                    <path
+                      className="maplab-door-swing"
+                      d={`M ${swing.leafTip.x} ${swing.leafTip.y} A ${swing.radius} ${swing.radius} 0 0 ${swing.sweepFlag} ${swing.farJamb.x} ${swing.farJamb.y}`}
+                      style={{ stroke: `var(${presentation.token})` }}
+                    />
+                  </>
+                ) : (
+                  // Closed: the leaf lies flush across the gap, same segment a plain wall would
+                  // occupy — distinguished from `.maplab-wall` by its own bolder, door-toned stroke.
+                  <line
+                    className="maplab-door-leaf-closed"
+                    x1={segment.x1}
+                    y1={segment.y1}
+                    x2={segment.x2}
+                    y2={segment.y2}
+                    style={{ stroke: `var(${presentation.token})` }}
+                    strokeDasharray={dasharray}
+                  />
+                )}
                 <g transform={`translate(${midX - ICON_SIZE / 2}, ${midY - ICON_SIZE / 2})`}>
                   <Icon
                     width={ICON_SIZE}
@@ -313,6 +433,17 @@ export function MapLabPage() {
                     style={{ color: `var(${presentation.token})` }}
                   />
                 </g>
+                {door.trapped && session.trapDisarmed && (
+                  <g transform={`translate(${midX + ICON_SIZE / 4}, ${midY + ICON_SIZE / 4})`}>
+                    <TrapDisarmedIcon
+                      width={14}
+                      height={14}
+                      className="maplab-trap-disarmed-badge"
+                      aria-hidden="true"
+                      style={{ color: 'var(--md-tertiary)' }}
+                    />
+                  </g>
+                )}
               </g>
             )
           })}
@@ -320,13 +451,15 @@ export function MapLabPage() {
           {stairs.map((stair) => {
             const cell = stairCellForZ(stair, activeZ)
             if (!cell) return null
+            const session = stairSession(stair)
             const [x, y] = cell
             const cx = (x + 0.5) * CELL_SIZE
             const cy = (y + 0.5) * CELL_SIZE
             const targetZ = otherFloorZ(stair, activeZ)
-            const presentation = passagePresentation(stair)
+            const presentation = stairPresentation(stair, activeZ, session)
             const Icon = presentation.icon
-            const label = `${stair.title ?? `Stair ${stair.stair_id}`} — ${presentation.label} — go to floor ${targetZ}`
+            const disarmedLabel = stair.trapped && session.trapDisarmed ? ' — trap disarmed' : ''
+            const label = `${stair.title ?? `Stair ${stair.stair_id}`} — ${presentation.label}${disarmedLabel} — go to floor ${targetZ}`
             return (
               <g
                 key={stair.stair_id}
@@ -335,10 +468,10 @@ export function MapLabPage() {
                 role="button"
                 tabIndex={0}
                 aria-label={label}
-                onMouseEnter={() => setHoveredAffordance({ kind: 'stair', id: stair.stair_id })}
-                onMouseLeave={() => setHoveredAffordance(null)}
-                onFocus={() => setFocusedAffordance({ kind: 'stair', id: stair.stair_id })}
-                onBlur={() => setFocusedAffordance(null)}
+                onMouseEnter={() => setHoveredInspectable({ kind: 'stair', id: stair.stair_id })}
+                onMouseLeave={() => setHoveredInspectable(null)}
+                onFocus={() => setFocusedInspectable({ kind: 'stair', id: stair.stair_id })}
+                onBlur={() => setFocusedInspectable(null)}
                 onClick={() => setActiveZ(targetZ)}
                 onKeyDown={(event) => {
                   if (event.key === 'Enter' || event.key === ' ') {
@@ -363,18 +496,27 @@ export function MapLabPage() {
                     style={{ color: `var(${presentation.token})` }}
                   />
                 </g>
+                {stair.trapped && session.trapDisarmed && (
+                  <g transform={`translate(${cx + ICON_SIZE / 4}, ${cy + ICON_SIZE / 4})`}>
+                    <TrapDisarmedIcon
+                      width={14}
+                      height={14}
+                      className="maplab-trap-disarmed-badge"
+                      aria-hidden="true"
+                      style={{ color: 'var(--md-tertiary)' }}
+                    />
+                  </g>
+                )}
               </g>
             )
           })}
         </svg>
 
-        <div className="maplab-affordance-panel" aria-live="polite">
-          {activeDoor && <PassageDetails title={activeDoor.title ?? `Door ${activeDoor.door_id}`} kind="Door" passage={activeDoor} />}
-          {activeStair && (
-            <PassageDetails title={activeStair.title ?? `Stair ${activeStair.stair_id}`} kind="Stair" passage={activeStair} />
-          )}
-          {!activeDoor && !activeStair && (
-            <p className="maplab-affordance-placeholder">Hover or focus a door or stair for details.</p>
+        <div className="maplab-inspector-panel-container" aria-live="polite">
+          {activeInspectable ? (
+            <InspectorPanel target={activeInspectable} controls={activeControls} />
+          ) : (
+            <p className="maplab-affordance-placeholder">Hover or focus a room, door, or stair for details.</p>
           )}
         </div>
       </div>
