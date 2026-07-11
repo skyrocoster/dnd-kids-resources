@@ -6,14 +6,287 @@
 }
 
 .maplab-title {
-  font-size: var(--type-headline);
+  font-size: var(--type-headline-size);
   font-weight: 500;
   margin: 0;
-  color: var(--md-on-background);
+  color: var(--md-on-surface);
 }
 
 .maplab-subtitle {
-  font-size: var(--type-body-sm);
+  font-size: var(--type-body-sm-size);
   margin: 0;
   color: var(--md-on-surface-variant);
+}
+
+.maplab-canvas {
+  display: flex;
+  gap: 1.5rem;
+  align-items: flex-start;
+}
+
+.maplab-svg {
+  max-width: 100%;
+  width: 100%;
+  height: auto;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.maplab-affordance-panel {
+  flex: 0 0 15rem;
+  min-height: 8rem;
+  padding: 1rem;
+  border: 1px solid var(--md-outline-variant);
+  border-radius: 12px;
+  background: var(--md-surface-2);
+}
+
+.maplab-affordance-placeholder {
+  margin: 0;
+  font-size: var(--type-body-sm-size);
+  color: var(--md-on-surface-variant);
+}
+
+.maplab-passage-details-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.maplab-passage-details-title {
+  font-size: var(--type-title-size);
+  font-weight: var(--type-title-weight);
+  color: var(--md-on-surface);
+  flex: 1 1 auto;
+}
+
+.maplab-passage-details-kind {
+  font-size: var(--type-caption-size);
+  font-weight: var(--type-caption-weight);
+  letter-spacing: var(--type-caption-tracking);
+  text-transform: uppercase;
+  color: var(--md-on-surface-variant);
+}
+
+.maplab-passage-details-state {
+  margin: 0.5rem 0 0;
+  font-size: var(--type-label-size);
+  font-weight: var(--type-label-weight);
+}
+
+.maplab-passage-details-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.maplab-passage-details-chip {
+  padding: 0.125rem 0.5rem;
+  border-radius: 999px;
+  background: var(--md-surface-3);
+  color: var(--md-on-surface-variant);
+  font-size: var(--type-caption-size);
+  text-transform: capitalize;
+}
+
+.maplab-passage-details-dcs {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 0.125rem 0.5rem;
+  margin: 0.75rem 0 0;
+  font-size: var(--type-body-sm-size);
+}
+
+.maplab-passage-details-dcs dt {
+  color: var(--md-on-surface-variant);
+}
+
+.maplab-passage-details-dcs dd {
+  margin: 0;
+  color: var(--md-on-surface);
+  font-weight: var(--type-label-weight);
+}
+
+.maplab-passage-details-note {
+  margin: 0.75rem 0 0;
+  font-size: var(--type-body-sm-size);
+  color: var(--md-on-surface-variant);
+}
+
+.maplab-grid-cell {
+  fill: var(--md-surface);
+  stroke: var(--md-outline-variant);
+  stroke-width: 1;
+  opacity: 0.5;
+}
+
+.maplab-unknown-space {
+  pointer-events: none;
+}
+
+.maplab-scale-ruler line {
+  stroke: var(--md-outline);
+  stroke-width: 2;
+}
+
+.maplab-scale-ruler text {
+  font-size: var(--type-caption-size);
+  font-weight: var(--type-caption-weight);
+  letter-spacing: var(--type-caption-tracking);
+  fill: var(--md-on-surface-variant);
+  text-transform: uppercase;
+}
+
+.maplab-room {
+  cursor: pointer;
+}
+
+.maplab-room-cell {
+  fill: var(--variant-container);
+  stroke: var(--md-outline-variant);
+  stroke-width: 2;
+  transition: fill 0.15s ease, stroke 0.15s ease;
+}
+
+.maplab-room:hover .maplab-room-cell {
+  stroke: var(--md-outline);
+}
+
+.maplab-room:focus-visible {
+  outline: none;
+}
+
+.maplab-room:focus-visible .maplab-room-cell {
+  stroke: var(--md-primary);
+  stroke-width: 3;
+}
+
+.maplab-room[data-selected] .maplab-room-cell {
+  fill: var(--md-primary-container);
+  stroke: var(--md-primary);
+  stroke-width: 3;
+}
+
+.maplab-room-title {
+  font-size: var(--type-label-size);
+  font-weight: var(--type-label-weight);
+  fill: var(--variant-on-container);
+  text-anchor: middle;
+  dominant-baseline: middle;
+  pointer-events: none;
+}
+
+.maplab-wall {
+  stroke: var(--md-on-surface-variant);
+  stroke-width: 4;
+  stroke-linecap: square;
+}
+
+.maplab-door {
+  cursor: pointer;
+}
+
+.maplab-door-glyph {
+  stroke-width: 6;
+  stroke-linecap: round;
+  transition: stroke 0.15s ease;
+}
+
+.maplab-door-icon {
+  pointer-events: none;
+}
+
+.maplab-door:hover .maplab-door-glyph {
+  stroke-width: 8;
+}
+
+.maplab-door:focus-visible {
+  outline: none;
+}
+
+/* Inline styles carry the passage-state token color; focus/pinned states use !important to take
+ * visible-focus-ring precedence over that per-state color, per the accessibility floor. */
+.maplab-door:focus-visible .maplab-door-glyph {
+  stroke: var(--md-primary) !important;
+  stroke-width: 8;
+}
+
+.maplab-door[aria-pressed='true'] .maplab-door-glyph {
+  stroke-width: 8;
+}
+
+.maplab-floor-tabs {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.maplab-floor-tab {
+  min-height: 48px;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--md-outline-variant);
+  border-radius: 999px;
+  background: var(--md-surface-2);
+  color: var(--md-on-surface-variant);
+  font-size: var(--type-label-size);
+  font-weight: var(--type-label-weight);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.maplab-floor-tab:hover {
+  border-color: var(--md-outline);
+}
+
+.maplab-floor-tab[aria-selected='true'] {
+  background: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+  border-color: var(--md-primary);
+}
+
+.maplab-stair {
+  cursor: pointer;
+}
+
+.maplab-stair-marker {
+  fill: var(--md-tertiary-container);
+  stroke-width: 3;
+  transition: fill 0.15s ease, stroke 0.15s ease;
+}
+
+.maplab-stair-icon {
+  pointer-events: none;
+}
+
+.maplab-stair:hover .maplab-stair-marker {
+  fill: var(--md-tertiary);
+}
+
+.maplab-stair:focus-visible {
+  outline: none;
+}
+
+.maplab-stair:focus-visible .maplab-stair-marker {
+  stroke: var(--md-primary) !important;
+  stroke-width: 4;
+}
+
+/* Stage 0 placeholder classes for future visuals */
+
+.maplab-door-glyph-open {
+  /* Stage 2: open-door glyph styling */
+}
+
+.maplab-stair-glyph-directional {
+  /* Stage 2: directional stair glyph (up/down/level) styling */
+}
+
+.maplab-inspector-row {
+  /* Stage 3: generic inspector detail row styling */
+}
+
+.maplab-session-control-button {
+  /* Stage 4: session-state toggle button (lock/unlock/disarm) styling */
 }
