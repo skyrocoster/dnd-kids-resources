@@ -1,0 +1,98 @@
+.encounter-browser-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.encounter-browser-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.encounter-browser-toolbar h2 {
+  margin: 0;
+}
+
+.encounter-browser-new {
+  background: var(--md-primary);
+  color: var(--md-on-primary);
+  border: none;
+  border-radius: 0.375rem;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  font-weight: var(--type-label-weight);
+}
+
+.encounter-browser-error {
+  color: var(--md-error);
+}
+
+.encounter-browser-split {
+  flex: 1;
+  min-height: 420px;
+}
+
+.encounter-browser-detail {
+  padding: 1rem;
+  overflow-y: auto;
+  height: 100%;
+}
+
+.encounter-browser-creatures {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.encounter-browser-creatures li {
+  display: flex;
+  justify-content: space-between;
+  background: var(--md-surface-2, var(--md-surface));
+  border-radius: 0.375rem;
+  padding: 0.4rem 0.6rem;
+}
+
+.encounter-browser-creature-meta {
+  color: var(--md-on-surface-variant);
+  font-size: var(--type-caption-size);
+}
+
+.encounter-browser-empty-creatures {
+  color: var(--md-on-surface-variant);
+}
+
+.encounter-browser-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.encounter-browser-actions button {
+  border-radius: 0.375rem;
+  padding: 0.35rem 0.75rem;
+  cursor: pointer;
+  border: 1px solid var(--md-outline-variant);
+  background: none;
+  color: var(--md-on-surface);
+}
+
+.encounter-browser-delete {
+  border-color: var(--md-error) !important;
+  color: var(--md-error) !important;
+}
+
+.encounter-browser-run {
+  border-color: var(--md-tertiary) !important;
+  color: var(--md-on-tertiary-container) !important;
+  background: var(--md-tertiary-container) !important;
+  font-weight: 600;
+}
+
+.encounter-browser-empty {
+  padding: 1rem;
+  color: var(--md-on-surface-variant);
+}

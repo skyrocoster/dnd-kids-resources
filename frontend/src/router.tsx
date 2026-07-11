@@ -2,6 +2,7 @@ import { createBrowserRouter } from 'react-router-dom'
 import { DungeonBrowserPage } from './features/dungeons/DungeonBrowserPage'
 import { DungeonViewPage } from './features/dungeons/DungeonViewPage'
 import { EncounterBrowserPage } from './features/encounters/EncounterBrowserPage'
+import { EncounterRunnerPage } from './features/encounters/EncounterRunnerPage'
 import { MonsterBrowserPage } from './features/monsters/MonsterBrowserPage'
 import { NPCBrowserPage } from './features/npcs/NPCBrowserPage'
 import { PlayerBrowserPage } from './features/players/PlayerBrowserPage'
@@ -26,6 +27,7 @@ export const router = createBrowserRouter([
       { path: 'npcs', element: <NPCBrowserPage /> },
       { path: 'quests', element: <QuestBrowserPage /> },
       { path: 'encounters', element: <EncounterBrowserPage /> },
+      { path: 'encounters/:id/run', element: <EncounterRunnerPage /> },
       { path: 'dungeons', element: <DungeonBrowserPage /> },
       { path: 'dungeons/:dungeonId', element: <DungeonViewPage /> },
       { path: 'dungeons/:dungeonId/rooms/:roomId', element: <DungeonViewPage /> },

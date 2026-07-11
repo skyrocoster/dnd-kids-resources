@@ -13,7 +13,7 @@ This is a **ground-up rebuild** running on:
 - **Backend:** FastAPI + SQLite
 - **Data:** Frozen seeds in `data/seeds/` (canonical source of truth)
 
-**Status:** In active development. See [`docs/v2-rebuild-plan.md`](docs/v2-rebuild-plan.md) for the staged task breakdown.
+**Status:** v2 rebuild complete. See [`docs/v2-rebuild-plan.md`](docs/v2-rebuild-plan.md) for the staged task breakdown.
 
 ---
 

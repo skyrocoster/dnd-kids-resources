@@ -3,7 +3,10 @@
     "allow": [
       "Bash(sqlite3 dnd_kids_resources.db \"PRAGMA table_info\\(damage_types\\);\")",
       "Bash(sqlite3 dnd_kids_resources.db \"PRAGMA table_info\\(abilities\\);\")",
-      "Bash(sqlite3 dnd_kids_resources.db \".tables\")"
+      "Bash(sqlite3 dnd_kids_resources.db \".tables\")",
+      "Bash(python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000)",
+      "Bash(npm run *)",
+      "WebSearch"
     ]
   }
 }

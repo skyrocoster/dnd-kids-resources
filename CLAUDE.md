@@ -2,16 +2,27 @@
 
 Guidance for AI assistants working in this repo. Read this first.
 
-## Current stage: v2 ground-up rebuild
+## Current stage: post-rebuild feature work
 
-This project is an online D&D 5e resource site for kids, designed for **running games** (live at the table) rather than exclusively pre-session prep. It has been **playtested** and is now being **rebuilt from the ground up**. Do not extend or patch the v1 app — work toward v2.
+The v2 ground-up rebuild (Flask+vanilla-JS → **FastAPI + SQLite** backend, **React + Vite + TypeScript**
+frontend) is **complete**. `docs/v2-rebuild-plan.md` (the 11-task rebuild plan) has served its purpose and been
+removed; do not look for it. This project is an online D&D 5e resource site for kids, designed for **running
+games** (live at the table) rather than exclusively pre-session prep.
 
-**The authoritative plan is [`docs/v2-rebuild-plan.md`](docs/v2-rebuild-plan.md).** It is broken into 11 self-contained tasks meant to be executed one at a time, in order. When asked to "do the next step" / "work on the rebuild," find the current task there and follow it. Do not skip ahead or combine tasks.
+**The authoritative plan for the dungeon room-navigation feature and its follow-on design phases is
+[`docs/dungeon_plan.md`](docs/dungeon_plan.md).** Original build (Stages 1–11) and Design Phase A (Encounter
+Runner, Stages E1–E6) and Design Phase B (NPC Dossier, Stages N1–N6) are **all shipped**. New design phases get
+appended under that doc's "Next: front-end design planning" section — when asked to "do the next step," find the
+current/next stage there and follow it; each stage lists exactly what to build, what it inherits, and how to
+verify it. Do not skip ahead or combine stages.
 
-### The stack transition
-- **Data:** FINAL and frozen. `data/seeds/*.json` is the canonical source of truth. The SQLite DB (`dnd_kids_resources.db`, gitignored) is **rebuilt from seeds** via `scripts/init_database.py` + `scripts/seed_database.py` (these move from `_dev/` to `scripts/` in Task 2). Never hand-edit the DB as a source of truth; edit seeds and rebuild.
-- **Backend:** moving from `server_flask.py` (Flask, being deleted) → **FastAPI + SQLite** in `backend/`.
-- **Frontend:** moving from `index.html` + `pages/*.html` + `js/*` (vanilla, being deleted) → **React + Vite + TypeScript** in `frontend/`.
+### The stack
+- **Data:** FINAL and frozen. `data/seeds/*.json` is the canonical source of truth. The SQLite DB (`dnd_kids_resources.db`, gitignored) is **rebuilt from seeds** via `scripts/init_database.py` + `scripts/seed_database.py`. Never hand-edit the DB as a source of truth; edit seeds and rebuild.
+- **Backend:** **FastAPI + SQLite** in `backend/`.
+- **Frontend:** **React + Vite + TypeScript** in `frontend/`. Design tokens live in `frontend/src/theme.css`
+  (`--md-*`/`--type-*`, Material Design 3 dark theme) — consume them, never hand-pick colors; see
+  `docs/dungeon_plan.md`'s "Design system in force" section for the full contract (palette, type scale, icons,
+  accessibility floor).
 
 ### v1 preservation
 - v1 is archived on the **`v1-archive`** git branch. `main` is the v2 workspace.
@@ -23,7 +34,9 @@ This project is an online D&D 5e resource site for kids, designed for **running 
 
 ## Testing
 
-**All feature code must include tests.** This is not optional.
+**All feature code must include tests.** This is not optional. See [`docs/TESTING.md`](docs/TESTING.md) for the full pass/fail contract (commands, layers, coverage gate).
+
+**Backend test DBs are built from the real `scripts/init_database.py` schema + `data/seeds/*.json` — never a hand-written schema in `conftest.py`.** Two hand-copied schemas previously drifted from production and hid live 500s. Run backend tests with `pytest` **from the repo root**; it enforces a coverage gate (≥85%). If you're editing a `CREATE TABLE` inside `conftest.py`, stop — that's the anti-pattern this rule exists to kill.
 
 - **Backend (FastAPI):** pytest. Use fixtures from `backend/tests/conftest.py` (seeded test DB, connection mocking). Every API endpoint gets a smoke test; routers with business logic get unit tests.
 - **Frontend (React):** vitest + React Testing Library. Components get render tests; hooks/utilities get unit tests.

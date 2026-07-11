@@ -22,17 +22,9 @@ EXPORT_DEFINITIONS = {
         "file": "seed_abilities.json",
         "query": "SELECT id, code, name, emoji, color, type FROM abilities ORDER BY id",
     },
-    "classes": {
-        "file": "seed_classes.json",
-        "query": "SELECT id, code, name, emoji, color FROM classes ORDER BY id",
-    },
     "conditions": {
         "file": "seed_conditions.json",
         "query": "SELECT id, title, icon, explanation, details FROM conditions ORDER BY title",
-    },
-    "actions": {
-        "file": "seed_actions.json",
-        "query": "SELECT id, name, icon, category, explanation FROM actions ORDER BY name",
     },
     "monsters": {
         "file": "seed_monsters.json",
@@ -58,17 +50,9 @@ EXPORT_DEFINITIONS = {
         "file": "seed_weapons.json",
         "query": "SELECT id, name, base_weapon, baseitems, rarity, weapon_category, weight, req_attune, sentient, curse, resist, property, focus, spells, attack, recharge, light, entries, tier, grants_language, bonus_spell_attack, bonus_spell_save_dc, bonus_ac, bonus_saving_throw, crit_threshold, ammo_type, grants_proficiency, modify_speed, ability FROM weapons ORDER BY name",
     },
-    "traps": {
-        "file": "seed_traps.json",
-        "query": "SELECT id, name FROM traps ORDER BY name",
-    },
     "dungeons": {
         "file": "seed_dungeons.json",
-        "query": "SELECT id, title, original_html, parsed_json FROM dungeons ORDER BY id",
-    },
-    "deities": {
-        "file": "seed_deities.json",
-        "query": "SELECT id, name, pantheon, alignment, category, domains, symbol, title, alt_names, entries FROM deities ORDER BY name",
+        "query": "SELECT id, title, data FROM dungeons ORDER BY id",
     },
     "spells": {
         "file": "seed_spells.json",
@@ -130,10 +114,6 @@ def transform_record(record, table_name):
     if table_name == "conditions":
         record["details"] = parse_json_value(record.get("details"))
         return record
-    if table_name == "creatures":
-        for field in ["attack_to_hit", "damage", "stats"]:
-            record[field] = parse_json_value(record.get(field))
-        return record
     if table_name == "npcs":
         for field in ["stats", "saving_throws", "skills", "senses", "appearance"]:
             record[field] = parse_json_value(record.get(field))
@@ -147,11 +127,7 @@ def transform_record(record, table_name):
             record[field] = parse_json_value(record.get(field))
         return record
     if table_name == "dungeons":
-        record["parsed_json"] = parse_json_value(record.get("parsed_json"))
-        return record
-    if table_name == "deities":
-        for field in ["alignment", "domains", "alt_names", "entries"]:
-            record[field] = parse_json_value(record.get(field))
+        record["data"] = parse_json_value(record.get("data"))
         return record
     if table_name == "quests":
         for field in ["reward", "objectives", "details"]:
@@ -199,8 +175,7 @@ def export_table(cursor, table_name, dry_run=False):
     if rows is None:
         return
     transformed = [transform_record(row, table_name) for row in rows]
-    data = {"deity": transformed} if table_name == "deities" else transformed
-    write_json_file(file_path, data, dry_run=dry_run)
+    write_json_file(file_path, transformed, dry_run=dry_run)
 
 
 def parse_table_list(value):

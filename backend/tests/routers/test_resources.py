@@ -93,6 +93,34 @@ def test_npc_crud(test_client):
     assert response.status_code == 204
 
 
+def test_npc_full_columns_round_trip(test_client):
+    """NPC fields beyond name (race, stats, senses, etc.) must persist and parse."""
+    npc = {
+        "name": "Full NPC",
+        "race": "Elf",
+        "gender": "Female",
+        "background": "Sage",
+        "size": "Medium",
+        "stats": {"strength": 8, "dexterity": 16},
+        "armor_class": 14,
+        "hit_points": 12,
+        "speed": "30",
+        "saving_throws": {"dexterity": 3},
+        "skills": {"arcana": 4},
+        "senses": [{"type": "darkvision", "range": 60}],
+        "languages": "Common, Elvish",
+        "appearance": {"hair_colour": "silver"},
+        "notes": "Keeper of old secrets.",
+    }
+    response = test_client.post("/api/npcs", json=npc)
+    assert response.status_code == 201
+    data = response.json()
+    assert data["race"] == "Elf"
+    assert data["stats"] == {"strength": 8, "dexterity": 16}
+    assert data["senses"] == [{"type": "darkvision", "range": 60}]
+    assert data["appearance"] == {"hair_colour": "silver"}
+
+
 # Quests
 def test_list_quests(test_client):
     """Test GET /api/quests."""
@@ -104,17 +132,18 @@ def test_list_quests(test_client):
 
 def test_create_quest(test_client):
     """Test POST /api/quests."""
-    quest = {"title": "Test Quest", "description": "A test quest", "reward": "100 gp"}
+    quest = {"title": "Test Quest", "summary": "A test quest", "reward": ["100 gp"]}
 
     response = test_client.post("/api/quests", json=quest)
     assert response.status_code == 201
     data = response.json()
     assert data["title"] == "Test Quest"
+    assert data["reward"] == ["100 gp"]
 
 
 def test_quest_crud(test_client):
     """Test full quest CRUD."""
-    quest = {"title": "CRUD Test", "description": "Test", "reward": "50 gp"}
+    quest = {"title": "CRUD Test", "summary": "Test", "reward": ["50 gp"]}
     response = test_client.post("/api/quests", json=quest)
     assert response.status_code == 201
     quest_id = response.json()["id"]
@@ -124,6 +153,26 @@ def test_quest_crud(test_client):
 
     response = test_client.delete(f"/api/quests/{quest_id}")
     assert response.status_code == 204
+
+
+def test_quest_full_columns_round_trip(test_client):
+    """Quest objectives/details/quest_giver/dungeon_id/location must persist."""
+    quest = {
+        "title": "Full Quest",
+        "summary": "A quest with everything",
+        "reward": ["10 gp", "a medal"],
+        "objectives": ["Find the cave", "Defeat the goblin"],
+        "details": ["The cave is north of town."],
+        "quest_giver": None,
+        "dungeon_id": None,
+        "location": "Northwood",
+    }
+    response = test_client.post("/api/quests", json=quest)
+    assert response.status_code == 201
+    data = response.json()
+    assert data["objectives"] == ["Find the cave", "Defeat the goblin"]
+    assert data["details"] == ["The cave is north of town."]
+    assert data["location"] == "Northwood"
 
 
 # Encounters
@@ -157,6 +206,34 @@ def test_encounter_crud(test_client):
 
     response = test_client.delete(f"/api/encounters/{encounter_id}")
     assert response.status_code == 204
+
+
+def test_encounter_creatures_round_trip_structured_units(test_client):
+    """Creature entries are rich dicts (monster_id, hp_current, status, ...), not plain strings."""
+    encounter = {
+        "title": "Structured Encounter",
+        "creatures": [
+            {
+                "monster_id": 1,
+                "original_name": "Goblin",
+                "name": "Goblin",
+                "hp_current": 7,
+                "hp_max": 7,
+                "ac": 15,
+                "status": "alive",
+                "conditions": [],
+            }
+        ],
+    }
+    response = test_client.post("/api/encounters", json=encounter)
+    assert response.status_code == 201
+    data = response.json()
+    assert data["creatures"][0]["monster_id"] == 1
+    assert data["creatures"][0]["status"] == "alive"
+
+    response = test_client.get(f"/api/encounters/{data['id']}")
+    assert response.status_code == 200
+    assert response.json()["creatures"][0]["name"] == "Goblin"
 
 
 # Dungeons

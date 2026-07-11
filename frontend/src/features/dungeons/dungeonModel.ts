@@ -18,6 +18,13 @@ function str(value: unknown): string {
   return value == null ? '' : String(value)
 }
 
+/** Coerce a numeric or numeric-string value to a number; null for anything else (incl. empty string). */
+function numOrNull(value: unknown): number | null {
+  if (typeof value === 'number') return Number.isFinite(value) ? value : null
+  if (typeof value === 'string' && value.trim() !== '' && Number.isFinite(Number(value))) return Number(value)
+  return null
+}
+
 // ============================================================================
 // Type definitions — mirrors the shape from seed_dungeons.json
 // ============================================================================
@@ -65,10 +72,30 @@ export interface DungeonDoor {
   trap_ids?: number[] | null
 }
 
+export interface DungeonFloor {
+  floor_id: number
+  title: string
+  room_ids: number[]
+  floor_above?: number | null
+  floor_below?: number | null
+  map_image?: string | null
+}
+
+export interface DungeonStair {
+  stair_id: number
+  title: string
+  leads_to_rooms: number[] | number
+  leads_to_floors?: number[] | null
+  is_hidden?: boolean | null
+  hidden_dc?: number | null
+}
+
 export interface DungeonData {
   general_info?: GeneralInfo | null
   rooms?: DungeonRoom[] | null
   doors?: DungeonDoor[] | null
+  floors?: DungeonFloor[] | null
+  stairs?: DungeonStair[] | null
   corridors?: unknown[] | null
   map_image?: string | null
   map_image_length?: number | null
@@ -82,9 +109,14 @@ export interface ThreatHints {
 }
 
 export interface RoomExit {
-  door: DungeonDoor
+  kind: 'door' | 'stair'
+  door?: DungeonDoor
+  stair?: DungeonStair
   toRoomId: number
   toRoom?: DungeonRoom
+  toFloorId?: number | null
+  toFloorTitle?: string | null
+  direction?: 'up' | 'down' | null
   isHidden: boolean
   hiddenDc: number | null
 }
@@ -98,7 +130,9 @@ export interface RoomNode {
 }
 
 export interface DoorEdge {
-  doorId: number
+  kind: 'door' | 'stair'
+  doorId?: number
+  stairId?: number
   a: number
   b: number
   isHidden: boolean
@@ -136,8 +170,8 @@ export function parseDungeonData(data: unknown): DungeonData {
             container: entry.container ? str(entry.container) : null,
             container_mechanics: entry.container_mechanics ? str(entry.container_mechanics) : null,
             count: typeof entry.count === 'number' ? entry.count : null,
-            monster_id: typeof entry.monster_id === 'number' ? entry.monster_id : null,
-            encounter_id: typeof entry.encounter_id === 'number' ? entry.encounter_id : null,
+            monster_id: numOrNull(entry.monster_id),
+            encounter_id: numOrNull(entry.encounter_id),
             trap_ids: asArray(entry.trap_ids).filter((x) => typeof x === 'number'),
             treasure_contents: asArray(entry.treasure_contents),
           }
@@ -163,6 +197,32 @@ export function parseDungeonData(data: unknown): DungeonData {
         trap_ids: asArray(door.trap_ids).filter((x) => typeof x === 'number'),
       }
     }),
+    floors: asArray(rec.floors).map((f) => {
+      const floor = asRecord(f)
+      return {
+        floor_id: typeof floor.floor_id === 'number' ? floor.floor_id : 0,
+        title: str(floor.title),
+        room_ids: asArray(floor.room_ids).filter((x) => typeof x === 'number'),
+        floor_above: typeof floor.floor_above === 'number' ? floor.floor_above : null,
+        floor_below: typeof floor.floor_below === 'number' ? floor.floor_below : null,
+        map_image: floor.map_image ? str(floor.map_image) : null,
+      }
+    }),
+    stairs: asArray(rec.stairs).map((s) => {
+      const stair = asRecord(s)
+      return {
+        stair_id: typeof stair.stair_id === 'number' ? stair.stair_id : 0,
+        title: str(stair.title),
+        leads_to_rooms: Array.isArray(stair.leads_to_rooms)
+          ? stair.leads_to_rooms.filter((x) => typeof x === 'number')
+          : typeof stair.leads_to_rooms === 'number'
+            ? [stair.leads_to_rooms]
+            : [],
+        leads_to_floors: asArray(stair.leads_to_floors).filter((x) => typeof x === 'number'),
+        is_hidden: stair.is_hidden === true,
+        hidden_dc: typeof stair.hidden_dc === 'number' ? stair.hidden_dc : null,
+      }
+    }),
     corridors: asArray(rec.corridors),
     map_image: rec.map_image ? str(rec.map_image) : null,
     map_image_length: typeof rec.map_image_length === 'number' ? rec.map_image_length : null,
@@ -179,21 +239,59 @@ export function getRoomById(data: DungeonData, roomId: number): DungeonRoom | un
   return getRooms(data).find((r) => r.room_id === roomId)
 }
 
-/** Group room entries by type for display (emoji + label pairs). */
-export function groupEntriesByType(
-  room: DungeonRoom,
-): Record<string, Array<{ label: string; entries: DungeonEntry[] }>> {
+/** Get all floors, ordered ground-first (floors without floor_below are ground level). */
+export function getFloors(data: DungeonData): DungeonFloor[] {
+  const floors = asArray(data.floors) as DungeonFloor[]
+  if (floors.length === 0) return []
+
+  // Sort so ground floor (no floor_below) comes first
+  const sorted = [...floors]
+  sorted.sort((a, b) => {
+    const aIsGround = a.floor_below === undefined || a.floor_below === null
+    const bIsGround = b.floor_below === undefined || b.floor_below === null
+    if (aIsGround && !bIsGround) return -1
+    if (!aIsGround && bIsGround) return 1
+    return (a.floor_id || 0) - (b.floor_id || 0)
+  })
+  return sorted
+}
+
+/** Get the floor containing a specific room. */
+export function getFloorForRoom(data: DungeonData, roomId: number): DungeonFloor | undefined {
+  const floors = asArray(data.floors) as DungeonFloor[]
+  return floors.find((f) => asArray(f.room_ids).includes(roomId))
+}
+
+/** Get all rooms on a specific floor. */
+export function getRoomsOnFloor(data: DungeonData, floorId: number): DungeonRoom[] {
+  const floors = asArray(data.floors) as DungeonFloor[]
+  const floor = floors.find((f) => f.floor_id === floorId)
+  if (!floor) return []
+
+  const rooms = getRooms(data)
+  const floorRoomIds = new Set(asArray(floor.room_ids))
+  return rooms.filter((r) => floorRoomIds.has(r.room_id))
+}
+
+export interface EntryTypeGroup {
+  type: string
+  label: string
+  entries: DungeonEntry[]
+}
+
+/** Group room entries by type for display. Returns typed groups with entry_type key, label string, and entries array. */
+export function groupEntriesByType(room: DungeonRoom): EntryTypeGroup[] {
   const entries = asArray(room.entries)
 
-  const typeMap: Record<string, { emoji: string; label: string }> = {
-    door: { emoji: '🚪', label: 'Doors' },
-    feature: { emoji: '✨', label: 'Features' },
-    trap: { emoji: '⚠️', label: 'Traps' },
-    encounter: { emoji: '👥', label: 'Encounters' },
-    monster: { emoji: '👹', label: 'Monsters' },
-    treasure: { emoji: '💎', label: 'Treasure' },
-    npc: { emoji: '🧑‍🤝‍🧑', label: 'NPCs' },
-    trick: { emoji: '🎭', label: 'Tricks' },
+  const typeMap: Record<string, string> = {
+    door: 'Doors',
+    feature: 'Features',
+    trap: 'Traps',
+    encounter: 'Encounters',
+    monster: 'Monsters',
+    treasure: 'Treasure',
+    npc: 'NPCs',
+    trick: 'Tricks',
   }
 
   const grouped: Record<string, DungeonEntry[]> = {}
@@ -205,10 +303,10 @@ export function groupEntriesByType(
     grouped[type].push(entry)
   }
 
-  const result: Record<string, Array<{ label: string; entries: DungeonEntry[] }>> = {}
+  const result: EntryTypeGroup[] = []
   for (const [type, entryList] of Object.entries(grouped)) {
-    const meta = typeMap[type] || { emoji: '❓', label: 'Other' }
-    result[`${meta.emoji} ${meta.label}`] = [{ label: `${meta.emoji} ${meta.label}`, entries: entryList }]
+    const label = typeMap[type] || 'Other'
+    result.push({ type, label, entries: entryList })
   }
 
   return result
@@ -244,18 +342,29 @@ export function getAdjacentRoomIds(data: DungeonData, roomId: number): number[] 
 export function getRoomGraph(data: DungeonData): DungeonGraph {
   const rooms = getRooms(data)
   const doors = asArray(data.doors) as DungeonDoor[]
+  const stairs = asArray(data.stairs) as DungeonStair[]
+  const floors = getFloors(data)
+
+  // Map room_id to floor_id for quick lookup
+  const roomToFloor = new Map<number, number>()
+  for (const floor of floors) {
+    for (const roomId of asArray(floor.room_ids)) {
+      roomToFloor.set(roomId, floor.floor_id)
+    }
+  }
 
   const nodes: RoomNode[] = rooms.map((room) => ({
     roomId: room.room_id,
     title: room.title,
     hints: getRoomThreatHints(room),
     position: undefined,
-    floorId: undefined,
+    floorId: roomToFloor.get(room.room_id),
   }))
 
   const edges: DoorEdge[] = []
   const roomIdSet = new Set(rooms.map((r) => r.room_id))
 
+  // Add door edges
   for (const door of doors) {
     const leadsTo = asArray(door.leads_to).filter((x) => typeof x === 'number')
     if (leadsTo.length !== 2) continue
@@ -265,6 +374,7 @@ export function getRoomGraph(data: DungeonData): DungeonGraph {
     if (a === b) continue // Skip self-loops
 
     edges.push({
+      kind: 'door',
       doorId: door.door_id,
       a,
       b,
@@ -274,16 +384,46 @@ export function getRoomGraph(data: DungeonData): DungeonGraph {
     })
   }
 
+  // Add stair edges
+  for (const stair of stairs) {
+    const leadsTo = asArray(stair.leads_to_rooms).filter((x) => typeof x === 'number')
+    if (leadsTo.length !== 2) continue
+
+    const [a, b] = leadsTo
+    if (!roomIdSet.has(a) || !roomIdSet.has(b)) continue // Skip edges to unknown rooms
+    if (a === b) continue // Skip self-loops
+
+    edges.push({
+      kind: 'stair',
+      stairId: stair.stair_id,
+      a,
+      b,
+      isHidden: stair.is_hidden || false,
+      hiddenDc: stair.hidden_dc || null,
+      title: stair.title,
+    })
+  }
+
   return { nodes, edges }
 }
 
-/** Get exits (doors) leaving from a specific room.
+/** Get exits (doors and stairs) leaving from a specific room.
  * Derives from the graph to ensure consistency.
- * Deduplicates by destination room (first door wins). */
+ * Deduplicates by destination room (first exit wins). */
 export function getExitsFromRoom(data: DungeonData, roomId: number): RoomExit[] {
   const graph = getRoomGraph(data)
   const allExits: RoomExit[] = []
   const seenDestinations = new Set<number>()
+
+  const doors = asArray(data.doors) as DungeonDoor[]
+  const stairs = asArray(data.stairs) as DungeonStair[]
+  const floors = getFloors(data)
+
+  // Map floor_id to floor for quick lookup
+  const floorsById = new Map<number, DungeonFloor>()
+  for (const floor of floors) {
+    floorsById.set(floor.floor_id, floor)
+  }
 
   for (const edge of graph.edges) {
     // Find which end of the edge is the current room
@@ -293,19 +433,50 @@ export function getExitsFromRoom(data: DungeonData, roomId: number): RoomExit[] 
     if (seenDestinations.has(destId)) continue // Dedupe by destination
     seenDestinations.add(destId)
 
-    // Find the door for this edge
-    const doors = asArray(data.doors) as DungeonDoor[]
-    const door = doors.find((d) => d.door_id === edge.doorId)
-    if (!door) continue
-
     const destRoom = getRoomById(data, destId)
-    allExits.push({
-      door,
-      toRoomId: destId,
-      toRoom: destRoom,
-      isHidden: edge.isHidden,
-      hiddenDc: edge.hiddenDc,
-    })
+
+    if (edge.kind === 'door') {
+      const door = doors.find((d) => d.door_id === edge.doorId)
+      if (!door) continue
+
+      allExits.push({
+        kind: 'door',
+        door,
+        toRoomId: destId,
+        toRoom: destRoom,
+        isHidden: edge.isHidden,
+        hiddenDc: edge.hiddenDc,
+      })
+    } else if (edge.kind === 'stair') {
+      const stair = stairs.find((s) => s.stair_id === edge.stairId)
+      if (!stair) continue
+
+      // Determine direction based on source/dest floor levels
+      const srcFloor = getFloorForRoom(data, roomId)
+      const destFloor = getFloorForRoom(data, destId)
+      let direction: 'up' | 'down' | null = null
+
+      if (srcFloor && destFloor) {
+        // Check if dest is above source (floor_above relationship)
+        if (srcFloor.floor_above === destFloor.floor_id) {
+          direction = 'up'
+        } else if (srcFloor.floor_below === destFloor.floor_id) {
+          direction = 'down'
+        }
+      }
+
+      allExits.push({
+        kind: 'stair',
+        stair,
+        toRoomId: destId,
+        toRoom: destRoom,
+        toFloorId: destFloor?.floor_id,
+        toFloorTitle: destFloor?.title,
+        direction,
+        isHidden: edge.isHidden,
+        hiddenDc: edge.hiddenDc,
+      })
+    }
   }
 
   return allExits

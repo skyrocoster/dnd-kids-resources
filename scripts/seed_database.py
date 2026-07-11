@@ -5,29 +5,18 @@ Phase 2: Seed System - Populate Database from JSON Files
 This script loads seed data from JSON files and populates empty database tables.
 It's designed to be safe and idempotent (can run multiple times).
 
-Seed files:
-- data/seeds/seed_abilities.json
-- data/seeds/seed_conditions.json
-- data/seeds/seed_monsters.json
-- data/seeds/seed_npcs.json
-- data/seeds/seed_damage_types.json
-- data/seeds/seed_traps.json
-- data/seeds/seed_dungeons.json
-- data/seeds/seed_actions.json
-- data/seeds/seed_spells.json (optional, JSON fallback)
-- data/seeds/seed_players.json
-- data/seeds/seed_player_spells.json
-- data/seeds/seed_player_weapons.json
+Seed files (in data/seeds/):
+- seed_abilities.json, seed_conditions.json, seed_damage_types.json, seed_weapon_properties.json
+- seed_spells.json, seed_monsters.json, seed_weapons.json
+- seed_npcs.json, seed_quests.json, seed_encounters.json, seed_dungeons.json
+- seed_players.json, seed_player_spells.json, seed_player_weapons.json
 
-Seed files are now loaded from the new `data/seeds/` directory.
-Legacy seed files under `data/` are still supported for compatibility, but new files should be stored in `data/seeds/`.
-Use `_dev/export_db_seeds.py` to archive old root seed files into `data/seeds/archive` and export current DB tables as new seed JSON.
+Use `scripts/export_db_seeds.py` to re-export the current DB's tables back into data/seeds/.
 
 Usage:
-    python _dev/seed_database.py              # Load all seeds
-    python _dev/seed_database.py --spells     # Load only spells
-    python _dev/seed_database.py --traps      # Load only traps
-    python _dev/seed_database.py --force      # Force reload (delete existing data first)
+    python scripts/seed_database.py              # Load all seeds
+    python scripts/seed_database.py --spells      # Load only spells
+    python scripts/seed_database.py --force       # Force reload (delete existing data first)
 """
 
 import sqlite3
@@ -765,12 +754,13 @@ def populate_encounters(cursor, conn, force=False):
     for encounter in seeds:
         try:
             cursor.execute("""
-                INSERT INTO encounter (id, name, units)
-                VALUES (?, ?, ?)
+                INSERT INTO encounter (id, name, units, active_index)
+                VALUES (?, ?, ?, ?)
             """, (
                 encounter.get('id'),
                 encounter.get('name'),
                 serialize_for_db(encounter.get('units', [])),
+                encounter.get('active_index'),
             ))
             print(f"  [CHECK] {encounter.get('name')}")
         except sqlite3.IntegrityError as e:

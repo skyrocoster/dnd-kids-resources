@@ -1,0 +1,68 @@
+.npc-browser-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.npc-browser-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.npc-browser-toolbar h2 {
+  margin: 0;
+}
+
+.npc-browser-new {
+  background: var(--md-primary);
+  color: var(--md-on-primary);
+  border: none;
+  border-radius: 0.375rem;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  font-weight: var(--type-label-weight);
+}
+
+.npc-browser-error {
+  color: var(--md-error);
+}
+
+.npc-browser-split {
+  flex: 1;
+  min-height: 420px;
+}
+
+.npc-browser-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  overflow-y: auto;
+  height: 100%;
+}
+
+.npc-browser-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.npc-browser-actions button {
+  border-radius: 0.375rem;
+  padding: 0.35rem 0.75rem;
+  cursor: pointer;
+  border: 1px solid var(--md-outline-variant);
+  background: none;
+  color: var(--md-on-surface);
+}
+
+.npc-browser-delete {
+  border-color: var(--md-error) !important;
+  color: var(--md-error) !important;
+}
+
+.npc-browser-empty {
+  padding: 1rem;
+  color: var(--md-on-surface-variant);
+}

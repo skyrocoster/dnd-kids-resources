@@ -1,0 +1,138 @@
+.player-browser-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.player-browser-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.player-browser-toolbar h2 {
+  margin: 0;
+}
+
+.player-browser-new {
+  background: var(--md-primary);
+  color: var(--md-on-primary);
+  border: none;
+  border-radius: 0.375rem;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  font-weight: var(--type-label-weight);
+}
+
+.player-browser-error {
+  color: var(--md-error);
+}
+
+.player-browser-split {
+  flex: 1;
+  min-height: 420px;
+}
+
+.player-browser-detail {
+  padding: 1rem;
+  overflow-y: auto;
+  height: 100%;
+}
+
+.player-browser-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.player-browser-actions button {
+  border-radius: 0.375rem;
+  padding: 0.35rem 0.75rem;
+  cursor: pointer;
+  border: 1px solid var(--md-outline-variant);
+  background: none;
+  color: var(--md-on-surface);
+}
+
+.player-browser-delete {
+  border-color: var(--md-error) !important;
+  color: var(--md-error) !important;
+}
+
+.player-browser-empty {
+  padding: 1rem;
+  color: var(--md-on-surface-variant);
+}
+
+.player-assignment {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--md-outline-variant);
+}
+
+.player-assignment h4 {
+  margin: 0 0 0.5rem;
+}
+
+.player-assignment-error {
+  color: var(--md-error);
+  font-size: var(--type-caption-size);
+}
+
+.player-assignment-empty {
+  color: var(--md-on-surface-variant);
+  font-size: var(--type-caption-size);
+}
+
+.player-assignment-list {
+  list-style: none;
+  margin: 0 0 0.75rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.player-assignment-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--md-surface-2, var(--md-surface));
+  border-radius: 0.375rem;
+  padding: 0.35rem 0.6rem;
+}
+
+.player-assignment-list li button {
+  background: none;
+  border: 1px solid var(--md-error);
+  color: var(--md-error);
+  border-radius: 0.375rem;
+  padding: 0.15rem 0.5rem;
+  cursor: pointer;
+  font-size: var(--type-caption-size);
+}
+
+.player-assignment-add {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+.player-assignment-add .form-field {
+  flex: 1;
+}
+
+.player-assignment-add button {
+  background: var(--md-secondary-container);
+  color: var(--md-on-secondary-container);
+  border: none;
+  border-radius: 0.375rem;
+  padding: 0.5rem 0.9rem;
+  cursor: pointer;
+  height: fit-content;
+}
+
+.player-assignment-add button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

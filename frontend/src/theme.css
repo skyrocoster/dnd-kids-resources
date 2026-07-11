@@ -30,6 +30,17 @@
   --md-error-container: #8c1d18;
   --md-on-error-container: #f9dedc;
 
+  /* NPC (rose/magenta) — generated via material-color-utilities from source
+     #e85d9e, Blend.harmonize()'d toward the primary/violet seed (#d0bcff),
+     landing at hue 340.6 / chroma 40 (clamped from the raw harmonize chroma
+     of 68.1 to match the other seeds' ~22-38 range), tones 80/20/30/90.
+     Regenerate with a throwaway material-color-utilities snippet if the seed
+     hues ever change (see docs/dungeon_plan.md Stage N1). */
+  --md-npc: #fbafe3;
+  --md-on-npc: #521b46;
+  --md-npc-container: #6c325e;
+  --md-on-npc-container: #ffd7ef;
+
   /* Neutral surfaces — violet-tinted near-black, elevation via tone step */
   --md-surface: #1c1b1f;
   --md-surface-1: #232128;
@@ -72,9 +83,9 @@
   --type-caption-tracking: 0.05em;
 }
 
-/* Content-role variants: map spell/monster/weapon/neutral onto the
-   primary/tertiary/secondary/neutral roles above. Consumed via
-   data-variant="spell|monster|weapon|neutral" on Card/SearchList. */
+/* Content-role variants: map spell/monster/weapon/npc/neutral onto the
+   primary/tertiary/secondary/npc/neutral roles above. Consumed via
+   data-variant="spell|monster|weapon|npc|neutral" on Card/SearchList. */
 [data-variant='spell'] {
   --variant-accent: var(--md-primary);
   --variant-on-accent: var(--md-on-primary);
@@ -101,6 +112,13 @@
   --variant-on-accent: var(--md-surface);
   --variant-container: var(--md-surface-3);
   --variant-on-container: var(--md-on-surface);
+}
+
+[data-variant='npc'] {
+  --variant-accent: var(--md-npc);
+  --variant-on-accent: var(--md-on-npc);
+  --variant-container: var(--md-npc-container);
+  --variant-on-container: var(--md-on-npc-container);
 }
 
 /* Visible focus ring, everywhere, per the accessibility floor */

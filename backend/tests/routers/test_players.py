@@ -42,6 +42,17 @@ def test_get_player(test_client):
     player = response.json()
     assert player["id"] == player_id
     assert player["name"] == "Retrieval Test"
+    assert player["class_"] == "Rogue"
+
+
+def test_list_players_includes_class(test_client):
+    """GET /api/players must not silently drop the class column (regression: was returning None)."""
+    test_client.post("/api/players", json={"name": "List Class Test", "class_": "Wizard", "level": 4})
+
+    response = test_client.get("/api/players")
+    assert response.status_code == 200
+    player = next(p for p in response.json() if p["name"] == "List Class Test")
+    assert player["class_"] == "Wizard"
 
 
 def test_update_player(test_client):

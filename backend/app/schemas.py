@@ -179,15 +179,37 @@ class PlayerUpdate(PlayerCreate):
 class NPC(BaseModel):
     id: int
     name: str
-    role: Optional[str] = None
-    description: Optional[str] = None
+    race: Optional[str] = None
+    gender: Optional[str] = None
+    background: Optional[str] = None
+    size: Optional[str] = None
+    stats: Optional[Dict[str, Any]] = None
+    armor_class: Optional[int] = None
+    hit_points: Optional[int] = None
+    speed: Optional[str] = None
+    saving_throws: Optional[Dict[str, Any]] = None
+    skills: Optional[Dict[str, Any]] = None
+    senses: Optional[List[Dict[str, Any]]] = None
+    languages: Optional[str] = None
+    appearance: Optional[Dict[str, Any]] = None
     notes: Optional[str] = None
 
 
 class NPCCreate(BaseModel):
     name: str
-    role: Optional[str] = None
-    description: Optional[str] = None
+    race: Optional[str] = None
+    gender: Optional[str] = None
+    background: Optional[str] = None
+    size: Optional[str] = None
+    stats: Optional[Dict[str, Any]] = None
+    armor_class: Optional[int] = None
+    hit_points: Optional[int] = None
+    speed: Optional[str] = None
+    saving_throws: Optional[Dict[str, Any]] = None
+    skills: Optional[Dict[str, Any]] = None
+    senses: Optional[List[Dict[str, Any]]] = None
+    languages: Optional[str] = None
+    appearance: Optional[Dict[str, Any]] = None
     notes: Optional[str] = None
 
 
@@ -198,18 +220,24 @@ class NPCUpdate(NPCCreate):
 class Quest(BaseModel):
     id: int
     title: str
-    description: Optional[str] = None
-    status: Optional[str] = None
-    reward: Optional[str] = None
-    notes: Optional[str] = None
+    summary: Optional[str] = None
+    reward: Optional[List[str]] = None
+    objectives: Optional[List[str]] = None
+    details: Optional[List[str]] = None
+    quest_giver: Optional[int] = None
+    dungeon_id: Optional[int] = None
+    location: Optional[str] = None
 
 
 class QuestCreate(BaseModel):
     title: str
-    description: Optional[str] = None
-    status: Optional[str] = None
-    reward: Optional[str] = None
-    notes: Optional[str] = None
+    summary: Optional[str] = None
+    reward: Optional[List[str]] = None
+    objectives: Optional[List[str]] = None
+    details: Optional[List[str]] = None
+    quest_giver: Optional[int] = None
+    dungeon_id: Optional[int] = None
+    location: Optional[str] = None
 
 
 class QuestUpdate(QuestCreate):
@@ -219,18 +247,14 @@ class QuestUpdate(QuestCreate):
 class Encounter(BaseModel):
     id: int
     title: str
-    description: Optional[str] = None
-    difficulty: Optional[str] = None
-    creatures: Optional[List[str]] = None
-    notes: Optional[str] = None
+    creatures: Optional[List[Dict[str, Any]]] = None
+    active_index: Optional[int] = None
 
 
 class EncounterCreate(BaseModel):
     title: str
-    description: Optional[str] = None
-    difficulty: Optional[str] = None
-    creatures: Optional[List[str]] = None
-    notes: Optional[str] = None
+    creatures: Optional[List[Dict[str, Any]]] = None
+    active_index: Optional[int] = None
 
 
 class EncounterUpdate(EncounterCreate):

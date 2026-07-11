@@ -111,8 +111,19 @@ export type PlayerInput = Omit<Player, 'id'>
 export interface NPC {
   id: number
   name: string
-  role?: string | null
-  description?: string | null
+  race?: string | null
+  gender?: string | null
+  background?: string | null
+  size?: string | null
+  stats?: Record<string, unknown> | null
+  armor_class?: number | null
+  hit_points?: number | null
+  speed?: string | null
+  saving_throws?: Record<string, unknown> | null
+  skills?: Record<string, unknown> | null
+  senses?: Record<string, unknown>[] | null
+  languages?: string | null
+  appearance?: Record<string, unknown> | null
   notes?: string | null
 }
 
@@ -121,21 +132,33 @@ export type NPCInput = Omit<NPC, 'id'>
 export interface Quest {
   id: number
   title: string
-  description?: string | null
-  status?: string | null
-  reward?: string | null
-  notes?: string | null
+  summary?: string | null
+  reward?: string[] | null
+  objectives?: string[] | null
+  details?: string[] | null
+  quest_giver?: number | null
+  dungeon_id?: number | null
+  location?: string | null
 }
 
 export type QuestInput = Omit<Quest, 'id'>
 
+export interface EncounterCreature {
+  monster_id?: number | null
+  original_name?: string | null
+  name?: string | null
+  hp_current?: number | null
+  hp_max?: number | null
+  ac?: number | null
+  status?: string | null
+  conditions?: string[] | null
+}
+
 export interface Encounter {
   id: number
   title: string
-  description?: string | null
-  difficulty?: string | null
-  creatures?: string[] | null
-  notes?: string | null
+  creatures?: EncounterCreature[] | null
+  active_index?: number | null
 }
 
 export type EncounterInput = Omit<Encounter, 'id'>

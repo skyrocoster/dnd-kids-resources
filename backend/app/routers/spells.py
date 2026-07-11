@@ -2,30 +2,10 @@ from fastapi import APIRouter, HTTPException, Query
 from typing import List, Optional
 import json
 
-from ..db import get_db, dict_from_row, parse_json_value, parse_json_list
+from ..db import get_db, parse_spell_row as _parse_spell_row
 from ..schemas import Spell, SpellCreate, SpellUpdate
 
 router = APIRouter(prefix="/api", tags=["spells"])
-
-
-def _parse_spell_row(row) -> dict:
-    """Convert a spell row, parsing JSON columns."""
-    spell = dict_from_row(row)
-    if spell is None:
-        return None
-
-    # Parse JSON columns
-    for field in ["damage", "heal", "heal_at_spell_slots", "area_of_effect", "attack_type"]:
-        if spell.get(field):
-            spell[field] = parse_json_value(spell[field])
-
-    # These are list-typed columns; some legacy rows store them as a plain
-    # comma-separated string instead of a JSON array.
-    for field in ["components", "classes", "subclasses"]:
-        if spell.get(field):
-            spell[field] = parse_json_list(spell[field])
-
-    return spell
 
 
 @router.get("/spells", response_model=List[Spell])
@@ -127,7 +107,7 @@ def create_spell(spell: SpellCreate):
                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     spell.spell_name,
-                    spell.icon,
+                    spell.icon or "✨",  # icon is NOT NULL in the real schema; match the seeder default
                     spell.level,
                     spell.school,
                     spell.spell_text,
@@ -194,7 +174,7 @@ def update_spell(spell_id: int, spell: SpellUpdate):
                    WHERE id = ?""",
                 (
                     spell.spell_name,
-                    spell.icon,
+                    spell.icon or "✨",  # icon is NOT NULL in the real schema; match the seeder default
                     spell.level,
                     spell.school,
                     spell.spell_text,

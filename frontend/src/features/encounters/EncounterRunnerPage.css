@@ -1,0 +1,24 @@
+.encounter-runner-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.encounter-runner-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.encounter-runner-page-header h1 {
+  margin: 0;
+  font-size: var(--type-headline-size);
+  font-weight: 500;
+}
+
+.encounter-runner-page-error {
+  color: var(--md-error);
+}

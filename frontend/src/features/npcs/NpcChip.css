@@ -1,0 +1,14 @@
+.npc-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3125rem;
+  border: none;
+  cursor: pointer;
+  touch-action: manipulation;
+  background-color: var(--variant-container);
+  color: var(--variant-on-container);
+}
+
+.npc-chip:hover {
+  filter: brightness(1.1);
+}

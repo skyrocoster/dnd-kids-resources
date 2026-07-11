@@ -6,8 +6,8 @@ This script creates the database tables with proper schema.
 It does NOT populate data - use seed_database.py for that.
 
 Workflow:
-  1. python _dev/init_database.py        # Create tables
-  2. python _dev/seed_database.py        # Load seed data from JSON files
+  1. python scripts/init_database.py        # Create tables
+  2. python scripts/seed_database.py        # Load seed data from JSON files
 """
 
 import sqlite3
@@ -262,11 +262,12 @@ def init_database():
     # Create encounter table for combat encounter management
     cursor.execute("""
         CREATE TABLE encounter (
-            id         INTEGER PRIMARY KEY AUTOINCREMENT,
-            name       TEXT    NOT NULL,
-            units      TEXT    NOT NULL DEFAULT '[]',
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            name         TEXT    NOT NULL,
+            units        TEXT    NOT NULL DEFAULT '[]',
+            active_index INTEGER,
+            created_at   DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at   DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     """)
 

@@ -1,237 +1,333 @@
-# Dungeon Room Navigation — Staged Build Plan
+# Dungeon Feature — State of Play & Design Foundation
 
-## Context
+This document is the single reference for the dungeon room-navigation feature and its follow-on design
+phases. Original build (Stages 1–11), Design Phase A (Encounter Runner, E1–E6), and Design Phase B (NPC
+Dossier, N1–N6) are **all complete and shipped**. This doc records what exists, the design system in
+force, and the facts a new executor needs, so the next phase can build on it without re-deriving
+anything. New design phases get appended under **"Next: front-end design planning"** at the bottom.
 
-The dungeon feature today is a single flat browser (`DungeonBrowserPage.tsx`): a `SplitPane`
-with a dungeon list on the left and one read-only `Card` on the right that dumps every room's
-title/entries and a "Door → rooms 2,1" line. There is no way to *be inside* a dungeon and move
-from room to room — which is how a DM actually uses it at the table.
-
-We want a **room-per-page experience**: enter a dungeon, land on a room, read its full detail,
-and move to connected rooms through **clearly-shown door choices**, with a **breadcrumb trail**
-and a **room-index rail** for orientation. This mirrors the v1 dungeon (two-pane, clickable
-"→ Room" door links) but evolves it — v1 used a dropdown and had no breadcrumbs or prominent
-exits, and its map was a dead static image.
-
-**Priority: get navigation right first. Do NOT expand the editor yet** — editing rooms comes in a
-later phase (see "Out of scope" and the editor-debt note). Each stage below is a self-contained
-work packet with its own test gate, sized to hand to one model at a time, in order.
-
-**Note: when completing a stage, explain to the user what they should be abel to view as a test visually**
-
-### Design decisions already made (from the user)
-- **Layout:** collapsible room-index / mini-map **rail** on the left, full **room page** on the right, breadcrumb bar on top. (Closest to v1, plus breadcrumbs.)
-- **Exits:** prominent **choice cards** — `🚪 Great Oak Door → Portal Room`. This is the page's signature affordance. Hidden doors are shown to the DM, marked with a DC.
-- **Typography:** stay within the existing Material Design 3 Roboto system — **no new fonts.**
+> **Status:** All stages below shipped. **230 frontend tests pass, `tsc --noEmit` clean.** No backend
+> change was needed for any dungeon/encounter/NPC work — the whole feature set is frontend against
+> `getDungeon(id)`, `getEncounter`/`updateEncounter`, and `getNPC`/`listNPCs`, except Stage E2 (one
+> additive `active_index` column).
 
 ---
 
-## Key facts the executor needs (assume no other repo knowledge)
+## What the feature is
 
-**Data is an opaque JSON blob.** Backend (`schemas.py` `Dungeon.data: Dict[str, Any]`) and
-frontend (`types.ts` `Dungeon.data: Record<string, unknown>`) both treat it untyped. **No backend
-change is needed for any stage here** — this is entirely frontend work against `getDungeon(id)`.
+A **room-per-page experience** for running games live at the table: enter a dungeon, land on a room,
+read its full detail, and move to connected rooms through **prominent door/stair choice-cards**, with a
+**breadcrumb trail** and a **floor-grouped room-index rail** for orientation. From a room, a DM can
+launch a **live encounter runner** (HP steppers, turn order) or open an **NPC dossier** in a floating
+dock without leaving the page.
 
-**The real shape** (from `data/seeds/seed_dungeons.json`, two dungeons: id 4 "Isly Castle",
-id 5 "Greenhouse", both single-floor):
+**Layout:** collapsible room-index/mini-map **rail** on the left, full **room page** on the right,
+**breadcrumb bar** on top. Exits are the signature affordance — gold **choice cards** (`Great Oak Door →
+Portal Room`); hidden doors are shown to the DM, marked with a DC. Encounter and NPC docks are movable
+`FloatingWindow`s that layer on top, independent of each other.
+
+---
+
+## Key data facts (assume no other repo knowledge)
+
+**Dungeon data is an opaque JSON blob.** Backend (`schemas.py` `Dungeon.data: Dict[str, Any]`) and
+frontend (`types.ts` `Dungeon.data: Record<string, unknown>`) both treat it untyped. The typed read-model
+lives entirely in the frontend (`dungeonModel.ts`).
+
+**The real shape** (from `data/seeds/seed_dungeons.json`; two dungeons: id 4 "Isly Castle" — 48 rooms
+across 2 floors joined by a stair; id 5 "Greenhouse" — one trivial floor):
 ```jsonc
 data = {
-  general_info: { title, size, walls, floor, temperature, illumination },  // mostly null
-  rooms: [ { room_id: 3, title: "Portal Room", entries: [Entry…], npcs?: [4] } ],
-  doors: [ { door_id, entry_type:"door", title, content, leads_to:[2,1],
+  general_info: { title, size, walls, floor, temperature, illumination },   // mostly null
+  rooms:  [ { room_id: 3, title: "Portal Room", entries: [Entry…], npcs?: [4] } ],
+  doors:  [ { door_id, entry_type:"door", title, content, leads_to:[2,1],
              is_hidden, hidden_dc, door_mechanics, trap_ids:[] } ],
+  floors: [ { floor_id, title:"Ground Floor", room_ids:[1,2,…],
+             floor_above, floor_below, map_image? } ],
+  stairs: [ { stair_id, title:"Stone Stairs",
+             leads_to_rooms:[32,33], leads_to_floors:[1,2] } ],
   corridors: [], map_image: null, map_image_length: 0
 }
 // Entry (inside a room): { entry_type: "feature"|"trap"|"encounter"|…, title, content,
 //   is_hidden, hidden_dc, container, container_mechanics, count, monster_id,
 //   encounter_id?, trap_ids:[], treasure_contents:[] }
 ```
-**Room connectivity = the door edge list.** A door's `leads_to` is a 2-element array of the two
-`room_id`s it joins (an undirected edge). To find a room's exits: scan `data.doors`, keep doors
-whose `leads_to` contains the current `room_id`, and the *other* id is the destination. Data is
-human-authored and slightly messy — `leads_to` can repeat a room (`[9,7]`, `[9,8]`), be a scalar
-in older records, and `door_id`s can skip numbers. Selectors must tolerate this.
 
-**How v1 did it (reference):** two-pane, left = room dropdown + static map, right = current room.
-Doors/stairs rendered as inline `<a class="room-link" onclick="goToRoom(id)">→ Room Name</a>`;
-`goToRoom` resolved the target by `room_id`, switched floor if needed, and re-rendered the detail.
-Entries were bucketed by type under emoji headers. Current room tracked by array index; dungeon
-deep-linked via `#dungeon/<id>` URL hash. We keep the grouping + clickable exits, add real routes,
-breadcrumbs, and choice-cards; we drop the dropdown and the dead map.
+**Connectivity = an undirected edge list.** A door's `leads_to` (and a stair's `leads_to_rooms`) is a
+2-element `[roomA, roomB]` of `room_id`s. A room's exits = the edges whose pair contains the current
+`room_id`; the *other* id is the destination. A stair is just a door that crosses floors
+(`leads_to_floors:[x,y]`). Data is human-authored and messy — a pair can repeat a room (`[9,9]`), be a
+scalar in older records, and ids skip numbers. Selectors tolerate all of this.
 
-**Reusable pieces (do not rebuild):**
-- `frontend/src/api/client.ts`: `getDungeon(id)`, `listDungeons()`.
-- `frontend/src/components/`: `Card` (`variant="neutral"`), `SplitPane`, `SearchList`, `DiceText` (wrap any prose that may contain `2d6+3`), `ConfirmDialog`.
-- Defensive `asRecord`/`asArray` helpers already exist inline in `DungeonBrowserPage.tsx` and `dungeonForm.ts` — extract to the new model module rather than copy a third time.
-- `frontend/src/theme.css`: M3 dark tokens. Neutral surfaces for the shell; **secondary (old-gold) container tokens** (`--md-secondary-container` / `--md-on-secondary-container`) are the one accent, used *only* on exit choice-cards.
+**Floors are authoritative for grouping.** `floors[i].room_ids` lists exactly which rooms sit on that
+floor; degrade to one implicit "Rooms" group when `floors` is absent (the Greenhouse case).
 
----
+**Room NPCs = `room.npcs: number[]`.** No `entry_type:"npc"` and no `entry.npc_id` in the real seed —
+NPC wiring hangs off the room-level array, not a FeatureTile slot.
 
-## Design direction (grounded, reconciled with the M3 system)
+**Encounter creatures are a denormalized, id-less array**: `creatures[]` = `{ monster_id, original_name,
+name, hp_current, hp_max, ac, status, conditions[] }`. Order is meaningful — it *is* turn order — and
+round-trips through the array as-is. The runner assigns a synthetic `clientId` on load, strips it on
+save. Monster `hp` is an **object** `{average, formula, minimum, maximum}`; quick-add derives
+`hp_current = hp_max = hp.average`.
 
-- **Palette:** neutral M3 surfaces throughout the dungeon shell (rail = `surface-1`, room page = base `surface`, breadcrumb bar = `surface-2` — same tone-step elevation the app shell uses). The **single accent is old-gold** on the exit choice-cards. Justification: the gold seed was chosen for "physical objects at the table — dice, brass fittings"; doors/keys/navigation *are* that register, so the accent is earned, not decorative. Hidden-door cards use `--md-outline-variant` dashed borders + muted gold text. No new hues.
-- **Type (M3 scale as-is):** room title = Headline Small; entry-group labels = Label Small caps; body = Body Large (wrapped in `DiceText`); exit-card door name = Label Large, destination room = Title Medium. Reuse the gold dice-pill motif in prose.
-- **Layout:** rail + room page + breadcrumb, per the chosen wireframe.
-- **Signature:** the **gold exit choice-card** — it turns the door edge-list into the primary way you move, evoking a gamebook while staying fully inside M3. Everything else stays quiet neutral so the exits are the one bold thing (spend boldness once; restraint everywhere else).
-- **Self-critique / what was cut:** a storybook display font and a full-screen gamebook layout were both considered and dropped to stay cohesive with the spells/monsters/weapons pages and honor "closer to the old design." The gold exit-card is where the risk is spent.
-- **Accessibility floor (every stage):** visible focus rings on rail rows / exit cards / breadcrumb links; don't rely on hue alone (exit cards pair the gold with the 🚪 icon + text; hidden doors add a 🗝 + "DC N" label); respect `prefers-reduced-motion` on rail collapse / any transition.
+**NPC record fields are messy dicts** (`stats`/`saving_throws`/`skills`/`appearance`:
+`Record<string, unknown>`; `senses`: array of `{type, range}`). **Real seed data uses full-word ability
+keys** (`strength`, not `str`) — helpers must tolerate both. Any field can be absent (a talking-cat NPC
+may have no AC/HP/speed).
 
 ---
 
-## ✅ Stage 1 — Typed read-model + selectors (foundation, no UI) [COMPLETE]
+## Design system in force
 
-**Goal:** one tested module that turns the opaque blob into typed rooms/doors/exits. Everything
-else reads this; it is verifiable with zero browser.
+The signature is **neutral surfaces everywhere, one gold accent on the exit choice-cards, one teal
+accent on HP meters, one rose accent on NPCs**, evoking a gamebook while staying inside the app's
+Material Design 3 system. Consume the **real tokens in `frontend/src/theme.css`** — never the
+`--md-sys-color-*` / `--md-sys-typescale-*` namespace (it does not exist in this project).
 
-**Built** `frontend/src/features/dungeons/dungeonModel.ts` with:
-- Interfaces: `GeneralInfo`, `DungeonEntry`, `DungeonRoom`, `DungeonDoor`, `DungeonData`, `ThreatHints`,
-  and normalized `RoomExit = { door: DungeonDoor; toRoomId: number; toRoom?: DungeonRoom; isHidden: boolean; hiddenDc: number | null }`.
-- Shared helpers extracted from dungeonForm: `asRecord`, `asArray`, `str`.
-- Pure selectors: `parseDungeonData(data)`, `getRooms(d)`, `getRoomById(d, roomId)`,
-  `getExitsFromRoom(d, roomId)` (handles scalar/array `leads_to`, self-loops, deduplicates by destination),
-  `groupEntriesByType(room)` (7 emoji-labeled buckets + "Other"), `getRoomThreatHints(room)`.
-
-**Graph structure** (normalized, renderer-agnostic):
-- `DungeonGraph = { nodes: RoomNode[]; edges: DoorEdge[] }` with optional geometry slots (`position`, `floorId`).
-- `getRoomGraph(d)` — single source of truth for connectivity (rail, exits, future map all consume it).
-- `getExitsFromRoom` derives from graph to ensure consistency; deduplicates first door per destination.
-- `getAdjacentRoomIds(d, roomId)` convenience function.
-
-**Test gate** (`src/features/dungeons/__tests__/dungeonModel.test.ts`): 31 tests pass, covering:
-- Parsing opaque data; room/exit queries; hidden doors + DC; graph structure + threat hints.
-- Scalar/array `leads_to`, self-loops, deduplication, edge cases (null inputs, missing keys).
-- End-to-end dungeon traversal (BFS from entry room reaches all rooms).
-- Graph edges match exit queries (exits derive from graph edges).
-
-**Updated** `dungeonForm.ts` to use `parseDungeonData` (no more duplication).
-
-All 119 frontend tests pass. Stage 1 complete; ready for Stage 2.
+- **Content-role palette** (`theme.css`, dark theme): primary/violet = spells, secondary/gold = weapons
+  + exit choice-cards, tertiary/teal = monsters + healthy HP, error/red = errors/traps/critical HP,
+  **npc/rose** (hue 340.6, chroma 40) = NPCs — added in Stage N1 via `material-color-utilities`
+  `Blend.harmonize()` toward the primary seed (documented inline in `theme.css` for regeneration). Each
+  role exposes `--md-{role}`, `--md-on-{role}`, `--md-{role}-container`, `--md-on-{role}-container`, plus
+  a `[data-variant='…']` mapping (`spell|monster|weapon|npc|neutral`) exposing `--variant-accent` /
+  `--variant-on-accent` / `--variant-container` / `--variant-on-container` for any component to consume.
+  **No new hues without going through this generator process.**
+- **Type scale (one mapping, applied everywhere — no ad-hoc rem/px):** headline (1.5rem) = page/room/NPC
+  name; title (1rem/500) = door/stair/ability-score/stepper labels; body (1rem) = prose; body-sm
+  (0.875rem) = secondary detail, **floor for all prose**; label (0.875rem) = rail/breadcrumb/section
+  headings; caption (0.6875rem) = eyebrows/chips/badges.
+- **Icons:** local **Lucide** line-icon set (ISC license) in `frontend/src/components/icons/`, inline-SVG
+  React components inheriting `currentColor`. No icon-font, no CDN, no emoji anywhere in the feature.
+- **Accessibility floor:** visible focus rings everywhere; never hue-alone (icons + text always back
+  color, e.g. `SkullIcon` at 0 HP, `user` icon on NPC chips); `prefers-reduced-motion` honored on every
+  animation/transition; ≥48px touch targets on interactive controls (the encounter runner is
+  touch-first, Surface Pro primary device).
 
 ---
 
-## ✅ Stage 2 — Routes + dungeon shell (deep-linkable room pages) [COMPLETE]
+## Component anatomy (the structural ideas — do not rebuild these shapes)
 
-**Goal:** URLs that land on a dungeon and a specific room; the rail + room region shell.
-
-**Built:**
-- `router.tsx`: added `/dungeons/:dungeonId` and `/dungeons/:dungeonId/rooms/:roomId` routes → `DungeonViewPage`.
-- `DungeonViewPage.tsx` + `.css`: room-per-page experience with:
-  - **Rail** (left, `surface-dim`): room list with threat hints (⚠️ trap, 👹 monster, 👥 encounter); current room highlighted with `●`.
-  - **Room panel** (right): full room detail (title, entries grouped by type with emoji buckets), exit choice-cards (gold old-gold on `secondary-container`, hidden with 🗝 + DC label + dashed border).
-  - **Error handling**: friendly "not found" messages for unknown dungeons/rooms; auto-navigate to first room when no roomId specified.
-  - **Navigation**: rail clicks + exit card clicks navigate via `useNavigate`.
-  
-- `DungeonBrowserPage.tsx`: added "Enter" button (gold, in footer) → navigates to `/dungeons/:id`.
-
-**Styling:**
-- Rail: `surface-dim` background, button-style rows, threat hint icons on right.
-- Room panel: entry groups with emoji labels, exit cards with gold old-gold accent (old-gold), hidden doors with dashed outline-variant.
-- Responsive: exit cards flex-wrap on mobile, DC label moves below.
-
-**All 119 frontend tests pass.** DungeonBrowserPage tests wrapped in `<BrowserRouter>` to support `useNavigate`.
-
-**Manual verification (next):** Enter dungeon from browser, land on first room, follow exit cards, rail stays in sync, refresh preserves position.
+- **FeatureTile** (`DungeonViewPage.tsx`) — every room entry: type-icon badge → header (title + count +
+  hidden-DC badge + reserved `.feature-tile-actions` slot) → body (`DiceText`) → meta rows, each shown
+  only when present. The encounter entry's action slot hosts **"Run encounter"** (Stage E6).
+- **Door/stair choice-card grid** — responsive 2-column grid of tall cards (icon → name → `→
+  destination` → meta footer → reserved `.exit-card-actions` bar). Stairs render identically to doors.
+- **CombatantCard** (`features/encounters/`) — HP meter (teal→gold→red by tier, `SkullIcon` at 0) +
+  6-button stepper rail + drag handle with ▲/▼ accessible fallback + status chips.
+- **NPCStatCard** (`features/npcs/`) — the character dossier: monogram + name + identity line + composed
+  appearance sentence (hero), notes, conditional AC/HP/Speed strip, six-ability block with modifiers,
+  saving-throws/skills/senses/languages sections each shown only when present. Takes a `compact` prop for
+  dock use. Consumes `data-variant="npc"` for its accent.
+- **FloatingWindow** (`components/`) — generic draggable/touch dock: grip header (pointer events,
+  `touch-action:none`), minimize, close, `sessionStorage`-persisted position. Used verbatim by both the
+  encounter dock and the NPC dock; multiple can be open at once (independent state, no shared DOM).
+- **Reserved action slots** (`.feature-tile-actions`, `.exit-card-actions`) exist specifically so a
+  future per-room editing phase can drop controls in without a re-layout.
 
 ---
 
-## ✅ Stage 3 — Room detail rendering (full content) [COMPLETE]
+## Shipped stages
 
-**Goal:** a room page that shows *everything* the seed holds, not just title + flat content.
-
-**Built:**
-- Enhanced `DungeonRoomPanel` component rendering all entry content fields
-- **Rich entry display:**
-  - Title + content wrapped in `DiceText` (dice notation as gold pills)
-  - `count` field displayed as `×N` badge next to title
-  - `container` + `container_mechanics` shown below content
-  - `treasure_contents` as bulleted list with qty × name (value gp) format
-  - Cross-reference chips: `Monster #ID`, `Encounter #ID`, `Trap #IDs` with type-specific colors
-  - Hidden entries: 🗝️ DC badge preserved from Stage 2
-- **Room-level NPCs:** section above entries showing all NPC IDs in the room (e.g., "NPC #4")
-- **Styling:** M3 surfaces, chips use `secondary-container` (gold), `tertiary-container` (monster), `primary-container` (encounter), `error-container` (trap)
-
-**Test gate:** 11 component tests verify trap + encounter + feature rooms show all three groups; hidden entries display DC badge; treasure shows qty/value; cross-refs render as chips; 2d6 notation wraps in gold pills. All 123 frontend tests pass.
-
-**Manual verification:** Navigate to Portal Room (trap + encounter + feature), Treasure Room (container + treasure + trap ref), Monster Lair (monster ID + count + dice), Entrance Hall (exit cards). All rich fields display correctly with M3 styling applied.
-
-**Commit:** 29e7b9b — feat(Stage 3): Enhance room detail rendering with rich content display
+| Stage(s) | What shipped |
+|----------|--------------|
+| **1–5** | Read-model + selectors (`dungeonModel.ts`); routes + shell (`/dungeons/:id[/rooms/:roomId]`); rich room detail (entries, treasure, cross-ref chips, hidden DC); exit choice-cards as real `<Link>`s; breadcrumbs + collapsible floor-grouped rail with `sessionStorage` trail persistence. |
+| **6–11** | Migrated off the undefined `--md-sys-*` namespace onto real theme tokens (root cause of "flat text on nothing"); local Lucide icon set replacing emoji; floors/stairs parsed into the model and rail; **FeatureTile** anatomy; door/stair choice-card grid; final zero-`--md-sys-*` / zero-hardcoded-font-size audit + shared `.dungeon-back-button`. |
+| **E1–E2** | Fixed `parseDungeonData` dropping numeric-string `encounter_id`/`monster_id` (real seed stores `"1"`); added nullable `active_index INTEGER` to the `encounter` table (`init_database.py`, threaded through schemas/router/types) to persist the turn pointer. |
+| **E3–E4** | Headless `encounterRunner.ts` reducer (HP clamp, duplicate, add-from-monster, reorder/moveUp/moveDown, `nextTurn` with round++/wrap, active-reassignment on remove) + `useEncounterRunner` hook (optimistic updates, ~600ms debounced auto-save, `syncStatus`). |
+| **E5–E6** | `CombatantCard`/`AddMonsterPanel`/`EncounterRunnerBoard` + standalone `/encounters/:id/run` route reached via a **Run** button; `FloatingWindow` component + dungeon dock launched from the encounter FeatureTile's action slot, bound to the room's `encounter_id`. Manually verified live (HP taps, add-monster, next-turn, refresh-persists). |
+| **N1** | Fifth MD3 content role for NPCs (`--md-npc*` / `data-variant="npc"`) — rose/magenta, harmonized toward primary via a throwaway `material-color-utilities` script (not a runtime dependency). |
+| **N2** | `npcModel.ts` headless helpers — ability-key-tolerant `getAbilityScores`, `formatModifier` (real minus glyph), `composeAppearance` (dict → sentence, generic fallback for unrecognized keys), `identityLine`, `hasCombatStats`. |
+| **N3–N4** | `NPCStatCard` component (see anatomy above); rebuilt `NPCBrowserPage` detail pane on it, replacing `dictToLines`/`<dl>` markup — Edit/Delete moved to a sibling action row since the card has no footer slot. |
+| **N5–N6** | `useNpc(id)` hook + `NpcChip` (roster-backed name resolution, `NPC #{id}` fallback only for dangling ids) wired into room NPC chips; `activeNpcId` state + NPC `FloatingWindow` dock in `DungeonViewPage`, sibling to the encounter dock. Manually verified live — `composeAppearance`'s fallback correctly handles real seed appearance keys beyond the fixed known set (`height`/`weight`), confirming it's not overfit to test fixtures. |
 
 ---
 
-## Stage 4 — Exit choice-cards (the signature navigation)
+## Reusable pieces (do not rebuild)
 
-**Goal:** move between rooms through prominent, clearly-labelled door choices.
-
-**Build:** below the room content, an **"Exits →"** region rendering `getExitsFromRoom(d, roomId)`
-as choice cards — `🚪` + door title + `→` destination **room name**, each a `Link` to
-`/dungeons/:id/rooms/:destId`. Style with the **secondary old-gold container** tokens (the one
-accent). Hidden doors: `🗝` marker + "(DC N)" + dashed `outline-variant` border, muted gold — the
-DM sees them; they're the reveal affordance. Dead-end rooms show a quiet "No visible exits."
-
-**Test gate:** from a known room, every door on it appears as a card pointing to the correct
-destination title; clicking lands on that room and the rail highlight moves; a hidden door shows
-its DC + marker. **Live reachability walk:** starting at the entry room and only following exit
-cards, every room in each seed is reachable (parity with v1 `goToRoom`). **Done when** the dungeon
-is fully traversable by clicking exits alone.
-
----
-
-## Stage 5 — Breadcrumb trail + rail orientation
-
-**Goal:** always know where you are and how you got here; jump anywhere.
-
-**Build:**
-- **Breadcrumb bar** (`surface-2`, above the room): `Dungeon Title › … › Current Room`. Track the
-  visited path in a pure reducer (`trailReducer(trail, roomId)` — append, and collapse when you
-  revisit an earlier room, since the graph has cycles). Persist per-dungeon in `sessionStorage` so
-  refresh keeps position + trail. Clicking a crumb navigates back and truncates the trail.
-- **Rail:** room-index list with the current room highlighted (`●`); each row shows at-a-glance
-  threat hints from `getRoomThreatHints` (⚠️ trap, 👹 monster, 👥 encounter). Collapsible (v1 had a
-  `.collapsed` rail + a `→` re-open button; the rebuild plan's open item "side panels being
-  completely collapsable" backs this). If `data.map_image` is ever non-null, show it above the list;
-  both current seeds are null, so guard the conditional (no empty box).
-
-**Test gate:** unit-test `trailReducer` (append, revisit-collapse, truncate-on-crumb-click);
-walking 3 rooms builds a 3-crumb trail, clicking crumb 1 resets it, refresh preserves position;
-rail highlights the current room and collapses/expands. **Done when** orientation + jump-anywhere
-work and survive refresh.
+- `frontend/src/api/client.ts`: `getDungeon`/`listDungeons`, `getEncounter`/`updateEncounter`/
+  `listEncounters`/`createEncounter`/`deleteEncounter`, `getNPC`/`listNPCs`, `listMonsters`.
+- `frontend/src/components/`: `Card`, `SplitPane`, `SearchList`, `DiceText`, `ConfirmDialog`,
+  `FloatingWindow`, `components/icons/` (Lucide set incl. `UserIcon`, `SkullIcon`, `GripIcon`,
+  `NextTurnIcon`, stepper/reorder icons).
+- `frontend/src/features/dungeons/dungeonModel.ts`: the typed read-model + all selectors (floors,
+  stairs, graph). **Extend this rather than adding a parallel model.**
+- `frontend/src/features/encounters/`: `encounterRunner.ts` (pure reducer), `useEncounterRunner.ts`,
+  `CombatantCard`, `AddMonsterPanel`, `EncounterRunnerBoard`.
+- `frontend/src/features/npcs/`: `npcModel.ts` (formatting helpers), `useNpc.ts`, `NPCStatCard`,
+  `NpcChip`.
+- `frontend/src/theme.css`: the real design tokens (`--md-*`, `--type-*`, `--variant-*`). Consume these.
+- **Dev servers:** `scripts/start_server.ps1` (backend :8000 + Vite :5173), `scripts/stop_server.ps1`.
+- **Tests:** `npm run test` (frontend, 230 passing); `pytest` from repo root (backend, unaffected by any
+  of this feature work except the one E2 migration).
 
 ---
 
-## Out of scope (later phases — do NOT build now)
+## Known debt / deferred work (NOT yet built)
 
-- **Stage 6 — Editor round-trip fix (first task of the future *editing* phase).** The current
-  `dungeonForm.ts` / `DungeonEditor.tsx` are **lossy**: on save they force every entry to
-  `entry_type: "feature"` and **drop** room `npcs[]`, `entry.monster_id`, `encounter_id`,
-  `trap_ids`, `treasure_contents`, `hidden_dc`, `container*`. Before any per-room editing ships,
-  rework `dungeonForm` to round-trip the full entry shape, and make the Stage-1 `dungeonModel.ts`
-  types the shared source the editor and viewer both use. "Rooms individually editable" then hangs
-  an Edit affordance off each room page. Flagged here so it isn't forgotten; **not planned in detail
-  per the user's instruction.**
-- **Stage 7 — Cross-reference hover pop-outs (later enhancement).** Turn the Stage-3 ref chips
-  (monster / NPC / encounter) into hover/click stat-card pop-outs (v1 had `showMonsterCardPopup` /
-  `showNpcCardPopup`), fetching via the monster/npc/encounter API. Needs its own data-fetch layer;
-  kept out of the core navigation stages deliberately.
-- **Floors & stairs:** v1 supported multi-floor dungeons (floor dropdown, ↑/↓ stair links). The two
-  current seeds are single-floor and have no `floors`/`stairs` keys, so Stages 1–5 build flat and
-  **degrade gracefully**; full floor/stair navigation is a later add if multi-floor dungeons are
-  authored.
-- **Stage 8 — Clickable programmatic map (later; the reason Stage 1 emits `DungeonGraph`).** A
-  visual map where rooms are clickable hotspots that navigate to the room page, drawn *from the
-  data*. It consumes Stage 1's `getRoomGraph` unchanged: auto-layout the nodes (e.g. dagre / a
-  force-directed pass) when `RoomNode.position` is absent, or honor stored coordinates once a map
-  editor writes them. **Not planned in detail now** — the only requirement this plan enforces is
-  that the graph structure + optional geometry slots exist so this becomes purely additive UI, not a
-  data-model rework.
+- **Editor round-trip fix.** `dungeonForm.ts`/`DungeonEditor.tsx` are still **lossy**: on save they force
+  every entry to `entry_type:"feature"` and drop room `npcs[]`, `entry.monster_id`, `encounter_id`,
+  `trap_ids`, `treasure_contents`, `hidden_dc`, `container*`, and floors/stairs. Rework `dungeonForm` to
+  round-trip the full shape and make `dungeonModel.ts` the shared source for editor + viewer before
+  per-room editing ships. Per-room Edit affordances then hang off the **reserved action slots**
+  (FeatureTile, door/stair cards) — the reason those slots exist.
+- **Cross-reference hover pop-outs** for monster/encounter chips (the NPC case is now solved by the N6
+  dock). Turn the ref chips into hover/click stat-card pop-outs.
+- **Clickable programmatic map** — `getRoomGraph` + `getFloors` already emit what's needed
+  (nodes/edges, optional `position`, `map_image`); a per-floor visual map with clickable room hotspots is
+  purely additive UI, not a model rework.
 
 ---
 
-## Verification (whole feature)
+## Verification (how to confirm the feature end-to-end)
 
-- **Per stage:** the stage's own gate above (vitest unit/component tests + a live check).
-- **End-to-end (after Stage 5):** run backend `uvicorn app.main:app` (from repo root or `backend/`)
-  + `npm run dev`; drive with browser automation. Enter Isly Castle from `/dungeons`, land on the
-  entry room, read full detail, follow exit cards through the whole dungeon confirming every room is
-  reachable, watch the breadcrumb trail build and collapse on revisit, jump via the rail, collapse
-  the rail, refresh mid-dungeon and confirm position/trail persist. Run `npm run test` (frontend)
-  and `pytest` (backend, unchanged) — both green. No console errors.
+Run `scripts/start_server.ps1`. **Dungeon nav:** drive `/dungeons/4` (Isly Castle) — land on entry room;
+content renders as icon-badged tiles; follow door **and** stair cards across both floors; rail
+floor-grouping and breadcrumbs update; refresh mid-dungeon confirms trail persistence. **Encounter
+runner:** from a room's encounter FeatureTile, **Run encounter** opens the `FloatingWindow` dock (HP
+steppers, add-monster, drag-reorder, Next turn); standalone `/encounters/:id/run` works identically;
+refresh confirms debounced auto-save persisted HP/order/`active_index`. **NPC dossier:** `/npcs` shows
+the redesigned card (six-ability block, composed appearance sentence, no empty rows for a bare NPC); a
+room's NPC chip resolves to a real name and opens the same dossier in a dock, coexisting with an open
+encounter dock. Confirm throughout: no emoji, no undefined-token flatness, no console errors.
+`npm run test` and `pytest` green; `tsc --noEmit` clean.
+
+---
+
+## Next: front-end design planning
+
+*(Append new design phases/stages here. They inherit the design system, component anatomy, reusable
+pieces, and reserved action slots documented above — build on them rather than re-deriving.)*
+
+---
+
+## Design Phase C — Programmatic Maps ("Map Lab" prototype)
+
+**Goal:** generate dungeon maps programmatically from stored room/door/floor **positions**, instead of the
+static per-floor `map_image`. A full-file search confirms there is currently **zero** spatial data in
+`data/seeds/seed_dungeons.json` — no coordinate/position/grid/size fields; layout exists only implicitly via
+the base64 `map_image` and the door/stair `leads_to` connectivity. `RoomNode.position` exists in
+`dungeonModel.ts` but is always `undefined` and consumed by nothing.
+
+Because storing positions likely means overhauling the dungeon data model, this phase does **not touch the
+current setup**. It builds an isolated, tiny **sandbox ("Map Lab")** that replicates only what's needed to
+prove the coordinate model, using **real Isly Castle ids**, before we decide whether/how to fold it into
+production.
+
+**Decisions locked in:**
+- **Hand-authored coordinates** — no auto-layout solver. Invent plausible cell geometry for the test rooms.
+- **Tiny scope, two cases only:**
+  1. Two adjacent rooms — **Combat Training Hall (room 17) → Armoury (room 23)**, joined by the real
+     **door 32 "Heavy Stone Door"** (`leads_to:[23,17]`). Room 17 rendered rectangular; room 23 rendered
+     **L-shaped** to prove non-rectangular footprints.
+  2. Stairs — **Back Stairwell (room 32, ground) → First Floor Landing (room 33, floor 2)** via the real
+     **stair 2 "Stone Stairs"** (`leads_to_floors:[1,2]`, `leads_to_rooms:[32,33]`) to prove the z-axis.
+- **Dev-only React route** `/dungeons/map-lab`, additive, reusing `theme.css` tokens + the local Lucide set.
+- **Additive layout layer; permanent home decided after the prototype (Stage M3 gate).** Layout lives in a
+  standalone sandbox module keyed by real ids. `seed_dungeons.json`, the DB, the backend, and
+  `dungeonModel.ts` are **untouched**.
+
+### The coordinate model (what the prototype proves)
+
+Integer **cell grid**, `x` = column (right), `y` = row (down) — matches SVG axes. Per-floor plane; all
+planes share one origin so a room directly above sits at the same `[x,y]`. Floor identity via a `z` integer.
+
+- **Room** = origin cell + a set of occupied cells **relative to that origin** (a polyomino), so rectangles
+  and L/T-shapes are both expressible and cell-aligned (rooms never cut a cell):
+  `{ room_id, z, origin:[x,y], cells:[[0,0],[1,0],[0,1],…] }`. Absolute cells = `origin + cell`. The first
+  authored room anchors at `origin:[0,0]`.
+- **Door** = a wall segment on the boundary between the two rooms it already connects (`leads_to`):
+  `{ door_id, cell:[x,y], side:"N"|"E"|"S"|"W" }` — the named wall of an absolute cell; the neighbor cell
+  across that side belongs to the other room. Side→neighbor: N=`(x,y-1)`, S=`(x,y+1)`, E=`(x+1,y)`,
+  W=`(x-1,y)`.
+- **Floor** = `{ z }` per `floor_id`; shared x/y space across z.
+- **Stair** = crosses z, two endpoint cells on two planes:
+  `{ stair_id, from:{z,cell:[x,y]}, to:{z,cell:[x,y]} }`.
+
+### Stack note (why React + TS + SVG, unchanged)
+
+SVG is DOM: rooms/doors are real elements, so selection, focus rings, `theme.css` tokens, and future
+**drag-to-place GUI editing** are ordinary pointer events (snap = `round(coord/cellSize)`), reusing the
+existing `FloatingWindow` pointer-drag pattern. Staying in-stack means the proven model/components fold
+straight into the production dungeon pages; canvas/WebGL or a node-graph lib (React Flow) would be throwaway
+and would fight the fixed **cell-grid + polyomino + wall-segment** model. No stack change.
+
+### Stages (each self-contained; do one at a time, in order)
+
+> **Model split:** Stage **M0a** is deliberately mechanical (no algorithms, no geometry, no rendering
+> logic) so a **cheap model (Haiku 4.5)** can execute it. The reasoning-heavy geometry and rendering are
+> isolated in M0b/M1/M2 for a stronger model.
+
+**Stage M0a — Pure scaffolding (Haiku-friendly, mechanical only).** Zero logic; create the skeleton so
+later stages just fill in bodies.
+- New isolated folder `frontend/src/features/dungeons/maplab/` (parallel to, **not** touching,
+  `dungeonModel.ts`).
+- `maplabModel.ts` — **type declarations only** (`MapCell`, `MapRoom`, `MapDoor`, `MapStair`, `MapFloor`,
+  `MapLayout`) plus **`throw new Error('not implemented')` stubs** with signatures for `absoluteCells`,
+  `layoutBounds`, `neighborCell`, `doorWallSegment`, `roomOfCell`. No bodies.
+- `maplabData.ts` — the authored Case-1 static layout object (room 17 rectangular e.g. 3×2; room 23
+  L-shaped e.g. `[[0,0],[1,0],[0,1]]` placed east of 17; door 32 on room 17's east wall e.g.
+  `cell:[2,0], side:"E"`), typed against `MapLayout`, keyed by real ids with titles. Data entry, not logic.
+- `MapLabPage.tsx` + `MapLabPage.css` — placeholder component rendering a heading only.
+- `router.tsx` — register the **new** `/dungeons/map-lab` route pointing at the placeholder (existing
+  routes untouched).
+- `maplab/__tests__/maplabModel.test.ts` + `MapLabPage.test.tsx` — a skipped/smoke stub each so files and
+  imports exist for M0b/M1 to flesh out.
+- Verify: `tsc --noEmit` clean; `/dungeons/map-lab` loads the placeholder; existing app unaffected.
+
+**Stage M0b — Geometry selectors + math tests (reasoning).**
+- Implement the M0a stubs: `absoluteCells(room)` (origin + cells), `layoutBounds(rooms)` (min/max x,y → svg
+  viewBox), `neighborCell(cell, side)` (N/S/E/W deltas), `doorWallSegment(door, cellSize)` (two corner
+  points of the wall line), `roomOfCell(cell, rooms)` (validation).
+- Fill `maplabModel.test.ts`: absolute-cell translation, bounds over a rectangle + an L-shape, side→neighbor
+  for all four sides, door-wall-segment geometry. (Repo mandates tests; frontend = vitest, aim >80%.)
+
+**Stage M1 — Single-floor SVG renderer + route.**
+- `MapLabPage.tsx`/`.css`: render one `<svg>` for `z:0`. Each room = a filled union of its cell rects
+  (`<path>` or grouped `<rect>`s), title centered; door 32 = a thick glyph on its wall segment. Grid bounds
+  from `layoutBounds`; fixed `cellSize` (e.g. 48px).
+- Interactivity: clicking a room selects it (highlight via `--variant-accent`/`--md-*` tokens). No hardcoded
+  colors/font-sizes — consume `theme.css` tokens and the `--type-*` scale only; Lucide icons, no emoji.
+- Tests `MapLabPage.test.tsx`: renders both rooms + the door; room-select works.
+- Verify: `/dungeons/map-lab` shows the rectangular hall + L-shaped armoury with the door on the shared
+  wall; click to select.
+
+**Stage M2 — Stairs + second floor (z-axis).**
+- Extend `maplabData.ts` with room 32 (`z:0`), room 33 (`z:1`), stair 2.
+- `maplabModel.ts`: `floorsInLayout()`, `roomsOnZ(z)`, `stairEndpointsForZ(z)`.
+- `MapLabPage.tsx`: render two floor planes (side-by-side panels or a floor toggle). Draw the stair marker
+  on **both** planes at its endpoint cells; clicking the stair moves the selection/active plane to the other
+  floor — proving cross-floor navigation with shared coordinate space.
+- Tests: two planes render; stair endpoints resolve on each z; cross-floor click switches active floor.
+- Verify: both floors show; the stair travels between them; intra-floor coords stay aligned across z.
+
+**Stage M3 — Evaluate + write the production decision back into this doc.**
+- Assess the model against both cases plus known real-data messiness (non-rectangular footprints, multi-door
+  pairs like real rooms 7↔10, z-stacking, the 16 orphan/disconnected rooms, prose-only "hidden" doors where
+  `content:"Hidden"` but `is_hidden` is false).
+- Append here: the proven coordinate schema, a recommendation on the **permanent home** (additive `layout`
+  block on the dungeon `data` blob, keyed by id, vs. embedding fields in existing room/door objects), and a
+  migration sketch (how `dungeonModel.ts` `RoomNode.position`/`getRoomGraph` would consume it, and how an
+  authoring/editor path would set coords — see the deferred editor round-trip debt above).
+- No production code change in this stage — it's the "decide after prototype" gate.
+
+### Critical files & isolation
+- **New (isolated):** `frontend/src/features/dungeons/maplab/{maplabData.ts, maplabModel.ts, MapLabPage.tsx,
+  MapLabPage.css, __tests__/…}`.
+- **Touched (additive only):** `frontend/src/router.tsx` (one new route); this doc (M3 writeup).
+- **Untouched (explicitly):** `data/seeds/seed_dungeons.json`, the DB, all of `backend/`, `dungeonModel.ts`,
+  `dungeonForm.ts`, `DungeonEditor.tsx`, the live dungeon pages.
+
+### Verified anchors (real seed ids/titles/connectivity)
+- Room 17 "Combat Training Hall" ↔ Room 23 "Armoury" via **door 32 "Heavy Stone Door"** (`leads_to:[23,17]`,
+  `door_mechanics:"DC23 to break; DC18 to pick lock"`).
+- Room 32 "Back Stairwell" (floor 1) ↔ Room 33 "First Floor Landing" (floor 2) via **stair 2 "Stone
+  Stairs"** (`leads_to_rooms:[32,33]`, `leads_to_floors:[1,2]`).
+
+### Verification (end-to-end)
+- `npm run test` (frontend) green incl. new maplab tests; `tsc --noEmit` clean.
+- `scripts/start_server.ps1` → `/dungeons/map-lab`: Case 1 (hall + L-armoury + shared-wall door, clickable)
+  and Case 2 (two floors, stair travels between them, coords aligned across z) both render with theme
+  tokens, no emoji, no console errors.
+- Confirm production untouched: `git status` shows no change to `seed_dungeons.json`, `backend/`, or the
+  existing dungeon model/pages; existing dungeon nav at `/dungeons/4` behaves exactly as before.

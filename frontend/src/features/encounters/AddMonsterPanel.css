@@ -1,0 +1,44 @@
+.add-monster-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background-color: var(--md-surface-1);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: 0.5rem;
+  max-height: 26rem;
+}
+
+.add-monster-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.add-monster-panel-header h3 {
+  margin: 0;
+  font-size: var(--type-title-size);
+}
+
+.add-monster-panel-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  background: transparent;
+  border: none;
+  color: var(--md-on-surface-variant);
+  font-size: 1.25rem;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.add-monster-panel-close:hover {
+  color: var(--md-on-surface);
+}
+
+.add-monster-panel-error {
+  color: var(--md-error);
+  font-size: var(--type-body-sm-size);
+}

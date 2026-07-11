@@ -72,3 +72,34 @@ def dict_from_row(row):
     if row is None:
         return None
     return dict(row)
+
+
+# JSON-encoded spell columns, split by expected decoded shape. Kept here (not in a
+# router) so every endpoint that returns a spell row parses it identically — a
+# second, drifting copy of this list previously caused /api/players/{id}/spells
+# to 500 while /api/spells worked.
+_SPELL_OBJECT_COLUMNS = ["damage", "heal", "heal_at_spell_slots", "area_of_effect", "attack_type"]
+_SPELL_LIST_COLUMNS = ["components", "classes", "subclasses"]
+
+
+def parse_spell_row(row):
+    """Convert a spell sqlite3.Row to a dict, parsing every JSON-encoded column.
+
+    This is the single canonical spell-row parser. Both the spells router and the
+    nested player-spells endpoint use it so their JSON handling can never diverge.
+    """
+    spell = dict_from_row(row)
+    if spell is None:
+        return None
+
+    for field in _SPELL_OBJECT_COLUMNS:
+        if spell.get(field):
+            spell[field] = parse_json_value(spell[field])
+
+    # List-typed columns; some legacy rows store them as a plain comma-separated
+    # string instead of a JSON array.
+    for field in _SPELL_LIST_COLUMNS:
+        if spell.get(field):
+            spell[field] = parse_json_list(spell[field])
+
+    return spell

@@ -7,6 +7,8 @@ from ..schemas import Encounter, EncounterCreate, EncounterUpdate
 
 router = APIRouter(prefix="/api", tags=["encounters"])
 
+SELECT_COLUMNS = "id, name as title, units as creatures, active_index"
+
 
 def _parse_encounter_row(row) -> dict:
     """Convert an encounter row, parsing JSON columns."""
@@ -14,8 +16,8 @@ def _parse_encounter_row(row) -> dict:
     if encounter is None:
         return None
 
-    if encounter.get("units"):
-        encounter["units"] = parse_json_value(encounter["units"])
+    if encounter.get("creatures"):
+        encounter["creatures"] = parse_json_value(encounter["creatures"])
 
     return encounter
 
@@ -29,8 +31,7 @@ def list_encounters(
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute(
-            """SELECT id, name as title, units as creatures FROM encounter
-               ORDER BY name LIMIT ? OFFSET ?""",
+            f"SELECT {SELECT_COLUMNS} FROM encounter ORDER BY name LIMIT ? OFFSET ?",
             (limit, offset)
         )
         rows = cursor.fetchall()
@@ -42,10 +43,7 @@ def get_encounter(encounter_id: int):
     """Get a specific encounter by ID."""
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute(
-            """SELECT id, name as title, units as creatures FROM encounter WHERE id = ?""",
-            (encounter_id,)
-        )
+        cursor.execute(f"SELECT {SELECT_COLUMNS} FROM encounter WHERE id = ?", (encounter_id,))
         row = cursor.fetchone()
         if not row:
             raise HTTPException(status_code=404, detail="Encounter not found")
@@ -60,10 +58,11 @@ def create_encounter(encounter: EncounterCreate):
 
         try:
             cursor.execute(
-                """INSERT INTO encounter (name, units) VALUES (?, ?)""",
+                """INSERT INTO encounter (name, units, active_index) VALUES (?, ?, ?)""",
                 (
                     encounter.title,
-                    json.dumps(encounter.creatures) if encounter.creatures else None,
+                    json.dumps(encounter.creatures) if encounter.creatures else json.dumps([]),
+                    encounter.active_index,
                 )
             )
             conn.commit()
@@ -72,10 +71,7 @@ def create_encounter(encounter: EncounterCreate):
             conn.rollback()
             raise HTTPException(status_code=400, detail=f"Failed to create encounter: {str(e)}")
 
-        cursor.execute(
-            """SELECT id, name as title, units as creatures FROM encounter WHERE id = ?""",
-            (encounter_id,)
-        )
+        cursor.execute(f"SELECT {SELECT_COLUMNS} FROM encounter WHERE id = ?", (encounter_id,))
         row = cursor.fetchone()
         return _parse_encounter_row(row)
 
@@ -92,10 +88,11 @@ def update_encounter(encounter_id: int, encounter: EncounterUpdate):
 
         try:
             cursor.execute(
-                """UPDATE encounter SET name = ?, units = ? WHERE id = ?""",
+                """UPDATE encounter SET name = ?, units = ?, active_index = ? WHERE id = ?""",
                 (
                     encounter.title,
-                    json.dumps(encounter.creatures) if encounter.creatures else None,
+                    json.dumps(encounter.creatures) if encounter.creatures else json.dumps([]),
+                    encounter.active_index,
                     encounter_id,
                 )
             )
@@ -104,10 +101,7 @@ def update_encounter(encounter_id: int, encounter: EncounterUpdate):
             conn.rollback()
             raise HTTPException(status_code=400, detail=f"Failed to update encounter: {str(e)}")
 
-        cursor.execute(
-            """SELECT id, name as title, units as creatures FROM encounter WHERE id = ?""",
-            (encounter_id,)
-        )
+        cursor.execute(f"SELECT {SELECT_COLUMNS} FROM encounter WHERE id = ?", (encounter_id,))
         row = cursor.fetchone()
         return _parse_encounter_row(row)
 

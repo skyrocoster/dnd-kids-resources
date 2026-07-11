@@ -9,6 +9,9 @@ import {
   getRoomThreatHints,
   getRoomGraph,
   getAdjacentRoomIds,
+  getFloors,
+  getFloorForRoom,
+  getRoomsOnFloor,
 } from '../dungeonModel'
 
 // Seed data for "Isly Castle" — minimal fixture for testing.
@@ -146,6 +149,27 @@ describe('dungeonModel', () => {
       const parsed = parseDungeonData(partial)
       expect(parsed.doors).toEqual([])
       expect(parsed.general_info).toEqual({})
+    })
+
+    it('coerces numeric-string monster_id/encounter_id on entries (real seed data uses strings)', () => {
+      const withStringIds = {
+        rooms: [
+          {
+            room_id: 1,
+            title: 'Kennels',
+            entries: [
+              { entry_type: 'encounter', title: 'Fight', content: '', encounter_id: '1', monster_id: '7' },
+              { entry_type: 'feature', title: 'Empty', content: '', encounter_id: '', monster_id: 'not-a-number' },
+            ],
+          },
+        ],
+      }
+      const parsed = parseDungeonData(withStringIds)
+      const entries = parsed.rooms![0].entries!
+      expect(entries[0].encounter_id).toBe(1)
+      expect(entries[0].monster_id).toBe(7)
+      expect(entries[1].encounter_id).toBeNull()
+      expect(entries[1].monster_id).toBeNull()
     })
   })
 
@@ -289,20 +313,20 @@ describe('dungeonModel', () => {
   })
 
   describe('groupEntriesByType', () => {
-    it('groups entries by type with emoji labels', () => {
+    it('groups entries by type with labels', () => {
       const parsed = parseDungeonData(islyData)
       const room = getRoomById(parsed, 3)!
       const grouped = groupEntriesByType(room)
-      expect(Object.keys(grouped).length).toBeGreaterThan(0)
-      expect(Object.keys(grouped).some((k) => k.includes('✨'))).toBe(true)
-      expect(Object.keys(grouped).some((k) => k.includes('⚠️'))).toBe(true)
+      expect(grouped.length).toBeGreaterThan(0)
+      expect(grouped.some((g) => g.label === 'Features')).toBe(true)
+      expect(grouped.some((g) => g.label === 'Traps')).toBe(true)
     })
 
-    it('returns empty object for room with no entries', () => {
+    it('returns empty array for room with no entries', () => {
       const parsed = parseDungeonData(islyData)
       const room = getRoomById(parsed, 1)!
       const grouped = groupEntriesByType(room)
-      expect(Object.keys(grouped).length).toBe(0)
+      expect(grouped.length).toBe(0)
     })
 
     it('assigns unrecognized types to "Other"', () => {
@@ -325,7 +349,7 @@ describe('dungeonModel', () => {
       const parsed = parseDungeonData(withUnknown)
       const room = getRoomById(parsed, 99)!
       const grouped = groupEntriesByType(room)
-      expect(Object.keys(grouped).some((k) => k.includes('❓'))).toBe(true)
+      expect(grouped.some((g) => g.label === 'Other')).toBe(true)
     })
   })
 
@@ -490,6 +514,129 @@ describe('dungeonModel', () => {
         }
         expect(exits.length).toBeLessThanOrEqual(uniqueDestinations.size)
       }
+    })
+  })
+
+  describe('Floor selectors', () => {
+    it('returns empty array when no floors present', () => {
+      const parsed = parseDungeonData(islyData)
+      const floors = getFloors(parsed)
+      expect(floors).toEqual([])
+    })
+
+    it('maps rooms to their floor', () => {
+      const withFloors = {
+        ...islyData,
+        floors: [
+          { floor_id: 1, title: 'Ground Floor', room_ids: [1, 2, 3], floor_below: null, floor_above: 2 },
+          { floor_id: 2, title: 'Second Floor', room_ids: [4, 5], floor_below: 1, floor_above: null },
+        ],
+      }
+      const parsed = parseDungeonData(withFloors)
+
+      const floor1 = getFloorForRoom(parsed, 1)
+      expect(floor1?.floor_id).toBe(1)
+
+      const floor5 = getFloorForRoom(parsed, 5)
+      expect(floor5?.floor_id).toBe(2)
+    })
+
+    it('returns rooms on a specific floor', () => {
+      const withFloors = {
+        ...islyData,
+        floors: [
+          { floor_id: 1, title: 'Ground Floor', room_ids: [1, 2, 3], floor_below: null, floor_above: 2 },
+          { floor_id: 2, title: 'Second Floor', room_ids: [4, 5], floor_below: 1, floor_above: null },
+        ],
+      }
+      const parsed = parseDungeonData(withFloors)
+
+      const floor1Rooms = getRoomsOnFloor(parsed, 1)
+      expect(floor1Rooms.map((r) => r.room_id)).toEqual([1, 2, 3])
+
+      const floor2Rooms = getRoomsOnFloor(parsed, 2)
+      expect(floor2Rooms.map((r) => r.room_id)).toEqual([4, 5])
+    })
+  })
+
+  describe('Stair exits', () => {
+    it('includes stairs in getExitsFromRoom', () => {
+      const withStairs = {
+        ...islyData,
+        floors: [
+          { floor_id: 1, title: 'Ground Floor', room_ids: [1, 2, 3], floor_below: null, floor_above: 2 },
+          { floor_id: 2, title: 'Second Floor', room_ids: [4, 5], floor_below: 1, floor_above: null },
+        ],
+        stairs: [
+          {
+            stair_id: 10,
+            title: 'Stone Stairs',
+            leads_to_rooms: [3, 4],
+            leads_to_floors: [1, 2],
+            is_hidden: false,
+            hidden_dc: null,
+          },
+        ],
+      }
+      const parsed = parseDungeonData(withStairs)
+
+      // Room 3 (ground floor) should have a stair exit to room 4 (second floor)
+      const exits3 = getExitsFromRoom(parsed, 3)
+      const stairExit = exits3.find((e) => e.kind === 'stair')
+      expect(stairExit).toBeDefined()
+      expect(stairExit?.toRoomId).toBe(4)
+      expect(stairExit?.direction).toBe('up')
+
+      // Room 4 (second floor) should have a stair exit to room 3 (ground floor)
+      const exits4 = getExitsFromRoom(parsed, 4)
+      const downStair = exits4.find((e) => e.kind === 'stair')
+      expect(downStair).toBeDefined()
+      expect(downStair?.toRoomId).toBe(3)
+      expect(downStair?.direction).toBe('down')
+    })
+
+    it('includes stairs in getRoomGraph', () => {
+      const withStairs = {
+        ...islyData,
+        floors: [
+          { floor_id: 1, title: 'Ground Floor', room_ids: [1, 2, 3], floor_below: null, floor_above: 2 },
+          { floor_id: 2, title: 'Second Floor', room_ids: [4, 5], floor_below: 1, floor_above: null },
+        ],
+        stairs: [
+          {
+            stair_id: 10,
+            title: 'Stone Stairs',
+            leads_to_rooms: [3, 4],
+            leads_to_floors: [1, 2],
+            is_hidden: false,
+            hidden_dc: null,
+          },
+        ],
+      }
+      const parsed = parseDungeonData(withStairs)
+      const graph = getRoomGraph(parsed)
+
+      const stairEdge = graph.edges.find((e) => e.kind === 'stair')
+      expect(stairEdge).toBeDefined()
+      expect(stairEdge?.stairId).toBe(10)
+      expect([stairEdge?.a, stairEdge?.b].sort()).toEqual([3, 4])
+    })
+
+    it('populates floorId on graph nodes', () => {
+      const withFloors = {
+        ...islyData,
+        floors: [
+          { floor_id: 1, title: 'Ground Floor', room_ids: [1, 2, 3], floor_below: null, floor_above: 2 },
+        ],
+      }
+      const parsed = parseDungeonData(withFloors)
+      const graph = getRoomGraph(parsed)
+
+      const node1 = graph.nodes.find((n) => n.roomId === 1)
+      expect(node1?.floorId).toBe(1)
+
+      const node4 = graph.nodes.find((n) => n.roomId === 4)
+      expect(node4?.floorId).toBeUndefined()
     })
   })
 })

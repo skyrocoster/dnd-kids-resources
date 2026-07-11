@@ -36,3 +36,16 @@ def test_get_nonexistent_monster(test_client):
     """Test 404 for nonexistent monster."""
     response = test_client.get("/api/monsters/99999")
     assert response.status_code == 404
+
+
+def test_get_monster_by_name(test_client):
+    """Test GET /api/monsters/by-name/{name}."""
+    response = test_client.get("/api/monsters/by-name/Owlbear")
+    assert response.status_code == 200
+    assert response.json()["name"] == "Owlbear"
+
+
+def test_get_monster_by_name_not_found(test_client):
+    """Test 404 for a nonexistent monster name."""
+    response = test_client.get("/api/monsters/by-name/NoSuchBeast")
+    assert response.status_code == 404

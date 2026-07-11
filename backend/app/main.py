@@ -1,5 +1,9 @@
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from .routers import reference, spells, monsters, weapons, players, npcs, quests, encounters, dungeons
 
@@ -9,10 +13,14 @@ app = FastAPI(
     version="2.0.0",
 )
 
-# CORS for Vite dev server (localhost:5173)
+# CORS for Vite dev server (localhost and LAN)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://192.168.1.175:5173",  # LAN IP
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -29,12 +37,28 @@ app.include_router(quests.router)
 app.include_router(encounters.router)
 app.include_router(dungeons.router)
 
+# Serve the built frontend (frontend/dist), if present, with an SPA fallback
+# for client-side routes. All API routes are under /api, so anything else
+# that isn't a known static asset falls back to index.html.
+FRONTEND_DIST = Path(__file__).parent.parent.parent / "frontend" / "dist"
 
-@app.get("/")
-def root():
-    """API root endpoint."""
-    return {
-        "message": "D&D Kids Resources API v2",
-        "docs": "/docs",
-        "openapi": "/openapi.json",
-    }
+if FRONTEND_DIST.is_dir():
+    app.mount("/assets", StaticFiles(directory=FRONTEND_DIST / "assets"), name="assets")
+
+    @app.get("/{full_path:path}")
+    def spa(full_path: str):
+        """Serve the SPA's index.html for any non-API route (client-side routing)."""
+        candidate = FRONTEND_DIST / full_path
+        if full_path and candidate.is_file():
+            return FileResponse(candidate)
+        return FileResponse(FRONTEND_DIST / "index.html")
+else:
+
+    @app.get("/")
+    def root():
+        """API root endpoint (frontend not built)."""
+        return {
+            "message": "D&D Kids Resources API v2",
+            "docs": "/docs",
+            "openapi": "/openapi.json",
+        }

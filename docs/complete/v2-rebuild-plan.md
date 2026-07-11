@@ -251,7 +251,7 @@ python scripts/init_database.py && python scripts/seed_database.py
 
 ---
 
-## Task 10 — Campaign CRUD & dungeons
+## Task 10 — Campaign CRUD & dungeons ✅ DONE (2026-07-10)
 
 **Goal:** Build the editable campaign pages and the custom-dungeon editor.
 
@@ -269,34 +269,43 @@ python scripts/init_database.py && python scripts/seed_database.py
 
 **Components available from Task 8/9:** these pages have no dedicated content-browser identity (per the design doc, campaign CRUD intentionally uses neutral surfaces only, no accent hue), so use `variant="neutral"` on `SearchList`/`Card` rather than picking a new color. All form work (player/NPC/quest/encounter/dungeon editors) should use the same `form/` primitives from Task 8 (`TextField`, `SelectField`, `CheckboxField`, `MultiSelectField`) that Task 9's `SpellEditor` establishes patterns for — check how Task 9 wired `MultiSelectField` and modal/form submission before inventing a new approach here, especially for the player↔spell/weapon assignment UI (conceptually a multi-select against a live API list rather than a static options array). Reuse `components/ConfirmDialog.tsx` (added in Task 9) for every delete action — **do not use `window.confirm()`**, it's a blocking native dialog that froze browser-automation verification mid-Task-9. Also reuse the `formState ⇄ API-payload` serialization pattern from `features/spells/spellForm.ts` / `features/weapons/weaponForm.ts` (a plain object of editable field state, `xToFormState()`/`formStateToXInput()` pure functions, unit-tested independently of the React component) rather than managing raw API types directly in editor component state.
 
-**Steps:**
-1. `features/players/` — player manager incl. assigning spells and weapons.
-2. `features/npcs/`, `features/quests/`, `features/encounters/` — CRUD editors.
-3. `features/dungeons/` — dungeon library browse + structured custom-dungeon editor.
-4. Verify: create/edit/delete for each; assign a spell to a player; author and edit a custom dungeon.
+**What was done:**
+- **Fixed all backend schema-drift gaps identified above:** `encounters.py`'s `_parse_encounter_row` now parses the aliased `creatures` column with `Schema.creatures: Optional[List[Dict[str, Any]]]`; `npcs.py`/`NPC`/`NPCCreate`/`NPCUpdate` rewritten to expose the full ~15-column table (race, gender, background, size, stats, armor_class, hit_points, speed, saving_throws, skills, senses, languages, appearance, notes); `quests.py`/`Quest` wired up `objectives`, `details`, `quest_giver`, `dungeon_id`, `location` and parses `reward`/`objectives` from JSON instead of leaving dead `status`/`notes` fields; `players.py` now aliases `class` → `class_` in the `SELECT` so class is no longer silently dropped. `conftest.py`'s two hand-written schema copies updated to match, and both fixed with regression tests (`test_players.py`, `test_resources.py`).
+- `frontend/src/features/players/`: `PlayerBrowserPage` (SplitPane + SearchList + Card, `variant="neutral"`), `PlayerEditor` (name/class/level form), `PlayerAssignments` (spell/weapon assignment via live-API multi-select: dropdown + Add, Remove per assigned item), `playerForm.ts`.
+- `frontend/src/features/npcs/`: `NPCBrowserPage`, `NPCEditor` (full form across all real columns), `npcForm.ts`.
+- `frontend/src/features/quests/`: `QuestBrowserPage`, `QuestEditor` (objectives/reward as repeatable text lists, quest_giver/location/dungeon_id fields), `questForm.ts`.
+- `frontend/src/features/encounters/`: `EncounterBrowserPage`, `EncounterEditor` (creatures as repeatable rows: monster_id, name, hp_current/max, ac, status, conditions), `encounterForm.ts`.
+- `frontend/src/features/dungeons/`: `DungeonBrowserPage`, `DungeonEditor` (rooms/entries editor against the Task 3 `{id, title, data}` shape), `dungeonForm.ts`.
+- All five browsers use `variant="neutral"` (no accent hue, per the design doc) and reuse `ConfirmDialog` for delete — no `window.confirm()`.
+- Wired `/players`, `/npcs`, `/quests`, `/encounters`, `/dungeons` routes in `router.tsx`, replacing the remaining `StubPage`s. `frontend/src/api/client.ts` and `api/types.ts` extended with full CRUD + player spell/weapon assignment functions for all five resources.
+- **Tests:** one `*Form.test.ts` (serialization round-trip) + one `*BrowserPage.test.tsx` (list/select/error/editor flows, mocking `api/client`) per feature. 88/88 frontend tests, 53/53 backend tests passing.
+- **Verified against the real dev DB** (not just pytest's schema): hit all five endpoints directly via `TestClient` against `dnd_kids_resources.db` — `/api/players`, `/api/npcs`, `/api/quests`, `/api/encounters`, `/api/dungeons` all return correctly parsed data with no 500s. **Verified live** (uvicorn + vite, driven via browser automation, no console errors): created a player ("TestChar", Rogue, level 3) through the UI, confirmed it persisted via direct API call, deleted it through the `ConfirmDialog` flow, confirmed removal — full CRUD round-trip. Loaded npcs/quests/encounters/dungeons pages and confirmed each renders its real seeded data (20 NPCs, quests, 3 encounters, 2 dungeons) with working list/detail/edit/delete UI.
 
-**Done when:** all kept features work end-to-end against FastAPI.
+**Done when:** all kept features work end-to-end against FastAPI. ✅
 
 ---
 
-## Task 11 — Production wiring & final cleanup
+## Task 11 — Production wiring & final cleanup ✅ DONE (2026-07-10)
 
 **Goal:** Serve the built frontend from FastAPI, update docs, and confirm a clean single-command run.
 
 **Prereqs:** Tasks 9–10.
 
-**Known issue to resolve here:** since Task 7, `npm run build` (`tsc -b && vite build`) has failed on a `vite.config.ts` type error — the `test` block isn't recognized by the base `UserConfigExport` overload (missing/misordered `/// <reference types="vitest/config" />`, or a `tsconfig` project-reference gap). It's never blocked work because `npm run test` (`vitest run`) doesn't go through `tsc -b`, but Task 11 requires an actual production build, so this must be fixed first.
+**What was done:**
+- **Root-caused and fixed the `tsc -b` build error:** it wasn't a `vite.config.ts` authoring mistake — `vitest@3.2.7` only declares peer support for vite 6/7, so its `UserConfigExport` type augmentation (the `test` block) never matched the project's installed `vite@8.1.4`, giving "Object literal may only specify known properties, and 'test' does not exist." Fixed by upgrading `vitest` to `^4.1.10` (peer range `^6.0.0 || ^7.0.0 || ^8.0.0`), which resolved the type mismatch with no code changes needed. `npm run build` (`tsc -b && vite build`) now succeeds; re-ran `npm run test` afterward to confirm the upgrade didn't regress anything (88/88 still passing).
+- **`backend/app/main.py`:** mounts `frontend/dist/assets` as static files and adds a catch-all `GET /{full_path:path}` route serving `index.html` (or the matching static file, e.g. `favicon.svg`) for any path that isn't under `/api` — standard SPA fallback. Only mounted when `frontend/dist` exists, so the API still runs standalone (with the old JSON root message) if the frontend hasn't been built. Verified `/`, a deep-linked client route (`/quests`), `/api/quests`, and `/docs` all resolve correctly from a single `uvicorn` process, both run from repo root and from `cd backend`.
+- **Cleaned up stale references to dropped v1 features** found while auditing for this task (none were live bugs, but they were dead/misleading code left over from Tasks 2–3's table drops):
+  - `scripts/export_db_seeds.py` still had export definitions querying the four tables dropped in Task 3 (`classes`, `actions`, `traps`, `deities`) — removed them, along with the now-dead `transform_record` branches for `deities` and an orphaned `creatures` case that never matched any real export key. Also fixed the `dungeons` export query, which still referenced the pre-Task-3 `original_html`/`parsed_json` columns instead of the current `data` column.
+  - `scripts/seed_database.py` and `scripts/init_database.py` had stale module docstrings referencing `_dev/seed_database.py` / `_dev/init_database.py` (pre-Task-2 paths) and a `--traps` flag that no longer exists in the actual argparse definition — corrected to match current `scripts/` paths and real CLI flags.
+  - Confirmed via repo-wide grep that no runtime code references trackers, the donjon parser, or traps; the remaining hits are documentation correctly describing what was intentionally dropped.
+- **`README.md`:** flipped status line from "In active development" to "v2 rebuild complete" — the quick-start steps (rebuild DB, run backend, run frontend dev, build+serve as one) were already accurate from earlier tasks and needed no other changes.
+- **Full clean-checkout verification:** `python scripts/init_database.py && python scripts/seed_database.py` (drops and recreates all 14 tables, confirmed idempotent) then `python scripts/seed_database.py --force` (confirmed it actually reloads data, not just skips) — all row counts match seeds. `pytest backend/tests/` → 53/53 passing against the freshly rebuilt DB. `npm run build` → clean production bundle. Ran the single `uvicorn` server and walked spells/monsters/weapons/players/npcs/quests/encounters/dungeons via browser automation — every page renders real seeded data with zero console errors, both via SPA client-side nav and direct deep-link requests to the FastAPI-served build.
 
-**Steps:**
-1. Fix the `tsc -b` / `vite.config.ts` build error (see above), then `vite build`; have `backend/app/main.py` serve the static `frontend/dist` bundle (SPA fallback for client routes).
-2. Refresh `README.md`: v2 quick start (rebuild DB from seeds → run uvicorn / build+serve), the new layout, and the seed-editing workflow via `scripts/export_db_seeds.py`.
-3. Confirm nothing references removed features (trackers, parser, traps).
-4. Verify: from a clean checkout, rebuild DB, build frontend, run the server, and walk every page once.
-
-**Done when:** v2 runs from one server serving the built app + API, docs match reality, and all kept features pass a full walkthrough.
+**Done when:** v2 runs from one server serving the built app + API, docs match reality, and all kept features pass a full walkthrough. ✅
 
 ---
 
 ## Open items (decide during the relevant task, not blockers)
 - Exact structured `dungeons` shape (Task 3), finalized when building the editor (Task 10).
 - Whether to keep the split Vite+uvicorn dev setup long-term or always serve the built bundle (Task 11).
+

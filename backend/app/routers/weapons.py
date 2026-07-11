@@ -85,10 +85,12 @@ def create_weapon(weapon: WeaponCreate):
                     weapon.weapon_category,
                     weapon.weight,
                     weapon.req_attune,
-                    json.dumps(weapon.property) if weapon.property else None,
-                    json.dumps(weapon.focus) if weapon.focus else None,
-                    json.dumps(weapon.attack) if weapon.attack else None,
-                    json.dumps(weapon.entries) if weapon.entries else None,
+                    # These columns are NOT NULL DEFAULT '[]' in the real schema —
+                    # an empty JSON array, never NULL.
+                    json.dumps(weapon.property) if weapon.property else "[]",
+                    json.dumps(weapon.focus) if weapon.focus else "[]",
+                    json.dumps(weapon.attack) if weapon.attack else "[]",
+                    json.dumps(weapon.entries) if weapon.entries else "[]",
                 )
             )
             conn.commit()
@@ -125,10 +127,12 @@ def update_weapon(weapon_id: int, weapon: WeaponUpdate):
                     weapon.weapon_category,
                     weapon.weight,
                     weapon.req_attune,
-                    json.dumps(weapon.property) if weapon.property else None,
-                    json.dumps(weapon.focus) if weapon.focus else None,
-                    json.dumps(weapon.attack) if weapon.attack else None,
-                    json.dumps(weapon.entries) if weapon.entries else None,
+                    # These columns are NOT NULL DEFAULT '[]' in the real schema —
+                    # an empty JSON array, never NULL.
+                    json.dumps(weapon.property) if weapon.property else "[]",
+                    json.dumps(weapon.focus) if weapon.focus else "[]",
+                    json.dumps(weapon.attack) if weapon.attack else "[]",
+                    json.dumps(weapon.entries) if weapon.entries else "[]",
                     weapon_id,
                 )
             )

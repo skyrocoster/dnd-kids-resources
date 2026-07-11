@@ -2,24 +2,10 @@ from fastapi import APIRouter, HTTPException, Query
 from typing import List
 import json
 
-from ..db import get_db, dict_from_row, parse_json_value
+from ..db import get_db, dict_from_row, parse_json_value, parse_spell_row as _parse_spell_row
 from ..schemas import Player, PlayerCreate, PlayerUpdate, Spell, Weapon
 
 router = APIRouter(prefix="/api", tags=["players"])
-
-
-def _parse_spell_row(row) -> dict:
-    """Convert a spell row, parsing JSON columns."""
-    spell = dict_from_row(row)
-    if spell is None:
-        return None
-
-    # Parse JSON columns
-    for field in ["components", "classes", "damage", "healing", "area_of_effect"]:
-        if spell.get(field):
-            spell[field] = parse_json_value(spell[field])
-
-    return spell
 
 
 def _parse_player_row(row) -> dict:
@@ -46,7 +32,7 @@ def list_players(
         cursor = conn.cursor()
 
         query = """
-            SELECT id, name, class, level
+            SELECT id, name, class AS class_, level
             FROM players
             ORDER BY name
             LIMIT ? OFFSET ?
@@ -63,7 +49,7 @@ def get_player(player_id: int):
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute(
-            """SELECT id, name, class, level FROM players WHERE id = ?""",
+            """SELECT id, name, class AS class_, level FROM players WHERE id = ?""",
             (player_id,)
         )
         row = cursor.fetchone()
@@ -91,7 +77,7 @@ def create_player(player: PlayerCreate):
             raise HTTPException(status_code=400, detail=f"Failed to create player: {str(e)}")
 
         cursor.execute(
-            """SELECT id, name, class, level FROM players WHERE id = ?""",
+            """SELECT id, name, class AS class_, level FROM players WHERE id = ?""",
             (player_id,)
         )
         row = cursor.fetchone()
@@ -121,7 +107,7 @@ def update_player(player_id: int, player: PlayerUpdate):
             raise HTTPException(status_code=400, detail=f"Failed to update player: {str(e)}")
 
         cursor.execute(
-            """SELECT id, name, class, level FROM players WHERE id = ?""",
+            """SELECT id, name, class AS class_, level FROM players WHERE id = ?""",
             (player_id,)
         )
         row = cursor.fetchone()
