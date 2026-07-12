@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import type { Encounter, Monster } from '../../../api/types'
-import { emptyEncounterForm, encounterToFormState, formStateToEncounterInput } from '../encounterForm'
+import type { Condition, Encounter, Monster } from '../../../api/types'
+import {
+  addEncounterCreatureRow,
+  emptyEncounterForm,
+  encounterToFormState,
+  formStateToEncounterInput,
+  isConditionSelected,
+  mergeConditionOptions,
+  toggleCondition,
+} from '../encounterForm'
 import { deriveCreatureStats } from '../encounterStats'
 import { combatantFromMonster } from '../encounterRunner'
 
@@ -81,23 +89,46 @@ describe('C1: Stat propagation', () => {
 })
 
 describe('C2: Condition checkboxes', () => {
-  it.skip('conditions render as checkboxes from getConditions', () => {
-    // TODO C2: verify condition checkboxes render
-    expect(true).toBe(true)
+  const canonical: Condition[] = [
+    { id: 1, name: 'Poisoned' },
+    { id: 2, name: 'Prone' },
+  ]
+
+  it('conditions render as checkboxes from getConditions', () => {
+    expect(mergeConditionOptions(canonical, [])).toEqual([
+      { value: 'Poisoned', label: 'Poisoned' },
+      { value: 'Prone', label: 'Prone' },
+    ])
   })
 
-  it.skip('toggling conditions updates form state', () => {
-    // TODO C2: verify checkbox toggle updates conditions: string[]
-    expect(true).toBe(true)
+  it('toggling conditions updates form state', () => {
+    expect(toggleCondition([], 'Poisoned')).toEqual(['Poisoned'])
+    expect(toggleCondition(['Poisoned'], 'Poisoned')).toEqual([])
+    expect(isConditionSelected(['poisoned'], 'Poisoned')).toBe(true)
   })
 
-  it.skip('conditions round-trip through formStateToEncounterInput', () => {
-    // TODO C2: verify structured conditions survive save/restore
-    expect(true).toBe(true)
+  it('conditions round-trip through formStateToEncounterInput', () => {
+    const [row] = addEncounterCreatureRow([])
+    const form = {
+      title: 'Test',
+      creatureRows: [{ ...row, conditions: ['Poisoned', 'Poisoned', ' Prone '] }],
+    }
+    const input = formStateToEncounterInput(form)
+    expect(input.creatures?.[0].conditions).toEqual(['Poisoned', 'Prone'])
   })
 
-  it.skip('legacy/unknown conditions survive an edit', () => {
-    // TODO C2: verify conditions not in canonical list persist
-    expect(true).toBe(true)
+  it('legacy/unknown conditions survive an edit', () => {
+    const encounter: Encounter = {
+      ...baseEncounter,
+      creatures: [{ ...baseEncounter.creatures![0], conditions: ['stunned (legacy)'] }],
+    }
+    const form = encounterToFormState(encounter)
+    expect(form.creatureRows[0].conditions).toEqual(['stunned (legacy)'])
+
+    const options = mergeConditionOptions(canonical, form.creatureRows[0].conditions)
+    expect(options).toContainEqual({ value: 'stunned (legacy)', label: 'stunned (legacy) (custom)' })
+
+    const input = formStateToEncounterInput(form)
+    expect(input.creatures?.[0].conditions).toEqual(['stunned (legacy)'])
   })
 })

@@ -2,12 +2,16 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as api from '../../../api/client'
-import type { Monster } from '../../../api/types'
+import type { Condition, Encounter, Monster } from '../../../api/types'
 import { EncounterEditor } from '../EncounterEditor'
 import { combatantFromMonster } from '../encounterRunner'
 
 const goblin: Monster = { id: 1, name: 'Goblin', ac: { '15': null }, hp: { average: 7 } }
 const mystery: Monster = { id: 2, name: 'Mystery', ac: null, hp: null }
+const conditions: Condition[] = [
+  { id: 1, name: 'Poisoned' },
+  { id: 2, name: 'Prone' },
+]
 
 describe('EncounterEditor', () => {
   beforeEach(() => {
@@ -63,24 +67,79 @@ describe('EncounterEditor', () => {
   })
 
   describe('C2: Condition checkboxes', () => {
-    it.skip('conditions render as checkboxes from getConditions', () => {
-      // TODO C2: mount editor, verify condition checkboxes render
-      expect(true).toBe(true)
+    it('conditions render as checkboxes from getConditions', async () => {
+      vi.spyOn(api, 'listMonsters').mockResolvedValue([goblin])
+      vi.spyOn(api, 'getConditions').mockResolvedValue(conditions)
+      const user = userEvent.setup()
+
+      render(<EncounterEditor onClose={() => {}} onSaved={() => {}} />)
+      await user.click(screen.getByRole('button', { name: 'Add Creature' }))
+
+      await waitFor(() => expect(screen.getByLabelText('Poisoned')).toBeInTheDocument())
+      expect(screen.getByLabelText('Prone')).toBeInTheDocument()
+      expect(screen.getByLabelText('Poisoned')).not.toBeChecked()
     })
 
-    it.skip('toggling conditions updates form state', () => {
-      // TODO C2: click checkbox, verify conditions: string[] updates
-      expect(true).toBe(true)
+    it('toggling conditions updates form state', async () => {
+      vi.spyOn(api, 'listMonsters').mockResolvedValue([goblin])
+      vi.spyOn(api, 'getConditions').mockResolvedValue(conditions)
+      const user = userEvent.setup()
+
+      render(<EncounterEditor onClose={() => {}} onSaved={() => {}} />)
+      await user.click(screen.getByRole('button', { name: 'Add Creature' }))
+      await waitFor(() => expect(screen.getByLabelText('Poisoned')).toBeInTheDocument())
+
+      await user.click(screen.getByLabelText('Poisoned'))
+      expect(screen.getByLabelText('Poisoned')).toBeChecked()
+
+      await user.click(screen.getByLabelText('Poisoned'))
+      expect(screen.getByLabelText('Poisoned')).not.toBeChecked()
     })
 
-    it.skip('conditions round-trip through formStateToEncounterInput', () => {
-      // TODO C2: set conditions, convert to input, verify round-trip
-      expect(true).toBe(true)
+    it('conditions round-trip through formStateToEncounterInput', async () => {
+      vi.spyOn(api, 'listMonsters').mockResolvedValue([goblin])
+      vi.spyOn(api, 'getConditions').mockResolvedValue(conditions)
+      const onSaved = vi.fn()
+      const createEncounter = vi
+        .spyOn(api, 'createEncounter')
+        .mockResolvedValue({ id: 1, title: 'Test', creatures: [] })
+      const user = userEvent.setup()
+
+      render(<EncounterEditor onClose={() => {}} onSaved={onSaved} />)
+      await user.type(screen.getByLabelText('Title'), 'Test')
+      await user.click(screen.getByRole('button', { name: 'Add Creature' }))
+      await waitFor(() => expect(screen.getByLabelText('Poisoned')).toBeInTheDocument())
+      await user.click(screen.getByLabelText('Poisoned'))
+
+      await user.click(screen.getByRole('button', { name: 'Create Encounter' }))
+
+      await waitFor(() => expect(createEncounter).toHaveBeenCalled())
+      expect(createEncounter.mock.calls[0][0].creatures?.[0].conditions).toEqual(['Poisoned'])
     })
 
-    it.skip('legacy/unknown conditions survive an edit', () => {
-      // TODO C2: verify conditions not in canonical list persist
-      expect(true).toBe(true)
+    it('legacy/unknown conditions survive an edit', async () => {
+      vi.spyOn(api, 'listMonsters').mockResolvedValue([goblin])
+      vi.spyOn(api, 'getConditions').mockResolvedValue(conditions)
+      const existing: Encounter = {
+        id: 7,
+        title: 'Old fight',
+        creatures: [
+          {
+            monster_id: 1,
+            original_name: 'Goblin',
+            name: 'Goblin',
+            hp_current: 7,
+            hp_max: 7,
+            ac: 15,
+            status: 'alive',
+            conditions: ['stunned (legacy)'],
+          },
+        ],
+      }
+
+      render(<EncounterEditor encounter={existing} onClose={() => {}} onSaved={() => {}} />)
+
+      expect(await screen.findByLabelText('stunned (legacy) (custom)')).toBeChecked()
     })
   })
 })

@@ -137,11 +137,13 @@
   cursor: not-allowed;
 }
 
-/* TODO C2: style condition checkboxes */
-.encounter-condition-grid {
-  /* TODO: grid layout for conditions */
+.encounter-editor-condition-field {
+  grid-column: 1 / -1;
 }
 
-.encounter-condition-chip {
-  /* TODO: checkbox chip styling */
+.encounter-condition-grid {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 1.5rem;
+  row-gap: 0.35rem;
 }

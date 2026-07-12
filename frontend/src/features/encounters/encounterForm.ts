@@ -1,4 +1,4 @@
-import type { Encounter, EncounterCreature, EncounterInput } from '../../api/types'
+import type { Condition, Encounter, EncounterCreature, EncounterInput } from '../../api/types'
 
 let rowIdCounter = 0
 function nextRowId(): string {
@@ -15,13 +15,17 @@ export interface EncounterCreatureRow {
   hpMax: string
   ac: string
   status: string
-  conditionsText: string
   conditions: string[]
 }
 
 export interface EncounterFormState {
   title: string
   creatureRows: EncounterCreatureRow[]
+}
+
+export interface ConditionOption {
+  value: string
+  label: string
 }
 
 export function emptyEncounterForm(): EncounterFormState {
@@ -40,7 +44,6 @@ export function addEncounterCreatureRow(rows: EncounterCreatureRow[]): Encounter
       hpMax: '',
       ac: '',
       status: 'alive',
-      conditionsText: '',
       conditions: [],
     },
   ]
@@ -59,10 +62,23 @@ export function encounterToFormState(encounter: Encounter): EncounterFormState {
       hpMax: c.hp_max != null ? String(c.hp_max) : '',
       ac: c.ac != null ? String(c.ac) : '',
       status: c.status || 'alive',
-      conditionsText: (c.conditions || []).join(', '),
       conditions: c.conditions || [],
     })),
   }
+}
+
+function dedupeConditions(conditions: string[]): string[] {
+  const seen = new Set<string>()
+  const result: string[] = []
+  for (const raw of conditions) {
+    const trimmed = raw.trim()
+    if (!trimmed) continue
+    const key = trimmed.toLowerCase()
+    if (seen.has(key)) continue
+    seen.add(key)
+    result.push(trimmed)
+  }
+  return result
 }
 
 export function formStateToEncounterInput(form: EncounterFormState): EncounterInput {
@@ -75,12 +91,7 @@ export function formStateToEncounterInput(form: EncounterFormState): EncounterIn
         hp_max: row.hpMax ? Number(row.hpMax) : null,
         ac: row.ac ? Number(row.ac) : null,
         status: row.status || null,
-        conditions: row.conditionsText
-          ? row.conditionsText
-              .split(',')
-              .map((c) => c.trim())
-              .filter(Boolean)
-          : [],
+        conditions: dedupeConditions(row.conditions),
       }))
     : null
 
@@ -88,4 +99,32 @@ export function formStateToEncounterInput(form: EncounterFormState): EncounterIn
     title: form.title,
     creatures,
   }
+}
+
+/** Canonical conditions as checkbox options, plus any already-selected value not in the canonical
+ * list (case-insensitively) appended as a "(custom)" option — so editing an old encounter with a
+ * legacy/unknown condition string never silently drops it.
+ */
+export function mergeConditionOptions(canonical: Condition[], selected: string[]): ConditionOption[] {
+  const canonicalLower = new Set(canonical.map((c) => c.name.toLowerCase()))
+  const options: ConditionOption[] = canonical.map((c) => ({ value: c.name, label: c.name }))
+  const seenExtra = new Set<string>()
+  for (const value of selected) {
+    const key = value.toLowerCase()
+    if (canonicalLower.has(key) || seenExtra.has(key)) continue
+    seenExtra.add(key)
+    options.push({ value, label: `${value} (custom)` })
+  }
+  return options
+}
+
+export function isConditionSelected(selected: string[], value: string): boolean {
+  const key = value.toLowerCase()
+  return selected.some((c) => c.toLowerCase() === key)
+}
+
+export function toggleCondition(selected: string[], value: string): string[] {
+  return isConditionSelected(selected, value)
+    ? selected.filter((c) => c.toLowerCase() !== value.toLowerCase())
+    : [...selected, value]
 }

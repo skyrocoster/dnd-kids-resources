@@ -2,10 +2,19 @@ import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import * as api from '../../api/client'
 import type { Condition, Encounter, Monster } from '../../api/types'
+import { CheckboxField } from '../../components/form/CheckboxField'
 import { SelectField } from '../../components/form/SelectField'
 import { TextField } from '../../components/form/TextField'
 import type { EncounterCreatureRow, EncounterFormState } from './encounterForm'
-import { addEncounterCreatureRow, emptyEncounterForm, encounterToFormState, formStateToEncounterInput } from './encounterForm'
+import {
+  addEncounterCreatureRow,
+  emptyEncounterForm,
+  encounterToFormState,
+  formStateToEncounterInput,
+  isConditionSelected,
+  mergeConditionOptions,
+  toggleCondition,
+} from './encounterForm'
 import { deriveCreatureStats } from './encounterStats'
 import './EncounterEditor.css'
 
@@ -27,7 +36,7 @@ export function EncounterEditor({ encounter, onClose, onSaved }: EncounterEditor
     encounter ? encounterToFormState(encounter) : emptyEncounterForm(),
   )
   const [monsters, setMonsters] = useState<Monster[]>([])
-  const [_conditions, setConditions] = useState<Condition[]>([])
+  const [conditions, setConditions] = useState<Condition[]>([])
   const [status, setStatus] = useState<{ message: string; kind?: 'error' | 'success' }>({ message: '' })
   const [saving, setSaving] = useState(false)
 
@@ -155,11 +164,24 @@ export function EncounterEditor({ encounter, onClose, onSaved }: EncounterEditor
                     onChange={(e) => updateRow(row.id, { status: e.target.value })}
                     options={STATUS_OPTIONS}
                   />
-                  <TextField
-                    label="Conditions (comma-separated)"
-                    value={row.conditionsText}
-                    onChange={(e) => updateRow(row.id, { conditionsText: e.target.value })}
-                  />
+                  <div className="form-field encounter-editor-condition-field">
+                    <span className="form-label">Conditions</span>
+                    <div className="encounter-condition-grid">
+                      {mergeConditionOptions(conditions, row.conditions).map((option) => (
+                        <CheckboxField
+                          key={option.value}
+                          label={option.label}
+                          checked={isConditionSelected(row.conditions, option.value)}
+                          onChange={() =>
+                            updateRow(row.id, { conditions: toggleCondition(row.conditions, option.value) })
+                          }
+                        />
+                      ))}
+                      {conditions.length === 0 && row.conditions.length === 0 && (
+                        <p className="encounter-editor-empty">No conditions available.</p>
+                      )}
+                    </div>
+                  </div>
                 </div>
                 <button type="button" className="encounter-editor-row-remove" onClick={() => removeRow(row.id)}>
                   Remove Creature

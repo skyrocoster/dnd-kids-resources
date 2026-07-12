@@ -5,7 +5,7 @@ This document is the single reference for expanding the **encounter** feature be
 methodology as `dungeon_plan.md` (scaffold → implementation → design pass) and inherits that project's
 design system, component anatomy, and reusable pieces — build on them rather than re-deriving.
 
-> **Status:** Phase 1 (**Creation Overhaul**) is **in progress**. C0 and C1 shipped; C2–C3 below.
+> **Status:** Phase 1 (**Creation Overhaul**) is **in progress**. C0, C1, and C2 shipped; C3 below.
 
 ---
 
@@ -191,6 +191,28 @@ Replace the comma-separated conditions text field with a checkbox group driven b
 
 **🚦 Gate:** all tests green; `npm run build` clean; `pytest` unaffected. Tests only — **no browser this
 stage.**
+
+**What shipped:**
+- `EncounterCreatureRow.conditionsText` removed entirely; `conditions: string[]` (populated by C0) is now
+  the sole source of truth. `formStateToEncounterInput` dedupes/trims it; `encounterToFormState` reads it
+  straight off the wire creature.
+- `mergeConditionOptions(canonical, selected)`, `isConditionSelected(selected, value)`, and
+  `toggleCondition(selected, value)` added to `encounterForm.ts` — pure, case-insensitive helpers shared by
+  the editor's checkbox group. Any `selected` value not matching a canonical condition name
+  (case-insensitively) is appended as a `"<value> (custom)"` option so legacy/unknown condition strings on
+  existing encounters render as an already-checked box instead of disappearing.
+- `EncounterEditor.tsx`: the `Conditions (comma-separated)` `TextField` replaced with a `CheckboxField` per
+  merged option, wired to `toggleCondition`/`isConditionSelected`; the previously-unused `getConditions()`
+  state (`_conditions`) is now consumed. Empty-`getConditions()` case still surfaces the row's already-set
+  conditions via the custom-option fallback rather than an empty void.
+- `EncounterEditor.css`: `.encounter-editor-condition-field`/`.encounter-condition-grid` implemented
+  (flex-wrap layout spanning the row grid); touch-target sizing/glyph-vs-hue polish deferred to C3 per plan.
+- Un-skipped and implemented all 8 C2 tests (4 pure-logic in `encounterForm.test.ts`: option merge, toggle,
+  round-trip, legacy survival; 4 DOM in `EncounterEditor.test.tsx`: checkboxes render from `getConditions`,
+  toggle updates state, round-trip through a real save, legacy condition renders checked on an existing
+  encounter).
+- Verified: `npm run build` clean; full frontend suite green (438 passed, 0 skipped); `pytest` from repo
+  root green (90.73% coverage, backend untouched this stage).
 
 ---
 
