@@ -8,21 +8,22 @@ The v2 ground-up rebuild (Flask+vanilla-JS → **FastAPI + SQLite** backend, **R
 frontend) is **complete**. This project is an online D&D 5e resource site for kids, designed for **running
 games** (live at the table) rather than exclusively pre-session prep.
 
-**The authoritative source for all feature work is [`docs/dungeon_plan.md`](docs/dungeon_plan.md)**, which
-documents the dungeon room-navigation feature and all follow-on design phases. Original build (Stages 1–11),
-Design Phase A–B (Encounter & NPC, E1–E6 & N1–N6), Design Phase C–E (Map Lab: Foundation, Authoring, Unified
-Data & Zoom), and Design Phase F (Room Props) are **all shipped**. New design phases are appended under
-`dungeon_plan.md`'s "Next: front-end design planning" section.
+**Feature work is organized as sequential design phases, each broken into self-contained stages.** The authoritative
+source for the dungeon room-navigation feature is [`docs/dungeon_plan.md`](docs/dungeon_plan.md) (Stages 1–11,
+Encounter/NPC, Map Lab Foundation/Authoring/Unified Data/Zoom, and Room Props are **all shipped**). Other features
+follow the same pattern — their own `docs/*_plan.md` files (e.g., `encounters_plan.md`, `loot_plan.md`) document
+their phases and stages.
 
-**When asked to "do the next step":** read the current/next stage in `dungeon_plan.md`, follow its specification
-exactly, and verify it against the gates listed. Each stage specifies what to build, what it inherits, required
+**When asked to "do the next step":** find the appropriate plan doc, read the current/next stage, follow its
+specification exactly, and verify against its gates. Each stage specifies what to build, what it inherits, required
 tests, and end-to-end verification. Do not skip ahead, combine stages, or deviate from the spec.
 
 ## Planning & Staging Methodology
 
-Each design phase is broken into self-contained stages, sequenced so later ones build on earlier ones without
-re-deriving prior work. **Use `dungeon_plan.md` as the model for all feature planning — structure all new phases
-the same way.**
+Each feature is documented in its own `docs/*_plan.md` file, broken into design phases, each broken into
+self-contained stages. Stages are sequenced so later ones build on earlier ones without re-deriving prior work.
+**Use `dungeon_plan.md` as the structural model for all feature plans — apply the same stage pattern to any new
+feature (encounters, loot, etc.).**
 
 **Stage structure (copying the dungeon_plan.md pattern):**
 1. **Scaffolding stage (e.g., "F0"):** Type declarations, stubs, placeholder CSS, test stubs (`it.skip`), no
