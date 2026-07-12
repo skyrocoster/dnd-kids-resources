@@ -109,8 +109,12 @@ export function absoluteCells(room: MapRoom): MapCell[] {
   return room.cells.map(([cx, cy]) => [ox + cx, oy + cy])
 }
 
+/** Grid-unit bounding box, shared by `layoutBounds`/`paddedBounds` and the Stage E2 zoom/pan
+ * layer (`useMapCanvasZoom`, `MapCanvas`) which sizes the scrollable canvas from it. */
+export type Bounds = { minX: number; maxX: number; minY: number; maxY: number }
+
 /** Get min/max bounds (x, y) for layout viewBox */
-export function layoutBounds(rooms: MapRoom[]): { minX: number; maxX: number; minY: number; maxY: number } {
+export function layoutBounds(rooms: MapRoom[]): Bounds {
   if (rooms.length === 0) {
     return { minX: 0, maxX: 0, minY: 0, maxY: 0 }
   }
@@ -268,7 +272,7 @@ export function roomOfCell(cell: MapCell, rooms: MapRoom[]): MapRoom | null {
 /** Tight room-union bounds expanded by `meta.padding` cells on every side — equal padding on all
  * sides is what centers the union within the resulting viewBox, giving the DM a margin of visible
  * "unknown space" (not-yet-authored content) around every authored room. */
-export function paddedBounds(layout: MapLayout): { minX: number; maxX: number; minY: number; maxY: number } {
+export function paddedBounds(layout: MapLayout): Bounds {
   const tight = layoutBounds(layout.rooms)
   const { padding } = layout.meta
   return {

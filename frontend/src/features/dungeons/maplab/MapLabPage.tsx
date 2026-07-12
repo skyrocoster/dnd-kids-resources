@@ -1,8 +1,10 @@
-import { Fragment, useMemo, useState } from 'react'
+import { Fragment, useCallback, useMemo, useState } from 'react'
 import './MapLabPage.css'
 import { MAP_LAB_DUNGEON_ID } from '../../../api/client'
 import { useMapLabLayout } from './useMapLabLayout'
-import { TrapDisarmedIcon } from '../../../components/icons'
+import { useMapCanvasZoom, type ViewportSize } from './useMapCanvasZoom'
+import { MapCanvas } from './MapCanvas'
+import { FitIcon, TrapDisarmedIcon, ZoomInIcon, ZoomOutIcon } from '../../../components/icons'
 import {
   absoluteCells,
   defaultPassageSession,
@@ -131,6 +133,9 @@ export function MapLabPage() {
   const [pinnedDoorId, setPinnedDoorId] = useState<number | null>(null)
   const [doorSessions, setDoorSessions] = useState<Record<number, PassageSessionState>>({})
   const [stairSessions, setStairSessions] = useState<Record<number, PassageSessionState>>({})
+  const zoomApi = useMapCanvasZoom()
+  const [viewportSize, setViewportSize] = useState<ViewportSize>({ width: 0, height: 0 })
+  const handleViewportResize = useCallback((size: ViewportSize) => setViewportSize(size), [])
 
   const rooms = useMemo(() => roomsOnZ(layout, activeZ), [layout, activeZ])
   const stairs = useMemo(() => stairEndpointsForZ(layout, activeZ), [layout, activeZ])
@@ -268,12 +273,35 @@ export function MapLabPage() {
       </div>
 
       <div className="maplab-canvas">
-        <svg
-          className="maplab-svg"
+        <MapCanvas
           viewBox={viewBox}
-          role="img"
-          aria-label={`Dungeon floor map — ${activeFloor?.title ?? `Floor ${activeZ}`}`}
-          data-variant="neutral"
+          bounds={bounds}
+          zoom={zoomApi.zoom}
+          ariaLabel={`Dungeon floor map — ${activeFloor?.title ?? `Floor ${activeZ}`}`}
+          variant="neutral"
+          onWheelZoom={zoomApi.handleWheel}
+          onPanStart={zoomApi.handlePointerDown}
+          onPanMove={zoomApi.handlePointerMove}
+          onPanEnd={zoomApi.handlePointerUp}
+          onViewportResize={handleViewportResize}
+          controlsSlot={
+            <>
+              <button type="button" className="maplab-zoom-button" aria-label="Zoom out" onClick={zoomApi.zoomOut}>
+                <ZoomOutIcon width={20} height={20} aria-hidden="true" />
+              </button>
+              <button type="button" className="maplab-zoom-button" aria-label="Zoom in" onClick={zoomApi.zoomIn}>
+                <ZoomInIcon width={20} height={20} aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                className="maplab-zoom-button"
+                aria-label="Reset zoom"
+                onClick={() => zoomApi.fitToBounds(bounds, viewportSize)}
+              >
+                <FitIcon width={20} height={20} aria-hidden="true" />
+              </button>
+            </>
+          }
         >
           <defs>
             <pattern
@@ -512,7 +540,7 @@ export function MapLabPage() {
               </g>
             )
           })}
-        </svg>
+        </MapCanvas>
 
         <div className="maplab-inspector-panel-container" aria-live="polite">
           {activeInspectable ? (

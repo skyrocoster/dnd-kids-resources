@@ -211,29 +211,137 @@ describe('MapLabEditorPage', () => {
 })
 
 describe('MapLabEditorPage (Stage E2 — Canvas zoom & pan)', () => {
-  it.skip('SVG gets explicit px width/height based on zoom level, not width:100%', () => {
-    // Stage E2: SVG width/height = viewBoxUnits × (BASE_PX_PER_UNIT × scale)
-    // Verify that container.querySelector('.maplab-svg') has concrete px dimensions
+  const singleRoomLayout = {
+    meta: { cellSizeFt: 5, padding: 3 },
+    rooms: [{ room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0]], title: 'Room 1' }],
+    doors: [],
+    stairs: [],
+    floors: [{ z: 0, title: 'Ground Floor' }],
+    items: [],
+  }
+  // 1 cell, padded ±3 on every side -> a 7x7-unit bounds -> 448x448px at scale 1 (BASE_PX_PER_UNIT=64).
+  const CONTENT_PX_AT_SCALE_1 = 448
+
+  let originalResizeObserver: unknown
+
+  beforeEach(() => {
+    originalResizeObserver = (globalThis as { ResizeObserver?: unknown }).ResizeObserver
+    class TestResizeObserver {
+      private callback: () => void
+      constructor(callback: () => void) {
+        this.callback = callback
+      }
+      observe() {
+        this.callback()
+      }
+      unobserve() {}
+      disconnect() {}
+    }
+    ;(globalThis as { ResizeObserver?: unknown }).ResizeObserver = TestResizeObserver
+    // jsdom has no layout engine (clientWidth/clientHeight are always 0) — stub a fixed viewport
+    // size so fitToBounds has something real to fit against.
+    Object.defineProperty(HTMLElement.prototype, 'clientWidth', { configurable: true, value: 640 })
+    Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, value: 640 })
   })
 
-  it.skip('zoom controls (+/−/Reset) change the scale and SVG dimensions', () => {
-    // Stage E2: click zoom buttons, assert zoom.scale changes, SVG px size updates
+  afterEach(() => {
+    ;(globalThis as { ResizeObserver?: unknown }).ResizeObserver = originalResizeObserver
+    delete (HTMLElement.prototype as unknown as Record<string, unknown>).clientWidth
+    delete (HTMLElement.prototype as unknown as Record<string, unknown>).clientHeight
   })
 
-  it.skip('Reset button fits the current floor to the viewport bounds', () => {
-    // Stage E2: fitToBounds logic — verify zoom/pan reframe the map to fit exactly
+  async function renderEditor() {
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: singleRoomLayout })
+    vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: singleRoomLayout })
+    const utils = render(<MapLabEditorPage />)
+    await flush()
+    return utils
+  }
+
+  it('SVG gets explicit px width/height based on zoom level, not width:100%', async () => {
+    const { container } = await renderEditor()
+    const svg = container.querySelector('.maplab-svg') as SVGSVGElement
+
+    expect(svg).toHaveAttribute('width', String(CONTENT_PX_AT_SCALE_1))
+    expect(svg).toHaveAttribute('height', String(CONTENT_PX_AT_SCALE_1))
+    expect(svg.getAttribute('style') ?? '').not.toContain('100%')
   })
 
-  it.skip('Ctrl/⌘+wheel zooms toward the cursor position', () => {
-    // Stage E2: synthetic wheel event with ctrlKey, assert zoom zooms toward mouse
+  it('zoom controls (+/−/Reset) change the scale and SVG dimensions', async () => {
+    const { container } = await renderEditor()
+    const svg = container.querySelector('.maplab-svg') as SVGSVGElement
+
+    fireEvent.click(screen.getByRole('button', { name: 'Zoom in' }))
+    expect(Number(svg.getAttribute('width'))).toBeCloseTo(CONTENT_PX_AT_SCALE_1 * 1.25)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Zoom out' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Zoom out' }))
+    expect(Number(svg.getAttribute('width'))).toBeCloseTo(CONTENT_PX_AT_SCALE_1 * 0.75)
   })
 
-  it.skip('click-drag pans the canvas, starting only outside room/door/paint hits', () => {
-    // Stage E2: pointer events (mousedown -> mousemove) pan; no pan on room/door/cell targets
+  it('Reset button fits the current floor to the viewport bounds', async () => {
+    const { container } = await renderEditor()
+    const svg = container.querySelector('.maplab-svg') as SVGSVGElement
+
+    fireEvent.click(screen.getByRole('button', { name: 'Zoom in' }))
+    expect(Number(svg.getAttribute('width'))).not.toBeCloseTo(640)
+
+    // 448px content into a 640px (stubbed) viewport -> scale = 640/448 -> exactly fills it.
+    fireEvent.click(screen.getByRole('button', { name: 'Reset zoom' }))
+    expect(Number(svg.getAttribute('width'))).toBeCloseTo(640)
+    expect(Number(svg.getAttribute('height'))).toBeCloseTo(640)
   })
 
-  it.skip('pan and zoom work together: zoom + drag + reset all coordinate correctly', () => {
-    // Stage E2 integration: paint a cell at z:0 x:10, zoom in, drag, reset fits to bounds
+  it('Ctrl/⌘+wheel zooms toward the cursor position', async () => {
+    const { container } = await renderEditor()
+    const svg = container.querySelector('.maplab-svg') as SVGSVGElement
+    const viewport = container.querySelector('.maplab-canvas-viewport') as Element
+
+    fireEvent.wheel(viewport, { deltaY: -100, clientX: 40, clientY: 40 })
+    expect(Number(svg.getAttribute('width'))).toBeCloseTo(CONTENT_PX_AT_SCALE_1)
+
+    fireEvent.wheel(viewport, { ctrlKey: true, deltaY: -100, clientX: 40, clientY: 40 })
+    expect(Number(svg.getAttribute('width'))).toBeCloseTo(CONTENT_PX_AT_SCALE_1 * 1.1)
+  })
+
+  it('click-drag pans the canvas, starting only outside room/door/paint hits', async () => {
+    const { container } = await renderEditor()
+    const viewport = container.querySelector('.maplab-canvas-viewport') as HTMLElement
+    const room = container.querySelector('.maplab-room') as Element
+
+    // A drag that starts on the room itself must not pan.
+    fireEvent.pointerDown(room, { clientX: 0, clientY: 0 })
+    fireEvent.pointerMove(window, { clientX: 100, clientY: 60 })
+    fireEvent.pointerUp(window)
+    expect(viewport.scrollLeft).toBe(0)
+    expect(viewport.scrollTop).toBe(0)
+
+    // A drag starting on empty canvas pans (scroll offset moves opposite the drag direction).
+    fireEvent.pointerDown(viewport, { clientX: 0, clientY: 0 })
+    fireEvent.pointerMove(window, { clientX: 100, clientY: 60 })
+    fireEvent.pointerUp(window)
+    expect(viewport.scrollLeft).toBe(-100)
+    expect(viewport.scrollTop).toBe(-60)
+  })
+
+  it('pan and zoom work together: zoom + drag + reset all coordinate correctly', async () => {
+    const { container } = await renderEditor()
+    const svg = container.querySelector('.maplab-svg') as SVGSVGElement
+    const viewport = container.querySelector('.maplab-canvas-viewport') as HTMLElement
+
+    fireEvent.click(screen.getByRole('button', { name: 'Zoom in' }))
+    expect(Number(svg.getAttribute('width'))).toBeCloseTo(CONTENT_PX_AT_SCALE_1 * 1.25)
+
+    fireEvent.pointerDown(viewport, { clientX: 0, clientY: 0 })
+    fireEvent.pointerMove(window, { clientX: 50, clientY: 20 })
+    fireEvent.pointerUp(window)
+    expect(viewport.scrollLeft).toBe(-50)
+    expect(viewport.scrollTop).toBe(-20)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reset zoom' }))
+    expect(Number(svg.getAttribute('width'))).toBeCloseTo(640)
+    expect(viewport.scrollLeft).toBe(0)
+    expect(viewport.scrollTop).toBe(0)
   })
 })
 
