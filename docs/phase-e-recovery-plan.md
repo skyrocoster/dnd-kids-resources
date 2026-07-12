@@ -157,7 +157,34 @@ from `scripts/init_database.py` + `seed_database.py` (gitignored, safe to rebuil
 **🚦 Gate:** run `scripts/start_server.ps1`; in the editor (`/dungeons/map-lab/edit`) add a door + a room
 (autosaves "Saved") → open `/dungeons/map-lab` → the new door/room appear. **Commit after sign-off.**
 
-## Stage E2 — Canvas zoom & pan, both pages (see dungeon_plan.md "Stage E2")
+## Stage E2 — Canvas zoom & pan, both pages (see dungeon_plan.md "Stage E2") ✅ COMPLETE (2026-07-12)
+**Result:** committed on `recover/phase-e`. `Bounds` exported from `maplabModel.ts` and used as
+`layoutBounds`/`paddedBounds`'s return type. `useMapCanvasZoom.ts` rebuilt to the exact API
+`MapLabEditorPage.tsx` already consumed: `zoomIn`/`zoomOut` step by 0.25 clamped to
+`MIN_SCALE`/`MAX_SCALE`; `fitToBounds(bounds, viewport)` fits content into the viewport, clamped;
+`handleWheel` only acts on Ctrl/⌘+wheel (plain wheel is left to native scroll) and re-centers pan on
+the cursor via `e.currentTarget`'s `getBoundingClientRect()`/`scrollLeft`/`scrollTop`; pan is
+implemented as scroll offset (`zoom.pan.x/y` = `scrollLeft`/`scrollTop`), applied by `MapCanvas` in an
+effect, not an SVG transform — so `touch-action:none` on the viewport hands all pointer-driven
+scrolling to the hook's own drag logic instead of letting native touch-scroll fight it.
+`MapCanvas.tsx` sizes the `<svg>` at explicit px `width`/`height`, wires native (not React-synthetic)
+`wheel`/`pointerdown`/`pointermove`/`pointerup` listeners so handlers get real DOM events, and reports
+viewport size via `ResizeObserver` (guarded for jsdom, which has none). Adopted in both pages; the
+viewer passes `variant="neutral"` through to `MapCanvas`'s wrapper div so `--variant-*` custom
+properties still reach `.maplab-room-cell` etc. `npm run typecheck` fully green (Group A cleared);
+`npm run test`: 385 passed / 5 skipped (only Stage E3 stubs remain); `npm run build` succeeds; `pytest`
+unaffected. 🚦 gate live-verified in Chrome (both routes): zoom buttons, Ctrl+wheel-toward-cursor
+(confirmed via a direct `WheelEvent` dispatch — the browser-automation tool's scroll+ctrl modifier
+doesn't reliably produce a real `ctrlKey` wheel event, so this needed dispatching one directly to
+confirm), Reset/fit-to-bounds, and drag-pan with correct room/door hit-test exclusion. **Bug found
+during live verification, not in the original spec:** a drag starting on empty canvas that crossed an
+SVG `<text>` (room title/scale ruler) triggered a native text-selection alongside the pan, since
+`handlePointerDown` never called `preventDefault()`. Fixed with `e.preventDefault()` in the handler
+(only on the branch that actually starts a pan) plus `user-select:none` on `.maplab-canvas-viewport`
+as defense-in-depth. Not verified: real touch input on a Surface-Pro-class device (none available) —
+pointer events + `touch-action:none` are used uniformly for mouse/touch/pen, which should extend
+correctly but wasn't physically confirmed.
+
 Rebuild the destroyed code to the API `MapLabEditorPage.tsx` already consumes (see Group A above).
 1. **Add a `Bounds` type export** to `maplabModel.ts`: `export type Bounds = { minX: number; maxX: number;
    minY: number; maxY: number }` and use it as the return type of `layoutBounds`/`paddedBounds`.

@@ -13,9 +13,10 @@ front-end design planning"** at the bottom.
 > additive `map_layout` table (the Phase-C FINAL-STAGE production-home decision, now implemented); all
 > gates live-verified through 2026-07-12. **Design Phase E (Map Lab: unified viewer/editor data, canvas
 > zoom, and layout redesign): Stage 0 mechanical scaffolding COMPLETE (2026-07-12, commit 1e674ac);
-> Stage E1 (viewer reads the shared backend layout) COMPLETE (2026-07-12, commit `e24de03`) after a
-> recovery detour — see `docs/phase-e-recovery-plan.md`.** Stages E2–E3 fill-ins queued (Sonnet, one at
-> a time). No backend change was needed for any dungeon/encounter/NPC/Map-Lab 
+> Stage E1 (viewer reads the shared backend layout) COMPLETE (2026-07-12, commit `e24de03`); Stage E2
+> (canvas zoom & pan, both pages) COMPLETE (2026-07-12) after a recovery detour — see
+> `docs/phase-e-recovery-plan.md`.** Stage E3 fill-in queued (Sonnet). No backend change was needed for
+> any dungeon/encounter/NPC/Map-Lab 
 > work except Stage E2's one additive `active_index` column and Phase D's one additive `map_layout` table 
 > — the rest of the feature set is frontend against `getDungeon(id)`, `getEncounter`/`updateEncounter`, and
 > `getNPC`/`listNPCs`.
@@ -431,6 +432,26 @@ including a recurring stale-dev-server gotcha, in `docs/phase-e-recovery-plan.md
   width/height that changes with zoom (not `width:100%`). (Replace the Stage-0 `it.skip` stub.)
 - **🚦 Gate:** on a large floor, zoom in → cells grow, the viewport scrolls (map does **not** shrink); Reset
   fits the floor; drag pans; Ctrl+wheel zooms; both pages; Surface-Pro touch.
+
+**✅ COMPLETE (2026-07-12, branch `recover/phase-e`):** `maplabModel.ts` exports a shared `Bounds` type
+(`layoutBounds`/`paddedBounds` return type). `useMapCanvasZoom.ts` implements real `zoomIn`/`zoomOut`/
+`reset`/`fitToBounds(bounds, viewport)`, Ctrl/⌘+wheel zoom-toward-cursor, and pointer-driven drag-pan
+that skips room/door/stair/paint-cell hits. `MapCanvas.tsx` sizes the `<svg>` at explicit px
+`width`/`height` inside an `overflow:auto` viewport, applies pan as `scrollLeft`/`scrollTop`, and
+reports viewport size via `ResizeObserver`. Adopted in **both** `MapLabEditorPage.tsx` (already
+consumed it) and `MapLabPage.tsx` (newly wired, with a `variant="neutral"` passthrough on `MapCanvas`
+so the viewer's room-fill colors are preserved). All 6 `useMapCanvasZoom.test.ts` skips and the 6
+Stage-E2 `MapLabEditorPage.test.tsx` skips replaced with real tests. `npm run typecheck` (`tsc -b`)
+fully clean (Group A cleared); `npm run test`: 385 passed / 5 skipped (only Stage E3 stubs remain);
+`npm run build` succeeds; `pytest` unaffected (110 passed, 90.73% coverage). 🚦 gate live-verified in
+Chrome on both routes: zoom buttons grow/shrink the map without shrinking the viewport; Reset exactly
+fits the floor to the viewport; Ctrl+wheel zooms toward the cursor; click-drag pans and correctly
+ignores drags starting on rooms/doors. One real gap found during live verification and fixed: dragging
+over empty canvas that happened to cross an SVG `<text>` (room title/scale ruler) started a native
+text-selection alongside the pan — fixed with `e.preventDefault()` in `handlePointerDown` plus
+`user-select:none` on `.maplab-canvas-viewport`. Not verified: real touch input on a Surface-Pro-class
+device (none available) — the implementation uses pointer events + `touch-action:none` uniformly for
+mouse/touch/pen, which should extend correctly but wasn't physically confirmed.
 
 #### Stage E3 — Full front-end design pass: grouping, rails, navigation (Sonnet + `frontend-design` skill)
 
