@@ -74,12 +74,21 @@ export interface MapFloor {
   title?: string
 }
 
-/** Item = forward-compat content slot, keyed by absolute cell. Unrendered in M2.1 — geometry stays
- * pure; contents attach via this parallel array rather than restructuring room cells. */
-export interface MapItem {
-  item_id: number
-  cell: MapCell
-  title: string
+/** Loot (reserved forward-compat slot; Phase G fills this) */
+export interface PropLoot {
+  /* empty for now */
+}
+
+/** Prop = static object placed on a grid square or wall (chest, table, mirror, etc.).
+ * Carries PassageFlags like doors for flexible authored state (hidden, locked, trapped, DCs).
+ * Unrendered in Phase F Stages 0-1; Stage F2+ renders and authors these. */
+export interface MapProp extends PassageFlags {
+  prop_id: number
+  kind: string // 'chest' | 'table' | 'mirror' | 'barrel' | 'statue' | 'other'
+  cell: MapCell // absolute [x, y]
+  side?: CardinalSide // ABSENT = on square; PRESENT = attached to that wall
+  title?: string
+  loot?: PropLoot // forward-compat; round-trips via autosave
 }
 
 /** Layout-wide scale/presentation constants: makes the 5 ft/cell scale and the unknown-space
@@ -96,7 +105,7 @@ export interface MapLayout {
   doors: MapDoor[]
   stairs: MapStair[]
   floors: MapFloor[]
-  items: MapItem[]
+  props: MapProp[]
 }
 
 // ============================================================================
@@ -400,14 +409,13 @@ export function defaultPassageSession(flags: PassageFlags): PassageSessionState 
 // Generic inspector (Stage 3)
 // ============================================================================
 
-/** Discriminated union of inspectable elements: rooms, doors, stairs, and forward-compat items.
- * Each carries enough data to render a descriptor panel. Items are currently unrendered
- * (geometry-only hook for later expansion). */
+/** Discriminated union of inspectable elements: rooms, doors, stairs, and props.
+ * Each carries enough data to render a descriptor panel. */
 export type Inspectable =
   | { kind: 'room'; room: MapRoom }
   | { kind: 'door'; door: MapDoor; session?: PassageSessionState }
   | { kind: 'stair'; stair: MapStair; session?: PassageSessionState }
-  | { kind: 'item'; item: MapItem }
+  | { kind: 'prop'; prop: MapProp }
 
 /** Descriptor for an element: title, type label, icon, and structured detail rows.
  * Consumed by the Stage-3 generic inspector panel and Stage-4 session controls. */
@@ -489,11 +497,11 @@ export function inspectableDescriptor(target: Inspectable): InspectableDescripto
         lines,
       }
     }
-    case 'item': {
-      const { item } = target
+    case 'prop': {
+      const { prop } = target
       return {
-        title: item.title,
-        typeLabel: 'Item',
+        title: prop.title ?? prop.kind,
+        typeLabel: 'Prop',
         icon: ItemIcon,
         token: '--md-on-surface-variant',
         lines: [],
@@ -628,4 +636,9 @@ export function nextRoomId(layout: MapLayout): number {
 /** Next free door id — one past the current maximum (1 for an empty layout). */
 export function nextDoorId(layout: MapLayout): number {
   return Math.max(0, ...layout.doors.map((d) => d.door_id)) + 1
+}
+
+/** Next free prop id — one past the current maximum (1 for an empty layout). */
+export function nextPropId(layout: MapLayout): number {
+  return Math.max(0, ...layout.props.map((p) => p.prop_id)) + 1
 }

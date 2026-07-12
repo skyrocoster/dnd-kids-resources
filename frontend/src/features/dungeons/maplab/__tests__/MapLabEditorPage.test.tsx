@@ -37,7 +37,7 @@ describe('MapLabEditorPage', () => {
       doors: [],
       stairs: [],
       floors: [{ z: 0, title: 'Ground Floor' }],
-      items: [],
+      props: [],
     }
     vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: layout })
     vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: layout })
@@ -55,7 +55,7 @@ describe('MapLabEditorPage', () => {
       doors: [],
       stairs: [],
       floors: [{ z: 0, title: 'Ground Floor' }],
-      items: [],
+      props: [],
     }
     vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: layout })
     const saveSpy = vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: layout })
@@ -87,7 +87,7 @@ describe('MapLabEditorPage', () => {
       doors: [],
       stairs: [],
       floors: [{ z: 0, title: 'Ground Floor' }],
-      items: [],
+      props: [],
     }
     vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: layout })
     vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: layout })
@@ -112,7 +112,7 @@ describe('MapLabEditorPage', () => {
       doors: [],
       stairs: [],
       floors: [{ z: 0, title: 'Ground Floor' }],
-      items: [],
+      props: [],
     }
     vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: layout })
     const saveSpy = vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: layout })
@@ -151,7 +151,7 @@ describe('MapLabEditorPage', () => {
       doors: [],
       stairs: [],
       floors: [{ z: 0, title: 'Ground Floor' }],
-      items: [],
+      props: [],
     }
     vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: layout })
     const saveSpy = vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: layout })
@@ -181,7 +181,7 @@ describe('MapLabEditorPage', () => {
       doors: [{ door_id: 1, cell: [0, 0], side: 'N', hidden: false, locked: false, trapped: false }],
       stairs: [],
       floors: [{ z: 0, title: 'Ground Floor' }],
-      items: [],
+      props: [],
     }
     vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: layout })
     const saveSpy = vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: layout })
@@ -217,7 +217,7 @@ describe('MapLabEditorPage (Stage E2 — Canvas zoom & pan)', () => {
     doors: [],
     stairs: [],
     floors: [{ z: 0, title: 'Ground Floor' }],
-    items: [],
+    props: [],
   }
   // 1 cell, padded ±3 on every side -> a 7x7-unit bounds -> 448x448px at scale 1 (BASE_PX_PER_UNIT=64).
   const CONTENT_PX_AT_SCALE_1 = 448
@@ -352,7 +352,7 @@ describe('MapLabEditorPage (Stage E3 — Toolbar reorganization & persistent ins
     doors: [{ door_id: 1, cell: [0, 0], side: 'N', hidden: false, locked: false, trapped: false }],
     stairs: [],
     floors: [{ z: 0, title: 'Ground Floor' }],
-    items: [],
+    props: [],
   }
 
   beforeEach(() => {
@@ -434,5 +434,23 @@ describe('MapLabEditorPage (Stage E3 — Toolbar reorganization & persistent ins
 
     fireEvent.click(container.querySelector('.maplab-door') as Element)
     expect(container.querySelector('.maplab-inspector-rail')).toBeInTheDocument()
+  })
+
+  describe('prop authoring (Phase F0 stubs)', () => {
+    it.skip('Stage F2: renders seeded props (e.g., Treasure Chest in the Armoury) with the correct glyph', () => {
+      // Verify prop1 from maplabData appears on the map with its kind icon
+    })
+
+    it.skip('Stage F3: "Place prop" toolbar toggle enters placement mode and allows clicking cells to add props', () => {
+      // Verify toggle UI + placement behavior + autosave
+    })
+
+    it.skip('Stage F3: inspector rail prop branch shows title, kind select, flags, Attach-to-wall select, Delete button', () => {
+      // Verify form fields for a selected prop
+    })
+
+    it.skip('Stage F3: prop placement lifecycle: add → edit kind/flags → attach-to-wall → delete', () => {
+      // Full end-to-end test mirroring the door lifecycle test
+    })
   })
 })

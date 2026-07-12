@@ -97,11 +97,15 @@ export function useMapLabEditor(dungeonId: number) {
   // rather than going through `apply` (which would schedule a needless autosave of unchanged data).
   const selectDoor = useCallback((doorId: number | null) => dispatch({ type: 'selectDoor', doorId }), [])
   const updateFixtureFlags = useCallback(
-    (fixtureId: number, fixtureType: 'door' | 'stair', flags: Record<string, unknown>) =>
+    (fixtureId: number, fixtureType: 'door' | 'stair' | 'prop', flags: Record<string, unknown>) =>
       apply({ type: 'updateFixtureFlags', fixtureId, fixtureType, flags }),
     [apply]
   )
   const deleteDoor = useCallback((doorId: number) => apply({ type: 'deleteDoor', doorId }), [apply])
+
+  const addProp = useCallback((cell: MapCell) => apply({ type: 'addProp', cell }), [apply])
+  const selectProp = useCallback((propId: number | null) => dispatch({ type: 'selectProp', propId }), [])
+  const deleteProp = useCallback((propId: number) => apply({ type: 'deleteProp', propId }), [apply])
 
   return {
     state: state as EditorState,
@@ -118,5 +122,8 @@ export function useMapLabEditor(dungeonId: number) {
     selectDoor,
     updateFixtureFlags,
     deleteDoor,
+    addProp,
+    selectProp,
+    deleteProp,
   }
 }

@@ -285,6 +285,36 @@
   pointer-events: none;
 }
 
+/* Phase F placeholder classes for props (static objects: chests, tables, mirrors, etc.).
+ * Stage F2+ will implement the actual prop marker rendering (on-square/on-wall placement,
+ * kind icon, hidden/locked/trapped state badges). */
+.maplab-prop {
+  cursor: pointer;
+}
+
+.maplab-prop-marker {
+  fill: var(--md-surface-3);
+  stroke-width: 3;
+  transition: stroke 0.15s ease, stroke-width 0.15s ease;
+}
+
+.maplab-prop-icon {
+  pointer-events: none;
+}
+
+.maplab-prop:hover .maplab-prop-marker {
+  stroke-width: 4;
+}
+
+.maplab-prop:focus-visible {
+  outline: none;
+}
+
+.maplab-prop:focus-visible .maplab-prop-marker {
+  stroke: var(--md-primary) !important;
+  stroke-width: 4;
+}
+
 .maplab-inspector-controls {
   display: flex;
   flex-wrap: wrap;

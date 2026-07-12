@@ -11,7 +11,7 @@ const emptyLayout: MapLayout = {
     { z: 0, title: 'Ground Floor' },
     { z: 1, title: 'First Floor' },
   ],
-  items: [],
+  props: [],
 }
 
 describe('initialEditorState', () => {
@@ -256,6 +256,28 @@ describe('mapLabEditorReducer', () => {
       const afterOwnerDeleted = mapLabEditorReducer(next, { type: 'deleteRoom', roomId: 2 })
       expect(afterOwnerDeleted.layout.doors).toHaveLength(0)
       expect(afterOwnerDeleted.selectedDoorId).toBeNull()
+    })
+  })
+
+  describe('prop actions (Phase F0 stubs)', () => {
+    it.skip('addProp creates a prop with default flags and selects it', () => {
+      // Stage F1: implement addProp reducer
+    })
+
+    it.skip('selectProp sets and clears selection', () => {
+      // Stage F1: implement selectProp
+    })
+
+    it.skip('updateFixtureFlags handles prop type', () => {
+      // Stage F1: implement prop case in updateFixtureFlags
+    })
+
+    it.skip('deleteProp removes the prop and clears selection if it was selected', () => {
+      // Stage F1: implement deleteProp
+    })
+
+    it.skip('prop selection is mutually exclusive with room and door selection', () => {
+      // Stage F1: verify three-way mutual exclusion
     })
   })
 })

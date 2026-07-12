@@ -1,7 +1,8 @@
 export interface FieldSpec {
   key: string
   label: string
-  type: 'boolean' | 'number' | 'text'
+  type: 'boolean' | 'number' | 'text' | 'select'
+  options?: string[]
   showWhen?: (values: Record<string, unknown>) => boolean
 }
 
@@ -22,10 +23,47 @@ export const PASSAGE_FIELDS: FieldSpec[] = [
   { key: 'note', label: 'Note', type: 'text' },
 ]
 
+const PROP_KINDS = ['chest', 'table', 'mirror', 'barrel', 'statue', 'other']
+
+export const PROP_FIELDS: FieldSpec[] = [
+  { key: 'title', label: 'Title', type: 'text' },
+  { key: 'kind', label: 'Kind', type: 'select', options: PROP_KINDS },
+  { key: 'hidden', label: 'Hidden', type: 'boolean' },
+  { key: 'locked', label: 'Locked', type: 'boolean' },
+  { key: 'trapped', label: 'Trapped', type: 'boolean' },
+  { key: 'breakDc', label: 'Break DC', type: 'number', showWhen: (values) => values.locked === true },
+  { key: 'pickDc', label: 'Pick Lock DC', type: 'number', showWhen: (values) => values.locked === true },
+  { key: 'hiddenDc', label: 'Perception DC', type: 'number', showWhen: (values) => values.hidden === true },
+  { key: 'note', label: 'Note', type: 'text' },
+]
+
+export type PropKind = typeof PROP_KINDS[number]
+
+export const PROP_KIND_ICONS: Record<PropKind, string> = {
+  chest: 'Box',
+  table: 'Table',
+  mirror: 'Frame',
+  barrel: 'Barrel',
+  statue: 'Gem',
+  other: 'Package',
+}
+
 export const FIXTURE_TYPES: Record<string, FixtureTypeSpec> = {
   door: {
     fields: PASSAGE_FIELDS,
     defaultFlags: {
+      title: '',
+      hidden: false,
+      locked: false,
+      trapped: false,
+    },
+  },
+  prop: {
+    fields: PROP_FIELDS,
+    defaultFlags: {
+      prop_id: 0,
+      kind: 'chest',
+      cell: [0, 0],
       title: '',
       hidden: false,
       locked: false,

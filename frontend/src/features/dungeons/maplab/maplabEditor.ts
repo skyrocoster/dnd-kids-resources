@@ -3,6 +3,7 @@ import {
   canPaintCell,
   floorsInLayout,
   nextDoorId,
+  nextPropId,
   nextRoomId,
   normalizeCells,
   roomOfCell,
@@ -10,6 +11,7 @@ import {
   type MapCell,
   type MapDoor,
   type MapLayout,
+  type MapProp,
   type MapRoom,
 } from './maplabModel'
 import { FIXTURE_TYPES } from './fixtureTypes'
@@ -18,6 +20,7 @@ export interface EditorState {
   layout: MapLayout
   selectedRoomId: number | null
   selectedDoorId: number | null
+  selectedPropId: number | null
   activeZ: number
 }
 
@@ -29,8 +32,11 @@ export type EditorAction =
   | { type: 'setRoomMeta'; roomId: number; meta: { title?: string; description?: string; kind?: string } }
   | { type: 'addDoor'; cell: [number, number]; side: CardinalSide }
   | { type: 'selectDoor'; doorId: number | null }
-  | { type: 'updateFixtureFlags'; fixtureId: number; fixtureType: 'door' | 'stair'; flags: Record<string, unknown> }
+  | { type: 'updateFixtureFlags'; fixtureId: number; fixtureType: 'door' | 'stair' | 'prop'; flags: Record<string, unknown> }
   | { type: 'deleteDoor'; doorId: number }
+  | { type: 'addProp'; cell: [number, number] }
+  | { type: 'selectProp'; propId: number | null }
+  | { type: 'deleteProp'; propId: number }
   | { type: 'setActiveZ'; z: number }
   | { type: 'loadLayout'; layout: MapLayout }
   | { type: 'resetToFixture'; layout: MapLayout }
@@ -117,11 +123,18 @@ export function mapLabEditorReducer(state: EditorState, action: EditorAction): E
       }
 
     case 'updateFixtureFlags': {
-      if (action.fixtureType !== 'door') return state
-      const doors = state.layout.doors.map((door) =>
-        door.door_id === action.fixtureId ? ({ ...door, ...action.flags } as MapDoor) : door,
-      )
-      return { ...state, layout: { ...state.layout, doors } }
+      if (action.fixtureType === 'door') {
+        const doors = state.layout.doors.map((door) =>
+          door.door_id === action.fixtureId ? ({ ...door, ...action.flags } as MapDoor) : door,
+        )
+        return { ...state, layout: { ...state.layout, doors } }
+      } else if (action.fixtureType === 'prop') {
+        const props = state.layout.props.map((prop) =>
+          prop.prop_id === action.fixtureId ? ({ ...prop, ...action.flags } as MapProp) : prop,
+        )
+        return { ...state, layout: { ...state.layout, props } }
+      }
+      return state
     }
 
     case 'deleteDoor': {
@@ -130,6 +143,44 @@ export function mapLabEditorReducer(state: EditorState, action: EditorAction): E
         ...state,
         layout: { ...state.layout, doors },
         selectedDoorId: state.selectedDoorId === action.doorId ? null : state.selectedDoorId,
+      }
+    }
+
+    case 'addProp': {
+      const prop_id = nextPropId(state.layout)
+      const defaults = FIXTURE_TYPES.prop.defaultFlags
+      const newProp: MapProp = {
+        prop_id,
+        kind: String(defaults.kind),
+        cell: action.cell,
+        title: String(defaults.title),
+        hidden: Boolean(defaults.hidden),
+        locked: Boolean(defaults.locked),
+        trapped: Boolean(defaults.trapped),
+      }
+      return {
+        ...state,
+        layout: { ...state.layout, props: [...state.layout.props, newProp] },
+        selectedPropId: prop_id,
+        selectedRoomId: null,
+        selectedDoorId: null,
+      }
+    }
+
+    case 'selectProp':
+      return {
+        ...state,
+        selectedPropId: action.propId,
+        selectedRoomId: action.propId === null ? state.selectedRoomId : null,
+        selectedDoorId: action.propId === null ? state.selectedDoorId : null,
+      }
+
+    case 'deleteProp': {
+      const props = state.layout.props.filter((prop) => prop.prop_id !== action.propId)
+      return {
+        ...state,
+        layout: { ...state.layout, props },
+        selectedPropId: state.selectedPropId === action.propId ? null : state.selectedPropId,
       }
     }
 
@@ -177,5 +228,5 @@ function isConnectedPolyomino(cells: MapCell[]): boolean {
 export function initialEditorState(layout: MapLayout): EditorState {
   const floors = floorsInLayout(layout)
   const activeZ = floors[0]?.z ?? layout.rooms[0]?.z ?? 0
-  return { layout, selectedRoomId: null, selectedDoorId: null, activeZ }
+  return { layout, selectedRoomId: null, selectedDoorId: null, selectedPropId: null, activeZ }
 }

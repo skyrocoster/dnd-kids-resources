@@ -28,7 +28,7 @@ import {
   type MapRoom,
   type MapDoor,
   type MapStair,
-  type MapItem,
+  type MapProp,
 } from '../maplabModel'
 
 const baseDoorFlags = { hidden: false, locked: false, trapped: false }
@@ -93,7 +93,7 @@ describe('maplabModel (M0a scaffold)', () => {
         doors: [],
         stairs: [],
         floors: [],
-        items: [],
+        props: [],
       }
       expect(paddedBounds(layout)).toEqual({ minX: -3, maxX: 8, minY: -3, maxY: 6 })
     })
@@ -108,7 +108,7 @@ describe('maplabModel (M0a scaffold)', () => {
         doors: [],
         stairs: [],
         floors: [],
-        items: [],
+        props: [],
       }
       expect(paddedBounds(layout)).toEqual({ minX: -2, maxX: 11, minY: -2, maxY: 5 })
     })
@@ -566,15 +566,19 @@ describe('maplabModel (Stage 3 inspector)', () => {
     })
   })
 
-  describe('inspectableDescriptor — item (typed hook, unrendered)', () => {
-    it('produces a minimal descriptor (title, type label) with no content lines', () => {
-      const item: MapItem = { item_id: 1, cell: [0, 0], title: 'Locked chest' }
-      const d = inspectableDescriptor({ kind: 'item', item })
+  describe('inspectableDescriptor — prop (Stage F0 stub)', () => {
+    it('produces a minimal descriptor (title, type label) with no content lines for Stage F0', () => {
+      const prop: MapProp = { prop_id: 1, kind: 'chest', cell: [0, 0], title: 'Locked chest', hidden: false, locked: true, trapped: false }
+      const d = inspectableDescriptor({ kind: 'prop', prop })
 
       expect(d.title).toBe('Locked chest')
-      expect(d.typeLabel).toBe('Item')
+      expect(d.typeLabel).toBe('Prop')
       expect(d.icon).toBeDefined()
       expect(d.lines).toEqual([])
+    })
+
+    it.skip('Stage F1: prop descriptor includes title, kind, and passage-flag lines (locked, hidden, perception dc)', () => {
+      // Stage F1: implement passageDescriptorLines for props, matching door/stair pattern
     })
   })
 })

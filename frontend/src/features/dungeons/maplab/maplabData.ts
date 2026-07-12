@@ -4,7 +4,7 @@
  * Case 2 (M2): Stairs connecting two floors.
  */
 
-import type { MapLayout, MapRoom, MapDoor, MapStair } from './maplabModel'
+import type { MapLayout, MapRoom, MapDoor, MapStair, MapProp } from './maplabModel'
 
 // ============================================================================
 // Case 1: Combat Training Hall (room 17) ↔ Armoury (room 23)
@@ -148,6 +148,22 @@ const stair2: MapStair = {
 }
 
 // ============================================================================
+// Props (fixtures) — Phase F seeding (M3+)
+// ============================================================================
+
+/** Prop 1 "Treasure Chest" — locked chest in the Armoury (room 23), center cell. */
+const prop1: MapProp = {
+  prop_id: 1,
+  kind: 'chest',
+  cell: [7, 1], // absolute [6+1, 0+1] = Armoury center
+  title: 'Treasure Chest',
+  hidden: false,
+  locked: true,
+  trapped: false,
+  pickDc: 16,
+}
+
+// ============================================================================
 // Export the complete layout for Case 1 + Case 2
 // ============================================================================
 
@@ -161,5 +177,5 @@ export const mapLabLayout: MapLayout = {
     { z: 1, title: 'First Floor' },
     { z: 2, title: 'Two-Wing Test Layout' },
   ],
-  items: [],
+  props: [prop1],
 }

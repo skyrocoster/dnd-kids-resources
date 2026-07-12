@@ -221,6 +221,25 @@
   outline-offset: 1px;
 }
 
+/* Phase F placeholder classes for prop authoring (Stage F3+).
+ * The "Place prop" toolbar toggle, prop placement overlay, and inspector rail prop branch
+ * will use these classes in Stage F3. */
+.maplab-prop-placement-overlay {
+  /* Stage F3: overlay styling for prop placement mode — similar to room-paint but for props */
+}
+
+.maplab-prop-placement-cell {
+  /* Stage F3: clickable cell styling during prop placement — reuse paint-cell overlay pattern */
+}
+
+.maplab-editor-prop-form {
+  /* Stage F3: prop inspector form styling — will inherit maplab-fixture-form base */
+}
+
+.maplab-editor-prop-delete {
+  /* Stage F3: delete prop button in inspector rail */
+}
+
 /* .maplab-canvas-wrapper / .maplab-canvas-viewport / .maplab-zoom-controls / .maplab-zoom-button /
  * .maplab-pill-button / .maplab-toolbar / .maplab-toolbar-group* / .maplab-editor-nav-rail /
  * .maplab-inspector-rail* are shared with the viewer — real rules live in MapLabPage.css (imported
