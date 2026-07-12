@@ -47,6 +47,7 @@ const door32: MapDoor = {
   door_id: 32,
   cell: [5, 3], // room 17's southeast cell, relative to room 17's origin [0,0]
   side: 'E', // east wall = shared boundary with room 23's [0,3] (absolute [6,3])
+  z: 0,
   title: 'Heavy Stone Door',
   hidden: false,
   locked: true,
@@ -62,6 +63,7 @@ const door98: MapDoor = {
   door_id: 98,
   cell: [11, 0],
   side: 'N',
+  z: 0, // room 32's own floor — room 33 (z:1) coincidentally shares this [x,y] (stair-aligned)
   title: 'Rusty Trap Door',
   hidden: false,
   locked: true,
@@ -156,6 +158,7 @@ const prop1: MapProp = {
   prop_id: 1,
   kind: 'chest',
   cell: [7, 1], // absolute [6+1, 0+1] = Armoury center
+  z: 0,
   title: 'Treasure Chest',
   hidden: false,
   locked: true,

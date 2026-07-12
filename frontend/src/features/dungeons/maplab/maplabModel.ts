@@ -57,6 +57,11 @@ export interface MapDoor extends PassageFlags {
   door_id: number
   cell: MapCell // absolute [x, y]
   side: CardinalSide // which wall of this cell
+  /** Authored floor. Optional for back-compat with data saved before floor-stacking was
+   * disambiguated (Stage G1) — `doorsOnFloor` falls back to spatial inference when absent, which
+   * is exact for a single-floor layout but ambiguous wherever two floors share an [x,y] (e.g. a
+   * stairwell's aligned coordinates), the case this field was added to fix. */
+  z?: number
   title?: string
 }
 
@@ -88,6 +93,8 @@ export interface MapProp extends PassageFlags {
   kind: string // 'chest' | 'table' | 'mirror' | 'barrel' | 'statue' | 'other'
   cell: MapCell // absolute [x, y]
   side?: CardinalSide // ABSENT = on square; PRESENT = attached to that wall
+  /** Authored floor. Optional for back-compat — see `MapDoor.z`. */
+  z?: number
   title?: string
   loot?: PropLoot // forward-compat; round-trips via autosave
 }
@@ -309,10 +316,36 @@ export function stairEndpointsForZ(layout: MapLayout, z: number): MapStair[] {
 }
 
 /** The nearest floor strictly below `activeZ` that has rooms, for ghosting in the editor.
- * Stage G1 will implement; G0 is a stub. */
-export function ghostFloorZ(_layout: MapLayout, _activeZ: number): number | null {
-  // TODO: implement in G1
-  return null
+ * "Below" = smaller z (Isly Castle convention: floor 1 Ground < floor 2 First). Returns `null`
+ * when there is no such floor (already at the lowest one with rooms). */
+export function ghostFloorZ(layout: MapLayout, activeZ: number): number | null {
+  const lowerZs = layout.rooms
+    .map((room) => room.z)
+    .filter((z) => z < activeZ)
+  if (lowerZs.length === 0) return null
+  return Math.max(...lowerZs)
+}
+
+/** Doors belonging to floor `z`: the authored `door.z` when present (exact), else spatial
+ * inference from owned-cell membership (correct for a single floor, but ambiguous wherever two
+ * floors share an `[x,y]` — e.g. a stairwell's aligned coordinates — since a cell match alone can't
+ * tell which floor authored the door). Extracted so the ghost layer and the active floor share one
+ * helper instead of duplicating the filter. */
+export function doorsOnFloor(layout: MapLayout, z: number): MapDoor[] {
+  const rooms = roomsOnZ(layout, z)
+  const ownedCells = new Set(rooms.flatMap((room) => absoluteCells(room).map(cellKey)))
+  return layout.doors.filter((door) =>
+    door.z !== undefined ? door.z === z : ownedCells.has(cellKey(door.cell)),
+  )
+}
+
+/** Props belonging to floor `z` — the prop analog of `doorsOnFloor`. */
+export function propsOnFloor(layout: MapLayout, z: number): MapProp[] {
+  const rooms = roomsOnZ(layout, z)
+  const ownedCells = new Set(rooms.flatMap((room) => absoluteCells(room).map(cellKey)))
+  return layout.props.filter((prop) =>
+    prop.z !== undefined ? prop.z === z : ownedCells.has(cellKey(prop.cell)),
+  )
 }
 
 /** A passage's (door or stair) single dominant presentation state, in display precedence order. */
@@ -652,7 +685,17 @@ export function nextPropId(layout: MapLayout): number {
 }
 
 /** Defends against an older persisted `map_layout` row saved before `props` existed (it was named
- * `items` and unrendered) — normalizes a loaded layout so `props` is always an array. */
+ * `items` and unrendered) — normalizes a loaded layout so `props` is always an array. Also backfills
+ * `z` on any door/prop saved before floor-stacking was disambiguated (Stage G1), inferring it from
+ * whichever room's cells the door/prop spatially overlaps — a best-effort one-time migration so
+ * floor-coincident data (e.g. a stairwell) resolves correctly from here on rather than re-inferring
+ * ambiguously on every render. */
 export function normalizeLayout(layout: MapLayout): MapLayout {
-  return { ...layout, props: layout.props ?? [] }
+  const props = layout.props ?? []
+  const inferZ = (cell: MapCell): number | undefined => roomOfCell(cell, layout.rooms)?.z
+  return {
+    ...layout,
+    props: props.map((prop) => (prop.z !== undefined ? prop : { ...prop, z: inferZ(prop.cell) })),
+    doors: layout.doors.map((door) => (door.z !== undefined ? door : { ...door, z: inferZ(door.cell) })),
+  }
 }

@@ -20,6 +20,7 @@ import {
 import { InspectorPanel } from './InspectorPanel'
 import { FixturePropertiesForm } from './FixturePropertiesForm'
 import { PropMarker } from './PropMarker'
+import { GhostFloorLayer } from './GhostFloorLayer'
 import { FIXTURE_TYPES } from './fixtureTypes'
 import {
   absoluteCells,
@@ -27,11 +28,13 @@ import {
   doorPresentation,
   doorSwingGeometry,
   doorWallSegment,
+  doorsOnFloor,
   ghostFloorZ,
   neighborCell,
   nonDoorWallSegments,
   oppositeSide,
   paddedBounds,
+  propsOnFloor,
   roomOfCell,
   roomsOnZ,
   type CardinalSide,
@@ -138,14 +141,28 @@ export function MapLabEditorPage() {
     [state.layout.rooms]
   )
   const roomsOnActiveFloor = useMemo(() => roomsOnZ(state.layout, state.activeZ), [state.layout, state.activeZ])
-  const doorsOnActiveFloor = useMemo(() => {
-    const ownedCells = new Set(roomsOnActiveFloor.flatMap((room) => absoluteCells(room).map(([x, y]) => `${x},${y}`)))
-    return state.layout.doors.filter((door) => ownedCells.has(`${door.cell[0]},${door.cell[1]}`))
-  }, [state.layout.doors, roomsOnActiveFloor])
-  const propsOnActiveFloor = useMemo(() => {
-    const ownedCells = new Set(roomsOnActiveFloor.flatMap((room) => absoluteCells(room).map(([x, y]) => `${x},${y}`)))
-    return state.layout.props.filter((prop) => ownedCells.has(`${prop.cell[0]},${prop.cell[1]}`))
-  }, [state.layout.props, roomsOnActiveFloor])
+  const doorsOnActiveFloor = useMemo(
+    () => doorsOnFloor(state.layout, state.activeZ),
+    [state.layout, state.activeZ]
+  )
+  const propsOnActiveFloor = useMemo(
+    () => propsOnFloor(state.layout, state.activeZ),
+    [state.layout, state.activeZ]
+  )
+
+  const ghostZ = useMemo(() => ghostFloorZ(state.layout, state.activeZ), [state.layout, state.activeZ])
+  const ghostRooms = useMemo(
+    () => (showGhostFloor && ghostZ !== null ? roomsOnZ(state.layout, ghostZ) : []),
+    [showGhostFloor, ghostZ, state.layout]
+  )
+  const ghostDoors = useMemo(
+    () => (showGhostFloor && ghostZ !== null ? doorsOnFloor(state.layout, ghostZ) : []),
+    [showGhostFloor, ghostZ, state.layout]
+  )
+  const ghostProps = useMemo(
+    () => (showGhostFloor && ghostZ !== null ? propsOnFloor(state.layout, ghostZ) : []),
+    [showGhostFloor, ghostZ, state.layout]
+  )
 
   const bounds = useMemo(() => paddedBounds(state.layout), [state.layout])
   const viewBox = `${bounds.minX * CELL_SIZE} ${bounds.minY * CELL_SIZE} ${
@@ -233,7 +250,7 @@ export function MapLabEditorPage() {
             className="maplab-pill-button maplab-editor-toolbar-button"
             aria-pressed={showGhostFloor}
             data-active={showGhostFloor || undefined}
-            disabled={ghostFloorZ(state.layout, state.activeZ) === null}
+            disabled={ghostZ === null}
             onClick={() => setShowGhostFloor((active) => !active)}
           >
             Ghost lower floor
@@ -352,6 +369,10 @@ export function MapLabEditorPage() {
             height={(bounds.maxY - bounds.minY + 1) * CELL_SIZE}
             fill={`url(#${GRID_PATTERN_ID})`}
           />
+
+          {showGhostFloor && ghostZ !== null && (
+            <GhostFloorLayer rooms={ghostRooms} doors={ghostDoors} props={ghostProps} cellSize={CELL_SIZE} />
+          )}
 
           {roomsOnActiveFloor.map((room) => (
             <g

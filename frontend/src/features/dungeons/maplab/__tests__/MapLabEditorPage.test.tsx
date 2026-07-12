@@ -587,6 +587,24 @@ describe('MapLabEditorPage (Stage F4 — prop stays clickable under the paint ov
   })
 })
 
+describe('MapLabEditorPage (floor-stacking regression — doors/props confined to their own floor)', () => {
+  it('door98 (ground floor) does not render as a live door when the coincident-coordinate upper floor is active', async () => {
+    // Room 32 (z:0) and Room 33 (z:1) share absolute [11,0] by design (a stairwell). Door 98 sits on
+    // room 32's own wall at that cell — before doors carried an authored `z`, spatial-only floor
+    // inference misattributed it to floor 1 as well.
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: { ...mapLabLayout } })
+    vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: { ...mapLabLayout } })
+
+    const { container } = render(<MapLabEditorPage />)
+    await flush()
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Floor 1' }))
+
+    const doorLabels = Array.from(container.querySelectorAll('.maplab-door')).map((el) => el.getAttribute('aria-label'))
+    expect(doorLabels.some((label) => label?.includes('Rusty Trap Door'))).toBe(false)
+  })
+})
+
 describe('MapLabEditorPage (Stage G-fix — black-fill bug)', () => {
   it('canvas wrapper renders data-variant="neutral" so room cells get the correct fill color', async () => {
     const layout = {
@@ -611,29 +629,148 @@ describe('MapLabEditorPage (Stage G-fix — black-fill bug)', () => {
 })
 
 describe('MapLabEditorPage (Stage G0 — Ghost Objects scaffolding)', () => {
-  it.skip('View toolbar group appears with "Ghost lower floor" toggle (Stage G0)', async () => {
-    // TODO: implement in G0
+  const oneFloorLayout = {
+    meta: { cellSizeFt: 5, padding: 3 },
+    rooms: [{ room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0]], title: 'Room 1' }],
+    doors: [],
+    stairs: [],
+    floors: [{ z: 0, title: 'Ground Floor' }],
+    props: [],
+  }
+
+  const twoFloorLayout = {
+    meta: { cellSizeFt: 5, padding: 3 },
+    rooms: [
+      { room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0]], title: 'Ground Room' },
+      { room_id: 2, z: 1, origin: [0, 0], cells: [[0, 0]], title: 'Upper Room' },
+    ],
+    doors: [],
+    stairs: [],
+    floors: [
+      { z: 0, title: 'Ground Floor' },
+      { z: 1, title: 'First Floor' },
+    ],
+    props: [],
+  }
+
+  afterEach(() => {
+    vi.restoreAllMocks()
   })
 
-  it.skip('ghost floor toggle is disabled when there is no lower floor (Stage G0)', async () => {
-    // TODO: implement in G0
+  it('View toolbar group appears with "Ghost lower floor" toggle (Stage G0)', async () => {
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: oneFloorLayout })
+    vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: oneFloorLayout })
+
+    const { container } = render(<MapLabEditorPage />)
+    await flush()
+
+    const groups = container.querySelectorAll('.maplab-toolbar-group')
+    const labels = Array.from(groups).map((group) => group.querySelector('.maplab-toolbar-group-label')?.textContent)
+    expect(labels).toContain('View')
+    expect(screen.getByRole('button', { name: /ghost lower floor/i })).toBeInTheDocument()
   })
 
-  it.skip('ghost floor toggle enables/disables via aria-pressed (Stage G0)', async () => {
-    // TODO: implement in G0
+  it('ghost floor toggle is disabled when there is no lower floor (Stage G0)', async () => {
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: oneFloorLayout })
+    vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: oneFloorLayout })
+
+    render(<MapLabEditorPage />)
+    await flush()
+
+    expect(screen.getByRole('button', { name: /ghost lower floor/i })).toBeDisabled()
+  })
+
+  it('ghost floor toggle enables/disables via aria-pressed (Stage G0)', async () => {
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: twoFloorLayout })
+    vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: twoFloorLayout })
+
+    render(<MapLabEditorPage />)
+    await flush()
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Floor 1' }))
+
+    const toggle = screen.getByRole('button', { name: /ghost lower floor/i })
+    expect(toggle).not.toBeDisabled()
+    expect(toggle).toHaveAttribute('aria-pressed', 'false')
+
+    fireEvent.click(toggle)
+    expect(toggle).toHaveAttribute('aria-pressed', 'true')
+
+    fireEvent.click(toggle)
+    expect(toggle).toHaveAttribute('aria-pressed', 'false')
   })
 })
 
 describe('MapLabEditorPage (Stage G1 — Ghost floor rendering)', () => {
-  it.skip('enabled ghost floor renders lower-floor rooms as read-only overlays (Stage G1)', async () => {
-    // TODO: implement in G1
+  const twoFloorLayout = {
+    meta: { cellSizeFt: 5, padding: 3 },
+    rooms: [
+      { room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0]], title: 'Ground Room' },
+      { room_id: 2, z: 1, origin: [0, 0], cells: [[0, 0]], title: 'Upper Room' },
+    ],
+    doors: [],
+    stairs: [],
+    floors: [
+      { z: 0, title: 'Ground Floor' },
+      { z: 1, title: 'First Floor' },
+    ],
+    props: [],
+  }
+
+  afterEach(() => {
+    vi.restoreAllMocks()
   })
 
-  it.skip('ghost floor objects sit behind active floor and stay non-interactive (Stage G1)', async () => {
-    // TODO: implement in G1
+  it('enabled ghost floor renders lower-floor rooms as read-only overlays (Stage G1)', async () => {
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: twoFloorLayout })
+    vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: twoFloorLayout })
+
+    const { container } = render(<MapLabEditorPage />)
+    await flush()
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Floor 1' }))
+    expect(container.querySelector('.maplab-ghost-layer')).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: /ghost lower floor/i }))
+
+    const ghostLayer = container.querySelector('.maplab-ghost-layer')
+    expect(ghostLayer).toBeInTheDocument()
+    expect(ghostLayer?.textContent).toMatch(/Ground Room/)
   })
 
-  it.skip('ghostFloorZ returns the nearest z < activeZ that has rooms (Stage G1)', async () => {
-    // TODO: implement in G1
+  it('ghost floor objects sit behind active floor and stay non-interactive (Stage G1)', async () => {
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: twoFloorLayout })
+    vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: twoFloorLayout })
+
+    const { container } = render(<MapLabEditorPage />)
+    await flush()
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Floor 1' }))
+    fireEvent.click(screen.getByRole('button', { name: /ghost lower floor/i }))
+
+    const ghostLayer = container.querySelector('.maplab-ghost-layer')
+    expect(ghostLayer).toHaveAttribute('aria-hidden', 'true')
+    expect(ghostLayer?.querySelector('[role="button"]')).not.toBeInTheDocument()
+    expect(ghostLayer?.querySelector('[tabindex]')).not.toBeInTheDocument()
+
+    // The ghost layer must precede the active floor's rooms in document order, so it renders
+    // behind them (SVG paints later siblings on top).
+    const activeRoom = container.querySelector('.maplab-room')
+    const position = ghostLayer?.compareDocumentPosition(activeRoom as Node)
+    expect((position as number) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('ghostFloorZ returns the nearest z < activeZ that has rooms (Stage G1)', async () => {
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: twoFloorLayout })
+    vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: twoFloorLayout })
+
+    render(<MapLabEditorPage />)
+    await flush()
+
+    // Floor 0 (the lowest with rooms) has no lower floor to ghost.
+    expect(screen.getByRole('button', { name: /ghost lower floor/i })).toBeDisabled()
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Floor 1' }))
+    expect(screen.getByRole('button', { name: /ghost lower floor/i })).not.toBeDisabled()
   })
 })

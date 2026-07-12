@@ -470,8 +470,42 @@
   color: var(--md-on-surface-variant);
 }
 
-/* Stage G1 placeholder: ghosted lower-floor objects for alignment reference. Rendered read-only,
- * behind the active floor. Stage G0 is a stub; G1 will implement opacity/pointer-events/styling. */
+/* Ghosted lower-floor objects for alignment reference (Stage G1). Dimmed + non-interactive is the
+ * whole distinction from the live floor — never pure hue, so it still reads correctly for
+ * colorblind users; a dashed room-cell stroke reinforces "not the active floor" the same way
+ * `strokeDasharray` already marks a hidden door/prop. */
 .maplab-ghost-layer {
-  /* TODO: implement in G1 */
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.maplab-ghost-room-cell {
+  fill: var(--variant-container, var(--md-surface-variant));
+  stroke: var(--md-outline);
+  stroke-dasharray: 4 3;
+}
+
+.maplab-ghost-wall {
+  stroke: var(--md-outline);
+  stroke-width: 2;
+}
+
+.maplab-ghost-room-title {
+  font-size: var(--type-body-sm-size);
+  fill: var(--md-on-surface-variant);
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+
+.maplab-ghost-door-leaf,
+.maplab-ghost-door-swing {
+  fill: none;
+  stroke: var(--md-outline);
+  stroke-width: 2;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .maplab-ghost-layer {
+    transition: none;
+  }
 }

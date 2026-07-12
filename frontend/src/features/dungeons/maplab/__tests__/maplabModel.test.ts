@@ -24,6 +24,9 @@ import {
   inspectableDescriptor,
   effectivePassageState,
   defaultPassageSession,
+  ghostFloorZ,
+  doorsOnFloor,
+  propsOnFloor,
   type MapLayout,
   type MapRoom,
   type MapDoor,
@@ -346,6 +349,67 @@ describe('maplabModel (M0a scaffold)', () => {
 
     it('returns an empty array for a floor with no stairs', () => {
       expect(stairEndpointsForZ(mapLabLayout, 5)).toEqual([])
+    })
+  })
+
+  describe('ghostFloorZ', () => {
+    it('returns the nearest lower floor with rooms', () => {
+      expect(ghostFloorZ(mapLabLayout, 1)).toBe(0)
+    })
+
+    it('returns null at the lowest floor with rooms', () => {
+      expect(ghostFloorZ(mapLabLayout, 0)).toBeNull()
+    })
+
+    it('returns the nearest lower floor even when higher floors exist too', () => {
+      expect(ghostFloorZ(mapLabLayout, 2)).toBe(1)
+    })
+  })
+
+  describe('doorsOnFloor / propsOnFloor — floor-stacked coordinates', () => {
+    // Regression: two floors can legitimately share an [x,y] (a stairwell's aligned coordinates —
+    // room 32 z:0 and room 33 z:1 both sit at [11,0] in the real fixture). Spatial-only inference
+    // can't tell which floor a door/prop belongs to in that case; the authored `z` field must win.
+    const stackedLayout: MapLayout = {
+      meta: { cellSizeFt: 5, padding: 0 },
+      rooms: [
+        { room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0]] },
+        { room_id: 2, z: 1, origin: [0, 0], cells: [[0, 0]] },
+      ],
+      doors: [
+        { door_id: 1, cell: [0, 0], side: 'N', z: 0, ...baseDoorFlags },
+        { door_id: 2, cell: [0, 0], side: 'S', z: 1, ...baseDoorFlags },
+      ],
+      stairs: [],
+      floors: [{ z: 0 }, { z: 1 }],
+      props: [
+        { prop_id: 1, kind: 'chest', cell: [0, 0], z: 0, ...baseDoorFlags },
+        { prop_id: 2, kind: 'table', cell: [0, 0], z: 1, ...baseDoorFlags },
+      ],
+    }
+
+    it('doorsOnFloor resolves by authored z, not just spatial cell overlap', () => {
+      expect(doorsOnFloor(stackedLayout, 0).map((d) => d.door_id)).toEqual([1])
+      expect(doorsOnFloor(stackedLayout, 1).map((d) => d.door_id)).toEqual([2])
+    })
+
+    it('propsOnFloor resolves by authored z, not just spatial cell overlap', () => {
+      expect(propsOnFloor(stackedLayout, 0).map((p) => p.prop_id)).toEqual([1])
+      expect(propsOnFloor(stackedLayout, 1).map((p) => p.prop_id)).toEqual([2])
+    })
+
+    it('falls back to spatial inference when z is absent (legacy data)', () => {
+      const legacyLayout: MapLayout = {
+        ...stackedLayout,
+        doors: [{ door_id: 3, cell: [0, 0], side: 'N', ...baseDoorFlags }],
+      }
+      // Single floor with a room at [0,0]; no ambiguity, so the spatial fallback still resolves.
+      expect(doorsOnFloor({ ...legacyLayout, rooms: [legacyLayout.rooms[0]] }, 0).map((d) => d.door_id)).toEqual([3])
+    })
+
+    it('the real fixture: door98 (Rusty Trap Door, z:0) does not leak onto floor 1 despite room 32/33 sharing [11,0]', () => {
+      expect(doorsOnFloor(mapLabLayout, 0).map((d) => d.door_id)).toContain(98)
+      expect(doorsOnFloor(mapLabLayout, 1).map((d) => d.door_id)).not.toContain(98)
     })
   })
 })

@@ -11,12 +11,13 @@ import {
   absoluteCells,
   defaultPassageSession,
   doorPresentation,
+  doorsOnFloor,
   doorSwingGeometry,
   doorWallSegment,
   floorsInLayout,
   nonDoorWallSegments,
   paddedBounds,
-  roomOfCell,
+  propsOnFloor,
   roomsOnZ,
   stairEndpointsForZ,
   stairPresentation,
@@ -76,18 +77,8 @@ export function MapLabPage() {
 
   const rooms = useMemo(() => roomsOnZ(layout, activeZ), [layout, activeZ])
   const stairs = useMemo(() => stairEndpointsForZ(layout, activeZ), [layout, activeZ])
-  const doors = useMemo(
-    () =>
-      layout.doors.filter((door) => {
-        const owner = roomOfCell(door.cell, rooms)
-        return owner !== null
-      }),
-    [layout, rooms],
-  )
-  const props = useMemo(
-    () => layout.props.filter((prop) => roomOfCell(prop.cell, rooms) !== null),
-    [layout, rooms],
-  )
+  const doors = useMemo(() => doorsOnFloor(layout, activeZ), [layout, activeZ])
+  const props = useMemo(() => propsOnFloor(layout, activeZ), [layout, activeZ])
 
   // Bounds computed over every room, not just the active floor, so the viewBox stays
   // aligned across floor switches — proving shared coordinate space across z. Padded by
