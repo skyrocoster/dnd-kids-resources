@@ -93,9 +93,19 @@ live 🚦 gates**.
 
 ---
 
-## Stage R0 — Checkpoint + kill the false-green + clear latent build errors
+## Stage R0 — Checkpoint + kill the false-green + clear latent build errors ✅ COMPLETE (2026-07-12)
 **Goal:** a genuinely green `npm run build`, leaving *only* Group A (Phase E) errors for E1/E2. No 🚦
 (no visual surface) — sign off on green tests + typecheck.
+
+**Result:** checkpoint committed on `recover/phase-e` (`25e9048`), then the fix commit (`e90ab66`).
+`npm run typecheck` (`tsc -b`) now real and shows **only** the 16 Group A errors listed above (the three
+stub files + `MapLabEditorPage.tsx`'s zoom-API mismatches) — Group B and Group C are fully cleared. One
+extra latent error not itemized in Group A/B/C was found and fixed: `useMapLabEditor.ts:68` passed a typed
+`MapLayout` where `saveDungeonLayout` expects `MapLayoutBlob.data: Record<string, unknown>` — fixed with
+the same `as unknown as` cast pattern already used for the read side. `npm run test`: 370 passed / 19
+skipped / 0 failed (unchanged from baseline). `pytest`: 110 passed, 90.73% coverage (unchanged). Docs
+updated: `docs/dungeon_plan.md` and `docs/TESTING.md` now point at `npm run typecheck` / `npm run build`
+and record the false-green cause (`frontend/tsconfig.json` root has `"files": []`).
 
 1. **Safety checkpoint first.** On `main`; create a recovery branch and commit the current recovered
    working tree so nothing recovered is lost again:
