@@ -586,3 +586,26 @@ describe('MapLabEditorPage (Stage F4 — prop stays clickable under the paint ov
     expect(container.querySelector('.maplab-fixture-form')).toBeInTheDocument()
   })
 })
+
+describe('MapLabEditorPage (Stage G-fix — black-fill bug)', () => {
+  it('canvas wrapper renders data-variant="neutral" so room cells get the correct fill color', async () => {
+    const layout = {
+      meta: { cellSizeFt: 5, padding: 3 },
+      rooms: [{ room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0]], title: 'Room 1' }],
+      doors: [],
+      stairs: [],
+      floors: [{ z: 0, title: 'Ground Floor' }],
+      props: [],
+    }
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: layout })
+    vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: layout })
+
+    const { container } = render(<MapLabEditorPage />)
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    const canvasWrapper = container.querySelector('.maplab-canvas-wrapper')
+    expect(canvasWrapper).toHaveAttribute('data-variant', 'neutral')
+  })
+})

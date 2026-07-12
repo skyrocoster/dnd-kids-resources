@@ -9,23 +9,7 @@ doc records what exists, the design system in force, and the facts a new executo
 phase can build on it without re-deriving anything. New design phases get appended under **"Next:
 front-end design planning"** at the bottom.
 
-> **Status:** Original build + Phases A/B/C/D/E/F **all shipped.** The latest, **Design Phase F ("Room
-> Props")**, turned rooms from empty shells into containers for static furniture — chests, tables, mirrors,
-> barrels, statues — placed on a grid square or attached to a wall, carrying the same `hidden`/`locked`/
-> `trapped`/DC bundle doors already use, with a reserved (unrendered) `loot` slot for the future loot
-> system. F0–F3 built the model/reducer/render/authoring; F4 was a front-end design pass that also fixed
-> two real bugs it turned up (a drifted duplicate `InspectorPanel` in the viewer, and a paint-overlay
-> z-order bug that could swallow clicks on a prop). See the collapsed "Design Phase F reference" below and
-> the "Shipped stages" table for stage-by-stage detail. Before that, **Design Phase E ("Map Lab: unified
-> viewer/editor data, canvas zoom, and layout redesign")** made the two Map Lab pages one coherent tool: the
-> viewer and editor now read the same backend-persisted `map_layout` row, the canvas gained real zoom + pan
-> (explicit-px SVG sizing, Ctrl/⌘-wheel, drag-pan), and a full front-end design pass regrouped the editor
-> toolbar/nav-rail/inspector-rail. Shipped on branch `recover/phase-e` after a recovery detour; all gates
-> live-verified through 2026-07-12 (see the collapsed "Design Phase E reference" below). No backend change
-> was needed for any dungeon/encounter/NPC/Map-Lab work except the encounter runner's one additive
-> `active_index` column and Phase D's one additive `map_layout` table — the rest of the feature set (Phase F
-> included — props round-trip inside the same `map_layout` blob) is frontend against `getDungeon(id)`,
-> `getEncounter`/`updateEncounter`, and `getNPC`/`listNPCs`.
+> **Status:** Original build + Phases A/B/C/D/E/F **all shipped**, plus **G-fix** (live regression fix). **Latest:** G-fix (shipped ahead of Phase G features) patched a black-fill bug in the Map Lab editor — the editor's `MapCanvas` was missing `variant="neutral"`, so room cells defaulted to opaque black. Fix confirmed live 2026-07-13: editor rooms render with neutral container fill; all gates live-verified. The feature phases preceding the G-fix: **Design Phase F ("Room Props")** turned rooms from empty shells into containers for static furniture — chests, tables, mirrors, barrels, statues — placed on a grid square or attached to a wall. F0–F3 built the model/reducer/render/authoring; F4 was a front-end design pass that also fixed two real bugs (drifted duplicate `InspectorPanel` in the viewer, and a paint-overlay z-order bug). Before that, **Design Phase E ("Map Lab: unified viewer/editor data, canvas zoom, and layout redesign")** made the two Map Lab pages one coherent tool. No backend change was needed for any dungeon/encounter/NPC/Map-Lab work except the encounter runner's one additive `active_index` column and Phase D's one additive `map_layout` table — the rest of the feature set (Phase F included — props round-trip inside the same `map_layout` blob) is frontend against `getDungeon(id)`, `getEncounter`/`updateEncounter`, and `getNPC`/`listNPCs`.
 
 ---
 
@@ -173,6 +157,7 @@ Material Design 3 system. Consume the **real tokens in `frontend/src/theme.css`*
 | **E: Stage E1** | `useMapLabLayout.ts` unifies the viewer onto the same backend-persisted layout the editor already used (`getDungeonLayout`, 404→fixture fallback mirroring `useMapLabEditor.ts`); `MapLabPage.tsx` derives floors/rooms/doors/stairs/bounds from the loaded layout instead of the static `maplabData.ts` import. 🚦 gate live-verified 2026-07-12: a door/room added in the editor appears in the viewer after reload. |
 | **E: Stage E2** | Real canvas zoom + pan on both pages: `Bounds` type exported from `maplabModel.ts`; `useMapCanvasZoom.ts` implements `zoomIn`/`zoomOut`/`reset`/`fitToBounds` (clamped `MIN_SCALE`–`MAX_SCALE`), Ctrl/⌘+wheel zoom-toward-cursor, and pointer-driven drag-pan that skips room/door/paint-cell hits; `MapCanvas.tsx` sizes the `<svg>` at explicit px `width`/`height` (`viewBoxUnits × BASE_PX_PER_UNIT × scale`) inside an `overflow:auto` viewport instead of shrinking to fit. Adopted in both pages. 🚦 gate live-verified 2026-07-12 (zoom buttons, Ctrl+wheel, drag-pan, both routes); fixed a real bug found live (drag-over-text triggered native text-selection alongside the pan). |
 | **E: Stage E3** | Front-end design pass: one shared `.maplab-pill-button` base replaces five duplicated button-style blocks; editor toolbar regrouped into labelled Create/Session/Status clusters (`.maplab-toolbar-group` + the `.maplab-inspector-kind` caption style reused as `.maplab-toolbar-group-label`); floor tabs + room list unified into one `.maplab-editor-nav-rail` column; the door-only `.maplab-editor-inspector` replaced by an always-mounted `.maplab-inspector-rail` with door/room/empty-state branches (room selection now reuses the generic `InspectorPanel` + a Delete room action); room/door selection made mutually exclusive in the `maplabEditor.ts` reducer; viewer's stray "Reset session state" button moved into its own Session toolbar group. 🚦 gate live-verified 2026-07-12 on both routes; 390/390 tests, `tsc -b`/`npm run build` clean, `pytest` unaffected. |
+| **G: G-fix** | Live regression fix (shipped ahead of the feature): editor's `MapCanvas` was missing `variant="neutral"`, so `--variant-container` resolved undefined and SVG defaulted to opaque black. Fix: pass `variant="neutral"` to editor's `MapCanvas` (matches viewer); add CSS fallback `fill: var(--variant-container, var(--md-surface-variant))` so future missing-variant never black-fills. Test: `MapLabEditorPage.test.tsx` asserts canvas wrapper renders `data-variant="neutral"`. 🚦 Gate live-verified 2026-07-13: editor rooms render with neutral container fill, not black; 409/409 tests, `npm run typecheck` clean, `pytest` unaffected (90.73% coverage). |
 
 ---
 
@@ -494,6 +479,95 @@ blob). Consume `theme.css` tokens and existing `maplabModel` helpers; never hand
 - **Regression:** `npm run test` (408 passing) + `npm run typecheck` + `npm run build` green;
   `python -m pytest` unaffected (90.73%). `git status` shows no change to `seed_dungeons.json`, `backend/`,
   or the live dungeon model/pages — Phase F stayed confined to `maplab/` + the shared icon layer.
+
+---
+
+## Design Phase G — Ghost Objects (Phase G-fix shipped; G0+ planned, no code)
+
+**Goal.** A toggle in the Map Lab **editor** that displays the objects of the floor **below** the active
+one as **ghosted, non-interactive overlays**, so a DM designing a multi-level dungeon can align connected
+features (stairs, shafts, matching rooms) across floors. Ghosts are visually distinct and never
+interactive while editing the current floor.
+
+**Why the ground is favorable (no re-derivation needed).** Floors are `z` integers sharing one origin, so
+a cell on the floor below sits at the same `[x,y]` — exactly the property that makes ghosting useful for
+alignment. `paddedBounds(layout)` already spans **all** floors, so the viewBox needs no change and ghost
+cells already fall inside it. `PropMarker` already accepts `interactive={false}`. The editor already
+computes `roomsOnActiveFloor`/`doorsOnActiveFloor`/`propsOnActiveFloor` by z-filtering
+(`MapLabEditorPage.tsx`) — the same machinery pointed at the lower floor is the whole feature. **Frontend-
+only**, confined to `maplab/`; no backend/seed change.
+
+**Direction convention.** "Lower floor" = the nearest `z` **strictly below** `activeZ` that has rooms
+(smaller z = physically lower; higher z = higher up, per Isly Castle: floor 1 = Ground, floor 2 = First).
+Trivially invertible if the z convention is ever read the other way. Default ghosts the **single nearest
+lower floor** (cleanest for alignment, avoids visual soup); ghosting *all* floors below is a deferred
+extension of the same layer.
+
+### Stage G-fix — black-fill bug (shipped 2026-07-13)
+
+A live regression, fixed ahead of the feature. **Root cause:** room cells are styled
+`.maplab-room-cell { fill: var(--variant-container) }` (`MapLabPage.css`), a custom property that only
+exists when an ancestor carries `data-variant`, which `MapCanvas` sets from its `variant` prop
+(`MapCanvas.tsx`). The **viewer** passes `variant="neutral"` (`MapLabPage.tsx`); the **editor** rendered
+`<MapCanvas>` with **no `variant` prop** (`MapLabEditorPage.tsx`), so `--variant-container` was undefined,
+`fill` resolved invalid, and SVG fell back to its default **opaque black** — every editor room painted
+solid black.
+
+**Implementation (Haiku 4.5, one context):**
+- Fixed: pass `variant="neutral"` to the editor's `<MapCanvas>` in `MapLabEditorPage.tsx` (matches the viewer).
+- Defense in depth: widen the CSS to `fill: var(--variant-container, var(--md-surface-variant))` so a
+  future missing-variant never black-fills again.
+- Test: added `MapLabEditorPage.test.tsx` case asserting the canvas wrapper renders `data-variant="neutral"`.
+
+**🚦 Gate verified 2026-07-13:** editor rooms render with the neutral container fill, not black; 409/409 tests pass; `npm run typecheck` clean; `pytest` unaffected (90.73% coverage).
+
+### Stage G0 — Scaffolding (Haiku 4.5, one context)
+
+- `maplabModel.ts`: `ghostFloorZ(layout, activeZ): number | null` **stub** — intended to return the nearest
+  `z` strictly below `activeZ` that has rooms (sits next to `roomsOnZ`/`floorsInLayout`).
+- New presentational `GhostFloorLayer.tsx` **stub** (props: the ghost floor's rooms/doors/props +
+  `cellSize`).
+- `showGhostFloor` local state + a **"Ghost lower floor"** toggle pill in a new **View** toolbar group
+  (`aria-pressed`, disabled when no lower floor exists), non-functional this stage.
+- Placeholder `.maplab-ghost-layer` CSS.
+- `it.skip` test stubs.
+
+### Stage G1 — Implementation (Sonnet)
+
+- Implement `ghostFloorZ`. (Optionally extract `doorsOnFloor`/`propsOnFloor` helpers so ghost + active
+  share the filter instead of duplicating the inline z-filter logic.)
+- `GhostFloorLayer` renders the lower floor's rooms (cells + `nonDoorWallSegments` + title), doors
+  (leaf/swing/icon), and props (`PropMarker interactive={false}`) as **read-only glyphs** — no `role`, no
+  `tabIndex`, no `onClick`, all wrapped in `<g className="maplab-ghost-layer" aria-hidden="true">`.
+- **Z-order:** insert the ghost `<g>` **immediately after the unknown-space backdrop and before the
+  active-floor rooms**, so ghosts sit *behind* the live floor and the active layer stays topmost and
+  clickable — the same discipline F4 established for props over the paint overlay.
+- Toggle wiring: default **off**; disabled when `ghostFloorZ` is `null`; recomputes when the active floor
+  changes.
+- **Styling (tokens only):** `.maplab-ghost-layer { opacity: ~0.35; pointer-events: none; }` — dimmed +
+  behind the live floor is the distinction; strokes fall back to neutral `--md-outline`. No hand-picked
+  color; `prefers-reduced-motion` honored on any transition.
+- **Tests:** `ghostFloorZ` (nearest-lower, `null` at lowest floor); toggle renders an `aria-hidden` ghost
+  `<g>` whose elements expose no button role; toggling off removes it; toggle disabled on the lowest floor.
+- **🚦 Gate (live):** on Isly Castle's two floors, edit the upper floor and enable the toggle — the ground
+  floor's rooms/doors/props appear ghosted and behind; the active floor's rooms, paint overlay, and
+  door/prop placement still select and click through with no interference; the toggle is disabled on the
+  lowest floor; no console errors.
+
+### Stage G2 — Front-end design pass (`/frontend-design`, Sonnet)
+
+- Confirm the ghost treatment reads as clearly "another floor," not a faded active element, and that ghost
+  props/doors aren't confused with live ones (add a subtle dashed/desaturated cue if opacity alone is
+  ambiguous).
+- Verify touch-target/z-order integrity, that focus never lands on ghost elements, `prefers-reduced-
+  motion`, no emoji, tokens-only.
+- Update the "Shipped stages" table + this Phase G reference; commit the doc with the code.
+
+**Deferred (NOT in Phase G):**
+- Ghosting **all** floors below (map the same layer over every `z < activeZ`) — the layer is built for one
+  floor; multi-floor stacking is a later extension.
+- Ghosting the floor **above** the active one.
+- Any ghost interactivity (click-through selection, "copy from floor below") — authored read-only overlay only.
 
 ---
 

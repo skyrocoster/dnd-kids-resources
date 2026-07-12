@@ -283,6 +283,7 @@ export function MapLabEditorPage() {
           bounds={bounds}
           zoom={zoomApi.zoom}
           ariaLabel={`Editor floor map — Floor ${state.activeZ}`}
+          variant="neutral"
           onWheelZoom={zoomApi.handleWheel}
           onPanStart={zoomApi.handlePointerDown}
           onPanMove={zoomApi.handlePointerMove}

@@ -118,7 +118,7 @@
  * correctly excludes the L's notch — is the perimeter `.maplab-wall` line set below; cell fill
  * alone carries "this square is occupied floor" vs. the unknown-space grid pattern behind it. */
 .maplab-room-cell {
-  fill: var(--variant-container);
+  fill: var(--variant-container, var(--md-surface-variant));
   stroke: none;
   transition: fill 0.15s ease;
 }
