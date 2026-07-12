@@ -18,6 +18,7 @@ import {
 } from '../../../components/icons'
 import { InspectorPanel } from './InspectorPanel'
 import { FixturePropertiesForm } from './FixturePropertiesForm'
+import { PropMarker } from './PropMarker'
 import { FIXTURE_TYPES } from './fixtureTypes'
 import {
   absoluteCells,
@@ -134,6 +135,10 @@ export function MapLabEditorPage() {
     const ownedCells = new Set(roomsOnActiveFloor.flatMap((room) => absoluteCells(room).map(([x, y]) => `${x},${y}`)))
     return state.layout.doors.filter((door) => ownedCells.has(`${door.cell[0]},${door.cell[1]}`))
   }, [state.layout.doors, roomsOnActiveFloor])
+  const propsOnActiveFloor = useMemo(() => {
+    const ownedCells = new Set(roomsOnActiveFloor.flatMap((room) => absoluteCells(room).map(([x, y]) => `${x},${y}`)))
+    return state.layout.props.filter((prop) => ownedCells.has(`${prop.cell[0]},${prop.cell[1]}`))
+  }, [state.layout.props, roomsOnActiveFloor])
 
   const bounds = useMemo(() => paddedBounds(state.layout), [state.layout])
   const viewBox = `${bounds.minX * CELL_SIZE} ${bounds.minY * CELL_SIZE} ${
@@ -398,6 +403,10 @@ export function MapLabEditorPage() {
               </g>
             )
           })}
+
+          {propsOnActiveFloor.map((prop) => (
+            <PropMarker key={prop.prop_id} prop={prop} cellSize={CELL_SIZE} interactive={false} />
+          ))}
 
           {placeDoorMode && (
             <g className="maplab-door-placement-overlay">

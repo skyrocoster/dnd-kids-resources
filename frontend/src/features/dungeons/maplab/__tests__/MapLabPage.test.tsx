@@ -150,7 +150,7 @@ describe('MapLabPage (M2.3 walls + door/stair affordances)', () => {
     const user = userEvent.setup()
     render(<MapLabPage />)
 
-    expect(screen.getByText('Hover or focus a room, door, or stair for details.')).toBeInTheDocument()
+    expect(screen.getByText('Hover or focus a room, door, stair, or prop for details.')).toBeInTheDocument()
 
     const door = screen.getByRole('button', { name: /Heavy Stone Door.*Locked/ })
     expect(door).toHaveAttribute('data-state', 'locked')
@@ -163,7 +163,7 @@ describe('MapLabPage (M2.3 walls + door/stair affordances)', () => {
     expect(screen.getByText('18')).toBeInTheDocument()
 
     await user.unhover(door)
-    expect(screen.getByText('Hover or focus a room, door, or stair for details.')).toBeInTheDocument()
+    expect(screen.getByText('Hover or focus a room, door, stair, or prop for details.')).toBeInTheDocument()
   })
 
   it('reveals door details on keyboard focus too (not hover-only)', () => {
@@ -289,7 +289,7 @@ describe('MapLabPage (Stage 3 — Generic inspector)', () => {
     const user = userEvent.setup()
     const { container } = render(<MapLabPage />)
 
-    expect(screen.getByText('Hover or focus a room, door, or stair for details.')).toBeInTheDocument()
+    expect(screen.getByText('Hover or focus a room, door, stair, or prop for details.')).toBeInTheDocument()
 
     const hall = screen.getByRole('button', { name: 'Combat Training Hall' })
     await user.hover(hall)
@@ -301,7 +301,7 @@ describe('MapLabPage (Stage 3 — Generic inspector)', () => {
     expect(panel).toHaveTextContent(/training/)
 
     await user.unhover(hall)
-    expect(screen.getByText('Hover or focus a room, door, or stair for details.')).toBeInTheDocument()
+    expect(screen.getByText('Hover or focus a room, door, stair, or prop for details.')).toBeInTheDocument()
   })
 
   it('shows the room descriptor on keyboard focus too, same as doors/stairs', () => {
@@ -397,6 +397,75 @@ describe('MapLabPage (Stage 4 — Passage session state)', () => {
     // Back to the authored default: trapped (armed) takes precedence again, door open.
     expect(door).toHaveAttribute('data-state', 'trapped')
     expect(door.querySelector('.maplab-door-leaf')).toBeInTheDocument()
+  })
+})
+
+describe('MapLabPage (Stage F2 — Prop rendering)', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('renders the seeded chest prop with its kind icon, locked state, and inspector details on hover', async () => {
+    const user = userEvent.setup()
+    render(<MapLabPage />)
+
+    const chest = screen.getByRole('button', { name: /Treasure Chest.*Locked/i })
+    expect(chest).toHaveAttribute('data-state', 'locked')
+    expect(chest.querySelector('svg')).toBeTruthy() // Lucide kind icon rendered inline
+
+    await user.hover(chest)
+    expect(screen.getByText('Prop')).toBeInTheDocument()
+    expect(screen.getByText('Pick DC')).toBeInTheDocument()
+    expect(screen.getByText('16')).toBeInTheDocument()
+  })
+
+  it('renders an on-wall prop anchored at the wall midpoint, smaller than an on-square prop', async () => {
+    const wallProp = {
+      prop_id: 900,
+      kind: 'mirror',
+      cell: [0, 0] as [number, number],
+      side: 'N' as const,
+      title: 'Wall Mirror',
+      hidden: false,
+      locked: false,
+      trapped: false,
+    }
+    const backendLayout = { ...mapLabLayout, props: [...mapLabLayout.props, wallProp] }
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: backendLayout })
+
+    render(<MapLabPage />)
+    await flush()
+
+    const mirror = screen.getByRole('button', { name: /Wall Mirror/i })
+    const chest = screen.getByRole('button', { name: /Treasure Chest/i })
+    const mirrorCircle = mirror.querySelector('circle')!
+    const chestCircle = chest.querySelector('circle')!
+
+    // On-wall marker sits at cell [0,0]'s north wall midpoint (32, 0) — a plain on-square marker
+    // would instead center on the cell (32, 32).
+    expect(mirrorCircle.getAttribute('cy')).toBe('0')
+    expect(Number(mirrorCircle.getAttribute('r'))).toBeLessThan(Number(chestCircle.getAttribute('r')))
+  })
+
+  it('renders a hidden prop with a dashed marker outline', async () => {
+    const hiddenProp = {
+      prop_id: 901,
+      kind: 'chest',
+      cell: [0, 0] as [number, number],
+      title: 'Hidden Chest',
+      hidden: true,
+      locked: false,
+      trapped: false,
+    }
+    const backendLayout = { ...mapLabLayout, props: [...mapLabLayout.props, hiddenProp] }
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: backendLayout })
+
+    render(<MapLabPage />)
+    await flush()
+
+    const hiddenChest = screen.getByRole('button', { name: /Hidden Chest/i })
+    expect(hiddenChest).toHaveAttribute('data-state', 'hidden')
+    expect(hiddenChest.querySelector('circle')).toHaveAttribute('stroke-dasharray')
   })
 })
 

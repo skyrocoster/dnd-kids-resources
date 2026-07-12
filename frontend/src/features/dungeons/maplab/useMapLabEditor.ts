@@ -7,7 +7,7 @@ import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
 import { ApiError, getDungeonLayout, saveDungeonLayout } from '../../../api/client'
 import { mapLabLayout } from './maplabData'
 import { initialEditorState, mapLabEditorReducer, type EditorAction, type EditorState } from './maplabEditor'
-import type { CardinalSide, MapCell, MapLayout } from './maplabModel'
+import { normalizeLayout, type CardinalSide, type MapCell, type MapLayout } from './maplabModel'
 
 const SAVE_DEBOUNCE_MS = 600
 
@@ -35,7 +35,7 @@ export function useMapLabEditor(dungeonId: number) {
     getDungeonLayout(dungeonId)
       .then((blob) => {
         if (cancelled) return
-        dispatch({ type: 'loadLayout', layout: blob.data as unknown as MapLayout })
+        dispatch({ type: 'loadLayout', layout: normalizeLayout(blob.data as unknown as MapLayout) })
         setLoading(false)
       })
       .catch((err: unknown) => {

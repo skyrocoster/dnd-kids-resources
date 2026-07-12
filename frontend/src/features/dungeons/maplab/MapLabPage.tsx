@@ -5,6 +5,7 @@ import { useMapLabLayout } from './useMapLabLayout'
 import { useMapCanvasZoom, type ViewportSize } from './useMapCanvasZoom'
 import { MapCanvas } from './MapCanvas'
 import { FitIcon, TrapDisarmedIcon, ZoomInIcon, ZoomOutIcon } from '../../../components/icons'
+import { PropMarker } from './PropMarker'
 import {
   absoluteCells,
   defaultPassageSession,
@@ -64,12 +65,10 @@ interface SessionControls {
   onDisarmTrap?: () => void
 }
 
-/** Element-agnostic descriptor panel — a room, door, or stair all resolve through
+/** Element-agnostic descriptor panel — a room, door, stair, or prop all resolve through
  * `inspectableDescriptor` to the same {title, typeLabel, icon, token, lines} shape, so one
- * component renders all three (an `Inspectable['kind'] === 'item'` target is reachable through the
- * same path but nothing in this page currently produces one — items aren't rendered yet). Doors and
- * stairs additionally get live session controls (Stage 4) — rooms and items don't carry passage
- * state, so `controls` is only passed for those two kinds. */
+ * component renders all four. Doors and stairs additionally get live session controls (Stage 4) —
+ * rooms and props don't carry session state, so `controls` is only passed for those two kinds. */
 function InspectorPanel({ target, controls }: { target: Inspectable; controls?: SessionControls }) {
   const descriptor = inspectableDescriptor(target)
   const Icon = descriptor.icon
@@ -145,6 +144,10 @@ export function MapLabPage() {
         const owner = roomOfCell(door.cell, rooms)
         return owner !== null
       }),
+    [layout, rooms],
+  )
+  const props = useMemo(
+    () => layout.props.filter((prop) => roomOfCell(prop.cell, rooms) !== null),
     [layout, rooms],
   )
 
@@ -247,6 +250,9 @@ export function MapLabPage() {
   } else if (activeRef?.kind === 'room') {
     const room = layout.rooms.find((r) => r.room_id === activeRef.id)
     if (room) activeInspectable = { kind: 'room', room }
+  } else if (activeRef?.kind === 'prop') {
+    const prop = layout.props.find((p) => p.prop_id === activeRef.id)
+    if (prop) activeInspectable = { kind: 'prop', prop }
   }
 
   return (
@@ -560,13 +566,25 @@ export function MapLabPage() {
               </g>
             )
           })}
+
+          {props.map((prop) => (
+            <PropMarker
+              key={prop.prop_id}
+              prop={prop}
+              cellSize={CELL_SIZE}
+              onMouseEnter={() => setHoveredInspectable({ kind: 'prop', id: prop.prop_id })}
+              onMouseLeave={() => setHoveredInspectable(null)}
+              onFocus={() => setFocusedInspectable({ kind: 'prop', id: prop.prop_id })}
+              onBlur={() => setFocusedInspectable(null)}
+            />
+          ))}
         </MapCanvas>
 
         <div className="maplab-inspector-panel-container" aria-live="polite">
           {activeInspectable ? (
             <InspectorPanel target={activeInspectable} controls={activeControls} />
           ) : (
-            <p className="maplab-affordance-placeholder">Hover or focus a room, door, or stair for details.</p>
+            <p className="maplab-affordance-placeholder">Hover or focus a room, door, stair, or prop for details.</p>
           )}
         </div>
       </div>

@@ -6,7 +6,7 @@
 import { useEffect, useState } from 'react'
 import { ApiError, getDungeonLayout } from '../../../api/client'
 import { mapLabLayout } from './maplabData'
-import type { MapLayout } from './maplabModel'
+import { normalizeLayout, type MapLayout } from './maplabModel'
 
 interface UseMapLabLayoutResult {
   layout: MapLayout
@@ -27,7 +27,7 @@ export function useMapLabLayout(dungeonId: number): UseMapLabLayoutResult {
     getDungeonLayout(dungeonId)
       .then((blob) => {
         if (cancelled) return
-        setLayout(blob.data as unknown as MapLayout)
+        setLayout(normalizeLayout(blob.data as unknown as MapLayout))
         setLoading(false)
       })
       .catch((err: unknown) => {

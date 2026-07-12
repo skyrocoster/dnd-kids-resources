@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as api from '../../../../api/client'
 import { MapLabEditorPage } from '../MapLabEditorPage'
+import { mapLabLayout } from '../maplabData'
 
 async function flush() {
   await act(async () => {
@@ -436,21 +437,39 @@ describe('MapLabEditorPage (Stage E3 — Toolbar reorganization & persistent ins
     expect(container.querySelector('.maplab-inspector-rail')).toBeInTheDocument()
   })
 
-  describe('prop authoring (Phase F0 stubs)', () => {
-    it.skip('Stage F2: renders seeded props (e.g., Treasure Chest in the Armoury) with the correct glyph', () => {
-      // Verify prop1 from maplabData appears on the map with its kind icon
-    })
+})
 
-    it.skip('Stage F3: "Place prop" toolbar toggle enters placement mode and allows clicking cells to add props', () => {
-      // Verify toggle UI + placement behavior + autosave
-    })
+describe('MapLabEditorPage (Stage F2 — prop rendering)', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
 
-    it.skip('Stage F3: inspector rail prop branch shows title, kind select, flags, Attach-to-wall select, Delete button', () => {
-      // Verify form fields for a selected prop
-    })
+  it('renders the seeded Treasure Chest prop as a read-only marker with its kind icon and locked state', async () => {
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: { ...mapLabLayout } })
 
-    it.skip('Stage F3: prop placement lifecycle: add → edit kind/flags → attach-to-wall → delete', () => {
-      // Full end-to-end test mirroring the door lifecycle test
-    })
+    const { container } = render(<MapLabEditorPage />)
+    await flush()
+
+    const propMarkers = Array.from(container.querySelectorAll('.maplab-prop'))
+    const chest = propMarkers.find((el) => el.querySelector('title')?.textContent === 'Treasure Chest')
+    expect(chest).toBeTruthy()
+    expect(chest).toHaveAttribute('data-state', 'locked')
+    expect(chest?.querySelector('svg')).toBeTruthy() // Lucide kind icon rendered inline
+    // Read-only for Stage F2 — no click/selection affordance until Stage F3.
+    expect(chest).not.toHaveAttribute('role')
+  })
+})
+
+describe('MapLabEditorPage (prop authoring — Phase F0 stubs)', () => {
+  it.skip('Stage F3: "Place prop" toolbar toggle enters placement mode and allows clicking cells to add props', () => {
+    // Verify toggle UI + placement behavior + autosave
+  })
+
+  it.skip('Stage F3: inspector rail prop branch shows title, kind select, flags, Attach-to-wall select, Delete button', () => {
+    // Verify form fields for a selected prop
+  })
+
+  it.skip('Stage F3: prop placement lifecycle: add → edit kind/flags → attach-to-wall → delete', () => {
+    // Full end-to-end test mirroring the door lifecycle test
   })
 })

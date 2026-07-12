@@ -130,7 +130,7 @@ Pure rename + stubs + declarations; no algorithms/render/design.
   descriptor lines + kind-icon (`maplabModel.test.ts`, update the existing prop/item descriptor test);
   form select render. **Sign-off:** tests + typecheck (headless, no live gate).
 
-### Stage F2 — Render props on both pages (Sonnet)
+### Stage F2 — Render props on both pages (Sonnet) — SHIPPED
 - A shared prop-marker render (extract a small helper/component so viewer + editor draw identically):
   **on-square** = centered marker at `((cell.x+0.5)*CELL, (cell.y+0.5)*CELL)` (stair-marker pattern) with
   the kind icon; **on-wall** (`side` present) = anchored at the `doorWallSegment` midpoint with a smaller

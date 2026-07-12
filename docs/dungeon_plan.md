@@ -401,8 +401,28 @@ blob). Consume `theme.css` tokens and existing `maplabModel` helpers; never hand
   (`maplabModel.test.ts`), new `FixturePropertiesForm.test.tsx` for select rendering. 399 passed/4 skipped,
   `npm run typecheck`/`npm run build` clean, `pytest` unaffected (90.73% coverage) — confirmed no changes to
   `seed_dungeons.json`/`backend/`.
-- **F2 — Render props:** Shared prop-marker render on both pages (on-square centered, on-wall at door-segment
-  midpoint). Seeded chest appears with right glyph/state. (Sonnet, 🚦 live gate)
+- **F2 — Render props (shipped):** New shared `PropMarker.tsx` component (on-square centers on the cell,
+  stair-marker pattern; wall-attached anchors at `doorWallSegment`'s midpoint, door pattern, smaller radius) —
+  used verbatim by both the viewer and editor so they draw props identically. Primary glyph is the per-kind
+  icon (`PROP_KIND_ICONS`); the dominant `passagePresentation` state drives the token color, a dashed outline
+  when hidden, and a small corner badge (`HiddenIcon`/`LockIcon`/`TrapIcon`) when hidden/locked/trapped —
+  never hue-alone. Viewer (`MapLabPage.tsx`) filters `layout.props` to the active floor (same `roomOfCell`
+  pattern as doors), renders them after stairs, and wires hover/focus into the existing `Inspectable`
+  resolver (`kind: 'prop'`) so the generic `InspectorPanel` shows title/state/DC lines with no new UI.
+  Editor (`MapLabEditorPage.tsx`) renders the same markers read-only (`interactive={false}` — no
+  role/tabIndex/click; authoring lands in F3). Added `normalizeLayout()` (`maplabModel.ts`) so an
+  older persisted `map_layout` row saved before `props` existed defaults to `[]` instead of crashing;
+  wired into both `useMapLabLayout.ts` and `useMapLabEditor.ts`'s load paths. 🚦 **Gate live-verified
+  2026-07-12:** the seeded "Treasure Chest" (Armoury) renders with the correct box glyph, gold "locked"
+  token, and lock badge on both `/dungeons/map-lab` and `/dungeons/map-lab/edit`; hovering it in the viewer
+  opens the inspector showing "Treasure Chest — PROP — State: Locked — Pick DC: 16"; no console errors.
+  (En route, found and cleared a stale pre-Phase-F `map_layout` row in the dev DB — carried an orphan "Room
+  101" from earlier E-phase manual testing and no `props` at all — via the editor's "Reset to fixture"
+  button, which re-seeds from `maplabData.ts` including the chest.) Tests: `maplabEditor.test.ts` gained
+  seeded-chest render assertions plus on-square-vs-on-wall and hidden-dashed-outline cases via a mocked
+  backend layout (mirroring the existing Stage-E1 pattern) in both `MapLabPage.test.tsx` and
+  `MapLabEditorPage.test.tsx`. 403 passed/3 skipped, `npm run typecheck`/`npm run build` clean, `pytest`
+  unaffected (90.73% coverage) — confirmed no changes to `seed_dungeons.json`/`backend/`.
 - **F3 — Editor authoring:** "Place prop" toolbar toggle, prop placement overlay, inspector-rail prop branch
   (kind select, Attach-to-wall select, Delete), autosave wiring. (Sonnet, 🚦 live gate)
 - **F4 — Front-end design:** `/frontend-design` pass before UI. Finalize marker art, badges, loot-hook

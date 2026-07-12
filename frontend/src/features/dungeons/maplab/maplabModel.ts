@@ -643,3 +643,9 @@ export function nextDoorId(layout: MapLayout): number {
 export function nextPropId(layout: MapLayout): number {
   return Math.max(0, ...layout.props.map((p) => p.prop_id)) + 1
 }
+
+/** Defends against an older persisted `map_layout` row saved before `props` existed (it was named
+ * `items` and unrendered) — normalizes a loaded layout so `props` is always an array. */
+export function normalizeLayout(layout: MapLayout): MapLayout {
+  return { ...layout, props: layout.props ?? [] }
+}
