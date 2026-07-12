@@ -504,6 +504,21 @@
   stroke-width: 2;
 }
 
+/* Props keep their per-state hue (gold/red/teal) via an inline `style` from `PropMarker`, so a
+ * ghosted chest at 0.35 opacity still reads as "a real locked chest, just faint" rather than
+ * "another floor" — the one place opacity alone was ambiguous, since it's the only ghost element
+ * carrying color instead of the room/wall/door neutral-outline treatment. Force the same neutral
+ * outline + always-dashed ring here so a ghost prop matches its ghost room/door neighbors. */
+.maplab-ghost-layer .maplab-prop-marker {
+  stroke: var(--md-outline) !important;
+  stroke-dasharray: 4 3;
+}
+
+.maplab-ghost-layer .maplab-prop-icon,
+.maplab-ghost-layer .maplab-prop-state-badge {
+  color: var(--md-outline) !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .maplab-ghost-layer {
     transition: none;

@@ -774,3 +774,41 @@ describe('MapLabEditorPage (Stage G1 — Ghost floor rendering)', () => {
     expect(screen.getByRole('button', { name: /ghost lower floor/i })).not.toBeDisabled()
   })
 })
+
+describe('MapLabEditorPage (Stage G2 — ghost treatment design pass)', () => {
+  const twoFloorLayoutWithProp = {
+    meta: { cellSizeFt: 5, padding: 3 },
+    rooms: [
+      { room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0]], title: 'Ground Room' },
+      { room_id: 2, z: 1, origin: [0, 0], cells: [[0, 0]], title: 'Upper Room' },
+    ],
+    doors: [],
+    stairs: [],
+    floors: [
+      { z: 0, title: 'Ground Floor' },
+      { z: 1, title: 'First Floor' },
+    ],
+    props: [{ prop_id: 1, kind: 'chest', cell: [0, 0], z: 0, title: 'Ghost Chest', hidden: false, locked: true, trapped: false }],
+  }
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('a ghosted lower-floor prop renders inside the ghost layer, non-interactive, alongside ghost rooms/doors (Stage G2)', async () => {
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: twoFloorLayoutWithProp })
+    vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: twoFloorLayoutWithProp })
+
+    const { container } = render(<MapLabEditorPage />)
+    await flush()
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Floor 1' }))
+    fireEvent.click(screen.getByRole('button', { name: /ghost lower floor/i }))
+
+    const ghostLayer = container.querySelector('.maplab-ghost-layer')
+    const ghostProp = ghostLayer?.querySelector('.maplab-prop')
+    expect(ghostProp).toBeInTheDocument()
+    expect(ghostProp).not.toHaveAttribute('role')
+    expect(ghostProp).not.toHaveAttribute('tabindex')
+  })
+})
