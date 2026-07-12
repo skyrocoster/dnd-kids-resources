@@ -10,11 +10,12 @@ removed; do not look for it. This project is an online D&D 5e resource site for 
 games** (live at the table) rather than exclusively pre-session prep.
 
 **The authoritative plan for the dungeon room-navigation feature and its follow-on design phases is
-[`docs/dungeon_plan.md`](docs/dungeon_plan.md).** Original build (Stages 1–11) and Design Phase A (Encounter
-Runner, Stages E1–E6) and Design Phase B (NPC Dossier, Stages N1–N6) are **all shipped**. New design phases get
-appended under that doc's "Next: front-end design planning" section — when asked to "do the next step," find the
-current/next stage there and follow it; each stage lists exactly what to build, what it inherits, and how to
-verify it. Do not skip ahead or combine stages.
+[`docs/dungeon_plan.md`](docs/dungeon_plan.md).** Original build (Stages 1–11), Design Phase A (Encounter
+Runner, E1–E6), Design Phase B (NPC Dossier, N1–N6), Design Phase C/D (Map Lab Foundation & Authoring, M0–M4 & D0–D3),
+and Design Phase E (Map Lab unified data, zoom, design pass, E1–E3) are **all shipped**. New design phases get
+appended under that doc's "Next" section — when asked to "do the next step," find the current/next stage there and
+follow it; each stage lists exactly what to build, what it inherits, and how to verify it. Do not skip ahead or
+combine stages.
 
 ### The stack
 - **Data:** FINAL and frozen. `data/seeds/*.json` is the canonical source of truth. The SQLite DB (`dnd_kids_resources.db`, gitignored) is **rebuilt from seeds** via `scripts/init_database.py` + `scripts/seed_database.py`. Never hand-edit the DB as a source of truth; edit seeds and rebuild.
@@ -51,3 +52,4 @@ Task 4.5 set up pytest infrastructure and fixtures. Tasks 5+ inherit these patte
 - Many DB columns are JSON-encoded text (e.g. spells' `damage`/`components`/`classes`, monsters' `ac`/`hp`/`action`) — `json.loads` on read, `json.dumps` on write.
 - Ingestion/parsing scripts are archived under `archive/ingestion/` and must stay out of the running app.
 - This is a Windows machine; the primary shell is PowerShell (a Bash tool is also available).
+-after each stage of an implementation, any persistant plan should be updated and a commit of the changes made.
