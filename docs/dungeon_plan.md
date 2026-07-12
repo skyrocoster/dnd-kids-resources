@@ -158,6 +158,7 @@ Material Design 3 system. Consume the **real tokens in `frontend/src/theme.css`*
 | **E: Stage E2** | Real canvas zoom + pan on both pages: `Bounds` type exported from `maplabModel.ts`; `useMapCanvasZoom.ts` implements `zoomIn`/`zoomOut`/`reset`/`fitToBounds` (clamped `MIN_SCALE`–`MAX_SCALE`), Ctrl/⌘+wheel zoom-toward-cursor, and pointer-driven drag-pan that skips room/door/paint-cell hits; `MapCanvas.tsx` sizes the `<svg>` at explicit px `width`/`height` (`viewBoxUnits × BASE_PX_PER_UNIT × scale`) inside an `overflow:auto` viewport instead of shrinking to fit. Adopted in both pages. 🚦 gate live-verified 2026-07-12 (zoom buttons, Ctrl+wheel, drag-pan, both routes); fixed a real bug found live (drag-over-text triggered native text-selection alongside the pan). |
 | **E: Stage E3** | Front-end design pass: one shared `.maplab-pill-button` base replaces five duplicated button-style blocks; editor toolbar regrouped into labelled Create/Session/Status clusters (`.maplab-toolbar-group` + the `.maplab-inspector-kind` caption style reused as `.maplab-toolbar-group-label`); floor tabs + room list unified into one `.maplab-editor-nav-rail` column; the door-only `.maplab-editor-inspector` replaced by an always-mounted `.maplab-inspector-rail` with door/room/empty-state branches (room selection now reuses the generic `InspectorPanel` + a Delete room action); room/door selection made mutually exclusive in the `maplabEditor.ts` reducer; viewer's stray "Reset session state" button moved into its own Session toolbar group. 🚦 gate live-verified 2026-07-12 on both routes; 390/390 tests, `tsc -b`/`npm run build` clean, `pytest` unaffected. |
 | **G: G-fix** | Live regression fix (shipped ahead of the feature): editor's `MapCanvas` was missing `variant="neutral"`, so `--variant-container` resolved undefined and SVG defaulted to opaque black. Fix: pass `variant="neutral"` to editor's `MapCanvas` (matches viewer); add CSS fallback `fill: var(--variant-container, var(--md-surface-variant))` so future missing-variant never black-fills. Test: `MapLabEditorPage.test.tsx` asserts canvas wrapper renders `data-variant="neutral"`. 🚦 Gate live-verified 2026-07-13: editor rooms render with neutral container fill, not black; 409/409 tests, `npm run typecheck` clean, `pytest` unaffected (90.73% coverage). |
+| **G: Stage 0** | Mechanical scaffolding (Haiku, one context) for the Ghost Objects feature: `maplabModel.ts` `ghostFloorZ` stub (returns null this stage, intended for G1); new `GhostFloorLayer.tsx` stub (renders null, full rendering deferred to G1); `showGhostFloor` state in `MapLabEditorPage.tsx` + "Ghost lower floor" toggle pill in new View toolbar group (disabled when no lower floor, non-functional this stage); placeholder `.maplab-ghost-layer` CSS; `it.skip` test stubs for G0 toolbar + G1 rendering. 🚦 Gate verified 2026-07-13: 409/409 tests (6 skipped), `npm run typecheck` clean, `pytest` unaffected (90.73% coverage). |
 
 ---
 
@@ -482,7 +483,7 @@ blob). Consume `theme.css` tokens and existing `maplabModel` helpers; never hand
 
 ---
 
-## Design Phase G — Ghost Objects (Phase G-fix shipped; G0+ planned, no code)
+## Design Phase G — Ghost Objects (Phase G-fix + G0 shipped; G1+ planned, no code)
 
 **Goal.** A toggle in the Map Lab **editor** that displays the objects of the floor **below** the active
 one as **ghosted, non-interactive overlays**, so a DM designing a multi-level dungeon can align connected
@@ -521,16 +522,19 @@ solid black.
 
 **🚦 Gate verified 2026-07-13:** editor rooms render with the neutral container fill, not black; 409/409 tests pass; `npm run typecheck` clean; `pytest` unaffected (90.73% coverage).
 
-### Stage G0 — Scaffolding (Haiku 4.5, one context)
+### Stage G0 — Scaffolding (shipped 2026-07-13, Haiku 4.5, one context)
 
-- `maplabModel.ts`: `ghostFloorZ(layout, activeZ): number | null` **stub** — intended to return the nearest
-  `z` strictly below `activeZ` that has rooms (sits next to `roomsOnZ`/`floorsInLayout`).
-- New presentational `GhostFloorLayer.tsx` **stub** (props: the ghost floor's rooms/doors/props +
-  `cellSize`).
-- `showGhostFloor` local state + a **"Ghost lower floor"** toggle pill in a new **View** toolbar group
-  (`aria-pressed`, disabled when no lower floor exists), non-functional this stage.
-- Placeholder `.maplab-ghost-layer` CSS.
-- `it.skip` test stubs.
+**Implementation:**
+- `maplabModel.ts`: `ghostFloorZ(layout, activeZ): number | null` stub — intended to return the nearest
+  `z` strictly below `activeZ` that has rooms (sits next to `roomsOnZ`/`floorsInLayout`). Returns `null` this stage.
+- New presentational `GhostFloorLayer.tsx` stub (props: the ghost floor's rooms/doors/props +
+  `cellSize`); renders `null` this stage, full rendering deferred to G1.
+- `showGhostFloor` local state in `MapLabEditorPage.tsx` + a **"Ghost lower floor"** toggle pill in a new **View** toolbar group
+  (`aria-pressed`, disabled when no lower floor exists, non-functional this stage).
+- Placeholder `.maplab-ghost-layer` CSS with TODO comment for G1 implementation.
+- Test stubs with `it.skip` for G0 (View toolbar group appearance/toggle) and G1 (ghost rendering/z-order/selector logic) in `MapLabEditorPage.test.tsx`.
+
+**🚦 Gate verified 2026-07-13:** 409/409 tests pass (6 new skipped); `npm run typecheck` clean; `pytest` unaffected (90.73% coverage).
 
 ### Stage G1 — Implementation (Sonnet)
 

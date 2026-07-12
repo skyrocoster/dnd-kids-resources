@@ -609,3 +609,31 @@ describe('MapLabEditorPage (Stage G-fix — black-fill bug)', () => {
     expect(canvasWrapper).toHaveAttribute('data-variant', 'neutral')
   })
 })
+
+describe('MapLabEditorPage (Stage G0 — Ghost Objects scaffolding)', () => {
+  it.skip('View toolbar group appears with "Ghost lower floor" toggle (Stage G0)', async () => {
+    // TODO: implement in G0
+  })
+
+  it.skip('ghost floor toggle is disabled when there is no lower floor (Stage G0)', async () => {
+    // TODO: implement in G0
+  })
+
+  it.skip('ghost floor toggle enables/disables via aria-pressed (Stage G0)', async () => {
+    // TODO: implement in G0
+  })
+})
+
+describe('MapLabEditorPage (Stage G1 — Ghost floor rendering)', () => {
+  it.skip('enabled ghost floor renders lower-floor rooms as read-only overlays (Stage G1)', async () => {
+    // TODO: implement in G1
+  })
+
+  it.skip('ghost floor objects sit behind active floor and stay non-interactive (Stage G1)', async () => {
+    // TODO: implement in G1
+  })
+
+  it.skip('ghostFloorZ returns the nearest z < activeZ that has rooms (Stage G1)', async () => {
+    // TODO: implement in G1
+  })
+})

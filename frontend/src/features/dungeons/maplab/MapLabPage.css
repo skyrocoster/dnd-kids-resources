@@ -469,3 +469,9 @@
   font-size: var(--type-body-sm-size);
   color: var(--md-on-surface-variant);
 }
+
+/* Stage G1 placeholder: ghosted lower-floor objects for alignment reference. Rendered read-only,
+ * behind the active floor. Stage G0 is a stub; G1 will implement opacity/pointer-events/styling. */
+.maplab-ghost-layer {
+  /* TODO: implement in G1 */
+}

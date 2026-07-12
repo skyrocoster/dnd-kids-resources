@@ -308,6 +308,13 @@ export function stairEndpointsForZ(layout: MapLayout, z: number): MapStair[] {
   return layout.stairs.filter((stair) => stair.from.z === z || stair.to.z === z)
 }
 
+/** The nearest floor strictly below `activeZ` that has rooms, for ghosting in the editor.
+ * Stage G1 will implement; G0 is a stub. */
+export function ghostFloorZ(_layout: MapLayout, _activeZ: number): number | null {
+  // TODO: implement in G1
+  return null
+}
+
 /** A passage's (door or stair) single dominant presentation state, in display precedence order. */
 export type PassageState = 'trapped' | 'locked' | 'hidden' | 'unlocked'
 

@@ -27,6 +27,7 @@ import {
   doorPresentation,
   doorSwingGeometry,
   doorWallSegment,
+  ghostFloorZ,
   neighborCell,
   nonDoorWallSegments,
   oppositeSide,
@@ -127,6 +128,7 @@ export function MapLabEditorPage() {
   const [hoveredCell, setHoveredCell] = useState<MapCell | null>(null)
   const [placeDoorMode, setPlaceDoorMode] = useState(false)
   const [placePropMode, setPlacePropMode] = useState(false)
+  const [showGhostFloor, setShowGhostFloor] = useState(false)
   const zoomApi = useMapCanvasZoom()
   const [viewportSize, setViewportSize] = useState<ViewportSize>({ width: 0, height: 0 })
   const handleViewportResize = useCallback((size: ViewportSize) => setViewportSize(size), [])
@@ -222,6 +224,19 @@ export function MapLabEditorPage() {
           <span className="maplab-toolbar-group-label">Session</span>
           <button type="button" className="maplab-pill-button maplab-editor-toolbar-button" onClick={resetToFixture}>
             Reset to fixture
+          </button>
+        </div>
+        <div className="maplab-toolbar-group">
+          <span className="maplab-toolbar-group-label">View</span>
+          <button
+            type="button"
+            className="maplab-pill-button maplab-editor-toolbar-button"
+            aria-pressed={showGhostFloor}
+            data-active={showGhostFloor || undefined}
+            disabled={ghostFloorZ(state.layout, state.activeZ) === null}
+            onClick={() => setShowGhostFloor((active) => !active)}
+          >
+            Ghost lower floor
           </button>
         </div>
         <div className="maplab-toolbar-group maplab-toolbar-group-status">
