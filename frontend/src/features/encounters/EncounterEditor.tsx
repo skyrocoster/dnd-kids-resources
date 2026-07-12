@@ -6,6 +6,7 @@ import { SelectField } from '../../components/form/SelectField'
 import { TextField } from '../../components/form/TextField'
 import type { EncounterCreatureRow, EncounterFormState } from './encounterForm'
 import { addEncounterCreatureRow, emptyEncounterForm, encounterToFormState, formStateToEncounterInput } from './encounterForm'
+import { deriveCreatureStats } from './encounterStats'
 import './EncounterEditor.css'
 
 interface EncounterEditorProps {
@@ -54,10 +55,16 @@ export function EncounterEditor({ encounter, onClose, onSaved }: EncounterEditor
   }
   const handlePickMonster = (rowId: string, monsterId: string) => {
     const monster = monsters.find((m) => String(m.id) === monsterId)
+    // Picking (or changing) the monster replaces this row's HP/AC with its defaults — the row
+    // represents "an instance of this monster." Hand-edits persist until the monster is re-picked.
+    const { hpAverage, ac } = monster ? deriveCreatureStats(monster) : { hpAverage: null, ac: null }
     updateRow(rowId, {
       monsterId,
       originalName: monster?.name || '',
       name: monster?.name || '',
+      hpCurrent: hpAverage != null ? String(hpAverage) : '',
+      hpMax: hpAverage != null ? String(hpAverage) : '',
+      ac: ac != null ? String(ac) : '',
     })
   }
 

@@ -5,7 +5,7 @@ This document is the single reference for expanding the **encounter** feature be
 methodology as `dungeon_plan.md` (scaffold → implementation → design pass) and inherits that project's
 design system, component anatomy, and reusable pieces — build on them rather than re-deriving.
 
-> **Status:** Phase 1 (**Creation Overhaul**) is **planned, not started**. Stages C0–C3 below.
+> **Status:** Phase 1 (**Creation Overhaul**) is **in progress**. C0 and C1 shipped; C2–C3 below.
 
 ---
 
@@ -151,6 +151,18 @@ Make choosing a monster populate the creature's default HP and AC, sharing one d
 
 **🚦 Gate:** all tests green (unit: derivation + editor row fill; existing runner tests unchanged);
 `npm run build` clean; `pytest` unaffected. Confirm via tests only — **no browser this stage.**
+
+**What shipped:**
+- `deriveCreatureStats(monster)` in `encounterStats.ts` implemented with the exact `hp.average`/first-finite-AC-key
+  logic that previously lived only in `combatantFromMonster`.
+- `combatantFromMonster` (`encounterRunner.ts`) refactored to call `deriveCreatureStats` — runner and editor now
+  share one derivation; runner tests unchanged and green.
+- `EncounterEditor.handlePickMonster` derives `hpCurrent`/`hpMax`/`ac` (stringified) from the picked monster and
+  writes them into the row alongside `name`/`originalName`. Re-picking a monster overwrites the row's HP/AC with
+  the new defaults (documented in a code comment); hand-edits persist until the monster is changed again.
+- Un-skipped and implemented the 6 C1 tests (3 in `encounterForm.test.ts` for the pure derivation/runner parity,
+  3 in `EncounterEditor.test.tsx` mounting the editor and driving the monster `<select>`).
+- Verified: `npm run build` clean; full frontend suite green (430 passed, 8 skipped — the remaining C2 stubs).
 
 ---
 

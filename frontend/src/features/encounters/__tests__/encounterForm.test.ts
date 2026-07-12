@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import type { Encounter } from '../../../api/types'
+import type { Encounter, Monster } from '../../../api/types'
 import { emptyEncounterForm, encounterToFormState, formStateToEncounterInput } from '../encounterForm'
+import { deriveCreatureStats } from '../encounterStats'
+import { combatantFromMonster } from '../encounterRunner'
 
 const baseEncounter: Encounter = {
   id: 1,
@@ -54,19 +56,27 @@ describe('formStateToEncounterInput', () => {
 })
 
 describe('C1: Stat propagation', () => {
-  it.skip('picking a monster fills HP current/max/AC from defaults', () => {
-    // TODO C1: test that selecting a monster populates hpCurrent, hpMax, ac
-    expect(true).toBe(true)
+  it('picking a monster fills HP current/max/AC from defaults', () => {
+    const monster: Monster = { id: 42, name: 'Goblin', ac: { '15': null }, hp: { average: 7 } }
+    const { hpAverage, ac } = deriveCreatureStats(monster)
+    expect(hpAverage).toBe(7)
+    expect(ac).toBe(15)
   })
 
-  it.skip('degrades to blank when the monster lacks hp.average or ac', () => {
-    // TODO C1: test graceful degradation when monster data is missing
-    expect(true).toBe(true)
+  it('degrades to blank when the monster lacks hp.average or ac', () => {
+    const monster: Monster = { id: 43, name: 'Mystery', ac: null, hp: null }
+    const { hpAverage, ac } = deriveCreatureStats(monster)
+    expect(hpAverage).toBeNull()
+    expect(ac).toBeNull()
   })
 
-  it.skip('shares logic with combatantFromMonster', () => {
-    // TODO C1: verify that editor + runner derive identical values for same monster
-    expect(true).toBe(true)
+  it('shares logic with combatantFromMonster', () => {
+    const monster: Monster = { id: 44, name: 'Ogre', ac: { '11': null }, hp: { average: 59 } }
+    const derived = deriveCreatureStats(monster)
+    const combatant = combatantFromMonster(monster)
+    expect(combatant.hp_current).toBe(derived.hpAverage)
+    expect(combatant.hp_max).toBe(derived.hpAverage)
+    expect(combatant.ac).toBe(derived.ac)
   })
 })
 

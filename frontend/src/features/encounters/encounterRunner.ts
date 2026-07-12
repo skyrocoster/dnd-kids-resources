@@ -3,6 +3,7 @@
  * the dungeon dock.
  */
 import type { Encounter, EncounterCreature, EncounterInput, Monster } from '../../api/types'
+import { deriveCreatureStats } from './encounterStats'
 
 let clientIdCounter = 0
 function nextClientId(): string {
@@ -62,9 +63,7 @@ function moveItem<T>(arr: T[], fromIndex: number, toIndex: number): T[] {
 
 /** Derive a fresh combatant from a monster: hp_current = hp_max = hp.average when derivable. */
 export function combatantFromMonster(monster: Monster): RunnerCombatant {
-  const hpAverage = monster.hp && typeof monster.hp.average === 'number' ? monster.hp.average : null
-  const acKeys = monster.ac ? Object.keys(monster.ac) : []
-  const acValue = acKeys.length > 0 && Number.isFinite(Number(acKeys[0])) ? Number(acKeys[0]) : null
+  const { hpAverage, ac } = deriveCreatureStats(monster)
 
   return {
     clientId: nextClientId(),
@@ -73,7 +72,7 @@ export function combatantFromMonster(monster: Monster): RunnerCombatant {
     name: monster.name,
     hp_current: hpAverage,
     hp_max: hpAverage,
-    ac: acValue,
+    ac,
     status: 'alive',
     conditions: [],
   }
