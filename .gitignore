@@ -37,7 +37,8 @@ dnd_kids_resources.db
 # Database backups (old versions)
 *.db.backup.*
 
-# Ignore local 5eTools data that should not be added to GitHub
+# Ignore local data and 5eTools data that should not be added to GitHub
+/data/
 /data/5eTools/
 
 data/seeds/archive/
