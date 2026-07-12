@@ -12,10 +12,12 @@ front-end design planning"** at the bottom.
 > Tools") turned the read-only Map Lab into an editor at `/dungeons/map-lab/edit`, backed by the
 > additive `map_layout` table (the Phase-C FINAL-STAGE production-home decision, now implemented); all
 > gates live-verified through 2026-07-12. **Design Phase E (Map Lab: unified viewer/editor data, canvas
-> zoom, and layout redesign): Stage 0 mechanical scaffolding COMPLETE (2026-07-12, commit 1e674ac);
-> Stage E1 (viewer reads the shared backend layout) COMPLETE (2026-07-12, commit `e24de03`); Stage E2
-> (canvas zoom & pan, both pages) COMPLETE (2026-07-12) after a recovery detour — see
-> `docs/phase-e-recovery-plan.md`.** Stage E3 fill-in queued (Sonnet). No backend change was needed for
+> zoom, and layout redesign) is COMPLETE (2026-07-12).** Stage 0 mechanical scaffolding (commit
+> 1e674ac), Stage E1 viewer/backend unification (commit `e24de03`), Stage E2 canvas zoom & pan (both
+> pages), and Stage E3 the front-end design pass (toolbar grouping, nav rail, persistent inspector
+> rail) all shipped on branch `recover/phase-e` after a recovery detour — see
+> `docs/phase-e-recovery-plan.md` for the full account, including the false-green `tsc --noEmit` finding
+> and the real `npm run typecheck`/`npm run build` gate it produced. No backend change was needed for
 > any dungeon/encounter/NPC/Map-Lab 
 > work except Stage E2's one additive `active_index` column and Phase D's one additive `map_layout` table 
 > — the rest of the feature set is frontend against `getDungeon(id)`, `getEncounter`/`updateEncounter`, and
@@ -163,6 +165,10 @@ Material Design 3 system. Consume the **real tokens in `frontend/src/theme.css`*
 | **D: Stage 1** | Backend persistence (`GET`/`PUT /dungeons/{id}/layout`, upsert via `INSERT ... ON CONFLICT`) + editor shell: `mapLabEditorReducer`'s `addRoom`/`selectRoom`/`deleteRoom`(orphan-door cleanup)/`setActiveZ`/`loadLayout`/`resetToFixture`; `useMapLabEditor` (load-on-mount with 404→fixture fallback, ~600ms debounced autosave, `syncStatus`); `MapLabEditorPage` toolbar/floor-tabs/room-list/read-only canvas. All 🚦 gates live-verified 2026-07-12 (caught and fixed a stale dev backend process missing the new PUT route along the way). |
 | **D: Stage 2** | Cell-painting: `isCellAdjacentToRoom`/`isCellFree`/`canPaintCell`/`normalizeCells` implemented; `toggleCell` reducer action (add via adjacency, remove guarded by an `isConnectedPolyomino` flood-fill so a removal can't split a room); paint overlay with four `data-paint-state`s (paintable/invalid/ownedSelected/ownedOther) rendered only for the selected room, shape-coded markers (not hue-alone) on hover. Also fixed the editor's missing "unknown space" grid backdrop (found first, matched the read-only viewer). 🚦 gate live-verified 2026-07-12. |
 | **D: Stage 3** | Door placement + generic fixture properties menu: `nextDoorId` implemented; reducer gained `addDoor`/`selectDoor`/`updateFixtureFlags`/`deleteDoor` + `selectedDoorId` on `EditorState`; "Place door" mode makes deduped `nonDoorWallSegments` wall edges clickable; new `FixturePropertiesForm.tsx` renders `FIXTURE_TYPES.door`'s `PASSAGE_FIELDS` generically (boolean/number/text, `showWhen`-gated), dispatching through the debounced-autosave path; doors now render the same leaf+swing+icon glyph as the read-only viewer and are click-to-select into a new `.maplab-editor-inspector` panel (InspectorPanel + form + Delete/Close). **Implements the Phase-C FINAL-STAGE production-home decision** (`map_layout` table is now the live store, not just a recommendation). 🚦 gate live-verified 2026-07-12 (386 frontend tests, `pytest` unaffected, `tsc --noEmit` clean). |
+| **E: Stage 0** | Mechanical scaffolding (Haiku, one context) for unified data + zoom: stub `useMapLabLayout`/`useMapCanvasZoom`/`MapCanvas`, zoom icons (`ZoomInIcon`/`ZoomOutIcon`/`FitIcon`), placeholder CSS classes, `it.skip` test stubs. Also the point where a **false-green typecheck gate** was discovered: root `frontend/tsconfig.json` has `"files": []`, so `tsc --noEmit` had been checking nothing — the real check is `tsc -b` (`npm run typecheck`/`npm run build`), which is how ~40 pre-existing + stub-related errors went undetected through earlier "COMPLETE" sign-offs. A commit-reset accident then lost most of the E1–E2 work-in-progress, recovered via `docs/phase-e-recovery-plan.md`'s Stage R0 (checkpoint + real typecheck gate + clearing the pre-existing Group B/C errors it exposed). |
+| **E: Stage E1** | `useMapLabLayout.ts` unifies the viewer onto the same backend-persisted layout the editor already used (`getDungeonLayout`, 404→fixture fallback mirroring `useMapLabEditor.ts`); `MapLabPage.tsx` derives floors/rooms/doors/stairs/bounds from the loaded layout instead of the static `maplabData.ts` import. 🚦 gate live-verified 2026-07-12: a door/room added in the editor appears in the viewer after reload. |
+| **E: Stage E2** | Real canvas zoom + pan on both pages: `Bounds` type exported from `maplabModel.ts`; `useMapCanvasZoom.ts` implements `zoomIn`/`zoomOut`/`reset`/`fitToBounds` (clamped `MIN_SCALE`–`MAX_SCALE`), Ctrl/⌘+wheel zoom-toward-cursor, and pointer-driven drag-pan that skips room/door/paint-cell hits; `MapCanvas.tsx` sizes the `<svg>` at explicit px `width`/`height` (`viewBoxUnits × BASE_PX_PER_UNIT × scale`) inside an `overflow:auto` viewport instead of shrinking to fit. Adopted in both pages. 🚦 gate live-verified 2026-07-12 (zoom buttons, Ctrl+wheel, drag-pan, both routes); fixed a real bug found live (drag-over-text triggered native text-selection alongside the pan). |
+| **E: Stage E3** | Front-end design pass: one shared `.maplab-pill-button` base replaces five duplicated button-style blocks; editor toolbar regrouped into labelled Create/Session/Status clusters (`.maplab-toolbar-group` + the `.maplab-inspector-kind` caption style reused as `.maplab-toolbar-group-label`); floor tabs + room list unified into one `.maplab-editor-nav-rail` column; the door-only `.maplab-editor-inspector` replaced by an always-mounted `.maplab-inspector-rail` with door/room/empty-state branches (room selection now reuses the generic `InspectorPanel` + a Delete room action); room/door selection made mutually exclusive in the `maplabEditor.ts` reducer; viewer's stray "Reset session state" button moved into its own Session toolbar group. 🚦 gate live-verified 2026-07-12 on both routes; 390/390 tests, `tsc -b`/`npm run build` clean, `pytest` unaffected. |
 
 ---
 
@@ -474,6 +480,36 @@ scale (no ad-hoc px/hex).
   the inspector rail; controls reachable). (Replace the Stage-0 `it.skip` stubs.)
 - **🚦 Gate:** live design review at both routes — grouped, uncluttered, tokens-only, no console errors;
   `npm run test` + `npm run typecheck` green; `pytest` unaffected (frontend-only).
+
+**✅ COMPLETE (2026-07-12, branch `recover/phase-e`):** One shared `.maplab-pill-button` base rule
+(`MapLabPage.css`) replaces five near-duplicated button blocks (`.maplab-editor-toolbar-button`,
+`.maplab-floor-tab`, `.maplab-session-control-button`/`.maplab-session-reset-button`,
+`.maplab-zoom-button`), each now carrying only its own state override (`[data-active]`,
+`[aria-selected]`, `:disabled`) layered on top. The signature move: the caption-style label already
+used for `.maplab-inspector-kind` is reused verbatim for `.maplab-toolbar-group-label`, so the toolbar
+and the inspector rail speak one label language. Editor toolbar regrouped into **Create** (Add room,
+Place door), **Session** (Reset to fixture), and a right-aligned **Status** cluster (zoom buttons stay
+docked to `MapCanvas`'s `controlsSlot` rather than becoming a fourth toolbar group — simpler, and the
+skipped test only required Create/Session/Status to be groups). Floor tabs + room list now live inside
+one `.maplab-editor-nav-rail` column. The inspector rail (`.maplab-inspector-rail`) is **always
+mounted**: door branch (unchanged `FixturePropertiesForm`), a new room branch (reuses the existing
+generic `InspectorPanel`/`inspectableDescriptor` with a Delete room + Close action — no new fixture
+type needed, matching "title/meta + delete"), and an empty-state placeholder
+(`.maplab-inspector-rail-empty`) when nothing is selected. Room/door selection made mutually exclusive
+in the `maplabEditor.ts` reducer (`selectRoom`/`selectDoor` now clear each other) — previously both
+could be non-null at once with no UI conflict only because no room inspector existed yet. Viewer: the
+stray "Reset session state" button moved out of the floor-tabs row into its own single-group toolbar
+row (`.maplab-toolbar` → one `.maplab-toolbar-group` labelled Session), floor tabs are now tabs-only.
+`npm run test`: 390/390 passed (5 new Stage E3 tests replace the `it.skip` stubs, no regressions).
+`npm run typecheck` (`tsc -b`) and `npm run build` both clean. `pytest`: 110 passed, 90.73% coverage,
+unaffected (frontend-only; note bare `pytest` failed to put the repo root on `sys.path` in this shell —
+`python -m pytest` is the reliable invocation here). 🚦 gate live-verified in Chrome on both routes:
+toolbar reads as labelled clusters, nav rail and inspector rail both read as one visual column each,
+selecting a room populates the inspector rail (title/size/description/Delete room/Close), selecting a
+door still shows the fixture form, and the reducer change was confirmed live — selecting a door while a
+room was selected correctly cleared the room selection. No console errors. **Known pre-existing UX
+note (not introduced by E3, not in scope):** a door's clickable hit area is effectively just its icon
+glyph; clicking elsewhere on that wall segment hits the room's paint-cell layer instead.
 
 #### Deferred (NOT in Phase E)
 

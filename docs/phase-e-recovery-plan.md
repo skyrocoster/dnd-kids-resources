@@ -208,7 +208,15 @@ Rebuild the destroyed code to the API `MapLabEditorPage.tsx` already consumes (s
 **🚦 Gate:** on a large floor, zoom in → cells grow and the viewport scrolls (map does *not* shrink);
 Reset fits the floor; drag pans; Ctrl+wheel zooms; both pages; Surface-Pro touch. **Commit after sign-off.**
 
-## Stage E3 — Front-end design pass (see dungeon_plan.md "Stage E3")
+## Stage E3 — Front-end design pass (see dungeon_plan.md "Stage E3") ✅ COMPLETE (2026-07-12)
+**Result:** committed on `recover/phase-e`. Full account (pill-button consolidation, toolbar
+regrouping, nav rail, always-mounted inspector rail with a new room branch, mutually-exclusive
+room/door selection in the reducer, viewer's Session group) recorded in `docs/dungeon_plan.md`'s
+Stage E3 entry — read that first, this is just the pointer. `npm run test`: 390/390 passed (5 new
+tests, no regressions). `npm run typecheck`/`npm run build` clean. `pytest`: 110 passed, 90.73%
+coverage, unaffected. 🚦 gate live-verified in Chrome on both routes. One pre-existing UX gap noted
+but explicitly out of scope: a door's clickable area is effectively just its icon glyph.
+
 **Invoke the `frontend-design` skill before writing UI.** Reorganize using `theme.css` tokens + the MD3
 type scale (no ad-hoc px/hex).
 - Editor toolbar → labelled clusters (`.maplab-toolbar-group`): *Create* (Add room, Place door), *Canvas*
