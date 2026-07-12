@@ -47,6 +47,25 @@ function FixtureField({
     )
   }
 
+  if (field.type === 'select') {
+    return (
+      <label className="maplab-field-row" htmlFor={inputId}>
+        <span>{field.label}</span>
+        <select
+          id={inputId}
+          value={typeof value === 'string' ? value : ''}
+          onChange={(event) => onChange(field.key, event.target.value)}
+        >
+          {(field.options ?? []).map((option) => (
+            <option key={option} value={option}>
+              {option}
+            </option>
+          ))}
+        </select>
+      </label>
+    )
+  }
+
   if (field.type === 'number') {
     return (
       <label className="maplab-field-row" htmlFor={inputId}>

@@ -115,7 +115,7 @@ Pure rename + stubs + declarations; no algorithms/render/design.
 - **Append the Phase F skeleton to `docs/dungeon_plan.md`** ("Next" section) so the doc leads the build.
 - **Verify:** `npm run typecheck` clean; `npm run test` green (skips); viewer + all suites unaffected.
 
-### Stage F1 — Model + reducer logic (Sonnet, headless)
+### Stage F1 — Model + reducer logic (Sonnet, headless) — SHIPPED
 - Implement `nextPropId` (`max(0,…prop_id)+1`); `addProp`/`selectProp`/`deleteProp` reducer branches
   mirroring `addDoor`/`selectDoor`/`deleteDoor`, seeding flags from `FIXTURE_TYPES.prop.defaultFlags`,
   selecting the new prop, and **clearing `selectedRoomId`/`selectedDoorId` on select** (three-way mutual

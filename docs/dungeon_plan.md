@@ -387,9 +387,20 @@ All work is **frontend-only** (no backend/seed change — props round-trip insid
 blob). Consume `theme.css` tokens and existing `maplabModel` helpers; never hand-pick color.
 
 **Stages:**
-- **F0 — Scaffolding:** Rename + stubs + declarations; no algorithms/render/design. (Haiku 4.5, one context)
-- **F1 — Model + reducer:** Implement `nextPropId`, `addProp`/`selectProp`/`deleteProp` reducer branches,
-  `inspectableDescriptor` prop case, `FixturePropertiesForm` select-field rendering. (Sonnet, headless)
+- **F0 — Scaffolding (shipped):** Rename + stubs + declarations; no algorithms/render/design. (Haiku 4.5, one context)
+- **F1 — Model + reducer (shipped):** Implemented `addProp`/`selectProp`/`deleteProp` reducer branches
+  (`nextPropId` was already implemented in F0) with full three-way mutual exclusion against room/door
+  selection (also backfilled onto `addRoom`/`selectRoom`/`addDoor`/`selectDoor`, which previously only
+  cleared each other, not props); `inspectableDescriptor`'s `'prop'` branch now returns real detail lines via
+  `passageDescriptorLines`, a state-driven `token` via `passagePresentation`, and a per-kind icon from
+  `PROP_KIND_ICONS` (promoted from placeholder strings to real `LucideIcon` components — chest/table/mirror/
+  barrel/statue/other — wired through `fixtureTypes.ts`); `FixturePropertiesForm` gained `'select'` field
+  rendering (a `<select>` over `field.options`), exercised by the prop `kind` field. Still unrendered —
+  nothing draws on either Map Lab page yet (that's F2). (Sonnet, headless). Tests: reducer add/select/
+  delete/updateFlags + mutual-exclusion (`maplabEditor.test.ts`), descriptor lines + kind-icon
+  (`maplabModel.test.ts`), new `FixturePropertiesForm.test.tsx` for select rendering. 399 passed/4 skipped,
+  `npm run typecheck`/`npm run build` clean, `pytest` unaffected (90.73% coverage) — confirmed no changes to
+  `seed_dungeons.json`/`backend/`.
 - **F2 — Render props:** Shared prop-marker render on both pages (on-square centered, on-wall at door-segment
   midpoint). Seeded chest appears with right glyph/state. (Sonnet, 🚦 live gate)
 - **F3 — Editor authoring:** "Place prop" toolbar toggle, prop placement overlay, inspector-rail prop branch

@@ -50,6 +50,8 @@ export function mapLabEditorReducer(state: EditorState, action: EditorAction): E
         ...state,
         layout: { ...state.layout, rooms: [...state.layout.rooms, newRoom] },
         selectedRoomId: room_id,
+        selectedDoorId: null,
+        selectedPropId: null,
       }
     }
 
@@ -58,6 +60,7 @@ export function mapLabEditorReducer(state: EditorState, action: EditorAction): E
         ...state,
         selectedRoomId: action.roomId,
         selectedDoorId: action.roomId === null ? state.selectedDoorId : null,
+        selectedPropId: action.roomId === null ? state.selectedPropId : null,
       }
 
     case 'deleteRoom': {
@@ -112,6 +115,8 @@ export function mapLabEditorReducer(state: EditorState, action: EditorAction): E
         ...state,
         layout: { ...state.layout, doors: [...state.layout.doors, newDoor] },
         selectedDoorId: door_id,
+        selectedRoomId: null,
+        selectedPropId: null,
       }
     }
 
@@ -120,6 +125,7 @@ export function mapLabEditorReducer(state: EditorState, action: EditorAction): E
         ...state,
         selectedDoorId: action.doorId,
         selectedRoomId: action.doorId === null ? state.selectedRoomId : null,
+        selectedPropId: action.doorId === null ? state.selectedPropId : null,
       }
 
     case 'updateFixtureFlags': {

@@ -566,19 +566,40 @@ describe('maplabModel (Stage 3 inspector)', () => {
     })
   })
 
-  describe('inspectableDescriptor — prop (Stage F0 stub)', () => {
-    it('produces a minimal descriptor (title, type label) with no content lines for Stage F0', () => {
+  describe('inspectableDescriptor — prop', () => {
+    it('produces a descriptor with title, type label, and icon', () => {
       const prop: MapProp = { prop_id: 1, kind: 'chest', cell: [0, 0], title: 'Locked chest', hidden: false, locked: true, trapped: false }
       const d = inspectableDescriptor({ kind: 'prop', prop })
 
       expect(d.title).toBe('Locked chest')
       expect(d.typeLabel).toBe('Prop')
       expect(d.icon).toBeDefined()
-      expect(d.lines).toEqual([])
     })
 
-    it.skip('Stage F1: prop descriptor includes title, kind, and passage-flag lines (locked, hidden, perception dc)', () => {
-      // Stage F1: implement passageDescriptorLines for props, matching door/stair pattern
+    it('falls back to the kind when no title is given', () => {
+      const prop: MapProp = { prop_id: 1, kind: 'table', cell: [0, 0], hidden: false, locked: false, trapped: false }
+      const d = inspectableDescriptor({ kind: 'prop', prop })
+      expect(d.title).toBe('table')
+    })
+
+    it('includes title, kind, and passage-flag lines (locked, hidden, perception dc)', () => {
+      const prop: MapProp = {
+        prop_id: 1,
+        kind: 'chest',
+        cell: [0, 0],
+        title: 'Locked chest',
+        hidden: true,
+        locked: true,
+        trapped: false,
+        pickDc: 12,
+        hiddenDc: 15,
+      }
+      const d = inspectableDescriptor({ kind: 'prop', prop })
+
+      expect(d.lines).toContainEqual({ label: 'State', value: 'Locked' })
+      expect(d.lines).toContainEqual({ label: 'Also', value: 'Hidden' })
+      expect(d.lines).toContainEqual({ label: 'Pick DC', value: '12' })
+      expect(d.lines).toContainEqual({ label: 'Perception DC', value: '15' })
     })
   })
 })

@@ -1,3 +1,13 @@
+import {
+  PropChestIcon,
+  PropTableIcon,
+  PropMirrorIcon,
+  PropBarrelIcon,
+  PropStatueIcon,
+  PropIcon,
+  type LucideIcon,
+} from '../../../components/icons'
+
 export interface FieldSpec {
   key: string
   label: string
@@ -39,13 +49,13 @@ export const PROP_FIELDS: FieldSpec[] = [
 
 export type PropKind = typeof PROP_KINDS[number]
 
-export const PROP_KIND_ICONS: Record<PropKind, string> = {
-  chest: 'Box',
-  table: 'Table',
-  mirror: 'Frame',
-  barrel: 'Barrel',
-  statue: 'Gem',
-  other: 'Package',
+export const PROP_KIND_ICONS: Record<PropKind, LucideIcon> = {
+  chest: PropChestIcon,
+  table: PropTableIcon,
+  mirror: PropMirrorIcon,
+  barrel: PropBarrelIcon,
+  statue: PropStatueIcon,
+  other: PropIcon,
 }
 
 export const FIXTURE_TYPES: Record<string, FixtureTypeSpec> = {

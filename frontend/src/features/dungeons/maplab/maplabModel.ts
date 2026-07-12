@@ -17,6 +17,7 @@ import {
   DoorClosedIcon,
   type LucideIcon,
 } from '../../../components/icons'
+import { PROP_KIND_ICONS } from './fixtureTypes'
 
 // ============================================================================
 // Type definitions
@@ -502,9 +503,9 @@ export function inspectableDescriptor(target: Inspectable): InspectableDescripto
       return {
         title: prop.title ?? prop.kind,
         typeLabel: 'Prop',
-        icon: ItemIcon,
-        token: '--md-on-surface-variant',
-        lines: [],
+        icon: PROP_KIND_ICONS[prop.kind] ?? ItemIcon,
+        token: passagePresentation(prop).token,
+        lines: passageDescriptorLines(prop),
       }
     }
   }
