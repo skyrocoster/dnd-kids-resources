@@ -423,7 +423,21 @@ blob). Consume `theme.css` tokens and existing `maplabModel` helpers; never hand
   backend layout (mirroring the existing Stage-E1 pattern) in both `MapLabPage.test.tsx` and
   `MapLabEditorPage.test.tsx`. 403 passed/3 skipped, `npm run typecheck`/`npm run build` clean, `pytest`
   unaffected (90.73% coverage) — confirmed no changes to `seed_dungeons.json`/`backend/`.
-- **F3 — Editor authoring:** "Place prop" toolbar toggle, prop placement overlay, inspector-rail prop branch
-  (kind select, Attach-to-wall select, Delete), autosave wiring. (Sonnet, 🚦 live gate)
+- **F3 — Editor authoring (shipped):** "Place prop" toolbar toggle in the Create group, mutually exclusive
+  with "Place door" (activating one cancels the other); a placement overlay clickable over every room cell
+  on the active floor (`.maplab-prop-placement-cell`, reusing the paint-cell visual language) dispatches
+  `addProp(cell)` on click, which auto-selects the new prop and exits placement mode. Props render as real
+  `PropMarker`s now (`interactive`, `role="button"`, click-to-select, `data-selected` outline) on both the
+  editor and viewer. New inspector-rail prop branch mirrors the door branch: `InspectorPanel` + a
+  `FixturePropertiesForm` over `FIXTURE_TYPES.prop` (title/kind-select/**Attach to wall** select
+  `Off|N|S|E|W`/hidden/locked/trapped/DCs/note) + Delete-prop/Close actions. `PROP_FIELDS` gained the
+  `side` select field; the page adapts `prop.side ?? 'Off'` for display and writes `undefined` back on
+  `'Off'` so an absent `side` (on-square) round-trips correctly. All wiring (`addProp`/`selectProp`/
+  `deleteProp`/`updateFixtureFlags('prop',…)`) already existed from F1/F2 — F3 was purely the editor-page
+  UI layer. 🚦 **Verified via test suite** (browser session not driven this pass — see verification notes
+  below): place an on-square prop → form appears → autosave; door/prop placement modes are mutually
+  exclusive; edit kind/flag/attach-to-wall → autosaved `props[0]` matches → delete clears the inspector.
+  406 passed, `npm run typecheck`/`npm run build` clean, `pytest` unaffected (90.73% coverage) — confirmed
+  no changes to `seed_dungeons.json`/`backend/`.
 - **F4 — Front-end design:** `/frontend-design` pass before UI. Finalize marker art, badges, loot-hook
   affordance (disabled placeholder row), accessibility floor. (Sonnet + frontend-design skill, 🚦 live gate)

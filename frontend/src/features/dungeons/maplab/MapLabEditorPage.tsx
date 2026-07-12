@@ -11,6 +11,7 @@ import {
   FitIcon,
   MinusIcon,
   PlusIcon,
+  PropIcon,
   SaveIcon,
   TrashIcon,
   ZoomInIcon,
@@ -119,9 +120,13 @@ export function MapLabEditorPage() {
     selectDoor,
     updateFixtureFlags,
     deleteDoor,
+    addProp,
+    selectProp,
+    deleteProp,
   } = useMapLabEditor(MAP_LAB_DUNGEON_ID)
   const [hoveredCell, setHoveredCell] = useState<MapCell | null>(null)
   const [placeDoorMode, setPlaceDoorMode] = useState(false)
+  const [placePropMode, setPlacePropMode] = useState(false)
   const zoomApi = useMapCanvasZoom()
   const [viewportSize, setViewportSize] = useState<ViewportSize>({ width: 0, height: 0 })
   const handleViewportResize = useCallback((size: ViewportSize) => setViewportSize(size), [])
@@ -157,6 +162,10 @@ export function MapLabEditorPage() {
     () => state.layout.rooms.find((room) => room.room_id === state.selectedRoomId) ?? null,
     [state.layout.rooms, state.selectedRoomId]
   )
+  const selectedProp = useMemo(
+    () => state.layout.props.find((prop) => prop.prop_id === state.selectedPropId) ?? null,
+    [state.layout.props, state.selectedPropId]
+  )
 
   if (loading) {
     return (
@@ -169,7 +178,7 @@ export function MapLabEditorPage() {
   return (
     <div className="maplab-editor">
       <h1 className="maplab-title">Map Lab Editor</h1>
-      <p className="maplab-subtitle">Create rooms, paint their footprint, and place doors.</p>
+      <p className="maplab-subtitle">Create rooms, paint their footprint, and place doors and props.</p>
 
       <div className="maplab-toolbar">
         <div className="maplab-toolbar-group">
@@ -183,10 +192,30 @@ export function MapLabEditorPage() {
             className="maplab-pill-button maplab-editor-toolbar-button"
             aria-pressed={placeDoorMode}
             data-active={placeDoorMode || undefined}
-            onClick={() => setPlaceDoorMode((active) => !active)}
+            onClick={() =>
+              setPlaceDoorMode((active) => {
+                if (!active) setPlacePropMode(false)
+                return !active
+              })
+            }
           >
             <DoorClosedIcon width={18} height={18} aria-hidden="true" />
             {placeDoorMode ? 'Cancel door placement' : 'Place door'}
+          </button>
+          <button
+            type="button"
+            className="maplab-pill-button maplab-editor-toolbar-button"
+            aria-pressed={placePropMode}
+            data-active={placePropMode || undefined}
+            onClick={() =>
+              setPlacePropMode((active) => {
+                if (!active) setPlaceDoorMode(false)
+                return !active
+              })
+            }
+          >
+            <PropIcon width={18} height={18} aria-hidden="true" />
+            {placePropMode ? 'Cancel prop placement' : 'Place prop'}
           </button>
         </div>
         <div className="maplab-toolbar-group">
@@ -405,8 +434,38 @@ export function MapLabEditorPage() {
           })}
 
           {propsOnActiveFloor.map((prop) => (
-            <PropMarker key={prop.prop_id} prop={prop} cellSize={CELL_SIZE} interactive={false} />
+            <PropMarker
+              key={prop.prop_id}
+              prop={prop}
+              cellSize={CELL_SIZE}
+              selected={prop.prop_id === state.selectedPropId}
+              onClick={() => selectProp(prop.prop_id === state.selectedPropId ? null : prop.prop_id)}
+            />
           ))}
+
+          {placePropMode && (
+            <g className="maplab-prop-placement-overlay">
+              {roomsOnActiveFloor.flatMap((room) =>
+                absoluteCells(room).map(([x, y]) => (
+                  <rect
+                    key={`${room.room_id}-${x}-${y}`}
+                    className="maplab-prop-placement-cell"
+                    x={x * CELL_SIZE}
+                    y={y * CELL_SIZE}
+                    width={CELL_SIZE}
+                    height={CELL_SIZE}
+                    role="button"
+                    aria-label={`Place prop at ${x}, ${y}`}
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      addProp([x, y])
+                      setPlacePropMode(false)
+                    }}
+                  />
+                ))
+              )}
+            </g>
+          )}
 
           {placeDoorMode && (
             <g className="maplab-door-placement-overlay">
@@ -433,7 +492,7 @@ export function MapLabEditorPage() {
             </g>
           )}
 
-          {!placeDoorMode && state.selectedRoomId !== null && (
+          {!placeDoorMode && !placePropMode && state.selectedRoomId !== null && (
             <g className="maplab-paint-overlay" onMouseLeave={() => setHoveredCell(null)}>
               {Array.from({ length: bounds.maxY - bounds.minY + 1 }, (_, rowIndex) => bounds.minY + rowIndex).map((y) =>
                 Array.from({ length: bounds.maxX - bounds.minX + 1 }, (_, colIndex) => bounds.minX + colIndex).map(
@@ -546,8 +605,38 @@ export function MapLabEditorPage() {
                 </button>
               </div>
             </>
+          ) : selectedProp ? (
+            <>
+              <InspectorPanel target={{ kind: 'prop', prop: selectedProp }} />
+              <FixturePropertiesForm
+                spec={FIXTURE_TYPES.prop}
+                values={{ ...selectedProp, side: selectedProp.side ?? 'Off' } as unknown as Record<string, unknown>}
+                onChange={(key, value) =>
+                  updateFixtureFlags(selectedProp.prop_id, 'prop', {
+                    [key]: key === 'side' && value === 'Off' ? undefined : value,
+                  })
+                }
+              />
+              <div className="maplab-editor-inspector-actions">
+                <button
+                  type="button"
+                  className="maplab-pill-button maplab-editor-toolbar-button"
+                  onClick={() => deleteProp(selectedProp.prop_id)}
+                >
+                  <TrashIcon width={16} height={16} aria-hidden="true" />
+                  Delete prop
+                </button>
+                <button
+                  type="button"
+                  className="maplab-pill-button maplab-editor-toolbar-button"
+                  onClick={() => selectProp(null)}
+                >
+                  Close
+                </button>
+              </div>
+            </>
           ) : (
-            <p className="maplab-inspector-rail-empty">Select a room or door to see its details.</p>
+            <p className="maplab-inspector-rail-empty">Select a room, door, or prop to see its details.</p>
           )}
         </div>
       </div>

@@ -221,23 +221,23 @@
   outline-offset: 1px;
 }
 
-/* Phase F placeholder classes for prop authoring (Stage F3+).
- * The "Place prop" toolbar toggle, prop placement overlay, and inspector rail prop branch
- * will use these classes in Stage F3. */
-.maplab-prop-placement-overlay {
-  /* Stage F3: overlay styling for prop placement mode — similar to room-paint but for props */
-}
-
 .maplab-prop-placement-cell {
-  /* Stage F3: clickable cell styling during prop placement — reuse paint-cell overlay pattern */
+  fill: var(--md-secondary-container);
+  opacity: 0.18;
+  stroke: var(--md-secondary);
+  stroke-width: 1.5;
+  stroke-dasharray: 5 4;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
 }
 
-.maplab-editor-prop-form {
-  /* Stage F3: prop inspector form styling — will inherit maplab-fixture-form base */
+.maplab-prop-placement-cell:hover,
+.maplab-prop-placement-cell:focus-visible {
+  opacity: 0.4;
 }
 
-.maplab-editor-prop-delete {
-  /* Stage F3: delete prop button in inspector rail */
+.maplab-prop[data-selected] .maplab-prop-marker {
+  stroke-width: 4;
 }
 
 /* .maplab-canvas-wrapper / .maplab-canvas-viewport / .maplab-zoom-controls / .maplab-zoom-button /

@@ -35,9 +35,12 @@ export const PASSAGE_FIELDS: FieldSpec[] = [
 
 const PROP_KINDS = ['chest', 'table', 'mirror', 'barrel', 'statue', 'other']
 
+const PROP_WALL_SIDES = ['Off', 'N', 'S', 'E', 'W']
+
 export const PROP_FIELDS: FieldSpec[] = [
   { key: 'title', label: 'Title', type: 'text' },
   { key: 'kind', label: 'Kind', type: 'select', options: PROP_KINDS },
+  { key: 'side', label: 'Attach to wall', type: 'select', options: PROP_WALL_SIDES },
   { key: 'hidden', label: 'Hidden', type: 'boolean' },
   { key: 'locked', label: 'Locked', type: 'boolean' },
   { key: 'trapped', label: 'Trapped', type: 'boolean' },

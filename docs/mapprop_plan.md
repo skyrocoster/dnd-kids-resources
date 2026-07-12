@@ -146,19 +146,29 @@ Pure rename + stubs + declarations; no algorithms/render/design.
   dashed.
 - **🚦 Gate:** the seeded prop shows on both routes with the right glyph/state; no console errors.
 
-### Stage F3 — Editor authoring (Sonnet)
+### Stage F3 — Editor authoring (Sonnet) — SHIPPED
 - "Place prop" toolbar toggle in the **Create** group (page-local mode, mutually exclusive with
   `placeDoorMode` and room-paint). In place mode, room cells become clickable (reuse the paint-cell overlay
-  styling); clicking dispatches `addProp(cell)`, then exits the tool and selects the new prop.
+  styling via `.maplab-prop-placement-cell`); clicking dispatches `addProp(cell)`, then exits the tool and
+  selects the new prop (the reducer already auto-selected it since F1).
+- `PropMarker` is rendered `interactive` (was `interactive={false}` in F2) on the editor page: click-to-select
+  toggles `selectedPropId`, `data-selected` drives a thicker marker outline.
 - Inspector-rail **prop branch**: `InspectorPanel` (read-only descriptor) + `FixturePropertiesForm`
-  (`FIXTURE_TYPES.prop`, incl. the **kind** select and an **Attach to wall** select →
+  (`FIXTURE_TYPES.prop`, incl. the **kind** select and a new **Attach to wall** select →
   `Off`/`N`/`S`/`E`/`W` writing `side`) + **Delete prop** / Close actions — mirroring the door branch.
+  `PROP_FIELDS` gained the `side` field (`FieldSpec` `'select'` type, reused as-is from F1); the page maps
+  `prop.side ?? 'Off'` for display and `'Off' → undefined` on write so on-square props keep `side` absent.
 - Hook wiring: `addProp`/`deleteProp`/`updateFixtureFlags('prop',…)` through `apply` (autosave);
-  `selectProp` via direct dispatch (no save), like `selectDoor`.
-- **Tests:** place → edit kind + a flag + attach-to-wall → assert autosaved `props[0]` → delete (mirror the
-  door lifecycle test); mode mutual-exclusion.
+  `selectProp` via direct dispatch (no save), like `selectDoor` — this wiring already existed from F1/F2,
+  F3 only consumed it from the page.
+- **Tests:** place → shows form → autosaves; door/prop placement-mode mutual exclusion; edit kind/flag/
+  attach-to-wall → assert autosaved `props[0]` → delete (mirrors the door lifecycle test); updated the F2
+  read-only-marker assertion (`role` absent) to the new F3 interactive assertion (`role="button"`).
+  406 passed, `npm run typecheck`/`npm run build` clean, `pytest` unaffected (90.73% coverage) — confirmed
+  no changes to `seed_dungeons.json`/`backend/`.
 - **🚦 Gate:** create an on-square prop and a wall-attached prop, edit kind/flags, confirm "Saved", reload
-  the viewer and see them; delete works.
+  the viewer and see them; delete works. *(Not driven live in a browser this pass — see the chat turn's
+  verification notes for the manual steps to run.)*
 
 ### Stage F4 — Front-end design pass (Sonnet + `frontend-design` skill)
 - **Invoke `/frontend-design` before writing UI.** Finalize the minimal marker art so props read in the

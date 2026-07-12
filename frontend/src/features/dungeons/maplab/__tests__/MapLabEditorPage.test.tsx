@@ -406,7 +406,7 @@ describe('MapLabEditorPage (Stage E3 — Toolbar reorganization & persistent ins
     const rail = container.querySelector('.maplab-inspector-rail')
     expect(rail).toBeInTheDocument()
     expect(rail?.querySelector('.maplab-inspector-rail-empty')).toBeInTheDocument()
-    expect(screen.getByText('Select a room or door to see its details.')).toBeInTheDocument()
+    expect(screen.getByText('Select a room, door, or prop to see its details.')).toBeInTheDocument()
   })
 
   it('selecting a room (not just door) populates the inspector rail', async () => {
@@ -444,7 +444,7 @@ describe('MapLabEditorPage (Stage F2 — prop rendering)', () => {
     vi.restoreAllMocks()
   })
 
-  it('renders the seeded Treasure Chest prop as a read-only marker with its kind icon and locked state', async () => {
+  it('renders the seeded Treasure Chest prop with its kind icon and locked state, selectable in F3', async () => {
     vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: { ...mapLabLayout } })
 
     const { container } = render(<MapLabEditorPage />)
@@ -455,21 +455,98 @@ describe('MapLabEditorPage (Stage F2 — prop rendering)', () => {
     expect(chest).toBeTruthy()
     expect(chest).toHaveAttribute('data-state', 'locked')
     expect(chest?.querySelector('svg')).toBeTruthy() // Lucide kind icon rendered inline
-    // Read-only for Stage F2 — no click/selection affordance until Stage F3.
-    expect(chest).not.toHaveAttribute('role')
+    // Stage F3: props are interactive/selectable, like doors.
+    expect(chest).toHaveAttribute('role', 'button')
   })
 })
 
-describe('MapLabEditorPage (prop authoring — Phase F0 stubs)', () => {
-  it.skip('Stage F3: "Place prop" toolbar toggle enters placement mode and allows clicking cells to add props', () => {
-    // Verify toggle UI + placement behavior + autosave
+describe('MapLabEditorPage (Stage F3 — prop authoring)', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks()
+    vi.useFakeTimers()
   })
 
-  it.skip('Stage F3: inspector rail prop branch shows title, kind select, flags, Attach-to-wall select, Delete button', () => {
-    // Verify form fields for a selected prop
+  afterEach(() => {
+    vi.runOnlyPendingTimers()
+    vi.useRealTimers()
   })
 
-  it.skip('Stage F3: prop placement lifecycle: add → edit kind/flags → attach-to-wall → delete', () => {
-    // Full end-to-end test mirroring the door lifecycle test
+  const oneRoomLayout = {
+    meta: { cellSizeFt: 5, padding: 3 },
+    rooms: [{ room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0]], title: 'Room 1' }],
+    doors: [],
+    stairs: [],
+    floors: [{ z: 0, title: 'Ground Floor' }],
+    props: [],
+  }
+
+  it('places a prop on a room cell and shows its properties form', async () => {
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: oneRoomLayout })
+    const saveSpy = vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: oneRoomLayout })
+
+    const { container } = render(<MapLabEditorPage />)
+    await flush()
+
+    fireEvent.click(screen.getByRole('button', { name: /place prop/i }))
+    expect(container.querySelectorAll('.maplab-prop-placement-cell').length).toBeGreaterThan(0)
+
+    fireEvent.click(container.querySelector('.maplab-prop-placement-cell') as Element)
+
+    expect(container.querySelectorAll('.maplab-prop-placement-cell')).toHaveLength(0)
+    expect(container.querySelector('.maplab-fixture-form')).toBeInTheDocument()
+
+    await act(async () => {
+      vi.advanceTimersByTime(700)
+      await Promise.resolve()
+    })
+    expect(saveSpy).toHaveBeenCalledTimes(1)
+  })
+
+  it('"Place door" and "Place prop" placement modes are mutually exclusive', async () => {
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: oneRoomLayout })
+    vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: oneRoomLayout })
+
+    const { container } = render(<MapLabEditorPage />)
+    await flush()
+
+    fireEvent.click(screen.getByRole('button', { name: /place door/i }))
+    expect(container.querySelectorAll('.maplab-door-placement-edge').length).toBeGreaterThan(0)
+
+    fireEvent.click(screen.getByRole('button', { name: /place prop/i }))
+    expect(container.querySelectorAll('.maplab-door-placement-edge')).toHaveLength(0)
+    expect(container.querySelectorAll('.maplab-prop-placement-cell').length).toBeGreaterThan(0)
+  })
+
+  it('edits prop kind, a flag, and attach-to-wall, then deletes it', async () => {
+    const layoutWithProp = {
+      ...oneRoomLayout,
+      props: [{ prop_id: 1, kind: 'chest', cell: [0, 0], title: 'A Chest', hidden: false, locked: false, trapped: false }],
+    }
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: layoutWithProp })
+    const saveSpy = vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: layoutWithProp })
+
+    const { container } = render(<MapLabEditorPage />)
+    await flush()
+
+    fireEvent.click(container.querySelector('.maplab-prop') as Element)
+    expect(container.querySelector('.maplab-fixture-form')).toBeInTheDocument()
+
+    const lockedCheckbox = screen.getByLabelText('Locked') as HTMLInputElement
+    fireEvent.click(lockedCheckbox)
+    expect(lockedCheckbox.checked).toBe(true)
+
+    const wallSelect = screen.getByLabelText('Attach to wall') as HTMLSelectElement
+    fireEvent.change(wallSelect, { target: { value: 'N' } })
+
+    await act(async () => {
+      vi.advanceTimersByTime(700)
+      await Promise.resolve()
+    })
+    expect(saveSpy).toHaveBeenCalledTimes(1)
+    const savedData = saveSpy.mock.calls[0][1].data as { props: Array<{ locked: boolean; side?: string }> }
+    expect(savedData.props[0]).toMatchObject({ locked: true, side: 'N' })
+
+    fireEvent.click(screen.getByRole('button', { name: /delete prop/i }))
+    expect(container.querySelector('.maplab-fixture-form')).not.toBeInTheDocument()
   })
 })
