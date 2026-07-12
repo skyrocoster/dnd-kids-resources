@@ -214,7 +214,7 @@ same dossier in a dock, coexisting with an open encounter dock. **Map Lab:** `/d
 the hall + L-armoury + shared-wall door, the two-floor stair (coords aligned across z), and the
 interlocking-L pair; doors show leaf+swing, stairs show directional icons, hover/focus opens the
 inspector, session controls toggle open/lock/disarm + reset. Confirm throughout: no emoji, no
-undefined-token flatness, no console errors. `npm run test` and `pytest` green; `tsc --noEmit` clean.
+undefined-token flatness, no console errors. `npm run test` and `pytest` green; `npm run typecheck` clean.
 Production untouched: `git status` shows no change to `seed_dungeons.json`, `backend/`, or the live
 dungeon model/pages.
 
@@ -355,7 +355,14 @@ Ctrl/⌘-wheel + drag-to-pan** (touch-friendly for the Surface Pro).
 > `docs/TESTING.md`. All work is frontend-only; consume `theme.css` tokens + existing model helpers (never
 > hand-pick colors or rebuild geometry). Stages E1–E3 each end with a **🚦 gate: drive both `/dungeons/map-lab`
 > and `/dungeons/map-lab/edit` live and get explicit user acceptance before the next stage.** Stage 0 has no
-> visual surface (tests + `tsc --noEmit` sign it off).
+> visual surface (tests + `npm run typecheck` sign it off).
+>
+> **False-green finding (2026-07-12):** root `frontend/tsconfig.json` has `"files": []`, so `tsc --noEmit`
+> checks nothing and reports clean even with real type errors — this is how ~40 errors (including the
+> Stage-0 stubs never being filled in) went undetected through the "COMPLETE" sign-offs below. The real
+> check is `tsc -b`, exposed as `npm run typecheck` (or via `npm run build`). See
+> `docs/phase-e-recovery-plan.md` for the recovery this caused. All "tsc --noEmit clean" notes elsewhere
+> in this doc predate the fix and should be read as unverified.
 
 #### Stage 0 — Scaffolding (Haiku 4.5, one context, mechanical only)
 
@@ -379,7 +386,7 @@ Ctrl/⌘-wheel + drag-to-pan** (touch-friendly for the Surface Pro).
   data-source case), plus new `it.skip` stubs appended to `__tests__/MapLabEditorPage.test.tsx` for the
   regrouped toolbar / persistent inspector.
 
-**Verify:** `tsc --noEmit` clean; `npm run test` green (skips); viewer + all existing suites unaffected.
+**Verify:** `npm run typecheck` clean; `npm run test` green (skips); viewer + all existing suites unaffected.
 
 **✅ COMPLETE (2026-07-12, commit 1e674ac):** Haiku scaffold. All 9 files created:
 `useMapLabLayout.ts`, `useMapCanvasZoom.ts`, `MapCanvas.tsx`, zoom icons, CSS placeholders,
@@ -435,7 +442,7 @@ scale (no ad-hoc px/hex).
 - **Tests:** update render tests for the regrouped structure (toolbar groups present; room selection opens
   the inspector rail; controls reachable). (Replace the Stage-0 `it.skip` stubs.)
 - **🚦 Gate:** live design review at both routes — grouped, uncluttered, tokens-only, no console errors;
-  `npm run test` + `tsc --noEmit` green; `pytest` unaffected (frontend-only).
+  `npm run test` + `npm run typecheck` green; `pytest` unaffected (frontend-only).
 
 #### Deferred (NOT in Phase E)
 

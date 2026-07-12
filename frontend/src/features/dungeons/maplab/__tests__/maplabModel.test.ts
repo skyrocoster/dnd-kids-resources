@@ -261,7 +261,7 @@ describe('maplabModel (M0a scaffold)', () => {
   })
 
   describe('findDoorAtEdge', () => {
-    const door32 = { door_id: 32, cell: [5, 3] as const, side: 'E' as const, hidden: false, locked: true, trapped: false }
+    const door32: MapDoor = { door_id: 32, cell: [5, 3], side: 'E', hidden: false, locked: true, trapped: false }
 
     it('matches a door from its own cell/side', () => {
       expect(findDoorAtEdge({ cell: [5, 3], side: 'E' }, [door32])?.door_id).toBe(32)

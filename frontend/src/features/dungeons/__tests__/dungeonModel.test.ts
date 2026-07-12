@@ -1,5 +1,4 @@
 import { describe, it, expect } from 'vitest'
-import type { DungeonData } from '../dungeonModel'
 import {
   parseDungeonData,
   getRooms,
@@ -499,7 +498,7 @@ describe('dungeonModel', () => {
               (e.a === node.roomId && e.b === exit.toRoomId) ||
               (e.b === node.roomId && e.a === exit.toRoomId),
           )
-          expect(edge).toBeDefined(`Room ${node.roomId} exit to ${exit.toRoomId} has no graph edge`)
+          expect(edge, `Room ${node.roomId} exit to ${exit.toRoomId} has no graph edge`).toBeDefined()
         }
 
         // Each edge connected to this room should have at most one deduplicated exit

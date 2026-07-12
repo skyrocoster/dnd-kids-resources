@@ -231,7 +231,7 @@ export function parseDungeonData(data: unknown): DungeonData {
 
 /** Get all rooms from parsed dungeon data. */
 export function getRooms(data: DungeonData): DungeonRoom[] {
-  return asArray(data.rooms)
+  return data.rooms ?? []
 }
 
 /** Get a specific room by room_id. */
@@ -281,7 +281,7 @@ export interface EntryTypeGroup {
 
 /** Group room entries by type for display. Returns typed groups with entry_type key, label string, and entries array. */
 export function groupEntriesByType(room: DungeonRoom): EntryTypeGroup[] {
-  const entries = asArray(room.entries)
+  const entries = room.entries ?? []
 
   const typeMap: Record<string, string> = {
     door: 'Doors',
@@ -314,21 +314,12 @@ export function groupEntriesByType(room: DungeonRoom): EntryTypeGroup[] {
 
 /** Get threat hints for a room (used for rail badges). */
 export function getRoomThreatHints(room: DungeonRoom): ThreatHints {
-  const entries = asArray(room.entries)
+  const entries = room.entries ?? []
   return {
     hasTrap: entries.some((e) => e.entry_type === 'trap'),
     hasMonster: entries.some((e) => e.entry_type === 'monster'),
     hasEncounter: entries.some((e) => e.entry_type === 'encounter'),
   }
-}
-
-/** Normalize leads_to into the destination room_id from the current room perspective.
- * doors.leads_to is a 2-element array of the two rooms the door connects.
- * This resolves the *other* room_id. */
-function resolveLeadsTo(door: DungeonDoor, fromRoomId: number): number | undefined {
-  const leadsTo = asArray(door.leads_to).filter((x) => typeof x === 'number')
-  if (leadsTo.length !== 2) return undefined
-  return leadsTo[0] === fromRoomId ? leadsTo[1] : leadsTo[0]
 }
 
 /** Get adjacent room IDs (convenience over the graph edges). */
@@ -348,7 +339,7 @@ export function getRoomGraph(data: DungeonData): DungeonGraph {
   // Map room_id to floor_id for quick lookup
   const roomToFloor = new Map<number, number>()
   for (const floor of floors) {
-    for (const roomId of asArray(floor.room_ids)) {
+    for (const roomId of floor.room_ids) {
       roomToFloor.set(roomId, floor.floor_id)
     }
   }

@@ -1,5 +1,4 @@
 import type { Dungeon, DungeonInput } from '../../api/types'
-import type { DungeonData } from './dungeonModel'
 import { parseDungeonData } from './dungeonModel'
 
 let rowIdCounter = 0
@@ -78,7 +77,7 @@ export function dungeonToFormState(dungeon: Dungeon): DungeonFormState {
     doorId: door.door_id,
     title: door.title,
     content: door.content,
-    leadsTo: door.leads_to.join(', '),
+    leadsTo: (Array.isArray(door.leads_to) ? door.leads_to : [door.leads_to]).join(', '),
     isHidden: door.is_hidden || false,
   }))
 

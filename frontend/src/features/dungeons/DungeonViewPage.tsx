@@ -22,7 +22,7 @@ import {
   getRoomsOnFloor,
   getFloorForRoom,
 } from './dungeonModel'
-import type { DungeonData, DungeonEntry } from './dungeonModel'
+import type { DungeonData, DungeonEntry, DungeonRoom } from './dungeonModel'
 import { trailReducer } from './trailReducer'
 import type { Trail } from './trailReducer'
 import {
@@ -489,9 +489,9 @@ function FeatureTile({
           <ul className="dungeon-treasure-list">
             {entry.treasure_contents.map((item, idx) => {
               const itemRecord = item && typeof item === 'object' ? (item as Record<string, unknown>) : {}
-              const qty = itemRecord.quantity || itemRecord.qty || 1
-              const name = itemRecord.name || itemRecord.title || String(item)
-              const value = itemRecord.value || itemRecord.gold || null
+              const qty = (itemRecord.quantity || itemRecord.qty || 1) as number
+              const name = (itemRecord.name || itemRecord.title || String(item)) as string
+              const value = (itemRecord.value || itemRecord.gold || null) as string | number | null
               return (
                 <li key={idx}>
                   {qty > 1 && `${qty}× `}
@@ -532,7 +532,7 @@ function DungeonRoomPanel({
 }: {
   dungeon: Dungeon
   dungeonId: number
-  room: ReturnType<typeof getRoomById>
+  room: DungeonRoom
   onRunEncounter?: (encounterId: number) => void
   onOpenNpc?: (npcId: number) => void
 }) {

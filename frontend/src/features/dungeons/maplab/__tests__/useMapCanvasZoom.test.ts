@@ -1,6 +1,4 @@
-import { describe, it, expect } from 'vitest'
-import { renderHook } from '@testing-library/react'
-import { useMapCanvasZoom } from '../useMapCanvasZoom'
+import { describe, it } from 'vitest'
 
 describe('useMapCanvasZoom', () => {
   it.skip('initializes zoom state with scale 1 and zero pan', () => {

@@ -65,7 +65,7 @@ export function useMapLabEditor(dungeonId: number) {
     saveTimerRef.current = setTimeout(() => {
       saveTimerRef.current = null
       setSyncStatus({ status: 'saving' })
-      saveDungeonLayout(dungeonId, { data: stateRef.current.layout })
+      saveDungeonLayout(dungeonId, { data: stateRef.current.layout as unknown as Record<string, unknown> })
         .then(() => setSyncStatus({ status: 'saved' }))
         .catch(() => setSyncStatus({ status: 'error', error: 'Failed to save layout' }))
     }, SAVE_DEBOUNCE_MS)

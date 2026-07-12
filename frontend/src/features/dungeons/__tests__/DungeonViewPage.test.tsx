@@ -260,7 +260,6 @@ describe('DungeonViewPage', () => {
 
   it('displays room title and entries grouped by type', async () => {
     vi.spyOn(api, 'getDungeon').mockResolvedValue(islyDungeon)
-    const user = userEvent.setup()
 
     renderWithRouter(4, 3) // Render Portal Room directly (room 3)
 

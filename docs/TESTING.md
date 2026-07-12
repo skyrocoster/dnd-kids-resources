@@ -75,7 +75,14 @@ pytest -m "not integration"                        # skip the slower real-data b
   serialization — that's the backend integration layer's job. Keep the two honest
   about their boundary: don't rely on frontend tests to catch API-shape drift.
 - `npm run build` (`tsc -b && vite build`) must also succeed before shipping — it
-  type-checks the whole app.
+  type-checks the whole app. Use `npm run typecheck` (`tsc -b`) for a fast type-only
+  check without the Vite build step.
+- **Do not use `tsc --noEmit` as a gate.** The root `frontend/tsconfig.json` has
+  `"files": []` (it only exists to reference the app/node sub-projects), so
+  `tsc --noEmit` silently checks *nothing* and reports success even with real type
+  errors in the tree — a false green that hid ~40 errors during the Phase E recovery
+  (2026-07-12; see `docs/phase-e-recovery-plan.md`). `tsc -b` (`npm run typecheck` /
+  `npm run build`) is the only real check — it builds the referenced sub-projects.
 
 ## Why this exists (the failure this prevents)
 Every 500 this project has shipped was the same shape: a router's response model or

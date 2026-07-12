@@ -202,7 +202,8 @@ describe('MapLabEditorPage', () => {
       await Promise.resolve()
     })
     expect(saveSpy).toHaveBeenCalledTimes(1)
-    expect(saveSpy.mock.calls[0][1].data.doors[0]).toMatchObject({ locked: true })
+    const savedData = saveSpy.mock.calls[0][1].data as { doors: Array<{ locked: boolean }> }
+    expect(savedData.doors[0]).toMatchObject({ locked: true })
 
     fireEvent.click(screen.getByRole('button', { name: /delete door/i }))
     expect(container.querySelector('.maplab-fixture-form')).not.toBeInTheDocument()
