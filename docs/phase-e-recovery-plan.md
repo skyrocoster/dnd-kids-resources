@@ -123,7 +123,24 @@ and record the false-green cause (`frontend/tsconfig.json` root has `"files": []
 **Verify:** `npm run test` green; `npm run typecheck` shows **only** the Phase-E (Group A) errors left;
 `pytest` green. **Commit.**
 
-## Stage E1 — Viewer reads the shared backend layout (see dungeon_plan.md "Stage E1")
+## Stage E1 — Viewer reads the shared backend layout (see dungeon_plan.md "Stage E1") ✅ COMPLETE (2026-07-12)
+**Result:** committed on `recover/phase-e` (`e24de03`). `useMapLabLayout.ts` implements the real
+load/fallback (mirrors `useMapLabEditor.ts`'s 404→fixture rule exactly), eagerly initialized to the
+`mapLabLayout` fixture so the viewer never needs a blocking loading gate — the ~28 pre-existing
+synchronous `MapLabPage.test.tsx` tests kept passing unmodified. `MapLabPage.tsx` now derives
+floors/rooms/doors/stairs/bounds from the loaded `layout` instead of the static import. `npm run
+test`: 372 passed / 17 skipped (up from 370/19 — the 2 new E1 tests replaced the Stage-0 skips).
+`npm run typecheck`: `useMapLabLayout.ts` fully cleared; only the pre-scoped Stage E2 errors remain
+(`MapCanvas.tsx`, `useMapCanvasZoom.ts` stubs, `MapLabEditorPage.tsx`'s zoom-API mismatches).
+`pytest` unaffected (90.73% coverage). 🚦 gate live-verified: added a room + door in the editor
+(autosaved, PUT 200 → "Saved"), reloaded the viewer, both appeared. **Recurring gotcha hit again**
+(also seen in D: Stage 1): the long-running dev backend (`start_server.ps1` has no `--reload`) was
+serving stale pre-recovery code, giving a false PUT 405; restarting both servers fixed it. Also hit:
+stale browser HTTP cache on GET responses survived a server restart and a plain reload — needed a
+hard reload (Ctrl+Shift+R) to see real 404/200 state. A leftover `map_layout` row from a manual
+`curl PUT` test (made while diagnosing the 405) was cleared by rebuilding `dnd_kids_resources.db`
+from `scripts/init_database.py` + `seed_database.py` (gitignored, safe to rebuild per CLAUDE.md).
+
 1. Implement `frontend/src/features/dungeons/maplab/useMapLabLayout.ts`: on mount call
    `getDungeonLayout(dungeonId)` → `blob.data as MapLayout`; **404 → seed from `mapLabLayout`** imported
    from `maplabData.ts`; other errors → `error`. Return `{ layout, loading, error }`. Mirror the exact

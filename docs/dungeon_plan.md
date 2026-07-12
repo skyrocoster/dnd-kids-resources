@@ -12,8 +12,10 @@ front-end design planning"** at the bottom.
 > Tools") turned the read-only Map Lab into an editor at `/dungeons/map-lab/edit`, backed by the
 > additive `map_layout` table (the Phase-C FINAL-STAGE production-home decision, now implemented); all
 > gates live-verified through 2026-07-12. **Design Phase E (Map Lab: unified viewer/editor data, canvas
-> zoom, and layout redesign): Stage 0 mechanical scaffolding COMPLETE (2026-07-12, commit 1e674ac).** 
-> Stages E1–E3 fill-ins queued (Sonnet, one at a time). No backend change was needed for any dungeon/encounter/NPC/Map-Lab 
+> zoom, and layout redesign): Stage 0 mechanical scaffolding COMPLETE (2026-07-12, commit 1e674ac);
+> Stage E1 (viewer reads the shared backend layout) COMPLETE (2026-07-12, commit `e24de03`) after a
+> recovery detour — see `docs/phase-e-recovery-plan.md`.** Stages E2–E3 fill-ins queued (Sonnet, one at
+> a time). No backend change was needed for any dungeon/encounter/NPC/Map-Lab 
 > work except Stage E2's one additive `active_index` column and Phase D's one additive `map_layout` table 
 > — the rest of the feature set is frontend against `getDungeon(id)`, `getEncounter`/`updateEncounter`, and
 > `getNPC`/`listNPCs`.
@@ -406,6 +408,14 @@ tsc clean, 386 tests pass | 19 skipped (no regressions). Ready for Stage E1.
 - **Tests:** viewer render test with a mocked `getDungeonLayout` returning a layout with an extra door → door
   renders; 404 mock → fixture rooms render. (Replace the Stage-0 `it.skip` stubs.)
 - **🚦 Gate:** editor → add a door + a room (autosaves "Saved") → open the viewer → the new door/room show.
+
+**✅ COMPLETE (2026-07-12, commit `e24de03`, branch `recover/phase-e`):** `useMapLabLayout.ts`
+implements the real load/fallback, eagerly initialized to the `mapLabLayout` fixture so the viewer
+never needs a blocking loading gate (kept the ~28 pre-existing synchronous `MapLabPage.test.tsx`
+tests passing unmodified). `MapLabPage.tsx` derives floors/rooms/doors/stairs/bounds from the loaded
+`layout`. `npm run test`: 372 passed / 17 skipped; `npm run typecheck` clears `useMapLabLayout.ts`,
+leaving only the pre-scoped Stage E2 errors; `pytest` unaffected. 🚦 gate live-verified. Full account,
+including a recurring stale-dev-server gotcha, in `docs/phase-e-recovery-plan.md`'s Stage E1 entry.
 
 #### Stage E2 — Canvas zoom & pan, both pages (Sonnet)
 
