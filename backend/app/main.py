@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from .routers import reference, spells, monsters, weapons, players, npcs, quests, encounters, dungeons
+from .routers import reference, spells, monsters, weapons, players, npcs, quests, encounters, dungeons, layouts
 
 app = FastAPI(
     title="D&D Kids Resources API",
@@ -36,6 +36,7 @@ app.include_router(npcs.router)
 app.include_router(quests.router)
 app.include_router(encounters.router)
 app.include_router(dungeons.router)
+app.include_router(layouts.router)
 
 # Serve the built frontend (frontend/dist), if present, with an SPA fallback
 # for client-side routes. All API routes are under /api, so anything else

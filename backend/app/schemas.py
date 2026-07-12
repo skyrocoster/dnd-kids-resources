@@ -274,3 +274,7 @@ class DungeonCreate(BaseModel):
 
 class DungeonUpdate(DungeonCreate):
     pass
+
+
+class MapLayoutBlob(BaseModel):
+    data: Dict[str, Any]

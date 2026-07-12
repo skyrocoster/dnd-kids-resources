@@ -170,3 +170,7 @@ export interface Dungeon {
 }
 
 export type DungeonInput = Omit<Dungeon, 'id'>
+
+export interface MapLayoutBlob {
+  data: Record<string, unknown>
+}

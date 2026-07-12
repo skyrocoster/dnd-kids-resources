@@ -286,6 +286,14 @@ def init_database():
         )
     """)
 
+    # Create map_layout table (Map Lab editor: additive coordinate/fixture layout per dungeon)
+    cursor.execute("""
+        CREATE TABLE map_layout (
+            dungeon_id INTEGER PRIMARY KEY,
+            data TEXT NOT NULL
+        )
+    """)
+
     # Create players table for persistent character records
     cursor.execute("""
         CREATE TABLE players (

@@ -575,3 +575,53 @@ export function doorPresentation(door: MapDoor, session?: PassageSessionState): 
   const icon = base.state === 'unlocked' ? (isOpen ? DoorOpenIcon : DoorClosedIcon) : base.icon
   return { ...base, icon, isOpen }
 }
+
+// ============================================================================
+// Editor helpers (Stage D2 — cell painting)
+// ============================================================================
+
+/** Whether `cell` is orthogonally adjacent to any cell already owned by `room` (same floor is the
+ * caller's responsibility — this only compares against the room's own absolute cells). */
+export function isCellAdjacentToRoom(cell: MapCell, room: MapRoom): boolean {
+  const own = new Set(absoluteCells(room).map(cellKey))
+  const sides: CardinalSide[] = ['N', 'S', 'E', 'W']
+  return sides.some((side) => own.has(cellKey(neighborCell(cell, side))))
+}
+
+/** Whether no room in `rooms` already owns `cell` — callers scope `rooms` to one floor so the same
+ * `[x, y]` can be painted independently on different z planes. */
+export function isCellFree(cell: MapCell, rooms: MapRoom[]): boolean {
+  return roomOfCell(cell, rooms) === null
+}
+
+/** Whether `cell` can be painted into `roomId`: it must be free on that room's own floor, and either
+ * the room has no cells yet (a fresh room may start anywhere) or the cell is adjacent to a cell the
+ * room already owns (rooms stay one connected polyomino). */
+export function canPaintCell(layout: MapLayout, roomId: number, cell: MapCell): boolean {
+  const room = layout.rooms.find((r) => r.room_id === roomId)
+  if (!room) return false
+
+  const sameFloorRooms = layout.rooms.filter((r) => r.z === room.z)
+  if (!isCellFree(cell, sameFloorRooms)) return false
+
+  const cells = absoluteCells(room)
+  if (cells.length === 0) return true
+  return isCellAdjacentToRoom(cell, room)
+}
+
+/** Takes a room's new absolute cell set (post paint/erase) and returns it as `{origin, cells}` with
+ * a fixed `[0, 0]` origin — rooms are created at origin `[0, 0]` and stay there, so their `cells`
+ * are just their absolute coordinates directly rather than re-anchored to a bounding-box minimum. */
+export function normalizeCells(cells: MapCell[]): { origin: MapCell; cells: MapCell[] } {
+  return { origin: [0, 0], cells }
+}
+
+/** Next free room id — one past the current maximum (1 for an empty layout). */
+export function nextRoomId(layout: MapLayout): number {
+  return Math.max(0, ...layout.rooms.map((r) => r.room_id)) + 1
+}
+
+/** Next free door id — one past the current maximum (1 for an empty layout). */
+export function nextDoorId(layout: MapLayout): number {
+  return Math.max(0, ...layout.doors.map((d) => d.door_id)) + 1
+}
