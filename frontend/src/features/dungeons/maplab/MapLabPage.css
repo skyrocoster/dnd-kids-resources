@@ -335,3 +335,28 @@
   outline: 2px solid var(--md-primary);
   outline-offset: 2px;
 }
+
+/* Placeholder classes for Stage E: shared between viewer and editor */
+.maplab-canvas-viewport {
+  /* Stage E2: will contain overflow:auto scrollable SVG */
+}
+
+.maplab-canvas-wrapper {
+  /* Stage E2: parent flex container for viewport + controls slot */
+}
+
+.maplab-zoom-controls {
+  /* Stage E2: zoom button group container */
+}
+
+.maplab-zoom-button {
+  /* Stage E3: zoom button styling (reuses .maplab-session-control-button base) */
+}
+
+.maplab-toolbar-group {
+  /* Stage E3: groups of buttons (Create, Canvas, Session) with dividers */
+}
+
+.maplab-toolbar-group-label {
+  /* Stage E3: visual label for toolbar groups */
+}

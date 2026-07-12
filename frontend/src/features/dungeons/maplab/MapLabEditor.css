@@ -1,0 +1,294 @@
+.maplab-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.5rem;
+}
+
+.maplab-editor-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.maplab-editor-toolbar-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: 48px;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--md-outline-variant);
+  border-radius: 999px;
+  background: var(--md-surface-2);
+  color: var(--md-on-surface);
+  font-size: var(--type-label-size);
+  font-weight: var(--type-label-weight);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.maplab-editor-toolbar-button:hover {
+  border-color: var(--md-outline);
+}
+
+.maplab-editor-toolbar-button:focus-visible {
+  outline: 2px solid var(--md-primary);
+  outline-offset: 2px;
+}
+
+.maplab-editor-save-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin-left: auto;
+  font-size: var(--type-body-sm-size);
+  color: var(--md-on-surface-variant);
+}
+
+.maplab-editor-save-status[data-status='saving'] {
+  color: var(--md-on-surface-variant);
+}
+
+.maplab-editor-save-status[data-status='saved'] {
+  color: var(--md-tertiary);
+}
+
+.maplab-editor-save-status[data-status='error'] {
+  color: var(--md-error);
+}
+
+.maplab-editor-layout {
+  display: flex;
+  gap: 1.5rem;
+  align-items: flex-start;
+}
+
+.maplab-editor-room-list {
+  flex: 0 0 14rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.maplab-editor-room-item {
+  display: flex;
+  align-items: stretch;
+  gap: 0.375rem;
+  border: 1px solid var(--md-outline-variant);
+  border-radius: 8px;
+  background: var(--md-surface-2);
+}
+
+.maplab-editor-room-item[data-selected] {
+  border-color: var(--md-primary);
+  background: var(--md-primary-container);
+}
+
+.maplab-editor-room-item-select {
+  flex: 1 1 auto;
+  min-height: 48px;
+  padding: 0.5rem 0.75rem;
+  border: none;
+  background: transparent;
+  color: var(--md-on-surface);
+  font-size: var(--type-body-sm-size);
+  text-align: left;
+  cursor: pointer;
+}
+
+.maplab-editor-room-item-select:focus-visible {
+  outline: 2px solid var(--md-primary);
+  outline-offset: -2px;
+}
+
+.maplab-editor-room-item-delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 48px;
+  min-height: 48px;
+  border: none;
+  background: transparent;
+  color: var(--md-on-surface-variant);
+  cursor: pointer;
+}
+
+.maplab-editor-room-item-delete:hover {
+  color: var(--md-error);
+}
+
+.maplab-editor-room-item-delete:focus-visible {
+  outline: 2px solid var(--md-primary);
+  outline-offset: -2px;
+}
+
+.maplab-editor-room-list-empty {
+  font-size: var(--type-body-sm-size);
+  color: var(--md-on-surface-variant);
+  padding: 0.5rem 0;
+}
+
+.maplab-paint-cell {
+  fill: transparent;
+  stroke: none;
+}
+
+.maplab-paint-cell[data-paint-state='paintable'] {
+  cursor: pointer;
+  fill: var(--md-secondary-container);
+  opacity: 0.18;
+  stroke: var(--md-secondary);
+  stroke-width: 1.5;
+  stroke-dasharray: 5 4;
+  transition: opacity 0.15s ease;
+}
+
+.maplab-paint-cell[data-paint-state='paintable']:hover {
+  opacity: 0.4;
+}
+
+.maplab-paint-cell[data-paint-state='ownedSelected'] {
+  cursor: pointer;
+}
+
+.maplab-paint-cell[data-paint-state='ownedSelected']:hover {
+  fill: var(--md-error-container);
+  opacity: 0.45;
+}
+
+.maplab-paint-cell[data-paint-state='ownedOther'] {
+  cursor: not-allowed;
+}
+
+.maplab-paint-cell[data-paint-state='invalid'] {
+  cursor: not-allowed;
+}
+
+.maplab-paint-marker {
+  pointer-events: none;
+  color: var(--md-secondary);
+}
+
+.maplab-paint-marker-remove {
+  color: var(--md-error);
+}
+
+.maplab-paint-marker-invalid {
+  color: var(--md-outline);
+}
+
+.maplab-editor-toolbar-button[data-active] {
+  border-color: var(--md-secondary);
+  background: var(--md-secondary-container);
+  color: var(--md-on-secondary-container);
+}
+
+.maplab-door-placement-edge {
+  stroke: var(--md-secondary);
+  stroke-width: 10;
+  stroke-linecap: round;
+  opacity: 0;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.maplab-door-placement-edge:hover,
+.maplab-door-placement-edge:focus-visible {
+  opacity: 0.55;
+}
+
+.maplab-door[data-selected] .maplab-door-leaf,
+.maplab-door[data-selected] .maplab-door-leaf-closed {
+  stroke-width: 8;
+}
+
+.maplab-door[data-selected] {
+  outline: none;
+}
+
+.maplab-editor-inspector {
+  flex: 0 0 16rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.maplab-editor-inspector-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.maplab-fixture-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid var(--md-outline-variant);
+  border-radius: 8px;
+  background: var(--md-surface-2);
+}
+
+.maplab-field-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: var(--type-body-sm-size);
+  color: var(--md-on-surface);
+}
+
+.maplab-field-row input[type='text'],
+.maplab-field-row input[type='number'] {
+  min-height: 36px;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--md-outline-variant);
+  border-radius: 4px;
+  background: var(--md-surface);
+  color: var(--md-on-surface);
+  width: 8rem;
+}
+
+.maplab-field-row input:focus-visible {
+  outline: 2px solid var(--md-primary);
+  outline-offset: 1px;
+}
+
+/* Placeholder classes for Stage E: zoom/pan and toolbar reorganization */
+.maplab-canvas-viewport {
+  /* Stage E2: will contain overflow:auto scrollable SVG */
+}
+
+.maplab-canvas-wrapper {
+  /* Stage E2: parent flex container for viewport + controls slot */
+}
+
+.maplab-zoom-controls {
+  /* Stage E2: zoom button group container */
+}
+
+.maplab-zoom-button {
+  /* Stage E3: zoom button styling (reuses .maplab-editor-toolbar-button base) */
+}
+
+.maplab-toolbar-group {
+  /* Stage E3: groups of buttons (Create, Canvas, Session) with dividers */
+}
+
+.maplab-toolbar-group-label {
+  /* Stage E3: visual label for toolbar groups */
+}
+
+.maplab-editor-nav-rail {
+  /* Stage E3: left navigation rail (floor tabs + room list) */
+}
+
+.maplab-inspector-rail {
+  /* Stage E3: right persistent inspector rail */
+}
+
+.maplab-inspector-rail-empty {
+  /* Stage E3: placeholder state when no fixture is selected */
+}

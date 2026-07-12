@@ -391,3 +391,14 @@ describe('MapLabPage (Stage 4 — Passage session state)', () => {
     expect(door.querySelector('.maplab-door-leaf')).toBeInTheDocument()
   })
 })
+
+describe('MapLabPage (Stage E1 — Unified data: viewer reads backend layout)', () => {
+  it.skip('loads layout from backend and renders doors/rooms from the persisted layout', () => {
+    // Stage E1: useMapLabLayout loads via getDungeonLayout, 404 -> fixture,
+    // viewer renders from loaded layout instead of hardcoded mapLabLayout
+  })
+
+  it.skip('404 from backend falls back to the fixture layout', () => {
+    // Stage E1: mock getDungeonLayout 404, expect fixture rooms/doors to render
+  })
+})
