@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import * as api from '../../api/client'
-import type { Encounter, Monster } from '../../api/types'
+import type { Condition, Encounter, Monster } from '../../api/types'
 import { SelectField } from '../../components/form/SelectField'
 import { TextField } from '../../components/form/TextField'
 import type { EncounterCreatureRow, EncounterFormState } from './encounterForm'
@@ -26,6 +26,7 @@ export function EncounterEditor({ encounter, onClose, onSaved }: EncounterEditor
     encounter ? encounterToFormState(encounter) : emptyEncounterForm(),
   )
   const [monsters, setMonsters] = useState<Monster[]>([])
+  const [_conditions, setConditions] = useState<Condition[]>([])
   const [status, setStatus] = useState<{ message: string; kind?: 'error' | 'success' }>({ message: '' })
   const [saving, setSaving] = useState(false)
 
@@ -34,6 +35,13 @@ export function EncounterEditor({ encounter, onClose, onSaved }: EncounterEditor
       .listMonsters()
       .then((data) => setMonsters([...data].sort((a, b) => a.name.localeCompare(b.name))))
       .catch(() => setMonsters([]))
+  }, [])
+
+  useEffect(() => {
+    api
+      .getConditions()
+      .then((data) => setConditions(data))
+      .catch(() => setConditions([]))
   }, [])
 
   const patch = (fields: Partial<EncounterFormState>) => setForm((prev) => ({ ...prev, ...fields }))

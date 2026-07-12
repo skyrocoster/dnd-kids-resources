@@ -16,6 +16,7 @@ export interface EncounterCreatureRow {
   ac: string
   status: string
   conditionsText: string
+  conditions: string[]
 }
 
 export interface EncounterFormState {
@@ -40,6 +41,7 @@ export function addEncounterCreatureRow(rows: EncounterCreatureRow[]): Encounter
       ac: '',
       status: 'alive',
       conditionsText: '',
+      conditions: [],
     },
   ]
 }
@@ -58,6 +60,7 @@ export function encounterToFormState(encounter: Encounter): EncounterFormState {
       ac: c.ac != null ? String(c.ac) : '',
       status: c.status || 'alive',
       conditionsText: (c.conditions || []).join(', '),
+      conditions: c.conditions || [],
     })),
   }
 }

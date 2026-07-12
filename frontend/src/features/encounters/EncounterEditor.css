@@ -136,3 +136,12 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+/* TODO C2: style condition checkboxes */
+.encounter-condition-grid {
+  /* TODO: grid layout for conditions */
+}
+
+.encounter-condition-chip {
+  /* TODO: checkbox chip styling */
+}
