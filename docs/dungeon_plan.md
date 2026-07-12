@@ -2,22 +2,30 @@
 
 This document is the single reference for the dungeon room-navigation feature and its follow-on design
 phases. Original build (Stages 1–11), Design Phase A (Encounter Runner, E1–E6), Design Phase B (NPC
-Dossier, N1–N6), Design Phase C (Map Lab, Foundation + M0–M4), and Design Phase D (Map Lab Authoring
-Tools, Stage 0–3) are **all complete and shipped**. This
+Dossier, N1–N6), Design Phase C (Map Lab, Foundation + M0–M4), Design Phase D (Map Lab Authoring Tools,
+Stage 0–3), Design Phase E (Map Lab unified data/zoom/redesign, E1–E3), and Design Phase F (Room Props,
+F0–F4) are **all complete and shipped**. This
 doc records what exists, the design system in force, and the facts a new executor needs, so the next
 phase can build on it without re-deriving anything. New design phases get appended under **"Next:
 front-end design planning"** at the bottom.
 
-> **Status:** Original build + Phases A/B/C/D/E **all shipped.** The latest, **Design Phase E ("Map Lab:
-> unified viewer/editor data, canvas zoom, and layout redesign")**, made the two Map Lab pages one coherent
-> tool: the viewer and editor now read the same backend-persisted `map_layout` row, the canvas gained real
-> zoom + pan (explicit-px SVG sizing, Ctrl/⌘-wheel, drag-pan), and a full front-end design pass regrouped the
-> editor toolbar/nav-rail/inspector-rail. Shipped on branch `recover/phase-e` after a recovery detour; all
-> gates live-verified through 2026-07-12 (see the collapsed "Design Phase E reference" below and the
-> "Shipped stages" table for stage-by-stage detail). No backend change was needed for any
-> dungeon/encounter/NPC/Map-Lab work except the encounter runner's one additive `active_index` column and
-> Phase D's one additive `map_layout` table — the rest of the feature set is frontend against
-> `getDungeon(id)`, `getEncounter`/`updateEncounter`, and `getNPC`/`listNPCs`.
+> **Status:** Original build + Phases A/B/C/D/E/F **all shipped.** The latest, **Design Phase F ("Room
+> Props")**, turned rooms from empty shells into containers for static furniture — chests, tables, mirrors,
+> barrels, statues — placed on a grid square or attached to a wall, carrying the same `hidden`/`locked`/
+> `trapped`/DC bundle doors already use, with a reserved (unrendered) `loot` slot for the future loot
+> system. F0–F3 built the model/reducer/render/authoring; F4 was a front-end design pass that also fixed
+> two real bugs it turned up (a drifted duplicate `InspectorPanel` in the viewer, and a paint-overlay
+> z-order bug that could swallow clicks on a prop). See the collapsed "Design Phase F reference" below and
+> the "Shipped stages" table for stage-by-stage detail. Before that, **Design Phase E ("Map Lab: unified
+> viewer/editor data, canvas zoom, and layout redesign")** made the two Map Lab pages one coherent tool: the
+> viewer and editor now read the same backend-persisted `map_layout` row, the canvas gained real zoom + pan
+> (explicit-px SVG sizing, Ctrl/⌘-wheel, drag-pan), and a full front-end design pass regrouped the editor
+> toolbar/nav-rail/inspector-rail. Shipped on branch `recover/phase-e` after a recovery detour; all gates
+> live-verified through 2026-07-12 (see the collapsed "Design Phase E reference" below). No backend change
+> was needed for any dungeon/encounter/NPC/Map-Lab work except the encounter runner's one additive
+> `active_index` column and Phase D's one additive `map_layout` table — the rest of the feature set (Phase F
+> included — props round-trip inside the same `map_layout` blob) is frontend against `getDungeon(id)`,
+> `getEncounter`/`updateEncounter`, and `getNPC`/`listNPCs`.
 
 ---
 
@@ -296,13 +304,6 @@ full `frontend-design` pass is a prerequisite before any production fold-in.
 
 ---
 
-## Next: front-end design planning
-
-*(Append new design phases/stages here. They inherit the design system, component anatomy, reusable
-pieces, and reserved action slots documented above — build on them rather than re-deriving.)*
-
----
-
 ## Design Phase D reference — Map Lab Authoring Tools (shipped)
 
 Turned the read-only Map Lab into an **editor** at a separate route `/dungeons/map-lab/edit` (the viewer at
@@ -363,7 +364,7 @@ in this doc predate the fix and should be read as unverified.
 
 ---
 
-## Next: Design Phase F — Room Props (static objects: chests, tables, mirrors…)
+## Design Phase F reference — Room Props (shipped)
 
 The Map Lab can author rooms, doors, and stairs, but rooms are empty shells — there's no way to place
 the static furniture a DM narrates around (chests, tables, mirrors, statues, barrels). This phase adds a
@@ -439,5 +440,64 @@ blob). Consume `theme.css` tokens and existing `maplabModel` helpers; never hand
   exclusive; edit kind/flag/attach-to-wall → autosaved `props[0]` matches → delete clears the inspector.
   406 passed, `npm run typecheck`/`npm run build` clean, `pytest` unaffected (90.73% coverage) — confirmed
   no changes to `seed_dungeons.json`/`backend/`.
-- **F4 — Front-end design:** `/frontend-design` pass before UI. Finalize marker art, badges, loot-hook
-  affordance (disabled placeholder row), accessibility floor. (Sonnet + frontend-design skill, 🚦 live gate)
+- **F4 — Front-end design (shipped):** `/frontend-design` pass, headless (no browser driven this pass —
+  see verification notes below). Found and fixed a real pre-existing bug the pass was meant to catch:
+  `MapLabPage.tsx` (the viewer) had its own **drifted local copy** of `InspectorPanel` — a byte-identical
+  fork of `InspectorPanel.tsx` predating the Stage-D0 extraction — so the loot-hook row below had to be
+  added twice or (correctly) the viewer switched to import the shared component, deleting the ~55-line
+  duplicate. Also fixed a **z-order hit-testing bug** in the editor: `propsOnActiveFloor` rendered before
+  the paint/placement overlays, so the room-paint overlay (mounted over every cell of a selected room,
+  including ones a prop sits on) silently swallowed clicks on props within that room — moved the prop
+  render block to after all three overlays so props stay the topmost, clickable layer in every mode.
+  Swapped the statue kind's icon from `Gem` (already used elsewhere for treasure/loot — a real collision
+  with the *other* reserved slot this phase explicitly avoided colliding with) to `Landmark` (a columned-
+  monument glyph, verified present in the installed `lucide-react`). Kind/wall-side `<select>` options
+  upgraded from raw lowercase values (`'chest'`, `'N'`) to a `SelectOption{value,label}` pair (`FieldSpec.options`
+  type widened accordingly) so the picker reads "Chest"/"North wall" instead of the storage string — the
+  underlying values are untouched, so no reducer/save-path change. Added the **loot-hook affordance**:
+  `InspectorPanel` renders a disabled `.maplab-loot-hook-row` ("Contents — added with the loot system")
+  for `kind:'prop'` targets only, styled inert (lower opacity, hairline divider, no hover/focus state,
+  `aria-disabled`) — the form still never writes `loot`. Marker art itself (ring + kind icon + single
+  state badge, dashed-hidden outline) was already consistent with the door/stair language from F2 — no
+  change needed there. Confirmed the on-square/on-wall marker radius (`CELL_SIZE * 0.32` / `* 0.22`)
+  already matches the stair marker's own radius exactly, so canvas-glyph touch-target sizing follows the
+  established Map Lab convention rather than the toolbar's 48px floor (glyphs on a zoomable SVG canvas
+  vs. touch-first toolbar controls are treated differently throughout this feature, not just for props).
+  Tests: new `MapLabPage.test.tsx` case asserting the loot row appears for a prop and not for a door; new
+  `MapLabEditorPage.test.tsx` case asserting a prop on a selected (paint-overlay-active) room cell is still
+  clickable — this one only documents the intended DOM order fix (jsdom's `fireEvent.click` targets the
+  queried node directly regardless of CSS `pointer-events`/stacking, so it can't itself catch a stacking
+  regression; the live gate below is what actually proves it). 408 passed, `npm run typecheck`/`npm run
+  build` clean, `pytest` unaffected (90.73% coverage) — confirmed no changes to `seed_dungeons.json`/`backend/`.
+  🚦 **Live gate — not yet driven this pass; see "What to check" below.**
+
+**Deferred (NOT in Phase F):**
+- The loot system itself (Phase F only reserves the `loot` slot + the F4 disabled affordance row).
+- A session/runtime layer for props (disarm-trap / reveal-hidden toggles like doors have) — authored flags
+  only for now.
+- Generalizing beyond the Isly Castle fixture (inherits Phase D/E's "any dungeon id" deferral).
+
+**What to check (live, in a browser — this is what F4 asked for and wasn't driven this pass):**
+- **Editor** (`/dungeons/map-lab/edit`): select the Armoury (room 23, has the seeded chest) — confirm the
+  paint overlay appears over its cells *and* the chest marker is still clickable (opens the inspector +
+  form), not swallowed by the overlay. Click "Place prop" → click a room square → a marker appears,
+  selected; the inspector's **Kind** dropdown now reads "Chest"/"Table"/"Mirror"/"Barrel"/"Statue"/"Other"
+  (not lowercase codes) and **Attach to wall** reads "On the floor"/"North wall"/etc; pick "Statue" and
+  confirm the marker's icon is a columned-monument glyph, not a gem. Scroll the inspector — a disabled,
+  visually inert row reads "Contents — added with the loot system" below the state lines, with no
+  hover/click affordance.
+- **Viewer** (`/dungeons/map-lab`): hover the seeded "Treasure Chest" — the same disabled "Contents" row
+  appears in its inspector panel; hover a door or stair instead and confirm that row does **not** appear
+  (props-only).
+- **Both:** no console errors; no emoji; marker art (ring + icon + state badge) still reads as one system
+  with doors/stairs, tokens-only.
+- **Regression:** `npm run test` (408 passing) + `npm run typecheck` + `npm run build` green;
+  `python -m pytest` unaffected (90.73%). `git status` shows no change to `seed_dungeons.json`, `backend/`,
+  or the live dungeon model/pages — Phase F stayed confined to `maplab/` + the shared icon layer.
+
+---
+
+## Next: front-end design planning
+
+*(Append new design phases/stages here. They inherit the design system, component anatomy, reusable
+pieces, and reserved action slots documented above — build on them rather than re-deriving.)*

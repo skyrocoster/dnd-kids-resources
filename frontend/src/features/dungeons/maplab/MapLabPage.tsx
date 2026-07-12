@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import './MapLabPage.css'
 import { MAP_LAB_DUNGEON_ID } from '../../../api/client'
 import { useMapLabLayout } from './useMapLabLayout'
@@ -6,6 +6,7 @@ import { useMapCanvasZoom, type ViewportSize } from './useMapCanvasZoom'
 import { MapCanvas } from './MapCanvas'
 import { FitIcon, TrapDisarmedIcon, ZoomInIcon, ZoomOutIcon } from '../../../components/icons'
 import { PropMarker } from './PropMarker'
+import { InspectorPanel, type SessionControls } from './InspectorPanel'
 import {
   absoluteCells,
   defaultPassageSession,
@@ -13,7 +14,6 @@ import {
   doorSwingGeometry,
   doorWallSegment,
   floorsInLayout,
-  inspectableDescriptor,
   nonDoorWallSegments,
   paddedBounds,
   roomOfCell,
@@ -57,68 +57,6 @@ type InspectableKind = Inspectable['kind']
 interface InspectableRef {
   kind: InspectableKind
   id: number
-}
-
-interface SessionControls {
-  onToggleOpen?: () => void
-  onToggleLocked?: () => void
-  onDisarmTrap?: () => void
-}
-
-/** Element-agnostic descriptor panel — a room, door, stair, or prop all resolve through
- * `inspectableDescriptor` to the same {title, typeLabel, icon, token, lines} shape, so one
- * component renders all four. Doors and stairs additionally get live session controls (Stage 4) —
- * rooms and props don't carry session state, so `controls` is only passed for those two kinds. */
-function InspectorPanel({ target, controls }: { target: Inspectable; controls?: SessionControls }) {
-  const descriptor = inspectableDescriptor(target)
-  const Icon = descriptor.icon
-  const isTrapped = target.kind === 'door' ? target.door.trapped : target.kind === 'stair' ? target.stair.trapped : false
-
-  return (
-    <div className="maplab-inspector-panel">
-      <div className="maplab-inspector-header">
-        <Icon width={20} height={20} aria-hidden="true" style={{ color: `var(${descriptor.token})` }} />
-        <span className="maplab-inspector-title">{descriptor.title}</span>
-        <span className="maplab-inspector-kind">{descriptor.typeLabel}</span>
-      </div>
-      {descriptor.lines.length > 0 && (
-        <dl className="maplab-inspector-lines">
-          {descriptor.lines.map((line) => (
-            <Fragment key={line.label}>
-              <dt className="maplab-inspector-row">{line.label}</dt>
-              <dd>{line.value}</dd>
-            </Fragment>
-          ))}
-        </dl>
-      )}
-      {controls && (
-        <div className="maplab-inspector-controls">
-          {target.kind === 'door' && controls.onToggleOpen && (
-            <button type="button" className="maplab-pill-button maplab-session-control-button" onClick={controls.onToggleOpen}>
-              {target.session?.isOpen ? 'Close door' : 'Open door'}
-            </button>
-          )}
-          {controls.onToggleLocked && (
-            <button type="button" className="maplab-pill-button maplab-session-control-button" onClick={controls.onToggleLocked}>
-              {(target.kind === 'door' || target.kind === 'stair') && target.session?.isLocked
-                ? 'Unlock'
-                : 'Lock'}
-            </button>
-          )}
-          {isTrapped && controls.onDisarmTrap && (
-            <button
-              type="button"
-              className="maplab-pill-button maplab-session-control-button"
-              disabled={(target.kind === 'door' || target.kind === 'stair') && target.session?.trapDisarmed}
-              onClick={controls.onDisarmTrap}
-            >
-              Disarm trap
-            </button>
-          )}
-        </div>
-      )}
-    </div>
-  )
 }
 
 /** Map Lab prototype page — Stage M2.3: walls, and door/stair affordances with state + details. */

@@ -8,11 +8,16 @@ import {
   type LucideIcon,
 } from '../../../components/icons'
 
+export interface SelectOption {
+  value: string
+  label: string
+}
+
 export interface FieldSpec {
   key: string
   label: string
   type: 'boolean' | 'number' | 'text' | 'select'
-  options?: string[]
+  options?: SelectOption[]
   showWhen?: (values: Record<string, unknown>) => boolean
 }
 
@@ -33,14 +38,29 @@ export const PASSAGE_FIELDS: FieldSpec[] = [
   { key: 'note', label: 'Note', type: 'text' },
 ]
 
-const PROP_KINDS = ['chest', 'table', 'mirror', 'barrel', 'statue', 'other']
+const PROP_KIND_OPTIONS: SelectOption[] = [
+  { value: 'chest', label: 'Chest' },
+  { value: 'table', label: 'Table' },
+  { value: 'mirror', label: 'Mirror' },
+  { value: 'barrel', label: 'Barrel' },
+  { value: 'statue', label: 'Statue' },
+  { value: 'other', label: 'Other' },
+]
 
-const PROP_WALL_SIDES = ['Off', 'N', 'S', 'E', 'W']
+const PROP_KINDS = PROP_KIND_OPTIONS.map((option) => option.value)
+
+const PROP_WALL_SIDE_OPTIONS: SelectOption[] = [
+  { value: 'Off', label: 'On the floor' },
+  { value: 'N', label: 'North wall' },
+  { value: 'S', label: 'South wall' },
+  { value: 'E', label: 'East wall' },
+  { value: 'W', label: 'West wall' },
+]
 
 export const PROP_FIELDS: FieldSpec[] = [
   { key: 'title', label: 'Title', type: 'text' },
-  { key: 'kind', label: 'Kind', type: 'select', options: PROP_KINDS },
-  { key: 'side', label: 'Attach to wall', type: 'select', options: PROP_WALL_SIDES },
+  { key: 'kind', label: 'Kind', type: 'select', options: PROP_KIND_OPTIONS },
+  { key: 'side', label: 'Attach to wall', type: 'select', options: PROP_WALL_SIDE_OPTIONS },
   { key: 'hidden', label: 'Hidden', type: 'boolean' },
   { key: 'locked', label: 'Locked', type: 'boolean' },
   { key: 'trapped', label: 'Trapped', type: 'boolean' },

@@ -170,19 +170,41 @@ Pure rename + stubs + declarations; no algorithms/render/design.
   the viewer and see them; delete works. *(Not driven live in a browser this pass — see the chat turn's
   verification notes for the manual steps to run.)*
 
-### Stage F4 — Front-end design pass (Sonnet + `frontend-design` skill)
-- **Invoke `/frontend-design` before writing UI.** Finalize the minimal marker art so props read in the
-  same line-icon language as door/stair glyphs (tokens + MD3 type scale only, no ad-hoc px/hex); consistent
-  hidden/locked/trapped badge treatment (icon **and** shape, never hue-alone); accessibility floor (≥48px
-  controls, focus rings, `prefers-reduced-motion`).
-- Kind-picker UX polish; ensure the prop marker doesn't fight the room-paint layer for hit-testing.
-- **Loot hook affordance:** the real hook is the reserved `MapProp.loot` slot (data, round-tripped). In the
-  inspector, add a clearly-disabled placeholder row ("Contents — added with the loot system") so the seam is
-  discoverable but obviously not wired; the form never writes `loot`. Document the seam in the Phase F doc:
-  the loot phase will populate `loot`, likely gating on container kinds (`chest`/`barrel`) and `locked`.
-- **Tests:** updated structure/render tests (prop marker, badges, inspector prop branch, disabled loot row).
-- **🚦 Gate:** live design review both routes — props read as one system with doors/stairs, grouped,
-  tokens-only, no console errors.
+### Stage F4 — Front-end design pass (Sonnet + `frontend-design` skill) — SHIPPED
+- Marker art audit: the ring + kind-icon + single state-badge language built in F2 already matched the
+  door/stair convention (tokens-only, dashed outline for hidden, never hue-alone) — no change needed there.
+  On-square/on-wall marker radii (`CELL_SIZE * 0.32` / `* 0.22`) were confirmed to already match the stair
+  marker's own radius, so canvas-glyph sizing follows the established Map Lab convention (not the toolbar's
+  48px floor, which applies to touch-first controls, not zoomable-canvas glyphs).
+- **Found and fixed two real bugs this pass was meant to catch:**
+  1. `MapLabPage.tsx` (viewer) carried its own **drifted local copy** of `InspectorPanel`, a byte-identical
+     fork of `InspectorPanel.tsx` predating the Stage-D0 extraction. The loot-hook row (below) would have
+     had to be added twice; instead the viewer now imports the shared component and the ~55-line duplicate
+     was deleted.
+  2. **Z-order hit-testing bug** in the editor: `propsOnActiveFloor` rendered *before* the paint/placement
+     overlays, so the room-paint overlay (mounted over every cell of the selected room, including ones a
+     prop sits on) silently ate clicks on props within that room. Fixed by moving the prop-render block to
+     after all three overlays so props are always the topmost, clickable layer.
+- **Icon fix:** statue's icon was `Gem` — already used elsewhere in the icon set for treasure, a real
+  collision with the *other* reserved slot (the coming loot **items** system) this phase was explicitly
+  designed to avoid colliding with. Swapped to `Landmark` (a columned-monument glyph; verified present in
+  the installed `lucide-react`).
+- **Kind-picker UX polish:** `FieldSpec.options` widened from `string[]` to `{value,label}[]`
+  (`SelectOption`); the prop `kind` and `side` selects now show "Chest"/"Statue"/"North wall"/"On the
+  floor" instead of raw lowercase storage codes. Underlying values (and the save path) are unchanged.
+- **Loot hook affordance (shipped as spec'd):** `InspectorPanel` renders a disabled `.maplab-loot-hook-row`
+  ("Contents — added with the loot system") for `kind:'prop'` targets only — lower opacity, hairline
+  divider, no hover/focus state, `aria-disabled="true"`; the form still never writes `loot`. The loot phase
+  will populate `loot`, likely gating on container kinds (`chest`/`barrel`) and `locked`.
+- **Tests:** `MapLabPage.test.tsx` gained a case asserting the loot row appears on a prop's inspector and
+  not on a door's; `MapLabEditorPage.test.tsx` gained a case asserting a prop under a selected room's paint
+  overlay is still clickable (documents the DOM-order fix's intent — jsdom's `fireEvent.click` targets the
+  queried node directly regardless of CSS stacking, so this test alone can't reproduce the original
+  browser-only symptom; the live gate below is what actually proves it).
+- 408 passed, `npm run typecheck`/`npm run build` clean, `pytest` unaffected (90.73% coverage) — confirmed
+  no changes to `seed_dungeons.json`/`backend/`.
+- **🚦 Gate:** live design review both routes — **not driven in a browser this pass** (see
+  `docs/dungeon_plan.md`'s Phase F reference, "What to check", for the exact manual steps).
 
 ---
 

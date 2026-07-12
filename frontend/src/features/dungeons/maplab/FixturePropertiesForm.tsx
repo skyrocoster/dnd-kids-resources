@@ -57,8 +57,8 @@ function FixtureField({
           onChange={(event) => onChange(field.key, event.target.value)}
         >
           {(field.options ?? []).map((option) => (
-            <option key={option} value={option}>
-              {option}
+            <option key={option.value} value={option.value}>
+              {option.label}
             </option>
           ))}
         </select>

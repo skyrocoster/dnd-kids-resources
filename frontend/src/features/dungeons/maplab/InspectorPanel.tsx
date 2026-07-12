@@ -1,4 +1,5 @@
 import { Fragment } from 'react'
+import { ItemIcon } from '../../../components/icons'
 import {
   inspectableDescriptor,
   type Inspectable,
@@ -10,12 +11,12 @@ export interface SessionControls {
   onDisarmTrap?: () => void
 }
 
-/** Element-agnostic descriptor panel — a room, door, or stair all resolve through
+/** Element-agnostic descriptor panel — a room, door, stair, or prop all resolve through
  * `inspectableDescriptor` to the same {title, typeLabel, icon, token, lines} shape, so one
- * component renders all three (an `Inspectable['kind'] === 'item'` target is reachable through the
- * same path but nothing in this page currently produces one — items aren't rendered yet). Doors and
- * stairs additionally get live session controls (Stage 4) — rooms and items don't carry passage
- * state, so `controls` is only passed for those two kinds. */
+ * component renders all four. Doors and stairs additionally get live session controls (Stage 4) —
+ * rooms and props don't carry that kind of runtime state, so `controls` is only passed for those two
+ * kinds. Props instead get a disabled "Contents" row (Phase F4) — the reserved `MapProp.loot` slot
+ * is data-only for now; the loot phase wires this row up rather than adding a new one. */
 export function InspectorPanel({ target, controls }: { target: Inspectable; controls?: SessionControls }) {
   const descriptor = inspectableDescriptor(target)
   const Icon = descriptor.icon
@@ -37,6 +38,12 @@ export function InspectorPanel({ target, controls }: { target: Inspectable; cont
             </Fragment>
           ))}
         </dl>
+      )}
+      {target.kind === 'prop' && (
+        <div className="maplab-loot-hook-row" aria-disabled="true">
+          <ItemIcon width={16} height={16} aria-hidden="true" />
+          <span>Contents — added with the loot system</span>
+        </div>
       )}
       {controls && (
         <div className="maplab-inspector-controls">

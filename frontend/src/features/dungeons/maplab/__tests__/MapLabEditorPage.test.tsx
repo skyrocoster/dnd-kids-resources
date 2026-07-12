@@ -550,3 +550,39 @@ describe('MapLabEditorPage (Stage F3 — prop authoring)', () => {
     expect(container.querySelector('.maplab-fixture-form')).not.toBeInTheDocument()
   })
 })
+
+describe('MapLabEditorPage (Stage F4 — prop stays clickable under the paint overlay)', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks()
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.runOnlyPendingTimers()
+    vi.useRealTimers()
+  })
+
+  it('a prop on a selected room cell is still selectable, not swallowed by the room-paint overlay', async () => {
+    const layoutWithProp = {
+      meta: { cellSizeFt: 5, padding: 3 },
+      rooms: [{ room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0]], title: 'Room 1' }],
+      doors: [],
+      stairs: [],
+      floors: [{ z: 0, title: 'Ground Floor' }],
+      props: [{ prop_id: 1, kind: 'chest', cell: [0, 0], title: 'A Chest', hidden: false, locked: false, trapped: false }],
+    }
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: layoutWithProp })
+    vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: layoutWithProp })
+
+    const { container } = render(<MapLabEditorPage />)
+    await flush()
+
+    // Select the room — this mounts the paint overlay over every cell the room owns, including
+    // the cell the chest sits on.
+    fireEvent.click(container.querySelector('.maplab-editor-room-item-select') as Element)
+    expect(container.querySelector('.maplab-paint-cell[data-paint-state="ownedSelected"]')).toBeInTheDocument()
+
+    fireEvent.click(container.querySelector('.maplab-prop') as Element)
+    expect(container.querySelector('.maplab-fixture-form')).toBeInTheDocument()
+  })
+})

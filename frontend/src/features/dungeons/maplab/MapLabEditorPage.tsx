@@ -433,16 +433,6 @@ export function MapLabEditorPage() {
             )
           })}
 
-          {propsOnActiveFloor.map((prop) => (
-            <PropMarker
-              key={prop.prop_id}
-              prop={prop}
-              cellSize={CELL_SIZE}
-              selected={prop.prop_id === state.selectedPropId}
-              onClick={() => selectProp(prop.prop_id === state.selectedPropId ? null : prop.prop_id)}
-            />
-          ))}
-
           {placePropMode && (
             <g className="maplab-prop-placement-overlay">
               {roomsOnActiveFloor.flatMap((room) =>
@@ -555,6 +545,19 @@ export function MapLabEditorPage() {
               )}
             </g>
           )}
+
+          {/* Rendered after the paint/placement overlays so a prop marker always stays on top and
+           * clickable — the paint overlay in particular covers every cell of the selected room
+           * (including ones a prop sits on), and would otherwise swallow the prop's click/hover. */}
+          {propsOnActiveFloor.map((prop) => (
+            <PropMarker
+              key={prop.prop_id}
+              prop={prop}
+              cellSize={CELL_SIZE}
+              selected={prop.prop_id === state.selectedPropId}
+              onClick={() => selectProp(prop.prop_id === state.selectedPropId ? null : prop.prop_id)}
+            />
+          ))}
         </MapCanvas>
 
         <div className="maplab-inspector-rail">

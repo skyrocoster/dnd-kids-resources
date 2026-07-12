@@ -469,6 +469,27 @@ describe('MapLabPage (Stage F2 — Prop rendering)', () => {
   })
 })
 
+describe('MapLabPage (Stage F4 — loot hook affordance)', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('shows a disabled "Contents" placeholder row for a prop, but not for a door', async () => {
+    const user = userEvent.setup()
+    render(<MapLabPage />)
+
+    const chest = screen.getByRole('button', { name: /Treasure Chest.*Locked/i })
+    await user.hover(chest)
+    const lootRow = screen.getByText('Contents — added with the loot system')
+    expect(lootRow.closest('[aria-disabled="true"]')).toBeTruthy()
+
+    await user.unhover(chest)
+    const door = screen.getAllByRole('button', { name: /Door/i })[0]
+    await user.hover(door)
+    expect(screen.queryByText('Contents — added with the loot system')).not.toBeInTheDocument()
+  })
+})
+
 describe('MapLabPage (Stage E1 — Unified data: viewer reads backend layout)', () => {
   afterEach(() => {
     vi.restoreAllMocks()
