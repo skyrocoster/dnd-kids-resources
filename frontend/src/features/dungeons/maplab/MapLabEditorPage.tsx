@@ -148,6 +148,10 @@ export function MapLabEditorPage() {
     () => state.layout.doors.find((door) => door.door_id === state.selectedDoorId) ?? null,
     [state.layout.doors, state.selectedDoorId]
   )
+  const selectedRoom = useMemo(
+    () => state.layout.rooms.find((room) => room.room_id === state.selectedRoomId) ?? null,
+    [state.layout.rooms, state.selectedRoomId]
+  )
 
   if (loading) {
     return (
@@ -162,73 +166,83 @@ export function MapLabEditorPage() {
       <h1 className="maplab-title">Map Lab Editor</h1>
       <p className="maplab-subtitle">Create rooms, paint their footprint, and place doors.</p>
 
-      <div className="maplab-editor-toolbar">
-        <button type="button" className="maplab-editor-toolbar-button" onClick={addRoom}>
-          <PlusIcon width={18} height={18} aria-hidden="true" />
-          Add room
-        </button>
-        <button
-          type="button"
-          className="maplab-editor-toolbar-button"
-          aria-pressed={placeDoorMode}
-          data-active={placeDoorMode || undefined}
-          onClick={() => setPlaceDoorMode((active) => !active)}
-        >
-          <DoorClosedIcon width={18} height={18} aria-hidden="true" />
-          {placeDoorMode ? 'Cancel door placement' : 'Place door'}
-        </button>
-        <button type="button" className="maplab-editor-toolbar-button" onClick={resetToFixture}>
-          Reset to fixture
-        </button>
-        <span className="maplab-editor-save-status" data-status={syncStatus.status} aria-live="polite">
-          <SaveIcon width={16} height={16} aria-hidden="true" />
-          {syncStatusLabel(syncStatus.status)}
-        </span>
-      </div>
-
-      <div className="maplab-floor-tabs" role="tablist" aria-label="Dungeon floors">
-        {floors.map((z) => (
-          <button
-            key={z}
-            type="button"
-            role="tab"
-            className="maplab-floor-tab"
-            aria-selected={z === state.activeZ}
-            onClick={() => setActiveZ(z)}
-          >
-            Floor {z}
+      <div className="maplab-toolbar">
+        <div className="maplab-toolbar-group">
+          <span className="maplab-toolbar-group-label">Create</span>
+          <button type="button" className="maplab-pill-button maplab-editor-toolbar-button" onClick={addRoom}>
+            <PlusIcon width={18} height={18} aria-hidden="true" />
+            Add room
           </button>
-        ))}
+          <button
+            type="button"
+            className="maplab-pill-button maplab-editor-toolbar-button"
+            aria-pressed={placeDoorMode}
+            data-active={placeDoorMode || undefined}
+            onClick={() => setPlaceDoorMode((active) => !active)}
+          >
+            <DoorClosedIcon width={18} height={18} aria-hidden="true" />
+            {placeDoorMode ? 'Cancel door placement' : 'Place door'}
+          </button>
+        </div>
+        <div className="maplab-toolbar-group">
+          <span className="maplab-toolbar-group-label">Session</span>
+          <button type="button" className="maplab-pill-button maplab-editor-toolbar-button" onClick={resetToFixture}>
+            Reset to fixture
+          </button>
+        </div>
+        <div className="maplab-toolbar-group maplab-toolbar-group-status">
+          <span className="maplab-editor-save-status" data-status={syncStatus.status} aria-live="polite">
+            <SaveIcon width={16} height={16} aria-hidden="true" />
+            {syncStatusLabel(syncStatus.status)}
+          </span>
+        </div>
       </div>
 
       <div className="maplab-editor-layout">
-        <ul className="maplab-editor-room-list" aria-label="Rooms on this floor">
-          {roomsOnActiveFloor.map((room) => (
-            <li
-              key={room.room_id}
-              className="maplab-editor-room-item"
-              data-selected={room.room_id === state.selectedRoomId || undefined}
-            >
+        <div className="maplab-editor-nav-rail">
+          <div className="maplab-floor-tabs" role="tablist" aria-label="Dungeon floors">
+            {floors.map((z) => (
               <button
+                key={z}
                 type="button"
-                className="maplab-editor-room-item-select"
-                aria-pressed={room.room_id === state.selectedRoomId}
-                onClick={() => selectRoom(room.room_id === state.selectedRoomId ? null : room.room_id)}
+                role="tab"
+                className="maplab-pill-button maplab-floor-tab"
+                aria-selected={z === state.activeZ}
+                onClick={() => setActiveZ(z)}
               >
-                {room.title ?? `Room ${room.room_id}`}
+                Floor {z}
               </button>
-              <button
-                type="button"
-                className="maplab-editor-room-item-delete"
-                aria-label={`Delete ${room.title ?? `Room ${room.room_id}`}`}
-                onClick={() => deleteRoom(room.room_id)}
+            ))}
+          </div>
+
+          <ul className="maplab-editor-room-list" aria-label="Rooms on this floor">
+            {roomsOnActiveFloor.map((room) => (
+              <li
+                key={room.room_id}
+                className="maplab-editor-room-item"
+                data-selected={room.room_id === state.selectedRoomId || undefined}
               >
-                <TrashIcon width={16} height={16} aria-hidden="true" />
-              </button>
-            </li>
-          ))}
-          {roomsOnActiveFloor.length === 0 && <li className="maplab-editor-room-list-empty">No rooms on this floor yet.</li>}
-        </ul>
+                <button
+                  type="button"
+                  className="maplab-editor-room-item-select"
+                  aria-pressed={room.room_id === state.selectedRoomId}
+                  onClick={() => selectRoom(room.room_id === state.selectedRoomId ? null : room.room_id)}
+                >
+                  {room.title ?? `Room ${room.room_id}`}
+                </button>
+                <button
+                  type="button"
+                  className="maplab-editor-room-item-delete"
+                  aria-label={`Delete ${room.title ?? `Room ${room.room_id}`}`}
+                  onClick={() => deleteRoom(room.room_id)}
+                >
+                  <TrashIcon width={16} height={16} aria-hidden="true" />
+                </button>
+              </li>
+            ))}
+            {roomsOnActiveFloor.length === 0 && <li className="maplab-editor-room-list-empty">No rooms on this floor yet.</li>}
+          </ul>
+        </div>
 
         <MapCanvas
           viewBox={viewBox}
@@ -242,15 +256,25 @@ export function MapLabEditorPage() {
           onViewportResize={handleViewportResize}
           controlsSlot={
             <>
-              <button type="button" className="maplab-zoom-button" aria-label="Zoom out" onClick={zoomApi.zoomOut}>
+              <button
+                type="button"
+                className="maplab-pill-button maplab-zoom-button"
+                aria-label="Zoom out"
+                onClick={zoomApi.zoomOut}
+              >
                 <ZoomOutIcon width={20} height={20} aria-hidden="true" />
               </button>
-              <button type="button" className="maplab-zoom-button" aria-label="Zoom in" onClick={zoomApi.zoomIn}>
+              <button
+                type="button"
+                className="maplab-pill-button maplab-zoom-button"
+                aria-label="Zoom in"
+                onClick={zoomApi.zoomIn}
+              >
                 <ZoomInIcon width={20} height={20} aria-hidden="true" />
               </button>
               <button
                 type="button"
-                className="maplab-zoom-button"
+                className="maplab-pill-button maplab-zoom-button"
                 aria-label="Reset zoom"
                 onClick={() => zoomApi.fitToBounds(bounds, viewportSize)}
               >
@@ -465,29 +489,58 @@ export function MapLabEditorPage() {
           )}
         </MapCanvas>
 
-        {selectedDoor && (
-          <div className="maplab-editor-inspector">
-            <InspectorPanel target={{ kind: 'door', door: selectedDoor }} />
-            <FixturePropertiesForm
-              spec={FIXTURE_TYPES.door}
-              values={selectedDoor as unknown as Record<string, unknown>}
-              onChange={(key, value) => updateFixtureFlags(selectedDoor.door_id, 'door', { [key]: value })}
-            />
-            <div className="maplab-editor-inspector-actions">
-              <button
-                type="button"
-                className="maplab-editor-toolbar-button"
-                onClick={() => deleteDoor(selectedDoor.door_id)}
-              >
-                <TrashIcon width={16} height={16} aria-hidden="true" />
-                Delete door
-              </button>
-              <button type="button" className="maplab-editor-toolbar-button" onClick={() => selectDoor(null)}>
-                Close
-              </button>
-            </div>
-          </div>
-        )}
+        <div className="maplab-inspector-rail">
+          {selectedDoor ? (
+            <>
+              <InspectorPanel target={{ kind: 'door', door: selectedDoor }} />
+              <FixturePropertiesForm
+                spec={FIXTURE_TYPES.door}
+                values={selectedDoor as unknown as Record<string, unknown>}
+                onChange={(key, value) => updateFixtureFlags(selectedDoor.door_id, 'door', { [key]: value })}
+              />
+              <div className="maplab-editor-inspector-actions">
+                <button
+                  type="button"
+                  className="maplab-pill-button maplab-editor-toolbar-button"
+                  onClick={() => deleteDoor(selectedDoor.door_id)}
+                >
+                  <TrashIcon width={16} height={16} aria-hidden="true" />
+                  Delete door
+                </button>
+                <button
+                  type="button"
+                  className="maplab-pill-button maplab-editor-toolbar-button"
+                  onClick={() => selectDoor(null)}
+                >
+                  Close
+                </button>
+              </div>
+            </>
+          ) : selectedRoom ? (
+            <>
+              <InspectorPanel target={{ kind: 'room', room: selectedRoom }} />
+              <div className="maplab-editor-inspector-actions">
+                <button
+                  type="button"
+                  className="maplab-pill-button maplab-editor-toolbar-button"
+                  onClick={() => deleteRoom(selectedRoom.room_id)}
+                >
+                  <TrashIcon width={16} height={16} aria-hidden="true" />
+                  Delete room
+                </button>
+                <button
+                  type="button"
+                  className="maplab-pill-button maplab-editor-toolbar-button"
+                  onClick={() => selectRoom(null)}
+                >
+                  Close
+                </button>
+              </div>
+            </>
+          ) : (
+            <p className="maplab-inspector-rail-empty">Select a room or door to see its details.</p>
+          )}
+        </div>
       </div>
     </div>
   )

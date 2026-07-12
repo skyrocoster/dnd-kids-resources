@@ -48,7 +48,11 @@ export function mapLabEditorReducer(state: EditorState, action: EditorAction): E
     }
 
     case 'selectRoom':
-      return { ...state, selectedRoomId: action.roomId }
+      return {
+        ...state,
+        selectedRoomId: action.roomId,
+        selectedDoorId: action.roomId === null ? state.selectedDoorId : null,
+      }
 
     case 'deleteRoom': {
       const rooms = state.layout.rooms.filter((room) => room.room_id !== action.roomId)
@@ -106,7 +110,11 @@ export function mapLabEditorReducer(state: EditorState, action: EditorAction): E
     }
 
     case 'selectDoor':
-      return { ...state, selectedDoorId: action.doorId }
+      return {
+        ...state,
+        selectedDoorId: action.doorId,
+        selectedRoomId: action.doorId === null ? state.selectedRoomId : null,
+      }
 
     case 'updateFixtureFlags': {
       if (action.fixtureType !== 'door') return state

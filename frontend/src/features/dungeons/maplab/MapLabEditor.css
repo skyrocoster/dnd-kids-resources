@@ -5,42 +5,14 @@
   padding: 1.5rem;
 }
 
-.maplab-editor-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.maplab-editor-toolbar-button {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  min-height: 48px;
-  padding: 0.5rem 1rem;
-  border: 1px solid var(--md-outline-variant);
-  border-radius: 999px;
-  background: var(--md-surface-2);
-  color: var(--md-on-surface);
-  font-size: var(--type-label-size);
-  font-weight: var(--type-label-weight);
-  cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease;
-}
-
-.maplab-editor-toolbar-button:hover {
-  border-color: var(--md-outline);
-}
-
-.maplab-editor-toolbar-button:focus-visible {
-  outline: 2px solid var(--md-primary);
-  outline-offset: 2px;
-}
+/* .maplab-editor-toolbar-button's base pill look comes from the shared `.maplab-pill-button`
+ * (MapLabPage.css) applied alongside it in JSX; this class now only carries the door-placement
+ * active-state override below. */
 
 .maplab-editor-save-status {
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
-  margin-left: auto;
   font-size: var(--type-body-sm-size);
   color: var(--md-on-surface-variant);
 }
@@ -209,13 +181,6 @@
   outline: none;
 }
 
-.maplab-editor-inspector {
-  flex: 0 0 16rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
 .maplab-editor-inspector-actions {
   display: flex;
   gap: 0.5rem;
@@ -256,26 +221,7 @@
   outline-offset: 1px;
 }
 
-/* .maplab-canvas-wrapper / .maplab-canvas-viewport / .maplab-zoom-controls / .maplab-zoom-button
- * are shared with the viewer — real rules live in MapLabPage.css (imported above this file). */
-
-/* Placeholder classes for Stage E3: toolbar reorganization */
-.maplab-toolbar-group {
-  /* Stage E3: groups of buttons (Create, Canvas, Session) with dividers */
-}
-
-.maplab-toolbar-group-label {
-  /* Stage E3: visual label for toolbar groups */
-}
-
-.maplab-editor-nav-rail {
-  /* Stage E3: left navigation rail (floor tabs + room list) */
-}
-
-.maplab-inspector-rail {
-  /* Stage E3: right persistent inspector rail */
-}
-
-.maplab-inspector-rail-empty {
-  /* Stage E3: placeholder state when no fixture is selected */
-}
+/* .maplab-canvas-wrapper / .maplab-canvas-viewport / .maplab-zoom-controls / .maplab-zoom-button /
+ * .maplab-pill-button / .maplab-toolbar / .maplab-toolbar-group* / .maplab-editor-nav-rail /
+ * .maplab-inspector-rail* are shared with the viewer — real rules live in MapLabPage.css (imported
+ * above this file). */

@@ -95,12 +95,12 @@ function InspectorPanel({ target, controls }: { target: Inspectable; controls?: 
       {controls && (
         <div className="maplab-inspector-controls">
           {target.kind === 'door' && controls.onToggleOpen && (
-            <button type="button" className="maplab-session-control-button" onClick={controls.onToggleOpen}>
+            <button type="button" className="maplab-pill-button maplab-session-control-button" onClick={controls.onToggleOpen}>
               {target.session?.isOpen ? 'Close door' : 'Open door'}
             </button>
           )}
           {controls.onToggleLocked && (
-            <button type="button" className="maplab-session-control-button" onClick={controls.onToggleLocked}>
+            <button type="button" className="maplab-pill-button maplab-session-control-button" onClick={controls.onToggleLocked}>
               {(target.kind === 'door' || target.kind === 'stair') && target.session?.isLocked
                 ? 'Unlock'
                 : 'Lock'}
@@ -109,7 +109,7 @@ function InspectorPanel({ target, controls }: { target: Inspectable; controls?: 
           {isTrapped && controls.onDisarmTrap && (
             <button
               type="button"
-              className="maplab-session-control-button"
+              className="maplab-pill-button maplab-session-control-button"
               disabled={(target.kind === 'door' || target.kind === 'stair') && target.session?.trapDisarmed}
               onClick={controls.onDisarmTrap}
             >
@@ -260,16 +260,26 @@ export function MapLabPage() {
             key={floor.z}
             type="button"
             role="tab"
-            className="maplab-floor-tab"
+            className="maplab-pill-button maplab-floor-tab"
             aria-selected={floor.z === activeZ}
             onClick={() => setActiveZ(floor.z)}
           >
             {floor.title ?? `Floor ${floor.z}`}
           </button>
         ))}
-        <button type="button" className="maplab-session-reset-button" onClick={resetSessions}>
-          Reset session state
-        </button>
+      </div>
+
+      <div className="maplab-toolbar">
+        <div className="maplab-toolbar-group">
+          <span className="maplab-toolbar-group-label">Session</span>
+          <button
+            type="button"
+            className="maplab-pill-button maplab-session-reset-button"
+            onClick={resetSessions}
+          >
+            Reset session state
+          </button>
+        </div>
       </div>
 
       <div className="maplab-canvas">
@@ -286,15 +296,25 @@ export function MapLabPage() {
           onViewportResize={handleViewportResize}
           controlsSlot={
             <>
-              <button type="button" className="maplab-zoom-button" aria-label="Zoom out" onClick={zoomApi.zoomOut}>
+              <button
+                type="button"
+                className="maplab-pill-button maplab-zoom-button"
+                aria-label="Zoom out"
+                onClick={zoomApi.zoomOut}
+              >
                 <ZoomOutIcon width={20} height={20} aria-hidden="true" />
               </button>
-              <button type="button" className="maplab-zoom-button" aria-label="Zoom in" onClick={zoomApi.zoomIn}>
+              <button
+                type="button"
+                className="maplab-pill-button maplab-zoom-button"
+                aria-label="Zoom in"
+                onClick={zoomApi.zoomIn}
+              >
                 <ZoomInIcon width={20} height={20} aria-hidden="true" />
               </button>
               <button
                 type="button"
-                className="maplab-zoom-button"
+                className="maplab-pill-button maplab-zoom-button"
                 aria-label="Reset zoom"
                 onClick={() => zoomApi.fitToBounds(bounds, viewportSize)}
               >

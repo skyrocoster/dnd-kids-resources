@@ -346,30 +346,93 @@ describe('MapLabEditorPage (Stage E2 — Canvas zoom & pan)', () => {
 })
 
 describe('MapLabEditorPage (Stage E3 — Toolbar reorganization & persistent inspector)', () => {
-  it.skip('toolbar groups buttons into Create / Canvas / Session / Status clusters', () => {
-    // Stage E3: Assert .maplab-toolbar-group containers with group labels present
-    // Create: Add room, Place door
-    // Canvas: Zoom +/−/Reset
-    // Session: Reset to fixture
-    // Status: rightmost save status indicator
+  const oneRoomOneDoorLayout = {
+    meta: { cellSizeFt: 5, padding: 3 },
+    rooms: [{ room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0]], title: 'Room 1' }],
+    doors: [{ door_id: 1, cell: [0, 0], side: 'N', hidden: false, locked: false, trapped: false }],
+    stairs: [],
+    floors: [{ z: 0, title: 'Ground Floor' }],
+    items: [],
+  }
+
+  beforeEach(() => {
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: oneRoomOneDoorLayout })
+    vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: oneRoomOneDoorLayout })
   })
 
-  it.skip('left navigation rail (nav-rail) holds floor tabs and room list vertically', () => {
-    // Stage E3: Assert .maplab-editor-nav-rail container exists, is flex-column,
-    // contains floor tabs at top, room list below
+  it('toolbar groups buttons into Create / Session / Status clusters', async () => {
+    const { container } = render(<MapLabEditorPage />)
+    await flush()
+
+    const groups = container.querySelectorAll('.maplab-toolbar-group')
+    expect(groups.length).toBeGreaterThanOrEqual(3)
+
+    const labels = Array.from(groups).map((group) => group.querySelector('.maplab-toolbar-group-label')?.textContent)
+    expect(labels).toContain('Create')
+    expect(labels).toContain('Session')
+
+    const createGroup = Array.from(groups).find((group) => group.querySelector('.maplab-toolbar-group-label')?.textContent === 'Create')
+    expect(createGroup?.textContent).toMatch(/Add room/)
+    expect(createGroup?.textContent).toMatch(/Place door/)
+
+    const sessionGroup = Array.from(groups).find((group) => group.querySelector('.maplab-toolbar-group-label')?.textContent === 'Session')
+    expect(sessionGroup?.textContent).toMatch(/Reset to fixture/)
+
+    const statusGroup = container.querySelector('.maplab-toolbar-group-status')
+    expect(statusGroup?.querySelector('.maplab-editor-save-status')).toBeInTheDocument()
   })
 
-  it.skip('right inspector rail is persistent, showing placeholder when no fixture selected', () => {
-    // Stage E3: .maplab-inspector-rail visible always; .maplab-inspector-rail-empty shown
-    // when no door/room selected; selecting a room populates the rail with room details
+  it('left navigation rail (nav-rail) holds floor tabs and room list vertically', async () => {
+    const { container } = render(<MapLabEditorPage />)
+    await flush()
+
+    const navRail = container.querySelector('.maplab-editor-nav-rail')
+    expect(navRail).toBeInTheDocument()
+    const floorTabs = navRail?.querySelector('.maplab-floor-tabs')
+    const roomList = navRail?.querySelector('.maplab-editor-room-list')
+    expect(floorTabs).toBeInTheDocument()
+    expect(roomList).toBeInTheDocument()
+
+    // Floor tabs precede the room list in document order (top of the column).
+    const position = floorTabs?.compareDocumentPosition(roomList as Node)
+    expect((position as number) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 
-  it.skip('selecting a room (not just door) populates the inspector rail', () => {
-    // Stage E3: click room -> inspector rail shows title/meta/delete; mirror door behavior
+  it('right inspector rail is persistent, showing placeholder when no fixture selected', async () => {
+    const { container } = render(<MapLabEditorPage />)
+    await flush()
+
+    const rail = container.querySelector('.maplab-inspector-rail')
+    expect(rail).toBeInTheDocument()
+    expect(rail?.querySelector('.maplab-inspector-rail-empty')).toBeInTheDocument()
+    expect(screen.getByText('Select a room or door to see its details.')).toBeInTheDocument()
   })
 
-  it.skip('inspector rail does not collapse entirely when a room is selected', () => {
-    // Stage E3: assert .maplab-inspector-rail remains flex: 0 0 16rem (or similar fixed),
-    // visible whether the selection is a room, door, or nothing
+  it('selecting a room (not just door) populates the inspector rail', async () => {
+    const { container } = render(<MapLabEditorPage />)
+    await flush()
+
+    fireEvent.click(container.querySelector('.maplab-editor-room-item-select') as Element)
+
+    const rail = container.querySelector('.maplab-inspector-rail')
+    expect(rail?.querySelector('.maplab-inspector-rail-empty')).not.toBeInTheDocument()
+    expect(rail?.textContent).toMatch(/Room 1/)
+    expect(screen.getByRole('button', { name: 'Delete room' })).toBeInTheDocument()
+  })
+
+  it('inspector rail does not collapse entirely when a room is selected', async () => {
+    const { container } = render(<MapLabEditorPage />)
+    await flush()
+
+    expect(container.querySelector('.maplab-inspector-rail')).toBeInTheDocument()
+
+    fireEvent.click(container.querySelector('.maplab-editor-room-item-select') as Element)
+    expect(container.querySelector('.maplab-inspector-rail')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: /close/i }))
+    expect(container.querySelector('.maplab-inspector-rail')).toBeInTheDocument()
+
+    fireEvent.click(container.querySelector('.maplab-door') as Element)
+    expect(container.querySelector('.maplab-inspector-rail')).toBeInTheDocument()
   })
 })

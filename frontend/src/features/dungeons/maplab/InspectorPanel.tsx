@@ -41,12 +41,12 @@ export function InspectorPanel({ target, controls }: { target: Inspectable; cont
       {controls && (
         <div className="maplab-inspector-controls">
           {target.kind === 'door' && controls.onToggleOpen && (
-            <button type="button" className="maplab-session-control-button" onClick={controls.onToggleOpen}>
+            <button type="button" className="maplab-pill-button maplab-session-control-button" onClick={controls.onToggleOpen}>
               {target.session?.isOpen ? 'Close door' : 'Open door'}
             </button>
           )}
           {controls.onToggleLocked && (
-            <button type="button" className="maplab-session-control-button" onClick={controls.onToggleLocked}>
+            <button type="button" className="maplab-pill-button maplab-session-control-button" onClick={controls.onToggleLocked}>
               {(target.kind === 'door' || target.kind === 'stair') && target.session?.isLocked
                 ? 'Unlock'
                 : 'Lock'}
@@ -55,7 +55,7 @@ export function InspectorPanel({ target, controls }: { target: Inspectable; cont
           {isTrapped && controls.onDisarmTrap && (
             <button
               type="button"
-              className="maplab-session-control-button"
+              className="maplab-pill-button maplab-session-control-button"
               disabled={(target.kind === 'door' || target.kind === 'stair') && target.session?.trapDisarmed}
               onClick={controls.onDisarmTrap}
             >
