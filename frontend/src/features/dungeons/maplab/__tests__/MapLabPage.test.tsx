@@ -1,7 +1,15 @@
-import { describe, it, expect } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { describe, it, expect, vi, afterEach } from 'vitest'
+import { act, render, screen, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import * as api from '../../../../api/client'
+import { mapLabLayout } from '../maplabData'
 import { MapLabPage } from '../MapLabPage'
+
+async function flush() {
+  await act(async () => {
+    await Promise.resolve()
+  })
+}
 
 describe('MapLabPage (M0a scaffold)', () => {
   it('renders placeholder', () => {
@@ -393,12 +401,43 @@ describe('MapLabPage (Stage 4 — Passage session state)', () => {
 })
 
 describe('MapLabPage (Stage E1 — Unified data: viewer reads backend layout)', () => {
-  it.skip('loads layout from backend and renders doors/rooms from the persisted layout', () => {
-    // Stage E1: useMapLabLayout loads via getDungeonLayout, 404 -> fixture,
-    // viewer renders from loaded layout instead of hardcoded mapLabLayout
+  afterEach(() => {
+    vi.restoreAllMocks()
   })
 
-  it.skip('404 from backend falls back to the fixture layout', () => {
-    // Stage E1: mock getDungeonLayout 404, expect fixture rooms/doors to render
+  it('loads layout from backend and renders doors/rooms from the persisted layout', async () => {
+    const backendDoor = {
+      door_id: 999,
+      cell: [0, 0] as [number, number],
+      side: 'N' as const,
+      title: 'Backend-Only Door',
+      hidden: false,
+      locked: false,
+      trapped: false,
+    }
+    const backendLayout = {
+      ...mapLabLayout,
+      doors: [...mapLabLayout.doors, backendDoor],
+    }
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: backendLayout })
+
+    render(<MapLabPage />)
+    await flush()
+
+    expect(screen.getByText('Backend-Only Door')).toBeInTheDocument()
+    // The fixture-only door is still present — the backend layout replaced the fixture wholesale,
+    // not merged, and it carries the same case-1 doors plus the new one.
+    expect(screen.getByText('Heavy Stone Door')).toBeInTheDocument()
+  })
+
+  it('404 from backend falls back to the fixture layout', async () => {
+    vi.spyOn(api, 'getDungeonLayout').mockRejectedValue(new api.ApiError(404, 'not found'))
+
+    render(<MapLabPage />)
+    await flush()
+
+    expect(screen.getByRole('button', { name: 'Combat Training Hall' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Armoury' })).toBeInTheDocument()
+    expect(screen.getByText('Heavy Stone Door')).toBeInTheDocument()
   })
 })

@@ -1,6 +1,7 @@
 import { Fragment, useMemo, useState } from 'react'
 import './MapLabPage.css'
-import { mapLabLayout } from './maplabData'
+import { MAP_LAB_DUNGEON_ID } from '../../../api/client'
+import { useMapLabLayout } from './useMapLabLayout'
 import { TrapDisarmedIcon } from '../../../components/icons'
 import {
   absoluteCells,
@@ -121,7 +122,8 @@ function InspectorPanel({ target, controls }: { target: Inspectable; controls?: 
 
 /** Map Lab prototype page — Stage M2.3: walls, and door/stair affordances with state + details. */
 export function MapLabPage() {
-  const floors = useMemo(() => floorsInLayout(mapLabLayout), [])
+  const { layout } = useMapLabLayout(MAP_LAB_DUNGEON_ID)
+  const floors = useMemo(() => floorsInLayout(layout), [layout])
   const [activeZ, setActiveZ] = useState<number>(floors[0]?.z ?? 0)
   const [selectedRoomId, setSelectedRoomId] = useState<number | null>(null)
   const [hoveredInspectable, setHoveredInspectable] = useState<InspectableRef | null>(null)
@@ -130,21 +132,21 @@ export function MapLabPage() {
   const [doorSessions, setDoorSessions] = useState<Record<number, PassageSessionState>>({})
   const [stairSessions, setStairSessions] = useState<Record<number, PassageSessionState>>({})
 
-  const rooms = useMemo(() => roomsOnZ(mapLabLayout, activeZ), [activeZ])
-  const stairs = useMemo(() => stairEndpointsForZ(mapLabLayout, activeZ), [activeZ])
+  const rooms = useMemo(() => roomsOnZ(layout, activeZ), [layout, activeZ])
+  const stairs = useMemo(() => stairEndpointsForZ(layout, activeZ), [layout, activeZ])
   const doors = useMemo(
     () =>
-      mapLabLayout.doors.filter((door) => {
+      layout.doors.filter((door) => {
         const owner = roomOfCell(door.cell, rooms)
         return owner !== null
       }),
-    [rooms],
+    [layout, rooms],
   )
 
   // Bounds computed over every room, not just the active floor, so the viewBox stays
   // aligned across floor switches — proving shared coordinate space across z. Padded by
   // meta.padding on every side: the margin of visible "unknown space" around authored content.
-  const bounds = useMemo(() => paddedBounds(mapLabLayout), [])
+  const bounds = useMemo(() => paddedBounds(layout), [layout])
   const viewBox = `${bounds.minX * CELL_SIZE} ${bounds.minY * CELL_SIZE} ${
     (bounds.maxX - bounds.minX + 1) * CELL_SIZE
   } ${(bounds.maxY - bounds.minY + 1) * CELL_SIZE}`
@@ -219,7 +221,7 @@ export function MapLabPage() {
   let activeInspectable: Inspectable | null = null
   let activeControls: SessionControls | undefined
   if (activeRef?.kind === 'door') {
-    const door = mapLabLayout.doors.find((d) => d.door_id === activeRef.id)
+    const door = layout.doors.find((d) => d.door_id === activeRef.id)
     if (door) {
       activeInspectable = { kind: 'door', door, session: doorSession(door) }
       activeControls = {
@@ -229,7 +231,7 @@ export function MapLabPage() {
       }
     }
   } else if (activeRef?.kind === 'stair') {
-    const stair = mapLabLayout.stairs.find((s) => s.stair_id === activeRef.id)
+    const stair = layout.stairs.find((s) => s.stair_id === activeRef.id)
     if (stair) {
       activeInspectable = { kind: 'stair', stair, session: stairSession(stair) }
       activeControls = {
@@ -238,7 +240,7 @@ export function MapLabPage() {
       }
     }
   } else if (activeRef?.kind === 'room') {
-    const room = mapLabLayout.rooms.find((r) => r.room_id === activeRef.id)
+    const room = layout.rooms.find((r) => r.room_id === activeRef.id)
     if (room) activeInspectable = { kind: 'room', room }
   }
 
@@ -336,7 +338,7 @@ export function MapLabPage() {
                     height={CELL_SIZE}
                   />
                 ))}
-                {nonDoorWallSegments(room, mapLabLayout.doors).map((edge) => {
+                {nonDoorWallSegments(room, layout.doors).map((edge) => {
                   const segment = doorWallSegment(edge, CELL_SIZE)
                   return (
                     <line
