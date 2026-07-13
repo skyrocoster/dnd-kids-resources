@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import type { PointerEvent } from 'react'
+import type { Condition } from '../../api/types'
 import type { RunnerCombatant } from './encounterRunner'
+import { ConditionPicker } from './ConditionPicker'
 import {
   ChevronDownIcon,
   ChevronUpIcon,
@@ -32,10 +34,11 @@ interface CombatantCardProps {
   isActive: boolean
   index: number
   count: number
+  conditions: Condition[]
   onAdjustHp: (delta: number) => void
   onSetHp: (hp: number) => void
   onSetStatus: (status: string) => void
-  onSetConditions?: (conditions: string[]) => void
+  onSetConditions: (conditions: string[]) => void
   onRename: (name: string) => void
   onDuplicate: () => void
   onRemove: () => void
@@ -50,9 +53,11 @@ export function CombatantCard({
   isActive,
   index,
   count,
+  conditions,
   onAdjustHp,
   onSetHp,
   onSetStatus,
+  onSetConditions,
   onRename,
   onDuplicate,
   onRemove,
@@ -163,16 +168,22 @@ export function CombatantCard({
         ))}
       </div>
 
-      {/* TODO (R2): condition chips row placeholder */}
-      {(combatant.conditions ?? []).length > 0 && (
-        <div className="combatant-condition-chips" role="group" aria-label="Conditions">
-          {(combatant.conditions ?? []).map((condition) => (
-            <span key={condition} className="combatant-condition-chip">
-              {condition}
-            </span>
-          ))}
-        </div>
-      )}
+      <div className="combatant-condition-row">
+        {(combatant.conditions ?? []).length > 0 && (
+          <div className="combatant-condition-chips" role="group" aria-label="Conditions">
+            {(combatant.conditions ?? []).map((condition) => (
+              <span key={condition} className="combatant-condition-chip">
+                {condition}
+              </span>
+            ))}
+          </div>
+        )}
+        <ConditionPicker
+          conditions={conditions}
+          selected={combatant.conditions ?? []}
+          onChange={onSetConditions}
+        />
+      </div>
 
       <div className="combatant-hp-row">
         <div className="combatant-hp-meter" role="img" aria-label={`${hpCurrent} of ${hpMax ?? '?'} hit points`}>

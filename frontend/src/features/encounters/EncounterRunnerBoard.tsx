@@ -115,6 +115,7 @@ export function EncounterRunnerBoard({ runner, compact = false }: EncounterRunne
                   isActive={combatant.clientId === activeClientId}
                   index={index}
                   count={combatants.length}
+                  conditions={runner.conditions}
                   onAdjustHp={(delta) => runner.adjustHp(combatant.clientId, delta)}
                   onSetHp={(hp) => runner.setHp(combatant.clientId, hp)}
                   onSetStatus={(status) => runner.setStatus(combatant.clientId, status)}

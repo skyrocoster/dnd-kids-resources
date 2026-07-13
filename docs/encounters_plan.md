@@ -123,10 +123,11 @@ section. The load-bearing points for this editor:
 
 ## Phase 2 — Runner Conditions
 
-> **Status:** Stage R1 (Reducer + data flow) **COMPLETE** ✓ (2026-07-13)
+> **Status:** Stage R2 (Card display + live edit) **COMPLETE** ✓ (2026-07-13)
 > - R0 (scaffolding): action + prop-threading stubs, placeholder CSS, test stubs
 > - R1 (reducer + data flow): `setConditions` reducer case implemented; canonical condition list fetched in the hook
-> - Next: R2–R3 for card display/live edit and design pass
+> - R2 (card display + live edit): condition chip row + `ConditionPicker` trigger wired into `CombatantCard`
+> - Next: R3 for design pass
 
 The Runner is otherwise **out of scope** in this project (see "Scope of this plan"), but conditions are the one
 gap that breaks live play: they are authored (Phase 1's `ConditionPicker`), stored as **condition-name strings**
@@ -144,7 +145,7 @@ markup/CSS (`.combatant-status-chip`) as the model for condition chips.
 |-------|-------|---------|--------------|
 | **R0 — Scaffolding** | Haiku | Action + prop-threading stubs, placeholder CSS, `it.skip` tests. | ✓ `{ type:'setConditions'; clientId; conditions:string[] }` added to `RunnerAction` (no-op case in reducer); `onSetConditions` + `conditions: Condition[]` prop signatures threaded `EncounterRunnerBoard → CombatantCard`; `.combatant-condition-chips` placeholder CSS mirroring `.combatant-status-chips`; condition render stub in CombatantCard; skipped test stubs; `useEncounterRunner` hook updated. |
 | **R1 — Reducer + data flow** | Sonnet | Implement the action; feed the canonical condition list in. | ✓ `setConditions` reducer case in `encounterRunner.ts` (mirrors `setStatus`) replacing `conditions` immutably for the matched `clientId`; canonical `Condition[]` fetched in `useEncounterRunner.ts` (mirrors `EncounterEditor.tsx:38` via `getConditions()`) and exposed as `runner.conditions`; round-trip preserved through `combatantsToCreatures`. Fixed two pre-existing R0 build errors (`onSetConditions` unused destructure, `combatant.conditions` possibly-null access) to keep `npm run build` clean. Tests: 3 reducer tests (sets/clears conditions, order & other combatants untouched) + 1 round-trip test + 2 hook tests (fetch success/failure); 453 frontend tests passing (4 skipped, unaffected), `npm run build` clean, 110 backend tests unaffected. |
-| **R2 — Card display + live edit** | Sonnet | Chips + inline picker on the combatant card. | Condition chip row in `CombatantCard.tsx` after line 163 (reuse status-chip markup/CSS, teal/tertiary role); a `ConditionPicker` trigger whose `onChange` dispatches `setConditions`; legacy/custom names preserved. Tests via `EncounterRunnerPage.test.tsx`: chips render from data, toggling persists through debounce-save, empty state. |
+| **R2 — Card display + live edit** | Sonnet | Chips + inline picker on the combatant card. | ✓ Condition chip row in `CombatantCard.tsx` (reuses status-chip markup pattern, teal/tertiary role via `--md-tertiary-container`/`--md-on-tertiary-container`); reused `ConditionPicker` (Phase 1) wired as the edit trigger, `onChange` dispatches `runner.setConditions(clientId, next)`; canonical `Condition[]` threaded `EncounterRunnerBoard → CombatantCard` via `runner.conditions`; legacy/custom names preserved (picker's `mergeConditionOptions` already handles this). Tests via `EncounterRunnerPage.test.tsx`: empty-state (no chip row, "No conditions" trigger text), toggling a condition renders a chip, toggle persists through debounce-save (`updateEncounter` payload carries `conditions: ['Prone']`). 456 frontend tests passing (2 skipped — unrelated D-phase stubs), `npm run build` clean, 110 backend tests unaffected (90.73% coverage). |
 | **R3 — Design pass (Runner)** | Sonnet | Visual/MD3/a11y review of the Runner. | Chip parity with status pills; teal/tertiary via `data-variant`; **≥48px touch targets**; focus rings; never hue-alone (glyph + text); `prefers-reduced-motion`; **compact mode (dungeon dock) doesn't overflow**; Lucide icons only. Live verified: author conditions → run → chips show → add/remove live → reopen round-trips. |
 
 ---

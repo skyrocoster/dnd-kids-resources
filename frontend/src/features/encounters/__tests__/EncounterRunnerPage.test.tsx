@@ -2,8 +2,13 @@ import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as api from '../../../api/client'
-import type { Encounter, Monster } from '../../../api/types'
+import type { Condition, Encounter, Monster } from '../../../api/types'
 import { EncounterRunnerPage } from '../EncounterRunnerPage'
+
+const conditionList: Condition[] = [
+  { id: 1, name: 'Prone' },
+  { id: 2, name: 'Poisoned' },
+]
 
 const baseEncounter: Encounter = {
   id: 7,
@@ -166,12 +171,58 @@ describe('EncounterRunnerPage', () => {
     expect(screen.getByText('Round 2')).toBeInTheDocument()
   })
 
-  // TODO (R0): condition display stubs
-  it.skip('toggles conditions on a combatant card', () => {
-    // R1: implement live-edit via ConditionPicker
+  it('renders no condition chips when a combatant has none', async () => {
+    vi.spyOn(api, 'getEncounter').mockResolvedValue(baseEncounter)
+    vi.spyOn(api, 'updateEncounter').mockResolvedValue(baseEncounter)
+    vi.spyOn(api, 'getConditions').mockResolvedValue(conditionList)
+
+    renderPage()
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    const card = cardByName('Goblin')
+    expect(within(card).queryByRole('group', { name: 'Conditions' })).not.toBeInTheDocument()
+    expect(within(card).getByText('No conditions')).toBeInTheDocument()
   })
 
-  it.skip('conditions persist through save/reload', () => {
-    // R1: verify round-trip through updateEncounter
+  it('toggles conditions on a combatant card', async () => {
+    vi.spyOn(api, 'getEncounter').mockResolvedValue(baseEncounter)
+    vi.spyOn(api, 'updateEncounter').mockResolvedValue(baseEncounter)
+    vi.spyOn(api, 'getConditions').mockResolvedValue(conditionList)
+
+    renderPage()
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    const card = cardByName('Goblin')
+    fireEvent.click(within(card).getByText('No conditions'))
+    fireEvent.click(within(card).getByLabelText('Prone'))
+
+    expect(within(card).getByRole('group', { name: 'Conditions' })).toBeInTheDocument()
+    expect(within(within(card).getByRole('group', { name: 'Conditions' })).getByText('Prone')).toBeInTheDocument()
+  })
+
+  it('conditions persist through save/reload', async () => {
+    vi.spyOn(api, 'getEncounter').mockResolvedValue(baseEncounter)
+    const updateSpy = vi.spyOn(api, 'updateEncounter').mockResolvedValue(baseEncounter)
+    vi.spyOn(api, 'getConditions').mockResolvedValue(conditionList)
+
+    renderPage()
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    const card = cardByName('Goblin')
+    fireEvent.click(within(card).getByText('No conditions'))
+    fireEvent.click(within(card).getByLabelText('Prone'))
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(600)
+    })
+
+    expect(updateSpy).toHaveBeenCalledTimes(1)
+    expect(updateSpy.mock.calls[0][1].creatures![0].conditions).toEqual(['Prone'])
   })
 })
