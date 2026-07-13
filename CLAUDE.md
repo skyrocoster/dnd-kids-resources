@@ -18,6 +18,20 @@ their phases and stages.
 specification exactly, and verify against its gates. Each stage specifies what to build, what it inherits, required
 tests, and end-to-end verification. Do not skip ahead, combine stages, or deviate from the spec.
 
+## Reference Docs (read before exploring the codebase)
+
+Before diving into the code or spawning exploration agents, read the appropriate reference doc. These describe stable structure (folders, conventions, API surface, data model) that rarely changes — much faster than exploring from scratch.
+
+| Need to know... | Read |
+|---|---|
+| Folder structure, backend/frontend conventions, request flow | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) |
+| Endpoint inventory (method, path, schema names) per router | [`docs/API_REFERENCE.md`](docs/API_REFERENCE.md) |
+| Seed files, table relationships, JSON-encoded columns | [`docs/DATA_MODEL.md`](docs/DATA_MODEL.md) |
+| Test commands, coverage gate, where test files live | [`docs/TESTING.md`](docs/TESTING.md) |
+| Current stage of a feature, next steps to implement | `docs/<feature>_plan.md` (e.g., `dungeon_plan.md`) |
+
+**Use reference docs before exploration agents.** Exploration agents are for open-ended questions ("what patterns exist across the codebase?", "find all places where X is used") or when you cannot find the answer in the reference docs. Starting with a grep/Explore agent for facts in these docs wastes tokens.
+
 ## Planning & Staging Methodology
 
 Each feature is documented in its own `docs/*_plan.md` file, broken into design phases, each broken into
@@ -43,7 +57,7 @@ feature (encounters, loot, etc.).**
 - **Commit message:** Reference the stage ID and list key deliverables; include test counts.
 
 **Between stages:** Update the plan doc with the "What shipped" section, commit it with the code, then proceed
-to the next stage. This keeps the plan synchronized with reality.
+to the next stage. This keeps the plan synchronized with reality. **If the stage added/removed a router, an endpoint, a seed domain/table, or a top-level folder/convention, update the matching reference doc (`ARCHITECTURE.md`, `API_REFERENCE.md`, `DATA_MODEL.md`) in the same commit — treat this as part of the stage's deliverables, not a follow-up.** This keeps reference docs synchronized with code.
 
 ### The stack
 - **Data:** FINAL and frozen. `data/seeds/*.json` is the canonical source of truth. The SQLite DB (`dnd_kids_resources.db`, gitignored) is **rebuilt from seeds** via `scripts/init_database.py` + `scripts/seed_database.py`. Never hand-edit the DB as a source of truth; edit seeds and rebuild.
@@ -78,11 +92,11 @@ Task 4.5 set up pytest infrastructure and fixtures. Tasks 5+ inherit these patte
 
 ## Conventions
 
-- Many DB columns are JSON-encoded text (e.g. spells' `damage`/`components`/`classes`, monsters' `ac`/`hp`/`action`) — `json.loads` on read, `json.dumps` on write.
+- Many DB columns are JSON-encoded text (e.g. spells' `damage`/`components`/`classes`, monsters' `ac`/`hp`/`action`) — `json.loads` on read, `json.dumps` on write. See `docs/DATA_MODEL.md` for the full list.
 - Ingestion/parsing scripts are archived under `archive/ingestion/` and must stay out of the running app.
 - This is a Windows machine; the primary shell is PowerShell (a Bash tool is also available).
-- After each stage of an implementation, update the persistent plan doc and commit changes together (code +
-  updated stage reference).
+- Reference docs (`ARCHITECTURE.md`, `API_REFERENCE.md`, `DATA_MODEL.md`) describe stable structure, not feature status — they should change rarely and only when the structure itself changes (new router, new table, new folder convention). Feature status lives only in `*_plan.md`.
+- After each stage of an implementation, update the persistent plan doc and commit changes together (code + updated stage reference). See "Between stages" above for reference-doc updates.
 
 ## Browser Automation
 
