@@ -90,13 +90,15 @@ export interface PropLoot {
  * Unrendered in Phase F Stages 0-1; Stage F2+ renders and authors these. */
 export interface MapProp extends PassageFlags {
   prop_id: number
-  kind: string // 'chest' | 'table' | 'mirror' | 'barrel' | 'statue' | 'other'
+  kind: string // 'chest' | 'table' | 'mirror' | 'barrel' | 'statue' | 'other' | 'encounter'
   cell: MapCell // absolute [x, y]
   side?: CardinalSide // ABSENT = on square; PRESENT = attached to that wall
   /** Authored floor. Optional for back-compat — see `MapDoor.z`. */
   z?: number
   title?: string
   loot?: PropLoot // forward-compat; round-trips via autosave
+  /** (D0+) Encounter marker: links to an encounter id for launching the runner. */
+  encounter_id?: number | null
 }
 
 /** Layout-wide scale/presentation constants: makes the 5 ft/cell scale and the unknown-space

@@ -26,6 +26,7 @@ export type RunnerAction =
   | { type: 'adjustHp'; clientId: string; delta: number }
   | { type: 'setHp'; clientId: string; hp: number }
   | { type: 'setStatus'; clientId: string; status: string }
+  | { type: 'setConditions'; clientId: string; conditions: string[] }
   | { type: 'duplicate'; clientId: string }
   | { type: 'addFromMonster'; monster: Monster }
   | { type: 'remove'; clientId: string }
@@ -137,6 +138,10 @@ export function encounterRunnerReducer(state: RunnerState, action: RunnerAction)
           c.clientId === action.clientId ? { ...c, status: action.status } : c
         ),
       }
+
+    case 'setConditions':
+      // TODO (R1): implement conditions reducer
+      return state
 
     case 'rename':
       return {

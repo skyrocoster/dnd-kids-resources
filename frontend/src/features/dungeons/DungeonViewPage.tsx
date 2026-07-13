@@ -6,8 +6,7 @@ import { SplitPane } from '../../components/SplitPane'
 import { Card } from '../../components/Card'
 import { DiceText } from '../../components/DiceText'
 import { FloatingWindow } from '../../components/FloatingWindow'
-import { useEncounterRunner } from '../encounters/useEncounterRunner'
-import { EncounterRunnerBoard } from '../encounters/EncounterRunnerBoard'
+import { EncounterDock } from '../encounters/EncounterDock'
 import { NpcChip } from '../npcs/NpcChip'
 import { NPCStatCard } from '../npcs/NPCStatCard'
 import { useNpc } from '../npcs/useNpc'
@@ -233,20 +232,6 @@ export function DungeonViewPage() {
 
       {activeNpcId != null && <NpcDock npcId={activeNpcId} onClose={() => setActiveNpcId(null)} />}
     </div>
-  )
-}
-
-function EncounterDock({ encounterId, onClose }: { encounterId: number; onClose: () => void }) {
-  const runner = useEncounterRunner(encounterId)
-
-  return (
-    <FloatingWindow
-      title={runner.loading ? 'Loading…' : runner.title}
-      storageKey="dungeon-encounter-dock-position"
-      onClose={onClose}
-    >
-      {!runner.loading && <EncounterRunnerBoard runner={runner} compact />}
-    </FloatingWindow>
   )
 }
 

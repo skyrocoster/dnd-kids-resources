@@ -530,4 +530,13 @@ describe('MapLabPage (Stage E1 — Unified data: viewer reads backend layout)', 
     expect(screen.getByRole('button', { name: 'Armoury' })).toBeInTheDocument()
     expect(screen.getByText('Heavy Stone Door')).toBeInTheDocument()
   })
+
+  // TODO (D0): encounter marker stubs
+  it.skip('encounter marker renders and opens the dock', () => {
+    // D2: wire up prop click → setActiveEncounterId
+  })
+
+  it.skip('encounter marker round-trips encounter_id through save/load', () => {
+    // D1: verify MapProp.encounter_id persists in the layout blob
+  })
 })

@@ -5,6 +5,7 @@ import {
   PropBarrelIcon,
   PropStatueIcon,
   PropIcon,
+  SwordsIcon,
   type LucideIcon,
 } from '../../../components/icons'
 
@@ -44,6 +45,7 @@ const PROP_KIND_OPTIONS: SelectOption[] = [
   { value: 'mirror', label: 'Mirror' },
   { value: 'barrel', label: 'Barrel' },
   { value: 'statue', label: 'Statue' },
+  { value: 'encounter', label: 'Encounter' },
   { value: 'other', label: 'Other' },
 ]
 
@@ -61,6 +63,7 @@ export const PROP_FIELDS: FieldSpec[] = [
   { key: 'title', label: 'Title', type: 'text' },
   { key: 'kind', label: 'Kind', type: 'select', options: PROP_KIND_OPTIONS },
   { key: 'side', label: 'Attach to wall', type: 'select', options: PROP_WALL_SIDE_OPTIONS },
+  { key: 'encounter_id', label: 'Encounter', type: 'text', showWhen: (values) => values.kind === 'encounter' },
   { key: 'hidden', label: 'Hidden', type: 'boolean' },
   { key: 'locked', label: 'Locked', type: 'boolean' },
   { key: 'trapped', label: 'Trapped', type: 'boolean' },
@@ -78,6 +81,7 @@ export const PROP_KIND_ICONS: Record<PropKind, LucideIcon> = {
   mirror: PropMirrorIcon,
   barrel: PropBarrelIcon,
   statue: PropStatueIcon,
+  encounter: SwordsIcon,
   other: PropIcon,
 }
 
@@ -101,6 +105,19 @@ export const FIXTURE_TYPES: Record<string, FixtureTypeSpec> = {
       hidden: false,
       locked: false,
       trapped: false,
+    },
+  },
+  encounter: {
+    fields: PROP_FIELDS,
+    defaultFlags: {
+      prop_id: 0,
+      kind: 'encounter',
+      cell: [0, 0],
+      title: '',
+      hidden: false,
+      locked: false,
+      trapped: false,
+      encounter_id: null,
     },
   },
 }

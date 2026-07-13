@@ -165,4 +165,13 @@ describe('EncounterRunnerPage', () => {
     expect(cardByName('Goblin').querySelector('.combatant-card-on-deck')).not.toBeNull()
     expect(screen.getByText('Round 2')).toBeInTheDocument()
   })
+
+  // TODO (R0): condition display stubs
+  it.skip('toggles conditions on a combatant card', () => {
+    // R1: implement live-edit via ConditionPicker
+  })
+
+  it.skip('conditions persist through save/reload', () => {
+    // R1: verify round-trip through updateEncounter
+  })
 })

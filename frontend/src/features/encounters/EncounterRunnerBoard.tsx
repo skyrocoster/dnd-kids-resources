@@ -118,6 +118,7 @@ export function EncounterRunnerBoard({ runner, compact = false }: EncounterRunne
                   onAdjustHp={(delta) => runner.adjustHp(combatant.clientId, delta)}
                   onSetHp={(hp) => runner.setHp(combatant.clientId, hp)}
                   onSetStatus={(status) => runner.setStatus(combatant.clientId, status)}
+                  onSetConditions={(conditions) => runner.setConditions(combatant.clientId, conditions)}
                   onRename={(name) => runner.rename(combatant.clientId, name)}
                   onDuplicate={() => runner.duplicate(combatant.clientId)}
                   onRemove={() => runner.remove(combatant.clientId)}

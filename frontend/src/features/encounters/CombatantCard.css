@@ -198,6 +198,25 @@
   border-color: var(--md-outline);
 }
 
+/* TODO (R2): condition chips styling */
+.combatant-condition-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.combatant-condition-chip {
+  display: inline-block;
+  padding: 0.25rem 0.625rem;
+  min-height: 2rem;
+  background-color: var(--md-surface-1);
+  color: var(--md-on-surface-variant);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: 999px;
+  font-size: var(--type-caption-size);
+  text-transform: capitalize;
+}
+
 /* HP meter: the signature control. */
 .combatant-hp-row {
   display: flex;

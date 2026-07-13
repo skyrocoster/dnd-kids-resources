@@ -5,6 +5,7 @@ import { useMapLabLayout } from './useMapLabLayout'
 import { useMapCanvasZoom, type ViewportSize } from './useMapCanvasZoom'
 import { MapCanvas } from './MapCanvas'
 import { FitIcon, TrapDisarmedIcon, ZoomInIcon, ZoomOutIcon } from '../../../components/icons'
+import { EncounterDock } from '../../encounters/EncounterDock'
 import { PropMarker } from './PropMarker'
 import { InspectorPanel, type SessionControls } from './InspectorPanel'
 import {
@@ -71,6 +72,7 @@ export function MapLabPage() {
   const [pinnedDoorId, setPinnedDoorId] = useState<number | null>(null)
   const [doorSessions, setDoorSessions] = useState<Record<number, PassageSessionState>>({})
   const [stairSessions, setStairSessions] = useState<Record<number, PassageSessionState>>({})
+  const [activeEncounterId, setActiveEncounterId] = useState<number | null>(null)
   const zoomApi = useMapCanvasZoom()
   const [viewportSize, setViewportSize] = useState<ViewportSize>({ width: 0, height: 0 })
   const handleViewportResize = useCallback((size: ViewportSize) => setViewportSize(size), [])
@@ -517,6 +519,11 @@ export function MapLabPage() {
           )}
         </div>
       </div>
+
+      {/* TODO (D1): encounter dock placeholder; D2 will wire up prop click handlers */}
+      {activeEncounterId != null && (
+        <EncounterDock encounterId={activeEncounterId} onClose={() => setActiveEncounterId(null)} />
+      )}
     </div>
   )
 }

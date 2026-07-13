@@ -24,6 +24,7 @@ export interface UseEncounterRunnerResult {
   adjustHp: (clientId: string, delta: number) => void
   setHp: (clientId: string, hp: number) => void
   setStatus: (clientId: string, status: string) => void
+  setConditions: (clientId: string, conditions: string[]) => void
   rename: (clientId: string, name: string) => void
   duplicate: (clientId: string) => void
   addFromMonster: (monster: Monster) => void
@@ -91,6 +92,7 @@ export function useEncounterRunner(encounterId: number): UseEncounterRunnerResul
   const adjustHp = useCallback((clientId: string, delta: number) => apply({ type: 'adjustHp', clientId, delta }), [apply])
   const setHp = useCallback((clientId: string, hp: number) => apply({ type: 'setHp', clientId, hp }), [apply])
   const setStatus = useCallback((clientId: string, status: string) => apply({ type: 'setStatus', clientId, status }), [apply])
+  const setConditions = useCallback((clientId: string, conditions: string[]) => apply({ type: 'setConditions', clientId, conditions }), [apply])
   const rename = useCallback((clientId: string, name: string) => apply({ type: 'rename', clientId, name }), [apply])
   const duplicate = useCallback((clientId: string) => apply({ type: 'duplicate', clientId }), [apply])
   const addFromMonster = useCallback((monster: Monster) => apply({ type: 'addFromMonster', monster }), [apply])
@@ -112,6 +114,7 @@ export function useEncounterRunner(encounterId: number): UseEncounterRunnerResul
     adjustHp,
     setHp,
     setStatus,
+    setConditions,
     rename,
     duplicate,
     addFromMonster,
