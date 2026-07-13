@@ -8,7 +8,7 @@ the same relationship `encounters_plan.md` has to `dungeon_plan.md`. Feature-spe
 toolbar/inspector redesign) lives in its own feature plan doc and cross-references this one for shared
 tokens/tooling; see `docs/dungeon_plan.md`'s **Design Phase J** for the current example.
 
-> **Status:** DP0 shipped. DP3 and DP1/DP2 queued next (see sequencing below).
+> **Status:** DP0 & DP3 shipped. DP1/DP2 queued next in parallel (see sequencing below).
 
 ---
 
@@ -85,6 +85,16 @@ in that stage's own commit).
 - `AppShell.test.tsx` test stubs with `it.skip` for collapse/persist/clickable/focus scenarios
 
 **Verification gate:** ✅ Frontend builds; stubs compile; app renders unchanged (nav still always-expanded).
+
+### DP3 — Icon Registry Finalize (✅ shipped)
+
+**What shipped:**
+- Icon registry batch finalized: `NavCollapseIcon`/`NavExpandIcon`, `CoinsIcon`, `ScrollIcon`, `WandIcon`, `TomeIcon`, `PropBedIcon`, `PropAnvilIcon`, `TorchIcon`
+- All 8 icons visually reviewed at 16px; no swaps needed (all clear at small size)
+- `GemIcon` loot-reuse decision finalized: `Gem` is claimed as the canonical choice for the future loot system
+- Detailed comments added linking each icon to its intended feature phase (Phase J: WandIcon, ScrollIcon, TomeIcon; Loot: CoinsIcon, PropBedIcon, PropAnvilIcon; TorchIcon: general lighting/fire effects)
+
+**Verification gate:** ✅ Icon registry finalized and ready for Phase J/loot wiring. No runtime changes; purely additive comments.
 
 ---
 
