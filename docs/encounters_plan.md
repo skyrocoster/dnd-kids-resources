@@ -123,6 +123,10 @@ section. The load-bearing points for this editor:
 
 ## Phase 2 — Runner Conditions
 
+> **Status:** Stage R0 (Scaffolding) **COMPLETE** ✓ (2026-07-13)
+> - R0 (scaffolding): action + prop-threading stubs, placeholder CSS, test stubs
+> - Next: R1–R3 for condition reducer, live edit, and design pass
+
 The Runner is otherwise **out of scope** in this project (see "Scope of this plan"), but conditions are the one
 gap that breaks live play: they are authored (Phase 1's `ConditionPicker`), stored as **condition-name strings**
 on `EncounterCreature.conditions` (`api/types.ts:154`), and preserved through hydrate/save — but **never shown or
@@ -145,6 +149,10 @@ markup/CSS (`.combatant-status-chip`) as the model for condition chips.
 ---
 
 ## Phase 3 — Dungeon Map Link
+
+> **Status:** Stage D0 (Scaffolding) **COMPLETE** ✓ (2026-07-13)
+> - D0 (scaffolding): encounter_id field, shared EncounterDock extraction, prop-kind stubs, test stubs
+> - Next: D1–D4 for data persistence, marker rendering, authoring, and design pass
 
 The runtime `DungeonViewPage` already launches the runner in a pop-out (`EncounterDock` = `FloatingWindow` +
 `useEncounterRunner` + `EncounterRunnerBoard compact`) from a room feature-tile button. The **Map Lab** on-table
