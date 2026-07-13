@@ -23,7 +23,14 @@ export interface SessionControls {
 export function InspectorPanel({ target, controls }: { target: Inspectable; controls?: SessionControls }) {
   const descriptor = inspectableDescriptor(target)
   const Icon = descriptor.icon
-  const isTrapped = target.kind === 'door' ? target.door.trapped : target.kind === 'stair' ? target.stair.trapped : false
+  const isTrapped =
+    target.kind === 'door'
+      ? target.door.trapped
+      : target.kind === 'stair'
+        ? target.stair.trapped
+        : target.kind === 'portal'
+          ? target.portal.trapped
+          : false
 
   return (
     <div className="maplab-inspector-panel">
@@ -75,7 +82,7 @@ export function InspectorPanel({ target, controls }: { target: Inspectable; cont
           )}
           {controls.onToggleLocked && (
             <button type="button" className="maplab-pill-button maplab-session-control-button" onClick={controls.onToggleLocked}>
-              {(target.kind === 'door' || target.kind === 'stair') && target.session?.isLocked
+              {(target.kind === 'door' || target.kind === 'stair' || target.kind === 'portal') && target.session?.isLocked
                 ? 'Unlock'
                 : 'Lock'}
             </button>
@@ -84,7 +91,7 @@ export function InspectorPanel({ target, controls }: { target: Inspectable; cont
             <button
               type="button"
               className="maplab-pill-button maplab-session-control-button"
-              disabled={(target.kind === 'door' || target.kind === 'stair') && target.session?.trapDisarmed}
+              disabled={(target.kind === 'door' || target.kind === 'stair' || target.kind === 'portal') && target.session?.trapDisarmed}
               onClick={controls.onDisarmTrap}
             >
               Disarm trap

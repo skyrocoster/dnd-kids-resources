@@ -1081,7 +1081,8 @@ describe('MapLabEditorPage (Stage H2 — portal doors)', () => {
 
     expect(container.querySelectorAll('.maplab-portal-placement-cell')).toHaveLength(0)
     expect(container.querySelector('.maplab-fixture-form')).toBeInTheDocument()
-    expect(screen.getByLabelText('Destination')).toBeInTheDocument()
+    expect(screen.getByLabelText('Floor')).toBeInTheDocument()
+    expect(screen.getByLabelText('Room')).toBeInTheDocument()
     expect(container.querySelector('.maplab-portal[data-selected]')).toBeInTheDocument()
 
     await act(async () => {
@@ -1101,9 +1102,9 @@ describe('MapLabEditorPage (Stage H2 — portal doors)', () => {
     fireEvent.click(screen.getByRole('button', { name: /place portal/i }))
     fireEvent.click(container.querySelector('.maplab-portal-placement-cell') as Element)
 
-    const floorSelect = screen.getByLabelText('Destination') as HTMLSelectElement
+    const floorSelect = screen.getByLabelText('Floor') as HTMLSelectElement
     fireEvent.change(floorSelect, { target: { value: '1' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Set destination to 0, 0 on floor 1' }))
+    fireEvent.change(screen.getByLabelText('Room'), { target: { value: '2' } })
 
     await act(async () => {
       vi.advanceTimersByTime(700)
@@ -1159,9 +1160,9 @@ describe('MapLabEditorPage (Stage H2 — portal doors)', () => {
     fireEvent.click(screen.getByRole('button', { name: /place portal/i }))
     fireEvent.click(container.querySelector('.maplab-portal-placement-cell') as Element)
 
-    const floorSelect = screen.getByLabelText('Destination') as HTMLSelectElement
+    const floorSelect = screen.getByLabelText('Floor') as HTMLSelectElement
     fireEvent.change(floorSelect, { target: { value: '1' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Set destination to 0, 0 on floor 1' }))
+    fireEvent.change(screen.getByLabelText('Room'), { target: { value: '2' } })
 
     await act(async () => {
       vi.advanceTimersByTime(700)

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { listEncounters } from '../../../api/client'
 import type { Encounter } from '../../../api/types'
 import type { FieldSpec, FixtureTypeSpec } from './fixtureTypes'
-import { absoluteCells, floorsInLayout, roomsOnZ, type MapCell, type MapLayout } from './maplabModel'
+import { absoluteCells, floorsInLayout, markersAtCell, roomsOnZ, type MapCell, type MapLayout, type MapRoom } from './maplabModel'
 
 interface FixturePropertiesFormProps {
   spec: FixtureTypeSpec
@@ -153,8 +153,6 @@ function EncounterPickerField({
   )
 }
 
-const DESTINATION_PICKER_CELL_SIZE = 16
-
 function isDestinationValue(value: unknown): value is { z: number; cell: MapCell } {
   return (
     typeof value === 'object' &&
@@ -165,10 +163,25 @@ function isDestinationValue(value: unknown): value is { z: number; cell: MapCell
   )
 }
 
-/** Picks a stair/portal destination as a floor + exact cell: a `<select>` for the floor, then a
- * read-only mini floor-plan of that floor's rooms where clicking a cell sets `{z, cell}`. Modeled
- * on `EncounterPickerField`'s seam (its own labeled field row) but sources its options from the
- * live layout rather than an API call, since floors/rooms are already loaded into editor state. */
+/** Cells in `room` not already occupied by another marker (stair/portal/on-square prop) on floor
+ * `z` — falls back to every cell in the room if all of them are already occupied (the grouped
+ * marker layout supports up to `MAX_MARKERS_PER_CELL` sharing one cell anyway). */
+function freeCellsInRoom(layout: MapLayout, z: number, room: MapRoom): MapCell[] {
+  const cells = absoluteCells(room)
+  const free = cells.filter((cell) => markersAtCell(layout, z, cell).length === 0)
+  return free.length > 0 ? free : cells
+}
+
+function pickRandomCell(cells: MapCell[]): MapCell {
+  return cells[Math.floor(Math.random() * cells.length)]
+}
+
+/** Picks a stair/portal destination as a floor + room: a `<select>` for the floor, then a
+ * `<select>` for one of that floor's rooms. Choosing a room drops the marker on a random free
+ * square inside it — the DM picks *where* narratively (which room), not a precise pixel, so this
+ * replaces the earlier click-a-cell mini floor-plan (which rendered too small to use reliably).
+ * Exact repositioning is deferred — see "Known debt" in `docs/dungeon_plan.md` for the planned
+ * drag-to-reposition follow-up. */
 function DestinationPickerField({
   inputId,
   field,
@@ -190,27 +203,30 @@ function DestinationPickerField({
     () => (layout ? roomsOnZ(layout, pickerZ) : []),
     [layout, pickerZ]
   )
-  const pickerCells = useMemo(
-    () => roomsOnPickerFloor.flatMap((room) => absoluteCells(room)),
-    [roomsOnPickerFloor]
-  )
-  const pickerBounds = useMemo(() => {
-    if (pickerCells.length === 0) return { minX: 0, minY: 0, maxX: 0, maxY: 0 }
-    const xs = pickerCells.map(([x]) => x)
-    const ys = pickerCells.map(([, y]) => y)
-    return { minX: Math.min(...xs), maxX: Math.max(...xs), minY: Math.min(...ys), maxY: Math.max(...ys) }
-  }, [pickerCells])
+
+  const destinationRoomId = useMemo(() => {
+    if (!destination || destination.z !== pickerZ) return ''
+    const room = roomsOnPickerFloor.find((candidate) =>
+      absoluteCells(candidate).some(([x, y]) => x === destination.cell[0] && y === destination.cell[1]),
+    )
+    return room ? String(room.room_id) : ''
+  }, [destination, pickerZ, roomsOnPickerFloor])
 
   if (!layout) return null
 
-  const viewBoxWidth = (pickerBounds.maxX - pickerBounds.minX + 1) * DESTINATION_PICKER_CELL_SIZE
-  const viewBoxHeight = (pickerBounds.maxY - pickerBounds.minY + 1) * DESTINATION_PICKER_CELL_SIZE
+  function handleRoomChange(roomIdValue: string) {
+    if (roomIdValue === '' || !layout) return
+    const room = roomsOnPickerFloor.find((candidate) => candidate.room_id === Number(roomIdValue))
+    if (!room) return
+    const cell = pickRandomCell(freeCellsInRoom(layout, pickerZ, room))
+    onChange(field.key, { z: pickerZ, cell })
+  }
 
   return (
-    <div className="maplab-field-row maplab-destination-picker">
-      <label htmlFor={inputId}>{field.label}</label>
+    <div className="maplab-field-row maplab-destination-picker" role="group" aria-label={field.label}>
+      <label htmlFor={`${inputId}-floor`}>Floor</label>
       <select
-        id={inputId}
+        id={`${inputId}-floor`}
         value={pickerZ}
         onChange={(event) => setPickerZ(Number(event.target.value))}
       >
@@ -220,30 +236,19 @@ function DestinationPickerField({
           </option>
         ))}
       </select>
-      <svg
-        className="maplab-destination-picker-map"
-        viewBox={`${pickerBounds.minX * DESTINATION_PICKER_CELL_SIZE} ${pickerBounds.minY * DESTINATION_PICKER_CELL_SIZE} ${viewBoxWidth} ${viewBoxHeight}`}
-        role="group"
-        aria-label={`Pick a cell on floor ${pickerZ}`}
+      <label htmlFor={inputId}>Room</label>
+      <select
+        id={inputId}
+        value={destinationRoomId}
+        onChange={(event) => handleRoomChange(event.target.value)}
       >
-        {pickerCells.map(([x, y]) => {
-          const isTarget = destination !== null && destination.z === pickerZ && destination.cell[0] === x && destination.cell[1] === y
-          return (
-            <rect
-              key={`${x}-${y}`}
-              className="maplab-destination-picker-cell"
-              data-selected={isTarget || undefined}
-              x={x * DESTINATION_PICKER_CELL_SIZE}
-              y={y * DESTINATION_PICKER_CELL_SIZE}
-              width={DESTINATION_PICKER_CELL_SIZE}
-              height={DESTINATION_PICKER_CELL_SIZE}
-              role="button"
-              aria-label={`Set destination to ${x}, ${y} on floor ${pickerZ}`}
-              onClick={() => onChange(field.key, { z: pickerZ, cell: [x, y] })}
-            />
-          )
-        })}
-      </svg>
+        <option value="">Select a room…</option>
+        {roomsOnPickerFloor.map((room) => (
+          <option key={room.room_id} value={room.room_id}>
+            {room.title ?? `Room ${room.room_id}`}
+          </option>
+        ))}
+      </select>
       {destination && (
         <span className="maplab-destination-picker-summary">
           {`Floor ${destination.z}, cell ${destination.cell[0]}, ${destination.cell[1]}`}

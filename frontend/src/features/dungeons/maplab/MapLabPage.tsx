@@ -7,6 +7,7 @@ import { MapCanvas } from './MapCanvas'
 import { ChevronDownIcon, ChevronUpIcon, FitIcon, TrapDisarmedIcon, ZoomInIcon, ZoomOutIcon } from '../../../components/icons'
 import { EncounterDock } from '../../encounters/EncounterDock'
 import { PropMarker } from './PropMarker'
+import { PortalMarker } from './PortalMarker'
 import { InspectorPanel, type SessionControls } from './InspectorPanel'
 import {
   absoluteCells,
@@ -22,6 +23,7 @@ import {
   nonDoorWallSegments,
   paddedBounds,
   otherFloorZ,
+  portalsOnFloor,
   propsOnFloor,
   roomsOnZ,
   stairCellForZ,
@@ -31,6 +33,7 @@ import {
   type MapCell,
   type MapDoor,
   type MapLayout,
+  type MapPortal,
   type MapRoom,
   type MapStair,
   type PassageSessionState,
@@ -153,6 +156,7 @@ export function MapLabPage() {
   const [pinnedDoorId, setPinnedDoorId] = useState<number | null>(null)
   const [doorSessions, setDoorSessions] = useState<Record<number, PassageSessionState>>({})
   const [stairSessions, setStairSessions] = useState<Record<number, PassageSessionState>>({})
+  const [portalSessions, setPortalSessions] = useState<Record<number, PassageSessionState>>({})
   const [activeEncounterId, setActiveEncounterId] = useState<number | null>(null)
   const zoomApi = useMapCanvasZoom()
   const [viewportSize, setViewportSize] = useState<ViewportSize>({ width: 0, height: 0 })
@@ -162,6 +166,7 @@ export function MapLabPage() {
   const stairs = useMemo(() => stairEndpointsForZ(layout, activeZ), [layout, activeZ])
   const doors = useMemo(() => doorsOnFloor(layout, activeZ), [layout, activeZ])
   const props = useMemo(() => propsOnFloor(layout, activeZ), [layout, activeZ])
+  const portals = useMemo(() => portalsOnFloor(layout, activeZ), [layout, activeZ])
 
   // Bounds computed over every room, not just the active floor, so the viewBox stays
   // aligned across floor switches — proving shared coordinate space across z. Padded by
@@ -228,9 +233,28 @@ export function MapLabPage() {
     }))
   }
 
+  function portalSession(portal: MapPortal): PassageSessionState {
+    return portalSessions[portal.portal_id] ?? defaultPassageSession(portal)
+  }
+
+  function togglePortalLocked(portal: MapPortal) {
+    setPortalSessions((current) => ({
+      ...current,
+      [portal.portal_id]: { ...portalSession(portal), isLocked: !portalSession(portal).isLocked },
+    }))
+  }
+
+  function disarmPortalTrap(portal: MapPortal) {
+    setPortalSessions((current) => ({
+      ...current,
+      [portal.portal_id]: { ...portalSession(portal), trapDisarmed: true },
+    }))
+  }
+
   function resetSessions() {
     setDoorSessions({})
     setStairSessions({})
+    setPortalSessions({})
   }
 
   const activeFloor = floors.find((floor) => floor.z === activeZ)
@@ -265,6 +289,15 @@ export function MapLabPage() {
   } else if (activeRef?.kind === 'prop') {
     const prop = layout.props.find((p) => p.prop_id === activeRef.id)
     if (prop) activeInspectable = { kind: 'prop', prop }
+  } else if (activeRef?.kind === 'portal') {
+    const portal = layout.portals.find((p) => p.portal_id === activeRef.id)
+    if (portal) {
+      activeInspectable = { kind: 'portal', portal, session: portalSession(portal) }
+      activeControls = {
+        onToggleLocked: () => togglePortalLocked(portal),
+        onDisarmTrap: portal.trapped ? () => disarmPortalTrap(portal) : undefined,
+      }
+    }
   }
 
   return (
@@ -578,6 +611,25 @@ export function MapLabPage() {
                   </g>
                 )}
               </g>
+            )
+          })}
+
+          {portals.map((portal) => {
+            const { dx, dy, grouped } = markerOffset(layout, activeZ, portal.cell, 'portal', portal.portal_id)
+            return (
+              <PortalMarker
+                key={portal.portal_id}
+                portal={portal}
+                cellSize={CELL_SIZE}
+                session={portalSession(portal)}
+                offset={{ dx, dy }}
+                grouped={grouped}
+                onMouseEnter={() => setHoveredInspectable({ kind: 'portal', id: portal.portal_id })}
+                onMouseLeave={() => setHoveredInspectable(null)}
+                onFocus={() => setFocusedInspectable({ kind: 'portal', id: portal.portal_id })}
+                onBlur={() => setFocusedInspectable(null)}
+                onClick={() => setActiveZ(portal.to.z)}
+              />
             )
           })}
 

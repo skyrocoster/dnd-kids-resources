@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event'
 import * as api from '../../../../api/client'
 import { mapLabLayout } from '../maplabData'
 import { MapLabPage } from '../MapLabPage'
+import type { MapPortal as MapPortalFixture } from '../maplabModel'
 
 async function flush() {
   await act(async () => {
@@ -645,6 +646,100 @@ describe('MapLabPage (Stage E1 — Unified data: viewer reads backend layout)', 
     await flush()
 
     expect(screen.getByRole('button', { name: /Goblin Ambush/i })).toBeInTheDocument()
+  })
+})
+
+describe('MapLabPage (Stage H3 — portal viewer rendering + navigation)', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  const portal: MapPortalFixture = {
+    portal_id: 501,
+    cell: [0, 0],
+    z: 0,
+    to: { z: 1, cell: [3, 3] },
+    title: 'Shimmering Archway',
+    hidden: false,
+    locked: false,
+    trapped: false,
+  }
+  const pairedPortal: MapPortalFixture = {
+    portal_id: 502,
+    cell: [3, 3],
+    z: 1,
+    to: { z: 0, cell: [0, 0] },
+    title: 'Shimmering Archway (return)',
+    hidden: false,
+    locked: false,
+    trapped: false,
+  }
+
+  it('renders a portal on its authored floor and not on the other floor', async () => {
+    const backendLayout = { ...mapLabLayout, portals: [portal, pairedPortal] }
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: backendLayout })
+
+    render(<MapLabPage />)
+    await flush()
+
+    expect(screen.getByRole('button', { name: /Shimmering Archway —/i })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Shimmering Archway \(return\)/i })).not.toBeInTheDocument()
+  })
+
+  it('hovering a portal opens the inspector with title and "Leads to" destination', async () => {
+    const user = userEvent.setup()
+    const backendLayout = { ...mapLabLayout, portals: [portal, pairedPortal] }
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: backendLayout })
+
+    const { container } = render(<MapLabPage />)
+    await flush()
+
+    const marker = screen.getByRole('button', { name: /Shimmering Archway —/i })
+    await user.hover(marker)
+
+    const inspector = container.querySelector('.maplab-inspector-panel')!
+    expect(inspector).toHaveTextContent('Shimmering Archway')
+    expect(inspector).toHaveTextContent('Portal')
+    expect(inspector).toHaveTextContent('3,3 (z:1)')
+  })
+
+  it('clicking a portal jumps the active floor to its destination z', async () => {
+    const user = userEvent.setup()
+    const backendLayout = { ...mapLabLayout, portals: [portal, pairedPortal] }
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: backendLayout })
+
+    render(<MapLabPage />)
+    await flush()
+
+    const marker = screen.getByRole('button', { name: /Shimmering Archway —/i })
+    await user.click(marker)
+
+    expect(screen.getByRole('button', { name: /Shimmering Archway \(return\) —/i })).toBeInTheDocument()
+  })
+
+  it('a co-located stair and portal render as distinct, non-overlapping markers', async () => {
+    const stair = {
+      stair_id: 601,
+      from: { z: 0, cell: [0, 0] as [number, number] },
+      to: { z: 1, cell: [0, 0] as [number, number] },
+      title: 'Shared Stair',
+      hidden: false,
+      locked: false,
+      trapped: false,
+    }
+    const colocatedPortal: MapPortalFixture = { ...portal, cell: [0, 0] }
+    const backendLayout = { ...mapLabLayout, stairs: [...mapLabLayout.stairs, stair], portals: [colocatedPortal, pairedPortal] }
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: backendLayout })
+
+    render(<MapLabPage />)
+    await flush()
+
+    const stairMarker = screen.getByRole('button', { name: /Shared Stair/i })
+    const portalMarker = screen.getByRole('button', { name: /Shimmering Archway —/i })
+    const stairCircle = stairMarker.querySelector('circle')!
+    const portalCircle = portalMarker.querySelector('circle')!
+
+    expect(stairCircle.getAttribute('cx')).not.toBe(portalCircle.getAttribute('cx'))
   })
 })
 

@@ -671,38 +671,13 @@
   fill: color-mix(in srgb, var(--md-primary) 20%, transparent);
 }
 
-/* Destination picker field for stair/portal editors. Overrides `.maplab-field-row`'s row layout
- * (label/input side-by-side) with a column stack — without this, the select/map/summary compete
- * for width in a flex row and the map's `width:100%` resolves against almost nothing, collapsing
- * the whole SVG (and its clickable cells) to a couple of pixels. */
+/* Destination picker field for stair/portal editors: a floor select + a room select, each on
+ * their own row. Overrides `.maplab-field-row`'s row layout (label/input side-by-side) with a
+ * column stack so the two selects and the summary line don't compete for width. */
 .maplab-destination-picker {
   flex-direction: column;
   align-items: stretch;
   gap: 8px;
-}
-
-.maplab-destination-picker-map {
-  width: 100%;
-  max-width: 220px;
-  max-height: 160px;
-  background: var(--md-surface-2);
-  border: 1px solid var(--md-outline-variant);
-  border-radius: 4px;
-}
-
-.maplab-destination-picker-cell {
-  fill: var(--md-surface-3);
-  stroke: var(--md-outline-variant);
-  stroke-width: 0.5;
-  cursor: pointer;
-}
-
-.maplab-destination-picker-cell:hover {
-  fill: color-mix(in srgb, var(--md-primary) 25%, var(--md-surface-3));
-}
-
-.maplab-destination-picker-cell[data-selected] {
-  fill: var(--md-primary);
 }
 
 .maplab-destination-picker-summary {

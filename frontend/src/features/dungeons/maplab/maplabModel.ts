@@ -430,6 +430,12 @@ export function propsOnFloor(layout: MapLayout, z: number): MapProp[] {
   )
 }
 
+/** Portals belonging to floor `z` — unlike doors/props, `z` is a required authored field on
+ * `MapPortal` (never inferred), so this is a direct filter. */
+export function portalsOnFloor(layout: MapLayout, z: number): MapPortal[] {
+  return layout.portals.filter((portal) => portal.z === z)
+}
+
 /** A passage's (door or stair) single dominant presentation state, in display precedence order. */
 export type PassageState = 'trapped' | 'locked' | 'hidden' | 'unlocked'
 

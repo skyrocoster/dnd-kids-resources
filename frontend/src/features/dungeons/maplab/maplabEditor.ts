@@ -178,9 +178,20 @@ export function mapLabEditorReducer(state: EditorState, action: EditorAction): E
 
         if ('to' in action.flags) {
           const target = updatedSource.to
+          // The portal that currently points back at the source — its "pair" before this edit.
+          // Portals only ever exist in pairs, so retargeting the source relocates this record to
+          // the new destination rather than leaving it behind as an orphan one-way portal.
+          const oldPair = state.layout.portals.find(
+            (portal) =>
+              portal.portal_id !== source.portal_id &&
+              portal.to.z === source.z &&
+              portal.to.cell[0] === source.cell[0] &&
+              portal.to.cell[1] === source.cell[1],
+          )
           const targetPortal = state.layout.portals.find(
             (portal) =>
               portal.portal_id !== source.portal_id &&
+              portal.portal_id !== oldPair?.portal_id &&
               portal.z === target.z &&
               portal.cell[0] === target.cell[0] &&
               portal.cell[1] === target.cell[1],
@@ -188,16 +199,29 @@ export function mapLabEditorReducer(state: EditorState, action: EditorAction): E
 
           let portals: MapPortal[]
           if (targetPortal) {
-            // Re-link: the existing portal at the target now points back at the source.
+            // Re-link: an independent portal already sits at the target, so it becomes the new
+            // pair — it now points back at the source. The old pair (if any) is dropped: nothing
+            // points to it anymore, and an unpaired portal isn't a valid state.
+            portals = state.layout.portals
+              .filter((portal) => portal.portal_id !== oldPair?.portal_id)
+              .map((portal) => {
+                if (portal.portal_id === source.portal_id) return updatedSource
+                if (portal.portal_id === targetPortal.portal_id) {
+                  return { ...portal, to: { z: updatedSource.z, cell: updatedSource.cell } }
+                }
+                return portal
+              })
+          } else if (oldPair) {
+            // Move the existing pair to the new target rather than creating a third portal.
             portals = state.layout.portals.map((portal) => {
               if (portal.portal_id === source.portal_id) return updatedSource
-              if (portal.portal_id === targetPortal.portal_id) {
-                return { ...portal, to: { z: updatedSource.z, cell: updatedSource.cell } }
+              if (portal.portal_id === oldPair.portal_id) {
+                return { ...portal, cell: target.cell, z: target.z, to: { z: updatedSource.z, cell: updatedSource.cell } }
               }
               return portal
             })
           } else {
-            // Auto-create the paired return portal at the target.
+            // No existing pair (e.g. a freshly created portal) — auto-create one at the target.
             const newPortal: MapPortal = {
               portal_id: nextPortalId(state.layout),
               cell: target.cell,

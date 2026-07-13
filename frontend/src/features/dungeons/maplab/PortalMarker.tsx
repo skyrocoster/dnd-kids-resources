@@ -1,5 +1,12 @@
 import { HiddenIcon, LockIcon, TrapIcon, PortalIcon, type LucideIcon } from '../../../components/icons'
-import { GROUPED_MARKER_RADIUS_FRACTION, passagePresentation, type MapPortal, type PassageState } from './maplabModel'
+import {
+  effectivePassageState,
+  GROUPED_MARKER_RADIUS_FRACTION,
+  passagePresentation,
+  type MapPortal,
+  type PassageSessionState,
+  type PassageState,
+} from './maplabModel'
 
 const BADGE_ICONS: Partial<Record<PassageState, LucideIcon>> = {
   hidden: HiddenIcon,
@@ -11,6 +18,9 @@ interface PortalMarkerProps {
   portal: MapPortal
   cellSize: number
   selected?: boolean
+  /** Live session state (locked/trapDisarmed) — the viewer merges this over the authored flags;
+   * the editor omits it and gets the authored state as-is. */
+  session?: PassageSessionState
   /** Fractional-cell nudge (from `gridMarkerOffset`) when this portal shares its cell with other
    * markers (stairs/other portals/props). */
   offset?: { dx: number; dy: number }
@@ -18,6 +28,10 @@ interface PortalMarkerProps {
    * so `gridMarkerOffset`'s spacing actually separates same-cell markers instead of stacking
    * full-size circles a few px apart. */
   grouped?: boolean
+  onMouseEnter?: () => void
+  onMouseLeave?: () => void
+  onFocus?: () => void
+  onBlur?: () => void
   onClick?: () => void
 }
 
@@ -25,13 +39,26 @@ interface PortalMarkerProps {
  * of `PropMarker.tsx`'s geometry. Same visual language as stair/prop markers: a neutral-fill ring
  * whose stroke carries the passage-state token, the portal glyph as the primary icon, and a small
  * state badge when locked/trapped/hidden — never hue-alone. */
-export function PortalMarker({ portal, cellSize, selected, offset, grouped, onClick }: PortalMarkerProps) {
+export function PortalMarker({
+  portal,
+  cellSize,
+  selected,
+  session,
+  offset,
+  grouped,
+  onMouseEnter,
+  onMouseLeave,
+  onFocus,
+  onBlur,
+  onClick,
+}: PortalMarkerProps) {
   const cx = (portal.cell[0] + 0.5 + (offset?.dx ?? 0)) * cellSize
   const cy = (portal.cell[1] + 0.5 + (offset?.dy ?? 0)) * cellSize
   const radius = grouped ? cellSize * GROUPED_MARKER_RADIUS_FRACTION : cellSize * 0.32
   const iconSize = grouped ? cellSize * GROUPED_MARKER_RADIUS_FRACTION * 1.1 : cellSize * 0.34
 
-  const presentation = passagePresentation(portal)
+  const effective = effectivePassageState(portal, session)
+  const presentation = passagePresentation(effective)
   const BadgeIcon = BADGE_ICONS[presentation.state]
   const dasharray = presentation.state === 'hidden' ? '4 3' : undefined
   const label = `${portal.title ?? `Portal ${portal.portal_id}`} — ${presentation.label}`
@@ -45,6 +72,10 @@ export function PortalMarker({ portal, cellSize, selected, offset, grouped, onCl
       tabIndex={0}
       aria-pressed={selected}
       aria-label={label}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+      onFocus={onFocus}
+      onBlur={onBlur}
       onClick={(event) => {
         event.stopPropagation()
         onClick?.()

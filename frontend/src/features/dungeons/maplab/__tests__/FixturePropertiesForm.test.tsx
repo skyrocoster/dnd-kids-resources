@@ -49,7 +49,7 @@ describe('FixturePropertiesForm', () => {
       portals: [],
     }
 
-    it('renders a floor select populated from the layout', () => {
+    it('renders a floor select and a room select populated from the layout', () => {
       render(
         <FixturePropertiesForm
           spec={FIXTURE_TYPES.portal}
@@ -58,11 +58,14 @@ describe('FixturePropertiesForm', () => {
           layout={layout}
         />,
       )
-      const select = screen.getByLabelText('Destination') as HTMLSelectElement
-      expect(Array.from(select.options).map((o) => o.textContent)).toEqual(['Ground Floor', 'First Floor'])
+      const floorSelect = screen.getByLabelText('Floor') as HTMLSelectElement
+      expect(Array.from(floorSelect.options).map((o) => o.textContent)).toEqual(['Ground Floor', 'First Floor'])
+
+      const roomSelect = screen.getByLabelText('Room') as HTMLSelectElement
+      expect(Array.from(roomSelect.options).map((o) => o.textContent)).toEqual(['Select a room…', 'Room 1'])
     })
 
-    it('switching the floor swaps which floor\'s cells render', () => {
+    it("switching the floor swaps which floor's rooms are offered", () => {
       render(
         <FixturePropertiesForm
           spec={FIXTURE_TYPES.portal}
@@ -71,15 +74,22 @@ describe('FixturePropertiesForm', () => {
           layout={layout}
         />,
       )
-      expect(screen.getAllByRole('button', { name: /on floor 0/ })).toHaveLength(2)
+      expect(Array.from((screen.getByLabelText('Room') as HTMLSelectElement).options).map((o) => o.textContent)).toEqual([
+        'Select a room…',
+        'Room 1',
+      ])
 
-      const select = screen.getByLabelText('Destination') as HTMLSelectElement
-      fireEvent.change(select, { target: { value: '1' } })
-      expect(screen.getAllByRole('button', { name: /on floor 1/ })).toHaveLength(1)
+      const floorSelect = screen.getByLabelText('Floor') as HTMLSelectElement
+      fireEvent.change(floorSelect, { target: { value: '1' } })
+      expect(Array.from((screen.getByLabelText('Room') as HTMLSelectElement).options).map((o) => o.textContent)).toEqual([
+        'Select a room…',
+        'Room 2',
+      ])
     })
 
-    it('clicking a cell sets the destination to that floor + cell', () => {
+    it('selecting a room sets the destination to a free cell inside that room', () => {
       const onChange = vi.fn()
+      vi.spyOn(Math, 'random').mockReturnValue(0)
       render(
         <FixturePropertiesForm
           spec={FIXTURE_TYPES.portal}
@@ -88,8 +98,9 @@ describe('FixturePropertiesForm', () => {
           layout={layout}
         />,
       )
-      fireEvent.click(screen.getByRole('button', { name: 'Set destination to 1, 0 on floor 0' }))
-      expect(onChange).toHaveBeenCalledWith('to', { z: 0, cell: [1, 0] })
+      fireEvent.change(screen.getByLabelText('Room'), { target: { value: '1' } })
+      expect(onChange).toHaveBeenCalledWith('to', { z: 0, cell: [0, 0] })
+      vi.restoreAllMocks()
     })
 
     it('renders nothing when no layout is supplied', () => {

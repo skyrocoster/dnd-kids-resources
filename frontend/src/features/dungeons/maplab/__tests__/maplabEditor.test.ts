@@ -488,8 +488,68 @@ describe('mapLabEditorReducer', () => {
       expect(state.selectedPortalId).toBeNull()
     })
 
-    it.skip('H3: portals render in the viewer and navigate to target z', () => {
-      // H3 implementation: viewer portal rendering + click navigation
+    // H3: viewer portal rendering + click-to-jump navigation — covered in MapLabPage.test.tsx
+    // ("Stage H3 — portal viewer rendering + navigation"), not the editor reducer under test here.
+
+    it('H3: retargeting a portal moves its existing pair instead of leaving it orphaned', () => {
+      let state = initialEditorState(emptyLayout)
+      state = mapLabEditorReducer(state, { type: 'addPortal', cell: [1, 1] })
+      const sourceId = state.selectedPortalId as number
+      state = mapLabEditorReducer(state, {
+        type: 'updateFixtureFlags',
+        fixtureId: sourceId,
+        fixtureType: 'portal',
+        flags: { to: { z: 1, cell: [5, 5] } },
+      })
+      const pairedId = state.layout.portals.find((p) => p.portal_id !== sourceId)!.portal_id
+
+      // Retarget the source to a brand-new, unoccupied location.
+      state = mapLabEditorReducer(state, {
+        type: 'updateFixtureFlags',
+        fixtureId: sourceId,
+        fixtureType: 'portal',
+        flags: { to: { z: 2, cell: [9, 9] } },
+      })
+
+      // Still exactly two portals — the old pair moved, no orphan left behind at [5,5].
+      expect(state.layout.portals).toHaveLength(2)
+      const source = state.layout.portals.find((p) => p.portal_id === sourceId)!
+      expect(source.to).toEqual({ z: 2, cell: [9, 9] })
+      const paired = state.layout.portals.find((p) => p.portal_id === pairedId)!
+      expect(paired).toMatchObject({ z: 2, cell: [9, 9], to: { z: 0, cell: [1, 1] } })
+    })
+
+    it('H3: retargeting onto an existing portal drops the old pair rather than leaving it orphaned', () => {
+      let state = initialEditorState(emptyLayout)
+      state = mapLabEditorReducer(state, { type: 'addPortal', cell: [1, 1] })
+      const sourceId = state.selectedPortalId as number
+      state = mapLabEditorReducer(state, { type: 'addPortal', cell: [8, 8] })
+      const standaloneId = state.selectedPortalId as number
+
+      // Give the source an initial pair at [5,5].
+      state = mapLabEditorReducer(state, {
+        type: 'updateFixtureFlags',
+        fixtureId: sourceId,
+        fixtureType: 'portal',
+        flags: { to: { z: 1, cell: [5, 5] } },
+      })
+      expect(state.layout.portals).toHaveLength(3)
+
+      // Retarget the source onto the standalone portal at [8,8] — it re-links, and the old
+      // pair at [5,5] (nothing points to it anymore) is dropped rather than left orphaned.
+      state = mapLabEditorReducer(state, {
+        type: 'updateFixtureFlags',
+        fixtureId: sourceId,
+        fixtureType: 'portal',
+        flags: { to: { z: 0, cell: [8, 8] } },
+      })
+
+      expect(state.layout.portals).toHaveLength(2)
+      const source = state.layout.portals.find((p) => p.portal_id === sourceId)!
+      const standalone = state.layout.portals.find((p) => p.portal_id === standaloneId)!
+      expect(source.to).toEqual({ z: 0, cell: [8, 8] })
+      expect(standalone.to).toEqual({ z: 0, cell: [1, 1] })
+      expect(state.layout.portals.some((p) => p.cell[0] === 5 && p.cell[1] === 5)).toBe(false)
     })
 
     it.skip('H4: portal marker reads as distinct from door/stair/prop', () => {
