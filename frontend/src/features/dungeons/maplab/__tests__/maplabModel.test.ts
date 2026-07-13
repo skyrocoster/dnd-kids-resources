@@ -39,6 +39,8 @@ import {
   type MapStair,
   type MapProp,
   type MapPortal,
+  PASSAGE_STATE_TOKENS,
+  passageStateChips,
 } from '../maplabModel'
 
 const baseDoorFlags = { hidden: false, locked: false, trapped: false }
@@ -902,5 +904,37 @@ describe('maplabModel (Stage 4 session state)', () => {
         { type: 'prop', id: 1 },
       ])
     })
+  })
+})
+
+describe('Design Phase J — Map Lab Decluttering (J0 scaffolding)', () => {
+  describe('PASSAGE_STATE_TOKENS', () => {
+    it('matches passagePresentation\'s current tokens (unchanged until J3)', () => {
+      expect(PASSAGE_STATE_TOKENS).toEqual({
+        trapped: '--md-error',
+        locked: '--md-secondary',
+        hidden: '--md-outline',
+        unlocked: '--md-on-surface-variant',
+      })
+    })
+  })
+
+  describe('passageStateChips (J2 stub)', () => {
+    it.skip('returns a trapped-only chip for a trapped passage', () => {})
+    it.skip('returns a locked-only chip for a locked passage', () => {})
+    it.skip('returns a hidden-only chip for a hidden passage', () => {})
+    it.skip('returns trapped + locked chips for a trapped and locked passage', () => {})
+    it.skip('returns no chips for a fully unlocked passage', () => {})
+
+    it('returns [] for every flag combination in J0', () => {
+      expect(passageStateChips(baseDoorFlags)).toEqual([])
+      expect(passageStateChips({ ...baseDoorFlags, trapped: true })).toEqual([])
+      expect(passageStateChips({ ...baseDoorFlags, locked: true, hidden: true })).toEqual([])
+    })
+  })
+
+  describe('passage-state color tokens (J3 stub — gated on design_plan.md DP1 banked tokens)', () => {
+    it.skip('locked passage uses the banked --md-passage-locked token, not --md-secondary', () => {})
+    it.skip('hidden passage uses the banked --md-passage-hidden token, not --md-outline', () => {})
   })
 })

@@ -846,7 +846,46 @@ call-sites).
 
 ---
 
+## Design Phase J — Map Lab Decluttering (queued)
+
+Desktop-only decluttering pass on the Map Lab editor/viewer: toolbar groups become genuinely collapsible trays,
+the inspector's lazily-formatted "State"/"Also" text rows become icon+text chips, and passage-state colors move
+off content-role tokens that currently collide with other UI (locked reuses the same gold as the exit
+choice-cards; hidden's grey is nearly indistinguishable from unlocked's grey). **No new responsive breakpoints**
+this phase — see `docs/design_plan.md` for the site-wide-nav half of this design pass, which follows the same
+constraint. **Portal viewer rendering + navigation (Phase H3/H4) stays out of scope and remains separately
+deferred** — this phase is chrome/layout/color/text only, not new functionality.
+
+**Depends on:** `docs/design_plan.md` Phase DP — J0 needs DP0's icon-registry batch; **J3 needs DP1's banked
+color tokens already committed — do not start J3 before DP1 lands.**
+
+| Stage | Model | Summary | Deliverables |
+|-------|-------|---------|---------------|
+| **J0 — Scaffolding** | Haiku | Type/hook stubs only, no behavior change. `maplabModel.ts` gets a `PASSAGE_STATE_TOKENS` map stub (values unchanged from today, so nothing visually shifts yet) and a `passageStateChips(passage)` stub returning `[]`; `MapLabPage.tsx`/`.css` get a `useToolbarTrayCollapse(groupKey)` hook stub (no-op) plus placeholder `.maplab-toolbar-tray`/`.maplab-toolbar-tray--collapsed` CSS documenting intent only. `InspectorPanel.tsx` is untouched — the existing "State"/"Also" `<dl>` rows keep rendering exactly as today. `it.skip` stubs added for: independent per-group tray collapse, tray-collapse localStorage persistence, chip rendering per flag combination, and "locked passage uses a banked token, not `--md-secondary`." | Stubs compile; Map Lab renders pixel-identical to Phase I. |
+| **J1 — Toolbar trays** | Sonnet | **Decision:** each of the four toolbar groups (Create/Session/View/Status) collapses **independently** via a chevron, default open, **per-group** `localStorage` persistence — not one unified "compact mode" switch for the whole toolbar. Reasoning: the groups have very different per-session utility (a DM running combat wants Session/Status open and rarely touches Create), so a single all-or-nothing toggle can't express that, whereas per-group collapse hides only the controls that aren't currently in use. Composes with the existing `flex-wrap` toolbar layout without any new breakpoint. Real `useToolbarTrayCollapse` implementation, same pattern as `docs/design_plan.md` DP2's `useNavCollapse` (cross-referenced, not re-derived). Collapsed groups keep their label + chevron + divider so the toolbar's group structure stays legible even collapsed; width/overflow-based collapse (not `display:none`), `prefers-reduced-motion` respected. **Same-commit doc update:** adds the finalized tray pattern (chevron placement, persistence key shape, default-open rationale) to `docs/DESIGN_SYSTEM.md`'s component-anatomy section — this is `design_plan.md` DP4's promised addendum, landing here per that stage's note. | Independently collapsible toolbar trays; unit tests (`useToolbarTrayCollapse` default/read/write/independent-keys) + integration tests (each group collapses without affecting siblings, state persists across remount); `DESIGN_SYSTEM.md` addendum. |
+| **J2 — Passage-state chips** | Sonnet | Real `passageStateChips(passage)` in `maplabModel.ts`: one chip per **active** flag (trapped/locked/hidden), built on top of the existing `passagePresentation`/`secondaryPassageStates` precedence logic — a rendering-shape wrapper, not a new state model. `passageDescriptorLines` drops its `State`/`Also` rows entirely (DC and note rows are untouched — those are legitimate free text, not state flags). `InspectorPanel.tsx` renders a new `.maplab-inspector-chips` row above the existing `<dl>`: one small pill per chip, icon + short text label (e.g. "Trapped"), so color is never the only signal. A fully-unlocked passage renders **zero** chips — absence of chips is the clean/unremarkable state, so nothing announces "Unlocked." | New chip row replacing "State"/"Also" text; unit tests (all flag combinations — trapped-only, locked-only, hidden-only, trapped+locked, fully open) + integration test (chip row renders icon+text for each, old text rows are gone). |
+| **J3 — Passage-state color tokens** | Sonnet | **Depends on `docs/design_plan.md` DP1** (banked tokens must already exist in `theme.css`). Repoints `passagePresentation()`/`PASSAGE_STATE_TOKENS`: trapped stays `--md-error` (no collision, unchanged); locked moves off `--md-secondary` (gold — collides with the dungeon viewer's exit choice-cards) onto DP1's first banked token, renamed to a descriptive alias `--md-passage-locked` in `theme.css` (the banked token becomes "spent," removed from the banked/reserved comment block); hidden moves off `--md-outline` (grey, too close to unlocked's grey at a glance) onto DP1's second banked token, renamed `--md-passage-hidden`; unlocked stays `--md-on-surface-variant` unchanged (the fix is hidden moving away from it, not unlocked itself). DP1's third banked token stays reserved for the deferred loot system, untouched here. Updates `DESIGN_SYSTEM.md`'s map-lab color section (same commit) noting gold/`--md-secondary` is exclusively the exit-choice-card color from here on. | Passage colors no longer collide with exit-card gold or with each other; unit test regression-guarding the exact token-per-state mapping; `DESIGN_SYSTEM.md` map-lab color section update. |
+
+**Sequencing:** J0 (Haiku, needs only DP0) → J1 and J2 (Sonnet, parallel to each other, both only need J0) → J3
+(Sonnet, gated on DP1 being committed in `docs/design_plan.md` — the one hard cross-doc dependency in this
+phase).
+
+### J0 — Scaffolding (✅ shipped)
+
+**What shipped:**
+- `maplabModel.ts`: `PASSAGE_STATE_TOKENS` map (values unchanged from `passagePresentation`'s existing mapping — trapped/locked/hidden/unlocked → the same tokens as today) and `PassageStateChip` type + `passageStateChips(passage)` stub returning `[]`
+- `MapLabPage.tsx`: `useToolbarTrayCollapse(groupKey)` hook stub (no-op, always reports `{collapsed: false, toggle: () => {}}`), unwired to any toolbar group yet
+- `MapLabPage.css`: placeholder `.maplab-toolbar-tray` / `.maplab-toolbar-tray--collapsed` rules (empty, documentation-only) — shared by both `MapLabPage.tsx` and `MapLabEditorPage.tsx` (the editor imports this stylesheet, and its toolbar is where J1's real Create/Session/View/Status groups live)
+- `InspectorPanel.tsx` untouched — "State"/"Also" `<dl>` rows still render exactly as today
+- Test stubs: `maplabModel.test.ts` gets a passing regression test for `PASSAGE_STATE_TOKENS`'s current values, a passing "`passageStateChips` returns `[]`" test, plus `it.skip` stubs for J2's per-flag chip combinations and J3's banked-token migration; `MapLabPage.test.tsx` gets `it.skip` stubs for J1's independent per-group collapse and localStorage persistence
+
+**Verification gate:** ✅ `npm run test` — 516 passed / 12 skipped (full suite), 247 passed / 12 skipped scoped to `maplab/`. `tsc -b` clean (pre-existing `theme-tokens.ts` unused-var errors from DP1 are unrelated). No runtime behavior change — `useToolbarTrayCollapse` is unused by any component and the placeholder CSS rules are empty, so Map Lab renders pixel-identical to Phase I.
+
+---
+
 ## Next: front-end design planning
 
 *(Append new design phases/stages here. They inherit the design system, component anatomy, reusable
 pieces, and reserved action slots documented above — build on them rather than re-deriving.)*
+  - Replace this section with the latest full phase plan. Once Design Phase J is complete, its section
+above will be summarised into the shipped-phase format used by Phases 1–I.

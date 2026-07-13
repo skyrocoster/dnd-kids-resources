@@ -455,6 +455,19 @@
   color: var(--md-on-surface-variant);
 }
 
+/* Design Phase J (J0 scaffolding — placeholder only, not yet applied to any element). J1 wires
+ * `.maplab-toolbar-group` to `.maplab-toolbar-tray` and toggles `--collapsed` from
+ * `useToolbarTrayCollapse`: a collapsed tray keeps its label + chevron + divider (never
+ * `display:none`, so the toolbar's group structure stays legible) and hides only its controls,
+ * width/overflow-based per J1's spec, respecting the existing `prefers-reduced-motion` reset. */
+.maplab-toolbar-tray {
+  /* no-op in J0 */
+}
+
+.maplab-toolbar-tray--collapsed {
+  /* no-op in J0 */
+}
+
 /* Left nav rail: floor tabs stacked above the room list as one column, instead of two unrelated
  * flex siblings. */
 .maplab-editor-nav-rail {

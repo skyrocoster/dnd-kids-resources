@@ -615,3 +615,8 @@ describe('MapLabPage (Stage E1 — Unified data: viewer reads backend layout)', 
     expect(screen.getByRole('button', { name: /Goblin Ambush/i })).toBeInTheDocument()
   })
 })
+
+describe('Design Phase J — Map Lab Decluttering (J0 scaffolding)', () => {
+  it.skip('each toolbar group collapses independently, without affecting siblings', () => {})
+  it.skip('toolbar tray collapse state persists across remount via localStorage', () => {})
+})

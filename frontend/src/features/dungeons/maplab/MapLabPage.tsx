@@ -72,6 +72,14 @@ interface InspectableRef {
   id: number
 }
 
+/** J0 stub for Design Phase J's toolbar-tray collapse (`docs/dungeon_plan.md` Phase J1): a no-op
+ * that always reports expanded, so every toolbar group renders open exactly as it does today. J1
+ * implements the real per-group `localStorage`-backed collapse, keyed by `groupKey`, following the
+ * same pattern as `docs/design_plan.md` DP2's `useNavCollapse`. */
+export function useToolbarTrayCollapse(_groupKey: string): { collapsed: boolean; toggle: () => void } {
+  return { collapsed: false, toggle: () => {} }
+}
+
 /** Map Lab prototype page — Stage M2.3: walls, and door/stair affordances with state + details. */
 export function MapLabPage() {
   const { layout } = useMapLabLayout(MAP_LAB_DUNGEON_ID)

@@ -476,6 +476,37 @@ export function secondaryPassageStates(passage: PassageFlags): PassageState[] {
 }
 
 // ============================================================================
+// Design Phase J — Map Lab Decluttering (J0 scaffolding)
+// ============================================================================
+
+/** State → MD3 token, split out of `passagePresentation`'s inline mapping so J3 can repoint
+ * `locked`/`hidden` at `docs/design_plan.md` DP1's banked tokens (`--md-passage-locked`/
+ * `--md-passage-hidden`) in one place instead of hunting through the icon/label mapping too.
+ * Values unchanged from today's `passagePresentation` — this stage only extracts the mapping. */
+export const PASSAGE_STATE_TOKENS: Record<PassageState, string> = {
+  trapped: '--md-error',
+  locked: '--md-secondary',
+  hidden: '--md-outline',
+  unlocked: '--md-on-surface-variant',
+}
+
+/** One chip per active passage-state flag, replacing the inspector's "State"/"Also" text rows
+ * (J2). Icon + short text label so color is never the only signal; a fully-unlocked passage
+ * produces zero chips (absence is the clean/unremarkable state). Stubbed for J0 — real
+ * implementation lands in J2. */
+export interface PassageStateChip {
+  state: PassageState
+  icon: LucideIcon
+  label: string
+}
+
+/** J0 stub: always returns no chips. J2 implements one chip per active flag
+ * (trapped/locked/hidden), built on `passagePresentation`/`secondaryPassageStates`. */
+export function passageStateChips(_passage: PassageFlags): PassageStateChip[] {
+  return []
+}
+
+// ============================================================================
 // Session state and effective state (Stage 4)
 // ============================================================================
 
