@@ -31,13 +31,20 @@
 }
 
 .encounter-editor-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
   background: none;
   border: none;
   color: var(--md-on-surface);
-  font-size: 1.5rem;
-  line-height: 1;
   cursor: pointer;
-  padding: 0.25rem 0.5rem;
+  border-radius: 0.375rem;
+}
+
+.encounter-editor-close:hover {
+  background-color: var(--md-surface-4);
 }
 
 .encounter-editor-status {
@@ -52,7 +59,7 @@
 }
 
 .encounter-editor-status.success {
-  color: var(--md-primary);
+  color: var(--md-tertiary);
 }
 
 .encounter-editor-section {
@@ -68,42 +75,23 @@
 }
 
 .encounter-editor-add {
-  background: var(--md-secondary-container);
-  color: var(--md-on-secondary-container);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: 2.75rem;
+  background: var(--variant-container, var(--md-tertiary-container));
+  color: var(--variant-on-container, var(--md-on-tertiary-container));
   border: none;
   border-radius: 0.375rem;
-  padding: 0.35rem 0.75rem;
+  padding: 0.35rem 0.875rem;
   cursor: pointer;
+  touch-action: manipulation;
   font-size: var(--type-label-size);
 }
 
 .encounter-editor-empty {
   color: var(--md-on-surface-variant);
   font-size: var(--type-caption-size);
-}
-
-.encounter-editor-row-card {
-  background: var(--md-surface-2, var(--md-surface));
-  border-radius: 0.5rem;
-  padding: 0.75rem;
-  margin-bottom: 0.75rem;
-}
-
-.encounter-editor-row-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 0 1rem;
-}
-
-.encounter-editor-row-remove {
-  background: none;
-  border: 1px solid var(--md-error);
-  color: var(--md-error);
-  border-radius: 0.375rem;
-  padding: 0.25rem 0.6rem;
-  cursor: pointer;
-  font-size: var(--type-caption-size);
-  margin-top: 0.5rem;
 }
 
 .encounter-editor-actions {
@@ -114,36 +102,29 @@
 }
 
 .encounter-editor-cancel {
+  min-height: 2.75rem;
   background: none;
   border: 1px solid var(--md-outline-variant);
   color: var(--md-on-surface);
   border-radius: 0.375rem;
   padding: 0.5rem 1rem;
   cursor: pointer;
+  touch-action: manipulation;
 }
 
 .encounter-editor-save {
-  background: var(--md-primary);
-  color: var(--md-on-primary);
+  min-height: 2.75rem;
+  background: var(--variant-accent, var(--md-tertiary));
+  color: var(--variant-on-accent, var(--md-on-tertiary));
   border: none;
   border-radius: 0.375rem;
   padding: 0.5rem 1.25rem;
   cursor: pointer;
+  touch-action: manipulation;
   font-weight: var(--type-label-weight);
 }
 
 .encounter-editor-save:disabled {
   opacity: 0.6;
   cursor: not-allowed;
-}
-
-.encounter-editor-condition-field {
-  grid-column: 1 / -1;
-}
-
-.encounter-condition-grid {
-  display: flex;
-  flex-wrap: wrap;
-  column-gap: 1.5rem;
-  row-gap: 0.35rem;
 }

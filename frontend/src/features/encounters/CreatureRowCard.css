@@ -1,0 +1,152 @@
+.creature-row-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.875rem;
+  background-color: var(--md-surface-2);
+  border: 1px solid var(--md-outline-variant);
+  border-left: 4px solid var(--variant-accent);
+  border-radius: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.creature-row-header {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  flex-wrap: wrap;
+}
+
+.creature-row-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  flex: 1 1 auto;
+  min-height: 2.75rem;
+  padding: 0 0.375rem;
+  background: transparent;
+  border: none;
+  color: var(--md-on-surface);
+  cursor: pointer;
+  touch-action: manipulation;
+  border-radius: 0.375rem;
+}
+
+.creature-row-toggle:hover {
+  background-color: var(--md-surface-4);
+}
+
+.creature-row-name {
+  font-size: var(--type-title-size);
+  font-weight: var(--type-title-weight);
+  text-align: left;
+}
+
+.creature-row-summary-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.1875rem;
+  color: var(--md-on-surface-variant);
+  font-size: var(--type-body-sm-size);
+  white-space: nowrap;
+}
+
+.creature-row-condition-count {
+  color: var(--variant-accent);
+  font-size: var(--type-caption-size);
+  white-space: nowrap;
+}
+
+span.creature-row-status-chip {
+  display: inline-flex;
+  padding: 0.25rem 0.625rem;
+  background-color: var(--md-surface-1);
+  color: var(--md-on-surface-variant);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: 999px;
+  font-size: var(--type-caption-size);
+  text-transform: capitalize;
+}
+
+.creature-row-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  background: transparent;
+  border: none;
+  color: var(--md-on-surface-variant);
+  border-radius: 0.375rem;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.creature-row-icon-button:hover {
+  background-color: var(--md-surface-4);
+}
+
+.creature-row-remove:hover {
+  color: var(--md-error);
+}
+
+.creature-row-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.creature-row-identity {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0 1rem;
+}
+
+.creature-row-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0 1rem;
+  align-items: start;
+}
+
+.creature-row-status-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.creature-row-status-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+button.creature-row-status-chip {
+  min-height: 2rem;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+button.creature-row-status-chip.selected.creature-row-status-alive {
+  background-color: var(--md-tertiary-container);
+  color: var(--md-on-tertiary-container);
+  border-color: var(--md-tertiary);
+}
+
+button.creature-row-status-chip.selected.creature-row-status-unconscious {
+  background-color: var(--md-secondary-container);
+  color: var(--md-on-secondary-container);
+  border-color: var(--md-secondary);
+}
+
+button.creature-row-status-chip.selected.creature-row-status-dead {
+  background-color: var(--md-error-container);
+  color: var(--md-on-error-container);
+  border-color: var(--md-error);
+}
+
+button.creature-row-status-chip.selected.creature-row-status-fled {
+  background-color: var(--md-surface-4);
+  color: var(--md-on-surface);
+  border-color: var(--md-outline);
+}

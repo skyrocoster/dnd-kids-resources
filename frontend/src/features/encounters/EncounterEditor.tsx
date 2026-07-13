@@ -2,19 +2,11 @@ import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import * as api from '../../api/client'
 import type { Condition, Encounter, Monster } from '../../api/types'
-import { CheckboxField } from '../../components/form/CheckboxField'
-import { SelectField } from '../../components/form/SelectField'
 import { TextField } from '../../components/form/TextField'
+import { CloseIcon, PlusIcon } from '../../components/icons'
+import { CreatureRowCard } from './CreatureRowCard'
 import type { EncounterCreatureRow, EncounterFormState } from './encounterForm'
-import {
-  addEncounterCreatureRow,
-  emptyEncounterForm,
-  encounterToFormState,
-  formStateToEncounterInput,
-  isConditionSelected,
-  mergeConditionOptions,
-  toggleCondition,
-} from './encounterForm'
+import { addEncounterCreatureRow, emptyEncounterForm, encounterToFormState, formStateToEncounterInput } from './encounterForm'
 import { deriveCreatureStats } from './encounterStats'
 import './EncounterEditor.css'
 
@@ -24,13 +16,6 @@ interface EncounterEditorProps {
   onSaved: (encounter: Encounter) => void
 }
 
-const STATUS_OPTIONS = [
-  { value: 'alive', label: 'Alive' },
-  { value: 'unconscious', label: 'Unconscious' },
-  { value: 'dead', label: 'Dead' },
-  { value: 'fled', label: 'Fled' },
-]
-
 export function EncounterEditor({ encounter, onClose, onSaved }: EncounterEditorProps) {
   const [form, setForm] = useState<EncounterFormState>(() =>
     encounter ? encounterToFormState(encounter) : emptyEncounterForm(),
@@ -39,6 +24,7 @@ export function EncounterEditor({ encounter, onClose, onSaved }: EncounterEditor
   const [conditions, setConditions] = useState<Condition[]>([])
   const [status, setStatus] = useState<{ message: string; kind?: 'error' | 'success' }>({ message: '' })
   const [saving, setSaving] = useState(false)
+  const [collapsedRows, setCollapsedRows] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     api
@@ -61,6 +47,14 @@ export function EncounterEditor({ encounter, onClose, onSaved }: EncounterEditor
   }
   const removeRow = (id: string) => {
     patch({ creatureRows: form.creatureRows.filter((r) => r.id !== id) })
+  }
+  const toggleRowCollapsed = (id: string) => {
+    setCollapsedRows((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
   }
   const handlePickMonster = (rowId: string, monsterId: string) => {
     const monster = monsters.find((m) => String(m.id) === monsterId)
@@ -99,12 +93,13 @@ export function EncounterEditor({ encounter, onClose, onSaved }: EncounterEditor
         role="dialog"
         aria-modal="true"
         aria-label={encounter ? `Edit ${encounter.title}` : 'Add new encounter'}
+        data-variant="monster"
         onClick={(e) => e.stopPropagation()}
       >
         <header className="encounter-editor-header">
           <h2>{encounter ? `Edit Encounter: ${encounter.title}` : 'Add New Encounter'}</h2>
           <button type="button" className="encounter-editor-close" onClick={onClose} aria-label="Close">
-            ×
+            <CloseIcon size={20} aria-hidden />
           </button>
         </header>
 
@@ -121,72 +116,23 @@ export function EncounterEditor({ encounter, onClose, onSaved }: EncounterEditor
                 className="encounter-editor-add"
                 onClick={() => patch({ creatureRows: addEncounterCreatureRow(form.creatureRows) })}
               >
+                <PlusIcon size={16} aria-hidden />
                 Add Creature
               </button>
             </div>
             {form.creatureRows.length === 0 && <p className="encounter-editor-empty">No creatures added.</p>}
             {form.creatureRows.map((row) => (
-              <div className="encounter-editor-row-card" key={row.id}>
-                <div className="encounter-editor-row-grid">
-                  <SelectField
-                    label="Monster"
-                    value={row.monsterId}
-                    onChange={(e) => handlePickMonster(row.id, e.target.value)}
-                    options={monsters.map((m) => ({ value: String(m.id), label: m.name }))}
-                    placeholder="Choose a monster…"
-                  />
-                  <TextField
-                    label="Display Name"
-                    value={row.name}
-                    onChange={(e) => updateRow(row.id, { name: e.target.value })}
-                  />
-                  <TextField
-                    label="HP Current"
-                    type="number"
-                    value={row.hpCurrent}
-                    onChange={(e) => updateRow(row.id, { hpCurrent: e.target.value })}
-                  />
-                  <TextField
-                    label="HP Max"
-                    type="number"
-                    value={row.hpMax}
-                    onChange={(e) => updateRow(row.id, { hpMax: e.target.value })}
-                  />
-                  <TextField
-                    label="AC"
-                    type="number"
-                    value={row.ac}
-                    onChange={(e) => updateRow(row.id, { ac: e.target.value })}
-                  />
-                  <SelectField
-                    label="Status"
-                    value={row.status}
-                    onChange={(e) => updateRow(row.id, { status: e.target.value })}
-                    options={STATUS_OPTIONS}
-                  />
-                  <div className="form-field encounter-editor-condition-field">
-                    <span className="form-label">Conditions</span>
-                    <div className="encounter-condition-grid">
-                      {mergeConditionOptions(conditions, row.conditions).map((option) => (
-                        <CheckboxField
-                          key={option.value}
-                          label={option.label}
-                          checked={isConditionSelected(row.conditions, option.value)}
-                          onChange={() =>
-                            updateRow(row.id, { conditions: toggleCondition(row.conditions, option.value) })
-                          }
-                        />
-                      ))}
-                      {conditions.length === 0 && row.conditions.length === 0 && (
-                        <p className="encounter-editor-empty">No conditions available.</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                <button type="button" className="encounter-editor-row-remove" onClick={() => removeRow(row.id)}>
-                  Remove Creature
-                </button>
-              </div>
+              <CreatureRowCard
+                key={row.id}
+                row={row}
+                monsters={monsters}
+                conditions={conditions}
+                collapsed={collapsedRows.has(row.id)}
+                onToggleCollapsed={() => toggleRowCollapsed(row.id)}
+                onPickMonster={(monsterId) => handlePickMonster(row.id, monsterId)}
+                onChange={(fields) => updateRow(row.id, fields)}
+                onRemove={() => removeRow(row.id)}
+              />
             ))}
           </section>
 

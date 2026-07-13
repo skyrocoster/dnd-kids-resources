@@ -5,7 +5,7 @@ This document is the single reference for expanding the **encounter** feature be
 methodology as `dungeon_plan.md` (scaffold → implementation → design pass) and inherits that project's
 design system, component anatomy, and reusable pieces — build on them rather than re-deriving.
 
-> **Status:** Phase 1 (**Creation Overhaul**) is **in progress**. C0, C1, and C2 shipped; C3 below.
+> **Status:** Phase 1 (**Creation Overhaul**) is **complete**. C0–C3 all shipped.
 
 ---
 
@@ -245,6 +245,40 @@ Chrome browser; C0–C2 verify by test suite alone.
 running app on the Surface Pro viewport; propagation and condition checkboxes behave as specified;
 authored data survives a save/reopen and shows correctly in the Runner; full test suite + `npm run build` +
 `pytest` all green. Update this doc's status line and each stage with a "What shipped" note, then commit.
+
+**What shipped:**
+- **`CreatureRowCard`** (new `CreatureRowCard.tsx`/`.css`) replaces the old inline row markup. Each
+  creature row is now a collapsible card: a collapsed summary line shows the display name, AC
+  (`ShieldIcon`), HP current/max, a color-coded status chip, and a condition count badge, with a
+  chevron toggle (`aria-expanded`/`aria-controls`) and an icon-only remove button (`TrashIcon`,
+  2.75rem target, red only on hover/focus). Expanding reveals the Monster/Display Name pair, an
+  HP Current/HP Max/AC stat trio, a Status **chip toggle group** (replacing the old `<select>`,
+  reusing the `CombatantCard` status-chip color recipe: teal=alive, gold=unconscious, red=dead,
+  neutral=fled), and the `ConditionPicker`. New rows mount expanded by default; collapse state is
+  local UI state in `EncounterEditor`, not persisted to the form/wire model.
+- **`ConditionPicker`** (new `ConditionPicker.tsx`/`.css`) — the "dropdown + checkbox combo" the user
+  asked for. A closed-by-default trigger button shows a summary ("No conditions" / up to 2 names /
+  "+N"); clicking opens a popover (closes on outside click or `Escape`) containing the same
+  `mergeConditionOptions`/`isConditionSelected`/`toggleCondition` checkbox grid from C2, unchanged.
+  Legacy/custom conditions still render as an already-checked "`{value} (custom)`" option.
+- **Design-system conformance fixes** in `EncounterEditor.tsx`/`.css`: the literal `×` replaced with
+  `CloseIcon`; modal root gets `data-variant="monster"`; Save button switched from `--md-primary`
+  (violet/spells) to the teal/monster role; Add Creature switched from `--md-secondary-container`
+  (gold/weapons) to the teal/monster container role and gained a `PlusIcon`; all buttons brought to
+  a ≥2.75rem touch target. The old `.encounter-editor-row-grid`/`.encounter-condition-grid` classes
+  were removed (superseded by the new components' own CSS).
+- Tests: new `CreatureRowCard.test.tsx` (4 tests: collapsed summary, expand reveals fields, remove
+  button, status-chip click) and `ConditionPicker.test.tsx` (5 tests: closed by default, opens on
+  click, closes on outside click, closes on Escape, toggle callback, legacy option). Existing
+  `EncounterEditor.test.tsx` C1/C2 tests updated to open the condition popover before asserting on
+  checkboxes; all prior assertions (HP/AC fill, condition round-trip, legacy survival) unchanged.
+- Verified live in the running app (Surface-Pro-width viewport): monster pick auto-filled HP 13/13 and
+  AC 12; opened the condition picker, checked "blinded" and "charmed", trigger summary and the row's
+  "2 conditions" badge updated correctly; collapsed the row and confirmed the summary line matched;
+  saved, reopened via Edit, and confirmed HP/AC/conditions all round-tripped intact; ran the encounter
+  in the Runner and confirmed HP 13/13, AC 12, Alive carried over correctly. GIF trace recorded.
+  `npm run test` (447 passed), `npm run build` (clean), and `pytest` (110 passed, 90.73% coverage,
+  backend untouched) all green.
 
 ---
 

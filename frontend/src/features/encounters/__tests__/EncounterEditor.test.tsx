@@ -74,6 +74,7 @@ describe('EncounterEditor', () => {
 
       render(<EncounterEditor onClose={() => {}} onSaved={() => {}} />)
       await user.click(screen.getByRole('button', { name: 'Add Creature' }))
+      await user.click(screen.getByRole('button', { name: /No conditions/ }))
 
       await waitFor(() => expect(screen.getByLabelText('Poisoned')).toBeInTheDocument())
       expect(screen.getByLabelText('Prone')).toBeInTheDocument()
@@ -87,6 +88,7 @@ describe('EncounterEditor', () => {
 
       render(<EncounterEditor onClose={() => {}} onSaved={() => {}} />)
       await user.click(screen.getByRole('button', { name: 'Add Creature' }))
+      await user.click(screen.getByRole('button', { name: /No conditions/ }))
       await waitFor(() => expect(screen.getByLabelText('Poisoned')).toBeInTheDocument())
 
       await user.click(screen.getByLabelText('Poisoned'))
@@ -108,6 +110,7 @@ describe('EncounterEditor', () => {
       render(<EncounterEditor onClose={() => {}} onSaved={onSaved} />)
       await user.type(screen.getByLabelText('Title'), 'Test')
       await user.click(screen.getByRole('button', { name: 'Add Creature' }))
+      await user.click(screen.getByRole('button', { name: /No conditions/ }))
       await waitFor(() => expect(screen.getByLabelText('Poisoned')).toBeInTheDocument())
       await user.click(screen.getByLabelText('Poisoned'))
 
@@ -138,6 +141,8 @@ describe('EncounterEditor', () => {
       }
 
       render(<EncounterEditor encounter={existing} onClose={() => {}} onSaved={() => {}} />)
+      await screen.findByText('Goblin')
+      await userEvent.click(screen.getByRole('button', { name: /stunned \(legacy\)/ }))
 
       expect(await screen.findByLabelText('stunned (legacy) (custom)')).toBeChecked()
     })
