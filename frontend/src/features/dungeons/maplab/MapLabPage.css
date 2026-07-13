@@ -543,14 +543,51 @@
   fill: color-mix(in srgb, var(--md-primary) 20%, transparent);
 }
 
-/* Portal marker — on-square portal door glyph (H2+) */
-.maplab-portal-marker {
-  /* TODO: H2 implementation */
+/* Portal markers — same visual language as `.maplab-stair-marker`/`.maplab-prop-marker`: a
+ * neutral-fill ring whose stroke carries the passage-state token, the portal icon as the primary
+ * glyph, and a small state badge (never hue-alone). See `PortalMarker.tsx`. */
+.maplab-portal {
+  cursor: pointer;
 }
 
-/* Portal state badge (H2+) */
+.maplab-portal-marker {
+  fill: var(--md-surface-3);
+  stroke-width: 3;
+  transition: stroke 0.15s ease, stroke-width 0.15s ease;
+}
+
+.maplab-portal-icon {
+  pointer-events: none;
+}
+
+.maplab-portal:hover .maplab-portal-marker {
+  stroke-width: 4;
+}
+
+.maplab-portal:focus-visible {
+  outline: none;
+}
+
+.maplab-portal:focus-visible .maplab-portal-marker {
+  stroke: var(--md-primary) !important;
+  stroke-width: 4;
+}
+
 .maplab-portal-state-badge {
-  /* TODO: H2 implementation */
+  pointer-events: none;
+}
+
+/* Portal placement overlay: same shape as .maplab-stair-placement-cell */
+.maplab-portal-placement-cell {
+  fill: transparent;
+  stroke: var(--md-primary);
+  stroke-width: 1;
+  stroke-dasharray: 4 3;
+  cursor: pointer;
+}
+
+.maplab-portal-placement-cell:hover {
+  fill: color-mix(in srgb, var(--md-primary) 20%, transparent);
 }
 
 /* Destination picker field for stair/portal editors */

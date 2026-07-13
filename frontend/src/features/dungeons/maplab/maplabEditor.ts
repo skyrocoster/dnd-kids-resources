@@ -3,6 +3,7 @@ import {
   canPaintCell,
   floorsInLayout,
   nextDoorId,
+  nextPortalId,
   nextPropId,
   nextRoomId,
   nextStairId,
@@ -45,9 +46,9 @@ export type EditorAction =
   | { type: 'addStair'; from: { z: number; cell: [number, number] } } // Phase H, stub
   | { type: 'selectStair'; stairId: number | null } // Phase H, stub
   | { type: 'deleteStair'; stairId: number } // Phase H, stub
-  | { type: 'addPortal'; cell: [number, number] } // Phase H, stub
-  | { type: 'selectPortal'; portalId: number | null } // Phase H, stub
-  | { type: 'deletePortal'; portalId: number } // Phase H, stub
+  | { type: 'addPortal'; cell: [number, number] } // Phase H
+  | { type: 'selectPortal'; portalId: number | null } // Phase H
+  | { type: 'deletePortal'; portalId: number } // Phase H
   | { type: 'setActiveZ'; z: number }
   | { type: 'loadLayout'; layout: MapLayout }
   | { type: 'resetToFixture'; layout: MapLayout }
@@ -165,8 +166,51 @@ export function mapLabEditorReducer(state: EditorState, action: EditorAction): E
         )
         return { ...state, layout: { ...state.layout, stairs } }
       } else if (action.fixtureType === 'portal') {
+        const source = state.layout.portals.find((portal) => portal.portal_id === action.fixtureId)
+        if (!source) return state
+        const updatedSource = { ...source, ...action.flags } as MapPortal
+
+        if ('to' in action.flags) {
+          const target = updatedSource.to
+          const targetPortal = state.layout.portals.find(
+            (portal) =>
+              portal.portal_id !== source.portal_id &&
+              portal.z === target.z &&
+              portal.cell[0] === target.cell[0] &&
+              portal.cell[1] === target.cell[1],
+          )
+
+          let portals: MapPortal[]
+          if (targetPortal) {
+            // Re-link: the existing portal at the target now points back at the source.
+            portals = state.layout.portals.map((portal) => {
+              if (portal.portal_id === source.portal_id) return updatedSource
+              if (portal.portal_id === targetPortal.portal_id) {
+                return { ...portal, to: { z: updatedSource.z, cell: updatedSource.cell } }
+              }
+              return portal
+            })
+          } else {
+            // Auto-create the paired return portal at the target.
+            const newPortal: MapPortal = {
+              portal_id: nextPortalId(state.layout),
+              cell: target.cell,
+              z: target.z,
+              to: { z: updatedSource.z, cell: updatedSource.cell },
+              hidden: false,
+              locked: false,
+              trapped: false,
+            }
+            portals = [
+              ...state.layout.portals.map((portal) => (portal.portal_id === source.portal_id ? updatedSource : portal)),
+              newPortal,
+            ]
+          }
+          return { ...state, layout: { ...state.layout, portals } }
+        }
+
         const portals = state.layout.portals.map((portal) =>
-          portal.portal_id === action.fixtureId ? ({ ...portal, ...action.flags } as MapPortal) : portal,
+          portal.portal_id === source.portal_id ? updatedSource : portal,
         )
         return { ...state, layout: { ...state.layout, portals } }
       }
@@ -267,15 +311,48 @@ export function mapLabEditorReducer(state: EditorState, action: EditorAction): E
       }
     }
 
-    // Phase H stub — implementation in H2
-    case 'addPortal':
-      return state // stub
+    case 'addPortal': {
+      const portal_id = nextPortalId(state.layout)
+      const defaults = FIXTURE_TYPES.portal.defaultFlags
+      const newPortal: MapPortal = {
+        portal_id,
+        cell: action.cell,
+        z: state.activeZ,
+        to: { z: state.activeZ, cell: action.cell }, // placeholder, set via the destination picker
+        title: typeof defaults.title === 'string' ? defaults.title : undefined,
+        hidden: Boolean(defaults.hidden),
+        locked: Boolean(defaults.locked),
+        trapped: Boolean(defaults.trapped),
+      }
+      return {
+        ...state,
+        layout: { ...state.layout, portals: [...state.layout.portals, newPortal] },
+        selectedPortalId: portal_id,
+        selectedRoomId: null,
+        selectedDoorId: null,
+        selectedPropId: null,
+        selectedStairId: null,
+      }
+    }
 
     case 'selectPortal':
-      return state // stub
+      return {
+        ...state,
+        selectedPortalId: action.portalId,
+        selectedRoomId: action.portalId === null ? state.selectedRoomId : null,
+        selectedDoorId: action.portalId === null ? state.selectedDoorId : null,
+        selectedPropId: action.portalId === null ? state.selectedPropId : null,
+        selectedStairId: action.portalId === null ? state.selectedStairId : null,
+      }
 
-    case 'deletePortal':
-      return state // stub
+    case 'deletePortal': {
+      const portals = state.layout.portals.filter((portal) => portal.portal_id !== action.portalId)
+      return {
+        ...state,
+        layout: { ...state.layout, portals },
+        selectedPortalId: state.selectedPortalId === action.portalId ? null : state.selectedPortalId,
+      }
+    }
 
     case 'setActiveZ':
       return { ...state, activeZ: action.z }

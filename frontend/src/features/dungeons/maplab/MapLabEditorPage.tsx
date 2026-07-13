@@ -11,6 +11,7 @@ import {
   FitIcon,
   MinusIcon,
   PlusIcon,
+  PortalIcon,
   PropIcon,
   SaveIcon,
   StairsIcon,
@@ -21,6 +22,7 @@ import {
 import { InspectorPanel } from './InspectorPanel'
 import { FixturePropertiesForm } from './FixturePropertiesForm'
 import { PropMarker } from './PropMarker'
+import { PortalMarker } from './PortalMarker'
 import { GhostFloorLayer } from './GhostFloorLayer'
 import { FIXTURE_TYPES } from './fixtureTypes'
 import {
@@ -135,11 +137,15 @@ export function MapLabEditorPage() {
     addStair,
     selectStair,
     deleteStair,
+    addPortal,
+    selectPortal,
+    deletePortal,
   } = useMapLabEditor(MAP_LAB_DUNGEON_ID)
   const [hoveredCell, setHoveredCell] = useState<MapCell | null>(null)
   const [placeDoorMode, setPlaceDoorMode] = useState(false)
   const [placePropMode, setPlacePropMode] = useState(false)
   const [placeStairMode, setPlaceStairMode] = useState(false)
+  const [placePortalMode, setPlacePortalMode] = useState(false)
   const [showGhostFloor, setShowGhostFloor] = useState(false)
   const zoomApi = useMapCanvasZoom()
   const [viewportSize, setViewportSize] = useState<ViewportSize>({ width: 0, height: 0 })
@@ -160,6 +166,10 @@ export function MapLabEditorPage() {
   )
   const stairsOnActiveFloor = useMemo(
     () => stairEndpointsForZ(state.layout, state.activeZ),
+    [state.layout, state.activeZ]
+  )
+  const portalsOnActiveFloor = useMemo(
+    () => state.layout.portals.filter((portal) => portal.z === state.activeZ),
     [state.layout, state.activeZ]
   )
 
@@ -202,6 +212,10 @@ export function MapLabEditorPage() {
     () => state.layout.stairs.find((stair) => stair.stair_id === state.selectedStairId) ?? null,
     [state.layout.stairs, state.selectedStairId]
   )
+  const selectedPortal = useMemo(
+    () => state.layout.portals.find((portal) => portal.portal_id === state.selectedPortalId) ?? null,
+    [state.layout.portals, state.selectedPortalId]
+  )
 
   if (loading) {
     return (
@@ -233,6 +247,7 @@ export function MapLabEditorPage() {
                 if (!active) {
                   setPlacePropMode(false)
                   setPlaceStairMode(false)
+                  setPlacePortalMode(false)
                 }
                 return !active
               })
@@ -251,6 +266,7 @@ export function MapLabEditorPage() {
                 if (!active) {
                   setPlaceDoorMode(false)
                   setPlaceStairMode(false)
+                  setPlacePortalMode(false)
                 }
                 return !active
               })
@@ -269,6 +285,7 @@ export function MapLabEditorPage() {
                 if (!active) {
                   setPlaceDoorMode(false)
                   setPlacePropMode(false)
+                  setPlacePortalMode(false)
                 }
                 return !active
               })
@@ -276,6 +293,25 @@ export function MapLabEditorPage() {
           >
             <StairsIcon width={18} height={18} aria-hidden="true" />
             {placeStairMode ? 'Cancel stair placement' : 'Place stair'}
+          </button>
+          <button
+            type="button"
+            className="maplab-pill-button maplab-editor-toolbar-button"
+            aria-pressed={placePortalMode}
+            data-active={placePortalMode || undefined}
+            onClick={() =>
+              setPlacePortalMode((active) => {
+                if (!active) {
+                  setPlaceDoorMode(false)
+                  setPlacePropMode(false)
+                  setPlaceStairMode(false)
+                }
+                return !active
+              })
+            }
+          >
+            <PortalIcon width={18} height={18} aria-hidden="true" />
+            {placePortalMode ? 'Cancel portal placement' : 'Place portal'}
           </button>
         </div>
         <div className="maplab-toolbar-group">
@@ -552,6 +588,16 @@ export function MapLabEditorPage() {
             )
           })}
 
+          {portalsOnActiveFloor.map((portal) => (
+            <PortalMarker
+              key={portal.portal_id}
+              portal={portal}
+              cellSize={CELL_SIZE}
+              selected={portal.portal_id === state.selectedPortalId}
+              onClick={() => selectPortal(portal.portal_id === state.selectedPortalId ? null : portal.portal_id)}
+            />
+          ))}
+
           {placePropMode && (
             <g className="maplab-prop-placement-overlay">
               {roomsOnActiveFloor.flatMap((room) =>
@@ -625,7 +671,31 @@ export function MapLabEditorPage() {
             </g>
           )}
 
-          {!placeDoorMode && !placePropMode && !placeStairMode && state.selectedRoomId !== null && (
+          {placePortalMode && (
+            <g className="maplab-portal-placement-overlay">
+              {roomsOnActiveFloor.flatMap((room) =>
+                absoluteCells(room).map(([x, y]) => (
+                  <rect
+                    key={`${room.room_id}-${x}-${y}`}
+                    className="maplab-portal-placement-cell"
+                    x={x * CELL_SIZE}
+                    y={y * CELL_SIZE}
+                    width={CELL_SIZE}
+                    height={CELL_SIZE}
+                    role="button"
+                    aria-label={`Place portal at ${x}, ${y}`}
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      addPortal([x, y])
+                      setPlacePortalMode(false)
+                    }}
+                  />
+                ))
+              )}
+            </g>
+          )}
+
+          {!placeDoorMode && !placePropMode && !placeStairMode && !placePortalMode && state.selectedRoomId !== null && (
             <g className="maplab-paint-overlay" onMouseLeave={() => setHoveredCell(null)}>
               {Array.from({ length: bounds.maxY - bounds.minY + 1 }, (_, rowIndex) => bounds.minY + rowIndex).map((y) =>
                 Array.from({ length: bounds.maxX - bounds.minX + 1 }, (_, colIndex) => bounds.minX + colIndex).map(
@@ -808,8 +878,35 @@ export function MapLabEditorPage() {
                 </button>
               </div>
             </>
+          ) : selectedPortal ? (
+            <>
+              <InspectorPanel target={{ kind: 'portal', portal: selectedPortal }} />
+              <FixturePropertiesForm
+                spec={FIXTURE_TYPES.portal}
+                values={selectedPortal as unknown as Record<string, unknown>}
+                layout={state.layout}
+                onChange={(key, value) => updateFixtureFlags(selectedPortal.portal_id, 'portal', { [key]: value })}
+              />
+              <div className="maplab-editor-inspector-actions">
+                <button
+                  type="button"
+                  className="maplab-pill-button maplab-editor-toolbar-button"
+                  onClick={() => deletePortal(selectedPortal.portal_id)}
+                >
+                  <TrashIcon width={16} height={16} aria-hidden="true" />
+                  Delete portal
+                </button>
+                <button
+                  type="button"
+                  className="maplab-pill-button maplab-editor-toolbar-button"
+                  onClick={() => selectPortal(null)}
+                >
+                  Close
+                </button>
+              </div>
+            </>
           ) : (
-            <p className="maplab-inspector-rail-empty">Select a room, door, prop, or stair to see its details.</p>
+            <p className="maplab-inspector-rail-empty">Select a room, door, prop, stair, or portal to see its details.</p>
           )}
         </div>
       </div>

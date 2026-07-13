@@ -394,12 +394,98 @@ describe('mapLabEditorReducer', () => {
       expect(state.selectedStairId).toBeNull()
     })
 
-    it.skip('H2: addPortal creates a portal with auto-paired linking', () => {
-      // H2 implementation: portal auto-pairing at target
+    it('H2: addPortal creates a portal and selects it', () => {
+      const state = initialEditorState(emptyLayout)
+      const next = mapLabEditorReducer(state, { type: 'addPortal', cell: [1, 1] })
+      expect(next.layout.portals).toHaveLength(1)
+      expect(next.layout.portals[0]).toMatchObject({
+        portal_id: 1,
+        cell: [1, 1],
+        z: 0,
+        to: { z: 0, cell: [1, 1] },
+      })
+      expect(next.selectedPortalId).toBe(1)
+
+      const second = mapLabEditorReducer(next, { type: 'addPortal', cell: [4, 4] })
+      expect(second.layout.portals.map((p) => p.portal_id)).toEqual([1, 2])
+      expect(second.selectedPortalId).toBe(2)
     })
 
-    it.skip('H2: portal selection is 5-way mutually exclusive', () => {
-      // H2: room/door/prop/stair/portal all clear each other
+    it('H2: retargeting a portal with no portal at the target auto-creates a paired return portal', () => {
+      let state = initialEditorState(emptyLayout)
+      state = mapLabEditorReducer(state, { type: 'addPortal', cell: [1, 1] })
+      const sourceId = state.selectedPortalId as number
+      state = mapLabEditorReducer(state, {
+        type: 'updateFixtureFlags',
+        fixtureId: sourceId,
+        fixtureType: 'portal',
+        flags: { to: { z: 1, cell: [5, 5] } },
+      })
+
+      expect(state.layout.portals).toHaveLength(2)
+      const source = state.layout.portals.find((p) => p.portal_id === sourceId)!
+      expect(source.to).toEqual({ z: 1, cell: [5, 5] })
+      const paired = state.layout.portals.find((p) => p.portal_id !== sourceId)!
+      expect(paired).toMatchObject({ z: 1, cell: [5, 5], to: { z: 0, cell: [1, 1] } })
+    })
+
+    it('H2: retargeting a portal onto an existing portal re-links instead of duplicating', () => {
+      let state = initialEditorState(emptyLayout)
+      state = mapLabEditorReducer(state, { type: 'addPortal', cell: [1, 1] })
+      const firstId = state.selectedPortalId as number
+      state = mapLabEditorReducer(state, { type: 'addPortal', cell: [8, 8] })
+      const secondId = state.selectedPortalId as number
+
+      state = mapLabEditorReducer(state, {
+        type: 'updateFixtureFlags',
+        fixtureId: firstId,
+        fixtureType: 'portal',
+        flags: { to: { z: 0, cell: [8, 8] } },
+      })
+
+      expect(state.layout.portals).toHaveLength(2)
+      const first = state.layout.portals.find((p) => p.portal_id === firstId)!
+      const second = state.layout.portals.find((p) => p.portal_id === secondId)!
+      expect(first.to).toEqual({ z: 0, cell: [8, 8] })
+      expect(second.to).toEqual({ z: 0, cell: [1, 1] })
+    })
+
+    it('H2: deletePortal removes the portal and clears selection if it was selected', () => {
+      let state = initialEditorState(emptyLayout)
+      state = mapLabEditorReducer(state, { type: 'addPortal', cell: [1, 1] })
+      const next = mapLabEditorReducer(state, { type: 'deletePortal', portalId: 1 })
+      expect(next.layout.portals).toHaveLength(0)
+      expect(next.selectedPortalId).toBeNull()
+    })
+
+    it('H2: portal selection is 5-way mutually exclusive', () => {
+      let state = initialEditorState(emptyLayout)
+      state = mapLabEditorReducer(state, { type: 'addRoom' })
+      state = mapLabEditorReducer(state, { type: 'addPortal', cell: [1, 1] })
+      expect(state.selectedPortalId).toBe(1)
+      expect(state.selectedRoomId).toBeNull()
+
+      state = mapLabEditorReducer(state, { type: 'selectRoom', roomId: 1 })
+      expect(state.selectedRoomId).toBe(1)
+      expect(state.selectedPortalId).toBeNull()
+
+      state = mapLabEditorReducer(state, { type: 'selectPortal', portalId: 1 })
+      expect(state.selectedPortalId).toBe(1)
+      expect(state.selectedRoomId).toBeNull()
+
+      state = mapLabEditorReducer(state, { type: 'selectDoor', doorId: 9 })
+      expect(state.selectedDoorId).toBe(9)
+      expect(state.selectedPortalId).toBeNull()
+
+      state = mapLabEditorReducer(state, { type: 'selectPortal', portalId: 1 })
+      state = mapLabEditorReducer(state, { type: 'selectProp', propId: 9 })
+      expect(state.selectedPropId).toBe(9)
+      expect(state.selectedPortalId).toBeNull()
+
+      state = mapLabEditorReducer(state, { type: 'selectPortal', portalId: 1 })
+      state = mapLabEditorReducer(state, { type: 'addStair', from: { z: 0, cell: [3, 3] } })
+      expect(state.selectedStairId).toBe(1)
+      expect(state.selectedPortalId).toBeNull()
     })
 
     it.skip('H3: portals render in the viewer and navigate to target z', () => {

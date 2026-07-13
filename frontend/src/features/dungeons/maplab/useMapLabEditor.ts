@@ -114,6 +114,10 @@ export function useMapLabEditor(dungeonId: number) {
   const selectStair = useCallback((stairId: number | null) => dispatch({ type: 'selectStair', stairId }), [])
   const deleteStair = useCallback((stairId: number) => apply({ type: 'deleteStair', stairId }), [apply])
 
+  const addPortal = useCallback((cell: MapCell) => apply({ type: 'addPortal', cell }), [apply])
+  const selectPortal = useCallback((portalId: number | null) => dispatch({ type: 'selectPortal', portalId }), [])
+  const deletePortal = useCallback((portalId: number) => apply({ type: 'deletePortal', portalId }), [apply])
+
   return {
     state: state as EditorState,
     dispatch,
@@ -135,5 +139,8 @@ export function useMapLabEditor(dungeonId: number) {
     addStair,
     selectStair,
     deleteStair,
+    addPortal,
+    selectPortal,
+    deletePortal,
   }
 }

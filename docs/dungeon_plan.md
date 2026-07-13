@@ -4,12 +4,12 @@ This document is the single reference for the dungeon room-navigation feature an
 phases. Original build (Stages 1–11), Design Phase A (Encounter Runner, E1–E6), Design Phase B (NPC
 Dossier, N1–N6), Design Phase C (Map Lab, Foundation + M0–M4), Design Phase D (Map Lab Authoring Tools,
 Stage 0–3), Design Phase E (Map Lab unified data/zoom/redesign, E1–E3), Design Phase F (Room Props,
-F0–F4), Design Phase G (Ghost Objects, G-fix + G0–G2), and **Design Phase H Stages H0–H1 (Stair/Portal scaffolding + Stair authoring)** are **all complete and shipped**. This
+F0–F4), Design Phase G (Ghost Objects, G-fix + G0–G2), and **Design Phase H Stages H0–H2 (Stair/Portal scaffolding + Stair authoring + Portal doors)** are **all complete and shipped**. This
 doc records what exists, the design system in force, and the facts a new executor needs, so the next
 phase can build on it without re-deriving anything. New design phases get appended under **"Next:
 front-end design planning"** at the bottom.
 
-> **Status:** Original build + Phases A/B/C/D/E/F/G **all shipped**, plus **Phase H Stages H0–H1 — complete**. **Latest:** Stage H1 (Sonnet) implemented stair authoring: reducer `addStair`/`selectStair`/`deleteStair` (5-way mutual exclusion with room/door/prop/portal), a "Place stair" toolbar toggle, the editor's first on-canvas stair rendering (click-to-select, not floor-jump), a new `DestinationPickerField` (floor `<select>` + clickable mini floor-plan) shared by the stair inspector form, and a `stairMarkerOffset` helper so co-located up/down stair "landings" render as distinct, independently selectable markers in **both** the editor and the pre-existing viewer. 481/486 tests pass (5 skipped = H2–H4 stubs), `npm run typecheck`/`npm run build` clean, `pytest`/seed data untouched. Before H1: Stage H0 (Haiku 4.5, one context) delivered the mechanical type setup for Phase H Stair Authoring + Portal Doors: `MapPortal` interface + `portals: MapPortal[]` on `MapLayout`, `Inspectable`'s `'portal'` variant, `EditorState`/`EditorAction` additions (`selectedStairId`/`selectedPortalId`, stubs for 6 new actions), `nextStairId`/`nextPortalId` id generators, `normalizeLayout` extended to default portals. Portal icon: `Sparkles` (verified non-colliding per F4's `Landmark` check). Windows feature **fully implemented** (no stubs): added `'window'` to `PROP_KIND_OPTIONS`/`PROP_KIND_ICONS`, immediately placeable/editable via existing "Place prop" mode. 🚦 H0 gate verified: `npm run typecheck`/`npm run build` clean, 412/412 tests pass, windows prop kind ready for placement. Before H0: **Design Phase G** (G-fix + G0–G2) shipped Ghost Objects — an editor toggle overlaying the floor below, dimmed and read-only, for cross-floor alignment. G1 found and fixed a real pre-existing bug (doors/props misattributed when floors share `[x,y]`); G2 fixed ghost props incorrectly carrying per-state hue. The feature phases preceding Phase G: **Design Phase F ("Room Props")**, E, D, C, original build, all shipped.
+> **Status:** Original build + Phases A/B/C/D/E/F/G **all shipped**, plus **Phase H Stages H0–H2 — complete**. **Latest:** Stage H2 (Sonnet) implemented portal doors: reducer `addPortal`/`selectPortal`/`deletePortal` (5-way mutual exclusion with room/door/prop/stair) plus paired-linking on `updateFixtureFlags('portal', …, {to})` — re-targeting an empty cell auto-creates a return portal there, re-targeting a cell that already has a portal re-links it instead of duplicating. New `PortalMarker.tsx` (on-square, same visual language as stair/prop markers), a "Place portal" toolbar toggle, portal canvas placement/selection in the editor, and a portal inspector-rail branch reusing `FIXTURE_TYPES.portal` + the shared `DestinationPickerField`. 490/493 tests pass (3 skipped = H3–H4 stubs), `npm run typecheck`/`npm run build` clean, `pytest`/seed data untouched. Before H2: Stage H1 (Sonnet) implemented stair authoring: reducer `addStair`/`selectStair`/`deleteStair` (5-way mutual exclusion with room/door/prop/portal), a "Place stair" toolbar toggle, the editor's first on-canvas stair rendering (click-to-select, not floor-jump), a new `DestinationPickerField` (floor `<select>` + clickable mini floor-plan) shared by the stair inspector form, and a `stairMarkerOffset` helper so co-located up/down stair "landings" render as distinct, independently selectable markers in **both** the editor and the pre-existing viewer. Before H1: Stage H0 (Haiku 4.5, one context) delivered the mechanical type setup for Phase H Stair Authoring + Portal Doors: `MapPortal` interface + `portals: MapPortal[]` on `MapLayout`, `Inspectable`'s `'portal'` variant, `EditorState`/`EditorAction` additions (`selectedStairId`/`selectedPortalId`, stubs for 6 new actions), `nextStairId`/`nextPortalId` id generators, `normalizeLayout` extended to default portals. Portal icon: `Sparkles` (verified non-colliding per F4's `Landmark` check). Windows feature **fully implemented** (no stubs): added `'window'` to `PROP_KIND_OPTIONS`/`PROP_KIND_ICONS`, immediately placeable/editable via existing "Place prop" mode. 🚦 H0 gate verified: `npm run typecheck`/`npm run build` clean, 412/412 tests pass, windows prop kind ready for placement. Before H0: **Design Phase G** (G-fix + G0–G2) shipped Ghost Objects — an editor toggle overlaying the floor below, dimmed and read-only, for cross-floor alignment. G1 found and fixed a real pre-existing bug (doors/props misattributed when floors share `[x,y]`); G2 fixed ghost props incorrectly carrying per-state hue. The feature phases preceding Phase G: **Design Phase F ("Room Props")**, E, D, C, original build, all shipped.
 
 ---
 
@@ -564,7 +564,7 @@ build` clean, `pytest` unaffected (90.73% coverage).
 
 ---
 
-## Design Phase H — Stair Authoring + Portal Doors (H0–H1 shipped; H2–H4 queued)
+## Design Phase H — Stair Authoring + Portal Doors (H0–H2 shipped; H3–H4 queued)
 
 **Goal.** Stairs are a fully-built **read/view-only** feature (`MapStair`, `stairEndpointsForZ`,
 `stairPresentation`, `Inspectable`'s `'stair'` case, and the viewer's click-to-jump floor navigation all
@@ -652,6 +652,23 @@ extending the existing room/door/prop mutual-exclusion pattern to 5-way. `fixtur
   canvas placement/selection. 🚦 Gate: place a portal in the editor, target a non-adjacent room on another
   floor via the picker, confirm a paired return portal appears there automatically; re-targeting an existing
   portal to a cell that already has a portal re-links instead of duplicating.
+
+  **What shipped:** `maplabEditor.ts` — `addPortal` (one-shot cell placement, placeholder `to` = own
+  cell/z, 5-way selection clearing), `selectPortal`/`deletePortal`, and the `updateFixtureFlags('portal', …)`
+  branch with paired-linking: setting `to` either re-links an existing portal found at the exact target
+  `{z, cell}` (points its `to` back at the source) or auto-creates a new paired portal there.
+  `useMapLabEditor.ts` gained `addPortal`/`selectPortal`/`deletePortal` callbacks. New `PortalMarker.tsx`
+  (on-square only, no wall-attached case — mirrors `PropMarker.tsx`'s on-square geometry, `radius = cellSize
+  * 0.32`, portal icon + passage-state ring/badge). `MapLabEditorPage.tsx` — "Place portal" toolbar toggle
+  (now 4-way exclusive with door/prop/stair), portal placement overlay, portal marker rendering, portal
+  inspector-rail branch (`FIXTURE_TYPES.portal` + `DestinationPickerField`), empty-state copy updated to
+  mention portals. CSS — `.maplab-portal`/`-marker`/`-icon`/`-state-badge` (real styles replacing the H0
+  TODO placeholders) and `.maplab-portal-placement-cell`. Tests: reducer add/select/delete, paired
+  auto-create-at-empty-target, paired re-link-at-occupied-target, 5-way mutual exclusion
+  (`maplabEditor.test.ts`); editor placement/selection/destination-picker-persistence/pairing/delete and
+  4-way placement-mode exclusion (`MapLabEditorPage.test.tsx`). 490/493 frontend tests pass (3 skipped =
+  H3–H4 stubs), typecheck/build clean, `pytest`/seed data untouched, frontend-only change confirmed via
+  `git status`.
 - **H3 — Viewer rendering + navigation (Sonnet).** Portals get viewer support for the first time.
   `inspectableDescriptor`'s `'portal'` case (title/typeLabel/icon/token/lines incl. a "Leads to: {floor
   title}" line). `MapLabPage.tsx`: filter/render portals on the active floor (same shape as the existing

@@ -406,7 +406,7 @@ describe('MapLabEditorPage (Stage E3 — Toolbar reorganization & persistent ins
     const rail = container.querySelector('.maplab-inspector-rail')
     expect(rail).toBeInTheDocument()
     expect(rail?.querySelector('.maplab-inspector-rail-empty')).toBeInTheDocument()
-    expect(screen.getByText('Select a room, door, prop, or stair to see its details.')).toBeInTheDocument()
+    expect(screen.getByText('Select a room, door, prop, stair, or portal to see its details.')).toBeInTheDocument()
   })
 
   it('selecting a room (not just door) populates the inspector rail', async () => {
@@ -1004,5 +1004,141 @@ describe('MapLabEditorPage (Stage H1 — stair authoring)', () => {
     fireEvent.click(stairMarkers[1])
     expect(stairMarkers[0]).not.toHaveAttribute('data-selected')
     expect(stairMarkers[1]).toHaveAttribute('data-selected')
+  })
+})
+
+describe('MapLabEditorPage (Stage H2 — portal doors)', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks()
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.runOnlyPendingTimers()
+    vi.useRealTimers()
+  })
+
+  const twoFloorLayout = {
+    meta: { cellSizeFt: 5, padding: 3 },
+    rooms: [
+      { room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0]], title: 'Ground Room' },
+      { room_id: 2, z: 1, origin: [0, 0], cells: [[0, 0]], title: 'Upper Room' },
+    ],
+    doors: [],
+    stairs: [],
+    floors: [
+      { z: 0, title: 'Ground Floor' },
+      { z: 1, title: 'First Floor' },
+    ],
+    props: [],
+    portals: [],
+  }
+
+  it('places a portal on a room cell, selects it, and shows its properties form with a destination picker', async () => {
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: twoFloorLayout })
+    const saveSpy = vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: twoFloorLayout })
+
+    const { container } = render(<MapLabEditorPage />)
+    await flush()
+
+    fireEvent.click(screen.getByRole('button', { name: /place portal/i }))
+    expect(container.querySelectorAll('.maplab-portal-placement-cell').length).toBeGreaterThan(0)
+
+    fireEvent.click(container.querySelector('.maplab-portal-placement-cell') as Element)
+
+    expect(container.querySelectorAll('.maplab-portal-placement-cell')).toHaveLength(0)
+    expect(container.querySelector('.maplab-fixture-form')).toBeInTheDocument()
+    expect(screen.getByLabelText('Destination')).toBeInTheDocument()
+    expect(container.querySelector('.maplab-portal[data-selected]')).toBeInTheDocument()
+
+    await act(async () => {
+      vi.advanceTimersByTime(700)
+      await Promise.resolve()
+    })
+    expect(saveSpy).toHaveBeenCalledTimes(1)
+  })
+
+  it('targeting a non-adjacent room via the picker auto-creates a paired return portal there', async () => {
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: twoFloorLayout })
+    const saveSpy = vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: twoFloorLayout })
+
+    const { container } = render(<MapLabEditorPage />)
+    await flush()
+
+    fireEvent.click(screen.getByRole('button', { name: /place portal/i }))
+    fireEvent.click(container.querySelector('.maplab-portal-placement-cell') as Element)
+
+    const floorSelect = screen.getByLabelText('Destination') as HTMLSelectElement
+    fireEvent.change(floorSelect, { target: { value: '1' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Set destination to 0, 0 on floor 1' }))
+
+    await act(async () => {
+      vi.advanceTimersByTime(700)
+      await Promise.resolve()
+    })
+    expect(saveSpy).toHaveBeenCalledTimes(1)
+    const savedData = saveSpy.mock.calls[0][1].data as {
+      portals: Array<{ portal_id: number; z: number; cell: number[]; to: { z: number; cell: number[] } }>
+    }
+    expect(savedData.portals).toHaveLength(2)
+    const [source, paired] = savedData.portals
+    expect(source.to).toEqual({ z: 1, cell: [0, 0] })
+    expect(paired).toMatchObject({ z: 1, cell: [0, 0], to: { z: source.z, cell: source.cell } })
+
+    fireEvent.click(screen.getByRole('button', { name: /delete portal/i }))
+    expect(container.querySelector('.maplab-fixture-form')).not.toBeInTheDocument()
+  })
+
+  it('"Place door", "Place prop", "Place stair", and "Place portal" placement modes are mutually exclusive', async () => {
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: twoFloorLayout })
+    vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: twoFloorLayout })
+
+    const { container } = render(<MapLabEditorPage />)
+    await flush()
+
+    fireEvent.click(screen.getByRole('button', { name: /place door/i }))
+    expect(container.querySelectorAll('.maplab-door-placement-edge').length).toBeGreaterThan(0)
+
+    fireEvent.click(screen.getByRole('button', { name: /place stair/i }))
+    expect(container.querySelectorAll('.maplab-door-placement-edge')).toHaveLength(0)
+    expect(container.querySelectorAll('.maplab-stair-placement-cell').length).toBeGreaterThan(0)
+
+    fireEvent.click(screen.getByRole('button', { name: /place portal/i }))
+    expect(container.querySelectorAll('.maplab-stair-placement-cell')).toHaveLength(0)
+    expect(container.querySelectorAll('.maplab-portal-placement-cell').length).toBeGreaterThan(0)
+
+    fireEvent.click(screen.getByRole('button', { name: /place prop/i }))
+    expect(container.querySelectorAll('.maplab-portal-placement-cell')).toHaveLength(0)
+    expect(container.querySelectorAll('.maplab-prop-placement-cell').length).toBeGreaterThan(0)
+  })
+
+  it('retargeting a portal onto an existing portal re-links instead of duplicating', async () => {
+    const layoutWithPortal = {
+      ...twoFloorLayout,
+      portals: [{ portal_id: 1, cell: [0, 0], z: 1, to: { z: 1, cell: [0, 0] }, hidden: false, locked: false, trapped: false, title: 'Existing Portal' }],
+    }
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: layoutWithPortal })
+    const saveSpy = vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: layoutWithPortal })
+
+    const { container } = render(<MapLabEditorPage />)
+    await flush()
+
+    fireEvent.click(screen.getByRole('button', { name: /place portal/i }))
+    fireEvent.click(container.querySelector('.maplab-portal-placement-cell') as Element)
+
+    const floorSelect = screen.getByLabelText('Destination') as HTMLSelectElement
+    fireEvent.change(floorSelect, { target: { value: '1' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Set destination to 0, 0 on floor 1' }))
+
+    await act(async () => {
+      vi.advanceTimersByTime(700)
+      await Promise.resolve()
+    })
+    const savedData = saveSpy.mock.calls[0][1].data as {
+      portals: Array<{ portal_id: number; z: number; cell: number[]; to: { z: number; cell: number[] } }>
+    }
+    expect(savedData.portals).toHaveLength(2)
+    const existing = savedData.portals.find((p) => p.portal_id === 1)!
+    expect(existing.to).toEqual({ z: 0, cell: [0, 0] })
   })
 })
