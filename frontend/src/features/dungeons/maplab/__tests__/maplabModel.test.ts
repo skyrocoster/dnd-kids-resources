@@ -182,7 +182,7 @@ describe('maplabModel (M0a scaffold)', () => {
       const door: MapDoor = { ...base, locked: true, hidden: true }
       const p = passagePresentation(door)
       expect(p.state).toBe('locked')
-      expect(p.token).toBe('--md-secondary')
+      expect(p.token).toBe('--md-passage-locked')
       expect(p.label).toBe('Locked')
     })
 
@@ -190,7 +190,7 @@ describe('maplabModel (M0a scaffold)', () => {
       const door: MapDoor = { ...base, hidden: true }
       const p = passagePresentation(door)
       expect(p.state).toBe('hidden')
-      expect(p.token).toBe('--md-outline')
+      expect(p.token).toBe('--md-passage-hidden')
       expect(p.label).toBe('Hidden')
     })
 
@@ -672,8 +672,8 @@ describe('maplabModel (Stage 3 inspector)', () => {
 
       expect(d.title).toBe('Heavy Stone Door')
       expect(d.typeLabel).toBe('Door')
-      expect(d.token).toBe('--md-secondary') // locked
-      expect(d.lines).toContainEqual({ label: 'State', value: 'Locked' })
+      expect(d.token).toBe('--md-passage-locked') // locked
+      expect(d.chips.map((c) => c.state)).toEqual(['locked'])
       expect(d.lines).toContainEqual({ label: 'Break DC', value: '23' })
       expect(d.lines).toContainEqual({ label: 'Pick DC', value: '18' })
     })
@@ -695,7 +695,7 @@ describe('maplabModel (Stage 3 inspector)', () => {
 
       expect(d.title).toBe('Stone Stairs')
       expect(d.typeLabel).toBe('Stair')
-      expect(d.lines).toContainEqual({ label: 'State', value: 'Unlocked' })
+      expect(d.chips).toEqual([]) // unlocked — no chip, the clean/unremarkable state
     })
   })
 
@@ -729,8 +729,7 @@ describe('maplabModel (Stage 3 inspector)', () => {
       }
       const d = inspectableDescriptor({ kind: 'prop', prop })
 
-      expect(d.lines).toContainEqual({ label: 'State', value: 'Locked' })
-      expect(d.lines).toContainEqual({ label: 'Also', value: 'Hidden' })
+      expect(d.chips.map((c) => c.state)).toEqual(['locked', 'hidden'])
       expect(d.lines).toContainEqual({ label: 'Pick DC', value: '12' })
       expect(d.lines).toContainEqual({ label: 'Perception DC', value: '15' })
     })
@@ -907,34 +906,58 @@ describe('maplabModel (Stage 4 session state)', () => {
   })
 })
 
-describe('Design Phase J — Map Lab Decluttering (J0 scaffolding)', () => {
+describe('Design Phase J — Map Lab Decluttering', () => {
   describe('PASSAGE_STATE_TOKENS', () => {
-    it('matches passagePresentation\'s current tokens (unchanged until J3)', () => {
+    it('matches passagePresentation\'s tokens, locked/hidden repointed to J3\'s banked tokens', () => {
       expect(PASSAGE_STATE_TOKENS).toEqual({
         trapped: '--md-error',
-        locked: '--md-secondary',
-        hidden: '--md-outline',
+        locked: '--md-passage-locked',
+        hidden: '--md-passage-hidden',
         unlocked: '--md-on-surface-variant',
       })
     })
   })
 
-  describe('passageStateChips (J2 stub)', () => {
-    it.skip('returns a trapped-only chip for a trapped passage', () => {})
-    it.skip('returns a locked-only chip for a locked passage', () => {})
-    it.skip('returns a hidden-only chip for a hidden passage', () => {})
-    it.skip('returns trapped + locked chips for a trapped and locked passage', () => {})
-    it.skip('returns no chips for a fully unlocked passage', () => {})
+  describe('passageStateChips', () => {
+    it('returns a trapped-only chip for a trapped passage', () => {
+      const chips = passageStateChips({ ...baseDoorFlags, trapped: true })
+      expect(chips.map((c) => c.state)).toEqual(['trapped'])
+      expect(chips[0].label).toBe('Trapped')
+    })
 
-    it('returns [] for every flag combination in J0', () => {
+    it('returns a locked-only chip for a locked passage', () => {
+      const chips = passageStateChips({ ...baseDoorFlags, locked: true })
+      expect(chips.map((c) => c.state)).toEqual(['locked'])
+      expect(chips[0].label).toBe('Locked')
+    })
+
+    it('returns a hidden-only chip for a hidden passage', () => {
+      const chips = passageStateChips({ ...baseDoorFlags, hidden: true })
+      expect(chips.map((c) => c.state)).toEqual(['hidden'])
+      expect(chips[0].label).toBe('Hidden')
+    })
+
+    it('returns trapped + locked chips for a trapped and locked passage', () => {
+      const chips = passageStateChips({ ...baseDoorFlags, trapped: true, locked: true })
+      expect(chips.map((c) => c.state)).toEqual(['trapped', 'locked'])
+    })
+
+    it('returns no chips for a fully unlocked passage', () => {
       expect(passageStateChips(baseDoorFlags)).toEqual([])
-      expect(passageStateChips({ ...baseDoorFlags, trapped: true })).toEqual([])
-      expect(passageStateChips({ ...baseDoorFlags, locked: true, hidden: true })).toEqual([])
     })
   })
 
-  describe('passage-state color tokens (J3 stub — gated on design_plan.md DP1 banked tokens)', () => {
-    it.skip('locked passage uses the banked --md-passage-locked token, not --md-secondary', () => {})
-    it.skip('hidden passage uses the banked --md-passage-hidden token, not --md-outline', () => {})
+  describe('passage-state color tokens (J3 — repointed to design_plan.md DP1 banked tokens)', () => {
+    it('locked passage uses the banked --md-passage-locked token, not --md-secondary', () => {
+      const p = passagePresentation({ ...baseDoorFlags, locked: true })
+      expect(p.token).toBe('--md-passage-locked')
+      expect(p.token).not.toBe('--md-secondary')
+    })
+
+    it('hidden passage uses the banked --md-passage-hidden token, not --md-outline', () => {
+      const p = passagePresentation({ ...baseDoorFlags, hidden: true })
+      expect(p.token).toBe('--md-passage-hidden')
+      expect(p.token).not.toBe('--md-outline')
+    })
   })
 })

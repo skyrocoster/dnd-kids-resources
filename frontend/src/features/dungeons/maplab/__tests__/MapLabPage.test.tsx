@@ -156,7 +156,7 @@ describe('MapLabPage (M2.3 walls + door/stair affordances)', () => {
     expect(door).toHaveAttribute('data-state', 'locked')
 
     await user.hover(door)
-    expect(screen.getByText('Locked')).toBeInTheDocument()
+    expect(screen.getByText('Locked')).toBeInTheDocument() // state chip, not the old dl row
     expect(screen.getByText('Break DC')).toBeInTheDocument()
     expect(screen.getByText('23')).toBeInTheDocument()
     expect(screen.getByText('Pick DC')).toBeInTheDocument()
@@ -195,7 +195,8 @@ describe('MapLabPage (M2.3 walls + door/stair affordances)', () => {
     expect(stair).toHaveAttribute('data-state', 'unlocked')
 
     await user.hover(stair)
-    expect(screen.getByText('Unlocked')).toBeInTheDocument()
+    // Unlocked is the clean/unremarkable state — it renders no chip at all (Design Phase J2).
+    expect(screen.queryByText('Unlocked')).not.toBeInTheDocument()
 
     // Stair's primary action is still travel, not pinning — click switches floor as before.
     await user.click(stair)
@@ -327,7 +328,38 @@ describe('MapLabPage (Stage 3 — Generic inspector)', () => {
     const stair = screen.getByRole('button', { name: /Stone Stairs.*floor 1/i })
     await user.hover(stair)
     expect(screen.getByText('Stair')).toBeInTheDocument()
-    expect(screen.getByText('Unlocked')).toBeInTheDocument()
+    // Unlocked is the clean/unremarkable state — no chip renders for it (Design Phase J2).
+    expect(screen.queryByText('Unlocked')).not.toBeInTheDocument()
+  })
+})
+
+describe('MapLabPage (Design Phase J2 — Passage-state chips)', () => {
+  it('renders an icon+text chip for the locked door, and the old State/Also rows are gone', async () => {
+    const user = userEvent.setup()
+    const { container } = render(<MapLabPage />)
+
+    const door = screen.getByRole('button', { name: /Heavy Stone Door.*Locked/ })
+    await user.hover(door)
+
+    const chipRow = container.querySelector('.maplab-inspector-chips')!
+    expect(chipRow).toBeInTheDocument()
+    const chip = chipRow.querySelector('.maplab-inspector-chip[data-state="locked"]')!
+    expect(chip).toHaveTextContent('Locked')
+    expect(chip.querySelector('svg')).toBeTruthy() // icon renders alongside the text label
+
+    // The retired "State"/"Also" <dl> text rows no longer render.
+    expect(screen.queryByText('State')).not.toBeInTheDocument()
+    expect(screen.queryByText('Also')).not.toBeInTheDocument()
+  })
+
+  it('renders zero chips for the fully-unlocked stair — absence is the clean state', async () => {
+    const user = userEvent.setup()
+    const { container } = render(<MapLabPage />)
+
+    const stair = screen.getByRole('button', { name: /Stone Stairs.*floor 1/i })
+    await user.hover(stair)
+
+    expect(container.querySelector('.maplab-inspector-chips')).not.toBeInTheDocument()
   })
 })
 

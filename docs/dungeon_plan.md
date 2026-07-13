@@ -93,6 +93,11 @@ Material Design 3 system. Consume the **real tokens in `frontend/src/theme.css`*
   a `[data-variant='…']` mapping (`spell|monster|weapon|npc|neutral`) exposing `--variant-accent` /
   `--variant-on-accent` / `--variant-container` / `--variant-on-container` for any component to consume.
   **No new hues without going through this generator process.**
+- **Map Lab passage-state colors** (Stage J3): `PASSAGE_STATE_TOKENS`/`passagePresentation` use
+  `--md-error` (trapped), **`--md-passage-locked`** and **`--md-passage-hidden`** (`theme.css`, generated
+  via `docs/design_plan.md` DP1's banked-token process), and `--md-on-surface-variant` (unlocked — no
+  chip). As of this stage, `--md-secondary`/gold is **exclusively** the exit-choice-card color — it no
+  longer doubles as the locked-passage color, so gold and passage state never collide.
 - **Type scale (one mapping, applied everywhere — no ad-hoc rem/px):** headline (1.5rem) = page/room/NPC
   name; title (1rem/500) = door/stair/ability-score/stepper labels; body (1rem) = prose; body-sm
   (0.875rem) = secondary detail, **floor for all prose**; label (0.875rem) = rail/breadcrumb/section
@@ -894,6 +899,28 @@ phase).
 **Deferred out of this stage:** the `docs/DESIGN_SYSTEM.md` component-anatomy addendum the plan's summary describes — `docs/design_plan.md`'s DP4 (which creates `DESIGN_SYSTEM.md`) has not shipped yet, so there is no file to land the addendum in. Once DP4 ships the doc, add the finalized tray pattern (chevron placement, `data-collapsed` attribute convention, per-`groupKey` persistence shape, default-open rationale) to it as a follow-up — tracked here rather than silently dropped.
 
 **Verification gate:** ✅ `npm run test` — 520 passed / 10 skipped (full suite), 251 passed / 10 skipped scoped to `maplab/`. `tsc -b` clean (same pre-existing `theme-tokens.ts` errors, unrelated). Each of the four editor toolbar groups and the viewer's Session group collapse/expand independently; collapsed state persists per group across remount; 48px touch targets and a visible focus ring on the toggle button.
+
+### J2 — Passage-state chips (✅ shipped)
+
+**What shipped:**
+- `maplabModel.ts`: real `passageStateChips(passage)` — one chip per active flag (trapped/locked/hidden) in the same trapped > locked > hidden precedence `passagePresentation` already uses, built via a small icon/label lookup (`PASSAGE_STATE_CHIP_ICONS`/`PASSAGE_STATE_CHIP_LABELS`) rather than a new state model; unlocked never produces a chip
+- `passageDescriptorLines` no longer emits the `State`/`Also` rows — DC rows (Break/Pick/Perception) and the free-text `Note` row are untouched
+- `InspectableDescriptor` gained a `chips: PassageStateChip[]` field, populated for door/stair/prop/portal via `passageStateChips` on the effective (session-merged) flags, `[]` for rooms
+- `InspectorPanel.tsx` renders a new `.maplab-inspector-chips` row above the existing `<dl>` — one `.maplab-inspector-chip` pill per chip, icon + short text label, colored via `PASSAGE_STATE_TOKENS[chip.state]` (so J3 repointing those tokens recolors the chips for free); zero chips renders no row at all
+- `MapLabPage.css`: `.maplab-inspector-chips`/`.maplab-inspector-chip` pill styling (MD3 surface-3 background, per-state text color, no new breakpoint)
+- Tests: `maplabModel.test.ts`'s J0 stub tests replaced with real per-combination tests (trapped-only, locked-only, hidden-only, trapped+locked, fully-unlocked) plus updated `inspectableDescriptor` assertions (door/stair/prop) checking `d.chips` instead of the retired `State`/`Also` lines; `MapLabPage.test.tsx` gained a "Design Phase J2" integration block (chip row renders icon+text for the locked door and the old text rows are gone; zero chips render for the fully-unlocked stair) plus updates to three pre-existing hover/focus assertions that depended on the old "Unlocked" text row
+
+**Verification gate:** ✅ `npm run test` — 526 passed / 5 skipped (full suite), 257 passed / 5 skipped scoped to `maplab/`. `tsc -b` clean (same pre-existing `theme-tokens.ts` errors from DP1, unrelated). A locked door's inspector shows an icon+text "Locked" chip and no `State`/`Also` rows; a fully-unlocked stair's inspector shows no chip row at all.
+
+### J3 — Passage-state color tokens (✅ shipped)
+
+**What shipped:**
+- `maplabModel.ts`: `passagePresentation()` and `PASSAGE_STATE_TOKENS` repointed — `locked` → `--md-passage-locked`, `hidden` → `--md-passage-hidden` (both `docs/design_plan.md` DP1 banked tokens); `trapped` (`--md-error`) and `unlocked` (`--md-on-surface-variant`) unchanged. `InspectorPanel.tsx` needed no code change — its chip row and icon color already read through `PASSAGE_STATE_TOKENS`/`descriptor.token` (J2), so the new tokens apply for free.
+- `theme.css`: `--md-passage-locked`/`--md-passage-hidden` (and their `-on`/`-container` pairs) moved out of the `/* Banked — reserved for future content roles */` comment block into their own "Passage-state colors" section noting they're now live-consumed and that `--md-secondary`/gold is exclusively the exit-choice-card color from here on. DP1's third banked set (loot) stays untouched in the banked block.
+- `docs/dungeon_plan.md`'s "Design system in force" section gained a "Map Lab passage-state colors" bullet documenting the token mapping and the gold/passage-state decollision — this stage's stand-in for the `DESIGN_SYSTEM.md` update the plan's summary describes; `docs/DESIGN_SYSTEM.md` itself doesn't exist yet (DP4 hasn't shipped, same situation J1 hit) — once DP4 lands, fold this bullet into its map-lab color section as a follow-up.
+- Tests: `maplabModel.test.ts`'s `passagePresentation` locked/hidden assertions and the `inspectableDescriptor — door` locked-token assertion updated to the new tokens; `PASSAGE_STATE_TOKENS` regression test updated; the two J0 `it.skip` stubs ("locked passage uses the banked token, not `--md-secondary`" / hidden equivalent) implemented for real.
+
+**Verification gate:** ✅ `npm run test` — 528 passed / 3 skipped (full suite, all `maplab/`-scoped J3 tests green). `tsc -b` clean (same pre-existing `theme-tokens.ts` unused-var errors from DP1, unrelated). No component code changes needed beyond the token mapping — chip/icon colors flow through the existing J2 wiring.
 
 ---
 

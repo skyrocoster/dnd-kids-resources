@@ -77,6 +77,28 @@
   color: var(--md-on-surface-variant);
 }
 
+/* One pill per active passage-state flag (trapped/locked/hidden), replacing the old "State"/"Also"
+ * text rows (Design Phase J2). Icon + text label so color alone never carries the meaning; each
+ * chip's color is its own state token (`PASSAGE_STATE_TOKENS`), not a single shared accent. */
+.maplab-inspector-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  margin-top: 0.75rem;
+}
+
+.maplab-inspector-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  background: var(--md-surface-3);
+  font-size: var(--type-caption-size);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
 .maplab-inspector-lines {
   display: grid;
   grid-template-columns: auto 1fr;

@@ -458,10 +458,10 @@ export function passagePresentation(passage: PassageFlags): PassagePresentation 
     return { state: 'trapped', icon: TrapIcon, token: '--md-error', label: 'Trapped' }
   }
   if (passage.locked) {
-    return { state: 'locked', icon: LockIcon, token: '--md-secondary', label: 'Locked' }
+    return { state: 'locked', icon: LockIcon, token: '--md-passage-locked', label: 'Locked' }
   }
   if (passage.hidden) {
-    return { state: 'hidden', icon: HiddenIcon, token: '--md-outline', label: 'Hidden' }
+    return { state: 'hidden', icon: HiddenIcon, token: '--md-passage-hidden', label: 'Hidden' }
   }
   return { state: 'unlocked', icon: UnlockIcon, token: '--md-on-surface-variant', label: 'Unlocked' }
 }
@@ -476,34 +476,51 @@ export function secondaryPassageStates(passage: PassageFlags): PassageState[] {
 }
 
 // ============================================================================
-// Design Phase J — Map Lab Decluttering (J0 scaffolding)
+// Design Phase J — Map Lab Decluttering
 // ============================================================================
 
-/** State → MD3 token, split out of `passagePresentation`'s inline mapping so J3 can repoint
+/** State → MD3 token, split out of `passagePresentation`'s inline mapping. J3 repoints
  * `locked`/`hidden` at `docs/design_plan.md` DP1's banked tokens (`--md-passage-locked`/
- * `--md-passage-hidden`) in one place instead of hunting through the icon/label mapping too.
- * Values unchanged from today's `passagePresentation` — this stage only extracts the mapping. */
+ * `--md-passage-hidden`) — gold (`--md-secondary`) collided with the dungeon viewer's exit
+ * choice-cards, and grey (`--md-outline`) was too close to unlocked's grey at a glance.
+ * `trapped`/`unlocked` are unchanged. */
 export const PASSAGE_STATE_TOKENS: Record<PassageState, string> = {
   trapped: '--md-error',
-  locked: '--md-secondary',
-  hidden: '--md-outline',
+  locked: '--md-passage-locked',
+  hidden: '--md-passage-hidden',
   unlocked: '--md-on-surface-variant',
 }
 
 /** One chip per active passage-state flag, replacing the inspector's "State"/"Also" text rows
  * (J2). Icon + short text label so color is never the only signal; a fully-unlocked passage
- * produces zero chips (absence is the clean/unremarkable state). Stubbed for J0 — real
- * implementation lands in J2. */
+ * produces zero chips (absence is the clean/unremarkable state). */
 export interface PassageStateChip {
   state: PassageState
   icon: LucideIcon
   label: string
 }
 
-/** J0 stub: always returns no chips. J2 implements one chip per active flag
- * (trapped/locked/hidden), built on `passagePresentation`/`secondaryPassageStates`. */
-export function passageStateChips(_passage: PassageFlags): PassageStateChip[] {
-  return []
+const PASSAGE_STATE_CHIP_ICONS: Record<Exclude<PassageState, 'unlocked'>, LucideIcon> = {
+  trapped: TrapIcon,
+  locked: LockIcon,
+  hidden: HiddenIcon,
+}
+
+const PASSAGE_STATE_CHIP_LABELS: Record<Exclude<PassageState, 'unlocked'>, string> = {
+  trapped: 'Trapped',
+  locked: 'Locked',
+  hidden: 'Hidden',
+}
+
+/** One chip per active flag (trapped/locked/hidden), in the same trapped > locked > hidden
+ * precedence `passagePresentation` uses for its primary state — a passage that's both locked and
+ * trapped surfaces both chips rather than picking one. Unlocked never produces a chip: it's the
+ * clean/unremarkable baseline, not a flag worth announcing. */
+export function passageStateChips(passage: PassageFlags): PassageStateChip[] {
+  return PASSAGE_STATE_PRECEDENCE.filter(
+    (state): state is Exclude<PassageState, 'unlocked'> =>
+      state !== 'unlocked' && isPassageStateActive(state, passage),
+  ).map((state) => ({ state, icon: PASSAGE_STATE_CHIP_ICONS[state], label: PASSAGE_STATE_CHIP_LABELS[state] }))
 }
 
 // ============================================================================
@@ -579,20 +596,17 @@ export interface InspectableDescriptor {
   typeLabel: string
   icon: LucideIcon
   token: string // MD3 semantic token for the icon/accent color
+  chips: PassageStateChip[]
   lines: { label: string; value: string }[]
 }
 
-/** Shared line-builder for the two passage kinds (door/stair) — state, any secondary flags, DCs,
- * and a free-text note. Previously duplicated inline in `MapLabPage.tsx`'s `PassageDetails`; the
- * generic inspector needs the same content as plain `{label, value}` rows instead of bespoke JSX. */
+/** Shared line-builder for the two passage kinds (door/stair) — DCs and a free-text note. State
+ * (trapped/locked/hidden) is no longer rendered as text rows here (Design Phase J2) — it surfaces
+ * as icon+text chips via `passageStateChips` instead, above the `<dl>` these lines populate.
+ * Previously duplicated inline in `MapLabPage.tsx`'s `PassageDetails`; the generic inspector needs
+ * the same content as plain `{label, value}` rows instead of bespoke JSX. */
 function passageDescriptorLines(passage: PassageFlags): { label: string; value: string }[] {
-  const presentation = passagePresentation(passage)
-  const lines: { label: string; value: string }[] = [{ label: 'State', value: presentation.label }]
-
-  const secondary = secondaryPassageStates(passage)
-  if (secondary.length > 0) {
-    lines.push({ label: 'Also', value: secondary.map((s) => s[0].toUpperCase() + s.slice(1)).join(', ') })
-  }
+  const lines: { label: string; value: string }[] = []
   if (passage.breakDc !== undefined) lines.push({ label: 'Break DC', value: String(passage.breakDc) })
   if (passage.pickDc !== undefined) lines.push({ label: 'Pick DC', value: String(passage.pickDc) })
   if (passage.hiddenDc !== undefined) lines.push({ label: 'Perception DC', value: String(passage.hiddenDc) })
@@ -620,6 +634,7 @@ export function inspectableDescriptor(target: Inspectable): InspectableDescripto
         typeLabel: 'Room',
         icon: RoomIcon,
         token: '--md-on-surface-variant',
+        chips: [],
         lines,
       }
     }
@@ -635,6 +650,7 @@ export function inspectableDescriptor(target: Inspectable): InspectableDescripto
         typeLabel: 'Door',
         icon: presentation.icon,
         token: presentation.token,
+        chips: passageStateChips(effective),
         lines,
       }
     }
@@ -649,6 +665,7 @@ export function inspectableDescriptor(target: Inspectable): InspectableDescripto
         typeLabel: 'Stair',
         icon: presentation.icon,
         token: presentation.token,
+        chips: passageStateChips(effective),
         lines,
       }
     }
@@ -659,6 +676,7 @@ export function inspectableDescriptor(target: Inspectable): InspectableDescripto
         typeLabel: 'Prop',
         icon: PROP_KIND_ICONS[prop.kind] ?? ItemIcon,
         token: passagePresentation(prop).token,
+        chips: passageStateChips(prop),
         lines: passageDescriptorLines(prop),
       }
     }
@@ -673,6 +691,7 @@ export function inspectableDescriptor(target: Inspectable): InspectableDescripto
         typeLabel: 'Portal',
         icon: presentation.icon,
         token: presentation.token,
+        chips: passageStateChips(effective),
         lines,
       }
     }

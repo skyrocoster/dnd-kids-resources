@@ -31,10 +31,13 @@
   --md-error-container: #8c1d18;
   --md-on-error-container: #f9dedc;
 
-  /* Banked — reserved for future content roles */
+  /* Passage-state colors — locked/hidden Map Lab passages (dungeon_plan.md Phase J3).
+     Moved off --md-secondary (gold — collides with the dungeon viewer's exit choice-cards,
+     which are the sole remaining consumer of --md-secondary from here on) and --md-outline
+     (grey — too close to unlocked's --md-on-surface-variant grey at a glance). */
   /* passage-locked — generated via material-color-utilities from source #5b6fd9,
      Blend.harmonize()'d toward primary seed #d0bcff (hue 289.1, chroma 40.0),
-     tones 80/20/30/90. Reserved for dungeon_plan.md Phase J3 (locked passage state). */
+     tones 80/20/30/90. */
   --md-passage-locked: #C5C0FF;
   --md-on-passage-locked: #2C2767;
   --md-passage-locked-container: #433F7F;
@@ -42,12 +45,13 @@
 
   /* passage-hidden — generated via material-color-utilities from source #8b8b8b,
      Blend.harmonize()'d toward primary seed #d0bcff (hue 209.5, chroma 2.0),
-     tones 80/20/30/90. Reserved for dungeon_plan.md Phase J3 (hidden passage state). */
+     tones 80/20/30/90. */
   --md-passage-hidden: #C7C6C6;
   --md-on-passage-hidden: #2F3031;
   --md-passage-hidden-container: #464747;
   --md-on-passage-hidden-container: #E3E2E2;
 
+  /* Banked — reserved for future content roles */
   /* loot — generated via material-color-utilities from source #d4a574,
      Blend.harmonize()'d toward primary seed #d0bcff (hue 51.3, chroma 26.7),
      tones 80/20/30/90. Reserved for future loot system (see dungeon_plan.md Known debt). */
