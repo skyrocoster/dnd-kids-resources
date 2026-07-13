@@ -40,4 +40,21 @@ describe('AppShell', () => {
     renderShell('/spells')
     expect(screen.getByText('spells content')).toBeInTheDocument()
   })
+
+  // DP0 scaffolding: nav collapse stubs (DP2 implementation)
+  it.skip('collapses on toggle', () => {
+    // TODO: trigger toggle, assert nav has app-nav--collapsed class
+  })
+
+  it.skip('persists across remount', () => {
+    // TODO: set collapsed in localStorage, remount component, assert state preserved
+  })
+
+  it.skip('icon-only rail keeps links clickable', () => {
+    // TODO: collapse nav, verify links are still navigable (no "expand first" step)
+  })
+
+  it.skip('focus ring visible when collapsed', () => {
+    // TODO: collapse nav, navigate via keyboard, verify focus ring visible
+  })
 })

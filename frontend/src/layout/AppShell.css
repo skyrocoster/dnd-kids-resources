@@ -31,6 +31,11 @@
   background: var(--md-surface-1);
 }
 
+/* DP0 scaffolding: placeholder for collapsed state — real width/transition in DP2 */
+.app-nav--collapsed {
+  /* TBD: icon-only rail width/transition */
+}
+
 .app-nav-section h2 {
   font-size: var(--type-caption-size);
   line-height: var(--type-caption-line);

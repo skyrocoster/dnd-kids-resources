@@ -46,4 +46,20 @@ export { Save as SaveIcon } from 'lucide-react'
 export { ZoomIn as ZoomInIcon } from 'lucide-react'
 export { ZoomOut as ZoomOutIcon } from 'lucide-react'
 export { Maximize2 as FitIcon } from 'lucide-react'
+
+/* DP0 scaffolding: nav collapse icons */
+export { PanelLeftClose as NavCollapseIcon } from 'lucide-react'
+export { PanelLeftOpen as NavExpandIcon } from 'lucide-react'
+
+/* DP0 scaffolding: icon batch for upcoming features (unused, reserved for Phase J/loot) */
+export { Coins as CoinsIcon } from 'lucide-react'
+export { ScrollText as ScrollIcon } from 'lucide-react'
+export { Wand2 as WandIcon } from 'lucide-react'
+export { BookOpen as TomeIcon } from 'lucide-react'
+export { Bed as PropBedIcon } from 'lucide-react'
+export { Anvil as PropAnvilIcon } from 'lucide-react'
+export { Flame as TorchIcon } from 'lucide-react'
+
+/* GemIcon is claimed for future loot system use; Gem re-export at line 16 reserved */
+
 export type { LucideIcon } from 'lucide-react'
