@@ -531,12 +531,29 @@ describe('MapLabPage (Stage E1 — Unified data: viewer reads backend layout)', 
     expect(screen.getByText('Heavy Stone Door')).toBeInTheDocument()
   })
 
-  // TODO (D0): encounter marker stubs
+  // TODO (D2): wire up prop click → setActiveEncounterId
   it.skip('encounter marker renders and opens the dock', () => {
     // D2: wire up prop click → setActiveEncounterId
   })
 
-  it.skip('encounter marker round-trips encounter_id through save/load', () => {
-    // D1: verify MapProp.encounter_id persists in the layout blob
+  it('encounter marker round-trips encounter_id through save/load', async () => {
+    const encounterProp = {
+      prop_id: 501,
+      kind: 'encounter',
+      cell: [0, 0] as [number, number],
+      z: 0,
+      title: 'Goblin Ambush',
+      hidden: false,
+      locked: false,
+      trapped: false,
+      encounter_id: 42,
+    }
+    const backendLayout = { ...mapLabLayout, props: [...mapLabLayout.props, encounterProp] }
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: backendLayout })
+
+    render(<MapLabPage />)
+    await flush()
+
+    expect(screen.getByRole('button', { name: /Goblin Ambush/i })).toBeInTheDocument()
   })
 })

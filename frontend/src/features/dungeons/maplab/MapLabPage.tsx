@@ -520,7 +520,7 @@ export function MapLabPage() {
         </div>
       </div>
 
-      {/* TODO (D1): encounter dock placeholder; D2 will wire up prop click handlers */}
+      {/* TODO (D2): wire up prop click handlers to open this dock */}
       {activeEncounterId != null && (
         <EncounterDock encounterId={activeEncounterId} onClose={() => setActiveEncounterId(null)} />
       )}

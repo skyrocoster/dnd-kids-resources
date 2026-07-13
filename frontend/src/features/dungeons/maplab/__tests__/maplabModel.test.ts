@@ -27,6 +27,7 @@ import {
   ghostFloorZ,
   doorsOnFloor,
   propsOnFloor,
+  normalizeLayout,
   type MapLayout,
   type MapRoom,
   type MapDoor,
@@ -731,5 +732,40 @@ describe('maplabModel (Stage 4 session state)', () => {
 
     expect(d.lines).toContainEqual({ label: 'Position', value: 'Open' })
     expect(d.lines).toContainEqual({ label: 'Trap', value: 'Disarmed' })
+  })
+
+  describe('MapProp.encounter_id round-trip (D1)', () => {
+    const encounterProp: MapProp = {
+      prop_id: 501,
+      kind: 'encounter',
+      cell: [0, 0],
+      hidden: false,
+      locked: false,
+      trapped: false,
+      title: 'Goblin Ambush',
+      encounter_id: 42,
+    }
+
+    it('survives a JSON round-trip through the persisted layout blob', () => {
+      const layout: MapLayout = { ...mapLabLayout, props: [...mapLabLayout.props, encounterProp] }
+      const roundTripped: MapLayout = JSON.parse(JSON.stringify(layout))
+      const prop = roundTripped.props.find((p) => p.prop_id === 501)
+      expect(prop?.encounter_id).toBe(42)
+    })
+
+    it('is preserved by normalizeLayout', () => {
+      const layout: MapLayout = { ...mapLabLayout, props: [...mapLabLayout.props, encounterProp] }
+      const normalized = normalizeLayout(layout)
+      const prop = normalized.props.find((p) => p.prop_id === 501)
+      expect(prop?.encounter_id).toBe(42)
+    })
+
+    it('preserves a null encounter_id for an unlinked encounter marker', () => {
+      const unlinked: MapProp = { ...encounterProp, encounter_id: null }
+      const layout: MapLayout = { ...mapLabLayout, props: [...mapLabLayout.props, unlinked] }
+      const roundTripped: MapLayout = JSON.parse(JSON.stringify(layout))
+      const prop = roundTripped.props.find((p) => p.prop_id === 501)
+      expect(prop?.encounter_id).toBeNull()
+    })
   })
 })
