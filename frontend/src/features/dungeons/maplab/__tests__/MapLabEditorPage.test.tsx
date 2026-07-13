@@ -551,6 +551,76 @@ describe('MapLabEditorPage (Stage F3 — prop authoring)', () => {
   })
 })
 
+describe('MapLabEditorPage (Stage D3 — encounter marker authoring)', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks()
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.runOnlyPendingTimers()
+    vi.useRealTimers()
+  })
+
+  const oneRoomLayout = {
+    meta: { cellSizeFt: 5, padding: 3 },
+    rooms: [{ room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0]], title: 'Room 1' }],
+    doors: [],
+    stairs: [],
+    floors: [{ z: 0, title: 'Ground Floor' }],
+    props: [{ prop_id: 1, kind: 'encounter', cell: [0, 0], title: 'Ambush', hidden: false, locked: false, trapped: false, encounter_id: null }],
+  }
+
+  it("lists encounters by title in the picker, attaches one via the Kind='encounter' marker's form, and persists encounter_id", async () => {
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: oneRoomLayout })
+    const saveSpy = vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: oneRoomLayout })
+    vi.spyOn(api, 'listEncounters').mockResolvedValue([
+      { id: 5, title: 'Goblin Ambush' },
+      { id: 9, title: 'Dragon Lair' },
+    ])
+
+    const { container } = render(<MapLabEditorPage />)
+    await flush()
+
+    fireEvent.click(container.querySelector('.maplab-prop') as Element)
+    expect(container.querySelector('.maplab-fixture-form')).toBeInTheDocument()
+    await flush()
+
+    const picker = screen.getByLabelText('Encounter') as HTMLSelectElement
+    expect(Array.from(picker.options).map((o) => o.textContent)).toEqual([
+      'No encounter',
+      'Goblin Ambush',
+      'Dragon Lair',
+    ])
+
+    fireEvent.change(picker, { target: { value: '9' } })
+
+    await act(async () => {
+      vi.advanceTimersByTime(700)
+      await Promise.resolve()
+    })
+    expect(saveSpy).toHaveBeenCalledTimes(1)
+    const savedData = saveSpy.mock.calls[0][1].data as { props: Array<{ encounter_id: number | null }> }
+    expect(savedData.props[0]).toMatchObject({ encounter_id: 9 })
+  })
+
+  it('the Encounter picker only shows for encounter-kind markers', async () => {
+    const chestLayout = {
+      ...oneRoomLayout,
+      props: [{ prop_id: 1, kind: 'chest', cell: [0, 0], title: 'A Chest', hidden: false, locked: false, trapped: false }],
+    }
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: chestLayout })
+    vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: chestLayout })
+    vi.spyOn(api, 'listEncounters').mockResolvedValue([])
+
+    const { container } = render(<MapLabEditorPage />)
+    await flush()
+
+    fireEvent.click(container.querySelector('.maplab-prop') as Element)
+    expect(screen.queryByLabelText('Encounter')).not.toBeInTheDocument()
+  })
+})
+
 describe('MapLabEditorPage (Stage F4 — prop stays clickable under the paint overlay)', () => {
   beforeEach(() => {
     vi.restoreAllMocks()

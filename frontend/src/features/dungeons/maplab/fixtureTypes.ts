@@ -17,7 +17,7 @@ export interface SelectOption {
 export interface FieldSpec {
   key: string
   label: string
-  type: 'boolean' | 'number' | 'text' | 'select'
+  type: 'boolean' | 'number' | 'text' | 'select' | 'encounterPicker'
   options?: SelectOption[]
   showWhen?: (values: Record<string, unknown>) => boolean
 }
@@ -63,7 +63,7 @@ export const PROP_FIELDS: FieldSpec[] = [
   { key: 'title', label: 'Title', type: 'text' },
   { key: 'kind', label: 'Kind', type: 'select', options: PROP_KIND_OPTIONS },
   { key: 'side', label: 'Attach to wall', type: 'select', options: PROP_WALL_SIDE_OPTIONS },
-  { key: 'encounter_id', label: 'Encounter', type: 'text', showWhen: (values) => values.kind === 'encounter' },
+  { key: 'encounter_id', label: 'Encounter', type: 'encounterPicker', showWhen: (values) => values.kind === 'encounter' },
   { key: 'hidden', label: 'Hidden', type: 'boolean' },
   { key: 'locked', label: 'Locked', type: 'boolean' },
   { key: 'trapped', label: 'Trapped', type: 'boolean' },
