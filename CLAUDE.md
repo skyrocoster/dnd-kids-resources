@@ -36,8 +36,11 @@ Before diving into the code or spawning exploration agents, read the appropriate
 
 Each feature is documented in its own `docs/*_plan.md` file, broken into design phases, each broken into
 self-contained stages. Stages are sequenced so later ones build on earlier ones without re-deriving prior work.
-**Use `dungeon_plan.md` as the structural model for all feature plans — apply the same stage pattern to any new
-feature (encounters, loot, etc.).**
+**Copy [`docs/PLAN_TEMPLATE.md`](docs/PLAN_TEMPLATE.md) to start any new plan doc — it defines the required
+sections, the per-stage completion ritual, and the collapse discipline that keeps a plan from growing unbounded.**
+`design_plan.md` is the reference for how a healthy, lean plan doc reads; `dungeon_plan.md` (933 lines, every
+shipped stage still carrying its full authoring paragraph) is the bloat failure mode the template exists to
+prevent — mine it for the *content* pattern, not the length.
 
 **Stage structure (copying the dungeon_plan.md pattern):**
 1. **Scaffolding stage (e.g., "F0"):** Type declarations, stubs, placeholder CSS, test stubs (`it.skip`), no
@@ -56,8 +59,12 @@ feature (encounters, loot, etc.).**
   automation only when verification requires it; do not drive the browser for routine testing.
 - **Commit message:** Reference the stage ID and list key deliverables; include test counts.
 
-**Between stages:** Update the plan doc with the "What shipped" section, commit it with the code, then proceed
-to the next stage. This keeps the plan synchronized with reality. **If the stage added/removed a router, an endpoint, a seed domain/table, or a top-level folder/convention, update the matching reference doc (`ARCHITECTURE.md`, `API_REFERENCE.md`, `DATA_MODEL.md`) in the same commit — treat this as part of the stage's deliverables, not a follow-up.** This keeps reference docs synchronized with code.
+**Between stages:** Update the plan doc, commit it with the code, then proceed to the next stage. This keeps
+the plan synchronized with reality. **Follow the collapse discipline in [`docs/PLAN_TEMPLATE.md`](docs/PLAN_TEMPLATE.md):**
+a shipped stage's verbose spec block is *deleted* and replaced by one ≤2-sentence row in the Shipped-stages
+table (the how-it-was-built narrative lives in the git commit, not the doc); rewrite the Status line rather than
+appending; and when a phase's last stage ships, fold the phase to a short `(shipped)` summary and promote any
+durable structure to a reference doc. **If the stage added/removed a router, an endpoint, a seed domain/table, or a top-level folder/convention, update the matching reference doc (`ARCHITECTURE.md`, `API_REFERENCE.md`, `DATA_MODEL.md`) in the same commit — treat this as part of the stage's deliverables, not a follow-up.** This keeps reference docs synchronized with code.
 
 ### The stack
 - **Data:** FINAL and frozen. `data/seeds/*.json` is the canonical source of truth. The SQLite DB (`dnd_kids_resources.db`, gitignored) is **rebuilt from seeds** via `scripts/init_database.py` + `scripts/seed_database.py`. Never hand-edit the DB as a source of truth; edit seeds and rebuild.

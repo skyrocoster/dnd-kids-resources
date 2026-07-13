@@ -5,9 +5,9 @@ Single reference for the dungeon room-navigation feature and its follow-on desig
 **Shipped stages** table for history, verbose spec only for the *active/next* stage. Detail on *how* a
 shipped stage was built lives in its git commit, not here.
 
-> **Status:** Original build (Stages 1–11) + Design Phases A–J **all shipped**. Phase H continued:
-> **H0–H3 shipped** (portal authoring + viewer rendering/navigation, plus a same-stage destination-picker
-> rework and orphan-pairing fix). **Active: H4 (design pass)**, queued next — see **`## Next`**.
+> **Status:** Original build (Stages 1–11) + Design Phases A–J **all shipped**. **Phase H (Stair/Portal
+> Authoring) is complete** — H0–H4 all shipped, portal thread closed. No phase is currently queued; see
+> **`## Known debt / deferred work`** for backlog candidates.
 
 ---
 
@@ -164,8 +164,7 @@ Each phase's per-stage authoring detail is in its git commits. This table is the
 | **E — Unified data + zoom (0–3)** | Viewer reads the same persisted `map_layout` as the editor (`useMapLabLayout`); real canvas zoom/pan (`useMapCanvasZoom` + `MapCanvas`, map *grows* on zoom inside an `overflow:auto` viewport, Ctrl/⌘-wheel + drag-pan); toolbar/inspector design pass (`.maplab-pill-button`, grouped toolbar, unified nav rail, always-mounted inspector rail). Exposed + fixed the false-green typecheck (`tsc -b`, not `--noEmit`). |
 | **F — Room Props (F0–F4)** | Generic on-square/on-wall `MapProp` system reusing `PassageFlags` wholesale: shared `PropMarker` (kind icon + state token + hidden-dashed outline + badge), editor placement mode, generic properties form, reserved-but-inert **loot hook** row. Frontend-only; round-trips in the `map_layout` blob. Renamed the reserved `MapItem` slot to `MapProp` to avoid colliding with the coming loot **items** system. |
 | **G — Ghost Objects (G-fix + G0–G2)** | Editor "Ghost lower floor" toggle overlaying the nearest lower floor as dimmed, read-only, `aria-hidden` ghosts for cross-floor alignment. G1 found and fixed a real floor-attribution bug — doors/props leaked across floors sharing `[x,y]`; fixed by stamping an authored `z` on `addDoor`/`addProp` and filtering by it (`normalizeLayout` backfills legacy data). |
-| **H — Stair/Portal Authoring (H0–H2)** | Editor stair authoring (on-canvas placement/selection — not viewer floor-jump — with `DestinationPickerField` and co-located up/down landings via `stairMarkerOffset`) + two-way **portal doors** (`MapPortal`, paired auto-create/re-link on `updateFixtureFlags('portal',…,{to})`, new `PortalMarker`). Windows added as a new `MapProp` kind on the existing seam. |
-| **H3 — Portal viewer rendering + navigation** | `MapLabPage.tsx` renders portals on the active floor, wires hover/focus into the inspector (session-aware lock/trap controls extended to portals), and click jumps `activeZ` to `portal.to.z` — mirrors the stair machinery. Same-stage fixes: `DestinationPickerField` replaced its unusably-small click-a-cell mini floor-plan with a floor + room select (random free cell inside the chosen room); `updateFixtureFlags('portal',…,{to})` now moves a portal's existing pair to the new target (or drops it on re-link) instead of leaving an orphaned one-way portal behind. |
+| **H — Stair/Portal Authoring (H0–H4)** | Editor stair authoring (on-canvas placement/selection with `DestinationPickerField` and co-located up/down landings) + two-way **portal doors** (`MapPortal`, paired auto-create/re-link, `PortalMarker`); viewer renders/navigates both stairs and portals (hover/focus inspector, click jumps `activeZ`), with a same-stage destination-picker rework (floor + room select, replacing an unusably-small click-a-cell mini floor-plan) and an orphan-pairing fix. **H4 design pass:** extracted a shared `StairMarker` (matching `PortalMarker`/`PropMarker`) to fix a real inconsistency — inline stair markers were missing the state badge and dashed-hidden outline the other two markers had — and consolidated the marker-radius magic numbers into named `maplabModel.ts` constants (`MARKER_RADIUS_FRACTION`, `WALL_PROP_RADIUS_FRACTION`/`WALL_PROP_ICON_SCALE`). Portal/stair/prop confirmed visually distinct via icon glyph alone (no new hue/shape needed); 5-way placement-mode toolbar exclusion and canvas-glyph touch targets confirmed with no edge cases. |
 | **I — Stair/Portal Fixes (I0–I3)** | Fixed the live destination-picker (a missing `flex-direction:column` collapsed its SVG to 2×2px); **redesigned stair destinations as up/down checkboxes** (`setStairDirection`; one record renders on both floors, so no reciprocal object — I2 multi-destination folded in); replaced `stairMarkerOffset` with a shared `gridMarkerOffset`/`markersAtCell` 2-column grid for any co-located marker type, with a 4-per-cell cap. All live-verified 2026-07-13. |
 | **J — Map Lab Decluttering (J0–J3)** | Independently collapsible toolbar trays (`ToolbarTray` + `useToolbarTrayCollapse`, per-group `localStorage`); passage-state **icon+text chips** (`passageStateChips`) replacing the "State"/"Also" text rows in the inspector; passage colors repointed onto banked `--md-passage-locked`/`--md-passage-hidden` tokens, decollided from exit-card gold and from each other. |
 
@@ -279,23 +278,8 @@ table + layout router), or the live dungeon model/pages.
 
 ---
 
-## Next: Design Phase H continued — Design pass
+## Next
 
-H0–H3 shipped: portal authoring, viewer rendering/navigation, and the destination-picker/pairing
-fixes (see the Shipped-stages table). **Frontend-only**, `maplab/` only — same isolation as Phases C–J;
-no backend/seed change.
-
-| Stage | Model | Summary | Deliverables |
-|-------|-------|---------|--------------|
-| **H4 — Design pass** | Sonnet (`/frontend-design`) | Marker distinctness + full-phase live gate + a11y/touch-target review across the stair/portal/window set. | Design fixes; live sign-off. |
-
-### H4 — Design pass (queued)
-
-`/frontend-design`, after H3. Confirm the portal marker reads as its own thing (not confusable with a prop
-or stair) while staying inside the token/icon/shape language (never hue-alone, dashed-hidden outline, badge
-pattern matches door/stair/prop); confirm 5-way placement-mode toolbar exclusion has no edge cases; confirm
-canvas-glyph touch-target sizing follows the Map Lab marker-radius convention (not the 48px toolbar floor).
-**🚦 Full-phase live regression** across editor (place stair/portal/window, destination picking, mutual
-exclusion) + viewer (stair *and* portal floor-jump, hover inspectors) + `npm run test`/`typecheck`/`build`
-green + `pytest` unaffected + `git status` clean on seeds/backend. On sign-off, fold H3+H4 into the
-Shipped-stages "Phase H" row and mark the portal thread complete.
+No phase is currently queued — Phase H (Stair/Portal Authoring) closes out the portal thread. See
+**`## Known debt / deferred work`** above for backlog candidates (editor round-trip fix, Map Lab
+production fold-in, loot system, cross-reference hover pop-outs, and the other deferred items).

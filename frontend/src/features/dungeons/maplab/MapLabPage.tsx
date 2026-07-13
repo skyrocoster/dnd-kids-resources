@@ -8,6 +8,7 @@ import { ChevronDownIcon, ChevronUpIcon, FitIcon, TrapDisarmedIcon, ZoomInIcon, 
 import { EncounterDock } from '../../encounters/EncounterDock'
 import { PropMarker } from './PropMarker'
 import { PortalMarker } from './PortalMarker'
+import { StairMarker } from './StairMarker'
 import { InspectorPanel, type SessionControls } from './InspectorPanel'
 import {
   absoluteCells,
@@ -17,7 +18,6 @@ import {
   doorSwingGeometry,
   doorWallSegment,
   floorsInLayout,
-  GROUPED_MARKER_RADIUS_FRACTION,
   gridMarkerOffset,
   markersAtCell,
   nonDoorWallSegments,
@@ -553,64 +553,28 @@ export function MapLabPage() {
             if (!cell) return null
             const session = stairSession(stair)
             const { dx, dy, grouped } = markerOffset(layout, activeZ, cell, 'stair', stair.stair_id)
-            const [x, y] = cell
-            const cx = (x + 0.5 + dx) * CELL_SIZE
-            const cy = (y + 0.5 + dy) * CELL_SIZE
-            const markerRadius = grouped ? CELL_SIZE * GROUPED_MARKER_RADIUS_FRACTION : CELL_SIZE * 0.32
-            const markerIconSize = grouped ? CELL_SIZE * GROUPED_MARKER_RADIUS_FRACTION * 1.1 : ICON_SIZE
             const targetZ = otherFloorZ(stair, activeZ)
             const presentation = stairPresentation(stair, activeZ, session)
-            const Icon = presentation.icon
             const disarmedLabel = stair.trapped && session.trapDisarmed ? ' — trap disarmed' : ''
             const label = `${stair.title ?? `Stair ${stair.stair_id}`} — ${presentation.label}${disarmedLabel} — go to floor ${targetZ}`
             return (
-              <g
+              <StairMarker
                 key={stair.stair_id}
-                className="maplab-stair"
-                data-state={presentation.state}
-                role="button"
-                tabIndex={0}
-                aria-label={label}
+                stair={stair}
+                cellSize={CELL_SIZE}
+                cell={cell}
+                activeZ={activeZ}
+                session={session}
+                trapDisarmed={stair.trapped && session.trapDisarmed}
+                offset={{ dx, dy }}
+                grouped={grouped}
+                label={label}
                 onMouseEnter={() => setHoveredInspectable({ kind: 'stair', id: stair.stair_id })}
                 onMouseLeave={() => setHoveredInspectable(null)}
                 onFocus={() => setFocusedInspectable({ kind: 'stair', id: stair.stair_id })}
                 onBlur={() => setFocusedInspectable(null)}
                 onClick={() => setActiveZ(targetZ)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter' || event.key === ' ') {
-                    event.preventDefault()
-                    setActiveZ(targetZ)
-                  }
-                }}
-              >
-                <title>{stair.title ?? `Stair ${stair.stair_id}`}</title>
-                <circle
-                  className="maplab-stair-marker"
-                  cx={cx}
-                  cy={cy}
-                  r={markerRadius}
-                  style={{ stroke: `var(${presentation.token})` }}
-                />
-                <g transform={`translate(${cx - markerIconSize / 2}, ${cy - markerIconSize / 2})`}>
-                  <Icon
-                    width={markerIconSize}
-                    height={markerIconSize}
-                    className="maplab-stair-icon"
-                    style={{ color: `var(${presentation.token})` }}
-                  />
-                </g>
-                {stair.trapped && session.trapDisarmed && (
-                  <g transform={`translate(${cx + markerIconSize / 4}, ${cy + markerIconSize / 4})`}>
-                    <TrapDisarmedIcon
-                      width={14}
-                      height={14}
-                      className="maplab-trap-disarmed-badge"
-                      aria-hidden="true"
-                      style={{ color: 'var(--md-tertiary)' }}
-                    />
-                  </g>
-                )}
-              </g>
+              />
             )
           })}
 

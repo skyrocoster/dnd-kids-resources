@@ -24,6 +24,7 @@ import { ToolbarTray } from './MapLabPage'
 import { FixturePropertiesForm } from './FixturePropertiesForm'
 import { PropMarker } from './PropMarker'
 import { PortalMarker } from './PortalMarker'
+import { StairMarker } from './StairMarker'
 import { GhostFloorLayer } from './GhostFloorLayer'
 import { FIXTURE_TYPES } from './fixtureTypes'
 import {
@@ -33,7 +34,6 @@ import {
   doorSwingGeometry,
   doorWallSegment,
   doorsOnFloor,
-  GROUPED_MARKER_RADIUS_FRACTION,
   MAX_MARKERS_PER_CELL,
   ghostFloorZ,
   gridMarkerOffset,
@@ -47,7 +47,6 @@ import {
   roomsOnZ,
   stairCellForZ,
   stairEndpointsForZ,
-  stairPresentation,
   type CardinalSide,
   type MapCell,
   type MapLayout,
@@ -620,42 +619,19 @@ export function MapLabEditorPage() {
             const cell = stairCellForZ(stair, state.activeZ)
             if (!cell) return null
             const { dx, dy, grouped } = markerOffset(state.layout, state.activeZ, cell, 'stair', stair.stair_id)
-            const [x, y] = cell
-            const cx = (x + 0.5 + dx) * CELL_SIZE
-            const cy = (y + 0.5 + dy) * CELL_SIZE
-            const markerRadius = grouped ? CELL_SIZE * GROUPED_MARKER_RADIUS_FRACTION : CELL_SIZE * 0.32
-            const markerIconSize = grouped ? CELL_SIZE * GROUPED_MARKER_RADIUS_FRACTION * 1.1 : ICON_SIZE
             const isSelected = stair.stair_id === state.selectedStairId
-            const presentation = stairPresentation(stair, state.activeZ)
-            const Icon = presentation.icon
-            const label = `${stair.title ?? `Stair ${stair.stair_id}`} — ${presentation.label}`
             return (
-              <g
+              <StairMarker
                 key={stair.stair_id}
-                className="maplab-stair"
-                data-state={presentation.state}
-                data-selected={isSelected || undefined}
-                role="button"
-                tabIndex={0}
-                aria-pressed={isSelected}
-                aria-label={label}
-                onClick={(event) => {
-                  event.stopPropagation()
-                  selectStair(isSelected ? null : stair.stair_id)
-                }}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter' || event.key === ' ') {
-                    event.preventDefault()
-                    selectStair(isSelected ? null : stair.stair_id)
-                  }
-                }}
-              >
-                <title>{stair.title ?? `Stair ${stair.stair_id}`}</title>
-                <circle className="maplab-stair-marker" cx={cx} cy={cy} r={markerRadius} style={{ stroke: `var(${presentation.token})` }} />
-                <g transform={`translate(${cx - markerIconSize / 2}, ${cy - markerIconSize / 2})`}>
-                  <Icon width={markerIconSize} height={markerIconSize} className="maplab-stair-icon" style={{ color: `var(${presentation.token})` }} />
-                </g>
-              </g>
+                stair={stair}
+                cellSize={CELL_SIZE}
+                cell={cell}
+                activeZ={state.activeZ}
+                selected={isSelected}
+                offset={{ dx, dy }}
+                grouped={grouped}
+                onClick={() => selectStair(isSelected ? null : stair.stair_id)}
+              />
             )
           })}
 

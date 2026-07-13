@@ -346,11 +346,21 @@ export function otherFloorZ(stair: MapStair, currentZ: number): number {
  * dropping it off the grid. */
 export const MAX_MARKERS_PER_CELL = 4
 
+/** Marker circle radius (as a fraction of cell size) for a lone on-square marker (stair/portal/
+ * on-square prop) — shrunk to `GROUPED_MARKER_RADIUS_FRACTION` instead once 2+ markers share a
+ * cell. Exported so every on-square marker renderer (stair/portal/prop) sizes consistently. */
+export const MARKER_RADIUS_FRACTION = 0.32
+
 /** Marker circle radius (as a fraction of cell size) once 2+ markers share a cell — smaller than
- * the lone-marker radius (0.32, e.g. `PortalMarker`'s default) so `gridMarkerOffset`'s spacing can
- * actually separate them instead of stacking same-size circles a few px apart. Exported so every
- * grouped-marker renderer (stair/portal/prop) sizes consistently with the offsets it's laid out by. */
+ * `MARKER_RADIUS_FRACTION` so `gridMarkerOffset`'s spacing can actually separate them instead of
+ * stacking same-size circles a few px apart. Exported so every grouped-marker renderer
+ * (stair/portal/prop) sizes consistently with the offsets it's laid out by. */
 export const GROUPED_MARKER_RADIUS_FRACTION = 0.18
+
+/** Marker circle radius / icon-scale fractions for a wall-attached prop (door pattern) — smaller
+ * than an on-square marker since it anchors to a wall segment rather than centering in a cell. */
+export const WALL_PROP_RADIUS_FRACTION = 0.22
+export const WALL_PROP_ICON_SCALE = 0.28
 
 /** Fractional-cell offset (as a multiple of cell size) for a marker among `count` markers sharing
  * the same grid cell, at position `index` in a stable order. 1 marker centers (no offset); 2+

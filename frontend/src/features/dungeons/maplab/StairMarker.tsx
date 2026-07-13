@@ -1,10 +1,10 @@
-import { HiddenIcon, LockIcon, TrapIcon, PortalIcon, type LucideIcon } from '../../../components/icons'
+import { HiddenIcon, LockIcon, TrapIcon, TrapDisarmedIcon, type LucideIcon } from '../../../components/icons'
 import {
-  effectivePassageState,
   GROUPED_MARKER_RADIUS_FRACTION,
   MARKER_RADIUS_FRACTION,
-  passagePresentation,
-  type MapPortal,
+  stairPresentation,
+  type MapCell,
+  type MapStair,
   type PassageSessionState,
   type PassageState,
 } from './maplabModel'
@@ -15,20 +15,28 @@ const BADGE_ICONS: Partial<Record<PassageState, LucideIcon>> = {
   trapped: TrapIcon,
 }
 
-interface PortalMarkerProps {
-  portal: MapPortal
+interface StairMarkerProps {
+  stair: MapStair
   cellSize: number
+  cell: MapCell
+  activeZ: number
   selected?: boolean
   /** Live session state (locked/trapDisarmed) — the viewer merges this over the authored flags;
    * the editor omits it and gets the authored state as-is. */
   session?: PassageSessionState
-  /** Fractional-cell nudge (from `gridMarkerOffset`) when this portal shares its cell with other
-   * markers (stairs/other portals/props). */
+  /** Viewer-only: shows a confirmation badge once a trapped stair's trap has been disarmed, in
+   * addition to (and independent of) the state-driven `BADGE_ICONS` badge above. */
+  trapDisarmed?: boolean
+  /** Fractional-cell nudge (from `gridMarkerOffset`) when this stair shares its cell with other
+   * markers (portals/other stairs/props). */
   offset?: { dx: number; dy: number }
   /** True when 2+ markers share this cell — shrinks the marker to `GROUPED_MARKER_RADIUS_FRACTION`
    * so `gridMarkerOffset`'s spacing actually separates same-cell markers instead of stacking
    * full-size circles a few px apart. */
   grouped?: boolean
+  /** Overrides the default `title — state` label (the viewer appends the floor-jump target and a
+   * disarmed suffix). */
+  label?: string
   onMouseEnter?: () => void
   onMouseLeave?: () => void
   onFocus?: () => void
@@ -36,43 +44,46 @@ interface PortalMarkerProps {
   onClick?: () => void
 }
 
-/** Portal marker — always on-square (never wall-attached), so it only needs the cell-centered half
- * of `PropMarker.tsx`'s geometry. Same visual language as stair/prop markers: a neutral-fill ring
- * whose stroke carries the passage-state token, the portal glyph as the primary icon, and a small
- * state badge when locked/trapped/hidden — never hue-alone. */
-export function PortalMarker({
-  portal,
+/** Stair marker — same visual language as portal/prop markers: a neutral-fill ring whose stroke
+ * carries the passage-state token, the stair glyph as the primary icon, a small state badge when
+ * locked/trapped/hidden, and a dashed outline when hidden — never hue-alone. */
+export function StairMarker({
+  stair,
   cellSize,
+  cell,
+  activeZ,
   selected,
   session,
+  trapDisarmed,
   offset,
   grouped,
+  label,
   onMouseEnter,
   onMouseLeave,
   onFocus,
   onBlur,
   onClick,
-}: PortalMarkerProps) {
-  const cx = (portal.cell[0] + 0.5 + (offset?.dx ?? 0)) * cellSize
-  const cy = (portal.cell[1] + 0.5 + (offset?.dy ?? 0)) * cellSize
+}: StairMarkerProps) {
+  const cx = (cell[0] + 0.5 + (offset?.dx ?? 0)) * cellSize
+  const cy = (cell[1] + 0.5 + (offset?.dy ?? 0)) * cellSize
   const radius = grouped ? cellSize * GROUPED_MARKER_RADIUS_FRACTION : cellSize * MARKER_RADIUS_FRACTION
   const iconSize = grouped ? cellSize * GROUPED_MARKER_RADIUS_FRACTION * 1.1 : cellSize * 0.34
 
-  const effective = effectivePassageState(portal, session)
-  const presentation = passagePresentation(effective)
+  const presentation = stairPresentation(stair, activeZ, session)
+  const Icon = presentation.icon
   const BadgeIcon = BADGE_ICONS[presentation.state]
   const dasharray = presentation.state === 'hidden' ? '4 3' : undefined
-  const label = `${portal.title ?? `Portal ${portal.portal_id}`} — ${presentation.label}`
+  const resolvedLabel = label ?? `${stair.title ?? `Stair ${stair.stair_id}`} — ${presentation.label}`
 
   return (
     <g
-      className="maplab-portal"
+      className="maplab-stair"
       data-state={presentation.state}
       data-selected={selected || undefined}
       role="button"
       tabIndex={0}
       aria-pressed={selected}
-      aria-label={label}
+      aria-label={resolvedLabel}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
       onFocus={onFocus}
@@ -88,9 +99,9 @@ export function PortalMarker({
         }
       }}
     >
-      <title>{portal.title ?? `Portal ${portal.portal_id}`}</title>
+      <title>{stair.title ?? `Stair ${stair.stair_id}`}</title>
       <circle
-        className="maplab-portal-marker"
+        className="maplab-stair-marker"
         cx={cx}
         cy={cy}
         r={radius}
@@ -98,16 +109,27 @@ export function PortalMarker({
         strokeDasharray={dasharray}
       />
       <g transform={`translate(${cx - iconSize / 2}, ${cy - iconSize / 2})`}>
-        <PortalIcon width={iconSize} height={iconSize} className="maplab-portal-icon" style={{ color: `var(${presentation.token})` }} />
+        <Icon width={iconSize} height={iconSize} className="maplab-stair-icon" style={{ color: `var(${presentation.token})` }} />
       </g>
       {BadgeIcon && (
         <g transform={`translate(${cx + iconSize / 4}, ${cy + iconSize / 4})`}>
           <BadgeIcon
             width={14}
             height={14}
-            className="maplab-portal-state-badge"
+            className="maplab-stair-state-badge"
             aria-hidden="true"
             style={{ color: `var(${presentation.token})` }}
+          />
+        </g>
+      )}
+      {trapDisarmed && (
+        <g transform={`translate(${cx + iconSize / 4}, ${cy + iconSize / 4})`}>
+          <TrapDisarmedIcon
+            width={14}
+            height={14}
+            className="maplab-trap-disarmed-badge"
+            aria-hidden="true"
+            style={{ color: 'var(--md-tertiary)' }}
           />
         </g>
       )}

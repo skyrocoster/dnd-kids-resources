@@ -1,6 +1,15 @@
 import { HiddenIcon, LockIcon, TrapIcon, ItemIcon, type LucideIcon } from '../../../components/icons'
 import { PROP_KIND_ICONS } from './fixtureTypes'
-import { GROUPED_MARKER_RADIUS_FRACTION, doorWallSegment, passagePresentation, type MapProp, type PassageState } from './maplabModel'
+import {
+  GROUPED_MARKER_RADIUS_FRACTION,
+  MARKER_RADIUS_FRACTION,
+  WALL_PROP_ICON_SCALE,
+  WALL_PROP_RADIUS_FRACTION,
+  doorWallSegment,
+  passagePresentation,
+  type MapProp,
+  type PassageState,
+} from './maplabModel'
 
 const BADGE_ICONS: Partial<Record<PassageState, LucideIcon>> = {
   hidden: HiddenIcon,
@@ -59,8 +68,16 @@ export function PropMarker({
     cx = (prop.cell[0] + 0.5 + (offset?.dx ?? 0)) * cellSize
     cy = (prop.cell[1] + 0.5 + (offset?.dy ?? 0)) * cellSize
   }
-  const radius = onWall ? cellSize * 0.22 : grouped ? cellSize * GROUPED_MARKER_RADIUS_FRACTION : cellSize * 0.32
-  const iconSize = onWall ? cellSize * 0.28 : grouped ? cellSize * GROUPED_MARKER_RADIUS_FRACTION * 1.1 : cellSize * 0.34
+  const radius = onWall
+    ? cellSize * WALL_PROP_RADIUS_FRACTION
+    : grouped
+      ? cellSize * GROUPED_MARKER_RADIUS_FRACTION
+      : cellSize * MARKER_RADIUS_FRACTION
+  const iconSize = onWall
+    ? cellSize * WALL_PROP_ICON_SCALE
+    : grouped
+      ? cellSize * GROUPED_MARKER_RADIUS_FRACTION * 1.1
+      : cellSize * 0.34
 
   const presentation = passagePresentation(prop)
   // Encounter markers default to the encounter/monster tertiary (teal) role rather than the

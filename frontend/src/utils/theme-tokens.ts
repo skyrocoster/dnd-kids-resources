@@ -20,9 +20,9 @@ export interface DerivedTokens {
 // and future TS consumers. The script handles the real color math via the Node import.
 
 export function deriveTokensStub(
-  seedHex: string,
-  role: string,
-  optionalChroma?: number | null,
+  _seedHex: string,
+  _role: string,
+  _optionalChroma?: number | null,
 ): DerivedTokens {
   throw new Error('deriveTokens requires material-color-utilities (Node runtime). Use scripts/generate-md3-tokens.mjs instead.')
 }

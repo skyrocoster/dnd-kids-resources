@@ -5,7 +5,7 @@
  */
 import { useEffect, useState } from 'react'
 import { ApiError, getDungeonLayout } from '../../../api/client'
-import { mapLabLayout } from './maplabData'
+import { islyCastleLayout } from './islyCastleData'
 import { normalizeLayout, type MapLayout } from './maplabModel'
 
 interface UseMapLabLayoutResult {
@@ -15,7 +15,7 @@ interface UseMapLabLayoutResult {
 }
 
 export function useMapLabLayout(dungeonId: number): UseMapLabLayoutResult {
-  const [layout, setLayout] = useState<MapLayout>(mapLabLayout)
+  const [layout, setLayout] = useState<MapLayout>(islyCastleLayout)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
 
@@ -33,7 +33,7 @@ export function useMapLabLayout(dungeonId: number): UseMapLabLayoutResult {
       .catch((err: unknown) => {
         if (cancelled) return
         if (err instanceof ApiError && err.status === 404) {
-          setLayout(mapLabLayout)
+          setLayout(islyCastleLayout)
           setLoading(false)
           return
         }

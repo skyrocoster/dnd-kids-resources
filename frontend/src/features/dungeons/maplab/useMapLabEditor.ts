@@ -5,7 +5,7 @@
  */
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
 import { ApiError, getDungeonLayout, saveDungeonLayout } from '../../../api/client'
-import { mapLabLayout } from './maplabData'
+import { islyCastleLayout } from './islyCastleData'
 import { initialEditorState, mapLabEditorReducer, type EditorAction, type EditorState } from './maplabEditor'
 import { normalizeLayout, type CardinalSide, type MapCell, type MapLayout } from './maplabModel'
 
@@ -17,7 +17,7 @@ export interface SyncStatus {
 }
 
 export function useMapLabEditor(dungeonId: number) {
-  const [state, dispatch] = useReducer(mapLabEditorReducer, mapLabLayout, initialEditorState)
+  const [state, dispatch] = useReducer(mapLabEditorReducer, islyCastleLayout, initialEditorState)
   const [loading, setLoading] = useState(true)
   const [syncStatus, setSyncStatus] = useState<SyncStatus>({ status: 'idle' })
 
@@ -41,7 +41,7 @@ export function useMapLabEditor(dungeonId: number) {
       .catch((err: unknown) => {
         if (cancelled) return
         if (err instanceof ApiError && err.status === 404) {
-          dispatch({ type: 'loadLayout', layout: mapLabLayout })
+          dispatch({ type: 'loadLayout', layout: islyCastleLayout })
           setLoading(false)
           return
         }
@@ -87,7 +87,7 @@ export function useMapLabEditor(dungeonId: number) {
     [apply]
   )
   const setActiveZ = useCallback((z: number) => dispatch({ type: 'setActiveZ', z }), [])
-  const resetToFixture = useCallback(() => apply({ type: 'resetToFixture', layout: mapLabLayout }), [apply])
+  const resetToFixture = useCallback(() => apply({ type: 'resetToFixture', layout: islyCastleLayout }), [apply])
 
   const addDoor = useCallback(
     (cell: MapCell, side: CardinalSide) => apply({ type: 'addDoor', cell, side }),
