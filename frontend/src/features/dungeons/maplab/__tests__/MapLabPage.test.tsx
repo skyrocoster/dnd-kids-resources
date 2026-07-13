@@ -531,9 +531,67 @@ describe('MapLabPage (Stage E1 — Unified data: viewer reads backend layout)', 
     expect(screen.getByText('Heavy Stone Door')).toBeInTheDocument()
   })
 
-  // TODO (D2): wire up prop click → setActiveEncounterId
-  it.skip('encounter marker renders and opens the dock', () => {
-    // D2: wire up prop click → setActiveEncounterId
+  it('encounter marker renders and opens the dock', async () => {
+    const encounterProp = {
+      prop_id: 502,
+      kind: 'encounter',
+      cell: [0, 0] as [number, number],
+      z: 0,
+      title: 'Goblin Ambush',
+      hidden: false,
+      locked: false,
+      trapped: false,
+      encounter_id: 7,
+    }
+    const backendLayout = { ...mapLabLayout, props: [...mapLabLayout.props, encounterProp] }
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: backendLayout })
+    vi.spyOn(api, 'getEncounter').mockResolvedValue({
+      id: 7,
+      title: 'Goblin Ambush',
+      active_index: 0,
+      creatures: [],
+    })
+    vi.spyOn(api, 'getConditions').mockResolvedValue([])
+    const user = userEvent.setup()
+
+    render(<MapLabPage />)
+    await flush()
+
+    const marker = screen.getByRole('button', { name: /Goblin Ambush/i })
+    expect(marker.querySelector('svg')).toBeTruthy() // encounter kind icon rendered inline
+
+    await user.click(marker)
+
+    const dock = await screen.findByRole('dialog', { name: 'Goblin Ambush' })
+    expect(dock).toBeInTheDocument()
+    expect(api.getEncounter).toHaveBeenCalledWith(7)
+  })
+
+  it('an encounter marker without an encounter_id is inert (no dock opens on click)', async () => {
+    const encounterProp = {
+      prop_id: 503,
+      kind: 'encounter',
+      cell: [1, 0] as [number, number],
+      z: 0,
+      title: 'Unlinked Marker',
+      hidden: false,
+      locked: false,
+      trapped: false,
+      encounter_id: null,
+    }
+    const backendLayout = { ...mapLabLayout, props: [...mapLabLayout.props, encounterProp] }
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: backendLayout })
+    const getEncounterSpy = vi.spyOn(api, 'getEncounter')
+    const user = userEvent.setup()
+
+    render(<MapLabPage />)
+    await flush()
+
+    const marker = screen.getByRole('button', { name: /Unlinked Marker/i })
+    await user.click(marker)
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(getEncounterSpy).not.toHaveBeenCalled()
   })
 
   it('encounter marker round-trips encounter_id through save/load', async () => {

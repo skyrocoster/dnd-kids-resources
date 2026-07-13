@@ -53,6 +53,10 @@ export function PropMarker({
   const iconSize = onWall ? cellSize * 0.28 : cellSize * 0.34
 
   const presentation = passagePresentation(prop)
+  // Encounter markers default to the encounter/monster tertiary (teal) role rather than the
+  // generic neutral "unlocked" token — trapped/locked/hidden states still take precedence.
+  const token =
+    prop.kind === 'encounter' && presentation.state === 'unlocked' ? '--md-tertiary' : presentation.token
   const Icon = PROP_KIND_ICONS[prop.kind] ?? ItemIcon
   const BadgeIcon = BADGE_ICONS[presentation.state]
   const dasharray = presentation.state === 'hidden' ? '4 3' : undefined
@@ -88,11 +92,11 @@ export function PropMarker({
         cx={cx}
         cy={cy}
         r={radius}
-        style={{ stroke: `var(${presentation.token})` }}
+        style={{ stroke: `var(${token})` }}
         strokeDasharray={dasharray}
       />
       <g transform={`translate(${cx - iconSize / 2}, ${cy - iconSize / 2})`}>
-        <Icon width={iconSize} height={iconSize} className="maplab-prop-icon" style={{ color: `var(${presentation.token})` }} />
+        <Icon width={iconSize} height={iconSize} className="maplab-prop-icon" style={{ color: `var(${token})` }} />
       </g>
       {BadgeIcon && (
         <g transform={`translate(${cx + iconSize / 4}, ${cy + iconSize / 4})`}>

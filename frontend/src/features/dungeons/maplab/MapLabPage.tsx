@@ -507,6 +507,11 @@ export function MapLabPage() {
               onMouseLeave={() => setHoveredInspectable(null)}
               onFocus={() => setFocusedInspectable({ kind: 'prop', id: prop.prop_id })}
               onBlur={() => setFocusedInspectable(null)}
+              onClick={
+                prop.kind === 'encounter' && prop.encounter_id != null
+                  ? () => setActiveEncounterId(prop.encounter_id as number)
+                  : undefined
+              }
             />
           ))}
         </MapCanvas>
@@ -520,7 +525,6 @@ export function MapLabPage() {
         </div>
       </div>
 
-      {/* TODO (D2): wire up prop click handlers to open this dock */}
       {activeEncounterId != null && (
         <EncounterDock encounterId={activeEncounterId} onClose={() => setActiveEncounterId(null)} />
       )}

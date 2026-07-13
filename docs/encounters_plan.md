@@ -15,7 +15,7 @@ design system, component anatomy, and reusable pieces — build on them rather t
 >
 > **Queued next:**
 > - **Phase 2 — Runner Conditions** (R0–R3): display + live-edit conditions on the combatant card during play. Design pass = the **Runner**.
-> - **Phase 3 — Dungeon Map Link** (D0–D4): an on-map encounter marker (container/chest style) that opens the runner pop-out, plus Map Lab authoring to attach it. Design pass = the **Dungeon**.
+> - **Phase 3 — Dungeon Map Link** (D0–D4): an on-map encounter marker (container/chest style) that opens the runner pop-out, plus Map Lab authoring to attach it. Design pass = the **Dungeon**. D0–D2 complete; D3 (authoring) and D4 (design pass) queued next.
 
 ---
 
@@ -152,10 +152,11 @@ markup/CSS (`.combatant-status-chip`) as the model for condition chips.
 
 ## Phase 3 — Dungeon Map Link
 
-> **Status:** Stage D1 (Data + shared dock in session viewer) **COMPLETE** ✓ (2026-07-13)
+> **Status:** Stage D2 (On-map marker + launch) **COMPLETE** ✓ (2026-07-13)
 > - D0 (scaffolding): encounter_id field, shared EncounterDock extraction, prop-kind stubs, test stubs
 > - D1 (data + shared dock): confirmed `encounter_id` round-trips through the opaque `map_layout` blob (no backend change needed); `EncounterDock` now live on the Map Lab session viewer via `activeEncounterId`
-> - Next: D2–D4 for marker click-to-launch, authoring, and design pass
+> - D2 (marker + launch): clicking/Enter-ing an `'encounter'`-kind prop with an `encounter_id` opens the dock in the session viewer (`MapLabPage`); a marker without an `encounter_id` is inert; `PropMarker` gives encounter markers the tertiary/teal token by default
+> - Next: D3–D4 for authoring and design pass
 
 The runtime `DungeonViewPage` already launches the runner in a pop-out (`EncounterDock` = `FloatingWindow` +
 `useEncounterRunner` + `EncounterRunnerBoard compact`) from a room feature-tile button. The **Map Lab** on-table
@@ -174,7 +175,7 @@ autosave; `listEncounters()` for the picker.
 |-------|-------|---------|--------------|
 | **D0 — Scaffolding** | Haiku | Data field, shared-dock extraction, prop-kind + field-spec stubs, `it.skip` tests. | ✓ `encounter_id?: number \| null` added to `MapProp` (`maplabModel.ts`); new `'encounter'` prop kind in `PROP_KIND_ICONS`/`FIXTURE_TYPES` (SwordsIcon, neutral token); **extracted inline `EncounterDock` → shared `frontend/src/features/encounters/EncounterDock.tsx`** (DungeonViewPage re-imports, behavior unchanged); MapLabPage state + conditional render placeholder; `PROP_FIELDS` encounter_id entry (text field, showWhen kind='encounter'); placeholder CSS comment; skipped test stubs; SwordsIcon added to icons index. |
 | **D1 — Data + shared dock in session viewer** | Sonnet | Persist the link; put the runner dock on the Map Lab viewer. | ✓ Confirmed `encounter_id` round-trips through the `map_layout` blob untouched — the backend (`layouts.py`) and frontend (`api/client.ts`) both treat `MapLayout`/`props` as an opaque JSON blob with no field-picking, and `normalizeLayout` (`maplabModel.ts`) passes `encounter_id` through unchanged; **no backend change required**, confirming the plan's premise. `activeEncounterId` state + `<EncounterDock>` render in `MapLabPage.tsx` (already scaffolded in D0) finalized — TODO comment narrowed to D2's remaining click-wiring scope only. Tests: 3 new `maplabModel.test.ts` unit tests (`encounter_id` survives JSON round-trip, survives `normalizeLayout`, `null` is preserved for an unlinked marker); un-skipped `MapLabPage.test.tsx`'s `'encounter marker round-trips encounter_id through save/load'` stub (mocks `getDungeonLayout` with an `'encounter'`-kind prop, confirms it loads and renders through the full `useMapLabLayout` → `normalizeLayout` → `propsOnFloor` → `PropMarker` pipeline). The sibling stub `'encounter marker renders and opens the dock'` stays skipped — its own D0 comment assigns it to D2 (click/Enter wiring on the marker), so it wasn't pulled forward. 460 frontend tests passing (1 skipped — the D2 stub), `npm run build` clean, 110 backend tests unaffected (90.73% coverage). |
-| **D2 — On-map marker + launch** | Sonnet | Tap an encounter marker → runner pop-out. | In the **session viewer**, an `'encounter'` prop with `encounter_id` renders via `PropMarker` (encounter icon + teal ring); its click/Enter calls `setActiveEncounterId(encounter_id)` → opens `EncounterDock` (in the editor it stays selectable, not launching). Tests: marker renders with encounter icon; activating launches the dock; a marker without `encounter_id` is inert. |
+| **D2 — On-map marker + launch** | Sonnet | Tap an encounter marker → runner pop-out. | ✓ In the **session viewer** (`MapLabPage.tsx`), an `'encounter'` prop with `encounter_id` renders via `PropMarker` (encounter icon + teal `--md-tertiary` ring, overriding the generic neutral "unlocked" token — trapped/locked/hidden states still take precedence); its click/Enter calls `setActiveEncounterId(encounter_id)` → opens the existing `EncounterDock`. The **editor** (`MapLabEditorPage.tsx`) is untouched — its prop click still only calls `selectProp` (selectable, not launching). Tests: marker renders with the encounter icon and opens the dock bound to the right encounter id on click; a marker without `encounter_id` is inert (no dock, `getEncounter` not called). 462 frontend tests passing (0 skipped), `npm run build` clean. |
 | **D3 — Authoring** | Sonnet | Attach an encounter to a marker in the Map Lab editor. | Editor places an `'encounter'` marker (`addProp`) and, in its `FixturePropertiesForm`, picks an encounter via a **custom picker control** populated by `listEncounters()` → writes `encounter_id` through `updateFixtureFlags(id,'prop',…)` → autosaves. Tests: attaching sets `encounter_id` and persists through save; picker lists encounters by title. |
 | **D4 — Design pass (Dungeon)** | Sonnet | Visual/MD3/a11y review of the map link. | Marker token color = encounter/teal role, distinct icon + badge (never hue-alone), **≥48px hit area**, focus visible, `prefers-reduced-motion`; picker control MD3-conformant; session-viewer dock placement. **Live end-to-end**: author link in Map Lab editor → open session viewer → tap marker → runner opens in `FloatingWindow` with Phase-2 condition chips working. |
 
