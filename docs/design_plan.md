@@ -8,7 +8,7 @@ the same relationship `encounters_plan.md` has to `dungeon_plan.md`. Feature-spe
 toolbar/inspector redesign) lives in its own feature plan doc and cross-references this one for shared
 tokens/tooling; see `docs/dungeon_plan.md`'s **Design Phase J** for the current example.
 
-> **Status:** DP0, DP3, & DP1 shipped. DP2 queued next (DP4 waits for DP1/DP2; see sequencing below).
+> **Status:** DP0, DP3, DP1, & DP2 shipped. DP4 queued next.
 
 ---
 
@@ -110,6 +110,18 @@ in that stage's own commit).
 
 **Verification gate:** ✅ Build succeeds; **510 tests pass** (updated token validation included); 3 banked sets ready for Phase J3/loot phases to wire up.
 
+### DP2 — Nav collapse implementation (✅ shipped)
+
+**What shipped:**
+- `useNavCollapse()` implemented for real: reads/writes a single `dnd-kids-nav-collapsed` `localStorage` key, defaults to expanded, tolerates `localStorage` being unavailable (private browsing)
+- `AppShell.tsx`: each `navSections` link gained a `linkIcon` field (`WandIcon`/`SkullIcon`/`SwordsIcon`/`UsersIcon`/`MasksIcon`/`ScrollIcon`/`ShieldIcon`/`DoorIcon`, all pre-existing registry icons — no new icon additions needed); persistent toggle button using DP0/DP3's `NavCollapseIcon`/`NavExpandIcon` with `aria-label`/`title` that flips with state; every link keeps an `aria-label`/`title` with the full text and stays clickable in both states (no "expand first" step)
+- Section `<h2>` headers get a `visually-hidden` class when collapsed (clip-based, stays in the accessibility tree, not `display:none`); a CSS `border-top` divider on `.app-nav-section` (not the hidden `<h2>` itself) gives sighted users the subtle section-break cue while collapsed
+- `AppShell.css`: icon-only rail is `64px` wide (was a 200px→64px transition on `width`, reusing the existing global `prefers-reduced-motion` reset — no new media query); nav links and the toggle button are `48px` min-height/width touch targets
+- No `SplitPane` reuse (per the plan's rationale — nav links aren't resizable content)
+- Tests: `useNavCollapse` covered indirectly via `AppShell.test.tsx`'s 4 previously-skipped scenarios, now implemented — collapse-on-toggle, persistence across remount (seeded via `localStorage`), icon-only rail links remain navigable, keyboard focus lands somewhere after collapse
+
+**Verification gate:** ✅ `AppShell.test.tsx` — 7/7 tests pass (3 pre-existing + 4 newly implemented). Full frontend suite: 47 test files, 514 passed / 3 skipped (pre-existing, unrelated). `tsc -b && vite build` — no new type errors (pre-existing `theme-tokens.ts` unused-var errors from DP1 are unrelated to this stage).
+
 ---
 
 ## Known debt / deferred work (NOT yet built)
@@ -135,4 +147,4 @@ in that stage's own commit).
 
 ## Next:
 
-  - Phase DP is queued. Once complete, this section will summarize it in the shipped-phase format used above.
+  - DP4 — `docs/DESIGN_SYSTEM.md` first draft. Queued next; DP1 and DP2 are both landed so it's unblocked.

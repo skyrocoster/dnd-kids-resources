@@ -383,6 +383,34 @@ describe('MapLabEditorPage (Stage E3 — Toolbar reorganization & persistent ins
     expect(statusGroup?.querySelector('.maplab-editor-save-status')).toBeInTheDocument()
   })
 
+  describe('Design Phase J1 — toolbar trays', () => {
+    afterEach(() => {
+      window.localStorage.removeItem('dnd-kids-maplab-tray-collapsed:editor-create')
+      window.localStorage.removeItem('dnd-kids-maplab-tray-collapsed:editor-session')
+    })
+
+    it('each toolbar group collapses independently, without affecting siblings', async () => {
+      render(<MapLabEditorPage />)
+      await flush()
+
+      fireEvent.click(screen.getByRole('button', { name: 'Collapse Create tools' }))
+
+      expect(screen.getByRole('button', { name: 'Expand Create tools' })).toBeInTheDocument()
+      // Session's own toggle is unaffected — still says "Collapse", meaning it stayed expanded.
+      expect(screen.getByRole('button', { name: 'Collapse Session tools' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Reset to fixture' })).toBeInTheDocument()
+    })
+
+    it('toolbar tray collapse state persists across remount via localStorage', async () => {
+      window.localStorage.setItem('dnd-kids-maplab-tray-collapsed:editor-create', 'true')
+
+      render(<MapLabEditorPage />)
+      await flush()
+
+      expect(screen.getByRole('button', { name: 'Expand Create tools' })).toBeInTheDocument()
+    })
+  })
+
   it('left navigation rail (nav-rail) holds floor tabs and room list vertically', async () => {
     const { container } = render(<MapLabEditorPage />)
     await flush()

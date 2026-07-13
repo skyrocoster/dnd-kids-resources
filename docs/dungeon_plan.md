@@ -881,6 +881,20 @@ phase).
 
 **Verification gate:** ✅ `npm run test` — 516 passed / 12 skipped (full suite), 247 passed / 12 skipped scoped to `maplab/`. `tsc -b` clean (pre-existing `theme-tokens.ts` unused-var errors from DP1 are unrelated). No runtime behavior change — `useToolbarTrayCollapse` is unused by any component and the placeholder CSS rules are empty, so Map Lab renders pixel-identical to Phase I.
 
+### J1 — Toolbar trays (✅ shipped)
+
+**What shipped:**
+- `MapLabPage.tsx`: `useToolbarTrayCollapse(groupKey)` implemented for real — per-`groupKey` `localStorage` key (`dnd-kids-maplab-tray-collapsed:<groupKey>`), defaults expanded, tolerates `localStorage` being unavailable (private browsing), same pattern as `docs/design_plan.md` DP2's `useNavCollapse` keyed per group instead of one global flag
+- New exported `ToolbarTray` component (`MapLabPage.tsx`) — the reusable tray: label + chevron toggle button always visible (`ChevronUpIcon`/`ChevronDownIcon`, 48×48px touch target, `aria-expanded`/`aria-label` flip with state), controls wrapped in `.maplab-toolbar-tray-controls` which collapses via `max-width`/`opacity` (never `display:none`, so it participates in a transition and stays legible structurally)
+- `MapLabPage.css`: real `.maplab-toolbar-tray` / `.maplab-toolbar-tray-toggle` / `.maplab-toolbar-tray-controls` rules, keyed off a `data-collapsed` attribute (matching the codebase's existing `data-active`/`data-state` convention rather than a BEM modifier class) instead of J0's placeholder `--collapsed` class; reuses the existing global `prefers-reduced-motion` reset in `theme.css` — no new media query
+- `MapLabPage.tsx`'s own toolbar (viewer): its one "Session" group now uses `ToolbarTray` (`groupKey="viewer-session"`)
+- `MapLabEditorPage.tsx`: all four toolbar groups — Create, Session, View, Status — converted to `ToolbarTray` (`groupKey`s `editor-create`/`editor-session`/`editor-view`/`editor-status`), each collapsing **independently** per the plan's decision (not one unified compact-mode switch); the Status group keeps its `maplab-toolbar-group-status` class (via `ToolbarTray`'s `extraClassName` prop) for its existing `margin-left:auto` positioning
+- Tests: `MapLabPage.test.tsx`'s J0 stubs replaced with real tests (Session tray collapses/expands on toggle, state persists across remount via `localStorage`); `MapLabEditorPage.test.tsx` gained a new "Design Phase J1 — toolbar trays" block (independent per-group collapse — collapsing Create doesn't affect Session's toggle state or controls — plus persistence across remount); `maplabModel.test.ts`'s J0-passing tests untouched (J2/J3 stubs still skipped, unaffected by this stage)
+
+**Deferred out of this stage:** the `docs/DESIGN_SYSTEM.md` component-anatomy addendum the plan's summary describes — `docs/design_plan.md`'s DP4 (which creates `DESIGN_SYSTEM.md`) has not shipped yet, so there is no file to land the addendum in. Once DP4 ships the doc, add the finalized tray pattern (chevron placement, `data-collapsed` attribute convention, per-`groupKey` persistence shape, default-open rationale) to it as a follow-up — tracked here rather than silently dropped.
+
+**Verification gate:** ✅ `npm run test` — 520 passed / 10 skipped (full suite), 251 passed / 10 skipped scoped to `maplab/`. `tsc -b` clean (same pre-existing `theme-tokens.ts` errors, unrelated). Each of the four editor toolbar groups and the viewer's Session group collapse/expand independently; collapsed state persists per group across remount; 48px touch targets and a visible focus ring on the toggle button.
+
 ---
 
 ## Next: front-end design planning

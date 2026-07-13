@@ -1,7 +1,10 @@
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { createMemoryRouter, RouterProvider } from 'react-router-dom'
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { AppShell } from '../AppShell'
+
+const STORAGE_KEY = 'dnd-kids-nav-collapsed'
 
 function renderShell(initialPath = '/') {
   const router = createMemoryRouter(
@@ -21,6 +24,14 @@ function renderShell(initialPath = '/') {
 }
 
 describe('AppShell', () => {
+  beforeEach(() => {
+    window.localStorage.removeItem(STORAGE_KEY)
+  })
+
+  afterEach(() => {
+    window.localStorage.removeItem(STORAGE_KEY)
+  })
+
   it('renders the header and nav sections', () => {
     renderShell()
     expect(screen.getByText('D&D Kids Resources')).toBeInTheDocument()
@@ -41,20 +52,43 @@ describe('AppShell', () => {
     expect(screen.getByText('spells content')).toBeInTheDocument()
   })
 
-  // DP0 scaffolding: nav collapse stubs (DP2 implementation)
-  it.skip('collapses on toggle', () => {
-    // TODO: trigger toggle, assert nav has app-nav--collapsed class
+  it('collapses on toggle', async () => {
+    const user = userEvent.setup()
+    renderShell()
+    const toggle = screen.getByRole('button', { name: 'Collapse navigation' })
+    const nav = document.querySelector('.app-nav')
+    expect(nav).not.toHaveClass('app-nav--collapsed')
+
+    await user.click(toggle)
+
+    expect(nav).toHaveClass('app-nav--collapsed')
+    expect(screen.getByRole('button', { name: 'Expand navigation' })).toBeInTheDocument()
   })
 
-  it.skip('persists across remount', () => {
-    // TODO: set collapsed in localStorage, remount component, assert state preserved
+  it('persists across remount', () => {
+    window.localStorage.setItem(STORAGE_KEY, 'true')
+    renderShell()
+    const nav = document.querySelector('.app-nav')
+    expect(nav).toHaveClass('app-nav--collapsed')
   })
 
-  it.skip('icon-only rail keeps links clickable', () => {
-    // TODO: collapse nav, verify links are still navigable (no "expand first" step)
+  it('icon-only rail keeps links clickable', async () => {
+    const user = userEvent.setup()
+    renderShell()
+    await user.click(screen.getByRole('button', { name: 'Collapse navigation' }))
+
+    const spellsLink = screen.getByRole('link', { name: 'Spells' })
+    expect(spellsLink).toBeInTheDocument()
+    await user.click(spellsLink)
+    expect(screen.getByText('spells content')).toBeInTheDocument()
   })
 
-  it.skip('focus ring visible when collapsed', () => {
-    // TODO: collapse nav, navigate via keyboard, verify focus ring visible
+  it('focus ring visible when collapsed', async () => {
+    const user = userEvent.setup()
+    renderShell()
+    await user.click(screen.getByRole('button', { name: 'Collapse navigation' }))
+
+    await user.tab()
+    expect(document.activeElement).not.toBeNull()
   })
 })

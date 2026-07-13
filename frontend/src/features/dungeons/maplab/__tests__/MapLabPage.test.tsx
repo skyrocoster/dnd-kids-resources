@@ -616,7 +616,32 @@ describe('MapLabPage (Stage E1 — Unified data: viewer reads backend layout)', 
   })
 })
 
-describe('Design Phase J — Map Lab Decluttering (J0 scaffolding)', () => {
-  it.skip('each toolbar group collapses independently, without affecting siblings', () => {})
-  it.skip('toolbar tray collapse state persists across remount via localStorage', () => {})
+describe('Design Phase J1 — toolbar trays', () => {
+  const STORAGE_KEY = 'dnd-kids-maplab-tray-collapsed:viewer-session'
+
+  afterEach(() => {
+    window.localStorage.removeItem(STORAGE_KEY)
+  })
+
+  it('Session tray collapses on toggle, hiding its controls', async () => {
+    const user = userEvent.setup()
+    render(<MapLabPage />)
+    await flush()
+
+    expect(screen.getByRole('button', { name: 'Reset session state' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Collapse Session tools' }))
+
+    expect(screen.getByRole('button', { name: 'Expand Session tools' })).toBeInTheDocument()
+    const tray = document.querySelector('.maplab-toolbar-tray')
+    expect(tray).toHaveAttribute('data-collapsed')
+  })
+
+  it('toolbar tray collapse state persists across remount via localStorage', async () => {
+    window.localStorage.setItem(STORAGE_KEY, 'true')
+    render(<MapLabPage />)
+    await flush()
+
+    expect(screen.getByRole('button', { name: 'Expand Session tools' })).toBeInTheDocument()
+  })
 })

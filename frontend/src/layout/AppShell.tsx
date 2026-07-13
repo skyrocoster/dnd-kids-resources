@@ -1,35 +1,47 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { useNavCollapse } from '../hooks/useNavCollapse'
+import {
+  DoorIcon,
+  MasksIcon,
+  NavCollapseIcon,
+  NavExpandIcon,
+  ScrollIcon,
+  ShieldIcon,
+  SkullIcon,
+  SwordsIcon,
+  UsersIcon,
+  WandIcon,
+} from '../components/icons'
+import type { LucideIcon } from '../components/icons'
 import './AppShell.css'
 
-const navSections = [
+const navSections: {
+  label: string
+  links: { to: string; label: string; linkIcon: LucideIcon }[]
+}[] = [
   {
     label: 'Reference',
     links: [
-      { to: '/spells', label: 'Spells' },
-      { to: '/monsters', label: 'Monsters' },
-      { to: '/weapons', label: 'Weapons' },
+      { to: '/spells', label: 'Spells', linkIcon: WandIcon },
+      { to: '/monsters', label: 'Monsters', linkIcon: SkullIcon },
+      { to: '/weapons', label: 'Weapons', linkIcon: SwordsIcon },
     ],
   },
   {
     label: 'Campaign',
     links: [
-      { to: '/players', label: 'Players' },
-      { to: '/npcs', label: 'NPCs' },
-      { to: '/quests', label: 'Quests' },
-      { to: '/encounters', label: 'Encounters' },
-      { to: '/dungeons', label: 'Dungeons' },
+      { to: '/players', label: 'Players', linkIcon: UsersIcon },
+      { to: '/npcs', label: 'NPCs', linkIcon: MasksIcon },
+      { to: '/quests', label: 'Quests', linkIcon: ScrollIcon },
+      { to: '/encounters', label: 'Encounters', linkIcon: ShieldIcon },
+      { to: '/dungeons', label: 'Dungeons', linkIcon: DoorIcon },
     ],
   },
 ]
 
 export function AppShell() {
-  const { collapsed } = useNavCollapse()
-
-  if (false) {
-    // DP0 scaffolding: inert branch for collapsed state
-    // Real implementation in DP2
-  }
+  const { collapsed, toggle } = useNavCollapse()
+  const ToggleIcon = collapsed ? NavExpandIcon : NavCollapseIcon
 
   return (
     <div className="app-shell">
@@ -38,14 +50,29 @@ export function AppShell() {
       </header>
       <div className="app-body">
         <nav className={`app-nav ${collapsed ? 'app-nav--collapsed' : ''}`}>
+          <button
+            type="button"
+            className="app-nav-toggle"
+            onClick={toggle}
+            aria-label={collapsed ? 'Expand navigation' : 'Collapse navigation'}
+            title={collapsed ? 'Expand navigation' : 'Collapse navigation'}
+          >
+            <ToggleIcon size={20} aria-hidden="true" />
+          </button>
           {navSections.map((section) => (
             <div className="app-nav-section" key={section.label}>
-              <h2>{section.label}</h2>
+              <h2 className={collapsed ? 'visually-hidden' : undefined}>{section.label}</h2>
               <ul>
                 {section.links.map((link) => (
                   <li key={link.to}>
-                    <NavLink to={link.to} className={({ isActive }) => (isActive ? 'active' : '')}>
-                      {link.label}
+                    <NavLink
+                      to={link.to}
+                      className={({ isActive }) => (isActive ? 'active' : '')}
+                      aria-label={link.label}
+                      title={link.label}
+                    >
+                      <link.linkIcon size={20} aria-hidden="true" />
+                      <span className={collapsed ? 'visually-hidden' : undefined}>{link.label}</span>
                     </NavLink>
                   </li>
                 ))}

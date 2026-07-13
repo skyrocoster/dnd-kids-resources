@@ -455,17 +455,54 @@
   color: var(--md-on-surface-variant);
 }
 
-/* Design Phase J (J0 scaffolding — placeholder only, not yet applied to any element). J1 wires
- * `.maplab-toolbar-group` to `.maplab-toolbar-tray` and toggles `--collapsed` from
- * `useToolbarTrayCollapse`: a collapsed tray keeps its label + chevron + divider (never
- * `display:none`, so the toolbar's group structure stays legible) and hides only its controls,
- * width/overflow-based per J1's spec, respecting the existing `prefers-reduced-motion` reset. */
+/* Design Phase J1: each toolbar group is a collapsible tray. Label + chevron toggle stay visible
+ * collapsed (never `display:none`, so the group structure stays legible); only `.maplab-toolbar-
+ * tray-controls` collapses, via `max-width`/`opacity` (not `display:none`, so it participates in a
+ * transition) — the existing global `prefers-reduced-motion` reset in theme.css already zeroes
+ * `transition-duration`, so no new media query is needed here. */
 .maplab-toolbar-tray {
-  /* no-op in J0 */
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
-.maplab-toolbar-tray--collapsed {
-  /* no-op in J0 */
+.maplab-toolbar-tray-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 48px;
+  min-height: 48px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--md-on-surface-variant);
+  cursor: pointer;
+}
+
+.maplab-toolbar-tray-toggle:hover {
+  background: var(--md-surface-2);
+}
+
+.maplab-toolbar-tray-toggle:focus-visible {
+  outline: 2px solid var(--md-primary);
+  outline-offset: 2px;
+}
+
+.maplab-toolbar-tray-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: 48rem;
+  overflow: hidden;
+  opacity: 1;
+  transition: max-width 0.2s ease, opacity 0.15s ease;
+}
+
+.maplab-toolbar-tray[data-collapsed] .maplab-toolbar-tray-controls {
+  max-width: 0;
+  gap: 0;
+  opacity: 0;
 }
 
 /* Left nav rail: floor tabs stacked above the room list as one column, instead of two unrelated

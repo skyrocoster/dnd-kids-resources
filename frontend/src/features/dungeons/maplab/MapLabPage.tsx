@@ -1,10 +1,10 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState, type ReactNode } from 'react'
 import './MapLabPage.css'
 import { MAP_LAB_DUNGEON_ID } from '../../../api/client'
 import { useMapLabLayout } from './useMapLabLayout'
 import { useMapCanvasZoom, type ViewportSize } from './useMapCanvasZoom'
 import { MapCanvas } from './MapCanvas'
-import { FitIcon, TrapDisarmedIcon, ZoomInIcon, ZoomOutIcon } from '../../../components/icons'
+import { ChevronDownIcon, ChevronUpIcon, FitIcon, TrapDisarmedIcon, ZoomInIcon, ZoomOutIcon } from '../../../components/icons'
 import { EncounterDock } from '../../encounters/EncounterDock'
 import { PropMarker } from './PropMarker'
 import { InspectorPanel, type SessionControls } from './InspectorPanel'
@@ -72,12 +72,74 @@ interface InspectableRef {
   id: number
 }
 
-/** J0 stub for Design Phase J's toolbar-tray collapse (`docs/dungeon_plan.md` Phase J1): a no-op
- * that always reports expanded, so every toolbar group renders open exactly as it does today. J1
- * implements the real per-group `localStorage`-backed collapse, keyed by `groupKey`, following the
- * same pattern as `docs/design_plan.md` DP2's `useNavCollapse`. */
-export function useToolbarTrayCollapse(_groupKey: string): { collapsed: boolean; toggle: () => void } {
-  return { collapsed: false, toggle: () => {} }
+const TOOLBAR_TRAY_STORAGE_PREFIX = 'dnd-kids-maplab-tray-collapsed:'
+
+function readStoredTrayCollapsed(groupKey: string): boolean {
+  try {
+    return window.localStorage.getItem(TOOLBAR_TRAY_STORAGE_PREFIX + groupKey) === 'true'
+  } catch {
+    return false
+  }
+}
+
+/** Per-group toolbar-tray collapse (Design Phase J1, `docs/dungeon_plan.md`): each toolbar group
+ * (Create/Session/View/Status) collapses independently rather than through one unified "compact
+ * mode" switch, since a DM running combat wants Session/Status open while rarely touching Create.
+ * `localStorage`-backed per `groupKey`, default expanded — same pattern as `docs/design_plan.md`
+ * DP2's `useNavCollapse`, keyed per group instead of one global flag. */
+export function useToolbarTrayCollapse(groupKey: string): { collapsed: boolean; toggle: () => void } {
+  const [collapsed, setCollapsed] = useState<boolean>(() => readStoredTrayCollapsed(groupKey))
+
+  const toggle = useCallback(() => {
+    setCollapsed((prev) => {
+      const next = !prev
+      try {
+        window.localStorage.setItem(TOOLBAR_TRAY_STORAGE_PREFIX + groupKey, String(next))
+      } catch {
+        // localStorage unavailable (e.g. private mode) — collapse state just won't persist
+      }
+      return next
+    })
+  }, [groupKey])
+
+  return { collapsed, toggle }
+}
+
+/** A collapsible toolbar group: label + chevron toggle always visible (so the group structure
+ * stays legible collapsed), controls hidden via width/overflow (never `display:none`) when
+ * collapsed. Shared by `MapLabPage`'s Session group and `MapLabEditorPage`'s Create/Session/View/
+ * Status groups — the reusable half of J1's per-group collapse. */
+export function ToolbarTray({
+  groupKey,
+  label,
+  extraClassName,
+  children,
+}: {
+  groupKey: string
+  label: string
+  extraClassName?: string
+  children: ReactNode
+}) {
+  const { collapsed, toggle } = useToolbarTrayCollapse(groupKey)
+  const ChevronIcon = collapsed ? ChevronDownIcon : ChevronUpIcon
+  return (
+    <div
+      className={`maplab-toolbar-group maplab-toolbar-tray${extraClassName ? ` ${extraClassName}` : ''}`}
+      data-collapsed={collapsed || undefined}
+    >
+      <span className="maplab-toolbar-group-label">{label}</span>
+      <button
+        type="button"
+        className="maplab-toolbar-tray-toggle"
+        aria-expanded={!collapsed}
+        aria-label={`${collapsed ? 'Expand' : 'Collapse'} ${label} tools`}
+        onClick={toggle}
+      >
+        <ChevronIcon width={14} height={14} aria-hidden="true" />
+      </button>
+      <div className="maplab-toolbar-tray-controls">{children}</div>
+    </div>
+  )
 }
 
 /** Map Lab prototype page — Stage M2.3: walls, and door/stair affordances with state + details. */
@@ -226,8 +288,7 @@ export function MapLabPage() {
       </div>
 
       <div className="maplab-toolbar">
-        <div className="maplab-toolbar-group">
-          <span className="maplab-toolbar-group-label">Session</span>
+        <ToolbarTray groupKey="viewer-session" label="Session">
           <button
             type="button"
             className="maplab-pill-button maplab-session-reset-button"
@@ -235,7 +296,7 @@ export function MapLabPage() {
           >
             Reset session state
           </button>
-        </div>
+        </ToolbarTray>
       </div>
 
       <div className="maplab-canvas">

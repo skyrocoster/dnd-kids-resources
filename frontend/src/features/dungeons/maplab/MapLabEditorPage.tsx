@@ -20,6 +20,7 @@ import {
   ZoomOutIcon,
 } from '../../../components/icons'
 import { InspectorPanel } from './InspectorPanel'
+import { ToolbarTray } from './MapLabPage'
 import { FixturePropertiesForm } from './FixturePropertiesForm'
 import { PropMarker } from './PropMarker'
 import { PortalMarker } from './PortalMarker'
@@ -292,8 +293,7 @@ export function MapLabEditorPage() {
       <p className="maplab-subtitle">Create rooms, paint their footprint, and place doors and props.</p>
 
       <div className="maplab-toolbar">
-        <div className="maplab-toolbar-group">
-          <span className="maplab-toolbar-group-label">Create</span>
+        <ToolbarTray groupKey="editor-create" label="Create">
           <button type="button" className="maplab-pill-button maplab-editor-toolbar-button" onClick={addRoom}>
             <PlusIcon width={18} height={18} aria-hidden="true" />
             Add room
@@ -378,15 +378,13 @@ export function MapLabEditorPage() {
             <PortalIcon width={18} height={18} aria-hidden="true" />
             {placePortalMode ? 'Cancel portal placement' : 'Place portal'}
           </button>
-        </div>
-        <div className="maplab-toolbar-group">
-          <span className="maplab-toolbar-group-label">Session</span>
+        </ToolbarTray>
+        <ToolbarTray groupKey="editor-session" label="Session">
           <button type="button" className="maplab-pill-button maplab-editor-toolbar-button" onClick={resetToFixture}>
             Reset to fixture
           </button>
-        </div>
-        <div className="maplab-toolbar-group">
-          <span className="maplab-toolbar-group-label">View</span>
+        </ToolbarTray>
+        <ToolbarTray groupKey="editor-view" label="View">
           <button
             type="button"
             className="maplab-pill-button maplab-editor-toolbar-button"
@@ -397,13 +395,13 @@ export function MapLabEditorPage() {
           >
             Ghost lower floor
           </button>
-        </div>
-        <div className="maplab-toolbar-group maplab-toolbar-group-status">
+        </ToolbarTray>
+        <ToolbarTray groupKey="editor-status" label="Status" extraClassName="maplab-toolbar-group-status">
           <span className="maplab-editor-save-status" data-status={syncStatus.status} aria-live="polite">
             <SaveIcon width={16} height={16} aria-hidden="true" />
             {syncStatusLabel(syncStatus.status)}
           </span>
-        </div>
+        </ToolbarTray>
       </div>
 
       {placementError && (
