@@ -4,6 +4,7 @@ import {
   PropMirrorIcon,
   PropBarrelIcon,
   PropStatueIcon,
+  PropWindowIcon,
   PropIcon,
   SwordsIcon,
   type LucideIcon,
@@ -17,7 +18,7 @@ export interface SelectOption {
 export interface FieldSpec {
   key: string
   label: string
-  type: 'boolean' | 'number' | 'text' | 'select' | 'encounterPicker'
+  type: 'boolean' | 'number' | 'text' | 'select' | 'encounterPicker' | 'destinationPicker'
   options?: SelectOption[]
   showWhen?: (values: Record<string, unknown>) => boolean
 }
@@ -45,6 +46,7 @@ const PROP_KIND_OPTIONS: SelectOption[] = [
   { value: 'mirror', label: 'Mirror' },
   { value: 'barrel', label: 'Barrel' },
   { value: 'statue', label: 'Statue' },
+  { value: 'window', label: 'Window' },
   { value: 'encounter', label: 'Encounter' },
   { value: 'other', label: 'Other' },
 ]
@@ -81,9 +83,36 @@ export const PROP_KIND_ICONS: Record<PropKind, LucideIcon> = {
   mirror: PropMirrorIcon,
   barrel: PropBarrelIcon,
   statue: PropStatueIcon,
+  window: PropWindowIcon,
   encounter: SwordsIcon,
   other: PropIcon,
 }
+
+/** Stair field definitions — PassageFlags + destination picker (Phase H) */
+export const STAIR_FIELDS: FieldSpec[] = [
+  { key: 'title', label: 'Title', type: 'text' },
+  { key: 'to', label: 'Destination', type: 'destinationPicker' },
+  { key: 'hidden', label: 'Hidden', type: 'boolean' },
+  { key: 'locked', label: 'Locked', type: 'boolean' },
+  { key: 'trapped', label: 'Trapped', type: 'boolean' },
+  { key: 'breakDc', label: 'Break DC', type: 'number', showWhen: (values) => values.locked === true },
+  { key: 'pickDc', label: 'Pick Lock DC', type: 'number', showWhen: (values) => values.locked === true },
+  { key: 'hiddenDc', label: 'Perception DC', type: 'number', showWhen: (values) => values.hidden === true },
+  { key: 'note', label: 'Note', type: 'text' },
+]
+
+/** Portal field definitions — PassageFlags + destination picker (Phase H) */
+export const PORTAL_FIELDS: FieldSpec[] = [
+  { key: 'title', label: 'Title', type: 'text' },
+  { key: 'to', label: 'Destination', type: 'destinationPicker' },
+  { key: 'hidden', label: 'Hidden', type: 'boolean' },
+  { key: 'locked', label: 'Locked', type: 'boolean' },
+  { key: 'trapped', label: 'Trapped', type: 'boolean' },
+  { key: 'breakDc', label: 'Break DC', type: 'number', showWhen: (values) => values.locked === true },
+  { key: 'pickDc', label: 'Pick Lock DC', type: 'number', showWhen: (values) => values.locked === true },
+  { key: 'hiddenDc', label: 'Perception DC', type: 'number', showWhen: (values) => values.hidden === true },
+  { key: 'note', label: 'Note', type: 'text' },
+]
 
 export const FIXTURE_TYPES: Record<string, FixtureTypeSpec> = {
   door: {
@@ -118,6 +147,24 @@ export const FIXTURE_TYPES: Record<string, FixtureTypeSpec> = {
       locked: false,
       trapped: false,
       encounter_id: null,
+    },
+  },
+  stair: {
+    fields: STAIR_FIELDS,
+    defaultFlags: {
+      title: '',
+      hidden: false,
+      locked: false,
+      trapped: false,
+    },
+  },
+  portal: {
+    fields: PORTAL_FIELDS,
+    defaultFlags: {
+      title: '',
+      hidden: false,
+      locked: false,
+      trapped: false,
     },
   },
 }

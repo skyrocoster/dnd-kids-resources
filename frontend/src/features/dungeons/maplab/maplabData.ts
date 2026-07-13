@@ -181,4 +181,5 @@ export const mapLabLayout: MapLayout = {
     { z: 2, title: 'Two-Wing Test Layout' },
   ],
   props: [prop1],
+  portals: [],
 }

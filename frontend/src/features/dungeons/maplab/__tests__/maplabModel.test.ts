@@ -98,6 +98,7 @@ describe('maplabModel (M0a scaffold)', () => {
         stairs: [],
         floors: [],
         props: [],
+        portals: [],
       }
       expect(paddedBounds(layout)).toEqual({ minX: -3, maxX: 8, minY: -3, maxY: 6 })
     })
@@ -113,6 +114,7 @@ describe('maplabModel (M0a scaffold)', () => {
         stairs: [],
         floors: [],
         props: [],
+        portals: [],
       }
       expect(paddedBounds(layout)).toEqual({ minX: -2, maxX: 11, minY: -2, maxY: 5 })
     })
@@ -387,6 +389,7 @@ describe('maplabModel (M0a scaffold)', () => {
         { prop_id: 1, kind: 'chest', cell: [0, 0], z: 0, ...baseDoorFlags },
         { prop_id: 2, kind: 'table', cell: [0, 0], z: 1, ...baseDoorFlags },
       ],
+      portals: [],
     }
 
     it('doorsOnFloor resolves by authored z, not just spatial cell overlap', () => {

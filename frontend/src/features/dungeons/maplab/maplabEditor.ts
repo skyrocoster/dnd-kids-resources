@@ -11,8 +11,10 @@ import {
   type MapCell,
   type MapDoor,
   type MapLayout,
+  type MapPortal,
   type MapProp,
   type MapRoom,
+  type MapStair,
 } from './maplabModel'
 import { FIXTURE_TYPES } from './fixtureTypes'
 
@@ -21,6 +23,8 @@ export interface EditorState {
   selectedRoomId: number | null
   selectedDoorId: number | null
   selectedPropId: number | null
+  selectedStairId: number | null // Phase H
+  selectedPortalId: number | null // Phase H
   activeZ: number
 }
 
@@ -32,11 +36,17 @@ export type EditorAction =
   | { type: 'setRoomMeta'; roomId: number; meta: { title?: string; description?: string; kind?: string } }
   | { type: 'addDoor'; cell: [number, number]; side: CardinalSide }
   | { type: 'selectDoor'; doorId: number | null }
-  | { type: 'updateFixtureFlags'; fixtureId: number; fixtureType: 'door' | 'stair' | 'prop'; flags: Record<string, unknown> }
+  | { type: 'updateFixtureFlags'; fixtureId: number; fixtureType: 'door' | 'stair' | 'prop' | 'portal'; flags: Record<string, unknown> }
   | { type: 'deleteDoor'; doorId: number }
   | { type: 'addProp'; cell: [number, number] }
   | { type: 'selectProp'; propId: number | null }
   | { type: 'deleteProp'; propId: number }
+  | { type: 'addStair'; from: { z: number; cell: [number, number] } } // Phase H, stub
+  | { type: 'selectStair'; stairId: number | null } // Phase H, stub
+  | { type: 'deleteStair'; stairId: number } // Phase H, stub
+  | { type: 'addPortal'; cell: [number, number] } // Phase H, stub
+  | { type: 'selectPortal'; portalId: number | null } // Phase H, stub
+  | { type: 'deletePortal'; portalId: number } // Phase H, stub
   | { type: 'setActiveZ'; z: number }
   | { type: 'loadLayout'; layout: MapLayout }
   | { type: 'resetToFixture'; layout: MapLayout }
@@ -52,6 +62,8 @@ export function mapLabEditorReducer(state: EditorState, action: EditorAction): E
         selectedRoomId: room_id,
         selectedDoorId: null,
         selectedPropId: null,
+        selectedStairId: null,
+        selectedPortalId: null,
       }
     }
 
@@ -61,6 +73,8 @@ export function mapLabEditorReducer(state: EditorState, action: EditorAction): E
         selectedRoomId: action.roomId,
         selectedDoorId: action.roomId === null ? state.selectedDoorId : null,
         selectedPropId: action.roomId === null ? state.selectedPropId : null,
+        selectedStairId: action.roomId === null ? state.selectedStairId : null,
+        selectedPortalId: action.roomId === null ? state.selectedPortalId : null,
       }
 
     case 'deleteRoom': {
@@ -118,6 +132,8 @@ export function mapLabEditorReducer(state: EditorState, action: EditorAction): E
         selectedDoorId: door_id,
         selectedRoomId: null,
         selectedPropId: null,
+        selectedStairId: null,
+        selectedPortalId: null,
       }
     }
 
@@ -127,6 +143,8 @@ export function mapLabEditorReducer(state: EditorState, action: EditorAction): E
         selectedDoorId: action.doorId,
         selectedRoomId: action.doorId === null ? state.selectedRoomId : null,
         selectedPropId: action.doorId === null ? state.selectedPropId : null,
+        selectedStairId: action.doorId === null ? state.selectedStairId : null,
+        selectedPortalId: action.doorId === null ? state.selectedPortalId : null,
       }
 
     case 'updateFixtureFlags': {
@@ -140,6 +158,16 @@ export function mapLabEditorReducer(state: EditorState, action: EditorAction): E
           prop.prop_id === action.fixtureId ? ({ ...prop, ...action.flags } as MapProp) : prop,
         )
         return { ...state, layout: { ...state.layout, props } }
+      } else if (action.fixtureType === 'stair') {
+        const stairs = state.layout.stairs.map((stair) =>
+          stair.stair_id === action.fixtureId ? ({ ...stair, ...action.flags } as MapStair) : stair,
+        )
+        return { ...state, layout: { ...state.layout, stairs } }
+      } else if (action.fixtureType === 'portal') {
+        const portals = state.layout.portals.map((portal) =>
+          portal.portal_id === action.fixtureId ? ({ ...portal, ...action.flags } as MapPortal) : portal,
+        )
+        return { ...state, layout: { ...state.layout, portals } }
       }
       return state
     }
@@ -172,6 +200,8 @@ export function mapLabEditorReducer(state: EditorState, action: EditorAction): E
         selectedPropId: prop_id,
         selectedRoomId: null,
         selectedDoorId: null,
+        selectedStairId: null,
+        selectedPortalId: null,
       }
     }
 
@@ -181,6 +211,8 @@ export function mapLabEditorReducer(state: EditorState, action: EditorAction): E
         selectedPropId: action.propId,
         selectedRoomId: action.propId === null ? state.selectedRoomId : null,
         selectedDoorId: action.propId === null ? state.selectedDoorId : null,
+        selectedStairId: action.propId === null ? state.selectedStairId : null,
+        selectedPortalId: action.propId === null ? state.selectedPortalId : null,
       }
 
     case 'deleteProp': {
@@ -191,6 +223,25 @@ export function mapLabEditorReducer(state: EditorState, action: EditorAction): E
         selectedPropId: state.selectedPropId === action.propId ? null : state.selectedPropId,
       }
     }
+
+    // Phase H stubs — implementations in H1+
+    case 'addStair':
+      return state // stub
+
+    case 'selectStair':
+      return state // stub
+
+    case 'deleteStair':
+      return state // stub
+
+    case 'addPortal':
+      return state // stub
+
+    case 'selectPortal':
+      return state // stub
+
+    case 'deletePortal':
+      return state // stub
 
     case 'setActiveZ':
       return { ...state, activeZ: action.z }
@@ -236,5 +287,13 @@ function isConnectedPolyomino(cells: MapCell[]): boolean {
 export function initialEditorState(layout: MapLayout): EditorState {
   const floors = floorsInLayout(layout)
   const activeZ = floors[0]?.z ?? layout.rooms[0]?.z ?? 0
-  return { layout, selectedRoomId: null, selectedDoorId: null, selectedPropId: null, activeZ }
+  return {
+    layout,
+    selectedRoomId: null,
+    selectedDoorId: null,
+    selectedPropId: null,
+    selectedStairId: null,
+    selectedPortalId: null,
+    activeZ,
+  }
 }

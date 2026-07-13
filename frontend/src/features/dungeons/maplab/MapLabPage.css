@@ -524,3 +524,27 @@
     transition: none;
   }
 }
+
+/* ============================================================================
+ * Phase H — Stair Authoring + Portal Doors (H0 placeholders)
+ * ============================================================================ */
+
+/* Stair placement overlay (H1+) */
+.maplab-stair-placement-overlay {
+  /* TODO: H1 implementation */
+}
+
+/* Portal marker — on-square portal door glyph (H2+) */
+.maplab-portal-marker {
+  /* TODO: H2 implementation */
+}
+
+/* Portal state badge (H2+) */
+.maplab-portal-state-badge {
+  /* TODO: H2 implementation */
+}
+
+/* Destination picker field for stair/portal editors (H1+) */
+.maplab-destination-picker {
+  /* TODO: H1 implementation */
+}

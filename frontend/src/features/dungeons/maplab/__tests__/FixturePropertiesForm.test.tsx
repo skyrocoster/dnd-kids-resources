@@ -22,6 +22,7 @@ describe('FixturePropertiesForm', () => {
       'mirror',
       'barrel',
       'statue',
+      'window',
       'encounter',
       'other',
     ])

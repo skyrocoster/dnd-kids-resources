@@ -12,6 +12,7 @@ const emptyLayout: MapLayout = {
     { z: 1, title: 'First Floor' },
   ],
   props: [],
+  portals: [],
 }
 
 describe('initialEditorState', () => {
@@ -218,16 +219,17 @@ describe('mapLabEditorReducer', () => {
       expect(next.layout.doors[0]).toMatchObject({ locked: true, breakDc: 15 })
     })
 
-    it('updateFixtureFlags is a no-op for a non-door fixtureType', () => {
+    it('updateFixtureFlags for stair/portal with non-matching id returns state with empty array', () => {
       let state = initialEditorState(emptyLayout)
       state = mapLabEditorReducer(state, { type: 'addDoor', cell: [0, 0], side: 'N' })
       const next = mapLabEditorReducer(state, {
         type: 'updateFixtureFlags',
-        fixtureId: 1,
+        fixtureId: 999,
         fixtureType: 'stair',
         flags: { locked: true },
       })
-      expect(next).toBe(state)
+      expect(next.layout.stairs).toEqual([])
+      expect(next.selectedDoorId).toBe(1)
     })
 
     it('deleteDoor removes the door and clears selection if it was selected', () => {
@@ -322,6 +324,37 @@ describe('mapLabEditorReducer', () => {
       state = mapLabEditorReducer(state, { type: 'selectRoom', roomId: 3 })
       expect(state.selectedRoomId).toBe(3)
       expect(state.selectedPropId).toBeNull()
+    })
+  })
+
+  // Phase H — Stair Authoring + Portal Doors (H0 stubs)
+  describe('Phase H — Stairs and Portals', () => {
+    it.skip('H0: stair/portal fields are stubbed', () => {
+      // H0 scaffolding: type additions complete, reducer cases stubbed
+    })
+
+    it.skip('H1: addStair creates a stair and selects it', () => {
+      // H1 implementation: add/select/delete stairs, destination picker
+    })
+
+    it.skip('H1: stair selection is 5-way mutually exclusive', () => {
+      // H1: room/door/prop/stair/portal all clear each other
+    })
+
+    it.skip('H2: addPortal creates a portal with auto-paired linking', () => {
+      // H2 implementation: portal auto-pairing at target
+    })
+
+    it.skip('H2: portal selection is 5-way mutually exclusive', () => {
+      // H2: room/door/prop/stair/portal all clear each other
+    })
+
+    it.skip('H3: portals render in the viewer and navigate to target z', () => {
+      // H3 implementation: viewer portal rendering + click navigation
+    })
+
+    it.skip('H4: portal marker reads as distinct from door/stair/prop', () => {
+      // H4 design pass: visual/interaction review
     })
   })
 })

@@ -90,7 +90,7 @@ export interface PropLoot {
  * Unrendered in Phase F Stages 0-1; Stage F2+ renders and authors these. */
 export interface MapProp extends PassageFlags {
   prop_id: number
-  kind: string // 'chest' | 'table' | 'mirror' | 'barrel' | 'statue' | 'other' | 'encounter'
+  kind: string // 'chest' | 'table' | 'mirror' | 'barrel' | 'statue' | 'window' | 'other' | 'encounter'
   cell: MapCell // absolute [x, y]
   side?: CardinalSide // ABSENT = on square; PRESENT = attached to that wall
   /** Authored floor. Optional for back-compat — see `MapDoor.z`. */
@@ -99,6 +99,17 @@ export interface MapProp extends PassageFlags {
   loot?: PropLoot // forward-compat; round-trips via autosave
   /** (D0+) Encounter marker: links to an encounter id for launching the runner. */
   encounter_id?: number | null
+}
+
+/** Portal = a freestanding on-square door linking to a non-adjacent destination with floor + exact-cell
+ * targeting. Portals are paired/two-way (setting a portal's destination auto-creates or re-links a matching
+ * return portal at the target). Carries PassageFlags like doors and stairs. (Phase H, Stage 0+) */
+export interface MapPortal extends PassageFlags {
+  portal_id: number
+  cell: MapCell // absolute [x, y]
+  z: number // floor level
+  title?: string
+  to: { z: number; cell: MapCell } // paired: the portal at `to` (if present) points back here
 }
 
 /** Layout-wide scale/presentation constants: makes the 5 ft/cell scale and the unknown-space
@@ -116,6 +127,7 @@ export interface MapLayout {
   stairs: MapStair[]
   floors: MapFloor[]
   props: MapProp[]
+  portals: MapPortal[] // added Phase H
 }
 
 // ============================================================================
@@ -459,6 +471,7 @@ export type Inspectable =
   | { kind: 'door'; door: MapDoor; session?: PassageSessionState }
   | { kind: 'stair'; stair: MapStair; session?: PassageSessionState }
   | { kind: 'prop'; prop: MapProp }
+  | { kind: 'portal'; portal: MapPortal; session?: PassageSessionState }
 
 /** Descriptor for an element: title, type label, icon, and structured detail rows.
  * Consumed by the Stage-3 generic inspector panel and Stage-4 session controls. */
@@ -548,6 +561,20 @@ export function inspectableDescriptor(target: Inspectable): InspectableDescripto
         icon: PROP_KIND_ICONS[prop.kind] ?? ItemIcon,
         token: passagePresentation(prop).token,
         lines: passageDescriptorLines(prop),
+      }
+    }
+    case 'portal': {
+      const { portal, session } = target
+      const effective = effectivePassageState(portal, session)
+      const presentation = passagePresentation(effective)
+      const lines = passageDescriptorLines(effective)
+      lines.push({ label: 'Leads to', value: `${portal.to.cell[0]},${portal.to.cell[1]} (z:${portal.to.z})` })
+      return {
+        title: portal.title ?? `Portal ${portal.portal_id}`,
+        typeLabel: 'Portal',
+        icon: presentation.icon,
+        token: presentation.token,
+        lines,
       }
     }
   }
@@ -686,18 +713,30 @@ export function nextPropId(layout: MapLayout): number {
   return Math.max(0, ...layout.props.map((p) => p.prop_id)) + 1
 }
 
+/** Next free stair id — one past the current maximum (1 for an empty layout). */
+export function nextStairId(layout: MapLayout): number {
+  return Math.max(0, ...layout.stairs.map((s) => s.stair_id)) + 1
+}
+
+/** Next free portal id — one past the current maximum (1 for an empty layout). */
+export function nextPortalId(layout: MapLayout): number {
+  return Math.max(0, ...layout.portals.map((p) => p.portal_id)) + 1
+}
+
 /** Defends against an older persisted `map_layout` row saved before `props` existed (it was named
  * `items` and unrendered) — normalizes a loaded layout so `props` is always an array. Also backfills
  * `z` on any door/prop saved before floor-stacking was disambiguated (Stage G1), inferring it from
  * whichever room's cells the door/prop spatially overlaps — a best-effort one-time migration so
  * floor-coincident data (e.g. a stairwell) resolves correctly from here on rather than re-inferring
- * ambiguously on every render. */
+ * ambiguously on every render. Defaults `portals` to an empty array (Phase H). */
 export function normalizeLayout(layout: MapLayout): MapLayout {
   const props = layout.props ?? []
+  const portals = layout.portals ?? []
   const inferZ = (cell: MapCell): number | undefined => roomOfCell(cell, layout.rooms)?.z
   return {
     ...layout,
     props: props.map((prop) => (prop.z !== undefined ? prop : { ...prop, z: inferZ(prop.cell) })),
     doors: layout.doors.map((door) => (door.z !== undefined ? door : { ...door, z: inferZ(door.cell) })),
+    portals,
   }
 }

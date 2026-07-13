@@ -3,13 +3,13 @@
 This document is the single reference for the dungeon room-navigation feature and its follow-on design
 phases. Original build (Stages 1–11), Design Phase A (Encounter Runner, E1–E6), Design Phase B (NPC
 Dossier, N1–N6), Design Phase C (Map Lab, Foundation + M0–M4), Design Phase D (Map Lab Authoring Tools,
-Stage 0–3), Design Phase E (Map Lab unified data/zoom/redesign, E1–E3), and Design Phase F (Room Props,
-F0–F4) are **all complete and shipped**. This
+Stage 0–3), Design Phase E (Map Lab unified data/zoom/redesign, E1–E3), Design Phase F (Room Props,
+F0–F4), Design Phase G (Ghost Objects, G-fix + G0–G2), and **Design Phase H Stage H0 (Stair/Portal scaffolding)** are **all complete and shipped**. This
 doc records what exists, the design system in force, and the facts a new executor needs, so the next
 phase can build on it without re-deriving anything. New design phases get appended under **"Next:
 front-end design planning"** at the bottom.
 
-> **Status:** Original build + Phases A/B/C/D/E/F **all shipped**, plus **G-fix** (live regression fix) and **Phase G Stages G0–G2 — Phase G is now complete**. **Latest:** Stage G2 (`/frontend-design`) found and fixed the one real ambiguity G1 left open — ghost props kept their full per-state hue (a ghosted locked chest still rendered solid gold), while ghost rooms/walls/doors were already neutral and dashed, so a ghost prop didn't read as "another floor" the way its neighbors did. Fixed with a scoped CSS override (`.maplab-ghost-layer .maplab-prop-marker`/`.maplab-prop-icon`/`.maplab-prop-state-badge` forced to `var(--md-outline)` + always-dashed ring) — no component change needed, `PropMarker`'s inline per-state token still drives the live floor. Confirmed live 2026-07-13. Before G2: Stage G1 implemented the Ghost Objects feature — a Map Lab editor toggle that overlays the floor below the active one, dimmed and read-only, for cross-floor alignment. Along the way it found and fixed a real pre-existing bug: doors/props were floor-attributed by spatial cell overlap alone, which misattributes a fixture whenever two floors share an `[x,y]` (a stairwell's aligned coordinates) — `MapDoor`/`MapProp` now carry an authored `z`. Confirmed live 2026-07-13. Before G1: **G-fix** (shipped ahead of Phase G features) patched a black-fill bug in the Map Lab editor — the editor's `MapCanvas` was missing `variant="neutral"`, so room cells defaulted to opaque black. Fix confirmed live 2026-07-13: editor rooms render with neutral container fill; all gates live-verified. The feature phases preceding the G-fix: **Design Phase F ("Room Props")** turned rooms from empty shells into containers for static furniture — chests, tables, mirrors, barrels, statues — placed on a grid square or attached to a wall. F0–F3 built the model/reducer/render/authoring; F4 was a front-end design pass that also fixed two real bugs (drifted duplicate `InspectorPanel` in the viewer, and a paint-overlay z-order bug). Before that, **Design Phase E ("Map Lab: unified viewer/editor data, canvas zoom, and layout redesign")** made the two Map Lab pages one coherent tool. No backend change was needed for any dungeon/encounter/NPC/Map-Lab work except the encounter runner's one additive `active_index` column and Phase D's one additive `map_layout` table — the rest of the feature set (Phase F included — props round-trip inside the same `map_layout` blob) is frontend against `getDungeon(id)`, `getEncounter`/`updateEncounter`, and `getNPC`/`listNPCs`.
+> **Status:** Original build + Phases A/B/C/D/E/F/G **all shipped**, plus **Phase H Stage H0 scaffolding — complete**. **Latest:** Stage H0 (Haiku 4.5, one context) delivered the mechanical type setup for Phase H Stair Authoring + Portal Doors: `MapPortal` interface + `portals: MapPortal[]` on `MapLayout`, `Inspectable`'s `'portal'` variant, `EditorState`/`EditorAction` additions (`selectedStairId`/`selectedPortalId`, stubs for 6 new actions), `nextStairId`/`nextPortalId` id generators, `normalizeLayout` extended to default portals. Portal icon: `Sparkles` (verified non-colliding per F4's `Landmark` check). Windows feature **fully implemented** (no stubs): added `'window'` to `PROP_KIND_OPTIONS`/`PROP_KIND_ICONS`, immediately placeable/editable via existing "Place prop" mode. Placeholder CSS for H1–H3 implementation areas. Test stubs with `it.skip` for H1–H4 behaviors. 🚦 Gate verified: `npm run typecheck`/`npm run build` clean, 412/412 tests pass, windows prop kind ready for placement. Before H0: **Design Phase G** (G-fix + G0–G2) shipped Ghost Objects — an editor toggle overlaying the floor below, dimmed and read-only, for cross-floor alignment. G1 found and fixed a real pre-existing bug (doors/props misattributed when floors share `[x,y]`); G2 fixed ghost props incorrectly carrying per-state hue. The feature phases preceding Phase G: **Design Phase F ("Room Props")**, E, D, C, original build, all shipped.
 
 ---
 
@@ -161,6 +161,7 @@ Material Design 3 system. Consume the **real tokens in `frontend/src/theme.css`*
 | **G: Stage 0** | Mechanical scaffolding (Haiku, one context) for the Ghost Objects feature: `maplabModel.ts` `ghostFloorZ` stub (returns null this stage, intended for G1); new `GhostFloorLayer.tsx` stub (renders null, full rendering deferred to G1); `showGhostFloor` state in `MapLabEditorPage.tsx` + "Ghost lower floor" toggle pill in new View toolbar group (disabled when no lower floor, non-functional this stage); placeholder `.maplab-ghost-layer` CSS; `it.skip` test stubs for G0 toolbar + G1 rendering. 🚦 Gate verified 2026-07-13: 409/409 tests (6 skipped), `npm run typecheck` clean, `pytest` unaffected (90.73% coverage). |
 | **G: Stage G1** | Implemented `ghostFloorZ` (nearest `z` strictly below `activeZ` with rooms, `null` at the lowest); extracted `doorsOnFloor`/`propsOnFloor` selectors so the ghost layer and the active floor share one floor-membership filter instead of duplicating it. `GhostFloorLayer.tsx` renders the lower floor's rooms (cells + `nonDoorWallSegments` + title), doors (leaf/swing glyph), and props (`PropMarker interactive={false}`) as read-only glyphs inside one `<g className="maplab-ghost-layer" aria-hidden="true">` — no `role`/`tabIndex`/`onClick` anywhere in the tree. Inserted immediately after the unknown-space backdrop and before the active-floor rooms in `MapLabEditorPage.tsx`, so ghosts sit behind the live floor (SVG paints later siblings on top) while the active layer stays topmost and clickable. Styling is tokens-only: `.maplab-ghost-layer { opacity: 0.35; pointer-events: none; }`, dashed neutral-outline room cells/walls (`--md-outline`), no hand-picked color, `prefers-reduced-motion` respected. Toggle defaults off, recomputes `ghostFloorZ` on every floor switch, stays disabled at the lowest floor. **Real bug found and fixed en route** (not part of the G1 spec, but blocked correct verification): `doorsOnActiveFloor`/`propsOnActiveFloor` (editor) and the equivalent inline filter (viewer) inferred floor membership *purely from spatial cell overlap* — since two floors can legitimately share an `[x,y]` (a stairwell's aligned coordinates, e.g. real fixture rooms 32 z:0 / 33 z:1 both at `[11,0]`), a door/prop authored on one floor would leak onto the other floor's live render whenever their cells coincided (confirmed live: door 98 "Rusty Trap Door", authored on room 32's own wall, was rendering as an interactive door on floor 1 too). Fixed by giving `MapDoor`/`MapProp` an optional `z` field, stamped from `state.activeZ` on creation (`addDoor`/`addProp` in `maplabEditor.ts`); `doorsOnFloor`/`propsOnFloor` now filter by authored `z` when present, falling back to the old spatial inference only for legacy data that predates the field (exact for a single floor, the only case it was ever correct for). `normalizeLayout` backfills `z` on load for any door/prop saved before this fix, so ambiguous legacy data resolves once and stays resolved. Real fixture (`maplabData.ts`) and both pages' door/prop filtering migrated to the new selectors. **Tests:** `ghostFloorZ` (nearest-lower / null-at-lowest / skips-non-adjacent-lower), `doorsOnFloor`/`propsOnFloor` floor-stacked-coordinate regression cases (including the real door-98 fixture), G0's previously-skipped toolbar tests implemented (group/disabled/aria-pressed), G1 rendering tests (`aria-hidden` ghost `<g>` with no interactive descendants, ghost-precedes-active document order, toggle visibility). 423/423 tests, `npm run typecheck`/`npm run build` clean, `pytest` unaffected (90.73% coverage) — confirmed no changes to `seed_dungeons.json`/`backend/`. 🚦 **Gate live-verified 2026-07-13** on Isly Castle's two floors: editing the upper floor and enabling the toggle ghosts the ground floor's rooms/doors/props, dimmed and behind; the active floor's rooms, paint overlay, and door/prop placement still select and click through with no interference; the toggle is disabled on the lowest floor; no console errors. |
 | **G: Stage G2** | Front-end design pass (`/frontend-design`, headless — no new UI, one CSS fix). Live-drove the editor (Isly Castle, Floor 1 → "Ghost lower floor") and found the one real gap: the seeded chest prop on Floor 0 ghosted at 0.35 opacity but kept its full `locked` gold token, so it read as "a real gold-locked chest, just faint" rather than "another floor" — the room cells/walls and door leaf/swing around it were already neutral `var(--md-outline)` + dashed, so the prop was the only ghost element still carrying live color. Fixed in `MapLabPage.css`: `.maplab-ghost-layer .maplab-prop-marker`/`.maplab-prop-icon`/`.maplab-prop-state-badge` forced to `var(--md-outline)` (`!important`, overriding `PropMarker`'s inline per-state `style` color) plus an always-on dashed ring, matching the room/door treatment — no component or reducer change. Verified structurally: touch-target/z-order integrity unaffected (`pointer-events:none` on the whole ghost `<g>` predates this stage); focus never lands on ghost elements (`aria-hidden`, no `role`/`tabIndex` anywhere in `GhostFloorLayer`, unchanged); no motion added, so `prefers-reduced-motion` is moot; no emoji; tokens-only (`var(--md-outline)`, no hand-picked color). Tests: new `MapLabEditorPage.test.tsx` case (Stage G2) renders a prop on the ghosted floor and asserts it lands inside `.maplab-ghost-layer` with no `role`/`tabindex`. 424 passed, `npm run typecheck`/`npm run build` clean, `pytest` unaffected (90.73% coverage) — confirmed no changes to `seed_dungeons.json`/`backend/`. 🚦 **Gate live-verified 2026-07-13**: on Isly Castle, Floor 1 with "Ghost lower floor" on, the ghosted Armoury's chest now renders as a neutral dashed ring + icon indistinguishable in treatment from the ghost room walls/door around it (screenshots taken before/after); the live First Floor Landing room still selects/opens the inspector/paint-overlay normally with the ghost layer beneath it; toggle still disables at Floor 0 (regression, unchanged from G0/G1). |
+| **H: Stage H0** | Mechanical scaffolding (Haiku 4.5, one context) for Stair Authoring + Portal Doors: `MapPortal` interface (extends `PassageFlags`, adds `portal_id`/`cell`/`z`/`to:{z,cell}`/title) + `portals: MapPortal[]` on `MapLayout`; `Inspectable`'s `'portal'` variant with optional `session` state; `EditorState` gains `selectedStairId`/`selectedPortalId` fields; `EditorAction` gains 6 new stub action types (`addStair`/`selectStair`/`deleteStair`/`addPortal`/`selectPortal`/`deletePortal`); `nextStairId`/`nextPortalId` id generators (follow `nextDoorId`/`nextPropId` pattern); `updateFixtureFlags` type signature extended to include `'stair'`/`'portal'` (reducer body stubs all 6 new actions); `normalizeLayout` extended to default `portals: layout.portals ?? []`; all 5 selection types made mutually exclusive in existing case bodies (`addRoom`/`selectRoom`/`addDoor`/`selectDoor`/`addProp`/`selectProp`/`initialEditorState`); icons: `Sparkles` for portals (verified non-colliding per F4 check); `FieldSpec` type extended with `'destinationPicker'` field type; `STAIR_FIELDS`/`PORTAL_FIELDS` defined (both `PASSAGE_FIELDS` + one `destinationPicker` for `to`), registered in `FIXTURE_TYPES.stair`/`.portal`; placeholder CSS (`.maplab-stair-placement-overlay`, `.maplab-portal-marker`, `.maplab-destination-picker`); test stubs with `it.skip` for H1–H4 behaviors. **Windows feature fully implemented** (no stubs): added `'window'` to `PROP_KIND_OPTIONS`/`PROP_KIND_ICONS` with `Window` icon, immediately placeable/editable via existing "Place prop" mode + properties form — no window-specific code elsewhere. 🚦 Gate verified: `npm run typecheck`/`npm run build` clean, 412/412 tests pass, `pytest` unaffected (90.73% coverage), windows prop kind ready for placement, `git status` shows only maplab/* + icons + dungeon_plan.md (no schema/backend change). |
 
 ---
 
@@ -559,6 +560,141 @@ build` clean, `pytest` unaffected (90.73% coverage).
   floor; multi-floor stacking is a later extension.
 - Ghosting the floor **above** the active one.
 - Any ghost interactivity (click-through selection, "copy from floor below") — authored read-only overlay only.
+
+---
+
+## Design Phase H — Stair Authoring + Portal Doors (queued, not yet shipped)
+
+**Goal.** Stairs are a fully-built **read/view-only** feature (`MapStair`, `stairEndpointsForZ`,
+`stairPresentation`, `Inspectable`'s `'stair'` case, and the viewer's click-to-jump floor navigation all
+exist in `MapLabPage.tsx`) but have **zero editor-side support** — no `selectedStairId`, no
+`addStair`/`selectStair`/`deleteStair`, no toolbar button, no canvas placement/rendering, no inspector
+branch. `EditorState`/`EditorAction`'s `updateFixtureFlags` type signature already includes `'stair'` in its
+`fixtureType` union but the reducer body silently no-ops for it — a pre-existing dead branch this phase
+retires. This phase also adds a new **portal door**: a freestanding door (on-square, never wall-attached,
+like a prop) that links to a non-adjacent destination, **paired/two-way** (setting a portal's destination
+auto-creates or re-links a matching return portal at the target — mirrors how a stair's `from`/`to` pair
+already works), with **floor + exact-cell** destination picking (pick a target floor, click a cell on a
+mini rendering of that floor). Two more requirements folded in during scoping: **windows** (a new `MapProp`
+kind riding the exact seam `chest`/`table`/etc. already use — wall-attached, no new type/reducer/marker
+needed) and **multi-directional stair landings** (a floor can have both an up-stair and a down-stair on the
+same cell — e.g. floor 2 → floor 1 down, floor 2 → floor 3 up — which `MapStair`'s shape already supports
+as two independent records sharing a cell; the gap is purely editor placement + marker-overlap, not the
+data model). **Frontend-only** — confirmed via `backend/app/routers/layouts.py`: `map_layout` is an opaque
+JSON blob, no schema validation, matching every prior Map Lab phase (C–G).
+
+**Data model additions:**
+```ts
+// maplabModel.ts
+export interface MapPortal extends PassageFlags {
+  portal_id: number
+  cell: MapCell
+  z: number
+  title?: string
+  to: { z: number; cell: MapCell }   // paired: the portal at `to` (if present) points back here
+}
+// MapLayout gains: portals: MapPortal[]
+// Inspectable gains: { kind: 'portal'; portal: MapPortal; session?: PassageSessionState }
+```
+`MapStair`/`MapDoor`/`MapProp` are unchanged. `EditorState` gains `selectedStairId`/`selectedPortalId`;
+`EditorAction` gains `addStair`/`selectStair`/`deleteStair`/`addPortal`/`selectPortal`/`deletePortal`,
+extending the existing room/door/prop mutual-exclusion pattern to 5-way. `fixtureTypes.ts` gains a
+`'destinationPicker'` field type + `STAIR_FIELDS`/`PORTAL_FIELDS` (both `PASSAGE_FIELDS` plus one
+`destinationPicker` field for `to`) registered as `FIXTURE_TYPES.stair`/`.portal`.
+
+**Stages:**
+- **H0 — Scaffolding (Haiku 4.5, one context).** Type additions above written complete (mechanical, not
+  stubbed): `MapPortal`, `MapLayout.portals`, `Inspectable`'s `'portal'` variant, `EditorState`/`EditorAction`
+  additions, `nextStairId`/`nextPortalId` (`Math.max(...) + 1`, copied from `nextDoorId`/`nextPropId`).
+  Reducer cases, the `destinationPicker` field renderer, and all new editor UI are **stubbed only**.
+  `normalizeLayout` extended to default `portals: layout.portals ?? []`. Pick one installed `lucide-react`
+  icon for portals not already used elsewhere (verify against `frontend/src/components/icons/`, same
+  collision check F4 did for `Landmark`). Placeholder CSS (`.maplab-stair-placement-overlay`,
+  `.maplab-portal-marker`, `.maplab-destination-picker`). `it.skip` test stubs for every H1–H3 behavior.
+  **Also fully implements windows** (no new seam needed): adds `'window'` to `PROP_KIND_OPTIONS`/
+  `PROP_KIND_ICONS` with a distinct wall-fixture icon — windows are immediately placeable/editable via the
+  existing "Place prop" mode + properties form (kind = Window, wall `side` set); no window-specific code
+  anywhere else in this phase. 🚦 Gate: `it.skip` stubs present, `npm run typecheck`/`npm run build` clean,
+  no runtime behavior change to ship yet except windows (verify a window prop can be placed/edited/saved).
+- **H1 — Stair authoring (Sonnet).** Implements `addStair` (one-shot cell-click placement, same pattern as
+  `addDoor`/`addProp` — `from:{z:activeZ, cell}`, placeholder `to` = `from`, auto-selects), `selectStair`,
+  `deleteStair`, and the `updateFixtureFlags` `'stair'` branch (writes through to the nested `to` object).
+  Toolbar "Place stair" toggle in the Create group, 4-way mutual exclusion with door/prop placement modes.
+  **Editor renders stairs on-canvas for the first time** (`stairPresentation`, `onClick` → `selectStair`,
+  not floor-jump — that stays viewer-only). New shared `DestinationPickerField` component (modeled on
+  `EncounterPickerField` in `FixturePropertiesForm.tsx`): floor `<select>` (`floorsInLayout`) + a read-only
+  mini floor-plan of the chosen floor's rooms (`roomsOnZ`/`absoluteCells`) where clicking a cell sets
+  `{z, cell}`; wired into `FixturePropertiesForm` for `'destinationPicker'` fields. Stair inspector-rail
+  branch (`InspectorPanel` + `FixturePropertiesForm(FIXTURE_TYPES.stair)` + Delete/Close). **Landings:**
+  `addStair`'s placement overlay stays clickable on an already-occupied cell (no occupancy guard, matching
+  `addProp`); stair marker rendering (editor **and** viewer) groups stairs by `(z, cell)` and offsets
+  multiple markers so co-located up/down stairs render as distinct, independently hoverable/clickable icons
+  (`stairDirection` already returns the correct icon per stair). Tests: reducer add/select/delete/
+  updateFlags (incl. nested `to` write), 4-way mutual exclusion, `DestinationPickerField` render/floor-
+  change/cell-click, stair canvas placement + selection, **two co-located stairs render as separate
+  non-overlapping, independently selectable markers**. 🚦 Gate: place a stair in the editor, set its
+  destination via the picker, confirm it persists; place a second stair on the same cell targeting a
+  different floor, confirm both render distinctly and select independently; existing door/prop placement
+  unaffected.
+- **H2 — Portal doors: model + reducer + editor placement (Sonnet).** Implements `addPortal` (one-shot
+  on-cell placement, placeholder `to` = own cell/z) and the paired-linking behavior on
+  `updateFixtureFlags('portal', …, {to: …})`: if a portal already exists at the exact target `{z, cell}`,
+  update *that* portal's `to` to point back (re-pairing); otherwise auto-create a new `MapPortal` at the
+  target whose `to` points back at the source. `deletePortal` is a simple single-object delete (no
+  cascading) — documented as a known limitation matching the pre-existing stair/prop orphan-cleanup gap
+  (`deleteRoom` doesn't clean up stairs or props today either; not fixed here). New `PortalMarker.tsx`
+  (mirrors only the on-square half of `PropMarker.tsx`'s geometry — cell-centered, `radius = cellSize *
+  0.32` — using `passagePresentation` + the H0 portal icon). Toolbar "Place portal" toggle, 5-way mutual
+  exclusion with door/prop/stair placement modes. Portal inspector-rail branch using `FIXTURE_TYPES.portal`
+  + the shared `DestinationPickerField`. Tests: reducer add/select/delete, paired auto-create-or-relink
+  (both "no portal at target yet" and "portal already exists at target" cases), 5-way mutual exclusion,
+  canvas placement/selection. 🚦 Gate: place a portal in the editor, target a non-adjacent room on another
+  floor via the picker, confirm a paired return portal appears there automatically; re-targeting an existing
+  portal to a cell that already has a portal re-links instead of duplicating.
+- **H3 — Viewer rendering + navigation (Sonnet).** Portals get viewer support for the first time.
+  `inspectableDescriptor`'s `'portal'` case (title/typeLabel/icon/token/lines incl. a "Leads to: {floor
+  title}" line). `MapLabPage.tsx`: filter/render portals on the active floor (same shape as the existing
+  stair block), hover/focus wiring into `hoveredInspectable`/`focusedInspectable`, click → `setActiveZ
+  (portal.to.z)` (matching stair click-to-jump — **no** viewport re-centering/pan-to-cell; no `panTo` helper
+  exists on `useMapCanvasZoom`, and portals aren't guaranteed x/y-aligned with their source the way stairs
+  conventionally are — a known follow-up, not required here). Per-portal session state (hidden/locked/
+  trapped toggle) mirrors `stairSessions`/`toggleStairLocked`/`disarmStairTrap` if the existing door/stair
+  session-control pattern in `InspectorPanel` extends cleanly — confirmed during implementation, not
+  assumed. Ghosting (`GhostFloorLayer`) is **out of scope** — stairs aren't ghosted today either; not
+  extended to portals, not retrofitted onto stairs. Tests: portal viewer rendering, hover/inspector content,
+  click navigates `activeZ`. 🚦 Gate: in the viewer, click a portal — floor jump works; hover a stair and a
+  portal — inspector shows correct title/state/destination lines for each; no console errors.
+- **H4 — Design pass (Sonnet, `/frontend-design`).** Visual/interaction review: portal marker reads as its
+  own thing (not confusable with a prop or stair) while staying inside the established token/icon/shape
+  language (never hue-alone, dashed-hidden outline, badge pattern matches door/stair/prop). Confirms 5-way
+  placement-mode toolbar mutual exclusion has no edge cases (e.g. selecting a room while a placement mode is
+  active). Confirms touch-target sizing follows the established Map Lab canvas-glyph convention (not the
+  48px toolbar floor — same distinction F4 documented for props).
+  🚦 **Live-verified gate (full phase regression + sign-off):**
+  - Editor: place a stair, open its inspector, use the destination picker to target the other floor + a
+    specific room's cell, confirm it saves; place a second stair on the same cell for the opposite
+    direction, confirm both render/select independently (landing case); place a portal, target a
+    non-adjacent room, confirm a paired return portal appears automatically; place a window prop on a wall,
+    confirm it saves; confirm "Place door/prop/stair/portal" toggles are mutually exclusive.
+  - Viewer: click the stair — floor jump works (regression-check); click the portal — floor jump to
+    `to.z` works; hover stair/portal/window — inspector shows correct title/state/destination lines; no
+    console errors, no emoji, tokens-only.
+  - Regression: `npm run test`, `npm run typecheck`, `npm run build` green; `pytest` unaffected; `git
+    status` shows no change to `seed_dungeons.json` or `backend/`.
+
+**Files most affected (representative, not exhaustive):** `maplabModel.ts` (`MapPortal`, `Inspectable`,
+`normalizeLayout`, `nextStairId`/`nextPortalId`); `maplabEditor.ts` (`EditorState`/`EditorAction`, reducer
+cases); `fixtureTypes.ts` (`destinationPicker` field type, `STAIR_FIELDS`/`PORTAL_FIELDS`,
+`FIXTURE_TYPES.stair`/`.portal`, `'window'` prop kind); `FixturePropertiesForm.tsx` (new
+`DestinationPickerField`); `MapLabEditorPage.tsx` (toolbar, placement overlays, canvas rendering,
+inspector-rail branches); `MapLabPage.tsx` (portal viewer rendering + navigation); new `PortalMarker.tsx`.
+
+**Deferred (NOT in Phase H):**
+- Portal/stair viewport re-centering on jump (`panTo`-style pan, not just `setActiveZ`).
+- Ghosting stairs or portals in `GhostFloorLayer` (stairs aren't ghosted today either).
+- Cascading delete/orphan-cleanup for stairs, portals, or props when their owning room is deleted
+  (pre-existing gap, not created or fixed by this phase).
+- Generalizing beyond the Isly Castle fixture (inherits the Phase D/E/F "any dungeon id" deferral).
 
 ---
 
