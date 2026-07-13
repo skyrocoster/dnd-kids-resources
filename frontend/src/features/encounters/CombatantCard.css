@@ -163,7 +163,7 @@
 
 .combatant-status-chip {
   padding: 0.25rem 0.625rem;
-  min-height: 2rem;
+  min-height: 2.75rem;
   background-color: var(--md-surface-1);
   color: var(--md-on-surface-variant);
   border: 1px solid var(--md-outline-variant);
@@ -366,4 +366,30 @@
   border-radius: 0.25rem;
   cursor: pointer;
   touch-action: manipulation;
+}
+
+/* Dock/compact mode (FloatingWindow, ~380px wide): tighten spacing so several
+   status/condition chips plus the picker trigger don't crowd or overflow.
+   Interactive controls keep the 2.75rem touch-target floor — only padding/gap shrink. */
+.encounter-runner-board.compact .combatant-card {
+  padding: 0.625rem;
+  gap: 0.5rem;
+}
+
+.encounter-runner-board.compact .combatant-status-chips,
+.encounter-runner-board.compact .combatant-condition-chips {
+  gap: 0.25rem;
+}
+
+.encounter-runner-board.compact .combatant-status-chip,
+.encounter-runner-board.compact .combatant-condition-chip {
+  padding: 0.1875rem 0.5rem;
+}
+
+.encounter-runner-board.compact .combatant-condition-row {
+  gap: 0.25rem;
+}
+
+.encounter-runner-board.compact .condition-picker-trigger {
+  padding: 0 0.5rem;
 }

@@ -61,7 +61,7 @@ export function ConditionPicker({ conditions, selected, onChange }: ConditionPic
         {isOpen ? <ChevronUpIcon size={18} aria-hidden /> : <ChevronDownIcon size={18} aria-hidden />}
       </button>
       {isOpen && (
-        <div id={panelId} className="condition-picker-panel">
+        <div id={panelId} className="condition-picker-panel" role="group" aria-label="Condition options">
           {options.length === 0 && <p className="encounter-editor-empty">No conditions available.</p>}
           {options.map((option) => (
             <CheckboxField

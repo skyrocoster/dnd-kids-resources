@@ -524,6 +524,3 @@
     transition: none;
   }
 }
-
-/* TODO (D0): encounter prop marker styling — follows prop pattern; D3 will add
-   state-specific colors via data-variant attribute (teal/tertiary role). */

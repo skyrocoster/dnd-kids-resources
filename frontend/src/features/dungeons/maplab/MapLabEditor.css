@@ -206,7 +206,8 @@
 }
 
 .maplab-field-row input[type='text'],
-.maplab-field-row input[type='number'] {
+.maplab-field-row input[type='number'],
+.maplab-field-row select {
   min-height: 36px;
   padding: 0.25rem 0.5rem;
   border: 1px solid var(--md-outline-variant);
@@ -216,7 +217,12 @@
   width: 8rem;
 }
 
-.maplab-field-row input:focus-visible {
+.maplab-field-row select {
+  cursor: pointer;
+}
+
+.maplab-field-row input:focus-visible,
+.maplab-field-row select:focus-visible {
   outline: 2px solid var(--md-primary);
   outline-offset: 1px;
 }
