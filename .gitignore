@@ -22,6 +22,7 @@ Thumbs.db
 .env
 build/
 *.log
+*.log.err
 .server.pid
 
 # Frontend (v2)
