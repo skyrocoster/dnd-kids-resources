@@ -15,6 +15,9 @@ import {
   floorsInLayout,
   roomsOnZ,
   stairEndpointsForZ,
+  stairCellForZ,
+  otherFloorZ,
+  stairMarkerOffset,
   passagePresentation,
   secondaryPassageStates,
   sharedWallSegments,
@@ -352,6 +355,56 @@ describe('maplabModel (M0a scaffold)', () => {
 
     it('returns an empty array for a floor with no stairs', () => {
       expect(stairEndpointsForZ(mapLabLayout, 5)).toEqual([])
+    })
+  })
+
+  describe('stairCellForZ / otherFloorZ', () => {
+    const stair: MapStair = {
+      stair_id: 100,
+      from: { z: 0, cell: [2, 3] },
+      to: { z: 1, cell: [4, 5] },
+      hidden: false,
+      locked: false,
+      trapped: false,
+    }
+
+    it('returns the from cell at the from floor, the to cell at the to floor', () => {
+      expect(stairCellForZ(stair, 0)).toEqual([2, 3])
+      expect(stairCellForZ(stair, 1)).toEqual([4, 5])
+    })
+
+    it('returns null for an unrelated floor', () => {
+      expect(stairCellForZ(stair, 5)).toBeNull()
+    })
+
+    it('otherFloorZ returns the opposite endpoint', () => {
+      expect(otherFloorZ(stair, 0)).toBe(1)
+      expect(otherFloorZ(stair, 1)).toBe(0)
+    })
+  })
+
+  describe('stairMarkerOffset — co-located landings', () => {
+    const up: MapStair = { stair_id: 1, from: { z: 0, cell: [2, 2] }, to: { z: 1, cell: [2, 2] }, hidden: false, locked: false, trapped: false }
+    const down: MapStair = { stair_id: 2, from: { z: 0, cell: [2, 2] }, to: { z: -1, cell: [2, 2] }, hidden: false, locked: false, trapped: false }
+    const elsewhere: MapStair = { stair_id: 3, from: { z: 0, cell: [9, 9] }, to: { z: 1, cell: [9, 9] }, hidden: false, locked: false, trapped: false }
+
+    it('a lone stair on its cell gets no offset', () => {
+      expect(stairMarkerOffset([elsewhere], elsewhere, 0)).toEqual({ dx: 0, dy: 0 })
+    })
+
+    it('two stairs sharing a cell fan out symmetrically around zero', () => {
+      const group = [up, down]
+      const offsetA = stairMarkerOffset(group, up, 0)
+      const offsetB = stairMarkerOffset(group, down, 0)
+      expect(offsetA.dy).toBe(0)
+      expect(offsetB.dy).toBe(0)
+      expect(offsetA.dx).toBe(-offsetB.dx)
+      expect(offsetA.dx).not.toBe(0)
+    })
+
+    it('stairs on different cells are unaffected by each other', () => {
+      const group = [up, down, elsewhere]
+      expect(stairMarkerOffset(group, elsewhere, 0)).toEqual({ dx: 0, dy: 0 })
     })
   })
 

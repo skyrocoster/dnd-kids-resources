@@ -5,6 +5,7 @@ import {
   nextDoorId,
   nextPropId,
   nextRoomId,
+  nextStairId,
   normalizeCells,
   roomOfCell,
   type CardinalSide,
@@ -224,16 +225,49 @@ export function mapLabEditorReducer(state: EditorState, action: EditorAction): E
       }
     }
 
-    // Phase H stubs — implementations in H1+
-    case 'addStair':
-      return state // stub
+    case 'addStair': {
+      const stair_id = nextStairId(state.layout)
+      const defaults = FIXTURE_TYPES.stair.defaultFlags
+      const newStair: MapStair = {
+        stair_id,
+        from: action.from,
+        to: action.from, // placeholder, set via the destination picker
+        title: typeof defaults.title === 'string' ? defaults.title : undefined,
+        hidden: Boolean(defaults.hidden),
+        locked: Boolean(defaults.locked),
+        trapped: Boolean(defaults.trapped),
+      }
+      return {
+        ...state,
+        layout: { ...state.layout, stairs: [...state.layout.stairs, newStair] },
+        selectedStairId: stair_id,
+        selectedRoomId: null,
+        selectedDoorId: null,
+        selectedPropId: null,
+        selectedPortalId: null,
+      }
+    }
 
     case 'selectStair':
-      return state // stub
+      return {
+        ...state,
+        selectedStairId: action.stairId,
+        selectedRoomId: action.stairId === null ? state.selectedRoomId : null,
+        selectedDoorId: action.stairId === null ? state.selectedDoorId : null,
+        selectedPropId: action.stairId === null ? state.selectedPropId : null,
+        selectedPortalId: action.stairId === null ? state.selectedPortalId : null,
+      }
 
-    case 'deleteStair':
-      return state // stub
+    case 'deleteStair': {
+      const stairs = state.layout.stairs.filter((stair) => stair.stair_id !== action.stairId)
+      return {
+        ...state,
+        layout: { ...state.layout, stairs },
+        selectedStairId: state.selectedStairId === action.stairId ? null : state.selectedStairId,
+      }
+    }
 
+    // Phase H stub — implementation in H2
     case 'addPortal':
       return state // stub
 

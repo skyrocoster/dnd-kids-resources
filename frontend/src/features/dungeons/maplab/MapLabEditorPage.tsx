@@ -13,6 +13,7 @@ import {
   PlusIcon,
   PropIcon,
   SaveIcon,
+  StairsIcon,
   TrashIcon,
   ZoomInIcon,
   ZoomOutIcon,
@@ -37,6 +38,10 @@ import {
   propsOnFloor,
   roomOfCell,
   roomsOnZ,
+  stairCellForZ,
+  stairEndpointsForZ,
+  stairMarkerOffset,
+  stairPresentation,
   type CardinalSide,
   type MapCell,
   type MapLayout,
@@ -127,10 +132,14 @@ export function MapLabEditorPage() {
     addProp,
     selectProp,
     deleteProp,
+    addStair,
+    selectStair,
+    deleteStair,
   } = useMapLabEditor(MAP_LAB_DUNGEON_ID)
   const [hoveredCell, setHoveredCell] = useState<MapCell | null>(null)
   const [placeDoorMode, setPlaceDoorMode] = useState(false)
   const [placePropMode, setPlacePropMode] = useState(false)
+  const [placeStairMode, setPlaceStairMode] = useState(false)
   const [showGhostFloor, setShowGhostFloor] = useState(false)
   const zoomApi = useMapCanvasZoom()
   const [viewportSize, setViewportSize] = useState<ViewportSize>({ width: 0, height: 0 })
@@ -147,6 +156,10 @@ export function MapLabEditorPage() {
   )
   const propsOnActiveFloor = useMemo(
     () => propsOnFloor(state.layout, state.activeZ),
+    [state.layout, state.activeZ]
+  )
+  const stairsOnActiveFloor = useMemo(
+    () => stairEndpointsForZ(state.layout, state.activeZ),
     [state.layout, state.activeZ]
   )
 
@@ -185,6 +198,10 @@ export function MapLabEditorPage() {
     () => state.layout.props.find((prop) => prop.prop_id === state.selectedPropId) ?? null,
     [state.layout.props, state.selectedPropId]
   )
+  const selectedStair = useMemo(
+    () => state.layout.stairs.find((stair) => stair.stair_id === state.selectedStairId) ?? null,
+    [state.layout.stairs, state.selectedStairId]
+  )
 
   if (loading) {
     return (
@@ -213,7 +230,10 @@ export function MapLabEditorPage() {
             data-active={placeDoorMode || undefined}
             onClick={() =>
               setPlaceDoorMode((active) => {
-                if (!active) setPlacePropMode(false)
+                if (!active) {
+                  setPlacePropMode(false)
+                  setPlaceStairMode(false)
+                }
                 return !active
               })
             }
@@ -228,13 +248,34 @@ export function MapLabEditorPage() {
             data-active={placePropMode || undefined}
             onClick={() =>
               setPlacePropMode((active) => {
-                if (!active) setPlaceDoorMode(false)
+                if (!active) {
+                  setPlaceDoorMode(false)
+                  setPlaceStairMode(false)
+                }
                 return !active
               })
             }
           >
             <PropIcon width={18} height={18} aria-hidden="true" />
             {placePropMode ? 'Cancel prop placement' : 'Place prop'}
+          </button>
+          <button
+            type="button"
+            className="maplab-pill-button maplab-editor-toolbar-button"
+            aria-pressed={placeStairMode}
+            data-active={placeStairMode || undefined}
+            onClick={() =>
+              setPlaceStairMode((active) => {
+                if (!active) {
+                  setPlaceDoorMode(false)
+                  setPlacePropMode(false)
+                }
+                return !active
+              })
+            }
+          >
+            <StairsIcon width={18} height={18} aria-hidden="true" />
+            {placeStairMode ? 'Cancel stair placement' : 'Place stair'}
           </button>
         </div>
         <div className="maplab-toolbar-group">
@@ -470,6 +511,47 @@ export function MapLabEditorPage() {
             )
           })}
 
+          {stairsOnActiveFloor.map((stair) => {
+            const cell = stairCellForZ(stair, state.activeZ)
+            if (!cell) return null
+            const { dx, dy } = stairMarkerOffset(stairsOnActiveFloor, stair, state.activeZ)
+            const [x, y] = cell
+            const cx = (x + 0.5 + dx) * CELL_SIZE
+            const cy = (y + 0.5 + dy) * CELL_SIZE
+            const isSelected = stair.stair_id === state.selectedStairId
+            const presentation = stairPresentation(stair, state.activeZ)
+            const Icon = presentation.icon
+            const label = `${stair.title ?? `Stair ${stair.stair_id}`} — ${presentation.label}`
+            return (
+              <g
+                key={stair.stair_id}
+                className="maplab-stair"
+                data-state={presentation.state}
+                data-selected={isSelected || undefined}
+                role="button"
+                tabIndex={0}
+                aria-pressed={isSelected}
+                aria-label={label}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  selectStair(isSelected ? null : stair.stair_id)
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault()
+                    selectStair(isSelected ? null : stair.stair_id)
+                  }
+                }}
+              >
+                <title>{stair.title ?? `Stair ${stair.stair_id}`}</title>
+                <circle className="maplab-stair-marker" cx={cx} cy={cy} r={CELL_SIZE * 0.32} style={{ stroke: `var(${presentation.token})` }} />
+                <g transform={`translate(${cx - ICON_SIZE / 2}, ${cy - ICON_SIZE / 2})`}>
+                  <Icon width={ICON_SIZE} height={ICON_SIZE} className="maplab-stair-icon" style={{ color: `var(${presentation.token})` }} />
+                </g>
+              </g>
+            )
+          })}
+
           {placePropMode && (
             <g className="maplab-prop-placement-overlay">
               {roomsOnActiveFloor.flatMap((room) =>
@@ -519,7 +601,31 @@ export function MapLabEditorPage() {
             </g>
           )}
 
-          {!placeDoorMode && !placePropMode && state.selectedRoomId !== null && (
+          {placeStairMode && (
+            <g className="maplab-stair-placement-overlay">
+              {roomsOnActiveFloor.flatMap((room) =>
+                absoluteCells(room).map(([x, y]) => (
+                  <rect
+                    key={`${room.room_id}-${x}-${y}`}
+                    className="maplab-stair-placement-cell"
+                    x={x * CELL_SIZE}
+                    y={y * CELL_SIZE}
+                    width={CELL_SIZE}
+                    height={CELL_SIZE}
+                    role="button"
+                    aria-label={`Place stair at ${x}, ${y}`}
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      addStair({ z: state.activeZ, cell: [x, y] })
+                      setPlaceStairMode(false)
+                    }}
+                  />
+                ))
+              )}
+            </g>
+          )}
+
+          {!placeDoorMode && !placePropMode && !placeStairMode && state.selectedRoomId !== null && (
             <g className="maplab-paint-overlay" onMouseLeave={() => setHoveredCell(null)}>
               {Array.from({ length: bounds.maxY - bounds.minY + 1 }, (_, rowIndex) => bounds.minY + rowIndex).map((y) =>
                 Array.from({ length: bounds.maxX - bounds.minX + 1 }, (_, colIndex) => bounds.minX + colIndex).map(
@@ -675,8 +781,35 @@ export function MapLabEditorPage() {
                 </button>
               </div>
             </>
+          ) : selectedStair ? (
+            <>
+              <InspectorPanel target={{ kind: 'stair', stair: selectedStair }} />
+              <FixturePropertiesForm
+                spec={FIXTURE_TYPES.stair}
+                values={selectedStair as unknown as Record<string, unknown>}
+                layout={state.layout}
+                onChange={(key, value) => updateFixtureFlags(selectedStair.stair_id, 'stair', { [key]: value })}
+              />
+              <div className="maplab-editor-inspector-actions">
+                <button
+                  type="button"
+                  className="maplab-pill-button maplab-editor-toolbar-button"
+                  onClick={() => deleteStair(selectedStair.stair_id)}
+                >
+                  <TrashIcon width={16} height={16} aria-hidden="true" />
+                  Delete stair
+                </button>
+                <button
+                  type="button"
+                  className="maplab-pill-button maplab-editor-toolbar-button"
+                  onClick={() => selectStair(null)}
+                >
+                  Close
+                </button>
+              </div>
+            </>
           ) : (
-            <p className="maplab-inspector-rail-empty">Select a room, door, or prop to see its details.</p>
+            <p className="maplab-inspector-rail-empty">Select a room, door, prop, or stair to see its details.</p>
           )}
         </div>
       </div>

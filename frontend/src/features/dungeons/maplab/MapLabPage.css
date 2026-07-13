@@ -529,9 +529,18 @@
  * Phase H — Stair Authoring + Portal Doors (H0 placeholders)
  * ============================================================================ */
 
-/* Stair placement overlay (H1+) */
-.maplab-stair-placement-overlay {
-  /* TODO: H1 implementation */
+/* Stair placement overlay: same shape as .maplab-prop-placement-cell (see M-era prop placement) —
+ * a transparent clickable cell per room square, cursor-only affordance until hovered. */
+.maplab-stair-placement-cell {
+  fill: transparent;
+  stroke: var(--md-primary);
+  stroke-width: 1;
+  stroke-dasharray: 4 3;
+  cursor: pointer;
+}
+
+.maplab-stair-placement-cell:hover {
+  fill: color-mix(in srgb, var(--md-primary) 20%, transparent);
 }
 
 /* Portal marker — on-square portal door glyph (H2+) */
@@ -544,7 +553,37 @@
   /* TODO: H2 implementation */
 }
 
-/* Destination picker field for stair/portal editors (H1+) */
+/* Destination picker field for stair/portal editors */
 .maplab-destination-picker {
-  /* TODO: H1 implementation */
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.maplab-destination-picker-map {
+  width: 100%;
+  max-width: 220px;
+  max-height: 160px;
+  background: var(--md-surface-2);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: 4px;
+}
+
+.maplab-destination-picker-cell {
+  fill: var(--md-surface-3);
+  stroke: var(--md-outline-variant);
+  stroke-width: 0.5;
+  cursor: pointer;
+}
+
+.maplab-destination-picker-cell:hover {
+  fill: color-mix(in srgb, var(--md-primary) 25%, var(--md-surface-3));
+}
+
+.maplab-destination-picker-cell[data-selected] {
+  fill: var(--md-primary);
+}
+
+.maplab-destination-picker-summary {
+  font-size: var(--type-caption-size);
+  color: var(--md-on-surface-variant);
 }

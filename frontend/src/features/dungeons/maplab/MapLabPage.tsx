@@ -18,9 +18,12 @@ import {
   floorsInLayout,
   nonDoorWallSegments,
   paddedBounds,
+  otherFloorZ,
   propsOnFloor,
   roomsOnZ,
+  stairCellForZ,
   stairEndpointsForZ,
+  stairMarkerOffset,
   stairPresentation,
   type Inspectable,
   type MapDoor,
@@ -43,16 +46,6 @@ function roomCenter(room: MapRoom): { x: number; y: number } {
     x: ((sum.x / cells.length) + 0.5) * CELL_SIZE,
     y: ((sum.y / cells.length) + 0.5) * CELL_SIZE,
   }
-}
-
-function stairCellForZ(stair: MapStair, z: number): [number, number] | null {
-  if (stair.from.z === z) return stair.from.cell
-  if (stair.to.z === z) return stair.to.cell
-  return null
-}
-
-function otherFloorZ(stair: MapStair, currentZ: number): number {
-  return stair.from.z === currentZ ? stair.to.z : stair.from.z
 }
 
 type InspectableKind = Inspectable['kind']
@@ -439,9 +432,10 @@ export function MapLabPage() {
             const cell = stairCellForZ(stair, activeZ)
             if (!cell) return null
             const session = stairSession(stair)
+            const { dx, dy } = stairMarkerOffset(stairs, stair, activeZ)
             const [x, y] = cell
-            const cx = (x + 0.5) * CELL_SIZE
-            const cy = (y + 0.5) * CELL_SIZE
+            const cx = (x + 0.5 + dx) * CELL_SIZE
+            const cy = (y + 0.5 + dy) * CELL_SIZE
             const targetZ = otherFloorZ(stair, activeZ)
             const presentation = stairPresentation(stair, activeZ, session)
             const Icon = presentation.icon

@@ -333,12 +333,65 @@ describe('mapLabEditorReducer', () => {
       // H0 scaffolding: type additions complete, reducer cases stubbed
     })
 
-    it.skip('H1: addStair creates a stair and selects it', () => {
-      // H1 implementation: add/select/delete stairs, destination picker
+    it('H1: addStair creates a stair and selects it', () => {
+      const state = initialEditorState(emptyLayout)
+      const next = mapLabEditorReducer(state, { type: 'addStair', from: { z: 0, cell: [2, 3] } })
+      expect(next.layout.stairs).toHaveLength(1)
+      expect(next.layout.stairs[0]).toMatchObject({
+        stair_id: 1,
+        from: { z: 0, cell: [2, 3] },
+        to: { z: 0, cell: [2, 3] },
+      })
+      expect(next.selectedStairId).toBe(1)
+
+      const second = mapLabEditorReducer(next, { type: 'addStair', from: { z: 0, cell: [5, 5] } })
+      expect(second.layout.stairs.map((s) => s.stair_id)).toEqual([1, 2])
+      expect(second.selectedStairId).toBe(2)
     })
 
-    it.skip('H1: stair selection is 5-way mutually exclusive', () => {
-      // H1: room/door/prop/stair/portal all clear each other
+    it('H1: addStair via updateFixtureFlags sets a real destination, and deleteStair removes it', () => {
+      let state = initialEditorState(emptyLayout)
+      state = mapLabEditorReducer(state, { type: 'addStair', from: { z: 0, cell: [2, 3] } })
+      const stairId = state.selectedStairId as number
+      state = mapLabEditorReducer(state, {
+        type: 'updateFixtureFlags',
+        fixtureId: stairId,
+        fixtureType: 'stair',
+        flags: { to: { z: 1, cell: [2, 3] } },
+      })
+      expect(state.layout.stairs[0].to).toEqual({ z: 1, cell: [2, 3] })
+
+      state = mapLabEditorReducer(state, { type: 'deleteStair', stairId })
+      expect(state.layout.stairs).toHaveLength(0)
+      expect(state.selectedStairId).toBeNull()
+    })
+
+    it('H1: stair selection clears other selections, and selecting other fixtures clears stair', () => {
+      let state = initialEditorState(emptyLayout)
+      state = mapLabEditorReducer(state, { type: 'addRoom' })
+      state = mapLabEditorReducer(state, { type: 'addStair', from: { z: 0, cell: [2, 3] } })
+      expect(state.selectedStairId).toBe(1)
+      expect(state.selectedRoomId).toBeNull()
+
+      state = mapLabEditorReducer(state, { type: 'selectStair', stairId: 1 })
+      expect(state.selectedStairId).toBe(1)
+
+      state = mapLabEditorReducer(state, { type: 'selectRoom', roomId: 1 })
+      expect(state.selectedRoomId).toBe(1)
+      expect(state.selectedStairId).toBeNull()
+
+      state = mapLabEditorReducer(state, { type: 'selectStair', stairId: 1 })
+      expect(state.selectedStairId).toBe(1)
+      expect(state.selectedRoomId).toBeNull()
+
+      state = mapLabEditorReducer(state, { type: 'selectDoor', doorId: 9 })
+      expect(state.selectedDoorId).toBe(9)
+      expect(state.selectedStairId).toBeNull()
+
+      state = mapLabEditorReducer(state, { type: 'selectStair', stairId: 1 })
+      state = mapLabEditorReducer(state, { type: 'selectProp', propId: 9 })
+      expect(state.selectedPropId).toBe(9)
+      expect(state.selectedStairId).toBeNull()
     })
 
     it.skip('H2: addPortal creates a portal with auto-paired linking', () => {

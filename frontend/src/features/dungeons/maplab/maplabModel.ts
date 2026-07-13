@@ -329,6 +329,38 @@ export function stairEndpointsForZ(layout: MapLayout, z: number): MapStair[] {
   return layout.stairs.filter((stair) => stair.from.z === z || stair.to.z === z)
 }
 
+/** The cell a stair occupies on floor `z`, or `null` if `z` isn't one of its two endpoints. */
+export function stairCellForZ(stair: MapStair, z: number): MapCell | null {
+  if (stair.from.z === z) return stair.from.cell
+  if (stair.to.z === z) return stair.to.cell
+  return null
+}
+
+/** The floor at the opposite end of a stair from `currentZ`. */
+export function otherFloorZ(stair: MapStair, currentZ: number): number {
+  return stair.from.z === currentZ ? stair.to.z : stair.from.z
+}
+
+/** Fractional-cell offset (as a multiple of cell size) for a stair marker among any other stairs
+ * sharing its exact `(z, cell)` — a landing, where an up-stair and a down-stair sit on the same
+ * square. A lone stair on its cell gets no offset; co-located stairs fan out horizontally around
+ * the cell center so each renders as a distinct, independently hoverable/clickable icon instead of
+ * overlapping. Takes the already-floor-filtered `stairs` list (e.g. `stairEndpointsForZ`'s result)
+ * so it doesn't need the whole layout. */
+export function stairMarkerOffset(stairs: MapStair[], stair: MapStair, z: number): { dx: number; dy: number } {
+  const cell = stairCellForZ(stair, z)
+  if (!cell) return { dx: 0, dy: 0 }
+  const group = stairs.filter((s) => {
+    const c = stairCellForZ(s, z)
+    return c !== null && c[0] === cell[0] && c[1] === cell[1]
+  })
+  if (group.length <= 1) return { dx: 0, dy: 0 }
+  const index = group.findIndex((s) => s.stair_id === stair.stair_id)
+  const spacing = 0.22
+  const mid = (group.length - 1) / 2
+  return { dx: (index - mid) * spacing, dy: 0 }
+}
+
 /** The nearest floor strictly below `activeZ` that has rooms, for ghosting in the editor.
  * "Below" = smaller z (Isly Castle convention: floor 1 Ground < floor 2 First). Returns `null`
  * when there is no such floor (already at the lowest one with rooms). */

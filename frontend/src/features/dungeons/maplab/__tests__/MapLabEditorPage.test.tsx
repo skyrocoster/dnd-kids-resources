@@ -406,7 +406,7 @@ describe('MapLabEditorPage (Stage E3 — Toolbar reorganization & persistent ins
     const rail = container.querySelector('.maplab-inspector-rail')
     expect(rail).toBeInTheDocument()
     expect(rail?.querySelector('.maplab-inspector-rail-empty')).toBeInTheDocument()
-    expect(screen.getByText('Select a room, door, or prop to see its details.')).toBeInTheDocument()
+    expect(screen.getByText('Select a room, door, prop, or stair to see its details.')).toBeInTheDocument()
   })
 
   it('selecting a room (not just door) populates the inspector rail', async () => {
@@ -880,5 +880,129 @@ describe('MapLabEditorPage (Stage G2 — ghost treatment design pass)', () => {
     expect(ghostProp).toBeInTheDocument()
     expect(ghostProp).not.toHaveAttribute('role')
     expect(ghostProp).not.toHaveAttribute('tabindex')
+  })
+})
+
+describe('MapLabEditorPage (Stage H1 — stair authoring)', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks()
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.runOnlyPendingTimers()
+    vi.useRealTimers()
+  })
+
+  const twoFloorLayout = {
+    meta: { cellSizeFt: 5, padding: 3 },
+    rooms: [
+      { room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0]], title: 'Ground Room' },
+      { room_id: 2, z: 1, origin: [0, 0], cells: [[0, 0]], title: 'Upper Room' },
+    ],
+    doors: [],
+    stairs: [],
+    floors: [
+      { z: 0, title: 'Ground Floor' },
+      { z: 1, title: 'First Floor' },
+    ],
+    props: [],
+  }
+
+  it('places a stair on a room cell, selects it, and shows its properties form with a destination picker', async () => {
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: twoFloorLayout })
+    const saveSpy = vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: twoFloorLayout })
+
+    const { container } = render(<MapLabEditorPage />)
+    await flush()
+
+    fireEvent.click(screen.getByRole('button', { name: /place stair/i }))
+    expect(container.querySelectorAll('.maplab-stair-placement-cell').length).toBeGreaterThan(0)
+
+    fireEvent.click(container.querySelector('.maplab-stair-placement-cell') as Element)
+
+    expect(container.querySelectorAll('.maplab-stair-placement-cell')).toHaveLength(0)
+    expect(container.querySelector('.maplab-fixture-form')).toBeInTheDocument()
+    expect(screen.getByLabelText('Destination')).toBeInTheDocument()
+    expect(container.querySelector('.maplab-stair[data-selected]')).toBeInTheDocument()
+
+    await act(async () => {
+      vi.advanceTimersByTime(700)
+      await Promise.resolve()
+    })
+    expect(saveSpy).toHaveBeenCalledTimes(1)
+  })
+
+  it('setting a destination via the picker persists it, and the stair can be deleted', async () => {
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: twoFloorLayout })
+    const saveSpy = vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: twoFloorLayout })
+
+    const { container } = render(<MapLabEditorPage />)
+    await flush()
+
+    fireEvent.click(screen.getByRole('button', { name: /place stair/i }))
+    fireEvent.click(container.querySelector('.maplab-stair-placement-cell') as Element)
+
+    const floorSelect = screen.getByLabelText('Destination') as HTMLSelectElement
+    fireEvent.change(floorSelect, { target: { value: '1' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Set destination to 0, 0 on floor 1' }))
+
+    await act(async () => {
+      vi.advanceTimersByTime(700)
+      await Promise.resolve()
+    })
+    expect(saveSpy).toHaveBeenCalledTimes(1)
+    const savedData = saveSpy.mock.calls[0][1].data as { stairs: Array<{ to: { z: number; cell: number[] } }> }
+    expect(savedData.stairs[0].to).toEqual({ z: 1, cell: [0, 0] })
+
+    fireEvent.click(screen.getByRole('button', { name: /delete stair/i }))
+    expect(container.querySelector('.maplab-fixture-form')).not.toBeInTheDocument()
+  })
+
+  it('"Place door", "Place prop", and "Place stair" placement modes are mutually exclusive', async () => {
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: twoFloorLayout })
+    vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: twoFloorLayout })
+
+    const { container } = render(<MapLabEditorPage />)
+    await flush()
+
+    fireEvent.click(screen.getByRole('button', { name: /place door/i }))
+    expect(container.querySelectorAll('.maplab-door-placement-edge').length).toBeGreaterThan(0)
+
+    fireEvent.click(screen.getByRole('button', { name: /place stair/i }))
+    expect(container.querySelectorAll('.maplab-door-placement-edge')).toHaveLength(0)
+    expect(container.querySelectorAll('.maplab-stair-placement-cell').length).toBeGreaterThan(0)
+
+    fireEvent.click(screen.getByRole('button', { name: /place prop/i }))
+    expect(container.querySelectorAll('.maplab-stair-placement-cell')).toHaveLength(0)
+    expect(container.querySelectorAll('.maplab-prop-placement-cell').length).toBeGreaterThan(0)
+  })
+
+  it('two stairs landing on the same cell render as distinct, independently selectable markers', async () => {
+    const layoutWithLanding = {
+      ...twoFloorLayout,
+      stairs: [
+        { stair_id: 1, from: { z: 0, cell: [0, 0] }, to: { z: 1, cell: [0, 0] }, hidden: false, locked: false, trapped: false, title: 'Up Stair' },
+        { stair_id: 2, from: { z: 0, cell: [0, 0] }, to: { z: -1, cell: [0, 0] }, hidden: false, locked: false, trapped: false, title: 'Down Stair' },
+      ],
+    }
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: layoutWithLanding })
+    vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: layoutWithLanding })
+
+    const { container } = render(<MapLabEditorPage />)
+    await flush()
+
+    const stairMarkers = Array.from(container.querySelectorAll('.maplab-stair'))
+    expect(stairMarkers).toHaveLength(2)
+    const circles = stairMarkers.map((el) => el.querySelector('circle')?.getAttribute('cx'))
+    expect(new Set(circles).size).toBe(2)
+
+    fireEvent.click(stairMarkers[0])
+    expect(stairMarkers[0]).toHaveAttribute('data-selected')
+    expect(stairMarkers[1]).not.toHaveAttribute('data-selected')
+
+    fireEvent.click(stairMarkers[1])
+    expect(stairMarkers[0]).not.toHaveAttribute('data-selected')
+    expect(stairMarkers[1]).toHaveAttribute('data-selected')
   })
 })
