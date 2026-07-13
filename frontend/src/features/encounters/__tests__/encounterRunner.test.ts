@@ -85,6 +85,31 @@ describe('setStatus / rename', () => {
   })
 })
 
+describe('setConditions', () => {
+  it('replaces conditions for the targeted combatant only', () => {
+    const state = hydrated()
+    const [a, b] = state.combatants
+    const next = encounterRunnerReducer(state, { type: 'setConditions', clientId: a.clientId, conditions: ['prone', 'poisoned'] })
+    expect(next.combatants[0].conditions).toEqual(['prone', 'poisoned'])
+    expect(next.combatants[1].conditions).toEqual(b.conditions)
+  })
+
+  it('clears conditions back to an empty array', () => {
+    const state = hydrated()
+    const clientId = state.combatants[0].clientId
+    const withConditions = encounterRunnerReducer(state, { type: 'setConditions', clientId, conditions: ['prone'] })
+    const cleared = encounterRunnerReducer(withConditions, { type: 'setConditions', clientId, conditions: [] })
+    expect(cleared.combatants[0].conditions).toEqual([])
+  })
+
+  it('leaves order untouched', () => {
+    const state = hydrated()
+    const [a, b, c] = state.combatants
+    const next = encounterRunnerReducer(state, { type: 'setConditions', clientId: b.clientId, conditions: ['stunned'] })
+    expect(next.combatants.map((x) => x.clientId)).toEqual([a.clientId, b.clientId, c.clientId])
+  })
+})
+
 describe('duplicate', () => {
   it('inserts a full-HP copy directly after the source, keeping name/ac and a new clientId', () => {
     const state = hydrated()
@@ -228,6 +253,15 @@ describe('combatantsToCreatures', () => {
     const state = { ...hydrated(), activeClientId: null }
     const { active_index } = combatantsToCreatures(state)
     expect(active_index).toBeNull()
+  })
+
+  it('round-trips conditions set via setConditions', () => {
+    const state = hydrated()
+    const clientId = state.combatants[0].clientId
+    const next = encounterRunnerReducer(state, { type: 'setConditions', clientId, conditions: ['grappled'] })
+    const { creatures } = combatantsToCreatures(next)
+    expect(creatures[0].conditions).toEqual(['grappled'])
+    expect(creatures[1].conditions).toEqual([])
   })
 })
 

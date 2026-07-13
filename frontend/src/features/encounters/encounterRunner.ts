@@ -140,8 +140,12 @@ export function encounterRunnerReducer(state: RunnerState, action: RunnerAction)
       }
 
     case 'setConditions':
-      // TODO (R1): implement conditions reducer
-      return state
+      return {
+        ...state,
+        combatants: state.combatants.map((c) =>
+          c.clientId === action.clientId ? { ...c, conditions: action.conditions } : c
+        ),
+      }
 
     case 'rename':
       return {

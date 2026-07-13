@@ -2,8 +2,8 @@
  * (debounced) so both the standalone runner page and the dungeon dock can share one engine.
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { getEncounter, updateEncounter } from '../../api/client'
-import type { Monster } from '../../api/types'
+import { getConditions, getEncounter, updateEncounter } from '../../api/client'
+import type { Condition, Monster } from '../../api/types'
 import {
   combatantsToCreatures,
   createInitialState,
@@ -21,6 +21,7 @@ export interface UseEncounterRunnerResult {
   title: string
   loading: boolean
   syncStatus: SyncStatus
+  conditions: Condition[]
   adjustHp: (clientId: string, delta: number) => void
   setHp: (clientId: string, hp: number) => void
   setStatus: (clientId: string, status: string) => void
@@ -41,6 +42,7 @@ export function useEncounterRunner(encounterId: number): UseEncounterRunnerResul
   const [title, setTitle] = useState('')
   const [loading, setLoading] = useState(true)
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('idle')
+  const [conditions, setConditionsList] = useState<Condition[]>([])
 
   const stateRef = useRef(state)
   stateRef.current = state
@@ -67,6 +69,12 @@ export function useEncounterRunner(encounterId: number): UseEncounterRunnerResul
     return () => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
     }
+  }, [])
+
+  useEffect(() => {
+    getConditions()
+      .then((data) => setConditionsList(data))
+      .catch(() => setConditionsList([]))
   }, [])
 
   const scheduleSave = useCallback(() => {
@@ -111,6 +119,7 @@ export function useEncounterRunner(encounterId: number): UseEncounterRunnerResul
     title,
     loading,
     syncStatus,
+    conditions,
     adjustHp,
     setHp,
     setStatus,

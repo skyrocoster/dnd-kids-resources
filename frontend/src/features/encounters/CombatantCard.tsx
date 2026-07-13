@@ -53,7 +53,6 @@ export function CombatantCard({
   onAdjustHp,
   onSetHp,
   onSetStatus,
-  onSetConditions,
   onRename,
   onDuplicate,
   onRemove,
@@ -165,9 +164,9 @@ export function CombatantCard({
       </div>
 
       {/* TODO (R2): condition chips row placeholder */}
-      {combatant.conditions.length > 0 && (
+      {(combatant.conditions ?? []).length > 0 && (
         <div className="combatant-condition-chips" role="group" aria-label="Conditions">
-          {combatant.conditions.map((condition) => (
+          {(combatant.conditions ?? []).map((condition) => (
             <span key={condition} className="combatant-condition-chip">
               {condition}
             </span>

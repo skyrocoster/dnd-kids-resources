@@ -40,6 +40,36 @@ describe('useEncounterRunner', () => {
     expect(result.current.state.activeClientId).toBe(result.current.state.combatants[0].clientId)
   })
 
+  it('fetches the canonical condition list', async () => {
+    vi.spyOn(api, 'getEncounter').mockResolvedValue(baseEncounter)
+    vi.spyOn(api, 'getConditions').mockResolvedValue([
+      { id: 1, name: 'Prone' },
+      { id: 2, name: 'Poisoned' },
+    ])
+
+    const { result } = renderHook(() => useEncounterRunner(1))
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    expect(result.current.conditions).toEqual([
+      { id: 1, name: 'Prone' },
+      { id: 2, name: 'Poisoned' },
+    ])
+  })
+
+  it('falls back to an empty condition list on fetch failure', async () => {
+    vi.spyOn(api, 'getEncounter').mockResolvedValue(baseEncounter)
+    vi.spyOn(api, 'getConditions').mockRejectedValue(new Error('network down'))
+
+    const { result } = renderHook(() => useEncounterRunner(1))
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    expect(result.current.conditions).toEqual([])
+  })
+
   it('applies mutations optimistically before the debounced save fires', async () => {
     vi.spyOn(api, 'getEncounter').mockResolvedValue(baseEncounter)
     const updateSpy = vi.spyOn(api, 'updateEncounter').mockResolvedValue(baseEncounter)
