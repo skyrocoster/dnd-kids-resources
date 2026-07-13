@@ -8,7 +8,7 @@ the same relationship `encounters_plan.md` has to `dungeon_plan.md`. Feature-spe
 toolbar/inspector redesign) lives in its own feature plan doc and cross-references this one for shared
 tokens/tooling; see `docs/dungeon_plan.md`'s **Design Phase J** for the current example.
 
-> **Status:** DP0 & DP3 shipped. DP1/DP2 queued next in parallel (see sequencing below).
+> **Status:** DP0, DP3, & DP1 shipped. DP2 queued next (DP4 waits for DP1/DP2; see sequencing below).
 
 ---
 
@@ -95,6 +95,20 @@ in that stage's own commit).
 - Detailed comments added linking each icon to its intended feature phase (Phase J: WandIcon, ScrollIcon, TomeIcon; Loot: CoinsIcon, PropBedIcon, PropAnvilIcon; TorchIcon: general lighting/fire effects)
 
 **Verification gate:** ✅ Icon registry finalized and ready for Phase J/loot wiring. No runtime changes; purely additive comments.
+
+### DP1 — Color-generation tool + banked tokens (✅ shipped)
+
+**What shipped:**
+- `@material/material-color-utilities` declared as devDependency (was transitive only)
+- `scripts/generate-md3-tokens.mjs` fully implemented: CLI parses `--seed <hex>` / `--chroma <n>` / `--role <name>`; harmonizes via `Blend.harmonize()` against primary seed `#d0bcff`; derives dark-theme tones 80/20/30/90; outputs ready-to-paste 4-line token block with generated-provenance comment
+- 3 banked token sets committed to `frontend/src/theme.css` under `/* Banked — reserved for future content roles */` section:
+  - `--md-passage-locked` (indigo, hue 289.1, chroma 40.0) — reserved for Phase J3 locked passage state
+  - `--md-passage-hidden` (gray, hue 209.5, chroma 2.0) — reserved for Phase J3 hidden passage state
+  - `--md-loot` (amber, hue 51.3, chroma 26.7) — reserved for deferred loot system
+- `theme.css` header updated to point at the script instead of "throwaway snippet" comment
+- Token format validation tests added in `frontend/src/__tests__/theme-tokens.test.mjs` (hex format, tone contrast, naming convention)
+
+**Verification gate:** ✅ Build succeeds; **510 tests pass** (updated token validation included); 3 banked sets ready for Phase J3/loot phases to wire up.
 
 ---
 

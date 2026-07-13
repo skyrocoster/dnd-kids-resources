@@ -3,6 +3,7 @@
   See docs/design-system-dark-mode.md for the full rationale (seed hues,
   content-role mapping, elevation model). Don't hand-pick colors per
   component — extend this file and consume the tokens.
+  Generate new token sets via scripts/generate-md3-tokens.mjs.
 */
 
 :root[data-theme='dark'] {
@@ -30,12 +31,36 @@
   --md-error-container: #8c1d18;
   --md-on-error-container: #f9dedc;
 
+  /* Banked — reserved for future content roles */
+  /* passage-locked — generated via material-color-utilities from source #5b6fd9,
+     Blend.harmonize()'d toward primary seed #d0bcff (hue 289.1, chroma 40.0),
+     tones 80/20/30/90. Reserved for dungeon_plan.md Phase J3 (locked passage state). */
+  --md-passage-locked: #C5C0FF;
+  --md-on-passage-locked: #2C2767;
+  --md-passage-locked-container: #433F7F;
+  --md-on-passage-locked-container: #E3DFFF;
+
+  /* passage-hidden — generated via material-color-utilities from source #8b8b8b,
+     Blend.harmonize()'d toward primary seed #d0bcff (hue 209.5, chroma 2.0),
+     tones 80/20/30/90. Reserved for dungeon_plan.md Phase J3 (hidden passage state). */
+  --md-passage-hidden: #C7C6C6;
+  --md-on-passage-hidden: #2F3031;
+  --md-passage-hidden-container: #464747;
+  --md-on-passage-hidden-container: #E3E2E2;
+
+  /* loot — generated via material-color-utilities from source #d4a574,
+     Blend.harmonize()'d toward primary seed #d0bcff (hue 51.3, chroma 26.7),
+     tones 80/20/30/90. Reserved for future loot system (see dungeon_plan.md Known debt). */
+  --md-loot: #F6B994;
+  --md-on-loot: #4C270C;
+  --md-loot-container: #663C20;
+  --md-on-loot-container: #FFDBC7;
+
   /* NPC (rose/magenta) — generated via material-color-utilities from source
      #e85d9e, Blend.harmonize()'d toward the primary/violet seed (#d0bcff),
      landing at hue 340.6 / chroma 40 (clamped from the raw harmonize chroma
      of 68.1 to match the other seeds' ~22-38 range), tones 80/20/30/90.
-     Regenerate with a throwaway material-color-utilities snippet if the seed
-     hues ever change (see docs/dungeon_plan.md Stage N1). */
+     Regenerate via scripts/generate-md3-tokens.mjs if seed hues change. */
   --md-npc: #fbafe3;
   --md-on-npc: #521b46;
   --md-npc-container: #6c325e;
