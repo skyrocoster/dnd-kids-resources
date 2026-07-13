@@ -113,6 +113,11 @@ export function useMapLabEditor(dungeonId: number) {
   )
   const selectStair = useCallback((stairId: number | null) => dispatch({ type: 'selectStair', stairId }), [])
   const deleteStair = useCallback((stairId: number) => apply({ type: 'deleteStair', stairId }), [apply])
+  const setStairDirection = useCallback(
+    (z: number, cell: MapCell, direction: 'up' | 'down', enabled: boolean) =>
+      apply({ type: 'setStairDirection', z, cell, direction, enabled }),
+    [apply]
+  )
 
   const addPortal = useCallback((cell: MapCell) => apply({ type: 'addPortal', cell }), [apply])
   const selectPortal = useCallback((portalId: number | null) => dispatch({ type: 'selectPortal', portalId }), [])
@@ -139,6 +144,7 @@ export function useMapLabEditor(dungeonId: number) {
     addStair,
     selectStair,
     deleteStair,
+    setStairDirection,
     addPortal,
     selectPortal,
     deletePortal,

@@ -17,7 +17,9 @@ import {
   stairEndpointsForZ,
   stairCellForZ,
   otherFloorZ,
-  stairMarkerOffset,
+  gridMarkerOffset,
+  markersAtCell,
+  MAX_MARKERS_PER_CELL,
   passagePresentation,
   secondaryPassageStates,
   sharedWallSegments,
@@ -36,6 +38,7 @@ import {
   type MapDoor,
   type MapStair,
   type MapProp,
+  type MapPortal,
 } from '../maplabModel'
 
 const baseDoorFlags = { hidden: false, locked: false, trapped: false }
@@ -383,19 +386,24 @@ describe('maplabModel (M0a scaffold)', () => {
     })
   })
 
-  describe('stairMarkerOffset — co-located landings', () => {
+  describe('gridMarkerOffset + markersAtCell — co-located landings', () => {
     const up: MapStair = { stair_id: 1, from: { z: 0, cell: [2, 2] }, to: { z: 1, cell: [2, 2] }, hidden: false, locked: false, trapped: false }
     const down: MapStair = { stair_id: 2, from: { z: 0, cell: [2, 2] }, to: { z: -1, cell: [2, 2] }, hidden: false, locked: false, trapped: false }
     const elsewhere: MapStair = { stair_id: 3, from: { z: 0, cell: [9, 9] }, to: { z: 1, cell: [9, 9] }, hidden: false, locked: false, trapped: false }
 
     it('a lone stair on its cell gets no offset', () => {
-      expect(stairMarkerOffset([elsewhere], elsewhere, 0)).toEqual({ dx: 0, dy: 0 })
+      const layout: MapLayout = { ...mapLabLayout, stairs: [elsewhere], portals: [], props: [] }
+      const group = markersAtCell(layout, 0, [9, 9])
+      expect(group).toHaveLength(1)
+      expect(gridMarkerOffset(group.length, 0)).toEqual({ dx: 0, dy: 0 })
     })
 
     it('two stairs sharing a cell fan out symmetrically around zero', () => {
-      const group = [up, down]
-      const offsetA = stairMarkerOffset(group, up, 0)
-      const offsetB = stairMarkerOffset(group, down, 0)
+      const layout: MapLayout = { ...mapLabLayout, stairs: [up, down], portals: [], props: [] }
+      const group = markersAtCell(layout, 0, [2, 2])
+      expect(group).toHaveLength(2)
+      const offsetA = gridMarkerOffset(group.length, 0)
+      const offsetB = gridMarkerOffset(group.length, 1)
       expect(offsetA.dy).toBe(0)
       expect(offsetB.dy).toBe(0)
       expect(offsetA.dx).toBe(-offsetB.dx)
@@ -403,8 +411,10 @@ describe('maplabModel (M0a scaffold)', () => {
     })
 
     it('stairs on different cells are unaffected by each other', () => {
-      const group = [up, down, elsewhere]
-      expect(stairMarkerOffset(group, elsewhere, 0)).toEqual({ dx: 0, dy: 0 })
+      const layout: MapLayout = { ...mapLabLayout, stairs: [up, down, elsewhere], portals: [], props: [] }
+      const group = markersAtCell(layout, 0, [9, 9])
+      expect(group).toHaveLength(1)
+      expect(gridMarkerOffset(group.length, 0)).toEqual({ dx: 0, dy: 0 })
     })
   })
 
@@ -822,6 +832,75 @@ describe('maplabModel (Stage 4 session state)', () => {
       const roundTripped: MapLayout = JSON.parse(JSON.stringify(layout))
       const prop = roundTripped.props.find((p) => p.prop_id === 501)
       expect(prop?.encounter_id).toBeNull()
+    })
+  })
+
+  describe('gridMarkerOffset (Phase I3)', () => {
+    it('centers a single marker', () => {
+      expect(gridMarkerOffset(1, 0)).toEqual({ dx: 0, dy: 0 })
+    })
+
+    it('arranges 2 markers side-by-side', () => {
+      const a = gridMarkerOffset(2, 0)
+      const b = gridMarkerOffset(2, 1)
+      expect(a.dy).toBe(0)
+      expect(b.dy).toBe(0)
+      expect(a.dx).toBeLessThan(0)
+      expect(b.dx).toBeGreaterThan(0)
+      expect(a.dx).toBe(-b.dx)
+    })
+
+    it('arranges 3-4 markers in a 2x2 grid, wrapping after 2 columns', () => {
+      const offsets4 = [0, 1, 2, 3].map((i) => gridMarkerOffset(4, i))
+      // Two distinct columns (x) and two distinct rows (y), symmetric around zero.
+      const xs = [...new Set(offsets4.map((o) => o.dx))]
+      const ys = [...new Set(offsets4.map((o) => o.dy))]
+      expect(xs).toHaveLength(2)
+      expect(ys).toHaveLength(2)
+      expect(xs[0]).toBe(-xs[1])
+      expect(ys[0]).toBe(-ys[1])
+
+      const offsets3 = [0, 1, 2].map((i) => gridMarkerOffset(3, i))
+      expect(offsets3[0].dy).toBe(offsets3[1].dy) // first row: two side-by-side
+      expect(offsets3[2].dy).not.toBe(offsets3[0].dy) // third wraps to a new row
+    })
+
+    it('MAX_MARKERS_PER_CELL matches the largest grid gridMarkerOffset lays out (2x2)', () => {
+      expect(MAX_MARKERS_PER_CELL).toBe(4)
+    })
+  })
+
+  describe('markersAtCell (Phase I3)', () => {
+    const stairHere: MapStair = { stair_id: 1, from: { z: 0, cell: [3, 3] }, to: { z: 1, cell: [3, 3] }, hidden: false, locked: false, trapped: false }
+    const portalHere: MapPortal = { portal_id: 1, z: 0, cell: [3, 3], to: { z: 2, cell: [0, 0] }, hidden: false, locked: false, trapped: false }
+    const propHere: MapProp = { prop_id: 1, kind: 'chest', z: 0, cell: [3, 3], hidden: false, locked: false, trapped: false }
+    const wallPropHere: MapProp = { prop_id: 2, kind: 'window', z: 0, cell: [3, 3], side: 'N', hidden: false, locked: false, trapped: false }
+
+    it('gathers stairs sharing the exact (z, cell)', () => {
+      const layout: MapLayout = { ...mapLabLayout, stairs: [stairHere], portals: [], props: [] }
+      expect(markersAtCell(layout, 0, [3, 3])).toEqual([{ type: 'stair', id: 1 }])
+      expect(markersAtCell(layout, 1, [3, 3])).toEqual([{ type: 'stair', id: 1 }])
+      expect(markersAtCell(layout, 0, [4, 4])).toEqual([])
+    })
+
+    it('gathers portals sharing the exact (z, cell)', () => {
+      const layout: MapLayout = { ...mapLabLayout, stairs: [], portals: [portalHere], props: [] }
+      expect(markersAtCell(layout, 0, [3, 3])).toEqual([{ type: 'portal', id: 1 }])
+      expect(markersAtCell(layout, 2, [3, 3])).toEqual([])
+    })
+
+    it('gathers on-square props sharing the exact (z, cell) (walls excluded)', () => {
+      const layout: MapLayout = { ...mapLabLayout, stairs: [], portals: [], props: [propHere, wallPropHere] }
+      expect(markersAtCell(layout, 0, [3, 3])).toEqual([{ type: 'prop', id: 1 }])
+    })
+
+    it('mixes stair/portal/prop types in one cell, in type-then-id order', () => {
+      const layout: MapLayout = { ...mapLabLayout, stairs: [stairHere], portals: [portalHere], props: [propHere] }
+      expect(markersAtCell(layout, 0, [3, 3])).toEqual([
+        { type: 'stair', id: 1 },
+        { type: 'portal', id: 1 },
+        { type: 'prop', id: 1 },
+      ])
     })
   })
 })

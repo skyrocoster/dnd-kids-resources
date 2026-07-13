@@ -16,6 +16,9 @@ import {
   doorSwingGeometry,
   doorWallSegment,
   floorsInLayout,
+  GROUPED_MARKER_RADIUS_FRACTION,
+  gridMarkerOffset,
+  markersAtCell,
   nonDoorWallSegments,
   paddedBounds,
   otherFloorZ,
@@ -23,10 +26,11 @@ import {
   roomsOnZ,
   stairCellForZ,
   stairEndpointsForZ,
-  stairMarkerOffset,
   stairPresentation,
   type Inspectable,
+  type MapCell,
   type MapDoor,
+  type MapLayout,
   type MapRoom,
   type MapStair,
   type PassageSessionState,
@@ -46,6 +50,20 @@ function roomCenter(room: MapRoom): { x: number; y: number } {
     x: ((sum.x / cells.length) + 0.5) * CELL_SIZE,
     y: ((sum.y / cells.length) + 0.5) * CELL_SIZE,
   }
+}
+
+/** Grid-layout offset for one marker among any others (stair/portal/on-square-prop) sharing its
+ * exact `(z, cell)` — the I3 replacement for the stair-only `stairMarkerOffset`. */
+function markerOffset(
+  layout: MapLayout,
+  z: number,
+  cell: MapCell,
+  type: 'stair' | 'portal' | 'prop',
+  id: number,
+): { dx: number; dy: number; grouped: boolean } {
+  const group = markersAtCell(layout, z, cell)
+  const index = group.findIndex((marker) => marker.type === type && marker.id === id)
+  return { ...gridMarkerOffset(group.length, index), grouped: group.length > 1 }
 }
 
 type InspectableKind = Inspectable['kind']
@@ -432,10 +450,12 @@ export function MapLabPage() {
             const cell = stairCellForZ(stair, activeZ)
             if (!cell) return null
             const session = stairSession(stair)
-            const { dx, dy } = stairMarkerOffset(stairs, stair, activeZ)
+            const { dx, dy, grouped } = markerOffset(layout, activeZ, cell, 'stair', stair.stair_id)
             const [x, y] = cell
             const cx = (x + 0.5 + dx) * CELL_SIZE
             const cy = (y + 0.5 + dy) * CELL_SIZE
+            const markerRadius = grouped ? CELL_SIZE * GROUPED_MARKER_RADIUS_FRACTION : CELL_SIZE * 0.32
+            const markerIconSize = grouped ? CELL_SIZE * GROUPED_MARKER_RADIUS_FRACTION * 1.1 : ICON_SIZE
             const targetZ = otherFloorZ(stair, activeZ)
             const presentation = stairPresentation(stair, activeZ, session)
             const Icon = presentation.icon
@@ -466,19 +486,19 @@ export function MapLabPage() {
                   className="maplab-stair-marker"
                   cx={cx}
                   cy={cy}
-                  r={CELL_SIZE * 0.32}
+                  r={markerRadius}
                   style={{ stroke: `var(${presentation.token})` }}
                 />
-                <g transform={`translate(${cx - ICON_SIZE / 2}, ${cy - ICON_SIZE / 2})`}>
+                <g transform={`translate(${cx - markerIconSize / 2}, ${cy - markerIconSize / 2})`}>
                   <Icon
-                    width={ICON_SIZE}
-                    height={ICON_SIZE}
+                    width={markerIconSize}
+                    height={markerIconSize}
                     className="maplab-stair-icon"
                     style={{ color: `var(${presentation.token})` }}
                   />
                 </g>
                 {stair.trapped && session.trapDisarmed && (
-                  <g transform={`translate(${cx + ICON_SIZE / 4}, ${cy + ICON_SIZE / 4})`}>
+                  <g transform={`translate(${cx + markerIconSize / 4}, ${cy + markerIconSize / 4})`}>
                     <TrapDisarmedIcon
                       width={14}
                       height={14}
@@ -492,22 +512,27 @@ export function MapLabPage() {
             )
           })}
 
-          {props.map((prop) => (
-            <PropMarker
-              key={prop.prop_id}
-              prop={prop}
-              cellSize={CELL_SIZE}
-              onMouseEnter={() => setHoveredInspectable({ kind: 'prop', id: prop.prop_id })}
-              onMouseLeave={() => setHoveredInspectable(null)}
-              onFocus={() => setFocusedInspectable({ kind: 'prop', id: prop.prop_id })}
-              onBlur={() => setFocusedInspectable(null)}
-              onClick={
-                prop.kind === 'encounter' && prop.encounter_id != null
-                  ? () => setActiveEncounterId(prop.encounter_id as number)
-                  : undefined
-              }
-            />
-          ))}
+          {props.map((prop) => {
+            const propOffset = prop.side === undefined ? markerOffset(layout, activeZ, prop.cell, 'prop', prop.prop_id) : undefined
+            return (
+              <PropMarker
+                key={prop.prop_id}
+                prop={prop}
+                cellSize={CELL_SIZE}
+                offset={propOffset}
+                grouped={propOffset?.grouped}
+                onMouseEnter={() => setHoveredInspectable({ kind: 'prop', id: prop.prop_id })}
+                onMouseLeave={() => setHoveredInspectable(null)}
+                onFocus={() => setFocusedInspectable({ kind: 'prop', id: prop.prop_id })}
+                onBlur={() => setFocusedInspectable(null)}
+                onClick={
+                  prop.kind === 'encounter' && prop.encounter_id != null
+                    ? () => setActiveEncounterId(prop.encounter_id as number)
+                    : undefined
+                }
+              />
+            )
+          })}
         </MapCanvas>
 
         <div className="maplab-inspector-panel-container" aria-live="polite">

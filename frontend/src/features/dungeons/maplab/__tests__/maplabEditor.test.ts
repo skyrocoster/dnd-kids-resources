@@ -333,33 +333,33 @@ describe('mapLabEditorReducer', () => {
       // H0 scaffolding: type additions complete, reducer cases stubbed
     })
 
-    it('H1: addStair creates a stair and selects it', () => {
+    it('H1: addStair creates a stair and selects it, defaulting to the floor below', () => {
       const state = initialEditorState(emptyLayout)
+      // emptyLayout has floors 0 and 1; z:0 has no floor below, so the default direction is up.
       const next = mapLabEditorReducer(state, { type: 'addStair', from: { z: 0, cell: [2, 3] } })
       expect(next.layout.stairs).toHaveLength(1)
       expect(next.layout.stairs[0]).toMatchObject({
         stair_id: 1,
         from: { z: 0, cell: [2, 3] },
-        to: { z: 0, cell: [2, 3] },
+        to: { z: 1, cell: [2, 3] },
       })
       expect(next.selectedStairId).toBe(1)
 
-      const second = mapLabEditorReducer(next, { type: 'addStair', from: { z: 0, cell: [5, 5] } })
+      // z:1 has a floor below (z:0), so a new stair placed there defaults down.
+      const second = mapLabEditorReducer(next, { type: 'addStair', from: { z: 1, cell: [5, 5] } })
       expect(second.layout.stairs.map((s) => s.stair_id)).toEqual([1, 2])
+      expect(second.layout.stairs[1]).toMatchObject({
+        from: { z: 1, cell: [5, 5] },
+        to: { z: 0, cell: [5, 5] },
+      })
       expect(second.selectedStairId).toBe(2)
     })
 
-    it('H1: addStair via updateFixtureFlags sets a real destination, and deleteStair removes it', () => {
+    it('H1: deleteStair removes only the one stair record', () => {
       let state = initialEditorState(emptyLayout)
       state = mapLabEditorReducer(state, { type: 'addStair', from: { z: 0, cell: [2, 3] } })
       const stairId = state.selectedStairId as number
-      state = mapLabEditorReducer(state, {
-        type: 'updateFixtureFlags',
-        fixtureId: stairId,
-        fixtureType: 'stair',
-        flags: { to: { z: 1, cell: [2, 3] } },
-      })
-      expect(state.layout.stairs[0].to).toEqual({ z: 1, cell: [2, 3] })
+      expect(state.layout.stairs).toHaveLength(1)
 
       state = mapLabEditorReducer(state, { type: 'deleteStair', stairId })
       expect(state.layout.stairs).toHaveLength(0)
@@ -494,6 +494,156 @@ describe('mapLabEditorReducer', () => {
 
     it.skip('H4: portal marker reads as distinct from door/stair/prop', () => {
       // H4 design pass: visual/interaction review
+    })
+
+    it('I1: updateFixtureFlags on a stair is a plain merge (title/hidden/locked/trapped/note only)', () => {
+      let state = initialEditorState(emptyLayout)
+      state = mapLabEditorReducer(state, { type: 'addStair', from: { z: 0, cell: [2, 3] } })
+      const stairId = state.selectedStairId as number
+      const before = { ...state.layout.stairs[0] }
+
+      state = mapLabEditorReducer(state, {
+        type: 'updateFixtureFlags',
+        fixtureId: stairId,
+        fixtureType: 'stair',
+        flags: { hidden: true, title: 'Spiral Stair' },
+      })
+
+      expect(state.layout.stairs).toHaveLength(1)
+      const stair = state.layout.stairs[0]
+      expect(stair.hidden).toBe(true)
+      expect(stair.title).toBe('Spiral Stair')
+      // Destination is untouched by updateFixtureFlags — it's only set via setStairDirection.
+      expect(stair.to).toEqual(before.to)
+    })
+
+    it('I1: setStairDirection(enabled: true) creates a stair for that direction if none exists', () => {
+      const state = initialEditorState(emptyLayout)
+      const next = mapLabEditorReducer(state, {
+        type: 'setStairDirection',
+        z: 0,
+        cell: [4, 4],
+        direction: 'up',
+        enabled: true,
+      })
+      expect(next.layout.stairs).toHaveLength(1)
+      expect(next.layout.stairs[0]).toMatchObject({
+        from: { z: 0, cell: [4, 4] },
+        to: { z: 1, cell: [4, 4] },
+        hidden: false,
+        locked: false,
+        trapped: false,
+      })
+      expect(next.selectedStairId).toBe(next.layout.stairs[0].stair_id)
+    })
+
+    it('I1: setStairDirection recognizes an existing stair from the other endpoint (undirected match)', () => {
+      // A stair created on z:0 going up is stored as from:{z:0} to:{z:1}. Viewed/toggled from
+      // z:1 (the `to` side), it must still be recognized as "down to floor 0" — the from/to
+      // fields just name endpoints, they aren't a fixed "viewed from here" direction.
+      let state = initialEditorState(emptyLayout)
+      state = mapLabEditorReducer(state, {
+        type: 'setStairDirection',
+        z: 0,
+        cell: [4, 4],
+        direction: 'up',
+        enabled: true,
+      })
+      expect(state.layout.stairs).toHaveLength(1)
+
+      // Re-enabling "down to floor 0" from z:1's perspective must be a no-op (already exists).
+      const again = mapLabEditorReducer(state, {
+        type: 'setStairDirection',
+        z: 1,
+        cell: [4, 4],
+        direction: 'down',
+        enabled: true,
+      })
+      expect(again.layout.stairs).toHaveLength(1)
+
+      // Disabling it from z:1's perspective must remove the one existing record.
+      const removed = mapLabEditorReducer(state, {
+        type: 'setStairDirection',
+        z: 1,
+        cell: [4, 4],
+        direction: 'down',
+        enabled: false,
+      })
+      expect(removed.layout.stairs).toHaveLength(0)
+    })
+
+    it('I1: setStairDirection(enabled: true) is a no-op if that direction already exists', () => {
+      let state = initialEditorState(emptyLayout)
+      state = mapLabEditorReducer(state, {
+        type: 'setStairDirection',
+        z: 0,
+        cell: [4, 4],
+        direction: 'up',
+        enabled: true,
+      })
+      const again = mapLabEditorReducer(state, {
+        type: 'setStairDirection',
+        z: 0,
+        cell: [4, 4],
+        direction: 'up',
+        enabled: true,
+      })
+      expect(again.layout.stairs).toHaveLength(1)
+    })
+
+    it('I1: a cell can independently have both an up-stair and a down-stair (a landing)', () => {
+      let state = initialEditorState(emptyLayout)
+      state = mapLabEditorReducer(state, {
+        type: 'setStairDirection',
+        z: 0,
+        cell: [4, 4],
+        direction: 'up',
+        enabled: true,
+      })
+      // z:0 has no floor below in emptyLayout, but the reducer doesn't gate on floor existence
+      // itself (the editor UI disables the checkbox) — verify the reducer's own behavior directly.
+      state = mapLabEditorReducer(state, {
+        type: 'setStairDirection',
+        z: 0,
+        cell: [4, 4],
+        direction: 'down',
+        enabled: true,
+      })
+      expect(state.layout.stairs).toHaveLength(2)
+      const up = state.layout.stairs.find((s) => s.to.z === 1)!
+      const down = state.layout.stairs.find((s) => s.to.z === -1)!
+      expect(up.from).toEqual({ z: 0, cell: [4, 4] })
+      expect(down.from).toEqual({ z: 0, cell: [4, 4] })
+    })
+
+    it('I1: setStairDirection(enabled: false) removes the matching stair and clears selection if selected', () => {
+      let state = initialEditorState(emptyLayout)
+      state = mapLabEditorReducer(state, {
+        type: 'setStairDirection',
+        z: 0,
+        cell: [4, 4],
+        direction: 'up',
+        enabled: true,
+      })
+
+      state = mapLabEditorReducer(state, {
+        type: 'setStairDirection',
+        z: 0,
+        cell: [4, 4],
+        direction: 'up',
+        enabled: false,
+      })
+      expect(state.layout.stairs).toHaveLength(0)
+      expect(state.selectedStairId).toBeNull()
+      // Deleting an already-absent direction is a no-op, not an error.
+      const noop = mapLabEditorReducer(state, {
+        type: 'setStairDirection',
+        z: 0,
+        cell: [4, 4],
+        direction: 'up',
+        enabled: false,
+      })
+      expect(noop).toBe(state)
     })
   })
 })

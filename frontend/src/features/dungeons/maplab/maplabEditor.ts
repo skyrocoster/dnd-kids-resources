@@ -46,6 +46,7 @@ export type EditorAction =
   | { type: 'addStair'; from: { z: number; cell: [number, number] } } // Phase H, stub
   | { type: 'selectStair'; stairId: number | null } // Phase H, stub
   | { type: 'deleteStair'; stairId: number } // Phase H, stub
+  | { type: 'setStairDirection'; z: number; cell: MapCell; direction: 'up' | 'down'; enabled: boolean } // Phase I
   | { type: 'addPortal'; cell: [number, number] } // Phase H
   | { type: 'selectPortal'; portalId: number | null } // Phase H
   | { type: 'deletePortal'; portalId: number } // Phase H
@@ -161,6 +162,11 @@ export function mapLabEditorReducer(state: EditorState, action: EditorAction): E
         )
         return { ...state, layout: { ...state.layout, props } }
       } else if (action.fixtureType === 'stair') {
+        // A MapStair already stores both endpoints (from/to), so one record renders on both
+        // floors via `stairCellForZ` — no separate paired record is needed here (unlike portals,
+        // which are one-way objects). Destination is set structurally via `setStairDirection`
+        // (always same x,y, adjacent z), so this stays a plain flag merge (title/hidden/locked/
+        // trapped/note).
         const stairs = state.layout.stairs.map((stair) =>
           stair.stair_id === action.fixtureId ? ({ ...stair, ...action.flags } as MapStair) : stair,
         )
@@ -272,10 +278,22 @@ export function mapLabEditorReducer(state: EditorState, action: EditorAction): E
     case 'addStair': {
       const stair_id = nextStairId(state.layout)
       const defaults = FIXTURE_TYPES.stair.defaultFlags
+      // Default direction: prefer down (the floor below is the common case — a stairwell
+      // reachable from where you're standing), else up if there's no floor below, else fall back
+      // to a same-floor placeholder on a single-floor layout (both direction checkboxes disabled,
+      // inert until a floor exists to point at).
+      const floors = floorsInLayout(state.layout)
+      const hasFloorBelow = floors.some((floor) => floor.z === action.from.z - 1)
+      const hasFloorAbove = floors.some((floor) => floor.z === action.from.z + 1)
+      const to = hasFloorBelow
+        ? { z: action.from.z - 1, cell: action.from.cell }
+        : hasFloorAbove
+          ? { z: action.from.z + 1, cell: action.from.cell }
+          : action.from
       const newStair: MapStair = {
         stair_id,
         from: action.from,
-        to: action.from, // placeholder, set via the destination picker
+        to,
         title: typeof defaults.title === 'string' ? defaults.title : undefined,
         hidden: Boolean(defaults.hidden),
         locked: Boolean(defaults.locked),
@@ -308,6 +326,48 @@ export function mapLabEditorReducer(state: EditorState, action: EditorAction): E
         ...state,
         layout: { ...state.layout, stairs },
         selectedStairId: state.selectedStairId === action.stairId ? null : state.selectedStairId,
+      }
+    }
+
+    case 'setStairDirection': {
+      // Stairs only ever cross to the adjacent floor at the same [x, y] — no arbitrary cell
+      // picking. A cell can independently have an up-stair and/or a down-stair (a landing);
+      // this toggles the one MapStair record for the given direction at (z, cell).
+      const targetZ = action.direction === 'up' ? action.z + 1 : action.z - 1
+      // A stair record is undirected — from/to just name its two endpoints — so it must match
+      // regardless of which endpoint happens to be stored as `from` vs `to`.
+      const endpointsMatch = (stair: MapStair, aZ: number, aCell: MapCell, bZ: number, bCell: MapCell) =>
+        (stair.from.z === aZ && stair.from.cell[0] === aCell[0] && stair.from.cell[1] === aCell[1] &&
+          stair.to.z === bZ && stair.to.cell[0] === bCell[0] && stair.to.cell[1] === bCell[1]) ||
+        (stair.to.z === aZ && stair.to.cell[0] === aCell[0] && stair.to.cell[1] === aCell[1] &&
+          stair.from.z === bZ && stair.from.cell[0] === bCell[0] && stair.from.cell[1] === bCell[1])
+      const existing = state.layout.stairs.find((stair) =>
+        endpointsMatch(stair, action.z, action.cell, targetZ, action.cell),
+      )
+
+      if (action.enabled) {
+        if (existing) return state
+        const newStair: MapStair = {
+          stair_id: nextStairId(state.layout),
+          from: { z: action.z, cell: action.cell },
+          to: { z: targetZ, cell: action.cell },
+          hidden: false,
+          locked: false,
+          trapped: false,
+        }
+        return {
+          ...state,
+          layout: { ...state.layout, stairs: [...state.layout.stairs, newStair] },
+          selectedStairId: newStair.stair_id,
+        }
+      }
+
+      if (!existing) return state
+      const stairs = state.layout.stairs.filter((stair) => stair.stair_id !== existing.stair_id)
+      return {
+        ...state,
+        layout: { ...state.layout, stairs },
+        selectedStairId: state.selectedStairId === existing.stair_id ? null : state.selectedStairId,
       }
     }
 

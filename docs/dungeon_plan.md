@@ -716,6 +716,136 @@ inspector-rail branches); `MapLabPage.tsx` (portal viewer rendering + navigation
 
 ---
 
+## Design Phase I — Stair/Portal Authoring Fixes (I0–I3 shipped; I2 folded into I1)
+
+**Goal.** Phase H (H0–H2, shipped) added stair authoring and portal doors, but **H1 was only
+test-verified, never live-browser-verified** (H2's live gate wasn't confirmed either). Live use has since
+surfaced four real gaps:
+
+1. **Destination cell-picking appears non-functional live** — the shared `DestinationPickerField`
+   (`FixturePropertiesForm.tsx:172-254`) already renders a per-cell clickable `<rect>` grid with CSS in
+   place (`MapLabPage.css:593-627`), but in practice the picker seems to only let you change floor, not
+   the actual square, for both stairs and portals. Never live-verified, so the actual break is unconfirmed
+   — needs to be found live, not assumed.
+2. **Stairs don't auto-create a reciprocal record.** Portals already auto-pair on
+   `updateFixtureFlags('portal', …, {to})` (re-link an existing portal at the target, or auto-create one —
+   `maplabEditor.ts:168-215`). The `'stair'` branch (`maplabEditor.ts:163-167`) is a plain merge with **no
+   pairing logic** — placing a stair floor 0→1 doesn't give floor 1 its own independently-editable stair
+   record pointing back.
+3. **Stairs have no multi-destination authoring.** A stair on floor 2 may need to serve as a landing to
+   *both* floor 1 (down) and floor 3 (up). The data model already supports this (H1's "landings" — two
+   independent `MapStair` records sharing an origin cell, fanned apart by `stairMarkerOffset`), but
+   authoring it today means manually repeating the whole placement flow per direction.
+4. **Co-located markers overlap or fan out awkwardly.** `stairMarkerOffset` (`maplabModel.ts:350-362`)
+   only fans stairs horizontally, only considers other stairs (not portals/props sharing the cell), and
+   doesn't wrap. Confirmed with the user: replace it with a shared 2-column grid layout (1 = centered, 2 =
+   side-by-side, 3–4 = 2×2 with a line break) applied to **any** marker type sharing a cell (stairs,
+   portals, on-square props), via one shared helper.
+
+**Frontend-only** (`maplab/`), same isolation rules as Phases C–H: no backend/seed changes.
+
+**Stages:**
+- **I0 — Scaffolding (shipped, Haiku 4.5, one context).** `fixtureTypes.ts`: `FieldSpec` gained an
+  optional `multi?: boolean` flag; `STAIR_FIELDS`'s `to` field got `multi: true` (portals' destination
+  field stays single, by design). `maplabEditor.ts`: new `EditorAction` variant `setStairDestinations: {
+  stairId, destinations: { z, cell }[] }`, reducer case stubbed as a no-op. `useMapLabEditor.ts`: stub
+  `setStairDestinations` callback mirroring `addStair`/`addPortal`'s dispatch pattern. `maplabModel.ts`:
+  stub `gridMarkerOffset(count, index): { dx, dy }` (returns `{0,0}` this stage) and stub
+  `markersAtCell(layout, z, cell): Array<{ type: 'stair'|'portal'|'prop'; id }>` (returns `[]` this
+  stage). 10 new `it.skip` test stubs across `maplabEditor.test.ts`/`maplabModel.test.ts`/
+  `FixturePropertiesForm.test.tsx` for reciprocal stair pairing, multi-destination reducer behavior,
+  `gridMarkerOffset` math, `markersAtCell` grouping, and the multi-picker UI flow. 🚦 **Gate verified:**
+  `npm run typecheck`/`npm run build` clean, 490 passed/13 skipped, `git status` confirmed only
+  `maplab/` files touched — no runtime behavior change.
+- **I1 — Fix the live destination-picker bug; redesign stair destinations as up/down checkboxes,
+  folding in I2 (shipped, live-verified 2026-07-13).** Two subagent attempts at the original
+  cell-picker-based design surfaced that the whole approach was over-engineered for what stairs actually
+  need — **a stair only ever crosses to the adjacent floor at the same `[x, y]`**, so a free-form
+  "pick any floor + any cell" picker (portals' actual use case) was the wrong tool. Redesigned live with
+  the user mid-stage:
+  - **Root cause of the picker bug, found live:** `.maplab-destination-picker`'s CSS (`MapLabPage.css`)
+    never set `flex-direction: column`, so it inherited `.maplab-field-row`'s row layout — the floor
+    `<select>`, the mini floor-plan `<svg>`, and the summary text all competed for width in one flex row,
+    collapsing the SVG (and its 37 clickable cells) to **2×2 pixels**. Fixed by adding
+    `flex-direction: column; align-items: stretch;` to `.maplab-destination-picker`. This is the actual
+    fix for portals, which still use the free-form picker.
+  - **Stairs dropped the free-form picker entirely.** `STAIR_FIELDS` no longer has a `destinationPicker`
+    field. The stair inspector (`MapLabEditorPage.tsx`) instead renders two bespoke checkboxes — "Stairs
+    up to floor {z+1}" / "Stairs down to floor {z-1}" — disabled when that adjacent floor doesn't exist.
+    New reducer action `setStairDirection({z, cell, direction, enabled})`: enabling creates a `MapStair`
+    for that direction if none exists at the cell (no-op if one already does); disabling removes the
+    matching one. This *is* the multi-destination authoring I2 was scoped for — checking both boxes on
+    one cell creates two independent landing records — so I2 is folded into I1, not a separate stage.
+  - **Dropped the portal-style paired-record auto-creation for stairs.** A `MapStair` already stores both
+    endpoints (`from`/`to`), and `stairCellForZ` already resolves either end — so one record placed
+    0→1 already renders on **both** floors with no separate reciprocal object needed (unlike portals,
+    which are genuinely one-way and need real pairing). `updateFixtureFlags`'s `'stair'` branch reverted
+    to a plain flag merge (title/hidden/locked/trapped/note only); destination is set structurally via
+    `setStairDirection`, never via `updateFixtureFlags`.
+  - **Real bug found and fixed during live verification:** the endpoint-matching lookups (both in the
+    reducer's `existing`-stair search and the inspector's `hasStairInDirection` checkbox-state check)
+    only matched a stair when *this* floor was stored as its `from` — viewing/toggling from the *other*
+    endpoint of an existing record (e.g. checking "down" from the floor a stair already goes *up*
+    *from*) silently failed to recognize it, showing an unchecked box for a stair that already existed.
+    Fixed by matching endpoints in either order (undirected match) in both places.
+  - `addStair`'s placeholder default changed from a same-floor no-op (`to = from`) to a real direction:
+    prefers down (the floor below) if one exists, else up, else an inert same-floor stub on a
+    single-floor layout (both checkboxes disabled).
+  - Tests: reducer cases for plain-merge-only `updateFixtureFlags`, `setStairDirection` create/no-op/
+    remove, the undirected-endpoint-match regression, and updated pre-existing H1/H2 tests to the new
+    defaults; component tests for the checkbox UI (checked/disabled states, unchecking removes and closes
+    the form) replacing the old picker-based stair tests (portals' own picker tests are unaffected —
+    they still exercise `DestinationPickerField` directly). 496 passed/10 skipped, `npm run typecheck`/
+    `npm run build` clean, `pytest`/seed data untouched.
+  🚦 **Gate live-verified 2026-07-13** end-to-end across all three Map Lab Editor floors: placed a stair
+  on floor 0 → defaulted to "up to floor 1", checked; switched to floor 1 → the *same* record correctly
+  showed "down to floor 0" checked (proving the undirected-match fix); checked "up to floor 2" from floor
+  1 → a second, distinct, independently-selectable marker appeared (a landing) and autosaved; switched to
+  floor 2 → confirmed "down to floor 1" checked there. No console errors.
+- **I3 — Grid layout for co-located markers (Sonnet, shipped, live-verified 2026-07-13).** Implemented
+  `gridMarkerOffset` (1 = centered, 2 = side-by-side, 3–4 = 2×2 row-major, wraps after 2 columns) and
+  `markersAtCell` (gathers stairs via `stairCellForZ`, portals, and on-square props sharing an exact
+  `(z, cell)` in a stable type-then-id order). Migrated stair marker rendering in both `MapLabPage.tsx`
+  and `MapLabEditorPage.tsx` off `stairMarkerOffset` onto `markersAtCell` + `gridMarkerOffset`, and
+  applied the same offset lookup to portal and on-square prop marker rendering; `stairMarkerOffset`
+  retired entirely.
+  - **Overlap bug found live, fixed:** the first pass kept `stairMarkerOffset`'s old 0.22-cell-unit
+    spacing constant, which only worked because lone stairs never overlapped themselves — two
+    full-size (0.32-radius) marker circles 0.22 apart are still mostly on top of each other (radius sum
+    0.64 vs. 0.22 separation). Live-verifying "place a stair and a portal on the same cell" surfaced
+    this immediately (the portal fully hid the stair). Fixed with two changes: (1) new exported
+    `GROUPED_MARKER_RADIUS_FRACTION` (0.18) shrinks a marker's circle/icon whenever `markersAtCell`
+    reports 2+ sharing its cell (`PropMarker`/`PortalMarker` gained a `grouped` prop; the inline stair
+    render in both pages computes the same shrink); (2) `gridMarkerOffset`'s spacing is now derived
+    from that radius (`2× radius + 0.04` gap) instead of a hardcoded constant, so offset and marker size
+    stay consistent by construction.
+  - **Cap added mid-stage (user request):** a cell can hold at most `MAX_MARKERS_PER_CELL` (4, matching
+    the largest grid `gridMarkerOffset` lays out) — placement handlers for stair/prop/portal in
+    `MapLabEditorPage.tsx` now check `markersAtCell(...).length` before dispatching; a full cell shows an
+    inline `role="alert"` message ("That square already has 4 markers — pick a different square.")
+    instead of adding a 5th marker nothing could render distinctly.
+  - Tests: `gridMarkerOffset` unit tests (1/2/3/4-count); `markersAtCell` mixed-type grouping tests;
+    `MAX_MARKERS_PER_CELL` sanity test; component tests for co-located stair+portal non-overlap (circle
+    separation ≥ sum of radii), a lone stair still centering with no shrink, and the 4-marker cap
+    refusing a 5th prop with the alert shown and no autosave. 507 passed/3 skipped (the 3 skips are
+    pre-existing H0/H3/H4 stubs, unrelated to I3), `npm run typecheck`/`npm run build` clean.
+  🚦 **Gate live-verified 2026-07-13:** authored a stair and a portal on the same cell in the running
+  editor — confirmed via DOM inspection both markers render as distinct, non-overlapping circles
+  (measured center separation ≥ radius sum); switched floors and confirmed a lone stair still renders
+  centered with no offset (no regression). Test data reset via "Reset to fixture" afterward.
+
+**Files most affected (representative):** `maplabModel.ts` (`gridMarkerOffset`, `markersAtCell`,
+`GROUPED_MARKER_RADIUS_FRACTION`, `MAX_MARKERS_PER_CELL`, retired `stairMarkerOffset`); `maplabEditor.ts`
+(`updateFixtureFlags` stair branch reverted to a plain merge, `setStairDirection`, `addStair`'s new
+direction default); `useMapLabEditor.ts` (`setStairDirection` callback); `fixtureTypes.ts` (`STAIR_FIELDS`
+dropped its `destinationPicker` field); `FixturePropertiesForm.tsx` / `MapLabPage.css` (picker
+flex-direction bug fix, portals only; I3 added `.maplab-placement-error`); `PropMarker.tsx` /
+`PortalMarker.tsx` (I3 `offset`/`grouped` props); `MapLabEditorPage.tsx` (up/down checkbox UI; I3 marker
+grid-offset call-sites and the 4-marker placement cap) / `MapLabPage.tsx` (I3 marker grid-offset
+call-sites).
+
+---
+
 ## Next: front-end design planning
 
 *(Append new design phases/stages here. They inherit the design system, component anatomy, reusable

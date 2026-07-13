@@ -1,6 +1,6 @@
 import { HiddenIcon, LockIcon, TrapIcon, ItemIcon, type LucideIcon } from '../../../components/icons'
 import { PROP_KIND_ICONS } from './fixtureTypes'
-import { doorWallSegment, passagePresentation, type MapProp, type PassageState } from './maplabModel'
+import { GROUPED_MARKER_RADIUS_FRACTION, doorWallSegment, passagePresentation, type MapProp, type PassageState } from './maplabModel'
 
 const BADGE_ICONS: Partial<Record<PassageState, LucideIcon>> = {
   hidden: HiddenIcon,
@@ -15,6 +15,14 @@ interface PropMarkerProps {
   /** Whether this marker responds to pointer/keyboard — off for the read-only editor render
    * (Stage F2); Stage F3 turns it on for authoring select/click. */
   interactive?: boolean
+  /** Fractional-cell nudge (from `gridMarkerOffset`) when this on-square prop shares its cell with
+   * other markers (stairs/portals/props). Ignored for wall-attached props, which anchor to their
+   * wall segment instead. */
+  offset?: { dx: number; dy: number }
+  /** True when 2+ markers share this cell — shrinks the marker to `GROUPED_MARKER_RADIUS_FRACTION`
+   * so `gridMarkerOffset`'s spacing actually separates same-cell markers instead of stacking
+   * full-size circles a few px apart. */
+  grouped?: boolean
   onMouseEnter?: () => void
   onMouseLeave?: () => void
   onFocus?: () => void
@@ -32,6 +40,8 @@ export function PropMarker({
   cellSize,
   selected,
   interactive = true,
+  offset,
+  grouped,
   onMouseEnter,
   onMouseLeave,
   onFocus,
@@ -46,11 +56,11 @@ export function PropMarker({
     cx = (segment.x1 + segment.x2) / 2
     cy = (segment.y1 + segment.y2) / 2
   } else {
-    cx = (prop.cell[0] + 0.5) * cellSize
-    cy = (prop.cell[1] + 0.5) * cellSize
+    cx = (prop.cell[0] + 0.5 + (offset?.dx ?? 0)) * cellSize
+    cy = (prop.cell[1] + 0.5 + (offset?.dy ?? 0)) * cellSize
   }
-  const radius = onWall ? cellSize * 0.22 : cellSize * 0.32
-  const iconSize = onWall ? cellSize * 0.28 : cellSize * 0.34
+  const radius = onWall ? cellSize * 0.22 : grouped ? cellSize * GROUPED_MARKER_RADIUS_FRACTION : cellSize * 0.32
+  const iconSize = onWall ? cellSize * 0.28 : grouped ? cellSize * GROUPED_MARKER_RADIUS_FRACTION * 1.1 : cellSize * 0.34
 
   const presentation = passagePresentation(prop)
   // Encounter markers default to the encounter/monster tertiary (teal) role rather than the

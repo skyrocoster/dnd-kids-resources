@@ -341,24 +341,60 @@ export function otherFloorZ(stair: MapStair, currentZ: number): number {
   return stair.from.z === currentZ ? stair.to.z : stair.from.z
 }
 
-/** Fractional-cell offset (as a multiple of cell size) for a stair marker among any other stairs
- * sharing its exact `(z, cell)` — a landing, where an up-stair and a down-stair sit on the same
- * square. A lone stair on its cell gets no offset; co-located stairs fan out horizontally around
- * the cell center so each renders as a distinct, independently hoverable/clickable icon instead of
- * overlapping. Takes the already-floor-filtered `stairs` list (e.g. `stairEndpointsForZ`'s result)
- * so it doesn't need the whole layout. */
-export function stairMarkerOffset(stairs: MapStair[], stair: MapStair, z: number): { dx: number; dy: number } {
-  const cell = stairCellForZ(stair, z)
-  if (!cell) return { dx: 0, dy: 0 }
-  const group = stairs.filter((s) => {
-    const c = stairCellForZ(s, z)
-    return c !== null && c[0] === cell[0] && c[1] === cell[1]
-  })
-  if (group.length <= 1) return { dx: 0, dy: 0 }
-  const index = group.findIndex((s) => s.stair_id === stair.stair_id)
-  const spacing = 0.22
-  const mid = (group.length - 1) / 2
-  return { dx: (index - mid) * spacing, dy: 0 }
+/** The largest marker group `gridMarkerOffset` lays out (a 2x2 block) — placement UIs should refuse
+ * adding a 5th stair/portal/prop to a cell that already holds this many rather than silently
+ * dropping it off the grid. */
+export const MAX_MARKERS_PER_CELL = 4
+
+/** Marker circle radius (as a fraction of cell size) once 2+ markers share a cell — smaller than
+ * the lone-marker radius (0.32, e.g. `PortalMarker`'s default) so `gridMarkerOffset`'s spacing can
+ * actually separate them instead of stacking same-size circles a few px apart. Exported so every
+ * grouped-marker renderer (stair/portal/prop) sizes consistently with the offsets it's laid out by. */
+export const GROUPED_MARKER_RADIUS_FRACTION = 0.18
+
+/** Fractional-cell offset (as a multiple of cell size) for a marker among `count` markers sharing
+ * the same grid cell, at position `index` in a stable order. 1 marker centers (no offset); 2+
+ * markers lay out in a grid of up to 2 columns, wrapping into additional rows (2 = one row
+ * side-by-side, 3-4 = a 2x2 block), each row/column centered around the cell midpoint the same way
+ * `stairMarkerOffset` centered its one-dimensional fan. The spacing is sized against
+ * `GROUPED_MARKER_RADIUS_FRACTION` (2x the radius, plus a visible gap) so grouped markers actually
+ * separate rather than overlap — two 0.32-radius circles a mere 0.22 apart barely clear each other.
+ * Supersedes `stairMarkerOffset`, generalized to any marker type and to two dimensions. */
+export function gridMarkerOffset(count: number, index: number): { dx: number; dy: number } {
+  if (count <= 1) return { dx: 0, dy: 0 }
+  const spacing = GROUPED_MARKER_RADIUS_FRACTION * 2 + 0.04
+  const columns = Math.min(count, 2)
+  const rows = Math.ceil(count / columns)
+  const col = index % columns
+  const row = Math.floor(index / columns)
+  const colMid = (columns - 1) / 2
+  const rowMid = (rows - 1) / 2
+  return { dx: (col - colMid) * spacing, dy: (row - rowMid) * spacing }
+}
+
+/** Gather all stairs/portals/on-square-props sharing the exact (z, cell) location, in a stable
+ * type-then-id order (stairs, then portals, then props) — the grouping `gridMarkerOffset` lays out
+ * together. Stairs match via `stairCellForZ` (either endpoint on this floor); props are restricted
+ * to on-square ones (`side` absent) since wall-attached props anchor to a wall segment, not a cell,
+ * and never compete for the same marker slot. */
+export function markersAtCell(layout: MapLayout, z: number, cell: MapCell): Array<{ type: 'stair' | 'portal' | 'prop'; id: number }> {
+  const [cx, cy] = cell
+  const stairs = layout.stairs
+    .filter((stair) => {
+      const c = stairCellForZ(stair, z)
+      return c !== null && c[0] === cx && c[1] === cy
+    })
+    .map((stair) => ({ type: 'stair' as const, id: stair.stair_id }))
+    .sort((a, b) => a.id - b.id)
+  const portals = layout.portals
+    .filter((portal) => portal.z === z && portal.cell[0] === cx && portal.cell[1] === cy)
+    .map((portal) => ({ type: 'portal' as const, id: portal.portal_id }))
+    .sort((a, b) => a.id - b.id)
+  const props = layout.props
+    .filter((prop) => prop.side === undefined && prop.z === z && prop.cell[0] === cx && prop.cell[1] === cy)
+    .map((prop) => ({ type: 'prop' as const, id: prop.prop_id }))
+    .sort((a, b) => a.id - b.id)
+  return [...stairs, ...portals, ...props]
 }
 
 /** The nearest floor strictly below `activeZ` that has rooms, for ghosting in the editor.

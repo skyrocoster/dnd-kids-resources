@@ -1,5 +1,5 @@
 import { HiddenIcon, LockIcon, TrapIcon, PortalIcon, type LucideIcon } from '../../../components/icons'
-import { passagePresentation, type MapPortal, type PassageState } from './maplabModel'
+import { GROUPED_MARKER_RADIUS_FRACTION, passagePresentation, type MapPortal, type PassageState } from './maplabModel'
 
 const BADGE_ICONS: Partial<Record<PassageState, LucideIcon>> = {
   hidden: HiddenIcon,
@@ -11,6 +11,13 @@ interface PortalMarkerProps {
   portal: MapPortal
   cellSize: number
   selected?: boolean
+  /** Fractional-cell nudge (from `gridMarkerOffset`) when this portal shares its cell with other
+   * markers (stairs/other portals/props). */
+  offset?: { dx: number; dy: number }
+  /** True when 2+ markers share this cell — shrinks the marker to `GROUPED_MARKER_RADIUS_FRACTION`
+   * so `gridMarkerOffset`'s spacing actually separates same-cell markers instead of stacking
+   * full-size circles a few px apart. */
+  grouped?: boolean
   onClick?: () => void
 }
 
@@ -18,11 +25,11 @@ interface PortalMarkerProps {
  * of `PropMarker.tsx`'s geometry. Same visual language as stair/prop markers: a neutral-fill ring
  * whose stroke carries the passage-state token, the portal glyph as the primary icon, and a small
  * state badge when locked/trapped/hidden — never hue-alone. */
-export function PortalMarker({ portal, cellSize, selected, onClick }: PortalMarkerProps) {
-  const cx = (portal.cell[0] + 0.5) * cellSize
-  const cy = (portal.cell[1] + 0.5) * cellSize
-  const radius = cellSize * 0.32
-  const iconSize = cellSize * 0.34
+export function PortalMarker({ portal, cellSize, selected, offset, grouped, onClick }: PortalMarkerProps) {
+  const cx = (portal.cell[0] + 0.5 + (offset?.dx ?? 0)) * cellSize
+  const cy = (portal.cell[1] + 0.5 + (offset?.dy ?? 0)) * cellSize
+  const radius = grouped ? cellSize * GROUPED_MARKER_RADIUS_FRACTION : cellSize * 0.32
+  const iconSize = grouped ? cellSize * GROUPED_MARKER_RADIUS_FRACTION * 1.1 : cellSize * 0.34
 
   const presentation = passagePresentation(portal)
   const BadgeIcon = BADGE_ICONS[presentation.state]

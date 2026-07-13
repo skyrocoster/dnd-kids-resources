@@ -88,10 +88,11 @@ export const PROP_KIND_ICONS: Record<PropKind, LucideIcon> = {
   other: PropIcon,
 }
 
-/** Stair field definitions — PassageFlags + destination picker (Phase H) */
+/** Stair field definitions — PassageFlags only. Destination isn't a generic field: stairs always
+ * cross to the adjacent floor at the same [x, y], so it's the bespoke up/down checkbox pair
+ * rendered directly in the stair inspector (Phase I), not a `destinationPicker`. */
 export const STAIR_FIELDS: FieldSpec[] = [
   { key: 'title', label: 'Title', type: 'text' },
-  { key: 'to', label: 'Destination', type: 'destinationPicker' },
   { key: 'hidden', label: 'Hidden', type: 'boolean' },
   { key: 'locked', label: 'Locked', type: 'boolean' },
   { key: 'trapped', label: 'Trapped', type: 'boolean' },

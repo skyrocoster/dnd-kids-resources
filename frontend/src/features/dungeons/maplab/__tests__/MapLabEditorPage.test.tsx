@@ -909,7 +909,7 @@ describe('MapLabEditorPage (Stage H1 — stair authoring)', () => {
     props: [],
   }
 
-  it('places a stair on a room cell, selects it, and shows its properties form with a destination picker', async () => {
+  it('places a stair on a room cell, selects it, and shows up/down direction checkboxes', async () => {
     vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: twoFloorLayout })
     const saveSpy = vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: twoFloorLayout })
 
@@ -923,7 +923,10 @@ describe('MapLabEditorPage (Stage H1 — stair authoring)', () => {
 
     expect(container.querySelectorAll('.maplab-stair-placement-cell')).toHaveLength(0)
     expect(container.querySelector('.maplab-fixture-form')).toBeInTheDocument()
-    expect(screen.getByLabelText('Destination')).toBeInTheDocument()
+    // z:0 has a floor above (z:1) but none below, so the stair defaults to going up, and the
+    // down checkbox is disabled rather than offering an arbitrary cell picker.
+    expect(screen.getByLabelText('Stairs up to floor 1')).toBeChecked()
+    expect(screen.getByLabelText('Stairs down (no floor below)')).toBeDisabled()
     expect(container.querySelector('.maplab-stair[data-selected]')).toBeInTheDocument()
 
     await act(async () => {
@@ -933,7 +936,7 @@ describe('MapLabEditorPage (Stage H1 — stair authoring)', () => {
     expect(saveSpy).toHaveBeenCalledTimes(1)
   })
 
-  it('setting a destination via the picker persists it, and the stair can be deleted', async () => {
+  it('unchecking the direction checkbox removes the stair; the form closes since it was selected', async () => {
     vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: twoFloorLayout })
     const saveSpy = vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: twoFloorLayout })
 
@@ -943,20 +946,22 @@ describe('MapLabEditorPage (Stage H1 — stair authoring)', () => {
     fireEvent.click(screen.getByRole('button', { name: /place stair/i }))
     fireEvent.click(container.querySelector('.maplab-stair-placement-cell') as Element)
 
-    const floorSelect = screen.getByLabelText('Destination') as HTMLSelectElement
-    fireEvent.change(floorSelect, { target: { value: '1' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Set destination to 0, 0 on floor 1' }))
+    await act(async () => {
+      vi.advanceTimersByTime(700)
+      await Promise.resolve()
+    })
+    const savedData = saveSpy.mock.calls[0][1].data as { stairs: Array<{ to: { z: number; cell: number[] } }> }
+    expect(savedData.stairs[0].to).toEqual({ z: 1, cell: [0, 0] })
+
+    fireEvent.click(screen.getByLabelText('Stairs up to floor 1'))
+    expect(container.querySelector('.maplab-fixture-form')).not.toBeInTheDocument()
 
     await act(async () => {
       vi.advanceTimersByTime(700)
       await Promise.resolve()
     })
-    expect(saveSpy).toHaveBeenCalledTimes(1)
-    const savedData = saveSpy.mock.calls[0][1].data as { stairs: Array<{ to: { z: number; cell: number[] } }> }
-    expect(savedData.stairs[0].to).toEqual({ z: 1, cell: [0, 0] })
-
-    fireEvent.click(screen.getByRole('button', { name: /delete stair/i }))
-    expect(container.querySelector('.maplab-fixture-form')).not.toBeInTheDocument()
+    const finalData = saveSpy.mock.calls[saveSpy.mock.calls.length - 1][1].data as { stairs: unknown[] }
+    expect(finalData.stairs).toHaveLength(0)
   })
 
   it('"Place door", "Place prop", and "Place stair" placement modes are mutually exclusive', async () => {
@@ -1140,5 +1145,99 @@ describe('MapLabEditorPage (Stage H2 — portal doors)', () => {
     expect(savedData.portals).toHaveLength(2)
     const existing = savedData.portals.find((p) => p.portal_id === 1)!
     expect(existing.to).toEqual({ z: 0, cell: [0, 0] })
+  })
+})
+
+describe('MapLabEditorPage (Stage I3 — grid marker layout)', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks()
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.runOnlyPendingTimers()
+    vi.useRealTimers()
+  })
+
+  const baseLayout = {
+    meta: { cellSizeFt: 5, padding: 3 },
+    rooms: [{ room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0]], title: 'Room' }],
+    doors: [],
+    floors: [{ z: 0, title: 'Ground Floor' }],
+  }
+
+  it('a co-located stair and portal render as distinct, non-overlapping markers', async () => {
+    const layout = {
+      ...baseLayout,
+      stairs: [{ stair_id: 1, from: { z: 0, cell: [0, 0] }, to: { z: 0, cell: [0, 0] }, hidden: false, locked: false, trapped: false }],
+      props: [],
+      portals: [{ portal_id: 1, cell: [0, 0], z: 0, to: { z: 0, cell: [0, 0] }, hidden: false, locked: false, trapped: false }],
+    }
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: layout })
+    vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: layout })
+
+    const { container } = render(<MapLabEditorPage />)
+    await flush()
+
+    const stairCircle = container.querySelector('.maplab-stair-marker')!
+    const portalCircle = container.querySelector('.maplab-portal-marker')!
+    const stairCx = Number(stairCircle.getAttribute('cx'))
+    const portalCx = Number(portalCircle.getAttribute('cx'))
+    const stairR = Number(stairCircle.getAttribute('r'))
+    const portalR = Number(portalCircle.getAttribute('r'))
+    // Distinct centers, separated by at least the sum of their radii — not overlapping.
+    expect(stairCx).not.toBe(portalCx)
+    expect(Math.abs(stairCx - portalCx)).toBeGreaterThanOrEqual(stairR + portalR)
+  })
+
+  it('a lone stair still renders centered on its cell (no grouped shrink/offset)', async () => {
+    const layout = {
+      ...baseLayout,
+      stairs: [{ stair_id: 1, from: { z: 0, cell: [0, 0] }, to: { z: 0, cell: [0, 0] }, hidden: false, locked: false, trapped: false }],
+      props: [],
+      portals: [],
+    }
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: layout })
+    vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: layout })
+
+    const { container } = render(<MapLabEditorPage />)
+    await flush()
+
+    const stairCircle = container.querySelector('.maplab-stair-marker')!
+    expect(Number(stairCircle.getAttribute('cx'))).toBe(0.5 * 64)
+    expect(Number(stairCircle.getAttribute('cy'))).toBe(0.5 * 64)
+  })
+
+  it('refuses a 5th marker on a cell already holding the max (4) and shows an error', async () => {
+    const layout = {
+      ...baseLayout,
+      stairs: [],
+      portals: [],
+      props: [
+        { prop_id: 1, kind: 'chest', z: 0, cell: [0, 0], hidden: false, locked: false, trapped: false },
+        { prop_id: 2, kind: 'table', z: 0, cell: [0, 0], hidden: false, locked: false, trapped: false },
+        { prop_id: 3, kind: 'barrel', z: 0, cell: [0, 0], hidden: false, locked: false, trapped: false },
+        { prop_id: 4, kind: 'statue', z: 0, cell: [0, 0], hidden: false, locked: false, trapped: false },
+      ],
+    }
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: layout })
+    const saveSpy = vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: layout })
+
+    const { container } = render(<MapLabEditorPage />)
+    await flush()
+
+    expect(container.querySelectorAll('.maplab-prop')).toHaveLength(4)
+
+    fireEvent.click(screen.getByRole('button', { name: /place prop/i }))
+    fireEvent.click(container.querySelector('.maplab-prop-placement-cell') as Element)
+
+    expect(screen.getByRole('alert')).toHaveTextContent(/already has 4 markers/i)
+    expect(container.querySelectorAll('.maplab-prop')).toHaveLength(4)
+
+    await act(async () => {
+      vi.advanceTimersByTime(700)
+      await Promise.resolve()
+    })
+    expect(saveSpy).not.toHaveBeenCalled()
   })
 })

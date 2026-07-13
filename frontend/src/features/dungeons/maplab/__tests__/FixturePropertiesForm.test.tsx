@@ -52,7 +52,7 @@ describe('FixturePropertiesForm', () => {
     it('renders a floor select populated from the layout', () => {
       render(
         <FixturePropertiesForm
-          spec={FIXTURE_TYPES.stair}
+          spec={FIXTURE_TYPES.portal}
           values={{ title: '', to: { z: 0, cell: [0, 0] }, hidden: false, locked: false, trapped: false }}
           onChange={vi.fn()}
           layout={layout}
@@ -65,7 +65,7 @@ describe('FixturePropertiesForm', () => {
     it('switching the floor swaps which floor\'s cells render', () => {
       render(
         <FixturePropertiesForm
-          spec={FIXTURE_TYPES.stair}
+          spec={FIXTURE_TYPES.portal}
           values={{ title: '', to: { z: 0, cell: [0, 0] }, hidden: false, locked: false, trapped: false }}
           onChange={vi.fn()}
           layout={layout}
@@ -82,7 +82,7 @@ describe('FixturePropertiesForm', () => {
       const onChange = vi.fn()
       render(
         <FixturePropertiesForm
-          spec={FIXTURE_TYPES.stair}
+          spec={FIXTURE_TYPES.portal}
           values={{ title: '', to: { z: 0, cell: [0, 0] }, hidden: false, locked: false, trapped: false }}
           onChange={onChange}
           layout={layout}
@@ -95,7 +95,7 @@ describe('FixturePropertiesForm', () => {
     it('renders nothing when no layout is supplied', () => {
       const { container } = render(
         <FixturePropertiesForm
-          spec={FIXTURE_TYPES.stair}
+          spec={FIXTURE_TYPES.portal}
           values={{ title: '', to: { z: 0, cell: [0, 0] }, hidden: false, locked: false, trapped: false }}
           onChange={vi.fn()}
         />,

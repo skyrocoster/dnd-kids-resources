@@ -43,6 +43,15 @@
   color: var(--md-on-surface-variant);
 }
 
+/* Shown when a placement click targets a cell that already holds the max markers
+ * `gridMarkerOffset` can lay out (4, a 2x2 block) — the editor refuses the placement rather than
+ * silently stacking a 5th icon nothing can render distinctly. */
+.maplab-placement-error {
+  margin: 0;
+  font-size: var(--type-body-sm-size);
+  color: var(--md-error);
+}
+
 /* Element-agnostic descriptor panel — one shape for room, door, and stair (and, structurally,
  * item) targets, sourced from `inspectableDescriptor`. Previously bespoke JSX per passage kind
  * (`.maplab-passage-details-*`); a room has no "state" line, so that row is conditional and the
@@ -590,9 +599,13 @@
   fill: color-mix(in srgb, var(--md-primary) 20%, transparent);
 }
 
-/* Destination picker field for stair/portal editors */
+/* Destination picker field for stair/portal editors. Overrides `.maplab-field-row`'s row layout
+ * (label/input side-by-side) with a column stack — without this, the select/map/summary compete
+ * for width in a flex row and the map's `width:100%` resolves against almost nothing, collapsing
+ * the whole SVG (and its clickable cells) to a couple of pixels. */
 .maplab-destination-picker {
-  align-items: flex-start;
+  flex-direction: column;
+  align-items: stretch;
   gap: 8px;
 }
 

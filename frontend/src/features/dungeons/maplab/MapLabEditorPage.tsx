@@ -32,7 +32,11 @@ import {
   doorSwingGeometry,
   doorWallSegment,
   doorsOnFloor,
+  GROUPED_MARKER_RADIUS_FRACTION,
+  MAX_MARKERS_PER_CELL,
   ghostFloorZ,
+  gridMarkerOffset,
+  markersAtCell,
   neighborCell,
   nonDoorWallSegments,
   oppositeSide,
@@ -42,7 +46,6 @@ import {
   roomsOnZ,
   stairCellForZ,
   stairEndpointsForZ,
-  stairMarkerOffset,
   stairPresentation,
   type CardinalSide,
   type MapCell,
@@ -63,6 +66,29 @@ function edgeKey(edge: WallEdge): string {
 function mirrorEdgeKey(edge: WallEdge): string {
   const neighbor = neighborCell(edge.cell, edge.side)
   return `${neighbor[0]},${neighbor[1]},${oppositeSide(edge.side)}`
+}
+
+/** Grid-layout offset (plus whether this marker is sharing its cell) for one marker among any
+ * others (stair/portal/on-square-prop) at its exact `(z, cell)` — the I3 replacement for the
+ * stair-only `stairMarkerOffset`. `grouped` drives the shrink-to-fit sizing that keeps 2+ markers
+ * visually distinct instead of full-size circles overlapping at `gridMarkerOffset`'s spacing. */
+function markerOffset(
+  layout: MapLayout,
+  z: number,
+  cell: MapCell,
+  type: 'stair' | 'portal' | 'prop',
+  id: number,
+): { dx: number; dy: number; grouped: boolean } {
+  const group = markersAtCell(layout, z, cell)
+  const index = group.findIndex((marker) => marker.type === type && marker.id === id)
+  return { ...gridMarkerOffset(group.length, index), grouped: group.length > 1 }
+}
+
+/** Whether `cell` already holds as many markers as `gridMarkerOffset` can lay out (a 2x2 block) —
+ * placement handlers check this before dispatching so a 5th stair/portal/prop is refused with a
+ * visible message instead of silently landing off-grid. */
+function cellIsFull(layout: MapLayout, z: number, cell: MapCell): boolean {
+  return markersAtCell(layout, z, cell).length >= MAX_MARKERS_PER_CELL
 }
 
 /** Clickable wall edges for door placement, deduped across a shared wall — a shared wall between
@@ -137,6 +163,7 @@ export function MapLabEditorPage() {
     addStair,
     selectStair,
     deleteStair,
+    setStairDirection,
     addPortal,
     selectPortal,
     deletePortal,
@@ -146,6 +173,7 @@ export function MapLabEditorPage() {
   const [placePropMode, setPlacePropMode] = useState(false)
   const [placeStairMode, setPlaceStairMode] = useState(false)
   const [placePortalMode, setPlacePortalMode] = useState(false)
+  const [placementError, setPlacementError] = useState<string | null>(null)
   const [showGhostFloor, setShowGhostFloor] = useState(false)
   const zoomApi = useMapCanvasZoom()
   const [viewportSize, setViewportSize] = useState<ViewportSize>({ width: 0, height: 0 })
@@ -212,6 +240,39 @@ export function MapLabEditorPage() {
     () => state.layout.stairs.find((stair) => stair.stair_id === state.selectedStairId) ?? null,
     [state.layout.stairs, state.selectedStairId]
   )
+  // Stairs always cross to the adjacent floor at the same [x, y] — the inspector surfaces this as
+  // two independent up/down checkboxes rather than a free cell picker (a cell can have 0, 1, or 2
+  // stair records: one per direction).
+  const selectedStairCell = useMemo(
+    () => (selectedStair ? stairCellForZ(selectedStair, state.activeZ) : null),
+    [selectedStair, state.activeZ]
+  )
+  const hasStairInDirection = useCallback(
+    (direction: 'up' | 'down') => {
+      if (!selectedStairCell) return false
+      const targetZ = direction === 'up' ? state.activeZ + 1 : state.activeZ - 1
+      // A stair record is undirected (from/to just name its two endpoints), so match regardless
+      // of which endpoint happens to be stored as `from` vs `to`.
+      return state.layout.stairs.some((stair) => {
+        const endpoints: Array<[{ z: number; cell: MapCell }, { z: number; cell: MapCell }]> = [
+          [stair.from, stair.to],
+          [stair.to, stair.from],
+        ]
+        return endpoints.some(
+          ([a, b]) =>
+            a.z === state.activeZ &&
+            a.cell[0] === selectedStairCell[0] &&
+            a.cell[1] === selectedStairCell[1] &&
+            b.z === targetZ &&
+            b.cell[0] === selectedStairCell[0] &&
+            b.cell[1] === selectedStairCell[1],
+        )
+      })
+    },
+    [state.layout.stairs, state.activeZ, selectedStairCell]
+  )
+  const stairUpFloor = floors.includes(state.activeZ + 1) ? state.activeZ + 1 : null
+  const stairDownFloor = floors.includes(state.activeZ - 1) ? state.activeZ - 1 : null
   const selectedPortal = useMemo(
     () => state.layout.portals.find((portal) => portal.portal_id === state.selectedPortalId) ?? null,
     [state.layout.portals, state.selectedPortalId]
@@ -249,6 +310,7 @@ export function MapLabEditorPage() {
                   setPlaceStairMode(false)
                   setPlacePortalMode(false)
                 }
+                setPlacementError(null)
                 return !active
               })
             }
@@ -268,6 +330,7 @@ export function MapLabEditorPage() {
                   setPlaceStairMode(false)
                   setPlacePortalMode(false)
                 }
+                setPlacementError(null)
                 return !active
               })
             }
@@ -287,6 +350,7 @@ export function MapLabEditorPage() {
                   setPlacePropMode(false)
                   setPlacePortalMode(false)
                 }
+                setPlacementError(null)
                 return !active
               })
             }
@@ -306,6 +370,7 @@ export function MapLabEditorPage() {
                   setPlacePropMode(false)
                   setPlaceStairMode(false)
                 }
+                setPlacementError(null)
                 return !active
               })
             }
@@ -340,6 +405,12 @@ export function MapLabEditorPage() {
           </span>
         </div>
       </div>
+
+      {placementError && (
+        <p className="maplab-placement-error" role="alert">
+          {placementError}
+        </p>
+      )}
 
       <div className="maplab-editor-layout">
         <div className="maplab-editor-nav-rail">
@@ -550,10 +621,12 @@ export function MapLabEditorPage() {
           {stairsOnActiveFloor.map((stair) => {
             const cell = stairCellForZ(stair, state.activeZ)
             if (!cell) return null
-            const { dx, dy } = stairMarkerOffset(stairsOnActiveFloor, stair, state.activeZ)
+            const { dx, dy, grouped } = markerOffset(state.layout, state.activeZ, cell, 'stair', stair.stair_id)
             const [x, y] = cell
             const cx = (x + 0.5 + dx) * CELL_SIZE
             const cy = (y + 0.5 + dy) * CELL_SIZE
+            const markerRadius = grouped ? CELL_SIZE * GROUPED_MARKER_RADIUS_FRACTION : CELL_SIZE * 0.32
+            const markerIconSize = grouped ? CELL_SIZE * GROUPED_MARKER_RADIUS_FRACTION * 1.1 : ICON_SIZE
             const isSelected = stair.stair_id === state.selectedStairId
             const presentation = stairPresentation(stair, state.activeZ)
             const Icon = presentation.icon
@@ -580,23 +653,28 @@ export function MapLabEditorPage() {
                 }}
               >
                 <title>{stair.title ?? `Stair ${stair.stair_id}`}</title>
-                <circle className="maplab-stair-marker" cx={cx} cy={cy} r={CELL_SIZE * 0.32} style={{ stroke: `var(${presentation.token})` }} />
-                <g transform={`translate(${cx - ICON_SIZE / 2}, ${cy - ICON_SIZE / 2})`}>
-                  <Icon width={ICON_SIZE} height={ICON_SIZE} className="maplab-stair-icon" style={{ color: `var(${presentation.token})` }} />
+                <circle className="maplab-stair-marker" cx={cx} cy={cy} r={markerRadius} style={{ stroke: `var(${presentation.token})` }} />
+                <g transform={`translate(${cx - markerIconSize / 2}, ${cy - markerIconSize / 2})`}>
+                  <Icon width={markerIconSize} height={markerIconSize} className="maplab-stair-icon" style={{ color: `var(${presentation.token})` }} />
                 </g>
               </g>
             )
           })}
 
-          {portalsOnActiveFloor.map((portal) => (
-            <PortalMarker
-              key={portal.portal_id}
-              portal={portal}
-              cellSize={CELL_SIZE}
-              selected={portal.portal_id === state.selectedPortalId}
-              onClick={() => selectPortal(portal.portal_id === state.selectedPortalId ? null : portal.portal_id)}
-            />
-          ))}
+          {portalsOnActiveFloor.map((portal) => {
+            const { grouped, ...offset } = markerOffset(state.layout, state.activeZ, portal.cell, 'portal', portal.portal_id)
+            return (
+              <PortalMarker
+                key={portal.portal_id}
+                portal={portal}
+                cellSize={CELL_SIZE}
+                selected={portal.portal_id === state.selectedPortalId}
+                offset={offset}
+                grouped={grouped}
+                onClick={() => selectPortal(portal.portal_id === state.selectedPortalId ? null : portal.portal_id)}
+              />
+            )
+          })}
 
           {placePropMode && (
             <g className="maplab-prop-placement-overlay">
@@ -613,6 +691,11 @@ export function MapLabEditorPage() {
                     aria-label={`Place prop at ${x}, ${y}`}
                     onClick={(event) => {
                       event.stopPropagation()
+                      if (cellIsFull(state.layout, state.activeZ, [x, y])) {
+                        setPlacementError(`That square already has ${MAX_MARKERS_PER_CELL} markers — pick a different square.`)
+                        return
+                      }
+                      setPlacementError(null)
                       addProp([x, y])
                       setPlacePropMode(false)
                     }}
@@ -662,6 +745,11 @@ export function MapLabEditorPage() {
                     aria-label={`Place stair at ${x}, ${y}`}
                     onClick={(event) => {
                       event.stopPropagation()
+                      if (cellIsFull(state.layout, state.activeZ, [x, y])) {
+                        setPlacementError(`That square already has ${MAX_MARKERS_PER_CELL} markers — pick a different square.`)
+                        return
+                      }
+                      setPlacementError(null)
                       addStair({ z: state.activeZ, cell: [x, y] })
                       setPlaceStairMode(false)
                     }}
@@ -686,6 +774,11 @@ export function MapLabEditorPage() {
                     aria-label={`Place portal at ${x}, ${y}`}
                     onClick={(event) => {
                       event.stopPropagation()
+                      if (cellIsFull(state.layout, state.activeZ, [x, y])) {
+                        setPlacementError(`That square already has ${MAX_MARKERS_PER_CELL} markers — pick a different square.`)
+                        return
+                      }
+                      setPlacementError(null)
                       addPortal([x, y])
                       setPlacePortalMode(false)
                     }}
@@ -762,15 +855,21 @@ export function MapLabEditorPage() {
           {/* Rendered after the paint/placement overlays so a prop marker always stays on top and
            * clickable — the paint overlay in particular covers every cell of the selected room
            * (including ones a prop sits on), and would otherwise swallow the prop's click/hover. */}
-          {propsOnActiveFloor.map((prop) => (
-            <PropMarker
-              key={prop.prop_id}
-              prop={prop}
-              cellSize={CELL_SIZE}
-              selected={prop.prop_id === state.selectedPropId}
-              onClick={() => selectProp(prop.prop_id === state.selectedPropId ? null : prop.prop_id)}
-            />
-          ))}
+          {propsOnActiveFloor.map((prop) => {
+            const propOffset =
+              prop.side === undefined ? markerOffset(state.layout, state.activeZ, prop.cell, 'prop', prop.prop_id) : undefined
+            return (
+              <PropMarker
+                key={prop.prop_id}
+                prop={prop}
+                cellSize={CELL_SIZE}
+                selected={prop.prop_id === state.selectedPropId}
+                offset={propOffset}
+                grouped={propOffset?.grouped}
+                onClick={() => selectProp(prop.prop_id === state.selectedPropId ? null : prop.prop_id)}
+              />
+            )
+          })}
         </MapCanvas>
 
         <div className="maplab-inspector-rail">
@@ -854,10 +953,39 @@ export function MapLabEditorPage() {
           ) : selectedStair ? (
             <>
               <InspectorPanel target={{ kind: 'stair', stair: selectedStair }} />
+              <div className="maplab-field-row maplab-stair-direction-row">
+                <label htmlFor="maplab-stair-direction-up">
+                  {stairUpFloor !== null ? `Stairs up to floor ${stairUpFloor}` : 'Stairs up (no floor above)'}
+                </label>
+                <input
+                  id="maplab-stair-direction-up"
+                  type="checkbox"
+                  disabled={stairUpFloor === null || !selectedStairCell}
+                  checked={hasStairInDirection('up')}
+                  onChange={(event) =>
+                    selectedStairCell &&
+                    setStairDirection(state.activeZ, selectedStairCell, 'up', event.target.checked)
+                  }
+                />
+              </div>
+              <div className="maplab-field-row maplab-stair-direction-row">
+                <label htmlFor="maplab-stair-direction-down">
+                  {stairDownFloor !== null ? `Stairs down to floor ${stairDownFloor}` : 'Stairs down (no floor below)'}
+                </label>
+                <input
+                  id="maplab-stair-direction-down"
+                  type="checkbox"
+                  disabled={stairDownFloor === null || !selectedStairCell}
+                  checked={hasStairInDirection('down')}
+                  onChange={(event) =>
+                    selectedStairCell &&
+                    setStairDirection(state.activeZ, selectedStairCell, 'down', event.target.checked)
+                  }
+                />
+              </div>
               <FixturePropertiesForm
                 spec={FIXTURE_TYPES.stair}
                 values={selectedStair as unknown as Record<string, unknown>}
-                layout={state.layout}
                 onChange={(key, value) => updateFixtureFlags(selectedStair.stair_id, 'stair', { [key]: value })}
               />
               <div className="maplab-editor-inspector-actions">
