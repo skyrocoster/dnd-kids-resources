@@ -52,8 +52,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.25rem;
-  height: 2.25rem;
+  width: 2.75rem;
+  height: 2.75rem;
   background: none;
   border: none;
   color: var(--md-on-surface-variant);
@@ -78,23 +78,32 @@
   position: absolute;
   right: 0;
   bottom: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
   width: 48px;
   height: 48px;
+  padding: 0.375rem;
+  background: linear-gradient(135deg, transparent 52%, var(--md-surface-4));
   cursor: nwse-resize;
   touch-action: none;
   z-index: 1;
 }
 
-.floating-window-resize-handle::after {
-  content: '';
-  position: absolute;
-  right: 4px;
-  bottom: 4px;
-  width: 12px;
-  height: 12px;
-  border-right: 2px solid var(--md-on-surface-variant);
-  border-bottom: 2px solid var(--md-on-surface-variant);
+.floating-window-resize-ridges {
+  width: 1.125rem;
+  height: 1.125rem;
+  border-right: 2px solid var(--md-secondary);
+  border-bottom: 2px solid var(--md-secondary);
+  box-shadow: 0.3125rem 0.3125rem 0 -0.1875rem var(--md-secondary-container);
   pointer-events: none;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.floating-window-resize-handle:hover .floating-window-resize-ridges,
+.floating-window-resize-handle:focus-visible .floating-window-resize-ridges {
+  border-color: var(--md-on-secondary-container);
+  transform: translate(-0.125rem, -0.125rem);
 }
 
 .floating-window-resize-handle:focus-visible {
@@ -104,9 +113,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .floating-window-resize-handle::after {
+  .floating-window-resize-ridges {
     transition: none;
+    transform: none;
   }
 }
-
 

@@ -97,6 +97,8 @@ describe('FloatingWindow resize', () => {
     const handle = screen.getByRole('separator', { name: /resize window/i })
     expect(handle).toBeInTheDocument()
     expect(handle.tabIndex).toBe(0)
+    expect(handle).toHaveAttribute('aria-orientation', 'horizontal')
+    expect(handle.querySelector('.floating-window-resize-ridges')).toBeInTheDocument()
   })
 
   it('keyboard arrow keys resize the window and persist', () => {

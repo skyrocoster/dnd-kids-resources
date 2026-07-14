@@ -86,7 +86,7 @@ export function CombatantCard({
 
   return (
     <div
-      className={`combatant-card combatant-card-${tier} ${isActive ? 'active' : ''}`}
+      className={`combatant-card combatant-card-${tier} ${isPlayer ? 'combatant-card-player' : 'combatant-card-monster'} ${isActive ? 'active' : ''}`}
       data-testid={`combatant-card-${combatant.clientId}`}
     >
       {isActive && <span className="combatant-card-on-deck">On deck</span>}
@@ -123,7 +123,12 @@ export function CombatantCard({
           </button>
         </div>
 
-        {isPlayer && <UserIcon size={18} aria-hidden className="combatant-player-icon" />}
+        {isPlayer && (
+          <span className="combatant-kind-badge" aria-label="Player character">
+            <UserIcon size={16} aria-hidden />
+            <span>Player</span>
+          </span>
+        )}
 
         <input
           className="combatant-name-input"

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { Condition } from '../../api/types'
 import { TextField } from '../../components/form/TextField'
-import { UserPlusIcon } from '../../components/icons'
+import { CloseIcon, UserPlusIcon } from '../../components/icons'
 import { ConditionPicker } from './ConditionPicker'
 import './AddPlayerPanel.css'
 
@@ -28,7 +28,7 @@ export function AddPlayerPanel({ conditions, onAdd, onClose }: AddPlayerPanelPro
       <div className="add-player-panel-header">
         <h3><UserPlusIcon size={18} aria-hidden /> Add player</h3>
         <button type="button" className="add-player-panel-close" onClick={onClose} aria-label="Close add player panel">
-          ×
+          <CloseIcon size={18} aria-hidden />
         </button>
       </div>
       <TextField

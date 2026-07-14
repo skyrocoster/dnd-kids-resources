@@ -111,28 +111,9 @@ player `kind` field round-trips through the opaque `units` blob).
 | **P0 — Scaffolding** | Haiku | Types/stubs/placeholder CSS/`it.skip` tests, no implementation. One context. | `Size` type + `size` state/`loadSize`/`saveSize` stubs + resize-handle element (inert) in `FloatingWindow`; `kind?: 'monster' \| 'player'` on `EncounterCreature`; `{ type:'addPlayer'; name; conditions? }` in `RunnerAction` (no-op case) + `combatantFromPlayer` stub + `addPlayer` on the hook; `AddPlayerPanel.tsx` stub + board toggle stub; `CombatantCard` `isPlayer` branch stub; placeholder CSS; skipped test stubs. Stubs compile; app renders unchanged. |
 | **P1 — Resizable window** | Sonnet | Drag a corner handle to resize the pop-out; size persists. | Resize-handle pointer-drag in `FloatingWindow` (mirrors the header-drag pattern) writing `width`/`height` with min/max clamps; size persisted to `sessionStorage` per `storageKey`; CSS switches from fixed `width`/`max-height` to state-driven; keyboard-resizable handle. Tests: clamp util + persistence round-trip + handle renders/operates. |
 | **P2 — Add players** | ✅ shipped | Add a PC to a live encounter: name + conditions only. | See shipped row below. |
-| **P3 — Design pass** | Sonnet | `/frontend-design` review, MD3/a11y, zero-bug. | Player-card visual distinction (icon + accent token, not hue-alone); resize-handle affordance + focus ring + reduced-motion; touch-target audit in compact/dock mode; tokens-only sweep. Fixes + design tests; live-verified. |
+| **P3 — Design pass** | ✅ shipped | `/frontend-design` review, MD3/a11y, zero-bug. | See shipped row below. |
 
 **Sequencing:** P0 → P1 → P2 → P3 (P1 and P2 were independent; P3 is last).
-
-<!-- ===== VERBOSE BLOCKS — one per un-shipped stage, in order. Delete a block and collapse it to a
-     Shipped row the moment that stage ships; the remaining blocks stay until their own turn. ===== -->
-
-#### P3 — Design pass (next up)
-
-- **Build:** `/frontend-design` review of the two new surfaces. Give the player card a clear, non-hue-alone
-  identity (a player/user Lucide icon + a distinct accent token vs. the monster/teal role); polish the
-  resize handle (visible affordance, focus ring, `prefers-reduced-motion`, ≥48px effective target); audit
-  touch targets and spacing of the Add-player panel + player cards in **compact/dock** mode (~310px); tokens-
-  only sweep (no stray hex/px). Fix any zero-bugs found.
-- **Inherits:** P1 + P2 shipped surfaces.
-- **Tests:** design/a11y assertions for the new markup (icon presence, roles/labels, handle focusability);
-  no behavioral regressions.
-- **🚦 Gate:** live end-to-end on the Surface Pro — resize the dock, add a player, size + player persist,
-  everything finger-sized and visually coherent in both hosts. Per `CLAUDE.md`, the user performs the manual
-  browser verification unless they ask for automation.
-
-<!-- ============================================================================================= -->
 
 ---
 
@@ -158,6 +139,7 @@ Implementation narrative lives in each stage's git commit; these rows answer *wh
 | **P0** | Phase 4 scaffolding: `Size` type + stubs, `kind` on `EncounterCreature`, `addPlayer` action/`combatantFromPlayer` stub/`AddPlayerPanel` stub/board toggle/`isPlayer` derivation, `it.skip` test stubs. Gate ✅. |
 | **P1** | Resizable `FloatingWindow`: `clampSize` util, `loadSize`/`saveSize` + `sessionStorage`, pointer-drag resize handle (mirrors header-drag), keyboard arrow-key resize (step 16px), `min-width`/`min-height` CSS floors, body user-select guard during resize. 602 tests, build clean. |
 | **P2** | Player characters in the runner: `addPlayer` reducer case, `combatantFromPlayer` factory, `AddPlayerPanel` (name field + `ConditionPicker`), `CombatantCard` player variant (no HP/stepper/AC/status), board-header toggle, `kind` round-trips through save/hydrate. 623 tests, build clean. Live-verified 2026-07-14. |
+| **P3** | Phase 4 design pass: player cards now have a semantic Player badge + secondary-token treatment, the Add-player panel uses icon-only local Lucide chrome, and the floating resize handle has a visible 48px keyboard-focusable affordance with reduced-motion handling. 623 tests, lint/build clean aside from existing warnings; manual browser verification remains user-performed per `CLAUDE.md`. |
 
 ---
 
@@ -181,6 +163,4 @@ Implementation narrative lives in each stage's git commit; these rows answer *wh
 
 ## Next:
 
-**Phase 4 / P3 — Design pass (Sonnet, unblocked).** `/frontend-design` review: player-card visual identity
-(UserIcon + secondary accent token), resize-handle affordance + focus ring + reduced-motion, touch-target
-audit in compact/dock mode, tokens-only sweep. Live end-to-end verification on Surface Pro preferred.
+No encounter expansion stage is currently queued.

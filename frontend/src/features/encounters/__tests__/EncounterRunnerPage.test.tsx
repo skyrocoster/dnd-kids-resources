@@ -256,6 +256,8 @@ describe('EncounterRunnerPage', () => {
     fireEvent.click(addPlayerButton())
 
     const playerCard = cardByName('Frodo')
+    expect(playerCard).toHaveClass('combatant-card-player')
+    expect(within(playerCard).getByLabelText('Player character')).toBeInTheDocument()
     expect(within(playerCard).queryByRole('group', { name: 'Status' })).not.toBeInTheDocument()
     expect(within(playerCard).queryByRole('img', { name: /hit points/i })).not.toBeInTheDocument()
     expect(within(playerCard).queryByLabelText('Damage 10')).not.toBeInTheDocument()

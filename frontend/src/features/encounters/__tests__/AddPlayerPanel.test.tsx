@@ -14,6 +14,7 @@ describe('AddPlayerPanel', () => {
     render(<AddPlayerPanel conditions={conditions} onAdd={() => {}} onClose={() => {}} />)
 
     expect(screen.getByText('Add player')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Close add player panel' })).toBeInTheDocument()
     expect(screen.getByPlaceholderText('Enter player name…')).toBeInTheDocument()
     expect(screen.getByText('No conditions')).toBeInTheDocument()
     expect(screen.getByText('Cancel')).toBeInTheDocument()

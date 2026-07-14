@@ -229,8 +229,11 @@ export function FloatingWindow({ title, storageKey, onClose, children }: Floatin
         onKeyDown={handleResizeKeyDown}
         role="separator"
         aria-label="Resize window. Arrow keys to resize."
+        aria-orientation="horizontal"
         tabIndex={0}
-      />
+      >
+        <span className="floating-window-resize-ridges" aria-hidden />
+      </div>
     </div>
   )
 }
