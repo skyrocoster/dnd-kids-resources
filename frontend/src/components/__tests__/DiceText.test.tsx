@@ -2,6 +2,8 @@ import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { DiceText } from '../DiceText'
 
+// TODO(X2): add role-prop variant tests and snapshots
+
 describe('DiceText', () => {
   it('renders plain text with no dice notation unchanged', () => {
     render(<DiceText text="A bolt of fire streaks toward a target." />)

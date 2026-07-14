@@ -1,0 +1,24 @@
+.monster-stat-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.monster-stat-block-region {
+  padding: 1rem 0;
+}
+
+.monster-stat-block-heading {
+  font-family: var(--type-face-mono);
+  font-size: var(--type-body-sm-size);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--md-tertiary);
+  margin: 0 0 0.5rem;
+}
+
+.monster-stat-block-rule {
+  height: 2px;
+  background: linear-gradient(to right, var(--md-tertiary), transparent);
+  opacity: 0.5;
+}

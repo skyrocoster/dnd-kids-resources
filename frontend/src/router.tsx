@@ -6,6 +6,7 @@ import { MapLabEditorPage } from './features/dungeons/maplab/MapLabEditorPage'
 import { EncounterBrowserPage } from './features/encounters/EncounterBrowserPage'
 import { EncounterRunnerPage } from './features/encounters/EncounterRunnerPage'
 import { MonsterBrowserPage } from './features/monsters/MonsterBrowserPage'
+import { MonsterEditor } from './features/monsters/MonsterEditor'
 import { NPCBrowserPage } from './features/npcs/NPCBrowserPage'
 import { PlayerBrowserPage } from './features/players/PlayerBrowserPage'
 import { QuestBrowserPage } from './features/quests/QuestBrowserPage'
@@ -26,6 +27,8 @@ export const router = createBrowserRouter([
       { path: 'demo', element: <ComponentDemoPage /> },
       { path: 'spells', element: <SpellBrowserPage /> },
       { path: 'monsters', element: <MonsterBrowserPage /> },
+      { path: 'monsters/new', element: <MonsterEditor /> },
+      { path: 'monsters/:id/edit', element: <MonsterEditor /> },
       { path: 'weapons', element: <WeaponBrowserPage /> },
       { path: 'items', element: <ItemBrowserPage /> },
       { path: 'loot', element: <LootBundleBrowserPage /> },

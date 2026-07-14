@@ -2,6 +2,7 @@ import './DiceText.css'
 
 interface DiceTextProps {
   text: string
+  role?: string // TODO(X2): role-aware chip inherits surrounding variant color
 }
 
 const DICE_PATTERN = /\b\d+d\d+(?:\s*[+-]\s*\d+)?\b/gi
@@ -10,6 +11,8 @@ const DICE_PATTERN = /\b\d+d\d+(?:\s*[+-]\s*\d+)?\b/gi
  * Renders inline prose, wrapping dice notation (e.g. "2d6+3") in the
  * gold monospace pill — the app's one signature motif, since dice
  * notation is the thing spells, monsters, and weapons all share.
+ *
+ * TODO(X2): redesign into role-aware rollable-die chip.
  */
 export function DiceText({ text }: DiceTextProps) {
   const parts: React.ReactNode[] = []
