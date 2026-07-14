@@ -1,6 +1,6 @@
 # Monsters — Data Restructure & Stat-Block Redesign
 
-> **Status:** M2.1 shipped. M2.2 is next: atomic contract cutover to the migrated monster shape. Phase MD
+> **Status:** M2.2 shipped. M2.3 is next: corpus conformance and release verification. Phase MD
 > (data foundation) runs first — nothing in Phase MX may start until M2.3 is committed.
 
 ## What this feature is
@@ -120,7 +120,7 @@ backend around it, and rewire existing consumers. **Depended on by:** all of Pha
 | **M0 — Scaffolding** | Haiku | Type stubs, schema/migration/CRUD stubs, placeholder CSS, `it.skip` tests. One context, no logic. | Stubs compile; app + tests render unchanged. |
 | **M1 — Seed discovery & target schema** | **Opus** | **Discovery only, no code.** Deep-read the 2,276-row seed; decide keep/drop/reshape for all 30 fields; write the target-schema contract. | `docs/monster_schema_decision.md` committed. |
 | **M2.1 — Deterministic migration engine** | Sonnet | **Shipped.** Pure source-to-target transform and fixture tests landed without changing the canonical seed or runtime contract. | Reproducible migration script + focused fixture tests. |
-| **M2.2 — Atomic contract cutover** | Sonnet | Apply the migration and update the seed, DB, API, frontend types, existing consumers, and reference docs together. | Migrated seed, new schema/API/types, working legacy browser + encounter consumers. |
+| **M2.2 — Atomic contract cutover** | Sonnet | **Shipped.** Migrated seed, DB/API/frontend contract cutover, existing browser/encounter consumers rewired, reference docs updated. | Migrated seed, new schema/API/types, working legacy browser + encounter consumers. |
 | **M2.3 — Corpus conformance & release verification** | Sonnet | Prove the full migrated corpus and rebuilt runtime meet the M1 acceptance contract. | Aggregate audit tests, clean DB rebuild, full green suite. |
 | **M3 — Monster CRUD endpoints** | Sonnet | POST/PUT/DELETE `/monsters` + client fns + tests. | CRUD live, ≥85% coverage. |
 
@@ -158,29 +158,6 @@ would commit a mixed, broken runtime shape.
 - **🚦 Gate:** `docs/monster_schema_decision.md` exists, covers all 30 fields with keep/drop/reshape + rationale,
   includes the worked examples and the final field list, and is committed. Human review of the doc is the gate —
   **do not proceed to M2 until the schema decision is accepted.**
-
-#### M2.2 — Atomic contract cutover (Sonnet)
-
-- **Build:** Run the proven migration once to rewrite `data/seeds/seed_monsters.json`, preserving all 2,276 source
-  IDs and names. Replace the legacy `monsters` table in `scripts/init_database.py` with the exact M1 projection,
-  its JSON defaults, nullable scalars, timestamps, `idx_monsters_cr`, and `idx_monsters_cr_sort`; rewrite
-  `populate_monsters` to insert explicit IDs and only target fields. Replace Monster Pydantic schemas with the
-  strict M1 nested-model contract, defaults, audio-device validation, and response-only `id`/`cr_sort`, while
-  leaving M3 CRUD stubs as 501s. Update every GET select and `_parse_monster_row` for the new columns.
-  
-  Replace `frontend/src/api/types.ts` Monster/MonsterInput definitions with the M1 TypeScript contract. Rewire
-  `deriveCreatureStats` to use `ac.value` and `hp.average`; update `MonsterBrowserPage` to consume typed AC,
-  speed, senses, abilities, and `features.actions` without starting the Phase MX redesign. Grep for other legacy
-  monster shape reads. Update the curated monster fixture and existing backend/frontend tests, then update
-  `docs/DATA_MODEL.md` and `docs/API_REFERENCE.md` in this same commit.
-- **Inherits:** M2.1's tested transform and the accepted M1 contract.
-- **Tests:** Update router smoke tests for list/by-id/by-name with nested target data, frontend browser-page tests,
-  and encounter stat-propagation tests. Assert Pydantic rejects unknown monster input fields and excludes computed
-  `cr_sort` from Create/Update inputs. Run focused backend/frontend tests and `npm run typecheck`.
-- **🚦 Gate:** `python scripts/init_database.py` then `python scripts/seed_database.py` rebuilds the DB from the
-  migrated seed. The ordinary list/detail page and encounter stat derivation work against the target shape through
-  automated tests; no browser automation unless requested. Commit message: `Stage M2.2: Cut over monsters to
-  authorable schema`.
 
 #### M2.3 — Corpus conformance & release verification (Sonnet)
 
@@ -313,6 +290,7 @@ merges before X4.
 |-------|------------------------------|
 | **M0** | Scaffolding: TODO(M2) marker on schemas, `scripts/migrate_monsters.py` stub, 501 CRUD endpoints, `client.ts` stubs, and `it.skip`/`@pytest.mark.skip` test placeholders. Gate ✅ suite-sufficient 2026-07-14. |
 | **M2.1** | Deterministic migration engine: `scripts/migrate_monsters.py` now performs the accepted M1 source-to-target transform with contextual failures for markup, audio, CR, XP, and malformed structures. Fixture tests cover Wolf, Mage, Adult Red Dragon, alternate movement, conditional defenses, CR/XP/unknown CR, deterministic output, and invalid tag/audio failures; canonical seed/runtime contracts remain unchanged. |
+| **M2.2** | Atomic contract cutover: canonical monster seed rewritten to the authorable target shape, SQLite projection/seed loading updated with explicit IDs and CR indexes, strict backend/frontend Monster contracts installed, and legacy browser/encounter consumers rewired to `ac.value`, `abilities`, and `features.actions`. Reference docs were updated and focused backend/frontend gates passed; browser automation was not run per repo guidance. |
 
 ---
 
@@ -327,5 +305,5 @@ merges before X4.
 
 ## Next:
 
-**M2.2 — Atomic contract cutover**. Run the proven migration once, update the canonical seed, DB schema/seed load,
-backend schemas/router parsing, frontend types/consumers, and reference docs in one breaking cutover commit.
+**M2.3 — Corpus conformance & release verification**. Add corpus-level migration/API assertions and run the full
+backend/frontend release verification suite against the migrated monster data.

@@ -2,6 +2,8 @@
 
 import pytest
 
+from backend.app.schemas import MonsterCreate, MonsterUpdate
+
 
 def test_list_monsters(test_client):
     """Test GET /api/monsters returns a list."""
@@ -25,13 +27,17 @@ def test_get_monster_by_id(test_client):
 
 
 def test_monster_seed_data_has_cr_and_parsed_json(test_client):
-    """Seeded monster should expose cr and parsed JSON columns (senses/languages/action/stats)."""
+    """Seeded monster should expose cr and parsed JSON columns in the M2 shape."""
     response = test_client.get("/api/monsters")
     monster = next(m for m in response.json() if m["name"] == "Owlbear")
     assert monster["cr"] == "3"
-    assert monster["senses"] == [{"type": "darkvision", "range": 60}]
-    assert monster["stats"]["str"] == 20
-    assert monster["action"][0]["attack"]["damage"] == "1d10+5"
+    assert monster["cr_sort"] == 3.0
+    assert monster["ac"] == {"value": 13, "note": "natural armour", "alternatives": []}
+    assert monster["senses"] == [{"type": "darkvision", "range": 60, "note": None}]
+    assert monster["abilities"]["str"] == 20
+    assert monster["features"]["actions"][1]["attack"]["damage"] == [
+        {"formula": "1d10", "bonus": 5, "damage_types": ["piercing"]}
+    ]
 
 
 def test_get_nonexistent_monster(test_client):
@@ -45,6 +51,15 @@ def test_get_monster_by_name(test_client):
     response = test_client.get("/api/monsters/by-name/Owlbear")
     assert response.status_code == 200
     assert response.json()["name"] == "Owlbear"
+
+
+def test_monster_input_rejects_unknown_fields_and_cr_sort():
+    with pytest.raises(ValueError):
+        MonsterCreate.model_validate({"name": "Bad", "unknown": True})
+    with pytest.raises(ValueError):
+        MonsterCreate.model_validate({"name": "Bad", "cr_sort": 1.0})
+    with pytest.raises(ValueError):
+        MonsterUpdate.model_validate({"name": "Bad", "cr_sort": 1.0})
 
 
 def test_get_monster_by_name_not_found(test_client):

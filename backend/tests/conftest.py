@@ -143,14 +143,66 @@ def _seed_curated_data(conn: sqlite3.Connection) -> None:
     )
 
     cursor.execute(
-        """INSERT INTO monsters (name, ac, hp, speed, stats, senses, languages, cr, action)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-        ("Owlbear", json.dumps({"13": None}), json.dumps({"average": 59, "formula": "7d10+21"}),
-         json.dumps({"walk": 40}),
-         json.dumps({"str": 20, "dex": 12, "con": 17, "int": 3, "wis": 12, "cha": 7}),
-         json.dumps([{"type": "darkvision", "range": 60}]), json.dumps([]), "3",
-         json.dumps([{"name": "Beak", "attack": {"type": "melee", "mod": 7,
-                     "damage": "1d10+5", "damage_type": "piercing"}}])),
+        """INSERT INTO monsters
+           (id, name, aliases, sizes, family, alignment, creature_type, ac, hp, speed, abilities,
+            saving_throws, skills, passive_perception, damage_resistances, damage_immunities,
+            damage_vulnerabilities, condition_immunities, senses, languages, audio_path, features,
+            cr, cr_sort, cr_note, experience_points)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        (
+            1803,
+            "Owlbear",
+            json.dumps([]),
+            json.dumps(["large"]),
+            None,
+            "unaligned",
+            json.dumps({"category": "monstrosity", "tags": [], "swarm_size": None}),
+            json.dumps({"value": 13, "note": "natural armour", "alternatives": []}),
+            json.dumps({"average": 59, "formula": "7d10 + 21"}),
+            json.dumps([{"mode": "walk", "feet": 40, "note": None, "hover": False}]),
+            json.dumps({"str": 20, "dex": 12, "con": 17, "int": 3, "wis": 12, "cha": 7}),
+            json.dumps({}),
+            json.dumps({"perception": 3}),
+            13,
+            json.dumps([]),
+            json.dumps([]),
+            json.dumps([]),
+            json.dumps([]),
+            json.dumps([{"type": "darkvision", "range": 60, "note": None}]),
+            json.dumps([]),
+            "owlbear.mp3",
+            json.dumps({
+                "traits": [],
+                "spellcasting": [],
+                "actions": [
+                    {"name": "Multiattack", "description": "The owlbear makes two attacks.", "attack": None},
+                    {
+                        "name": "Beak",
+                        "description": None,
+                        "attack": {
+                            "kind": "melee_weapon",
+                            "attack_bonus": 7,
+                            "automatic_hit": False,
+                            "range_ft": 5,
+                            "long_range_ft": None,
+                            "targets": 1,
+                            "damage": [{"formula": "1d10", "bonus": 5, "damage_types": ["piercing"]}],
+                        },
+                    },
+                ],
+                "bonus_actions": [],
+                "reactions": [],
+                "reaction_intro": None,
+                "legendary_actions": [],
+                "legendary_intro": None,
+                "legendary_actions_per_round": None,
+                "mythic_actions": [],
+            }),
+            "3",
+            3.0,
+            None,
+            None,
+        ),
     )
 
     cursor.execute(

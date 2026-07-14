@@ -184,39 +184,35 @@ def init_database():
     """)
 
 
-    # Create monsters table using the normalized merged structure
+    # Create monsters table using the M2 authorable target projection
     cursor.execute("""
         CREATE TABLE monsters (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL UNIQUE,
-            alias TEXT NOT NULL DEFAULT '[]',
-            size TEXT,
-            "group" TEXT NOT NULL DEFAULT '[]',
-            alignment TEXT NOT NULL DEFAULT '[]',
-            type TEXT NOT NULL DEFAULT '{}',
-            ac TEXT NOT NULL DEFAULT '{}',
-            hp TEXT NOT NULL DEFAULT '{}',
-            speed TEXT NOT NULL DEFAULT '{}',
-            stats TEXT NOT NULL DEFAULT '{}',
-            save TEXT NOT NULL DEFAULT '{}',
-            skill TEXT NOT NULL DEFAULT '{}',
-            resist TEXT NOT NULL DEFAULT '[]',
-            vulnerable TEXT NOT NULL DEFAULT '[]',
+            aliases TEXT NOT NULL DEFAULT '[]',
+            sizes TEXT NOT NULL DEFAULT '[]',
+            family TEXT,
+            alignment TEXT,
+            creature_type TEXT,
+            ac TEXT,
+            hp TEXT,
+            speed TEXT NOT NULL DEFAULT '[]',
+            abilities TEXT,
+            saving_throws TEXT NOT NULL DEFAULT '{}',
+            skills TEXT NOT NULL DEFAULT '{}',
+            passive_perception INTEGER,
+            damage_resistances TEXT NOT NULL DEFAULT '[]',
+            damage_immunities TEXT NOT NULL DEFAULT '[]',
+            damage_vulnerabilities TEXT NOT NULL DEFAULT '[]',
+            condition_immunities TEXT NOT NULL DEFAULT '[]',
             senses TEXT NOT NULL DEFAULT '[]',
             languages TEXT NOT NULL DEFAULT '[]',
-            action TEXT NOT NULL DEFAULT '[]',
-            reaction TEXT NOT NULL DEFAULT '[]',
-            traits TEXT NOT NULL DEFAULT '[]',
-            spellcasting TEXT NOT NULL DEFAULT '[]',
-            bonus TEXT NOT NULL DEFAULT '[]',
-            legendary TEXT NOT NULL DEFAULT '[]',
-            legendaryHeader TEXT,
-            mythic TEXT NOT NULL DEFAULT '[]',
-            mythicHeader TEXT,
-            reactionRules TEXT NOT NULL DEFAULT '[]',
-            soundClip TEXT NOT NULL DEFAULT '{}',
+            audio_path TEXT,
+            features TEXT NOT NULL DEFAULT '{}',
             cr TEXT,
-            cr_details TEXT NOT NULL DEFAULT '{}',
+            cr_sort REAL,
+            cr_note TEXT,
+            experience_points INTEGER,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
@@ -299,6 +295,9 @@ def init_database():
 
     cursor.execute(
         "CREATE INDEX IF NOT EXISTS idx_monsters_cr ON monsters(cr)"
+    )
+    cursor.execute(
+        "CREATE INDEX IF NOT EXISTS idx_monsters_cr_sort ON monsters(cr_sort)"
     )
 
     # Create dungeons table (v2: structured hand-authored dungeons only, no HTML)

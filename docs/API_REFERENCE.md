@@ -8,7 +8,7 @@ Hand-written endpoint inventory. For response/request shapes, refer to `backend/
 - **Request/response format:** JSON
 - **Response on success:** `2xx` status, JSON body with resource(s) or null
 - **Response on error:** `4xx` or `5xx` status, JSON error message
-- **JSON-encoded columns:** Several tables store complex data (damage, spells.classes, monsters.stats, etc.) as `TEXT` JSON — see `docs/DATA_MODEL.md` for the full list. These are automatically deserialized by Pydantic on read and serialized on write.
+- **JSON-encoded columns:** Several tables store complex data (damage, spells.classes, monsters.features, etc.) as `TEXT` JSON — see `docs/DATA_MODEL.md` for the full list. These are automatically deserialized by Pydantic on read and serialized on write.
 
 ## Adding an Endpoint
 
@@ -198,7 +198,7 @@ When adding a new endpoint:
 All request and response body shapes are defined in `backend/app/schemas.py` as Pydantic models. Refer there for field names, types, and optionality. Examples:
 
 - **Spell:** id, spell_name, level, school, damage (JSON), components (JSON), classes (JSON), casting_time, duration, concentration, ritual, materials, higher_levels, spell_text, spell_alt_text, range, action, attack_type (JSON), area_of_effect (JSON), heal (JSON), heal_at_spell_slots (JSON), subclasses (JSON)
-- **Monster:** id, name, ac (JSON), hp (JSON), speed (JSON), stats (JSON), senses (JSON), languages (JSON), cr, action (JSON)
+- **Monster:** id, name, aliases (JSON), sizes (JSON), family, alignment, creature_type (JSON), ac (JSON), hp (JSON), speed (JSON), abilities (JSON), saving_throws (JSON), skills (JSON), passive_perception, damage_resistances (JSON), damage_immunities (JSON), damage_vulnerabilities (JSON), condition_immunities (JSON), senses (JSON), languages (JSON), audio_path, features (JSON), cr, cr_sort, cr_note, experience_points
 - **Weapon:** id, name, base_weapon, rarity, weapon_category, weight, req_attune, property (JSON), focus (JSON), attack (JSON), entries (JSON)
 - **Item:** id, name, value_gp, category, description
 - **LootBundle:** id, name, gold, contents (JSON loot-entry array)

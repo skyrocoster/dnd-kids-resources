@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import * as api from '../../api/client'
-import type { Monster } from '../../api/types'
+import type { Feature, Monster } from '../../api/types'
 import { Card } from '../../components/Card'
 import { DiceText } from '../../components/DiceText'
 import { SearchList } from '../../components/SearchList'
@@ -8,9 +8,8 @@ import { SplitPane } from '../../components/SplitPane'
 import './MonsterBrowserPage.css'
 
 function formatAc(ac: Monster['ac']): string {
-  if (!ac || typeof ac !== 'object') return ''
-  const [value] = Object.keys(ac)
-  return value || ''
+  if (!ac) return ''
+  return ac.note ? `${ac.value} (${ac.note})` : String(ac.value)
 }
 
 function formatHp(hp: Monster['hp']): string {
@@ -21,29 +20,37 @@ function formatHp(hp: Monster['hp']): string {
 }
 
 function formatSpeed(speed: Monster['speed']): string {
-  if (!speed || typeof speed !== 'object') return ''
-  return Object.entries(speed as Record<string, number>)
-    .map(([type, value]) => (type === 'walk' ? `${value} ft.` : `${type} ${value} ft.`))
-    .join(', ')
-}
-
-function formatSenses(senses: Monster['senses']): string {
-  if (!senses) return ''
-  return senses
-    .map((s) => {
-      const entry = s as { type?: string; range?: number }
-      return entry.type ? `${entry.type} ${entry.range ?? ''} ft.`.trim() : JSON.stringify(s)
+  if (!speed.length) return ''
+  return speed
+    .map((entry) => {
+      const label = entry.mode === 'walk' ? `${entry.feet} ft.` : `${entry.mode} ${entry.feet} ft.`
+      const hover = entry.hover ? ' hover' : ''
+      return entry.note ? `${label}${hover} (${entry.note})` : `${label}${hover}`
     })
     .join(', ')
 }
 
-function describeAction(action: Record<string, unknown>): string {
-  const name = typeof action.name === 'string' ? action.name : 'Action'
-  const attack = action.attack as { type?: string; mod?: number; damage?: string; damage_type?: string } | undefined
-  if (!attack) return name
-  const parts = [name + ':']
-  if (attack.mod != null) parts.push(`+${attack.mod} to hit,`)
-  if (attack.damage) parts.push(`${attack.damage}${attack.damage_type ? ` ${attack.damage_type}` : ''} damage.`)
+function formatSenses(senses: Monster['senses']): string {
+  if (!senses.length) return ''
+  return senses
+    .map((s) => {
+      const note = s.note ? ` (${s.note})` : ''
+      return `${s.type} ${s.range} ft.${note}`
+    })
+    .join(', ')
+}
+
+function describeAction(action: Feature): string {
+  const attack = action.attack
+  if (!attack) return action.description ? `${action.name}: ${action.description}` : action.name
+  const parts = [action.name + ':']
+  if (attack.attack_bonus != null) parts.push(`+${attack.attack_bonus} to hit,`)
+  if (attack.automatic_hit) parts.push('automatic hit,')
+  const damage = attack.damage
+    .map((entry) => `${entry.formula}${entry.bonus ? ` + ${entry.bonus}` : ''}${entry.damage_types.length ? ` ${entry.damage_types.join(', ')}` : ''}`)
+    .join('; ')
+  if (damage) parts.push(`${damage} damage.`)
+  if (action.description) parts.push(action.description)
   return parts.join(' ')
 }
 
@@ -121,21 +128,21 @@ export function MonsterBrowserPage() {
                     )}
                   </dl>
 
-                  {selected.stats && (
-                    <div className="monster-browser-stats">
-                      {Object.entries(selected.stats as Record<string, number>).map(([stat, value]) => (
+                    {selected.abilities && (
+                      <div className="monster-browser-stats">
+                      {Object.entries(selected.abilities).map(([stat, value]) => (
                         <div key={stat} className="monster-browser-stat">
                           <span className="monster-browser-stat-label">{stat.toUpperCase()}</span>
-                          <span>{value}</span>
+                          <span>{value ?? 'n/a'}</span>
                         </div>
                       ))}
-                    </div>
-                  )}
+                      </div>
+                    )}
 
-                  {selected.action && selected.action.length > 0 && (
+                  {selected.features.actions.length > 0 && (
                     <div className="monster-browser-actions">
                       <h4>Actions</h4>
-                      {selected.action.map((action, i) => (
+                      {selected.features.actions.map((action, i) => (
                         <p key={i}>
                           <DiceText text={describeAction(action)} />
                         </p>

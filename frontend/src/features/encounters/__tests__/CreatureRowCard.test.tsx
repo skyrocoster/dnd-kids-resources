@@ -5,7 +5,50 @@ import type { Monster } from '../../../api/types'
 import { CreatureRowCard } from '../CreatureRowCard'
 import { addEncounterCreatureRow } from '../encounterForm'
 
-const goblin: Monster = { id: 1, name: 'Goblin', ac: { '15': null }, hp: { average: 7 } }
+function monster(overrides: Partial<Monster>): Monster {
+  return {
+    id: 1,
+    name: 'Monster',
+    aliases: [],
+    sizes: [],
+    family: null,
+    alignment: null,
+    creature_type: null,
+    ac: null,
+    hp: null,
+    speed: [],
+    abilities: null,
+    saving_throws: {},
+    skills: {},
+    passive_perception: null,
+    damage_resistances: [],
+    damage_immunities: [],
+    damage_vulnerabilities: [],
+    condition_immunities: [],
+    senses: [],
+    languages: [],
+    audio_path: null,
+    features: {
+      traits: [],
+      spellcasting: [],
+      actions: [],
+      bonus_actions: [],
+      reactions: [],
+      reaction_intro: null,
+      legendary_actions: [],
+      legendary_intro: null,
+      legendary_actions_per_round: null,
+      mythic_actions: [],
+    },
+    cr: null,
+    cr_sort: null,
+    cr_note: null,
+    experience_points: null,
+    ...overrides,
+  }
+}
+
+const goblin: Monster = monster({ id: 1, name: 'Goblin', ac: { value: 15, note: null, alternatives: [] }, hp: { average: 7, formula: null } })
 
 function makeRow() {
   const [row] = addEncounterCreatureRow([])

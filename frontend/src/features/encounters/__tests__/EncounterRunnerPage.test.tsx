@@ -20,6 +20,49 @@ const baseEncounter: Encounter = {
   ],
 }
 
+function monster(overrides: Partial<Monster>): Monster {
+  return {
+    id: 1,
+    name: 'Monster',
+    aliases: [],
+    sizes: [],
+    family: null,
+    alignment: null,
+    creature_type: null,
+    ac: null,
+    hp: null,
+    speed: [],
+    abilities: null,
+    saving_throws: {},
+    skills: {},
+    passive_perception: null,
+    damage_resistances: [],
+    damage_immunities: [],
+    damage_vulnerabilities: [],
+    condition_immunities: [],
+    senses: [],
+    languages: [],
+    audio_path: null,
+    features: {
+      traits: [],
+      spellcasting: [],
+      actions: [],
+      bonus_actions: [],
+      reactions: [],
+      reaction_intro: null,
+      legendary_actions: [],
+      legendary_intro: null,
+      legendary_actions_per_round: null,
+      mythic_actions: [],
+    },
+    cr: null,
+    cr_sort: null,
+    cr_note: null,
+    experience_points: null,
+    ...overrides,
+  }
+}
+
 function renderPage(encounterId = 7) {
   return render(
     <MemoryRouter initialEntries={[`/encounters/${encounterId}/run`]}>
@@ -119,8 +162,8 @@ describe('EncounterRunnerPage', () => {
   it('add-monster inserts a combatant from the search panel', async () => {
     vi.spyOn(api, 'getEncounter').mockResolvedValue(baseEncounter)
     vi.spyOn(api, 'updateEncounter').mockResolvedValue(baseEncounter)
-    const monster: Monster = { id: 99, name: 'Owlbear', ac: { '13': null }, hp: { average: 59 } }
-    vi.spyOn(api, 'listMonsters').mockResolvedValue([monster])
+    const owlbear = monster({ id: 99, name: 'Owlbear', ac: { value: 13, note: null, alternatives: [] }, hp: { average: 59, formula: null } })
+    vi.spyOn(api, 'listMonsters').mockResolvedValue([owlbear])
 
     renderPage()
     await act(async () => {
