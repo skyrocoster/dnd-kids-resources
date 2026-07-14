@@ -1,6 +1,6 @@
 # Monsters — Data Restructure & Stat-Block Redesign
 
-> **Status:** M3, X0, X1, X2 shipped. X3 is next: create/edit form.
+> **Status:** M3, X0, X1, X2, X3 shipped. X4 is next: design pass.
 
 ## What this feature is
 
@@ -122,26 +122,9 @@ before M2.**
 | **X3 — Create / edit form** | Sonnet | Grouped authoring form mirroring the regions, wired to M3 CRUD + routes. | `MonsterEditor` + model + tests. |
 | **X4 — Design pass** | Sonnet | `/frontend-design` review, a11y, responsive/mobile, reduced-motion, zero-bug. | Fixes + design tests. |
 
-**Sequencing:** X0 (Haiku, first) → X1 → X2 → X3 → X4. X2 may run in parallel with X1 (different files) but
-merges before X4.
+**Sequencing:** X0 (Haiku, first) → X1 → X2 → X3 → X4.
 
 <!-- ===== VERBOSE BLOCKS — one per un-shipped stage ===== -->
-
-#### X3 — Create / edit form (planned)
-
-- **Build:** `MonsterEditor.tsx` + `monsterModel.ts` — an authoring form grouped into fieldsets that mirror the
-  stat-block regions (Identity / Defenses / Abilities / Actions / Lore), following the repo's Browser/View/
-  Editor/Model convention. Add/edit via M3 CRUD (`createMonster`/`updateMonster`); delete with `ConfirmDialog`.
-  Wire `/monsters/new` and `/monsters/:id/edit` routes and an "Add monster" / "Edit" entry from the browser
-  page. Client-side validation for required fields (name) and well-formed numeric AC/HP/scores. On save, refresh
-  the list and select the new/edited monster.
-- **Inherits:** M3 CRUD + client fns; X1 region taxonomy (fieldset groups match the display regions); X2 chip
-  (preview of entered dice, optional).
-- **Tests:** model unit tests (form ↔ payload mapping, validation); editor render test (fieldsets present,
-  required-field error shows); an integration test for create-then-appears-in-list (mocked client).
-- **🚦 Gate:** create a monster through the form, see it in the list and its stat block; edit and delete it. Browser
-  pass warranted **only on user request**; otherwise report the manual create/edit/delete check. Suites green,
-  ≥85% backend already covered by M3.
 
 #### X4 — Design pass (planned)
 
@@ -172,6 +155,7 @@ merges before X4.
 | **X0** | Scaffolding: MonsterStatBlock/MonsterEditor/monsterModel stubs, DiceText role prop stub + TODO(X2), DiceIcon alias, route stubs for /monsters/new and /monsters/:id/edit, it.skip test stubs. Gate ✅ suite-sufficient. |
 | **X1** | Stat-block redesign: MonsterStatBlock renders five region-ordered sections (Identity→Defenses→Abilities→Actions→Lore) with tapered teal rules, hidden-when-absent sections, DiceText-wired prose, and six-ability block. MonsterBrowserPage rewired from old dl/grid to MonsterStatBlock. 8 render tests pass. Gate ✅ suite-sufficient. |
 | **X2** | Dice motif redesign: flat gold `.dice-pill` replaced with role-aware rollable-die chip inheriting `--variant-container`/`--variant-on-container` from ambient `data-variant` (default neutral), prepending DiceIcon glyph. Added optional `role` prop. 10 unit tests, full suite green. Gate ✅ suite-sufficient. |
+| **X3** | Create/edit form: `MonsterEditor` with five fieldsets (Identity/Defenses/Abilities/Actions/Lore) wired to M3 CRUD, `monsterForm.ts` mapping/validation, Add/Edit buttons on browser page, post-save auto-select. 8 model/render tests, full suite green. Gate ✅ suite-sufficient. |
 
 ---
 
@@ -186,4 +170,4 @@ merges before X4.
 
 ## Next:
 
-**X3 — Create / edit form**. Grouped authoring form mirroring the stat-block regions, wired to M3 CRUD.
+**X4 — Design pass**. `/frontend-design` review, a11y, responsive/mobile, reduced-motion, zero-bug.
