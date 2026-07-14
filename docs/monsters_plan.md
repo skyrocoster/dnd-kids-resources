@@ -1,6 +1,6 @@
 # Monsters — Data Restructure & Stat-Block Redesign
 
-> **Status:** M3, X0, X1, X2, X3 shipped. X4 is next: design pass.
+> **Status:** M3, X0, X1, X2, X3, X4 shipped. Monster experience phase complete.
 
 ## What this feature is
 
@@ -108,11 +108,11 @@ visible `:focus-visible`, never hue-alone, `prefers-reduced-motion`, ≥48px tou
 
 ---
 
-## Design Phase MX — Experience (stat block, dice motif, authoring)
+## Design Phase MX — Experience (shipped)
 
-Redesign the read view into the bestiary field card, redesign the dice motif site-wide, and build the authoring
-form on M3's CRUD. **Depends on:** M2 committed (new shape) and M3 committed (CRUD, for X3). **Do not start X1
-before M2.**
+Redesigned the read view into the bestiary field card, redesigned the dice motif site-wide, and built the
+authoring form on M3's CRUD. X4 completed the responsive/a11y/design polish pass; remaining monster work, if any,
+should be planned as a new phase rather than appended here.
 
 | Stage | Model | Summary | Deliverables |
 |-------|-------|---------|--------------|
@@ -123,22 +123,6 @@ before M2.**
 | **X4 — Design pass** | Sonnet | `/frontend-design` review, a11y, responsive/mobile, reduced-motion, zero-bug. | Fixes + design tests. |
 
 **Sequencing:** X0 (Haiku, first) → X1 → X2 → X3 → X4.
-
-<!-- ===== VERBOSE BLOCKS — one per un-shipped stage ===== -->
-
-#### X4 — Design pass (planned)
-
-- **Build:** `/frontend-design` review of the whole monster experience: region rhythm and tapered-rule
-  execution, the die-chip motif in context, type scale adherence, teal-identity consistency, responsive down to
-  mobile (stat block reflows, ability block wraps), keyboard focus visibility across the form, `prefers-reduced-
-  motion` respected, no emoji/flat-text, no hue-alone cues. Fix any bugs found (zero-bug exit). Add a couple of
-  design regression tests (mobile reflow, focus-visible on editor fields).
-- **Inherits:** X1–X3 shipped.
-- **Tests:** design regression tests added; full suite green; `npm run build`/`typecheck` clean.
-- **🚦 Gate:** the experience is visually reviewed and bug-free at desktop and mobile widths. Per `CLAUDE.md`,
-  drive the browser only if the user asks; otherwise deliver the manual review checklist and confirm suites green.
-
-<!-- ============================================================================================= -->
 
 ---
 
@@ -156,6 +140,7 @@ before M2.**
 | **X1** | Stat-block redesign: MonsterStatBlock renders five region-ordered sections (Identity→Defenses→Abilities→Actions→Lore) with tapered teal rules, hidden-when-absent sections, DiceText-wired prose, and six-ability block. MonsterBrowserPage rewired from old dl/grid to MonsterStatBlock. 8 render tests pass. Gate ✅ suite-sufficient. |
 | **X2** | Dice motif redesign: flat gold `.dice-pill` replaced with role-aware rollable-die chip inheriting `--variant-container`/`--variant-on-container` from ambient `data-variant` (default neutral), prepending DiceIcon glyph. Added optional `role` prop. 10 unit tests, full suite green. Gate ✅ suite-sufficient. |
 | **X3** | Create/edit form: `MonsterEditor` with five fieldsets (Identity/Defenses/Abilities/Actions/Lore) wired to M3 CRUD, `monsterForm.ts` mapping/validation, Add/Edit buttons on browser page, post-save auto-select. 8 model/render tests, full suite green. Gate ✅ suite-sufficient. |
+| **X4** | Design pass: monster browser now reflows list/detail on mobile, the stat block gained stronger field-card framing and action hierarchy, the editor controls/fieldsets were polished to the same teal identity, and the top-line strip bug was fixed for partial stats. Added regression coverage around the stat strip, browser chrome, and keyboard focus; `npm run test`, `npm run typecheck`, and `npm run build` all passed. |
 
 ---
 
@@ -170,4 +155,5 @@ before M2.**
 
 ## Next:
 
-**X4 — Design pass**. `/frontend-design` review, a11y, responsive/mobile, reduced-motion, zero-bug.
+No further monster stage is planned in this document. Any follow-up work should start a new phase or be tracked in
+the deferred items above.

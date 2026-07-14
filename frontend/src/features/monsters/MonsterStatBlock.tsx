@@ -20,6 +20,14 @@ interface MonsterStatBlockProps {
   monster: Monster
 }
 
+function RegionHeading({ children }: { children: string }) {
+  return <h4 className="monster-stat-block-region-heading">{children}</h4>
+}
+
+function SectionHeading({ children }: { children: string }) {
+  return <h5 className="monster-stat-block-section-heading">{children}</h5>
+}
+
 function FeatureBlock({ feature }: { feature: Feature }) {
   return (
     <p className="monster-stat-block-feature">
@@ -53,7 +61,7 @@ export function MonsterStatBlock({ monster }: MonsterStatBlockProps) {
         {cr && <p className="monster-stat-block-cr">{cr}</p>}
       </section>
 
-      {ac && hp && (
+      {(ac || hp || speed) && (
         <div className="monster-stat-block-strip">
           {ac && (
             <div className="monster-stat-block-strip-item">
@@ -80,6 +88,7 @@ export function MonsterStatBlock({ monster }: MonsterStatBlockProps) {
         <>
           <div className="monster-stat-block-rule" aria-hidden />
           <section className="monster-stat-block-region" data-region="defenses">
+            <RegionHeading>Defenses</RegionHeading>
             {resist && (
               <div className="monster-stat-block-def-row">
                 <span className="monster-stat-block-def-label">Damage Resistances</span>
@@ -118,6 +127,7 @@ export function MonsterStatBlock({ monster }: MonsterStatBlockProps) {
         <>
           <div className="monster-stat-block-rule" aria-hidden />
           <section className="monster-stat-block-region" data-region="abilities">
+            <RegionHeading>Abilities</RegionHeading>
             {abilityScores.length > 0 && (
               <div className="monster-stat-block-abilities" role="group" aria-label="Ability scores">
                 {abilityScores.map((ability) => (
@@ -149,9 +159,10 @@ export function MonsterStatBlock({ monster }: MonsterStatBlockProps) {
         <>
           <div className="monster-stat-block-rule" aria-hidden />
           <section className="monster-stat-block-region" data-region="actions">
+            <RegionHeading>Actions</RegionHeading>
             {monster.features.spellcasting.map((block, i) => (
               <div key={i} className="monster-stat-block-spellcasting">
-                <h4 className="monster-stat-block-feature-heading">{block.name}</h4>
+                <SectionHeading>{block.name}</SectionHeading>
                 {block.description && <p><DiceText text={block.description} /></p>}
                 {block.groups.map((group, gi) => (
                   <p key={gi}>
@@ -162,10 +173,16 @@ export function MonsterStatBlock({ monster }: MonsterStatBlockProps) {
                 {block.footer && <p><DiceText text={block.footer} /></p>}
               </div>
             ))}
+            {monster.features.actions.length > 0 && <SectionHeading>Attacks & Actions</SectionHeading>}
             {monster.features.reaction_intro && <p><DiceText text={monster.features.reaction_intro} /></p>}
             {monster.features.actions.map((action, i) => <FeatureBlock key={`action-${i}`} feature={action} />)}
+            {monster.features.bonus_actions.length > 0 && <SectionHeading>Bonus Actions</SectionHeading>}
             {monster.features.bonus_actions.map((action, i) => <FeatureBlock key={`bonus-${i}`} feature={action} />)}
+            {monster.features.reactions.length > 0 && <SectionHeading>Reactions</SectionHeading>}
             {monster.features.reactions.map((action, i) => <FeatureBlock key={`reaction-${i}`} feature={action} />)}
+            {(monster.features.legendary_actions.length > 0 || monster.features.legendary_intro || monster.features.legendary_actions_per_round != null) && (
+              <SectionHeading>Legendary Actions</SectionHeading>
+            )}
             {monster.features.legendary_intro && <p><DiceText text={monster.features.legendary_intro} /></p>}
             {monster.features.legendary_actions_per_round != null && (
               <p className="monster-stat-block-legendary-note">
@@ -173,6 +190,7 @@ export function MonsterStatBlock({ monster }: MonsterStatBlockProps) {
               </p>
             )}
             {monster.features.legendary_actions.map((action, i) => <FeatureBlock key={`legendary-${i}`} feature={action} />)}
+            {monster.features.mythic_actions.length > 0 && <SectionHeading>Mythic Actions</SectionHeading>}
             {monster.features.mythic_actions.map((action, i) => <FeatureBlock key={`mythic-${i}`} feature={action} />)}
           </section>
         </>
@@ -182,6 +200,7 @@ export function MonsterStatBlock({ monster }: MonsterStatBlockProps) {
         <>
           <div className="monster-stat-block-rule" aria-hidden />
           <section className="monster-stat-block-region" data-region="lore">
+            <RegionHeading>Lore</RegionHeading>
             {monster.features.traits.map((trait, i) => <FeatureBlock key={`trait-${i}`} feature={trait} />)}
             {monster.languages.length > 0 && (
               <p className="monster-stat-block-def-row">
