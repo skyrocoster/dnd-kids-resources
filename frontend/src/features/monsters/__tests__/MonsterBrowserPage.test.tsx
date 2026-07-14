@@ -62,6 +62,9 @@ const monsters: Monster[] = [
     languages: ['Auran'],
     cr: '1/4',
     cr_sort: 0.25,
+    creature_type: { category: 'humanoid', tags: [], swarm_size: null },
+    alignment: 'neutral',
+    senses: [{ type: 'darkvision', range: 60, note: null }],
     features: {
       ...monster({}).features,
       actions: [
@@ -91,6 +94,8 @@ const monsters: Monster[] = [
     senses: [{ type: 'darkvision', range: 60, note: null }],
     cr: '3',
     cr_sort: 3,
+    creature_type: { category: 'monstrosity', tags: [], swarm_size: null },
+    alignment: 'unaligned',
     features: {
       ...monster({}).features,
       actions: [
@@ -146,8 +151,6 @@ describe('MonsterBrowserPage', () => {
   })
 })
 
-// ── M2/M3 test stubs ────────────────────────────────────────────────────────────
-
 describe('Monster data (M2 shape)', () => {
   it('renders AC as {value, note} from the migrated shape', async () => {
     vi.spyOn(api, 'listMonsters').mockResolvedValue(monsters)
@@ -155,11 +158,12 @@ describe('Monster data (M2 shape)', () => {
     render(<MonsterBrowserPage />)
 
     await screen.findByRole('heading', { name: 'Aarakocra' })
-    expect(screen.getByText('Armor Class').nextElementSibling).toHaveTextContent('12')
+    const acLabel = screen.getByText('AC')
+    expect(acLabel.nextElementSibling).toHaveTextContent('12')
   })
 
   it.skip('hides sections when data is absent', () => {
-    // M2: empty traits/actions/reactions produce no DOM section
+    // X1: a bare beast hides Actions and Lore sections
   })
 })
 
