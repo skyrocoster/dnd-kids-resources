@@ -142,6 +142,8 @@ function syncStatusLabel(status: 'idle' | 'saving' | 'saved' | 'error'): string 
   }
 }
 
+type RoomFootprintSelection = { anchor: MapCell; current: MapCell; mode: 'click' | 'drag' } | null
+
 export function MapLabEditorPage() {
   const {
     state,
@@ -151,6 +153,7 @@ export function MapLabEditorPage() {
     selectRoom,
     deleteRoom,
     toggleCell,
+    setRoomFootprint,
     setActiveZ,
     resetToFixture,
     addDoor,
@@ -169,15 +172,21 @@ export function MapLabEditorPage() {
     deletePortal,
   } = useMapLabEditor(MAP_LAB_DUNGEON_ID)
   const [hoveredCell, setHoveredCell] = useState<MapCell | null>(null)
+  const [isCanvasFullscreen, setIsCanvasFullscreen] = useState(false)
+  const [roomFootprintSelection] = useState<RoomFootprintSelection>(null)
   const [placeDoorMode, setPlaceDoorMode] = useState(false)
   const [placePropMode, setPlacePropMode] = useState(false)
   const [placeStairMode, setPlaceStairMode] = useState(false)
   const [placePortalMode, setPlacePortalMode] = useState(false)
   const [placementError, setPlacementError] = useState<string | null>(null)
   const [showGhostFloor, setShowGhostFloor] = useState(false)
-  const zoomApi = useMapCanvasZoom()
+  const zoomApi = useMapCanvasZoom({ wheelZoomMode: 'always' })
   const [viewportSize, setViewportSize] = useState<ViewportSize>({ width: 0, height: 0 })
   const handleViewportResize = useCallback((size: ViewportSize) => setViewportSize(size), [])
+  const toggleCanvasFullscreen = useCallback(() => {
+    setIsCanvasFullscreen((active) => !active)
+  }, [])
+  void setRoomFootprint
 
   const floors = useMemo(
     () => [...new Set(state.layout.rooms.map((room) => room.z))].sort((a, b) => a - b),
@@ -287,7 +296,7 @@ export function MapLabEditorPage() {
   }
 
   return (
-    <div className="maplab-editor">
+    <div className="maplab-editor" data-footprint-selection-mode={roomFootprintSelection?.mode}>
       <h1 className="maplab-title">Map Lab Editor</h1>
       <p className="maplab-subtitle">Create rooms, paint their footprint, and place doors and props.</p>
 
@@ -461,13 +470,25 @@ export function MapLabEditorPage() {
           zoom={zoomApi.zoom}
           ariaLabel={`Editor floor map — Floor ${state.activeZ}`}
           variant="neutral"
+          fullscreen={isCanvasFullscreen}
+          onToggleFullscreen={toggleCanvasFullscreen}
+          onExitFullscreen={() => setIsCanvasFullscreen(false)}
           onWheelZoom={zoomApi.handleWheel}
           onPanStart={zoomApi.handlePointerDown}
           onPanMove={zoomApi.handlePointerMove}
           onPanEnd={zoomApi.handlePointerUp}
           onViewportResize={handleViewportResize}
+          panHint="Wheel to zoom. Drag empty canvas or use scrollbars to pan. Press Escape to exit fullscreen."
           controlsSlot={
             <>
+              <button
+                type="button"
+                className="maplab-pill-button maplab-zoom-button"
+                aria-label={isCanvasFullscreen ? 'Exit fullscreen map editor' : 'Enter fullscreen map editor'}
+                onClick={toggleCanvasFullscreen}
+              >
+                <FitIcon width={20} height={20} aria-hidden="true" />
+              </button>
               <button
                 type="button"
                 className="maplab-pill-button maplab-zoom-button"

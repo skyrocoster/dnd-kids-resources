@@ -1,5 +1,5 @@
 import { act, renderHook } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { useMapCanvasZoom } from '../useMapCanvasZoom'
 
 // Plain objects rather than real `Event`/`PointerEvent` instances — `target`/`currentTarget` are
@@ -85,6 +85,44 @@ describe('useMapCanvasZoom', () => {
     expect(result.current.zoom.pan.y).toBeCloseTo(50 * 1.1 - 50)
   })
 
+  it('plain wheel zooms and prevents default when wheelZoomMode is always, while Ctrl/Cmd still works', () => {
+    const { result } = renderHook(() => useMapCanvasZoom({ wheelZoomMode: 'always' }))
+    const container = { getBoundingClientRect: () => ({ left: 0, top: 0 }), scrollLeft: 20, scrollTop: 30 } as unknown as HTMLElement
+    const plainPreventDefault = vi.fn()
+    const modifierPreventDefault = vi.fn()
+
+    act(() =>
+      result.current.handleWheel(
+        makeWheelEvent({
+          deltaY: -100,
+          clientX: 40,
+          clientY: 50,
+          currentTarget: container,
+          preventDefault: plainPreventDefault,
+        }),
+      ),
+    )
+    expect(plainPreventDefault).toHaveBeenCalledTimes(1)
+    expect(result.current.zoom.scale).toBeCloseTo(1.1)
+    expect(result.current.zoom.pan.x).toBeCloseTo((20 + 40) * 1.1 - 40)
+    expect(result.current.zoom.pan.y).toBeCloseTo((30 + 50) * 1.1 - 50)
+
+    act(() =>
+      result.current.handleWheel(
+        makeWheelEvent({
+          ctrlKey: true,
+          deltaY: 100,
+          clientX: 40,
+          clientY: 50,
+          currentTarget: container,
+          preventDefault: modifierPreventDefault,
+        }),
+      ),
+    )
+    expect(modifierPreventDefault).toHaveBeenCalledTimes(1)
+    expect(result.current.zoom.scale).toBeCloseTo(1)
+  })
+
   it('pointer drag pans the canvas, ignoring drags started on interactive targets', () => {
     const { result } = renderHook(() => useMapCanvasZoom())
 
@@ -94,13 +132,19 @@ describe('useMapCanvasZoom', () => {
     expect(result.current.zoom.pan).toEqual({ x: -30, y: 20 })
     act(() => result.current.handlePointerUp())
 
-    // A drag that starts on a room/door/paint-cell hit target must not move the pan at all.
+    // A drag that starts on a room/door/paint-cell/marker hit target must not move the pan at all.
     const roomEl = document.createElement('div')
     roomEl.className = 'maplab-room'
     const inner = document.createElement('div')
     roomEl.appendChild(inner)
     act(() => result.current.handlePointerDown(makePointerEvent({ clientX: 0, clientY: 0, target: inner })))
     act(() => result.current.handlePointerMove(makePointerEvent({ clientX: 500, clientY: 500 })))
+    expect(result.current.zoom.pan).toEqual({ x: -30, y: 20 })
+
+    const propEl = document.createElement('div')
+    propEl.className = 'maplab-prop'
+    act(() => result.current.handlePointerDown(makePointerEvent({ clientX: 0, clientY: 0, target: propEl })))
+    act(() => result.current.handlePointerMove(makePointerEvent({ clientX: 600, clientY: 600 })))
     expect(result.current.zoom.pan).toEqual({ x: -30, y: 20 })
   })
 
@@ -119,4 +163,5 @@ describe('useMapCanvasZoom', () => {
     // No animation frame/timer is involved — the state is already settled synchronously.
     expect(result.current.zoom.scale).toBeCloseTo(0.5)
   })
+
 })

@@ -17,6 +17,10 @@ interface MapCanvasProps {
    * `--variant-*` custom properties from `theme.css` — the viewer wants `"neutral"`; the editor
    * doesn't set one yet (Stage E3 territory). */
   variant?: string
+  fullscreen?: boolean
+  onToggleFullscreen?: () => void
+  onExitFullscreen?: () => void
+  panHint?: string
   controlsSlot?: ReactNode
   children: ReactNode
 }
@@ -32,6 +36,9 @@ export function MapCanvas({
   onPanEnd,
   onViewportResize,
   variant,
+  fullscreen,
+  onExitFullscreen,
+  panHint,
   controlsSlot,
   children,
 }: MapCanvasProps) {
@@ -90,8 +97,26 @@ export function MapCanvas({
     return () => observer.disconnect()
   }, [onViewportResize])
 
+  useEffect(() => {
+    if (!fullscreen || !onExitFullscreen) return
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      event.preventDefault()
+      onExitFullscreen()
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [fullscreen, onExitFullscreen])
+
   return (
-    <div className="maplab-canvas-wrapper" data-variant={variant}>
+    <div
+      className="maplab-canvas-wrapper"
+      data-variant={variant}
+      data-fullscreen={fullscreen || undefined}
+      aria-label={fullscreen ? 'Fullscreen map editor workspace' : undefined}
+    >
       <div ref={viewportRef} className="maplab-canvas-viewport">
         <svg
           className="maplab-svg"
@@ -104,7 +129,16 @@ export function MapCanvas({
           {children}
         </svg>
       </div>
-      {controlsSlot && <div className="maplab-zoom-controls">{controlsSlot}</div>}
+      {controlsSlot && (
+        <div className="maplab-zoom-controls">
+          {controlsSlot}
+          {panHint && (
+            <span className="maplab-canvas-fullscreen-hint">
+              {panHint}
+            </span>
+          )}
+        </div>
+      )}
     </div>
   )
 }

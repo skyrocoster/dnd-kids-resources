@@ -384,6 +384,14 @@
   min-width: 0;
 }
 
+.maplab-canvas-wrapper[data-fullscreen] {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  padding: 1rem;
+  background: color-mix(in srgb, var(--md-surface) 92%, black 8%);
+}
+
 /* Panning is driven by scrollLeft/scrollTop from useMapCanvasZoom (see MapCanvas), not native
  * touch-scroll gestures — touch-action:none hands pointer events to that JS drag instead of
  * letting the browser's own touch-scroll compete with it. */
@@ -399,9 +407,22 @@
   background: var(--md-surface);
 }
 
+.maplab-canvas-wrapper[data-fullscreen] .maplab-canvas-viewport {
+  flex: 1 1 auto;
+  height: calc(100vh - 8.5rem);
+  min-height: 16rem;
+}
+
 .maplab-zoom-controls {
   display: flex;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 0.5rem;
+}
+
+.maplab-canvas-fullscreen-hint {
+  font-size: var(--type-body-sm-size);
+  color: var(--md-on-surface-variant);
 }
 
 /* `.maplab-zoom-button`'s base pill look comes from the shared `.maplab-pill-button`; this class

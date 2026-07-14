@@ -293,15 +293,12 @@ describe('MapLabEditorPage (Stage E2 — Canvas zoom & pan)', () => {
     expect(Number(svg.getAttribute('height'))).toBeCloseTo(640)
   })
 
-  it('Ctrl/⌘+wheel zooms toward the cursor position', async () => {
+  it('editor plain wheel zooms toward the cursor position without Ctrl', async () => {
     const { container } = await renderEditor()
     const svg = container.querySelector('.maplab-svg') as SVGSVGElement
     const viewport = container.querySelector('.maplab-canvas-viewport') as Element
 
     fireEvent.wheel(viewport, { deltaY: -100, clientX: 40, clientY: 40 })
-    expect(Number(svg.getAttribute('width'))).toBeCloseTo(CONTENT_PX_AT_SCALE_1)
-
-    fireEvent.wheel(viewport, { ctrlKey: true, deltaY: -100, clientX: 40, clientY: 40 })
     expect(Number(svg.getAttribute('width'))).toBeCloseTo(CONTENT_PX_AT_SCALE_1 * 1.1)
   })
 
@@ -343,6 +340,80 @@ describe('MapLabEditorPage (Stage E2 — Canvas zoom & pan)', () => {
     expect(Number(svg.getAttribute('width'))).toBeCloseTo(640)
     expect(viewport.scrollLeft).toBe(0)
     expect(viewport.scrollTop).toBe(0)
+  })
+})
+
+describe('MapLabEditorPage (Phase K scaffolding)', () => {
+  const singleRoomLayout = {
+    meta: { cellSizeFt: 5, padding: 3 },
+    rooms: [{ room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0]], title: 'Room 1' }],
+    doors: [],
+    stairs: [],
+    floors: [{ z: 0, title: 'Ground Floor' }],
+    props: [{ prop_id: 1, kind: 'chest', z: 0, cell: [0, 0], title: 'Marker Prop', hidden: false, locked: false, trapped: false }],
+    portals: [],
+  }
+
+  beforeEach(() => {
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: singleRoomLayout })
+    vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: singleRoomLayout })
+  })
+
+  it('K1: fullscreen toggle and Escape exit the fullscreen workspace', async () => {
+    const { container } = render(<MapLabEditorPage />)
+    await flush()
+
+    const wrapper = container.querySelector('.maplab-canvas-wrapper')
+    expect(wrapper).not.toHaveAttribute('data-fullscreen')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Enter fullscreen map editor' }))
+    expect(wrapper).toHaveAttribute('data-fullscreen')
+    expect(screen.getByText(/wheel to zoom\. drag empty canvas or use scrollbars to pan\./i)).toBeInTheDocument()
+
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(wrapper).not.toHaveAttribute('data-fullscreen')
+  })
+
+  it('K1: fullscreen workspace keeps scrollbars available and drag-pan working on empty canvas but not on marker targets', async () => {
+    const { container } = render(<MapLabEditorPage />)
+    await flush()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Enter fullscreen map editor' }))
+
+    const wrapper = container.querySelector('.maplab-canvas-wrapper') as HTMLElement
+    const viewport = container.querySelector('.maplab-canvas-viewport') as HTMLElement
+    const prop = container.querySelector('.maplab-prop') as Element
+
+    expect(wrapper).toHaveAttribute('data-fullscreen')
+    expect(viewport).toBeInTheDocument()
+
+    fireEvent.pointerDown(prop, { clientX: 0, clientY: 0 })
+    fireEvent.pointerMove(window, { clientX: 80, clientY: 45 })
+    fireEvent.pointerUp(window)
+    expect(viewport.scrollLeft).toBe(0)
+    expect(viewport.scrollTop).toBe(0)
+
+    fireEvent.pointerDown(viewport, { clientX: 0, clientY: 0 })
+    fireEvent.pointerMove(window, { clientX: 80, clientY: 45 })
+    fireEvent.pointerUp(window)
+    expect(viewport.scrollLeft).toBe(-80)
+    expect(viewport.scrollTop).toBe(-45)
+  })
+
+  it.skip('K2: drag rectangle commit updates the selected room footprint', () => {
+    // K0 scaffolding only.
+  })
+
+  it.skip('K2: two-click rectangle commit updates the selected room footprint', () => {
+    // K0 scaffolding only.
+  })
+
+  it.skip('K2: Escape cancels a pending room footprint preview', () => {
+    // K0 scaffolding only.
+  })
+
+  it.skip('K2: preview-only footprint state does not autosave', () => {
+    // K0 scaffolding only.
   })
 })
 

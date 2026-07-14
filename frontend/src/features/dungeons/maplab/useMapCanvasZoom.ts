@@ -13,6 +13,12 @@ export interface ViewportSize {
   height: number
 }
 
+export type WheelZoomMode = 'modifier' | 'always'
+
+export interface UseMapCanvasZoomOptions {
+  wheelZoomMode?: WheelZoomMode
+}
+
 export const MIN_SCALE = 0.25
 export const MAX_SCALE = 3
 export const BASE_PX_PER_UNIT = 64
@@ -30,12 +36,25 @@ interface DragOrigin {
   pan: { x: number; y: number }
 }
 
-/** Interactive elements a drag-pan must not start on top of — matches the room/door/paint-cell/
- * door-placement hit targets in `MapLabPage.tsx`/`MapLabEditorPage.tsx`, so a click that's meant to
- * select a room or place a door never gets swallowed as the start of a pan gesture. */
-const NON_PAN_TARGET_SELECTOR = '.maplab-room, .maplab-door, .maplab-stair, .maplab-paint-cell, .maplab-door-placement-edge'
+/** Interactive elements a drag-pan must not start on top of — matches the room/door/marker/
+ * placement hit targets in `MapLabPage.tsx`/`MapLabEditorPage.tsx`, so a click that's meant to
+ * select or place something never gets swallowed as the start of a pan gesture. */
+const NON_PAN_TARGET_SELECTOR = [
+  '.maplab-room',
+  '.maplab-door',
+  '.maplab-stair',
+  '.maplab-prop',
+  '.maplab-portal',
+  '.maplab-paint-cell',
+  '.maplab-room-footprint-preview',
+  '.maplab-room-footprint-anchor',
+  '.maplab-door-placement-edge',
+  '.maplab-prop-placement-cell',
+  '.maplab-stair-placement-cell',
+  '.maplab-portal-placement-cell',
+].join(', ')
 
-export function useMapCanvasZoom() {
+export function useMapCanvasZoom({ wheelZoomMode = 'modifier' }: UseMapCanvasZoomOptions = {}) {
   const [zoom, setZoom] = useState<ZoomState>({ scale: 1, pan: { x: 0, y: 0 } })
   const dragOrigin = useRef<DragOrigin | null>(null)
 
@@ -66,14 +85,19 @@ export function useMapCanvasZoom() {
     setZoom({ scale, pan: { x: 0, y: 0 } })
   }, [])
 
-  // Ctrl/⌘+wheel only — a plain wheel is left for native scroll of the `overflow:auto` viewport.
-  // Zooms toward the cursor: `e.currentTarget` is the viewport div the listener is bound to
+  // Modifier-only by default; editor mode can opt into plain-wheel zoom. Zooms toward the cursor:
+  // `e.currentTarget` is the viewport div the listener is bound to
   // (`MapCanvas` attaches this as a native `wheel` listener), so its scroll position + bounding
   // rect give the cursor's position within the scrolled content, which is held fixed across the
   // scale change by solving the new pan for it.
   const handleWheel = useCallback((e: WheelEvent) => {
-    if (!e.ctrlKey && !e.metaKey) return
-    e.preventDefault()
+    const modifierPressed = e.ctrlKey || e.metaKey
+    if (wheelZoomMode === 'modifier' && !modifierPressed) return
+    if (wheelZoomMode === 'always' || modifierPressed) {
+      e.preventDefault()
+    } else {
+      return
+    }
 
     const container = e.currentTarget as HTMLElement | null
     const delta = e.deltaY > 0 ? -WHEEL_SCALE_STEP : WHEEL_SCALE_STEP
@@ -98,7 +122,7 @@ export function useMapCanvasZoom() {
         },
       }
     })
-  }, [])
+  }, [wheelZoomMode])
 
   const handlePointerDown = useCallback(
     (e: PointerEvent) => {
