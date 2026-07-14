@@ -235,72 +235,12 @@ before any production fold-in.
 
 ---
 
-## Design Phase K — Map Lab Editor QOL
+## Design Phase K Reference — Map Lab Editor QOL (shipped)
 
-This phase improves the editor canvas ergonomics without changing the persisted `MapLayout` schema:
-fullscreen editing, wheel-first zoom, explicit pan affordances, and faster multi-cell room sizing. It builds
-only on existing Map Lab editor/viewer primitives (`MapCanvas`, `useMapCanvasZoom`, `mapLabEditorReducer`,
-`MapLabEditorPage`) and must not touch production dungeon pages or seed data.
-
-**Current implementation anchors (read this before coding; do not re-explore unless these files drift):**
-- `MapLabEditorPage.tsx` owns editor-only state: `hoveredCell`, `roomFootprintSelection`, placement-mode
-  booleans, `placementError`, `showGhostFloor`, `zoomApi = useMapCanvasZoom({ wheelZoomMode: 'always' })`,
-  `viewportSize`, `bounds`, `viewBox`, and all SVG overlay rendering. Room painting is the final
-  `maplab-paint-overlay`: one `<rect.maplab-paint-cell>` per bounded grid cell, visible only when no
-  door/prop/stair/portal placement mode is active and `state.selectedRoomId !== null`; paintable cells support
-  drag/two-click rectangular footprints through `setRoomFootprint`, while owned selected cells still call
-  `toggleCell` for single-cell cleanup when no footprint anchor is active.
-- `MapCanvas.tsx` owns the scrollable viewport. It renders `.maplab-canvas-wrapper` →
-  `.maplab-canvas-viewport` (`overflow:auto`) → `<svg.maplab-svg width={bounds*scale}>`, and attaches native
-  `wheel`/`pointerdown` listeners to the viewport plus `pointermove`/`pointerup` on `window`. Pan is applied
-  by setting `scrollLeft`/`scrollTop` from `zoom.pan`.
-- `useMapCanvasZoom.ts` defaults to Ctrl/⌘ wheel zoom for viewer consumers; editor opts into plain-wheel zoom
-  with `wheelZoomMode: 'always'`. `NON_PAN_TARGET_SELECTOR` excludes room/door/stair/prop/portal markers,
-  paint cells, footprint preview classes, and placement hit targets from drag-pan starts so pan never steals
-  selection gestures.
-- `maplabEditor.ts` is the pure reducer seam. `toggleCell` is single-cell add/remove, using
-  `absoluteCells`, `canPaintCell`, `normalizeCells`, `roomOfCell`, and `isConnectedPolyomino`; any multi-cell
-  room sizing must land here as a reducer action, not as repeated UI calls to `toggleCell`.
-- `useMapLabEditor.ts` wraps reducer actions and schedules autosave only through `apply()`. Selection-only
-  dispatches bypass autosave. K2's committed room-footprint action must go through `apply()`; preview/cancel
-  state should stay local UI state and must not autosave.
-- CSS is split: shared canvas/tooling rules live in `MapLabPage.css`; editor-only rules live in
-  `MapLabEditor.css`. Fullscreen canvas shell belongs in shared CSS only if viewer can safely ignore it;
-  room-footprint preview styles belong in editor CSS.
-- Existing tests to extend: `__tests__/useMapCanvasZoom.test.ts` for wheel/pan hook semantics;
-  `__tests__/maplabEditor.test.ts` for rectangle reducer behavior; `__tests__/MapLabEditorPage.test.tsx`
-  for fullscreen toggle, page interactions, autosave, and SVG overlay behavior.
-
-**Interaction decisions locked for this phase:**
-- Fullscreen is an in-app editor workspace overlay (`position: fixed`, high z-index), not the browser
-  Fullscreen API. This avoids permission/browser variance in tests and keeps the app toolbar/zoom controls
-  under React control. The fullscreen button lives in `MapCanvas.controlsSlot`; `Escape` exits fullscreen.
-- In editor mode only, plain wheel over `.maplab-canvas-viewport` zooms toward the cursor and calls
-  `preventDefault()`. Viewer behavior can remain Ctrl/⌘-wheel unless K1 deliberately opts it into the new
-  mode; do not regress the shipped viewer tests.
-- Panning remains available through scrollbars and drag-pan on empty canvas. K1 should also add visible copy
-  or an accessible label making this explicit; do not remove `overflow:auto`.
-- Room footprint selection creates rectangular footprints. It does not attempt arbitrary lasso/polyomino
-  drawing. Existing single-cell add/remove remains available for fine edits after creation.
-- Two-click selection means: first click anchors one corner; moving/hovering previews the rectangle; second
-  click commits all valid cells between the two corners. `Escape`, floor changes, room changes, and placement
-  mode changes cancel the pending anchor.
-- Drag selection means pointer down on a paintable cell anchors one corner, pointer move previews the
-  rectangle, pointer up commits it. A click with no meaningful movement still behaves like the two-click first
-  anchor path, not an accidental large commit.
-- Rectangle commit must be atomic: if any target cell is occupied by another room on the same floor or would
-  violate the selected room's connectivity rules, the reducer returns unchanged and the UI shows
-  `placementError`. Different floors may still share `[x,y]`.
-
-| Stage | Model | Summary | Deliverables |
-|-------|-------|---------|--------------|
-| **K0 — Scaffolding** | Haiku | Add compile-only contracts for K1/K2 without changing behavior. | Types/actions/props/classes/test stubs named below; app renders unchanged. |
-| **K1 — Fullscreen canvas + wheel zoom default** | Sonnet | Implement editor fullscreen workspace and make plain wheel zoom the editor default. | Editor fullscreen state, controls, CSS, Escape handling, wheel-mode hook, drag/scrollbar pan retained, tests. |
-| **K2 — Multi-cell room footprint selection** | Sonnet | Implement rectangular room sizing by drag and two-click corner selection. | Rectangle preview state, atomic reducer action, paint overlay pointer handlers, cancel/error behavior, autosave only on commit, tests. |
-| **K3 — Design pass** | Sonnet | Review combined QOL surface for clarity, accessibility, touch/mouse ergonomics, and regressions. | Polish copy/controls/visual states, verify no viewer regressions, final tests/typecheck/live gate. |
-
-**Sequencing:** K0 (Haiku, first) → K1 → K2 → K3. K1 and K2 both depend on the K0 action/type stubs; K3
-must run after both implementations so it can evaluate the combined editor workflow.
+Phase K added in-app fullscreen editing, editor-only cursor-centered wheel zoom while preserving scrollbar and
+empty-canvas drag pan, and atomic rectangular room footprints via drag or two-click selection. `MapCanvas`,
+`useMapCanvasZoom`, `mapLabEditorReducer`, and `MapLabEditorPage` remain the reusable seams; the persisted
+`MapLayout` schema and production dungeon pages were unchanged. See the shipped-stage table for K0–K3 detail.
 
 ## Known debt / deferred work (NOT yet built)
 
