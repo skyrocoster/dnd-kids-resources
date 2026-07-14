@@ -27,7 +27,6 @@ import {
   roomsOnZ,
   stairCellForZ,
   stairEndpointsForZ,
-  stairPresentation,
   type Inspectable,
   type MapCell,
   type MapDoor,
@@ -481,9 +480,6 @@ export function MapLabPage() {
             const session = stairSession(stair)
             const { dx, dy, grouped } = markerOffset(layout, activeZ, cell, 'stair', stair.stair_id)
             const targetZ = otherFloorZ(stair, activeZ)
-            const presentation = stairPresentation(stair, activeZ, session)
-            const disarmedLabel = stair.trapped && session.trapDisarmed ? ' — trap disarmed' : ''
-            const label = `${stair.title ?? `Stair ${stair.stair_id}`} — ${presentation.label}${disarmedLabel} — go to floor ${targetZ}`
             return (
               <StairMarker
                 key={stair.stair_id}
@@ -495,7 +491,7 @@ export function MapLabPage() {
                 trapDisarmed={stair.trapped && session.trapDisarmed}
                 offset={{ dx, dy }}
                 grouped={grouped}
-                label={label}
+                destinationLabel={`go to floor ${targetZ}`}
                 onMouseEnter={() => setHoveredInspectable({ kind: 'stair', id: stair.stair_id })}
                 onMouseLeave={() => setHoveredInspectable(null)}
                 onFocus={() => setFocusedInspectable({ kind: 'stair', id: stair.stair_id })}

@@ -1,6 +1,6 @@
 import { PortalIcon } from '../../../components/icons'
 import { BadgeRing } from './BadgeRing'
-import { markerBadges } from './markerBadges'
+import { collapsedStatusLabel, markerBadges } from './markerBadges'
 import {
   effectivePassageState,
   GROUPED_MARKER_RADIUS_FRACTION,
@@ -58,7 +58,7 @@ export function PortalMarker({
   // Keep the authored trap badge after disarming so the confirmation badge can communicate both facts.
   const badges = markerBadges({ ...portal, locked: effective.locked }, effective.trapDisarmed)
   const dasharray = effective.hidden ? '4 3' : undefined
-  const label = `${portal.title ?? `Portal ${portal.portal_id}`} — ${badges.length ? badges.map((badge) => badge.label).join(', ') : presentation.label}`
+  const label = `${portal.title ?? `Portal ${portal.portal_id}`} — ${collapsedStatusLabel(badges, presentation.label)}`
 
   return (
     <g

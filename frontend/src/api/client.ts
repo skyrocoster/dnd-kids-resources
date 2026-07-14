@@ -8,6 +8,7 @@ import type {
   Spell,
   SpellInput,
   Monster,
+  MonsterInput,
   Weapon,
   WeaponInput,
   Item,
@@ -77,10 +78,19 @@ export const createSpell = (spell: SpellInput) => post<Spell>('/spells', spell)
 export const updateSpell = (id: number, spell: SpellInput) => put<Spell>(`/spells/${id}`, spell)
 export const deleteSpell = (id: number) => del(`/spells/${id}`)
 
-// Monsters (read-only)
+// Monsters (read-only; CRUD stubs for M3)
 export const listMonsters = () => get<Monster[]>('/monsters')
 export const getMonster = (id: number) => get<Monster>(`/monsters/${id}`)
 export const getMonsterByName = (name: string) => get<Monster>(`/monsters/by-name/${encodeURIComponent(name)}`)
+export const createMonster = (_monster: MonsterInput): Promise<Monster> => {
+  throw new Error('not implemented')
+}
+export const updateMonster = (_id: number, _monster: MonsterInput): Promise<Monster> => {
+  throw new Error('not implemented')
+}
+export const deleteMonster = (_id: number): Promise<void> => {
+  throw new Error('not implemented')
+}
 
 // Weapons
 export const listWeapons = () => get<Weapon[]>('/weapons')

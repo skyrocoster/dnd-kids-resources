@@ -1,5 +1,5 @@
 import { BadgeRing } from './BadgeRing'
-import { markerBadges } from './markerBadges'
+import { collapsedStatusLabel, markerBadges } from './markerBadges'
 import {
   effectivePassageState,
   GROUPED_MARKER_RADIUS_FRACTION,
@@ -31,9 +31,8 @@ interface StairMarkerProps {
    * so `gridMarkerOffset`'s spacing actually separates same-cell markers instead of stacking
    * full-size circles a few px apart. */
   grouped?: boolean
-  /** Overrides the default `title — state` label (the viewer appends the floor-jump target and a
-   * disarmed suffix). */
-  label?: string
+  /** Viewer-only destination appended after the complete status narration. */
+  destinationLabel?: string
   onMouseEnter?: () => void
   onMouseLeave?: () => void
   onFocus?: () => void
@@ -53,7 +52,7 @@ export function StairMarker({
   trapDisarmed,
   offset,
   grouped,
-  label,
+  destinationLabel,
   onMouseEnter,
   onMouseLeave,
   onFocus,
@@ -71,7 +70,7 @@ export function StairMarker({
   // Keep the authored trap badge after disarming so the confirmation badge can communicate both facts.
   const badges = markerBadges({ ...stair, locked: effective.locked }, trapDisarmed ?? effective.trapDisarmed)
   const dasharray = effective.hidden ? '4 3' : undefined
-  const resolvedLabel = label ?? `${stair.title ?? `Stair ${stair.stair_id}`} — ${badges.length ? badges.map((badge) => badge.label).join(', ') : presentation.label}`
+  const resolvedLabel = `${stair.title ?? `Stair ${stair.stair_id}`} — ${collapsedStatusLabel(badges, presentation.label)}${destinationLabel ? ` — ${destinationLabel}` : ''}`
 
   return (
     <g

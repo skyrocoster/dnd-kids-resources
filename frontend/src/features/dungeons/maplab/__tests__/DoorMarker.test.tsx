@@ -65,9 +65,9 @@ describe('DoorBadgeLayer collapsed status (M3)', () => {
     expect(container.querySelector('.maplab-door-icon')).not.toBeInTheDocument()
   })
 
-  it('narrates every individual status in the interactive door label', () => {
+  it('names the Layers disc and narrates every individual status in the interactive door label', () => {
     const { getByRole } = renderDoor(door({ locked: true, trapped: true }))
-    expect(getByRole('button').getAttribute('aria-label')).toMatch(/Trapped.*Locked/)
+    expect(getByRole('button').getAttribute('aria-label')).toMatch(/Multiple statuses: Trapped, Locked/)
   })
 })
 

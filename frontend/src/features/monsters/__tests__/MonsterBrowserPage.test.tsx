@@ -67,3 +67,29 @@ describe('MonsterBrowserPage', () => {
     await waitFor(() => expect(screen.getByText(/server error/)).toBeInTheDocument())
   })
 })
+
+// ── M2/M3 test stubs ────────────────────────────────────────────────────────────
+
+describe('Monster data (M2 shape)', () => {
+  it.skip('renders AC as {value, note} from the migrated shape', () => {
+    // M2: AC shape changes from {"13": null} to {"value": 13, "note": null}
+  })
+
+  it.skip('hides sections when data is absent', () => {
+    // M2: empty traits/actions/reactions produce no DOM section
+  })
+})
+
+describe('Monster CRUD (M3)', () => {
+  it.skip('createMonster sends POST and returns the created monster', () => {
+    // M3: stub becomes real when CRUD endpoints land
+  })
+
+  it.skip('updateMonster sends PUT and returns updated fields', () => {
+    // M3: stub becomes real when CRUD endpoints land
+  })
+
+  it.skip('deleteMonster sends DELETE and removes the monster', () => {
+    // M3: stub becomes real when CRUD endpoints land
+  })
+})

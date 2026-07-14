@@ -3,7 +3,7 @@ from typing import List, Optional
 import json
 
 from ..db import get_db, dict_from_row, parse_json_value
-from ..schemas import Monster
+from ..schemas import Monster, MonsterCreate, MonsterUpdate
 
 router = APIRouter(prefix="/api", tags=["monsters"])
 
@@ -73,3 +73,23 @@ def get_monster_by_name(name: str):
         if not row:
             raise HTTPException(status_code=404, detail="Monster not found")
         return _parse_monster_row(row)
+
+
+# ── CRUD stubs (M3 will implement) ──────────────────────────────────────────────
+
+@router.post("/monsters", status_code=501)
+def create_monster(_monster: MonsterCreate):
+    """Create a new monster (stub — M2 replaces schema, M3 implements)."""
+    raise HTTPException(status_code=501, detail="Not implemented")
+
+
+@router.put("/monsters/{monster_id}", status_code=501)
+def update_monster(monster_id: int, _monster: MonsterUpdate):
+    """Update a monster (stub — M3 implements)."""
+    raise HTTPException(status_code=501, detail="Not implemented")
+
+
+@router.delete("/monsters/{monster_id}", status_code=501)
+def delete_monster(monster_id: int):
+    """Delete a monster (stub — M3 implements)."""
+    raise HTTPException(status_code=501, detail="Not implemented")

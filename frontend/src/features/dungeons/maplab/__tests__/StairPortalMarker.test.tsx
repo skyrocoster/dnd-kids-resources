@@ -56,9 +56,9 @@ describe('StairMarker bounded badge (M2)', () => {
     expect(container.querySelector('.maplab-stair-marker')).toHaveAttribute('stroke-dasharray')
   })
 
-  it('narrates all flags in ARIA label', () => {
+  it('names the Layers disc and narrates all flags in the ARIA label', () => {
     const { getByRole } = render(<svg><StairMarker stair={stair({ locked: true, trapped: true })} cellSize={40} cell={[1, 1]} activeZ={1} trapDisarmed /></svg>)
-    expect(getByRole('button').getAttribute('aria-label')).toMatch(/Trapped.*Locked/)
+    expect(getByRole('button').getAttribute('aria-label')).toMatch(/Multiple statuses: Trapped, Locked, Trap disarmed/)
   })
 
   it('stays within its owning cell', () => {
@@ -99,9 +99,9 @@ describe('PortalMarker bounded badge (M2)', () => {
     expect(container.querySelector('.maplab-portal-marker')).toHaveAttribute('stroke-dasharray')
   })
 
-  it('narrates all flags in ARIA label', () => {
+  it('names the Layers disc and narrates all flags in the ARIA label', () => {
     const { getByRole } = render(<svg><PortalMarker portal={portal({ locked: true, trapped: true })} cellSize={40} session={{ isOpen: true, isLocked: true, trapDisarmed: true }} /></svg>)
-    expect(getByRole('button').getAttribute('aria-label')).toMatch(/Trapped.*Locked/)
+    expect(getByRole('button').getAttribute('aria-label')).toMatch(/Multiple statuses: Trapped, Locked, Trap disarmed/)
   })
 
   it('stays within its owning cell', () => {
@@ -123,7 +123,7 @@ describe('StairMarker', () => {
     const badges = container.querySelectorAll('.maplab-badge')
     expect(badges).toHaveLength(1)
     expect(badges[0]).toHaveAttribute('data-badge', 'multiple-statuses')
-    expect(getByRole('button', { name: 'Stair 1 — Trapped, Locked, Trap disarmed' })).toBeTruthy()
+    expect(getByRole('button', { name: 'Stair 1 — Multiple statuses: Trapped, Locked, Trap disarmed' })).toBeTruthy()
   })
 
   it('keeps the collapsed badge in the grouped marker sub-slot', () => {
@@ -148,7 +148,7 @@ describe('PortalMarker', () => {
     expect(container.querySelector('.maplab-badge-ring')).toBeTruthy()
     expect(container.querySelectorAll('.maplab-badge')).toHaveLength(1)
     expect(container.querySelector('.maplab-badge')).toHaveAttribute('data-badge', 'multiple-statuses')
-    expect(getByRole('button', { name: 'Portal 1 — Trapped, Locked, Trap disarmed' })).toBeTruthy()
+    expect(getByRole('button', { name: 'Portal 1 — Multiple statuses: Trapped, Locked, Trap disarmed' })).toBeTruthy()
   })
 
   it('keeps the collapsed badge in the grouped marker sub-slot', () => {

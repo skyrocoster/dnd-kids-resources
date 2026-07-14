@@ -112,6 +112,7 @@ class Monster(BaseModel):
     action: Optional[List[Dict[str, Any]]] = None
 
 
+# TODO(M2): replace MonsterCreate/MonsterUpdate with M1 target shape
 class MonsterCreate(BaseModel):
     name: str
     ac: Optional[Dict[str, Any]] = None

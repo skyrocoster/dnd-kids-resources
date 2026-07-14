@@ -63,9 +63,9 @@ describe('PropMarker bounded badge (M2)', () => {
     expect(container.querySelector('.maplab-prop-marker')).toHaveAttribute('stroke-dasharray')
   })
 
-  it('narrates every active status in the ARIA label', () => {
+  it('names the Layers disc and narrates every active status in the ARIA label', () => {
     const { getByRole } = renderMarker(prop({ locked: true, trapped: true }))
-    expect(getByRole('button').getAttribute('aria-label')).toMatch(/Trapped.*Locked/)
+    expect(getByRole('button').getAttribute('aria-label')).toMatch(/Multiple statuses: Trapped, Locked/)
   })
   it('uses encounter identity for encounter props regardless of status', () => {
     const { container } = renderMarker(prop({ kind: 'encounter', trapped: true }))
@@ -79,7 +79,7 @@ describe('PropMarker bounded badge (M2)', () => {
 
     expect(container.querySelectorAll('.maplab-badge')).toHaveLength(1)
     expect(container.querySelector('.maplab-badge')).toHaveAttribute('data-badge', 'multiple-statuses')
-    expect(getByRole('button', { name: 'Treasure chest — Trapped, Locked, Loot assigned' })).toBeTruthy()
+    expect(getByRole('button', { name: 'Treasure chest — Multiple statuses: Trapped, Locked, Loot assigned' })).toBeTruthy()
   })
 
   it('does not render legacy corner or loot badges when BadgeRing is active', () => {

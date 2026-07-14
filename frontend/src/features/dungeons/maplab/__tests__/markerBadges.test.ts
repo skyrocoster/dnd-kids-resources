@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest'
 import { MultipleStatusesIcon } from '../../../../components/icons'
 import {
   boundedBadgeLayout,
+  collapsedStatusLabel,
   collapsedStatusDescriptor,
   linearBadgeLayout,
   markerBadges,
@@ -110,6 +111,12 @@ describe('collapsedStatusDescriptor (M1)', () => {
   it('uses the semantically named Layers alias for multiple statuses', () => {
     expect(MultipleStatusesIcon).toBe(Layers)
     expect(MULTIPLE_STATUSES_BADGE.icon).toBe(Layers)
+  })
+
+  it('names the Layers disc as multiple statuses while preserving every flag', () => {
+    expect(collapsedStatusLabel(markerBadges(prop({ locked: true, trapped: true })), 'Clear')).toBe(
+      'Multiple statuses: Trapped, Locked',
+    )
   })
 
   it('preserves the full MarkerBadge list for inspector and accessible-label consumers', () => {

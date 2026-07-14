@@ -155,7 +155,7 @@ export function MapCanvas({
           viewBox={viewBox}
           width={widthPx}
           height={heightPx}
-          role="img"
+          role="group"
           aria-label={ariaLabel}
         >
           {children}

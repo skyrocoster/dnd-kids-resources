@@ -29,9 +29,9 @@ describe('MapLabPage (M0a scaffold)', () => {
 })
 
 describe('MapLabPage (M1 SVG renderer)', () => {
-  it('renders SVG canvas with both Case-1 rooms and the door', () => {
+  it('renders an accessible SVG group with both Case-1 rooms and the door', () => {
     render(<MapLabPage />)
-    expect(screen.getByRole('img', { name: /dungeon floor map/i })).toBeInTheDocument()
+    expect(screen.getByRole('group', { name: /dungeon floor map/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Combat Training Hall' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Armoury' })).toBeInTheDocument()
     expect(screen.getByText('Heavy Stone Door')).toBeInTheDocument()
@@ -68,6 +68,13 @@ describe('MapLabPage (M1 SVG renderer)', () => {
     const door = container.querySelector('.maplab-door') as Element
     const layer = container.querySelector('.maplab-door-badge-layer') as Element
     expect(door.compareDocumentPosition(layer) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('keeps map controls available to assistive technology inside the named canvas group', () => {
+    render(<MapLabPage />)
+
+    const canvas = screen.getByRole('group', { name: /dungeon floor map/i })
+    expect(canvas).toContainElement(screen.getByRole('button', { name: 'Combat Training Hall' }))
   })
 })
 

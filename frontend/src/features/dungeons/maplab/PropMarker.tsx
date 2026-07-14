@@ -1,7 +1,7 @@
 import { ItemIcon } from '../../../components/icons'
 import { BadgeRing } from './BadgeRing'
 import { PROP_KIND_ICONS } from './fixtureTypes'
-import { markerBadges } from './markerBadges'
+import { collapsedStatusLabel, markerBadges } from './markerBadges'
 import {
   GROUPED_MARKER_RADIUS_FRACTION,
   MARKER_RADIUS_FRACTION,
@@ -83,7 +83,7 @@ export function PropMarker({
   const Icon = PROP_KIND_ICONS[prop.kind] ?? ItemIcon
   const badges = markerBadges(prop)
   const dasharray = prop.hidden ? '4 3' : undefined
-  const label = `${prop.title ?? prop.kind} — ${badges.length ? badges.map((badge) => badge.label).join(', ') : presentation.label}`
+  const label = `${prop.title ?? prop.kind} — ${collapsedStatusLabel(badges, presentation.label)}`
 
   return (
     <g

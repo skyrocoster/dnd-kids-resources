@@ -1,5 +1,7 @@
 """Tests for monster endpoints."""
 
+import pytest
+
 
 def test_list_monsters(test_client):
     """Test GET /api/monsters returns a list."""
@@ -49,3 +51,45 @@ def test_get_monster_by_name_not_found(test_client):
     """Test 404 for a nonexistent monster name."""
     response = test_client.get("/api/monsters/by-name/NoSuchBeast")
     assert response.status_code == 404
+
+
+# ── M2/M3 test stubs ────────────────────────────────────────────────────────────
+
+@pytest.mark.skip(reason="M2: seed-migration shape (AC→value/note, tag-strip, cr_sort)")
+def test_migrated_ac_shape():
+    """Assert the M2 migration transforms inverted AC keys to {value, note}."""
+
+
+@pytest.mark.skip(reason="M2: tag-stripping — {@creature x} becomes display text")
+def test_migrated_tag_stripping():
+    """Assert {@tag } markup is removed from action/trait text during migration."""
+
+
+@pytest.mark.skip(reason="M3: POST /monsters creates and returns a new monster")
+def test_create_monster():
+    """POST /api/monsters with valid data returns 201 and persists."""
+
+
+@pytest.mark.skip(reason="M3: POST /monsters with duplicate name returns 409")
+def test_create_monster_duplicate():
+    """POST /api/monsters with an existing name returns 409."""
+
+
+@pytest.mark.skip(reason="M3: PUT /monsters/{id} updates fields")
+def test_update_monster():
+    """PUT /api/monsters/{id} returns the updated monster."""
+
+
+@pytest.mark.skip(reason="M3: PUT /monsters/{id} returns 404 for unknown id")
+def test_update_nonexistent_monster():
+    """PUT /api/monsters/99999 returns 404."""
+
+
+@pytest.mark.skip(reason="M3: DELETE /monsters/{id} returns 204")
+def test_delete_monster():
+    """DELETE /api/monsters/{id} returns 204, then GET returns 404."""
+
+
+@pytest.mark.skip(reason="M3: DELETE /monsters/{id} returns 404 for unknown id")
+def test_delete_nonexistent_monster():
+    """DELETE /api/monsters/99999 returns 404."""

@@ -36,6 +36,14 @@ export function collapsedStatusDescriptor(badges: MarkerBadge[]): CollapsedStatu
   return MULTIPLE_STATUSES_BADGE
 }
 
+/** Names the collapsed disc for assistive technology while retaining every underlying status.
+ * The explicit prefix makes the Layers glyph understandable without relying on its shape or color. */
+export function collapsedStatusLabel(badges: MarkerBadge[], fallback: string): string {
+  if (badges.length === 0) return fallback
+  if (badges.length === 1) return badges[0].label
+  return `${MULTIPLE_STATUSES_BADGE.label}: ${badges.map((badge) => badge.label).join(', ')}`
+}
+
 // ─── M2: Bounded on-square placement ────────────────────────────────────────
 
 /** A single badge disc position and radius that is geometrically bounded to stay

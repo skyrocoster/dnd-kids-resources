@@ -1,5 +1,5 @@
 import { doorPresentation, doorSwingGeometry, doorWallSegment, effectivePassageState, type MapDoor, type PassageSessionState } from './maplabModel'
-import { collapsedStatusDescriptor, markerBadges } from './markerBadges'
+import { collapsedStatusDescriptor, collapsedStatusLabel, markerBadges } from './markerBadges'
 
 const DOOR_BADGE_RADIUS = 8
 const DOOR_LEAF_STROKE_WIDTH = 6
@@ -75,7 +75,7 @@ export function DoorMarker({
   const presentation = doorPresentation(door, session)
   const effective = effectivePassageState(door, session)
   const badges = markerBadges({ ...door, locked: effective.locked }, effective.trapDisarmed)
-  const stateLabel = badges.length ? badges.map((badge) => badge.label).join(', ') : presentation.label
+  const stateLabel = collapsedStatusLabel(badges, presentation.label)
   const label = `${door.title ?? `Door ${door.door_id}`} — ${stateLabel}, ${presentation.isOpen ? 'open' : 'closed'}`
   const isHidden = effective.hidden
   const dasharray = isHidden ? HIDDEN_DOOR_DASHARRAY : undefined

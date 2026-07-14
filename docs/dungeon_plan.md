@@ -5,7 +5,7 @@ Single reference for the dungeon room-navigation feature and its follow-on desig
 **Shipped stages** table for history, verbose spec only for the *active/next* stage. Detail on *how* a
 shipped stage was built lives in its git commit, not here.
 
-> **Status:** Original build (Stages 1–11) + Design Phases A–L + **M0–M3** shipped. **M4 — Design Pass** is next.
+> **Status:** Original build (Stages 1–11) + Design Phases A–M shipped. No dungeon design phase is currently active.
 
 ---
 
@@ -166,6 +166,7 @@ the exit-choice-card color. Canvas SVG glyphs are the documented exception to th
 | **M1 — Collapsed Status Model** | `collapsedStatusDescriptor()` now returns `null`, the sole existing `MarkerBadge`, or one synthetic `multiple-statuses` badge using `MultipleStatusesIcon`/Lucide `Layers`. `markerBadges()` remains the full-detail source for inspector and accessible labels; 636 frontend tests, typecheck, and build clean. |
 | **M2 — Bounded On-Square Markers** | Props, stairs, and portals now render one bounded collapsed status disc while their marker ring/icon color stays stable by fixture identity; hidden remains dashed and ARIA labels still enumerate all individual statuses. Replaced radial layout tests with bounded/collision coverage plus marker render assertions. |
 | **M3 — Door Status Collapse** | Doors now render zero or one centered collapsed status disc on their active leaf/segment; the separate repeated door-state icon was removed. Hidden alone controls the dotted architectural leaf, including locked/trapped hidden doors, with closed hidden dots visually spanning the original wall gap; DoorMarker focused tests cover the geometry. |
+| **M4 — Design Pass** | The Layers disc is explicitly named “Multiple statuses” while preserving every individual status in ARIA labels, stair travel labels retain concurrent state, and the interactive SVG canvas is exposed as a named group. 672 frontend tests, typecheck, and build clean. |
 
 ---
 
@@ -232,51 +233,6 @@ before any production fold-in.
 
 ---
 
-## Design Phase M — Bounded Marker Status
-
-Replace Map Lab's radial, per-flag badge rings with one status disc per fixture, while preserving every
-underlying independent passage flag in the inspector and accessible label. On-square fixtures remain
-individually visible in the existing 2x2 co-location grid; their status discs must be geometrically bounded
-to their own cell so they neither bleed into an adjacent square nor clash with another fixture's disc. The
-phase also removes the implied status hierarchy created by recoloring on-square markers: type identity owns
-marker color, and a collapsed status icon communicates state. Doors retain their fixed architectural glyph
-and their separate wall/leaf-relative status-disc treatment. **Depends on:** Phase L's shared badge model,
-`markersAtCell`/`gridMarkerOffset` grouping, and current shared marker components. **Depended on by:** no
-production fold-in work; this remains isolated to `frontend/src/features/dungeons/maplab/` and must not
-modify `map_layout` data, seed data, backend code, or live dungeon pages.
-
-| Stage | Model | Summary | Deliverables |
-|-------|-------|---------|--------------|
-| **M0 — Scaffolding** | Haiku | Establish compile-only display contracts and skipped tests without changing rendered behavior. | New collapsed-status type/layout stubs; `it.skip` coverage; app unchanged. |
-| **M1 — Collapsed Status Model** | Sonnet | Make one pure model decide zero, one, or multiple-status display while retaining full state detail. | `markerBadges.ts` model/tests; `MultipleStatusesIcon` alias of `Layers`. |
-| **M2 — Bounded On-Square Markers** | Sonnet | Render one contained disc per prop/stair/portal and make marker color express identity, not status. | Shared renderer, three marker components, CSS, render/geometry tests. |
-| **M3 — Door Status Collapse** | Sonnet | Apply the same collapsed-status rule to the distinct architectural door overlay. | `DoorBadgeLayer`, door tests, viewer/editor integration. ✅ Shipped. |
-| **M4 — Design Pass** | Sonnet | Validate visual hierarchy, collision safety, keyboard/a11y behavior, and responsive zoom states. | Focused corrections and regression coverage. Next. |
-
-**Sequencing:** M4 follows M0–M3 so the design pass can verify on-square and door behavior together. Do not
-replace the existing `markersAtCell` 2x2 placement model or its four-marker cap.
-
-#### M4 — Design Pass (next up)
-
-- **Build:** Perform a focused `frontend-design` review of M1–M3 without inventing new hues, shapes, or a
-  second co-location system. Correct any discovered geometry, SVG stacking, contrast, hover/focus, keyboard,
-  narrow-layout, or zoom defects. Confirm the Layers disc is recognizable as “multiple statuses” through its
-  inspector/ARIA wording, not color alone. Keep scope to Map Lab badge/status presentation; no persistence,
-  authoring workflow, inspector-chip, room layout, or production fold-in changes unless a direct regression
-  from M1–M3 requires one.
-- **Inherits:** Complete M0–M3 implementation, existing `Inspectable`/`InspectorPanel` full-state chips,
-  grouped-marker cap, shared viewer/editor marker components, and current theme tokens.
-- **Tests:** Add regressions for every defect fixed. Run the full frontend suite; run backend tests only if a
-  backend file changes, which this phase should not require. Confirm no skipped M0 tests remain. Typecheck and
-  production build are required.
-- **🚦 Gate:** `npm run test`, `npm run typecheck`, and `npm run build` are clean. Manual user verification
-  covers keyboard focus and activation, hover inspector state detail, session changes, all four co-location
-  counts, default/fullscreen editor, narrow viewport, and multiple zoom levels on viewer and editor. Confirm
-  no badge crosses a cell boundary, no badge overlaps another fixture's badge, no emoji/undefined tokens/
-  console errors appear, and doors remain visually distinct.
-
----
-
 ## Known debt / deferred work (NOT yet built)
 
 - **Editor round-trip fix.** `dungeonForm.ts`/`DungeonEditor.tsx` are still **lossy**: on save they force
@@ -327,8 +283,6 @@ table + layout router), or the live dungeon model/pages.
 
 ## Next
 
-**Active:** Design Phase M — Bounded Marker Status. **Next:** M4 — Design Pass; it is unblocked.
-
-Also queued (not blocking M): the Map Lab production-home recommendation before any production fold-in;
-and the loot-on-the-map wiring that fills the reserved `MapProp.loot` slot, staged in `docs/loot_plan.md`
-(Design Phase M) — owned by the loot plan, not this one.
+**Next:** the Map Lab production-home recommendation before any production fold-in; and the loot-on-the-map
+wiring that fills the reserved `MapProp.loot` slot, staged in `docs/loot_plan.md` (Design Phase M) — owned by
+the loot plan, not this one.
