@@ -5,6 +5,47 @@ import pytest
 from backend.app.schemas import MonsterCreate, MonsterUpdate
 
 
+def _monster_payload(name="Tiny Test Drake"):
+    return {
+        "name": name,
+        "aliases": ["test drake"],
+        "sizes": ["small"],
+        "alignment": "unaligned",
+        "creature_type": {"category": "dragon", "tags": ["test"], "swarm_size": None},
+        "ac": {"value": 14, "note": "natural armor", "alternatives": []},
+        "hp": {"average": 22, "formula": "4d6 + 8"},
+        "speed": [{"mode": "walk", "feet": 30, "note": None, "hover": False}],
+        "abilities": {"str": 12, "dex": 14, "con": 15, "int": 4, "wis": 11, "cha": 8},
+        "saving_throws": {"dex": 4},
+        "skills": {"perception": 2},
+        "passive_perception": 12,
+        "damage_resistances": [{"damage_type": "fire", "note": None, "conditional": False}],
+        "condition_immunities": ["frightened"],
+        "senses": [{"type": "darkvision", "range": 60, "note": None}],
+        "languages": ["Draconic"],
+        "features": {
+            "traits": [{"name": "Keen Smell", "description": "Advantage on smell checks.", "attack": None}],
+            "actions": [
+                {
+                    "name": "Bite",
+                    "description": "Melee Weapon Attack: hit for 1d6 + 2 piercing damage.",
+                    "attack": {
+                        "kind": "melee_weapon",
+                        "attack_bonus": 4,
+                        "automatic_hit": False,
+                        "range_ft": 5,
+                        "long_range_ft": None,
+                        "targets": 1,
+                        "damage": [{"formula": "1d6", "bonus": 2, "damage_types": ["piercing"]}],
+                    },
+                }
+            ],
+        },
+        "cr": "1/2",
+        "experience_points": 100,
+    }
+
+
 def test_list_monsters(test_client):
     """Test GET /api/monsters returns a list."""
     response = test_client.get("/api/monsters")
@@ -68,43 +109,78 @@ def test_get_monster_by_name_not_found(test_client):
     assert response.status_code == 404
 
 
-# ── M2/M3 test stubs ────────────────────────────────────────────────────────────
-
-@pytest.mark.skip(reason="M2: seed-migration shape (AC→value/note, tag-strip, cr_sort)")
-def test_migrated_ac_shape():
-    """Assert the M2 migration transforms inverted AC keys to {value, note}."""
-
-
-@pytest.mark.skip(reason="M2: tag-stripping — {@creature x} becomes display text")
-def test_migrated_tag_stripping():
-    """Assert {@tag } markup is removed from action/trait text during migration."""
-
-
-@pytest.mark.skip(reason="M3: POST /monsters creates and returns a new monster")
-def test_create_monster():
+def test_create_monster(test_client):
     """POST /api/monsters with valid data returns 201 and persists."""
+    payload = _monster_payload()
+
+    response = test_client.post("/api/monsters", json=payload)
+
+    assert response.status_code == 201
+    data = response.json()
+    assert data["id"] is not None
+    assert data["name"] == payload["name"]
+    assert data["cr_sort"] == 0.5
+    assert data["ac"] == payload["ac"]
+    assert data["saving_throws"] == {"dex": 4}
+    assert data["damage_resistances"][0]["damage_type"] == "fire"
+    assert data["features"]["actions"][0]["attack"]["damage"][0]["formula"] == "1d6"
+
+    fetched = test_client.get(f"/api/monsters/{data['id']}")
+    assert fetched.status_code == 200
+    assert fetched.json()["features"] == data["features"]
 
 
-@pytest.mark.skip(reason="M3: POST /monsters with duplicate name returns 409")
-def test_create_monster_duplicate():
+def test_create_monster_duplicate(test_client):
     """POST /api/monsters with an existing name returns 409."""
+    response = test_client.post("/api/monsters", json=_monster_payload("Owlbear"))
+    assert response.status_code == 409
 
 
-@pytest.mark.skip(reason="M3: PUT /monsters/{id} updates fields")
-def test_update_monster():
+def test_update_monster(test_client):
     """PUT /api/monsters/{id} returns the updated monster."""
+    created = test_client.post("/api/monsters", json=_monster_payload()).json()
+    payload = _monster_payload("Tiny Test Drake Updated")
+    payload["hp"] = {"average": 31, "formula": "6d6 + 10"}
+    payload["features"]["actions"][0]["name"] = "Fiery Bite"
+    payload["cr"] = "2"
+
+    response = test_client.put(f"/api/monsters/{created['id']}", json=payload)
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["id"] == created["id"]
+    assert data["name"] == "Tiny Test Drake Updated"
+    assert data["hp"]["average"] == 31
+    assert data["features"]["actions"][0]["name"] == "Fiery Bite"
+    assert data["cr_sort"] == 2.0
 
 
-@pytest.mark.skip(reason="M3: PUT /monsters/{id} returns 404 for unknown id")
-def test_update_nonexistent_monster():
+def test_update_monster_duplicate_name(test_client):
+    created = test_client.post("/api/monsters", json=_monster_payload()).json()
+    payload = _monster_payload("Owlbear")
+
+    response = test_client.put(f"/api/monsters/{created['id']}", json=payload)
+
+    assert response.status_code == 409
+
+
+def test_update_nonexistent_monster(test_client):
     """PUT /api/monsters/99999 returns 404."""
+    response = test_client.put("/api/monsters/99999", json=_monster_payload())
+    assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="M3: DELETE /monsters/{id} returns 204")
-def test_delete_monster():
+def test_delete_monster(test_client):
     """DELETE /api/monsters/{id} returns 204, then GET returns 404."""
+    created = test_client.post("/api/monsters", json=_monster_payload()).json()
+
+    response = test_client.delete(f"/api/monsters/{created['id']}")
+
+    assert response.status_code == 204
+    assert test_client.get(f"/api/monsters/{created['id']}").status_code == 404
 
 
-@pytest.mark.skip(reason="M3: DELETE /monsters/{id} returns 404 for unknown id")
-def test_delete_nonexistent_monster():
+def test_delete_nonexistent_monster(test_client):
     """DELETE /api/monsters/99999 returns 404."""
+    response = test_client.delete("/api/monsters/99999")
+    assert response.status_code == 404
