@@ -14,6 +14,9 @@ The rule these tests encode: **no configured GET endpoint may 500 against the re
 seed data, and every row of every browsable collection must serialize.**
 """
 
+import json
+import sqlite3
+
 import pytest
 
 # Whole module runs against the full frozen production seeds (slower, read-only).
@@ -83,6 +86,120 @@ def test_every_row_serializes(real_client, base):
             break
         offset += 500
     assert total > 0, f"{base} returned no rows — seed data missing?"
+
+
+def test_every_monster_detail_serializes_with_target_contract(real_client):
+    """Every migrated monster detail response validates the target API contract."""
+    offset = 0
+    total = 0
+    expected_fields = {
+        "id",
+        "name",
+        "aliases",
+        "sizes",
+        "family",
+        "alignment",
+        "creature_type",
+        "ac",
+        "hp",
+        "speed",
+        "abilities",
+        "saving_throws",
+        "skills",
+        "passive_perception",
+        "damage_resistances",
+        "damage_immunities",
+        "damage_vulnerabilities",
+        "condition_immunities",
+        "senses",
+        "languages",
+        "audio_path",
+        "features",
+        "cr",
+        "cr_sort",
+        "cr_note",
+        "experience_points",
+    }
+    legacy_fields = {
+        "alias",
+        "size",
+        "group",
+        "type",
+        "stats",
+        "save",
+        "skill",
+        "resist",
+        "vulnerable",
+        "action",
+        "reaction",
+        "traits",
+        "spellcasting",
+        "bonus",
+        "legendary",
+        "soundClip",
+        "cr_details",
+    }
+
+    while True:
+        listing = real_client.get(f"/api/monsters?limit=500&offset={offset}")
+        assert listing.status_code == 200, listing.text[:300]
+        batch = listing.json()
+        for listed_monster in batch:
+            detail = real_client.get(f"/api/monsters/{listed_monster['id']}")
+            assert detail.status_code == 200, (
+                f"/api/monsters/{listed_monster['id']} -> {detail.status_code}: {detail.text[:300]}"
+            )
+            monster = detail.json()
+            assert set(monster) == expected_fields
+            assert not (set(monster) & legacy_fields)
+            assert "{@" not in json.dumps(monster, ensure_ascii=False)
+            assert isinstance(monster["aliases"], list)
+            assert isinstance(monster["saving_throws"], dict)
+            assert isinstance(monster["skills"], dict)
+            assert isinstance(monster["features"], dict)
+            assert isinstance(monster["features"]["actions"], list)
+        total += len(batch)
+        if len(batch) < 500:
+            break
+        offset += 500
+    assert total == 2276
+
+
+def test_real_monster_sqlite_projection_preserves_ids_indexes_and_json(real_db_path):
+    """The rebuilt SQLite projection keeps explicit IDs, JSON text columns, and both CR indexes."""
+    conn = sqlite3.connect(real_db_path)
+    conn.row_factory = sqlite3.Row
+    try:
+        row = conn.execute(
+            """
+            SELECT COUNT(*) AS total, COUNT(DISTINCT id) AS ids, MIN(id) AS min_id, MAX(id) AS max_id,
+                   SUM(CASE WHEN cr_sort IS NOT NULL THEN 1 ELSE 0 END) AS sortable_crs
+            FROM monsters
+            """
+        ).fetchone()
+        assert dict(row) == {
+            "total": 2276,
+            "ids": 2276,
+            "min_id": 1,
+            "max_id": 2734,
+            "sortable_crs": 2275,
+        }
+
+        indexes = {row["name"] for row in conn.execute("PRAGMA index_list('monsters')")}
+        assert "idx_monsters_cr" in indexes
+        assert "idx_monsters_cr_sort" in indexes
+
+        wolf = conn.execute("SELECT id, ac, features, cr, cr_sort FROM monsters WHERE name = 'Wolf'").fetchone()
+        assert wolf["id"] == 2600
+        assert json.loads(wolf["ac"]) == {"value": 13, "note": "natural armour", "alternatives": []}
+        features = json.loads(wolf["features"])
+        assert features["actions"][0]["attack"]["damage"] == [
+            {"formula": "2d4", "bonus": 2, "damage_types": ["piercing"]}
+        ]
+        assert wolf["cr"] == "1/4"
+        assert wolf["cr_sort"] == 0.25
+    finally:
+        conn.close()
 
 
 @pytest.mark.parametrize("base", DETAIL_COLLECTIONS)

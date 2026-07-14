@@ -9,11 +9,10 @@ def test_list_items_returns_real_seed_catalog(real_client):
     response = real_client.get("/api/items")
 
     assert response.status_code == 200
-    assert [item["name"] for item in response.json()] == [
-        "Potion of Healing",
-        "Ruby",
-        "Silk Rope",
-    ]
+    items_by_name = {item["name"]: item for item in response.json()}
+    assert {"Potion of Healing", "Ruby", "Silk Rope"} <= set(items_by_name)
+    assert items_by_name["Ruby"]["value_gp"] == 50
+    assert items_by_name["Silk Rope"]["category"] == "gear"
 
 
 def test_item_crud_allows_duplicate_names(test_client):

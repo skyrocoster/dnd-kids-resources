@@ -1,5 +1,13 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { ApiError, getAbilities, createSpell, deleteSpell } from '../client'
+import {
+  ApiError,
+  createMonster,
+  createSpell,
+  deleteMonster,
+  deleteSpell,
+  getAbilities,
+  updateMonster,
+} from '../client'
 
 function mockFetchOnce(response: Partial<Response> & { jsonBody?: unknown }) {
   const { jsonBody, ...rest } = response
@@ -44,6 +52,31 @@ describe('api client', () => {
     mockFetchOnce({ status: 204 })
 
     await expect(deleteSpell(1)).resolves.toBeUndefined()
+  })
+
+  it('monster CRUD functions hit the expected endpoints', async () => {
+    const monster = { name: 'Tiny Test Drake', cr: '1/2' }
+    const fetchMock = mockFetchOnce({ jsonBody: { id: 42, ...monster } })
+
+    await createMonster(monster)
+    await updateMonster(42, { name: 'Tiny Test Drake Updated' })
+    const deleteFetchMock = mockFetchOnce({ status: 204 })
+    await deleteMonster(42)
+
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      1,
+      '/api/monsters',
+      expect.objectContaining({ method: 'POST', body: JSON.stringify(monster) }),
+    )
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      '/api/monsters/42',
+      expect.objectContaining({ method: 'PUT', body: JSON.stringify({ name: 'Tiny Test Drake Updated' }) }),
+    )
+    expect(deleteFetchMock).toHaveBeenCalledWith(
+      '/api/monsters/42',
+      expect.objectContaining({ method: 'DELETE' }),
+    )
   })
 
   it('throws ApiError with the response status on a non-OK response', async () => {

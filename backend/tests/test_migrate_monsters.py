@@ -2,12 +2,47 @@ from __future__ import annotations
 
 import copy
 import importlib.util
+import json
 from pathlib import Path
 
 import pytest
 
+from backend.app.schemas import Monster
+
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT_PATH = ROOT / "scripts" / "migrate_monsters.py"
+SEED_PATH = ROOT / "data" / "seeds" / "seed_monsters.json"
+LEGACY_TOP_LEVEL_FIELDS = {
+    "alias",
+    "size",
+    "group",
+    "type",
+    "stats",
+    "save",
+    "skill",
+    "resist",
+    "vulnerable",
+    "action",
+    "reaction",
+    "traits",
+    "spellcasting",
+    "bonus",
+    "legendary",
+    "legendaryHeader",
+    "mythic",
+    "mythicHeader",
+    "reactionRules",
+    "soundClip",
+    "cr_details",
+}
+FEATURE_LIST_KEYS = (
+    "traits",
+    "actions",
+    "bonus_actions",
+    "reactions",
+    "legendary_actions",
+    "mythic_actions",
+)
 
 spec = importlib.util.spec_from_file_location("migrate_monsters", SCRIPT_PATH)
 migrate_monsters = importlib.util.module_from_spec(spec)
@@ -54,6 +89,77 @@ def base_monster(**overrides):
 
 def migrate_one(monster):
     return migrate_monsters.migrate([copy.deepcopy(monster)])[0]
+
+
+def load_canonical_monsters():
+    return json.loads(SEED_PATH.read_text(encoding="utf-8"))
+
+
+def all_feature_entries(monster):
+    for key in FEATURE_LIST_KEYS:
+        yield from monster["features"][key]
+
+
+def test_canonical_migrated_seed_matches_m1_corpus_contract():
+    monsters = load_canonical_monsters()
+    all_fields = set().union(*(monster.keys() for monster in monsters))
+
+    assert len(monsters) == 2276
+    assert len({monster["id"] for monster in monsters}) == 2276
+    assert min(monster["id"] for monster in monsters) == 1
+    assert max(monster["id"] for monster in monsters) == 2734
+    assert len({monster["name"] for monster in monsters}) == 2276
+    assert len({monster["name"].lower() for monster in monsters}) == 2276
+    assert not all_fields & LEGACY_TOP_LEVEL_FIELDS
+    assert "{@" not in json.dumps(monsters, ensure_ascii=False)
+    assert migrate_monsters.migrate(copy.deepcopy(monsters)) == monsters
+
+    for monster in monsters:
+        Monster.model_validate(monster)
+
+
+def test_canonical_migrated_seed_preserves_aggregate_rich_data():
+    monsters = load_canonical_monsters()
+
+    assert sum(1 for monster in monsters if monster["ac"] and monster["ac"]["alternatives"]) == 91
+    assert sum(1 for monster in monsters if monster["ac"] is None) == 0
+    assert sum(1 for monster in monsters if monster["saving_throws"]) == 1065
+    assert sum(1 for monster in monsters if monster["skills"]) == 1599
+    assert sum(1 for monster in monsters if monster["passive_perception"] is not None) == 2243
+
+    assert sum(len(monster["damage_resistances"]) for monster in monsters) == 2406
+    assert sum(len(monster["damage_immunities"]) for monster in monsters) == 1583
+    assert sum(len(monster["damage_vulnerabilities"]) for monster in monsters) == 94
+    assert sum(len(monster["condition_immunities"]) for monster in monsters) == 3620
+    assert sum(len(monster["senses"]) for monster in monsters) == 1861
+    assert sum(1 for monster in monsters if monster["languages"]) == 1781
+
+    assert sum(len(monster["features"]["traits"]) for monster in monsters) == 4735
+    assert sum(len(monster["features"]["actions"]) for monster in monsters) == 6338
+    assert sum(len(monster["features"]["bonus_actions"]) for monster in monsters) == 380
+    assert sum(len(monster["features"]["reactions"]) for monster in monsters) == 309
+    assert sum(len(monster["features"]["legendary_actions"]) for monster in monsters) == 736
+    assert sum(len(monster["features"]["mythic_actions"]) for monster in monsters) == 35
+    assert sum(len(monster["features"]["spellcasting"]) for monster in monsters) == 712
+    assert sum(1 for monster in monsters if monster["features"]["reaction_intro"]) == 15
+    assert sum(1 for monster in monsters if monster["features"]["legendary_intro"]) == 3
+    assert sum(1 for monster in monsters if monster["features"]["legendary_actions_per_round"] is not None) == 255
+
+    action_attacks = sum(1 for monster in monsters for feature in monster["features"]["actions"] if feature["attack"])
+    attack_damage = sum(
+        len(feature["attack"]["damage"])
+        for monster in monsters
+        for feature in all_feature_entries(monster)
+        if feature["attack"]
+    )
+    assert action_attacks == 3586
+    assert attack_damage == 4363
+
+    assert sum(1 for monster in monsters if monster["audio_path"]) == 963
+    assert sum(1 for monster in monsters if monster["cr"] is not None) == 2276
+    assert sum(1 for monster in monsters if monster["cr_sort"] is not None) == 2275
+    assert sum(1 for monster in monsters if monster["cr_note"]) == 43
+    assert sum(1 for monster in monsters if monster["experience_points"] is not None) == 5
 
 
 def test_migrates_wolf_fixture_with_sparse_maps_text_cleanup_and_audio():

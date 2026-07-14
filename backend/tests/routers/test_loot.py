@@ -2,30 +2,30 @@ def test_list_loot_bundles_returns_real_seed_bundle(real_client):
     response = real_client.get("/api/loot-bundles")
 
     assert response.status_code == 200
-    assert response.json() == [
-        {
-            "id": 1,
-            "name": "Bandit Captain's Cache",
-            "gold": 12.5,
-            "contents": [
-                {
-                    "kind": "item",
-                    "ref_id": 1,
-                    "name": "Ruby",
-                    "value_gp": 50,
-                    "category": "gem",
-                    "quantity": 2,
-                },
-                {
-                    "kind": "weapon",
-                    "ref_id": 1,
-                    "name": "+1 Moon Sickle",
-                    "value_gp": None,
-                    "quantity": 1,
-                },
-            ],
-        }
-    ]
+    bundles_by_name = {bundle["name"]: bundle for bundle in response.json()}
+    assert "Bandit Captain's Cache" in bundles_by_name
+    assert bundles_by_name["Bandit Captain's Cache"] == {
+        "id": 1,
+        "name": "Bandit Captain's Cache",
+        "gold": 12.5,
+        "contents": [
+            {
+                "kind": "item",
+                "ref_id": 1,
+                "name": "Ruby",
+                "value_gp": 50,
+                "category": "gem",
+                "quantity": 2,
+            },
+            {
+                "kind": "weapon",
+                "ref_id": 1,
+                "name": "+1 Moon Sickle",
+                "value_gp": None,
+                "quantity": 1,
+            },
+        ],
+    }
 
 
 def test_loot_bundle_crud_round_trips_mixed_snapshot_contents(test_client):

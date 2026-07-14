@@ -45,6 +45,9 @@ When adding a new endpoint:
 | GET | `/monsters` | List all monsters | (query params: none) | `List[Monster]` |
 | GET | `/monsters/{monster_id}` | Fetch monster by ID | (path param) | `Monster` |
 | GET | `/monsters/by-name/{name}` | Fetch monster by exact name | (path param) | `Monster` |
+| POST | `/monsters` | Create monster | `MonsterCreate` | `Monster` (201) |
+| PUT | `/monsters/{monster_id}` | Update monster | `MonsterUpdate` | `Monster` |
+| DELETE | `/monsters/{monster_id}` | Delete monster | (path param) | (204 No Content) |
 
 ---
 
