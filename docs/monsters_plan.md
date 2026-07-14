@@ -1,6 +1,6 @@
 # Monsters — Data Restructure & Stat-Block Redesign
 
-> **Status:** M3 shipped. X0 is next: experience scaffolding for the stat block, editor, dice chip, and routes.
+> **Status:** M3, X0, X1 shipped. X2 is next: dice motif redesign.
 
 ## What this feature is
 
@@ -127,36 +127,6 @@ merges before X4.
 
 <!-- ===== VERBOSE BLOCKS — one per un-shipped stage ===== -->
 
-#### X0 — Scaffolding (planned)
-
-- **Build:** Single Haiku context, stubs only:
-  - `features/monsters/MonsterStatBlock.tsx` + `.css` — component stub rendering the region `<section>`s with
-    headings and placeholder tapered-rule CSS, no data logic.
-  - `features/monsters/MonsterEditor.tsx` + `monsterModel.ts` — form-shell + model stubs (no submit logic).
-  - `components/DiceText.tsx` — leave working; add `// TODO(X2)` marker and a `role?` prop stub (unused).
-  - `components/icons/index.ts` — add `DiceIcon` alias (`Dices`).
-  - Route stub for `/monsters/new` + `/monsters/:id/edit` in `router.tsx` pointing at the editor stub.
-  - `it.skip` test stubs for stat block, editor, and dice chip.
-- **Inherits:** M2 types (already merged).
-- **Tests:** suites green; new stubs skipped.
-- **🚦 Gate:** `npm run build` + `npm run test` clean; app renders unchanged. Suite-sufficient.
-
-#### X1 — Stat-block redesign (planned)
-
-- **Build:** `MonsterStatBlock.tsx` renders the M2 monster into five tapered-rule-separated regions in the
-  reading order **Identity → Defenses → Abilities → Actions → Lore** (see *Visual direction*). Wire it into
-  `MonsterBrowserPage`'s detail pane (replace the current `<dl>`/grid/paragraph markup). Mirror `NPCStatCard`
-  anatomy for the six-ability block and hidden-when-absent sections. Add a small `renderStatText` helper that
-  converts `{@tag x||y}` markup to clean display text (per M1's transform) and passes prose through the
-  redesigned `DiceText`. Consume `data-variant="monster"` for teal identity. Each region **hides entirely when
-  its data is absent** (no empty headers).
-- **Inherits:** M2 shape/types; `NPCStatCard` pattern; `DiceText` (X2 refines it, X1 works with either state).
-- **Tests:** render tests — full-featured monster shows all five regions in order; a bare beast hides
-  Actions/Lore sub-sections; tag markup renders as text not literal `{@...}`; six-ability block shows modifiers.
-- **🚦 Gate:** browser pass **is** warranted here per `CLAUDE.md` (visual region separation is the whole point) —
-  but only if the user asks for automation; otherwise report the manual check: open a simple, a caster, and a
-  legendary monster and confirm region order, tapered rules, teal identity, and no empty sections. Suites green.
-
 #### X2 — Dice motif redesign (planned)
 
 - **Build:** Redesign `DiceText`/`.dice-pill` into the **role-aware rollable-die chip** (see *Visual direction*):
@@ -213,6 +183,8 @@ merges before X4.
 | **M2.2** | Atomic contract cutover: canonical monster seed rewritten to the authorable target shape, SQLite projection/seed loading updated with explicit IDs and CR indexes, strict backend/frontend Monster contracts installed, and legacy browser/encounter consumers rewired to `ac.value`, `abilities`, and `features.actions`. Reference docs were updated and focused backend/frontend gates passed; browser automation was not run per repo guidance. |
 | **M2.3** | Corpus conformance and release verification: canonical migrated seed audit tests now enforce row/ID/name counts, no legacy fields or residual tags, aggregate rich-data totals, Pydantic contract validation, SQLite explicit IDs/JSON projection, and both CR indexes. Real-data integration now pages every monster and serializes every detail response against the target contract; DB rebuild and full backend/frontend gates passed. |
 | **M3** | Monster CRUD endpoints: backend POST/PUT/DELETE now serialize the M2 JSON columns, compute `cr_sort`, enforce unique names with 409 conflicts, and return parsed `Monster` responses. Frontend client CRUD functions were wired and backend/frontend tests cover create/fetch/update/delete and conflict behavior. |
+| **X0** | Scaffolding: MonsterStatBlock/MonsterEditor/monsterModel stubs, DiceText role prop stub + TODO(X2), DiceIcon alias, route stubs for /monsters/new and /monsters/:id/edit, it.skip test stubs. Gate ✅ suite-sufficient. |
+| **X1** | Stat-block redesign: MonsterStatBlock renders five region-ordered sections (Identity→Defenses→Abilities→Actions→Lore) with tapered teal rules, hidden-when-absent sections, DiceText-wired prose, and six-ability block. MonsterBrowserPage rewired from old dl/grid to MonsterStatBlock. 8 render tests pass. Gate ✅ suite-sufficient. |
 
 ---
 
@@ -227,5 +199,5 @@ merges before X4.
 
 ## Next:
 
-**X0 — Experience scaffolding**. Add stat-block/editor/dice-chip stubs and monster authoring routes without changing
-the current app behavior.
+**X2 — Dice motif redesign**. Replace the flat gold dice-pill with a role-aware rollable-die chip that
+inherits the content role's container color and carries a die glyph.
