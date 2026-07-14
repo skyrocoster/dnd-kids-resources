@@ -404,10 +404,6 @@
   color: var(--md-loot);
 }
 
-.maplab-loot-badge {
-  pointer-events: none;
-}
-
 .maplab-inspector-controls {
   display: flex;
   flex-wrap: wrap;

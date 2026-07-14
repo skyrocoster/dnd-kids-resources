@@ -204,10 +204,90 @@ describe('EncounterRunnerPage', () => {
     expect(within(within(card).getByRole('group', { name: 'Conditions' })).getByText('Prone')).toBeInTheDocument()
   })
 
-  // P2 stubs
-  it.skip('add-player button renders in the board header', () => {})
-  it.skip('add-player panel opens and accepts a name', () => {})
-  it.skip('player card suppresses HP meter, stepper rail, AC, and status pills', () => {})
+  it('add-player button renders in the board header', async () => {
+    vi.spyOn(api, 'getEncounter').mockResolvedValue(baseEncounter)
+    vi.spyOn(api, 'updateEncounter').mockResolvedValue(baseEncounter)
+    vi.spyOn(api, 'getConditions').mockResolvedValue(conditionList)
+
+    renderPage()
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    expect(screen.getByRole('button', { name: 'Add player' })).toBeInTheDocument()
+  })
+
+  const addPlayerButton = () => screen.getByRole('button', { name: 'Add player' })
+
+  it('add-player panel opens and accepts a name', async () => {
+    vi.spyOn(api, 'getEncounter').mockResolvedValue(baseEncounter)
+    vi.spyOn(api, 'updateEncounter').mockResolvedValue(baseEncounter)
+    vi.spyOn(api, 'getConditions').mockResolvedValue(conditionList)
+
+    renderPage()
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    fireEvent.click(addPlayerButton())
+    expect(screen.getByPlaceholderText('Enter player name…')).toBeInTheDocument()
+
+    fireEvent.change(screen.getByPlaceholderText('Enter player name…'), { target: { value: 'Frodo' } })
+    expect(screen.getByText('Add')).not.toBeDisabled()
+
+    fireEvent.click(screen.getByText('Add'))
+    fireEvent.click(addPlayerButton())
+    expect(allCardNames()).toEqual(['Goblin', 'Wolf', 'Frodo'])
+  })
+
+  it('player card suppresses HP meter, stepper rail, AC, and status pills', async () => {
+    vi.spyOn(api, 'getEncounter').mockResolvedValue(baseEncounter)
+    vi.spyOn(api, 'updateEncounter').mockResolvedValue(baseEncounter)
+    vi.spyOn(api, 'getConditions').mockResolvedValue(conditionList)
+
+    renderPage()
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    fireEvent.click(addPlayerButton())
+    fireEvent.change(screen.getByPlaceholderText('Enter player name…'), { target: { value: 'Frodo' } })
+    fireEvent.click(screen.getByText('Add'))
+    fireEvent.click(addPlayerButton())
+
+    const playerCard = cardByName('Frodo')
+    expect(within(playerCard).queryByRole('group', { name: 'Status' })).not.toBeInTheDocument()
+    expect(within(playerCard).queryByRole('img', { name: /hit points/i })).not.toBeInTheDocument()
+    expect(within(playerCard).queryByLabelText('Damage 10')).not.toBeInTheDocument()
+    expect(within(playerCard).queryByLabelText('Heal 1')).not.toBeInTheDocument()
+    expect(within(playerCard).queryByText('Set…')).not.toBeInTheDocument()
+    expect(within(playerCard).queryByText('—')).not.toBeInTheDocument()
+    expect(within(playerCard).queryByText('AC')).not.toBeInTheDocument()
+
+    expect(within(playerCard).getByDisplayValue('Frodo')).toBeInTheDocument()
+  })
+
+  it('player card allows condition toggling', async () => {
+    vi.spyOn(api, 'getEncounter').mockResolvedValue(baseEncounter)
+    vi.spyOn(api, 'updateEncounter').mockResolvedValue(baseEncounter)
+    vi.spyOn(api, 'getConditions').mockResolvedValue(conditionList)
+
+    renderPage()
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    fireEvent.click(addPlayerButton())
+    fireEvent.change(screen.getByPlaceholderText('Enter player name…'), { target: { value: 'Frodo' } })
+    fireEvent.click(screen.getByText('Add'))
+    fireEvent.click(addPlayerButton())
+
+    const playerCard = cardByName('Frodo')
+    fireEvent.click(within(playerCard).getByText('No conditions'))
+    fireEvent.click(within(playerCard).getByLabelText('Prone'))
+
+    expect(within(playerCard).getByRole('group', { name: 'Conditions' })).toBeInTheDocument()
+  })
 
   it('conditions persist through save/reload', async () => {
     vi.spyOn(api, 'getEncounter').mockResolvedValue(baseEncounter)

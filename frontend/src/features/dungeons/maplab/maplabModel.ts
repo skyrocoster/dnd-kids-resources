@@ -171,7 +171,7 @@ export function layoutBounds(rooms: MapRoom[]): Bounds {
   return { minX, maxX, minY, maxY }
 }
 
-const CARDINAL_DELTAS: Record<CardinalSide, MapCell> = {
+export const CARDINAL_DELTAS: Record<CardinalSide, MapCell> = {
   N: [0, -1],
   S: [0, 1],
   E: [1, 0],

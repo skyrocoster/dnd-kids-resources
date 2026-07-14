@@ -151,7 +151,7 @@ export function EncounterRunnerBoard({ runner, compact = false }: EncounterRunne
           <AddMonsterPanel onAdd={handleAddMonster} onClose={() => setAddMonsterOpen(false)} />
         )}
         {addPlayerOpen && (
-          <AddPlayerPanel onAdd={handleAddPlayer} onClose={() => setAddPlayerOpen(false)} />
+          <AddPlayerPanel conditions={runner.conditions} onAdd={handleAddPlayer} onClose={() => setAddPlayerOpen(false)} />
         )}
       </div>
     </div>

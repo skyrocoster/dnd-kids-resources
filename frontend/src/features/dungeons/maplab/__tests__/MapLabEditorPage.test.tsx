@@ -31,6 +31,18 @@ describe('MapLabEditorPage', () => {
     expect(screen.getAllByText('Combat Training Hall').length).toBeGreaterThan(0)
   })
 
+  it('mounts the door badge overlay after the door glyph layer', async () => {
+    vi.spyOn(api, 'getDungeonLayout').mockRejectedValue(new api.ApiError(404, 'not found'))
+    vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: {} })
+
+    const { container } = render(<MapLabEditorPage />)
+    await flush()
+
+    const door = container.querySelector('.maplab-door') as Element
+    const layer = container.querySelector('.maplab-door-badge-layer') as Element
+    expect(door.compareDocumentPosition(layer) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
   it('renders a saved layout from the backend', async () => {
     const layout = {
       meta: { cellSizeFt: 5, padding: 3 },

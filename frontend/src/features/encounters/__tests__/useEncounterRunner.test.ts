@@ -167,8 +167,24 @@ describe('useEncounterRunner', () => {
     expect(result.current.syncStatus).toBe('saved')
   })
 
-  // P2 stub
-  it.skip('addPlayer dispatches the addPlayer action', () => {})
+  it('addPlayer dispatches the addPlayer action', async () => {
+    vi.spyOn(api, 'getEncounter').mockResolvedValue(baseEncounter)
+
+    const { result } = renderHook(() => useEncounterRunner(1))
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    act(() => {
+      result.current.addPlayer('Aragorn', ['prone'])
+    })
+
+    const players = result.current.state.combatants.filter((c) => c.kind === 'player')
+    expect(players).toHaveLength(1)
+    expect(players[0].name).toBe('Aragorn')
+    expect(players[0].hp_current).toBeNull()
+    expect(players[0].conditions).toEqual(['prone'])
+  })
 
   it('sets syncStatus to error on save failure but preserves local state', async () => {
     vi.spyOn(api, 'getEncounter').mockResolvedValue(baseEncounter)

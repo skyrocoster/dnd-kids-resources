@@ -60,6 +60,15 @@ describe('MapLabPage (M1 SVG renderer)', () => {
     await user.keyboard('{Enter}')
     expect(armoury).toHaveAttribute('aria-pressed', 'true')
   })
+
+  it('mounts the door badge overlay after the door glyph layer', async () => {
+    const { container } = render(<MapLabPage />)
+    await flush()
+
+    const door = container.querySelector('.maplab-door') as Element
+    const layer = container.querySelector('.maplab-door-badge-layer') as Element
+    expect(door.compareDocumentPosition(layer) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
 })
 
 describe('MapLabPage (M2 stairs + second floor)', () => {
@@ -427,11 +436,11 @@ describe('MapLabPage (Stage 4 — Passage session state)', () => {
     await user.click(door)
 
     expect(door).toHaveAttribute('data-state', 'trapped')
-    expect(door.querySelector('.maplab-trap-disarmed-badge')).not.toBeInTheDocument()
+    expect(document.querySelector('.maplab-door-badge-layer [data-badge="trap-disarmed"]')).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Disarm trap' }))
     expect(door).toHaveAttribute('data-state', 'locked')
-    expect(door.querySelector('.maplab-trap-disarmed-badge')).toBeInTheDocument()
+    expect(document.querySelector('.maplab-door-badge-layer [data-badge="trap-disarmed"]')).toBeInTheDocument()
   })
 
   it('resets all session overrides via a reset button', async () => {
@@ -551,7 +560,7 @@ describe('Design Phase M — Loot on the map', () => {
     await flush()
 
     const chest = screen.getByRole('button', { name: /Treasure Chest.*loot assigned/i })
-    expect(chest.querySelector('.maplab-loot-badge')).toBeInTheDocument()
+    expect(chest.querySelector('[data-badge="loot"]')).toBeInTheDocument()
 
     await user.hover(chest)
     expect(await screen.findByLabelText('Loot contents')).toBeInTheDocument()
@@ -619,7 +628,7 @@ describe('MapLabPage (Stage F4 — loot hook affordance)', () => {
     await flush()
 
     const chest = screen.getByRole('button', { name: /Treasure Chest.*Locked/i })
-    expect(chest.querySelector('.maplab-loot-badge')).not.toBeInTheDocument()
+    expect(chest.querySelector('[data-badge="loot"]')).not.toBeInTheDocument()
     await user.hover(chest)
     expect(screen.queryByLabelText('Loot contents')).not.toBeInTheDocument()
 

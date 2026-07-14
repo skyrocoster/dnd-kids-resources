@@ -4,18 +4,17 @@ import { MAP_LAB_DUNGEON_ID } from '../../../api/client'
 import { useMapLabLayout } from './useMapLabLayout'
 import { useMapCanvasZoom, type ViewportSize } from './useMapCanvasZoom'
 import { MapCanvas } from './MapCanvas'
-import { ChevronDownIcon, ChevronUpIcon, FitIcon, TrapDisarmedIcon, ZoomInIcon, ZoomOutIcon } from '../../../components/icons'
+import { ChevronDownIcon, ChevronUpIcon, FitIcon, ZoomInIcon, ZoomOutIcon } from '../../../components/icons'
 import { EncounterDock } from '../../encounters/EncounterDock'
 import { PropMarker } from './PropMarker'
 import { PortalMarker } from './PortalMarker'
 import { StairMarker } from './StairMarker'
+import { DoorBadgeLayer, DoorMarker } from './DoorMarker'
 import { InspectorPanel, type SessionControls } from './InspectorPanel'
 import {
   absoluteCells,
   defaultPassageSession,
-  doorPresentation,
   doorsOnFloor,
-  doorSwingGeometry,
   doorWallSegment,
   floorsInLayout,
   gridMarkerOffset,
@@ -40,7 +39,6 @@ import {
 } from './maplabModel'
 
 const CELL_SIZE = 64
-const ICON_SIZE = 22
 const GRID_PATTERN_ID = 'maplab-unknown-space-grid'
 
 function roomCenter(room: MapRoom): { x: number; y: number } {
@@ -457,96 +455,25 @@ export function MapLabPage() {
           })}
 
           {doors.map((door) => {
-            const session = doorSession(door)
-            const segment = doorWallSegment(door, CELL_SIZE)
-            const swing = doorSwingGeometry(door, CELL_SIZE)
-            const presentation = doorPresentation(door, session)
-            const Icon = presentation.icon
-            const midX = (segment.x1 + segment.x2) / 2
-            const midY = (segment.y1 + segment.y2) / 2
             const isPinned = pinnedDoorId === door.door_id
-            const openLabel = presentation.isOpen ? 'open' : 'closed'
-            const disarmedLabel = door.trapped && session.trapDisarmed ? ' — trap disarmed' : ''
-            const label = `${door.title ?? `Door ${door.door_id}`} — ${presentation.label}, ${openLabel}${disarmedLabel}`
-            const dasharray = presentation.state === 'hidden' ? '6 4' : undefined
             return (
-              <g
+              <DoorMarker
                 key={door.door_id}
-                className="maplab-door"
-                data-state={presentation.state}
-                role="button"
-                tabIndex={0}
-                aria-pressed={isPinned}
-                aria-label={label}
+                door={door}
+                cellSize={CELL_SIZE}
+                session={doorSession(door)}
+                selected={isPinned}
                 onMouseEnter={() => setHoveredInspectable({ kind: 'door', id: door.door_id })}
                 onMouseLeave={() => setHoveredInspectable(null)}
                 onFocus={() => setFocusedInspectable({ kind: 'door', id: door.door_id })}
                 onBlur={() => setFocusedInspectable(null)}
                 onClick={() => togglePinnedDoor(door.door_id)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter' || event.key === ' ') {
-                    event.preventDefault()
-                    togglePinnedDoor(door.door_id)
-                  }
-                }}
-              >
-                <title>{door.title ?? `Door ${door.door_id}`}</title>
-                {presentation.isOpen ? (
-                  <>
-                    {/* Leaf: hinge swung a quarter-turn off the wall — a door reads as a hinged
-                        panel in a gap, never as a straight run that could be mistaken for a wall. */}
-                    <line
-                      className="maplab-door-leaf"
-                      x1={swing.hinge.x}
-                      y1={swing.hinge.y}
-                      x2={swing.leafTip.x}
-                      y2={swing.leafTip.y}
-                      style={{ stroke: `var(${presentation.token})` }}
-                      strokeDasharray={dasharray}
-                    />
-                    {/* Swing arc: the leaf's travel path back to the far jamb, the other half of
-                        the same door-plan convention. */}
-                    <path
-                      className="maplab-door-swing"
-                      d={`M ${swing.leafTip.x} ${swing.leafTip.y} A ${swing.radius} ${swing.radius} 0 0 ${swing.sweepFlag} ${swing.farJamb.x} ${swing.farJamb.y}`}
-                      style={{ stroke: `var(${presentation.token})` }}
-                    />
-                  </>
-                ) : (
-                  // Closed: the leaf lies flush across the gap, same segment a plain wall would
-                  // occupy — distinguished from `.maplab-wall` by its own bolder, door-toned stroke.
-                  <line
-                    className="maplab-door-leaf-closed"
-                    x1={segment.x1}
-                    y1={segment.y1}
-                    x2={segment.x2}
-                    y2={segment.y2}
-                    style={{ stroke: `var(${presentation.token})` }}
-                    strokeDasharray={dasharray}
-                  />
-                )}
-                <g transform={`translate(${midX - ICON_SIZE / 2}, ${midY - ICON_SIZE / 2})`}>
-                  <Icon
-                    width={ICON_SIZE}
-                    height={ICON_SIZE}
-                    className="maplab-door-icon"
-                    style={{ color: `var(${presentation.token})` }}
-                  />
-                </g>
-                {door.trapped && session.trapDisarmed && (
-                  <g transform={`translate(${midX + ICON_SIZE / 4}, ${midY + ICON_SIZE / 4})`}>
-                    <TrapDisarmedIcon
-                      width={14}
-                      height={14}
-                      className="maplab-trap-disarmed-badge"
-                      aria-hidden="true"
-                      style={{ color: 'var(--md-tertiary)' }}
-                    />
-                  </g>
-                )}
-              </g>
+              />
             )
           })}
+          <g className="maplab-door-badge-layer" aria-hidden="true">
+            {doors.map((door) => <DoorBadgeLayer key={door.door_id} door={door} cellSize={CELL_SIZE} session={doorSession(door)} />)}
+          </g>
 
           {stairs.map((stair) => {
             const cell = stairCellForZ(stair, activeZ)

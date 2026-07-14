@@ -426,6 +426,7 @@ export { Bike as BikeIcon } from 'lucide-react'                     // Mount / c
 export { Footprints as FootprintsIcon } from 'lucide-react'         // Tracks / trail
 
 // ─── Status Indicators ──────────────────────────────────────────────────
+export { Layers as MultipleStatusesIcon } from 'lucide-react'      // Two+ active statuses (distinct from PropWindowIcon)
 export { Check as CheckIcon } from 'lucide-react'                   // Confirm
 export { CheckCheck as DoubleCheckIcon } from 'lucide-react'        // Verified
 export { CheckCircle as CheckCircleIcon } from 'lucide-react'       // Success

@@ -27,13 +27,12 @@ import { FixturePropertiesForm } from './FixturePropertiesForm'
 import { PropMarker } from './PropMarker'
 import { PortalMarker } from './PortalMarker'
 import { StairMarker } from './StairMarker'
+import { DoorBadgeLayer, DoorMarker } from './DoorMarker'
 import { GhostFloorLayer } from './GhostFloorLayer'
 import { FIXTURE_TYPES } from './fixtureTypes'
 import {
   absoluteCells,
   canPaintCell,
-  doorPresentation,
-  doorSwingGeometry,
   doorWallSegment,
   doorsOnFloor,
   MAX_MARKERS_PER_CELL,
@@ -58,7 +57,6 @@ import {
 
 const CELL_SIZE = 64
 const MARKER_SIZE = 20
-const ICON_SIZE = 24
 const GRID_PATTERN_ID = 'maplab-editor-unknown-space-grid'
 
 function edgeKey(edge: WallEdge): string {
@@ -772,54 +770,20 @@ export function MapLabEditorPage() {
           )}
 
           {doorsOnActiveFloor.map((door) => {
-            const segment = doorWallSegment(door, CELL_SIZE)
-            const swing = doorSwingGeometry(door, CELL_SIZE)
-            const presentation = doorPresentation(door)
-            const Icon = presentation.icon
-            const midX = (segment.x1 + segment.x2) / 2
-            const midY = (segment.y1 + segment.y2) / 2
             const isSelected = door.door_id === state.selectedDoorId
-            const label = `${door.title ?? `Door ${door.door_id}`} — ${presentation.label}`
             return (
-              <g
+              <DoorMarker
                 key={door.door_id}
-                className="maplab-door"
-                data-state={presentation.state}
-                data-selected={isSelected || undefined}
-                role="button"
-                tabIndex={0}
-                aria-pressed={isSelected}
-                aria-label={label}
-                onClick={(event) => {
-                  event.stopPropagation()
-                  selectDoor(isSelected ? null : door.door_id)
-                }}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter' || event.key === ' ') {
-                    event.preventDefault()
-                    selectDoor(isSelected ? null : door.door_id)
-                  }
-                }}
-              >
-                <line
-                  className="maplab-door-leaf"
-                  x1={swing.hinge.x}
-                  y1={swing.hinge.y}
-                  x2={swing.leafTip.x}
-                  y2={swing.leafTip.y}
-                  style={{ stroke: `var(${presentation.token})` }}
-                />
-                <path
-                  className="maplab-door-swing"
-                  d={`M ${swing.leafTip.x} ${swing.leafTip.y} A ${swing.radius} ${swing.radius} 0 0 ${swing.sweepFlag} ${swing.farJamb.x} ${swing.farJamb.y}`}
-                  style={{ stroke: `var(${presentation.token})` }}
-                />
-                <g transform={`translate(${midX - ICON_SIZE / 2}, ${midY - ICON_SIZE / 2})`}>
-                  <Icon width={ICON_SIZE} height={ICON_SIZE} className="maplab-door-icon" style={{ color: `var(${presentation.token})` }} />
-                </g>
-              </g>
+                door={door}
+                cellSize={CELL_SIZE}
+                selected={isSelected}
+                onClick={() => selectDoor(isSelected ? null : door.door_id)}
+              />
             )
           })}
+          <g className="maplab-door-badge-layer" aria-hidden="true">
+            {doorsOnActiveFloor.map((door) => <DoorBadgeLayer key={door.door_id} door={door} cellSize={CELL_SIZE} />)}
+          </g>
 
           {stairsOnActiveFloor.map((stair) => {
             const cell = stairCellForZ(stair, state.activeZ)

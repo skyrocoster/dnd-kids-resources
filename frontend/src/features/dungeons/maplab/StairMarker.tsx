@@ -1,19 +1,14 @@
-import { HiddenIcon, LockIcon, TrapIcon, TrapDisarmedIcon, type LucideIcon } from '../../../components/icons'
+import { BadgeRing } from './BadgeRing'
+import { markerBadges } from './markerBadges'
 import {
+  effectivePassageState,
   GROUPED_MARKER_RADIUS_FRACTION,
   MARKER_RADIUS_FRACTION,
   stairPresentation,
   type MapCell,
   type MapStair,
   type PassageSessionState,
-  type PassageState,
 } from './maplabModel'
-
-const BADGE_ICONS: Partial<Record<PassageState, LucideIcon>> = {
-  hidden: HiddenIcon,
-  locked: LockIcon,
-  trapped: TrapIcon,
-}
 
 interface StairMarkerProps {
   stair: MapStair
@@ -69,11 +64,13 @@ export function StairMarker({
   const radius = grouped ? cellSize * GROUPED_MARKER_RADIUS_FRACTION : cellSize * MARKER_RADIUS_FRACTION
   const iconSize = grouped ? cellSize * GROUPED_MARKER_RADIUS_FRACTION * 1.1 : cellSize * 0.34
 
+  const effective = effectivePassageState(stair, session)
   const presentation = stairPresentation(stair, activeZ, session)
   const Icon = presentation.icon
-  const BadgeIcon = BADGE_ICONS[presentation.state]
+  // Keep the authored trap badge after disarming so the confirmation badge can communicate both facts.
+  const badges = markerBadges({ ...stair, locked: effective.locked }, trapDisarmed ?? effective.trapDisarmed)
   const dasharray = presentation.state === 'hidden' ? '4 3' : undefined
-  const resolvedLabel = label ?? `${stair.title ?? `Stair ${stair.stair_id}`} — ${presentation.label}`
+  const resolvedLabel = label ?? `${stair.title ?? `Stair ${stair.stair_id}`} — ${badges.length ? badges.map((badge) => badge.label).join(', ') : presentation.label}`
 
   return (
     <g
@@ -111,28 +108,7 @@ export function StairMarker({
       <g transform={`translate(${cx - iconSize / 2}, ${cy - iconSize / 2})`}>
         <Icon width={iconSize} height={iconSize} className="maplab-stair-icon" style={{ color: `var(${presentation.token})` }} />
       </g>
-      {BadgeIcon && (
-        <g transform={`translate(${cx + iconSize / 4}, ${cy + iconSize / 4})`}>
-          <BadgeIcon
-            width={14}
-            height={14}
-            className="maplab-stair-state-badge"
-            aria-hidden="true"
-            style={{ color: `var(${presentation.token})` }}
-          />
-        </g>
-      )}
-      {trapDisarmed && (
-        <g transform={`translate(${cx + iconSize / 4}, ${cy + iconSize / 4})`}>
-          <TrapDisarmedIcon
-            width={14}
-            height={14}
-            className="maplab-trap-disarmed-badge"
-            aria-hidden="true"
-            style={{ color: 'var(--md-tertiary)' }}
-          />
-        </g>
-      )}
+       <BadgeRing badges={badges} cx={cx} cy={cy} markerRadius={radius} badgeRadius={8} />
     </g>
   )
 }

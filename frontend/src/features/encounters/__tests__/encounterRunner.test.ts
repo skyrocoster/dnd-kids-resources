@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { Encounter, Monster } from '../../../api/types'
 import {
   combatantFromMonster,
+  combatantFromPlayer,
   combatantsToCreatures,
   createInitialState,
   encounterRunnerReducer,
@@ -263,6 +264,17 @@ describe('combatantsToCreatures', () => {
     expect(creatures[0].conditions).toEqual(['grappled'])
     expect(creatures[1].conditions).toEqual([])
   })
+
+  it('kind field survives combatantsToCreatures -> hydrate round-trip', () => {
+    const state = encounterRunnerReducer(hydrated(), { type: 'addPlayer', name: 'Frodo', conditions: [] })
+    const { creatures } = combatantsToCreatures(state)
+    expect(creatures[3].kind).toBe('player')
+
+    const rehydrated = hydrate({ id: 1, title: 'Test', creatures, active_index: 3 })
+    expect(rehydrated.combatants[3].kind).toBe('player')
+    expect(rehydrated.combatants[3].hp_current).toBeNull()
+    expect(rehydrated.combatants[3].name).toBe('Frodo')
+  })
 })
 
 describe('combatantFromMonster', () => {
@@ -274,12 +286,61 @@ describe('combatantFromMonster', () => {
   })
 })
 
-// P2 stubs
-describe.skip('addPlayer', () => {
-  it('appends a player combatant with null HP and kind player')
-  it('preserves existing combatant order')
+describe('addPlayer', () => {
+  it('appends a player combatant with null HP and kind player', () => {
+    const state = hydrated()
+    const next = encounterRunnerReducer(state, { type: 'addPlayer', name: 'Aragorn', conditions: ['prone'] })
+    expect(next.combatants).toHaveLength(4)
+    const player = next.combatants[3]
+    expect(player.name).toBe('Aragorn')
+    expect(player.kind).toBe('player')
+    expect(player.hp_current).toBeNull()
+    expect(player.hp_max).toBeNull()
+    expect(player.ac).toBeNull()
+    expect(player.monster_id).toBeNull()
+    expect(player.conditions).toEqual(['prone'])
+    expect(player.status).toBe('alive')
+  })
+
+  it('preserves existing combatant order', () => {
+    const state = hydrated()
+    const [a, b, c] = state.combatants
+    const next = encounterRunnerReducer(state, { type: 'addPlayer', name: 'Legolas' })
+    expect(next.combatants.map((x) => x.clientId)).toEqual([
+      a.clientId, b.clientId, c.clientId, next.combatants[3].clientId,
+    ])
+  })
+
+  it('defaults conditions to empty array', () => {
+    const state = hydrated()
+    const next = encounterRunnerReducer(state, { type: 'addPlayer', name: 'Gimli' })
+    expect(next.combatants[3].conditions).toEqual([])
+  })
 })
 
-describe.skip('combatantFromPlayer', () => {
-  it('returns a combatant with kind player and null HP/AC')
+describe('combatantFromPlayer', () => {
+  it('returns a combatant with kind player and null HP/AC', () => {
+    const player = combatantFromPlayer('Gandalf', ['stunned'])
+    expect(player.kind).toBe('player')
+    expect(player.hp_current).toBeNull()
+    expect(player.hp_max).toBeNull()
+    expect(player.ac).toBeNull()
+    expect(player.monster_id).toBeNull()
+    expect(player.original_name).toBe('Gandalf')
+    expect(player.name).toBe('Gandalf')
+    expect(player.status).toBe('alive')
+    expect(player.conditions).toEqual(['stunned'])
+    expect(player.clientId).toBeTruthy()
+  })
+
+  it('defaults conditions to empty when not provided', () => {
+    const player = combatantFromPlayer('Frodo')
+    expect(player.conditions).toEqual([])
+  })
+
+  it('assigns a fresh clientId each call', () => {
+    const a = combatantFromPlayer('Boromir')
+    const b = combatantFromPlayer('Aragorn')
+    expect(a.clientId).not.toBe(b.clientId)
+  })
 })

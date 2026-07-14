@@ -1,4 +1,6 @@
-import { HiddenIcon, LockIcon, TrapIcon, PortalIcon, type LucideIcon } from '../../../components/icons'
+import { PortalIcon } from '../../../components/icons'
+import { BadgeRing } from './BadgeRing'
+import { markerBadges } from './markerBadges'
 import {
   effectivePassageState,
   GROUPED_MARKER_RADIUS_FRACTION,
@@ -6,14 +8,7 @@ import {
   passagePresentation,
   type MapPortal,
   type PassageSessionState,
-  type PassageState,
 } from './maplabModel'
-
-const BADGE_ICONS: Partial<Record<PassageState, LucideIcon>> = {
-  hidden: HiddenIcon,
-  locked: LockIcon,
-  trapped: TrapIcon,
-}
 
 interface PortalMarkerProps {
   portal: MapPortal
@@ -60,9 +55,10 @@ export function PortalMarker({
 
   const effective = effectivePassageState(portal, session)
   const presentation = passagePresentation(effective)
-  const BadgeIcon = BADGE_ICONS[presentation.state]
+  // Keep the authored trap badge after disarming so the confirmation badge can communicate both facts.
+  const badges = markerBadges({ ...portal, locked: effective.locked }, effective.trapDisarmed)
   const dasharray = presentation.state === 'hidden' ? '4 3' : undefined
-  const label = `${portal.title ?? `Portal ${portal.portal_id}`} — ${presentation.label}`
+  const label = `${portal.title ?? `Portal ${portal.portal_id}`} — ${badges.length ? badges.map((badge) => badge.label).join(', ') : presentation.label}`
 
   return (
     <g
@@ -100,17 +96,7 @@ export function PortalMarker({
       <g transform={`translate(${cx - iconSize / 2}, ${cy - iconSize / 2})`}>
         <PortalIcon width={iconSize} height={iconSize} className="maplab-portal-icon" style={{ color: `var(${presentation.token})` }} />
       </g>
-      {BadgeIcon && (
-        <g transform={`translate(${cx + iconSize / 4}, ${cy + iconSize / 4})`}>
-          <BadgeIcon
-            width={14}
-            height={14}
-            className="maplab-portal-state-badge"
-            aria-hidden="true"
-            style={{ color: `var(${presentation.token})` }}
-          />
-        </g>
-      )}
+       <BadgeRing badges={badges} cx={cx} cy={cy} markerRadius={radius} badgeRadius={8} />
     </g>
   )
 }

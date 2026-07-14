@@ -190,8 +190,7 @@ export function encounterRunnerReducer(state: RunnerState, action: RunnerAction)
       return { ...state, combatants: [...state.combatants, combatantFromMonster(action.monster)] }
 
     case 'addPlayer':
-      // P2: append combatantFromPlayer(action.name, action.conditions)
-      return state
+      return { ...state, combatants: [...state.combatants, combatantFromPlayer(action.name, action.conditions)] }
 
     case 'remove': {
       const index = state.combatants.findIndex((c) => c.clientId === action.clientId)

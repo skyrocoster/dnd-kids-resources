@@ -1,0 +1,86 @@
+.add-player-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background-color: var(--md-surface-1);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: 0.5rem;
+}
+
+.add-player-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.add-player-panel-header h3 {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin: 0;
+  font-size: var(--type-title-size);
+}
+
+.add-player-panel-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  background: transparent;
+  border: none;
+  color: var(--md-on-surface-variant);
+  font-size: 1.25rem;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.add-player-panel-close:hover {
+  color: var(--md-on-surface);
+}
+
+.add-player-panel-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.add-player-panel-cancel {
+  min-height: 2.75rem;
+  padding: 0 0.875rem;
+  background-color: var(--md-surface-3);
+  color: var(--md-on-surface);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: 0.375rem;
+  font-size: var(--type-label-size);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.add-player-panel-cancel:hover {
+  background-color: var(--md-surface-4);
+}
+
+.add-player-panel-add {
+  min-height: 2.75rem;
+  padding: 0 1.25rem;
+  background-color: var(--md-secondary);
+  color: var(--md-on-secondary);
+  border: none;
+  border-radius: 0.375rem;
+  font-size: var(--type-label-size);
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.add-player-panel-add:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.add-player-panel-add:hover:not(:disabled) {
+  filter: brightness(1.08);
+}

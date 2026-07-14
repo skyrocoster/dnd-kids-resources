@@ -5,8 +5,8 @@ This document is the single reference for expanding the **encounter** feature be
 methodology as `dungeon_plan.md` (scaffold → implementation → design pass) and inherits that project's
 design system, component anatomy, and reusable pieces — build on them rather than re-deriving.
 
-> **Status:** Phases 1–3, P0, and P1 shipped. **P2 (Add players)** is next. See the Shipped-stages
-> table for the collapsed record.
+> **Status:** Phases 1–3 and Phase 4 shipped. See the Shipped-stages table for the collapsed
+> record.
 
 ---
 
@@ -110,7 +110,7 @@ player `kind` field round-trips through the opaque `units` blob).
 |-------|-------|---------|--------------|
 | **P0 — Scaffolding** | Haiku | Types/stubs/placeholder CSS/`it.skip` tests, no implementation. One context. | `Size` type + `size` state/`loadSize`/`saveSize` stubs + resize-handle element (inert) in `FloatingWindow`; `kind?: 'monster' \| 'player'` on `EncounterCreature`; `{ type:'addPlayer'; name; conditions? }` in `RunnerAction` (no-op case) + `combatantFromPlayer` stub + `addPlayer` on the hook; `AddPlayerPanel.tsx` stub + board toggle stub; `CombatantCard` `isPlayer` branch stub; placeholder CSS; skipped test stubs. Stubs compile; app renders unchanged. |
 | **P1 — Resizable window** | Sonnet | Drag a corner handle to resize the pop-out; size persists. | Resize-handle pointer-drag in `FloatingWindow` (mirrors the header-drag pattern) writing `width`/`height` with min/max clamps; size persisted to `sessionStorage` per `storageKey`; CSS switches from fixed `width`/`max-height` to state-driven; keyboard-resizable handle. Tests: clamp util + persistence round-trip + handle renders/operates. |
-| **P2 — Add players** | Sonnet | Add a PC to a live encounter: name + conditions only. | `addPlayer` reducer case + `combatantFromPlayer` (null HP/AC, `kind:'player'`, `status:'alive'`); `AddPlayerPanel` (name field + `ConditionPicker`) wired via a board-header **Add player** toggle; `CombatantCard` player variant hides HP meter / stepper rail / AC / status pills, keeps name + conditions + reorder/active/remove; `kind` round-trips through save/hydrate. Tests: reducer (adds a player, null HP), panel (name required, condition toggles), card variant (no HP/stepper DOM), round-trip. |
+| **P2 — Add players** | ✅ shipped | Add a PC to a live encounter: name + conditions only. | See shipped row below. |
 | **P3 — Design pass** | Sonnet | `/frontend-design` review, MD3/a11y, zero-bug. | Player-card visual distinction (icon + accent token, not hue-alone); resize-handle affordance + focus ring + reduced-motion; touch-target audit in compact/dock mode; tokens-only sweep. Fixes + design tests; live-verified. |
 
 **Sequencing:** P0 → P1 → P2 → P3 (P1 and P2 were independent; P3 is last).
@@ -118,35 +118,7 @@ player `kind` field round-trips through the opaque `units` blob).
 <!-- ===== VERBOSE BLOCKS — one per un-shipped stage, in order. Delete a block and collapse it to a
      Shipped row the moment that stage ships; the remaining blocks stay until their own turn. ===== -->
 
-#### P2 — Add players (next up)
-
-- **Build:** Let the DM add a player character to a running encounter.
-  - `combatantFromPlayer(name, conditions = [])`: mint a `clientId`, `monster_id: null`, `original_name:
-    name`, `name`, `hp_current: null`, `hp_max: null`, `ac: null`, `status: 'alive'`, `conditions`,
-    `kind: 'player'`.
-  - `case 'addPlayer'`: append `combatantFromPlayer(action.name, action.conditions)` to `combatants`
-    (mirror `addFromMonster`).
-  - `AddPlayerPanel`: a name `TextField` (required, trim; disable Add when empty) + a `ConditionPicker`
-    (optional, seeded from `runner.conditions`), Add/Cancel; `onAdd(name, conditions)` → `runner.addPlayer`.
-    Wire the board-header **Add player** toggle beside **Add monster**.
-  - `CombatantCard` player variant (`combatant.kind === 'player'`): suppress the HP meter, the stepper rail,
-    the AC chip, and the status-pill row; keep the header (drag/reorder/name/active/remove; drop duplicate
-    or keep — pick per design) and the condition row. Ensure `hpTier`/HP math is never invoked for a
-    player (no null-deref).
-  - Confirm `kind` survives `combatantsToCreatures` → `updateEncounter` → `hydrate` (it's just a passthrough
-    field on the blob).
-- **Inherits:** P0's `addPlayer` action/hook/panel/card stubs and the `kind` field; `ConditionPicker` and
-  `AddMonsterPanel` patterns.
-- **Tests:** reducer (`addPlayer` appends a player with null HP and `kind:'player'`; order preserved);
-  `AddPlayerPanel` (Add disabled until name entered; condition toggle flows to `onAdd`); `CombatantCard`
-  player variant renders **no** HP meter / stepper / status pills but **does** render name + conditions;
-  round-trip test that a player survives save→hydrate with `kind` intact. Both hosts (page + dock) exercise
-  the path via existing test harnesses.
-- **🚦 Gate:** suite-sufficient. Live confirmation (add a player in the dock, toggle a condition, reopen —
-  player + conditions persist, no HP UI) is desirable; run the suite + `npm run build` and report the manual
-  check to the user unless a browser pass is explicitly requested.
-
-#### P3 — Design pass (planned)
+#### P3 — Design pass (next up)
 
 - **Build:** `/frontend-design` review of the two new surfaces. Give the player card a clear, non-hue-alone
   identity (a player/user Lucide icon + a distinct accent token vs. the monster/teal role); polish the
@@ -185,6 +157,7 @@ Implementation narrative lives in each stage's git commit; these rows answer *wh
 | **D4** | Dungeon design pass: styled `.maplab-field-row select` to match text inputs; removed stale TODO; confirmed marker focus/sizing precedent. 464 tests, live-verified 2026-07-13. |
 | **P0** | Phase 4 scaffolding: `Size` type + stubs, `kind` on `EncounterCreature`, `addPlayer` action/`combatantFromPlayer` stub/`AddPlayerPanel` stub/board toggle/`isPlayer` derivation, `it.skip` test stubs. Gate ✅. |
 | **P1** | Resizable `FloatingWindow`: `clampSize` util, `loadSize`/`saveSize` + `sessionStorage`, pointer-drag resize handle (mirrors header-drag), keyboard arrow-key resize (step 16px), `min-width`/`min-height` CSS floors, body user-select guard during resize. 602 tests, build clean. |
+| **P2** | Player characters in the runner: `addPlayer` reducer case, `combatantFromPlayer` factory, `AddPlayerPanel` (name field + `ConditionPicker`), `CombatantCard` player variant (no HP/stepper/AC/status), board-header toggle, `kind` round-trips through save/hydrate. 623 tests, build clean. Live-verified 2026-07-14. |
 
 ---
 
@@ -208,6 +181,6 @@ Implementation narrative lives in each stage's git commit; these rows answer *wh
 
 ## Next:
 
-**Phase 4 / P2 — Add players (Sonnet, unblocked).** Wire `combatantFromPlayer` into the reducer, build
-`AddPlayerPanel` with name field + `ConditionPicker`, render the player card variant (no HP/stepper/AC/status).
-Full implementation; live-verified.
+**Phase 4 / P3 — Design pass (Sonnet, unblocked).** `/frontend-design` review: player-card visual identity
+(UserIcon + secondary accent token), resize-handle affordance + focus ring + reduced-motion, touch-target
+audit in compact/dock mode, tokens-only sweep. Live end-to-end verification on Surface Pro preferred.

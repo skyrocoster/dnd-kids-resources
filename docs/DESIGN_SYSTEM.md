@@ -23,6 +23,7 @@ four tokens: `--md-{role}`, `--md-on-{role}`, `--md-{role}-container`, `--md-on-
 | `--md-npc` | NPCs (rose, hue 340.6/chroma 40) | `#fbafe3` | `#521b46` | `#6c325e` | `#ffd7ef` |
 | `--md-passage-locked` | Map Lab locked passages | `#C5C0FF` | `#2C2767` | `#433F7F` | `#E3DFFF` |
 | `--md-passage-hidden` | Map Lab hidden passages | `#C7C6C6` | `#2F3031` | `#464747` | `#E3E2E2` |
+| `--md-door` | Map Lab door leaf and identity glyph | `#F9B79F` | `#4E2515` | `#683B29` | `#FFDBCE` |
 | `--md-loot` | Items catalog and loot bundles | `#F6B994` | `#4C270C` | `#663C20` | `#FFDBC7` |
 | `--md-divine` | Healing, radiant (banked) | `#FBBA73` | `#492900` | `#683D00` | `#FFDCBC` |
 | `--md-arcane` | Arcane/eldritch magic (banked) | `#90CDFE` | `#00344F` | `#004B71` | `#CBE6FF` |
@@ -172,6 +173,13 @@ Generic hover/focus details panel in Map Lab:
   to a uniform `{title, typeLabel, icon, token, lines, chips}` shape
 - **Panels** — icon+text chips for passage state, detail lines, session toggle controls
 - **Session layer** — `effectivePassageState` computed from authored flags + runtime toggles
+
+### Map Lab markers (`maplab/`)
+
+- **On-square markers** — props, stairs, and portals retain neutral marker bodies with state-colored rings;
+  icon-bearing badge discs carry every active state outside the marker.
+- **Doors** — the leaf and identity glyph always use `--md-door`; door state is communicated by its
+  icon-bearing badges, distributed alongside the current leaf in a trailing SVG layer.
 
 ### Collapsible nav rail (`layout/AppShell.tsx`)
 

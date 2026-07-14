@@ -1,5 +1,7 @@
-import { CoinsIcon, HiddenIcon, LockIcon, TrapIcon, ItemIcon, type LucideIcon } from '../../../components/icons'
+import { ItemIcon } from '../../../components/icons'
+import { BadgeRing } from './BadgeRing'
 import { PROP_KIND_ICONS } from './fixtureTypes'
+import { markerBadges } from './markerBadges'
 import {
   GROUPED_MARKER_RADIUS_FRACTION,
   MARKER_RADIUS_FRACTION,
@@ -8,14 +10,7 @@ import {
   doorWallSegment,
   passagePresentation,
   type MapProp,
-  type PassageState,
 } from './maplabModel'
-
-const BADGE_ICONS: Partial<Record<PassageState, LucideIcon>> = {
-  hidden: HiddenIcon,
-  locked: LockIcon,
-  trapped: TrapIcon,
-}
 
 interface PropMarkerProps {
   prop: MapProp
@@ -43,7 +38,7 @@ interface PropMarkerProps {
  * its cell (stair-marker pattern); a wall-attached prop (`side` present) anchors at the wall
  * segment's midpoint (door pattern) with a smaller marker. The kind icon is the primary glyph;
  * the dominant passage state (from `passagePresentation`) drives the token color, a dashed outline
- * when hidden, and a small corner badge when locked/trapped/hidden — never hue-alone. */
+ * when hidden, and a programmatic badge ring for every active state — never hue-alone. */
 export function PropMarker({
   prop,
   cellSize,
@@ -85,9 +80,9 @@ export function PropMarker({
   const token =
     prop.kind === 'encounter' && presentation.state === 'unlocked' ? '--md-tertiary' : presentation.token
   const Icon = PROP_KIND_ICONS[prop.kind] ?? ItemIcon
-  const BadgeIcon = BADGE_ICONS[presentation.state]
+  const badges = markerBadges(prop)
   const dasharray = presentation.state === 'hidden' ? '4 3' : undefined
-  const label = `${prop.title ?? prop.kind} — ${presentation.label}${prop.loot ? ' — loot assigned' : ''}`
+  const label = `${prop.title ?? prop.kind} — ${badges.length ? badges.map((badge) => badge.label).join(', ') : presentation.label}`
 
   return (
     <g
@@ -125,28 +120,7 @@ export function PropMarker({
       <g transform={`translate(${cx - iconSize / 2}, ${cy - iconSize / 2})`}>
         <Icon width={iconSize} height={iconSize} className="maplab-prop-icon" style={{ color: `var(${token})` }} />
       </g>
-      {BadgeIcon && (
-        <g transform={`translate(${cx + iconSize / 4}, ${cy + iconSize / 4})`}>
-          <BadgeIcon
-            width={14}
-            height={14}
-            className="maplab-prop-state-badge"
-            aria-hidden="true"
-            style={{ color: `var(${presentation.token})` }}
-          />
-        </g>
-      )}
-      {prop.loot && (
-        <g className="maplab-loot-badge" transform={`translate(${cx - iconSize / 2}, ${cy - iconSize / 2})`}>
-          <circle cx={7} cy={7} r={8} fill="var(--md-loot)" />
-          <CoinsIcon
-            width={14}
-            height={14}
-            aria-hidden="true"
-            style={{ color: 'var(--md-on-loot)' }}
-          />
-        </g>
-      )}
+      <BadgeRing badges={badges} cx={cx} cy={cy} markerRadius={radius} badgeRadius={8} />
     </g>
   )
 }

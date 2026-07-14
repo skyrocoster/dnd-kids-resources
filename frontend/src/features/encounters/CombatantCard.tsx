@@ -13,6 +13,7 @@ import {
   ShieldIcon,
   SkullIcon,
   TrashIcon,
+  UserIcon,
 } from '../../components/icons'
 import './CombatantCard.css'
 
@@ -70,11 +71,10 @@ export function CombatantCard({
   const [setValue, setSetValue] = useState('')
 
   const isPlayer = combatant.kind === 'player'
-  void isPlayer
 
   const hpMax = combatant.hp_max ?? null
   const hpCurrent = combatant.hp_current ?? 0
-  const tier = hpTier(combatant.hp_current, hpMax)
+  const tier = isPlayer ? 'healthy' : hpTier(combatant.hp_current, hpMax)
   const pct = hpMax && hpMax > 0 ? Math.max(0, Math.min(100, (hpCurrent / hpMax) * 100)) : 100
 
   const applySet = () => {
@@ -123,6 +123,8 @@ export function CombatantCard({
           </button>
         </div>
 
+        {isPlayer && <UserIcon size={18} aria-hidden className="combatant-player-icon" />}
+
         <input
           className="combatant-name-input"
           value={combatant.name ?? ''}
@@ -130,10 +132,12 @@ export function CombatantCard({
           aria-label="Combatant name"
         />
 
-        <span className="combatant-ac">
-          <ShieldIcon size={14} aria-hidden />
-          {combatant.ac ?? '—'}
-        </span>
+        {!isPlayer && (
+          <span className="combatant-ac">
+            <ShieldIcon size={14} aria-hidden />
+            {combatant.ac ?? '—'}
+          </span>
+        )}
 
         <button
           type="button"
@@ -157,19 +161,21 @@ export function CombatantCard({
         </button>
       </div>
 
-      <div className="combatant-status-chips" role="group" aria-label="Status">
-        {STATUS_OPTIONS.map((status) => (
-          <button
-            key={status}
-            type="button"
-            className={`combatant-status-chip combatant-status-${status} ${combatant.status === status ? 'selected' : ''}`}
-            onClick={() => onSetStatus(status)}
-            aria-pressed={combatant.status === status}
-          >
-            {status}
-          </button>
-        ))}
-      </div>
+      {!isPlayer && (
+        <div className="combatant-status-chips" role="group" aria-label="Status">
+          {STATUS_OPTIONS.map((status) => (
+            <button
+              key={status}
+              type="button"
+              className={`combatant-status-chip combatant-status-${status} ${combatant.status === status ? 'selected' : ''}`}
+              onClick={() => onSetStatus(status)}
+              aria-pressed={combatant.status === status}
+            >
+              {status}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="combatant-condition-row">
         {(combatant.conditions ?? []).length > 0 && (
@@ -188,65 +194,69 @@ export function CombatantCard({
         />
       </div>
 
-      <div className="combatant-hp-row">
-        <div className="combatant-hp-meter" role="img" aria-label={`${hpCurrent} of ${hpMax ?? '?'} hit points`}>
-          <div className="combatant-hp-meter-fill" style={{ width: `${pct}%` }} />
-          <div className="combatant-hp-meter-label">
-            {tier === 'down' && <SkullIcon size={18} aria-hidden />}
-            <span className="combatant-hp-number">{hpCurrent}</span>
-            <span className="combatant-hp-max"> / {hpMax ?? '?'}</span>
+      {!isPlayer && (
+        <>
+          <div className="combatant-hp-row">
+            <div className="combatant-hp-meter" role="img" aria-label={`${hpCurrent} of ${hpMax ?? '?'} hit points`}>
+              <div className="combatant-hp-meter-fill" style={{ width: `${pct}%` }} />
+              <div className="combatant-hp-meter-label">
+                {tier === 'down' && <SkullIcon size={18} aria-hidden />}
+                <span className="combatant-hp-number">{hpCurrent}</span>
+                <span className="combatant-hp-max"> / {hpMax ?? '?'}</span>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
 
-      <div className="combatant-stepper-rail">
-        <div className="combatant-stepper-group">
-          <button type="button" className="combatant-stepper" onClick={() => onAdjustHp(-10)} aria-label="Damage 10">
-            <MinusIcon size={14} aria-hidden />10
-          </button>
-          <button type="button" className="combatant-stepper" onClick={() => onAdjustHp(-2)} aria-label="Damage 2">
-            <MinusIcon size={14} aria-hidden />2
-          </button>
-          <button type="button" className="combatant-stepper" onClick={() => onAdjustHp(-1)} aria-label="Damage 1">
-            <MinusIcon size={14} aria-hidden />1
-          </button>
-        </div>
-        <div className="combatant-stepper-group">
-          <button type="button" className="combatant-stepper" onClick={() => onAdjustHp(1)} aria-label="Heal 1">
-            <PlusIcon size={14} aria-hidden />1
-          </button>
-          <button type="button" className="combatant-stepper" onClick={() => onAdjustHp(2)} aria-label="Heal 2">
-            <PlusIcon size={14} aria-hidden />2
-          </button>
-          <button type="button" className="combatant-stepper" onClick={() => onAdjustHp(10)} aria-label="Heal 10">
-            <PlusIcon size={14} aria-hidden />10
-          </button>
-        </div>
-        <div className="combatant-set-wrap">
-          <button type="button" className="combatant-set-toggle" onClick={() => setIsSetOpen((v) => !v)}>
-            Set…
-          </button>
-          {isSetOpen && (
-            <div className="combatant-set-popover">
-              <label className="visually-hidden" htmlFor={`set-hp-${combatant.clientId}`}>
-                Set HP
-              </label>
-              <input
-                id={`set-hp-${combatant.clientId}`}
-                type="number"
-                className="combatant-set-input"
-                value={setValue}
-                onChange={(e) => setSetValue(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && applySet()}
-                autoFocus
-              />
-              <button type="button" className="combatant-set-apply" onClick={applySet}>
-                Apply
+          <div className="combatant-stepper-rail">
+            <div className="combatant-stepper-group">
+              <button type="button" className="combatant-stepper" onClick={() => onAdjustHp(-10)} aria-label="Damage 10">
+                <MinusIcon size={14} aria-hidden />10
+              </button>
+              <button type="button" className="combatant-stepper" onClick={() => onAdjustHp(-2)} aria-label="Damage 2">
+                <MinusIcon size={14} aria-hidden />2
+              </button>
+              <button type="button" className="combatant-stepper" onClick={() => onAdjustHp(-1)} aria-label="Damage 1">
+                <MinusIcon size={14} aria-hidden />1
               </button>
             </div>
-          )}
-        </div>
-      </div>
+            <div className="combatant-stepper-group">
+              <button type="button" className="combatant-stepper" onClick={() => onAdjustHp(1)} aria-label="Heal 1">
+                <PlusIcon size={14} aria-hidden />1
+              </button>
+              <button type="button" className="combatant-stepper" onClick={() => onAdjustHp(2)} aria-label="Heal 2">
+                <PlusIcon size={14} aria-hidden />2
+              </button>
+              <button type="button" className="combatant-stepper" onClick={() => onAdjustHp(10)} aria-label="Heal 10">
+                <PlusIcon size={14} aria-hidden />10
+              </button>
+            </div>
+            <div className="combatant-set-wrap">
+              <button type="button" className="combatant-set-toggle" onClick={() => setIsSetOpen((v) => !v)}>
+                Set…
+              </button>
+              {isSetOpen && (
+                <div className="combatant-set-popover">
+                  <label className="visually-hidden" htmlFor={`set-hp-${combatant.clientId}`}>
+                    Set HP
+                  </label>
+                  <input
+                    id={`set-hp-${combatant.clientId}`}
+                    type="number"
+                    className="combatant-set-input"
+                    value={setValue}
+                    onChange={(e) => setSetValue(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && applySet()}
+                    autoFocus
+                  />
+                  <button type="button" className="combatant-set-apply" onClick={applySet}>
+                    Apply
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   )
 }
