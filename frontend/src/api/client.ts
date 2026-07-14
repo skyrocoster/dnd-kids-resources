@@ -10,6 +10,10 @@ import type {
   Monster,
   Weapon,
   WeaponInput,
+  Item,
+  ItemInput,
+  LootBundle,
+  LootBundleInput,
   Player,
   PlayerInput,
   NPC,
@@ -86,6 +90,13 @@ export const createWeapon = (weapon: WeaponInput) => post<Weapon>('/weapons', we
 export const updateWeapon = (id: number, weapon: WeaponInput) => put<Weapon>(`/weapons/${id}`, weapon)
 export const deleteWeapon = (id: number) => del(`/weapons/${id}`)
 
+// Items
+export const listItems = () => get<Item[]>('/items')
+export const getItem = (id: number) => get<Item>(`/items/${id}`)
+export const createItem = (item: ItemInput) => post<Item>('/items', item)
+export const updateItem = (id: number, item: ItemInput) => put<Item>(`/items/${id}`, item)
+export const deleteItem = (id: number) => del(`/items/${id}`)
+
 // Players
 export const listPlayers = () => get<Player[]>('/players')
 export const getPlayer = (id: number) => get<Player>(`/players/${id}`)
@@ -124,6 +135,14 @@ export const createEncounter = (encounter: EncounterInput) => post<Encounter>('/
 export const updateEncounter = (id: number, encounter: EncounterInput) =>
   put<Encounter>(`/encounters/${id}`, encounter)
 export const deleteEncounter = (id: number) => del(`/encounters/${id}`)
+
+// Loot bundles
+export const listLootBundles = () => get<LootBundle[]>('/loot-bundles')
+export const getLootBundle = (id: number) => get<LootBundle>(`/loot-bundles/${id}`)
+export const createLootBundle = (bundle: LootBundleInput) => post<LootBundle>('/loot-bundles', bundle)
+export const updateLootBundle = (id: number, bundle: LootBundleInput) =>
+  put<LootBundle>(`/loot-bundles/${id}`, bundle)
+export const deleteLootBundle = (id: number) => del(`/loot-bundles/${id}`)
 
 // Dungeons
 export const listDungeons = () => get<Dungeon[]>('/dungeons')

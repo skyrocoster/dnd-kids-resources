@@ -63,6 +63,30 @@ When adding a new endpoint:
 
 ---
 
+## Items Router
+
+`backend/app/routers/items.py` — treasure item catalog CRUD.
+
+| Method | Path | Purpose | Request schema | Response schema |
+|---|---|---|---|---|
+| GET | `/items` | List catalog items | (query params: `limit`, `offset`) | `List[Item]` |
+| GET | `/items/{item_id}` | Fetch item by ID | (path param) | `Item` |
+| POST | `/items` | Create catalog item | `ItemCreate` | `Item` (201) |
+| PUT | `/items/{item_id}` | Update catalog item | `ItemUpdate` | `Item` |
+| DELETE | `/items/{item_id}` | Delete catalog item | (path param) | (204 No Content) |
+
+---
+
+## Loot Bundles Router
+
+`backend/app/routers/loot.py` — loot bundle authoring (scaffold).
+
+| Method | Path | Purpose | Request schema | Response schema |
+|---|---|---|---|---|
+| GET | `/loot-bundles` | List loot bundles | (query params: none) | `List[LootBundle]` |
+
+---
+
 ## Players Router
 
 `backend/app/routers/players.py` — player CRUD and spell/weapon roster management.
@@ -172,6 +196,8 @@ All request and response body shapes are defined in `backend/app/schemas.py` as 
 - **Spell:** id, spell_name, level, school, damage (JSON), components (JSON), classes (JSON), casting_time, duration, concentration, ritual, materials, higher_levels, spell_text, spell_alt_text, range, action, attack_type (JSON), area_of_effect (JSON), heal (JSON), heal_at_spell_slots (JSON), subclasses (JSON)
 - **Monster:** id, name, ac (JSON), hp (JSON), speed (JSON), stats (JSON), senses (JSON), languages (JSON), cr, action (JSON)
 - **Weapon:** id, name, base_weapon, rarity, weapon_category, weight, req_attune, property (JSON), focus (JSON), attack (JSON), entries (JSON)
+- **Item:** id, name, value_gp, category, description
+- **LootBundle:** id, name, gold, contents (JSON loot-entry array)
 - **Player:** id, name, class_, level
 - **NPC:** id, name, race, gender, background, size, stats (JSON), armor_class, hit_points, speed, saving_throws (JSON), skills (JSON), senses (JSON), languages, appearance (JSON), notes
 - **Quest:** id, title, summary, objectives (JSON), details (JSON), reward (JSON), quest_giver (foreign key to NPC), dungeon_id (foreign key to Dungeon), location

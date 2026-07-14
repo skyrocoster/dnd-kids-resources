@@ -24,6 +24,8 @@ build/
 *.log
 *.log.err
 .server.pid
+.frontend.pid
+.coverage
 
 # Frontend (v2)
 frontend/node_modules/

@@ -2,6 +2,8 @@ import { NavLink, Outlet } from 'react-router-dom'
 import { useNavCollapse } from '../hooks/useNavCollapse'
 import {
   DoorIcon,
+  GemIcon,
+  CoinsIcon,
   MasksIcon,
   NavCollapseIcon,
   NavExpandIcon,
@@ -35,6 +37,13 @@ const navSections: {
       { to: '/quests', label: 'Quests', linkIcon: ScrollIcon },
       { to: '/encounters', label: 'Encounters', linkIcon: ShieldIcon },
       { to: '/dungeons', label: 'Dungeons', linkIcon: DoorIcon },
+    ],
+  },
+  {
+    label: 'Loot',
+    links: [
+      { to: '/items', label: 'Items', linkIcon: GemIcon },
+      { to: '/loot', label: 'Loot Bundles', linkIcon: CoinsIcon },
     ],
   },
 ]

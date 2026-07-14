@@ -16,15 +16,17 @@ This doc describes the folder structure, backend/frontend conventions, and reque
 |---|---|
 | `main.py` | FastAPI app instance, CORS setup, router imports + registration, healthcheck endpoint |
 | `db.py` | SQLite connection helper, resolves database path, connection pooling |
-| `schemas.py` | Pydantic request/response models (Ability, Condition, Spell, Monster, Weapon, Player, NPC, Quest, Encounter, Dungeon, MapLayoutBlob + their Create/Update variants) |
+| `schemas.py` | Pydantic request/response models (Ability, Condition, Spell, Monster, Weapon, Item, LootBundle, Player, NPC, Quest, Encounter, Dungeon, MapLayoutBlob + their Create/Update variants) |
 
-**`backend/app/routers/`** — 9 domain-specific routers, each mounted at `/{domain}`:
+**`backend/app/routers/`** — 11 domain-specific routers, each mounted at `/{domain}`:
 
 | Router | Endpoint prefix | Purpose |
 |---|---|---|
 | `spells.py` | `/spells` | Spell CRUD, query by ID/title, reference data |
 | `monsters.py` | `/monsters` | Monster CRUD, query by ID/name |
 | `weapons.py` | `/weapons` | Weapon CRUD, query by ID/name |
+| `items.py` | `/items` | Treasure item catalog CRUD |
+| `loot.py` | `/loot-bundles` | Loot bundle authoring API (list scaffold; CRUD follows) |
 | `players.py` | `/players` | Player CRUD, player spell/weapon roster management |
 | `npcs.py` | `/npcs` | NPC CRUD and details |
 | `quests.py` | `/quests` | Quest CRUD and details |
@@ -45,7 +47,7 @@ This doc describes the folder structure, backend/frontend conventions, and reque
 |---|---|
 | `api/` | Single API client (`client.ts`) that speaks to the backend + centralized TypeScript type definitions (`types.ts`) |
 | `components/` | Shared UI primitives (Card, ConfirmDialog, DiceText, FloatingWindow, SearchList, SplitPane) + subdirs for form inputs and icon components |
-| `features/` | Domain modules — `dungeons/`, `encounters/`, `monsters/`, `npcs/`, `players/`, `quests/`, `spells/`, `weapons/`. Each feature dir contains pages, editor forms, and local state management. |
+| `features/` | Domain modules — `dungeons/`, `encounters/`, `items/`, `loot/`, `monsters/`, `npcs/`, `players/`, `quests/`, `spells/`, `weapons/`. Each feature dir contains pages, editor forms, and local state management. |
 | `pages/` | Top-level router pages (HomePage, ComponentDemoPage, StubPage) — entry points for each route |
 | `layout/` | AppShell.tsx — header, nav, footer layout that wraps all pages |
 | `router.tsx` | React Router configuration (routes, page-to-path mappings) |
@@ -108,4 +110,4 @@ data/seeds/*.json (canonical truth)
 - **Seed domains & table relationships:** [`docs/DATA_MODEL.md`](DATA_MODEL.md)
 - **Test pass/fail contract:** [`docs/TESTING.md`](TESTING.md)
 - **Feature plan (current stage, next steps):** `docs/<feature>_plan.md` (e.g., `dungeon_plan.md`, `encounters_plan.md`)
-- **Material Design 3 dark-mode tokens:** `dungeon_plan.md` § "Design system in force"
+- **Design system reference:** [`docs/DESIGN_SYSTEM.md`](DESIGN_SYSTEM.md) — color tokens, type scale, icons, component anatomy, accessibility floor

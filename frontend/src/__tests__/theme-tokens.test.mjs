@@ -19,6 +19,47 @@ describe('theme tokens', () => {
       '--md-on-loot',
       '--md-loot-container',
       '--md-on-loot-container',
+      // DP1: Banked damage-type and domain roles
+      '--md-divine',
+      '--md-on-divine',
+      '--md-divine-container',
+      '--md-on-divine-container',
+      '--md-arcane',
+      '--md-on-arcane',
+      '--md-arcane-container',
+      '--md-on-arcane-container',
+      '--md-nature',
+      '--md-on-nature',
+      '--md-nature-container',
+      '--md-on-nature-container',
+      '--md-fire',
+      '--md-on-fire',
+      '--md-fire-container',
+      '--md-on-fire-container',
+      '--md-cold',
+      '--md-on-cold',
+      '--md-cold-container',
+      '--md-on-cold-container',
+      '--md-lightning',
+      '--md-on-lightning',
+      '--md-lightning-container',
+      '--md-on-lightning-container',
+      '--md-poison',
+      '--md-on-poison',
+      '--md-poison-container',
+      '--md-on-poison-container',
+      '--md-psychic',
+      '--md-on-psychic',
+      '--md-psychic-container',
+      '--md-on-psychic-container',
+      '--md-boss',
+      '--md-on-boss',
+      '--md-boss-container',
+      '--md-on-boss-container',
+      '--md-skill',
+      '--md-on-skill',
+      '--md-skill-container',
+      '--md-on-skill-container',
     ]
     tokenNames.forEach((name) => {
       expect(name).toMatch(validTokenPattern)
@@ -28,7 +69,11 @@ describe('theme tokens', () => {
   it('banked hex colors are uppercase 6-digit #-prefixed format', () => {
     // All token values should be #XXXXXX (uppercase hex)
     const hexPattern = /^#[0-9A-F]{6}$/
-    const sampleTokens = ['#C5C0FF', '#2C2767', '#433F7F', '#E3DFFF', '#C7C6C6', '#F6B994']
+    const sampleTokens = [
+      '#C5C0FF', '#2C2767', '#433F7F', '#E3DFFF', '#C7C6C6', '#F6B994',
+      '#FBBA73', '#90CDFE', '#86D5C1', '#FFB3AE', '#73D5E1', '#ECBF79',
+      '#9BD594', '#DFB7FF', '#FFB1C1', '#A6C8FF',
+    ]
     sampleTokens.forEach((hex) => {
       expect(hex).toMatch(hexPattern)
     })
@@ -36,11 +81,16 @@ describe('theme tokens', () => {
 
   it('banked tokens provide contrast for dark theme', () => {
     // Each role should have light/dark variants for contrast
-    // passage-locked: light (#C5C0FF) and dark (#2C2767) text
-    // passage-hidden: light (#C7C6C6) and dark (#2F3031) text
-    // loot: light (#F6B994) and dark (#4C270C) text
-    const lightTokens = ['C5C0FF', 'C7C6C6', 'F6B994']
-    const darkTokens = ['2C2767', '2F3031', '4C270C']
+    const lightTokens = [
+      'C5C0FF', 'C7C6C6', 'F6B994',  // original banked
+      'FBBA73', '90CDFE', '86D5C1', 'FFB3AE', '73D5E1',
+      'ECBF79', '9BD594', 'DFB7FF', 'FFB1C1', 'A6C8FF',
+    ]
+    const darkTokens = [
+      '2C2767', '2F3031', '4C270C',  // original banked
+      '492900', '00344F', '00382E', '5A1B1A', '00363B',
+      '432C00', '01390A', '41215D', '59192C', '00315F',
+    ]
 
     lightTokens.forEach((hex) => {
       const value = parseInt(hex, 16)

@@ -9,6 +9,7 @@ Seed files (in data/seeds/):
 - seed_abilities.json, seed_conditions.json, seed_damage_types.json, seed_weapon_properties.json
 - seed_spells.json, seed_monsters.json, seed_weapons.json
 - seed_npcs.json, seed_quests.json, seed_encounters.json, seed_dungeons.json
+- seed_items.json, seed_loot_bundles.json
 - seed_players.json, seed_player_spells.json, seed_player_weapons.json
 
 Use `scripts/export_db_seeds.py` to re-export the current DB's tables back into data/seeds/.
@@ -662,6 +663,33 @@ def populate_weapons(cursor, conn, force=False):
     print(f"  [OK] Loaded {final_count} weapons")
 
 
+def populate_items(cursor, conn, force=False):
+    """Populate items table from seed_items.json."""
+    print("\n[ITEMS] Loading items...")
+    if force:
+        cursor.execute("DELETE FROM items")
+    else:
+        cursor.execute("SELECT COUNT(*) FROM items")
+        if cursor.fetchone()[0] > 0:
+            print("  [INFO] Items table already has data. Skip (use --force to override)")
+            return
+
+    seeds = load_json_file(SEEDS_DIR / "seed_items.json")
+    for item in seeds:
+        cursor.execute(
+            """INSERT INTO items (name, value_gp, category, description)
+               VALUES (?, ?, ?, ?)""",
+            (item.get("name"), item.get("value_gp", 0), item.get("category"), item.get("description")),
+        )
+    conn.commit()
+    print(f"  [OK] Loaded {len(seeds)} items")
+
+
+def populate_loot_bundles(cursor, conn, force=False):
+    """Reserve the loot-bundle seed pipeline for L3."""
+    print("\n[LOOT] Loading loot bundles...")
+
+
 def populate_dungeons(cursor, conn, force=False):
     """Populate dungeons table from seed_dungeons.json (v2: structured dungeons only)"""
     print("\n[CASTLE] Loading dungeons...")
@@ -996,6 +1024,8 @@ def clear_all_tables(cursor, conn):
         "abilities",
         "dungeons",
         "encounter",
+        "loot_bundle",
+        "items",
         "skills"
     ]
     
@@ -1031,6 +1061,7 @@ def main():
     parser.add_argument('--damage-types', action='store_true', help='Load only damage types')
     parser.add_argument('--weapon-properties', action='store_true', help='Load only weapon properties')
     parser.add_argument('--weapons', action='store_true', help='Load only weapons')
+    parser.add_argument('--items', action='store_true', help='Load only items')
     parser.add_argument('--dungeons', action='store_true', help='Load only dungeons')
     parser.add_argument('--encounters', action='store_true', help='Load only encounters')
     parser.add_argument('--npcs', action='store_true', help='Load only NPCs')
@@ -1045,7 +1076,7 @@ def main():
         args.abilities, args.spells, args.conditions, args.monsters, args.quests,
         args.npcs, args.players, args.player_spells, args.player_weapons,
         args.damage_types, args.weapon_properties, args.weapons,
-        args.dungeons, args.encounters
+        args.dungeons, args.encounters, args.items
     ])
     
     print("="*60)
@@ -1075,6 +1106,8 @@ def main():
             populate_weapon_properties(cursor, conn, args.force)
         if load_all or args.weapons:
             populate_weapons(cursor, conn, args.force)
+        if load_all or args.items:
+            populate_items(cursor, conn, args.force)
         if load_all or args.monsters:
             populate_monsters(cursor, conn, args.force)
         if load_all or args.npcs:
@@ -1089,6 +1122,8 @@ def main():
             populate_dungeons(cursor, conn, args.force)
         if load_all or args.encounters:
             populate_encounters(cursor, conn, args.force)
+        if load_all:
+            populate_loot_bundles(cursor, conn, args.force)
         if load_all or args.players:
             populate_players(cursor, conn, args.force)
         if load_all or args.player_spells:
@@ -1111,11 +1146,13 @@ def main():
         print("  1. Edit seed files in data/seeds/ to add more data")
         print("  2. Run: python scripts/seed_database.py --force")
         print("  3. Build frontend and run FastAPI server")
-        print("\nV2 Seed files (14 tables):")
+        print("\nV2 Seed files (16 tables):")
         print("  - data/seeds/seed_abilities.json")
         print("  - data/seeds/seed_damage_types.json")
         print("  - data/seeds/seed_weapon_properties.json")
         print("  - data/seeds/seed_weapons.json")
+        print("  - data/seeds/seed_items.json")
+        print("  - data/seeds/seed_loot_bundles.json")
         print("  - data/seeds/seed_spells.json")
         print("  - data/seeds/seed_conditions.json")
         print("  - data/seeds/seed_monsters.json")

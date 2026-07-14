@@ -107,14 +107,13 @@ Task 4.5 set up pytest infrastructure and fixtures. Tasks 5+ inherit these patte
 
 ## Browser Automation
 
-- **Do not drive the Chrome browser in verification passes by default.** Test suite (`npm run test` + `pytest`)
-  is sufficient to catch logic bugs.
-- **Only use browser automation when:**
-  - The user explicitly asks to verify a feature in a browser ("does the UI look right", "try the new button").
-  - A stage's verification gate specifically requires live visual/interaction confirmation (e.g., "confirm the
-    marker is clickable and doesn't get swallowed by the overlay").
-  - End-to-end user flow validation is needed (flow requires cross-component interaction or visual feedback
-    that tests cannot capture).
-- **When you do automate:** Record GIF traces for complex interactions; verify touch-target sizing, z-order,
-  focus visibility, `prefers-reduced-motion`, and no emoji/flat-text issues alongside functional correctness.
-  Skip routine interaction unless the stage spec explicitly asks for it.
+- **Do not drive the Chrome browser unless the user explicitly asks for browser automation in the current
+  turn.** The user performs manual browser/UI verification. This overrides plan-stage language that says a
+  live visual/interaction gate is required.
+- **Default verification:** run automated suites (`npm run test`, `npm run typecheck`, `npm run build`,
+  `pytest` as applicable) and report any manual browser checks the user needs to perform. Do not open,
+  control, or inspect Chrome/Playwright just because a stage has a live gate or because visual confidence
+  would be useful.
+- **If the user explicitly asks you to automate the browser:** keep the pass scoped to the requested flow.
+  For complex interactions, record traces/GIFs when useful; verify touch-target sizing, z-order, focus
+  visibility, `prefers-reduced-motion`, and no emoji/flat-text issues alongside functional correctness.

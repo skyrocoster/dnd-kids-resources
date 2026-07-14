@@ -7,25 +7,28 @@ doc from growing unbounded**. `design_plan.md` is the reference for how a health
 failure mode this template exists to prevent.
 
 **The core rule:** the plan doc is a *forward-looking* working document, not a changelog. Detail is
-verbose while a stage is being built, condensed to one row the moment it ships, and folded to a short
-summary when the whole phase is done. **The durable record of *how* a stage was built is its git
+verbose while a stage is being built, condensed to one row the moment it ships, and removed with its phase
+when that phase is done. **The durable record of *how* a stage was built is its git
 commit — never duplicate that prose into the plan doc permanently.**
 
 ---
 
 ## The three states of a plan doc
 
-Every plan doc is always in one of three states. The bulk of a doc's content should be pointer-thin;
-only the *one* stage currently in flight earns verbose treatment.
+Every stage in a plan doc is always in one of three states. **Every stage that has not yet shipped —
+the next one and all planned stages after it — carries a full verbose block. The moment a stage ships,
+its verbose block is deleted and replaced by a single Shipped-table row.** So a plan is a stack of
+verbose future-stage blocks on top of a thin table of shipped rows; nothing in between.
 
 | State | What the doc looks like | Detail budget |
 |---|---|---|
 | **① Reference (top matter)** | Stable context an executor reads *before* touching code — never a log of what happened. | Long-lived, edited only when the structure itself changes. |
-| **② Active stage** | The single stage being built right now. Full spec: what to build, what it inherits, tests, gate. | Verbose — this is the one place detail lives. |
-| **③ Shipped (collapsed)** | Everything already done. One table row per stage; one short summary per completed phase. | ≤2 sentences per stage row. |
+| **② Future stage (not yet shipped)** | Every un-shipped stage — the next one *and* all later planned ones. Full spec each: what to build, what it inherits, tests, gate. | Verbose — this is where all forward detail lives. |
+| **③ Shipped (collapsed)** | Everything already done. One short table row per stage; completed phase sections are deleted. | ≤2 sentences per stage row. |
 
-**As work moves forward, content flows ①→②→③ and *shrinks* at each step.** A stage that just shipped
-gets its verbose "Active" block deleted and replaced by a single row in the Shipped table.
+**As work moves forward, content flows ①→②→③ and *shrinks* at the ②→③ step.** A stage that just shipped
+gets its verbose block deleted and replaced by a single row in the Shipped table; the still-future stages
+keep their verbose blocks until their own turn to ship.
 
 ---
 
@@ -46,14 +49,15 @@ are **not** a history of the phase. Keep them current; don't append to them per 
 - **Known debt / deferred (NOT built)** — explicit non-goals, so scope doesn't creep.
 
 > **Discipline:** if you catch yourself adding a *stage's* implementation detail to any of these
-> sections, stop — that belongs in the Active-stage block (while in flight) or the commit (after).
+> sections, stop — that belongs in that stage's verbose block (while un-shipped) or the commit (after).
 
 ---
 
 ## The phase plan (the forward-looking core)
 
-One section per phase. While the phase is active, it holds the **stage table** and the **verbose
-block for the one active stage only**.
+One section per phase. While the phase is active, it holds the **stage table** and a **verbose block
+for every stage that has not yet shipped** (the next stage and all planned stages after it). Shipped
+stages have no block here — only a row in the Shipped table.
 
 ### Design Phase <X> — <Name>
 
@@ -69,15 +73,21 @@ sequencing constraints ("do not start J3 before DP1 is committed").
 
 **Sequencing:** X0 (Haiku, first) → X1 → X2 → X3. Note any parallelism.
 
-<!-- ===== ACTIVE STAGE BLOCK — delete and collapse to a Shipped row the moment it ships ===== -->
+<!-- ===== VERBOSE BLOCKS — one per un-shipped stage, in order. Delete a block and collapse it to a
+     Shipped row the moment that stage ships; the remaining blocks stay until their own turn. ===== -->
 
-#### X<n> — <name> (⏳ active)
+#### X<n> — <name> (next up)
 
 - **Build:** concrete algorithms, reducer actions, component shapes, exact file paths.
 - **Inherits:** what earlier stages already provide that this one builds on (don't re-derive).
 - **Tests:** unit (reducer/selector/render) + integration (full flow) to write.
 - **🚦 Gate:** the live end-to-end confirmation that proves it works — not just test-green. State
   whether a browser pass is required (per `CLAUDE.md`'s browser-automation policy) or the suite suffices.
+
+#### X<n+1> — <name> (planned)
+
+- **Build / Inherits / Tests / 🚦 Gate:** same four-part shape as above, one block per remaining stage.
+  Keep each as specific as the next-up block — future stages earn full detail, not a placeholder.
 
 <!-- ============================================================================================= -->
 
@@ -88,8 +98,9 @@ sequencing constraints ("do not start J3 before DP1 is committed").
 A stage is done only when its **🚦 gate is met live**, tests are green, and typecheck/build are clean.
 On completion, do all of this in the stage's own commit:
 
-1. **Delete the verbose Active-stage block.** Replace it with **one row** in the Shipped table (see
-   below), ≤2 sentences. The detailed authoring narrative goes in the **commit message**, not the doc.
+1. **Delete this stage's verbose block.** Replace it with **one row** in the Shipped table (see below),
+   ≤2 sentences. The detailed authoring narrative goes in the **commit message**, not the doc. Leave the
+   verbose blocks of the still-un-shipped stages untouched.
 2. **Rewrite the Status line** to show this stage shipped and name the next one.
 3. **Update reference docs if structure changed** — a new router/endpoint/table/folder means
    `ARCHITECTURE.md` / `API_REFERENCE.md` / `DATA_MODEL.md` updates in the *same* commit (per `CLAUDE.md`).
@@ -98,7 +109,7 @@ On completion, do all of this in the stage's own commit:
 ### Shipped stages table (the collapsed record)
 
 Everything done lives here as thin rows. This table only grows by one short row per stage — it must
-never carry the paragraph that was in the Active block.
+never carry the paragraph that was in the stage's verbose block.
 
 | Stage | What shipped (≤2 sentences) |
 |-------|------------------------------|
@@ -111,28 +122,26 @@ never carry the paragraph that was in the Active block.
 
 ---
 
-## How to collapse a phase when it's complete
+## How to complete a phase
 
-When every stage in a phase has shipped, the phase is no longer forward-looking — it's context.
-Collapse it so the doc stays oriented toward the *next* phase:
+When every stage in a phase has shipped, remove the phase completely so the plan is clean for the next
+forward-looking phase. Its concise stage rows remain in the Shipped-stages table; the commit history is the
+record of implementation detail.
 
-1. **Fold the phase to a summary section.** Replace the phase's stage table + any remaining prose with
-   a single **`## Design Phase <X> reference — <Name> (shipped)`** section: one paragraph on what the
-   phase delivered, and a pointer to the Shipped-stages table rows for stage detail. Keep only facts a
-   *future* phase needs to build on (schema, reusable selectors, decisions locked).
-2. **Promote anything durable to a reference doc.** If the phase established stable structure (a design
-   token contract, a data-model addition, an API surface), move that into `DESIGN_SYSTEM.md` /
-   `DATA_MODEL.md` / `API_REFERENCE.md` and leave a one-line pointer. Reference docs outlive plan docs.
-3. **Move deferred items to the shared "Known debt" list** so they aren't buried in a collapsed phase.
+1. **Delete the phase section.** Remove its overview, stage table, sequencing, and any active-stage block.
+   Do not leave a shipped-phase summary section behind.
+2. **Promote durable facts to top matter or a reference doc.** Keep only facts a future executor needs in
+   `Reusable pieces`, `Key facts`, or the appropriate `DESIGN_SYSTEM.md` / `DATA_MODEL.md` /
+   `API_REFERENCE.md` reference.
+3. **Move deferred items to the shared "Known debt" list** so they are not buried in a completed phase.
 4. **Update the Status line and the `## Next:` section** to point at the next phase.
 
 ### When the *whole feature* is complete
 
 When there are no more planned phases:
 
-1. Reduce the entire doc to: the Reference top-matter (still useful as living context), the collapsed
-   per-phase summaries, and a final **Verification** section (how to confirm the whole feature
-   end-to-end).
+1. Reduce the entire doc to: the Reference top-matter (still useful as living context), the Shipped-stages
+   table, and a final **Verification** section (how to confirm the whole feature end-to-end).
 2. Consider moving the doc to `docs/complete/<feature>_plan.md` (the repo's convention for superseded/
    done plan docs) and leaving a pointer, so `docs/` shows only *active* plans.
 3. Record the completion in project memory (`MEMORY.md`) with a one-line pointer to the plan doc's
@@ -152,9 +161,10 @@ When there are no more planned phases:
 ## Quick checklist per stage
 
 - [ ] 🚦 gate met live (or suite-sufficient per policy); tests green; `npm run typecheck`/`npm run build` clean (`tsc -b`, not `--noEmit` — [it checks nothing here](DESIGN_SYSTEM.md)); `pytest` from repo root, ≥85% coverage.
-- [ ] Verbose Active block **deleted**, collapsed to one Shipped-table row (≤2 sentences).
+- [ ] This stage's verbose block **deleted**, collapsed to one Shipped-table row (≤2 sentences); the
+       un-shipped stages' verbose blocks left in place.
 - [ ] Status line rewritten; `## Next:` updated.
 - [ ] Reference docs updated *if* structure changed (same commit).
 - [ ] Code + plan-doc edit committed together, stage ID + test counts in the message.
-- [ ] If this was the phase's last stage: phase folded to a `(shipped)` summary; durable facts promoted
-      to reference docs; deferred items moved to the Known-debt list.
+- [ ] If this was the phase's last stage: phase section deleted; durable facts promoted to top matter or
+       reference docs; deferred items moved to the Known-debt list.

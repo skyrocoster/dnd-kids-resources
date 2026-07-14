@@ -99,6 +99,34 @@ export interface Weapon {
 
 export type WeaponInput = Omit<Weapon, 'id'>
 
+export interface Item {
+  id: number
+  name: string
+  value_gp: number
+  category?: string | null
+  description?: string | null
+}
+
+export type ItemInput = Omit<Item, 'id'>
+
+export interface LootEntry {
+  kind: 'item' | 'weapon'
+  ref_id: number | null
+  name: string
+  value_gp: number | null
+  category?: string | null
+  quantity: number
+}
+
+export interface LootBundle {
+  id: number
+  name: string
+  gold: number
+  contents?: LootEntry[] | null
+}
+
+export type LootBundleInput = Omit<LootBundle, 'id'>
+
 export interface Player {
   id: number
   name: string

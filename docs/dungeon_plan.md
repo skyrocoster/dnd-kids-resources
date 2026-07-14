@@ -73,30 +73,17 @@ data = {
 
 ## Design system in force
 
-Signature: **neutral surfaces everywhere, one gold accent on exit choice-cards, one teal accent on HP
-meters, one rose accent on NPCs** — a gamebook feel inside the app's Material Design 3 system. Consume the
-**real tokens in `frontend/src/theme.css`** (`--md-*`, `--type-*`, `--variant-*`) — never the
-`--md-sys-color-*` namespace (it does not exist here).
+Consume the canonical design tokens from `frontend/src/theme.css` (`--md-*`, `--type-*`, `--variant-*`) —
+never the `--md-sys-color-*` namespace. See [`docs/DESIGN_SYSTEM.md`](DESIGN_SYSTEM.md) for the full color
+token table, type scale, icon policy, component anatomy, and accessibility floor.
 
-- **Content-role palette** (dark theme): primary/violet = spells, secondary/gold = weapons + exit
-  choice-cards, tertiary/teal = monsters + healthy HP, error/red = errors/traps/critical HP, **npc/rose**
-  (hue 340.6, chroma 40) = NPCs. Each role exposes `--md-{role}` / `--md-on-{role}` /
-  `--md-{role}-container` / `--md-on-{role}-container`, plus a `[data-variant='…']` mapping
-  (`spell|monster|weapon|npc|neutral`). **No new hues without going through `docs/design_plan.md` DP1's
-  banked-token generator** (`scripts/generate-md3-tokens.mjs`).
-- **Map Lab passage-state colors** (Phase J3): `PASSAGE_STATE_TOKENS`/`passagePresentation` use `--md-error`
-  (trapped), **`--md-passage-locked`** / **`--md-passage-hidden`** (banked tokens), and
-  `--md-on-surface-variant` (unlocked — no chip). Gold/`--md-secondary` is now **exclusively** the
-  exit-choice-card color — it no longer doubles as the locked-passage color.
-- **Type scale (one mapping, no ad-hoc rem/px):** headline (1.5rem) = page/room/NPC name; title (1rem/500)
-  = door/stair/ability/stepper labels; body (1rem) = prose; body-sm (0.875rem) = secondary detail, floor for
-  prose; label (0.875rem) = rail/breadcrumb/section headings; caption (0.6875rem) = eyebrows/chips/badges.
-- **Icons:** local **Lucide** line-icon set in `frontend/src/components/icons/`, inline-SVG React components
-  inheriting `currentColor`, re-exported under app aliases (never import `lucide-react` in a component). No
-  icon-font, no CDN, no emoji.
-- **Accessibility floor:** visible focus rings everywhere; never hue-alone (icons + text always back color);
-  `prefers-reduced-motion` honored on every animation; ≥48px touch targets on interactive controls (canvas
-  SVG glyphs are the documented exception — they follow a marker-radius convention, not the 48px floor).
+**Feature-specific assignments:** primary/violet = spells, secondary/gold = weapons + exit choice-cards,
+tertiary/teal = monsters + healthy HP, error/red = errors/traps/critical HP, npc/rose = NPCs. Map Lab
+passage-state colors (`PASSAGE_STATE_TOKENS`/`passagePresentation`): `--md-error` (trapped),
+`--md-passage-locked` / `--md-passage-hidden` (banked tokens), `--md-on-surface-variant` (unlocked).
+Gold/`--md-secondary` is now **exclusively** the exit-choice-card color — it no longer doubles as the
+locked-passage color. Canvas SVG glyphs are the documented exception to the 48px touch-target floor
+(they follow a marker-radius convention).
 
 ---
 
@@ -235,13 +222,6 @@ before any production fold-in.
 
 ---
 
-## Design Phase K Reference — Map Lab Editor QOL (shipped)
-
-Phase K added in-app fullscreen editing, editor-only cursor-centered wheel zoom while preserving scrollbar and
-empty-canvas drag pan, and atomic rectangular room footprints via drag or two-click selection. `MapCanvas`,
-`useMapCanvasZoom`, `mapLabEditorReducer`, and `MapLabEditorPage` remain the reusable seams; the persisted
-`MapLayout` schema and production dungeon pages were unchanged. See the shipped-stage table for K0–K3 detail.
-
 ## Known debt / deferred work (NOT yet built)
 
 - **Editor round-trip fix.** `dungeonForm.ts`/`DungeonEditor.tsx` are still **lossy**: on save they force
@@ -259,9 +239,9 @@ empty-canvas drag pan, and atomic rectangular room footprints via drag or two-cl
   ghosting stairs/portals or ghosting *all* floors below / the floor above; cascading delete/orphan-cleanup
   for stairs/portals/props when their owning room is deleted (pre-existing gap); a session/runtime layer for
   props (disarm/reveal toggles like doors have).
-- **`DESIGN_SYSTEM.md` addenda owed:** the toolbar-tray pattern (from J1) and the map-lab passage-color
-  section (from J3) are documented inline here as stand-ins; fold both into `docs/DESIGN_SYSTEM.md` once
-  `docs/design_plan.md` DP4 creates that file.
+- **`DESIGN_SYSTEM.md` addenda shipped in DP4:** the toolbar-tray pattern (from J1) and passage-color tokens
+  (from J3) are now documented in `docs/DESIGN_SYSTEM.md`; this file's "Design system in force" section
+  was trimmed to a short pointer with feature-specific detail retained here.
 - **Numeric spacing scale** — current state is ad-hoc rem per component; documented as-is, not introduced.
 - **Stair/portal destination picker is room-granularity, not exact-cell.** `DestinationPickerField`
   (`FixturePropertiesForm.tsx`) replaced the earlier click-a-cell mini floor-plan (too small to use

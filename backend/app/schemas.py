@@ -159,6 +159,42 @@ class WeaponUpdate(WeaponCreate):
     pass
 
 
+class Item(BaseModel):
+    id: int
+    name: str
+    value_gp: float = 0
+    category: Optional[str] = None
+    description: Optional[str] = None
+
+
+class ItemCreate(BaseModel):
+    name: str
+    value_gp: float = 0
+    category: Optional[str] = None
+    description: Optional[str] = None
+
+
+class ItemUpdate(ItemCreate):
+    pass
+
+
+class LootBundle(BaseModel):
+    id: int
+    name: str
+    gold: float = 0
+    contents: Optional[List[Dict[str, Any]]] = None
+
+
+class LootBundleCreate(BaseModel):
+    name: str
+    gold: float = 0
+    contents: Optional[List[Dict[str, Any]]] = None
+
+
+class LootBundleUpdate(LootBundleCreate):
+    pass
+
+
 class Player(BaseModel):
     id: int
     name: str

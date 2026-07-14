@@ -8,24 +8,22 @@ the same relationship `encounters_plan.md` has to `dungeon_plan.md`. Feature-spe
 toolbar/inspector redesign) lives in its own feature plan doc and cross-references this one for shared
 tokens/tooling; see `docs/dungeon_plan.md`'s **Design Phase J** for the current example.
 
-> **Status:** DP0, DP3, DP1, & DP2 shipped. DP4 queued next.
+> **Status:** DP0–DP4 shipped.
 
 ---
 
-## Why this doc exists
+## What this doc covers
 
 Two gaps prompted this doc:
 
 1. **No canonical design-system reference.** `docs/ARCHITECTURE.md` currently points design-token documentation
    at `docs/dungeon_plan.md`'s "Design system in force" section — a short prose paragraph inside a feature plan
-   doc, not a stable reference doc. The one earlier attempt at a dedicated doc,
-   `docs/complete/design-system-dark-mode.md`, is explicitly marked superseded. Per this repo's own reference-doc
-   tier (`ARCHITECTURE.md` / `API_REFERENCE.md` / `DATA_MODEL.md` / `TESTING.md` — "stable structure, rarely
-   changes"), a design system belongs in that same tier. Phase DP ships `docs/DESIGN_SYSTEM.md` to fill it.
+   doc, not a stable reference doc. Per this repo's reference-doc tier (`ARCHITECTURE.md` / `API_REFERENCE.md` /
+   `DATA_MODEL.md` / `TESTING.md`), a design system belongs in that same tier. Phase DP ships
+   `docs/DESIGN_SYSTEM.md` to fill it.
 2. **No reusable color tooling.** The one precedent for adding a new content-role color — the `--md-npc` rose
-   token — was produced by an "uncommitted throwaway snippet" (`theme.css`'s own comment says to regenerate one
-   if seed hues ever change). Phase DP commits a real script instead, and uses it immediately to bank a few
-   extra token sets for near-future features (map-lab passage-state colors, the deferred loot system).
+   token — was produced by an "uncommitted throwaway snippet." Phase DP commits a real script instead, and uses
+   it immediately to bank token sets for near-future features (passage-state colors, loot system).
 
 ---
 
@@ -33,94 +31,86 @@ Two gaps prompted this doc:
 
 - **Site-wide nav** (`frontend/src/layout/AppShell.tsx` + `AppShell.css`): a plain `<nav className="app-nav">`,
   fixed `200px` width, two static sections (Reference: Spells/Monsters/Weapons; Campaign:
-  Players/NPCs/Quests/Encounters/Dungeons). No collapse mechanism, no persistence, exists anywhere today.
+  Players/NPCs/Quests/Encounters/Dungeons). No collapse mechanism, no persistence.
 - **A different, unrelated collapse pattern already exists**: the dungeon room-index rail
-  (`frontend/src/features/dungeons/DungeonViewPage.tsx`) collapses via an instant DOM swap between a generic
-  `SplitPane` component (`frontend/src/components/SplitPane.tsx`, drag-resizable) and a collapsed strip — not
-  persisted, no CSS transition. This plan does **not** reuse `SplitPane` for the site nav: nav links aren't
-  resizable content, so the site nav gets its own simpler width/class toggle.
-- **Theme tokens** (`frontend/src/theme.css`): primary/violet=spells, secondary/gold=weapons **and** the dungeon
-  viewer's exit-choice-cards, tertiary/teal=monsters, npc/rose=NPCs, error/red=errors. Neutral surfaces
-  `--md-surface-1..5` (tone steps, no numeric spacing scale exists anywhere in the app). Global
-  `:focus-visible` ring and `prefers-reduced-motion` reset are already defined once, at the root of this file —
-  reuse them, don't redeclare.
-- **Icon registry** (`frontend/src/components/icons/index.ts`): the single place `lucide-react` is imported;
-  every consumer re-exports an aliased icon from here, never imports `lucide-react` directly. 30 icons in use
-  today. `GemIcon` (`Gem`) exists and is confirmed unused elsewhere — free to claim for loot, or swap to
-  `Diamond` if disambiguation is wanted. `TrapIcon` (`AlertTriangle`) already exists and is reused by
-  `dungeon_plan.md`'s Phase J passage-chip work — no new trap icon needed.
-- **No `material-color-utilities` devDependency is declared** — it's only present transitively
-  (`node_modules/.package-lock.json`). No committed color-generation script exists anywhere in `scripts/`.
+  (`DungeonViewPage.tsx`) collapses via an instant DOM swap between `SplitPane` and a collapsed strip — not
+  persisted, no CSS transition. This plan does **not** reuse `SplitPane` for the site nav.
+- **Nav collapse is intentionally separate.** Two different patterns by design — nav links aren't resizable
+  content, so the site nav gets its own simpler toggle. No unification planned.
+- **No `material-color-utilities` devDependency was declared** — only transitive. Now committed as a real
+  dependency per DP1.
+
+---
+
+## Design system in force
+
+- **Content-role palette** (dark theme): primary/violet=spells, secondary/gold=weapons + exit choice-cards,
+  tertiary/teal=monsters, npc/rose=NPCs, error/red=errors. Each role exposes `--md-{role}` /
+  `--md-on-{role}` / `--md-{role}-container` / `--md-on-{role}-container`. Three banked sets reserved in
+  `theme.css`: `--md-passage-locked` (indigo), `--md-passage-hidden` (gray), `--md-loot` (amber).
+- **Type scale:** headline (1.5rem), title (1rem/500), body (1rem), body-sm (0.875rem), label (0.875rem),
+  caption (0.6875rem) — no ad-hoc rem/px.
+- **Icons:** local Lucide line-icon set in `frontend/src/components/icons/index.ts`, re-exported under app
+  aliases (never import `lucide-react` in a component). 38 icons in registry today.
+- **Surfaces:** `--md-surface-1..5` tone steps. No numeric spacing scale — ad hoc rem per component.
+- **Accessibility floor:** visible `:focus-visible` rings, never hue-alone, `prefers-reduced-motion` reset at
+  root, ≥48px touch targets on interactive controls.
+- All tokens live in `frontend/src/theme.css`. Never use the `--md-sys-color-*` namespace (it does not exist).
+
+---
+
+## Reusable pieces (do not rebuild)
+
+- `frontend/src/components/icons/index.ts` — the single Lucide import point; re-export under app aliases
+- `frontend/src/hooks/useNavCollapse.ts` — site nav collapse state (localStorage, default expanded)
+- `frontend/src/theme.css` — canonical design tokens
+- `scripts/generate-md3-tokens.mjs` — color-token generator (CLI: `--seed` / `--chroma` / `--role`)
+- `frontend/src/__tests__/theme-tokens.test.mjs` — token format validation
 
 ---
 
 ## Design Phase DP — Site Nav Collapse, Color Tooling, Icon Batch, Design-System Doc
 
-Ships an icon-only collapsible site nav (persisted in localStorage, global across the whole site), a real
-committed color-generation script plus banked token sets for near-future features, an icon-registry batch for
-known upcoming needs, and the `docs/DESIGN_SYSTEM.md` reference doc. **Depended on by:** `dungeon_plan.md`
-Design Phase J (J0 needs DP0's icon batch; J3 needs DP1's banked tokens — do not start J3 before DP1 is
-committed).
+Ships an icon-only collapsible site nav (persisted in localStorage), a real committed color-generation script
+plus banked token sets, an icon-registry batch for known upcoming needs, and `docs/DESIGN_SYSTEM.md`.
+**Depended on by:** `dungeon_plan.md` Design Phase J (J0 needs DP0's icon batch; J3 needs DP1's banked tokens).
 
 | Stage | Model | Summary | Deliverables |
-|-------|-------|---------|---------------|
-| **DP0 — Scaffolding** | Haiku | Type/hook stubs only, no implementation. `useNavCollapse()` hook stub (no-op, returns `{collapsed: false, toggle: () => {}}`) wired into `AppShell.tsx` behind an inert branch; placeholder `.app-nav--collapsed` CSS (documents intent, no real width/transition yet); icon registry batch added as **unused** re-exports — `NavCollapseIcon`/`NavExpandIcon` (`PanelLeftClose`/`PanelLeftOpen`), `CoinsIcon` (`Coins`), `ScrollIcon` (`ScrollText`), `WandIcon` (`Wand2`), `TomeIcon` (`BookOpen`), `PropBedIcon` (`Bed`), `PropAnvilIcon` (`Anvil`), `TorchIcon` (`Flame`) — with an inline comment resolving the `GemIcon` loot-reuse question; `scripts/generate-md3-tokens.mjs` stub (CLI arg parsing for `--seed`/`--chroma`/`--role` only, prints "not yet implemented"); `it.skip` stubs in `AppShell.test.tsx` for "collapses on toggle," "persists across remount," "icon-only rail keeps links clickable," "focus ring visible when collapsed." | Stubs compile; app renders unchanged (nav still always-expanded). |
-| **DP1 — Color-generation tool + banked tokens** | Sonnet | Declares `@material/material-color-utilities` as a real `devDependency` (currently only a transitive resolution). Implements `scripts/generate-md3-tokens.mjs` for real: `--seed <hex>` + optional `--chroma <n>`, harmonizes against the existing violet seed (`#d0bcff`) via `Blend.harmonize()` — the same approach the `--md-npc` token's comment describes — derives dark-theme tone 80/20/30/90 values, prints a ready-to-paste 4-line token block (`--md-<role>` / `--md-on-<role>` / `--md-<role>-container` / `--md-on-<role>-container>`) in the exact shape of the existing `--md-npc` block, with a generated-provenance comment. Runs it to generate and commit **3 banked token sets** into `theme.css` under a `/* Banked — reserved for future content roles */` section: 2 earmarked for `dungeon_plan.md` Phase J3's locked/hidden passage-state reassignment, 1 spare reserved for the deferred loot system (see `dungeon_plan.md`'s "Known debt" list). Updates `theme.css`'s header comment to point at the script instead of "throwaway snippet." | `scripts/generate-md3-tokens.mjs` (working CLI); 3 banked token sets committed in `theme.css`; unit tests for the pure token-derivation function (tone ordering, hex format, deterministic output for a fixed seed). |
-| **DP2 — Nav collapse implementation** | Sonnet | Real `useNavCollapse()`: reads/writes a single global `localStorage` key, default expanded. `AppShell.tsx` renders two modes — expanded (current labels+links) and an icon-only rail (~56–64px) — driven by `collapsed`; each `navSections` link gains a `linkIcon` field, `aria-label` and `title` cover the hidden text; links stay clickable in both states, no "expand first" step required. A single persistent toggle button (DP0's `NavCollapseIcon`/`NavExpandIcon`) lives in the nav itself. Section headers (`<h2>`) collapse to a subtle divider rather than vanishing (keeps the two-group structure legible without text) — hidden via a visually-hidden pattern, not `display:none`, so they stay in the accessibility tree. CSS width transition respects `prefers-reduced-motion` (reuses the existing global reset in `theme.css`, no new media query needed). No `SplitPane` reuse — justified above. | Working nav collapse; unit tests (`useNavCollapse` localStorage read/write/default) + integration tests (icon-only rendering, links still navigate, state persists across simulated remount). |
-| **DP3 — Icon registry finalize** | Haiku | Confirms/finalizes DP0's stub icons: resolves the `GemIcon` loot-reuse decision definitively; swaps any icon that reads poorly at small size during review (e.g. a `Menu` fallback if `PanelLeftClose`/`PanelLeftOpen` prove visually ambiguous at 16px). Pure registry additions/renames — zero wiring, zero runtime risk. Can run parallel to DP1/DP2 once DP0 lands. | Finalized icon batch, ready for later stages (`dungeon_plan.md` Phase J, future loot phase) to wire up. |
-| **DP4 — `docs/DESIGN_SYSTEM.md` first draft** | Sonnet | New reference doc consolidating: full color token table (existing roles + DP1's banked/spent tokens, each with role meaning and dark-theme hex), type scale table, icon-registry policy ("re-export from `lucide-react` under an app-specific alias in `components/icons/index.ts`; never import `lucide-react` directly in a component" + how-to-add-new-icon steps), spacing/layout convention documented as **current reality** ("no formal spacing scale — ad hoc rem values per component, elevation via `--md-surface-1..5` tone steps" — not inventing a new scale in this stage), component anatomy (the 6 existing patterns copied from `dungeon_plan.md`'s "Component anatomy" section, plus the 2 new ones this phase ships: collapsible nav rail, collapsible toolbar tray), and the accessibility floor (focus rings, never hue-alone, reduced-motion, ≥48px touch targets). Repoints `docs/ARCHITECTURE.md`'s design-token pointer at this doc instead of `dungeon_plan.md`. Trims `dungeon_plan.md`'s "Design system in force" section down to a short pointer rather than deleting it outright. **Note:** the toolbar-tray pattern's finalized specifics (chevron behavior, persistence key shape) are added to this doc's component-anatomy section **inside `dungeon_plan.md` Phase J1's own commit**, not deferred here — call this out in J1 explicitly so it isn't missed. | `docs/DESIGN_SYSTEM.md`; updated `ARCHITECTURE.md` pointer; trimmed `dungeon_plan.md` design-system prose. |
+|-------|-------|---------|--------------|
+| **DP0 — Scaffolding** | Haiku | Type/hook stubs only, no implementation. Placeholder CSS, unused icon batch, CLI parser stub, `it.skip` tests. | Stubs compile; app renders unchanged. |
+| **DP1 — Color tool + banked tokens** | Sonnet | Real `generate-md3-tokens.mjs` using `Blend.harmonize()`, 3 banked token sets in `theme.css`, validation tests. | Working CLI; 3 token sets; token tests. |
+| **DP2 — Nav collapse implementation** | Sonnet | Real `useNavCollapse()`, icon-only 64px rail, persisted state, a11y (aria-label, visually-hidden headers, reduced-motion), 4 integration tests. | Working collapse; test coverage. |
+| **DP3 — Icon registry finalize** | Haiku | Confirms/finalizes DP0's stub icons, reviews at 16px, resolves `GemIcon` loot-reuse decision. | Finalized batch, no runtime risk. |
+| **DP4 — `docs/DESIGN_SYSTEM.md` first draft** | Sonnet | New reference doc: color token table, type scale, icon policy, spacing/layout convention, component anatomy (6 existing + 2 new patterns), accessibility floor. Repoints `ARCHITECTURE.md` pointer; trims `dungeon_plan.md` design-system prose. | `DESIGN_SYSTEM.md`; updated pointers. |
 
 **Sequencing:** DP0 (Haiku, first) → DP3 (Haiku, parallel, right after DP0) and DP1/DP2 (Sonnet, parallel to each
-other, both only need DP0) → DP4 (Sonnet, drafts once DP1/DP2 land; receives its Phase-J1 addendum later,
-in that stage's own commit).
+other, both only need DP0) → DP4 (Sonnet, drafts once DP1/DP2 land; receives Phase-J1 addendum in that commit).
 
-### DP0 — Scaffolding (✅ shipped)
+<!-- ===== SHIPPED STAGE ===== -->
 
-**What shipped:**
-- `frontend/src/hooks/useNavCollapse.ts` — stub hook (no-op, returns `{collapsed: false, toggle: () => {}}`)
-- `AppShell.tsx` wired with hook import + inert conditional branch (`if (false)`) + `.app-nav--collapsed` class binding
-- `AppShell.css` placeholder rule for `.app-nav--collapsed` (no-op, documents intent)
-- Icon registry batch in `frontend/src/components/icons/index.ts`: `NavCollapseIcon`/`NavExpandIcon`, `CoinsIcon`, `ScrollIcon`, `WandIcon`, `TomeIcon`, `PropBedIcon`, `PropAnvilIcon`, `TorchIcon` (all unused re-exports); inline comment resolving `GemIcon` loot-reuse claim
-- `scripts/generate-md3-tokens.mjs` CLI arg parser stub (parses `--seed`/`--chroma`/`--role`, prints "not yet implemented")
-- `AppShell.test.tsx` test stubs with `it.skip` for collapse/persist/clickable/focus scenarios
+### DP4 — `docs/DESIGN_SYSTEM.md` first draft ✅
 
-**Verification gate:** ✅ Frontend builds; stubs compile; app renders unchanged (nav still always-expanded).
+Created `docs/DESIGN_SYSTEM.md` consolidating the full color token table (8 roles with hex values and
+semantic meaning), type scale, icon-registry policy with add-new-icon steps, spacing/layout documentation
+(as-is reality), component anatomy (FeatureTile, choice-card grid, CombatantCard, NPCStatCard,
+FloatingWindow, InspectorPanel/Inspectable, collapsible nav rail, ToolbarTray), and the accessibility
+floor. Repointed `docs/ARCHITECTURE.md`'s design-token pointer at the new doc. Trimmed `dungeon_plan.md`'s
+"Design system in force" to a short pointer with feature-specific detail retained. Gate ✅ — build,
+typecheck, and tests clean.
 
-### DP3 — Icon Registry Finalize (✅ shipped)
+<!-- ============================================================================================= -->
 
-**What shipped:**
-- Icon registry batch finalized: `NavCollapseIcon`/`NavExpandIcon`, `CoinsIcon`, `ScrollIcon`, `WandIcon`, `TomeIcon`, `PropBedIcon`, `PropAnvilIcon`, `TorchIcon`
-- All 8 icons visually reviewed at 16px; no swaps needed (all clear at small size)
-- `GemIcon` loot-reuse decision finalized: `Gem` is claimed as the canonical choice for the future loot system
-- Detailed comments added linking each icon to its intended feature phase (Phase J: WandIcon, ScrollIcon, TomeIcon; Loot: CoinsIcon, PropBedIcon, PropAnvilIcon; TorchIcon: general lighting/fire effects)
+---
 
-**Verification gate:** ✅ Icon registry finalized and ready for Phase J/loot wiring. No runtime changes; purely additive comments.
+## Shipped stages
 
-### DP1 — Color-generation tool + banked tokens (✅ shipped)
-
-**What shipped:**
-- `@material/material-color-utilities` declared as devDependency (was transitive only)
-- `scripts/generate-md3-tokens.mjs` fully implemented: CLI parses `--seed <hex>` / `--chroma <n>` / `--role <name>`; harmonizes via `Blend.harmonize()` against primary seed `#d0bcff`; derives dark-theme tones 80/20/30/90; outputs ready-to-paste 4-line token block with generated-provenance comment
-- 3 banked token sets committed to `frontend/src/theme.css` under `/* Banked — reserved for future content roles */` section:
-  - `--md-passage-locked` (indigo, hue 289.1, chroma 40.0) — reserved for Phase J3 locked passage state
-  - `--md-passage-hidden` (gray, hue 209.5, chroma 2.0) — reserved for Phase J3 hidden passage state
-  - `--md-loot` (amber, hue 51.3, chroma 26.7) — reserved for deferred loot system
-- `theme.css` header updated to point at the script instead of "throwaway snippet" comment
-- Token format validation tests added in `frontend/src/__tests__/theme-tokens.test.mjs` (hex format, tone contrast, naming convention)
-
-**Verification gate:** ✅ Build succeeds; **510 tests pass** (updated token validation included); 3 banked sets ready for Phase J3/loot phases to wire up.
-
-### DP2 — Nav collapse implementation (✅ shipped)
-
-**What shipped:**
-- `useNavCollapse()` implemented for real: reads/writes a single `dnd-kids-nav-collapsed` `localStorage` key, defaults to expanded, tolerates `localStorage` being unavailable (private browsing)
-- `AppShell.tsx`: each `navSections` link gained a `linkIcon` field (`WandIcon`/`SkullIcon`/`SwordsIcon`/`UsersIcon`/`MasksIcon`/`ScrollIcon`/`ShieldIcon`/`DoorIcon`, all pre-existing registry icons — no new icon additions needed); persistent toggle button using DP0/DP3's `NavCollapseIcon`/`NavExpandIcon` with `aria-label`/`title` that flips with state; every link keeps an `aria-label`/`title` with the full text and stays clickable in both states (no "expand first" step)
-- Section `<h2>` headers get a `visually-hidden` class when collapsed (clip-based, stays in the accessibility tree, not `display:none`); a CSS `border-top` divider on `.app-nav-section` (not the hidden `<h2>` itself) gives sighted users the subtle section-break cue while collapsed
-- `AppShell.css`: icon-only rail is `64px` wide (was a 200px→64px transition on `width`, reusing the existing global `prefers-reduced-motion` reset — no new media query); nav links and the toggle button are `48px` min-height/width touch targets
-- No `SplitPane` reuse (per the plan's rationale — nav links aren't resizable content)
-- Tests: `useNavCollapse` covered indirectly via `AppShell.test.tsx`'s 4 previously-skipped scenarios, now implemented — collapse-on-toggle, persistence across remount (seeded via `localStorage`), icon-only rail links remain navigable, keyboard focus lands somewhere after collapse
-
-**Verification gate:** ✅ `AppShell.test.tsx` — 7/7 tests pass (3 pre-existing + 4 newly implemented). Full frontend suite: 47 test files, 514 passed / 3 skipped (pre-existing, unrelated). `tsc -b && vite build` — no new type errors (pre-existing `theme-tokens.ts` unused-var errors from DP1 are unrelated to this stage).
+| Stage | What shipped (≤2 sentences) |
+|-------|------------------------------|
+| **DP0** | Scaffolding: `useNavCollapse()` stub, placeholder CSS, unused icon batch (8 icons), `generate-md3-tokens.mjs` CLI stub, `it.skip` tests. Gate ✅ — builds, app unchanged. |
+| **DP3** | Icon registry finalized: 8 icons reviewed at 16px, `GemIcon` claimed for loot, phase-comments added. Gate ✅ — no runtime changes. |
+| **DP1** | Color-generation tool implemented (`Blend.harmonize()` via `--seed`/`--chroma`/`--role`); 3 banked token sets (`--md-passage-locked`, `--md-passage-hidden`, `--md-loot`) committed in `theme.css`; token validation tests. Gate ✅ — build succeeds, 510 tests pass. |
+| **DP2** | Nav collapse implemented: `useNavCollapse()` (localStorage, private-browsing-safe), 64px icon-only rail with `aria-label` on all links, visually-hidden section headers with border-top dividers, 4 integration tests. Gate ✅ — 7/7 AppShell tests, 514 total pass, `tsc -b && vite build` clean. |
+| **DP4** | `docs/DESIGN_SYSTEM.md` first draft: color token table, type scale, icon policy, spacing/layout convention, 8-component anatomy, a11y floor. `ARCHITECTURE.md` pointer repointed; `dungeon_plan.md` prose trimmed. Gate ✅ — build clean. |
 
 ---
 
@@ -131,20 +121,20 @@ in that stage's own commit).
 - **Loot system icons/tokens.** DP0's icon batch and DP1's third banked token set are pre-staged for this, but
   the loot system itself remains deferred per `dungeon_plan.md`'s "Known debt" list.
 - **Nav collapse on the dungeon room-index rail.** DP2 does not touch or unify with the existing bespoke
-  `DungeonViewPage` rail collapse — they remain two separate patterns by design (see "Key facts" above).
+  `DungeonViewPage` rail collapse — they remain two separate patterns by design (see Key facts).
 
 ---
 
 ## Cross-references
 
-- `docs/dungeon_plan.md` — Design Phase J (Map Lab Decluttering) depends on this doc's DP0 (icon batch) and DP1
-  (banked tokens); its J1 stage writes back into this doc's DP4 output (`DESIGN_SYSTEM.md`).
-- `docs/DESIGN_SYSTEM.md` (ships in DP4) — canonical design-token/component-anatomy reference going forward;
-  supersedes prose duplicated in feature plan docs.
+- `docs/dungeon_plan.md` — Design Phase J depends on DP0 (icon batch) and DP1 (banked tokens); J1 writes back
+  into this doc's DP4 output (`DESIGN_SYSTEM.md`).
+- `docs/DESIGN_SYSTEM.md` (ships in DP4) — canonical design-token/component-anatomy reference going forward.
 - `docs/ARCHITECTURE.md` — repointed at `DESIGN_SYSTEM.md` in DP4.
 
 ---
 
 ## Next:
 
-  - DP4 — `docs/DESIGN_SYSTEM.md` first draft. Queued next; DP1 and DP2 are both landed so it's unblocked.
+All DP stages shipped. No further design-system stages queued. Future feature work that adds tokens or
+patterns should update `DESIGN_SYSTEM.md` as part of that feature's commit.

@@ -70,6 +70,88 @@
   --md-npc-container: #6c325e;
   --md-on-npc-container: #ffd7ef;
 
+  /* ─── Banked — damage-type and domain roles (reserved for future use) ──── */
+
+  /* divine — healing, cleric, paladin, radiant damage. Generated via material-color-utilities
+     from source #F9C156, Blend.harmonize()'d toward primary seed #d0bcff
+     (hue 66.5, chroma 36.2), tones 80/20/30/90. */
+  --md-divine: #FBBA73;
+  --md-on-divine: #492900;
+  --md-divine-container: #683D00;
+  --md-on-divine-container: #FFDCBC;
+
+  /* arcane — arcane/eldritch magic, magic items, enchantment. Generated via
+     material-color-utilities from source #6BD4FF, Blend.harmonize()'d toward
+     primary seed #d0bcff (hue 243.5, chroma 39.2), tones 80/20/30/90. */
+  --md-arcane: #90CDFE;
+  --md-on-arcane: #00344F;
+  --md-arcane-container: #004B71;
+  --md-on-arcane-container: #CBE6FF;
+
+  /* nature — nature, druid, ranger, plants, animals. Generated via material-color-utilities
+     from source #6BAF8C, Blend.harmonize()'d toward primary seed #d0bcff
+     (hue 179, chroma 35.6), tones 80/20/30/90. */
+  --md-nature: #86D5C1;
+  --md-on-nature: #00382E;
+  --md-nature-container: #005143;
+  --md-on-nature-container: #A2F2DD;
+
+  /* fire — fire damage, heat, lava. Generated via material-color-utilities from
+     source #FF6B35, Blend.harmonize()'d toward primary seed #d0bcff
+     (hue 22, chroma 40), tones 80/20/30/90. */
+  --md-fire: #FFB3AE;
+  --md-on-fire: #5A1B1A;
+  --md-fire-container: #77302E;
+  --md-on-fire-container: #FFDAD7;
+
+  /* cold — cold damage, ice, water, frost. Generated via material-color-utilities
+     from source #69DBD4, Blend.harmonize()'d toward primary seed #d0bcff
+     (hue 206.6, chroma 40), tones 80/20/30/90. */
+  --md-cold: #73D5E1;
+  --md-on-cold: #00363B;
+  --md-cold-container: #004F56;
+  --md-on-cold-container: #90F2FD;
+
+  /* lightning — lightning / thunder damage. Generated via material-color-utilities
+     from source #FFD43B, Blend.harmonize()'d toward primary seed #d0bcff
+     (hue 78.7, chroma 31.5), tones 80/20/30/90. */
+  --md-lightning: #ECBF79;
+  --md-on-lightning: #432C00;
+  --md-lightning-container: #5F4104;
+  --md-on-lightning-container: #FFDEAD;
+
+  /* poison — poison, acid, necrotic damage. Generated via material-color-utilities
+     from source #94D82D, Blend.harmonize()'d toward primary seed #d0bcff
+     (hue 145.7, chroma 40), tones 80/20/30/90. */
+  --md-poison: #9BD594;
+  --md-on-poison: #01390A;
+  --md-poison-container: #1D511F;
+  --md-on-poison-container: #B7F2AE;
+
+  /* psychic — psychic damage, mind, illusion, charm. Generated via material-color-utilities
+     from source #DA77F2, Blend.harmonize()'d toward primary seed #d0bcff
+     (hue 312.2, chroma 40), tones 80/20/30/90. */
+  --md-psychic: #DFB7FF;
+  --md-on-psychic: #41215D;
+  --md-psychic-container: #593876;
+  --md-on-psychic-container: #F1DAFF;
+
+  /* boss — boss enemies, legendary encounters. Generated via material-color-utilities
+     from source #FF6B6B, Blend.harmonize()'d toward primary seed #d0bcff
+     (hue 5.3, chroma 40), tones 80/20/30/90. */
+  --md-boss: #FFB1C1;
+  --md-on-boss: #59192C;
+  --md-boss-container: #753042;
+  --md-on-boss-container: #FFD9DF;
+
+  /* skill — skills, proficiencies, ability checks. Generated via material-color-utilities
+     from source #74C0FC, Blend.harmonize()'d toward primary seed #d0bcff
+     (hue 259.7, chroma 40), tones 80/20/30/90. */
+  --md-skill: #A6C8FF;
+  --md-on-skill: #00315F;
+  --md-skill-container: #18477D;
+  --md-on-skill-container: #D5E3FF;
+
   /* Neutral surfaces — violet-tinted near-black, elevation via tone step */
   --md-surface: #1c1b1f;
   --md-surface-1: #232128;
@@ -148,6 +230,78 @@
   --variant-on-accent: var(--md-on-npc);
   --variant-container: var(--md-npc-container);
   --variant-on-container: var(--md-on-npc-container);
+}
+
+/* ─── Banked content-role variants (reserved, ready to adopt) ────────────── */
+
+[data-variant='divine'] {
+  --variant-accent: var(--md-divine);
+  --variant-on-accent: var(--md-on-divine);
+  --variant-container: var(--md-divine-container);
+  --variant-on-container: var(--md-on-divine-container);
+}
+
+[data-variant='arcane'] {
+  --variant-accent: var(--md-arcane);
+  --variant-on-accent: var(--md-on-arcane);
+  --variant-container: var(--md-arcane-container);
+  --variant-on-container: var(--md-on-arcane-container);
+}
+
+[data-variant='nature'] {
+  --variant-accent: var(--md-nature);
+  --variant-on-accent: var(--md-on-nature);
+  --variant-container: var(--md-nature-container);
+  --variant-on-container: var(--md-on-nature-container);
+}
+
+[data-variant='fire'] {
+  --variant-accent: var(--md-fire);
+  --variant-on-accent: var(--md-on-fire);
+  --variant-container: var(--md-fire-container);
+  --variant-on-container: var(--md-on-fire-container);
+}
+
+[data-variant='cold'] {
+  --variant-accent: var(--md-cold);
+  --variant-on-accent: var(--md-on-cold);
+  --variant-container: var(--md-cold-container);
+  --variant-on-container: var(--md-on-cold-container);
+}
+
+[data-variant='lightning'] {
+  --variant-accent: var(--md-lightning);
+  --variant-on-accent: var(--md-on-lightning);
+  --variant-container: var(--md-lightning-container);
+  --variant-on-container: var(--md-on-lightning-container);
+}
+
+[data-variant='poison'] {
+  --variant-accent: var(--md-poison);
+  --variant-on-accent: var(--md-on-poison);
+  --variant-container: var(--md-poison-container);
+  --variant-on-container: var(--md-on-poison-container);
+}
+
+[data-variant='psychic'] {
+  --variant-accent: var(--md-psychic);
+  --variant-on-accent: var(--md-on-psychic);
+  --variant-container: var(--md-psychic-container);
+  --variant-on-container: var(--md-on-psychic-container);
+}
+
+[data-variant='boss'] {
+  --variant-accent: var(--md-boss);
+  --variant-on-accent: var(--md-on-boss);
+  --variant-container: var(--md-boss-container);
+  --variant-on-container: var(--md-on-boss-container);
+}
+
+[data-variant='skill'] {
+  --variant-accent: var(--md-skill);
+  --variant-on-accent: var(--md-on-skill);
+  --variant-container: var(--md-skill-container);
+  --variant-on-container: var(--md-on-skill-container);
 }
 
 /* Visible focus ring, everywhere, per the accessibility floor */

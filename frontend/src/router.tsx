@@ -11,6 +11,8 @@ import { PlayerBrowserPage } from './features/players/PlayerBrowserPage'
 import { QuestBrowserPage } from './features/quests/QuestBrowserPage'
 import { SpellBrowserPage } from './features/spells/SpellBrowserPage'
 import { WeaponBrowserPage } from './features/weapons/WeaponBrowserPage'
+import { ItemBrowserPage } from './features/items/ItemBrowserPage'
+import { LootBundleBrowserPage } from './features/loot/LootBundleBrowserPage'
 import { AppShell } from './layout/AppShell'
 import { ComponentDemoPage } from './pages/ComponentDemoPage'
 import { HomePage } from './pages/HomePage'
@@ -25,6 +27,8 @@ export const router = createBrowserRouter([
       { path: 'spells', element: <SpellBrowserPage /> },
       { path: 'monsters', element: <MonsterBrowserPage /> },
       { path: 'weapons', element: <WeaponBrowserPage /> },
+      { path: 'items', element: <ItemBrowserPage /> },
+      { path: 'loot', element: <LootBundleBrowserPage /> },
       { path: 'players', element: <PlayerBrowserPage /> },
       { path: 'npcs', element: <NPCBrowserPage /> },
       { path: 'quests', element: <QuestBrowserPage /> },

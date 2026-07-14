@@ -43,9 +43,12 @@ def init_database():
         "weapon_properties",
         "weapons",
         "abilities",
+        "map_layout",
         "dungeons",
         "skills",
-        "encounter"
+        "encounter",
+        "loot_bundle",
+        "items",
     ]
     
     for table in tables_to_drop:
@@ -271,6 +274,29 @@ def init_database():
         )
     """)
 
+    cursor.execute("""
+        CREATE TABLE items (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            value_gp REAL NOT NULL DEFAULT 0,
+            category TEXT,
+            description TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    cursor.execute("""
+        CREATE TABLE loot_bundle (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            gold REAL NOT NULL DEFAULT 0,
+            contents TEXT NOT NULL DEFAULT '[]',
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
     cursor.execute(
         "CREATE INDEX IF NOT EXISTS idx_monsters_cr ON monsters(cr)"
     )
@@ -342,10 +368,11 @@ def init_database():
 
     print(f"\n[SUCCESS] Database initialized: {DB_PATH}")
     print(f"   Size: {DB_PATH.stat().st_size / 1024:.1f} KB")
-    print("\nV2 SCHEMA - 14 tables (reduced from 18 for v2):")
+    print("\nV2 SCHEMA - 16 tables (reduced from 18 for v2):")
     print("  [OK] abilities, damage_types, weapon_properties, weapons")
     print("  [OK] spells (23 columns: spell_name, icon, level, school, spell_text, etc.)")
     print("  [OK] conditions, monsters, npcs, quests, encounter")
+    print("  [OK] items, loot_bundle")
     print("  [OK] dungeons (id, title, data JSON for structured hand-authored dungeons)")
     print("  [OK] players, player_spells, player_weapons")
     print("\n" + "="*60)

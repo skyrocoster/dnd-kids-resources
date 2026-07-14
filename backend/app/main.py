@@ -5,7 +5,20 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from .routers import reference, spells, monsters, weapons, players, npcs, quests, encounters, dungeons, layouts
+from .routers import (
+    encounters,
+    dungeons,
+    items,
+    layouts,
+    loot,
+    monsters,
+    npcs,
+    players,
+    quests,
+    reference,
+    spells,
+    weapons,
+)
 
 app = FastAPI(
     title="D&D Kids Resources API",
@@ -31,6 +44,8 @@ app.include_router(reference.router)
 app.include_router(spells.router)
 app.include_router(monsters.router)
 app.include_router(weapons.router)
+app.include_router(items.router)
+app.include_router(loot.router)
 app.include_router(players.router)
 app.include_router(npcs.router)
 app.include_router(quests.router)
