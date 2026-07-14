@@ -792,6 +792,24 @@
   pointer-events: none;
 }
 
+/* ─── L0 placeholder — Marker Badge System (Design Phase L) ────────────── */
+
+.maplab-badge {
+  pointer-events: none;
+}
+
+.maplab-badge-ring {
+  pointer-events: none;
+}
+
+.maplab-door-badge-layer {
+  pointer-events: none;
+}
+
+.maplab-door-badge {
+  pointer-events: none;
+}
+
 /* Portal placement overlay: same shape as .maplab-stair-placement-cell */
 .maplab-portal-placement-cell {
   fill: transparent;

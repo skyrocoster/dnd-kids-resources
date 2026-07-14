@@ -51,6 +51,15 @@
   --md-passage-hidden-container: #464747;
   --md-on-passage-hidden-container: #E3E2E2;
 
+  /* door — generated via material-color-utilities from source #8B5E3C,
+      Blend.harmonize()'d toward primary seed #d0bcff (hue 39.4, chroma 26.5),
+      tones 80/20/30/90. Fixed leaf color for door markers — door status is carried by
+      badges, not by recoloring the leaf. */
+  --md-door: #F9B79F;
+  --md-on-door: #4E2515;
+  --md-door-container: #683B29;
+  --md-on-door-container: #FFDBCE;
+
   /* loot — generated via material-color-utilities from source #d4a574,
       Blend.harmonize()'d toward primary seed #d0bcff (hue 51.3, chroma 26.7),
       tones 80/20/30/90. Used by items and loot bundles. */

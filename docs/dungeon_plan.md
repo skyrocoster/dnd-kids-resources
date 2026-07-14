@@ -5,10 +5,9 @@ Single reference for the dungeon room-navigation feature and its follow-on desig
 **Shipped stages** table for history, verbose spec only for the *active/next* stage. Detail on *how* a
 shipped stage was built lives in its git commit, not here.
 
-> **Status:** Original build (Stages 1–11) + Design Phases A–K **all shipped**. **Design Phase L — Marker
-> Badge System** is queued (L0 scaffolding → L4 design pass): a programmatic badge layout that rings
-> on-square markers from 12 o'clock and runs door badges along the leaf, with doors taking their own fixed
-> color and their badges painted above the leaf.
+> **Status:** Original build (Stages 1–11) + Design Phases A–L0 **all shipped**. **L1 — Badge model + radial
+> ring** is next: a programmatic badge layout that rings on-square markers from 12 o'clock and runs door
+> badges along the leaf, with doors taking their own fixed color and their badges painted above the leaf.
 
 ---
 
@@ -159,6 +158,7 @@ Each phase's per-stage authoring detail is in its git commits. This table is the
 | **K1 — Fullscreen canvas + wheel zoom default** | Editor now uses in-app fullscreen canvas mode (`data-fullscreen` overlay, Escape exit, helper copy) and plain-wheel cursor-centered zoom by default while retaining drag-pan/scrollbar pan. `useMapCanvasZoom` keeps modifier-only behavior for viewer consumers, extends non-pan hit targets to current markers/placement overlays, and K1 tests cover wheel semantics, fullscreen toggle/Escape, and preserved pan behavior. |
 | **K2 — Multi-cell room footprint selection** | Editor room painting now supports atomic rectangular footprints via drag or two-click corner selection, with local preview/cancel state, blocked overlap errors, commit-only autosave, and retained owned-cell single-cell cleanup. `setRoomFootprint` is the reducer validation seam for same-floor overlap/connectivity, and K2 tests cover reducer geometry plus page commit/cancel/no-save/error paths. |
 | **K3 — Design pass** | Refined the combined QOL workflow with persistent footprint guidance, keyboard-operable paint cells, modal fullscreen semantics/focus, non-hue-only footprint/error states, and narrow-layout rails/controls. Full frontend test, typecheck, and production build gates pass; live verification remains a manual gate. |
+| **L0 — Marker Badge scaffolding** | Added `maplab/markerBadges.ts` (MarkerBadge type + stub signatures returning `[]`/throw `NotImplemented`), `BadgeRing.tsx`/`DoorMarker.tsx` typed shells (render null), banked `--md-door` token family (warm salmon #F9B79F via MD3 harmonization), placeholder `.maplab-badge`/`.maplab-badge-ring`/`.maplab-door-badge-layer`/`.maplab-door-badge` CSS, and skipped L1–L3 tests in three new test files. Compile-only: typecheck, build, and existing tests all green. |
 
 ---
 
@@ -272,7 +272,7 @@ table + layout router), or the live dungeon model/pages.
 
 ---
 
-## Design Phase L — Marker Badge System (active)
+## Design Phase L — Marker Badge System (L1 active)
 
 **Problem.** Every marker type currently stamps a *single* state badge at one fixed corner
 (`translate(cx + iconSize/4, cy + iconSize/4)` in `PropMarker`/`StairMarker`, and the door's lone
@@ -298,23 +298,7 @@ about. Doors carry no per-status badges at all and encode state in the *leaf col
 (not hand-listed per call site), a future PassageFlag → new chip → new badge with no change to any layout
 or render code. This is the "programmatic, no code change" property, made concrete.
 
-### L0 — Scaffolding (Haiku 4.5, single context, compile-only)
-
-**What to build (stubs/types/CSS only — no algorithms):**
-- New `maplab/markerBadges.ts`: exported type `MarkerBadge = { key: string; icon: LucideIcon; token: string;
-  label: string }`; stub signatures (return `[]` / throw `NotImplemented`) for `markerBadges(source)`,
-  `radialBadgeLayout(count, markerRadius, badgeRadius)` → `{ x: number; y: number }[]`, and
-  `linearBadgeLayout(count, segment, normal, badgeRadius)` → `{ x: number; y: number }[]`.
-- New `maplab/BadgeRing.tsx` and `maplab/DoorMarker.tsx` component shells (typed props, render `null`).
-- `theme.css`: add a **banked `--md-door` token** (+ `-container`/`-on-` as needed) via the MD3
-  custom-color/harmonization standard used for `--md-passage-locked`/`--md-passage-hidden`/`--md-loot` —
-  **never a hand-picked hex.** Chosen hue must not collide with exit-card gold, the passage-state tokens,
-  or `--md-loot`.
-- Placeholder CSS: `.maplab-badge`, `.maplab-badge-ring`, `.maplab-door-badge-layer`, `.maplab-door-badge`.
-- Skipped tests (`it.skip`) for L1–L3 in `markerBadges.test.ts`, `PropMarker.test.tsx`, `DoorMarker.test.tsx`.
-
-**Inherits:** existing `passageStateChips`, `MARKER_RADIUS_FRACTION`, `WALL_PROP_RADIUS_FRACTION`, marker
-CSS conventions. **Gate (🚦):** `npm run typecheck` + `npm run build` clean; no behavior change.
+**L0 shipped** — scaffolding (types, stubs, `--md-door` token, placeholder CSS, skipped tests). Detail in the L0 commit.
 
 ### L1 — Badge model + radial ring (Sonnet)
 
@@ -393,9 +377,9 @@ this plan's "Design system in force" note accordingly. **Gate:** full `npm run t
 
 ## Next
 
-**Active:** Design Phase L — Marker Badge System (spec above). Start at **L0** (Haiku scaffolding), then
-L1→L4 in order; commit each stage with its plan-doc update per the collapse discipline. Do not combine
-stages or skip the L0 scaffold.
+**Active:** Design Phase L — Marker Badge System (spec above). **L0 shipped**; continue with **L1 — Badge
+model + radial ring** → L2 → L3 → L4 in order. Commit each stage with its plan-doc update per the
+collapse discipline. Do not combine stages.
 
 Also queued (not blocking L): the Map Lab production-home recommendation before any production fold-in;
 and the loot-on-the-map wiring that fills the reserved `MapProp.loot` slot, staged in `docs/loot_plan.md`
