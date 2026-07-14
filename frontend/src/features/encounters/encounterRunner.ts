@@ -29,6 +29,7 @@ export type RunnerAction =
   | { type: 'setConditions'; clientId: string; conditions: string[] }
   | { type: 'duplicate'; clientId: string }
   | { type: 'addFromMonster'; monster: Monster }
+  | { type: 'addPlayer'; name: string; conditions?: string[] }
   | { type: 'remove'; clientId: string }
   | { type: 'rename'; clientId: string; name: string }
   | { type: 'reorder'; fromIndex: number; toIndex: number }
@@ -76,6 +77,22 @@ export function combatantFromMonster(monster: Monster): RunnerCombatant {
     ac,
     status: 'alive',
     conditions: [],
+  }
+}
+
+/** Stub: creates a player combatant (no HP/AC, kind='player'). Full implementation in P2. */
+export function combatantFromPlayer(name: string, conditions: string[] = []): RunnerCombatant {
+  return {
+    clientId: nextClientId(),
+    monster_id: null,
+    original_name: name,
+    name,
+    hp_current: null,
+    hp_max: null,
+    ac: null,
+    status: 'alive',
+    conditions,
+    kind: 'player',
   }
 }
 
@@ -171,6 +188,10 @@ export function encounterRunnerReducer(state: RunnerState, action: RunnerAction)
 
     case 'addFromMonster':
       return { ...state, combatants: [...state.combatants, combatantFromMonster(action.monster)] }
+
+    case 'addPlayer':
+      // P2: append combatantFromPlayer(action.name, action.conditions)
+      return state
 
     case 'remove': {
       const index = state.combatants.findIndex((c) => c.clientId === action.clientId)

@@ -29,6 +29,7 @@ export interface UseEncounterRunnerResult {
   rename: (clientId: string, name: string) => void
   duplicate: (clientId: string) => void
   addFromMonster: (monster: Monster) => void
+  addPlayer: (name: string, conditions?: string[]) => void
   remove: (clientId: string) => void
   reorder: (fromIndex: number, toIndex: number) => void
   moveUp: (clientId: string) => void
@@ -104,6 +105,10 @@ export function useEncounterRunner(encounterId: number): UseEncounterRunnerResul
   const rename = useCallback((clientId: string, name: string) => apply({ type: 'rename', clientId, name }), [apply])
   const duplicate = useCallback((clientId: string) => apply({ type: 'duplicate', clientId }), [apply])
   const addFromMonster = useCallback((monster: Monster) => apply({ type: 'addFromMonster', monster }), [apply])
+  const addPlayer = useCallback(
+    (name: string, conditions?: string[]) => apply({ type: 'addPlayer', name, conditions }),
+    [apply]
+  )
   const remove = useCallback((clientId: string) => apply({ type: 'remove', clientId }), [apply])
   const reorder = useCallback(
     (fromIndex: number, toIndex: number) => apply({ type: 'reorder', fromIndex, toIndex }),
@@ -127,6 +132,7 @@ export function useEncounterRunner(encounterId: number): UseEncounterRunnerResul
     rename,
     duplicate,
     addFromMonster,
+    addPlayer,
     remove,
     reorder,
     moveUp,

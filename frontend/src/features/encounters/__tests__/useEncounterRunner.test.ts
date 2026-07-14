@@ -167,6 +167,9 @@ describe('useEncounterRunner', () => {
     expect(result.current.syncStatus).toBe('saved')
   })
 
+  // P2 stub
+  it.skip('addPlayer dispatches the addPlayer action', () => {})
+
   it('sets syncStatus to error on save failure but preserves local state', async () => {
     vi.spyOn(api, 'getEncounter').mockResolvedValue(baseEncounter)
     vi.spyOn(api, 'updateEncounter').mockRejectedValue(new Error('network down'))

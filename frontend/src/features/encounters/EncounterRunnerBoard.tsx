@@ -5,6 +5,7 @@ import { NextTurnIcon, PlusIcon } from '../../components/icons'
 import type { UseEncounterRunnerResult } from './useEncounterRunner'
 import { CombatantCard } from './CombatantCard'
 import { AddMonsterPanel } from './AddMonsterPanel'
+import { AddPlayerPanel } from './AddPlayerPanel'
 import './EncounterRunnerBoard.css'
 
 interface EncounterRunnerBoardProps {
@@ -21,6 +22,7 @@ const SYNC_LABELS: Record<UseEncounterRunnerResult['syncStatus'], string> = {
 
 export function EncounterRunnerBoard({ runner, compact = false }: EncounterRunnerBoardProps) {
   const [addMonsterOpen, setAddMonsterOpen] = useState(false)
+  const [addPlayerOpen, setAddPlayerOpen] = useState(false)
   const cardRefs = useRef<Map<string, HTMLDivElement>>(new Map())
   const dragState = useRef<{ clientId: string; fromIndex: number } | null>(null)
   const [draggingClientId, setDraggingClientId] = useState<string | null>(null)
@@ -30,6 +32,10 @@ export function EncounterRunnerBoard({ runner, compact = false }: EncounterRunne
 
   const handleAddMonster = (monster: Monster) => {
     runner.addFromMonster(monster)
+  }
+
+  const handleAddPlayer = (name: string, conditions?: string[]) => {
+    runner.addPlayer(name, conditions)
   }
 
   const findDropIndex = (clientY: number): number => {
@@ -94,6 +100,14 @@ export function EncounterRunnerBoard({ runner, compact = false }: EncounterRunne
           <PlusIcon size={16} aria-hidden />
           Add monster
         </button>
+        <button
+          type="button"
+          className="encounter-runner-add-monster-toggle"
+          onClick={() => setAddPlayerOpen((v) => !v)}
+        >
+          <PlusIcon size={16} aria-hidden />
+          Add player
+        </button>
       </div>
 
       <div className="encounter-runner-body">
@@ -135,6 +149,9 @@ export function EncounterRunnerBoard({ runner, compact = false }: EncounterRunne
 
         {addMonsterOpen && (
           <AddMonsterPanel onAdd={handleAddMonster} onClose={() => setAddMonsterOpen(false)} />
+        )}
+        {addPlayerOpen && (
+          <AddPlayerPanel onAdd={handleAddPlayer} onClose={() => setAddPlayerOpen(false)} />
         )}
       </div>
     </div>

@@ -204,6 +204,11 @@ describe('EncounterRunnerPage', () => {
     expect(within(within(card).getByRole('group', { name: 'Conditions' })).getByText('Prone')).toBeInTheDocument()
   })
 
+  // P2 stubs
+  it.skip('add-player button renders in the board header', () => {})
+  it.skip('add-player panel opens and accepts a name', () => {})
+  it.skip('player card suppresses HP meter, stepper rail, AC, and status pills', () => {})
+
   it('conditions persist through save/reload', async () => {
     vi.spyOn(api, 'getEncounter').mockResolvedValue(baseEncounter)
     const updateSpy = vi.spyOn(api, 'updateEncounter').mockResolvedValue(baseEncounter)

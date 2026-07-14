@@ -5,209 +5,209 @@ This document is the single reference for expanding the **encounter** feature be
 methodology as `dungeon_plan.md` (scaffold → implementation → design pass) and inherits that project's
 design system, component anatomy, and reusable pieces — build on them rather than re-deriving.
 
-> **Status:** Phase 1 (**Creation Overhaul**) **COMPLETE** ✓ (2026-07-13)
-> - C0 (scaffolding): type stubs, form shape, conditions fetch wiring
-> - C1 (stat propagation): shared `deriveCreatureStats`, editor auto-fill HP/AC
-> - C2 (condition checkboxes): replaced text field with checkbox grid from canonical conditions
-> - C3 (design pass): `CreatureRowCard` (collapsible), `ConditionPicker` (popover), MD3 conformance
-> 
-> **Live:** encounter creator auto-fills monster stats and renders condition checkboxes.
->
-> **Phase 2 (Runner Conditions)** and **Phase 3 (Dungeon Map Link)** are now both **COMPLETE** ✓ (2026-07-13),
-> including their design-pass stages (R3, D4). See each phase's own status block below for what shipped.
+> **Status:** Phases 1–3, P0, and P1 shipped. **P2 (Add players)** is next. See the Shipped-stages
+> table for the collapsed record.
 
 ---
 
-## Scope of this plan
+## What the feature is
 
-The Encounter **Runner** (running combat live: HP steppers, turn order, status chips) is already shipped
-and is **out of scope** here — do not rebuild or restyle it except where a Phase-1 change forces a shared
-refactor. This plan is about the **creation/editing experience**: the `EncounterEditor` modal reached from
-the Encounter Browser and used to author an encounter before it is ever run.
+The **Encounter Runner** runs combat live at the table: a scrollable list of combatant cards, each with
+HP steppers, a status-pill row, a condition chip row + inline picker, drag-reorder, and "set active"/
+"next turn" turn tracking. It runs in two hosts that share one engine (`useEncounterRunner`): a standalone
+route (`/encounters/:id/run`) and a **draggable pop-out dock** (`FloatingWindow` + `EncounterDock`) that
+floats over the dungeon and Map Lab session viewers. The separate **Encounter Editor** (creation/authoring)
+is where an encounter is built before it is ever run.
 
-**Phase 1 fixes two concrete deficiencies in creation:**
-1. **Stat propagation is broken.** Choosing a monster for a creature row copies only its *name*. HP and AC
-   are left blank, so every authored creature must have its HP/AC typed in by hand — even though the app
-   already knows the monster's default stats.
-2. **Conditions are free text.** Conditions are entered as a comma-separated string, which is
-   error-prone, inconsistent with the canonical condition list, and not kid-friendly. They should be
-   **checkboxes** driven by the real condition data.
-
-Later phases (initiative/CR propagation, encounter templates, difficulty budgeting) are noted under
-**"Deferred / future phases"** and are **not** part of Phase 1.
+Phase 4's signature affordance: the pop-out runner becomes a **resizable** window, and the DM can add
+**player characters** to a live encounter — name + conditions only, no HP tracking — so the party and the
+monsters share one turn list.
 
 ---
 
-## Key data facts (assume no other repo knowledge)
+## Key facts (assume no other repo knowledge)
 
-**The editor and its form model.**
-- UI: `frontend/src/features/encounters/EncounterEditor.tsx` — a modal (`role="dialog"`) with a Title
-  field and a repeatable **Creatures** section. Opened from `EncounterBrowserPage.tsx`.
-- Form logic: `frontend/src/features/encounters/encounterForm.ts` — `EncounterFormState` +
-  `EncounterCreatureRow` (all string-typed fields for inputs), plus the pure converters
-  `emptyEncounterForm`, `addEncounterCreatureRow`, `encounterToFormState`, `formStateToEncounterInput`.
-  Tests: `__tests__/encounterForm.test.ts`.
+**The runner engine is a pure reducer + a hook.**
+- `frontend/src/features/encounters/encounterRunner.ts` — headless `encounterRunnerReducer(state, action)`,
+  `RunnerAction` union, `RunnerState` (`{ combatants: RunnerCombatant[]; activeClientId; round }`), and the
+  serializers `combatantsToCreatures` / `runnerStateToEncounterInput`. `RunnerCombatant` = the wire
+  `EncounterCreature` plus a session-only `clientId`. `combatantFromMonster(monster)` derives a fresh
+  combatant (HP/AC via `deriveCreatureStats`). Tests: `__tests__/encounterRunner.test.ts`.
+- `frontend/src/features/encounters/useEncounterRunner.ts` — loads the encounter, drives the reducer,
+  debounced-autosaves (`SAVE_DEBOUNCE_MS = 600`) via `updateEncounter`, and fetches the canonical
+  `Condition[]`. Exposes one bound callback per action. Both hosts consume this hook.
 
-**The propagation bug.** `EncounterEditor.handlePickMonster` (≈`EncounterEditor.tsx:47`) sets only
-`originalName` and `name` on the row; `hpCurrent`, `hpMax`, and `ac` stay empty. **The correct derivation
-already exists** in `encounterRunner.ts:64`, `combatantFromMonster(monster)`:
-- `hp_current = hp_max = monster.hp.average` when `monster.hp.average` is a number, else `null`.
-- `ac = Number(firstKey(monster.ac))` when that first key parses to a finite number, else `null`.
-- `monster.hp` is an object `{average, formula, minimum, maximum}`; `monster.ac` is a keyed object whose
-  first key is the AC value (both are `Record<string, unknown> | null` on the `Monster` type in
-  `api/types.ts`). Real data is messy — either can be absent; the derivation must degrade to `null`, never
-  throw.
+**The wire model is HP + AC + status + conditions, and it's an opaque blob server-side.**
+- `EncounterCreature` (`api/types.ts:174`): `{ monster_id?, original_name?, name?, hp_current?, hp_max?,
+  ac?, status?, conditions?[] }` — every field optional/nullable. There is **no** initiative, CR, or
+  per-creature "kind" field today.
+- Backend stores `creatures` as `List[Dict[str, Any]]` (`backend/app/schemas.py:286`) → JSON blob in the
+  `units` column; the router does no field-picking. **A new per-creature field (e.g. `kind`) round-trips
+  with no backend/seed change** — the same pattern Phase 3 used for `encounter_id` on a prop. Prefer this
+  to inferring a player from null HP.
 
-The runner's "add from monster" path is **already correct**; only the **editor** is wrong. Phase 1 must
-make both consume **one** shared derivation helper rather than duplicating the logic.
+**The pop-out is a generic FloatingWindow.**
+- `frontend/src/components/FloatingWindow.tsx` (+ `.css`) — `position: fixed`, drag by a fat grip header,
+  minimize/close, position persisted to `sessionStorage` under `storageKey`. Size is currently **fixed**
+  in CSS (`width: min(380px, 92vw)`, `max-height: min(70vh, 640px)`); there is no resize handle and no size
+  persistence. It hosts arbitrary `children` — the encounter dock is one caller (`EncounterDock.tsx`),
+  which renders `EncounterRunnerBoard compact`.
 
-**The wire model carries only HP + AC (plus name/status/conditions).** `EncounterCreature`
-(`api/types.ts`): `{ monster_id, original_name, name, hp_current, hp_max, ac, status, conditions[] }`.
-There is **no** initiative, CR, speed, or ability-score field. So "propagate default stats" in Phase 1
-means **HP (current+max) and AC** — that is the whole set the model can hold. Propagating more requires a
-model change and is explicitly deferred.
-
-**Conditions data already exists end-to-end.**
-- Backend: `GET /api/conditions` (`backend/app/routers/reference.py`) returns the `conditions` table as
-  `Condition[] = { id, name, description? }` (the SQL aliases `title AS name`), ordered by title.
-- Frontend client: `getConditions()` in `api/client.ts` already returns `Condition[]`.
-- The runner's `CombatantCard` renders **status** as chips (`alive/unconscious/dead/fled`) but does **not**
-  render conditions at all — conditions round-trip through the data untouched. Phase 1 only changes how
-  conditions are **authored**; it does not add condition display to the runner (that is deferred).
-
-**No backend change is required for Phase 1.** Conditions, creatures, HP/AC all already persist and
-round-trip through `createEncounter`/`updateEncounter`. This is a pure frontend phase.
+**The board and the card.**
+- `EncounterRunnerBoard.tsx` — header (round, next-turn, sync status, **Add monster** toggle → `AddMonsterPanel`),
+  then the combatant list with drag-reorder. `compact` prop tightens spacing for the ~310px dock.
+- `CombatantCard.tsx` — renders, in order: header (drag handle, reorder ↑↓, name input, AC, active toggle,
+  duplicate, remove), a **status-pill** row (`alive/unconscious/dead/fled`), a **condition** row
+  (chips + `ConditionPicker`), an **HP meter**, and a **stepper rail** (−10/−2/−1, +1/+2/+10, Set…). A
+  player card must suppress the HP meter, stepper rail, AC, and status pills, keeping only name + conditions
+  (and reorder/active/remove for turn order).
 
 ---
 
 ## Design system in force
 
 Inherit the project design system exactly as documented in `dungeon_plan.md`'s "Design system in force"
-section. The load-bearing points for this editor:
-- **Tokens only.** Consume `--md-*` / `--type-*` from `frontend/src/theme.css`. Encounters/monsters are
-  the **tertiary/teal** content role; the editor's accents (selected condition chips, primary save button)
-  should use the monster/teal role via `data-variant` where a variant surface is appropriate — never
-  hand-picked hex.
-- **Type scale:** title (1rem/500) for field labels and section headings; body-sm for secondary detail;
-  label/caption for chips and badges. No ad-hoc rem/px.
+section. Load-bearing points for this phase:
+- **Tokens only.** Consume `--md-*` / `--type-*` from `frontend/src/theme.css`. Encounters/monsters are the
+  **tertiary/teal** content role; players should read as a distinct-but-related role (use an existing token
+  such as the primary/secondary container for the player accent — never hand-picked hex).
 - **Icons:** local Lucide inline-SVG components in `components/icons/`. No emoji, no icon font, no CDN.
-- **Accessibility floor:** visible focus rings; never hue-alone (checked state needs a check glyph + text,
-  not just a color); `prefers-reduced-motion` honored; **≥48px touch targets** — the primary device is a
-  Surface Pro and creation is touch-first, so the condition checkboxes must be finger-sized, not native
-  16px boxes.
+- **Accessibility floor:** visible focus rings; never hue-alone (a player card must be labeled/iconed, not
+  just tinted); `prefers-reduced-motion` honored; **≥48px touch targets** — the primary device is a Surface
+  Pro and the runner is touch-first. The resize handle must be a finger-sized, keyboard-operable control,
+  not a 6px corner nub.
 
 ---
 
 ## Reusable pieces (do not rebuild)
 
-- **`combatantFromMonster`** (`encounterRunner.ts`) — the existing, correct monster→stats derivation. C1
-  factors its stat math into a shared helper; do not write a second derivation.
-- **`getConditions()`** (`api/client.ts`) + **`GET /api/conditions`** — the condition source of truth.
-- **`SelectField` / `TextField`** (`components/form/`) — the existing form primitives the editor already
-  uses. Add a checkbox-group primitive only if one does not already exist; otherwise reuse.
-- **`listMonsters()`** — already loaded and sorted by the editor for the monster picker.
+- **`encounterRunnerReducer` + `RunnerAction`** — add new actions here (mirror `setStatus`/`addFromMonster`);
+  do not fork the engine.
+- **`combatantFromMonster`** — the model for a `combatantFromPlayer` factory (same `clientId` minting, but
+  null HP/AC and `kind: 'player'`).
+- **`AddMonsterPanel`** — the exact pattern for an `AddPlayerPanel` (toggle in the board header → panel →
+  `onAdd`/`onClose`).
+- **`ConditionPicker`** + `encounterForm.ts` helpers (`mergeConditionOptions`/`isConditionSelected`/
+  `toggleCondition`) — the condition editor, already used by both the editor and the card.
+- **`FloatingWindow`'s drag machinery** — the pointer-move/pointer-up window-listener pattern for the drag
+  header is the exact template for the resize-handle pointer logic; `loadPosition`/`savePosition` are the
+  template for `loadSize`/`saveSize`.
+- **`getConditions()`** (`api/client.ts`) — condition source of truth.
 
 ---
 
-## Phase 1 — Creation Overhaul
+## Phase 4 — Runner Field Ops
 
-| Stage | Summary | Deliverables |
-|-------|---------|--------------|
-| **C0 — Scaffolding** | Type stubs, form-state shape, conditions fetch wiring, placeholder CSS. | `deriveCreatureStats` stub; `conditions: string[]` in `EncounterCreatureRow`; `getConditions()` wired; test stubs |
-| **C1 — Stat propagation** | Shared derivation logic. `combatantFromMonster` refactored. Editor auto-fills HP/AC on monster pick (overwrite semantics; hand-edits persist until re-pick). | `deriveCreatureStats` in `encounterStats.ts`; `handlePickMonster` derives stats; 6 tests (derivation parity + editor fill); runner unchanged |
-| **C2 — Condition checkboxes** | Comma-separated text field → checkbox group from canonical conditions. Helpers for case-insensitive matching. Legacy/unknown conditions preserved as custom options. | `mergeConditionOptions`, `isConditionSelected`, `toggleCondition` in `encounterForm.ts`; conditions sourced from `getConditions()`; 8 tests (logic + DOM); 438 tests passing |
-| **C3 — Design pass** | Visual review, MD3 conformance, accessibility. New components: `CreatureRowCard` (collapsible summary + stats). `ConditionPicker` (popover trigger + checkbox grid). Touch targets ≥2.75rem; tokens only; Lucide icons; `aria-modal` intact. | `CreatureRowCard.tsx`/`.css`; `ConditionPicker.tsx`/`.css`; design conformance fixes (tokens, icons, sizing, role); 9 new tests; 447 tests passing; live verified |
+Make the pop-out runner usable as a live combat surface: **resizable** so the DM can size it to the table,
+and able to hold **player characters** (name + conditions, no HP) alongside monsters in one turn list.
+Both are pure-frontend — no backend/seed change (`FloatingWindow` size persists to `sessionStorage`; the
+player `kind` field round-trips through the opaque `units` blob).
 
----
-
-## Phase 2 — Runner Conditions
-
-> **Status:** Phase 2 (Runner Conditions) **COMPLETE** ✓ (2026-07-13)
-> - R0 (scaffolding): action + prop-threading stubs, placeholder CSS, test stubs
-> - R1 (reducer + data flow): `setConditions` reducer case implemented; canonical condition list fetched in the hook
-> - R2 (card display + live edit): condition chip row + `ConditionPicker` trigger wired into `CombatantCard`
-> - R3 (design pass): status-chip touch target fixed, dock/compact spacing tightened, picker panel grouped for a11y
-
-The Runner is otherwise **out of scope** in this project (see "Scope of this plan"), but conditions are the one
-gap that breaks live play: they are authored (Phase 1's `ConditionPicker`), stored as **condition-name strings**
-on `EncounterCreature.conditions` (`api/types.ts:154`), and preserved through hydrate/save — but **never shown or
-editable** while running combat. `CombatantCard.tsx:151-163` renders only the `status` pill row. This phase adds a
-condition chip row **plus live add/remove**, reusing Phase 1's picker. **No backend change** (conditions already
-round-trip through `units`).
-
-**Reuse (do not rebuild):** `ConditionPicker.tsx` (`{ conditions, selected, onChange }`) + `encounterForm.ts`
-helpers `mergeConditionOptions`/`isConditionSelected`/`toggleCondition`; `getConditions()` (`api/client.ts:62`);
-the `setStatus` reducer case (`encounterRunner.ts:133-139`) as the model for the new action; the status-pill
-markup/CSS (`.combatant-status-chip`) as the model for condition chips.
+**Depends on:** Phases 1–3 shipped (uses `ConditionPicker`, the shared `EncounterDock`, `useEncounterRunner`).
+**Depended on by:** nothing queued.
 
 | Stage | Model | Summary | Deliverables |
 |-------|-------|---------|--------------|
-| **R0 — Scaffolding** | Haiku | Action + prop-threading stubs, placeholder CSS, `it.skip` tests. | ✓ `{ type:'setConditions'; clientId; conditions:string[] }` added to `RunnerAction` (no-op case in reducer); `onSetConditions` + `conditions: Condition[]` prop signatures threaded `EncounterRunnerBoard → CombatantCard`; `.combatant-condition-chips` placeholder CSS mirroring `.combatant-status-chips`; condition render stub in CombatantCard; skipped test stubs; `useEncounterRunner` hook updated. |
-| **R1 — Reducer + data flow** | Sonnet | Implement the action; feed the canonical condition list in. | ✓ `setConditions` reducer case in `encounterRunner.ts` (mirrors `setStatus`) replacing `conditions` immutably for the matched `clientId`; canonical `Condition[]` fetched in `useEncounterRunner.ts` (mirrors `EncounterEditor.tsx:38` via `getConditions()`) and exposed as `runner.conditions`; round-trip preserved through `combatantsToCreatures`. Fixed two pre-existing R0 build errors (`onSetConditions` unused destructure, `combatant.conditions` possibly-null access) to keep `npm run build` clean. Tests: 3 reducer tests (sets/clears conditions, order & other combatants untouched) + 1 round-trip test + 2 hook tests (fetch success/failure); 453 frontend tests passing (4 skipped, unaffected), `npm run build` clean, 110 backend tests unaffected. |
-| **R2 — Card display + live edit** | Sonnet | Chips + inline picker on the combatant card. | ✓ Condition chip row in `CombatantCard.tsx` (reuses status-chip markup pattern, teal/tertiary role via `--md-tertiary-container`/`--md-on-tertiary-container`); reused `ConditionPicker` (Phase 1) wired as the edit trigger, `onChange` dispatches `runner.setConditions(clientId, next)`; canonical `Condition[]` threaded `EncounterRunnerBoard → CombatantCard` via `runner.conditions`; legacy/custom names preserved (picker's `mergeConditionOptions` already handles this). Tests via `EncounterRunnerPage.test.tsx`: empty-state (no chip row, "No conditions" trigger text), toggling a condition renders a chip, toggle persists through debounce-save (`updateEncounter` payload carries `conditions: ['Prone']`). 456 frontend tests passing (2 skipped — unrelated D-phase stubs), `npm run build` clean, 110 backend tests unaffected (90.73% coverage). |
-| **R3 — Design pass (Runner)** | Sonnet | Visual/MD3/a11y review of the Runner. | ✓ `.combatant-status-chip` `min-height` raised `2rem` → `2.75rem` (`CombatantCard.css`) — it's a real `<button>` with `aria-pressed`, unlike the condition `<span>` chips, so it was the one interactive control under the project's touch-target floor. Added `.encounter-runner-board.compact` overrides for `.combatant-card`/`.combatant-status-chips`/`.combatant-condition-chips`/`.combatant-condition-row`/`.condition-picker-trigger` that tighten padding/gap for the 380px `FloatingWindow` dock — spacing shrinks, the 2.75rem interactive floor does not. `ConditionPicker`'s checkbox panel gained `role="group" aria-label="Condition options"` (distinct from the chip row's own `"Conditions"` label, avoiding an `aria-label` collision caught by the test suite) for correct grouping semantics. Condition chips kept text-only (no added glyph) — condition names are short, legible words, not a color-only state, so no icon was needed to avoid hue-alone signaling. Tokens, global focus rings, and `prefers-reduced-motion` were already correct — no changes needed there. Tests: 464 passing (no new tests; pure CSS/markup, one existing test's `aria-label` query updated for the new distinct label). `npm run build` clean, `pytest` unaffected (110 passed, 90.73% coverage). 🚦 **Live verified 2026-07-13**: standalone runner (`/encounters/4/run`, "Goblin Ambush") shows finger-sized status pills and condition chips (Blinded, Charmed); same encounter opened via the dungeon dock (`FloatingWindow`, ~310px rendered width) shows the compact spacing fitting both chip rows and the picker trigger without crowding or overflow. |
+| **P0 — Scaffolding** | Haiku | Types/stubs/placeholder CSS/`it.skip` tests, no implementation. One context. | `Size` type + `size` state/`loadSize`/`saveSize` stubs + resize-handle element (inert) in `FloatingWindow`; `kind?: 'monster' \| 'player'` on `EncounterCreature`; `{ type:'addPlayer'; name; conditions? }` in `RunnerAction` (no-op case) + `combatantFromPlayer` stub + `addPlayer` on the hook; `AddPlayerPanel.tsx` stub + board toggle stub; `CombatantCard` `isPlayer` branch stub; placeholder CSS; skipped test stubs. Stubs compile; app renders unchanged. |
+| **P1 — Resizable window** | Sonnet | Drag a corner handle to resize the pop-out; size persists. | Resize-handle pointer-drag in `FloatingWindow` (mirrors the header-drag pattern) writing `width`/`height` with min/max clamps; size persisted to `sessionStorage` per `storageKey`; CSS switches from fixed `width`/`max-height` to state-driven; keyboard-resizable handle. Tests: clamp util + persistence round-trip + handle renders/operates. |
+| **P2 — Add players** | Sonnet | Add a PC to a live encounter: name + conditions only. | `addPlayer` reducer case + `combatantFromPlayer` (null HP/AC, `kind:'player'`, `status:'alive'`); `AddPlayerPanel` (name field + `ConditionPicker`) wired via a board-header **Add player** toggle; `CombatantCard` player variant hides HP meter / stepper rail / AC / status pills, keeps name + conditions + reorder/active/remove; `kind` round-trips through save/hydrate. Tests: reducer (adds a player, null HP), panel (name required, condition toggles), card variant (no HP/stepper DOM), round-trip. |
+| **P3 — Design pass** | Sonnet | `/frontend-design` review, MD3/a11y, zero-bug. | Player-card visual distinction (icon + accent token, not hue-alone); resize-handle affordance + focus ring + reduced-motion; touch-target audit in compact/dock mode; tokens-only sweep. Fixes + design tests; live-verified. |
+
+**Sequencing:** P0 → P1 → P2 → P3 (P1 and P2 were independent; P3 is last).
+
+<!-- ===== VERBOSE BLOCKS — one per un-shipped stage, in order. Delete a block and collapse it to a
+     Shipped row the moment that stage ships; the remaining blocks stay until their own turn. ===== -->
+
+#### P2 — Add players (next up)
+
+- **Build:** Let the DM add a player character to a running encounter.
+  - `combatantFromPlayer(name, conditions = [])`: mint a `clientId`, `monster_id: null`, `original_name:
+    name`, `name`, `hp_current: null`, `hp_max: null`, `ac: null`, `status: 'alive'`, `conditions`,
+    `kind: 'player'`.
+  - `case 'addPlayer'`: append `combatantFromPlayer(action.name, action.conditions)` to `combatants`
+    (mirror `addFromMonster`).
+  - `AddPlayerPanel`: a name `TextField` (required, trim; disable Add when empty) + a `ConditionPicker`
+    (optional, seeded from `runner.conditions`), Add/Cancel; `onAdd(name, conditions)` → `runner.addPlayer`.
+    Wire the board-header **Add player** toggle beside **Add monster**.
+  - `CombatantCard` player variant (`combatant.kind === 'player'`): suppress the HP meter, the stepper rail,
+    the AC chip, and the status-pill row; keep the header (drag/reorder/name/active/remove; drop duplicate
+    or keep — pick per design) and the condition row. Ensure `hpTier`/HP math is never invoked for a
+    player (no null-deref).
+  - Confirm `kind` survives `combatantsToCreatures` → `updateEncounter` → `hydrate` (it's just a passthrough
+    field on the blob).
+- **Inherits:** P0's `addPlayer` action/hook/panel/card stubs and the `kind` field; `ConditionPicker` and
+  `AddMonsterPanel` patterns.
+- **Tests:** reducer (`addPlayer` appends a player with null HP and `kind:'player'`; order preserved);
+  `AddPlayerPanel` (Add disabled until name entered; condition toggle flows to `onAdd`); `CombatantCard`
+  player variant renders **no** HP meter / stepper / status pills but **does** render name + conditions;
+  round-trip test that a player survives save→hydrate with `kind` intact. Both hosts (page + dock) exercise
+  the path via existing test harnesses.
+- **🚦 Gate:** suite-sufficient. Live confirmation (add a player in the dock, toggle a condition, reopen —
+  player + conditions persist, no HP UI) is desirable; run the suite + `npm run build` and report the manual
+  check to the user unless a browser pass is explicitly requested.
+
+#### P3 — Design pass (planned)
+
+- **Build:** `/frontend-design` review of the two new surfaces. Give the player card a clear, non-hue-alone
+  identity (a player/user Lucide icon + a distinct accent token vs. the monster/teal role); polish the
+  resize handle (visible affordance, focus ring, `prefers-reduced-motion`, ≥48px effective target); audit
+  touch targets and spacing of the Add-player panel + player cards in **compact/dock** mode (~310px); tokens-
+  only sweep (no stray hex/px). Fix any zero-bugs found.
+- **Inherits:** P1 + P2 shipped surfaces.
+- **Tests:** design/a11y assertions for the new markup (icon presence, roles/labels, handle focusability);
+  no behavioral regressions.
+- **🚦 Gate:** live end-to-end on the Surface Pro — resize the dock, add a player, size + player persist,
+  everything finger-sized and visually coherent in both hosts. Per `CLAUDE.md`, the user performs the manual
+  browser verification unless they ask for automation.
+
+<!-- ============================================================================================= -->
 
 ---
 
-## Phase 3 — Dungeon Map Link
+## Shipped stages (collapsed record)
 
-> **Status:** Phase 3 (Dungeon Map Link) **COMPLETE** ✓ (2026-07-13)
-> - D0 (scaffolding): encounter_id field, shared EncounterDock extraction, prop-kind stubs, test stubs
-> - D1 (data + shared dock): confirmed `encounter_id` round-trips through the opaque `map_layout` blob (no backend change needed); `EncounterDock` now live on the Map Lab session viewer via `activeEncounterId`
-> - D2 (marker + launch): clicking/Enter-ing an `'encounter'`-kind prop with an `encounter_id` opens the dock in the session viewer (`MapLabPage`); a marker without an `encounter_id` is inert; `PropMarker` gives encounter markers the tertiary/teal token by default
-> - D3 (authoring): new `encounterPicker` field type in `FixturePropertiesForm` — a `<select>` populated by `listEncounters()` (titles, not raw ids) — replaces the placeholder text field on the encounter marker's `encounter_id`; writes through the existing `updateFixtureFlags` → autosave path unchanged
-> - D4 (design pass): styled the previously-unstyled `<select>` fields, cleaned up a stale TODO comment, confirmed marker focus/sizing conventions inherited from Phase F
+Implementation narrative lives in each stage's git commit; these rows answer *what exists*, not *how it was built*.
 
-The runtime `DungeonViewPage` already launches the runner in a pop-out (`EncounterDock` = `FloatingWindow` +
-`useEncounterRunner` + `EncounterRunnerBoard compact`) from a room feature-tile button. The **Map Lab** on-table
-SVG viewer (`MapLabPage.tsx`) has **no on-map encounter marker** and no authoring for one. This phase adds an
-on-map marker in the **container/chest prop style** (`PropMarker`) that, tapped in the session viewer, opens that
-same pop-out — plus Map Lab editor authoring to attach an encounter. Launch needs **only a numeric encounter id**
-→ `useEncounterRunner(id)`. Both stores are opaque JSON blobs, so **no backend/seed migration** is required
-(`encounter_id` on `MapProp` round-trips through the `map_layout` blob exactly as props themselves shipped).
-
-**Reuse (do not rebuild):** `FloatingWindow.tsx`; the inline `EncounterDock` from `DungeonViewPage`
-(**extract to a shared component**); `PropMarker.tsx` + `PROP_KIND_ICONS`/`propsOnFloor` marker pattern; the
-prop-authoring path `addProp` → `FixturePropertiesForm`/`PROP_FIELDS` → `updateFixtureFlags` → `useMapLabEditor`
-autosave; `listEncounters()` for the picker.
-
-| Stage | Model | Summary | Deliverables |
-|-------|-------|---------|--------------|
-| **D0 — Scaffolding** | Haiku | Data field, shared-dock extraction, prop-kind + field-spec stubs, `it.skip` tests. | ✓ `encounter_id?: number \| null` added to `MapProp` (`maplabModel.ts`); new `'encounter'` prop kind in `PROP_KIND_ICONS`/`FIXTURE_TYPES` (SwordsIcon, neutral token); **extracted inline `EncounterDock` → shared `frontend/src/features/encounters/EncounterDock.tsx`** (DungeonViewPage re-imports, behavior unchanged); MapLabPage state + conditional render placeholder; `PROP_FIELDS` encounter_id entry (text field, showWhen kind='encounter'); placeholder CSS comment; skipped test stubs; SwordsIcon added to icons index. |
-| **D1 — Data + shared dock in session viewer** | Sonnet | Persist the link; put the runner dock on the Map Lab viewer. | ✓ Confirmed `encounter_id` round-trips through the `map_layout` blob untouched — the backend (`layouts.py`) and frontend (`api/client.ts`) both treat `MapLayout`/`props` as an opaque JSON blob with no field-picking, and `normalizeLayout` (`maplabModel.ts`) passes `encounter_id` through unchanged; **no backend change required**, confirming the plan's premise. `activeEncounterId` state + `<EncounterDock>` render in `MapLabPage.tsx` (already scaffolded in D0) finalized — TODO comment narrowed to D2's remaining click-wiring scope only. Tests: 3 new `maplabModel.test.ts` unit tests (`encounter_id` survives JSON round-trip, survives `normalizeLayout`, `null` is preserved for an unlinked marker); un-skipped `MapLabPage.test.tsx`'s `'encounter marker round-trips encounter_id through save/load'` stub (mocks `getDungeonLayout` with an `'encounter'`-kind prop, confirms it loads and renders through the full `useMapLabLayout` → `normalizeLayout` → `propsOnFloor` → `PropMarker` pipeline). The sibling stub `'encounter marker renders and opens the dock'` stays skipped — its own D0 comment assigns it to D2 (click/Enter wiring on the marker), so it wasn't pulled forward. 460 frontend tests passing (1 skipped — the D2 stub), `npm run build` clean, 110 backend tests unaffected (90.73% coverage). |
-| **D2 — On-map marker + launch** | Sonnet | Tap an encounter marker → runner pop-out. | ✓ In the **session viewer** (`MapLabPage.tsx`), an `'encounter'` prop with `encounter_id` renders via `PropMarker` (encounter icon + teal `--md-tertiary` ring, overriding the generic neutral "unlocked" token — trapped/locked/hidden states still take precedence); its click/Enter calls `setActiveEncounterId(encounter_id)` → opens the existing `EncounterDock`. The **editor** (`MapLabEditorPage.tsx`) is untouched — its prop click still only calls `selectProp` (selectable, not launching). Tests: marker renders with the encounter icon and opens the dock bound to the right encounter id on click; a marker without `encounter_id` is inert (no dock, `getEncounter` not called). 462 frontend tests passing (0 skipped), `npm run build` clean. |
-| **D3 — Authoring** | Sonnet | Attach an encounter to a marker in the Map Lab editor. | ✓ Editor places an `'encounter'` marker (existing `addProp` + the Kind `select`'s `'encounter'` option) and, in its `FixturePropertiesForm`, picks an encounter via a new **`encounterPicker`** field type — a `<select>` populated by `listEncounters()`, rendered by a dedicated `EncounterPickerField` component — replacing the placeholder text field from D0. Selecting an option writes `encounter_id` through the existing `updateFixtureFlags(id,'prop',…)` → autosave path unchanged. Tests: picker lists encounters by title (`No encounter` + each `Encounter.title`); selecting one sets `encounter_id` and persists it through `saveDungeonLayout`; the picker only renders for `kind==='encounter'` markers (a chest shows no `Encounter` field). 464 frontend tests passing (0 skipped), `npm run build` clean. |
-| **D4 — Design pass (Dungeon)** | Sonnet | Visual/MD3/a11y review of the map link. | ✓ Added `.maplab-field-row select` styling (`MapLabEditor.css`) matching the existing `input[type='text']`/`input[type='number']` treatment (36px min-height, border, background, token colors, `focus-visible` outline) — previously **every** `<select>` field type (including the new `encounterPicker`) fell back to unstyled browser-default chrome next to styled text inputs in the same form; this was the single largest visible gap found. Removed a stale `MapLabPage.css` TODO comment describing an unimplemented `data-variant`-attribute approach for encounter marker coloring that D3 didn't actually build (it uses an inline `style` token instead, which was already correct). **No change** to `PropMarker`'s focus-visible stroke-based ring or its `CELL_SIZE * 0.32` radius — confirmed both are existing, intentional Phase C/D/F precedent for SVG-canvas glyphs (stroke ring hugs the shape where CSS `outline` wouldn't; radius matches the shared stair/prop marker convention rather than the touch-first 48px toolbar floor), not a regression to fix. Icon (`SwordsIcon`), color precedence (state > kind, teal only when `unlocked`), corner badges, dashed-hidden outline, and `aria-label` were already correct — no hue-alone violation, no emoji, no hardcoded hex found. Tests: 464 passing (no new tests; pure CSS, no component behavior changed). `npm run build` clean, `pytest` unaffected (110 passed, 90.73% coverage). 🚦 **Live verified 2026-07-13**: placed a test encounter marker in the Map Lab editor — Kind/Attach-to-wall/Encounter selects now render as three visually consistent styled controls; picked "Goblin Ambush", autosaved; opened the session viewer, the teal `SwordsIcon` marker was visually distinct from the Armoury's gold-locked chest; tapping it opened the runner in a `FloatingWindow` with Phase-2's fixed condition chips fitting cleanly (ties R3 and D4 together in one end-to-end check). Test marker removed afterward, dev DB left as found. |
+| Stage | What shipped (≤2 sentences) |
+|-------|------------------------------|
+| **C0** | Scaffolding for Creation Overhaul: `deriveCreatureStats` stub, `conditions: string[]` on the creature row, `getConditions()` wired, test stubs. Gate ✅. |
+| **C1** | Shared `deriveCreatureStats` (`encounterStats.ts`); editor auto-fills HP/AC on monster pick (overwrite semantics); `combatantFromMonster` refactored onto it. Runner unchanged; live-verified 2026-07-13. |
+| **C2** | Comma-text condition field → checkbox group from canonical conditions; `mergeConditionOptions`/`isConditionSelected`/`toggleCondition` in `encounterForm.ts`; legacy/unknown names preserved. 438 tests. |
+| **C3** | Creation design pass: `CreatureRowCard` (collapsible) + `ConditionPicker` (popover) components; MD3 tokens, Lucide icons, ≥2.75rem targets, `aria-modal` intact. 447 tests, live-verified 2026-07-13. |
+| **R0** | Runner-Conditions scaffolding: `setConditions` action (no-op case), `onSetConditions`/`conditions` props threaded to `CombatantCard`, placeholder CSS, `it.skip` stubs. Gate ✅. |
+| **R1** | `setConditions` reducer case (immutable replace by `clientId`); canonical `Condition[]` fetched in `useEncounterRunner` and exposed as `runner.conditions`; round-trip preserved. 453 tests, build clean. |
+| **R2** | Condition chip row + inline `ConditionPicker` on `CombatantCard` (teal/tertiary role); toggles dispatch `setConditions` and persist through debounce-save; legacy names preserved. 456 tests. |
+| **R3** | Runner design pass: status-chip target raised to 2.75rem; `.compact` dock spacing overrides; picker panel `role="group"`. 464 tests, live-verified 2026-07-13. |
+| **D0** | Dungeon-Link scaffolding: `encounter_id?` on `MapProp`, `'encounter'` prop kind, **inline `EncounterDock` extracted to shared `EncounterDock.tsx`**, `PROP_FIELDS` stub, `it.skip` stubs. Gate ✅. |
+| **D1** | Confirmed `encounter_id` round-trips through the opaque `map_layout` blob (no backend change); `EncounterDock` rendered on the Map Lab session viewer via `activeEncounterId`. 460 tests. |
+| **D2** | Session-viewer `'encounter'` marker (teal `PropMarker`, state tokens take precedence) opens the dock on click/Enter; a marker without `encounter_id` is inert; editor prop-click still only selects. 462 tests. |
+| **D3** | Editor authoring: new `encounterPicker` field (`EncounterPickerField`, `<select>` from `listEncounters()` by title) writes `encounter_id` through the existing autosave path; only shown for `kind==='encounter'`. 464 tests. |
+| **D4** | Dungeon design pass: styled `.maplab-field-row select` to match text inputs; removed stale TODO; confirmed marker focus/sizing precedent. 464 tests, live-verified 2026-07-13. |
+| **P0** | Phase 4 scaffolding: `Size` type + stubs, `kind` on `EncounterCreature`, `addPlayer` action/`combatantFromPlayer` stub/`AddPlayerPanel` stub/board toggle/`isPlayer` derivation, `it.skip` test stubs. Gate ✅. |
+| **P1** | Resizable `FloatingWindow`: `clampSize` util, `loadSize`/`saveSize` + `sessionStorage`, pointer-drag resize handle (mirrors header-drag), keyboard arrow-key resize (step 16px), `min-width`/`min-height` CSS floors, body user-select guard during resize. 602 tests, build clean. |
 
 ---
 
-## Deferred / future phases (NOT in Phase 1)
+## Known debt / deferred work (NOT yet built)
 
 - **Wider stat propagation** (initiative, CR, speed, ability scores) — requires extending the
   `EncounterCreature` wire model + backend; a model-change phase of its own.
-- ~~**Condition display in the Runner**~~ — **promoted to Phase 2 (Runner Conditions), now display + live edit.**
 - **Encounter templates / difficulty budgeting** — party-size/CR-based XP budget, "build me an encounter"
   helpers.
 - **Quick-add-by-quantity** — "add 4× Goblin" in the editor in one action.
+- **Player HP/initiative tracking** — Phase 4 adds players as name + conditions only by design; giving
+  players optional HP or initiative is a later, explicitly-scoped extension.
 
 ---
 
-## Verification (Phase 1 LIVE — 2026-07-13)
+## Cross-references
 
-1. `pytest` from repo root (110 passed, 90.73% coverage).
-2. `npm run test` — 447 passed, 0 skipped.
-3. `npm run build` — clean.
-4. **Live verified** (Surface Pro): creature pick auto-fills HP/AC; condition picker toggles and persists; save/reopen round-trip intact; runner receives authored stats/conditions correctly.
+- Sibling plan: `docs/dungeon_plan.md` (Design Phase A shipped the runner E1–E6; Map Lab + props).
+- Reference docs: `docs/API_REFERENCE.md` (encounters router), `docs/DATA_MODEL.md` (`units`/`creatures`
+  JSON blob), `docs/DESIGN_SYSTEM.md` (tokens, icons, a11y floor), `docs/TESTING.md`.
 
-## Verification (Phases 2 + 3 LIVE — 2026-07-13, R3 + D4 design passes)
+## Next:
 
-1. `pytest` from repo root (110 passed, 90.73% coverage) — unaffected, no backend touched.
-2. `npm run test` — 464 passed, 0 skipped.
-3. `npm run build` — clean (the real typecheck gate; `tsc --noEmit` alone is a false-green in this repo).
-4. **Live verified** (Surface Pro): Runner status pills and condition chips are finger-sized and fit
-   cleanly in both the standalone route (`/encounters/:id/run`) and the ~310px-wide dungeon dock
-   (`FloatingWindow`, compact mode) with two conditions authored. Map Lab editor's Kind/Attach-to-wall/
-   Encounter `<select>` fields render as three visually consistent controls; authoring an encounter link
-   end-to-end (place marker → pick encounter → autosave → session viewer → tap marker → dock opens with
-   working condition chips) round-trips correctly. `git status` confined to
-   `frontend/src/features/encounters/` and `frontend/src/features/dungeons/maplab/` CSS/TSX plus this doc.
+**Phase 4 / P2 — Add players (Sonnet, unblocked).** Wire `combatantFromPlayer` into the reducer, build
+`AddPlayerPanel` with name field + `ConditionPicker`, render the player card variant (no HP/stepper/AC/status).
+Full implementation; live-verified.

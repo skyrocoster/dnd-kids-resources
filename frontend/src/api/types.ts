@@ -180,6 +180,7 @@ export interface EncounterCreature {
   ac?: number | null
   status?: string | null
   conditions?: string[] | null
+  kind?: 'monster' | 'player' | null
 }
 
 export interface Encounter {

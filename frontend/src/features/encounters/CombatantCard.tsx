@@ -69,6 +69,9 @@ export function CombatantCard({
   const [isSetOpen, setIsSetOpen] = useState(false)
   const [setValue, setSetValue] = useState('')
 
+  const isPlayer = combatant.kind === 'player'
+  void isPlayer
+
   const hpMax = combatant.hp_max ?? null
   const hpCurrent = combatant.hp_current ?? 0
   const tier = hpTier(combatant.hp_current, hpMax)

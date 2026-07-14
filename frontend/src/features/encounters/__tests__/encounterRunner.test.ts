@@ -273,3 +273,13 @@ describe('combatantFromMonster', () => {
     expect(a.clientId).not.toBe(b.clientId)
   })
 })
+
+// P2 stubs
+describe.skip('addPlayer', () => {
+  it('appends a player combatant with null HP and kind player')
+  it('preserves existing combatant order')
+})
+
+describe.skip('combatantFromPlayer', () => {
+  it('returns a combatant with kind player and null HP/AC')
+})
