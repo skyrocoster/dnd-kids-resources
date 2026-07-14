@@ -293,40 +293,38 @@ def populate_monsters(cursor, conn, force=False):
         try:
             cursor.execute("""
                 INSERT INTO monsters
-                (name, alias, size, "group", alignment, type, ac, hp, speed, stats, save, skill, resist, vulnerable,
-                 senses, languages, action, reaction, traits, spellcasting, bonus, legendary, legendaryHeader, mythic,
-                 mythicHeader, reactionRules, soundClip, cr, cr_details)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (id, name, aliases, sizes, family, alignment, creature_type, ac, hp, speed, abilities,
+                 saving_throws, skills, passive_perception, damage_resistances, damage_immunities,
+                 damage_vulnerabilities, condition_immunities, senses, languages, audio_path, features,
+                 cr, cr_sort, cr_note, experience_points)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
+                monster.get('id'),
                 monster.get('name'),
-                serialize(monster.get('alias', [])),
-                serialize(monster.get('size')),
-                serialize(monster.get('group', [])),
-                serialize(monster.get('alignment', [])),
-                serialize(monster.get('type', {})),
-                serialize(monster.get('ac', {})),
-                serialize(monster.get('hp', {})),
-                serialize(monster.get('speed', {})),
-                serialize(monster.get('stats', {})),
-                serialize(monster.get('save', {})),
-                serialize(monster.get('skill', {})),
-                serialize(monster.get('resist', [])),
-                serialize(monster.get('vulnerable', [])),
+                serialize(monster.get('aliases', [])),
+                serialize(monster.get('sizes', [])),
+                monster.get('family'),
+                monster.get('alignment'),
+                serialize(monster.get('creature_type')),
+                serialize(monster.get('ac')),
+                serialize(monster.get('hp')),
+                serialize(monster.get('speed', [])),
+                serialize(monster.get('abilities')),
+                serialize(monster.get('saving_throws', {})),
+                serialize(monster.get('skills', {})),
+                monster.get('passive_perception'),
+                serialize(monster.get('damage_resistances', [])),
+                serialize(monster.get('damage_immunities', [])),
+                serialize(monster.get('damage_vulnerabilities', [])),
+                serialize(monster.get('condition_immunities', [])),
                 serialize(monster.get('senses', [])),
                 serialize(monster.get('languages', [])),
-                serialize(monster.get('action', [])),
-                serialize(monster.get('reaction', [])),
-                serialize(monster.get('traits', [])),
-                serialize(monster.get('spellcasting', [])),
-                serialize(monster.get('bonus', [])),
-                serialize(monster.get('legendary', [])),
-                serialize(monster.get('legendaryHeader')),
-                serialize(monster.get('mythic', [])),
-                serialize(monster.get('mythicHeader')),
-                serialize(monster.get('reactionRules', [])),
-                serialize(monster.get('soundClip', {})),
+                monster.get('audio_path'),
+                serialize(monster.get('features', {})),
                 serialize(monster.get('cr')),
-                serialize(monster.get('cr_details', {}))
+                monster.get('cr_sort'),
+                monster.get('cr_note'),
+                monster.get('experience_points')
             ))
             print(f"  [CHECK] {monster.get('name')}")
         except sqlite3.IntegrityError as e:

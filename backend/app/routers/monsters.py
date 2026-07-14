@@ -7,6 +7,53 @@ from ..schemas import Monster, MonsterCreate, MonsterUpdate
 
 router = APIRouter(prefix="/api", tags=["monsters"])
 
+MONSTER_COLUMNS = [
+    "id",
+    "name",
+    "aliases",
+    "sizes",
+    "family",
+    "alignment",
+    "creature_type",
+    "ac",
+    "hp",
+    "speed",
+    "abilities",
+    "saving_throws",
+    "skills",
+    "passive_perception",
+    "damage_resistances",
+    "damage_immunities",
+    "damage_vulnerabilities",
+    "condition_immunities",
+    "senses",
+    "languages",
+    "audio_path",
+    "features",
+    "cr",
+    "cr_sort",
+    "cr_note",
+    "experience_points",
+]
+JSON_COLUMNS = {
+    "aliases",
+    "sizes",
+    "creature_type",
+    "ac",
+    "hp",
+    "speed",
+    "abilities",
+    "saving_throws",
+    "skills",
+    "damage_resistances",
+    "damage_immunities",
+    "damage_vulnerabilities",
+    "condition_immunities",
+    "senses",
+    "languages",
+    "features",
+}
+
 
 def _parse_monster_row(row) -> dict:
     """Convert a monster row, parsing JSON columns."""
@@ -14,9 +61,8 @@ def _parse_monster_row(row) -> dict:
     if monster is None:
         return None
 
-    # Parse JSON columns
-    for field in ["ac", "hp", "speed", "stats", "senses", "languages", "action"]:
-        if monster.get(field):
+    for field in JSON_COLUMNS:
+        if monster.get(field) is not None:
             monster[field] = parse_json_value(monster[field])
 
     return monster
@@ -31,8 +77,9 @@ def list_monsters(
     with get_db() as conn:
         cursor = conn.cursor()
 
-        query = """
-            SELECT id, name, ac, hp, speed, stats, senses, languages, cr, action
+        columns = ", ".join(MONSTER_COLUMNS)
+        query = f"""
+            SELECT {columns}
             FROM monsters
             ORDER BY name
             LIMIT ? OFFSET ?
@@ -48,11 +95,8 @@ def get_monster(monster_id: int):
     """Get a specific monster by ID."""
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute(
-            """SELECT id, name, ac, hp, speed, stats, senses, languages, cr, action
-               FROM monsters WHERE id = ?""",
-            (monster_id,)
-        )
+        columns = ", ".join(MONSTER_COLUMNS)
+        cursor.execute(f"SELECT {columns} FROM monsters WHERE id = ?", (monster_id,))
         row = cursor.fetchone()
         if not row:
             raise HTTPException(status_code=404, detail="Monster not found")
@@ -64,11 +108,8 @@ def get_monster_by_name(name: str):
     """Get a specific monster by name."""
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute(
-            """SELECT id, name, ac, hp, speed, stats, senses, languages, cr, action
-               FROM monsters WHERE name = ?""",
-            (name,)
-        )
+        columns = ", ".join(MONSTER_COLUMNS)
+        cursor.execute(f"SELECT {columns} FROM monsters WHERE name = ?", (name,))
         row = cursor.fetchone()
         if not row:
             raise HTTPException(status_code=404, detail="Monster not found")

@@ -12,6 +12,49 @@ import {
 import { deriveCreatureStats } from '../encounterStats'
 import { combatantFromMonster } from '../encounterRunner'
 
+function monster(overrides: Partial<Monster>): Monster {
+  return {
+    id: 1,
+    name: 'Monster',
+    aliases: [],
+    sizes: [],
+    family: null,
+    alignment: null,
+    creature_type: null,
+    ac: null,
+    hp: null,
+    speed: [],
+    abilities: null,
+    saving_throws: {},
+    skills: {},
+    passive_perception: null,
+    damage_resistances: [],
+    damage_immunities: [],
+    damage_vulnerabilities: [],
+    condition_immunities: [],
+    senses: [],
+    languages: [],
+    audio_path: null,
+    features: {
+      traits: [],
+      spellcasting: [],
+      actions: [],
+      bonus_actions: [],
+      reactions: [],
+      reaction_intro: null,
+      legendary_actions: [],
+      legendary_intro: null,
+      legendary_actions_per_round: null,
+      mythic_actions: [],
+    },
+    cr: null,
+    cr_sort: null,
+    cr_note: null,
+    experience_points: null,
+    ...overrides,
+  }
+}
+
 const baseEncounter: Encounter = {
   id: 1,
   title: 'Ants',
@@ -65,23 +108,23 @@ describe('formStateToEncounterInput', () => {
 
 describe('C1: Stat propagation', () => {
   it('picking a monster fills HP current/max/AC from defaults', () => {
-    const monster: Monster = { id: 42, name: 'Goblin', ac: { '15': null }, hp: { average: 7 } }
-    const { hpAverage, ac } = deriveCreatureStats(monster)
+    const goblin = monster({ id: 42, name: 'Goblin', ac: { value: 15, note: null, alternatives: [] }, hp: { average: 7, formula: null } })
+    const { hpAverage, ac } = deriveCreatureStats(goblin)
     expect(hpAverage).toBe(7)
     expect(ac).toBe(15)
   })
 
   it('degrades to blank when the monster lacks hp.average or ac', () => {
-    const monster: Monster = { id: 43, name: 'Mystery', ac: null, hp: null }
-    const { hpAverage, ac } = deriveCreatureStats(monster)
+    const mystery = monster({ id: 43, name: 'Mystery', ac: null, hp: null })
+    const { hpAverage, ac } = deriveCreatureStats(mystery)
     expect(hpAverage).toBeNull()
     expect(ac).toBeNull()
   })
 
   it('shares logic with combatantFromMonster', () => {
-    const monster: Monster = { id: 44, name: 'Ogre', ac: { '11': null }, hp: { average: 59 } }
-    const derived = deriveCreatureStats(monster)
-    const combatant = combatantFromMonster(monster)
+    const ogre = monster({ id: 44, name: 'Ogre', ac: { value: 11, note: null, alternatives: [] }, hp: { average: 59, formula: null } })
+    const derived = deriveCreatureStats(ogre)
+    const combatant = combatantFromMonster(ogre)
     expect(combatant.hp_current).toBe(derived.hpAverage)
     expect(combatant.hp_max).toBe(derived.hpAverage)
     expect(combatant.ac).toBe(derived.ac)

@@ -5,33 +5,111 @@ import * as api from '../../../api/client'
 import type { Monster } from '../../../api/types'
 import { MonsterBrowserPage } from '../MonsterBrowserPage'
 
+function monster(overrides: Partial<Monster>): Monster {
+  return {
+    id: 1,
+    name: 'Monster',
+    aliases: [],
+    sizes: [],
+    family: null,
+    alignment: null,
+    creature_type: null,
+    ac: null,
+    hp: null,
+    speed: [],
+    abilities: null,
+    saving_throws: {},
+    skills: {},
+    passive_perception: null,
+    damage_resistances: [],
+    damage_immunities: [],
+    damage_vulnerabilities: [],
+    condition_immunities: [],
+    senses: [],
+    languages: [],
+    audio_path: null,
+    features: {
+      traits: [],
+      spellcasting: [],
+      actions: [],
+      bonus_actions: [],
+      reactions: [],
+      reaction_intro: null,
+      legendary_actions: [],
+      legendary_intro: null,
+      legendary_actions_per_round: null,
+      mythic_actions: [],
+    },
+    cr: null,
+    cr_sort: null,
+    cr_note: null,
+    experience_points: null,
+    ...overrides,
+  }
+}
+
 const monsters: Monster[] = [
-  {
+  monster({
     id: 1,
     name: 'Aarakocra',
-    ac: { '12': null },
+    ac: { value: 12, note: null, alternatives: [] },
     hp: { average: 13, formula: '3d8' },
-    speed: { walk: 20, fly: 50 },
-    stats: { str: 10, dex: 14, con: 10, int: 11, wis: 12, cha: 11 },
-    senses: [],
+    speed: [
+      { mode: 'walk', feet: 20, note: null, hover: false },
+      { mode: 'fly', feet: 50, note: null, hover: false },
+    ],
+    abilities: { str: 10, dex: 14, con: 10, int: 11, wis: 12, cha: 11 },
     languages: ['Auran'],
     cr: '1/4',
-    action: [
-      { name: 'Talon', attack: { type: 'melee', mod: 4, damage: '1d4', damage_type: 'slashing' } },
-    ],
-  },
-  {
+    cr_sort: 0.25,
+    features: {
+      ...monster({}).features,
+      actions: [
+        {
+          name: 'Talon',
+          description: null,
+          attack: {
+            kind: 'melee_weapon',
+            attack_bonus: 4,
+            automatic_hit: false,
+            range_ft: 5,
+            long_range_ft: null,
+            targets: 1,
+            damage: [{ formula: '1d4', bonus: 0, damage_types: ['slashing'] }],
+          },
+        },
+      ],
+    },
+  }),
+  monster({
     id: 2,
     name: 'Owlbear',
-    ac: { '13': null },
-    hp: { average: 59, formula: '7d10+21' },
-    speed: { walk: 40 },
-    stats: { str: 20, dex: 12, con: 17, int: 3, wis: 12, cha: 7 },
-    senses: [{ type: 'darkvision', range: 60 }],
-    languages: [],
+    ac: { value: 13, note: 'natural armour', alternatives: [] },
+    hp: { average: 59, formula: '7d10 + 21' },
+    speed: [{ mode: 'walk', feet: 40, note: null, hover: false }],
+    abilities: { str: 20, dex: 12, con: 17, int: 3, wis: 12, cha: 7 },
+    senses: [{ type: 'darkvision', range: 60, note: null }],
     cr: '3',
-    action: [{ name: 'Beak', attack: { type: 'melee', mod: 7, damage: '1d10+5', damage_type: 'piercing' } }],
-  },
+    cr_sort: 3,
+    features: {
+      ...monster({}).features,
+      actions: [
+        {
+          name: 'Beak',
+          description: null,
+          attack: {
+            kind: 'melee_weapon',
+            attack_bonus: 7,
+            automatic_hit: false,
+            range_ft: 5,
+            long_range_ft: null,
+            targets: 1,
+            damage: [{ formula: '1d10', bonus: 5, damage_types: ['piercing'] }],
+          },
+        },
+      ],
+    },
+  }),
 ]
 
 describe('MonsterBrowserPage', () => {
@@ -71,8 +149,13 @@ describe('MonsterBrowserPage', () => {
 // ── M2/M3 test stubs ────────────────────────────────────────────────────────────
 
 describe('Monster data (M2 shape)', () => {
-  it.skip('renders AC as {value, note} from the migrated shape', () => {
-    // M2: AC shape changes from {"13": null} to {"value": 13, "note": null}
+  it('renders AC as {value, note} from the migrated shape', async () => {
+    vi.spyOn(api, 'listMonsters').mockResolvedValue(monsters)
+
+    render(<MonsterBrowserPage />)
+
+    await screen.findByRole('heading', { name: 'Aarakocra' })
+    expect(screen.getByText('Armor Class').nextElementSibling).toHaveTextContent('12')
   })
 
   it.skip('hides sections when data is absent', () => {

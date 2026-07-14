@@ -53,7 +53,13 @@ class _MonsterContext:
 
 def migrate(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Transform legacy monster rows to the accepted M1 target shape."""
+    if all(_is_target_monster(row) for row in rows):
+        return rows
     return [_migrate_monster(row) for row in rows]
+
+
+def _is_target_monster(row: dict[str, Any]) -> bool:
+    return "aliases" in row and "features" in row and "alias" not in row and "action" not in row
 
 
 def _migrate_monster(monster: dict[str, Any]) -> dict[str, Any]:

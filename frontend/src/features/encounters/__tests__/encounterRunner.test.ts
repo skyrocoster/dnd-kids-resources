@@ -25,6 +25,49 @@ function hydrated(encounter: Encounter = baseEncounter): RunnerState {
   return hydrate(encounter)
 }
 
+function monster(overrides: Partial<Monster>): Monster {
+  return {
+    id: 1,
+    name: 'Monster',
+    aliases: [],
+    sizes: [],
+    family: null,
+    alignment: null,
+    creature_type: null,
+    ac: null,
+    hp: null,
+    speed: [],
+    abilities: null,
+    saving_throws: {},
+    skills: {},
+    passive_perception: null,
+    damage_resistances: [],
+    damage_immunities: [],
+    damage_vulnerabilities: [],
+    condition_immunities: [],
+    senses: [],
+    languages: [],
+    audio_path: null,
+    features: {
+      traits: [],
+      spellcasting: [],
+      actions: [],
+      bonus_actions: [],
+      reactions: [],
+      reaction_intro: null,
+      legendary_actions: [],
+      legendary_intro: null,
+      legendary_actions_per_round: null,
+      mythic_actions: [],
+    },
+    cr: null,
+    cr_sort: null,
+    cr_note: null,
+    experience_points: null,
+    ...overrides,
+  }
+}
+
 describe('hydrate', () => {
   it('assigns a stable clientId per combatant and defaults active to the first combatant', () => {
     const state = hydrated()
@@ -126,16 +169,16 @@ describe('duplicate', () => {
 })
 
 describe('addFromMonster', () => {
-  const monster: Monster = {
+  const owlbear: Monster = monster({
     id: 42,
     name: 'Owlbear',
-    ac: { '13': 'natural armour' },
-    hp: { average: 59, formula: '7d10 + 21', minimum: 28, maximum: 90 },
-  }
+    ac: { value: 13, note: 'natural armour', alternatives: [] },
+    hp: { average: 59, formula: '7d10 + 21' },
+  })
 
   it('derives hp_current/hp_max from hp.average and appends to the end', () => {
     const state = hydrated()
-    const next = encounterRunnerReducer(state, { type: 'addFromMonster', monster })
+    const next = encounterRunnerReducer(state, { type: 'addFromMonster', monster: owlbear })
     expect(next.combatants).toHaveLength(4)
     const added = next.combatants[3]
     expect(added.monster_id).toBe(42)
@@ -147,7 +190,7 @@ describe('addFromMonster', () => {
   })
 
   it('falls back to null hp/ac when the monster data cannot derive them', () => {
-    const oddMonster: Monster = { id: 43, name: 'Aberrant Spirit', ac: {}, hp: { special: 'varies' } }
+    const oddMonster: Monster = monster({ id: 43, name: 'Aberrant Spirit', ac: null, hp: null })
     const state = hydrated({ id: 1, title: 'Empty', creatures: [] })
     const next = encounterRunnerReducer(state, { type: 'addFromMonster', monster: oddMonster })
     expect(next.combatants[0].hp_current).toBeNull()
@@ -279,9 +322,9 @@ describe('combatantsToCreatures', () => {
 
 describe('combatantFromMonster', () => {
   it('assigns a fresh clientId each call', () => {
-    const monster: Monster = { id: 1, name: 'Rat', ac: { '11': null }, hp: { average: 4 } }
-    const a = combatantFromMonster(monster)
-    const b = combatantFromMonster(monster)
+    const rat = monster({ id: 1, name: 'Rat', ac: { value: 11, note: null, alternatives: [] }, hp: { average: 4, formula: null } })
+    const a = combatantFromMonster(rat)
+    const b = combatantFromMonster(rat)
     expect(a.clientId).not.toBe(b.clientId)
   })
 })

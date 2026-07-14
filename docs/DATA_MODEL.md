@@ -61,13 +61,22 @@ Some tables store complex structured data as JSON strings. The backend's Pydanti
 | `spells` | `area_of_effect` | Area of effect dict (`{"type": "cone", "size": 15}`) | `{"type": "sphere", "size": 20}` |
 | `spells` | `classes` | List of classes that can learn this spell | `["Cleric", "Wizard"]` |
 | `spells` | `subclasses` | List of subclasses that can learn this spell | `["Lore Master"]` |
-| `monsters` | `ac` | Armor class dict (base AC, conditions, notes) | `{"base": 15, "note": "leather armour"}` |
-| `monsters` | `hp` | Hit points dict (average, dice) | `{"average": 27, "dice": "5d8+5"}` |
-| `monsters` | `speed` | Movement speeds dict (`{"walk": 30, "fly": 60}`) | `{"walk": 30, "swim": 30}` |
-| `monsters` | `stats` | Ability scores dict (`{"str": 15, "dex": 12, ...}`) | `{"str": 15, "dex": 12, "con": 14, "int": 10, "wis": 12, "cha": 8}` |
-| `monsters` | `senses` | List of special senses | `[{"type": "darkvision", "range": 60}]` |
+| `monsters` | `aliases` | Alternate search/display names | `["fiendish hawk"]` |
+| `monsters` | `sizes` | Creature sizes | `["medium"]` |
+| `monsters` | `creature_type` | Category, subtype tags, and optional swarm size | `{"category":"dragon","tags":[],"swarm_size":null}` |
+| `monsters` | `ac` | Primary armor class plus ordered alternatives | `{"value":13,"note":"natural armour","alternatives":[]}` |
+| `monsters` | `hp` | Hit points average and optional formula | `{"average":59,"formula":"7d10 + 21"}` |
+| `monsters` | `speed` | Typed movement speeds | `[{"mode":"walk","feet":40,"note":null,"hover":false}]` |
+| `monsters` | `abilities` | Six ability scores with nullable individual values | `{"str":20,"dex":12,"con":17,"int":3,"wis":12,"cha":7}` |
+| `monsters` | `saving_throws` | Sparse saving throw bonuses | `{"int":6,"wis":4}` |
+| `monsters` | `skills` | Sparse active skill bonuses | `{"perception":3}` |
+| `monsters` | `damage_resistances` | Damage resistance entries | `[{"damage_type":"fire","note":null,"conditional":false}]` |
+| `monsters` | `damage_immunities` | Damage immunity entries | `[{"damage_type":"poison","note":null,"conditional":false}]` |
+| `monsters` | `damage_vulnerabilities` | Damage vulnerability entries | `[{"damage_type":"radiant","note":"while cursed","conditional":true}]` |
+| `monsters` | `condition_immunities` | Condition immunity names | `["poisoned"]` |
+| `monsters` | `senses` | List of special senses | `[{"type":"darkvision","range":60,"note":null}]` |
 | `monsters` | `languages` | List of languages spoken | `["Common", "Draconic"]` |
-| `monsters` | `action` | List of action definitions (name, description, attack bonus, etc.) | `[{"name": "Bite", "description": "..."}]` |
+| `monsters` | `features` | Traits, actions, spellcasting, reactions, legendary/mythic blocks | `{"traits":[],"actions":[{"name":"Bite","description":null,"attack":{...}}]}` |
 | `npcs` | `stats` | Ability scores dict (same as monsters) | `{"str": 14, "dex": 13, "con": 15, ...}` |
 | `npcs` | `appearance` | Appearance dict (hair, eyes, height, distinctive features) | `{"hair": "black", "eyes": "blue", "height": "5'10\""}` |
 | `npcs` | `saving_throws` | Saving throw bonuses dict (`{"str": 2, "cha": -1}`) | `{"str": 1, "dex": 0}` |

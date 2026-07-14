@@ -68,20 +68,270 @@ export interface Spell {
 
 export type SpellInput = Omit<Spell, 'id'>
 
+export type AbilityName = 'str' | 'dex' | 'con' | 'int' | 'wis' | 'cha'
+export type CreatureSize = 'tiny' | 'small' | 'medium' | 'large' | 'huge' | 'gargantuan'
+export type MovementMode = 'walk' | 'burrow' | 'climb' | 'fly' | 'swim'
+export type AttackKind =
+  | 'melee_weapon'
+  | 'ranged_weapon'
+  | 'melee_spell'
+  | 'ranged_spell'
+  | 'melee_or_ranged_spell'
+
+export interface CreatureType {
+  category: string
+  tags: string[]
+  swarm_size: CreatureSize | null
+}
+
+export interface ArmorClassEntry {
+  value: number
+  note: string | null
+}
+
+export interface ArmorClass extends ArmorClassEntry {
+  alternatives: ArmorClassEntry[]
+}
+
+export interface HitPoints {
+  average: number
+  formula: string | null
+}
+
+export interface MovementSpeed {
+  mode: MovementMode
+  feet: number
+  note: string | null
+  hover: boolean
+}
+
+export interface AbilityScores {
+  str: number | null
+  dex: number | null
+  con: number | null
+  int: number | null
+  wis: number | null
+  cha: number | null
+}
+
+export interface DamageModifier {
+  damage_type: string
+  note: string | null
+  conditional: boolean
+}
+
+export interface Sense {
+  type: string
+  range: number
+  note: string | null
+}
+
+export interface AttackDamage {
+  formula: string
+  bonus: number
+  damage_types: string[]
+}
+
+export interface Attack {
+  kind: AttackKind
+  attack_bonus: number | null
+  automatic_hit: boolean
+  range_ft: number | null
+  long_range_ft: number | null
+  targets: number | null
+  damage: AttackDamage[]
+}
+
+export interface Feature {
+  name: string
+  description: string | null
+  attack: Attack | null
+}
+
+export interface SpellReference {
+  name: string
+  hidden: boolean
+}
+
+export interface SpellGroup {
+  label: string
+  spells: SpellReference[]
+  hidden: boolean
+}
+
+export interface SpellcastingBlock {
+  name: string
+  ability: AbilityName | null
+  description: string | null
+  resource: string | null
+  groups: SpellGroup[]
+  footer: string | null
+}
+
+export interface MonsterFeatures {
+  traits: Feature[]
+  spellcasting: SpellcastingBlock[]
+  actions: Feature[]
+  bonus_actions: Feature[]
+  reactions: Feature[]
+  reaction_intro: string | null
+  legendary_actions: Feature[]
+  legendary_intro: string | null
+  legendary_actions_per_round: number | null
+  mythic_actions: Feature[]
+}
+
 export interface Monster {
   id: number
   name: string
-  ac?: Record<string, unknown> | null
-  hp?: Record<string, unknown> | null
-  speed?: Record<string, unknown> | null
-  stats?: Record<string, unknown> | null
-  senses?: Record<string, unknown>[] | null
-  languages?: string[] | null
-  cr?: string | null
-  action?: Record<string, unknown>[] | null
+  aliases: string[]
+  sizes: CreatureSize[]
+  family: string | null
+  alignment: string | null
+  creature_type: CreatureType | null
+  ac: ArmorClass | null
+  hp: HitPoints | null
+  speed: MovementSpeed[]
+  abilities: AbilityScores | null
+  saving_throws: Partial<Record<AbilityName, number>>
+  skills: Record<string, number>
+  passive_perception: number | null
+  damage_resistances: DamageModifier[]
+  damage_immunities: DamageModifier[]
+  damage_vulnerabilities: DamageModifier[]
+  condition_immunities: string[]
+  senses: Sense[]
+  languages: string[]
+  audio_path: string | null
+  features: MonsterFeatures
+  cr: string | null
+  cr_sort: number | null
+  cr_note: string | null
+  experience_points: number | null
 }
 
-export type MonsterInput = Omit<Monster, 'id'>
+export interface CreatureTypeInput {
+  category: string
+  tags?: string[]
+  swarm_size?: CreatureSize | null
+}
+
+export interface ArmorClassEntryInput {
+  value: number
+  note?: string | null
+}
+
+export interface ArmorClassInput extends ArmorClassEntryInput {
+  alternatives?: ArmorClassEntryInput[]
+}
+
+export interface HitPointsInput {
+  average: number
+  formula?: string | null
+}
+
+export interface MovementSpeedInput {
+  mode: MovementMode
+  feet: number
+  note?: string | null
+  hover?: boolean
+}
+
+export type AbilityScoresInput = Partial<AbilityScores>
+
+export interface DamageModifierInput {
+  damage_type: string
+  note?: string | null
+  conditional?: boolean
+}
+
+export interface SenseInput {
+  type: string
+  range: number
+  note?: string | null
+}
+
+export interface AttackDamageInput {
+  formula: string
+  bonus?: number
+  damage_types?: string[]
+}
+
+export interface AttackInput {
+  kind: AttackKind
+  attack_bonus?: number | null
+  automatic_hit?: boolean
+  range_ft?: number | null
+  long_range_ft?: number | null
+  targets?: number | null
+  damage?: AttackDamageInput[]
+}
+
+export interface FeatureInput {
+  name: string
+  description?: string | null
+  attack?: AttackInput | null
+}
+
+export interface SpellReferenceInput {
+  name: string
+  hidden?: boolean
+}
+
+export interface SpellGroupInput {
+  label: string
+  spells?: SpellReferenceInput[]
+  hidden?: boolean
+}
+
+export interface SpellcastingBlockInput {
+  name: string
+  ability?: AbilityName | null
+  description?: string | null
+  resource?: string | null
+  groups?: SpellGroupInput[]
+  footer?: string | null
+}
+
+export interface MonsterFeaturesInput {
+  traits?: FeatureInput[]
+  spellcasting?: SpellcastingBlockInput[]
+  actions?: FeatureInput[]
+  bonus_actions?: FeatureInput[]
+  reactions?: FeatureInput[]
+  reaction_intro?: string | null
+  legendary_actions?: FeatureInput[]
+  legendary_intro?: string | null
+  legendary_actions_per_round?: number | null
+  mythic_actions?: FeatureInput[]
+}
+
+export interface MonsterInput {
+  name: string
+  aliases?: string[]
+  sizes?: CreatureSize[]
+  family?: string | null
+  alignment?: string | null
+  creature_type?: CreatureTypeInput | null
+  ac?: ArmorClassInput | null
+  hp?: HitPointsInput | null
+  speed?: MovementSpeedInput[]
+  abilities?: AbilityScoresInput | null
+  saving_throws?: Partial<Record<AbilityName, number>>
+  skills?: Record<string, number>
+  passive_perception?: number | null
+  damage_resistances?: DamageModifierInput[]
+  damage_immunities?: DamageModifierInput[]
+  damage_vulnerabilities?: DamageModifierInput[]
+  condition_immunities?: string[]
+  senses?: SenseInput[]
+  languages?: string[]
+  audio_path?: string | null
+  features?: MonsterFeaturesInput
+  cr?: string | null
+  cr_note?: string | null
+  experience_points?: number | null
+}
 
 export interface Weapon {
   id: number
