@@ -432,6 +432,10 @@
   padding: 0.5rem;
 }
 
+.maplab-zoom-button-label {
+  white-space: nowrap;
+}
+
 /* Shared pill look for every clickable control across Map Lab (toolbar buttons, floor tabs,
  * session/zoom buttons) — one base rule instead of five near-identical duplicated blocks. Each
  * control keeps its own class too, for state-specific overrides (`[data-active]`,

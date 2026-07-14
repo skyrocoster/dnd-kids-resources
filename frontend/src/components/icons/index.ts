@@ -46,6 +46,8 @@ export { Save as SaveIcon } from 'lucide-react'
 export { ZoomIn as ZoomInIcon } from 'lucide-react'
 export { ZoomOut as ZoomOutIcon } from 'lucide-react'
 export { Maximize2 as FitIcon } from 'lucide-react'
+export { Maximize2 as FullscreenEnterIcon } from 'lucide-react'
+export { Minimize2 as FullscreenExitIcon } from 'lucide-react'
 
 /* DP3 finalized: nav collapse icons (ready for DP2 wiring) */
 export { PanelLeftClose as NavCollapseIcon } from 'lucide-react'

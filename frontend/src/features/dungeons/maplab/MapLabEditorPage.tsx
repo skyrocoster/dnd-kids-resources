@@ -9,6 +9,8 @@ import {
   CloseIcon,
   DoorClosedIcon,
   FitIcon,
+  FullscreenEnterIcon,
+  FullscreenExitIcon,
   MinusIcon,
   PlusIcon,
   PortalIcon,
@@ -481,14 +483,22 @@ export function MapLabEditorPage() {
           panHint="Wheel to zoom. Drag empty canvas or use scrollbars to pan. Press Escape to exit fullscreen."
           controlsSlot={
             <>
+              {(() => {
+                const FullscreenIcon = isCanvasFullscreen ? FullscreenExitIcon : FullscreenEnterIcon
+                return (
               <button
                 type="button"
                 className="maplab-pill-button maplab-zoom-button"
                 aria-label={isCanvasFullscreen ? 'Exit fullscreen map editor' : 'Enter fullscreen map editor'}
                 onClick={toggleCanvasFullscreen}
               >
-                <FitIcon width={20} height={20} aria-hidden="true" />
+                    <FullscreenIcon width={20} height={20} aria-hidden="true" />
+                    <span className="maplab-zoom-button-label">
+                      {isCanvasFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+                    </span>
               </button>
+                )
+              })()}
               <button
                 type="button"
                 className="maplab-pill-button maplab-zoom-button"
@@ -508,10 +518,11 @@ export function MapLabEditorPage() {
               <button
                 type="button"
                 className="maplab-pill-button maplab-zoom-button"
-                aria-label="Reset zoom"
+                aria-label="Fit map to viewport"
                 onClick={() => zoomApi.fitToBounds(bounds, viewportSize)}
               >
                 <FitIcon width={20} height={20} aria-hidden="true" />
+                <span className="maplab-zoom-button-label">Fit</span>
               </button>
             </>
           }

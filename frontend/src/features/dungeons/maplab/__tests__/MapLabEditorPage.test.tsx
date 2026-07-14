@@ -288,7 +288,7 @@ describe('MapLabEditorPage (Stage E2 — Canvas zoom & pan)', () => {
     expect(Number(svg.getAttribute('width'))).not.toBeCloseTo(640)
 
     // 448px content into a 640px (stubbed) viewport -> scale = 640/448 -> exactly fills it.
-    fireEvent.click(screen.getByRole('button', { name: 'Reset zoom' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Fit map to viewport' }))
     expect(Number(svg.getAttribute('width'))).toBeCloseTo(640)
     expect(Number(svg.getAttribute('height'))).toBeCloseTo(640)
   })
@@ -336,7 +336,7 @@ describe('MapLabEditorPage (Stage E2 — Canvas zoom & pan)', () => {
     expect(viewport.scrollLeft).toBe(-50)
     expect(viewport.scrollTop).toBe(-20)
 
-    fireEvent.click(screen.getByRole('button', { name: 'Reset zoom' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Fit map to viewport' }))
     expect(Number(svg.getAttribute('width'))).toBeCloseTo(640)
     expect(viewport.scrollLeft).toBe(0)
     expect(viewport.scrollTop).toBe(0)
