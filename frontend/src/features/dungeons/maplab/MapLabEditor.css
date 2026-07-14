@@ -122,6 +122,15 @@
   opacity: 0.4;
 }
 
+.maplab-paint-cell:focus-visible {
+  fill: var(--md-primary-container);
+  opacity: 0.7;
+  stroke: var(--md-primary);
+  stroke-width: 3;
+  stroke-dasharray: none;
+  outline: none;
+}
+
 .maplab-paint-cell[data-paint-state='ownedSelected'] {
   cursor: pointer;
 }
@@ -150,6 +159,48 @@
 
 .maplab-paint-marker-invalid {
   color: var(--md-outline);
+}
+
+.maplab-room-footprint-preview {
+  pointer-events: none;
+}
+
+.maplab-room-footprint-cell,
+.maplab-room-footprint-anchor {
+  fill: var(--md-secondary-container);
+  stroke: var(--md-secondary);
+  stroke-width: 2;
+  opacity: 0.42;
+}
+
+.maplab-room-footprint-anchor {
+  stroke-width: 4;
+  stroke-dasharray: 8 4;
+  opacity: 0.62;
+}
+
+.maplab-room-footprint-cell[data-footprint-state='owned'],
+.maplab-room-footprint-anchor[data-footprint-state='owned'] {
+  fill: var(--md-primary-container);
+  stroke: var(--md-primary);
+}
+
+.maplab-room-footprint-cell[data-footprint-state='blocked'],
+.maplab-room-footprint-anchor[data-footprint-state='blocked'] {
+  fill: var(--md-error-container);
+  stroke: var(--md-error);
+  stroke-dasharray: 5 4;
+}
+
+.maplab-placement-error {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--md-error);
+  border-radius: 8px;
+  background: var(--md-error-container);
+  color: var(--md-on-error-container);
 }
 
 .maplab-editor-toolbar-button[data-active] {

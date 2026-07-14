@@ -128,6 +128,16 @@ export function useMapCanvasZoom({ wheelZoomMode = 'modifier' }: UseMapCanvasZoo
     (e: PointerEvent) => {
       const target = e.target as HTMLElement | null
       if (target?.closest(NON_PAN_TARGET_SELECTOR)) return
+      const viewport = e.currentTarget as HTMLElement | null
+      if (viewport) {
+        const rect = viewport.getBoundingClientRect()
+        // Native pointer events on a scrollbar target its scroll container. Do not turn a
+        // scrollbar-thumb drag into a canvas pan, which would immediately reset its position.
+        if (
+          (viewport.clientWidth > 0 && e.clientX >= rect.left + viewport.clientWidth) ||
+          (viewport.clientHeight > 0 && e.clientY >= rect.top + viewport.clientHeight)
+        ) return
+      }
       // A drag starting over an SVG <text> (room titles, the scale ruler) would otherwise kick off
       // the browser's native text selection alongside the pan.
       e.preventDefault()

@@ -183,6 +183,68 @@ describe('mapLabEditorReducer', () => {
     })
   })
 
+  describe('setRoomFootprint', () => {
+    it('commits a 2x3 rectangle and normalizes the room cells', () => {
+      const layout: MapLayout = {
+        ...emptyLayout,
+        rooms: [{ room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0]] }],
+      }
+      const state = initialEditorState(layout)
+      const next = mapLabEditorReducer(state, {
+        type: 'setRoomFootprint',
+        roomId: 1,
+        cells: [[2, 4], [3, 4], [2, 5], [3, 5], [2, 6], [3, 6]],
+      })
+
+      expect(next.layout.rooms[0]).toMatchObject({
+        origin: [0, 0],
+        cells: [[2, 4], [3, 4], [2, 5], [3, 5], [2, 6], [3, 6]],
+      })
+    })
+
+    it('rejects overlap with another same-floor room', () => {
+      const layout: MapLayout = {
+        ...emptyLayout,
+        rooms: [
+          { room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0]] },
+          { room_id: 2, z: 0, origin: [0, 0], cells: [[2, 0]] },
+        ],
+      }
+      const state = initialEditorState(layout)
+      const next = mapLabEditorReducer(state, { type: 'setRoomFootprint', roomId: 1, cells: [[1, 0], [2, 0]] })
+      expect(next).toBe(state)
+    })
+
+    it('allows same [x,y] on another floor', () => {
+      const layout: MapLayout = {
+        ...emptyLayout,
+        rooms: [
+          { room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0]] },
+          { room_id: 2, z: 1, origin: [0, 0], cells: [[0, 0]] },
+        ],
+      }
+      const state = initialEditorState(layout)
+      const next = mapLabEditorReducer(state, { type: 'setRoomFootprint', roomId: 1, cells: [[0, 0], [1, 0]] })
+      expect(next.layout.rooms[0].cells).toEqual([[0, 0], [1, 0]])
+    })
+
+    it('rejects disconnected replacement', () => {
+      const layout: MapLayout = {
+        ...emptyLayout,
+        rooms: [{ room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0], [1, 0]] }],
+      }
+      const state = initialEditorState(layout)
+      const next = mapLabEditorReducer(state, { type: 'setRoomFootprint', roomId: 1, cells: [[0, 0], [2, 0]] })
+      expect(next).toBe(state)
+    })
+
+    it('is a no-op for an unknown room id', () => {
+      const state = initialEditorState(emptyLayout)
+      const next = mapLabEditorReducer(state, { type: 'setRoomFootprint', roomId: 999, cells: [[0, 0]] })
+      expect(next).toBe(state)
+    })
+  })
+
   describe('door actions', () => {
     it('addDoor creates a door with default flags and selects it', () => {
       const state = initialEditorState(emptyLayout)

@@ -148,6 +148,19 @@ describe('useMapCanvasZoom', () => {
     expect(result.current.zoom.pan).toEqual({ x: -30, y: 20 })
   })
 
+  it('does not treat a scrollbar drag as canvas pan', () => {
+    const { result } = renderHook(() => useMapCanvasZoom())
+    const viewport = document.createElement('div')
+    Object.defineProperty(viewport, 'clientWidth', { value: 90 })
+    Object.defineProperty(viewport, 'clientHeight', { value: 90 })
+    vi.spyOn(viewport, 'getBoundingClientRect').mockReturnValue({ left: 0, top: 0 } as DOMRect)
+
+    act(() => result.current.handlePointerDown(makePointerEvent({ clientX: 95, clientY: 40, target: viewport, currentTarget: viewport })))
+    act(() => result.current.handlePointerMove(makePointerEvent({ clientX: 40, clientY: 80 })))
+
+    expect(result.current.zoom.pan).toEqual({ x: 0, y: 0 })
+  })
+
   it('honors prefers-reduced-motion by never animating — zoom/fit are synchronous either way', () => {
     const matchMediaMock = (query: string) => ({
       matches: query.includes('prefers-reduced-motion'),

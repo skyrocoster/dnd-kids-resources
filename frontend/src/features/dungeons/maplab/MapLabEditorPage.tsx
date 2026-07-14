@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import './MapLabPage.css'
 import './MapLabEditor.css'
 import { MAP_LAB_DUNGEON_ID } from '../../../api/client'
@@ -112,6 +112,8 @@ function doorPlacementEdges(rooms: MapRoom[], doors: MapLayout['doors']): WallEd
 
 type PaintState = 'ownedSelected' | 'ownedOther' | 'paintable' | 'invalid'
 
+type FootprintState = 'candidate' | 'blocked' | 'owned'
+
 /** A free cell's paint state considers only rooms on the *same floor* — different z planes may
  * legitimately share [x,y] (e.g. a stair landing directly above a stairwell). */
 function paintStateForCell(layout: MapLayout, selectedRoomId: number, activeZ: number, cell: MapCell): PaintState {
@@ -142,6 +144,76 @@ function syncStatusLabel(status: 'idle' | 'saving' | 'saved' | 'error'): string 
     default:
       return ''
   }
+}
+
+function cellKey(cell: MapCell): string {
+  return `${cell[0]},${cell[1]}`
+}
+
+export function rectangleCells(a: MapCell, b: MapCell): MapCell[] {
+  const minX = Math.min(a[0], b[0])
+  const maxX = Math.max(a[0], b[0])
+  const minY = Math.min(a[1], b[1])
+  const maxY = Math.max(a[1], b[1])
+  const cells: MapCell[] = []
+  for (let y = minY; y <= maxY; y += 1) {
+    for (let x = minX; x <= maxX; x += 1) {
+      cells.push([x, y])
+    }
+  }
+  return cells
+}
+
+function cellsAreConnected(cells: MapCell[]): boolean {
+  if (cells.length <= 1) return true
+  const pending = new Set(cells.map(cellKey))
+  const stack = [cells[0]]
+  pending.delete(cellKey(cells[0]))
+  const deltas: MapCell[] = [[0, -1], [0, 1], [1, 0], [-1, 0]]
+  while (stack.length > 0) {
+    const [x, y] = stack.pop()!
+    for (const [dx, dy] of deltas) {
+      const next: MapCell = [x + dx, y + dy]
+      const key = cellKey(next)
+      if (pending.delete(key)) stack.push(next)
+    }
+  }
+  return pending.size === 0
+}
+
+function footprintIsCommitCandidate(layout: MapLayout, selectedRoomId: number, activeZ: number, cells: MapCell[]): boolean {
+  const uniqueCells = Array.from(new Map(cells.map((cell) => [cellKey(cell), cell])).values())
+  const sameFloorRooms = layout.rooms.filter((room) => room.z === activeZ)
+  const overlapsOtherRoom = uniqueCells.some((cell) => {
+    const owner = roomOfCell(cell, sameFloorRooms)
+    return owner !== null && owner.room_id !== selectedRoomId
+  })
+  return !overlapsOtherRoom && cellsAreConnected(uniqueCells)
+}
+
+function footprintStateForCell(
+  layout: MapLayout,
+  selectedRoomId: number,
+  activeZ: number,
+  cell: MapCell,
+  rectangleIsValid: boolean,
+): FootprintState {
+  const owner = roomOfCell(cell, layout.rooms.filter((room) => room.z === activeZ))
+  if (owner?.room_id === selectedRoomId) return 'owned'
+  if (owner !== null || !rectangleIsValid) return 'blocked'
+  return 'candidate'
+}
+
+function footprintCellsForSelection(
+  layout: MapLayout,
+  selectedRoomId: number,
+  activeZ: number,
+  anchor: MapCell,
+  rectangle: MapCell[],
+): MapCell[] {
+  const owner = roomOfCell(anchor, layout.rooms.filter((room) => room.z === activeZ))
+  if (owner?.room_id !== selectedRoomId) return rectangle
+  return [...absoluteCells(owner), ...rectangle]
 }
 
 type RoomFootprintSelection = { anchor: MapCell; current: MapCell; mode: 'click' | 'drag' } | null
@@ -175,20 +247,25 @@ export function MapLabEditorPage() {
   } = useMapLabEditor(MAP_LAB_DUNGEON_ID)
   const [hoveredCell, setHoveredCell] = useState<MapCell | null>(null)
   const [isCanvasFullscreen, setIsCanvasFullscreen] = useState(false)
-  const [roomFootprintSelection] = useState<RoomFootprintSelection>(null)
+  const [roomFootprintSelection, setRoomFootprintSelection] = useState<RoomFootprintSelection>(null)
   const [placeDoorMode, setPlaceDoorMode] = useState(false)
   const [placePropMode, setPlacePropMode] = useState(false)
   const [placeStairMode, setPlaceStairMode] = useState(false)
   const [placePortalMode, setPlacePortalMode] = useState(false)
   const [placementError, setPlacementError] = useState<string | null>(null)
   const [showGhostFloor, setShowGhostFloor] = useState(false)
+  const suppressNextPaintClickRef = useRef(false)
   const zoomApi = useMapCanvasZoom({ wheelZoomMode: 'always' })
   const [viewportSize, setViewportSize] = useState<ViewportSize>({ width: 0, height: 0 })
   const handleViewportResize = useCallback((size: ViewportSize) => setViewportSize(size), [])
-  const toggleCanvasFullscreen = useCallback(() => {
-    setIsCanvasFullscreen((active) => !active)
+  const clearRoomFootprintSelection = useCallback(() => {
+    setRoomFootprintSelection(null)
+    setPlacementError(null)
   }, [])
-  void setRoomFootprint
+  const toggleCanvasFullscreen = useCallback(() => {
+    clearRoomFootprintSelection()
+    setIsCanvasFullscreen((active) => !active)
+  }, [clearRoomFootprintSelection])
 
   const floors = useMemo(
     () => [...new Set(state.layout.rooms.map((room) => room.z))].sort((a, b) => a - b),
@@ -288,6 +365,66 @@ export function MapLabEditorPage() {
     () => state.layout.portals.find((portal) => portal.portal_id === state.selectedPortalId) ?? null,
     [state.layout.portals, state.selectedPortalId]
   )
+
+  const pendingFootprintCells = useMemo(
+    () => (roomFootprintSelection ? rectangleCells(roomFootprintSelection.anchor, roomFootprintSelection.current) : []),
+    [roomFootprintSelection]
+  )
+  const pendingFootprintCommitCells = useMemo(
+    () =>
+      roomFootprintSelection && state.selectedRoomId !== null
+        ? footprintCellsForSelection(
+            state.layout,
+            state.selectedRoomId,
+            state.activeZ,
+            roomFootprintSelection.anchor,
+            pendingFootprintCells,
+          )
+        : [],
+    [pendingFootprintCells, roomFootprintSelection, state.activeZ, state.layout, state.selectedRoomId],
+  )
+  const pendingFootprintIsValid = useMemo(
+    () =>
+      state.selectedRoomId !== null &&
+      pendingFootprintCommitCells.length > 0 &&
+      footprintIsCommitCandidate(state.layout, state.selectedRoomId, state.activeZ, pendingFootprintCommitCells),
+    [pendingFootprintCommitCells, state.activeZ, state.layout, state.selectedRoomId]
+  )
+  const footprintGuidance = useMemo(() => {
+    if (state.selectedRoomId === null) return 'Select a room to edit its footprint.'
+    if (roomFootprintSelection?.mode === 'click') {
+      return `Corner set at ${roomFootprintSelection.anchor[0]}, ${roomFootprintSelection.anchor[1]}. Choose a second corner, or press Escape to cancel.`
+    }
+    if (roomFootprintSelection?.mode === 'drag') return 'Drag to the opposite corner, then release to set the footprint.'
+    return 'Click two free corners to size a room. Drag from an existing room square to extend it; click an existing square to remove it.'
+  }, [roomFootprintSelection, state.selectedRoomId])
+  const commitRoomFootprint = useCallback(
+    (cells: MapCell[]): boolean => {
+      if (state.selectedRoomId === null) return false
+      if (!footprintIsCommitCandidate(state.layout, state.selectedRoomId, state.activeZ, cells)) {
+        setPlacementError('That footprint overlaps another room or would split this room.')
+        return false
+      }
+      setRoomFootprint(state.selectedRoomId, cells)
+      setRoomFootprintSelection(null)
+      setPlacementError(null)
+      return true
+    },
+    [setRoomFootprint, state.activeZ, state.layout, state.selectedRoomId]
+  )
+
+  useEffect(() => {
+    if (!roomFootprintSelection) return
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') clearRoomFootprintSelection()
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [clearRoomFootprintSelection, roomFootprintSelection])
+
+  useEffect(() => {
+    clearRoomFootprintSelection()
+  }, [clearRoomFootprintSelection, placeDoorMode, placePortalMode, placePropMode, placeStairMode, state.activeZ, state.selectedRoomId])
 
   if (loading) {
     return (
@@ -430,7 +567,10 @@ export function MapLabEditorPage() {
                 role="tab"
                 className="maplab-pill-button maplab-floor-tab"
                 aria-selected={z === state.activeZ}
-                onClick={() => setActiveZ(z)}
+                onClick={() => {
+                  clearRoomFootprintSelection()
+                  setActiveZ(z)
+                }}
               >
                 Floor {z}
               </button>
@@ -448,7 +588,10 @@ export function MapLabEditorPage() {
                   type="button"
                   className="maplab-editor-room-item-select"
                   aria-pressed={room.room_id === state.selectedRoomId}
-                  onClick={() => selectRoom(room.room_id === state.selectedRoomId ? null : room.room_id)}
+                  onClick={() => {
+                    clearRoomFootprintSelection()
+                    selectRoom(room.room_id === state.selectedRoomId ? null : room.room_id)
+                  }}
                 >
                   {room.title ?? `Room ${room.room_id}`}
                 </button>
@@ -474,13 +617,17 @@ export function MapLabEditorPage() {
           variant="neutral"
           fullscreen={isCanvasFullscreen}
           onToggleFullscreen={toggleCanvasFullscreen}
-          onExitFullscreen={() => setIsCanvasFullscreen(false)}
+          onExitFullscreen={() => {
+            clearRoomFootprintSelection()
+            setIsCanvasFullscreen(false)
+          }}
           onWheelZoom={zoomApi.handleWheel}
           onPanStart={zoomApi.handlePointerDown}
           onPanMove={zoomApi.handlePointerMove}
           onPanEnd={zoomApi.handlePointerUp}
           onViewportResize={handleViewportResize}
           panHint="Wheel to zoom. Drag empty canvas or use scrollbars to pan. Press Escape to exit fullscreen."
+          viewportDescription={footprintGuidance}
           controlsSlot={
             <>
               {(() => {
@@ -596,6 +743,33 @@ export function MapLabEditorPage() {
               </text>
             </g>
           ))}
+
+          {!placeDoorMode && !placePropMode && !placeStairMode && !placePortalMode && state.selectedRoomId !== null && roomFootprintSelection && (
+            <g className="maplab-room-footprint-preview" aria-hidden="true">
+              {pendingFootprintCells.map((cell) => {
+                const [x, y] = cell
+                const footprintState = footprintStateForCell(
+                  state.layout,
+                  state.selectedRoomId as number,
+                  state.activeZ,
+                  cell,
+                  pendingFootprintIsValid,
+                )
+                const isAnchor = roomFootprintSelection.anchor[0] === x && roomFootprintSelection.anchor[1] === y
+                return (
+                  <rect
+                    key={`${x}-${y}`}
+                    className={isAnchor ? 'maplab-room-footprint-anchor' : 'maplab-room-footprint-cell'}
+                    data-footprint-state={footprintState}
+                    x={x * CELL_SIZE}
+                    y={y * CELL_SIZE}
+                    width={CELL_SIZE}
+                    height={CELL_SIZE}
+                  />
+                )
+              })}
+            </g>
+          )}
 
           {doorsOnActiveFloor.map((door) => {
             const segment = doorWallSegment(door, CELL_SIZE)
@@ -802,7 +976,7 @@ export function MapLabEditorPage() {
                     const cell: MapCell = [x, y]
                     const paintState = paintStateForCell(state.layout, state.selectedRoomId as number, state.activeZ, cell)
                     const isHovered = hoveredCell?.[0] === x && hoveredCell?.[1] === y
-                    const interactive = paintState === 'paintable' || paintState === 'ownedSelected'
+                    const interactive = paintState === 'paintable' || paintState === 'ownedSelected' || roomFootprintSelection?.mode === 'click'
                     const markerX = x * CELL_SIZE + CELL_SIZE / 2 - MARKER_SIZE / 2
                     const markerY = y * CELL_SIZE + CELL_SIZE / 2 - MARKER_SIZE / 2
                     return (
@@ -814,19 +988,79 @@ export function MapLabEditorPage() {
                           y={y * CELL_SIZE}
                           width={CELL_SIZE}
                           height={CELL_SIZE}
-                          role={interactive ? 'button' : undefined}
+                           role={interactive ? 'button' : undefined}
+                           tabIndex={interactive ? 0 : undefined}
                           aria-label={
-                            paintState === 'paintable'
+                            roomFootprintSelection?.mode === 'click'
+                              ? `Set footprint corner ${x}, ${y}`
+                              : paintState === 'paintable'
                               ? `Add cell ${x}, ${y}`
                               : paintState === 'ownedSelected'
                                 ? `Remove cell ${x}, ${y}`
                                 : undefined
                           }
                           onMouseEnter={() => setHoveredCell(cell)}
-                          onClick={() => {
-                            if (interactive) toggleCell(state.selectedRoomId as number, cell)
+                          onPointerEnter={() => {
+                            if (roomFootprintSelection?.mode === 'drag') {
+                              setRoomFootprintSelection({ ...roomFootprintSelection, current: cell })
+                            }
                           }}
-                        />
+                          onPointerDown={(event) => {
+                            if (paintState !== 'paintable' && paintState !== 'ownedSelected') return
+                            event.stopPropagation()
+                            setRoomFootprintSelection({ anchor: cell, current: cell, mode: 'drag' })
+                            setPlacementError(null)
+                          }}
+                          onPointerUp={(event) => {
+                            if (roomFootprintSelection?.mode !== 'drag') return
+                            event.stopPropagation()
+                            const moved = roomFootprintSelection.anchor[0] !== cell[0] || roomFootprintSelection.anchor[1] !== cell[1]
+                            if (moved) {
+                              commitRoomFootprint(
+                                footprintCellsForSelection(
+                                  state.layout,
+                                  state.selectedRoomId as number,
+                                  state.activeZ,
+                                  roomFootprintSelection.anchor,
+                                  rectangleCells(roomFootprintSelection.anchor, cell),
+                                ),
+                              )
+                            } else {
+                              if (paintState === 'ownedSelected') {
+                                toggleCell(state.selectedRoomId as number, cell)
+                                setRoomFootprintSelection(null)
+                              } else {
+                                setRoomFootprintSelection({ anchor: cell, current: cell, mode: 'click' })
+                              }
+                            }
+                            suppressNextPaintClickRef.current = true
+                          }}
+                           onClick={() => {
+                            if (suppressNextPaintClickRef.current) {
+                              suppressNextPaintClickRef.current = false
+                              return
+                            }
+                            if (!interactive) return
+                            if (roomFootprintSelection?.mode === 'click') {
+                              commitRoomFootprint(rectangleCells(roomFootprintSelection.anchor, cell))
+                              return
+                            }
+                            if (paintState === 'ownedSelected' && !roomFootprintSelection) {
+                              toggleCell(state.selectedRoomId as number, cell)
+                              return
+                            }
+                            if (paintState !== 'paintable') return
+                            if (!roomFootprintSelection) {
+                              setRoomFootprintSelection({ anchor: cell, current: cell, mode: 'click' })
+                              setPlacementError(null)
+                             }
+                           }}
+                           onKeyDown={(event) => {
+                             if (event.key !== 'Enter' && event.key !== ' ') return
+                             event.preventDefault()
+                             event.currentTarget.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+                           }}
+                         />
                         {isHovered && paintState === 'paintable' && (
                           <g transform={`translate(${markerX}, ${markerY})`} className="maplab-paint-marker" aria-hidden="true">
                             <PlusIcon width={MARKER_SIZE} height={MARKER_SIZE} />

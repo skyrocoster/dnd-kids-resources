@@ -392,6 +392,10 @@
   background: color-mix(in srgb, var(--md-surface) 92%, black 8%);
 }
 
+.maplab-canvas-wrapper[data-fullscreen]:focus {
+  outline: none;
+}
+
 /* Panning is driven by scrollLeft/scrollTop from useMapCanvasZoom (see MapCanvas), not native
  * touch-scroll gestures — touch-action:none hands pointer events to that JS drag instead of
  * letting the browser's own touch-scroll compete with it. */
@@ -421,6 +425,7 @@
 }
 
 .maplab-canvas-fullscreen-hint {
+  flex: 1 0 100%;
   font-size: var(--type-body-sm-size);
   color: var(--md-on-surface-variant);
 }
@@ -677,6 +682,63 @@
 .maplab-portal:focus-visible .maplab-portal-marker {
   stroke: var(--md-primary) !important;
   stroke-width: 4;
+}
+
+@media (max-width: 56rem) {
+  .maplab-editor-layout {
+    flex-wrap: wrap;
+  }
+
+  .maplab-editor-nav-rail,
+  .maplab-inspector-rail {
+    flex: 1 1 100%;
+  }
+
+  .maplab-editor-nav-rail {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+
+  .maplab-editor-room-list {
+    flex: 1 1 auto;
+  }
+
+  .maplab-toolbar-group-status {
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 38rem) {
+  .maplab-editor,
+  .maplab-page {
+    padding: 1rem;
+  }
+
+  .maplab-editor-layout {
+    gap: 1rem;
+  }
+
+  .maplab-editor-nav-rail {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .maplab-floor-tabs {
+    overflow-x: auto;
+    padding-bottom: 0.25rem;
+  }
+
+  .maplab-canvas-wrapper[data-fullscreen] {
+    padding: 0.75rem;
+  }
+
+  .maplab-zoom-controls {
+    gap: 0.375rem;
+  }
+
+  .maplab-zoom-button-label {
+    display: none;
+  }
 }
 
 .maplab-portal-state-badge {

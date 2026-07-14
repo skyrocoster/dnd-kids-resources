@@ -106,10 +106,10 @@ describe('MapLabEditorPage', () => {
     expect(container.querySelectorAll('.maplab-paint-cell')).toHaveLength(0)
   })
 
-  it('painting an adjacent cell extends the room and autosaves; a non-adjacent cell is refused', async () => {
+  it('removing an owned cell still works as single-cell cleanup and autosaves', async () => {
     const layout = {
       meta: { cellSizeFt: 5, padding: 3 },
-      rooms: [{ room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0]], title: 'Room 1' }],
+      rooms: [{ room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0], [1, 0]], title: 'Room 1' }],
       doors: [],
       stairs: [],
       floors: [{ z: 0, title: 'Ground Floor' }],
@@ -123,26 +123,17 @@ describe('MapLabEditorPage', () => {
 
     fireEvent.click(container.querySelector('.maplab-editor-room-item-select') as Element)
 
-    const adjacentCell = container.querySelector('.maplab-paint-cell[x="64"][y="0"]')
-    expect(adjacentCell).toBeInTheDocument()
-    fireEvent.click(adjacentCell as Element)
+    const ownedCell = container.querySelector('.maplab-paint-cell[x="64"][y="0"]')
+    expect(ownedCell).toBeInTheDocument()
+    fireEvent.click(ownedCell as Element)
 
     await act(async () => {
       vi.advanceTimersByTime(700)
       await Promise.resolve()
     })
     expect(saveSpy).toHaveBeenCalledTimes(1)
-
-    // Refetch and confirm the invalid (non-adjacent) cell has no click effect: still shows a single
-    // extra save from the valid paint above, not two.
-    const invalidCell = container.querySelector('.maplab-paint-cell[data-paint-state="invalid"]')
-    expect(invalidCell).toBeInTheDocument()
-    fireEvent.click(invalidCell as Element)
-    await act(async () => {
-      vi.advanceTimersByTime(700)
-      await Promise.resolve()
-    })
-    expect(saveSpy).toHaveBeenCalledTimes(1)
+    const savedData = saveSpy.mock.calls[0][1].data as { rooms: Array<{ cells: number[][] }> }
+    expect(savedData.rooms[0].cells).toEqual([[0, 0]])
   })
 
   it('places a door on a wall edge and shows its properties form', async () => {
@@ -355,8 +346,15 @@ describe('MapLabEditorPage (Phase K scaffolding)', () => {
   }
 
   beforeEach(() => {
+    vi.restoreAllMocks()
+    vi.useFakeTimers()
     vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: singleRoomLayout })
     vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: singleRoomLayout })
+  })
+
+  afterEach(() => {
+    vi.clearAllTimers()
+    vi.useRealTimers()
   })
 
   it('K1: fullscreen toggle and Escape exit the fullscreen workspace', async () => {
@@ -368,10 +366,25 @@ describe('MapLabEditorPage (Phase K scaffolding)', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Enter fullscreen map editor' }))
     expect(wrapper).toHaveAttribute('data-fullscreen')
+    expect(wrapper).toHaveAttribute('role', 'dialog')
+    expect(wrapper).toHaveAttribute('aria-modal', 'true')
     expect(screen.getByText(/wheel to zoom\. drag empty canvas or use scrollbars to pan\./i)).toBeInTheDocument()
 
     fireEvent.keyDown(window, { key: 'Escape' })
     expect(wrapper).not.toHaveAttribute('data-fullscreen')
+  })
+
+  it('K3: selected-room footprint controls expose keyboard focus and visible instructions', async () => {
+    const { container } = render(<MapLabEditorPage />)
+    await flush()
+
+    fireEvent.click(container.querySelector('.maplab-editor-room-item-select') as Element)
+    const paintCell = container.querySelector('.maplab-paint-cell[x="64"][y="0"]') as Element
+    expect(paintCell).toHaveAttribute('tabindex', '0')
+    expect(screen.getByText(/click two free corners to size a room/i)).toBeInTheDocument()
+
+    fireEvent.keyDown(paintCell, { key: 'Enter' })
+    expect(screen.getByText(/corner set at 1, 0/i)).toBeInTheDocument()
   })
 
   it('K1: fullscreen workspace keeps scrollbars available and drag-pan working on empty canvas but not on marker targets', async () => {
@@ -400,20 +413,127 @@ describe('MapLabEditorPage (Phase K scaffolding)', () => {
     expect(viewport.scrollTop).toBe(-45)
   })
 
-  it.skip('K2: drag rectangle commit updates the selected room footprint', () => {
-    // K0 scaffolding only.
+  it('K2: drag rectangle commit updates the selected room footprint and autosaves once', async () => {
+    const saveSpy = vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: singleRoomLayout })
+    const { container } = render(<MapLabEditorPage />)
+    await flush()
+
+    fireEvent.click(container.querySelector('.maplab-editor-room-item-select') as Element)
+
+    const firstCorner = container.querySelector('.maplab-paint-cell[x="64"][y="0"]') as Element
+    const secondCorner = container.querySelector('.maplab-paint-cell[x="128"][y="64"]') as Element
+    fireEvent.pointerDown(firstCorner, { clientX: 64, clientY: 0 })
+    fireEvent.pointerEnter(secondCorner, { clientX: 128, clientY: 64 })
+    fireEvent.pointerUp(secondCorner, { clientX: 128, clientY: 64 })
+
+    await act(async () => {
+      vi.advanceTimersByTime(700)
+      await Promise.resolve()
+    })
+
+    expect(saveSpy).toHaveBeenCalledTimes(1)
+    const savedData = saveSpy.mock.calls[0][1].data as { rooms: Array<{ cells: number[][] }> }
+    expect(savedData.rooms[0].cells).toEqual([[1, 0], [2, 0], [1, 1], [2, 1]])
   })
 
-  it.skip('K2: two-click rectangle commit updates the selected room footprint', () => {
-    // K0 scaffolding only.
+  it('K2: dragging from an owned cell extends the selected room without removing its existing cells', async () => {
+    const saveSpy = vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: singleRoomLayout })
+    const { container } = render(<MapLabEditorPage />)
+    await flush()
+
+    fireEvent.click(container.querySelector('.maplab-editor-room-item-select') as Element)
+    const ownedCell = container.querySelector('.maplab-paint-cell[x="0"][y="0"]') as Element
+    const outerCorner = container.querySelector('.maplab-paint-cell[x="128"][y="64"]') as Element
+    fireEvent.pointerDown(ownedCell, { clientX: 0, clientY: 0 })
+    fireEvent.pointerEnter(outerCorner, { clientX: 128, clientY: 64 })
+    fireEvent.pointerUp(outerCorner, { clientX: 128, clientY: 64 })
+
+    await act(async () => {
+      vi.advanceTimersByTime(700)
+      await Promise.resolve()
+    })
+
+    const savedData = saveSpy.mock.calls[0][1].data as { rooms: Array<{ cells: number[][] }> }
+    expect(savedData.rooms[0].cells).toEqual([[0, 0], [1, 0], [2, 0], [0, 1], [1, 1], [2, 1]])
   })
 
-  it.skip('K2: Escape cancels a pending room footprint preview', () => {
-    // K0 scaffolding only.
+  it('K2: two-click rectangle commit updates the selected room footprint', async () => {
+    const saveSpy = vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: singleRoomLayout })
+    const { container } = render(<MapLabEditorPage />)
+    await flush()
+
+    fireEvent.click(container.querySelector('.maplab-editor-room-item-select') as Element)
+    fireEvent.click(container.querySelector('.maplab-paint-cell[x="64"][y="0"]') as Element)
+    expect(container.querySelector('.maplab-room-footprint-preview')).toBeInTheDocument()
+    fireEvent.click(container.querySelector('.maplab-paint-cell[x="128"][y="64"]') as Element)
+
+    await act(async () => {
+      vi.advanceTimersByTime(700)
+      await Promise.resolve()
+    })
+
+    expect(saveSpy).toHaveBeenCalledTimes(1)
+    const savedData = saveSpy.mock.calls[0][1].data as { rooms: Array<{ cells: number[][] }> }
+    expect(savedData.rooms[0].cells).toEqual([[1, 0], [2, 0], [1, 1], [2, 1]])
   })
 
-  it.skip('K2: preview-only footprint state does not autosave', () => {
-    // K0 scaffolding only.
+  it('K2: preview-only footprint state does not autosave', async () => {
+    const saveSpy = vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: singleRoomLayout })
+    const { container } = render(<MapLabEditorPage />)
+    await flush()
+
+    fireEvent.click(container.querySelector('.maplab-editor-room-item-select') as Element)
+    fireEvent.click(container.querySelector('.maplab-paint-cell[x="64"][y="0"]') as Element)
+
+    expect(container.querySelector('.maplab-room-footprint-preview')).toBeInTheDocument()
+    await act(async () => {
+      vi.advanceTimersByTime(700)
+      await Promise.resolve()
+    })
+    expect(saveSpy).not.toHaveBeenCalled()
+  })
+
+  it('K2: Escape and placement mode changes cancel a pending room footprint preview', async () => {
+    const { container } = render(<MapLabEditorPage />)
+    await flush()
+
+    fireEvent.click(container.querySelector('.maplab-editor-room-item-select') as Element)
+    fireEvent.click(container.querySelector('.maplab-paint-cell[x="64"][y="0"]') as Element)
+    expect(container.querySelector('.maplab-room-footprint-preview')).toBeInTheDocument()
+
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(container.querySelector('.maplab-room-footprint-preview')).not.toBeInTheDocument()
+
+    fireEvent.click(container.querySelector('.maplab-paint-cell[x="64"][y="0"]') as Element)
+    expect(container.querySelector('.maplab-room-footprint-preview')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /place door/i }))
+    expect(container.querySelector('.maplab-room-footprint-preview')).not.toBeInTheDocument()
+  })
+
+  it('K2: blocked rectangle shows an alert and does not save', async () => {
+    const blockedLayout = {
+      ...singleRoomLayout,
+      rooms: [
+        { room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0]], title: 'Room 1' },
+        { room_id: 2, z: 0, origin: [0, 0], cells: [[2, 0]], title: 'Room 2' },
+      ],
+    }
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: blockedLayout })
+    const saveSpy = vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: blockedLayout })
+    const { container } = render(<MapLabEditorPage />)
+    await flush()
+
+    fireEvent.click(container.querySelector('.maplab-editor-room-item-select') as Element)
+    fireEvent.click(container.querySelector('.maplab-paint-cell[x="64"][y="0"]') as Element)
+    fireEvent.click(container.querySelector('.maplab-paint-cell[x="128"][y="0"]') as Element)
+
+    expect(screen.getByRole('alert')).toHaveTextContent('That footprint overlaps another room or would split this room.')
+    expect(container.querySelector('.maplab-room-footprint-preview')).toBeInTheDocument()
+    await act(async () => {
+      vi.advanceTimersByTime(700)
+      await Promise.resolve()
+    })
+    expect(saveSpy).not.toHaveBeenCalled()
   })
 })
 

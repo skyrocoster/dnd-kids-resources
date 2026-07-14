@@ -5,8 +5,8 @@ Single reference for the dungeon room-navigation feature and its follow-on desig
 **Shipped stages** table for history, verbose spec only for the *active/next* stage. Detail on *how* a
 shipped stage was built lives in its git commit, not here.
 
-> **Status:** Original build (Stages 1–11) + Design Phases A–J **all shipped**. **Phase K (Map Lab Editor
-> QOL) is in progress**; K0 scaffolding and K1 fullscreen/wheel-zoom shipped, and K2 room-footprint sizing is active next.
+> **Status:** Original build (Stages 1–11) + Design Phases A–K **all shipped**. Map Lab Editor QOL now
+> includes fullscreen/wheel zoom, rectangular room sizing, and an accessibility/responsive design pass.
 
 ---
 
@@ -168,6 +168,8 @@ Each phase's per-stage authoring detail is in its git commits. This table is the
 | **J — Map Lab Decluttering (J0–J3)** | Independently collapsible toolbar trays (`ToolbarTray` + `useToolbarTrayCollapse`, per-group `localStorage`); passage-state **icon+text chips** (`passageStateChips`) replacing the "State"/"Also" text rows in the inspector; passage colors repointed onto banked `--md-passage-locked`/`--md-passage-hidden` tokens, decollided from exit-card gold and from each other. |
 | **K0 — Map Lab Editor QOL scaffolding** | Added compile-only shells for editor fullscreen/wheel-zoom and rectangular room-footprint work: `useMapCanvasZoom({ wheelZoomMode })`, `MapCanvas` fullscreen/pan-hint props, inert editor fullscreen/footprint state, `setRoomFootprint` reducer/hook plumbing, placeholder CSS selectors, and skipped K1/K2 tests. |
 | **K1 — Fullscreen canvas + wheel zoom default** | Editor now uses in-app fullscreen canvas mode (`data-fullscreen` overlay, Escape exit, helper copy) and plain-wheel cursor-centered zoom by default while retaining drag-pan/scrollbar pan. `useMapCanvasZoom` keeps modifier-only behavior for viewer consumers, extends non-pan hit targets to current markers/placement overlays, and K1 tests cover wheel semantics, fullscreen toggle/Escape, and preserved pan behavior. |
+| **K2 — Multi-cell room footprint selection** | Editor room painting now supports atomic rectangular footprints via drag or two-click corner selection, with local preview/cancel state, blocked overlap errors, commit-only autosave, and retained owned-cell single-cell cleanup. `setRoomFootprint` is the reducer validation seam for same-floor overlap/connectivity, and K2 tests cover reducer geometry plus page commit/cancel/no-save/error paths. |
+| **K3 — Design pass** | Refined the combined QOL workflow with persistent footprint guidance, keyboard-operable paint cells, modal fullscreen semantics/focus, non-hue-only footprint/error states, and narrow-layout rails/controls. Full frontend test, typecheck, and production build gates pass; live verification remains a manual gate. |
 
 ---
 
@@ -241,19 +243,21 @@ only on existing Map Lab editor/viewer primitives (`MapCanvas`, `useMapCanvasZoo
 `MapLabEditorPage`) and must not touch production dungeon pages or seed data.
 
 **Current implementation anchors (read this before coding; do not re-explore unless these files drift):**
-- `MapLabEditorPage.tsx` owns editor-only state: `hoveredCell`, placement-mode booleans, `placementError`,
-  `showGhostFloor`, `zoomApi = useMapCanvasZoom()`, `viewportSize`, `bounds`, `viewBox`, and all SVG overlay
-  rendering. Room painting is currently the final `maplab-paint-overlay`: one `<rect.maplab-paint-cell>` per
-  bounded grid cell, visible only when no door/prop/stair/portal placement mode is active and
-  `state.selectedRoomId !== null`; clicks call `toggleCell(selectedRoomId, cell)`.
+- `MapLabEditorPage.tsx` owns editor-only state: `hoveredCell`, `roomFootprintSelection`, placement-mode
+  booleans, `placementError`, `showGhostFloor`, `zoomApi = useMapCanvasZoom({ wheelZoomMode: 'always' })`,
+  `viewportSize`, `bounds`, `viewBox`, and all SVG overlay rendering. Room painting is the final
+  `maplab-paint-overlay`: one `<rect.maplab-paint-cell>` per bounded grid cell, visible only when no
+  door/prop/stair/portal placement mode is active and `state.selectedRoomId !== null`; paintable cells support
+  drag/two-click rectangular footprints through `setRoomFootprint`, while owned selected cells still call
+  `toggleCell` for single-cell cleanup when no footprint anchor is active.
 - `MapCanvas.tsx` owns the scrollable viewport. It renders `.maplab-canvas-wrapper` →
   `.maplab-canvas-viewport` (`overflow:auto`) → `<svg.maplab-svg width={bounds*scale}>`, and attaches native
   `wheel`/`pointerdown` listeners to the viewport plus `pointermove`/`pointerup` on `window`. Pan is applied
   by setting `scrollLeft`/`scrollTop` from `zoom.pan`.
-- `useMapCanvasZoom.ts` currently zooms only on Ctrl/⌘ wheel; plain wheel is intentionally ignored for native
-  scroll. `NON_PAN_TARGET_SELECTOR` currently excludes `.maplab-room`, `.maplab-door`, `.maplab-stair`,
-  `.maplab-paint-cell`, and `.maplab-door-placement-edge` from drag-pan starts; K1/K2 must extend this list
-  for every new/changed SVG hit target so pan never steals selection gestures.
+- `useMapCanvasZoom.ts` defaults to Ctrl/⌘ wheel zoom for viewer consumers; editor opts into plain-wheel zoom
+  with `wheelZoomMode: 'always'`. `NON_PAN_TARGET_SELECTOR` excludes room/door/stair/prop/portal markers,
+  paint cells, footprint preview classes, and placement hit targets from drag-pan starts so pan never steals
+  selection gestures.
 - `maplabEditor.ts` is the pure reducer seam. `toggleCell` is single-cell add/remove, using
   `absoluteCells`, `canPaintCell`, `normalizeCells`, `roomOfCell`, and `isConnectedPolyomino`; any multi-cell
   room sizing must land here as a reducer action, not as repeated UI calls to `toggleCell`.
@@ -297,116 +301,6 @@ only on existing Map Lab editor/viewer primitives (`MapCanvas`, `useMapCanvasZoo
 
 **Sequencing:** K0 (Haiku, first) → K1 → K2 → K3. K1 and K2 both depend on the K0 action/type stubs; K3
 must run after both implementations so it can evaluate the combined editor workflow.
-
-<!-- ===== ACTIVE STAGE BLOCK — delete and collapse to a Shipped row the moment it ships ===== -->
-
-### K2 — Multi-cell room footprint selection (active)
-
-K1 shipped: editor fullscreen workspace, plain-wheel zoom, Escape exit, and preserved drag/scrollbar pan all
-landed with hook/page coverage. K2 is now the active implementation stage.
-<!-- ============================================================================================= -->
-
-- **Build:**
-  - In `MapLabEditorPage.tsx`, instantiate `useMapCanvasZoom({ wheelZoomMode: 'always' })` for the editor
-    only. Keep viewer calls unchanged unless deliberately tested.
-  - Add a fullscreen toggle button inside the existing `controlsSlot` next to Zoom out / Zoom in / Reset.
-    Use existing local icons if there is a fit/fullscreen-style icon; otherwise reuse `FitIcon` with explicit
-    accessible labels: `Enter fullscreen map editor` / `Exit fullscreen map editor`.
-  - Pass `fullscreen={isCanvasFullscreen}`, `onToggleFullscreen`, `onExitFullscreen`, and a short pan hint to
-    `MapCanvas`.
-  - In `MapCanvas.tsx`, apply `data-fullscreen` to `.maplab-canvas-wrapper`, expose the pan hint in an
-    accessible/visible helper inside or near `.maplab-zoom-controls`, and add an effect that listens for
-    `keydown` Escape only while `fullscreen` is true.
-  - In `useMapCanvasZoom.ts`, implement `wheelZoomMode: 'always'`: plain wheel should run the same
-    cursor-centered zoom math currently gated behind Ctrl/⌘, call `preventDefault()`, and preserve Ctrl/⌘ as
-    also valid. Default `'modifier'` must preserve current behavior for existing consumers.
-  - Extend `NON_PAN_TARGET_SELECTOR` to include current placement and marker classes that can receive pointer
-    starts: `.maplab-prop`, `.maplab-portal`, `.maplab-prop-placement-cell`, `.maplab-stair-placement-cell`,
-    `.maplab-portal-placement-cell`, and K2 preview/paint classes as they are introduced.
-  - In `MapLabPage.css`, make `.maplab-canvas-wrapper[data-fullscreen]` a fixed overlay with viewport-sized
-    canvas, theme background, padding, and a z-index above floating panels/toolbars. Ensure
-    `.maplab-canvas-wrapper[data-fullscreen] .maplab-canvas-viewport` uses available viewport height rather
-    than the current fixed `32rem`; keep `overflow:auto` so scrollbars remain the non-wheel pan path.
-- **Inherits:** K0 props/types/classes; existing scroll-based pan; existing zoom buttons and `fitToBounds`.
-- **Tests:**
-  - `useMapCanvasZoom.test.ts`: assert plain wheel is ignored in default mode, plain wheel zooms and calls
-    `preventDefault` in `'always'` mode, Ctrl/⌘ still works, cursor-centered pan math remains stable, and
-    scale clamps still apply.
-  - `MapLabEditorPage.test.tsx`: assert fullscreen button toggles `data-fullscreen`, Escape exits, reset zoom
-    still fits using `ResizeObserver` stubs, wheel over viewport changes SVG width without Ctrl, and drag-pan
-    still changes `scrollLeft`/`scrollTop` when started on the viewport but not when started on room/marker
-    targets.
-- **🚦 Gate:** Run `cd frontend; npm run test` and `npm run typecheck`. Manual live check at
-  `/dungeons/map-lab/edit`: enter fullscreen, wheel zoom in/out without Ctrl, confirm browser page does not
-  scroll while the cursor is over the map, confirm scrollbars and empty-canvas drag still pan, confirm Escape
-  exits fullscreen. Do not automate this browser check unless the user explicitly asks; report it as a manual
-  verification item.
-
-- **Build:**
-  - In `maplabEditor.ts`, implement `setRoomFootprint` as the one atomic geometry action. It should find the
-    selected room, reject unknown room ids, reject any proposed cell owned by a different room on the same
-    `activeZ`, reject disconnected cell sets with `isConnectedPolyomino`, normalize via `normalizeCells`,
-    update that room only, and preserve current fixture selections. Different floors may reuse coordinates.
-  - Add small pure helpers in `MapLabEditorPage.tsx` or `maplabEditor.ts` as appropriate:
-    `rectangleCells(a: MapCell, b: MapCell): MapCell[]`, `cellKey`, and `footprintIsCommitCandidate`. Keep
-    geometry deterministic and unit-testable; do not hide rectangle generation inside JSX loops.
-  - In `useMapLabEditor.ts`, use the K0 `setRoomFootprint` wrapper and autosave only when the reducer action
-    commits. Preview state must remain local and unsaved.
-  - In `MapLabEditorPage.tsx`, replace the current one-click-only paint overlay behavior with a mode that
-    supports both workflows while preserving fine edits:
-    when the user clicks a paintable/owned cell with no active anchor, set `roomFootprintSelection` anchor and
-    render a preview; second click commits the rectangle using `setRoomFootprint`.
-    pointer down + move on paintable cells sets drag mode and updates `current`; pointer up commits if moved
-    beyond a small threshold or leaves an anchor if it was effectively a click.
-    clicking an owned selected cell with no anchor can still call `toggleCell` for single-cell removal, unless
-    the UI is in an explicit footprint selection state.
-  - Render a preview overlay before markers but after room cells: cells in the pending rectangle should show
-    valid/invalid states using `data-footprint-state="candidate|blocked|owned"`, with a distinct anchor marker.
-    Blocked cells include same-floor cells owned by another room and any rectangle that would fail reducer
-    validation.
-  - Cancellation: Escape clears `roomFootprintSelection`; changing active floor, selecting another room,
-    deleting the selected room, toggling any placement mode, or entering/exiting fullscreen clears preview
-    state. Clearing preview must not autosave.
-  - Error path: if commit is rejected, keep the anchor visible and set `placementError` to a concise message
-    such as `That footprint overlaps another room or would split this room.` Clear the error on successful
-    commit or cancel.
-- **Inherits:** K1 fullscreen/zoom behavior; K0 `setRoomFootprint` wrapper; existing `paintStateForCell`,
-  `canPaintCell`, `absoluteCells`, and `normalizeCells`.
-- **Tests:**
-  - `maplabEditor.test.ts`: reducer commits a 2x3 rectangle, normalizes origin/cells, rejects overlap with
-    another same-floor room, allows same coordinates on another floor, rejects disconnected replacement, and
-    no-ops unknown room ids.
-  - `MapLabEditorPage.test.tsx`: two-click corner selection creates all cells between corners and triggers
-    one debounced save; drag selection creates the same footprint; preview-only hover/click-anchor does not
-    save; Escape cancels preview; changing floor/placement mode cancels preview; blocked rectangle shows an
-    alert and does not save.
-  - Keep existing tests for single adjacent paint, invalid paint refusal, door/prop/stair/portal placement
-    mutually exclusive, and zoom/pan passing.
-- **🚦 Gate:** Run `cd frontend; npm run test` and `npm run typecheck`. Manual live check at
-  `/dungeons/map-lab/edit`: add/select a room, drag across multiple empty squares to create a rectangle,
-  create another rectangle via two corner clicks, verify autosave after commit only, verify blocked overlap is
-  refused with a visible error, verify single-cell cleanup still works, verify fullscreen + wheel zoom do not
-  interfere with selection. Do not automate this browser check unless the user explicitly asks; report it as a
-  manual verification item.
-
-### K3 — Design pass (queued)
-
-- **Build:** Review the combined editor experience, not the architecture. Tighten labels, hints, focus states,
-  and visual affordances in `MapLabEditorPage.tsx`, `MapCanvas.tsx`, `MapLabPage.css`, and
-  `MapLabEditor.css`. Confirm fullscreen controls remain reachable at desktop and narrow widths, preview
-  cells are not hue-only, touch targets outside SVG glyph exceptions remain ≥48px, `prefers-reduced-motion`
-  is respected, and no new color tokens/hues are introduced.
-- **Inherits:** K1/K2 working behavior and tests.
-- **Tests:** Add or adjust render tests only for real regressions discovered during the pass: accessible labels
-  for fullscreen and footprint states, visible hint text, focus/escape behavior, and unchanged viewer wheel
-  behavior if touched.
-- **🚦 Gate:** Run `cd frontend; npm run test`, `npm run typecheck`, and `npm run build`. Live visual check
-  `/dungeons/map-lab/edit` on desktop and a narrow viewport: fullscreen enter/exit, plain-wheel zoom,
-  scrollbar/drag pan, drag rectangle, two-click rectangle, cancel/error states, and existing door/prop/stair/
-  portal placement. Do not automate this browser check unless the user explicitly asks; report it as a manual
-  verification item for the user.
-
----
 
 ## Known debt / deferred work (NOT yet built)
 
@@ -456,5 +350,5 @@ table + layout router), or the live dungeon model/pages.
 
 ## Next
 
-Start **K2 — Multi-cell room footprint selection** for Phase K (Map Lab Editor QOL): atomic rectangle
-footprints, preview/cancel behavior, and commit-only autosave.
+No active dungeon stage. The next queued decision is the Map Lab production-home recommendation before any
+production fold-in.

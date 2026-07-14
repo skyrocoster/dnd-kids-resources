@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useId, useRef } from 'react'
 import type { ReactNode } from 'react'
 import type { Bounds } from './maplabModel'
 import { BASE_PX_PER_UNIT, type ViewportSize, type ZoomState } from './useMapCanvasZoom'
@@ -21,6 +21,7 @@ interface MapCanvasProps {
   onToggleFullscreen?: () => void
   onExitFullscreen?: () => void
   panHint?: string
+  viewportDescription?: string
   controlsSlot?: ReactNode
   children: ReactNode
 }
@@ -39,10 +40,13 @@ export function MapCanvas({
   fullscreen,
   onExitFullscreen,
   panHint,
+  viewportDescription,
   controlsSlot,
   children,
 }: MapCanvasProps) {
   const viewportRef = useRef<HTMLDivElement>(null)
+  const wrapperRef = useRef<HTMLDivElement>(null)
+  const hintId = useId()
 
   const unitsX = bounds.maxX - bounds.minX + 1
   const unitsY = bounds.maxY - bounds.minY + 1
@@ -113,6 +117,8 @@ export function MapCanvas({
   useEffect(() => {
     if (!fullscreen) return
 
+    wrapperRef.current?.focus()
+
     const html = document.documentElement
     const body = document.body
     const previousHtmlOverflow = html.style.overflow
@@ -128,12 +134,22 @@ export function MapCanvas({
 
   return (
     <div
+      ref={wrapperRef}
       className="maplab-canvas-wrapper"
       data-variant={variant}
       data-fullscreen={fullscreen || undefined}
+      role={fullscreen ? 'dialog' : undefined}
+      aria-modal={fullscreen || undefined}
       aria-label={fullscreen ? 'Fullscreen map editor workspace' : undefined}
+      tabIndex={fullscreen ? -1 : undefined}
     >
-      <div ref={viewportRef} className="maplab-canvas-viewport">
+      <div
+        ref={viewportRef}
+        className="maplab-canvas-viewport"
+        tabIndex={0}
+        aria-label="Map canvas"
+        aria-describedby={viewportDescription ? hintId : undefined}
+      >
         <svg
           className="maplab-svg"
           viewBox={viewBox}
@@ -148,9 +164,11 @@ export function MapCanvas({
       {controlsSlot && (
         <div className="maplab-zoom-controls">
           {controlsSlot}
-          {panHint && (
-            <span className="maplab-canvas-fullscreen-hint">
+          {(panHint || viewportDescription) && (
+            <span id={hintId} className="maplab-canvas-fullscreen-hint">
               {panHint}
+              {panHint && viewportDescription ? ' ' : null}
+              {viewportDescription}
             </span>
           )}
         </div>

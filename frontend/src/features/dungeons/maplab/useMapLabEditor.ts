@@ -80,10 +80,14 @@ export function useMapLabEditor(dungeonId: number) {
   )
 
   const addRoom = useCallback(() => apply({ type: 'addRoom' }), [apply])
-  const selectRoom = useCallback((roomId: number | null) => apply({ type: 'selectRoom', roomId }), [apply])
+  const selectRoom = useCallback((roomId: number | null) => dispatch({ type: 'selectRoom', roomId }), [])
   const deleteRoom = useCallback((roomId: number) => apply({ type: 'deleteRoom', roomId }), [apply])
   const toggleCell = useCallback(
     (roomId: number, cell: MapCell) => apply({ type: 'toggleCell', roomId, cell }),
+    [apply]
+  )
+  const setRoomFootprint = useCallback(
+    (roomId: number, cells: MapCell[]) => apply({ type: 'setRoomFootprint', roomId, cells }),
     [apply]
   )
   const setActiveZ = useCallback((z: number) => dispatch({ type: 'setActiveZ', z }), [])
@@ -132,6 +136,7 @@ export function useMapLabEditor(dungeonId: number) {
     selectRoom,
     deleteRoom,
     toggleCell,
+    setRoomFootprint,
     setActiveZ,
     resetToFixture,
     addDoor,

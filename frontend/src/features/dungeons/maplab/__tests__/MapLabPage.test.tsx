@@ -17,7 +17,7 @@ async function flush() {
 // chest/trap-door), so pin that as the default backend layout here; per-test `vi.spyOn` calls
 // still override it where a test supplies its own `backendLayout`.
 beforeEach(() => {
-  vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: mapLabLayout })
+  vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: mapLabLayout as unknown as Record<string, unknown> })
 })
 
 describe('MapLabPage (M0a scaffold)', () => {

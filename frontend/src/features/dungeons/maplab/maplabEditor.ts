@@ -35,6 +35,7 @@ export type EditorAction =
   | { type: 'selectRoom'; roomId: number | null }
   | { type: 'deleteRoom'; roomId: number }
   | { type: 'toggleCell'; roomId: number; cell: [number, number] }
+  | { type: 'setRoomFootprint'; roomId: number; cells: MapCell[] }
   | { type: 'setRoomMeta'; roomId: number; meta: { title?: string; description?: string; kind?: string } }
   | { type: 'addDoor'; cell: [number, number]; side: CardinalSide }
   | { type: 'selectDoor'; doorId: number | null }
@@ -116,6 +117,24 @@ export function mapLabEditorReducer(state: EditorState, action: EditorAction): E
       const rooms = state.layout.rooms.map((r) => (r.room_id === action.roomId ? { ...r, origin, cells } : r))
       return { ...state, layout: { ...state.layout, rooms } }
     }
+
+    case 'setRoomFootprint':
+      {
+        const room = state.layout.rooms.find((r) => r.room_id === action.roomId)
+        if (!room) return state
+
+        const uniqueCells = Array.from(new Map(action.cells.map((cell) => [`${cell[0]},${cell[1]}`, cell])).values())
+        const sameFloorRooms = state.layout.rooms.filter((r) => r.z === room.z)
+        const overlapsOtherRoom = uniqueCells.some((cell) => {
+          const owner = roomOfCell(cell, sameFloorRooms)
+          return owner !== null && owner.room_id !== action.roomId
+        })
+        if (overlapsOtherRoom || !isConnectedPolyomino(uniqueCells)) return state
+
+        const { origin, cells } = normalizeCells(uniqueCells)
+        const rooms = state.layout.rooms.map((r) => (r.room_id === action.roomId ? { ...r, origin, cells } : r))
+        return { ...state, layout: { ...state.layout, rooms } }
+      }
 
     case 'addDoor': {
       const door_id = nextDoorId(state.layout)
