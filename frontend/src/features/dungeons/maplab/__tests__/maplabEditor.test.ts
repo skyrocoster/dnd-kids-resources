@@ -359,6 +359,20 @@ describe('mapLabEditorReducer', () => {
       expect(next.layout.props[0]).toMatchObject({ prop_id: 1, kind: 'mirror', locked: true, hiddenDc: 15 })
     })
 
+    it('round-trips a loot bundle soft-reference through the prop reducer and layout serialization', () => {
+      let state = initialEditorState(emptyLayout)
+      state = mapLabEditorReducer(state, { type: 'addProp', cell: [0, 0] })
+      state = mapLabEditorReducer(state, {
+        type: 'updateFixtureFlags',
+        fixtureId: 1,
+        fixtureType: 'prop',
+        flags: { loot: { bundle_id: 24, bundle_name: 'Wizard Cache' } },
+      })
+
+      const reloaded = JSON.parse(JSON.stringify(state.layout)) as MapLayout
+      expect(reloaded.props[0].loot).toEqual({ bundle_id: 24, bundle_name: 'Wizard Cache' })
+    })
+
     it('deleteProp removes the prop and clears selection if it was selected', () => {
       let state = initialEditorState(emptyLayout)
       state = mapLabEditorReducer(state, { type: 'addProp', cell: [0, 0] })

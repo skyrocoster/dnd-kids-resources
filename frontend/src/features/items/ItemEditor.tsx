@@ -4,6 +4,7 @@ import * as api from '../../api/client'
 import type { Item } from '../../api/types'
 import { SelectField } from '../../components/form/SelectField'
 import { TextField } from '../../components/form/TextField'
+import { CloseIcon } from '../../components/icons'
 import { ITEM_CATEGORIES } from '../loot/itemCategories'
 import { emptyItemForm, formStateToItemInput, itemToFormState, validateItemForm } from './itemForm'
 import type { ItemFormErrors, ItemFormState } from './itemForm'
@@ -45,7 +46,7 @@ export function ItemEditor({ item, onClose, onSaved }: ItemEditorProps) {
       <div className="item-editor-modal" role="dialog" aria-modal="true" aria-label={item ? `Edit ${item.name}` : 'Add new item'} onClick={(event) => event.stopPropagation()}>
         <header className="item-editor-header">
           <h2>{item ? `Edit Item: ${item.name}` : 'Add New Item'}</h2>
-          <button type="button" className="item-editor-close" onClick={onClose} aria-label="Close">×</button>
+          <button type="button" className="item-editor-close" onClick={onClose} aria-label="Close"><CloseIcon size={20} aria-hidden="true" /></button>
         </header>
         {status.message && <p className={`item-editor-status ${status.kind || ''}`}>{status.message}</p>}
         <form onSubmit={handleSubmit} className="item-editor-form">

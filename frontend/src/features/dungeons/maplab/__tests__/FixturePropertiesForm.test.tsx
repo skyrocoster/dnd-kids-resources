@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
+import * as api from '../../../../api/client'
 import { FixturePropertiesForm } from '../FixturePropertiesForm'
 import { FIXTURE_TYPES } from '../fixtureTypes'
 import type { MapLayout } from '../maplabModel'
@@ -30,6 +31,49 @@ describe('FixturePropertiesForm', () => {
 
     fireEvent.change(select, { target: { value: 'mirror' } })
     expect(onChange).toHaveBeenCalledWith('kind', 'mirror')
+  })
+
+  describe('Phase M — Loot bundle picker', () => {
+    it('shows bundle options and writes or clears prop.loot', async () => {
+      vi.spyOn(api, 'listLootBundles').mockResolvedValue([
+        { id: 12, name: 'Goblin Chest', gold: 25, contents: [] },
+        { id: 24, name: 'Wizard Cache', gold: 50, contents: [] },
+      ])
+      const onChange = vi.fn()
+      render(
+        <FixturePropertiesForm
+          spec={FIXTURE_TYPES.prop}
+          values={{ kind: 'chest', hidden: false, locked: false, trapped: false }}
+          onChange={onChange}
+        />,
+      )
+
+      const select = await screen.findByLabelText('Loot bundle') as HTMLSelectElement
+      expect(Array.from(select.options).map((option) => option.textContent)).toEqual([
+        'No loot',
+        'Goblin Chest',
+        'Wizard Cache',
+      ])
+
+      fireEvent.change(select, { target: { value: '24' } })
+      expect(onChange).toHaveBeenCalledWith('loot', { bundle_id: 24, bundle_name: 'Wizard Cache' })
+
+      fireEvent.change(select, { target: { value: '' } })
+      expect(onChange).toHaveBeenCalledWith('loot', null)
+    })
+
+    it('explains when no loot bundles can be loaded', async () => {
+      vi.spyOn(api, 'listLootBundles').mockRejectedValue(new Error('Offline'))
+      render(
+        <FixturePropertiesForm
+          spec={FIXTURE_TYPES.prop}
+          values={{ kind: 'chest', hidden: false, locked: false, trapped: false }}
+          onChange={vi.fn()}
+        />,
+      )
+
+      expect(await screen.findByRole('status')).toHaveTextContent('Unable to load loot bundles.')
+    })
   })
 
   describe('DestinationPickerField (stair/portal)', () => {

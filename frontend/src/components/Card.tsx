@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import './Card.css'
 
-export type CardVariant = 'spell' | 'monster' | 'weapon' | 'neutral'
+export type CardVariant = 'spell' | 'monster' | 'weapon' | 'loot' | 'neutral'
 
 interface CardProps {
   title: string

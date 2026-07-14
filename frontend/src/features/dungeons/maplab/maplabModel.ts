@@ -80,9 +80,13 @@ export interface MapFloor {
   title?: string
 }
 
-/** Loot (reserved forward-compat slot; Phase G fills this) */
+/** Loot bundle soft-reference carried by a map prop. Soft-reference (not snapshot): the prop
+ * points to a bundle by id and renders it live at inspection time — a chest reflects the
+ * bundle's current contents. `bundle_name` is a cached display label for when the bundle list
+ * hasn't loaded yet or the bundle has been deleted. (Design Phase M.) */
 export interface PropLoot {
-  /* empty for now */
+  bundle_id: number
+  bundle_name?: string
 }
 
 /** Prop = static object placed on a grid square or wall (chest, table, mirror, etc.).

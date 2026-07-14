@@ -3,7 +3,7 @@
 import { describe, it, expect } from 'vitest'
 
 describe('theme tokens', () => {
-  it('existing banked tokens in theme.css follow MD3 format', () => {
+  it('MD3 custom-color tokens follow the role naming format', () => {
     // Token names: --md-<role> / --md-on-<role> / --md-<role>-container / --md-on-<role>-container
     const validTokenPattern = /^--md-[a-z-]+$/
     const tokenNames = [

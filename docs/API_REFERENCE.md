@@ -79,11 +79,15 @@ When adding a new endpoint:
 
 ## Loot Bundles Router
 
-`backend/app/routers/loot.py` — loot bundle authoring (scaffold).
+`backend/app/routers/loot.py` — loot bundle authoring CRUD.
 
 | Method | Path | Purpose | Request schema | Response schema |
 |---|---|---|---|---|
-| GET | `/loot-bundles` | List loot bundles | (query params: none) | `List[LootBundle]` |
+| GET | `/loot-bundles` | List loot bundles | (query params: `limit`, `offset`) | `List[LootBundle]` |
+| GET | `/loot-bundles/{bundle_id}` | Fetch loot bundle by ID | (path param) | `LootBundle` |
+| POST | `/loot-bundles` | Create loot bundle | `LootBundleCreate` | `LootBundle` (201) |
+| PUT | `/loot-bundles/{bundle_id}` | Update loot bundle | `LootBundleUpdate` | `LootBundle` |
+| DELETE | `/loot-bundles/{bundle_id}` | Delete loot bundle | (path param) | (204 No Content) |
 
 ---
 

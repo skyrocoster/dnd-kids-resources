@@ -1,0 +1,30 @@
+.add-catalog-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: var(--md-surface-1, var(--md-surface));
+  border: 1px solid var(--md-outline-variant);
+  border-radius: 0.5rem;
+  max-height: 26rem;
+}
+
+.add-catalog-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.add-catalog-panel-header h3 { margin: 0; font-size: var(--type-title-size); }
+
+.add-catalog-panel-header button {
+  width: 2.75rem;
+  height: 2.75rem;
+  background: transparent;
+  border: none;
+  color: var(--md-on-surface-variant);
+  font-size: 1.25rem;
+  cursor: pointer;
+}
+
+.add-catalog-panel-error { color: var(--md-error); font-size: var(--type-body-sm-size); }

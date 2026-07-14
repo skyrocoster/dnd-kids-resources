@@ -1,7 +1,7 @@
 import { useId, useMemo, useState } from 'react'
 import './SearchList.css'
 
-export type SearchListVariant = 'spell' | 'monster' | 'weapon' | 'neutral'
+export type SearchListVariant = 'spell' | 'monster' | 'weapon' | 'loot' | 'neutral'
 
 interface SearchListProps<T> {
   items: T[]

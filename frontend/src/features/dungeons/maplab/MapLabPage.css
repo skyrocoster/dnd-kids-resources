@@ -346,19 +346,66 @@
   stroke-width: 4;
 }
 
-/* Disabled placeholder row for the reserved `MapProp.loot` seam — visually inert (no hover/focus
- * state, `aria-disabled` not a real control) so it reads as "not built yet" rather than a broken
- * button. The loot phase replaces this row's content, not its position. */
-.maplab-loot-hook-row {
+/* A small treasure ledger in the inspector: neutral structure carries the panel while the
+ * harmonized loot role identifies its contents without competing with passage-state colors. */
+.maplab-loot-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid color-mix(in srgb, var(--md-loot) 45%, var(--md-outline-variant));
+  font-size: var(--type-body-sm-size);
+  color: var(--md-on-surface);
+}
+
+.maplab-loot-summary-header,
+.maplab-loot-entries li {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-top: 0.75rem;
-  padding-top: 0.75rem;
-  border-top: 1px solid var(--md-outline-variant);
+}
+
+.maplab-loot-summary-header {
+  color: var(--md-loot);
+  font-weight: var(--type-label-weight);
+}
+
+.maplab-loot-summary-status {
+  flex-direction: row;
+  align-items: center;
+  color: var(--md-on-loot-container);
+}
+
+.maplab-loot-summary-header strong {
+  margin-left: auto;
+}
+
+.maplab-loot-gold,
+.maplab-loot-summary-missing {
   color: var(--md-on-surface-variant);
-  font-size: var(--type-body-sm-size);
-  opacity: 0.6;
+}
+
+.maplab-loot-empty {
+  margin: 0;
+  color: var(--md-on-surface-variant);
+  font-size: var(--type-caption-size);
+}
+
+.maplab-loot-entries {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.maplab-loot-entries svg {
+  color: var(--md-loot);
+}
+
+.maplab-loot-badge {
+  pointer-events: none;
 }
 
 .maplab-inspector-controls {

@@ -5,8 +5,10 @@ Single reference for the dungeon room-navigation feature and its follow-on desig
 **Shipped stages** table for history, verbose spec only for the *active/next* stage. Detail on *how* a
 shipped stage was built lives in its git commit, not here.
 
-> **Status:** Original build (Stages 1–11) + Design Phases A–K **all shipped**. Map Lab Editor QOL now
-> includes fullscreen/wheel zoom, rectangular room sizing, and an accessibility/responsive design pass.
+> **Status:** Original build (Stages 1–11) + Design Phases A–K **all shipped**. **Design Phase L — Marker
+> Badge System** is queued (L0 scaffolding → L4 design pass): a programmatic badge layout that rings
+> on-square markers from 12 o'clock and runs door badges along the leaf, with doors taking their own fixed
+> color and their badges painted above the leaf.
 
 ---
 
@@ -232,8 +234,10 @@ before any production fold-in.
 - **Map Lab production fold-in** — generalize the editor beyond the hard-wired Isly Castle id
   (`MAP_LAB_DUNGEON_ID = 4`); fold the `map_layout` store back into the live `dungeonModel.ts`/dungeon pages.
   Gated on the production-home decision above.
-- **Loot system.** Only reserved slots exist (`MapProp.loot`, the F4 inert "Contents" row, DP1's third
-  banked `--md-loot` token, DP0's loot icons). The system itself is unbuilt.
+- **Loot system.** The catalog + bundles shipped (`docs/loot_plan.md`, L0–L5). Wiring a bundle onto the
+  map's reserved slots (`MapProp.loot`, the F4 inert "Contents" row, DP1's banked `--md-loot` token) is
+  now planned as **loot_plan.md Design Phase M — Loot on the Map** (frontend-only, round-trips in
+  `map_layout`); see that doc, not this one, for the staged spec.
 - **Cross-reference hover pop-outs** for monster/encounter chips (the NPC case is solved by the N6 dock).
 - **Deferred Map Lab extensions:** viewport re-centering on stair/portal jump (`panTo`, not just `setActiveZ`);
   ghosting stairs/portals or ghosting *all* floors below / the floor above; cascading delete/orphan-cleanup
@@ -268,7 +272,131 @@ table + layout router), or the live dungeon model/pages.
 
 ---
 
+## Design Phase L — Marker Badge System (active)
+
+**Problem.** Every marker type currently stamps a *single* state badge at one fixed corner
+(`translate(cx + iconSize/4, cy + iconSize/4)` in `PropMarker`/`StairMarker`, and the door's lone
+trap-disarmed badge in `MapLabPage.tsx`). When a marker has more than one thing to say — locked **and**
+trapped, plus loot, plus trap-disarmed — the badges **stack on top of each other** at that one corner
+(`StairMarker.tsx:114`/`:125` render two badges at the *identical* transform). Props also only ever show
+their *primary* state badge, silently dropping the secondary flags that `passageStateChips` already knows
+about. Doors carry no per-status badges at all and encode state in the *leaf color*, so a door reads as
+"the wall clash" the moment its state token overlaps a neighbour's.
+
+**Goal (what the user asked for):**
+1. **On-square tokens (props, stairs, portals):** badges attach to the **outside** of the token, the first
+   at **12 o'clock**, the rest spaced **evenly clockwise**, the angular gap **recomputed from the count** —
+   fully programmatic, so adding a new badge kind needs **zero render-code change**.
+2. **Doors:** all of a door's badges run **along the length of the door**, so they **move with the leaf**
+   when it opens (distributed along the door's *current* segment, in whatever direction it faces), and are
+   painted **above** the leaf, never under it.
+3. **Doors get their own consistent color** (`--md-door`); a door's *status* is carried by its **badges**,
+   not by recoloring the leaf.
+
+**Core idea — one badge model, two layouts.** A single ordered descriptor list feeds both a radial layout
+(on-square markers) and a linear layout (doors). Because the descriptor list is *derived* from the flags
+(not hand-listed per call site), a future PassageFlag → new chip → new badge with no change to any layout
+or render code. This is the "programmatic, no code change" property, made concrete.
+
+### L0 — Scaffolding (Haiku 4.5, single context, compile-only)
+
+**What to build (stubs/types/CSS only — no algorithms):**
+- New `maplab/markerBadges.ts`: exported type `MarkerBadge = { key: string; icon: LucideIcon; token: string;
+  label: string }`; stub signatures (return `[]` / throw `NotImplemented`) for `markerBadges(source)`,
+  `radialBadgeLayout(count, markerRadius, badgeRadius)` → `{ x: number; y: number }[]`, and
+  `linearBadgeLayout(count, segment, normal, badgeRadius)` → `{ x: number; y: number }[]`.
+- New `maplab/BadgeRing.tsx` and `maplab/DoorMarker.tsx` component shells (typed props, render `null`).
+- `theme.css`: add a **banked `--md-door` token** (+ `-container`/`-on-` as needed) via the MD3
+  custom-color/harmonization standard used for `--md-passage-locked`/`--md-passage-hidden`/`--md-loot` —
+  **never a hand-picked hex.** Chosen hue must not collide with exit-card gold, the passage-state tokens,
+  or `--md-loot`.
+- Placeholder CSS: `.maplab-badge`, `.maplab-badge-ring`, `.maplab-door-badge-layer`, `.maplab-door-badge`.
+- Skipped tests (`it.skip`) for L1–L3 in `markerBadges.test.ts`, `PropMarker.test.tsx`, `DoorMarker.test.tsx`.
+
+**Inherits:** existing `passageStateChips`, `MARKER_RADIUS_FRACTION`, `WALL_PROP_RADIUS_FRACTION`, marker
+CSS conventions. **Gate (🚦):** `npm run typecheck` + `npm run build` clean; no behavior change.
+
+### L1 — Badge model + radial ring (Sonnet)
+
+**What to build:**
+- Implement `markerBadges(source)` — composes the descriptor list from, in fixed precedence:
+  `passageStateChips(effectiveFlags)` (trapped ▸ locked ▸ hidden, already precedence-ordered) → one badge
+  each, then `loot` (when set → `CoinsIcon`/`--md-loot`), then `trapDisarmed` (session → `TrapDisarmedIcon`/
+  `--md-tertiary`). Stable ordering so a badge keeps its clock position as unrelated flags toggle.
+- Implement `radialBadgeLayout(count, markerRadius, badgeRadius)`: first badge at **−90° (12 o'clock)**,
+  step `360/count`, sweeping **clockwise** (pin the sign convention for SVG's y-down space in the test),
+  each centered at distance `markerRadius + gap + badgeRadius` from the marker center. Returns
+  center-relative `{x,y}` offsets.
+- `BadgeRing.tsx`: renders the `MarkerBadge[]` at the `radialBadgeLayout` positions (each badge a small
+  filled disc + icon; `aria-hidden`, since the parent marker's `aria-label` already narrates state).
+- Rewire **`PropMarker`** to render a `BadgeRing` (replacing the single corner `BadgeIcon` **and** the
+  separate loot badge). Marker `aria-label` extended to list every active badge.
+
+**Tests:** layout math (1/2/3/4 badges → correct angles, 12 o'clock start, even gaps, outside the
+marker radius); badge derivation (locked+trapped → 2; +loot → 3; +trapDisarmed → 4; unlocked+no-loot → 0);
+`PropMarker` render (right count of badges, no corner-stack). **Gate:** tests + typecheck + build green.
+
+### L2 — Stairs & portals onto the ring (Sonnet)
+
+**What to build:** rewire **`StairMarker`** and **`PortalMarker`** to `markerBadges` + `BadgeRing`. This
+**fixes the real overlap bug** where the state badge and the trap-disarmed badge render at the identical
+corner transform (`StairMarker.tsx:114`/`:125`). Delete the per-file `BADGE_ICONS` maps now that the model
+owns badge derivation. **Tests:** stair/portal render the full badge set (e.g. trapped-but-disarmed shows
+both the trapped **and** disarmed badges, non-overlapping); grouped/offset markers still ring correctly.
+**Gate:** tests + typecheck + build green.
+
+### L3 — Door color + along-the-leaf badges + z-order (Sonnet)
+
+**What to build:**
+- Extract a shared **`DoorMarker.tsx`** from the near-duplicate inline door renders in
+  **`MapLabPage.tsx:459`** (viewer) and **`MapLabEditorPage.tsx:775`** (editor) — mirroring the H4
+  `StairMarker` extraction — so door badging lives in **one** place.
+- **Door leaf/closed line now strokes `--md-door`** (its own fixed color) in every state; the door glyph
+  stays the identity icon. State is conveyed **only** by badges from here on. `doorPresentation` keeps
+  computing `state`/`isOpen` (still drives icon + `aria-label` + the hidden dash), but the *leaf color* is
+  decoupled from `state`.
+- Implement `linearBadgeLayout(count, segment, normal, badgeRadius)`: badges at evenly spaced interior
+  params `t_i = (i+1)/(count+1)` **along the segment** (avoids the hinge, the far jamb, and the centered
+  glyph), each pushed off the leaf by `normal` so it floats just above the line — readable at any door
+  orientation ("whichever direction the door is facing"). Pass the **open leaf** segment + its inward
+  normal when `isOpen`, the **closed wall** segment + inward normal otherwise, so the badges **track the
+  leaf as it swings** (`doorSwingGeometry` already gives hinge/leafTip; the inward normal is `-CARDINAL_DELTAS[side]`).
+- **Z-order fix:** render all door badges in a dedicated `<g className="maplab-door-badge-layer">` painted
+  **after** the entire doors `.map()` (both pages), so no leaf/swing can ever paint over a badge. (SVG paint
+  order = document order; a trailing overlay is the robust guarantee, matching the existing
+  `.maplab-door-placement-overlay` pattern.)
+
+**Tests:** `linearBadgeLayout` math (even interior spacing along an N/S/E/W segment; normal offset sign);
+door badge derivation reuses `markerBadges`; `DoorMarker` renders leaf in `--md-door` regardless of state
+and badges along the leaf; open vs closed places badges on the leaf vs the wall segment; both viewer and
+editor pages mount the badge overlay after the doors layer. **Gate:** tests + typecheck + build green.
+
+### L4 — Design pass (Sonnet)
+
+Front-end visual/accessibility review across all four marker types: every badge is **icon-bearing** (never
+hue-alone); badge discs stay legible at the smallest live cell size and against busy grid/wall lines;
+radial badges don't collide with grouped-cell offsets; door badges don't overlap the door glyph or spill
+outside the canvas at edge cells; `prefers-reduced-motion` respected; `--md-door` contrast + non-collision
+with gold/passage/loot tokens confirmed. Resolve the **open consistency question**: doors now use a fixed
+color + badges while stairs/portals keep a state-colored ring + badges — decide in this pass whether the
+ring color should also go neutral for uniformity, or whether the ring-vs-leaf distinction is intentional
+and documented. Zero-bug discovery/fix. **Reference-doc updates (same commit):** record the `--md-door`
+token and the "door color is fixed; door status = badges" contract in `docs/DESIGN_SYSTEM.md`, and trim/point
+this plan's "Design system in force" note accordingly. **Gate:** full `npm run test` + `npm run typecheck`
++ `npm run build`; live visual verification is a manual gate (per CLAUDE.md, the user drives the browser).
+
+**Phase deliverable → collapse:** on L4 ship, fold L0–L4 into a single **Shipped stages** row, add
+`markerBadges`/`radialBadgeLayout`/`linearBadgeLayout`/`BadgeRing`/`DoorMarker` to the coordinate-model
+"Reusable selectors" list, and delete this verbose section.
+
+---
+
 ## Next
 
-No active dungeon stage. The next queued decision is the Map Lab production-home recommendation before any
-production fold-in.
+**Active:** Design Phase L — Marker Badge System (spec above). Start at **L0** (Haiku scaffolding), then
+L1→L4 in order; commit each stage with its plan-doc update per the collapse discipline. Do not combine
+stages or skip the L0 scaffold.
+
+Also queued (not blocking L): the Map Lab production-home recommendation before any production fold-in;
+and the loot-on-the-map wiring that fills the reserved `MapProp.loot` slot, staged in `docs/loot_plan.md`
+(Design Phase M) — owned by the loot plan, not this one.

@@ -1,6 +1,7 @@
 # Loot System — Plan Doc
 
-> **Status:** L0→L2 shipped. **L3 (Loot bundle backend, Sonnet) queued next.** L4→L5 follow.
+> **Status:** L0→L5 shipped (catalog + bundles authored). Design Phase M (loot on the dungeon map)
+> is shipped (M0→M3).
 
 ## What the feature is
 
@@ -88,102 +89,102 @@ focus visibility, `aria-hidden` on decorative icons, `prefers-reduced-motion`).
 - **Data-driven categories.** Categories live as a frontend constant. If categories ever need backend
   ownership (custom user categories, seeded reference rows with icon keys), promote to an `item_categories`
   reference table + `/api/item-categories` in `reference.py`.
-- **Awarding loot to players / dungeons.** Attaching a bundle to a dungeon room, encounter reward, or a
-  player's inventory is out of scope; this phase only authors bundles.
+- **Awarding loot to players / encounters.** Attaching a bundle to a **map prop / token** on the dungeon
+  map is now **in scope as Design Phase M** (below). Still deferred: encounter-reward links and a player's
+  inventory.
 - **Randomized loot tables / dice-driven generation.** Bundles are hand-authored only.
+- **Bundle-specific item editing.** A future editor may let a catalog item snapshot be edited into a unique
+  item for just that loot bundle, without changing the source catalog item.
 
 ---
 
-## Design Phase L — Loot System
+## Shipped stages (collapsed history)
 
-Delivers the items catalog and loot bundles end to end: schema, seeds, routers, both browser+editor
-frontends, and a design pass. **Depends on:** nothing external. **Depended on by:** any future
-"award loot" feature.
-
-| Stage | Model | Summary | Deliverables |
-|-------|-------|---------|--------------|
-| **L0 — Scaffolding** | Haiku | Types/schemas/stub routers/CREATE TABLE stubs/empty seeds/placeholder components + nav/routes/`it.skip` tests. One context, no business logic. | Stubs compile; `pytest` collects; `npm run build` clean; new nav entries render empty pages. |
-| **L1 — Items backend** | Sonnet | Implement `items` table, `/api/items` CRUD, seed sample items. | `items.py`, CREATE TABLE, `seed_items.json`, `populate_items`, backend tests, ref-doc rows. |
-| **L2 — Items browser + editor** | Sonnet | `features/items/` browser+editor, category-icon constant, client+route+nav. | `ItemBrowserPage`, `ItemEditor`, `itemForm.ts`, `itemCategories.ts`, tests. |
-| **L3 — Loot bundle backend** | Sonnet | Implement `loot_bundle` table, `/api/loot-bundles` CRUD, seed a sample bundle. | `loot.py`, CREATE TABLE, `seed_loot_bundles.json`, `populate_loot_bundles`, round-trip tests, ref-doc rows. |
-| **L4 — Loot bundle browser + editor** | Sonnet | `features/loot/` browser (with totals) + editor with item/weapon pickers, quantities, gold, live total. | `LootBundleBrowserPage`, `LootBundleEditor`, `AddItemPanel`, `AddWeaponPanel`, `lootBundleForm.ts`, `lootTotals.ts`, client+route+nav, tests. |
-| **L5 — Design pass** | Sonnet | `/frontend-design` review, distinct loot identity, a11y, empty states, zero-bug. | Fixes + design tests. |
-
-**Sequencing:** L0 (Haiku, first) → then **L1 ∥ L3** (independent backends) → L2 (needs L1) → L4 (needs L2
-for the item client/types + L3 for the bundle API) → L5 (needs L2+L4 live).
-
-<!-- ===== VERBOSE BLOCKS — one per un-shipped stage (L3→L5). Delete a block and collapse it to a
-      Shipped row the moment that stage ships; the remaining blocks stay until their own turn. ===== -->
-
-#### L3 — Loot bundle backend (planned — Sonnet; independent of L2, may run in parallel after L1)
-
-- **Build:**
-  - `backend/app/routers/loot.py` — implement full `/api/loot-bundles` CRUD by copying `encounters.py`
-    almost verbatim: `SELECT id, name, gold, contents`, parse `contents` with `parse_json_value` on read,
-    `json.dumps(contents)` on write, using the L0 `LootBundle`/`LootBundleCreate`/`LootBundleUpdate` schemas.
-  - `scripts/init_database.py` — the `loot_bundle` CREATE TABLE (L0 stubbed it): `id PK`, `name TEXT NOT
-    NULL`, `gold REAL NOT NULL DEFAULT 0`, `contents TEXT NOT NULL DEFAULT '[]'`, `created_at`/`updated_at`.
-  - `data/seeds/seed_loot_bundles.json` — one sample bundle whose `contents` mixes an **item** entry and a
-    **weapon** entry (with quantities) plus a `gold` amount, to prove the round-trip and give L4 a browser row.
-  - `scripts/seed_database.py` — implement `populate_loot_bundles` (L0 stub) and keep it registered.
-  - Rebuild DB: `python scripts/init_database.py && python scripts/seed_database.py`.
-  - **Reference docs (same commit):** API_REFERENCE.md (Loot Bundles router section + `LootBundle` shape),
-    DATA_MODEL.md (`seed_loot_bundles → loot_bundle` row, `contents` JSON column, snapshot/soft-ref note),
-    ARCHITECTURE.md (`loot.py` router row).
-- **Inherits:** L0 schemas, `main.py` router registration, the table + empty-seed stubs.
-- **Tests:** `backend/tests/routers/test_loot.py` — list/get/create/update/delete smoke **plus** a
-  round-trip test asserting a bundle created with a mixed item+weapon+gold `contents` reads back byte-intact
-  (JSON fidelity, snapshot fields preserved). Keep ≥85% coverage.
-- **🚦 Gate:** suite suffices. `pytest` from repo root green; init+seed run clean; `GET /api/loot-bundles`
-  returns the seeded bundle with `contents` parsed to objects.
-
-#### L4 — Loot bundle browser + editor (planned — Sonnet; needs L2 for the item client + L3 for the API)
-
-- **Build:**
-  - `frontend/src/features/loot/LootBundleBrowserPage.tsx` — list + search; each row shows name and the
-    **computed total** from `lootTotals.ts`. Copy `EncounterBrowserPage`.
-  - `frontend/src/features/loot/LootBundleEditor.tsx` — `name` field, `gold` number input, the working
-    `contents` list with per-entry **quantity steppers** + remove, `AddItemPanel` + `AddWeaponPanel` to
-    append snapshots, and a **live total** (`gold + Σ value_gp×quantity`). Save via create/update. Mirror
-    `EncounterEditor`.
-  - `frontend/src/features/loot/AddItemPanel.tsx` — search `/api/items`, click appends a snapshot entry
-    `{kind:'item', ref_id:item.id, name, value_gp, category, quantity:1}`. Copy `AddMonsterPanel`.
-  - `frontend/src/features/loot/AddWeaponPanel.tsx` — search `/api/weapons`, click appends
-    `{kind:'weapon', ref_id:weapon.id, name, value_gp:null, quantity:1}`.
-  - `frontend/src/features/loot/lootBundleForm.ts` — reducer: `setName`, `setGold`, `addEntry` (snapshots
-    at add-time), `removeEntry`, `setQuantity`.
-  - `frontend/src/features/loot/lootTotals.ts` — `computeBundleTotal(gold, contents)` = `gold + Σ((value_gp
-    ?? 0) × quantity)`; weapon entries (`value_gp: null`) contribute 0.
-  - Point route `/loot` at the real browser; confirm the `*LootBundle` client functions and nav link.
-- **Inherits:** L2's item client/types + `categoryIcon` (for entry icons); L3's `/api/loot-bundles` API and
-  seeded bundle; L0 scaffolds (`LootEntry` type, route, nav, client stubs).
-- **Tests:** `lootBundleForm` reducer (add/remove/quantity/gold; snapshot stays fixed when catalog would
-  change); `lootTotals` selector (mixed entries, weapon-null ignored, quantity multiply, decimal gold);
-  `AddItemPanel`/`AddWeaponPanel` render + add; `LootBundleEditor` render + save; browser render with total.
-- **🚦 Gate:** suite suffices for logic. Manual (user): assemble a bundle mixing items + weapons + gold,
-  confirm quantities multiply, the total live-updates, and save→reopen persists the snapshots.
-
-#### L5 — Design pass (planned — Sonnet; needs L2 + L4 live)
-
-- **Build:** `/frontend-design` review of the items and loot surfaces. Give loot its **distinct treasure
-  identity** via an MD3-harmonized gold accent token (added through the `DESIGN_SYSTEM.md` custom-color path,
-  never a hand-picked hex); polish category icons; add empty states for both browsers; a11y sweep
-  (touch-target floor, focus visibility, `aria-hidden` on decorative icons, `prefers-reduced-motion`);
-  zero-bug pass over gp decimal formatting, quantity steppers, and total rounding.
-- **Inherits:** the shipped L2 + L4 UI.
-- **Tests:** extend `theme-tokens.test.mjs` for any new accent token; render/regression tests for each fix.
-- **🚦 Gate:** design review complete; suite green. Manual (user): visual pass over both browsers and the
-  bundle editor in light + dark.
-
-<!-- ============================================================================================= -->
-
-### Shipped stages table (the collapsed record)
+Phase L (items catalog + loot bundles, end to end) is complete; each stage's authoring detail lives in
+its git commit. Reusable outputs are promoted to the top-matter **Reusable pieces** / **Key facts**.
 
 | Stage | What shipped (≤2 sentences) |
 |-------|------------------------------|
 | L0 — Scaffolding | Added item and loot schemas, tables, seed-pipeline hooks, typed client stubs, placeholder pages, routes, navigation, category icons, and skipped frontend tests. |
 | L1 — Items backend | Implemented item catalog CRUD with duplicate names permitted, seeded three sample items, added API tests, and documented the new items/loot domains. |
 | L2 — Items browser + editor | Replaced the placeholder with searchable catalog browser and CRUD editor, added validated form state and full category-icon mapping, and converted the skipped tests to browser, editor, form, and icon coverage. |
+| L3 — Loot bundle backend | Implemented loot-bundle CRUD with JSON snapshot round-tripping, seeded a mixed item/weapon bundle, added API and real-data tests, and documented the router and data model. |
+| L4 — Loot bundle browser + editor | Added searchable bundle browsing with computed totals and a snapshot-based editor with item/weapon pickers, quantities, gold, and live totals; added focused reducer, selector, picker, editor, and browser tests. |
+| L5 — Design pass | Activated the MD3-harmonized loot accent across item and bundle surfaces, added actionable empty states, and raised loot controls to the 48px touch-target floor; added regression coverage for the new variant and empty states. |
+| M2 — Inspector contents + marker badge | Replaced the prop loot placeholder with a live, soft-referenced bundle summary covering loading, missing, and failed requests; added the loot glyph badge and Map Lab regression coverage. |
+| M3 — Design pass | Refined the Map Lab loot identity with a high-contrast coin badge and treasure-ledger summary, raised the bundle picker to the 48px touch-target floor, and added explicit loading, unavailable, removed, and gold-only states with regression coverage. |
+
+---
+
+## Design Phase M — Loot on the Map
+
+Ties an authored loot bundle to a **prop/token on the dungeon map**: the DM points a chest (or any prop)
+at a bundle in the Map Lab editor, and the inspector then shows that bundle's treasure live — name, total
+gp, and the item/weapon list — replacing the inert "Contents — added with the loot system" placeholder row
+shipped in dungeon Phase F4. Frontend-only and self-contained to `frontend/src/features/dungeons/maplab/`
+(+ the shared loot helpers): the link round-trips inside the existing `map_layout` blob, so **no backend,
+schema, seed, or router change**. **Depends on:** L2 (item client/types) + L4 (`lootTotals.ts`,
+`itemCategories.ts`, `listLootBundles`/`getLootBundle`) — all shipped. **Depended on by:** any future
+"reveal loot at the table" / award-to-player flow.
+
+### Key facts (an executor needs these; don't re-derive)
+
+- **Fill the reserved seam — don't add a new one.** Dungeon Phase F reserved exactly two slots for this:
+  the empty `PropLoot` interface on `MapProp.loot?` (`maplab/maplabModel.ts` ~line 83–99) and the
+  `aria-disabled` `.maplab-loot-hook-row` in `maplab/InspectorPanel.tsx` (~line 70–75, CSS in
+  `MapLabPage.css` ~line 349). This phase types `PropLoot` and replaces that row's content — it does not
+  introduce a parallel field, row, or model.
+- **Soft-reference, NOT snapshot** — this is the deliberate exception to the loot system's snapshot rule.
+  A bundle's *own* entries snapshot their catalog rows (`LootEntry.ref_id`), but a **map prop links to a
+  bundle by id and renders it live** — a chest should reflect the bundle's current contents, and a bundle
+  is re-editable in its own browser. Shape: `PropLoot = { bundle_id: number; bundle_name?: string }`.
+  `bundle_name` is a cached label for display before/if the bundle list resolves (and a breadcrumb if the
+  bundle is later deleted); the authoritative contents come from `getLootBundle(bundle_id)` at render time.
+- **Copy the encounter-picker pattern verbatim.** The prop already links to an encounter the exact way
+  this needs to link to a bundle: the `encounterPicker` `FieldSpec` type (`fixtureTypes.ts`), the
+  `encounter_id` entry in `PROP_FIELDS`, and `EncounterPickerField` (`FixturePropertiesForm.tsx`, options
+  from `listEncounters()`). Add a parallel `lootBundlePicker` field type, a `loot` entry in `PROP_FIELDS`,
+  and a `LootBundlePickerField` populated from `listLootBundles()`. Gate it with
+  `showWhen: (v) => v.kind !== 'encounter'` (an encounter prop uses `encounter_id`, not loot).
+- **Nested-object field precedent exists.** The picker writes a nested object under the `loot` key, exactly
+  as the portal/stair `destinationPicker` writes `{ z, cell }` under the `to` key — the generic
+  `FixturePropertiesForm`/reducer already round-trip a nested value, so no form rewrite is needed.
+- **Reuse the loot render helpers, don't rebuild.** Total via `computeBundleTotal(gold, contents)` +
+  `formatGp` (`features/loot/lootTotals.ts`); per-entry category icon via `features/loot/itemCategories.ts`
+  (weapons use the weapon/swords glyph). Client calls `listLootBundles`/`getLootBundle` already exist in
+  `api/client.ts` — import, don't add.
+- **Loot accent already banked.** `--md-loot` (DP1) is the harmonized treasure accent — use it for the
+  loot-bearing prop's marker badge and the inspector loot summary. No new hue; the marker must stay
+  distinguishable by glyph, not hue alone (accessibility floor).
+- **No `normalizeLayout` change required** — `loot` is optional on `MapProp`; legacy props simply lack it.
+
+### Design system in force
+
+Reuse the loot identity established in Phase L: the `--md-loot` accent from `theme.css`, category line
+icons from the shared registry at the established sizes, and the `DESIGN_SYSTEM.md` accessibility floor
+(48px touch targets on the picker/reveal control, `aria-hidden` on decorative icons, focus visibility,
+`prefers-reduced-motion`, never hue-alone).
+
+### Reusable pieces (do not rebuild)
+
+- `features/loot/lootTotals.ts` (`computeBundleTotal`, `formatGp`), `features/loot/itemCategories.ts`
+  (category → icon+label), `api/client.ts` (`listLootBundles`, `getLootBundle`).
+- `maplab/FixturePropertiesForm.tsx` `EncounterPickerField` (the catalog-`<select>` picker to mirror),
+  `maplab/fixtureTypes.ts` (`FieldSpec`/`PROP_FIELDS`/`FIXTURE_TYPES` registry seam),
+  `maplab/InspectorPanel.tsx` (the panel + the reserved loot row to replace), `maplab/PropMarker.tsx`
+  (the marker that gains a loot badge).
+
+| Stage | Model | Summary | Deliverables |
+|-------|-------|---------|--------------|
+| **M0 — Scaffolding** | Haiku | Shipped the typed `PropLoot` seam, `lootBundlePicker` registry field, inspector shell, placeholder CSS, and test stubs. | Map Lab behavior unchanged. |
+| **M1 — Editor bundle picker** | Sonnet | Shipped the bundle selector backed by `listLootBundles`; it writes or clears the nested soft-reference with its cached name and preserves it through the prop reducer/layout serialization. | Picker and reducer round-trip tests. |
+| **M2 — Inspector contents + marker badge** | Sonnet | Shipped live soft-referenced bundle summary states, category/weapon entry icons, and the distinguishable `--md-loot` marker glyph. | Inspector/marker coverage in the Map Lab suite. |
+| **M3 — Design pass** | Sonnet | `/frontend-design` review, distinct loot identity on the map, a11y, empty/loading/deleted states, zero-bug. | Fixes + design/regression tests. |
+
+**Sequencing:** M0 (Haiku, first) → then **M1 ∥ M2** (write-side editor vs. read-side inspector/marker
+both need only M0's `PropLoot` shape; no dependency between them) → M3 (needs M1+M2 live).
+
+<!-- ============================================================================================= -->
 
 ---
 
@@ -196,7 +197,11 @@ for the item client/types + L3 for the bundle API) → L5 (needs L2+L4 live).
   router sections + response shapes), `docs/DATA_MODEL.md` (seed→table rows, `loot_bundle.contents` JSON
   column, snapshot/soft-ref relationships).
 - Design: `docs/DESIGN_SYSTEM.md` (loot accent via MD3 harmonization).
+- Phase M consumes the dungeon Map Lab: `docs/dungeon_plan.md` (the reserved `MapProp.loot` slot + F4
+  inert "Contents" row this phase fills), `frontend/src/features/dungeons/maplab/` (`maplabModel.ts`,
+  `fixtureTypes.ts`, `FixturePropertiesForm.tsx`, `InspectorPanel.tsx`, `PropMarker.tsx`). Frontend-only —
+  no reference-doc (`ARCHITECTURE/API_REFERENCE/DATA_MODEL`) change, since it round-trips in `map_layout`.
 
 ## Next:
 
-**L3 — Loot bundle backend (Sonnet).** Unblocked; start here.
+No loot-system stage is currently planned.

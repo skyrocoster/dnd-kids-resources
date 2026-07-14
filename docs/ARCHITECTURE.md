@@ -26,7 +26,7 @@ This doc describes the folder structure, backend/frontend conventions, and reque
 | `monsters.py` | `/monsters` | Monster CRUD, query by ID/name |
 | `weapons.py` | `/weapons` | Weapon CRUD, query by ID/name |
 | `items.py` | `/items` | Treasure item catalog CRUD |
-| `loot.py` | `/loot-bundles` | Loot bundle authoring API (list scaffold; CRUD follows) |
+| `loot.py` | `/loot-bundles` | Loot bundle CRUD with snapshotted JSON contents |
 | `players.py` | `/players` | Player CRUD, player spell/weapon roster management |
 | `npcs.py` | `/npcs` | NPC CRUD and details |
 | `quests.py` | `/quests` | Quest CRUD and details |

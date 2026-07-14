@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-import { listEncounters } from '../../../api/client'
-import type { Encounter } from '../../../api/types'
+import { listEncounters, listLootBundles } from '../../../api/client'
+import type { Encounter, LootBundle } from '../../../api/types'
 import type { FieldSpec, FixtureTypeSpec } from './fixtureTypes'
 import { absoluteCells, floorsInLayout, markersAtCell, roomsOnZ, type MapCell, type MapLayout, type MapRoom } from './maplabModel'
 
@@ -77,6 +77,10 @@ function FixtureField({
 
   if (field.type === 'encounterPicker') {
     return <EncounterPickerField inputId={inputId} field={field} value={value} onChange={onChange} />
+  }
+
+  if (field.type === 'lootBundlePicker') {
+    return <LootBundlePickerField inputId={inputId} field={field} value={value} onChange={onChange} />
   }
 
   if (field.type === 'destinationPicker') {
@@ -255,5 +259,67 @@ function DestinationPickerField({
         </span>
       )}
     </div>
+  )
+}
+
+/** Attaches a live loot bundle to a non-encounter prop, retaining its name as a display fallback
+ * when the bundle is later unavailable. */
+function LootBundlePickerField({
+  inputId,
+  field,
+  value,
+  onChange,
+}: {
+  inputId: string
+  field: FieldSpec
+  value: unknown
+  onChange: (key: string, value: unknown) => void
+}) {
+  const [bundles, setBundles] = useState<LootBundle[]>([])
+  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
+
+  useEffect(() => {
+    listLootBundles()
+      .then((result) => {
+        setBundles(result)
+        setStatus('ready')
+      })
+      .catch(() => {
+        setBundles([])
+        setStatus('error')
+      })
+  }, [])
+
+  const selected =
+    typeof value === 'object' && value !== null && 'bundle_id' in value && typeof value.bundle_id === 'number'
+      ? String(value.bundle_id)
+      : ''
+
+  function handleChange(bundleId: string) {
+    if (bundleId === '') {
+      onChange(field.key, null)
+      return
+    }
+
+    const bundle = bundles.find((candidate) => candidate.id === Number(bundleId))
+    if (bundle) onChange(field.key, { bundle_id: bundle.id, bundle_name: bundle.name })
+  }
+
+  return (
+    <label className="maplab-field-row maplab-loot-bundle-picker" htmlFor={inputId}>
+      <span className="maplab-loot-bundle-picker-label">{field.label}</span>
+      <select id={inputId} value={selected} onChange={(event) => handleChange(event.target.value)}>
+        <option value="">{status === 'loading' ? 'Loading loot bundles...' : 'No loot'}</option>
+        {bundles.map((bundle) => (
+          <option key={bundle.id} value={bundle.id}>
+            {bundle.name}
+          </option>
+        ))}
+      </select>
+      {status === 'error' && <span className="maplab-loot-bundle-picker-status" role="status">Unable to load loot bundles.</span>}
+      {status === 'ready' && bundles.length === 0 && (
+        <span className="maplab-loot-bundle-picker-status">No loot bundles available.</span>
+      )}
+    </label>
   )
 }

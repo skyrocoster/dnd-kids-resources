@@ -1,4 +1,4 @@
-import { HiddenIcon, LockIcon, TrapIcon, ItemIcon, type LucideIcon } from '../../../components/icons'
+import { CoinsIcon, HiddenIcon, LockIcon, TrapIcon, ItemIcon, type LucideIcon } from '../../../components/icons'
 import { PROP_KIND_ICONS } from './fixtureTypes'
 import {
   GROUPED_MARKER_RADIUS_FRACTION,
@@ -87,7 +87,7 @@ export function PropMarker({
   const Icon = PROP_KIND_ICONS[prop.kind] ?? ItemIcon
   const BadgeIcon = BADGE_ICONS[presentation.state]
   const dasharray = presentation.state === 'hidden' ? '4 3' : undefined
-  const label = `${prop.title ?? prop.kind} — ${presentation.label}`
+  const label = `${prop.title ?? prop.kind} — ${presentation.label}${prop.loot ? ' — loot assigned' : ''}`
 
   return (
     <g
@@ -133,6 +133,17 @@ export function PropMarker({
             className="maplab-prop-state-badge"
             aria-hidden="true"
             style={{ color: `var(${presentation.token})` }}
+          />
+        </g>
+      )}
+      {prop.loot && (
+        <g className="maplab-loot-badge" transform={`translate(${cx - iconSize / 2}, ${cy - iconSize / 2})`}>
+          <circle cx={7} cy={7} r={8} fill="var(--md-loot)" />
+          <CoinsIcon
+            width={14}
+            height={14}
+            aria-hidden="true"
+            style={{ color: 'var(--md-on-loot)' }}
           />
         </g>
       )}

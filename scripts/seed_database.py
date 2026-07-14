@@ -686,8 +686,43 @@ def populate_items(cursor, conn, force=False):
 
 
 def populate_loot_bundles(cursor, conn, force=False):
-    """Reserve the loot-bundle seed pipeline for L3."""
+    """Populate loot_bundle table from seed_loot_bundles.json."""
     print("\n[LOOT] Loading loot bundles...")
+    try:
+        cursor.execute("SELECT COUNT(*) FROM loot_bundle")
+        count = cursor.fetchone()[0]
+    except sqlite3.OperationalError:
+        print("  [ERROR] loot_bundle table does not exist. Run scripts/init_database.py first.")
+        return
+
+    if count > 0 and not force:
+        print(f"  [INFO] Loot bundle table already has {count} records. Skip (use --force to override)")
+        return
+
+    if force:
+        cursor.execute("DELETE FROM loot_bundle")
+
+    seeds = load_json_file(SEEDS_DIR / "seed_loot_bundles.json")
+    if not seeds:
+        print("  [WARNING] No loot bundle seeds found")
+        return
+
+    for bundle in seeds:
+        cursor.execute(
+            """INSERT INTO loot_bundle (id, name, gold, contents)
+               VALUES (?, ?, ?, ?)""",
+            (
+                bundle.get("id"),
+                bundle.get("name"),
+                bundle.get("gold", 0),
+                serialize_for_db(bundle.get("contents", [])),
+            ),
+        )
+        print(f"  [CHECK] {bundle.get('name')}")
+
+    conn.commit()
+    cursor.execute("SELECT COUNT(*) FROM loot_bundle")
+    print(f"  [OK] Loaded {cursor.fetchone()[0]} loot bundles")
 
 
 def populate_dungeons(cursor, conn, force=False):
@@ -1062,6 +1097,7 @@ def main():
     parser.add_argument('--weapon-properties', action='store_true', help='Load only weapon properties')
     parser.add_argument('--weapons', action='store_true', help='Load only weapons')
     parser.add_argument('--items', action='store_true', help='Load only items')
+    parser.add_argument('--loot-bundles', action='store_true', help='Load only loot bundles')
     parser.add_argument('--dungeons', action='store_true', help='Load only dungeons')
     parser.add_argument('--encounters', action='store_true', help='Load only encounters')
     parser.add_argument('--npcs', action='store_true', help='Load only NPCs')
@@ -1076,7 +1112,7 @@ def main():
         args.abilities, args.spells, args.conditions, args.monsters, args.quests,
         args.npcs, args.players, args.player_spells, args.player_weapons,
         args.damage_types, args.weapon_properties, args.weapons,
-        args.dungeons, args.encounters, args.items
+        args.dungeons, args.encounters, args.items, args.loot_bundles
     ])
     
     print("="*60)
@@ -1122,7 +1158,7 @@ def main():
             populate_dungeons(cursor, conn, args.force)
         if load_all or args.encounters:
             populate_encounters(cursor, conn, args.force)
-        if load_all:
+        if load_all or args.loot_bundles:
             populate_loot_bundles(cursor, conn, args.force)
         if load_all or args.players:
             populate_players(cursor, conn, args.force)

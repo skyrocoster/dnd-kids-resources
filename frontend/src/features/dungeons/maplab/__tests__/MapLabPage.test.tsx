@@ -523,25 +523,110 @@ describe('MapLabPage (Stage F2 — Prop rendering)', () => {
   })
 })
 
+describe('Design Phase M — Loot on the map', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('shows a live loot summary and badge for a loot-bearing prop', async () => {
+    const user = userEvent.setup()
+    const lootChest = {
+      ...mapLabLayout.props[0],
+      loot: { bundle_id: 12, bundle_name: 'Goblin Chest' },
+    }
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({
+      data: { ...mapLabLayout, props: [lootChest] } as unknown as Record<string, unknown>,
+    })
+    vi.spyOn(api, 'getLootBundle').mockResolvedValue({
+      id: 12,
+      name: 'Goblin Chest',
+      gold: 12.5,
+      contents: [
+        { kind: 'item', ref_id: 3, name: 'Ruby', value_gp: 50, category: 'gem', quantity: 2 },
+        { kind: 'weapon', ref_id: 4, name: 'Shortsword', value_gp: null, quantity: 1 },
+      ],
+    })
+
+    render(<MapLabPage />)
+    await flush()
+
+    const chest = screen.getByRole('button', { name: /Treasure Chest.*loot assigned/i })
+    expect(chest.querySelector('.maplab-loot-badge')).toBeInTheDocument()
+
+    await user.hover(chest)
+    expect(await screen.findByLabelText('Loot contents')).toBeInTheDocument()
+    expect(screen.getByText('Goblin Chest')).toBeInTheDocument()
+    expect(screen.getByText('112.5 gp')).toBeInTheDocument()
+    expect(screen.getByText('Gold: 12.5 gp')).toBeInTheDocument()
+    expect(screen.getByText('2 x Ruby (50 gp)')).toBeInTheDocument()
+    expect(screen.getByText('1 x Shortsword')).toBeInTheDocument()
+  })
+
+  it('shows loading then the cached name when the linked bundle was removed', async () => {
+    const user = userEvent.setup()
+    let rejectBundle!: (reason?: unknown) => void
+    const lootChest = {
+      ...mapLabLayout.props[0],
+      loot: { bundle_id: 12, bundle_name: 'Lost Cache' },
+    }
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({
+      data: { ...mapLabLayout, props: [lootChest] } as unknown as Record<string, unknown>,
+    })
+    vi.spyOn(api, 'getLootBundle').mockReturnValue(
+      new Promise((_, reject) => {
+        rejectBundle = reject
+      }),
+    )
+
+    render(<MapLabPage />)
+    await flush()
+    await user.hover(screen.getByRole('button', { name: /Treasure Chest/i }))
+    expect(screen.getByRole('status')).toHaveTextContent('Opening the treasure cache...')
+
+    await act(async () => {
+      rejectBundle(new api.ApiError(404, 'Not found'))
+    })
+    expect(await screen.findByRole('status')).toHaveTextContent('Lost Cache was removed')
+  })
+
+  it('identifies a gold-only bundle instead of leaving its contents blank', async () => {
+    const user = userEvent.setup()
+    const lootChest = {
+      ...mapLabLayout.props[0],
+      loot: { bundle_id: 12, bundle_name: 'Loose Coin' },
+    }
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({
+      data: { ...mapLabLayout, props: [lootChest] } as unknown as Record<string, unknown>,
+    })
+    vi.spyOn(api, 'getLootBundle').mockResolvedValue({ id: 12, name: 'Loose Coin', gold: 8, contents: [] })
+
+    render(<MapLabPage />)
+    await flush()
+    await user.hover(screen.getByRole('button', { name: /Treasure Chest/i }))
+
+    expect(await screen.findByText('This bundle holds gold only.')).toBeInTheDocument()
+  })
+})
+
 describe('MapLabPage (Stage F4 — loot hook affordance)', () => {
   afterEach(() => {
     vi.restoreAllMocks()
   })
 
-  it('shows a disabled "Contents" placeholder row for a prop, but not for a door', async () => {
+  it('does not show a loot summary for a prop without loot', async () => {
     const user = userEvent.setup()
     render(<MapLabPage />)
     await flush()
 
     const chest = screen.getByRole('button', { name: /Treasure Chest.*Locked/i })
+    expect(chest.querySelector('.maplab-loot-badge')).not.toBeInTheDocument()
     await user.hover(chest)
-    const lootRow = screen.getByText('Contents — added with the loot system')
-    expect(lootRow.closest('[aria-disabled="true"]')).toBeTruthy()
+    expect(screen.queryByLabelText('Loot contents')).not.toBeInTheDocument()
 
     await user.unhover(chest)
     const door = screen.getAllByRole('button', { name: /Door/i })[0]
     await user.hover(door)
-    expect(screen.queryByText('Contents — added with the loot system')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Loot contents')).not.toBeInTheDocument()
   })
 })
 

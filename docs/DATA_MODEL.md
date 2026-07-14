@@ -26,7 +26,7 @@ This ensures schema and data stay synced with the codebase and can be reliably r
 | `seed_monsters.json` | `monsters` | D&D 5e monsters/creatures (AC, HP, abilities, actions, CR) | `/monsters` |
 | `seed_weapons.json` | `weapons` | D&D 5e weapons (name, rarity, base weapon, properties, attack data) | `/weapons`, `/players/{id}/weapons` |
 | `seed_items.json` | `items` | Reusable treasure item catalog (name, gp value, category, description) | `/items` |
-| `seed_loot_bundles.json` | `loot_bundle` | Hand-authored loot bundles (gold and snapshotted contents) | `/loot-bundles` |
+| `seed_loot_bundles.json` | `loot_bundle` | Hand-authored loot bundles (gold and JSON snapshotted item/weapon contents) | `/loot-bundles` |
 | `seed_dungeons.json` | `dungeons` | Dungeon modules (room layout, encounter placement, NPC locations) | `/dungeons`, `/dungeons/{id}/layout` |
 | `seed_encounters.json` | `encounters` | Combat encounters (creature roster, active creature index) | `/encounters` |
 | `seed_npcs.json` | `npcs` | Non-player characters (name, race, stats, appearance, notes) | `/npcs` |

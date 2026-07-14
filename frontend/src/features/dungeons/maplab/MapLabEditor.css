@@ -272,6 +272,28 @@
   cursor: pointer;
 }
 
+/* Loot is a table-facing choice with enough prominence to avoid being mistaken for another
+ * passage flag. Its 48px control meets the Map Lab touch-target floor. */
+.maplab-loot-bundle-picker {
+  flex-wrap: wrap;
+}
+
+.maplab-field-row.maplab-loot-bundle-picker select {
+  min-height: 48px;
+  border-color: var(--md-loot);
+}
+
+.maplab-loot-bundle-picker-label {
+  color: var(--md-on-loot-container);
+  font-weight: var(--type-label-weight);
+}
+
+.maplab-loot-bundle-picker-status {
+  flex: 1 0 100%;
+  color: var(--md-on-surface-variant);
+  font-size: var(--type-caption-size);
+}
+
 .maplab-field-row input:focus-visible,
 .maplab-field-row select:focus-visible {
   outline: 2px solid var(--md-primary);

@@ -22,5 +22,7 @@ describe('ItemBrowserPage', () => {
     vi.spyOn(api, 'listItems').mockResolvedValue([])
     render(<ItemBrowserPage />)
     await waitFor(() => expect(screen.getByText('No items found.')).toBeInTheDocument())
+    expect(screen.getByRole('heading', { name: 'Start your item catalog' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Add your first item' })).toBeInTheDocument()
   })
 })

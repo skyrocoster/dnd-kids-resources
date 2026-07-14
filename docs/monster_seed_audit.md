@@ -1,0 +1,1037 @@
+# Monster Seed Audit — Major Missing Information
+
+**Total monsters in seed:** 2734
+**Monsters with at least one major issue:** 1036
+
+> Ignored legendary actions, reactions, traits, spellcasting, skills, saves, resistances, languages, and senses — only **core combat stats** (size, type, AC, HP, speed, ability scores, CR, actions) are considered.
+
+---
+## Tier 1 — Empty Stubs / Placeholder Templates
+
+**291 monsters** have **no data whatsoever** (completely empty records).
+
+- Aarakocra Spelljammer
+- Aberrant Zealot (Tentacled)
+- Acidic Mist Apparition
+- Adult Red Dracolich
+- Aegisaur
+- Aerosaur (Large)
+- Aerosaur (Small)
+- Air Totem Elemental
+- Altisaur (PSX)
+- Amber Golem
+- Ammit
+- Amonkhet Hydra
+- Amonkhet Mummy
+- Amonkhet Mummy Lord
+- Amonkhet Sphinx
+- Angel (PSK)
+- Angel (PSZ)
+- Angel of Amonkhet
+- Animated Furniture
+- Animated Tile Chimera
+- Animated Tree
+- Animated Wand
+- Anointed
+- Archfiend of Ifnir
+- Armasaur
+- Ash Zombie (PaBTSO)
+- Ashen Heir Anarchist
+- Ashen Heir Assassin
+- Ashen Heir Mage
+- Ashen Heir Veteran
+- Avacyn
+- Awakened Brown Bear
+- Awakened Elk
+- Awakened Giant Wasp
+- Awakened Shrub Totem Elemental
+- Baloth
+- Barovian Scout
+- Battlehammer Dwarf
+- Blacktongue Bullywug
+- Blight Totem Elemental
+- Booyahg Booyahg Booyahg
+- Booyahg Caster
+- Booyahg Slave of the Archfey
+- Booyahg Slave of the Fiend
+- Booyahg Slave of the Great Old One
+- Booyahg Whip
+- Booyahg Wielder
+- Boulderfoot Giant
+- Brontodon
+- Bruna
+- Bugbear Gardener
+- Bugbear Lieutenant
+- Cat Skeleton
+- Caustic Crawler
+- Ceratops (PSX)
+- Cerodon
+- Chimeric Baboon
+- Chimeric Cat
+- Chimeric Fox (IDRotF)
+- Chimeric Rat
+- Chimeric Weasel
+- Chwinga (CM)
+- Chwinga (IDRotF)
+- Coatl
+- Construct (Animated Armor)
+- Construct (Helmed Horror)
+- Construct (Modron)
+- Construct (Shield Guardian)
+- Crimson Helmed Horror
+- Crow
+- Crystal Golem
+- Deadstone Cleft Stone Giant
+- Demon (PSK)
+- Demon (PSX)
+- Demonlord of Ashmouth
+- Dragon
+- Drake (Large) (PSZ)
+- Drake (Small) (PSK)
+- Drake (Small) (PSZ)
+- Drow Acolyte
+- Drow Assassin
+- Drow Bandit
+- Drow Commoner
+- Drow Cultist
+- Drow Guard
+- Drow Noble
+- Drow Scout
+- Drow Spy
+- Dryad (PSX)
+- Dryad Spirit
+- Duergar Alchemist
+- Earth Totem Elemental
+- Elder Dinosaur (Etali, Primal Storm)
+- Elder Dinosaur (Ghalta, Primal Hunger)
+- Elder Dinosaur (Tetzimoc, Primal Death)
+- Elder Dinosaur (Zacama, Primal Calamity)
+- Elder Monastery of the Distressed Body Monk
+- Eldritch Horror Hatchling
+- Emberhorn Minotaur
+- Emrakul
+- Enhanced Medusa
+- Eternal
+- Eyestalk of Gzemnid
+- Falcon
+- Felbarren Dwarf
+- Ferocidon
+- Fire Giant Royal Headsman
+- Fire Giant Servant
+- Fire Guardian
+- Flight Alabaster Angel
+- Flight of Moonsilver Angel
+- Flying Trident
+- Four-Armed Statue
+- Frost Giant Servant
+- Frozen Golem
+- Giant
+- Giant Raven
+- Giant River Serpent
+- Gisela
+- Gnarlid
+- Goblin Boss Archer
+- Golden Stag
+- Great Cat
+- Griffin
+- Griffin (Type 1)
+- Griffin (Type 2)
+- Hadrosaur
+- Hag of the Fetid Gaze
+- Half-Blue Dragon Gladiator
+- Half-Green Dragon Assassin
+- Half-Red Dragon Gladiator
+- Hammerskull
+- Harpy (PSX)
+- Heartstabber Mosquito
+- Hellion
+- Hellion (Huge)
+- Hellion (Large)
+- Hellwasp Grub
+- Hill Giant Servant
+- Hill Giant Subchief
+- Horned Frog
+- Host of Herons Angel
+- Hurda
+- Hydra (PSK)
+- Ice Piercer
+- Ice Spider
+- Ice Troll (RoT)
+- Icy Simulacrum
+- Infected Townsperson
+- Iona
+- Junior Drow Priestess of Lolth
+- Knight of the Black Sword
+- Koi Prawn
+- Kozilek
+- Kuo-toa Heretic
+- Large Drake
+- Linvala
+- Lonelywood Banshee
+- Lycanthropickle
+- Lyra
+- Macaw
+- Medusa (MOT)
+- Meeseeks
+- Mind Flayer Nothic
+- Molten Magma Roper
+- Monastery of the Distressed Body Monk
+- Naiad (CM)
+- Necro-Alchemist
+- Necrotic Centipede
+- Nightsea Chil-liren
+- Ogre Channeler
+- Ogre Goblin Hucker
+- Ogre Skeleton
+- Orc Commoner
+- Oxen
+- Parrot
+- Peacock
+- Pestilence Demon
+- Phantom Warrior (Archer)
+- Piranha
+- Psionic Shambling Mound
+- Red Wizard
+- Reduced-Threat Aboleth
+- Reduced-Threat Basilisk
+- Reduced-Threat Behir
+- Reduced-Threat Beholder
+- Reduced-Threat Black Pudding
+- Reduced-Threat Carrion Crawler
+- Reduced-Threat Clay Golem
+- Reduced-Threat Darkmantle
+- Reduced-Threat Displacer Beast
+- Reduced-Threat Dragon Turtle
+- Reduced-Threat Ettercap
+- Reduced-Threat Flesh Golem
+- Reduced-Threat Glabrezu
+- Reduced-Threat Gray Ooze
+- Reduced-Threat Helmed Horror
+- Reduced-Threat Hezrou
+- Reduced-Threat Hook Horror
+- Reduced-Threat Ochre Jelly
+- Reduced-Threat Otyugh
+- Reduced-Threat Owlbear
+- Reduced-Threat Peryton
+- Reduced-Threat Remorhaz
+- Reduced-Threat Stone Golem
+- Reduced-Threat Vrock
+- Reduced-Threat Wight
+- Reduced-Threat Wyvern
+- Reghed Chieftain
+- Reghed Great Warrior
+- Reghed Shaman
+- Reghed Warrior
+- Reindeer
+- Replica Duodrone
+- Replica Pentadrone
+- Replica Tridrone
+- River Serpent
+- Runed Behir
+- Sailback
+- Sandwurm
+- Sergeant (ERLW)
+- Sergeant (WDH)
+- Serra Angel
+- Shade
+- Shalai
+- Shambling Mound Totem Elemental
+- Shapechanged Roper
+- Shatterskull Giant
+- Shoal Serpent
+- Sigarda
+- Skaab
+- Small Drake
+- Snake Horror
+- Snow Leopard
+- Snow Maiden
+- Sphinx (Type 1)
+- Sphinx (Type 2)
+- Sphinx of Judgment
+- Spirit
+- Statue of Vergadain
+- Stone Guardian (Animated Armor)
+- Stone Guardian (Helmed Horror)
+- Stone Guardian (Shield Guardian)
+- Stone Guardian (Stone Golem)
+- Strefan Maurer
+- Surrakar
+- Svirfneblin Wererat
+- Swarm of Piranhas
+- Terastodon
+- Terra Stomper
+- Terracotta Warrior
+- The Bagman
+- Tiefling Acrobat
+- Tiefling Muralist
+- Timbermaw
+- Treant Totem Elemental
+- Trench Giant
+- Tressym (BGDIA)
+- Trilobite
+- Trilobite (Giant)
+- Turntimber Giant
+- Two-Headed Troll
+- Tyrant
+- Ulamog
+- Vampire Null
+- Vecna Impersonator
+- Violet Fungus (DoSI)
+- Vistana Assassin
+- Vistana Bandit
+- Vistana Bandit Captain
+- Vistana Commoner
+- Vistana Guard
+- Vistana Spy
+- Vistana Thug
+- Water Totem Elemental
+- Whirlwyrm
+- Will-o'-Wells
+- Wine Weird
+- Wood Elf
+- Wood Elf Wizard
+- Wraith (PSZ)
+- Wurm (PSK)
+- Wurm (PSZ)
+- Yak
+- Yeti Leader
+- Young Fire Giant
+- Young Frost Giant
+- Young Winter Wolf
+- Yuan-ti Priest
+- Zebra
+- Zendikar Golem
+
+---
+## Tier 1b — Missing Stats, AC, HP, Speed, CR, AND Actions
+
+**51 monsters** are missing **all core combat statistics** (no stats, AC, HP, speed, CR, or actions). They may have size/type defined but nothing useful for combat.
+
+- Animated Drow Statue
+- Animated Jade Serpent
+- Animatronic Allosaurus
+- Ashen Animated Armor
+- Ashen Flying Sword
+- Ashen Knight
+- Ashen Shambling Mound
+- Ashen Veteran
+- Ashen Warhorse
+- Clockwork Behir
+- Clockwork Mule
+- Dinosaur Skeleton
+- Fiendish Orc
+- Hound of Ill Omen
+- Hulking Shadow
+- Lifecraft Elephant
+- Mechachimera
+- Merfolk Scout
+- Modron Planar Incarnate
+- Mutated Drow
+- Paper Whirlwind
+- Reflection
+- Sea Elf
+- Skeletal Bloodfin
+- Skeletal Giant Owl
+- Skeletal Owlbear
+- Skeletal Polar Bear
+- Skeletal Rats
+- Skeletal Riding Horse
+- Skeletal Two-Headed Owlbear
+- Soulstinger Demon
+- Swarm of Undead Snakes
+- Thopter (Bat)
+- Thopter (Blood Hawk)
+- Thopter (Eagle)
+- Thopter (Hawk)
+- Thopter (Owl)
+- Thopter (Pseudodragon)
+- Thopter (Raven)
+- Thopter (Vulture)
+- Undead Cockatrice
+- Undead Shambling Mound
+- Undead Tree
+- Wooden Donkey
+- Young Hill Giant
+- Young Ogre Servant
+- Young Troglodyte
+- Zombie Cat
+- Zombie Horse
+- Zombie Rat
+- Zombie Snake
+
+---
+## Tier 2 — Missing Stats, AC, CR, AND Actions
+
+**47 monsters** are missing **stats, AC, CR, and actions** — they cannot function in combat at all.
+
+- Advanced Detention Drone
+- Animated Armor Detention Drone
+- Aquatic Ghoul
+- Aquatic Troll
+- Carnivorous Flower
+- Chimeric Hare
+- Demon Ichor
+- Distended Corpse
+- Dragon Tortoise
+- Drow Commander
+- Elder Black Pudding
+- Elder Dinosaur (Nezahal, Primal Tide)
+- Elder Dinosaur (Zetalpa, Primal Dawn)
+- Elder Giant Lizard
+- Engineer
+- Gargantuan Rug of Smothering
+- Giant Flying Spider
+- Giant Rocktopus
+- Giant Whirlwyrm
+- Giant White Moray Eel
+- Gomazoa
+- Helmed Horror Detention Drone
+- Hippopotamus
+- Huge Ochre Jelly
+- Huge Polar Bear
+- Huge Stone Golem
+- Jade Giant Spider
+- Kobold Elite
+- Lacedon
+- Large Mimic (WDMM)
+- Replica Monodrone
+- Replica Quadrone
+- Rooster
+- Rowboat Mimic
+- Scrag
+- Sharkbody Abomination
+- Simic Merfolk
+- Sky Whale
+- Snowy Owlbear
+- Telepathic Pentacle
+- Undead Bulette
+- Walking Corpse
+- Werejaguar
+- Witchlight Hand (Small)
+- Woodcrasher Baloth
+- Young Wereraven
+- Zhent Martial Arts Adept
+
+---
+## Tier 3 — Missing Stats Plus Other Core Fields
+
+**48 monsters** are missing **ability scores** plus at least one of: AC, CR, or actions.
+
+### Missing stats + HP (1)
+- Brain in Iron
+
+### Missing stats + HP, size, speed (1)
+- Detached Shadow
+
+### Missing stats + HP, size, speed, type (27)
+- Amphisbaena (TftYP)
+- Animated Halberd
+- Barovian Commoner
+- Cloud Giant Noble
+- Crystal Battleaxe
+- Diatryma
+- Diva
+- Dracophage Subject
+- Dragon Hunter
+- Dwarven Worker
+- Enormous Tentacle
+- Fiendish Giant Spider
+- Five-Armed Troll
+- Flight Goldnight Angel
+- Flying Wand
+- Four-Armed Troll
+- Gorzil's Gang Troglodyte
+- Halaster Horror
+- Knight of the Mithral Shield
+- Knight of the Order
+- Moonshark
+- Old Troglodyte
+- Poison Weird
+- Shield Dwarf Guard
+- Shield Dwarf Noble
+- Stone Dragon Statue
+- Undead Soldier
+
+### Missing stats + HP, size, type (4)
+- Brain Breaker
+- Cave Badger
+- Skeleton Key
+- Stomping Foot
+
+### Missing stats + size, speed (1)
+- Metal Wasp
+
+### Missing stats + size, speed, type (10)
+- Armored Saber-Toothed Tiger
+- Damaged Flesh Golem
+- Headless Iron Golem
+- Hill Giant Sergeant
+- Ice Spider Queen
+- Kobold Commoner
+- Stone Warrior
+- Two-Headed Plesiosaurus
+- Young Bulette
+- Young Purple Worm
+
+### Missing stats + speed, type (3)
+- Animated Knife
+- Animated Statue of Lolth
+- Flying Dagger
+
+### Missing stats + type (1)
+- Large Mimic (RMBRE)
+
+
+---
+## Tier 4a — AC All-Null (But Has Stats/Other Core Data)
+
+**450 monsters** have **AC all null** but otherwise have stats, HP, speed, size, type, CR, and actions.
+
+- Aarakocra
+- Aarakocra Simulacrum
+- Abyssal Wretch
+- Acolyte
+- Air Elemental
+- Allip (MPMM)
+- Allip (MTF)
+- Amphisbaena (GoS)
+- Animated Ballista
+- Animated Glass Statue
+- Animated Stove
+- Ape
+- Apprentice Wizard (VGM)
+- Arclight Phoenix
+- Art Elemental Mascot
+- Ash Zombie (LMoP)
+- Aspirant of the Comet
+- Atropal
+- Axe Beak
+- Bag Jelly
+- Banshee
+- Barovian Witch
+- Black Pudding
+- Blaze
+- Blink Dog
+- Blistercoil Weird
+- Blood Hawk
+- Blood-Toll Harpy
+- Boggle (MPMM)
+- Boggle (VGM)
+- Bone Roc
+- Boneless
+- Boss Augustus
+- Boss Delour
+- Brigganock
+- Bronze Scout
+- Camel
+- Centaur
+- Clawfoot
+- Clockwork Bronze Scout
+- Clockwork Iron Cobra
+- Cockatrice
+- Constrictor Snake
+- Core Spawn Crawler
+- Corpse Flower (MPMM)
+- Corpse Flower (MTF)
+- Cow
+- Crag Cat
+- Cranium Rat Squeaker Swarm
+- Creepy Doll
+- Dabus
+- Dandylion
+- Dankwood Grung
+- Dark Tide Knight
+- Darkmantle
+- Death Dog
+- Death's Head of Bhaal
+- Deathlock (MPMM)
+- Deathlock Mastermind (MPMM)
+- Deathlock Wight (MPMM)
+- Deep Rothé (MPMM)
+- Deep Rothé (VGM)
+- Deep Scion (MPMM)
+- Deep Scion (VGM)
+- Doppelganger
+- Draft Horse
+- Dread Doppelganger
+- Dream Eater
+- Drow Favored Consort (MPMM)
+- Drowned Ascetic
+- Dust Mephit
+- Dybbuk (MPMM)
+- Dybbuk (MTF)
+- Eblis
+- Eidolon (MPMM)
+- Eidolon (MTF)
+- Elder Brain (MPMM)
+- Elder Brain (VGM)
+- Elder Oblex (MPMM)
+- Elder Oblex (MTF)
+- Elder Tempest (MPMM)
+- Elder Tempest (MTF)
+- Elk
+- Encephalon Gemmule
+- Enderman
+- Evil Mage (HftT)
+- Evil Mage (LMoP)
+- Expeditious Messenger
+- Faerie Borrower
+- Faerie Dragon (Blue)
+- Faerie Dragon (Green)
+- Faerie Dragon (Indigo)
+- Faerie Dragon (Orange)
+- Faerie Dragon (Red)
+- Faerie Dragon (Violet)
+- Faerie Dragon (Yellow)
+- Faerie Pathlighter
+- Fastieth
+- Felidar (PSZ)
+- Fire Elemental
+- Firenewt Warlock of Imix (MPMM)
+- First-Year Student
+- Flameskull
+- Flesh Golem
+- Flesh Meld
+- Flitterstep Eidolon
+- Flumph
+- Flying Snake
+- Fractal Mascot
+- Frog
+- Fume Drake
+- Gallows Speaker
+- Galvan Magen
+- Galvanic Blastseeker
+- Gas Spore
+- Gazer (MPMM)
+- Gazer (VGM)
+- Geist
+- Gelatinous Cube
+- Ghast
+- Ghost
+- Ghost Dragon
+- Ghostblade Eidolon
+- Ghoul
+- Giant Ape
+- Giant Badger
+- Giant Bat
+- Giant Canary
+- Giant Constrictor Snake
+- Giant Coral Snake
+- Giant Eagle
+- Giant Frog
+- Giant Goose
+- Giant Hyena
+- Giant Lightning Eel
+- Giant Lynx
+- Giant Octopus
+- Giant Owl
+- Giant Poisonous Snake
+- Giant Rat
+- Giant Space Hamster
+- Giant Swan
+- Giant Toad
+- Giant Vulture
+- Giant Walrus
+- Giant Wasp
+- Giant Weasel
+- Giant Wolf Spider
+- Gibbering Mouther
+- Gibberling (MaBJoV)
+- Giff Shipmate
+- Gingerbrute
+- Gingwatzim
+- Girallon (MPMM)
+- Girallon (VGM)
+- Githyanki Xenomancer
+- Githzerai Anarch (MTF)
+- Githzerai Enlightened (MTF)
+- Githzerai Monk
+- Githzerai Zerth
+- Gnome Squidling
+- Goon Balloon
+- Goose Mother
+- Gray Ooze
+- Greater Shadow Horror
+- Grell
+- Gremishka
+- Gremlin
+- Gremorly's Ghost
+- Griffon
+- Grimlock
+- Grinning Cat
+- Grippli Warrior
+- Grung (MPMM)
+- Grung (VGM)
+- Grung Elite Warrior (MPMM)
+- Grung Elite Warrior (VGM)
+- Hadozee Shipmate
+- Haint
+- Harpy (MM)
+- Harrow Hawk
+- Hertilod
+- High Fae Impostor
+- High Fae Noble
+- Hippogriff
+- Hobgoblin Iron Shadow (VGM)
+- Horrid Plant
+- Humanoid Mutate
+- Hurricane
+- Husk Zombie
+- Hybrid Flier
+- Hybrid Poisoner
+- Hybrid Shocker
+- Hybrid Spy
+- Hydroloth (MPMM)
+- Hydroloth (MTF)
+- Hypnos Magen
+- Ice Mephit
+- Imp
+- Indentured Spirit
+- Infected Elder Brain
+- Initiate of the Comet
+- Inkling Mascot
+- Inquisitor of the Tome
+- Intellect Devourer
+- Intellect Snare
+- Invisible Stalker
+- Irda Seeker
+- Irda Veil Keeper
+- Iron Cobra
+- Jackalwere
+- Jermlaine
+- Kalashtar
+- Kenku
+- King Robbit the Slimy
+- Kobold
+- Kobold Inventor (MPMM)
+- Kobold Inventor (VGM)
+- Kobold Tinkerer
+- Kobold Underling
+- Kobold Vampire Spawn
+- Kraken Priest (VGM)
+- Lantern Archon
+- Lava Child
+- Leprechaun
+- Leviathan (MPMM)
+- Leviathan (MTF)
+- Light Devourer
+- Lightning Golem
+- Lightning Hulk
+- Lion
+- Lorehold Apprentice
+- Lorehold Pledgemage
+- Lorehold Professor of Chaos
+- Lorehold Professor of Order
+- Lothar
+- Mage of Usamigaras
+- Magma Mephit
+- Mantrap
+- Martial Arts Adept (VGM)
+- Master Sage
+- Master of Souls
+- Mastiff
+- Meazel (MPMM)
+- Meazel (MTF)
+- Memory Web
+- Merfolk
+- Merfolk Salvager
+- Merrenoloth (MPMM)
+- Merrenoloth (MTF)
+- Mind Drinker Vampire
+- Mirror Shade
+- Mist Hulk
+- Mite
+- Mountain Goat
+- Mud Mephit
+- Mule
+- Musteval Guardinal
+- Necrichor
+- Necromite of Myrkul
+- Needle Spawn
+- Neogi Hatchling (MPMM)
+- Neogi Hatchling (VGM)
+- Neogi Hatchling Swarm
+- Nereid
+- Night Blade
+- Nightmare Haunt
+- Nightwalker (MPMM)
+- Nightwalker (MTF)
+- Oblex Spawn (MPMM)
+- Oblex Spawn (MTF)
+- Occult Extollant
+- Occult Initiate
+- Occult Silvertongue
+- Ochre Jelly
+- Ogre Zombie
+- Oracle of Strixhaven
+- Orc Nurtured One of Yurtrus
+- Ox (MPMM)
+- Ox (VGM)
+- Panopticus Wizard
+- Panther
+- Pegasus
+- Phantom Warrior
+- Phoenix (MPMM)
+- Phoenix (MTF)
+- Pixie
+- Plasmoid Boss
+- Plasmoid Explorer
+- Podling
+- Poisonous Snake
+- Poltergeist
+- Pony
+- Prismari Apprentice
+- Prismari Pledgemage
+- Prismari Professor of Expression
+- Prismari Professor of Perfection
+- Pseudodragon
+- Quandrix Apprentice
+- Quandrix Pledgemage
+- Quandrix Professor of Substance
+- Quandrix Professor of Theory
+- Quasit
+- Quickling (MPMM)
+- Quickling (VGM)
+- Rakdos Performer, Blade Juggler
+- Rakdos Performer, Fire Eater
+- Rakdos Performer, High-Wire Acrobat
+- Razorvine Blight
+- Reaper of Bhaal
+- Redtooth Werefox
+- Riding Horse
+- Riverine
+- Rothé (CoA)
+- Rothé (VGM)
+- Rug of Smothering
+- Rutterkin (MPMM)
+- Rutterkin (MTF)
+- Saber-Toothed Tiger
+- Sacred Stone Monk
+- Sage
+- Sahuagin Hatchling Swarm
+- Satyr Reveler
+- Scarecrow
+- Scarlet Sentinel
+- Scholarly Agent
+- Scholarly Mastermind
+- Sea Horse
+- Serpopard
+- Servitor Thrull
+- Seth the Shapeshifting Dragon
+- Shadar-kai Gloom Weaver
+- Shadow
+- Shadow Assassin
+- Shadow Demon
+- Shadow Horror
+- Shadow Mastiff (MPMM)
+- Shadow Mastiff (VGM)
+- Shadow Mastiff Alpha
+- Shadowghast
+- Shard Shunner
+- Silverquill Apprentice
+- Silverquill Pledgemage
+- Silverquill Professor of Radiance
+- Silverquill Professor of Shadow
+- Simon Aumar
+- Sirene
+- Skeletal Alchemist
+- Skeletal Horror
+- Skulk (MPMM)
+- Skulk (MTF)
+- Skull Lasher of Myrkul
+- Slaad Tadpole
+- Slithering Tracker (MPMM)
+- Slithering Tracker (VGM)
+- Smoke Mephit
+- Snow Golem
+- Sofina
+- Space Clown
+- Space Eel
+- Space Hamster (BAM)
+- Space Swine
+- Spawn of Kyuss (MPMM)
+- Spawn of Kyuss (VGM)
+- Specter
+- Spectral Cloud
+- Spiderfrog
+- Spiked Tomb Guardian
+- Spore Servant Octopus
+- Spy
+- Star Spawn Grue (MPMM)
+- Star Spawn Grue (MTF)
+- Star Spawn Mangler (MPMM)
+- Star Spawn Mangler (MTF)
+- Starlight Apparition
+- Steam Mephit
+- Stench Kow (MPMM)
+- Stench Kow (VGM)
+- Storm Giant Quintessent (MPMM)
+- Storm Giant Quintessent (VGM)
+- Strahd Zombie
+- Su-monster
+- Swarm of Bats
+- Swarm of Books
+- Swarm of Cranium Rats (MPMM)
+- Swarm of Cranium Rats (VGM)
+- Swarm of Gibberlings
+- Swarm of Gremishkas
+- Swarm of Maggots
+- Swarm of Poisonous Snakes
+- Swarm of Quippers
+- Swarm of Rats
+- Swarm of Ravens
+- Swarm of Rot Grubs (MPMM)
+- Swarm of Rot Grubs (VGM)
+- Swarm of Sorrowfish
+- Swarm of Sunflies
+- Swarm of Zombie Limbs
+- Sweettooth Horror
+- Tabaxi Minstrel
+- Tasloi
+- Tasloi Sniper
+- Tempest Hart
+- Tempest Spirit
+- Thorn Slinger
+- Tiger
+- Tlacatecolo
+- Tomb Guardian
+- Tri-flower Frond
+- Triton Shorestalker
+- Two-Headed Cerberus
+- Unicorn
+- Usagt
+- Valenar Hawk
+- Valenar Steed
+- Vampiric Mist (MPMM)
+- Vampiric Mist (MTF)
+- Vargouille (MPMM)
+- Vargouille (VGM)
+- Vargouille Reflection
+- Violet Fungus (MM)
+- Walrus
+- Warhorse
+- Wasteland Dragonnel
+- Water Weird
+- Werebat
+- Wererat
+- Wereraven
+- Weretiger
+- Werevulture
+- Will-o'-Wisp
+- Winged Bull
+- Winged Kobold
+- Winged Lion
+- Winged Thrull
+- Witchlight Hand (Medium)
+- Witchstalker
+- Wraith (MM)
+- Wynling
+- Xvart Warlock of Raxivort (MPMM)
+- Yellow Musk Creeper
+- Yellow Musk Zombie
+- Yuan-ti Malison (Type 1)
+- Yuan-ti Malison (Type 2)
+- Yuan-ti Malison (Type 3)
+- Yuan-ti Malison (Type 4)
+- Yuan-ti Malison (Type 5)
+- Yuan-ti Pureblood
+- Zombie
+- Zombie Plague Spreader
+
+---
+## Tier 4b — Only Missing CR
+
+**31 monsters** have everything except a Challenge Rating.
+
+- Campestri
+- Clockwork Observer
+- Constructed Commoner
+- Crab
+- Disciple
+- Expert (DC)
+- Expert (ESK)
+- Expert (SDW)
+- Expert (SLW)
+- Giant Fire Beetle
+- Homunculus
+- Mighty Servant of Leuk-o
+- Sacred Statue (MPMM)
+- Sacred Statue (MTF)
+- Scorpion
+- Servo
+- Sneak
+- Spellcaster
+- Spellcaster (Healer) (DC)
+- Spellcaster (Healer) (SDW)
+- Spellcaster (Healer) (SLW)
+- Spellcaster (Mage) (DC)
+- Spellcaster (Mage) (SDW)
+- Spellcaster (Mage) (SLW)
+- Squire
+- Thessalheart Construct
+- Tiny Servant
+- Warrior (DC)
+- Warrior (ESK)
+- Warrior (SDW)
+- Warrior (SLW)
+
+---
+## Tier 4c — Only Missing Actions (But Has Stats)
+
+**2 monsters** have stats and core combat data but **no action/attack entries**.
+
+- Creeper
+- Guardian Portrait
+
+---
+## Appendix — HP Missing Average/Formula
+
+**33 monsters** have an HP entry but it's missing both `average` and `formula` keys.
+
+- Aberrant Spirit
+- Animated Object (Huge)
+- Animated Object (Large)
+- Animated Object (Medium)
+- Animated Object (Small)
+- Animated Object (Tiny)
+- Animated Staff
+- Avatar of Death
+- Beast of the Land
+- Beast of the Sea
+- Beast of the Sky
+- Bestial Spirit
+- Boontu Monkey
+- Celestial Spirit
+- Construct Spirit
+- Crystal Cave Merfolk
+- Dancing Item
+- Dankwood Hag
+- Deck Defender
+- Draconic Spirit
+- Drake Companion
+- Dum-Dum Goblin
+- Dwarf
+- Elemental Spirit
+- Fey Spirit
+- Fiendish Spirit
+- Hangry Otyugh
+- Mechanical Bird
+- Meeseeks
+- Reaper Spirit
+- Shadow Spirit
+- Undead Spirit
+- Wildfire Spirit
+
+---
+## Summary
+
+| Severity | Count |
+|----------|------:|
+| Tier 1 — Empty stubs | 291 |
+| Tier 1b — Missing everything (stats/AC/HP/speed/CR/actions) | 51 |
+| Tier 2 — Missing stats + AC + CR + actions | 47 |
+| Tier 3 — Missing stats + other core fields | 48 |
+| Tier 4a — Only AC missing | 450 |
+| Tier 4b — Only CR missing | 31 |
+| Tier 4c — Only actions missing | 2 |
+| HP incomplete (avg/formula) | 33 |

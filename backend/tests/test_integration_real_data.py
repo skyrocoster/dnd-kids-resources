@@ -28,6 +28,8 @@ LIST_ENDPOINTS = [
     "/api/spells",
     "/api/monsters",
     "/api/weapons",
+    "/api/items",
+    "/api/loot-bundles",
     "/api/players",
     "/api/npcs",
     "/api/quests",
@@ -36,13 +38,15 @@ LIST_ENDPOINTS = [
 ]
 
 # Collections that support ?limit=&offset= pagination and back a browser page.
-PAGINATED_COLLECTIONS = ["/api/spells", "/api/monsters", "/api/weapons"]
+PAGINATED_COLLECTIONS = ["/api/spells", "/api/monsters", "/api/weapons", "/api/items", "/api/loot-bundles"]
 
 # Collections with GET /{id} detail routes.
 DETAIL_COLLECTIONS = [
     "/api/spells",
     "/api/monsters",
     "/api/weapons",
+    "/api/items",
+    "/api/loot-bundles",
     "/api/players",
     "/api/npcs",
     "/api/quests",

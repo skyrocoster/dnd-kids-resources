@@ -51,10 +51,9 @@
   --md-passage-hidden-container: #464747;
   --md-on-passage-hidden-container: #E3E2E2;
 
-  /* Banked — reserved for future content roles */
   /* loot — generated via material-color-utilities from source #d4a574,
-     Blend.harmonize()'d toward primary seed #d0bcff (hue 51.3, chroma 26.7),
-     tones 80/20/30/90. Reserved for future loot system (see dungeon_plan.md Known debt). */
+      Blend.harmonize()'d toward primary seed #d0bcff (hue 51.3, chroma 26.7),
+      tones 80/20/30/90. Used by items and loot bundles. */
   --md-loot: #F6B994;
   --md-on-loot: #4C270C;
   --md-loot-container: #663C20;
@@ -194,9 +193,7 @@
   --type-caption-tracking: 0.05em;
 }
 
-/* Content-role variants: map spell/monster/weapon/npc/neutral onto the
-   primary/tertiary/secondary/npc/neutral roles above. Consumed via
-   data-variant="spell|monster|weapon|npc|neutral" on Card/SearchList. */
+/* Content-role variants consumed via data-variant on Card/SearchList. */
 [data-variant='spell'] {
   --variant-accent: var(--md-primary);
   --variant-on-accent: var(--md-on-primary);
@@ -216,6 +213,13 @@
   --variant-on-accent: var(--md-on-secondary);
   --variant-container: var(--md-secondary-container);
   --variant-on-container: var(--md-on-secondary-container);
+}
+
+[data-variant='loot'] {
+  --variant-accent: var(--md-loot);
+  --variant-on-accent: var(--md-on-loot);
+  --variant-container: var(--md-loot-container);
+  --variant-on-container: var(--md-on-loot-container);
 }
 
 [data-variant='neutral'] {

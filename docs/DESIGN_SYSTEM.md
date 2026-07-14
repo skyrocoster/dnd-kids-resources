@@ -23,7 +23,7 @@ four tokens: `--md-{role}`, `--md-on-{role}`, `--md-{role}-container`, `--md-on-
 | `--md-npc` | NPCs (rose, hue 340.6/chroma 40) | `#fbafe3` | `#521b46` | `#6c325e` | `#ffd7ef` |
 | `--md-passage-locked` | Map Lab locked passages | `#C5C0FF` | `#2C2767` | `#433F7F` | `#E3DFFF` |
 | `--md-passage-hidden` | Map Lab hidden passages | `#C7C6C6` | `#2F3031` | `#464747` | `#E3E2E2` |
-| `--md-loot` | Future loot system (banked, unused) | `#F6B994` | `#4C270C` | `#663C20` | `#FFDBC7` |
+| `--md-loot` | Items catalog and loot bundles | `#F6B994` | `#4C270C` | `#663C20` | `#FFDBC7` |
 | `--md-divine` | Healing, radiant (banked) | `#FBBA73` | `#492900` | `#683D00` | `#FFDCBC` |
 | `--md-arcane` | Arcane/eldritch magic (banked) | `#90CDFE` | `#00344F` | `#004B71` | `#CBE6FF` |
 | `--md-nature` | Nature, druid, ranger (banked) | `#86D5C1` | `#00382E` | `#005143` | `#A2F2DD` |

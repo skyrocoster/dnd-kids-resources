@@ -1,5 +1,9 @@
-import { Fragment } from 'react'
-import { ItemIcon } from '../../../components/icons'
+import { Fragment, useEffect, useState } from 'react'
+import { CoinsIcon, SwordsIcon } from '../../../components/icons'
+import { ApiError, getLootBundle } from '../../../api/client'
+import type { LootBundle } from '../../../api/types'
+import { categoryIcon } from '../../loot/itemCategories'
+import { computeBundleTotal, formatGp } from '../../loot/lootTotals'
 import {
   inspectableDescriptor,
   PASSAGE_STATE_TOKENS,
@@ -18,8 +22,7 @@ export interface SessionControls {
  * icon+text pills — empty for a room or a fully-unlocked passage. Doors and stairs additionally get
  * live session controls (Stage 4) —
  * rooms and props don't carry that kind of runtime state, so `controls` is only passed for those two
- * kinds. Props instead get a disabled "Contents" row (Phase F4) — the reserved `MapProp.loot` slot
- * is data-only for now; the loot phase wires this row up rather than adding a new one. */
+ * kinds. Props can additionally resolve their soft-referenced loot bundle live. */
 export function InspectorPanel({ target, controls }: { target: Inspectable; controls?: SessionControls }) {
   const descriptor = inspectableDescriptor(target)
   const Icon = descriptor.icon
@@ -67,12 +70,7 @@ export function InspectorPanel({ target, controls }: { target: Inspectable; cont
           ))}
         </dl>
       )}
-      {target.kind === 'prop' && (
-        <div className="maplab-loot-hook-row" aria-disabled="true">
-          <ItemIcon width={16} height={16} aria-hidden="true" />
-          <span>Contents — added with the loot system</span>
-        </div>
-      )}
+      {target.kind === 'prop' && target.prop.loot && <LootSummaryShell loot={target.prop.loot} />}
       {controls && (
         <div className="maplab-inspector-controls">
           {target.kind === 'door' && controls.onToggleOpen && (
@@ -100,5 +98,86 @@ export function InspectorPanel({ target, controls }: { target: Inspectable; cont
         </div>
       )}
     </div>
+  )
+}
+
+function LootSummaryShell({ loot }: { loot: { bundle_id: number; bundle_name?: string } }) {
+  const [bundle, setBundle] = useState<LootBundle | null>(null)
+  const [status, setStatus] = useState<'loading' | 'ready' | 'missing' | 'error'>('loading')
+
+  useEffect(() => {
+    let active = true
+    setBundle(null)
+    setStatus('loading')
+
+    getLootBundle(loot.bundle_id)
+      .then((result) => {
+        if (!active) return
+        setBundle(result)
+        setStatus('ready')
+      })
+      .catch((error: unknown) => {
+        if (!active) return
+        setStatus(error instanceof ApiError && error.status === 404 ? 'missing' : 'error')
+      })
+
+    return () => {
+      active = false
+    }
+  }, [loot.bundle_id])
+
+  if (status === 'loading') {
+    return (
+      <div className="maplab-loot-summary maplab-loot-summary-status" role="status">
+        <CoinsIcon width={16} height={16} aria-hidden="true" />
+        <span>Opening the treasure cache...</span>
+      </div>
+    )
+  }
+
+  if (status === 'error') {
+    return (
+      <div className="maplab-loot-summary maplab-loot-summary-missing" role="status">
+        <CoinsIcon width={16} height={16} aria-hidden="true" />
+        <span>Could not open {loot.bundle_name ?? 'this loot bundle'}.</span>
+      </div>
+    )
+  }
+
+  if (status === 'missing' || !bundle) {
+    return (
+      <div className="maplab-loot-summary maplab-loot-summary-missing" role="status">
+        <CoinsIcon width={16} height={16} aria-hidden="true" />
+        <span>{loot.bundle_name ? `${loot.bundle_name} was removed` : 'This loot bundle was removed'}</span>
+      </div>
+    )
+  }
+
+  const contents = bundle.contents ?? []
+  return (
+    <section className="maplab-loot-summary" aria-label="Loot contents">
+      <div className="maplab-loot-summary-header">
+        <CoinsIcon width={16} height={16} aria-hidden="true" />
+        <span>{bundle.name}</span>
+        <strong>{formatGp(computeBundleTotal(bundle.gold, contents))}</strong>
+      </div>
+      <div className="maplab-loot-gold">Gold: {formatGp(bundle.gold)}</div>
+      {contents.length > 0 ? (
+        <ul className="maplab-loot-entries">
+          {contents.map((entry, index) => {
+            const EntryIcon = entry.kind === 'weapon' ? SwordsIcon : categoryIcon(entry.category)
+            const value = entry.value_gp === null ? null : formatGp(entry.value_gp)
+            return (
+              <li key={`${entry.kind}-${entry.ref_id ?? entry.name}-${index}`}>
+                <EntryIcon width={14} height={14} aria-hidden="true" />
+                <span>{entry.quantity} x {entry.name}{value ? ` (${value})` : ''}</span>
+              </li>
+            )
+          })}
+        </ul>
+      ) : (
+        <p className="maplab-loot-empty">This bundle holds gold only.</p>
+      )}
+    </section>
   )
 }
