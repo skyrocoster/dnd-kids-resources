@@ -21,7 +21,8 @@ M2 will migrate all 2,276 monsters to a typed, authorable model with these rules
   fails on unknown or residual tags. Raw and derived prose will not coexist as competing sources of truth.
 - Keep CR as its familiar string, add nullable numeric `cr_sort`, preserve lair/coven context in `cr_note`, and
   fold explicit XP overrides into `experience_points`.
-- Drop `soundClip`: its 963 populated rows point at repository-relative MP3 files that are not present.
+- Reshape `soundClip` to a safe relative `audio_path`. The local, gitignored bestiary collection resolves 961
+  of the 963 row references; playback remains deferred.
 
 This contract deliberately preserves exceptional source data instead of deriving over it. In particular,
 explicit HP averages and passive Perception values remain authoritative even when they disagree with standard
@@ -80,7 +81,7 @@ being non-empty does not imply that they contain data.
 | `mythic` | object array | 17 | 35 mythic actions. |
 | `mythicHeader` | null | 0 | Null on every row. |
 | `reactionRules` | string array | 15 | Section-level rules for monsters with multiple reactions. |
-| `soundClip` | `{path}` or `{}` | 963 | 672 distinct paths; no MP3 files exist in the repository. |
+| `soundClip` | `{path}` or `{}` | 963 | 672 distinct paths; 961 row references resolve to the local bestiary audio collection. |
 | `cr` | number/string/object | 2,276 | 1,790 numbers, 440 strings, 46 context/XP objects; one `Unknown`. |
 | `cr_details` | object | 2 | Contains only explicit XP overrides for Sled Dog and Wild Dog. |
 
@@ -130,7 +131,7 @@ frontend types.
 | 25 | `mythic` | **Reshape** | Move entries to `features.mythic_actions`. |
 | 26 | `mythicHeader` | **Drop** | Null on all 2,276 rows; it carries no data to preserve. |
 | 27 | `reactionRules` | **Reshape** | Join paragraphs into `features.reaction_intro`. |
-| 28 | `soundClip` | **Drop** | Paths are unresolved and no corresponding audio assets ship with the repository. |
+| 28 | `soundClip` | **Reshape** | Store the filename as `audio_path: str | None`; local media remains gitignored and playback is deferred. |
 | 29 | `cr` | **Reshape** | Normalize to `cr`, computed `cr_sort`, optional `cr_note`, and explicit XP where present. |
 | 30 | `cr_details` | **Reshape** | Fold its two `xp` values into `experience_points`, then remove the wrapper. |
 
@@ -472,18 +473,39 @@ There is no stored kid-facing label. The UI can deterministically render `CR 1/4
 
 M2 ships all rows. The seed has unique names but substantial source/version duplication: 576 names end in a
 parenthetical qualifier, including pairs such as `Alhoon (MPMM)` / `Alhoon (VGM)`. The data has no dedicated
-source-book, license, age-rating, or review-status field, so no automatic subset criterion would be reliable or
-defensible.
+source-book, age-rating, or review-status field, so no automatic kid-appropriate subset criterion would be
+reliable.
 
 Kid-appropriate curation remains a separate product task requiring a reviewed allowlist and provenance metadata.
 It must not be inferred from CR, creature type, name keywords, or prose during M2.
 
-### Drop `soundClip`
+### Keep Audio Metadata
 
-The 963 populated objects contain repository-relative paths under `bestiary/audio/`, but no MP3 assets exist in
-the repository. Keeping unresolved paths would create an API promise the application cannot fulfill. A future
-audio feature should define asset ownership/licensing, stable URLs, missing-file behavior, preload policy, and an
-accessible player as a new contract rather than carrying these dead paths forward.
+The MP3 collection is available locally at the gitignored path
+`data/5eTools/full_extract/audio/bestiary/`. It contains 673 uniquely named files. The seed has 963 populated
+`soundClip` objects using 672 distinct paths; filename matching resolves 961 row references across 670 distinct
+files with no ambiguous matches. `sled-dog.mp3` and `wild-dog.mp3` are the only referenced files not present.
+The collection also has three currently unreferenced files: `oblex-adult.mp3`, `psychic-gray-ooze.mp3`, and
+`shrieker.mp3`.
+
+M2 converts each source path from `bestiary/audio/<filename>.mp3` to the safe relative identifier
+`audio_path: "<filename>.mp3"`. It preserves the two known missing filenames rather than silently dropping source
+metadata. Source paths must match `^bestiary/audio/([a-z0-9][a-z0-9_-]*\.mp3)$`; the captured target filename
+must match `^[a-z0-9][a-z0-9_-]*\.mp3$`. Every current reference and local file satisfies that allowlist. Any
+absolute/drive-qualified path, backslash, traversal segment, nested directory, uppercase character, or non-MP3
+value fails migration. The case-insensitive Windows device stems `con`, `prn`, `aux`, `nul`, `com1`-`com9`, and
+`lpt1`-`lpt9` are also rejected.
+
+Physical-file validation is optional because the media root is intentionally gitignored. If
+`data/5eTools/full_extract/audio/bestiary` exists, M2 checks every reference and warns for the two known missing
+filenames. If the root is absent, M2 emits one `audio validation skipped` warning and continues; syntax validation
+and target transformation still run in all environments.
+
+`audio_path` is metadata, not a public file-system path. A future playback stage must serve it through a bounded
+backend media endpoint or configured static mount rooted at `data/5eTools/full_extract/audio/bestiary`, reject
+path traversal, show a non-disruptive unavailable state for missing files, and provide accessible player controls.
+The media endpoint and playback UI are explicitly deferred; M2 only preserves the identifier in seed, DB, API,
+and frontend types.
 
 ## Final Pydantic Contract
 
@@ -496,7 +518,7 @@ rejected rather than ignored.
 ```python
 from typing import Annotated, Literal, TypeAlias
 
-from pydantic import BaseModel, ConfigDict, Field, StringConstraints
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator
 
 
 AbilityName: TypeAlias = Literal["str", "dex", "con", "int", "wis", "cha"]
@@ -514,6 +536,17 @@ AttackKind: TypeAlias = Literal[
 NonEmptyString: TypeAlias = Annotated[
     str, StringConstraints(strip_whitespace=True, min_length=1)
 ]
+AudioFileName: TypeAlias = Annotated[
+    str, StringConstraints(
+        strip_whitespace=True,
+        pattern=r"^[a-z0-9][a-z0-9_-]*\.mp3$",
+    )
+]
+WINDOWS_RESERVED_AUDIO_STEMS = {
+    "con", "prn", "aux", "nul",
+    *(f"com{number}" for number in range(1, 10)),
+    *(f"lpt{number}" for number in range(1, 10)),
+}
 
 
 class StrictModel(BaseModel):
@@ -643,10 +676,18 @@ class MonsterFields(StrictModel):
     condition_immunities: list[str] = Field(default_factory=list)
     senses: list[Sense] = Field(default_factory=list)
     languages: list[str] = Field(default_factory=list)
+    audio_path: AudioFileName | None = None
     features: MonsterFeatures = Field(default_factory=MonsterFeatures)
     cr: str | None = None
     cr_note: str | None = None
     experience_points: int | None = None
+
+    @field_validator("audio_path")
+    @classmethod
+    def reject_windows_device_name(cls, value: str | None) -> str | None:
+        if value is not None and value.removesuffix(".mp3") in WINDOWS_RESERVED_AUDIO_STEMS:
+            raise ValueError("audio_path uses a reserved Windows device name")
+        return value
 
 
 class MonsterCreate(MonsterFields):
@@ -808,6 +849,7 @@ export interface Monster {
   condition_immunities: string[]
   senses: Sense[]
   languages: string[]
+  audio_path: string | null
   features: MonsterFeatures
   cr: string | null
   cr_sort: number | null
@@ -931,6 +973,7 @@ export interface MonsterInput {
   condition_immunities?: string[]
   senses?: SenseInput[]
   languages?: string[]
+  audio_path?: string | null
   features?: MonsterFeaturesInput
   cr?: string | null
   cr_note?: string | null
@@ -965,6 +1008,7 @@ router; nullable scalars stay native SQLite values.
 | `condition_immunities` | `TEXT NOT NULL DEFAULT '[]'` | Yes |
 | `senses` | `TEXT NOT NULL DEFAULT '[]'` | Yes |
 | `languages` | `TEXT NOT NULL DEFAULT '[]'` | Yes |
+| `audio_path` | `TEXT` | No |
 | `features` | `TEXT NOT NULL DEFAULT '{}'` | Yes |
 | `cr` | `TEXT` | No |
 | `cr_sort` | `REAL` | No |
@@ -1005,6 +1049,7 @@ Source excerpt:
     "notes": ["If the target is a creature, it must succeed on a DC11 Strength saving throw or be knocked prone."],
     "attack": {"type": "melee", "mod": 4, "range": 5, "targets": 1, "damage": "2d4", "damage_mod": 2, "damage_type": "piercing"}
   }],
+  "soundClip": {"path": "bestiary/audio/wolf.mp3"},
   "cr": "1/4"
 }
 ```
@@ -1026,6 +1071,7 @@ Target excerpt:
   "saving_throws": {},
   "skills": {"perception": 3, "stealth": 4},
   "passive_perception": 13,
+  "audio_path": "wolf.mp3",
   "features": {
     "traits": [
       {"name": "Keen Senses", "description": null, "attack": null},
@@ -1060,8 +1106,8 @@ Target excerpt:
 }
 ```
 
-Wolf demonstrates sparse skill maps, explicit passive Perception, a name-only trait, tag cleanup, and fractional
-CR sorting.
+Wolf demonstrates sparse skill maps, explicit passive Perception, a name-only trait, tag cleanup, audio-path
+normalization, and fractional CR sorting.
 
 ### Mage - Spellcaster and Alternate AC
 
@@ -1228,6 +1274,9 @@ M2 is conformant only if all of the following hold:
 - Structured attacks retain 3,586 attack objects and produce exactly 4,362 ordered damage entries.
 - All feature categories, 712 spellcasting blocks, 19 hidden schedule declarations, nine hidden spell entries,
   and custom section intros retain their source content.
+- All 963 populated audio references become allowlisted relative filenames. When the local bestiary audio root is
+  present, 961 resolve and the two known missing files produce warnings without losing their identifiers; when it
+  is absent, physical validation is skipped with one warning.
 - CR values, context notes, all five explicit XP values (including zero), and numeric sorting match this contract;
   later CRUD recomputes `cr_sort` through the same parser.
 - The database inserts source IDs, exposes the exact Pydantic/TypeScript fields, and indexes `cr_sort`.
