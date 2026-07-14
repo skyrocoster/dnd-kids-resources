@@ -1,0 +1,8 @@
+.monster-editor {
+  padding: 1.5rem;
+}
+
+.monster-editor-placeholder {
+  color: var(--md-on-surface-variant);
+  font-style: italic;
+}

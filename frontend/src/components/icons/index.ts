@@ -299,6 +299,7 @@ export { Dice4 as Dice4Icon } from 'lucide-react'
 export { Dice5 as Dice5Icon } from 'lucide-react'
 export { Dice6 as Dice6Icon } from 'lucide-react'
 export { Dices as DicesIcon } from 'lucide-react'                   // Multiple dice
+export { Dices as DiceIcon } from 'lucide-react'                    // X2: rollable-die chip glyph
 export { Dices as RollDiceIcon } from 'lucide-react'                // Rolling action
 
 // ─── Chess (tactical board) ─────────────────────────────────────────────
