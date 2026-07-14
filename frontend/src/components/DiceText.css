@@ -1,11 +1,24 @@
+.dice-text {
+  --variant-container: var(--md-surface-3);
+  --variant-on-container: var(--md-on-surface);
+}
+
 .dice-pill {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
   font-family: var(--type-face-mono);
   font-size: var(--type-body-sm-size);
   line-height: 1;
   padding: 0.125rem 0.4rem;
   border-radius: 999px;
-  background: var(--md-secondary-container);
-  color: var(--md-on-secondary-container);
+  background: var(--variant-container);
+  color: var(--variant-on-container);
   white-space: nowrap;
+}
+
+.dice-pill svg {
+  width: 0.8em;
+  height: 0.8em;
+  flex-shrink: 0;
 }

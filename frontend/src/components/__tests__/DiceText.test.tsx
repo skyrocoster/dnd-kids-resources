@@ -2,8 +2,6 @@ import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { DiceText } from '../DiceText'
 
-// TODO(X2): add role-prop variant tests and snapshots
-
 describe('DiceText', () => {
   it('renders plain text with no dice notation unchanged', () => {
     render(<DiceText text="A bolt of fire streaks toward a target." />)
@@ -33,5 +31,37 @@ describe('DiceText', () => {
   it('normalizes whitespace inside a modifier', () => {
     const { container } = render(<DiceText text="Deals 1d8 + 2 slashing damage." />)
     expect(container.querySelector('.dice-pill')).toHaveTextContent('1d8+2')
+  })
+
+  it('prepends DiceIcon glyph to each pill', () => {
+    const { container } = render(<DiceText text="Deals 8d6 fire damage." />)
+    const pill = container.querySelector('.dice-pill')
+    expect(pill?.querySelector('svg')).not.toBeNull()
+  })
+
+  it('applies data-variant from role prop', () => {
+    const { container } = render(<DiceText text="4d10" role="spell" />)
+    const wrapper = container.querySelector('.dice-text')
+    expect(wrapper).toHaveAttribute('data-variant', 'spell')
+  })
+
+  it('omits data-variant when no role prop', () => {
+    const { container } = render(<DiceText text="2d6" />)
+    const wrapper = container.querySelector('.dice-text')
+    expect(wrapper).not.toHaveAttribute('data-variant')
+  })
+
+  it('renders glyph for monster variant', () => {
+    const { container } = render(<DiceText text="3d8+2" role="monster" />)
+    const pill = container.querySelector('.dice-pill')
+    expect(pill?.querySelector('svg')).not.toBeNull()
+    expect(pill).toHaveTextContent('3d8+2')
+  })
+
+  it('renders glyph for weapon variant', () => {
+    const { container } = render(<DiceText text="1d12" role="weapon" />)
+    const pill = container.querySelector('.dice-pill')
+    expect(pill?.querySelector('svg')).not.toBeNull()
+    expect(pill).toHaveTextContent('1d12')
   })
 })
