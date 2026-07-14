@@ -1,9 +1,18 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { MemoryRouter } from 'react-router-dom'
 import * as api from '../../../api/client'
 import type { Monster } from '../../../api/types'
 import { MonsterBrowserPage } from '../MonsterBrowserPage'
+
+function renderPage() {
+  return render(
+    <MemoryRouter>
+      <MonsterBrowserPage />
+    </MemoryRouter>,
+  )
+}
 
 function monster(overrides: Partial<Monster>): Monster {
   return {
@@ -125,7 +134,7 @@ describe('MonsterBrowserPage', () => {
   it('lists monsters sorted by name and shows the first one selected', async () => {
     vi.spyOn(api, 'listMonsters').mockResolvedValue(monsters)
 
-    render(<MonsterBrowserPage />)
+    renderPage()
 
     await waitFor(() => expect(screen.getByText('Owlbear')).toBeInTheDocument())
     expect(screen.getByRole('heading', { name: 'Aarakocra' })).toBeInTheDocument()
@@ -135,7 +144,7 @@ describe('MonsterBrowserPage', () => {
     vi.spyOn(api, 'listMonsters').mockResolvedValue(monsters)
     const user = userEvent.setup()
 
-    render(<MonsterBrowserPage />)
+    renderPage()
     await waitFor(() => expect(screen.getByText('Owlbear')).toBeInTheDocument())
 
     await user.click(screen.getByText('Owlbear'))
@@ -146,7 +155,7 @@ describe('MonsterBrowserPage', () => {
   it('shows an error message when loading fails', async () => {
     vi.spyOn(api, 'listMonsters').mockRejectedValue(new Error('server error'))
 
-    render(<MonsterBrowserPage />)
+    renderPage()
     await waitFor(() => expect(screen.getByText(/server error/)).toBeInTheDocument())
   })
 })
@@ -155,7 +164,7 @@ describe('Monster data (M2 shape)', () => {
   it('renders AC as {value, note} from the migrated shape', async () => {
     vi.spyOn(api, 'listMonsters').mockResolvedValue(monsters)
 
-    render(<MonsterBrowserPage />)
+    renderPage()
 
     await screen.findByRole('heading', { name: 'Aarakocra' })
     const acLabel = screen.getByText('AC')

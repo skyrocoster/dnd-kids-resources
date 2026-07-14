@@ -1,6 +1,6 @@
 # Monsters — Data Restructure & Stat-Block Redesign
 
-> **Status:** M3, X0, X1 shipped. X2 is next: dice motif redesign.
+> **Status:** M3, X0, X1, X2 shipped. X3 is next: create/edit form.
 
 ## What this feature is
 
@@ -127,20 +127,6 @@ merges before X4.
 
 <!-- ===== VERBOSE BLOCKS — one per un-shipped stage ===== -->
 
-#### X2 — Dice motif redesign (planned)
-
-- **Build:** Redesign `DiceText`/`.dice-pill` into the **role-aware rollable-die chip** (see *Visual direction*):
-  chip inherits the surrounding content role's container color via a CSS custom property set by the nearest
-  `data-variant` (default neutral), and prepends the `DiceIcon` glyph. Keep the existing regex and every call
-  site. Add an optional `role` prop for call sites without an ambient variant. **This is site-wide** — verify
-  spells, weapons, and monsters all still read well; the chip must never reduce contrast below the a11y floor.
-- **Inherits:** X0 icon alias + `role` prop stub; the existing `DiceText` regex/call-site surface.
-- **Tests:** `DiceText` unit tests — notation still matched and wrapped; glyph present; role prop / ambient
-  variant drives the container color class; non-dice text passes through untouched. Snapshot the three variants.
-- **🚦 Gate:** suites green; contrast check on teal/purple/gold chip backgrounds. Manual: glance at a spell, a
-  weapon, and a monster and confirm the motif reads as one coherent, rollable chip. Suite-sufficient unless the
-  user requests a visual pass.
-
 #### X3 — Create / edit form (planned)
 
 - **Build:** `MonsterEditor.tsx` + `monsterModel.ts` — an authoring form grouped into fieldsets that mirror the
@@ -185,6 +171,7 @@ merges before X4.
 | **M3** | Monster CRUD endpoints: backend POST/PUT/DELETE now serialize the M2 JSON columns, compute `cr_sort`, enforce unique names with 409 conflicts, and return parsed `Monster` responses. Frontend client CRUD functions were wired and backend/frontend tests cover create/fetch/update/delete and conflict behavior. |
 | **X0** | Scaffolding: MonsterStatBlock/MonsterEditor/monsterModel stubs, DiceText role prop stub + TODO(X2), DiceIcon alias, route stubs for /monsters/new and /monsters/:id/edit, it.skip test stubs. Gate ✅ suite-sufficient. |
 | **X1** | Stat-block redesign: MonsterStatBlock renders five region-ordered sections (Identity→Defenses→Abilities→Actions→Lore) with tapered teal rules, hidden-when-absent sections, DiceText-wired prose, and six-ability block. MonsterBrowserPage rewired from old dl/grid to MonsterStatBlock. 8 render tests pass. Gate ✅ suite-sufficient. |
+| **X2** | Dice motif redesign: flat gold `.dice-pill` replaced with role-aware rollable-die chip inheriting `--variant-container`/`--variant-on-container` from ambient `data-variant` (default neutral), prepending DiceIcon glyph. Added optional `role` prop. 10 unit tests, full suite green. Gate ✅ suite-sufficient. |
 
 ---
 
@@ -199,5 +186,4 @@ merges before X4.
 
 ## Next:
 
-**X2 — Dice motif redesign**. Replace the flat gold dice-pill with a role-aware rollable-die chip that
-inherits the content role's container color and carries a die glyph.
+**X3 — Create / edit form**. Grouped authoring form mirroring the stat-block regions, wired to M3 CRUD.
