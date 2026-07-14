@@ -16,27 +16,24 @@ type BadgeSource = MapDoor | MapStair | MapPortal | MapProp
 
 // ─── M0 / M1: Collapsed status descriptor ───────────────────────────────────
 
-/** A collapsed on-canvas status descriptor that distinguishes three cases:
- * `none` (no status display), `single` (one active badge), and `multiple`
- * (two or more, rendered with `MultipleStatusesIcon`). Consumers that need
- * full detail (inspector labels, accessible descriptions) should still use the
- * `MarkerBadge[]` from `markerBadges()` — this is for on-canvas display only. */
-export type CollapsedStatusDescriptor =
-  | { kind: 'none' }
-  | { kind: 'single'; badge: MarkerBadge }
-  | { kind: 'multiple'; icon: LucideIcon; token: string; onToken: string; label: string }
+/** A collapsed on-canvas status descriptor. Consumers that need full detail
+ * (inspector labels, accessible descriptions) should still use the complete
+ * `MarkerBadge[]` from `markerBadges()`. */
+export type CollapsedStatusDescriptor = MarkerBadge | null
 
-/** M1 stub — collapses an ordered badge list to one on-canvas disc descriptor. */
+export const MULTIPLE_STATUSES_BADGE: MarkerBadge = {
+  key: 'multiple-statuses',
+  icon: MultipleStatusesIcon,
+  token: '--md-surface',
+  onToken: '--md-on-surface',
+  label: 'Multiple statuses',
+}
+
+/** Collapse an ordered badge list to the single on-canvas disc M1 displays. */
 export function collapsedStatusDescriptor(badges: MarkerBadge[]): CollapsedStatusDescriptor {
-  if (badges.length === 0) return { kind: 'none' }
-  if (badges.length === 1) return { kind: 'single', badge: badges[0] }
-  return {
-    kind: 'multiple',
-    icon: MultipleStatusesIcon,
-    token: '--md-on-surface-variant',
-    onToken: '--md-on-surface',
-    label: 'Multiple statuses',
-  }
+  if (badges.length === 0) return null
+  if (badges.length === 1) return badges[0]
+  return MULTIPLE_STATUSES_BADGE
 }
 
 // ─── M2: Bounded on-square placement ────────────────────────────────────────

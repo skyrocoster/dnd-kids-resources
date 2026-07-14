@@ -1,8 +1,15 @@
+/// <reference types="node" />
+
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
+import { Layers } from 'lucide-react'
 import { describe, expect, it } from 'vitest'
+import { MultipleStatusesIcon } from '../../../../components/icons'
 import {
   collapsedStatusDescriptor,
   linearBadgeLayout,
   markerBadges,
+  MULTIPLE_STATUSES_BADGE,
   radialBadgeLayout,
 } from '../markerBadges'
 import type { MapProp } from '../maplabModel'
@@ -40,40 +47,84 @@ describe('markerBadges', () => {
   })
 })
 
+const themeCss = readFileSync(resolve(process.cwd(), 'src/theme.css'), 'utf8')
+
+const expectThemeToken = (token: string): void => {
+  expect(themeCss).toContain(`${token}:`)
+}
+
 // ─── M1 — Collapsed Status Model ────────────────────────────────────────────
-describe.skip('collapsedStatusDescriptor (M1)', () => {
-  it('returns none for an empty badge list', () => {
-    expect(collapsedStatusDescriptor([])).toEqual({ kind: 'none' })
+describe('collapsedStatusDescriptor (M1)', () => {
+  it('returns null for an empty badge list', () => {
+    expect(collapsedStatusDescriptor([])).toBeNull()
   })
 
-  it('returns single with the sole badge for a one-element list', () => {
-    const [badge] = markerBadges(prop({ locked: true }))
-    const result = collapsedStatusDescriptor([badge])
-    expect(result).toHaveProperty('kind', 'single')
-    if (result.kind === 'single') {
-      expect(result.badge.key).toBe('locked')
-    }
-  })
-
-  it('returns multiple with Layers icon for two or more badges', () => {
-    const badges = markerBadges(prop({ locked: true, trapped: true }))
+  it.each([
+    ['trapped', prop({ trapped: true })],
+    ['locked', prop({ locked: true })],
+    ['hidden', prop({ hidden: true })],
+    ['loot', prop({ loot: { bundle_id: 1 } })],
+    ['trap-disarmed', prop()],
+  ] as const)('returns the sole existing badge for %s', (key, source) => {
+    const badges = markerBadges(source, key === 'trap-disarmed')
     const result = collapsedStatusDescriptor(badges)
-    expect(result).toHaveProperty('kind', 'multiple')
-    if (result.kind === 'multiple') {
-      expect(result.label).toBe('Multiple statuses')
-    }
+
+    expect(badges).toHaveLength(1)
+    expect(result).toBe(badges[0])
+    expect(result?.key).toBe(key)
   })
 
-  it('returns multiple for loot + trap-disarmed without passage flags', () => {
-    const badges = markerBadges(prop({ loot: { bundle_id: 1 } }), true)
+  it.each([
+    ['trapped + locked', prop({ locked: true, trapped: true }), false, ['trapped', 'locked']],
+    ['locked + hidden + loot', prop({ hidden: true, locked: true, loot: { bundle_id: 1 } }), false, ['locked', 'hidden', 'loot']],
+    ['loot + trap-disarmed', prop({ loot: { bundle_id: 1 } }), true, ['loot', 'trap-disarmed']],
+    ['all states', prop({ hidden: true, locked: true, trapped: true, loot: { bundle_id: 1 } }), true, [
+      'trapped',
+      'locked',
+      'hidden',
+      'loot',
+      'trap-disarmed',
+    ]],
+  ] as const)('returns one synthetic descriptor for %s', (_name, source, trapDisarmed, expectedKeys) => {
+    const badges = markerBadges(source, trapDisarmed)
     const result = collapsedStatusDescriptor(badges)
-    expect(result).toHaveProperty('kind', 'multiple')
+
+    expect(badges.map((badge) => badge.key)).toEqual(expectedKeys)
+    expect(result).toBe(MULTIPLE_STATUSES_BADGE)
+    expect(result).toMatchObject({
+      key: 'multiple-statuses',
+      icon: MultipleStatusesIcon,
+      token: '--md-surface',
+      onToken: '--md-on-surface',
+      label: 'Multiple statuses',
+    })
   })
 
-  it('preserves full MarkerBadge list for inspector label consumers', () => {
-    const badges = markerBadges(prop({ locked: true, trapped: true, loot: { bundle_id: 1 } }))
-    expect(badges.map((b) => b.key)).toEqual(['trapped', 'locked', 'loot'])
-    expect(badges).toHaveLength(3)
+  it('uses the semantically named Layers alias for multiple statuses', () => {
+    expect(MultipleStatusesIcon).toBe(Layers)
+    expect(MULTIPLE_STATUSES_BADGE.icon).toBe(Layers)
+  })
+
+  it('preserves the full MarkerBadge list for inspector and accessible-label consumers', () => {
+    const badges = markerBadges(prop({ hidden: true, locked: true, trapped: true, loot: { bundle_id: 1 } }), true)
+    const result = collapsedStatusDescriptor(badges)
+
+    expect(result?.key).toBe('multiple-statuses')
+    expect(badges).toHaveLength(5)
+    expect(badges.map((badge) => badge.label)).toEqual(['Trapped', 'Locked', 'Hidden', 'Loot assigned', 'Trap disarmed'])
+    expect(badges.map((badge) => badge.key)).toEqual(['trapped', 'locked', 'hidden', 'loot', 'trap-disarmed'])
+  })
+
+  it('uses token and foreground pairs that exist in the theme', () => {
+    const badges = [
+      ...markerBadges(prop({ hidden: true, locked: true, trapped: true, loot: { bundle_id: 1 } }), true),
+      MULTIPLE_STATUSES_BADGE,
+    ]
+
+    for (const badge of badges) {
+      expectThemeToken(badge.token)
+      expectThemeToken(badge.onToken)
+    }
   })
 })
 

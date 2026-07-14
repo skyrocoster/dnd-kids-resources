@@ -5,7 +5,7 @@ Single reference for the dungeon room-navigation feature and its follow-on desig
 **Shipped stages** table for history, verbose spec only for the *active/next* stage. Detail on *how* a
 shipped stage was built lives in its git commit, not here.
 
-> **Status:** Original build (Stages 1–11) + Design Phases A–L shipped. **M0 — Bounded Marker Status scaffolding** is next.
+> **Status:** Original build (Stages 1–11) + Design Phases A–L + **M0–M1** shipped. **M2 — Bounded On-Square Markers** is next.
 
 ---
 
@@ -142,28 +142,28 @@ the exit-choice-card color. Canvas SVG glyphs are the documented exception to th
 
 ---
 
-## Shipped stages (collapsed history)
+### Shipped stages table (the collapsed record)
 
-Each phase's per-stage authoring detail is in its git commits. This table is the durable summary.
-
-| Phase | What shipped |
-|-------|--------------|
-| **1–11 — Original build** | Read-model + selectors (`dungeonModel.ts`), room-per-page routes/shell, rich room detail (entries/treasure/cross-refs/hidden DC), exit choice-cards, breadcrumbs + floor-grouped rail with `sessionStorage` trail. Migrated onto real theme tokens (root cause of "flat text on nothing"), local Lucide icons replacing emoji, FeatureTile + door/stair choice-card grid. |
-| **A — Encounter Runner (E1–E6)** | Headless `encounterRunner` reducer (HP clamp, duplicate, add-from-monster, reorder, `nextTurn` with round-wrap) + `useEncounterRunner` (optimistic, ~600ms debounced autosave); `CombatantCard`/`AddMonsterPanel`/`EncounterRunnerBoard`, standalone `/encounters/:id/run`, and a `FloatingWindow` dock from the room's encounter tile. Added nullable `active_index` to the `encounter` table to persist the turn pointer; fixed `parseDungeonData` dropping numeric-string ids. |
-| **B — NPC Dossier (N1–N6)** | Fifth MD3 content role `--md-npc` (rose, harmonized toward primary); `npcModel.ts` ability-key-tolerant helpers; `NPCStatCard` + rebuilt NPC browser detail; `useNpc(id)` hook + `NpcChip` (roster-backed name resolution) + an NPC `FloatingWindow` dock coexisting with the encounter dock. |
-| **C — Map Lab Foundation (M0–M4)** | Isolated Map Lab sandbox proving a programmatic coordinate model on real Isly Castle ids (full schema + selectors in the reference section below): geometry core, polyomino L/T rooms, single-floor SVG render + z-axis floors/stairs, perimeter walls, architectural door leaf+swing glyphs, generic `Inspectable`/`inspectableDescriptor` inspector, and a live session-state layer (`effectivePassageState`). |
-| **D — Authoring Tools (0–3)** | Turned Map Lab into an editor at `/dungeons/map-lab/edit`: paint-to-create rooms (walls auto-derive, never stored), place doors on wall segments, edit any fixture via a schema-driven `FixturePropertiesForm` (`FieldSpec`/`FIXTURE_TYPES`). Mutable state = pure `mapLabEditorReducer` + `useMapLabEditor` (404→fixture fallback, debounced autosave); persists to the additive **`map_layout` table** via `GET`/`PUT /dungeons/{id}/layout`. |
-| **E — Unified data + zoom (0–3)** | Viewer reads the same persisted `map_layout` as the editor (`useMapLabLayout`); real canvas zoom/pan (`useMapCanvasZoom` + `MapCanvas`, map *grows* on zoom inside an `overflow:auto` viewport, Ctrl/⌘-wheel + drag-pan); toolbar/inspector design pass (`.maplab-pill-button`, grouped toolbar, unified nav rail, always-mounted inspector rail). Exposed + fixed the false-green typecheck (`tsc -b`, not `--noEmit`). |
-| **F — Room Props (F0–F4)** | Generic on-square/on-wall `MapProp` system reusing `PassageFlags` wholesale: shared `PropMarker` (kind icon + state token + hidden-dashed outline + badge), editor placement mode, generic properties form, reserved-but-inert **loot hook** row. Frontend-only; round-trips in the `map_layout` blob. Renamed the reserved `MapItem` slot to `MapProp` to avoid colliding with the coming loot **items** system. |
-| **G — Ghost Objects (G-fix + G0–G2)** | Editor "Ghost lower floor" toggle overlaying the nearest lower floor as dimmed, read-only, `aria-hidden` ghosts for cross-floor alignment. G1 found and fixed a real floor-attribution bug — doors/props leaked across floors sharing `[x,y]`; fixed by stamping an authored `z` on `addDoor`/`addProp` and filtering by it (`normalizeLayout` backfills legacy data). |
-| **H — Stair/Portal Authoring (H0–H4)** | Editor stair authoring (on-canvas placement/selection with `DestinationPickerField` and co-located up/down landings) + two-way **portal doors** (`MapPortal`, paired auto-create/re-link, `PortalMarker`); viewer renders/navigates both stairs and portals (hover/focus inspector, click jumps `activeZ`), with a same-stage destination-picker rework (floor + room select, replacing an unusably-small click-a-cell mini floor-plan) and an orphan-pairing fix. **H4 design pass:** extracted a shared `StairMarker` (matching `PortalMarker`/`PropMarker`) to fix a real inconsistency — inline stair markers were missing the state badge and dashed-hidden outline the other two markers had — and consolidated the marker-radius magic numbers into named `maplabModel.ts` constants (`MARKER_RADIUS_FRACTION`, `WALL_PROP_RADIUS_FRACTION`/`WALL_PROP_ICON_SCALE`). Portal/stair/prop confirmed visually distinct via icon glyph alone (no new hue/shape needed); 5-way placement-mode toolbar exclusion and canvas-glyph touch targets confirmed with no edge cases. |
-| **I — Stair/Portal Fixes (I0–I3)** | Fixed the live destination-picker (a missing `flex-direction:column` collapsed its SVG to 2×2px); **redesigned stair destinations as up/down checkboxes** (`setStairDirection`; one record renders on both floors, so no reciprocal object — I2 multi-destination folded in); replaced `stairMarkerOffset` with a shared `gridMarkerOffset`/`markersAtCell` 2-column grid for any co-located marker type, with a 4-per-cell cap. All live-verified 2026-07-13. |
-| **J — Map Lab Decluttering (J0–J3)** | Independently collapsible toolbar trays (`ToolbarTray` + `useToolbarTrayCollapse`, per-group `localStorage`); passage-state **icon+text chips** (`passageStateChips`) replacing the "State"/"Also" text rows in the inspector; passage colors repointed onto banked `--md-passage-locked`/`--md-passage-hidden` tokens, decollided from exit-card gold and from each other. |
-| **K0 — Map Lab Editor QOL scaffolding** | Added compile-only shells for editor fullscreen/wheel-zoom and rectangular room-footprint work: `useMapCanvasZoom({ wheelZoomMode })`, `MapCanvas` fullscreen/pan-hint props, inert editor fullscreen/footprint state, `setRoomFootprint` reducer/hook plumbing, placeholder CSS selectors, and skipped K1/K2 tests. |
-| **K1 — Fullscreen canvas + wheel zoom default** | Editor now uses in-app fullscreen canvas mode (`data-fullscreen` overlay, Escape exit, helper copy) and plain-wheel cursor-centered zoom by default while retaining drag-pan/scrollbar pan. `useMapCanvasZoom` keeps modifier-only behavior for viewer consumers, extends non-pan hit targets to current markers/placement overlays, and K1 tests cover wheel semantics, fullscreen toggle/Escape, and preserved pan behavior. |
-| **K2 — Multi-cell room footprint selection** | Editor room painting now supports atomic rectangular footprints via drag or two-click corner selection, with local preview/cancel state, blocked overlap errors, commit-only autosave, and retained owned-cell single-cell cleanup. `setRoomFootprint` is the reducer validation seam for same-floor overlap/connectivity, and K2 tests cover reducer geometry plus page commit/cancel/no-save/error paths. |
-| **K3 — Design pass** | Refined the combined QOL workflow with persistent footprint guidance, keyboard-operable paint cells, modal fullscreen semantics/focus, non-hue-only footprint/error states, and narrow-layout rails/controls. Full frontend test, typecheck, and production build gates pass; live verification remains a manual gate. |
-| **L — Marker Badge System (L0–L4)** | Added a programmatic `markerBadges` model with radial rings for props, stairs, and portals, plus a fixed `--md-door` leaf with status badges that follow its current segment in a trailing overlay. The final design pass corrected status-disc icon contrast and door-glyph clearance; neutral state-colored marker rings remain intentional, distinct from the fixed architectural door treatment. |
+| Stage | What shipped (≤2 sentences) |
+|-------|-----------------------------|
+| **1–11 — Original build** | Read-model + selectors, room-per-page shell, exit choice-cards, breadcrumbs + floor-grouped rail, theme token migration, FeatureTile + door/stair grid. |
+| **A — Encounter Runner (E1–E6)** | Headless `encounterRunner` reducer + `useEncounterRunner` (debounced autosave); `CombatantCard`/`AddMonsterPanel`/`EncounterRunnerBoard`; `FloatingWindow` dock from encounter tile. Added `active_index` to encounter table; fixed `parseDungeonData` numeric-string ids. |
+| **B — NPC Dossier (N1–N6)** | `--md-npc` role; `npcModel.ts` ability-key-tolerant helpers; `NPCStatCard` + `NpcChip`; NPC `FloatingWindow` dock coexisting with encounter dock. |
+| **C — Map Lab Foundation (M0–M4)** | Isolated Map Lab sandbox: coordinate model, polyomino rooms, SVG render + z-axis, perimeter walls, door leaf+swing glyphs, `Inspectable`/`inspectableDescriptor` inspector, session-state layer. |
+| **D — Authoring Tools (0–3)** | Editor at `/dungeons/map-lab/edit`: paint-to-create rooms, place/edit doors, `FixturePropertiesForm`; `mapLabEditorReducer` + `useMapLabEditor`; `map_layout` table GET/PUT. |
+| **E — Unified data + zoom (0–3)** | Viewer reads `map_layout`; `useMapCanvasZoom` + `MapCanvas` zoom/pan; toolbar/inspector design pass; fixed `tsc -b` typecheck. |
+| **F — Room Props (F0–F4)** | `MapProp` system reusing `PassageFlags`: `PropMarker` (kind icon + state token + hidden dash + badge), editor placement mode, `FixturePropertiesForm`. Reserved `MapProp.loot` hook. |
+| **G — Ghost Objects (G-fix + G0–G2)** | Editor "Ghost lower floor" toggle — dimmed, `aria-hidden` ghosts for cross-floor alignment. G1 fixed floor-attribution bug via authored `z` on doors/props. |
+| **H — Stair/Portal Authoring (H0–H4)** | Editor stair authoring with `DestinationPickerField`; two-way portal doors (`MapPortal`, paired auto-create, `PortalMarker`); viewer render/navigation. H4: shared `StairMarker`, extracted marker-radius constants. |
+| **I — Stair/Portal Fixes (I0–I3)** | Fixed `flex-direction:column` collapsing SVG picker; stair directions as up/down checkboxes; `gridMarkerOffset`/`markersAtCell` 2-column grid with 4-per-cell cap. Live-verified 2026-07-13. |
+| **J — Map Lab Decluttering (J0–J3)** | `ToolbarTray` + `useToolbarTrayCollapse` (per-group localStorage); `passageStateChips` replacing inspector text rows; `--md-passage-locked`/`--md-passage-hidden` tokens. |
+| **K0** | Compile-only shells for editor fullscreen, wheel-zoom, and rectangular room-footprint. |
+| **K1** | In-app fullscreen canvas + plain-wheel cursor-centered zoom; `useMapCanvasZoom` modifier-only viewer behavior. |
+| **K2** | Multi-cell room footprint via drag or two-click corner; overlap errors; commit-only autosave. |
+| **K3 — Design pass** | Refined QOL workflow: footprint guidance, keyboard-operable cells, modal fullscreen semantics, non-hue-only states. |
+| **L — Marker Badge System (L0–L4)** | `markerBadges` model with radial badge rings; `--md-door` leaf with trailing badge overlay. Design pass corrected icon contrast and door-glyph clearance. |
+| **M0 — Scaffolding** | Compile-only `CollapsedStatusDescriptor`/`BoundedBadgePlacement` types and stubs in `markerBadges.ts`; `MultipleStatusesIcon` alias; 30 `it.skip` contract tests. 623 pass, typecheck/build clean. Gate ✅. |
+| **M1 — Collapsed Status Model** | `collapsedStatusDescriptor()` now returns `null`, the sole existing `MarkerBadge`, or one synthetic `multiple-statuses` badge using `MultipleStatusesIcon`/Lucide `Layers`. `markerBadges()` remains the full-detail source for inspector and accessible labels; 636 frontend tests, typecheck, and build clean. |
 
 ---
 
@@ -251,50 +251,11 @@ modify `map_layout` data, seed data, backend code, or live dungeon pages.
 | **M3 — Door Status Collapse** | Sonnet | Apply the same collapsed-status rule to the distinct architectural door overlay. | `DoorBadgeLayer`, door tests, viewer/editor integration. |
 | **M4 — Design Pass** | Sonnet | Validate visual hierarchy, collision safety, keyboard/a11y behavior, and responsive zoom states. | Focused corrections and regression coverage. |
 
-**Sequencing:** M0 (Haiku, first) → M1 → M2 → M3 → M4. M2 and M3 both consume M1 but must land in this
+**Sequencing:** M2 → M3 → M4. M2 and M3 both consume M1 but must land in this
 order so the design pass can verify on-square and door behavior together. Do not merge stages, and do not
 replace the existing `markersAtCell` 2x2 placement model or its four-marker cap.
 
-#### M0 — Scaffolding (next up)
-
-- **Build:** In `frontend/src/features/dungeons/maplab/markerBadges.ts`, introduce compile-only exports for
-  the new collapsed on-canvas status descriptor and cell-bounded on-square placement contract. The descriptor
-  must distinguish no active display, one active badge, and the `multiple-statuses` badge; it must preserve
-  the full `MarkerBadge[]` list for labels/inspector consumers rather than changing `passageStateChips` or
-  passage data. Add a non-rendering stub/prop seam in `BadgeRing.tsx` only if needed by M2, without changing
-  current radial output. Add skipped, named tests beside `markerBadges.test.ts`, `PropMarker.test.tsx`,
-  `StairPortalMarker.test.tsx`, and `DoorMarker.test.tsx` for M1–M3 expectations. No CSS or visible marker
-  changes; do not delete `radialBadgeLayout` yet.
-- **Inherits:** Phase L's `MarkerBadge`, `markerBadges`, `BadgeRing`, `linearBadgeLayout`, and test fixtures.
-  `markersAtCell` and `gridMarkerOffset` remain the only co-location geometry source.
-- **Tests:** New tests are explicitly `it.skip` and state the intended contracts: multiple flags collapse to
-  `multiple-statuses`; one flag keeps its own icon; a bounded badge stays inside its cell; grouped fixtures'
-  discs do not intersect; doors still use segment-relative placement. Existing frontend tests remain green.
-- **🚦 Gate:** Run `npm run test`, `npm run typecheck`, and `npm run build`. Start the app only to confirm
-  `/dungeons/map-lab` and `/dungeons/map-lab/edit` render unchanged with no console errors; per repository
-  policy, the user performs the manual browser confirmation and no browser automation is used.
-
-#### M1 — Collapsed Status Model (planned)
-
-- **Build:** Implement the pure display selector in `markerBadges.ts`. It consumes the existing ordered badge
-  list (trapped, locked, hidden, then loot/trap-disarmed where applicable) and returns: `null` for no badges;
-  the sole existing badge for one; or one synthetic `multiple-statuses` descriptor for two or more. The
-  synthetic descriptor uses a new `MultipleStatusesIcon` export from
-  `frontend/src/components/icons/index.ts` that aliases Lucide `Layers` (do not reuse the semantically
-  unrelated `PropWindowIcon` alias), an existing neutral semantic token with a valid `--md-on-*` foreground,
-  and label `Multiple statuses`. Keep `markerBadges()` as the complete-detail source until all callers
-  migrate. Do not assign priority to one status when several exist, and do not change inspector chips,
-  session-state semantics, or persistence.
-- **Inherits:** M0's types and test names; `passageStateChips` supplies stable full-state ordering and
-  `effectivePassageState` resolves live lock/disarm state before badge derivation.
-- **Tests:** Unskip/add unit tests for zero, each single status, loot-only, trap-disarmed-only, and every
-  representative multi-state combination. Assert the display selector emits exactly one disc descriptor for
-  two-or-more flags, uses Layers for that descriptor, while `markerBadges()` and accessible-label inputs still
-  retain all individual labels in stable order. Assert token/foreground pairs resolve to real theme tokens.
-- **🚦 Gate:** `npm run test`, `npm run typecheck`, and `npm run build` pass. Manual verification requested
-  from the user: the current maps still render unchanged because M1 is model-only.
-
-#### M2 — Bounded On-Square Markers (planned)
+#### M2 — Bounded On-Square Markers (next up)
 
 - **Build:** Replace radial rendering in `BadgeRing.tsx` with one shared status-disc renderer consuming M1's
   collapsed descriptor. Replace `radialBadgeLayout` with a pure bounded placement helper that receives the
@@ -414,7 +375,7 @@ table + layout router), or the live dungeon model/pages.
 
 ## Next
 
-**Active:** Design Phase M — Bounded Marker Status. **Next:** M0 scaffolding (Haiku); it is unblocked.
+**Active:** Design Phase M — Bounded Marker Status. **Next:** M2 — Bounded On-Square Markers; it is unblocked.
 
 Also queued (not blocking M): the Map Lab production-home recommendation before any production fold-in;
 and the loot-on-the-map wiring that fills the reserved `MapProp.loot` slot, staged in `docs/loot_plan.md`
