@@ -156,7 +156,6 @@ export const updateDungeon = (id: number, dungeon: DungeonInput) => put<Dungeon>
 export const deleteDungeon = (id: number) => del(`/dungeons/${id}`)
 
 // Map Lab layout
-export const MAP_LAB_DUNGEON_ID = 4
 export const getDungeonLayout = (dungeonId: number) => get<MapLayoutBlob>(`/dungeons/${dungeonId}/layout`)
 export const saveDungeonLayout = (dungeonId: number, blob: MapLayoutBlob) =>
   put<MapLayoutBlob>(`/dungeons/${dungeonId}/layout`, blob)

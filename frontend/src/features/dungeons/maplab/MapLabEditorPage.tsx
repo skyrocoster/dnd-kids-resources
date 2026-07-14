@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useParams } from 'react-router-dom'
 import './MapLabPage.css'
 import './MapLabEditor.css'
-import { MAP_LAB_DUNGEON_ID } from '../../../api/client'
 import { useMapLabEditor } from './useMapLabEditor'
 import { useMapCanvasZoom, type ViewportSize } from './useMapCanvasZoom'
 import { MapCanvas } from './MapCanvas'
@@ -217,6 +217,8 @@ function footprintCellsForSelection(
 type RoomFootprintSelection = { anchor: MapCell; current: MapCell; mode: 'click' | 'drag' } | null
 
 export function MapLabEditorPage() {
+  const { dungeonId: dungeonIdStr } = useParams()
+  const dungeonId = Number(dungeonIdStr!)
   const {
     state,
     loading,
@@ -242,7 +244,7 @@ export function MapLabEditorPage() {
     addPortal,
     selectPortal,
     deletePortal,
-  } = useMapLabEditor(MAP_LAB_DUNGEON_ID)
+  } = useMapLabEditor(dungeonId)
   const [hoveredCell, setHoveredCell] = useState<MapCell | null>(null)
   const [isCanvasFullscreen, setIsCanvasFullscreen] = useState(false)
   const [roomFootprintSelection, setRoomFootprintSelection] = useState<RoomFootprintSelection>(null)

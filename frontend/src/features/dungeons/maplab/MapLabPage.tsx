@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState, type ReactNode } from 'react'
+import { useParams } from 'react-router-dom'
 import './MapLabPage.css'
-import { MAP_LAB_DUNGEON_ID } from '../../../api/client'
 import { useMapLabLayout } from './useMapLabLayout'
 import { useMapCanvasZoom, type ViewportSize } from './useMapCanvasZoom'
 import { MapCanvas } from './MapCanvas'
@@ -144,7 +144,9 @@ export function ToolbarTray({
 
 /** Map Lab prototype page — Stage M2.3: walls, and door/stair affordances with state + details. */
 export function MapLabPage() {
-  const { layout } = useMapLabLayout(MAP_LAB_DUNGEON_ID)
+  const { dungeonId: dungeonIdStr } = useParams()
+  const dungeonId = Number(dungeonIdStr!)
+  const { layout } = useMapLabLayout(dungeonId)
   const floors = useMemo(() => floorsInLayout(layout), [layout])
   const [activeZ, setActiveZ] = useState<number>(floors[0]?.z ?? 0)
   const [selectedRoomId, setSelectedRoomId] = useState<number | null>(null)

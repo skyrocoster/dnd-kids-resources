@@ -1,8 +1,19 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import * as api from '../../../../api/client'
 import { MapLabEditorPage } from '../MapLabEditorPage'
 import { mapLabLayout } from '../maplabData'
+
+function renderMapLabEditorPage() {
+  return render(
+    <MemoryRouter initialEntries={['/dungeons/4/edit']}>
+      <Routes>
+        <Route path="/dungeons/:dungeonId/edit" element={<MapLabEditorPage />} />
+      </Routes>
+    </MemoryRouter>,
+  )
+}
 
 async function flush() {
   await act(async () => {
@@ -25,7 +36,7 @@ describe('MapLabEditorPage', () => {
     vi.spyOn(api, 'getDungeonLayout').mockRejectedValue(new api.ApiError(404, 'not found'))
     vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: {} })
 
-    render(<MapLabEditorPage />)
+    renderMapLabEditorPage()
     await flush()
 
     expect(screen.getAllByText('Combat Training Hall').length).toBeGreaterThan(0)
@@ -35,7 +46,7 @@ describe('MapLabEditorPage', () => {
     vi.spyOn(api, 'getDungeonLayout').mockRejectedValue(new api.ApiError(404, 'not found'))
     vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: {} })
 
-    const { container } = render(<MapLabEditorPage />)
+    const { container } = renderMapLabEditorPage()
     await flush()
 
     const door = container.querySelector('.maplab-door') as Element
@@ -55,7 +66,7 @@ describe('MapLabEditorPage', () => {
     vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: layout })
     vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: layout })
 
-    render(<MapLabEditorPage />)
+    renderMapLabEditorPage()
     await flush()
 
     expect(screen.getAllByText('Saved Room').length).toBeGreaterThan(0)
@@ -73,7 +84,7 @@ describe('MapLabEditorPage', () => {
     vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: layout })
     const saveSpy = vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: layout })
 
-    render(<MapLabEditorPage />)
+    renderMapLabEditorPage()
     await flush()
 
     expect(screen.getByText('No rooms on this floor yet.')).toBeInTheDocument()
@@ -105,7 +116,7 @@ describe('MapLabEditorPage', () => {
     vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: layout })
     vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: layout })
 
-    const { container } = render(<MapLabEditorPage />)
+    const { container } = renderMapLabEditorPage()
     await flush()
 
     expect(container.querySelectorAll('.maplab-paint-cell')).toHaveLength(0)
@@ -130,7 +141,7 @@ describe('MapLabEditorPage', () => {
     vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: layout })
     const saveSpy = vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: layout })
 
-    const { container } = render(<MapLabEditorPage />)
+    const { container } = renderMapLabEditorPage()
     await flush()
 
     fireEvent.click(container.querySelector('.maplab-editor-room-item-select') as Element)
@@ -160,7 +171,7 @@ describe('MapLabEditorPage', () => {
     vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: layout })
     const saveSpy = vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: layout })
 
-    const { container } = render(<MapLabEditorPage />)
+    const { container } = renderMapLabEditorPage()
     await flush()
 
     fireEvent.click(screen.getByRole('button', { name: /place door/i }))
@@ -190,7 +201,7 @@ describe('MapLabEditorPage', () => {
     vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: layout })
     const saveSpy = vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: layout })
 
-    const { container } = render(<MapLabEditorPage />)
+    const { container } = renderMapLabEditorPage()
     await flush()
 
     fireEvent.click(container.querySelector('.maplab-door') as Element)
@@ -257,7 +268,7 @@ describe('MapLabEditorPage (Stage E2 — Canvas zoom & pan)', () => {
   async function renderEditor() {
     vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: singleRoomLayout })
     vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: singleRoomLayout })
-    const utils = render(<MapLabEditorPage />)
+    const utils = renderMapLabEditorPage()
     await flush()
     return utils
   }
@@ -370,7 +381,7 @@ describe('MapLabEditorPage (Phase K scaffolding)', () => {
   })
 
   it('K1: fullscreen toggle and Escape exit the fullscreen workspace', async () => {
-    const { container } = render(<MapLabEditorPage />)
+    const { container } = renderMapLabEditorPage()
     await flush()
 
     const wrapper = container.querySelector('.maplab-canvas-wrapper')
@@ -387,7 +398,7 @@ describe('MapLabEditorPage (Phase K scaffolding)', () => {
   })
 
   it('K3: selected-room footprint controls expose keyboard focus and visible instructions', async () => {
-    const { container } = render(<MapLabEditorPage />)
+    const { container } = renderMapLabEditorPage()
     await flush()
 
     fireEvent.click(container.querySelector('.maplab-editor-room-item-select') as Element)
@@ -400,7 +411,7 @@ describe('MapLabEditorPage (Phase K scaffolding)', () => {
   })
 
   it('K1: fullscreen workspace keeps scrollbars available and drag-pan working on empty canvas but not on marker targets', async () => {
-    const { container } = render(<MapLabEditorPage />)
+    const { container } = renderMapLabEditorPage()
     await flush()
 
     fireEvent.click(screen.getByRole('button', { name: 'Enter fullscreen map editor' }))
@@ -427,7 +438,7 @@ describe('MapLabEditorPage (Phase K scaffolding)', () => {
 
   it('K2: drag rectangle commit updates the selected room footprint and autosaves once', async () => {
     const saveSpy = vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: singleRoomLayout })
-    const { container } = render(<MapLabEditorPage />)
+    const { container } = renderMapLabEditorPage()
     await flush()
 
     fireEvent.click(container.querySelector('.maplab-editor-room-item-select') as Element)
@@ -450,7 +461,7 @@ describe('MapLabEditorPage (Phase K scaffolding)', () => {
 
   it('K2: dragging from an owned cell extends the selected room without removing its existing cells', async () => {
     const saveSpy = vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: singleRoomLayout })
-    const { container } = render(<MapLabEditorPage />)
+    const { container } = renderMapLabEditorPage()
     await flush()
 
     fireEvent.click(container.querySelector('.maplab-editor-room-item-select') as Element)
@@ -471,7 +482,7 @@ describe('MapLabEditorPage (Phase K scaffolding)', () => {
 
   it('K2: two-click rectangle commit updates the selected room footprint', async () => {
     const saveSpy = vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: singleRoomLayout })
-    const { container } = render(<MapLabEditorPage />)
+    const { container } = renderMapLabEditorPage()
     await flush()
 
     fireEvent.click(container.querySelector('.maplab-editor-room-item-select') as Element)
@@ -491,7 +502,7 @@ describe('MapLabEditorPage (Phase K scaffolding)', () => {
 
   it('K2: preview-only footprint state does not autosave', async () => {
     const saveSpy = vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: singleRoomLayout })
-    const { container } = render(<MapLabEditorPage />)
+    const { container } = renderMapLabEditorPage()
     await flush()
 
     fireEvent.click(container.querySelector('.maplab-editor-room-item-select') as Element)
@@ -506,7 +517,7 @@ describe('MapLabEditorPage (Phase K scaffolding)', () => {
   })
 
   it('K2: Escape and placement mode changes cancel a pending room footprint preview', async () => {
-    const { container } = render(<MapLabEditorPage />)
+    const { container } = renderMapLabEditorPage()
     await flush()
 
     fireEvent.click(container.querySelector('.maplab-editor-room-item-select') as Element)
@@ -532,7 +543,7 @@ describe('MapLabEditorPage (Phase K scaffolding)', () => {
     }
     vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: blockedLayout })
     const saveSpy = vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: blockedLayout })
-    const { container } = render(<MapLabEditorPage />)
+    const { container } = renderMapLabEditorPage()
     await flush()
 
     fireEvent.click(container.querySelector('.maplab-editor-room-item-select') as Element)
@@ -565,7 +576,7 @@ describe('MapLabEditorPage (Stage E3 — Toolbar reorganization & persistent ins
   })
 
   it('toolbar groups buttons into Create / Session / Status clusters', async () => {
-    const { container } = render(<MapLabEditorPage />)
+    const { container } = renderMapLabEditorPage()
     await flush()
 
     const groups = container.querySelectorAll('.maplab-toolbar-group')
@@ -593,7 +604,7 @@ describe('MapLabEditorPage (Stage E3 — Toolbar reorganization & persistent ins
     })
 
     it('each toolbar group collapses independently, without affecting siblings', async () => {
-      render(<MapLabEditorPage />)
+      renderMapLabEditorPage()
       await flush()
 
       fireEvent.click(screen.getByRole('button', { name: 'Collapse Create tools' }))
@@ -607,7 +618,7 @@ describe('MapLabEditorPage (Stage E3 — Toolbar reorganization & persistent ins
     it('toolbar tray collapse state persists across remount via localStorage', async () => {
       window.localStorage.setItem('dnd-kids-maplab-tray-collapsed:editor-create', 'true')
 
-      render(<MapLabEditorPage />)
+      renderMapLabEditorPage()
       await flush()
 
       expect(screen.getByRole('button', { name: 'Expand Create tools' })).toBeInTheDocument()
@@ -615,7 +626,7 @@ describe('MapLabEditorPage (Stage E3 — Toolbar reorganization & persistent ins
   })
 
   it('left navigation rail (nav-rail) holds floor tabs and room list vertically', async () => {
-    const { container } = render(<MapLabEditorPage />)
+    const { container } = renderMapLabEditorPage()
     await flush()
 
     const navRail = container.querySelector('.maplab-editor-nav-rail')
@@ -631,7 +642,7 @@ describe('MapLabEditorPage (Stage E3 — Toolbar reorganization & persistent ins
   })
 
   it('right inspector rail is persistent, showing placeholder when no fixture selected', async () => {
-    const { container } = render(<MapLabEditorPage />)
+    const { container } = renderMapLabEditorPage()
     await flush()
 
     const rail = container.querySelector('.maplab-inspector-rail')
@@ -641,7 +652,7 @@ describe('MapLabEditorPage (Stage E3 — Toolbar reorganization & persistent ins
   })
 
   it('selecting a room (not just door) populates the inspector rail', async () => {
-    const { container } = render(<MapLabEditorPage />)
+    const { container } = renderMapLabEditorPage()
     await flush()
 
     fireEvent.click(container.querySelector('.maplab-editor-room-item-select') as Element)
@@ -653,7 +664,7 @@ describe('MapLabEditorPage (Stage E3 — Toolbar reorganization & persistent ins
   })
 
   it('inspector rail does not collapse entirely when a room is selected', async () => {
-    const { container } = render(<MapLabEditorPage />)
+    const { container } = renderMapLabEditorPage()
     await flush()
 
     expect(container.querySelector('.maplab-inspector-rail')).toBeInTheDocument()
@@ -678,7 +689,7 @@ describe('MapLabEditorPage (Stage F2 — prop rendering)', () => {
   it('renders the seeded Treasure Chest prop with its kind icon and locked state, selectable in F3', async () => {
     vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: { ...mapLabLayout } })
 
-    const { container } = render(<MapLabEditorPage />)
+    const { container } = renderMapLabEditorPage()
     await flush()
 
     const propMarkers = Array.from(container.querySelectorAll('.maplab-prop'))
@@ -715,7 +726,7 @@ describe('MapLabEditorPage (Stage F3 — prop authoring)', () => {
     vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: oneRoomLayout })
     const saveSpy = vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: oneRoomLayout })
 
-    const { container } = render(<MapLabEditorPage />)
+    const { container } = renderMapLabEditorPage()
     await flush()
 
     fireEvent.click(screen.getByRole('button', { name: /place prop/i }))
@@ -737,7 +748,7 @@ describe('MapLabEditorPage (Stage F3 — prop authoring)', () => {
     vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: oneRoomLayout })
     vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: oneRoomLayout })
 
-    const { container } = render(<MapLabEditorPage />)
+    const { container } = renderMapLabEditorPage()
     await flush()
 
     fireEvent.click(screen.getByRole('button', { name: /place door/i }))
@@ -756,7 +767,7 @@ describe('MapLabEditorPage (Stage F3 — prop authoring)', () => {
     vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: layoutWithProp })
     const saveSpy = vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: layoutWithProp })
 
-    const { container } = render(<MapLabEditorPage />)
+    const { container } = renderMapLabEditorPage()
     await flush()
 
     fireEvent.click(container.querySelector('.maplab-prop') as Element)
@@ -810,7 +821,7 @@ describe('MapLabEditorPage (Stage D3 — encounter marker authoring)', () => {
       { id: 9, title: 'Dragon Lair' },
     ])
 
-    const { container } = render(<MapLabEditorPage />)
+    const { container } = renderMapLabEditorPage()
     await flush()
 
     fireEvent.click(container.querySelector('.maplab-prop') as Element)
@@ -844,7 +855,7 @@ describe('MapLabEditorPage (Stage D3 — encounter marker authoring)', () => {
     vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: chestLayout })
     vi.spyOn(api, 'listEncounters').mockResolvedValue([])
 
-    const { container } = render(<MapLabEditorPage />)
+    const { container } = renderMapLabEditorPage()
     await flush()
 
     fireEvent.click(container.querySelector('.maplab-prop') as Element)
@@ -875,7 +886,7 @@ describe('MapLabEditorPage (Stage F4 — prop stays clickable under the paint ov
     vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: layoutWithProp })
     vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: layoutWithProp })
 
-    const { container } = render(<MapLabEditorPage />)
+    const { container } = renderMapLabEditorPage()
     await flush()
 
     // Select the room — this mounts the paint overlay over every cell the room owns, including
@@ -896,7 +907,7 @@ describe('MapLabEditorPage (floor-stacking regression — doors/props confined t
     vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: { ...mapLabLayout } })
     vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: { ...mapLabLayout } })
 
-    const { container } = render(<MapLabEditorPage />)
+    const { container } = renderMapLabEditorPage()
     await flush()
 
     fireEvent.click(screen.getByRole('tab', { name: 'Floor 1' }))
@@ -919,7 +930,7 @@ describe('MapLabEditorPage (Stage G-fix — black-fill bug)', () => {
     vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: layout })
     vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: layout })
 
-    const { container } = render(<MapLabEditorPage />)
+    const { container } = renderMapLabEditorPage()
     await act(async () => {
       await Promise.resolve()
     })
@@ -962,7 +973,7 @@ describe('MapLabEditorPage (Stage G0 — Ghost Objects scaffolding)', () => {
     vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: oneFloorLayout })
     vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: oneFloorLayout })
 
-    const { container } = render(<MapLabEditorPage />)
+    const { container } = renderMapLabEditorPage()
     await flush()
 
     const groups = container.querySelectorAll('.maplab-toolbar-group')
@@ -975,7 +986,7 @@ describe('MapLabEditorPage (Stage G0 — Ghost Objects scaffolding)', () => {
     vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: oneFloorLayout })
     vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: oneFloorLayout })
 
-    render(<MapLabEditorPage />)
+    renderMapLabEditorPage()
     await flush()
 
     expect(screen.getByRole('button', { name: /ghost lower floor/i })).toBeDisabled()
@@ -985,7 +996,7 @@ describe('MapLabEditorPage (Stage G0 — Ghost Objects scaffolding)', () => {
     vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: twoFloorLayout })
     vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: twoFloorLayout })
 
-    render(<MapLabEditorPage />)
+    renderMapLabEditorPage()
     await flush()
 
     fireEvent.click(screen.getByRole('tab', { name: 'Floor 1' }))
@@ -1026,7 +1037,7 @@ describe('MapLabEditorPage (Stage G1 — Ghost floor rendering)', () => {
     vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: twoFloorLayout })
     vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: twoFloorLayout })
 
-    const { container } = render(<MapLabEditorPage />)
+    const { container } = renderMapLabEditorPage()
     await flush()
 
     fireEvent.click(screen.getByRole('tab', { name: 'Floor 1' }))
@@ -1043,7 +1054,7 @@ describe('MapLabEditorPage (Stage G1 — Ghost floor rendering)', () => {
     vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: twoFloorLayout })
     vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: twoFloorLayout })
 
-    const { container } = render(<MapLabEditorPage />)
+    const { container } = renderMapLabEditorPage()
     await flush()
 
     fireEvent.click(screen.getByRole('tab', { name: 'Floor 1' }))
@@ -1065,7 +1076,7 @@ describe('MapLabEditorPage (Stage G1 — Ghost floor rendering)', () => {
     vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: twoFloorLayout })
     vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: twoFloorLayout })
 
-    render(<MapLabEditorPage />)
+    renderMapLabEditorPage()
     await flush()
 
     // Floor 0 (the lowest with rooms) has no lower floor to ghost.
@@ -1100,7 +1111,7 @@ describe('MapLabEditorPage (Stage G2 — ghost treatment design pass)', () => {
     vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: twoFloorLayoutWithProp })
     vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: twoFloorLayoutWithProp })
 
-    const { container } = render(<MapLabEditorPage />)
+    const { container } = renderMapLabEditorPage()
     await flush()
 
     fireEvent.click(screen.getByRole('tab', { name: 'Floor 1' }))
@@ -1144,7 +1155,7 @@ describe('MapLabEditorPage (Stage H1 — stair authoring)', () => {
     vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: twoFloorLayout })
     const saveSpy = vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: twoFloorLayout })
 
-    const { container } = render(<MapLabEditorPage />)
+    const { container } = renderMapLabEditorPage()
     await flush()
 
     fireEvent.click(screen.getByRole('button', { name: /place stair/i }))
@@ -1171,7 +1182,7 @@ describe('MapLabEditorPage (Stage H1 — stair authoring)', () => {
     vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: twoFloorLayout })
     const saveSpy = vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: twoFloorLayout })
 
-    const { container } = render(<MapLabEditorPage />)
+    const { container } = renderMapLabEditorPage()
     await flush()
 
     fireEvent.click(screen.getByRole('button', { name: /place stair/i }))
@@ -1199,7 +1210,7 @@ describe('MapLabEditorPage (Stage H1 — stair authoring)', () => {
     vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: twoFloorLayout })
     vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: twoFloorLayout })
 
-    const { container } = render(<MapLabEditorPage />)
+    const { container } = renderMapLabEditorPage()
     await flush()
 
     fireEvent.click(screen.getByRole('button', { name: /place door/i }))
@@ -1225,7 +1236,7 @@ describe('MapLabEditorPage (Stage H1 — stair authoring)', () => {
     vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: layoutWithLanding })
     vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: layoutWithLanding })
 
-    const { container } = render(<MapLabEditorPage />)
+    const { container } = renderMapLabEditorPage()
     await flush()
 
     const stairMarkers = Array.from(container.querySelectorAll('.maplab-stair'))
@@ -1274,7 +1285,7 @@ describe('MapLabEditorPage (Stage H2 — portal doors)', () => {
     vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: twoFloorLayout })
     const saveSpy = vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: twoFloorLayout })
 
-    const { container } = render(<MapLabEditorPage />)
+    const { container } = renderMapLabEditorPage()
     await flush()
 
     fireEvent.click(screen.getByRole('button', { name: /place portal/i }))
@@ -1299,7 +1310,7 @@ describe('MapLabEditorPage (Stage H2 — portal doors)', () => {
     vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: twoFloorLayout })
     const saveSpy = vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: twoFloorLayout })
 
-    const { container } = render(<MapLabEditorPage />)
+    const { container } = renderMapLabEditorPage()
     await flush()
 
     fireEvent.click(screen.getByRole('button', { name: /place portal/i }))
@@ -1330,7 +1341,7 @@ describe('MapLabEditorPage (Stage H2 — portal doors)', () => {
     vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: twoFloorLayout })
     vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: twoFloorLayout })
 
-    const { container } = render(<MapLabEditorPage />)
+    const { container } = renderMapLabEditorPage()
     await flush()
 
     fireEvent.click(screen.getByRole('button', { name: /place door/i }))
@@ -1357,7 +1368,7 @@ describe('MapLabEditorPage (Stage H2 — portal doors)', () => {
     vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: layoutWithPortal })
     const saveSpy = vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: layoutWithPortal })
 
-    const { container } = render(<MapLabEditorPage />)
+    const { container } = renderMapLabEditorPage()
     await flush()
 
     fireEvent.click(screen.getByRole('button', { name: /place portal/i }))
@@ -1408,7 +1419,7 @@ describe('MapLabEditorPage (Stage I3 — grid marker layout)', () => {
     vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: layout })
     vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: layout })
 
-    const { container } = render(<MapLabEditorPage />)
+    const { container } = renderMapLabEditorPage()
     await flush()
 
     const stairCircle = container.querySelector('.maplab-stair-marker')!
@@ -1432,7 +1443,7 @@ describe('MapLabEditorPage (Stage I3 — grid marker layout)', () => {
     vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: layout })
     vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: layout })
 
-    const { container } = render(<MapLabEditorPage />)
+    const { container } = renderMapLabEditorPage()
     await flush()
 
     const stairCircle = container.querySelector('.maplab-stair-marker')!
@@ -1455,7 +1466,7 @@ describe('MapLabEditorPage (Stage I3 — grid marker layout)', () => {
     vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: layout })
     const saveSpy = vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: layout })
 
-    const { container } = render(<MapLabEditorPage />)
+    const { container } = renderMapLabEditorPage()
     await flush()
 
     expect(container.querySelectorAll('.maplab-prop')).toHaveLength(4)
