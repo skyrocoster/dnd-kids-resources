@@ -138,6 +138,8 @@ describe('MonsterBrowserPage', () => {
 
     await waitFor(() => expect(screen.getByText('Owlbear')).toBeInTheDocument())
     expect(screen.getByRole('heading', { name: 'Aarakocra' })).toBeInTheDocument()
+    expect(screen.getByText('Bestiary Field Card')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument()
   })
 
   it('selecting a monster shows its stat block details', async () => {

@@ -1,27 +1,30 @@
 .monster-editor {
   padding: 1.5rem;
-  max-width: 800px;
+  max-width: 900px;
   margin: 0 auto;
 }
 
 .monster-editor-title {
   margin: 0 0 1rem;
+  color: var(--md-tertiary);
 }
 
 .monster-editor-error {
   color: var(--md-error);
   margin: 0 0 1rem;
-  padding: 0.5rem 0.75rem;
-  border-radius: 0.375rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 0.75rem;
   background: var(--md-surface-2);
+  border: 1px solid color-mix(in srgb, var(--md-error) 28%, var(--md-outline-variant));
 }
 
 .monster-editor-validation {
   color: var(--md-error);
   margin: 0 0 1rem;
-  padding: 0.5rem 0.75rem;
-  border-radius: 0.375rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 0.75rem;
   background: var(--md-surface-2);
+  border: 1px solid color-mix(in srgb, var(--md-error) 28%, var(--md-outline-variant));
   list-style: disc;
   padding-left: 2rem;
 }
@@ -33,16 +36,21 @@
 }
 
 .monster-editor-fieldset {
-  border: 1px solid var(--md-outline-variant);
-  border-radius: 0.5rem;
-  padding: 1rem 1.25rem;
+  border: 1px solid color-mix(in srgb, var(--md-tertiary) 22%, var(--md-outline-variant));
+  border-radius: 1rem;
+  padding: 1.1rem 1.25rem 1.25rem;
+  background:
+    linear-gradient(180deg, rgb(160 208 190 / 0.05), transparent 6rem),
+    var(--md-surface-1);
+  box-shadow: inset 0 0 0 1px rgb(188 236 217 / 0.04);
 }
 
 .monster-editor-fieldset legend {
   color: var(--md-tertiary);
   font-weight: var(--type-title-weight);
-  padding: 0 0.5rem;
+  padding: 0 0.6rem;
   font-size: var(--type-title-size);
+  letter-spacing: 0.04em;
 }
 
 .monster-editor-grid {
@@ -60,6 +68,7 @@
 
 .monster-editor-actions {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
   gap: 0.75rem;
 }
@@ -68,7 +77,8 @@
   background: none;
   border: 1px solid var(--md-outline-variant);
   color: var(--md-on-surface);
-  border-radius: 0.375rem;
+  border-radius: 999px;
+  min-height: 3rem;
   padding: 0.5rem 1rem;
   cursor: pointer;
 }
@@ -77,7 +87,8 @@
   background: var(--md-error-container);
   color: var(--md-on-error-container);
   border: none;
-  border-radius: 0.375rem;
+  border-radius: 999px;
+  min-height: 3rem;
   padding: 0.5rem 1rem;
   cursor: pointer;
   font-weight: var(--type-label-weight);
@@ -93,7 +104,8 @@
   background: var(--md-tertiary);
   color: var(--md-on-tertiary);
   border: none;
-  border-radius: 0.375rem;
+  border-radius: 999px;
+  min-height: 3rem;
   padding: 0.5rem 1.25rem;
   cursor: pointer;
   font-weight: var(--type-label-weight);
@@ -102,4 +114,49 @@
 .monster-editor-save:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.monster-editor-actions button {
+  font-size: var(--type-body-sm-size);
+}
+
+@media (max-width: 768px) {
+  .monster-editor {
+    padding: 1rem;
+  }
+
+  .monster-editor-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
+
+  .monster-editor-actions {
+    justify-content: stretch;
+  }
+
+  .monster-editor-delete {
+    margin-right: 0;
+  }
+
+  .monster-editor-actions button {
+    flex: 1 1 12rem;
+  }
+}
+
+@media (max-width: 520px) {
+  .monster-editor {
+    padding: 0.75rem;
+  }
+
+  .monster-editor-fieldset {
+    padding: 1rem;
+  }
+
+  .monster-editor-grid,
+  .monster-editor-ability-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .monster-editor-actions button {
+    flex-basis: 100%;
+  }
 }

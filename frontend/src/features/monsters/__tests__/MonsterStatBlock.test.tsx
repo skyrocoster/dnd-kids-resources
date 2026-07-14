@@ -130,6 +130,10 @@ describe('MonsterStatBlock', () => {
 
   it('renders actions, reactions, legendary actions, and spellcasting', () => {
     render(<MonsterStatBlock monster={monster()} />)
+    expect(screen.getByText('Actions')).toBeInTheDocument()
+    expect(screen.getByText('Attacks & Actions')).toBeInTheDocument()
+    expect(screen.getByText('Reactions')).toBeInTheDocument()
+    expect(screen.getByText('Legendary Actions')).toBeInTheDocument()
     expect(screen.getByText(/Bite: Melee Weapon Attack\./)).toBeInTheDocument()
     expect(screen.getByText(/Tail Swipe: Reaction to a nearby hit\./)).toBeInTheDocument()
     expect(screen.getByText(/Wing Attack: Beats wings\./)).toBeInTheDocument()
@@ -173,5 +177,21 @@ describe('MonsterStatBlock', () => {
     expect(screen.queryByText('Damage Resistances')).not.toBeInTheDocument()
     expect(screen.queryByText('Actions')).not.toBeInTheDocument()
     expect(screen.queryByText('Languages')).not.toBeInTheDocument()
+  })
+
+  it('keeps the stat strip when only one top-line stat is present', () => {
+    render(
+      <MonsterStatBlock
+        monster={monster({
+          ac: null,
+          hp: null,
+          speed: [{ mode: 'walk', feet: 30, note: null, hover: false }],
+        })}
+      />,
+    )
+
+    expect(screen.getByText('Speed')).toBeInTheDocument()
+    expect(screen.queryByText('AC')).not.toBeInTheDocument()
+    expect(screen.queryByText('HP')).not.toBeInTheDocument()
   })
 })

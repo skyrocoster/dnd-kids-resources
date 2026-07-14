@@ -62,7 +62,7 @@ export function MonsterBrowserPage() {
             selected ? (
               <div className="monster-browser-detail" data-variant="monster">
                 <div className="monster-browser-detail-header">
-                  <MonsterStatBlock monster={selected} />
+                  <div className="monster-browser-detail-kicker">Bestiary Field Card</div>
                   <button
                     type="button"
                     className="monster-browser-edit"
@@ -71,6 +71,7 @@ export function MonsterBrowserPage() {
                     Edit
                   </button>
                 </div>
+                <MonsterStatBlock monster={selected} />
               </div>
             ) : (
               <p className="monster-browser-empty">Select a monster to see its stat block.</p>

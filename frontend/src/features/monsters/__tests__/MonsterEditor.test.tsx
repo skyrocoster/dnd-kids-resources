@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import * as api from '../../../api/client'
@@ -182,5 +183,27 @@ describe('MonsterEditor render', () => {
     expect(await screen.findByText('Edit Monster')).toBeInTheDocument()
     expect(await screen.findByDisplayValue('Edit Test')).toBeInTheDocument()
     spy.mockRestore()
+  })
+
+  it('supports keyboard focus through the primary editor controls', async () => {
+    const user = userEvent.setup()
+
+    render(
+      <MemoryRouter initialEntries={['/monsters/new']}>
+        <Routes>
+          <Route path="/monsters/new" element={<MonsterEditor />} />
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    await user.tab()
+    expect(screen.getByLabelText('Name')).toHaveFocus()
+
+    await user.tab()
+    expect(screen.getByLabelText('Size (comma-separated)')).toHaveFocus()
+
+    const saveButton = screen.getByRole('button', { name: 'Create Monster' })
+    saveButton.focus()
+    expect(saveButton).toHaveFocus()
   })
 })
