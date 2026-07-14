@@ -10,6 +10,8 @@ import {
   type PassageSessionState,
 } from './maplabModel'
 
+const STAIR_IDENTITY_TOKEN = '--md-tertiary'
+
 interface StairMarkerProps {
   stair: MapStair
   cellSize: number
@@ -39,9 +41,8 @@ interface StairMarkerProps {
   onClick?: () => void
 }
 
-/** Stair marker — same visual language as portal/prop markers: a neutral-fill ring whose stroke
- * carries the passage-state token, the stair glyph as the primary icon, a small state badge when
- * locked/trapped/hidden, and a dashed outline when hidden — never hue-alone. */
+/** Stair marker — the stair glyph and ring carry stable fixture identity; one collapsed
+ * status disc carries passage state, and hidden remains dashed as a non-color cue. */
 export function StairMarker({
   stair,
   cellSize,
@@ -69,7 +70,7 @@ export function StairMarker({
   const Icon = presentation.icon
   // Keep the authored trap badge after disarming so the confirmation badge can communicate both facts.
   const badges = markerBadges({ ...stair, locked: effective.locked }, trapDisarmed ?? effective.trapDisarmed)
-  const dasharray = presentation.state === 'hidden' ? '4 3' : undefined
+  const dasharray = effective.hidden ? '4 3' : undefined
   const resolvedLabel = label ?? `${stair.title ?? `Stair ${stair.stair_id}`} — ${badges.length ? badges.map((badge) => badge.label).join(', ') : presentation.label}`
 
   return (
@@ -102,13 +103,22 @@ export function StairMarker({
         cx={cx}
         cy={cy}
         r={radius}
-        style={{ stroke: `var(${presentation.token})` }}
+        style={{ stroke: `var(${STAIR_IDENTITY_TOKEN})` }}
         strokeDasharray={dasharray}
       />
       <g transform={`translate(${cx - iconSize / 2}, ${cy - iconSize / 2})`}>
-        <Icon width={iconSize} height={iconSize} className="maplab-stair-icon" style={{ color: `var(${presentation.token})` }} />
+        <Icon width={iconSize} height={iconSize} className="maplab-stair-icon" style={{ color: `var(${STAIR_IDENTITY_TOKEN})` }} />
       </g>
-       <BadgeRing badges={badges} cx={cx} cy={cy} markerRadius={radius} badgeRadius={8} />
+      <BadgeRing
+        badges={badges}
+        cx={cx}
+        cy={cy}
+        cellX={cell[0] * cellSize}
+        cellY={cell[1] * cellSize}
+        cellSize={cellSize}
+        markerRadius={radius}
+        badgeRadius={8}
+      />
     </g>
   )
 }

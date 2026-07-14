@@ -5,7 +5,7 @@ Single reference for the dungeon room-navigation feature and its follow-on desig
 **Shipped stages** table for history, verbose spec only for the *active/next* stage. Detail on *how* a
 shipped stage was built lives in its git commit, not here.
 
-> **Status:** Original build (Stages 1–11) + Design Phases A–L + **M0–M1** shipped. **M2 — Bounded On-Square Markers** is next.
+> **Status:** Original build (Stages 1–11) + Design Phases A–L + **M0–M3** shipped. **M4 — Design Pass** is next.
 
 ---
 
@@ -164,6 +164,8 @@ the exit-choice-card color. Canvas SVG glyphs are the documented exception to th
 | **L — Marker Badge System (L0–L4)** | `markerBadges` model with radial badge rings; `--md-door` leaf with trailing badge overlay. Design pass corrected icon contrast and door-glyph clearance. |
 | **M0 — Scaffolding** | Compile-only `CollapsedStatusDescriptor`/`BoundedBadgePlacement` types and stubs in `markerBadges.ts`; `MultipleStatusesIcon` alias; 30 `it.skip` contract tests. 623 pass, typecheck/build clean. Gate ✅. |
 | **M1 — Collapsed Status Model** | `collapsedStatusDescriptor()` now returns `null`, the sole existing `MarkerBadge`, or one synthetic `multiple-statuses` badge using `MultipleStatusesIcon`/Lucide `Layers`. `markerBadges()` remains the full-detail source for inspector and accessible labels; 636 frontend tests, typecheck, and build clean. |
+| **M2 — Bounded On-Square Markers** | Props, stairs, and portals now render one bounded collapsed status disc while their marker ring/icon color stays stable by fixture identity; hidden remains dashed and ARIA labels still enumerate all individual statuses. Replaced radial layout tests with bounded/collision coverage plus marker render assertions. |
+| **M3 — Door Status Collapse** | Doors now render zero or one centered collapsed status disc on their active leaf/segment; the separate repeated door-state icon was removed. Hidden alone controls the dotted architectural leaf, including locked/trapped hidden doors, with closed hidden dots visually spanning the original wall gap; DoorMarker focused tests cover the geometry. |
 
 ---
 
@@ -248,63 +250,13 @@ modify `map_layout` data, seed data, backend code, or live dungeon pages.
 | **M0 — Scaffolding** | Haiku | Establish compile-only display contracts and skipped tests without changing rendered behavior. | New collapsed-status type/layout stubs; `it.skip` coverage; app unchanged. |
 | **M1 — Collapsed Status Model** | Sonnet | Make one pure model decide zero, one, or multiple-status display while retaining full state detail. | `markerBadges.ts` model/tests; `MultipleStatusesIcon` alias of `Layers`. |
 | **M2 — Bounded On-Square Markers** | Sonnet | Render one contained disc per prop/stair/portal and make marker color express identity, not status. | Shared renderer, three marker components, CSS, render/geometry tests. |
-| **M3 — Door Status Collapse** | Sonnet | Apply the same collapsed-status rule to the distinct architectural door overlay. | `DoorBadgeLayer`, door tests, viewer/editor integration. |
-| **M4 — Design Pass** | Sonnet | Validate visual hierarchy, collision safety, keyboard/a11y behavior, and responsive zoom states. | Focused corrections and regression coverage. |
+| **M3 — Door Status Collapse** | Sonnet | Apply the same collapsed-status rule to the distinct architectural door overlay. | `DoorBadgeLayer`, door tests, viewer/editor integration. ✅ Shipped. |
+| **M4 — Design Pass** | Sonnet | Validate visual hierarchy, collision safety, keyboard/a11y behavior, and responsive zoom states. | Focused corrections and regression coverage. Next. |
 
-**Sequencing:** M2 → M3 → M4. M2 and M3 both consume M1 but must land in this
-order so the design pass can verify on-square and door behavior together. Do not merge stages, and do not
+**Sequencing:** M4 follows M0–M3 so the design pass can verify on-square and door behavior together. Do not
 replace the existing `markersAtCell` 2x2 placement model or its four-marker cap.
 
-#### M2 — Bounded On-Square Markers (next up)
-
-- **Build:** Replace radial rendering in `BadgeRing.tsx` with one shared status-disc renderer consuming M1's
-  collapsed descriptor. Replace `radialBadgeLayout` with a pure bounded placement helper that receives the
-  marker center/radius, cell bounds, and grouped offset/size as needed, and returns one disc center whose
-  full radius is within `[cell.x, cell.x + cellSize] × [cell.y, cell.y + cellSize]`. The disc may overlap the
-  fixture icon. For a co-located 2x2 group, placement must use each fixture's existing `gridMarkerOffset`
-  sub-slot or an equivalent deterministic reservation so discs cannot intersect each other; it must work for
-  same-type fixtures as well as mixed stairs, portals, and props. Migrate `PropMarker.tsx`, `StairMarker.tsx`,
-  and `PortalMarker.tsx` to render that one disc. Remove status-derived stroke/icon tokens: props use their
-  kind/identity token (retain encounter's tertiary treatment), stairs and portals use stable identity styling
-  chosen from existing tokens, while selection/focus remains primary. Hidden remains dashed. Keep full labels
-  based on all individual badges, not the collapsed disc label. Delete the old radial geometry only after no
-  caller remains.
-- **Inherits:** M1's collapsed selector, the existing neutral marker fill, `MARKER_RADIUS_FRACTION`,
-  `GROUPED_MARKER_RADIUS_FRACTION`, `markersAtCell`, and `gridMarkerOffset`. `passagePresentation` may still
-  provide hidden state/session semantics, but its status token must not drive on-square marker identity color.
-  Wall-attached props are not part of the cell-interior layout: preserve their current wall marker behavior
-  unless M4 identifies a concrete collision bug.
-- **Tests:** Replace radial-layout assertions with bounded-placement tests for standalone and grouped markers
-  at the four supported positions. Assert each badge disc remains within its owning cell, pairwise disc bounds
-  do not overlap for 2, 3, and 4 co-located fixtures, and layout is deterministic by type/id ordering. Update
-  prop/stair/portal render tests: one status renders its icon; multiple statuses render Layers once; no status
-  renders no disc; status changes do not change the identity stroke/icon token; hidden remains dashed; ARIA
-  labels still enumerate every active status. Test both viewer and editor composition paths where practical.
-- **🚦 Gate:** `npm run test`, `npm run typecheck`, and `npm run build` pass. Manual user verification on both
-  `/dungeons/map-lab` and `/dungeons/map-lab/edit`: create/inspect one each of locked, trapped, hidden, and
-  multi-state prop/stair/portal; then co-locate 2, 3, and 4 mixed and same-type markers. At default, zoomed-in,
-  and zoomed-out views, discs remain in their cells, do not clash, and marker type remains legible without
-  relying on status color.
-
-#### M3 — Door Status Collapse (planned)
-
-- **Build:** Keep `DoorMarker.tsx`'s fixed `--md-door` leaf, swing, icon, hidden dash, open/closed geometry,
-  and trailing `DoorBadgeLayer` intact. Migrate only badge derivation from the full list to M1's single
-  collapsed descriptor, so a door has zero or one status disc. Continue placing that disc with
-  `linearBadgeLayout` against the current leaf when open and owning wall segment when closed; preserve the
-  inward/open-leaf normal logic and page-level overlay ordering. The disc must remain clear of the door's
-  central icon and associated leaf/swing; do not make doors use on-square bounds or marker identity tokens.
-- **Inherits:** M1's selector and M2's single-disc rendering conventions; existing `DOOR_BADGE_RADIUS`,
-  `DOOR_BADGE_CLEARANCE`, `doorSwingGeometry`, and `CARDINAL_DELTAS` remain the geometry contract.
-- **Tests:** Update `DoorMarker.test.tsx` for one badge maximum, specific icon for one active status, Layers
-  for multiple statuses, full individual status labels in the interactive door label, and unchanged fixed
-  `--md-door` glyph styling. Retain tests for closed/open badge positions, orientation on all four sides,
-  badge-layer z-order, hidden dash, session lock changes, and no overlap with the central icon.
-- **🚦 Gate:** `npm run test`, `npm run typecheck`, and `npm run build` pass. Manual user verification on both
-  Map Lab routes: toggle door open/locked/trapped/hidden session states and confirm exactly one readable disc
-  follows the correct leaf/segment without covering the door glyph or leaking across the exterior wall.
-
-#### M4 — Design Pass (planned)
+#### M4 — Design Pass (next up)
 
 - **Build:** Perform a focused `frontend-design` review of M1–M3 without inventing new hues, shapes, or a
   second co-location system. Correct any discovered geometry, SVG stacking, contrast, hover/focus, keyboard,
@@ -375,7 +327,7 @@ table + layout router), or the live dungeon model/pages.
 
 ## Next
 
-**Active:** Design Phase M — Bounded Marker Status. **Next:** M2 — Bounded On-Square Markers; it is unblocked.
+**Active:** Design Phase M — Bounded Marker Status. **Next:** M4 — Design Pass; it is unblocked.
 
 Also queued (not blocking M): the Map Lab production-home recommendation before any production fold-in;
 and the loot-on-the-map wiring that fills the reserved `MapProp.loot` slot, staged in `docs/loot_plan.md`

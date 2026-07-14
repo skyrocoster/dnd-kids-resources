@@ -176,8 +176,10 @@ Generic hover/focus details panel in Map Lab:
 
 ### Map Lab markers (`maplab/`)
 
-- **On-square markers** — props, stairs, and portals retain neutral marker bodies with state-colored rings;
-  icon-bearing badge discs carry every active state outside the marker.
+- **On-square markers** — props, stairs, and portals retain neutral marker bodies with stable fixture-identity
+  ring/icon color. One bounded status disc appears inside the owning cell: the specific status icon for one
+  active state, or the `MultipleStatusesIcon`/Layers alias for two or more; inspector chips and ARIA labels
+  still enumerate every independent state.
 - **Doors** — the leaf and identity glyph always use `--md-door`; door state is communicated by its
   icon-bearing badges, distributed alongside the current leaf in a trailing SVG layer.
 

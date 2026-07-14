@@ -12,6 +12,11 @@ import {
   type MapProp,
 } from './maplabModel'
 
+const PROP_IDENTITY_TOKENS: Record<string, string> = {
+  chest: '--md-loot',
+  encounter: '--md-tertiary',
+}
+
 interface PropMarkerProps {
   prop: MapProp
   cellSize: number
@@ -37,8 +42,7 @@ interface PropMarkerProps {
 /** Shared prop-marker render for both the viewer and editor pages — an on-square prop centers on
  * its cell (stair-marker pattern); a wall-attached prop (`side` present) anchors at the wall
  * segment's midpoint (door pattern) with a smaller marker. The kind icon is the primary glyph;
- * the dominant passage state (from `passagePresentation`) drives the token color, a dashed outline
- * when hidden, and a programmatic badge ring for every active state — never hue-alone. */
+ * on-square marker color is stable fixture identity, while the status disc carries state. */
 export function PropMarker({
   prop,
   cellSize,
@@ -75,13 +79,10 @@ export function PropMarker({
       : cellSize * 0.34
 
   const presentation = passagePresentation(prop)
-  // Encounter markers default to the encounter/monster tertiary (teal) role rather than the
-  // generic neutral "unlocked" token — trapped/locked/hidden states still take precedence.
-  const token =
-    prop.kind === 'encounter' && presentation.state === 'unlocked' ? '--md-tertiary' : presentation.token
+  const token = onWall ? presentation.token : (PROP_IDENTITY_TOKENS[prop.kind] ?? '--md-on-surface-variant')
   const Icon = PROP_KIND_ICONS[prop.kind] ?? ItemIcon
   const badges = markerBadges(prop)
-  const dasharray = presentation.state === 'hidden' ? '4 3' : undefined
+  const dasharray = prop.hidden ? '4 3' : undefined
   const label = `${prop.title ?? prop.kind} — ${badges.length ? badges.map((badge) => badge.label).join(', ') : presentation.label}`
 
   return (
@@ -120,7 +121,16 @@ export function PropMarker({
       <g transform={`translate(${cx - iconSize / 2}, ${cy - iconSize / 2})`}>
         <Icon width={iconSize} height={iconSize} className="maplab-prop-icon" style={{ color: `var(${token})` }} />
       </g>
-      <BadgeRing badges={badges} cx={cx} cy={cy} markerRadius={radius} badgeRadius={8} />
+      <BadgeRing
+        badges={badges}
+        cx={cx}
+        cy={cy}
+        cellX={prop.cell[0] * cellSize}
+        cellY={prop.cell[1] * cellSize}
+        cellSize={cellSize}
+        markerRadius={radius}
+        badgeRadius={8}
+      />
     </g>
   )
 }

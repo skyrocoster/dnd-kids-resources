@@ -6,13 +6,20 @@ import { Layers } from 'lucide-react'
 import { describe, expect, it } from 'vitest'
 import { MultipleStatusesIcon } from '../../../../components/icons'
 import {
+  boundedBadgeLayout,
   collapsedStatusDescriptor,
   linearBadgeLayout,
   markerBadges,
   MULTIPLE_STATUSES_BADGE,
-  radialBadgeLayout,
 } from '../markerBadges'
-import type { MapProp } from '../maplabModel'
+import {
+  GROUPED_MARKER_RADIUS_FRACTION,
+  gridMarkerOffset,
+  MARKER_RADIUS_FRACTION,
+  markersAtCell,
+  type MapLayout,
+  type MapProp,
+} from '../maplabModel'
 
 const prop = (overrides: Partial<MapProp> = {}): MapProp => ({
   prop_id: 1,
@@ -128,46 +135,66 @@ describe('collapsedStatusDescriptor (M1)', () => {
   })
 })
 
-describe('radialBadgeLayout', () => {
-  const layout = (count: number) => radialBadgeLayout(count, 10, 8)
+describe('boundedBadgeLayout (M2)', () => {
+  const cellSize = 40
+  const badgeRadius = 8
 
-  it('starts at 12 o\'clock (-90°)', () => {
-    const [first] = layout(1)
-    expect(first.x).toBeCloseTo(0)
-    expect(first.y).toBeCloseTo(-20)
-  })
+  function placementFor(count: number, index: number) {
+    const offset = gridMarkerOffset(count, index)
+    const markerRadius = cellSize * (count > 1 ? GROUPED_MARKER_RADIUS_FRACTION : MARKER_RADIUS_FRACTION)
+    const cx = (1.5 + offset.dx) * cellSize
+    const cy = (1.5 + offset.dy) * cellSize
+    return boundedBadgeLayout(40, 40, cellSize, cx, cy, markerRadius, badgeRadius)
+  }
 
-  it('uses even 180° spacing for 2 badges', () => {
-    const [first, second] = layout(2)
-    expect(first.y).toBeCloseTo(-20)
-    expect(second.y).toBeCloseTo(20)
-  })
+  function expectWithinCell(placement: { cx: number; cy: number; radius: number }) {
+    expect(placement.cx - placement.radius).toBeGreaterThanOrEqual(40)
+    expect(placement.cx + placement.radius).toBeLessThanOrEqual(80)
+    expect(placement.cy - placement.radius).toBeGreaterThanOrEqual(40)
+    expect(placement.cy + placement.radius).toBeLessThanOrEqual(80)
+  }
 
-  it('uses even 120° clockwise spacing for 3 badges in SVG y-down space', () => {
-    const [first, second, third] = layout(3)
-    expect(first.y).toBeCloseTo(-20)
-    expect(second.x).toBeCloseTo(Math.sqrt(3) * 10)
-    expect(second.y).toBeCloseTo(10)
-    expect(third.x).toBeCloseTo(-Math.sqrt(3) * 10)
-    expect(third.y).toBeCloseTo(10)
-  })
-
-  it('uses even 90° spacing for 4 badges', () => {
-    const [first, second, third, fourth] = layout(4)
-    expect(first.x).toBeCloseTo(0)
-    expect(first.y).toBeCloseTo(-20)
-    expect(second.x).toBeCloseTo(20)
-    expect(second.y).toBeCloseTo(0)
-    expect(third.x).toBeCloseTo(0)
-    expect(third.y).toBeCloseTo(20)
-    expect(fourth.x).toBeCloseTo(-20)
-    expect(fourth.y).toBeCloseTo(0)
-  })
-
-  it('places badges outside the marker radius', () => {
-    for (const position of layout(4)) {
-      expect(Math.hypot(position.x, position.y) - 8).toBeGreaterThan(10)
+  it.each([1, 2, 3, 4])('keeps all %s supported marker slots inside the owning cell', (count) => {
+    for (let index = 0; index < count; index += 1) {
+      expectWithinCell(placementFor(count, index))
     }
+  })
+
+  it.each([2, 3, 4])('does not overlap pairwise disc bounds for %s co-located markers', (count) => {
+    const placements = Array.from({ length: count }, (_, index) => placementFor(count, index))
+
+    for (let a = 0; a < placements.length; a += 1) {
+      for (let b = a + 1; b < placements.length; b += 1) {
+        const distance = Math.hypot(placements[a].cx - placements[b].cx, placements[a].cy - placements[b].cy)
+        expect(distance).toBeGreaterThanOrEqual(placements[a].radius + placements[b].radius)
+      }
+    }
+  })
+
+  it('clamps edge-biased marker centers to keep the full disc inside the cell', () => {
+    expect(boundedBadgeLayout(40, 40, cellSize, 39, 81, 12, badgeRadius)).toEqual({ cx: 48, cy: 72, radius: 8 })
+  })
+
+  it('uses deterministic type/id ordering before assigning grouped slots', () => {
+    const layout: MapLayout = {
+      meta: { cellSizeFt: 5, padding: 1 },
+      rooms: [{ room_id: 1, z: 1, origin: [1, 1], cells: [[0, 0]] }],
+      floors: [{ z: 1 }],
+      doors: [],
+      stairs: [
+        { stair_id: 2, from: { z: 1, cell: [1, 1] }, to: { z: 2, cell: [1, 1] }, hidden: false, locked: false, trapped: false },
+        { stair_id: 1, from: { z: 1, cell: [1, 1] }, to: { z: 2, cell: [1, 1] }, hidden: false, locked: false, trapped: false },
+      ],
+      portals: [{ portal_id: 4, z: 1, cell: [1, 1], to: { z: 2, cell: [1, 1] }, hidden: false, locked: false, trapped: false }],
+      props: [{ prop_id: 3, kind: 'chest', z: 1, cell: [1, 1], hidden: false, locked: false, trapped: false }],
+    }
+
+    expect(markersAtCell(layout, 1, [1, 1])).toEqual([
+      { type: 'stair', id: 1 },
+      { type: 'stair', id: 2 },
+      { type: 'portal', id: 4 },
+      { type: 'prop', id: 3 },
+    ])
   })
 })
 

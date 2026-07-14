@@ -260,9 +260,7 @@
   cursor: pointer;
 }
 
-/* One token family: the ring/icon carry the passage-state token (see stairPresentation); the fill
- * stays a neutral surface so it never competes with that token as a second, unrelated color
- * family (the M2.3 clash — a hardcoded teal disc behind a differently-toned ring/icon). */
+/* Stable stair identity on the ring/icon; passage state is carried by the collapsed status disc. */
 .maplab-stair-marker {
   fill: var(--md-surface-3);
   stroke-width: 3;
@@ -316,9 +314,8 @@
   pointer-events: none;
 }
 
-/* Prop markers (static objects: chests, tables, mirrors, etc.) — same visual language as
- * `.maplab-stair-marker`: a neutral-fill ring whose stroke carries the passage-state token, the
- * kind icon as the primary glyph, and a small state badge (never hue-alone). See `PropMarker.tsx`. */
+/* Prop markers (static objects: chests, tables, mirrors, etc.) keep stable kind identity on the
+ * ring/icon; passage state is carried by the collapsed status disc. See `PropMarker.tsx`. */
 .maplab-prop {
   cursor: pointer;
 }
@@ -669,7 +666,7 @@
 }
 
 .maplab-ghost-layer .maplab-prop-icon,
-.maplab-ghost-layer .maplab-prop-state-badge {
+.maplab-ghost-layer .maplab-badge {
   color: var(--md-outline) !important;
 }
 
@@ -697,9 +694,8 @@
   fill: color-mix(in srgb, var(--md-primary) 20%, transparent);
 }
 
-/* Portal markers — same visual language as `.maplab-stair-marker`/`.maplab-prop-marker`: a
- * neutral-fill ring whose stroke carries the passage-state token, the portal icon as the primary
- * glyph, and a small state badge (never hue-alone). See `PortalMarker.tsx`. */
+/* Portal markers keep stable portal identity on the ring/icon; passage state is carried by the
+ * collapsed status disc. See `PortalMarker.tsx`. */
 .maplab-portal {
   cursor: pointer;
 }

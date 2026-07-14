@@ -47,19 +47,29 @@ export interface BoundedBadgePlacement {
   radius: number
 }
 
-/** M2 stub — returns a bounded badge position for a standalone or grouped on-square
- * marker whose disc stays inside its owning cell and does not intersect other
- * co-located fixture discs. */
+/** Returns a badge position for an on-square marker. The existing marker center is already
+ * the fixture's reserved slot: standalone markers use the cell center; grouped markers use
+ * `gridMarkerOffset`'s 2x2 sub-slot centers. Clamping preserves the full-disc cell bound
+ * even if a future caller supplies an edge-biased marker center. */
 export function boundedBadgeLayout(
-  _cellX: number,
-  _cellY: number,
-  _cellSize: number,
+  cellX: number,
+  cellY: number,
+  cellSize: number,
   markerCenterX: number,
   markerCenterY: number,
   _markerRadius: number,
-  _badgeRadius: number,
+  badgeRadius: number,
 ): BoundedBadgePlacement {
-  return { cx: markerCenterX, cy: markerCenterY, radius: 8 }
+  const minX = cellX + badgeRadius
+  const maxX = cellX + cellSize - badgeRadius
+  const minY = cellY + badgeRadius
+  const maxY = cellY + cellSize - badgeRadius
+
+  return {
+    cx: Math.min(Math.max(markerCenterX, minX), maxX),
+    cy: Math.min(Math.max(markerCenterY, minY), maxY),
+    radius: badgeRadius,
+  }
 }
 
 /** Derive the ordered badge descriptor list from a marker's passage flags and session state.
@@ -83,24 +93,6 @@ export function markerBadges(source: BadgeSource, trapDisarmed = false): MarkerB
   }
 
   return badges
-}
-
-/** Radial layout for on-square markers (props, stairs, portals). First badge at −90° (12 o'clock),
- * step = 360/count, sweeping clockwise. Each badge center is at distance `markerRadius + gap +
- * badgeRadius` from the marker center. Returns center-relative {x, y} offsets. */
-export function radialBadgeLayout(
-  count: number,
-  markerRadius: number,
-  badgeRadius: number,
-): { x: number; y: number }[] {
-  if (count <= 0) return []
-
-  const distance = markerRadius + 2 + badgeRadius
-  return Array.from({ length: count }, (_, index) => {
-    // SVG's y axis increases downward, so increasing angles sweep clockwise.
-    const angle = (-90 + (360 / count) * index) * (Math.PI / 180)
-    return { x: distance * Math.cos(angle), y: distance * Math.sin(angle) }
-  })
 }
 
 /** Linear layout for door badges along the leaf. Badges at evenly spaced interior params

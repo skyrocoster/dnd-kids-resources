@@ -24,15 +24,33 @@ function renderDoor(marker: MapDoor, isOpen = true) {
 }
 
 // ─── M3 — Door Status Collapse ──────────────────────────────────────────────
-describe.skip('DoorBadgeLayer collapsed status (M3)', () => {
+describe('DoorBadgeLayer collapsed status (M3)', () => {
   it('renders exactly one badge disc for multiple active flags', () => {
     const { container } = renderDoor(door({ locked: true, trapped: true }))
     expect(container.querySelectorAll('.maplab-door-badge')).toHaveLength(1)
+    expect(container.querySelector('.maplab-door-badge')).toHaveAttribute('data-badge', 'multiple-statuses')
   })
 
   it('renders the specific icon for one active status', () => {
     const { container } = renderDoor(door({ locked: true }))
     expect(container.querySelectorAll('.maplab-door-badge')).toHaveLength(1)
+    expect(container.querySelector('.maplab-door-badge')).toHaveAttribute('data-badge', 'locked')
+  })
+
+  it('renders hidden doors with the hidden badge and dotted leaf cue', () => {
+    const { container } = renderDoor(door({ hidden: true }))
+
+    expect(container.querySelector('.maplab-door-badge')).toHaveAttribute('data-badge', 'hidden')
+    expect(container.querySelector('.maplab-door-leaf')).toHaveAttribute('stroke-dasharray', '1 9')
+    expect(container.querySelector('.maplab-door-leaf')).toHaveAttribute('pathLength', '61')
+  })
+
+  it('keeps hidden doors dotted even when another status controls the badge', () => {
+    const { container } = renderDoor(door({ hidden: true, locked: true, trapped: true }))
+
+    expect(container.querySelector('.maplab-door-badge')).toHaveAttribute('data-badge', 'multiple-statuses')
+    expect(container.querySelector('.maplab-door-leaf')).toHaveAttribute('stroke-dasharray', '1 9')
+    expect(container.querySelector('.maplab-door-leaf')).toHaveAttribute('pathLength', '61')
   })
 
   it('renders no badge disc when no flags are active', () => {
@@ -40,10 +58,11 @@ describe.skip('DoorBadgeLayer collapsed status (M3)', () => {
     expect(container.querySelector('.maplab-door-badge')).toBeNull()
   })
 
-  it('keeps the door glyph in fixed --md-door regardless of status', () => {
+  it('keeps the door leaf in fixed --md-door regardless of status', () => {
     const { container } = renderDoor(door({ locked: true, trapped: true, hidden: true }))
-    expect(container.querySelector('.maplab-door-icon')).toHaveStyle({ color: 'var(--md-door)' })
     expect(container.querySelector('.maplab-door-leaf')).toHaveStyle({ stroke: 'var(--md-door)' })
+    expect(container.querySelector('.maplab-door-badge')).toHaveAttribute('data-badge', 'multiple-statuses')
+    expect(container.querySelector('.maplab-door-icon')).not.toBeInTheDocument()
   })
 
   it('narrates every individual status in the interactive door label', () => {
@@ -53,30 +72,51 @@ describe.skip('DoorBadgeLayer collapsed status (M3)', () => {
 })
 
 describe('DoorMarker', () => {
-  it('renders the leaf and identity glyph in --md-door regardless of state', () => {
+  it('renders the leaf in --md-door and no repeated door-state icon', () => {
     const { container } = renderDoor(door({ hidden: true, locked: true, trapped: true }))
 
     expect(container.querySelector('.maplab-door-leaf')).toHaveStyle({ stroke: 'var(--md-door)' })
-    expect(container.querySelector('.maplab-door-icon')).toHaveStyle({ color: 'var(--md-door)' })
+    expect(container.querySelector('.maplab-door-icon')).not.toBeInTheDocument()
   })
 
   it('places badges along the open leaf', () => {
     const { container } = renderDoor(door({ locked: true }))
 
-    expect(container.querySelector('.maplab-door-badge')).toHaveAttribute('transform', 'translate(60, 60)')
+    expect(container.querySelector('.maplab-door-badge')).toHaveAttribute('transform', 'translate(40, 60)')
   })
 
   it('places badges along the closed wall segment', () => {
     const { container } = renderDoor(door({ locked: true }), false)
 
-    expect(container.querySelector('.maplab-door-badge')).toHaveAttribute('transform', 'translate(60, 60)')
+    expect(container.querySelector('.maplab-door-badge')).toHaveAttribute('transform', 'translate(60, 40)')
   })
 
-  it('uses the badge role foreground and clears the central door glyph', () => {
+  it('keeps non-hidden closed doors on the full wall segment', () => {
+    const { container } = renderDoor(door({ locked: true }), false)
+    const leaf = container.querySelector('.maplab-door-leaf-closed')
+
+    expect(leaf).toHaveAttribute('x1', '40')
+    expect(leaf).toHaveAttribute('x2', '80')
+    expect(leaf).not.toHaveAttribute('stroke-dasharray')
+    expect(leaf).not.toHaveAttribute('pathLength')
+  })
+
+  it('keeps closed hidden doors dotted across the full wall gap', () => {
+    const { container } = renderDoor(door({ hidden: true, locked: true }), false)
+    const leaf = container.querySelector('.maplab-door-leaf-closed')
+
+    expect(leaf).toHaveAttribute('x1', '43')
+    expect(leaf).toHaveAttribute('x2', '77')
+    expect(leaf).toHaveAttribute('stroke-dasharray', '1 9')
+    expect(leaf).toHaveAttribute('pathLength', '61')
+    expect(leaf).toHaveStyle({ strokeLinecap: 'round' })
+  })
+
+  it('uses the badge role foreground and places the status disc on the leaf', () => {
     const { container } = renderDoor(door({ locked: true }))
 
     expect(container.querySelector('.maplab-door-badge svg')).toHaveStyle({ color: 'var(--md-on-passage-locked)' })
-    expect(container.querySelector('.maplab-door-badge')).toHaveAttribute('transform', 'translate(60, 60)')
+    expect(container.querySelector('.maplab-door-badge')).toHaveAttribute('transform', 'translate(40, 60)')
   })
 
   it('renders badges in the trailing door-badge-layer', () => {
@@ -86,5 +126,12 @@ describe('DoorMarker', () => {
 
     expect(marker.compareDocumentPosition(layer) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     expect(layer.querySelector('.maplab-door-badge')).toBeTruthy()
+  })
+
+  it.each(['N', 'S', 'E', 'W'] as const)('keeps a collapsed badge on the %s side', (side) => {
+    const { container } = renderDoor(door({ side, locked: true, trapped: true }))
+
+    expect(container.querySelectorAll('.maplab-door-badge')).toHaveLength(1)
+    expect(container.querySelector('.maplab-door-badge')).toHaveAttribute('data-badge', 'multiple-statuses')
   })
 })

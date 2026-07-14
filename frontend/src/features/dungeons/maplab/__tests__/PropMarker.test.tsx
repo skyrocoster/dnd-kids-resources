@@ -23,16 +23,20 @@ function renderMarker(marker: MapProp) {
 }
 
 // ─── M2 — Bounded On-Square Markers ─────────────────────────────────────────
-describe.skip('PropMarker bounded badge (M2)', () => {
+describe('PropMarker bounded badge (M2)', () => {
   it('renders one status disc with its own icon for a single active flag', () => {
     const { container } = renderMarker(prop({ locked: true }))
-    expect(container.querySelector('.maplab-badge-ring .maplab-badge')).toBeTruthy()
+
+    expect(container.querySelectorAll('.maplab-badge-ring .maplab-badge')).toHaveLength(1)
+    expect(container.querySelector('[data-badge="locked"] svg')).toHaveStyle({ color: 'var(--md-on-passage-locked)' })
   })
 
   it('renders Layers icon disc for multiple active flags', () => {
     const { container } = renderMarker(prop({ locked: true, trapped: true }))
     const badges = container.querySelectorAll('.maplab-badge-ring .maplab-badge')
+
     expect(badges).toHaveLength(1)
+    expect(container.querySelector('[data-badge="multiple-statuses"] svg')).toHaveStyle({ color: 'var(--md-on-surface)' })
   })
 
   it('renders no disc when no flags are active', () => {
@@ -45,13 +49,17 @@ describe.skip('PropMarker bounded badge (M2)', () => {
     const { container: locked } = renderMarker(prop({ locked: true }))
     const unlockedStroke = unlocked.querySelector('.maplab-prop-marker')
     const lockedStroke = locked.querySelector('.maplab-prop-marker')
-    // Identity token is stable; only the badge disc changes
-    expect(unlockedStroke).toBeTruthy()
-    expect(lockedStroke).toBeTruthy()
+    const unlockedIcon = unlocked.querySelector('.maplab-prop-icon')
+    const lockedIcon = locked.querySelector('.maplab-prop-icon')
+
+    expect(unlockedStroke).toHaveStyle({ stroke: 'var(--md-loot)' })
+    expect(lockedStroke).toHaveStyle({ stroke: 'var(--md-loot)' })
+    expect(unlockedIcon).toHaveStyle({ color: 'var(--md-loot)' })
+    expect(lockedIcon).toHaveStyle({ color: 'var(--md-loot)' })
   })
 
   it('keeps hidden state as dashed outline', () => {
-    const { container } = renderMarker(prop({ hidden: true }))
+    const { container } = renderMarker(prop({ hidden: true, locked: true }))
     expect(container.querySelector('.maplab-prop-marker')).toHaveAttribute('stroke-dasharray')
   })
 
@@ -59,28 +67,19 @@ describe.skip('PropMarker bounded badge (M2)', () => {
     const { getByRole } = renderMarker(prop({ locked: true, trapped: true }))
     expect(getByRole('button').getAttribute('aria-label')).toMatch(/Trapped.*Locked/)
   })
-})
+  it('uses encounter identity for encounter props regardless of status', () => {
+    const { container } = renderMarker(prop({ kind: 'encounter', trapped: true }))
 
-describe('PropMarker', () => {
-  it('renders BadgeRing badges instead of corner-stacked badges', () => {
-    const { container } = renderMarker(prop({ locked: true, trapped: true }))
-
-    expect(container.querySelector('.maplab-badge-ring')).toBeTruthy()
-    expect(container.querySelectorAll('.maplab-badge')).toHaveLength(2)
+    expect(container.querySelector('.maplab-prop-marker')).toHaveStyle({ stroke: 'var(--md-tertiary)' })
+    expect(container.querySelector('.maplab-prop-icon')).toHaveStyle({ color: 'var(--md-tertiary)' })
   })
 
-  it('renders the full radial badge count and narrates every active badge', () => {
+  it('renders one collapsed disc and narrates every active badge', () => {
     const { container, getByRole } = renderMarker(prop({ locked: true, trapped: true, loot: { bundle_id: 1 } }))
 
-    expect(container.querySelectorAll('.maplab-badge')).toHaveLength(3)
+    expect(container.querySelectorAll('.maplab-badge')).toHaveLength(1)
+    expect(container.querySelector('.maplab-badge')).toHaveAttribute('data-badge', 'multiple-statuses')
     expect(getByRole('button', { name: 'Treasure chest — Trapped, Locked, Loot assigned' })).toBeTruthy()
-  })
-
-  it("uses each badge token's matching foreground for icon contrast", () => {
-    const { container } = renderMarker(prop({ locked: true, loot: { bundle_id: 1 } }))
-
-    expect(container.querySelector('[data-badge="locked"] svg')).toHaveStyle({ color: 'var(--md-on-passage-locked)' })
-    expect(container.querySelector('[data-badge="loot"] svg')).toHaveStyle({ color: 'var(--md-on-loot)' })
   })
 
   it('does not render legacy corner or loot badges when BadgeRing is active', () => {

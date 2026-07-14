@@ -10,6 +10,8 @@ import {
   type PassageSessionState,
 } from './maplabModel'
 
+const PORTAL_IDENTITY_TOKEN = '--md-primary'
+
 interface PortalMarkerProps {
   portal: MapPortal
   cellSize: number
@@ -31,10 +33,8 @@ interface PortalMarkerProps {
   onClick?: () => void
 }
 
-/** Portal marker — always on-square (never wall-attached), so it only needs the cell-centered half
- * of `PropMarker.tsx`'s geometry. Same visual language as stair/prop markers: a neutral-fill ring
- * whose stroke carries the passage-state token, the portal glyph as the primary icon, and a small
- * state badge when locked/trapped/hidden — never hue-alone. */
+/** Portal marker — stable portal identity color on the ring/icon; one collapsed status
+ * disc carries passage state, and hidden remains dashed as a non-color cue. */
 export function PortalMarker({
   portal,
   cellSize,
@@ -57,7 +57,7 @@ export function PortalMarker({
   const presentation = passagePresentation(effective)
   // Keep the authored trap badge after disarming so the confirmation badge can communicate both facts.
   const badges = markerBadges({ ...portal, locked: effective.locked }, effective.trapDisarmed)
-  const dasharray = presentation.state === 'hidden' ? '4 3' : undefined
+  const dasharray = effective.hidden ? '4 3' : undefined
   const label = `${portal.title ?? `Portal ${portal.portal_id}`} — ${badges.length ? badges.map((badge) => badge.label).join(', ') : presentation.label}`
 
   return (
@@ -90,13 +90,22 @@ export function PortalMarker({
         cx={cx}
         cy={cy}
         r={radius}
-        style={{ stroke: `var(${presentation.token})` }}
+        style={{ stroke: `var(${PORTAL_IDENTITY_TOKEN})` }}
         strokeDasharray={dasharray}
       />
       <g transform={`translate(${cx - iconSize / 2}, ${cy - iconSize / 2})`}>
-        <PortalIcon width={iconSize} height={iconSize} className="maplab-portal-icon" style={{ color: `var(${presentation.token})` }} />
+        <PortalIcon width={iconSize} height={iconSize} className="maplab-portal-icon" style={{ color: `var(${PORTAL_IDENTITY_TOKEN})` }} />
       </g>
-       <BadgeRing badges={badges} cx={cx} cy={cy} markerRadius={radius} badgeRadius={8} />
+      <BadgeRing
+        badges={badges}
+        cx={cx}
+        cy={cy}
+        cellX={portal.cell[0] * cellSize}
+        cellY={portal.cell[1] * cellSize}
+        cellSize={cellSize}
+        markerRadius={radius}
+        badgeRadius={8}
+      />
     </g>
   )
 }

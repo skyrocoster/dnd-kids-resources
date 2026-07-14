@@ -299,13 +299,13 @@ describe('MapLabPage (Stage 2 — Passage visuals)', () => {
     expect(firstFloorStair).toBeInTheDocument()
   })
 
-  it('unifies the stair marker on a single token family (no hardcoded tertiary fill)', () => {
+  it('uses stable stair identity color while keeping marker fill neutral', () => {
     const { container } = render(<MapLabPage />)
     const marker = container.querySelector('.maplab-stair-marker')!
-    // The fill is a neutral surface (class-driven, from theme.css); only the stroke/icon carry
-    // the passage-state token via inline style, so there is exactly one meaningful color family.
+    // The fill is a neutral surface (class-driven, from theme.css); stroke/icon carry fixture
+    // identity and status moves to the collapsed disc.
     expect(marker).not.toHaveAttribute('fill')
-    expect(marker.getAttribute('style') ?? '').not.toContain('tertiary')
+    expect(marker).toHaveStyle({ stroke: 'var(--md-tertiary)' })
   })
 })
 
@@ -437,10 +437,13 @@ describe('MapLabPage (Stage 4 — Passage session state)', () => {
 
     expect(door).toHaveAttribute('data-state', 'trapped')
     expect(document.querySelector('.maplab-door-badge-layer [data-badge="trap-disarmed"]')).not.toBeInTheDocument()
+    expect(document.querySelector('.maplab-door-badge-layer [data-badge="multiple-statuses"]')).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Disarm trap' }))
     expect(door).toHaveAttribute('data-state', 'locked')
-    expect(document.querySelector('.maplab-door-badge-layer [data-badge="trap-disarmed"]')).toBeInTheDocument()
+    expect(document.querySelector('.maplab-door-badge-layer [data-badge="trap-disarmed"]')).not.toBeInTheDocument()
+    expect(document.querySelector('.maplab-door-badge-layer [data-badge="multiple-statuses"]')).toBeInTheDocument()
+    expect(door).toHaveAccessibleName(/Trap disarmed/)
   })
 
   it('resets all session overrides via a reset button', async () => {
@@ -560,7 +563,7 @@ describe('Design Phase M — Loot on the map', () => {
     await flush()
 
     const chest = screen.getByRole('button', { name: /Treasure Chest.*loot assigned/i })
-    expect(chest.querySelector('[data-badge="loot"]')).toBeInTheDocument()
+    expect(chest.querySelector('[data-badge="multiple-statuses"]')).toBeInTheDocument()
 
     await user.hover(chest)
     expect(await screen.findByLabelText('Loot contents')).toBeInTheDocument()

@@ -1,10 +1,38 @@
-import { CARDINAL_DELTAS, doorPresentation, doorSwingGeometry, doorWallSegment, effectivePassageState, type MapDoor, type PassageSessionState } from './maplabModel'
-import { linearBadgeLayout, markerBadges } from './markerBadges'
+import { doorPresentation, doorSwingGeometry, doorWallSegment, effectivePassageState, type MapDoor, type PassageSessionState } from './maplabModel'
+import { collapsedStatusDescriptor, markerBadges } from './markerBadges'
 
 const DOOR_BADGE_RADIUS = 8
-// The central door glyph is 22px wide. This clearance keeps badges distinct from it while
-// retaining the badge's attachment to the current door segment.
-const DOOR_BADGE_CLEARANCE = 20
+const DOOR_LEAF_STROKE_WIDTH = 6
+const HIDDEN_DOOR_DASHARRAY = '1 9'
+const HIDDEN_DOOR_PATH_LENGTH = 61
+const DOOR_BADGE_T = 0.5
+const HIDDEN_DOT_ENDPOINT_INSET = DOOR_LEAF_STROKE_WIDTH / 2
+
+function pointOnSegment(
+  segment: { x1: number; y1: number; x2: number; y2: number },
+  t: number,
+): { x: number; y: number } {
+  return {
+    x: segment.x1 + (segment.x2 - segment.x1) * t,
+    y: segment.y1 + (segment.y2 - segment.y1) * t,
+  }
+}
+
+function insetSegment(
+  segment: { x1: number; y1: number; x2: number; y2: number },
+  inset: number,
+): { x1: number; y1: number; x2: number; y2: number } {
+  const length = Math.hypot(segment.x2 - segment.x1, segment.y2 - segment.y1)
+  if (length === 0 || inset <= 0) return segment
+  const unitX = (segment.x2 - segment.x1) / length
+  const unitY = (segment.y2 - segment.y1) / length
+  return {
+    x1: segment.x1 + unitX * inset,
+    y1: segment.y1 + unitY * inset,
+    x2: segment.x2 - unitX * inset,
+    y2: segment.y2 - unitY * inset,
+  }
+}
 
 interface DoorMarkerProps {
   door: MapDoor
@@ -45,14 +73,16 @@ export function DoorMarker({
   const segment = doorWallSegment(door, cellSize)
   const swing = doorSwingGeometry(door, cellSize)
   const presentation = doorPresentation(door, session)
-  const Icon = presentation.icon
-  const midX = (segment.x1 + segment.x2) / 2
-  const midY = (segment.y1 + segment.y2) / 2
   const effective = effectivePassageState(door, session)
   const badges = markerBadges({ ...door, locked: effective.locked }, effective.trapDisarmed)
   const stateLabel = badges.length ? badges.map((badge) => badge.label).join(', ') : presentation.label
   const label = `${door.title ?? `Door ${door.door_id}`} — ${stateLabel}, ${presentation.isOpen ? 'open' : 'closed'}`
-  const dasharray = presentation.state === 'hidden' ? '6 4' : undefined
+  const isHidden = effective.hidden
+  const dasharray = isHidden ? HIDDEN_DOOR_DASHARRAY : undefined
+  const pathLength = isHidden ? HIDDEN_DOOR_PATH_LENGTH : undefined
+  const openLeafSegment = { x1: swing.hinge.x, y1: swing.hinge.y, x2: swing.leafTip.x, y2: swing.leafTip.y }
+  const renderedOpenLeafSegment = isHidden ? insetSegment(openLeafSegment, HIDDEN_DOT_ENDPOINT_INSET) : openLeafSegment
+  const renderedClosedLeafSegment = isHidden ? insetSegment(segment, HIDDEN_DOT_ENDPOINT_INSET) : segment
 
   return (
     <g
@@ -83,12 +113,13 @@ export function DoorMarker({
         <>
           <line
             className="maplab-door-leaf"
-            x1={swing.hinge.x}
-            y1={swing.hinge.y}
-            x2={swing.leafTip.x}
-            y2={swing.leafTip.y}
+            x1={renderedOpenLeafSegment.x1}
+            y1={renderedOpenLeafSegment.y1}
+            x2={renderedOpenLeafSegment.x2}
+            y2={renderedOpenLeafSegment.y2}
             style={{ stroke: 'var(--md-door)' }}
             strokeDasharray={dasharray}
+            pathLength={pathLength}
           />
           <path
             className="maplab-door-swing"
@@ -99,17 +130,15 @@ export function DoorMarker({
       ) : (
         <line
           className="maplab-door-leaf-closed"
-          x1={segment.x1}
-          y1={segment.y1}
-          x2={segment.x2}
-          y2={segment.y2}
-          style={{ stroke: 'var(--md-door)' }}
+          x1={renderedClosedLeafSegment.x1}
+          y1={renderedClosedLeafSegment.y1}
+          x2={renderedClosedLeafSegment.x2}
+          y2={renderedClosedLeafSegment.y2}
+          style={{ stroke: 'var(--md-door)', strokeLinecap: isHidden ? 'round' : undefined }}
           strokeDasharray={dasharray}
+          pathLength={pathLength}
         />
       )}
-      <g transform={`translate(${midX - 11}, ${midY - 11})`}>
-        <Icon width={22} height={22} className="maplab-door-icon" style={{ color: 'var(--md-door)' }} />
-      </g>
     </g>
   )
 }
@@ -119,7 +148,8 @@ export function DoorMarker({
 export function DoorBadgeLayer({ door, cellSize, session }: DoorBadgeLayerProps) {
   const effective = effectivePassageState(door, session)
   const badges = markerBadges({ ...door, locked: effective.locked }, effective.trapDisarmed)
-  if (!badges.length) return null
+  const badge = collapsedStatusDescriptor(badges)
+  if (!badge) return null
 
   const presentation = doorPresentation(door, session)
   const wallSegment = doorWallSegment(door, cellSize)
@@ -127,26 +157,15 @@ export function DoorBadgeLayer({ door, cellSize, session }: DoorBadgeLayerProps)
   const segment = presentation.isOpen
     ? { x1: swing.hinge.x, y1: swing.hinge.y, x2: swing.leafTip.x, y2: swing.leafTip.y }
     : wallSegment
-  const [dx, dy] = CARDINAL_DELTAS[door.side]
-  // A closed badge moves into its owning cell. An open badge sits beside the leaf, using the wall
-  // tangent so it neither covers the central glyph nor escapes through the outer wall.
-  const normal = presentation.isOpen ? { x: Math.abs(dy), y: Math.abs(dx) } : { x: -dx, y: -dy }
-  const positions = linearBadgeLayout(badges.length, segment, normal, DOOR_BADGE_RADIUS, DOOR_BADGE_CLEARANCE)
+  const position = pointOnSegment(segment, DOOR_BADGE_T)
+  const Icon = badge.icon
 
   return (
-    <>
-      {badges.map((badge, index) => {
-        const Icon = badge.icon
-        const position = positions[index]
-        return (
-          <g key={`${door.door_id}-${badge.key}`} className="maplab-door-badge maplab-badge" data-badge={badge.key} transform={`translate(${position.x}, ${position.y})`}>
-            <circle r={DOOR_BADGE_RADIUS} fill={`var(${badge.token})`} />
-            <g transform="translate(-5.6, -5.6)">
-              <Icon width={11.2} height={11.2} style={{ color: `var(${badge.onToken})` }} />
-            </g>
-          </g>
-        )
-      })}
-    </>
+    <g className="maplab-door-badge maplab-badge" data-badge={badge.key} transform={`translate(${position.x}, ${position.y})`}>
+      <circle r={DOOR_BADGE_RADIUS} fill={`var(${badge.token})`} />
+      <g transform="translate(-5.6, -5.6)">
+        <Icon width={11.2} height={11.2} style={{ color: `var(${badge.onToken})` }} />
+      </g>
+    </g>
   )
 }
