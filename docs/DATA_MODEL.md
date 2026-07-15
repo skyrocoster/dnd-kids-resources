@@ -22,7 +22,7 @@ This ensures schema and seed-backed data stay synced with the codebase. Dungeons
 | `seed_conditions.json` | `conditions` | D&D 5e conditions (poisoned, stunned, etc.) | `/conditions` (ref.py) |
 | `seed_damage_types.json` | `damage_types` | Damage types (fire, cold, necrotic, etc.) | `/damage_types` (ref.py) |
 | `seed_weapon_properties.json` | `weapon_properties` | Weapon property tags (finesse, reach, heavy, etc.) | `/weapon_properties` (ref.py) |
-| `seed_spells.json` | `spells` | D&D 5e spells (name, level, school, damage, components, classes, etc.) | `/spells`, `/players/{id}/spells` |
+| `seed_spells.json` | `spells` | D&D 5e spells in the canonical 18-field contract | `/spells`, `/players/{id}/spells` |
 | `seed_monsters.json` | `monsters` | D&D 5e monsters/creatures (AC, HP, abilities, actions, CR) | `/monsters` |
 | `seed_weapons.json` | `weapons` | D&D 5e weapons (name, rarity, base weapon, properties, attack data) | `/weapons`, `/players/{id}/weapons` |
 | `seed_items.json` | `items` | Reusable treasure item catalog (name, gp value, category, description) | `/items` |
@@ -54,14 +54,13 @@ Some tables store complex structured data as JSON strings. The backend's Pydanti
 
 | Table | Column | Contents | Example |
 |---|---|---|---|
-| `spells` | `damage` | List of damage rolls (`[{"damage_type": "fire", "dice": "8d6"}]`) | `[{"damage_type": "fire", "dice": "8d6"}]` |
-| `spells` | `heal` | Healing roll dict | `{"dice": "1d4+1"}` |
-| `spells` | `heal_at_higher_levels` | Healing by spell slot (`{"1": "1d4+1", "5": "2d4+1"}`) | `{"1": "1d4+1"}` |
+| `spells` | `damage` | List of named damage expressions | `[{"name":"primary","formula":"8d6","damage_types":["fire"]}]` |
+| `spells` | `healing` | Healing expression and flags | `{"amount":"1d4+1","temp_hp":false,"max_hp":false}` |
+| `spells` | `higher_levels` | Higher-level prose and damage-by-slot expressions | `{"text":null,"damage_by_slot":{"3":"8d6"}}` |
+| `spells` | `casting_times` | One or more casting-time descriptions | `["1 action"]` |
 | `spells` | `components` | List of spell components (`["V", "S", "M"]`) | `["V", "S"]` |
-| `spells` | `attack_type` | List of attack roll definitions | `[{"type": "melee", "hit_bonus": 4}]` |
-| `spells` | `area_of_effect` | Area of effect dict (`{"type": "cone", "size": 15}`) | `{"type": "sphere", "size": 20}` |
-| `spells` | `classes` | List of classes that can learn this spell | `["Cleric", "Wizard"]` |
-| `spells` | `subclasses` | List of subclasses that can learn this spell | `["Lore Master"]` |
+| `spells` | `attacks` | Attack kinds and saving throws | `[{"kind":"melee","saving_throws":["str"]}]` |
+| `spells` | `area_of_effect` | Area shape and optional size | `{"shape":"sphere","size":20}` |
 | `monsters` | `aliases` | Alternate search/display names | `["fiendish hawk"]` |
 | `monsters` | `sizes` | Creature sizes | `["medium"]` |
 | `monsters` | `creature_type` | Category, subtype tags, and optional swarm size | `{"category":"dragon","tags":[],"swarm_size":null}` |

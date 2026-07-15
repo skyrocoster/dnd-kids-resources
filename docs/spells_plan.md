@@ -1,6 +1,6 @@
 # Spells - Data Restructure & Experience Rewire
 
-> **Status:** S0-S3, B0-B2 shipped. Phase B in progress; B3 (real-data verification) next.
+> **Status:** S0-S3, B0-B3 shipped. Phase F in progress; F0 (frontend scaffolding) next.
 
 ## What this feature is
 
@@ -97,34 +97,6 @@ the tested S2 transform and must not add ad hoc repair rules.
 
 ---
 
-## Design Phase B - SQLite & API Contract Cutover
-
-This phase projects the canonical seed into SQLite and makes the API return only the target contract. It is
-the backend rewire that makes a fresh database usable again. **Depends on:** S3 committed. **Depended on by:**
-F1-F2; frontend code must not consume the target API before B2 ships.
-
-| Stage | Model | Summary | Deliverables |
-|-------|-------|---------|--------------|
-| **B0 - Backend scaffolding** | Haiku | Add target contract stubs and skipped API regressions. | Typed model placeholders, test scaffolds. |
-| **B1 - Persistence projection** | Sonnet | Rebuild the spells table and seeder around the target fields. | SQLite schema, seed projection, row parser. |
-| **B2 - API cutover** | Sonnet | Rewire spell/player endpoints and CRUD to the target model. | Schemas, routers, fixtures, API tests. |
-| **B3 - Real-data verification** | Sonnet | Validate the entire canonical catalog through a rebuilt database. | Integration coverage and reference-doc updates. |
-
-**Sequencing:** B0 -> B1 -> B2 -> B3. B1 and B2 are separate commits so the database boundary is reviewable;
-B3 must run against a clean rebuild.
-
-#### B3 - Real-data verification (planned)
-
-- **Build:** Update `docs/DATA_MODEL.md` and `docs/API_REFERENCE.md` to the stable target table/schema and
-  response contract. Remove S0/B0 TODOs only after the data/API contract is verified.
-- **Inherits:** B2's canonical spell and player-spell API responses, plus a database rebuilt by B1.
-- **Tests:** Extend the real-data integration sweep to page all 525 spell list/detail responses and every
-  player-spell response through Pydantic; verify no raw JSON strings or legacy keys reach an API response.
-- **Gate:** Clean database rebuild, `pytest`, and the real-data integration suite pass. No browser pass is
-  required.
-
----
-
 ## Design Phase F - Frontend Contract Rewire
 
 This phase removes the frontend's dependence on legacy spell fields and restores spell browsing, editing,
@@ -144,7 +116,7 @@ and player spell displays against the target API. It intentionally preserves the
 
 - **Build:** Add exact target `Spell`, nested type, and input declarations to `frontend/src/api/types.ts`; add
   target test fixtures and skipped browser/editor/player contract tests. Do not change live legacy consumers.
-- **Inherits:** B3's published API contract.
+- **Inherits:** B3's verified canonical API contract, documented in `DATA_MODEL.md` and `API_REFERENCE.md`.
 - **Tests:** Type-only fixture construction and skipped consumer tests compile.
 - **Gate:** `npm run test` and `npm run typecheck` pass. No browser pass is required.
 
@@ -194,6 +166,7 @@ and player spell displays against the target API. It intentionally preserves the
 | **B0** | Backend scaffolding: target nested Pydantic models (`SpellDamage`, `SpellHealing`, `SpellHigherLevels`, `SpellAttack`, `SpellAreaOfEffect`, `SpellTarget`, `SpellTargetCreate`, `SpellTargetUpdate`) added to `schemas.py`; 17 passing schema-construction tests; 29 skipped API regression tests (22 xfailed, 7 xpassed). Legacy routes/models unchanged. SQL projection inventory captured. Gate ✅. |
 | **B1** | Persistence projection: rebuilt the `spells` table around the canonical target fields, projected the canonical seed into the new columns with explicit IDs, and centralized target JSON parsing in `backend/app/db.py`. Gate ✅. |
 | **B2** | API cutover: canonical `Spell` schemas and spell/player routes now project only the 18-field contract, with JSON CRUD serialization and normalized school filters. 246 tests pass at 91.27% coverage. Gate ✅. |
+| **B3** | Real-data verification: a clean rebuild loaded 525 spells, and integration tests validate every spell list/detail and player-spell response through `Spell`. Reference docs now describe the stable contract; 246 tests pass at 91.27% coverage. Gate ✅. |
 
 ## Cross-references
 
@@ -207,4 +180,4 @@ and player spell displays against the target API. It intentionally preserves the
 
 ## Next:
 
-B3 - Real-data verification: validate the canonical catalog through a clean rebuilt database.
+F0 - Frontend scaffolding: add target TypeScript declarations and skipped consumer tests.
