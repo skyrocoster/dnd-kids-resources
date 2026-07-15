@@ -12,10 +12,10 @@ import './SpellBrowserPage.css'
 
 function sortSpells(spells: Spell[]): Spell[] {
   return [...spells].sort((a, b) => {
-    const levelA = Number(a.level ?? 99)
-    const levelB = Number(b.level ?? 99)
+    const levelA = a.level
+    const levelB = b.level
     if (levelA !== levelB) return levelA - levelB
-    return a.spell_name.localeCompare(b.spell_name)
+    return a.name.localeCompare(b.name)
   })
 }
 
@@ -87,7 +87,7 @@ export function SpellBrowserPage() {
             <SearchList
               items={spells}
               getId={(s) => s.id}
-              getLabel={(s) => s.spell_name}
+              getLabel={(s) => s.name}
               getMeta={(s) => levelLabel(s.level)}
               selectedId={selectedId}
               onSelect={(s) => setSelectedId(s.id)}
@@ -100,7 +100,7 @@ export function SpellBrowserPage() {
             selected ? (
               <div className="spell-browser-detail">
                 <Card
-                  title={`${selected.icon || ''} ${selected.spell_name}`.trim()}
+                  title={selected.name}
                   subtitle={`${levelLabel(selected.level)}${selected.school ? ` · ${selected.school}` : ''}`}
                   tag={selected.concentration ? 'Concentration' : selected.ritual ? 'Ritual' : undefined}
                   variant="spell"
@@ -120,10 +120,10 @@ export function SpellBrowserPage() {
                   }
                 >
                   <dl className="spell-browser-meta">
-                    {selected.casting_time && (
+                    {selected.casting_times.length > 0 && (
                       <>
                         <dt>Casting Time</dt>
-                        <dd>{selected.casting_time}</dd>
+                        <dd>{selected.casting_times.join(' or ')}</dd>
                       </>
                     )}
                     {selected.range && (
@@ -144,22 +144,25 @@ export function SpellBrowserPage() {
                         <dd>{selected.components.join(', ')}</dd>
                       </>
                     )}
-                    {selected.classes && selected.classes.length > 0 && (
+                    {selected.materials && (
                       <>
-                        <dt>Classes</dt>
-                        <dd>{selected.classes.join(', ')}</dd>
+                        <dt>Materials</dt>
+                        <dd>{selected.materials}</dd>
                       </>
                     )}
+                    {selected.concentration && <><dt>Concentration</dt><dd>Yes</dd></>}
+                    {selected.ritual && <><dt>Ritual</dt><dd>Yes</dd></>}
                   </dl>
-                  {selected.spell_text && (
+                  {selected.description && (
                     <p>
-                      <DiceText text={selected.spell_text} />
+                      <DiceText text={selected.description} />
                     </p>
                   )}
-                  {selected.higher_levels && (
+                  {selected.alternate_description && <p><DiceText text={selected.alternate_description} /></p>}
+                  {selected.higher_levels.text && (
                     <p>
                       <strong>At Higher Levels: </strong>
-                      <DiceText text={selected.higher_levels} />
+                      <DiceText text={selected.higher_levels.text} />
                     </p>
                   )}
                 </Card>
@@ -177,7 +180,7 @@ export function SpellBrowserPage() {
 
       {pendingDelete && (
         <ConfirmDialog
-          message={`Delete ${pendingDelete.spell_name}?`}
+          message={`Delete ${pendingDelete.name}?`}
           onConfirm={confirmDelete}
           onCancel={() => setPendingDelete(null)}
         />
