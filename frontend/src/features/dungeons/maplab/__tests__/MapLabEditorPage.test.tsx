@@ -1,16 +1,25 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { MemoryRouter } from 'react-router-dom'
 import * as api from '../../../../api/client'
 import { MapLabEditorPage } from '../MapLabEditorPage'
 import { mapLabLayout } from '../maplabData'
+import { DungeonRouteContextProvider, type DungeonRouteContext } from '../dungeonRouteContext'
 
-function renderMapLabEditorPage() {
+function renderMapLabEditorPage(
+  initialEntry: string = '/dungeons/4/edit',
+  route: DungeonRouteContext = {
+    dungeonId: 4,
+    dungeon: { id: 4, title: 'Test Dungeon', data: {} },
+    status: 'ready',
+    error: null,
+  },
+) {
   return render(
-    <MemoryRouter initialEntries={['/dungeons/4/edit']}>
-      <Routes>
-        <Route path="/dungeons/:dungeonId/edit" element={<MapLabEditorPage />} />
-      </Routes>
+    <MemoryRouter initialEntries={[initialEntry]}>
+      <DungeonRouteContextProvider value={route}>
+        <MapLabEditorPage />
+      </DungeonRouteContextProvider>
     </MemoryRouter>,
   )
 }
@@ -32,19 +41,31 @@ describe('MapLabEditorPage', () => {
     vi.useRealTimers()
   })
 
-  it('falls back to the fixture layout when the backend has no saved layout (404)', async () => {
+  it('loads a blank layout when the backend has no saved layout (404) and does not save until edited', async () => {
     vi.spyOn(api, 'getDungeonLayout').mockRejectedValue(new api.ApiError(404, 'not found'))
-    vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: {} })
+    const saveSpy = vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: {} })
 
     renderMapLabEditorPage()
     await flush()
 
-    expect(screen.getAllByText('Combat Training Hall').length).toBeGreaterThan(0)
+    expect(screen.getByText('No saved layout yet. Your first edit will save this blank map.')).toBeInTheDocument()
+    expect(screen.getByText('No rooms on this floor yet.')).toBeInTheDocument()
+    expect(screen.queryByText('Combat Training Hall')).not.toBeInTheDocument()
+    expect(saveSpy).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByRole('button', { name: /add room/i }))
+
+    await act(async () => {
+      vi.advanceTimersByTime(700)
+      await Promise.resolve()
+    })
+
+    expect(saveSpy).toHaveBeenCalledTimes(1)
   })
 
   it('mounts the door badge overlay after the door glyph layer', async () => {
-    vi.spyOn(api, 'getDungeonLayout').mockRejectedValue(new api.ApiError(404, 'not found'))
-    vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: {} })
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: mapLabLayout as unknown as Record<string, unknown> })
+    vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: mapLabLayout as unknown as Record<string, unknown> })
 
     const { container } = renderMapLabEditorPage()
     await flush()
@@ -591,7 +612,7 @@ describe('MapLabEditorPage (Stage E3 — Toolbar reorganization & persistent ins
     expect(createGroup?.textContent).toMatch(/Place door/)
 
     const sessionGroup = Array.from(groups).find((group) => group.querySelector('.maplab-toolbar-group-label')?.textContent === 'Session')
-    expect(sessionGroup?.textContent).toMatch(/Reset to fixture/)
+    expect(sessionGroup?.textContent).toMatch(/Reset unsaved changes/)
 
     const statusGroup = container.querySelector('.maplab-toolbar-group-status')
     expect(statusGroup?.querySelector('.maplab-editor-save-status')).toBeInTheDocument()
@@ -612,7 +633,7 @@ describe('MapLabEditorPage (Stage E3 — Toolbar reorganization & persistent ins
       expect(screen.getByRole('button', { name: 'Expand Create tools' })).toBeInTheDocument()
       // Session's own toggle is unaffected — still says "Collapse", meaning it stayed expanded.
       expect(screen.getByRole('button', { name: 'Collapse Session tools' })).toBeInTheDocument()
-      expect(screen.getByRole('button', { name: 'Reset to fixture' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Reset unsaved changes' })).toBeInTheDocument()
     })
 
     it('toolbar tray collapse state persists across remount via localStorage', async () => {
@@ -910,7 +931,7 @@ describe('MapLabEditorPage (floor-stacking regression — doors/props confined t
     const { container } = renderMapLabEditorPage()
     await flush()
 
-    fireEvent.click(screen.getByRole('tab', { name: 'Floor 1' }))
+    fireEvent.click(screen.getByRole('tab', { name: 'First Floor' }))
 
     const doorLabels = Array.from(container.querySelectorAll('.maplab-door')).map((el) => el.getAttribute('aria-label'))
     expect(doorLabels.some((label) => label?.includes('Rusty Trap Door'))).toBe(false)
@@ -999,7 +1020,7 @@ describe('MapLabEditorPage (Stage G0 — Ghost Objects scaffolding)', () => {
     renderMapLabEditorPage()
     await flush()
 
-    fireEvent.click(screen.getByRole('tab', { name: 'Floor 1' }))
+    fireEvent.click(screen.getByRole('tab', { name: 'First Floor' }))
 
     const toggle = screen.getByRole('button', { name: /ghost lower floor/i })
     expect(toggle).not.toBeDisabled()
@@ -1040,7 +1061,7 @@ describe('MapLabEditorPage (Stage G1 — Ghost floor rendering)', () => {
     const { container } = renderMapLabEditorPage()
     await flush()
 
-    fireEvent.click(screen.getByRole('tab', { name: 'Floor 1' }))
+    fireEvent.click(screen.getByRole('tab', { name: 'First Floor' }))
     expect(container.querySelector('.maplab-ghost-layer')).not.toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: /ghost lower floor/i }))
@@ -1057,7 +1078,7 @@ describe('MapLabEditorPage (Stage G1 — Ghost floor rendering)', () => {
     const { container } = renderMapLabEditorPage()
     await flush()
 
-    fireEvent.click(screen.getByRole('tab', { name: 'Floor 1' }))
+    fireEvent.click(screen.getByRole('tab', { name: 'First Floor' }))
     fireEvent.click(screen.getByRole('button', { name: /ghost lower floor/i }))
 
     const ghostLayer = container.querySelector('.maplab-ghost-layer')
@@ -1082,7 +1103,7 @@ describe('MapLabEditorPage (Stage G1 — Ghost floor rendering)', () => {
     // Floor 0 (the lowest with rooms) has no lower floor to ghost.
     expect(screen.getByRole('button', { name: /ghost lower floor/i })).toBeDisabled()
 
-    fireEvent.click(screen.getByRole('tab', { name: 'Floor 1' }))
+    fireEvent.click(screen.getByRole('tab', { name: 'First Floor' }))
     expect(screen.getByRole('button', { name: /ghost lower floor/i })).not.toBeDisabled()
   })
 })
@@ -1114,7 +1135,7 @@ describe('MapLabEditorPage (Stage G2 — ghost treatment design pass)', () => {
     const { container } = renderMapLabEditorPage()
     await flush()
 
-    fireEvent.click(screen.getByRole('tab', { name: 'Floor 1' }))
+    fireEvent.click(screen.getByRole('tab', { name: 'First Floor' }))
     fireEvent.click(screen.getByRole('button', { name: /ghost lower floor/i }))
 
     const ghostLayer = container.querySelector('.maplab-ghost-layer')

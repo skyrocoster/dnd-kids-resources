@@ -1,16 +1,23 @@
-import { useCallback, useMemo, useState, type ReactNode } from 'react'
-import { useParams } from 'react-router-dom'
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import './MapLabPage.css'
+import { FloatingWindow } from '../../../components/FloatingWindow'
+import { MapLabRouteState } from './MapLabRouteState'
+import { useDungeonShellContext } from './dungeonRouteContext'
 import { useMapLabLayout } from './useMapLabLayout'
 import { useMapCanvasZoom, type ViewportSize } from './useMapCanvasZoom'
 import { MapCanvas } from './MapCanvas'
 import { ChevronDownIcon, ChevronUpIcon, FitIcon, ZoomInIcon, ZoomOutIcon } from '../../../components/icons'
 import { EncounterDock } from '../../encounters/EncounterDock'
+import { NPCStatCard } from '../../npcs/NPCStatCard'
+import { useNpc } from '../../npcs/useNpc'
+import { parseDungeonData } from '../dungeonModel'
 import { PropMarker } from './PropMarker'
 import { PortalMarker } from './PortalMarker'
 import { StairMarker } from './StairMarker'
 import { DoorBadgeLayer, DoorMarker } from './DoorMarker'
 import { InspectorPanel, type SessionControls } from './InspectorPanel'
+import { RoomDetailsPanel } from './RoomDetailsPanel'
+import { useActiveRoom } from './useActiveRoom'
 import {
   absoluteCells,
   defaultPassageSession,
@@ -42,6 +49,12 @@ const GRID_PATTERN_ID = 'maplab-unknown-space-grid'
 
 function roomCenter(room: MapRoom): { x: number; y: number } {
   const cells = absoluteCells(room)
+  if (cells.length === 0) {
+    return {
+      x: (room.origin[0] + 0.5) * CELL_SIZE,
+      y: (room.origin[1] + 0.5) * CELL_SIZE,
+    }
+  }
   const sum = cells.reduce(
     (acc, [x, y]) => ({ x: acc.x + x, y: acc.y + y }),
     { x: 0, y: 0 },
@@ -144,12 +157,11 @@ export function ToolbarTray({
 
 /** Map Lab prototype page — Stage M2.3: walls, and door/stair affordances with state + details. */
 export function MapLabPage() {
-  const { dungeonId: dungeonIdStr } = useParams()
-  const dungeonId = Number(dungeonIdStr!)
-  const { layout } = useMapLabLayout(dungeonId)
+  const route = useDungeonShellContext()
+  const { layout, loading: layoutLoading, status: layoutStatus, error: layoutError } = useMapLabLayout(route.dungeonId)
+  const [parsed, setParsed] = useState(() => parseDungeonData(route.dungeon?.data ?? {}))
   const floors = useMemo(() => floorsInLayout(layout), [layout])
   const [activeZ, setActiveZ] = useState<number>(floors[0]?.z ?? 0)
-  const [selectedRoomId, setSelectedRoomId] = useState<number | null>(null)
   const [hoveredInspectable, setHoveredInspectable] = useState<InspectableRef | null>(null)
   const [focusedInspectable, setFocusedInspectable] = useState<InspectableRef | null>(null)
   const [pinnedDoorId, setPinnedDoorId] = useState<number | null>(null)
@@ -157,9 +169,21 @@ export function MapLabPage() {
   const [stairSessions, setStairSessions] = useState<Record<number, PassageSessionState>>({})
   const [portalSessions, setPortalSessions] = useState<Record<number, PassageSessionState>>({})
   const [activeEncounterId, setActiveEncounterId] = useState<number | null>(null)
+  const [activeNpcId, setActiveNpcId] = useState<number | null>(null)
   const zoomApi = useMapCanvasZoom()
   const [viewportSize, setViewportSize] = useState<ViewportSize>({ width: 0, height: 0 })
   const handleViewportResize = useCallback((size: ViewportSize) => setViewportSize(size), [])
+
+  useEffect(() => {
+    setParsed(parseDungeonData(route.dungeon?.data ?? {}))
+  }, [route.dungeon?.data])
+
+  useEffect(() => {
+    if (floors.length === 0) return
+    if (!floors.some((floor) => floor.z === activeZ)) {
+      setActiveZ(floors[0].z)
+    }
+  }, [activeZ, floors])
 
   const rooms = useMemo(() => roomsOnZ(layout, activeZ), [layout, activeZ])
   const stairs = useMemo(() => stairEndpointsForZ(layout, activeZ), [layout, activeZ])
@@ -181,9 +205,12 @@ export function MapLabPage() {
   const rulerY = (bounds.minY + 1.5) * CELL_SIZE
   const rulerTick = CELL_SIZE * 0.12
 
-  function toggleSelect(roomId: number) {
-    setSelectedRoomId((current) => (current === roomId ? null : roomId))
-  }
+  const {
+    activeRoomId,
+    setActiveRoomId,
+    activeLayoutRoom,
+    activeDungeonRoom,
+  } = useActiveRoom(layout, activeZ, parsed, setActiveZ)
 
   function togglePinnedDoor(doorId: number) {
     setPinnedDoorId((current) => (current === doorId ? null : doorId))
@@ -258,6 +285,19 @@ export function MapLabPage() {
 
   const activeFloor = floors.find((floor) => floor.z === activeZ)
 
+  if (route.status === 'loading' || layoutLoading) {
+    return <MapLabRouteState title="Loading map" message="Loading dungeon map…" />
+  }
+
+  if (layoutStatus === 'error') {
+    return (
+      <MapLabRouteState
+        title={route.dungeon?.title ?? 'Dungeon layout unavailable'}
+        message={layoutError?.message ?? 'Failed to load dungeon layout.'}
+      />
+    )
+  }
+
   const activeRef: InspectableRef | null =
     hoveredInspectable ?? focusedInspectable ?? (pinnedDoorId !== null ? { kind: 'door', id: pinnedDoorId } : null)
 
@@ -301,8 +341,9 @@ export function MapLabPage() {
 
   return (
     <div className="maplab-page">
-      <h1 className="maplab-title">Map Lab</h1>
-      <p className="maplab-subtitle">Programmatic dungeon map prototype</p>
+      {layoutStatus === 'empty' && (
+        <p className="maplab-subtitle">No saved layout yet. This dungeon is starting from a blank map.</p>
+      )}
 
       <div className="maplab-floor-tabs" role="tablist" aria-label="Dungeon floors">
         {floors.map((floor) => (
@@ -332,46 +373,47 @@ export function MapLabPage() {
       </div>
 
       <div className="maplab-canvas">
-        <MapCanvas
-          viewBox={viewBox}
-          bounds={bounds}
-          zoom={zoomApi.zoom}
-          ariaLabel={`Dungeon floor map — ${activeFloor?.title ?? `Floor ${activeZ}`}`}
-          variant="neutral"
-          onWheelZoom={zoomApi.handleWheel}
-          onPanStart={zoomApi.handlePointerDown}
-          onPanMove={zoomApi.handlePointerMove}
-          onPanEnd={zoomApi.handlePointerUp}
-          onViewportResize={handleViewportResize}
-          controlsSlot={
-            <>
-              <button
-                type="button"
-                className="maplab-pill-button maplab-zoom-button"
-                aria-label="Zoom out"
-                onClick={zoomApi.zoomOut}
-              >
-                <ZoomOutIcon width={20} height={20} aria-hidden="true" />
-              </button>
-              <button
-                type="button"
-                className="maplab-pill-button maplab-zoom-button"
-                aria-label="Zoom in"
-                onClick={zoomApi.zoomIn}
-              >
-                <ZoomInIcon width={20} height={20} aria-hidden="true" />
-              </button>
-              <button
-                type="button"
-                className="maplab-pill-button maplab-zoom-button"
-                aria-label="Reset zoom"
-                onClick={() => zoomApi.fitToBounds(bounds, viewportSize)}
-              >
-                <FitIcon width={20} height={20} aria-hidden="true" />
-              </button>
-            </>
-          }
-        >
+        <div className="maplab-canvas-area">
+          <MapCanvas
+            viewBox={viewBox}
+            bounds={bounds}
+            zoom={zoomApi.zoom}
+            ariaLabel={`Dungeon floor map — ${activeFloor?.title ?? `Floor ${activeZ}`}`}
+            variant="neutral"
+            onWheelZoom={zoomApi.handleWheel}
+            onPanStart={zoomApi.handlePointerDown}
+            onPanMove={zoomApi.handlePointerMove}
+            onPanEnd={zoomApi.handlePointerUp}
+            onViewportResize={handleViewportResize}
+            controlsSlot={
+              <>
+                <button
+                  type="button"
+                  className="maplab-pill-button maplab-zoom-button"
+                  aria-label="Zoom out"
+                  onClick={zoomApi.zoomOut}
+                >
+                  <ZoomOutIcon width={20} height={20} aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  className="maplab-pill-button maplab-zoom-button"
+                  aria-label="Zoom in"
+                  onClick={zoomApi.zoomIn}
+                >
+                  <ZoomInIcon width={20} height={20} aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  className="maplab-pill-button maplab-zoom-button"
+                  aria-label="Reset zoom"
+                  onClick={() => zoomApi.fitToBounds(bounds, viewportSize)}
+                >
+                  <FitIcon width={20} height={20} aria-hidden="true" />
+                </button>
+              </>
+            }
+          >
           <defs>
             <pattern
               id={GRID_PATTERN_ID}
@@ -402,7 +444,7 @@ export function MapLabPage() {
           </g>
 
           {rooms.map((room) => {
-            const isSelected = room.room_id === selectedRoomId
+            const isSelected = room.room_id === activeRoomId
             const center = roomCenter(room)
             return (
               <g
@@ -413,16 +455,19 @@ export function MapLabPage() {
                 tabIndex={0}
                 aria-pressed={isSelected}
                 aria-label={room.title ?? `Room ${room.room_id}`}
-                onClick={() => toggleSelect(room.room_id)}
+                onClick={() => setActiveRoomId(room.room_id)}
                 onKeyDown={(event) => {
                   if (event.key === 'Enter' || event.key === ' ') {
                     event.preventDefault()
-                    toggleSelect(room.room_id)
+                    setActiveRoomId(room.room_id)
                   }
                 }}
                 onMouseEnter={() => setHoveredInspectable({ kind: 'room', id: room.room_id })}
                 onMouseLeave={() => setHoveredInspectable(null)}
-                onFocus={() => setFocusedInspectable({ kind: 'room', id: room.room_id })}
+                onFocus={() => {
+                  setFocusedInspectable({ kind: 'room', id: room.room_id })
+                  setActiveRoomId(room.room_id)
+                }}
                 onBlur={() => setFocusedInspectable(null)}
               >
                 {absoluteCells(room).map(([x, y]) => (
@@ -543,20 +588,48 @@ export function MapLabPage() {
               />
             )
           })}
-        </MapCanvas>
+          </MapCanvas>
+        </div>
 
-        <div className="maplab-inspector-panel-container" aria-live="polite">
-          {activeInspectable ? (
-            <InspectorPanel target={activeInspectable} controls={activeControls} />
-          ) : (
-            <p className="maplab-affordance-placeholder">Hover or focus a room, door, stair, or prop for details.</p>
-          )}
+        <div className="maplab-sidebar">
+          <div className="maplab-inspector-panel-container" aria-live="polite">
+            {activeInspectable ? (
+              <InspectorPanel target={activeInspectable} controls={activeControls} />
+            ) : (
+              <p className="maplab-affordance-placeholder">Hover or focus a room, door, stair, or prop for details.</p>
+            )}
+          </div>
+          <RoomDetailsPanel
+            room={activeLayoutRoom}
+            dungeonRoom={activeDungeonRoom}
+            parsed={parsed}
+            dungeonId={route.dungeonId ?? 0}
+            onRunEncounter={setActiveEncounterId}
+            onOpenNpc={setActiveNpcId}
+          />
         </div>
       </div>
 
       {activeEncounterId != null && (
         <EncounterDock encounterId={activeEncounterId} onClose={() => setActiveEncounterId(null)} />
       )}
+      {activeNpcId != null && <NpcDock npcId={activeNpcId} onClose={() => setActiveNpcId(null)} />}
     </div>
+  )
+}
+
+function NpcDock({ npcId, onClose }: { npcId: number; onClose: () => void }) {
+  const { npc, loading, error } = useNpc(npcId)
+
+  return (
+    <FloatingWindow
+      title={loading ? 'Loading…' : npc?.name ?? `NPC #${npcId}`}
+      storageKey="dungeon-npc-dock-position"
+      onClose={onClose}
+    >
+      {loading && <p className="maplab-affordance-placeholder">Loading NPC…</p>}
+      {!loading && error && <p className="maplab-affordance-placeholder">{error}</p>}
+      {!loading && npc && <NPCStatCard npc={npc} compact />}
+    </FloatingWindow>
   )
 }

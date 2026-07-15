@@ -1,0 +1,108 @@
+.maplab-room-details-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.maplab-room-details-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.maplab-room-details-title {
+  margin: 0;
+  font-size: var(--type-title-size);
+  font-weight: var(--type-title-weight);
+  color: var(--md-on-surface);
+}
+
+.maplab-room-details-badges,
+.maplab-room-details-npcs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.maplab-room-details-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: 999px;
+  background: var(--md-secondary-container);
+  color: var(--md-on-secondary-container);
+  font-size: var(--type-caption-size);
+  font-weight: var(--type-label-weight);
+}
+
+.maplab-room-details-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.maplab-room-details-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.maplab-room-details-group-title {
+  margin: 0;
+  font-size: var(--type-caption-size);
+  font-weight: var(--type-caption-weight);
+  letter-spacing: var(--type-caption-tracking);
+  text-transform: uppercase;
+  color: var(--md-on-surface-variant);
+}
+
+.maplab-room-details-entry-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.maplab-room-details-entry {
+  padding: 0.875rem;
+  border: 1px solid var(--md-outline-variant);
+  border-radius: 12px;
+  background: var(--md-surface);
+}
+
+.maplab-room-details-entry-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.maplab-room-details-entry-title {
+  margin: 0;
+  font-size: var(--type-body-size);
+  font-weight: var(--type-label-weight);
+  color: var(--md-on-surface);
+}
+
+.maplab-room-details-entry-content,
+.maplab-room-details-treasure,
+.maplab-room-details-empty {
+  margin: 0;
+  font-size: var(--type-body-sm-size);
+}
+
+.maplab-room-details-entry-content,
+.maplab-room-details-treasure {
+  color: var(--md-on-surface);
+}
+
+.maplab-room-details-empty,
+.maplab-room-details-treasure {
+  color: var(--md-on-surface-variant);
+}
+
+.maplab-room-details-encounter-button {
+  min-height: 2rem;
+  padding: 0.25rem 0.75rem;
+}
