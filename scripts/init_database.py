@@ -232,7 +232,7 @@ def init_database():
             speed TEXT,
             saving_throws JSON DEFAULT '{}',
             skills JSON DEFAULT '{}',
-            senses JSON DFEFAULT '[{}]',
+            senses JSON DEFAULT '[{}]',
             languages TEXT,
             appearance JSON DEFAULT '{}',
             notes TEXT,
