@@ -7,8 +7,8 @@ room-reading/authoring capabilities around them. It follows
 [`docs/PLAN_TEMPLATE.md`](PLAN_TEMPLATE.md): durable facts first, a collapsed shipped-stage table,
 and detailed specifications only for the remaining work.
 
-> **Status:** Original dungeon work, encounter/NPC support, and Map Lab phases A-M shipped. R0-R3
-> shipped. R4 - Add viewer room-reading surface is next.
+> **Status:** Original dungeon work, encounter/NPC support, and Map Lab phases A-M shipped. R0-R4
+> shipped. R5 - Add viewer navigation rail is next.
 
 ---
 
@@ -152,6 +152,7 @@ Use the canonical tokens in `frontend/src/theme.css` and
 | **R1 - Route cutover scaffold** | Production paths now mount Map Lab by route parameter; sandbox routes and the fixed dungeon-ID constant were removed. |
 | **R2 - Production data loading** | Added validated dungeon route loading, distinct missing/error states, blank-layout 404 handling, and reset-to-last-loaded behavior instead of production fixture fallback. Gate ✅. |
 | **R3 - Additive shared dungeon shell** | DungeonShell layout route with dungeon title, view/edit mode toggle, return-to-browser link, and hoisted DungeonRouteContext. Prototype titles removed from both pages. Gate ✅. |
+| **R4 - Add viewer room-reading surface** | Added persistent active-room selection, a room-details sidebar with entries/NPCs/encounter launch, and viewer NPC dock wiring while preserving fixture inspection. Gate ✅. |
 
 ---
 
@@ -191,26 +192,7 @@ future dungeon authoring.
 work after R3, but R4's active-room contract lands first. R6 must precede R7-R8 because the old
 modal cannot be removed until production editing persists complete room data.
 
-#### R4 - Add Viewer Room-Reading Surface (Planned)
-
-- **Build:** extend `MapLabPage`'s existing `selectedRoomId` state into a persistent active-room
-  model keyed by shared `room_id`. Default to the first layout room with matching data, then the
-  first layout room; map click and keyboard selection set it and synchronize the active floor. Add
-  a stable room-details panel beside the existing map/hover inspector; do not replace
-  `InspectorPanel`, which continues to inspect map fixtures. The new panel reads the matching
-  `DungeonRoom` through `parseDungeonData`/`groupEntriesByType`: title, grouped entries, treasure
-  content, encounter launch affordances, and NPC chips/dock. A layout-only room displays an
-  explicit empty-content state; a data-only room is not invented on the map.
-- **Inherits:** R3's `DungeonShell` context and shell framing, R2 dungeon context, current map room
-  accessibility, `dungeonModel.ts`, `DiceText`, `EncounterDock`, `NpcChip`, `useNpc`, and
-  `NPCStatCard`.
-- **Tests:** default selection, pointer and keyboard selection, floor synchronization, grouped
-  entry render, encounter and NPC interactions, layout-only/data-only mismatch states, and missing
-  optional data tolerance.
-- **Gate:** selecting a room provides the practical information needed to run it without opening
-  `DungeonViewPage`.
-
-#### R5 - Add Viewer Navigation Rail (Planned)
+#### R5 - Add Viewer Navigation Rail (next up)
 
 - **Build:** add a floor-grouped room rail to the viewer's existing composition using `getFloors`,
   `getRoomsOnFloor`, and threat hints from `dungeonModel.ts`, constrained to rooms that have map
@@ -218,8 +200,10 @@ modal cannot be removed until production editing persists complete room data.
   It supplements rather than replaces Map Lab's floor tabs, zoom, or canvas selection. Choose and
   document a compact or collapsible presentation based on the shared shell's actual responsive
   layout.
-- **Inherits:** R4 active-room state and the old selectors; do not revive old breadcrumb-history
-  behavior without a current table-use need.
+- **Inherits:** R4 `useActiveRoom` state and selectors (`activeRoomId`, `setActiveRoomId`,
+  `activeLayoutRoom`, `activeDungeonRoom`); `RoomDetailsPanel` content surface; `DungeonRouteContext`
+  for dungeon identity; `dungeonModel.ts` selectors (`getFloors`, `getRoomsOnFloor`, `groupEntriesByType`,
+  `getRoomThreatHints`). Do not revive old breadcrumb-history behavior without a current table-use need.
 - **Tests:** grouping/order, rail-to-map synchronization, map-to-rail synchronization, floor change,
   and any retained collapse behavior.
 - **Gate:** the viewer supports both spatial discovery and fast room-list navigation while retaining
@@ -235,7 +219,8 @@ modal cannot be removed until production editing persists complete room data.
   `dungeons.data` and mirrors the layout cache; entries and NPC IDs are edited in the inspector.
   Preserve layout-only `description` and `kind`. Save status must report either blob's failure
   accurately and never silently claim a coordinated save succeeded when one request failed.
-- **Inherits:** R2 context/load semantics, the current `mapLabEditorReducer`, `useMapLabEditor`,
+- **Inherits:** R2 context/load semantics; R4 `useActiveRoom`, `RoomDetailsPanel`,
+  `DungeonRouteContext`; the current `mapLabEditorReducer`, `useMapLabEditor`,
   existing room add/delete/select flow, room-form conversion patterns, `parseDungeonData`, and
   fixture property forms. Do not create a second modal or a parallel room editor.
 - **Tests:** add/edit/delete shared room lifecycle; title cache synchronization; entries/NPC edits;
@@ -311,4 +296,4 @@ When the phase is complete:
 
 ## Next
 
-**Next:** `R4 - Add viewer room-reading surface` is unblocked.
+**Next:** `R5 - Add viewer navigation rail` is unblocked.

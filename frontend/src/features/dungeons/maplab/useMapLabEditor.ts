@@ -5,9 +5,8 @@
  */
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
 import { ApiError, getDungeonLayout, saveDungeonLayout } from '../../../api/client'
-import { islyCastleLayout } from './islyCastleData'
 import { initialEditorState, mapLabEditorReducer, type EditorAction, type EditorState } from './maplabEditor'
-import { normalizeLayout, type CardinalSide, type MapCell, type MapLayout } from './maplabModel'
+import { createEmptyMapLayout, normalizeLayout, type CardinalSide, type MapCell, type MapLayout } from './maplabModel'
 
 const SAVE_DEBOUNCE_MS = 600
 
@@ -16,18 +15,35 @@ export interface SyncStatus {
   error?: string
 }
 
-export function useMapLabEditor(dungeonId: number) {
-  const [state, dispatch] = useReducer(mapLabEditorReducer, islyCastleLayout, initialEditorState)
+export interface LayoutLoadStatus {
+  status: 'loading' | 'ready' | 'empty' | 'error'
+  error?: string
+}
+
+export function useMapLabEditor(dungeonId: number | null) {
+  const [state, dispatch] = useReducer(mapLabEditorReducer, createEmptyMapLayout(), initialEditorState)
   const [loading, setLoading] = useState(true)
+  const [loadStatus, setLoadStatus] = useState<LayoutLoadStatus>({ status: 'loading' })
   const [syncStatus, setSyncStatus] = useState<SyncStatus>({ status: 'idle' })
 
   const stateRef = useRef(state)
   stateRef.current = state
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const loadedLayoutRef = useRef<MapLayout>(createEmptyMapLayout())
 
   useEffect(() => {
+    if (dungeonId === null) {
+      dispatch({ type: 'loadLayout', layout: createEmptyMapLayout() })
+      loadedLayoutRef.current = createEmptyMapLayout()
+      setLoading(false)
+      setLoadStatus({ status: 'error', error: 'Invalid dungeon id' })
+      setSyncStatus({ status: 'idle' })
+      return
+    }
+
     let cancelled = false
     setLoading(true)
+    setLoadStatus({ status: 'loading' })
     setSyncStatus({ status: 'idle' })
 
     // Initial hydration dispatches directly (bypassing `apply`) so loading a layout — from the
@@ -35,18 +51,25 @@ export function useMapLabEditor(dungeonId: number) {
     getDungeonLayout(dungeonId)
       .then((blob) => {
         if (cancelled) return
-        dispatch({ type: 'loadLayout', layout: normalizeLayout(blob.data as unknown as MapLayout) })
+        const layout = normalizeLayout(blob.data as unknown as MapLayout)
+        loadedLayoutRef.current = layout
+        dispatch({ type: 'loadLayout', layout })
         setLoading(false)
+        setLoadStatus({ status: 'ready' })
       })
       .catch((err: unknown) => {
         if (cancelled) return
         if (err instanceof ApiError && err.status === 404) {
-          dispatch({ type: 'loadLayout', layout: islyCastleLayout })
+          const emptyLayout = createEmptyMapLayout()
+          loadedLayoutRef.current = emptyLayout
+          dispatch({ type: 'loadLayout', layout: emptyLayout })
           setLoading(false)
+          setLoadStatus({ status: 'empty' })
           return
         }
-        setSyncStatus({ status: 'error', error: 'Failed to load layout' })
+        dispatch({ type: 'loadLayout', layout: createEmptyMapLayout() })
         setLoading(false)
+        setLoadStatus({ status: 'error', error: 'Failed to load layout' })
       })
 
     return () => {
@@ -61,6 +84,7 @@ export function useMapLabEditor(dungeonId: number) {
   }, [])
 
   const scheduleSave = useCallback(() => {
+    if (dungeonId === null) return
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
     saveTimerRef.current = setTimeout(() => {
       saveTimerRef.current = null
@@ -91,7 +115,14 @@ export function useMapLabEditor(dungeonId: number) {
     [apply]
   )
   const setActiveZ = useCallback((z: number) => dispatch({ type: 'setActiveZ', z }), [])
-  const resetToFixture = useCallback(() => apply({ type: 'resetToFixture', layout: islyCastleLayout }), [apply])
+  const resetToLastLoadedLayout = useCallback(() => {
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current)
+      saveTimerRef.current = null
+    }
+    dispatch({ type: 'loadLayout', layout: loadedLayoutRef.current })
+    setSyncStatus({ status: 'idle' })
+  }, [])
 
   const addDoor = useCallback(
     (cell: MapCell, side: CardinalSide) => apply({ type: 'addDoor', cell, side }),
@@ -131,6 +162,7 @@ export function useMapLabEditor(dungeonId: number) {
     state: state as EditorState,
     dispatch,
     loading,
+    loadStatus,
     syncStatus,
     addRoom,
     selectRoom,
@@ -138,7 +170,7 @@ export function useMapLabEditor(dungeonId: number) {
     toggleCell,
     setRoomFootprint,
     setActiveZ,
-    resetToFixture,
+    resetToLastLoadedLayout,
     addDoor,
     selectDoor,
     updateFixtureFlags,

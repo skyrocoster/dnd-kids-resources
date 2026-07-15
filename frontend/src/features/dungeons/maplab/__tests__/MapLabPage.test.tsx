@@ -1,20 +1,73 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
 import { act, render, screen, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { MemoryRouter } from 'react-router-dom'
 import * as api from '../../../../api/client'
+import type { NPC } from '../../../../api/types'
 import { mapLabLayout } from '../maplabData'
 import { MapLabPage } from '../MapLabPage'
 import type { MapPortal as MapPortalFixture } from '../maplabModel'
+import { DungeonRouteContextProvider, type DungeonRouteContext } from '../dungeonRouteContext'
 
-function renderMapLabPage() {
+const dungeonDataFixture = {
+  rooms: [
+    {
+      room_id: 17,
+      title: 'Training Hall',
+      npcs: [9],
+      entries: [
+        { entry_type: 'feature', title: 'Banner', content: 'Ancient banners hang above the arena.' },
+        { entry_type: 'trap', title: 'Loose Flagstones', content: 'Creatures trigger 1d6 darts.' },
+        { entry_type: 'encounter', title: 'Goblin Drill', content: '2d4 goblins rush the room.', encounter_id: 7 },
+        { entry_type: 'treasure', title: 'Hidden Cache', content: 'A niche in the wall.', treasure_contents: [{ name: 'Ruby', quantity: 2 }] },
+      ],
+    },
+    {
+      room_id: 23,
+      title: 'Armoury',
+      entries: [{ entry_type: 'feature', title: 'Weapon Racks', content: 'Dusty weapons line the walls.' }],
+      npcs: [],
+    },
+    {
+      room_id: 33,
+      title: 'First Floor Landing',
+      entries: [{ entry_type: 'feature', title: 'Balcony', content: 'A narrow overlook faces the courtyard.' }],
+      npcs: [],
+    },
+    {
+      room_id: 404,
+      title: 'Data Only Room',
+      entries: [{ entry_type: 'feature', title: 'Ghost Note', content: 'No geometry should render this.' }],
+      npcs: [],
+    },
+  ],
+}
+
+function renderMapLabPage(
+  initialEntry: string = '/dungeons/4',
+  route: DungeonRouteContext = {
+    dungeonId: 4,
+    dungeon: { id: 4, title: 'Test Dungeon', data: dungeonDataFixture },
+    status: 'ready',
+    error: null,
+  },
+) {
+  if (!vi.isMockFunction(api.getDungeonLayout)) {
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: mapLabLayout as unknown as Record<string, unknown> })
+  }
   return render(
-    <MemoryRouter initialEntries={['/dungeons/4']}>
-      <Routes>
-        <Route path="/dungeons/:dungeonId" element={<MapLabPage />} />
-      </Routes>
+    <MemoryRouter initialEntries={[initialEntry]}>
+      <DungeonRouteContextProvider value={route}>
+        <MapLabPage />
+      </DungeonRouteContextProvider>
     </MemoryRouter>,
   )
+}
+
+async function renderLoadedMapLabPage(initialEntry: string = '/dungeons/4') {
+  const utils = renderMapLabPage(initialEntry)
+  await flush()
+  return utils
 }
 
 async function flush() {
@@ -29,42 +82,49 @@ async function flush() {
 // still override it where a test supplies its own `backendLayout`.
 beforeEach(() => {
   vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: mapLabLayout as unknown as Record<string, unknown> })
+  vi.spyOn(api, 'listNPCs').mockResolvedValue([{ id: 9, name: 'Mira' }] as NPC[])
+  vi.spyOn(api, 'getNPC').mockResolvedValue({
+    id: 9,
+    name: 'Mira',
+    notes: 'A careful scout.',
+  } as NPC)
 })
 
 describe('MapLabPage (M0a scaffold)', () => {
-  it('renders placeholder', () => {
-    renderMapLabPage()
-    expect(screen.getByText('Map Lab')).toBeInTheDocument()
-    expect(screen.getByText('Programmatic dungeon map prototype')).toBeInTheDocument()
+  it('renders the loaded map without the retired prototype copy', async () => {
+    await renderLoadedMapLabPage()
+    expect(screen.getByRole('button', { name: 'Combat Training Hall' })).toBeInTheDocument()
+    expect(screen.queryByText('Map Lab')).not.toBeInTheDocument()
+    expect(screen.queryByText('Programmatic dungeon map prototype')).not.toBeInTheDocument()
   })
 })
 
 describe('MapLabPage (M1 SVG renderer)', () => {
-  it('renders an accessible SVG group with both Case-1 rooms and the door', () => {
-    renderMapLabPage()
+  it('renders an accessible SVG group with both Case-1 rooms and the door', async () => {
+    await renderLoadedMapLabPage()
     expect(screen.getByRole('group', { name: /dungeon floor map/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Combat Training Hall' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Armoury' })).toBeInTheDocument()
     expect(screen.getByText('Heavy Stone Door')).toBeInTheDocument()
   })
 
-  it('room selection toggles on click', async () => {
+  it('room selection switches the active room on click', async () => {
     const user = userEvent.setup()
-    renderMapLabPage()
+    await renderLoadedMapLabPage()
 
     const hall = screen.getByRole('button', { name: 'Combat Training Hall' })
-    expect(hall).toHaveAttribute('aria-pressed', 'false')
-
-    await user.click(hall)
+    const armoury = screen.getByRole('button', { name: 'Armoury' })
     expect(hall).toHaveAttribute('aria-pressed', 'true')
+    expect(armoury).toHaveAttribute('aria-pressed', 'false')
 
-    await user.click(hall)
+    await user.click(armoury)
     expect(hall).toHaveAttribute('aria-pressed', 'false')
+    expect(armoury).toHaveAttribute('aria-pressed', 'true')
   })
 
   it('room selection toggles on keyboard activation', async () => {
     const user = userEvent.setup()
-    renderMapLabPage()
+    await renderLoadedMapLabPage()
 
     const armoury = screen.getByRole('button', { name: 'Armoury' })
     armoury.focus()
@@ -73,16 +133,15 @@ describe('MapLabPage (M1 SVG renderer)', () => {
   })
 
   it('mounts the door badge overlay after the door glyph layer', async () => {
-    const { container } = renderMapLabPage()
-    await flush()
+    const { container } = await renderLoadedMapLabPage()
 
     const door = container.querySelector('.maplab-door') as Element
     const layer = container.querySelector('.maplab-door-badge-layer') as Element
     expect(door.compareDocumentPosition(layer) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 
-  it('keeps map controls available to assistive technology inside the named canvas group', () => {
-    renderMapLabPage()
+  it('keeps map controls available to assistive technology inside the named canvas group', async () => {
+    await renderLoadedMapLabPage()
 
     const canvas = screen.getByRole('group', { name: /dungeon floor map/i })
     expect(canvas).toContainElement(screen.getByRole('button', { name: 'Combat Training Hall' }))
@@ -90,8 +149,8 @@ describe('MapLabPage (M1 SVG renderer)', () => {
 })
 
 describe('MapLabPage (M2 stairs + second floor)', () => {
-  it('renders both floor tabs, starting on the ground floor', () => {
-    renderMapLabPage()
+  it('renders both floor tabs, starting on the ground floor', async () => {
+    await renderLoadedMapLabPage()
     const groundTab = screen.getByRole('tab', { name: 'Ground Floor' })
     const firstTab = screen.getByRole('tab', { name: 'First Floor' })
     expect(groundTab).toHaveAttribute('aria-selected', 'true')
@@ -102,7 +161,7 @@ describe('MapLabPage (M2 stairs + second floor)', () => {
 
   it('switches floor via the floor tabs', async () => {
     const user = userEvent.setup()
-    renderMapLabPage()
+    await renderLoadedMapLabPage()
 
     await user.click(screen.getByRole('tab', { name: 'First Floor' }))
     expect(screen.getByRole('tab', { name: 'First Floor' })).toHaveAttribute('aria-selected', 'true')
@@ -112,7 +171,7 @@ describe('MapLabPage (M2 stairs + second floor)', () => {
 
   it('clicking the stair marker switches the active floor', async () => {
     const user = userEvent.setup()
-    renderMapLabPage()
+    await renderLoadedMapLabPage()
 
     const stair = screen.getByRole('button', { name: /Stone Stairs.*floor 1/i })
     await user.click(stair)
@@ -123,8 +182,7 @@ describe('MapLabPage (M2 stairs + second floor)', () => {
 
   it('stair endpoint cell stays coordinate-aligned across floors', async () => {
     const user = userEvent.setup()
-    renderMapLabPage()
-    await flush()
+    await renderLoadedMapLabPage()
 
     const groundStair = screen.getByRole('button', { name: /Stone Stairs/i })
     const groundCircle = groundStair.querySelector('circle')!
@@ -141,15 +199,15 @@ describe('MapLabPage (M2 stairs + second floor)', () => {
 })
 
 describe('MapLabPage (M2.2 grid canvas + scale)', () => {
-  it('renders the padded unknown-space grid behind the rooms', () => {
-    const { container } = renderMapLabPage()
+  it('renders the padded unknown-space grid behind the rooms', async () => {
+    const { container } = await renderLoadedMapLabPage()
     const unknownSpace = container.querySelector('.maplab-unknown-space')
     expect(unknownSpace).toBeInTheDocument()
     expect(unknownSpace).toHaveAttribute('fill', expect.stringContaining('maplab-unknown-space-grid'))
   })
 
-  it('renders a visible scale reference', () => {
-    renderMapLabPage()
+  it('renders a visible scale reference', async () => {
+    await renderLoadedMapLabPage()
     expect(screen.getByText('1 square = 5 ft')).toBeInTheDocument()
   })
 
@@ -188,7 +246,7 @@ describe('MapLabPage (M2.3 walls + door/stair affordances)', () => {
 
   it('renders the door with its state icon/token and reveals details on hover', async () => {
     const user = userEvent.setup()
-    renderMapLabPage()
+    await renderLoadedMapLabPage()
 
     expect(screen.getByText('Hover or focus a room, door, stair, or prop for details.')).toBeInTheDocument()
 
@@ -206,8 +264,8 @@ describe('MapLabPage (M2.3 walls + door/stair affordances)', () => {
     expect(screen.getByText('Hover or focus a room, door, stair, or prop for details.')).toBeInTheDocument()
   })
 
-  it('reveals door details on keyboard focus too (not hover-only)', () => {
-    renderMapLabPage()
+  it('reveals door details on keyboard focus too (not hover-only)', async () => {
+    await renderLoadedMapLabPage()
     const door = screen.getByRole('button', { name: /Heavy Stone Door/ })
     fireEvent.focus(door)
     expect(screen.getByText('Locked')).toBeInTheDocument()
@@ -215,7 +273,7 @@ describe('MapLabPage (M2.3 walls + door/stair affordances)', () => {
 
   it("pins the door's details open on click/Enter, giving touch users the same access as hover", async () => {
     const user = userEvent.setup()
-    renderMapLabPage()
+    await renderLoadedMapLabPage()
     const door = screen.getByRole('button', { name: /Heavy Stone Door/ })
 
     expect(door).toHaveAttribute('aria-pressed', 'false')
@@ -229,7 +287,7 @@ describe('MapLabPage (M2.3 walls + door/stair affordances)', () => {
 
   it('renders the stair with its state icon and reveals details on hover, without breaking floor travel', async () => {
     const user = userEvent.setup()
-    renderMapLabPage()
+    await renderLoadedMapLabPage()
 
     const stair = screen.getByRole('button', { name: /Stone Stairs.*floor 1/i })
     expect(stair).toHaveAttribute('data-state', 'unlocked')
@@ -288,8 +346,8 @@ describe('MapLabPage (Stage 1 — Faithful L-shape rendering)', () => {
 })
 
 describe('MapLabPage (Stage 2 — Passage visuals)', () => {
-  it('renders the door as a leaf + swing arc, never a straight line matching a wall segment', () => {
-    const { container } = renderMapLabPage()
+  it('renders the door as a leaf + swing arc, never a straight line matching a wall segment', async () => {
+    const { container } = await renderLoadedMapLabPage()
     const door = screen.getByRole('button', { name: /Heavy Stone Door/ })
 
     // A leaf (hinge -> tip) and a swing arc (tip -> far jamb) — no full-span `<line>` across the
@@ -304,7 +362,7 @@ describe('MapLabPage (Stage 2 — Passage visuals)', () => {
 
   it('renders stair markers with directional glyphs that flip per viewing floor', async () => {
     const user = userEvent.setup()
-    renderMapLabPage()
+    await renderLoadedMapLabPage()
 
     // Ground floor: stair 2 goes z0 -> z1, viewed from z0 -> "up".
     const groundStair = screen.getByRole('button', { name: /Stone Stairs.*floor 1/i })
@@ -317,8 +375,8 @@ describe('MapLabPage (Stage 2 — Passage visuals)', () => {
     expect(firstFloorStair).toBeInTheDocument()
   })
 
-  it('uses stable stair identity color while keeping marker fill neutral', () => {
-    const { container } = renderMapLabPage()
+  it('uses stable stair identity color while keeping marker fill neutral', async () => {
+    const { container } = await renderLoadedMapLabPage()
     const marker = container.querySelector('.maplab-stair-marker')!
     // The fill is a neutral surface (class-driven, from theme.css); stroke/icon carry fixture
     // identity and status moves to the collapsed disc.
@@ -361,7 +419,7 @@ describe('MapLabPage (Stage 3 — Generic inspector)', () => {
 
   it('door and stair inspection still work through the same generalized panel', async () => {
     const user = userEvent.setup()
-    renderMapLabPage()
+    await renderLoadedMapLabPage()
 
     const door = screen.getByRole('button', { name: /Heavy Stone Door/ })
     await user.hover(door)
@@ -380,7 +438,7 @@ describe('MapLabPage (Stage 3 — Generic inspector)', () => {
 describe('MapLabPage (Design Phase J2 — Passage-state chips)', () => {
   it('renders an icon+text chip for the locked door, and the old State/Also rows are gone', async () => {
     const user = userEvent.setup()
-    const { container } = renderMapLabPage()
+    const { container } = await renderLoadedMapLabPage()
 
     const door = screen.getByRole('button', { name: /Heavy Stone Door.*Locked/ })
     await user.hover(door)
@@ -398,7 +456,7 @@ describe('MapLabPage (Design Phase J2 — Passage-state chips)', () => {
 
   it('renders zero chips for the fully-unlocked stair — absence is the clean state', async () => {
     const user = userEvent.setup()
-    const { container } = renderMapLabPage()
+    const { container } = await renderLoadedMapLabPage()
 
     const stair = screen.getByRole('button', { name: /Stone Stairs.*floor 1/i })
     await user.hover(stair)
@@ -693,12 +751,11 @@ describe('MapLabPage (Stage E1 — Unified data: viewer reads backend layout)', 
   it('404 from backend falls back to the fixture layout', async () => {
     vi.spyOn(api, 'getDungeonLayout').mockRejectedValue(new api.ApiError(404, 'not found'))
 
-    renderMapLabPage()
-    await flush()
+    await renderLoadedMapLabPage()
 
-    expect(screen.getByRole('button', { name: 'Combat Training Hall' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Armoury' })).toBeInTheDocument()
-    expect(screen.getByText('Heavy Stone Door')).toBeInTheDocument()
+    expect(screen.getByText('No saved layout yet. This dungeon is starting from a blank map.')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Combat Training Hall' })).not.toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'Starting Floor' })).toBeInTheDocument()
   })
 
   it('encounter marker renders and opens the dock', async () => {
@@ -783,6 +840,101 @@ describe('MapLabPage (Stage E1 — Unified data: viewer reads backend layout)', 
     await flush()
 
     expect(screen.getByRole('button', { name: /Goblin Ambush/i })).toBeInTheDocument()
+  })
+
+})
+
+describe('MapLabPage (R4 viewer room-reading surface)', () => {
+  it('shows the default room details panel after load', async () => {
+    await renderLoadedMapLabPage()
+
+    expect(screen.getByText('Training Hall')).toBeInTheDocument()
+    expect(screen.getByText('Features')).toBeInTheDocument()
+    expect(screen.getByText('Trap')).toBeInTheDocument()
+  })
+
+  it('room click switches the details panel content', async () => {
+    const user = userEvent.setup()
+    await renderLoadedMapLabPage()
+
+    await user.click(screen.getByRole('button', { name: 'Armoury' }))
+    expect(screen.getByText('Weapon Racks')).toBeInTheDocument()
+    expect(screen.queryByText('Loose Flagstones')).not.toBeInTheDocument()
+  })
+
+  it('room keyboard selection updates the details panel', async () => {
+    const user = userEvent.setup()
+    await renderLoadedMapLabPage()
+
+    const armoury = screen.getByRole('button', { name: 'Armoury' })
+    armoury.focus()
+    await user.keyboard('{Enter}')
+    expect(screen.getByText('Weapon Racks')).toBeInTheDocument()
+  })
+
+  it('floor switches re-default the active room and its details', async () => {
+    const user = userEvent.setup()
+    await renderLoadedMapLabPage()
+
+    await user.click(screen.getByRole('tab', { name: 'First Floor' }))
+    expect(screen.getByText('Balcony')).toBeInTheDocument()
+    expect(screen.queryByText('Banner')).not.toBeInTheDocument()
+  })
+
+  it('stair travel updates the room details on the destination floor', async () => {
+    const user = userEvent.setup()
+    await renderLoadedMapLabPage()
+
+    await user.click(screen.getByRole('button', { name: /Stone Stairs.*floor 1/i }))
+    expect(screen.getByRole('heading', { name: 'First Floor Landing', level: 3 })).toBeInTheDocument()
+    expect(screen.getByText('Balcony')).toBeInTheDocument()
+  })
+
+  it('encounter entries launch the encounter dock', async () => {
+    const user = userEvent.setup()
+    vi.spyOn(api, 'getEncounter').mockResolvedValue({
+      id: 7,
+      title: 'Goblin Drill',
+      active_index: 0,
+      creatures: [],
+    })
+    vi.spyOn(api, 'getConditions').mockResolvedValue([])
+
+    await renderLoadedMapLabPage()
+    await user.click(screen.getByRole('button', { name: 'Run encounter' }))
+
+    expect(await screen.findByRole('dialog', { name: 'Goblin Drill' })).toBeInTheDocument()
+  })
+
+  it('NPC chips open the NPC dock', async () => {
+    const user = userEvent.setup()
+    await renderLoadedMapLabPage()
+
+    await user.click(await screen.findByRole('button', { name: 'Mira' }))
+    expect(await screen.findByRole('dialog', { name: 'Mira' })).toBeInTheDocument()
+    expect(screen.getByTestId('npc-stat-card')).toBeInTheDocument()
+  })
+
+  it('layout-only rooms show the empty content state', async () => {
+    const user = userEvent.setup()
+    await renderLoadedMapLabPage()
+
+    await user.click(screen.getByRole('button', { name: 'Back Stairwell' }))
+    expect(screen.getByText('This room has no content data yet.')).toBeInTheDocument()
+  })
+
+  it('fixture inspection still works while the details panel shows the active room', async () => {
+    const user = userEvent.setup()
+    await renderLoadedMapLabPage()
+
+    await user.hover(screen.getByRole('button', { name: /Heavy Stone Door/ }))
+    expect(screen.getByText('Door')).toBeInTheDocument()
+    expect(screen.getByText('Training Hall')).toBeInTheDocument()
+  })
+
+  it('data-only rooms are not invented on the map', async () => {
+    await renderLoadedMapLabPage()
+    expect(screen.queryByRole('button', { name: 'Data Only Room' })).not.toBeInTheDocument()
   })
 })
 

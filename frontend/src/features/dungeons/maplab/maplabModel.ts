@@ -134,6 +134,18 @@ export interface MapLayout {
   portals: MapPortal[] // added Phase H
 }
 
+export function createEmptyMapLayout(floorTitle: string = 'Starting Floor'): MapLayout {
+  return {
+    meta: { cellSizeFt: 5, padding: 3 },
+    rooms: [],
+    doors: [],
+    stairs: [],
+    floors: [{ z: 0, title: floorTitle }],
+    props: [],
+    portals: [],
+  }
+}
+
 // ============================================================================
 // Selector stubs (to be implemented in M0b)
 // ============================================================================
@@ -142,6 +154,11 @@ export interface MapLayout {
 export function absoluteCells(room: MapRoom): MapCell[] {
   const [ox, oy] = room.origin
   return room.cells.map(([cx, cy]) => [ox + cx, oy + cy])
+}
+
+function roomCellsForBounds(room: MapRoom): MapCell[] {
+  const cells = absoluteCells(room)
+  return cells.length > 0 ? cells : [room.origin]
 }
 
 /** Grid-unit bounding box, shared by `layoutBounds`/`paddedBounds` and the Stage E2 zoom/pan
@@ -160,7 +177,7 @@ export function layoutBounds(rooms: MapRoom[]): Bounds {
   let maxY = -Infinity
 
   for (const room of rooms) {
-    for (const [x, y] of absoluteCells(room)) {
+    for (const [x, y] of roomCellsForBounds(room)) {
       if (x < minX) minX = x
       if (x > maxX) maxX = x
       if (y < minY) minY = y

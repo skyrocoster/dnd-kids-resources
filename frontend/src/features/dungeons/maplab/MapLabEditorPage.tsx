@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useParams } from 'react-router-dom'
 import './MapLabPage.css'
 import './MapLabEditor.css'
+import { MapLabRouteState } from './MapLabRouteState'
+import { useDungeonShellContext } from './dungeonRouteContext'
 import { useMapLabEditor } from './useMapLabEditor'
 import { useMapCanvasZoom, type ViewportSize } from './useMapCanvasZoom'
 import { MapCanvas } from './MapCanvas'
@@ -217,11 +218,11 @@ function footprintCellsForSelection(
 type RoomFootprintSelection = { anchor: MapCell; current: MapCell; mode: 'click' | 'drag' } | null
 
 export function MapLabEditorPage() {
-  const { dungeonId: dungeonIdStr } = useParams()
-  const dungeonId = Number(dungeonIdStr!)
+  const route = useDungeonShellContext()
   const {
     state,
-    loading,
+    loading: layoutLoading,
+    loadStatus,
     syncStatus,
     addRoom,
     selectRoom,
@@ -229,7 +230,7 @@ export function MapLabEditorPage() {
     toggleCell,
     setRoomFootprint,
     setActiveZ,
-    resetToFixture,
+    resetToLastLoadedLayout,
     addDoor,
     selectDoor,
     updateFixtureFlags,
@@ -244,7 +245,7 @@ export function MapLabEditorPage() {
     addPortal,
     selectPortal,
     deletePortal,
-  } = useMapLabEditor(dungeonId)
+  } = useMapLabEditor(route.dungeonId)
   const [hoveredCell, setHoveredCell] = useState<MapCell | null>(null)
   const [isCanvasFullscreen, setIsCanvasFullscreen] = useState(false)
   const [roomFootprintSelection, setRoomFootprintSelection] = useState<RoomFootprintSelection>(null)
@@ -268,8 +269,8 @@ export function MapLabEditorPage() {
   }, [clearRoomFootprintSelection])
 
   const floors = useMemo(
-    () => [...new Set(state.layout.rooms.map((room) => room.z))].sort((a, b) => a - b),
-    [state.layout.rooms]
+    () => [...state.layout.floors].sort((a, b) => a.z - b.z),
+    [state.layout.floors]
   )
   const roomsOnActiveFloor = useMemo(() => roomsOnZ(state.layout, state.activeZ), [state.layout, state.activeZ])
   const doorsOnActiveFloor = useMemo(
@@ -359,8 +360,9 @@ export function MapLabEditorPage() {
     },
     [state.layout.stairs, state.activeZ, selectedStairCell]
   )
-  const stairUpFloor = floors.includes(state.activeZ + 1) ? state.activeZ + 1 : null
-  const stairDownFloor = floors.includes(state.activeZ - 1) ? state.activeZ - 1 : null
+  const floorZs = useMemo(() => floors.map((floor) => floor.z), [floors])
+  const stairUpFloor = floorZs.includes(state.activeZ + 1) ? state.activeZ + 1 : null
+  const stairDownFloor = floorZs.includes(state.activeZ - 1) ? state.activeZ - 1 : null
   const selectedPortal = useMemo(
     () => state.layout.portals.find((portal) => portal.portal_id === state.selectedPortalId) ?? null,
     [state.layout.portals, state.selectedPortalId]
@@ -426,18 +428,24 @@ export function MapLabEditorPage() {
     clearRoomFootprintSelection()
   }, [clearRoomFootprintSelection, placeDoorMode, placePortalMode, placePropMode, placeStairMode, state.activeZ, state.selectedRoomId])
 
-  if (loading) {
+  if (route.status === 'loading' || layoutLoading) {
+    return <MapLabRouteState title="Loading map editor" message="Loading dungeon layout…" />
+  }
+
+  if (loadStatus.status === 'error') {
     return (
-      <div className="maplab-editor">
-        <p className="maplab-subtitle">Loading layout…</p>
-      </div>
+      <MapLabRouteState
+        title={route.dungeon?.title ?? 'Dungeon layout unavailable'}
+        message={loadStatus.error ?? 'Failed to load dungeon layout.'}
+      />
     )
   }
 
   return (
     <div className="maplab-editor" data-footprint-selection-mode={roomFootprintSelection?.mode}>
-      <h1 className="maplab-title">Map Lab Editor</h1>
-      <p className="maplab-subtitle">Create rooms, paint their footprint, and place doors and props.</p>
+      {loadStatus.status === 'empty' && (
+        <p className="maplab-subtitle">No saved layout yet. Your first edit will save this blank map.</p>
+      )}
 
       <div className="maplab-toolbar">
         <ToolbarTray groupKey="editor-create" label="Create">
@@ -527,8 +535,8 @@ export function MapLabEditorPage() {
           </button>
         </ToolbarTray>
         <ToolbarTray groupKey="editor-session" label="Session">
-          <button type="button" className="maplab-pill-button maplab-editor-toolbar-button" onClick={resetToFixture}>
-            Reset to fixture
+          <button type="button" className="maplab-pill-button maplab-editor-toolbar-button" onClick={resetToLastLoadedLayout}>
+            Reset unsaved changes
           </button>
         </ToolbarTray>
         <ToolbarTray groupKey="editor-view" label="View">
@@ -560,19 +568,19 @@ export function MapLabEditorPage() {
       <div className="maplab-editor-layout">
         <div className="maplab-editor-nav-rail">
           <div className="maplab-floor-tabs" role="tablist" aria-label="Dungeon floors">
-            {floors.map((z) => (
+            {floors.map((floor) => (
               <button
-                key={z}
+                key={floor.z}
                 type="button"
                 role="tab"
                 className="maplab-pill-button maplab-floor-tab"
-                aria-selected={z === state.activeZ}
+                aria-selected={floor.z === state.activeZ}
                 onClick={() => {
                   clearRoomFootprintSelection()
-                  setActiveZ(z)
+                  setActiveZ(floor.z)
                 }}
               >
-                Floor {z}
+                {floor.title ?? `Floor ${floor.z}`}
               </button>
             ))}
           </div>
