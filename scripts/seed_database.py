@@ -53,7 +53,7 @@ def populate_abilities(cursor, conn, force=False):
             print("  [TRASH]  Cleared existing abilities data")
         except Exception as e:
             print(f"  [WARNING]  Error clearing abilities data: {e}")
-            print("  [ERROR]  abilities table may not exist. Run _dev/init_database.py first.")
+            print("  [ERROR]  abilities table may not exist. Run scripts/init_database.py first.")
             return
     else:
         # Check if table exists and has data
@@ -64,7 +64,7 @@ def populate_abilities(cursor, conn, force=False):
                 print(f"  [INFO]  Abilities table already has {count} records. Skip (use --force to override)")
                 return
         except Exception:
-            print("  [ERROR]  Abilities table does not exist. Run _dev/init_database.py first.")
+            print("  [ERROR]  Abilities table does not exist. Run scripts/init_database.py first.")
             return
     
     seeds = load_json_file(SEEDS_DIR / "seed_abilities.json")
@@ -224,7 +224,7 @@ def populate_conditions(cursor, conn, force=False):
         try:
             cursor.execute("SELECT 1 FROM conditions LIMIT 1")
         except Exception:
-            print("  [ERROR]  Conditions table does not exist. Run _dev/init_database.py first.")
+            print("  [ERROR]  Conditions table does not exist. Run scripts/init_database.py first.")
             return
     
     seeds = load_json_file(SEEDS_DIR / "seed_conditions.json")
@@ -269,7 +269,7 @@ def populate_monsters(cursor, conn, force=False):
         try:
             cursor.execute("SELECT 1 FROM monsters LIMIT 1")
         except Exception:
-            print("  [ERROR]  Monsters table does not exist. Run _dev/init_database.py first.")
+            print("  [ERROR]  Monsters table does not exist. Run scripts/init_database.py first.")
             return
     seeds = load_json_file(SEEDS_DIR / "seed_monsters.json")
     if not seeds:
@@ -343,7 +343,7 @@ def populate_npcs(cursor, conn, force=False):
         try:
             cursor.execute("SELECT 1 FROM npcs LIMIT 1")
         except Exception:
-            print("  [ERROR] NPCs table does not exist. Run _dev/init_database.py first.")
+            print("  [ERROR] NPCs table does not exist. Run scripts/init_database.py first.")
             return
 
     seeds = load_json_file(SEEDS_DIR / "seed_npcs.json")
@@ -401,7 +401,7 @@ def populate_quests(cursor, conn, force=False):
         try:
             cursor.execute("SELECT 1 FROM quests LIMIT 1")
         except Exception:
-            print("  [ERROR] Quests table does not exist. Run _dev/init_database.py first.")
+            print("  [ERROR] Quests table does not exist. Run scripts/init_database.py first.")
             return
 
     seeds = load_json_file(SEEDS_DIR / "seed_quests.json")
@@ -445,7 +445,7 @@ def populate_damage_types(cursor, conn, force=False):
             print("  [TRASH]  Cleared existing damage_types data")
         except Exception as e:
             print(f"  [WARNING]  Error clearing damage_types data: {e}")
-            print("  [ERROR]  damage_types table may not exist. Run _dev/init_database.py first.")
+            print("  [ERROR]  damage_types table may not exist. Run scripts/init_database.py first.")
             return
     else:
         # Check if table exists and has data
@@ -456,7 +456,7 @@ def populate_damage_types(cursor, conn, force=False):
                 print(f"  [INFO]  Damage types table already has {count} records. Skip (use --force to override)")
                 return
         except Exception:
-            print("  [ERROR]  Damage types table does not exist. Run _dev/init_database.py first.")
+            print("  [ERROR]  Damage types table does not exist. Run scripts/init_database.py first.")
             return
     
     seeds = load_json_file(SEEDS_DIR / "seed_damage_types.json")
@@ -498,7 +498,7 @@ def populate_weapon_properties(cursor, conn, force=False):
             print("  [TRASH]  Cleared existing weapon_properties data")
         except Exception as e:
             print(f"  [WARNING]  Error clearing weapon_properties data: {e}")
-            print("  [ERROR]  weapon_properties table may not exist. Run _dev/init_database.py first.")
+            print("  [ERROR]  weapon_properties table may not exist. Run scripts/init_database.py first.")
             return
     else:
         try:
@@ -508,7 +508,7 @@ def populate_weapon_properties(cursor, conn, force=False):
                 print(f"  [INFO]  Weapon properties table already has {count} records. Skip (use --force to override)")
                 return
         except Exception:
-            print("  [ERROR]  weapon_properties table does not exist. Run _dev/init_database.py first.")
+            print("  [ERROR]  weapon_properties table does not exist. Run scripts/init_database.py first.")
             return
     
     seeds = load_json_file(SEEDS_DIR / "seed_weapon_properties.json")
@@ -563,7 +563,7 @@ def populate_weapons(cursor, conn, force=False):
             print("  [TRASH]  Cleared existing weapons data")
         except Exception as e:
             print(f"  [WARNING]  Error clearing weapons data: {e}")
-            print("  [ERROR]  weapons table may not exist. Run _dev/init_database.py first.")
+            print("  [ERROR]  weapons table may not exist. Run scripts/init_database.py first.")
             return
     else:
         try:
@@ -573,7 +573,7 @@ def populate_weapons(cursor, conn, force=False):
                 print(f"  [INFO] Weapons table already has {count} records. Skip (use --force to override)")
                 return
         except Exception:
-            print("  [ERROR]  weapons table does not exist. Run _dev/init_database.py first.")
+            print("  [ERROR]  weapons table does not exist. Run scripts/init_database.py first.")
             return
 
     seeds = load_json_file(SEEDS_DIR / "seed_weapons.json")
@@ -735,7 +735,7 @@ def populate_encounters(cursor, conn, force=False):
             print("  [TRASH]  Cleared existing encounter data")
         except Exception as e:
             print(f"  [WARNING]  Error clearing encounter data: {e}")
-            print("  [ERROR]  encounter table may not exist. Run _dev/init_database.py first.")
+            print("  [ERROR]  encounter table may not exist. Run scripts/init_database.py first.")
             return
 
     seeds = load_json_file(SEEDS_DIR / "seed_encounters.json")
@@ -783,7 +783,7 @@ def populate_players(cursor, conn, force=False):
             print("  [TRASH]  Cleared existing players data")
         except Exception as e:
             print(f"  [WARNING]  Error clearing players data: {e}")
-            print("  [ERROR]  players table may not exist. Run _dev/init_database.py first.")
+            print("  [ERROR]  players table may not exist. Run scripts/init_database.py first.")
             return
 
     seeds = load_json_file(SEEDS_DIR / "seed_players.json")
@@ -836,7 +836,7 @@ def populate_player_spells(cursor, conn, force=False):
             print("  [TRASH]  Cleared existing player spells data")
         except Exception as e:
             print(f"  [WARNING]  Error clearing player spells data: {e}")
-            print("  [ERROR]  player_spells table may not exist. Run _dev/init_database.py first.")
+            print("  [ERROR]  player_spells table may not exist. Run scripts/init_database.py first.")
             return
 
     seeds = load_json_file(SEEDS_DIR / "seed_player_spells.json")
@@ -886,7 +886,7 @@ def populate_player_weapons(cursor, conn, force=False):
             print("  [TRASH]  Cleared existing player weapons data")
         except Exception as e:
             print(f"  [WARNING]  Error clearing player weapons data: {e}")
-            print("  [ERROR]  player_weapons table may not exist. Run _dev/init_database.py first.")
+            print("  [ERROR]  player_weapons table may not exist. Run scripts/init_database.py first.")
             return
 
     seeds = load_json_file(SEEDS_DIR / "seed_player_weapons.json")

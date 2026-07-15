@@ -2,7 +2,7 @@
 
 This plan fixes bugs and gaps in the seed export/import pipeline (`init_database.py`, `seed_database.py`, `export_db_seeds.py`) that risk silent data loss during backup/restore cycles. All fixes are in `scripts/`; no schema changes, no API changes, no frontend changes.
 
-> **Status:** S2–S5 queued. S2 next. S0–S1 shipped.
+> **Status:** S3–S5 queued. S3 next. S0–S2 shipped.
 
 ---
 
@@ -57,15 +57,6 @@ Six targeted fixes across three scripts. No new files, no new tables, no API cha
 <!-- ===== VERBOSE BLOCKS — one per un-shipped stage, in order. Delete a block and collapse it to a
      Shipped row the moment that stage ships; the remaining blocks stay until their own turn. ===== -->
 
-#### S2 — Fix stale `_dev/` paths (planned)
-
-- **Build:** In `scripts/seed_database.py`, replace all occurrences of `_dev/init_database.py` with `scripts/init_database.py`:
-  - Line 56, 67, 227, 272, 346, 404, 448, 501, 566, 576, 738 (error messages in `populate_*` functions)
-  - Use `replaceAll` in the edit tool for a single-pass replacement.
-- **Inherits:** N/A — string replacement only.
-- **Tests:** `grep -c "_dev/" scripts/seed_database.py` returns 0.
-- **🚦 Gate:** No `_dev/` references remain.
-
 #### S3 — Remove phantom `skills` table (planned)
 
 - **Build:**
@@ -108,6 +99,7 @@ Six targeted fixes across three scripts. No new files, no new tables, no API cha
 |-------|------------------------------|
 | **S0** | Added `items` and `loot_bundles` to `EXPORT_DEFINITIONS` and `transform_record()` in `export_db_seeds.py`. Dry-run confirms 15 tables exported. |
 | **S1** | Fixed `DFEFAULT` typo to `DEFAULT` in `init_database.py:235` npcs schema. |
+| **S2** | Replaced all `_dev/init_database.py` references with `scripts/init_database.py` in `seed_database.py`. |
 
 ---
 
@@ -122,4 +114,4 @@ Six targeted fixes across three scripts. No new files, no new tables, no API cha
 
 ## Next:
 
-S2 (fix stale `_dev/` paths in seed_database.py) — unblocked, ready to implement.
+S3 (remove phantom `skills` table) — unblocked, ready to implement.
