@@ -28,6 +28,7 @@ This ensures schema and data stay synced with the codebase and can be reliably r
 | `seed_items.json` | `items` | Reusable treasure item catalog (name, gp value, category, description) | `/items` |
 | `seed_loot_bundles.json` | `loot_bundle` | Hand-authored loot bundles (gold and JSON snapshotted item/weapon contents) | `/loot-bundles` |
 | `seed_dungeons.json` | `dungeons` | Dungeon modules (room layout, encounter placement, NPC locations) | `/dungeons`, `/dungeons/{id}/layout` |
+| (editor-generated) | `map_layout` | Map layout geometry (rooms, doors, stairs, floors, props, portals) | `/dungeons/{id}/layout` (GET, PUT) |
 | `seed_encounters.json` | `encounters` | Combat encounters (creature roster, active creature index) | `/encounters` |
 | `seed_npcs.json` | `npcs` | Non-player characters (name, race, stats, appearance, notes) | `/npcs` |
 | `seed_players.json` | `players` | Player characters (name, class, level) | `/players` |
@@ -43,7 +44,7 @@ Non-obvious foreign-key-like relationships (skip any self-evident from naming):
 - **`players` → `player_weapons` ↔ `weapons`** — Many-to-many via junction table. A player can have multiple weapons; a weapon can be owned by multiple players.
 - **`encounters`** — Contains `creatures` (JSON array of creature references, typically monsters). No explicit foreign key in the current schema; monsters are referenced by name or ID within the JSON.
 - **`loot_bundle`** — Contains `contents`, a JSON array of item/weapon snapshots. Entries keep a soft `ref_id` to the catalog source, but retain their name, item category, per-unit `value_gp`, and quantity after source edits or deletion.
-- **`dungeons`** — Contains `data` (complex JSON) storing room layout, encounters, NPC placements. No explicit foreign keys; references are embedded in the JSON blob.
+- **`dungeons`** — Contains `data` (complex JSON) storing room-reading content (entries, NPCs, encounter refs, general info). Geometry lives in map_layout. No explicit foreign keys; references are embedded in the JSON blob.
 - **`quests` → `quest_giver`** — Optional foreign key to `npcs.id`. A quest is given by an NPC (or none if quest_giver is NULL).
 - **`quests` → `dungeon_id`** — Optional foreign key to `dungeons.id`. A quest can be tied to a specific dungeon.
 
@@ -86,7 +87,8 @@ Some tables store complex structured data as JSON strings. The backend's Pydanti
 | `quests` | `details` | List of quest details/lore (strings) | `["The amulet was stolen by goblins"]` |
 | `quests` | `reward` | List of rewards (strings or formatted descriptions) | `["500 gold", "Amulet of Protection"]` |
 | `encounters` | `creatures` | List of creature roster entries (name, HP, initiative, etc.) | `[{"name": "Goblin", "hp": 7}, ...]` |
-| `dungeons` | `data` | Complex dungeon structure (rooms, exits, encounters, NPCs, props) | (large JSON blob per dungeon) |
+| `dungeons` | `data` | DungeonData shape: general_info, rooms (with entries, NPCs), floors, doors, stairs, corridors | (large JSON blob per dungeon) |
+| `map_layout` | `data` | MapLayout blob: rooms (polyomino cells), doors, stairs, floors, props, portals, fixtures. Authoritative for map geometry. | (JSON blob per dungeon) |
 | `player_spells` | (implicit in junction) | (Many-to-many, no direct column; routes expose via `/players/{id}/spells`) | |
 | `player_weapons` | (implicit in junction) | (Many-to-many, no direct column; routes expose via `/players/{id}/weapons`) | |
 | `weapons` | `attack` | List of attack definitions (similar to spells) | `[{"type": "melee", "damage": "1d8"}]` |

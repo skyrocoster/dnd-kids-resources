@@ -59,13 +59,22 @@ This doc describes the folder structure, backend/frontend conventions, and reque
 
 ```
 features/dungeons/
-├── DungeonBrowserPage.tsx         # List view / search UI
-├── DungeonViewPage.tsx            # Read-only detail view
-├── DungeonEditor.tsx              # Edit/create form
-├── dungeonModel.ts                # Local state logic, API calls
-├── maplab/                        # Feature-specific submodules (e.g., map editor)
-│   ├── MapLabEditor.tsx
-│   └── mapLabModel.ts
+├── DungeonBrowserPage.tsx      # list / create / delete
+├── dungeonModel.ts             # read-only content model (rooms, entries, NPCs)
+└── maplab/
+    ├── DungeonShell.tsx         # layout route with view/edit mode toggle
+    ├── MapLabPage.tsx           # viewer (read + encounter/NPC use)
+    ├── MapLabEditorPage.tsx     # editor (geometry + content authoring)
+    ├── maplabModel.ts           # coordinate/geometry model (MapLayout)
+    ├── maplabEditor.ts          # editor reducer (21 actions)
+    ├── useMapLabLayout.ts       # viewer layout fetch
+    ├── useMapLabEditor.ts       # editor hook (dual-save)
+    ├── RoomDetailsPanel.tsx     # viewer room-reading sidebar
+    ├── RoomContentEditor.tsx    # editor content inspector
+    ├── InspectorPanel.tsx       # fixture inspector (viewer)
+    ├── ViewerRoomRail.tsx       # floor-grouped room navigation
+    ├── MapCanvas.tsx            # SVG canvas renderer
+    └── ... (markers, badges, CSS, tests)
 ```
 
 This pattern is copied across all 8 feature domains. If building a new feature domain, follow the same structure.
