@@ -7,8 +7,8 @@ room-reading/authoring capabilities around them. It follows
 [`docs/PLAN_TEMPLATE.md`](PLAN_TEMPLATE.md): durable facts first, a collapsed shipped-stage table,
 and detailed specifications only for the remaining work.
 
-> **Status:** Original dungeon work, encounter/NPC support, and Map Lab phases A-M shipped. R0-R5
-> shipped. R6 - Add editor data ownership is next.
+> **Status:** Original dungeon work, encounter/NPC support, and Map Lab phases A-M shipped. R0-R6
+> shipped. R7 - Browser and creation cutover is next.
 
 ---
 
@@ -25,7 +25,7 @@ test data and the original Isly Castle prototype fixture need not survive as aut
 
 ---
 
-## Current Implementation (Post-R2)
+## Current Implementation (Post-R6)
 
 - `router.tsx` maps `/dungeons/:dungeonId` to `MapLabPage` and
   `/dungeons/:dungeonId/edit` to `MapLabEditorPage`.
@@ -38,11 +38,16 @@ test data and the original Isly Castle prototype fixture need not survive as aut
 - A dungeon-level load seam fetches `getDungeon(dungeonId)` alongside the layout. A 404 from
   `GET /dungeons/:id` renders a missing-dungeon state that prevents layout editing for that route.
 - `MapLabPage.tsx` consumes the dungeon context and respects the loading/error/missing states
-  before rendering the map. Its headings and prototype labels still need replacement (R3).
-- `MapLabEditorPage.tsx` consumes the same context. **Reset to fixture** has been removed from
-  the production editor; any remaining reset action resets only unsaved local work to the last
-  successfully loaded layout.
-- `dungeons.data` remains the typed non-spatial source through `dungeonModel.ts`: general info,
+  before rendering the map. It includes `RoomDetailsPanel` for room-reading with entries/NPCs.
+- `MapLabEditorPage.tsx` consumes the same context. The editor now owns `dungeons.data` alongside
+  `map_layout`, with dual save status and `RoomContentEditor` for room content editing.
+- `useMapLabEditor.ts` loads both layout and data on mount, maintains `loadedDataRef` for reset,
+  and bridges room lifecycle: `addRoom`/`deleteRoom` create/remove matching `DungeonRoom` records.
+  `updateRoomTitle` syncs layout and data blobs; entry/NPC editing mutates local data state.
+- `roomContentEditorReducer` handles `setRoomMeta` for layout-only fields (title cache, description, kind).
+- `RoomContentEditor.tsx` renders in the inspector rail with title input, entry/NPC editing, and
+  a "Create room data" fallback for layout-only rooms.
+- `dungeons.data` is the typed non-spatial source through `dungeonModel.ts`: general info,
   rooms (`room_id`, `title`, `entries`, `npcs`), floors, doors, and stairs. Its selectors already
   group entries and resolve room/floor relationships.
 - `getDungeon`, `updateDungeon`, `getDungeonLayout`, and `saveDungeonLayout` already exist. No
@@ -154,14 +159,12 @@ Use the canonical tokens in `frontend/src/theme.css` and
 | **R3 - Additive shared dungeon shell** | DungeonShell layout route with dungeon title, view/edit mode toggle, return-to-browser link, and hoisted DungeonRouteContext. Prototype titles removed from both pages. Gate ✅. |
 | **R4 - Add viewer room-reading surface** | Added persistent active-room selection, a room-details sidebar with entries/NPCs/encounter launch, and viewer NPC dock wiring while preserving fixture inspection. Gate ✅. |
 | **R5 - Add viewer navigation rail** | Added a floor-grouped viewer rail with room-selection syncing, threat hints, and responsive rail layouts while preserving map-based selection and floor switching. Gate ✅. |
+| **R6 - Add editor data ownership** | Editor now owns `dungeons.data` alongside `map_layout`: shared room lifecycle, title sync, entry/NPC editing, `RoomContentEditor` component, and dual save status. Gate ✅. |
 
 ---
 
 ## Known Debt / Deferred Work (Not Yet Built)
 
-- The editor does not load or persist `dungeons.data`; it cannot create a usable production dungeon
-  on its own and can still reset arbitrary routes to Isly Castle.
-- Layout and data room IDs have no enforced shared lifecycle yet.
 - Loot-on-the-map ownership remains in [`docs/loot_plan.md`](loot_plan.md); this phase only preserves
   the shipped map-prop hook.
 - Cross-reference hover pop-outs for monsters and encounters remain deferred.
@@ -182,7 +185,6 @@ future dungeon authoring.
 | **R3 - Additive shared dungeon shell** | Sonnet | Wrap, rather than rebuild, both existing Map Lab pages with real dungeon identity and mode controls. | Thin shared shell, title, browser return, view/edit navigation, responsive framing. |
 | **R4 - Add viewer room-reading surface** | Sonnet | Layer persistent room selection and `dungeons.data` details beside the existing map inspector. | Active-room model, details panel, entry/NPC/encounter parity, map/data mismatch tolerance. |
 | **R5 - Add viewer navigation rail** | Sonnet | Add fast structured navigation alongside the existing spatial selection. | Floor-grouped rail, floor/selection synchronization, compact layout decision. |
-| **R6 - Add editor data ownership** | Sonnet | Extend the existing editor's state and inspector with shared room lifecycle and content persistence. | Shared ID lifecycle, room content controls, coordinated save/reload behavior. |
 | **R7 - Browser and creation cutover** | Sonnet | Send every dungeon action through the production surfaces. | Browser edit routing, create-then-edit flow, modal-editor removal from browser. |
 | **R8 - Retire old dungeon UI** | Sonnet | Delete the old viewer, modal editor, room route, and obsolete tests/styles. | One live dungeon surface, route and dead-code cleanup. |
 | **R9 - Cutover design and reference pass** | Sonnet | Verify the final surface, accessibility, persistence, and durable docs. | Polish/fixes, reference-doc updates where needed, full verification. |
@@ -191,33 +193,15 @@ future dungeon authoring.
 work after R3, but R4's active-room contract lands first. R6 must precede R7-R8 because the old
 modal cannot be removed until production editing persists complete room data.
 
-#### R6 - Add Editor Data Ownership (next up)
-
-- **Build:** extend the existing editor state/hook and selected-room inspector; do not replace the
-  layout reducer, map canvas, placement modes, or fixture forms. Load a working `Dungeon` data blob
-  beside layout state and persist content changes with `updateDungeon` as well as the existing
-  `saveDungeonLayout`. Make the shared room ID lifecycle explicit: adding a room creates geometry
-  plus an empty data room using one ID; deleting removes both; editing a room title writes
-  `dungeons.data` and mirrors the layout cache; entries and NPC IDs are edited in the inspector.
-  Preserve layout-only `description` and `kind`. Save status must report either blob's failure
-  accurately and never silently claim a coordinated save succeeded when one request failed.
-- **Inherits:** R2 context/load semantics; R4 `useActiveRoom`, `RoomDetailsPanel`,
-  `DungeonRouteContext`; the current `mapLabEditorReducer`, `useMapLabEditor`,
-  existing room add/delete/select flow, room-form conversion patterns, `parseDungeonData`, and
-  fixture property forms. Do not create a second modal or a parallel room editor.
-- **Tests:** add/edit/delete shared room lifecycle; title cache synchronization; entries/NPC edits;
-  independent layout/data payload assertions; save/reload round trip; partial-save error state; and
-  regression coverage for existing geometry/fixture autosave.
-- **Gate:** a dungeon authored entirely in Map Lab can be reloaded into the new viewer with matching
-  geometry and usable room content, without `DungeonEditor`.
-
 #### R7 - Browser And Creation Cutover (Planned)
 
 - **Build:** change browser **Edit** to `/dungeons/:id/edit`. Replace the modal **New Dungeon**
   path with the smallest create-then-navigate flow: create a title-only dungeon with clean
   `dungeons.data`, then navigate directly to its production editor; retain list/select/delete
   behavior. Update browser detail counts so they do not imply old blob geometry is authoritative.
-- **Inherits:** R6's standalone production editor and existing create/delete API calls.
+- **Inherits:** R6's standalone production editor (`useMapLabEditor` with dual save, `RoomContentEditor`,
+  `roomContentEditorReducer` with `setRoomMeta`, shared room lifecycle) and existing create/delete
+  API calls (`client.ts`).
 - **Tests:** edit route, create request and redirect, cancellation/error behavior, and browse/select/delete
   regression tests.
 - **Gate:** every browser entry action reaches a production route, and a newly created dungeon opens
@@ -278,4 +262,4 @@ When the phase is complete:
 
 ## Next
 
-**Next:** `R6 - Add editor data ownership` is unblocked.
+**Next:** `R7 - Browser and creation cutover` is unblocked.

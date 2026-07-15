@@ -246,6 +246,108 @@
   gap: 0.5rem;
 }
 
+.maplab-room-content-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.maplab-room-content-editor-form {
+  gap: 0.875rem;
+}
+
+.maplab-room-content-field input,
+.maplab-room-content-field select,
+.maplab-room-content-textarea-row textarea {
+  width: 100%;
+}
+
+.maplab-room-content-readonly,
+.maplab-room-content-section,
+.maplab-room-content-entry-groups,
+.maplab-room-content-entry-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.maplab-room-content-readonly-row,
+.maplab-room-content-section-header,
+.maplab-room-content-entry-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.maplab-room-content-label,
+.maplab-room-content-section-subtitle {
+  font-size: var(--type-caption-size);
+  font-weight: var(--type-caption-weight);
+  letter-spacing: var(--type-caption-tracking);
+  text-transform: uppercase;
+  color: var(--md-on-surface-variant);
+}
+
+.maplab-room-content-value,
+.maplab-room-content-muted,
+.maplab-room-content-entry-text {
+  margin: 0;
+  font-size: var(--type-body-sm-size);
+  color: var(--md-on-surface);
+}
+
+.maplab-room-content-muted {
+  color: var(--md-on-surface-variant);
+}
+
+.maplab-room-content-chip-row,
+.maplab-room-content-checkbox-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.maplab-room-content-checkbox-list {
+  flex-direction: column;
+}
+
+.maplab-room-content-checkbox-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: var(--type-body-sm-size);
+  color: var(--md-on-surface);
+}
+
+.maplab-room-content-entry-card {
+  padding: 0.75rem;
+  border: 1px solid var(--md-outline-variant);
+  border-radius: 10px;
+  background: var(--md-surface);
+}
+
+.maplab-room-content-textarea-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.maplab-room-content-textarea-row textarea {
+  min-height: 7rem;
+  padding: 0.5rem;
+  border: 1px solid var(--md-outline-variant);
+  border-radius: 6px;
+  background: var(--md-surface);
+  color: var(--md-on-surface);
+  resize: vertical;
+}
+
+.maplab-room-content-textarea-row textarea:focus-visible {
+  outline: 2px solid var(--md-primary);
+  outline-offset: 1px;
+}
+
 .maplab-fixture-form {
   display: flex;
   flex-direction: column;

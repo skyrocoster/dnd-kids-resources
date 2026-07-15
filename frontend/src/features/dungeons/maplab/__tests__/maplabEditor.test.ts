@@ -99,18 +99,33 @@ describe('mapLabEditorReducer', () => {
     expect(next.activeZ).toBe(5)
   })
 
+  it('setRoomMeta updates the matching room cache fields', () => {
+    const layout: MapLayout = {
+      ...emptyLayout,
+      rooms: [{ room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0]], title: 'Old', description: 'Old desc', kind: 'Old kind' }],
+    }
+    const state = initialEditorState(layout)
+    const next = mapLabEditorReducer(state, {
+      type: 'setRoomMeta',
+      roomId: 1,
+      meta: { title: 'New', description: 'New desc', kind: 'New kind' },
+    })
+
+    expect(next.layout.rooms[0]).toMatchObject({ title: 'New', description: 'New desc', kind: 'New kind' })
+  })
+
+  it('setRoomMeta is a no-op for an unknown room id', () => {
+    const state = initialEditorState(emptyLayout)
+    const next = mapLabEditorReducer(state, { type: 'setRoomMeta', roomId: 99, meta: { title: 'x' } })
+    expect(next).toBe(state)
+  })
+
   it('resetToFixture behaves like loadLayout', () => {
     const state = initialEditorState(emptyLayout)
     const other: MapLayout = { ...emptyLayout, floors: [{ z: 7, title: 'Fixture' }] }
     const next = mapLabEditorReducer(state, { type: 'resetToFixture', layout: other })
     expect(next.layout).toBe(other)
     expect(next.activeZ).toBe(7)
-  })
-
-  it('unhandled action types are a no-op', () => {
-    const state = initialEditorState(emptyLayout)
-    const next = mapLabEditorReducer(state, { type: 'setRoomMeta', roomId: 1, meta: { title: 'x' } })
-    expect(next).toBe(state)
   })
 
   describe('toggleCell', () => {
