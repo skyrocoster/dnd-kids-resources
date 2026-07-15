@@ -117,35 +117,30 @@ def insert_spell(cursor, spell_data):
     cursor.execute(
         """
         INSERT INTO spells
-        (spell_name, icon, level, school, spell_text, spell_alt_text, damage, heal, heal_at_spell_slots, range,
-         higher_levels, damage_at_higher_levels, casting_time, duration, concentration, ritual, components, materials,
-         attack_type, action, area_of_effect, classes, subclasses)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (id, name, level, school, description, alternate_description, damage, healing, range,
+         higher_levels, casting_times, duration, concentration, ritual, components, materials, attacks,
+         area_of_effect)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
-            serialize_for_db(spell_data.get("spell_name")),
-            serialize_for_db(spell_data.get("icon", "✨")),
-            serialize_for_db(spell_data.get("level")),
-            serialize_for_db(spell_data.get("school")),
-            serialize_for_db(spell_data.get("spell_text")),
-            serialize_for_db(spell_data.get("spell_alt_text")),
-            serialize_for_db(spell_data.get("damage")),
-            serialize_for_db(spell_data.get("heal")),
-            serialize_for_db(spell_data.get("heal_at_spell_slots")),
-            serialize_for_db(spell_data.get("range")),
-            serialize_for_db(spell_data.get("higher_levels")),
-            serialize_for_db(spell_data.get("damage_at_higher_levels")),
-            serialize_for_db(spell_data.get("casting_time")),
-            serialize_for_db(spell_data.get("duration")),
+            spell_data["id"],
+            spell_data["name"],
+            spell_data["level"],
+            spell_data.get("school"),
+            spell_data["description"],
+            spell_data.get("alternate_description"),
+            serialize_for_db(spell_data.get("damage", [])),
+            serialize_for_db(spell_data.get("healing", {"amount": None, "temp_hp": False, "max_hp": False})),
+            spell_data["range"],
+            serialize_for_db(spell_data.get("higher_levels", {"text": None, "damage_by_slot": {}})),
+            serialize_for_db(spell_data.get("casting_times", [])),
+            spell_data["duration"],
             int(bool(spell_data.get("concentration", False))),
             int(bool(spell_data.get("ritual", False))),
-            serialize_for_db(spell_data.get("components")),
+            serialize_for_db(spell_data.get("components", [])),
             serialize_for_db(spell_data.get("materials")),
-            serialize_for_db(spell_data.get("attack_type")),
-            serialize_for_db(spell_data.get("action")),
-            serialize_for_db(spell_data.get("area_of_effect")),
-            serialize_for_db(spell_data.get("classes")),
-            serialize_for_db(spell_data.get("subclasses")),
+            serialize_for_db(spell_data.get("attacks", [])),
+            serialize_for_db(spell_data.get("area_of_effect", {"shape": None, "size": None})),
         )
     )
 
@@ -179,9 +174,9 @@ def populate_spells(cursor, conn, force=False):
         for spell in seeds:
             try:
                 insert_spell(cursor, spell)
-                print(f"  [CHECK] {spell.get('spell_name')}")
+                print(f"  [CHECK] {spell.get('name')}")
             except sqlite3.IntegrityError as e:
-                print(f"  [WARNING]  Duplicate or error: {spell.get('spell_name')} - {e}")
+                print(f"  [WARNING]  Duplicate or error: {spell.get('name')} - {e}")
 
         conn.commit()
         print(f"  [OK] Loaded {len(seeds)} spells from JSON seed file")

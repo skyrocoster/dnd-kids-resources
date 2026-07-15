@@ -1,6 +1,6 @@
 # Spells - Data Restructure & Experience Rewire
 
-> **Status:** S0-S3 shipped. Phase B (SQLite & API Contract Cutover) is next.
+> **Status:** S0-S3, B0-B1 shipped. Phase B in progress; B2 (API cutover) next.
 
 ## What this feature is
 
@@ -113,26 +113,6 @@ F1-F2; frontend code must not consume the target API before B2 ships.
 **Sequencing:** B0 -> B1 -> B2 -> B3. B1 and B2 are separate commits so the database boundary is reviewable;
 B3 must run against a clean rebuild.
 
-#### B0 - Backend scaffolding (planned)
-
-- **Build:** Add target nested Pydantic model stubs and skipped route/real-data expectations, without making
-  legacy endpoint responses ambiguous. Identify all current spell SQL projections, including players.
-- **Inherits:** S3 canonical target and the legacy route inventory in `API_REFERENCE.md`.
-- **Tests:** Schema construction and skipped response/CRUD tests compile without changing runtime behavior.
-- **Gate:** Focused backend tests pass. No browser pass is required.
-
-#### B1 - Persistence projection (planned)
-
-- **Build:** Replace the `spells` table columns in `scripts/init_database.py`, `insert_spell`/diagnostics in
-  `scripts/seed_database.py`, and `parse_spell_row` JSON handling with target names/types/defaults. Preserve
-  explicit seed IDs so player-spell junction IDs remain stable across a rebuild; add indexes only for actual
-  query paths (`name`, `level`, `school`) if missing.
-- **Inherits:** S3's target field/default rules and B0 stubs.
-- **Tests:** Rebuild a database from real seeds; assert all 525 records insert with IDs preserved and every
-  JSON TEXT column round-trips to the target Python type. Test empty collections/objects survive storage.
-- **Gate:** `python scripts/init_database.py` and `python scripts/seed_database.py` complete on a clean DB;
-  focused persistence tests pass. No browser pass is required.
-
 #### B2 - API cutover (planned)
 
 - **Build:** Replace legacy spell Pydantic models and all spell/player route SQL with explicit target
@@ -140,7 +120,10 @@ B3 must run against a clean rebuild.
   path rename; the response/request fields are `name` and the old fields do not serialize. Make CRUD JSON
   serialization preserve empty collections and always-present nested objects; enforce unique names with
   predictable conflict handling. Convert `level` query filtering to integer semantics.
-- **Inherits:** B1 persistence projection and the schema decision's no-compatibility rule.
+- **Inherits:** The `spells` table now has 18 target columns (canonical seed fields). `parse_spell_row`
+  in `db.py` handles `healing`, `higher_levels`, `area_of_effect` as objects and `damage`, `casting_times`,
+  `components`, `attacks` as lists — no comma-split fallback. Indexes on `name`, `level`, `school` cover
+  the three query paths. The schema decision's no-compatibility rule still applies.
 - **Tests:** Rewrite spell-router and player-spell tests for target responses, create/update/delete, duplicate
   name, ID/not-found, integer level/school filters, and nested JSON round trips. Replace all legacy rows in
   `backend/tests/conftest.py`; add API response-model validation for known anomaly records.
@@ -225,6 +208,8 @@ and player spell displays against the target API. It intentionally preserves the
 | **S1** | Accepted 18-field canonical contract in `spell_schema_decision.md`, covering all 24 legacy fields, strict defaults/validation, corpus totals, known repairs, and rejected alternatives; `icon` is dropped as presentation-only data. Seed and runtime contracts unchanged. Gate ✅. |
 | **S2** | Deterministic 18-field transform with strict contextual validation, enumerated anomaly repairs, stable write/check CLI modes, and complete fixture/corpus coverage. 30 focused tests pass with no skips; canonical seed and runtime contracts remain unchanged. Gate ✅. |
 | **S3** | Canonical seed cutover: generated 18-field canonical seed locally via tested S2 boundary (gitignored, not committed). Refactored tests with explicit legacy fixtures, Pydantic v2 strict validation models, and corpus acceptance tests (46 total). SHA-256 byte-reproducible from legacy source. Gate ✅. |
+| **B0** | Backend scaffolding: target nested Pydantic models (`SpellDamage`, `SpellHealing`, `SpellHigherLevels`, `SpellAttack`, `SpellAreaOfEffect`, `SpellTarget`, `SpellTargetCreate`, `SpellTargetUpdate`) added to `schemas.py`; 17 passing schema-construction tests; 29 skipped API regression tests (22 xfailed, 7 xpassed). Legacy routes/models unchanged. SQL projection inventory captured. Gate ✅. |
+| **B1** | Persistence projection: rebuilt the `spells` table around the canonical target fields, projected the canonical seed into the new columns with explicit IDs, and centralized target JSON parsing in `backend/app/db.py`. Gate ✅. |
 
 ## Cross-references
 
@@ -238,5 +223,4 @@ and player spell displays against the target API. It intentionally preserves the
 
 ## Next:
 
-B0 - Backend scaffolding: add target contract stubs and skipped API regressions for the SQLite & API
-contract cutover.
+B2 - API cutover: rewire spell/player endpoints and CRUD to the target model.
