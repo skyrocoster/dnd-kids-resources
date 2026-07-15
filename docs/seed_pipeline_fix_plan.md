@@ -2,7 +2,7 @@
 
 This plan fixes bugs and gaps in the seed export/import pipeline (`init_database.py`, `seed_database.py`, `export_db_seeds.py`) that risk silent data loss during backup/restore cycles. All fixes are in `scripts/`; no schema changes, no API changes, no frontend changes.
 
-> **Status:** S4–S5 queued. S4 next. S0–S3 shipped.
+> **Status:** S5 queued. S5 next. S0–S4 shipped.
 
 ---
 
@@ -57,18 +57,6 @@ Six targeted fixes across three scripts. No new files, no new tables, no API cha
 <!-- ===== VERBOSE BLOCKS — one per un-shipped stage, in order. Delete a block and collapse it to a
      Shipped row the moment that stage ships; the remaining blocks stay until their own turn. ===== -->
 
-#### S4 — Remove dead spell parser fallback (planned)
-
-- **Build:** In `scripts/seed_database.py`, replace lines 191-205 (the `parse_spells_to_db.py` fallback block) with:
-  ```python
-  print("  [WARNING] No seed_spells.json found. Create it with export_db_seeds.py or add it manually.")
-  return
-  ```
-  Also remove the `import subprocess` at the top (line 25) if no other code uses it.
-- **Inherits:** The `parse_spells_to_db.py` script does not exist; the fallback always fails.
-- **Tests:** `grep -c "parse_spells_to_db" scripts/seed_database.py` returns 0; `grep -c "subprocess" scripts/seed_database.py` returns 0.
-- **葡京 Gate:** No subprocess references remain; `--spells` with missing seed file just warns.
-
 #### S5 — Full round-trip verification (planned)
 
 - **Build:** Run the full pipeline:
@@ -92,6 +80,7 @@ Six targeted fixes across three scripts. No new files, no new tables, no API cha
 | **S1** | Fixed `DFEFAULT` typo to `DEFAULT` in `init_database.py:235` npcs schema. |
 | **S2** | Replaced all `_dev/init_database.py` references with `scripts/init_database.py` in `seed_database.py`. |
 | **S3** | Removed phantom `skills` table from drop/clear lists in `init_database.py` and `seed_database.py`. |
+| **S4** | Removed dead `parse_spells_to_db.py` fallback and `import subprocess` from `seed_database.py`. |
 
 ---
 
@@ -106,4 +95,4 @@ Six targeted fixes across three scripts. No new files, no new tables, no API cha
 
 ## Next:
 
-S4 (remove dead spell parser fallback) — unblocked, ready to implement.
+S5 (full round-trip verification) — unblocked, ready to implement.
