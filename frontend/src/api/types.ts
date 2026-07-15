@@ -41,32 +41,71 @@ export interface SpellComponent {
 
 export interface Spell {
   id: number
-  spell_name: string
-  icon?: string | null
-  level?: string | null
-  school?: string | null
-  spell_text?: string | null
-  spell_alt_text?: string | null
-  damage?: Record<string, unknown>[] | null
-  heal?: Record<string, unknown> | null
-  heal_at_spell_slots?: Record<string, unknown> | null
-  range?: string | null
-  higher_levels?: string | null
-  damage_at_higher_levels?: string | null
-  casting_time?: string | null
-  duration?: string | null
-  concentration?: boolean | null
-  ritual?: boolean | null
-  components?: string[] | null
-  materials?: string | null
-  attack_type?: Record<string, unknown>[] | null
-  area_of_effect?: Record<string, unknown> | null
-  action?: string | null
-  classes?: string[] | null
-  subclasses?: string[] | null
+  name: string
+  level: number
+  school: string | null
+  description: string
+  alternate_description: string | null
+  damage: SpellDamage[]
+  healing: SpellHealing
+  range: string
+  higher_levels: SpellHigherLevels
+  casting_times: string[]
+  duration: string
+  concentration: boolean
+  ritual: boolean
+  components: string[]
+  materials: string | null
+  attacks: SpellAttack[]
+  area_of_effect: SpellAreaOfEffect
 }
 
-export type SpellInput = Omit<Spell, 'id'>
+export interface SpellDamage {
+  name: string
+  formula: string
+  damage_types: string[]
+}
+
+export interface SpellHealing {
+  amount: string | null
+  temp_hp: boolean
+  max_hp: boolean
+}
+
+export interface SpellHigherLevels {
+  text: string | null
+  damage_by_slot: Record<string, string>
+}
+
+export interface SpellAttack {
+  kind: 'melee' | 'ranged' | null
+  saving_throws: string[]
+}
+
+export interface SpellAreaOfEffect {
+  shape: string | null
+  size: number | null
+}
+
+export interface SpellInput {
+  name: string
+  level: number
+  school?: string | null
+  description: string
+  alternate_description?: string | null
+  damage?: SpellDamage[]
+  healing?: SpellHealing
+  range: string
+  higher_levels?: SpellHigherLevels
+  casting_times?: string[]
+  duration: string
+  concentration?: boolean
+  ritual?: boolean
+  components?: string[]
+  materials?: string | null
+  attacks?: SpellAttack[]
+  area_of_effect?: SpellAreaOfEffect
+}
 
 export type AbilityName = 'str' | 'dex' | 'con' | 'int' | 'wis' | 'cha'
 export type CreatureSize = 'tiny' | 'small' | 'medium' | 'large' | 'huge' | 'gargantuan'
