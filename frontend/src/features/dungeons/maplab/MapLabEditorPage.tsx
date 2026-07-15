@@ -225,6 +225,8 @@ export function MapLabEditorPage() {
     loadStatus,
     syncStatus,
     addRoom,
+    addFloorAbove,
+    addFloorBelow,
     selectRoom,
     deleteRoom,
     toggleCell,
@@ -361,6 +363,8 @@ export function MapLabEditorPage() {
     [state.layout.stairs, state.activeZ, selectedStairCell]
   )
   const floorZs = useMemo(() => floors.map((floor) => floor.z), [floors])
+  const hasFloorAbove = floorZs.includes(state.activeZ + 1)
+  const hasFloorBelow = floorZs.includes(state.activeZ - 1)
   const stairUpFloor = floorZs.includes(state.activeZ + 1) ? state.activeZ + 1 : null
   const stairDownFloor = floorZs.includes(state.activeZ - 1) ? state.activeZ - 1 : null
   const selectedPortal = useMemo(
@@ -583,6 +587,33 @@ export function MapLabEditorPage() {
                 {floor.title ?? `Floor ${floor.z}`}
               </button>
             ))}
+          </div>
+
+          <div className="maplab-editor-floor-actions" aria-label="Floor actions">
+            <button
+              type="button"
+              className="maplab-pill-button maplab-editor-floor-action"
+              disabled={hasFloorAbove}
+              onClick={() => {
+                clearRoomFootprintSelection()
+                addFloorAbove()
+              }}
+            >
+              <PlusIcon width={16} height={16} aria-hidden="true" />
+              Add floor above
+            </button>
+            <button
+              type="button"
+              className="maplab-pill-button maplab-editor-floor-action"
+              disabled={hasFloorBelow}
+              onClick={() => {
+                clearRoomFootprintSelection()
+                addFloorBelow()
+              }}
+            >
+              <PlusIcon width={16} height={16} aria-hidden="true" />
+              Add floor below
+            </button>
           </div>
 
           <ul className="maplab-editor-room-list" aria-label="Rooms on this floor">

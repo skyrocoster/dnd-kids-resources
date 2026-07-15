@@ -7,8 +7,8 @@ room-reading/authoring capabilities around them. It follows
 [`docs/PLAN_TEMPLATE.md`](PLAN_TEMPLATE.md): durable facts first, a collapsed shipped-stage table,
 and detailed specifications only for the remaining work.
 
-> **Status:** Original dungeon work, encounter/NPC support, and Map Lab phases A-M shipped. R0-R4
-> shipped. R5 - Add viewer navigation rail is next.
+> **Status:** Original dungeon work, encounter/NPC support, and Map Lab phases A-M shipped. R0-R5
+> shipped. R6 - Add editor data ownership is next.
 
 ---
 
@@ -153,13 +153,12 @@ Use the canonical tokens in `frontend/src/theme.css` and
 | **R2 - Production data loading** | Added validated dungeon route loading, distinct missing/error states, blank-layout 404 handling, and reset-to-last-loaded behavior instead of production fixture fallback. Gate ✅. |
 | **R3 - Additive shared dungeon shell** | DungeonShell layout route with dungeon title, view/edit mode toggle, return-to-browser link, and hoisted DungeonRouteContext. Prototype titles removed from both pages. Gate ✅. |
 | **R4 - Add viewer room-reading surface** | Added persistent active-room selection, a room-details sidebar with entries/NPCs/encounter launch, and viewer NPC dock wiring while preserving fixture inspection. Gate ✅. |
+| **R5 - Add viewer navigation rail** | Added a floor-grouped viewer rail with room-selection syncing, threat hints, and responsive rail layouts while preserving map-based selection and floor switching. Gate ✅. |
 
 ---
 
 ## Known Debt / Deferred Work (Not Yet Built)
 
-- The production viewer has no stable active-room content surface or room navigation rail.
-  R4 adds the content surface; R5 adds the rail.
 - The editor does not load or persist `dungeons.data`; it cannot create a usable production dungeon
   on its own and can still reset arbitrary routes to Isly Castle.
 - Layout and data room IDs have no enforced shared lifecycle yet.
@@ -192,24 +191,7 @@ future dungeon authoring.
 work after R3, but R4's active-room contract lands first. R6 must precede R7-R8 because the old
 modal cannot be removed until production editing persists complete room data.
 
-#### R5 - Add Viewer Navigation Rail (next up)
-
-- **Build:** add a floor-grouped room rail to the viewer's existing composition using `getFloors`,
-  `getRoomsOnFloor`, and threat hints from `dungeonModel.ts`, constrained to rooms that have map
-  geometry. Rail activation changes active floor and active room; map selection updates rail state.
-  It supplements rather than replaces Map Lab's floor tabs, zoom, or canvas selection. Choose and
-  document a compact or collapsible presentation based on the shared shell's actual responsive
-  layout.
-- **Inherits:** R4 `useActiveRoom` state and selectors (`activeRoomId`, `setActiveRoomId`,
-  `activeLayoutRoom`, `activeDungeonRoom`); `RoomDetailsPanel` content surface; `DungeonRouteContext`
-  for dungeon identity; `dungeonModel.ts` selectors (`getFloors`, `getRoomsOnFloor`, `groupEntriesByType`,
-  `getRoomThreatHints`). Do not revive old breadcrumb-history behavior without a current table-use need.
-- **Tests:** grouping/order, rail-to-map synchronization, map-to-rail synchronization, floor change,
-  and any retained collapse behavior.
-- **Gate:** the viewer supports both spatial discovery and fast room-list navigation while retaining
-  a readable selected-room panel on desktop and narrow screens.
-
-#### R6 - Add Editor Data Ownership (Planned)
+#### R6 - Add Editor Data Ownership (next up)
 
 - **Build:** extend the existing editor state/hook and selected-room inspector; do not replace the
   layout reducer, map canvas, placement modes, or fixture forms. Load a working `Dungeon` data blob
@@ -296,4 +278,4 @@ When the phase is complete:
 
 ## Next
 
-**Next:** `R5 - Add viewer navigation rail` is unblocked.
+**Next:** `R6 - Add editor data ownership` is unblocked.

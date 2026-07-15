@@ -18,6 +18,7 @@ import { DoorBadgeLayer, DoorMarker } from './DoorMarker'
 import { InspectorPanel, type SessionControls } from './InspectorPanel'
 import { RoomDetailsPanel } from './RoomDetailsPanel'
 import { useActiveRoom } from './useActiveRoom'
+import { ViewerRoomRail } from './ViewerRoomRail'
 import {
   absoluteCells,
   defaultPassageSession,
@@ -373,6 +374,15 @@ export function MapLabPage() {
       </div>
 
       <div className="maplab-canvas">
+        <div className="maplab-viewer-rail-container">
+          <ViewerRoomRail
+            layout={layout}
+            parsed={parsed}
+            activeRoomId={activeRoomId}
+            onSelectRoom={setActiveRoomId}
+          />
+        </div>
+
         <div className="maplab-canvas-area">
           <MapCanvas
             viewBox={viewBox}
