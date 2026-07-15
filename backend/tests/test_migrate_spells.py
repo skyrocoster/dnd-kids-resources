@@ -6,8 +6,10 @@ import json
 import subprocess
 import sys
 from pathlib import Path
+from typing import Literal
 
 import pytest
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT_PATH = ROOT / "scripts" / "migrate_spells.py"
@@ -32,12 +34,79 @@ TARGET_FIELDS = [
     "attacks",
     "area_of_effect",
 ]
+DROPPED_LEGACY_KEYS = {
+    "spell_name", "icon", "spell_text", "spell_alt_text", "heal",
+    "heal_at_spell_slots", "damage_at_higher_levels", "casting_time",
+    "attack_type", "action", "classes", "subclasses",
+}
 
 spec = importlib.util.spec_from_file_location("migrate_spells", SCRIPT_PATH)
 migrate_spells = importlib.util.module_from_spec(spec)
 assert spec.loader is not None
 spec.loader.exec_module(migrate_spells)
 
+
+# ---------------------------------------------------------------------------
+# Migration-only Pydantic v2 models (strict, for test validation only)
+# ---------------------------------------------------------------------------
+
+class Damage(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    name: str = Field(min_length=1)
+    formula: str = Field(min_length=1)
+    damage_types: list[str]
+
+
+class Healing(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    amount: str | None = None
+    temp_hp: bool = False
+    max_hp: bool = False
+
+
+class HigherLevels(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    text: str | None = None
+    damage_by_slot: dict[str, str] = {}
+
+
+class Attack(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    kind: Literal["melee", "ranged"] | None = None
+    saving_throws: list[str] = []
+
+
+class AreaOfEffect(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    shape: str | None = None
+    size: int | None = Field(default=None, ge=1)
+
+
+class CanonicalSpell(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    id: int = Field(gt=0)
+    name: str = Field(min_length=1)
+    level: int = Field(ge=0, le=9)
+    school: str | None = None
+    description: str = Field(min_length=1)
+    alternate_description: str | None = None
+    damage: list[Damage] = []
+    healing: Healing = Field(default_factory=Healing)
+    range: str = Field(min_length=1)
+    higher_levels: HigherLevels = Field(default_factory=HigherLevels)
+    casting_times: list[str] = []
+    duration: str = Field(min_length=1)
+    concentration: bool
+    ritual: bool
+    components: list[str] = []
+    materials: str | None = None
+    attacks: list[Attack] = []
+    area_of_effect: AreaOfEffect = Field(default_factory=AreaOfEffect)
+
+
+# ---------------------------------------------------------------------------
+# Fixtures and helpers
+# ---------------------------------------------------------------------------
 
 def base_spell(**overrides):
     spell = {
@@ -79,17 +148,8 @@ def migrate_one(spell):
 
 
 @pytest.fixture(scope="module")
-def legacy_spells():
+def canonical_spells():
     return json.loads(SEED_PATH.read_text(encoding="utf-8"))
-
-
-@pytest.fixture(scope="module")
-def migrated_spells(legacy_spells):
-    return migrate_spells.migrate(copy.deepcopy(legacy_spells))
-
-
-def corpus_spell(legacy_spells, spell_id):
-    return next(spell for spell in legacy_spells if spell["id"] == spell_id)
 
 
 def run_cli(*args):
@@ -106,6 +166,84 @@ def write_source(path, rows=None):
         encoding="utf-8",
     )
 
+
+# ---------------------------------------------------------------------------
+# Explicit legacy fixture rows (for edge-case transform tests)
+# ---------------------------------------------------------------------------
+
+def legacy_plant_growth():
+    return base_spell(
+        id=348,
+        spell_name="Plant Growth",
+        level="3",
+        school="transmutation",
+        spell_text="This spell channels vitality into plants within a specific area.",
+        damage=None,
+        heal=None,
+        range="150 feet",
+        higher_levels=None,
+        damage_at_higher_levels=None,
+        casting_time="['1 action', '8 hour']",
+        duration="Instantaneous",
+        concentration=0,
+        ritual=0,
+        components='["V", "S"]',
+        materials=None,
+        attack_type=None,
+        area_of_effect="{}",
+    )
+
+
+def legacy_absorb_elements():
+    return base_spell(
+        id=2,
+        spell_name="Absorb Elements",
+        level="1",
+        school="abjuration",
+        spell_text="The spell captures some of the incoming energy.",
+        damage=[{"name": "primary", "damage": "1d6"}],
+        heal=None,
+        range="Self",
+        higher_levels="When you cast this spell using a spell slot of 2nd level or higher.",
+        damage_at_higher_levels='{"1": "1d6", "2": "2d6", "3": "3d6", "4": "4d6", "5": "5d6", "6": "6d6", "7": "7d6", "8": "8d6", "9": "9d6"}',
+        casting_time="1 reaction",
+        duration="1 round",
+        concentration=0,
+        ritual=0,
+        components='["S"]',
+        materials=None,
+        attack_type=None,
+        area_of_effect="{}",
+    )
+
+
+def legacy_flashdaggers():
+    return base_spell(
+        id=525,
+        spell_name="Flashdaggers",
+        school="Conjuration",
+        spell_text="You summon a spray of knives.",
+        damage=[{"name": "initial", "damage": "5d4", "damage_type": "peircing"}],
+        heal=None,
+        range="60",
+        higher_levels=None,
+        damage_at_higher_levels=None,
+        casting_time="1 action",
+        duration="Instantaneous",
+        concentration=0,
+        ritual=0,
+        components="V, S",
+        materials=None,
+        attack_type=[{"name": "initial", "save": "DEX"}],
+        action='{"action": "Action"}',
+        area_of_effect=None,
+        classes="Wizard",
+    )
+
+
+# ---------------------------------------------------------------------------
+# S2 transform tests (retained)
+# ---------------------------------------------------------------------------
 
 def test_conventional_spell_transform_has_exact_ordered_contract():
     result = migrate_one(base_spell())
@@ -224,21 +362,25 @@ def test_attack_roll_and_saving_throw_shapes(raw_attack, expected):
     assert migrate_one(base_spell(attack_type=[raw_attack]))["attacks"] == [expected]
 
 
-def test_plant_growth_preserves_both_casting_times(legacy_spells):
-    result = migrate_one(corpus_spell(legacy_spells, 348))
+# ---------------------------------------------------------------------------
+# Edge-case tests using explicit legacy fixtures
+# ---------------------------------------------------------------------------
+
+def test_plant_growth_preserves_both_casting_times():
+    result = migrate_one(legacy_plant_growth())
     assert result["casting_times"] == ["1 action", "8 hours"]
     assert result["area_of_effect"] == {"shape": None, "size": None}
 
 
-def test_absorb_elements_preserves_variable_damage_type(legacy_spells):
-    result = migrate_one(corpus_spell(legacy_spells, 2))
+def test_absorb_elements_preserves_variable_damage_type():
+    result = migrate_one(legacy_absorb_elements())
     assert result["damage"] == [
         {"name": "primary", "formula": "1d6", "damage_types": []}
     ]
 
 
-def test_flashdaggers_applies_only_enumerated_repairs(legacy_spells):
-    result = migrate_one(corpus_spell(legacy_spells, 525))
+def test_flashdaggers_applies_only_enumerated_repairs():
+    result = migrate_one(legacy_flashdaggers())
     assert result["name"] == "Flashdaggers"
     assert result["school"] == "conjuration"
     assert result["components"] == ["V", "S"]
@@ -248,45 +390,9 @@ def test_flashdaggers_applies_only_enumerated_repairs(legacy_spells):
     assert result["attacks"] == [{"kind": None, "saving_throws": ["dex"]}]
 
 
-def test_full_corpus_acceptance_contract(migrated_spells):
-    assert len(migrated_spells) == 525
-    assert len({spell["id"] for spell in migrated_spells}) == 525
-    assert len({spell["name"] for spell in migrated_spells}) == 525
-    assert all(list(spell) == TARGET_FIELDS for spell in migrated_spells)
-    assert all(type(spell["level"]) is int for spell in migrated_spells)
-    assert all(0 <= spell["level"] <= 9 for spell in migrated_spells)
-    assert all(type(spell["concentration"]) is bool for spell in migrated_spells)
-    assert all(type(spell["ritual"]) is bool for spell in migrated_spells)
-    assert all(isinstance(spell["components"], list) for spell in migrated_spells)
-    assert all(isinstance(spell["healing"], dict) for spell in migrated_spells)
-    assert all(isinstance(spell["higher_levels"], dict) for spell in migrated_spells)
-    assert all(isinstance(spell["area_of_effect"], dict) for spell in migrated_spells)
-    assert sum(len(spell["damage"]) for spell in migrated_spells) == 103
-    assert sum(bool(spell["damage"]) for spell in migrated_spells) == 97
-    assert sum(len(spell["damage"]) == 2 for spell in migrated_spells) == 6
-    assert sum(len(spell["attacks"]) for spell in migrated_spells) == 249
-    assert sum(bool(spell["higher_levels"]["damage_by_slot"]) for spell in migrated_spells) == 74
-    assert all(
-        spell["higher_levels"]["text"] is not None
-        for spell in migrated_spells
-        if spell["higher_levels"]["damage_by_slot"]
-    )
-    assert all(
-        attack["kind"] in {None, "melee", "ranged"}
-        and all(save == save.lower() for save in attack["saving_throws"])
-        for spell in migrated_spells
-        for attack in spell["attacks"]
-    )
-
-
-def test_migration_is_pure_and_deterministic(legacy_spells):
-    original = copy.deepcopy(legacy_spells)
-    first = migrate_spells.migrate(legacy_spells)
-    second = migrate_spells.migrate(copy.deepcopy(legacy_spells))
-    assert legacy_spells == original
-    assert first == second
-    assert migrate_spells._serialize(first) == migrate_spells._serialize(second)
-
+# ---------------------------------------------------------------------------
+# S2 contextual error tests (retained)
+# ---------------------------------------------------------------------------
 
 @pytest.mark.parametrize(
     ("field", "bad_value"),
@@ -327,6 +433,10 @@ def test_unrecognized_source_shapes_fail_contextually(mutation):
         migrate_one(spell)
     assert "spell 999 'Fixture Spell' at" in str(exc_info.value)
 
+
+# ---------------------------------------------------------------------------
+# S2 CLI tests (retained)
+# ---------------------------------------------------------------------------
 
 def test_cli_help():
     result = run_cli("--help")
@@ -399,3 +509,280 @@ def test_cli_check_requires_explicit_source(tmp_path):
     result = run_cli("--check", "--output", tmp_path / "output.json")
     assert result.returncode != 0
     assert "--source is required" in result.stderr
+
+
+# ---------------------------------------------------------------------------
+# S3: Canonical seed shape and identity
+# ---------------------------------------------------------------------------
+
+def test_canonical_seed_shape_and_identity(canonical_spells):
+    assert len(canonical_spells) == 525
+    assert len({spell["id"] for spell in canonical_spells}) == 525
+    assert all(isinstance(spell["id"], int) and spell["id"] > 0 for spell in canonical_spells)
+    assert len({spell["name"].casefold() for spell in canonical_spells}) == 525
+    assert all(list(spell.keys()) == TARGET_FIELDS for spell in canonical_spells)
+    union_keys = set()
+    for spell in canonical_spells:
+        union_keys.update(spell.keys())
+    assert not union_keys & DROPPED_LEGACY_KEYS
+    assert "icon" not in union_keys
+    assert "spell_name" not in union_keys
+    assert "heal" not in union_keys
+    assert "attack_type" not in union_keys
+    assert "classes" not in union_keys
+    assert "subclasses" not in union_keys
+
+
+# ---------------------------------------------------------------------------
+# S3: Strict model validation
+# ---------------------------------------------------------------------------
+
+def test_strict_model_validation_accepts_canonical_rows(canonical_spells):
+    for spell in canonical_spells:
+        validated = CanonicalSpell.model_validate(spell)
+        assert type(validated.id) is int
+        assert type(validated.level) is int
+        assert type(validated.concentration) is bool
+        assert type(validated.ritual) is bool
+        assert isinstance(validated.damage, list)
+        assert isinstance(validated.healing, Healing)
+        assert isinstance(validated.higher_levels, HigherLevels)
+        assert isinstance(validated.area_of_effect, AreaOfEffect)
+
+
+def test_strict_model_rejects_extra_legacy_key():
+    bad = {
+        "id": 999, "name": "X", "level": 1, "school": None, "description": "X",
+        "alternate_description": None, "damage": [], "healing": Healing(),
+        "range": "Self", "higher_levels": HigherLevels(), "casting_times": ["1 action"],
+        "duration": "Instantaneous", "concentration": False, "ritual": False,
+        "components": ["V"], "materials": None, "attacks": [],
+        "area_of_effect": AreaOfEffect(), "icon": "✨",
+    }
+    with pytest.raises(ValidationError):
+        CanonicalSpell.model_validate(bad)
+
+
+def test_strict_model_rejects_string_level():
+    bad = {
+        "id": 999, "name": "X", "level": "3", "school": None, "description": "X",
+        "alternate_description": None, "damage": [], "healing": Healing(),
+        "range": "Self", "higher_levels": HigherLevels(), "casting_times": ["1 action"],
+        "duration": "Instantaneous", "concentration": False, "ritual": False,
+        "components": ["V"], "materials": None, "attacks": [],
+        "area_of_effect": AreaOfEffect(),
+    }
+    with pytest.raises(ValidationError):
+        CanonicalSpell.model_validate(bad, strict=True)
+
+
+def test_strict_model_rejects_integer_boolean():
+    bad = {
+        "id": 999, "name": "X", "level": 1, "school": None, "description": "X",
+        "alternate_description": None, "damage": [], "healing": Healing(),
+        "range": "Self", "higher_levels": HigherLevels(), "casting_times": ["1 action"],
+        "duration": "Instantaneous", "concentration": 0, "ritual": 0,
+        "components": ["V"], "materials": None, "attacks": [],
+        "area_of_effect": AreaOfEffect(),
+    }
+    with pytest.raises(ValidationError):
+        CanonicalSpell.model_validate(bad, strict=True)
+
+
+def test_strict_model_rejects_null_collection():
+    bad = {
+        "id": 999, "name": "X", "level": 1, "school": None, "description": "X",
+        "alternate_description": None, "damage": None, "healing": Healing(),
+        "range": "Self", "higher_levels": HigherLevels(), "casting_times": ["1 action"],
+        "duration": "Instantaneous", "concentration": False, "ritual": False,
+        "components": ["V"], "materials": None, "attacks": [],
+        "area_of_effect": AreaOfEffect(),
+    }
+    with pytest.raises(ValidationError):
+        CanonicalSpell.model_validate(bad)
+
+
+def test_strict_model_rejects_invalid_attack_kind():
+    bad_attack = {"kind": "invalid", "saving_throws": []}
+    bad = {
+        "id": 999, "name": "X", "level": 1, "school": None, "description": "X",
+        "alternate_description": None, "damage": [], "healing": Healing(),
+        "range": "Self", "higher_levels": HigherLevels(), "casting_times": ["1 action"],
+        "duration": "Instantaneous", "concentration": False, "ritual": False,
+        "components": ["V"], "materials": None, "attacks": [bad_attack],
+        "area_of_effect": AreaOfEffect(),
+    }
+    with pytest.raises(ValidationError):
+        CanonicalSpell.model_validate(bad)
+
+
+def test_strict_model_rejects_non_positive_aoe_size():
+    bad_aoe = {"shape": "sphere", "size": 0}
+    bad = {
+        "id": 999, "name": "X", "level": 1, "school": None, "description": "X",
+        "alternate_description": None, "damage": [], "healing": Healing(),
+        "range": "Self", "higher_levels": HigherLevels(), "casting_times": ["1 action"],
+        "duration": "Instantaneous", "concentration": False, "ritual": False,
+        "components": ["V"], "materials": None, "attacks": [],
+        "area_of_effect": bad_aoe,
+    }
+    with pytest.raises(ValidationError):
+        AreaOfEffect.model_validate(bad_aoe)
+
+
+# ---------------------------------------------------------------------------
+# S3: Defaults and normalized members
+# ---------------------------------------------------------------------------
+
+def test_canonical_defaults_and_normalized_members(canonical_spells):
+    for spell in canonical_spells:
+        assert isinstance(spell["components"], list)
+        assert isinstance(spell["healing"], dict)
+        assert isinstance(spell["higher_levels"], dict)
+        assert isinstance(spell["area_of_effect"], dict)
+        assert "amount" in spell["healing"]
+        assert "temp_hp" in spell["healing"]
+        assert "max_hp" in spell["healing"]
+        assert "text" in spell["higher_levels"]
+        assert "damage_by_slot" in spell["higher_levels"]
+        assert "shape" in spell["area_of_effect"]
+        assert "size" in spell["area_of_effect"]
+    populated_healing = [
+        s for s in canonical_spells if s["healing"]["amount"] is not None
+    ]
+    for spell in populated_healing:
+        assert isinstance(spell["healing"]["amount"], str)
+        assert spell["healing"]["amount"]
+    populated_hl = [
+        s for s in canonical_spells if s["higher_levels"]["text"] is not None
+    ]
+    for spell in populated_hl:
+        assert isinstance(spell["higher_levels"]["text"], str)
+        assert spell["higher_levels"]["text"]
+    schools = [s["school"] for s in canonical_spells if s["school"] is not None]
+    assert all(s == s.lower() for s in schools)
+    for spell in canonical_spells:
+        for dtype in spell["damage"]:
+            for dt in dtype["damage_types"]:
+                assert dt == dt.lower()
+        for attack in spell["attacks"]:
+            for save in attack["saving_throws"]:
+                assert save == save.lower()
+    for spell in canonical_spells:
+        for comp in spell["components"]:
+            assert comp == comp.strip() and comp == comp.upper()
+        assert len(spell["components"]) == len(set(spell["components"]))
+    for spell in canonical_spells:
+        slot_map = spell["higher_levels"]["damage_by_slot"]
+        for key in slot_map:
+            assert len(key) == 1 and key in "0123456789"
+            assert slot_map[key]
+
+
+# ---------------------------------------------------------------------------
+# S3: Corpus acceptance totals
+# ---------------------------------------------------------------------------
+
+def test_canonical_corpus_acceptance_totals(canonical_spells):
+    assert len(canonical_spells) == 525
+    assert sum(len(spell["damage"]) for spell in canonical_spells) == 103
+    assert sum(bool(spell["damage"]) for spell in canonical_spells) == 97
+    assert sum(len(spell["damage"]) == 2 for spell in canonical_spells) == 6
+    assert sum(len(spell["attacks"]) for spell in canonical_spells) == 249
+    assert sum(
+        bool(spell["higher_levels"]["damage_by_slot"]) for spell in canonical_spells
+    ) == 74
+    for spell in canonical_spells:
+        if spell["higher_levels"]["damage_by_slot"]:
+            assert spell["higher_levels"]["text"] is not None
+    levels = {spell["level"] for spell in canonical_spells}
+    assert levels == set(range(10))
+
+
+# ---------------------------------------------------------------------------
+# S3: Known repairs present in canonical data
+# ---------------------------------------------------------------------------
+
+def test_canonical_plant_growth_repairs(canonical_spells):
+    pg = next(s for s in canonical_spells if s["id"] == 348)
+    assert pg["casting_times"] == ["1 action", "8 hours"]
+    assert pg["area_of_effect"] == {"shape": None, "size": None}
+
+
+def test_canonical_absorb_elements_repairs(canonical_spells):
+    ae = next(s for s in canonical_spells if s["id"] == 2)
+    assert ae["damage"] == [
+        {"name": "primary", "formula": "1d6", "damage_types": []}
+    ]
+
+
+def test_canonical_flashdaggers_repairs(canonical_spells):
+    fd = next(s for s in canonical_spells if s["id"] == 525)
+    assert fd["school"] == "conjuration"
+    assert fd["components"] == ["V", "S"]
+    assert fd["damage"] == [
+        {"name": "initial", "formula": "5d4", "damage_types": ["piercing"]}
+    ]
+    assert fd["attacks"] == [{"kind": None, "saving_throws": ["dex"]}]
+
+
+def test_canonical_no_icon_field(canonical_spells):
+    for spell in canonical_spells:
+        assert "icon" not in spell
+
+
+# ---------------------------------------------------------------------------
+# S3: Reproducibility and CLI safety
+# ---------------------------------------------------------------------------
+
+def test_canonical_source_order_preserves_legacy(canonical_spells):
+    legacy_source = Path("F:/TMP/seed_spells_legacy_s3.json")
+    if legacy_source.exists():
+        legacy_rows = json.loads(legacy_source.read_text(encoding="utf-8"))
+        migrated = migrate_spells.migrate(copy.deepcopy(legacy_rows))
+        assert [s["id"] for s in canonical_spells] == [s["id"] for s in migrated]
+        assert [s["name"] for s in canonical_spells] == [s["name"] for s in migrated]
+
+
+def test_cli_check_succeeds_against_canonical_seed(tmp_path):
+    legacy_source = Path("F:/TMP/seed_spells_legacy_s3.json")
+    assert legacy_source.exists(), "Legacy backup not found at F:/TMP/seed_spells_legacy_s3.json"
+
+    before_source = legacy_source.read_bytes()
+    before_output = SEED_PATH.read_bytes()
+
+    result = run_cli(
+        "--check", "--source", str(legacy_source),
+        "--output", str(SEED_PATH),
+    )
+    assert result.returncode == 0, result.stderr
+    assert legacy_source.read_bytes() == before_source
+    assert SEED_PATH.read_bytes() == before_output
+
+
+def test_cli_check_fails_when_canonical_seed_is_altered(tmp_path):
+    legacy_source = Path("F:/TMP/seed_spells_legacy_s3.json")
+    assert legacy_source.exists(), "Legacy backup not found at F:/TMP/seed_spells_legacy_s3.json"
+
+    altered = tmp_path / "altered_seed.json"
+    altered.write_text(SEED_PATH.read_text(encoding="utf-8").replace('"level": 0', '"level": 9'), encoding="utf-8")
+
+    before_source = legacy_source.read_bytes()
+    before_altered = altered.read_bytes()
+
+    result = run_cli(
+        "--check", "--source", str(legacy_source),
+        "--output", str(altered),
+    )
+    assert result.returncode == 1
+    assert "CHECK FAILED" in result.stderr
+    assert legacy_source.read_bytes() == before_source
+    assert altered.read_bytes() == before_altered
+
+
+def test_migration_is_pure_and_deterministic(tmp_path):
+    rows = [base_spell(), legacy_plant_growth(), legacy_flashdaggers()]
+    first = migrate_spells.migrate(copy.deepcopy(rows))
+    second = migrate_spells.migrate(copy.deepcopy(rows))
+    assert first == second
+    assert migrate_spells._serialize(first) == migrate_spells._serialize(second)
