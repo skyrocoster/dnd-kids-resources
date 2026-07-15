@@ -4,60 +4,19 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as api from '../../../api/client'
 import type { Spell } from '../../../api/types'
 import { SpellBrowserPage } from '../SpellBrowserPage'
+import { targetSpell } from './spellFixtures'
 
 const spells: Spell[] = [
   {
-    id: 1,
-    spell_name: 'Fireball',
-    icon: '🔥',
-    level: '3',
-    school: 'evocation',
-    spell_text: 'A bright streak deals 8d6 fire damage.',
-    spell_alt_text: null,
-    damage: null,
-    heal: null,
-    heal_at_spell_slots: null,
-    range: '150 feet',
-    higher_levels: null,
-    damage_at_higher_levels: null,
-    casting_time: '1 action',
-    duration: 'Instantaneous',
-    concentration: false,
-    ritual: false,
-    components: ['V', 'S', 'M'],
-    materials: null,
-    attack_type: null,
-    area_of_effect: null,
-    action: null,
-    classes: ['Wizard'],
-    subclasses: null,
-  },
-  {
+    ...targetSpell,
     id: 2,
-    spell_name: 'Cure Wounds',
-    icon: '✨',
-    level: '1',
-    school: 'evocation',
-    spell_text: 'A creature regains 1d8+3 hit points.',
-    spell_alt_text: null,
-    damage: null,
-    heal: null,
-    heal_at_spell_slots: null,
+    name: 'Cure Wounds',
+    level: 1,
+    description: 'A creature regains 1d8+3 hit points.',
+    casting_times: ['1 action'],
     range: 'Touch',
-    higher_levels: null,
-    damage_at_higher_levels: null,
-    casting_time: '1 action',
-    duration: 'Instantaneous',
-    concentration: false,
-    ritual: false,
-    components: ['V', 'S'],
-    materials: null,
-    attack_type: null,
-    area_of_effect: null,
-    action: null,
-    classes: ['Cleric'],
-    subclasses: null,
   },
+  targetSpell,
 ]
 
 describe('SpellBrowserPage', () => {
@@ -70,7 +29,7 @@ describe('SpellBrowserPage', () => {
 
     render(<SpellBrowserPage />)
 
-    await waitFor(() => expect(screen.getByText('Cure Wounds')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByRole('heading', { name: /Cure Wounds/ })).toBeInTheDocument())
     expect(screen.getByRole('heading', { name: /Cure Wounds/ })).toBeInTheDocument()
   })
 
@@ -79,10 +38,12 @@ describe('SpellBrowserPage', () => {
     const user = userEvent.setup()
 
     render(<SpellBrowserPage />)
-    await waitFor(() => expect(screen.getByText('Fireball')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('Plant Growth')).toBeInTheDocument())
 
-    await user.click(screen.getByText('Fireball'))
-    expect(screen.getByRole('heading', { name: /Fireball/ })).toBeInTheDocument()
+    await user.click(screen.getByText('Plant Growth'))
+    expect(screen.getByRole('heading', { name: /Plant Growth/ })).toBeInTheDocument()
+    expect(screen.getByText('1 action or 8 hours')).toBeInTheDocument()
+    expect(screen.getByText('V, S')).toBeInTheDocument()
   })
 
   it('opens the editor when New Spell is clicked', async () => {
@@ -90,7 +51,7 @@ describe('SpellBrowserPage', () => {
     const user = userEvent.setup()
 
     render(<SpellBrowserPage />)
-    await waitFor(() => expect(screen.getByText('Cure Wounds')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByRole('heading', { name: /Cure Wounds/ })).toBeInTheDocument())
 
     await user.click(screen.getByRole('button', { name: 'New Spell' }))
     expect(screen.getByRole('dialog', { name: 'Add new spell' })).toBeInTheDocument()

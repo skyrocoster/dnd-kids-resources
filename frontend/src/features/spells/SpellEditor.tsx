@@ -6,7 +6,7 @@ import { CheckboxField } from '../../components/form/CheckboxField'
 import { MultiSelectField } from '../../components/form/MultiSelectField'
 import { SelectField } from '../../components/form/SelectField'
 import { TextField } from '../../components/form/TextField'
-import { ACTION_OPTIONS, ATTACK_TYPE_OPTIONS, CLASS_OPTIONS, LEVEL_OPTIONS, SCHOOL_OPTIONS } from './constants'
+import { LEVEL_OPTIONS, SCHOOL_OPTIONS } from './constants'
 import { DiceRollField } from './DiceRollField'
 import type { AttackRow, DamageRow, SpellFormState } from './spellForm'
 import { emptySpellForm, formStateToSpellInput, nextRowId, spellToFormState } from './spellForm'
@@ -44,7 +44,7 @@ export function SpellEditor({ spell, onClose, onSaved }: SpellEditorProps) {
   const patch = (fields: Partial<SpellFormState>) => setForm((prev) => ({ ...prev, ...fields }))
 
   const addAttackRow = () => {
-    const row: AttackRow = { id: nextRowId(), name: form.spell_name, type: '', save: [] }
+    const row: AttackRow = { id: nextRowId(), kind: '', savingThrows: [] }
     patch({ attackRows: [...form.attackRows, row] })
   }
   const updateAttackRow = (id: string, fields: Partial<AttackRow>) => {
@@ -55,7 +55,7 @@ export function SpellEditor({ spell, onClose, onSaved }: SpellEditorProps) {
   }
 
   const addDamageRow = () => {
-    const row: DamageRow = { id: nextRowId(), name: form.spell_name, damage: '', type: [] }
+    const row: DamageRow = { id: nextRowId(), name: '', formula: '', damageTypes: [] }
     patch({ damageRows: [...form.damageRows, row] })
   }
   const updateDamageRow = (id: string, fields: Partial<DamageRow>) => {
@@ -89,11 +89,11 @@ export function SpellEditor({ spell, onClose, onSaved }: SpellEditorProps) {
         className="spell-editor-modal"
         role="dialog"
         aria-modal="true"
-        aria-label={spell ? `Edit ${spell.spell_name}` : 'Add new spell'}
+          aria-label={spell ? `Edit ${spell.name}` : 'Add new spell'}
         onClick={(e) => e.stopPropagation()}
       >
         <header className="spell-editor-header">
-          <h2>{spell ? `Edit Spell: ${spell.spell_name}` : 'Add New Spell'}</h2>
+          <h2>{spell ? `Edit Spell: ${spell.name}` : 'Add New Spell'}</h2>
           <button type="button" className="spell-editor-close" onClick={onClose} aria-label="Close">
             ×
           </button>
@@ -105,11 +105,10 @@ export function SpellEditor({ spell, onClose, onSaved }: SpellEditorProps) {
           <div className="spell-editor-grid">
             <TextField
               label="Spell Name"
-              value={form.spell_name}
-              onChange={(e) => patch({ spell_name: e.target.value })}
+              value={form.name}
+              onChange={(e) => patch({ name: e.target.value })}
               required
             />
-            <TextField label="Icon" value={form.icon} onChange={(e) => patch({ icon: e.target.value })} />
             <SelectField
               label="Level"
               value={form.level}
@@ -125,9 +124,10 @@ export function SpellEditor({ spell, onClose, onSaved }: SpellEditorProps) {
             />
             <TextField
               label="Casting Time"
-              value={form.casting_time}
-              onChange={(e) => patch({ casting_time: e.target.value })}
-              placeholder="1 action"
+              multiline
+              value={form.castingTimes}
+              onChange={(e) => patch({ castingTimes: e.target.value })}
+              placeholder="One casting time per line"
             />
             <TextField
               label="Duration"
@@ -140,12 +140,6 @@ export function SpellEditor({ spell, onClose, onSaved }: SpellEditorProps) {
               value={form.range}
               onChange={(e) => patch({ range: e.target.value })}
               placeholder="60 feet"
-            />
-            <SelectField
-              label="Action"
-              value={form.action}
-              onChange={(e) => patch({ action: e.target.value })}
-              options={ACTION_OPTIONS}
             />
             <CheckboxField
               label="Concentration"
@@ -160,19 +154,6 @@ export function SpellEditor({ spell, onClose, onSaved }: SpellEditorProps) {
             multiline
             value={form.materials}
             onChange={(e) => patch({ materials: e.target.value })}
-          />
-
-          <MultiSelectField
-            label="Classes"
-            options={CLASS_OPTIONS}
-            selected={form.classes}
-            onChange={(classes) => patch({ classes })}
-          />
-
-          <TextField
-            label="Subclasses (comma-separated)"
-            value={form.subclasses}
-            onChange={(e) => patch({ subclasses: e.target.value })}
           />
 
           {componentOptions.length > 0 && (
@@ -213,16 +194,12 @@ export function SpellEditor({ spell, onClose, onSaved }: SpellEditorProps) {
             {form.attackRows.map((row) => (
               <div className="spell-editor-row-card" key={row.id}>
                 <div className="spell-editor-row-grid">
-                  <TextField
-                    label="Name"
-                    value={row.name}
-                    onChange={(e) => updateAttackRow(row.id, { name: e.target.value })}
-                  />
-                  <SelectField
-                    label="Attack Type"
-                    value={row.type}
-                    onChange={(e) => updateAttackRow(row.id, { type: e.target.value })}
-                    options={ATTACK_TYPE_OPTIONS}
+                    <SelectField
+                      label="Attack Type"
+                      value={row.kind}
+                      onChange={(e) => updateAttackRow(row.id, { kind: e.target.value as AttackRow['kind'] })}
+                      options={[{ value: 'melee', label: 'Melee' }, { value: 'ranged', label: 'Ranged' }]}
+                      placeholder="— (none)"
                   />
                   <fieldset className="spell-editor-check-group">
                     <legend>Save</legend>
@@ -230,8 +207,8 @@ export function SpellEditor({ spell, onClose, onSaved }: SpellEditorProps) {
                       <label key={ability.value} className="spell-editor-check-option">
                         <input
                           type="checkbox"
-                          checked={row.save.includes(ability.value)}
-                          onChange={() => updateAttackRow(row.id, { save: toggleRowMulti(row.save, ability.value) })}
+                          checked={row.savingThrows.includes(ability.value)}
+                          onChange={() => updateAttackRow(row.id, { savingThrows: toggleRowMulti(row.savingThrows, ability.value) })}
                         />
                         {ability.label}
                       </label>
@@ -263,8 +240,8 @@ export function SpellEditor({ spell, onClose, onSaved }: SpellEditorProps) {
                   />
                   <DiceRollField
                     label="Damage"
-                    value={row.damage}
-                    onChange={(damage) => updateDamageRow(row.id, { damage })}
+                      value={row.formula}
+                      onChange={(formula) => updateDamageRow(row.id, { formula })}
                   />
                   <fieldset className="spell-editor-check-group">
                     <legend>Damage Type</legend>
@@ -272,8 +249,8 @@ export function SpellEditor({ spell, onClose, onSaved }: SpellEditorProps) {
                       <label key={dt.value} className="spell-editor-check-option">
                         <input
                           type="checkbox"
-                          checked={row.type.includes(dt.value)}
-                          onChange={() => updateDamageRow(row.id, { type: toggleRowMulti(row.type, dt.value) })}
+                          checked={row.damageTypes.includes(dt.value)}
+                          onChange={() => updateDamageRow(row.id, { damageTypes: toggleRowMulti(row.damageTypes, dt.value) })}
                         />
                         {dt.label}
                       </label>
@@ -290,18 +267,18 @@ export function SpellEditor({ spell, onClose, onSaved }: SpellEditorProps) {
           <section className="spell-editor-section">
             <h3>Heal</h3>
             <div className="spell-editor-inline-grid">
-              <DiceRollField label="Amount" value={form.healAmount} onChange={(healAmount) => patch({ healAmount })} />
+              <DiceRollField label="Amount" value={form.healingAmount} onChange={(healingAmount) => patch({ healingAmount })} />
             </div>
             <div className="spell-editor-bool-row">
               <CheckboxField
                 label="Temporary HP"
-                checked={form.healTempHp}
-                onChange={(e) => patch({ healTempHp: e.target.checked })}
+                checked={form.healingTempHp}
+                onChange={(e) => patch({ healingTempHp: e.target.checked })}
               />
               <CheckboxField
                 label="Increases Max HP"
-                checked={form.healMaxHp}
-                onChange={(e) => patch({ healMaxHp: e.target.checked })}
+                checked={form.healingMaxHp}
+                onChange={(e) => patch({ healingMaxHp: e.target.checked })}
               />
             </div>
           </section>
@@ -309,15 +286,22 @@ export function SpellEditor({ spell, onClose, onSaved }: SpellEditorProps) {
           <TextField
             label="Higher Levels"
             multiline
-            value={form.higher_levels}
-            onChange={(e) => patch({ higher_levels: e.target.value })}
+            value={form.higherLevelsText}
+            onChange={(e) => patch({ higherLevelsText: e.target.value })}
           />
 
           <TextField
-            label="Spell Text"
+            label="Description"
             multiline
-            value={form.spell_text}
-            onChange={(e) => patch({ spell_text: e.target.value })}
+            value={form.description}
+            onChange={(e) => patch({ description: e.target.value })}
+          />
+
+          <TextField
+            label="Alternate Description"
+            multiline
+            value={form.alternateDescription}
+            onChange={(e) => patch({ alternateDescription: e.target.value })}
           />
 
           <div className="spell-editor-actions">

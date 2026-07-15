@@ -55,7 +55,7 @@ export const CLASS_OPTIONS = [
 export const DICE_COUNT_OPTIONS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '12', '20']
 export const DICE_TYPE_OPTIONS = ['4', '6', '8', '10', '12', '20', '100']
 
-export function levelLabel(level: string | null | undefined): string {
-  const found = LEVEL_OPTIONS.find((o) => o.value === level)
-  return found ? found.label : level || 'Unknown level'
+export function levelLabel(level: number | null | undefined): string {
+  const found = LEVEL_OPTIONS.find((o) => o.value === String(level))
+  return found ? found.label : level == null ? 'Unknown level' : String(level)
 }
