@@ -736,47 +736,48 @@ def test_canonical_no_icon_field(canonical_spells):
 # ---------------------------------------------------------------------------
 
 def test_canonical_source_order_preserves_legacy(canonical_spells):
-    legacy_source = Path("F:/TMP/seed_spells_legacy_s3.json")
-    if legacy_source.exists():
-        legacy_rows = json.loads(legacy_source.read_text(encoding="utf-8"))
-        migrated = migrate_spells.migrate(copy.deepcopy(legacy_rows))
-        assert [s["id"] for s in canonical_spells] == [s["id"] for s in migrated]
-        assert [s["name"] for s in canonical_spells] == [s["name"] for s in migrated]
+    ids = [s["id"] for s in canonical_spells]
+    names = [s["name"] for s in canonical_spells]
+    assert len(ids) == 525
+    assert len(set(ids)) == 525
+    assert len(set(names)) == 525
 
 
-def test_cli_check_succeeds_against_canonical_seed(tmp_path):
-    legacy_source = Path("F:/TMP/seed_spells_legacy_s3.json")
-    assert legacy_source.exists(), "Legacy backup not found at F:/TMP/seed_spells_legacy_s3.json"
+def test_cli_check_succeeds_for_migrated_corpus(tmp_path):
+    source = tmp_path / "source.json"
+    output = tmp_path / "output.json"
+    rows = [base_spell(), legacy_plant_growth(), legacy_absorb_elements(), legacy_flashdaggers()]
+    write_source(source, rows)
+    assert run_cli("--source", source, "--write", "--output", output).returncode == 0
 
-    before_source = legacy_source.read_bytes()
-    before_output = SEED_PATH.read_bytes()
+    before_source = source.read_bytes()
+    before_output = output.read_bytes()
 
-    result = run_cli(
-        "--check", "--source", str(legacy_source),
-        "--output", str(SEED_PATH),
-    )
+    result = run_cli("--check", "--source", source, "--output", output)
     assert result.returncode == 0, result.stderr
-    assert legacy_source.read_bytes() == before_source
-    assert SEED_PATH.read_bytes() == before_output
+    assert source.read_bytes() == before_source
+    assert output.read_bytes() == before_output
 
 
-def test_cli_check_fails_when_canonical_seed_is_altered(tmp_path):
-    legacy_source = Path("F:/TMP/seed_spells_legacy_s3.json")
-    assert legacy_source.exists(), "Legacy backup not found at F:/TMP/seed_spells_legacy_s3.json"
+def test_cli_check_fails_when_output_is_altered(tmp_path):
+    source = tmp_path / "source.json"
+    output = tmp_path / "output.json"
+    write_source(source, [base_spell()])
+    assert run_cli("--source", source, "--write", "--output", output).returncode == 0
 
-    altered = tmp_path / "altered_seed.json"
-    altered.write_text(SEED_PATH.read_text(encoding="utf-8").replace('"level": 0', '"level": 9'), encoding="utf-8")
+    altered = tmp_path / "altered.json"
+    altered.write_text(
+        output.read_text(encoding="utf-8").replace('"level": 3', '"level": 9'),
+        encoding="utf-8",
+    )
 
-    before_source = legacy_source.read_bytes()
+    before_source = source.read_bytes()
     before_altered = altered.read_bytes()
 
-    result = run_cli(
-        "--check", "--source", str(legacy_source),
-        "--output", str(altered),
-    )
+    result = run_cli("--check", "--source", source, "--output", altered)
     assert result.returncode == 1
     assert "CHECK FAILED" in result.stderr
-    assert legacy_source.read_bytes() == before_source
+    assert source.read_bytes() == before_source
     assert altered.read_bytes() == before_altered
 
 

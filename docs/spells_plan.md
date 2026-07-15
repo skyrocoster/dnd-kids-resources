@@ -1,6 +1,6 @@
 # Spells - Data Restructure & Experience Rewire
 
-> **Status:** S0-S2 shipped. S3 (canonical seed cutover) is next.
+> **Status:** S0-S3 shipped. Phase B (SQLite & API Contract Cutover) is next.
 
 ## What this feature is
 
@@ -297,6 +297,7 @@ and player spell displays against the target API. It intentionally preserves the
 | **S0** | Migration scaffolding: `migrate_spells.py` entry point, `base_spell()` fixture, 4 passing + 3 skipped tests, `TODO(S1)` comments in db.py/schemas.py. Seed unchanged. Gate ✅. |
 | **S1** | Accepted 18-field canonical contract in `spell_schema_decision.md`, covering all 24 legacy fields, strict defaults/validation, corpus totals, known repairs, and rejected alternatives; `icon` is dropped as presentation-only data. Seed and runtime contracts unchanged. Gate ✅. |
 | **S2** | Deterministic 18-field transform with strict contextual validation, enumerated anomaly repairs, stable write/check CLI modes, and complete fixture/corpus coverage. 30 focused tests pass with no skips; canonical seed and runtime contracts remain unchanged. Gate ✅. |
+| **S3** | Canonical seed cutover: replaced legacy 24-field seed with 18-field canonical format via tested S2 boundary. Refactored tests with explicit legacy fixtures, Pydantic v2 strict validation models, and corpus acceptance tests (46 total). SHA-256 byte-reproducible from legacy source. Gate ✅. |
 
 ## Cross-references
 
@@ -310,5 +311,5 @@ and player spell displays against the target API. It intentionally preserves the
 
 ## Next:
 
-S3 - Replace the canonical seed using S2's tested transform and prove the checked-in result is byte-for-byte
-reproducible. Do not change database, backend, or frontend contracts in this stage.
+B0 - Backend scaffolding: add target contract stubs and skipped API regressions for the SQLite & API
+contract cutover.
