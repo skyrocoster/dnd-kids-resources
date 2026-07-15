@@ -6,7 +6,6 @@ import { Card } from '../../components/Card'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
 import { SearchList } from '../../components/SearchList'
 import { SplitPane } from '../../components/SplitPane'
-import { DungeonEditor } from './DungeonEditor'
 import './DungeonBrowserPage.css'
 
 function asRecord(value: unknown): Record<string, unknown> {
@@ -22,42 +21,42 @@ export function DungeonBrowserPage() {
   const [dungeons, setDungeons] = useState<Dungeon[]>([])
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
-  const [editorOpen, setEditorOpen] = useState(false)
-  const [editingDungeon, setEditingDungeon] = useState<Dungeon | undefined>(undefined)
+  const [creating, setCreating] = useState(false)
   const [pendingDelete, setPendingDelete] = useState<Dungeon | null>(null)
 
-  const load = () => {
-    api
-      .listDungeons()
-      .then((data) => {
-        const sorted = [...data].sort((a, b) => a.title.localeCompare(b.title))
-        setDungeons(sorted)
-        setLoadError(null)
-        if (sorted.length > 0 && selectedId == null) setSelectedId(sorted[0].id)
-      })
-      .catch((error) => setLoadError(error instanceof Error ? error.message : 'Failed to load dungeons.'))
+  const load = async () => {
+    try {
+      const data = await api.listDungeons()
+      const sorted = [...data].sort((a, b) => a.title.localeCompare(b.title))
+      setDungeons(sorted)
+      setLoadError(null)
+      if (sorted.length > 0 && selectedId == null) setSelectedId(sorted[0].id)
+    } catch (error) {
+      setLoadError(error instanceof Error ? error.message : 'Failed to load dungeons.')
+    }
   }
 
-  useEffect(load, [])
+  useEffect(() => {
+    void load()
+  }, [])
 
   const selected = dungeons.find((d) => d.id === selectedId) || null
   const data = asRecord(selected?.data)
-  const generalInfo = asRecord(data.general_info)
   const rooms = asArray(data.rooms)
-  const doors = asArray(data.doors)
 
-  const openCreate = () => {
-    setEditingDungeon(undefined)
-    setEditorOpen(true)
-  }
-  const openEdit = (dungeon: Dungeon) => {
-    setEditingDungeon(dungeon)
-    setEditorOpen(true)
-  }
-  const handleSaved = (dungeon: Dungeon) => {
-    setEditorOpen(false)
-    setSelectedId(dungeon.id)
-    load()
+  const createDungeon = async () => {
+    setCreating(true)
+    setLoadError(null)
+    try {
+      const dungeon = await api.createDungeon({ title: 'Untitled Dungeon', data: {} })
+      navigate(`/dungeons/${dungeon.id}/edit`)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to create dungeon.'
+      await load()
+      setLoadError(message)
+    } finally {
+      setCreating(false)
+    }
   }
   const confirmDelete = async () => {
     if (!pendingDelete) return
@@ -74,8 +73,8 @@ export function DungeonBrowserPage() {
     <div className="dungeon-browser-page">
       <div className="dungeon-browser-toolbar">
         <h2>Dungeons</h2>
-        <button type="button" className="dungeon-browser-new" onClick={openCreate}>
-          New Dungeon
+        <button type="button" className="dungeon-browser-new" onClick={createDungeon} disabled={creating}>
+          {creating ? 'Creating...' : 'New Dungeon'}
         </button>
       </div>
 
@@ -101,15 +100,14 @@ export function DungeonBrowserPage() {
               <div className="dungeon-browser-detail">
                 <Card
                   title={selected.title}
-                  subtitle={typeof generalInfo.size === 'string' ? generalInfo.size : undefined}
-                  tag={rooms.length ? `${rooms.length} room(s)` : undefined}
+                  tag={`${rooms.length} room(s)`}
                   variant="neutral"
                   footer={
                     <div className="dungeon-browser-actions">
                       <button type="button" className="dungeon-browser-enter" onClick={() => handleEnter(selected)}>
                         Enter
                       </button>
-                      <button type="button" onClick={() => openEdit(selected)}>
+                      <button type="button" onClick={() => navigate(`/dungeons/${selected.id}/edit`)}>
                         Edit
                       </button>
                       <button
@@ -122,48 +120,9 @@ export function DungeonBrowserPage() {
                     </div>
                   }
                 >
-                  {rooms.length > 0 && (
-                    <div className="dungeon-browser-block">
-                      <h4>Rooms</h4>
-                      <ul>
-                        {rooms.map((room, i) => (
-                          <li key={i}>
-                            <strong>{String(room.title || `Room ${room.room_id ?? i}`)}</strong>
-                            {asArray(room.entries).length > 0 && (
-                              <ul>
-                                {asArray(room.entries).map((entry, j) => (
-                                  <li key={j}>
-                                    {entry.title ? `${entry.title}: ` : ''}
-                                    {String(entry.content || '')}
-                                  </li>
-                                ))}
-                              </ul>
-                            )}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {doors.length > 0 && (
-                    <div className="dungeon-browser-block">
-                      <h4>Doors</h4>
-                      <ul>
-                        {doors.map((door, i) => (
-                          <li key={i}>
-                            {String(door.title || `Door ${door.door_id ?? i}`)}
-                            {Array.isArray(door.leads_to) && door.leads_to.length > 0
-                              ? ` → rooms ${(door.leads_to as unknown[]).join(', ')}`
-                              : ''}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {rooms.length === 0 && doors.length === 0 && (
-                    <p className="dungeon-browser-empty-content">This dungeon has no rooms or doors yet.</p>
-                  )}
+                  <p className="dungeon-browser-empty-content">
+                    Open this dungeon in the map editor to see rooms, entries, and doors.
+                  </p>
                 </Card>
               </div>
             ) : (
@@ -172,10 +131,6 @@ export function DungeonBrowserPage() {
           }
         />
       </div>
-
-      {editorOpen && (
-        <DungeonEditor dungeon={editingDungeon} onClose={() => setEditorOpen(false)} onSaved={handleSaved} />
-      )}
 
       {pendingDelete && (
         <ConfirmDialog

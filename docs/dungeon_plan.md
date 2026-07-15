@@ -7,8 +7,8 @@ room-reading/authoring capabilities around them. It follows
 [`docs/PLAN_TEMPLATE.md`](PLAN_TEMPLATE.md): durable facts first, a collapsed shipped-stage table,
 and detailed specifications only for the remaining work.
 
-> **Status:** Original dungeon work, encounter/NPC support, and Map Lab phases A-M shipped. R0-R6
-> shipped. R7 - Browser and creation cutover is next.
+> **Status:** Original dungeon work, encounter/NPC support, and Map Lab phases A-M shipped. R0-R7
+> shipped. R8 - Retire old dungeon UI is next.
 
 ---
 
@@ -160,6 +160,7 @@ Use the canonical tokens in `frontend/src/theme.css` and
 | **R4 - Add viewer room-reading surface** | Added persistent active-room selection, a room-details sidebar with entries/NPCs/encounter launch, and viewer NPC dock wiring while preserving fixture inspection. Gate ✅. |
 | **R5 - Add viewer navigation rail** | Added a floor-grouped viewer rail with room-selection syncing, threat hints, and responsive rail layouts while preserving map-based selection and floor switching. Gate ✅. |
 | **R6 - Add editor data ownership** | Editor now owns `dungeons.data` alongside `map_layout`: shared room lifecycle, title sync, entry/NPC editing, `RoomContentEditor` component, and dual save status. Gate ✅. |
+| **R7 - Browser and creation cutover** | The dungeon browser now creates title-only dungeons directly into Map Lab editing, routes Edit to the production editor, and removes legacy blob details/modal use. 7 browser-flow tests; typecheck/build clean. |
 
 ---
 
@@ -185,7 +186,6 @@ future dungeon authoring.
 | **R3 - Additive shared dungeon shell** | Sonnet | Wrap, rather than rebuild, both existing Map Lab pages with real dungeon identity and mode controls. | Thin shared shell, title, browser return, view/edit navigation, responsive framing. |
 | **R4 - Add viewer room-reading surface** | Sonnet | Layer persistent room selection and `dungeons.data` details beside the existing map inspector. | Active-room model, details panel, entry/NPC/encounter parity, map/data mismatch tolerance. |
 | **R5 - Add viewer navigation rail** | Sonnet | Add fast structured navigation alongside the existing spatial selection. | Floor-grouped rail, floor/selection synchronization, compact layout decision. |
-| **R7 - Browser and creation cutover** | Sonnet | Send every dungeon action through the production surfaces. | Browser edit routing, create-then-edit flow, modal-editor removal from browser. |
 | **R8 - Retire old dungeon UI** | Sonnet | Delete the old viewer, modal editor, room route, and obsolete tests/styles. | One live dungeon surface, route and dead-code cleanup. |
 | **R9 - Cutover design and reference pass** | Sonnet | Verify the final surface, accessibility, persistence, and durable docs. | Polish/fixes, reference-doc updates where needed, full verification. |
 
@@ -193,31 +193,106 @@ future dungeon authoring.
 work after R3, but R4's active-room contract lands first. R6 must precede R7-R8 because the old
 modal cannot be removed until production editing persists complete room data.
 
-#### R7 - Browser And Creation Cutover (Planned)
+#### R8 — Retire Old Dungeon UI (Planned)
 
-- **Build:** change browser **Edit** to `/dungeons/:id/edit`. Replace the modal **New Dungeon**
-  path with the smallest create-then-navigate flow: create a title-only dungeon with clean
-  `dungeons.data`, then navigate directly to its production editor; retain list/select/delete
-  behavior. Update browser detail counts so they do not imply old blob geometry is authoritative.
-- **Inherits:** R6's standalone production editor (`useMapLabEditor` with dual save, `RoomContentEditor`,
-  `roomContentEditorReducer` with `setRoomMeta`, shared room lifecycle) and existing create/delete
-  API calls (`client.ts`).
-- **Tests:** edit route, create request and redirect, cancellation/error behavior, and browse/select/delete
-  regression tests.
-- **Gate:** every browser entry action reaches a production route, and a newly created dungeon opens
-  with no Isly Castle content or old modal editor.
+**Build:**
 
-#### R8 - Retire Old Dungeon UI (Planned)
+Files to delete (6 source files + 2 CSS files):
 
-- **Build:** delete `DungeonViewPage.tsx`, `DungeonViewPage.css`, `DungeonEditor.tsx`,
-  `DungeonEditor.css`, the `dungeons/:dungeonId/rooms/:roomId` route, and their dedicated tests.
-  Remove `dungeonForm.ts` only after confirming no surviving production code uses it. Remove
-  prototype-only fixture fallback/reset code and any imports, CSS, or route assumptions made dead
-  by R2-R7.
-- **Inherits:** R4-R7 must be complete; this is deliberate removal, not a coexistence stage.
-- **Tests:** remove obsolete suites, update route/browser tests, run a repository search proving no
-  live imports or routes reference retired surfaces, and retain Map Lab regression coverage.
-- **Gate:** Map Lab view and edit routes are the sole live dungeon surfaces.
+| File | Lines | Why dead |
+|------|-------|----------|
+| `frontend/src/features/dungeons/DungeonViewPage.tsx` | 640 | Old room-per-page viewer; replaced by MapLabPage (R4-R5) |
+| `frontend/src/features/dungeons/DungeonViewPage.css` | 682 | Styles for old viewer only; not imported by MapLabPage or DungeonShell |
+| `frontend/src/features/dungeons/DungeonEditor.tsx` | 267 | Modal blob editor; no production code imports it (DungeonBrowserPage navigates to `/edit` route) |
+| `frontend/src/features/dungeons/DungeonEditor.css` | 163 | Styles for modal editor only |
+| `frontend/src/features/dungeons/dungeonForm.ts` | 163 | Form helpers consumed only by DungeonEditor.tsx |
+| `frontend/src/features/dungeons/trailReducer.ts` | 13 | Breadcrumb trail reducer consumed only by DungeonViewPage |
+| `frontend/src/features/dungeons/maplab/islyCastleData.ts` | 111 | Full Isly Castle fixture; not imported by any production code or surviving test (MapLabPage.test.tsx uses `mapLabLayout` from `maplabData.ts` instead) |
+
+Route to remove in `frontend/src/router.tsx`:
+
+- Line 50: delete `{ path: 'dungeons/:dungeonId/rooms/:roomId', element: <DungeonViewPage /> }`
+- Line 6: delete the `DungeonViewPage` import (now unused)
+
+After these changes, `router.tsx` should have the dungeon section as:
+```ts
+{ path: 'dungeons', element: <DungeonBrowserPage /> },
+{
+  path: 'dungeons/:dungeonId',
+  element: <DungeonShell />,
+  children: [
+    { index: true, element: <MapLabPage /> },
+    { path: 'edit', element: <MapLabEditorPage /> },
+  ],
+},
+```
+
+Tests to delete (3 files):
+
+| Test file | Lines | Coverage |
+|-----------|-------|----------|
+| `__tests__/DungeonViewPage.test.tsx` | 761 | Old viewer — all 25 tests cover deleted component |
+| `__tests__/dungeonForm.test.ts` | 49 | Form helpers — 3 tests cover deleted `dungeonForm.ts` |
+| `__tests__/trailReducer.test.ts` | ~50 | Trail logic — 5 tests cover deleted `trailReducer.ts` |
+
+What does NOT change:
+- `DungeonBrowserPage.tsx` — its "Enter" navigates to `/dungeons/:id` (the DungeonShell/MapLabPage viewer route), not the old rooms route. The "Edit" button navigates to `/dungeons/:id/edit`. Both routes survive.
+- `DungeonBrowserPage.test.tsx` — all 7 tests exercise the browser with its existing navigation; none reference the old room route. No edits needed.
+- `maplabData.ts` — the small test fixture (6×4 hall + L-shape armoury) stays; it's the canonical unit-test layout.
+- All files under `maplab/` except `islyCastleData.ts` — MapLabPage, MapLabEditorPage, DungeonShell, RoomDetailsPanel, ViewerRoomRail, useActiveRoom, etc. are the production surface.
+- `dungeonModel.ts` — selectors, parsing, and grouping used by both MapLabPage and MapLabEditorPage.
+- `DungeonBrowserPage.css` — not touched.
+
+**Inherits:**
+
+- R2: Production route loading and distinct missing/error states. The old viewer's manual `getDungeon` + error handling is superseded by `DungeonShell`'s `dungeonRouteContext` + `useMapLabLayout`.
+- R3: `DungeonShell` provides dungeon identity, View/Edit toggle, and hoisted route context. The old viewer's header/back-button/breadcrumb implementation is superseded.
+- R4: `RoomDetailsPanel` + `useActiveRoom` replace the old `DungeonRoomPanel` and room-per-page navigation. The viewer now reads rooms through the map canvas and inspector rail, not URL params.
+- R5: `ViewerRoomRail` replaces the old `DungeonRail` component with floor-grouped room selection synced to map click/focus.
+- R6: `RoomContentEditor` in the editor replaces `DungeonEditor`'s modal form for entry/NPC editing. `useMapLabEditor` bridges room lifecycle (create/delete rooms as both layout and `dungeons.data` records). Title sync, entry editing, and NPC editing are all production-ready.
+- R7: The browser creates title-only dungeons directly into `/dungeons/:id/edit`. "Edit" navigates to the production editor. The old modal open/save flow is completely bypassed.
+
+**Tests:**
+
+Deleted test coverage (no longer applicable — the components are gone):
+1. ~~`DungeonViewPage.test.tsx` — all 25 tests: room loading, entries, hidden DC, dice pills, exit cards, breadcrumbs, trail, rail collapse, floor grouping, encounter dock, NPC dock.~~
+2. ~~`dungeonForm.test.ts` — `dungeonToFormState`, `formStateToDungeonInput`, empty form round-trip.~~
+3. ~~`trailReducer.test.ts` — append, collapse-on-revisit, dedup.~~
+
+Regression coverage that must remain green (existing tests to verify):
+1. `DungeonBrowserPage.test.tsx` — 7 tests: list, select, navigate to edit, create, error, disable-while-creating, delete. Confirms the browser still works without the old modal.
+2. `maplabModel.test.ts` — all model/selector tests. Confirms dungeon data parsing is unaffected.
+3. `MapLabPage.test.tsx` — viewer rendering, room selection, floor switching, zoom, inspector, passage sessions, rail, room details. Confirms the production viewer is unaffected.
+4. `MapLabEditorPage.test.tsx` — editor save/load, room add/delete, title sync, entry editing. Confirms production editing is unaffected.
+5. `RoomDetailsPanel.test.tsx` — room details rendering, entry/NPC display. Confirms the viewer room-reading surface is unaffected.
+6. `ViewerRoomRail.test.tsx` — floor grouping, room selection sync. Confirms the viewer rail is unaffected.
+7. `DungeonShell.test.tsx` — shell rendering, mode toggle, context provision. Confirms the shell is unaffected.
+8. `useMapLabEditor.test.tsx` — editor hook lifecycle. Confirms room data ownership is unaffected.
+9. `useActiveRoom.test.tsx` — active room resolution. Confirms active room logic is unaffected.
+10. `FixturePropertiesForm.test.tsx`, `DoorMarker.test.tsx`, `StairPortalMarker.test.tsx`, `PropMarker.test.tsx`, `markerBadges.test.tsx`, `useMapCanvasZoom.test.ts` — all map component/model tests.
+
+Post-deletion verification (search-based):
+- After all deletions, run a project-wide search for:
+  - `DungeonViewPage` — zero hits outside the deleted file
+  - `DungeonEditor` — zero hits (DungeonBrowserPage does not import it)
+  - `dungeonForm` — zero hits
+  - `trailReducer` — zero hits
+  - `islyCastleLayout` — zero hits (was only in `islyCastleData.ts`)
+  - `rooms/${` or `rooms/:roomId` — zero hits in routing or navigation code
+- Confirm `npm run test`, `npm run typecheck`, and `npm run build` all pass clean
+
+**Gate:**
+
+- Browser pass required: Yes, per CLAUDE.md manual-verification policy.
+- End-to-end criteria:
+  1. From `/dungeons`, create a dungeon → opens at `/dungeons/:id/edit` with empty map. The old modal never appears.
+  2. Enter an existing dungeon from the browser → opens at `/dungeons/:id` (MapLabPage viewer). The old room-per-page layout never appears.
+  3. Navigate `/dungeons/:id/rooms/1` directly → returns a 404 / unknown-route page (not the old viewer). The user can navigate back to `/dungeons` or `/dungeons/:id`.
+  4. View/Edit toggle works. Room selection via map click and rail both work. Room details panel shows entries/NPCs. Encounter and NPC docks open.
+  5. Editor: add rooms, edit titles, edit entries, edit NPCs, save. Reload and confirm persistence.
+  6. `npm run test` passes. `npm run typecheck` passes. `npm run build` passes.
+  7. `pytest` from repo root passes (no backend changes, but verify no regressions).
+- User should see: One dungeon surface (Map Lab) everywhere. No old modal, no room-per-page navigation, no breadcrumb trail, no Isly Castle fallback. The dungeon browser creates and enters dungeons through the Map Lab exclusively.
 
 #### R9 - Cutover Design And Reference Pass (Planned)
 
@@ -262,4 +337,4 @@ When the phase is complete:
 
 ## Next
 
-**Next:** `R7 - Browser and creation cutover` is unblocked.
+**Next:** `R8 - Retire old dungeon UI` is unblocked.
