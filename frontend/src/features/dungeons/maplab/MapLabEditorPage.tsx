@@ -443,7 +443,7 @@ export function MapLabEditorPage() {
   }, [clearRoomFootprintSelection, placeDoorMode, placePortalMode, placePropMode, placeStairMode, state.activeZ, state.selectedRoomId])
 
   if (route.status === 'loading' || layoutLoading) {
-    return <MapLabRouteState title="Loading map editor" message="Loading dungeon layout…" />
+    return <MapLabRouteState title="Loading map editor" message="Loading dungeon layout…" variant="loading" />
   }
 
   if (loadStatus.status === 'error') {
@@ -451,6 +451,7 @@ export function MapLabEditorPage() {
       <MapLabRouteState
         title={route.dungeon?.title ?? 'Dungeon layout unavailable'}
         message={loadStatus.error ?? 'Failed to load dungeon layout.'}
+        variant="error"
       />
     )
   }
