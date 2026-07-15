@@ -449,7 +449,6 @@ export { CirclePlus as AddCircleIcon } from 'lucide-react'          // Add
 export { CircleMinus as RemoveCircleIcon } from 'lucide-react'      // Remove
 export { CircleX as DeleteCircleIcon } from 'lucide-react'          // Delete
 export { Loader as LoaderIcon } from 'lucide-react'                 // Loading
-export { LoaderCircle as SpinnerIcon } from 'lucide-react'          // Spinner
 
 // ─── Communication / Social ─────────────────────────────────────────────
 export { MessageSquare as MessageIcon } from 'lucide-react'         // Chat message
