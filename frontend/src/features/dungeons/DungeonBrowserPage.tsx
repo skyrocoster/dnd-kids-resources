@@ -48,7 +48,14 @@ export function DungeonBrowserPage() {
     setCreating(true)
     setLoadError(null)
     try {
-      const dungeon = await api.createDungeon({ title: 'Untitled Dungeon', data: {} })
+      const base = 'Untitled Dungeon'
+      let title = base
+      let n = 2
+      while (dungeons.some((d) => d.title === title)) {
+        title = `${base} ${n}`
+        n++
+      }
+      const dungeon = await api.createDungeon({ title, data: {} })
       navigate(`/dungeons/${dungeon.id}/edit`)
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to create dungeon.'
@@ -78,7 +85,7 @@ export function DungeonBrowserPage() {
         </button>
       </div>
 
-      {loadError && <p className="dungeon-browser-error">{loadError}</p>}
+      {loadError && <p className="dungeon-browser-error" role="alert">{loadError}</p>}
 
       <div className="dungeon-browser-split">
         <SplitPane

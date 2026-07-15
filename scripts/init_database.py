@@ -304,7 +304,7 @@ def init_database():
     cursor.execute("""
         CREATE TABLE dungeons (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            title TEXT NOT NULL UNIQUE,
+            title TEXT NOT NULL,
             data TEXT NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
