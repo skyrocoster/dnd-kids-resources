@@ -150,14 +150,14 @@ Use the canonical tokens in `frontend/src/theme.css` and
 | **M0-M4** | Collapsed multi-status model, bounded on-square markers, door status badge, and accessibility polish. |
 | **R0 - Plan reset** | Rewrote this plan around Map Lab cutover, split persistence, and disposable prototype data. |
 | **R1 - Route cutover scaffold** | Production paths now mount Map Lab by route parameter; sandbox routes and the fixed dungeon-ID constant were removed. |
-| **R2 - Production data loading** | Added validated dungeon route loading, distinct missing/error states, blank-layout 404 handling, and reset-to-last-loaded behavior instead of production fixture fallback. |
+| **R2 - Production data loading** | Added validated dungeon route loading, distinct missing/error states, blank-layout 404 handling, and reset-to-last-loaded behavior instead of production fixture fallback. Gate ✅. |
 
 ---
 
 ## Known Debt / Deferred Work (Not Yet Built)
 
-- The production viewer has no stable active-room content surface, room navigation rail, shared
-  shell, or view/edit control.
+- The production viewer has no stable active-room content surface, room navigation rail, or
+  view/edit control. R3 adds the shared shell; R4-R5 add the content surface and rail.
 - The editor does not load or persist `dungeons.data`; it cannot create a usable production dungeon
   on its own and can still reset arbitrary routes to Isly Castle.
 - Layout and data room IDs have no enforced shared lifecycle yet.
@@ -178,7 +178,6 @@ future dungeon authoring.
 
 | Stage | Model | Summary | Deliverables |
 |-------|-------|---------|--------------|
-| **R2 - Production data loading** | Sonnet | Extend existing Map Lab hooks with validated dungeon context and empty-layout handling. | Additive route context, loading/error/empty states, no production fixture reset. |
 | **R3 - Additive shared dungeon shell** | Sonnet | Wrap, rather than rebuild, both existing Map Lab pages with real dungeon identity and mode controls. | Thin shared shell, title, browser return, view/edit navigation, responsive framing. |
 | **R4 - Add viewer room-reading surface** | Sonnet | Layer persistent room selection and `dungeons.data` details beside the existing map inspector. | Active-room model, details panel, entry/NPC/encounter parity, map/data mismatch tolerance. |
 | **R5 - Add viewer navigation rail** | Sonnet | Add fast structured navigation alongside the existing spatial selection. | Floor-grouped rail, floor/selection synchronization, compact layout decision. |
