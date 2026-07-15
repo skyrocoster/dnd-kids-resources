@@ -32,65 +32,6 @@ class WeaponProperty(BaseModel):
     description: Optional[str] = None
 
 
-# TODO(S1): Spell model will be replaced by the target contract.  See spells_plan.md S1.
-class Spell(BaseModel):
-    id: int
-    spell_name: str
-    icon: Optional[str] = None
-    level: Optional[str] = None
-    school: Optional[str] = None
-    spell_text: Optional[str] = None
-    spell_alt_text: Optional[str] = None
-    damage: Optional[List[Dict[str, Any]]] = None
-    heal: Optional[Dict[str, Any]] = None
-    heal_at_spell_slots: Optional[Dict[str, Any]] = None
-    range: Optional[str] = None
-    higher_levels: Optional[str] = None
-    damage_at_higher_levels: Optional[str] = None
-    casting_time: Optional[str] = None
-    duration: Optional[str] = None
-    concentration: Optional[bool] = None
-    ritual: Optional[bool] = None
-    components: Optional[List[str]] = None
-    materials: Optional[str] = None
-    attack_type: Optional[List[Dict[str, Any]]] = None
-    area_of_effect: Optional[Dict[str, Any]] = None
-    action: Optional[str] = None
-    classes: Optional[List[str]] = None
-    subclasses: Optional[List[str]] = None
-
-
-# TODO(S1): SpellCreate model will be replaced by the target contract.  See spells_plan.md S1.
-class SpellCreate(BaseModel):
-    spell_name: str
-    icon: Optional[str] = None
-    level: Optional[str] = None
-    school: Optional[str] = None
-    spell_text: Optional[str] = None
-    spell_alt_text: Optional[str] = None
-    damage: Optional[List[Dict[str, Any]]] = None
-    heal: Optional[Dict[str, Any]] = None
-    heal_at_spell_slots: Optional[Dict[str, Any]] = None
-    range: Optional[str] = None
-    higher_levels: Optional[str] = None
-    damage_at_higher_levels: Optional[str] = None
-    casting_time: Optional[str] = None
-    duration: Optional[str] = None
-    concentration: Optional[bool] = None
-    ritual: Optional[bool] = None
-    components: Optional[List[str]] = None
-    materials: Optional[str] = None
-    attack_type: Optional[List[Dict[str, Any]]] = None
-    area_of_effect: Optional[Dict[str, Any]] = None
-    action: Optional[str] = None
-    classes: Optional[List[str]] = None
-    subclasses: Optional[List[str]] = None
-
-
-class SpellUpdate(SpellCreate):
-    pass
-
-
 class Skill(BaseModel):
     name: str
     ability: str
@@ -130,11 +71,7 @@ class StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 
-# ── Target spell contract stubs (B0) ────────────────────────────────────────
-# These models define the 18-field canonical spell shape from spell_schema_decision.md.
-# They are not wired into routes or the DB parser yet; B1 replaces the persistence
-# layer and B2 rewires the routers to consume them.
-# See spells_plan.md Phase B for sequencing.
+# ── Canonical spell contract (B2) ───────────────────────────────────────────
 
 
 class SpellDamage(StrictModel):
@@ -164,7 +101,7 @@ class SpellAreaOfEffect(StrictModel):
     size: Optional[int] = None
 
 
-class SpellTarget(StrictModel):
+class Spell(StrictModel):
     """Response model for the 18-field canonical spell contract."""
     id: int
     name: str
@@ -186,7 +123,7 @@ class SpellTarget(StrictModel):
     area_of_effect: SpellAreaOfEffect = Field(default_factory=SpellAreaOfEffect)
 
 
-class SpellTargetCreate(StrictModel):
+class SpellCreate(StrictModel):
     """Create model for the 18-field canonical spell contract (no id)."""
     name: str
     level: int
@@ -207,11 +144,8 @@ class SpellTargetCreate(StrictModel):
     area_of_effect: SpellAreaOfEffect = Field(default_factory=SpellAreaOfEffect)
 
 
-class SpellTargetUpdate(SpellTargetCreate):
+class SpellUpdate(SpellCreate):
     pass
-
-
-# ── End target spell contract stubs ─────────────────────────────────────────
 
 
 class CreatureType(StrictModel):

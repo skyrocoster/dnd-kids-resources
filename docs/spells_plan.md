@@ -1,6 +1,6 @@
 # Spells - Data Restructure & Experience Rewire
 
-> **Status:** S0-S3, B0-B1 shipped. Phase B in progress; B2 (API cutover) next.
+> **Status:** S0-S3, B0-B2 shipped. Phase B in progress; B3 (real-data verification) next.
 
 ## What this feature is
 
@@ -113,28 +113,11 @@ F1-F2; frontend code must not consume the target API before B2 ships.
 **Sequencing:** B0 -> B1 -> B2 -> B3. B1 and B2 are separate commits so the database boundary is reviewable;
 B3 must run against a clean rebuild.
 
-#### B2 - API cutover (planned)
-
-- **Build:** Replace legacy spell Pydantic models and all spell/player route SQL with explicit target
-  projections. Keep endpoint paths, including `/spells/by-title/{spell_name}`, unless API review requires a
-  path rename; the response/request fields are `name` and the old fields do not serialize. Make CRUD JSON
-  serialization preserve empty collections and always-present nested objects; enforce unique names with
-  predictable conflict handling. Convert `level` query filtering to integer semantics.
-- **Inherits:** The `spells` table now has 18 target columns (canonical seed fields). `parse_spell_row`
-  in `db.py` handles `healing`, `higher_levels`, `area_of_effect` as objects and `damage`, `casting_times`,
-  `components`, `attacks` as lists — no comma-split fallback. Indexes on `name`, `level`, `school` cover
-  the three query paths. The schema decision's no-compatibility rule still applies.
-- **Tests:** Rewrite spell-router and player-spell tests for target responses, create/update/delete, duplicate
-  name, ID/not-found, integer level/school filters, and nested JSON round trips. Replace all legacy rows in
-  `backend/tests/conftest.py`; add API response-model validation for known anomaly records.
-- **Gate:** Focused backend tests, `pytest` from repo root, and a clean type/import check pass. No browser
-  pass is required.
-
 #### B3 - Real-data verification (planned)
 
 - **Build:** Update `docs/DATA_MODEL.md` and `docs/API_REFERENCE.md` to the stable target table/schema and
   response contract. Remove S0/B0 TODOs only after the data/API contract is verified.
-- **Inherits:** B2's API and a database rebuilt by B1.
+- **Inherits:** B2's canonical spell and player-spell API responses, plus a database rebuilt by B1.
 - **Tests:** Extend the real-data integration sweep to page all 525 spell list/detail responses and every
   player-spell response through Pydantic; verify no raw JSON strings or legacy keys reach an API response.
 - **Gate:** Clean database rebuild, `pytest`, and the real-data integration suite pass. No browser pass is
@@ -210,6 +193,7 @@ and player spell displays against the target API. It intentionally preserves the
 | **S3** | Canonical seed cutover: generated 18-field canonical seed locally via tested S2 boundary (gitignored, not committed). Refactored tests with explicit legacy fixtures, Pydantic v2 strict validation models, and corpus acceptance tests (46 total). SHA-256 byte-reproducible from legacy source. Gate ✅. |
 | **B0** | Backend scaffolding: target nested Pydantic models (`SpellDamage`, `SpellHealing`, `SpellHigherLevels`, `SpellAttack`, `SpellAreaOfEffect`, `SpellTarget`, `SpellTargetCreate`, `SpellTargetUpdate`) added to `schemas.py`; 17 passing schema-construction tests; 29 skipped API regression tests (22 xfailed, 7 xpassed). Legacy routes/models unchanged. SQL projection inventory captured. Gate ✅. |
 | **B1** | Persistence projection: rebuilt the `spells` table around the canonical target fields, projected the canonical seed into the new columns with explicit IDs, and centralized target JSON parsing in `backend/app/db.py`. Gate ✅. |
+| **B2** | API cutover: canonical `Spell` schemas and spell/player routes now project only the 18-field contract, with JSON CRUD serialization and normalized school filters. 246 tests pass at 91.27% coverage. Gate ✅. |
 
 ## Cross-references
 
@@ -223,4 +207,4 @@ and player spell displays against the target API. It intentionally preserves the
 
 ## Next:
 
-B2 - API cutover: rewire spell/player endpoints and CRUD to the target model.
+B3 - Real-data verification: validate the canonical catalog through a clean rebuilt database.

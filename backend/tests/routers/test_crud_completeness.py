@@ -28,6 +28,7 @@ def test_player_spell_assignment_lifecycle(test_client):
     spells = test_client.get(f"/api/players/{pid}/spells")
     assert spells.status_code == 200
     assert any(s["id"] == spell_id for s in spells.json())
+    assert all("name" in spell for spell in spells.json())
     # duplicate assignment is rejected
     assert test_client.post(f"/api/players/{pid}/spells/{spell_id}").status_code == 400
     # remove
