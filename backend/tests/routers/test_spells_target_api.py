@@ -1,24 +1,4 @@
-"""Skipped API regression tests for the target spell contract (B0).
-
-Every test in this file exercises an API endpoint against the TARGET response
-shape (18-field canonical spell).  They are marked xfail because the legacy
-router is still live; B2 will rewire the router and un-skip these.
-
-Run with:  pytest backend/tests/routers/test_spells_target_contract.py -v
-"""
-
-import json
-
-import pytest
-
-from backend.app.schemas import SpellTarget
-
-
-# All tests in this module are expected to fail until B2 rewires the router.
-pytestmark = pytest.mark.xfail(
-    reason="B2 not yet shipped — legacy router returns legacy field names",
-    strict=False,
-)
+"""API regression tests for the canonical spell contract."""
 
 # Canonical target fields that every API response must include.
 _TARGET_FIELDS = {
@@ -197,7 +177,7 @@ class TestIntegerLevelFilter:
 # ── Create / Update / Delete lifecycle ──────────────────────────────────────
 
 
-class TestCreateSpellTargetContract:
+class TestCreateSpellContract:
     """POST /api/spells accepts and returns the target contract."""
 
     def test_create_returns_target_fields(self, test_client):
@@ -234,7 +214,7 @@ class TestCreateSpellTargetContract:
         assert resp.status_code in (400, 422)
 
 
-class TestUpdateSpellTargetContract:
+class TestUpdateSpellContract:
     """PUT /api/spells/{id} accepts and returns the target contract."""
 
     def test_update_returns_target_fields(self, test_client):
@@ -273,6 +253,21 @@ class TestDuplicateNameContract:
         assert resp.status_code == 201
         resp = test_client.post("/api/spells", json=_CREATE_PAYLOAD)
         assert resp.status_code == 400
+
+    def test_duplicate_name_error_is_human_readable(self, test_client):
+        assert test_client.post("/api/spells", json=_CREATE_PAYLOAD).status_code == 201
+        resp = test_client.post("/api/spells", json=_CREATE_PAYLOAD)
+        assert resp.status_code == 400
+        assert resp.json()["detail"] == "A spell with this name already exists"
+
+
+class TestSchoolFilterNormalization:
+    def test_school_filter_is_case_insensitive(self, test_client):
+        capitalized = test_client.get("/api/spells?school=Evocation")
+        lowercase = test_client.get("/api/spells?school=evocation")
+        assert capitalized.status_code == lowercase.status_code == 200
+        assert capitalized.json()
+        assert capitalized.json() == lowercase.json()
 
 
 # ── 404 handling ────────────────────────────────────────────────────────────

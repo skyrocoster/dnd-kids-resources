@@ -121,6 +121,7 @@ def test_get_player_spells(test_client):
         assert response.status_code == 200
         player_spells = response.json()
         assert any(s["id"] == spell_id for s in player_spells)
+        assert all("name" in spell for spell in player_spells)
 
 
 def test_get_player_weapons(test_client):

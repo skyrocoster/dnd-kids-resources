@@ -147,15 +147,13 @@ def get_player_spells(player_id: int):
             raise HTTPException(status_code=404, detail="Player not found")
 
         cursor.execute(
-            """SELECT s.id, s.spell_name, s.icon, s.level, s.school, s.spell_text,
-                      s.spell_alt_text, s.damage, s.heal, s.heal_at_spell_slots, s.range,
-                      s.higher_levels, s.damage_at_higher_levels, s.casting_time, s.duration,
-                      s.concentration, s.ritual, s.components, s.materials, s.attack_type,
-                      s.area_of_effect, s.action, s.classes, s.subclasses
+            """SELECT s.id, s.name, s.level, s.school, s.description, s.alternate_description,
+                       s.damage, s.healing, s.range, s.higher_levels, s.casting_times, s.duration,
+                       s.concentration, s.ritual, s.components, s.materials, s.attacks, s.area_of_effect
                FROM spells s
                JOIN player_spells ps ON s.id = ps.spell_id
                WHERE ps.player_id = ?
-               ORDER BY s.spell_name""",
+                ORDER BY s.name""",
             (player_id,)
         )
         rows = cursor.fetchall()

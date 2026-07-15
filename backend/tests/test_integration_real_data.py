@@ -256,15 +256,11 @@ def test_players_expose_class(real_client):
 
 
 def test_assigned_spell_json_columns_are_parsed(real_client):
-    """A spell fetched via a player must have list/dict JSON columns decoded, not raw strings."""
+    """A spell fetched via a player must have canonical fields decoded from JSON."""
     players = real_client.get("/api/players").json()
     for player in players:
         spells = real_client.get(f"/api/players/{player['id']}/spells").json()
         for spell in spells:
-            if spell.get("attack_type") is not None:
-                assert isinstance(spell["attack_type"], list), (
-                    f"attack_type not parsed for spell {spell.get('spell_name')}"
-                )
-            if spell.get("components") is not None:
-                assert isinstance(spell["components"], list)
-            return  # one assigned-spell sample with attack_type is enough
+            assert isinstance(spell["name"], str)
+            assert isinstance(spell["attacks"], list)
+            assert isinstance(spell["components"], list)

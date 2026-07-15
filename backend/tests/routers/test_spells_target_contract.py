@@ -1,16 +1,5 @@
-"""Skipped scaffolds for the target spell contract (B0).
+"""Schema construction tests for the canonical spell contract."""
 
-These tests verify that the new Pydantic models can be constructed from
-representative seed shapes and that every future route/response endpoint
-will be exercised once B1-B2 land.  They do NOT change runtime behavior;
-the legacy Spell/SpellCreate/SpellUpdate models and the legacy router
-remain the live code path.
-
-Run with:  pytest backend/tests/routers/test_spells_target_contract.py
-All tests in this module should be xfail(strict=False) until B2 ships.
-"""
-
-import json
 import pytest
 
 from backend.app.schemas import (
@@ -19,9 +8,9 @@ from backend.app.schemas import (
     SpellDamage,
     SpellHealing,
     SpellHigherLevels,
-    SpellTarget,
-    SpellTargetCreate,
-    SpellTargetUpdate,
+    Spell,
+    SpellCreate,
+    SpellUpdate,
 )
 
 
@@ -133,11 +122,11 @@ class TestNestedModelConstruction:
         assert aoe.size == 30
 
 
-class TestSpellTargetConstruction:
-    """SpellTarget builds from a canonical seed dict."""
+class TestSpellConstruction:
+    """Spell models build from canonical seed dictionaries."""
 
     def test_from_sample(self):
-        spell = SpellTarget(**_SAMPLE_CANONICAL)
+        spell = Spell(**_SAMPLE_CANONICAL)
         assert spell.id == 2
         assert spell.name == "Absorb Elements"
         assert spell.level == 1
@@ -162,7 +151,7 @@ class TestSpellTargetConstruction:
             "concentration": False,
             "ritual": False,
         }
-        spell = SpellTargetCreate(**minimal)
+        spell = SpellCreate(**minimal)
         assert spell.level == 0
         assert spell.damage == []
         assert spell.components == []
@@ -170,19 +159,19 @@ class TestSpellTargetConstruction:
         assert spell.area_of_effect.shape is None
 
     def test_create_round_trip(self):
-        create = SpellTargetCreate(**_SAMPLE_CREATE)
+        create = SpellCreate(**_SAMPLE_CREATE)
         as_dict = create.model_dump()
-        restored = SpellTargetCreate(**as_dict)
+        restored = SpellCreate(**as_dict)
         assert restored == create
 
     def test_update_inherits_create(self):
-        update = SpellTargetUpdate(**_SAMPLE_CREATE)
-        assert isinstance(update, SpellTargetCreate)
+        update = SpellUpdate(**_SAMPLE_CREATE)
+        assert isinstance(update, SpellCreate)
         assert update.name == "Test Spell"
 
     def test_strict_forbids_extra_fields(self):
         with pytest.raises(Exception):
-            SpellTarget(**_SAMPLE_CANONICAL, bogus_field="nope")
+            Spell(**_SAMPLE_CANONICAL, bogus_field="nope")
 
 
 class TestEdgeCaseShapes:
@@ -190,7 +179,7 @@ class TestEdgeCaseShapes:
 
     def test_plant_growth_two_casting_times(self):
         """Plant Growth has casting_times: ['1 action', '8 hours']."""
-        spell = SpellTarget(
+        spell = Spell(
             id=99, name="Plant Growth", level=3,
             school="transmutation", description="Overgrow.",
             range="150 feet", duration="Instantaneous",
@@ -201,7 +190,7 @@ class TestEdgeCaseShapes:
 
     def test_empty_collections_from_seed(self):
         """A spell with no damage/healing/attacks still has empty lists, not None."""
-        spell = SpellTarget(
+        spell = Spell(
             id=1, name="Shield", level=1, school="abjuration",
             description="An invisible barrier.", range="Self",
             duration="1 round", concentration=False, ritual=False,
