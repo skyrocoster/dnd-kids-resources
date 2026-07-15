@@ -24,6 +24,9 @@ def save_dungeon_layout(dungeon_id: int, blob: MapLayoutBlob) -> dict:
     """Save/upsert the layout for a dungeon (Map Lab editor stage)"""
     with get_db() as conn:
         cursor = conn.cursor()
+        cursor.execute("SELECT 1 FROM dungeons WHERE id = ?", (dungeon_id,))
+        if not cursor.fetchone():
+            raise HTTPException(status_code=404, detail="Dungeon not found")
         try:
             cursor.execute(
                 """INSERT INTO map_layout (dungeon_id, data) VALUES (?, ?)

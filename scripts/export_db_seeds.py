@@ -15,7 +15,6 @@ from pathlib import Path
 ROOT = Path(__file__).parent.parent
 DB_PATH = ROOT / "dnd_kids_resources.db"
 SEEDS_DIR = ROOT / "data" / "seeds"
-LEGACY_DATA_DIR = ROOT / "data"
 
 EXPORT_DEFINITIONS = {
     "abilities": {
@@ -28,7 +27,7 @@ EXPORT_DEFINITIONS = {
     },
     "monsters": {
         "file": "seed_monsters.json",
-        "query": "SELECT id, name, alias, size, \"group\", alignment, type, ac, hp, speed, stats, save, skill, resist, vulnerable, senses, languages, action, reaction, traits, spellcasting, bonus, legendary, legendaryHeader, mythic, mythicHeader, reactionRules, soundClip, cr, cr_details FROM monsters ORDER BY name",
+        "query": "SELECT id, name, aliases, sizes, family, alignment, creature_type, ac, hp, speed, abilities, saving_throws, skills, passive_perception, damage_resistances, damage_immunities, damage_vulnerabilities, condition_immunities, senses, languages, audio_path, features, cr, cr_sort, cr_note, experience_points FROM monsters ORDER BY name",
     },
     "npcs": {
         "file": "seed_npcs.json",
@@ -49,10 +48,6 @@ EXPORT_DEFINITIONS = {
     "weapons": {
         "file": "seed_weapons.json",
         "query": "SELECT id, name, base_weapon, baseitems, rarity, weapon_category, weight, req_attune, sentient, curse, resist, property, focus, spells, attack, recharge, light, entries, tier, grants_language, bonus_spell_attack, bonus_spell_save_dc, bonus_ac, bonus_saving_throw, crit_threshold, ammo_type, grants_proficiency, modify_speed, ability FROM weapons ORDER BY name",
-    },
-    "dungeons": {
-        "file": "seed_dungeons.json",
-        "query": "SELECT id, title, data FROM dungeons ORDER BY id",
     },
     "spells": {
         "file": "seed_spells.json",
@@ -120,14 +115,11 @@ def transform_record(record, table_name):
         return record
     if table_name == "monsters":
         for field in [
-            "alias", "size", "group", "alignment", "type", "ac", "hp", "speed", "stats", "save", "skill",
-            "resist", "vulnerable", "senses", "languages", "action", "reaction", "traits", "spellcasting",
-            "bonus", "legendary", "legendaryHeader", "mythic", "mythicHeader", "reactionRules", "soundClip", "cr", "cr_details"
+            "aliases", "sizes", "creature_type", "ac", "hp", "speed", "abilities", "saving_throws", "skills",
+            "damage_resistances", "damage_immunities", "damage_vulnerabilities", "condition_immunities", "senses",
+            "languages", "features"
         ]:
             record[field] = parse_json_value(record.get(field))
-        return record
-    if table_name == "dungeons":
-        record["data"] = parse_json_value(record.get("data"))
         return record
     if table_name == "quests":
         for field in ["reward", "objectives", "details"]:

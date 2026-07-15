@@ -4,17 +4,17 @@ Reference for seed files, tables, relationships, and JSON-encoded columns.
 
 ## Source of Truth
 
-**Seeds are canonical; the database is built, not edited.** Never hand-edit `dnd_kids_resources.db` (it's gitignored). Instead:
+**Seeds are canonical for seed-backed domains; dungeons are runtime-authored.** Never hand-edit `dnd_kids_resources.db` (it's gitignored). Instead:
 
 1. Edit `data/seeds/*.json` — the source files.
 2. Run `python scripts/init_database.py` — builds the schema.
 3. Run `python scripts/seed_database.py` — loads the seed files into the database.
 
-This ensures schema and data stay synced with the codebase and can be reliably rebuilt in any environment (CI, another machine, etc.).
+This ensures schema and seed-backed data stay synced with the codebase. Dungeons and Map Lab layouts are created through the API, persist in the local database during normal use, and are intentionally cleared by a database rebuild.
 
 ## Domains and Tables
 
-16 seed files populate 16 main tables (plus a few junction/lookup tables for many-to-many relationships).
+15 seed files populate 15 seed-backed tables (plus a few junction/lookup tables for many-to-many relationships). Dungeon records and their map layouts are created at runtime and are intentionally not seeded.
 
 | Seed file | Table(s) | Description | Routers |
 |---|---|---|---|
@@ -27,8 +27,8 @@ This ensures schema and data stay synced with the codebase and can be reliably r
 | `seed_weapons.json` | `weapons` | D&D 5e weapons (name, rarity, base weapon, properties, attack data) | `/weapons`, `/players/{id}/weapons` |
 | `seed_items.json` | `items` | Reusable treasure item catalog (name, gp value, category, description) | `/items` |
 | `seed_loot_bundles.json` | `loot_bundle` | Hand-authored loot bundles (gold and JSON snapshotted item/weapon contents) | `/loot-bundles` |
-| `seed_dungeons.json` | `dungeons` | Dungeon modules (room layout, encounter placement, NPC locations) | `/dungeons`, `/dungeons/{id}/layout` |
-| (editor-generated) | `map_layout` | Map layout geometry (rooms, doors, stairs, floors, props, portals) | `/dungeons/{id}/layout` (GET, PUT) |
+| (runtime-created) | `dungeons` | Dungeon title and room-reading content | `/dungeons` |
+| (editor-generated) | `map_layout` | Map layout geometry (rooms, doors, stairs, floors, props, portals); deleted with its dungeon | `/dungeons/{id}/layout` (GET, PUT) |
 | `seed_encounters.json` | `encounters` | Combat encounters (creature roster, active creature index) | `/encounters` |
 | `seed_npcs.json` | `npcs` | Non-player characters (name, race, stats, appearance, notes) | `/npcs` |
 | `seed_players.json` | `players` | Player characters (name, class, level) | `/players` |
@@ -87,7 +87,7 @@ Some tables store complex structured data as JSON strings. The backend's Pydanti
 | `quests` | `details` | List of quest details/lore (strings) | `["The amulet was stolen by goblins"]` |
 | `quests` | `reward` | List of rewards (strings or formatted descriptions) | `["500 gold", "Amulet of Protection"]` |
 | `encounters` | `creatures` | List of creature roster entries (name, HP, initiative, etc.) | `[{"name": "Goblin", "hp": 7}, ...]` |
-| `dungeons` | `data` | DungeonData shape: general_info, rooms (with entries, NPCs), floors, doors, stairs, corridors | (large JSON blob per dungeon) |
+| `dungeons` | `data` | DungeonData shape: general_info and rooms (with entries, NPCs); map geometry and navigation fixtures are not stored here | (large JSON blob per dungeon) |
 | `map_layout` | `data` | MapLayout blob: rooms (polyomino cells), doors, stairs, floors, props, portals, fixtures. Authoritative for map geometry. | (JSON blob per dungeon) |
 | `player_spells` | (implicit in junction) | (Many-to-many, no direct column; routes expose via `/players/{id}/spells`) | |
 | `player_weapons` | (implicit in junction) | (Many-to-many, no direct column; routes expose via `/players/{id}/weapons`) | |
@@ -115,4 +115,4 @@ To export the current database state back to seed files (one-off data updates):
 python scripts/export_db_seeds.py
 ```
 
-This overwrites `data/seeds/*.json` with the current DB contents — useful after adding data via the UI, but generally prefer editing seed files directly.
+This overwrites seed-backed `data/seeds/*.json` files with the current DB contents. Dungeons and Map Lab layouts are runtime-created and are never exported.
