@@ -2,7 +2,7 @@
 
 This plan fixes bugs and gaps in the seed export/import pipeline (`init_database.py`, `seed_database.py`, `export_db_seeds.py`) that risk silent data loss during backup/restore cycles. All fixes are in `scripts/`; no schema changes, no API changes, no frontend changes.
 
-> **Status:** S1–S5 queued. S1 next. S0 shipped.
+> **Status:** S2–S5 queued. S2 next. S0–S1 shipped.
 
 ---
 
@@ -57,16 +57,6 @@ Six targeted fixes across three scripts. No new files, no new tables, no API cha
 <!-- ===== VERBOSE BLOCKS — one per un-shipped stage, in order. Delete a block and collapse it to a
      Shipped row the moment that stage ships; the remaining blocks stay until their own turn. ===== -->
 
-#### S1 — Fix DFEFAULT typo (planned)
-
-- **Build:** In `scripts/init_database.py:235`, change `DFEFAULT` to `DEFAULT`:
-  ```
-  senses JSON DFEFAULT '[{}]'  →  senses JSON DEFAULT '[{}]'
-  ```
-- **Inherits:** N/A — standalone one-line fix.
-- **Tests:** `python scripts/init_database.py` completes without error; `sqlite3 dnd_kids_resources.db ".schema npcs"` shows correct `DEFAULT`.
-- **🚦 Gate:** Schema query confirms `DEFAULT '[{}]'` in npcs.senses column.
-
 #### S2 — Fix stale `_dev/` paths (planned)
 
 - **Build:** In `scripts/seed_database.py`, replace all occurrences of `_dev/init_database.py` with `scripts/init_database.py`:
@@ -117,6 +107,7 @@ Six targeted fixes across three scripts. No new files, no new tables, no API cha
 | Stage | What shipped (≤2 sentences) |
 |-------|------------------------------|
 | **S0** | Added `items` and `loot_bundles` to `EXPORT_DEFINITIONS` and `transform_record()` in `export_db_seeds.py`. Dry-run confirms 15 tables exported. |
+| **S1** | Fixed `DFEFAULT` typo to `DEFAULT` in `init_database.py:235` npcs schema. |
 
 ---
 
@@ -131,4 +122,4 @@ Six targeted fixes across three scripts. No new files, no new tables, no API cha
 
 ## Next:
 
-S1 (fix DFEFAULT typo in init_database.py npcs schema) — unblocked, ready to implement.
+S2 (fix stale `_dev/` paths in seed_database.py) — unblocked, ready to implement.
