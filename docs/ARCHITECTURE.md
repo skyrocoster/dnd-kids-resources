@@ -6,7 +6,7 @@ This doc describes the folder structure, backend/frontend conventions, and reque
 
 - **Backend:** FastAPI + SQLite (no ORM, raw SQL via `db.py`)
 - **Frontend:** React + Vite + TypeScript, no global state library (local/component state only)
-- **Database:** SQLite, gitignored and rebuilt from seed files, never hand-edited as a source of truth
+- **Database:** SQLite, gitignored and rebuilt from seed files; dungeons and Map Lab layouts are runtime-authored records
 
 ## Backend Layout
 
@@ -31,7 +31,7 @@ This doc describes the folder structure, backend/frontend conventions, and reque
 | `npcs.py` | `/npcs` | NPC CRUD and details |
 | `quests.py` | `/quests` | Quest CRUD and details |
 | `encounters.py` | `/encounters` | Encounter CRUD, creature rosters |
-| `dungeons.py` | `/dungeons` | Dungeon CRUD (room navigation data stored in `data` JSON column) |
+| `dungeons.py` | `/dungeons` | Runtime-created dungeon CRUD (room-reading data stored in `data` JSON column) |
 | `layouts.py` | `/dungeons/{dungeon_id}/layout` | Dungeon map layout save/load (MapLayoutBlob) |
 | `reference.py` | `/abilities`, `/conditions`, `/damage_types`, `/weapon_properties`, `/skills`, `/spell-components` | Read-only reference data (abilities, conditions, damage types, weapon properties, skills, spell components) |
 
@@ -84,7 +84,7 @@ This pattern is copied across all 8 feature domains. If building a new feature d
 ## Data Flow
 
 ```
-data/seeds/*.json (canonical truth)
+data/seeds/*.json (canonical reference and campaign data)
           ↓
     scripts/init_database.py (builds schema)
           ↓
@@ -101,7 +101,7 @@ data/seeds/*.json (canonical truth)
     frontend/src/features/*/Model.ts (local state, re-renders)
 ```
 
-**The database is never a source of truth.** Edit `data/seeds/*.json`, then rebuild the database via the two scripts. This keeps schema and data in sync with the codebase (not hand-edited DB state). See `docs/DATA_MODEL.md` for the seed-to-table mapping.
+**Seed-backed domains are never sourced from the database.** Edit `data/seeds/*.json`, then rebuild the database via the two scripts. Dungeons are intentionally runtime-created, so a rebuild starts with no dungeons or map layouts. See `docs/DATA_MODEL.md` for the seed-to-table mapping.
 
 ## Scripts
 
@@ -109,7 +109,7 @@ data/seeds/*.json (canonical truth)
 |---|---|
 | `scripts/init_database.py` | Creates SQLite schema (`CREATE TABLE` statements) in `dnd_kids_resources.db` |
 | `scripts/seed_database.py` | Loads all `data/seeds/*.json` files into the database |
-| `scripts/export_db_seeds.py` | Exports current database back to `data/seeds/*.json` (useful for one-off seed updates) |
+| `scripts/export_db_seeds.py` | Exports seed-backed tables back to `data/seeds/*.json` (useful for one-off seed updates; never exports runtime dungeons) |
 | `scripts/start_server.ps1` (Windows) | Starts the FastAPI dev server (localhost:8000) |
 | `scripts/stop_server.ps1` (Windows) | Stops the server process |
 

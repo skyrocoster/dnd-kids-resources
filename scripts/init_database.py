@@ -300,7 +300,7 @@ def init_database():
         "CREATE INDEX IF NOT EXISTS idx_monsters_cr_sort ON monsters(cr_sort)"
     )
 
-    # Create dungeons table (v2: structured hand-authored dungeons only, no HTML)
+    # Runtime-created dungeon content; no dungeon seeds are loaded on rebuild.
     cursor.execute("""
         CREATE TABLE dungeons (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -311,11 +311,12 @@ def init_database():
         )
     """)
 
-    # Create map_layout table (Map Lab editor: additive coordinate/fixture layout per dungeon)
+    # Map Lab geometry belongs to its dungeon and is removed with it.
     cursor.execute("""
         CREATE TABLE map_layout (
             dungeon_id INTEGER PRIMARY KEY,
-            data TEXT NOT NULL
+            data TEXT NOT NULL,
+            FOREIGN KEY (dungeon_id) REFERENCES dungeons(id) ON DELETE CASCADE
         )
     """)
 

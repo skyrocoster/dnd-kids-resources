@@ -79,7 +79,6 @@ def _seed_real_data(db_path: str) -> None:
             seed_mod.populate_quests(cursor, conn)
             seed_mod.populate_spells(cursor, conn)
             seed_mod.populate_conditions(cursor, conn)
-            seed_mod.populate_dungeons(cursor, conn)
             seed_mod.populate_encounters(cursor, conn)
             seed_mod.populate_loot_bundles(cursor, conn)
             seed_mod.populate_players(cursor, conn)

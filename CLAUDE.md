@@ -67,7 +67,7 @@ appending; and when a phase's last stage ships, fold the phase to a short `(ship
 durable structure to a reference doc. **If the stage added/removed a router, an endpoint, a seed domain/table, or a top-level folder/convention, update the matching reference doc (`ARCHITECTURE.md`, `API_REFERENCE.md`, `DATA_MODEL.md`) in the same commit — treat this as part of the stage's deliverables, not a follow-up.** This keeps reference docs synchronized with code.
 
 ### The stack
-- **Data:** FINAL and frozen. `data/seeds/*.json` is the canonical source of truth. The SQLite DB (`dnd_kids_resources.db`, gitignored) is **rebuilt from seeds** via `scripts/init_database.py` + `scripts/seed_database.py`. Never hand-edit the DB as a source of truth; edit seeds and rebuild.
+- **Data:** `data/seeds/*.json` is canonical for seed-backed reference and campaign domains. Dungeon records and Map Lab layouts are runtime-authored in SQLite; a full rebuild via `scripts/init_database.py` + `scripts/seed_database.py` intentionally starts with no dungeons. Never hand-edit the DB; use the API/UI for dungeons and edit seeds only for seed-backed domains.
 - **Backend:** **FastAPI + SQLite** in `backend/`.
 - **Frontend:** **React + Vite + TypeScript** in `frontend/`. Design tokens live in `frontend/src/theme.css`
   (`--md-*`/`--type-*`, Material Design 3 dark theme) — consume them, never hand-pick colors; see

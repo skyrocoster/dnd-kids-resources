@@ -15,11 +15,14 @@ def test_save_and_get_dungeon_layout(test_client):
         "items": [],
     }
 
-    put_response = test_client.put("/api/dungeons/4/layout", json={"data": layout})
+    dungeon_id = test_client.post(
+        "/api/dungeons", json={"title": "Layout test", "data": {}}
+    ).json()["id"]
+    put_response = test_client.put(f"/api/dungeons/{dungeon_id}/layout", json={"data": layout})
     assert put_response.status_code == 200
     assert put_response.json()["data"] == layout
 
-    get_response = test_client.get("/api/dungeons/4/layout")
+    get_response = test_client.get(f"/api/dungeons/{dungeon_id}/layout")
     assert get_response.status_code == 200
     assert get_response.json()["data"] == layout
 
@@ -29,9 +32,27 @@ def test_save_dungeon_layout_upserts_on_second_call(test_client):
     first = {"meta": {"cellSizeFt": 5, "padding": 3}, "rooms": [], "doors": [], "stairs": [], "floors": [], "items": []}
     second = {**first, "rooms": [{"room_id": 1, "z": 0, "origin": [0, 0], "cells": [[0, 0]]}]}
 
-    test_client.put("/api/dungeons/5/layout", json={"data": first})
-    put_response = test_client.put("/api/dungeons/5/layout", json={"data": second})
+    dungeon_id = test_client.post(
+        "/api/dungeons", json={"title": "Layout upsert test", "data": {}}
+    ).json()["id"]
+    test_client.put(f"/api/dungeons/{dungeon_id}/layout", json={"data": first})
+    put_response = test_client.put(f"/api/dungeons/{dungeon_id}/layout", json={"data": second})
     assert put_response.status_code == 200
 
-    get_response = test_client.get("/api/dungeons/5/layout")
+    get_response = test_client.get(f"/api/dungeons/{dungeon_id}/layout")
     assert get_response.json()["data"] == second
+
+
+def test_save_dungeon_layout_requires_existing_dungeon(test_client):
+    response = test_client.put("/api/dungeons/999/layout", json={"data": {}})
+    assert response.status_code == 404
+
+
+def test_deleting_dungeon_removes_its_layout(test_client):
+    dungeon_id = test_client.post(
+        "/api/dungeons", json={"title": "Layout cleanup test", "data": {}}
+    ).json()["id"]
+    test_client.put(f"/api/dungeons/{dungeon_id}/layout", json={"data": {}})
+
+    assert test_client.delete(f"/api/dungeons/{dungeon_id}").status_code == 204
+    assert test_client.get(f"/api/dungeons/{dungeon_id}/layout").status_code == 404

@@ -8,7 +8,7 @@ It's designed to be safe and idempotent (can run multiple times).
 Seed files (in data/seeds/):
 - seed_abilities.json, seed_conditions.json, seed_damage_types.json, seed_weapon_properties.json
 - seed_spells.json, seed_monsters.json, seed_weapons.json
-- seed_npcs.json, seed_quests.json, seed_encounters.json, seed_dungeons.json
+- seed_npcs.json, seed_quests.json, seed_encounters.json
 - seed_items.json, seed_loot_bundles.json
 - seed_players.json, seed_player_spells.json, seed_player_weapons.json
 
@@ -29,18 +29,11 @@ import sys
 
 DB_PATH = Path(__file__).parent.parent / "dnd_kids_resources.db"
 SEEDS_DIR = Path(__file__).parent.parent / "data" / "seeds"
-LEGACY_SEEDS_DIR = Path(__file__).parent.parent / "data"
-
-
 def load_json_file(filepath):
     """Load and parse a JSON seed file."""
     if not filepath.exists():
-        alternate = LEGACY_SEEDS_DIR / filepath.name
-        if alternate.exists():
-            filepath = alternate
-        else:
-            print(f"[WARNING]  Seed file not found: {filepath}")
-            return []
+        print(f"[WARNING]  Seed file not found: {filepath}")
+        return []
     
     try:
         with open(filepath, 'r', encoding='utf-8') as f:
@@ -723,68 +716,6 @@ def populate_loot_bundles(cursor, conn, force=False):
     print(f"  [OK] Loaded {cursor.fetchone()[0]} loot bundles")
 
 
-def populate_dungeons(cursor, conn, force=False):
-    """Populate dungeons table from seed_dungeons.json (v2: structured dungeons only)"""
-    print("\n[CASTLE] Loading dungeons...")
-
-    # Check if already populated
-    try:
-        cursor.execute("SELECT COUNT(*) FROM dungeons")
-        count = cursor.fetchone()[0]
-    except sqlite3.OperationalError:
-        count = 0
-
-    if count > 0 and not force:
-        print(f"  [INFO]  Dungeons table already has {count} records. Skip (use --force to override)")
-        return
-
-    if force:
-        try:
-            cursor.execute("DELETE FROM dungeons")
-            print(f"  [TRASH]  Cleared existing dungeons")
-        except Exception as e:
-            print(f"  [WARNING]  Error clearing dungeons data: {e}")
-            print("  [ERROR]  dungeons table may not exist. Run scripts/init_database.py first.")
-            return
-    else:
-        # Check if table exists and has data
-        try:
-            cursor.execute("SELECT COUNT(*) FROM dungeons")
-            count = cursor.fetchone()[0]
-            if count > 0:
-                print(f"  [INFO]  Dungeons table already has {count} records. Skip (use --force to override)")
-                return
-        except Exception:
-            print("  [ERROR]  Dungeons table does not exist. Run scripts/init_database.py first.")
-            return
-
-    seeds = load_json_file(SEEDS_DIR / "seed_dungeons.json")
-    if not seeds:
-        print("  [WARNING]  No dungeon seeds found")
-        return
-
-    for dungeon in seeds:
-        try:
-            # V2: structured dungeons with id, title, and data (JSON-encoded)
-            cursor.execute("""
-                INSERT INTO dungeons
-                (id, title, data)
-                VALUES (?, ?, ?)
-            """, (
-                dungeon.get('id'),
-                dungeon.get('title'),
-                serialize_for_db(dungeon.get('data', {}))
-            ))
-            print(f"  [CHECK] {dungeon.get('title')}")
-        except sqlite3.IntegrityError as e:
-            print(f"  [WARNING]  Error: {dungeon.get('title')} - {e}")
-
-    conn.commit()
-    cursor.execute("SELECT COUNT(*) FROM dungeons")
-    final_count = cursor.fetchone()[0]
-    print(f"  [OK] Dungeons table now has {final_count} records")
-
-
 def populate_encounters(cursor, conn, force=False):
     """Populate encounter table from seed_encounters.json."""
     print("\n[ENCOUNTER] Loading encounters...")
@@ -985,55 +916,6 @@ def populate_player_weapons(cursor, conn, force=False):
     print(f"  [OK] Loaded {final_count} player weapons")
 
 
-# def reparse_all_dungeons():
-#     """Re-parse all dungeons in the database to populate trap_ids and other references"""
-#     try:
-#         conn = sqlite3.connect(str(DB_PATH))
-#         cursor = conn.cursor()
-#
-#         # Get all dungeons
-#         cursor.execute('SELECT id, title, original_html FROM dungeons ORDER BY id')
-#         dungeons = cursor.fetchall()
-#
-#         if not dungeons:
-#             print("  [INFO] No dungeons found to re-parse")
-#             conn.close()
-#             return
-#
-#         print(f"\n  Found {len(dungeons)} dungeon(s) to re-parse\n")
-#
-#         for dungeon_id, title, original_html in dungeons:
-#             print(f"  🔄 Re-parsing: {title} (ID: {dungeon_id})")
-#
-#             try:
-#                 # Parse the HTML
-#                 parser = DungeonHTMLParser(original_html)
-#                 dungeon_data = parser.parse()
-#
-#                 # Convert to JSON
-#                 json_output = json.dumps(dungeon_data.to_dict(), indent=2)
-#
-#                 # Update the database
-#                 cursor.execute(
-#                     'UPDATE dungeons SET parsed_json = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-#                     (json_output, dungeon_id)
-#                 )
-#                 conn.commit()
-#
-#                 print(f"    ✓ Successfully re-parsed and updated\n")
-#
-#             except Exception as e:
-#                 print(f"    ✗ Error: {e}\n")
-#                 conn.rollback()
-#
-#         conn.close()
-#         print("  ✓ Re-parsing complete!")
-#         
-#     except Exception as e:
-#         print(f"  [ERROR] Re-parsing failed: {e}")
-#         import traceback
-#         traceback.print_exc()
-#
 
 def clear_all_tables(cursor, conn):
     """Drop all tables in dependency order to avoid FK constraint violations"""
@@ -1096,7 +978,6 @@ def main():
     parser.add_argument('--weapons', action='store_true', help='Load only weapons')
     parser.add_argument('--items', action='store_true', help='Load only items')
     parser.add_argument('--loot-bundles', action='store_true', help='Load only loot bundles')
-    parser.add_argument('--dungeons', action='store_true', help='Load only dungeons')
     parser.add_argument('--encounters', action='store_true', help='Load only encounters')
     parser.add_argument('--npcs', action='store_true', help='Load only NPCs')
     parser.add_argument('--players', action='store_true', help='Load only players')
@@ -1110,7 +991,7 @@ def main():
         args.abilities, args.spells, args.conditions, args.monsters, args.quests,
         args.npcs, args.players, args.player_spells, args.player_weapons,
         args.damage_types, args.weapon_properties, args.weapons,
-        args.dungeons, args.encounters, args.items, args.loot_bundles
+        args.encounters, args.items, args.loot_bundles
     ])
     
     print("="*60)
@@ -1152,8 +1033,6 @@ def main():
             populate_spells(cursor, conn, args.force)
         if load_all or args.conditions:
             populate_conditions(cursor, conn, args.force)
-        if load_all or args.dungeons:
-            populate_dungeons(cursor, conn, args.force)
         if load_all or args.encounters:
             populate_encounters(cursor, conn, args.force)
         if load_all or args.loot_bundles:
@@ -1167,12 +1046,6 @@ def main():
         
         conn.close()
         
-        # Dungeon re-parsing has been disabled. Dungeon records are still loaded from seeds.
-        # print("\n" + "="*60)
-        # print("[REPARSE] Starting dungeon re-parsing...")
-        # print("="*60)
-        # reparse_all_dungeons()
-        
         print("\n" + "="*60)
         print("[OK] PHASE 2 COMPLETE!")
         print("="*60)
@@ -1180,7 +1053,7 @@ def main():
         print("  1. Edit seed files in data/seeds/ to add more data")
         print("  2. Run: python scripts/seed_database.py --force")
         print("  3. Build frontend and run FastAPI server")
-        print("\nV2 Seed files (16 tables):")
+        print("\nSeed files (15 tables):")
         print("  - data/seeds/seed_abilities.json")
         print("  - data/seeds/seed_damage_types.json")
         print("  - data/seeds/seed_weapon_properties.json")
@@ -1193,7 +1066,6 @@ def main():
         print("  - data/seeds/seed_npcs.json")
         print("  - data/seeds/seed_quests.json")
         print("  - data/seeds/seed_encounters.json")
-        print("  - data/seeds/seed_dungeons.json")
         print("  - data/seeds/seed_players.json")
         print("  - data/seeds/seed_player_spells.json")
         print("  - data/seeds/seed_player_weapons.json")

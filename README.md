@@ -67,8 +67,7 @@ Serves the built SPA + API from `http://localhost:8000`.
 - Combat encounter builder
 
 ### Dungeons
-- Browse hand-authored structured dungeons
-- Create and edit custom dungeons (no upload/parse)
+- Create and edit custom dungeons in Map Lab (no upload/parse or prototype dungeon data)
 
 **Dropped in v2:** HP tracker, spell slot tracker, turn order, character sheet, dungeon HTML parser.
 
@@ -83,13 +82,14 @@ Canonical seed files in `data/seeds/`:
 - `seed_weapons.json` — 200+ weapons
 - `seed_npcs.json`, `seed_players.json` — characters
 - `seed_quests.json`, `seed_encounters.json` — campaign data
-- `seed_dungeons.json` — structured dungeons
 - `seed_conditions.json`, `seed_damage_types.json`, `seed_weapon_properties.json`
 
-To export DB changes back to seeds:
+To export seed-backed DB changes back to seeds:
 ```bash
 python scripts/export_db_seeds.py
 ```
+
+Dungeons and Map Lab layouts are runtime-created and intentionally are not exported as seeds.
 
 ---
 
