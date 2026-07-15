@@ -5,6 +5,8 @@ These are the functions every router leans on, including the canonical
 pure functions, so they're tested directly rather than through an endpoint.
 """
 
+import pytest
+
 from backend.app.db import (
     dict_from_row,
     parse_json_value,
@@ -32,14 +34,12 @@ def test_parse_json_list_from_json_array():
     assert parse_json_list('["V", "S"]') == ["V", "S"]
 
 
-def test_parse_json_list_from_legacy_comma_string():
-    # Legacy rows stored list columns as a plain comma-separated string.
-    assert parse_json_list("V, S, M") == ["V", "S", "M"]
-
-
-def test_parse_json_list_none_and_scalar():
+def test_parse_json_list_none_and_non_list_values():
     assert parse_json_list(None) is None
-    assert parse_json_list("42") == [42]  # a lone non-list JSON scalar is decoded then wrapped
+    with pytest.raises(TypeError):
+        parse_json_list("V, S, M")
+    with pytest.raises(TypeError):
+        parse_json_list("42")
 
 
 def test_dict_from_row_none():
@@ -51,30 +51,59 @@ def test_parse_spell_row_none():
 
 
 def test_parse_spell_row_decodes_every_json_column():
-    """The regression this guards: object columns AND list columns both get decoded."""
+    """The regression this guards: target object and list columns both get decoded."""
     row = _FakeRow(
         id=1,
-        spell_name="Test",
-        attack_type='[{"name": "initial", "type": "melee", "save": []}]',
-        heal='{"amount": "1d4", "temp_hp": true}',
-        damage='[{"amount": "2d6", "type": "fire"}]',
-        area_of_effect='{"shape": "sphere", "size": 20}',
+        name="Test",
+        level=3,
+        school="evocation",
+        description="Test spell",
+        damage='[{"name": "primary", "formula": "2d6", "damage_types": ["fire"]}]',
+        healing='{"amount": "1d4", "temp_hp": true, "max_hp": false}',
+        range="120 feet",
+        higher_levels='{"text": "At higher levels", "damage_by_slot": {"3": "3d6"}}',
+        casting_times='["1 action"]',
+        duration="Instantaneous",
+        concentration=False,
+        ritual=False,
         components='["V", "S"]',
-        classes='["Wizard"]',
-        subclasses=None,
+        materials=None,
+        attacks='[{"kind": "ranged", "saving_throws": ["dex"]}]',
+        area_of_effect='{"shape": "sphere", "size": 20}',
     )
     parsed = parse_spell_row(row)
-    assert parsed["attack_type"] == [{"name": "initial", "type": "melee", "save": []}]
-    assert parsed["heal"] == {"amount": "1d4", "temp_hp": True}
-    assert parsed["damage"] == [{"amount": "2d6", "type": "fire"}]
+    assert parsed["damage"] == [{"name": "primary", "formula": "2d6", "damage_types": ["fire"]}]
+    assert parsed["healing"] == {"amount": "1d4", "temp_hp": True, "max_hp": False}
     assert parsed["area_of_effect"] == {"shape": "sphere", "size": 20}
+    assert parsed["higher_levels"] == {"text": "At higher levels", "damage_by_slot": {"3": "3d6"}}
+    assert parsed["casting_times"] == ["1 action"]
     assert parsed["components"] == ["V", "S"]
-    assert parsed["classes"] == ["Wizard"]
-    assert parsed["subclasses"] is None
+    assert parsed["attacks"] == [{"kind": "ranged", "saving_throws": ["dex"]}]
 
 
-def test_parse_spell_row_handles_legacy_comma_components():
-    row = _FakeRow(id=2, spell_name="Legacy", components="V, S", classes="Wizard, Cleric")
+def test_parse_spell_row_empty_collections_survive():
+    row = _FakeRow(
+        id=2,
+        name="Empty",
+        level=0,
+        description="Empty spell",
+        range="Self",
+        duration="Instantaneous",
+        concentration=False,
+        ritual=False,
+        damage="[]",
+        healing='{"amount": null, "temp_hp": false, "max_hp": false}',
+        higher_levels='{"text": null, "damage_by_slot": {}}',
+        casting_times="[]",
+        components="[]",
+        attacks="[]",
+        area_of_effect='{"shape": null, "size": null}',
+    )
     parsed = parse_spell_row(row)
-    assert parsed["components"] == ["V", "S"]
-    assert parsed["classes"] == ["Wizard", "Cleric"]
+    assert parsed["damage"] == []
+    assert parsed["healing"] == {"amount": None, "temp_hp": False, "max_hp": False}
+    assert parsed["higher_levels"] == {"text": None, "damage_by_slot": {}}
+    assert parsed["casting_times"] == []
+    assert parsed["components"] == []
+    assert parsed["attacks"] == []
+    assert parsed["area_of_effect"] == {"shape": None, "size": None}
