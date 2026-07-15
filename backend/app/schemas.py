@@ -32,6 +32,7 @@ class WeaponProperty(BaseModel):
     description: Optional[str] = None
 
 
+# TODO(S1): Spell model will be replaced by the target contract.  See spells_plan.md S1.
 class Spell(BaseModel):
     id: int
     spell_name: str
@@ -59,6 +60,7 @@ class Spell(BaseModel):
     subclasses: Optional[List[str]] = None
 
 
+# TODO(S1): SpellCreate model will be replaced by the target contract.  See spells_plan.md S1.
 class SpellCreate(BaseModel):
     spell_name: str
     icon: Optional[str] = None

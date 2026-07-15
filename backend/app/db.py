@@ -79,6 +79,8 @@ def dict_from_row(row):
 # router) so every endpoint that returns a spell row parses it identically — a
 # second, drifting copy of this list previously caused /api/players/{id}/spells
 # to 500 while /api/spells worked.
+# TODO(S1): _SPELL_OBJECT_COLUMNS/_SPELL_LIST_COLUMNS will change when the target
+# contract ships.  See spells_plan.md S1 for the binding field list.
 _SPELL_OBJECT_COLUMNS = ["damage", "heal", "heal_at_spell_slots", "area_of_effect", "attack_type"]
 _SPELL_LIST_COLUMNS = ["components", "classes", "subclasses"]
 
