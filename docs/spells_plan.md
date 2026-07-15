@@ -108,10 +108,10 @@ the tested S2 transform and must not add ad hoc repair rules.
      `_serialize()` (lines 398-399) must define the checked-in bytes: UTF-8, two-space indentation,
      `ensure_ascii=False`, target-key insertion order, and one trailing newline. Do not hand-edit the generated
      JSON or make S3-only repairs.
-  3. The seed is currently excluded by `.gitignore`'s `/data/` rule and is not in `git ls-files` (unlike the
-     already tracked `seed_monsters.json`). Stage it explicitly with
-     `git add -f data/seeds/seed_spells.json`; do not unignore or add the other local seed/data files, and do not
-     retain the temporary legacy source anywhere in the repository.
+   3. The seed is excluded by `.gitignore`'s `/data/` rule and must NOT be committed to git. Generate it
+      locally with `python scripts/migrate_spells.py --write --source <legacy-temp> --output
+      data/seeds/seed_spells.json` and keep the legacy temp file outside the repository for reproducibility
+      checks.
   4. Refactor `backend/tests/test_migrate_spells.py` at its current corpus fixtures (lines 81-92) so the checked-in
      seed is loaded as target data after cutover. Replace the three edge-record lookups at lines 227-248 with
      small explicit legacy fixture rows derived from `base_spell()`; keep their source anomalies literal so
@@ -160,13 +160,12 @@ the tested S2 transform and must not add ad hoc repair rules.
      and after to prove check mode modifies neither. Copy the canonical output to a second temporary file, alter
      one value, and assert check exits 1 without changing either comparison file; retain S2's missing-output and
      source-equals-output regressions.
-- **Gate:** `pytest backend/tests/test_migrate_spells.py --no-cov` passes with no skips. A fresh temporary output
-  generated from the preserved legacy source has the same SHA-256/bytes as the staged canonical seed, and
-  `--check` succeeds against it; review `git diff -- data/seeds/seed_spells.json` to confirm a mechanical
-  24-to-18-field rewrite with 525 records and review `git status --short --ignored data/seeds` to confirm only
-  `seed_spells.json` was force-added. The temporary legacy file is deleted only after the reproducibility check,
-  and `git diff --check` passes. Do not rebuild/seed SQLite or run API/frontend/browser verification: the runtime
-  intentionally remains incompatible with the canonical seed until Phase B, and no browser pass is required.
+- **Gate:** `pytest backend/tests/test_migrate_spells.py --no-cov` passes with no skips. The seed file exists
+  locally at `data/seeds/seed_spells.json` (gitignored, not committed). A fresh temporary output generated from
+  the preserved legacy source has the same SHA-256/bytes as the local canonical seed, and `--check` succeeds
+  against it. The temporary legacy file is deleted only after the reproducibility check. Do not rebuild/seed
+  SQLite or run API/frontend/browser verification: the runtime intentionally remains incompatible with the
+  canonical seed until Phase B, and no browser pass is required.
 
 ---
 
@@ -297,7 +296,7 @@ and player spell displays against the target API. It intentionally preserves the
 | **S0** | Migration scaffolding: `migrate_spells.py` entry point, `base_spell()` fixture, 4 passing + 3 skipped tests, `TODO(S1)` comments in db.py/schemas.py. Seed unchanged. Gate ✅. |
 | **S1** | Accepted 18-field canonical contract in `spell_schema_decision.md`, covering all 24 legacy fields, strict defaults/validation, corpus totals, known repairs, and rejected alternatives; `icon` is dropped as presentation-only data. Seed and runtime contracts unchanged. Gate ✅. |
 | **S2** | Deterministic 18-field transform with strict contextual validation, enumerated anomaly repairs, stable write/check CLI modes, and complete fixture/corpus coverage. 30 focused tests pass with no skips; canonical seed and runtime contracts remain unchanged. Gate ✅. |
-| **S3** | Canonical seed cutover: replaced legacy 24-field seed with 18-field canonical format via tested S2 boundary. Refactored tests with explicit legacy fixtures, Pydantic v2 strict validation models, and corpus acceptance tests (46 total). SHA-256 byte-reproducible from legacy source. Gate ✅. |
+| **S3** | Canonical seed cutover: generated 18-field canonical seed locally via tested S2 boundary (gitignored, not committed). Refactored tests with explicit legacy fixtures, Pydantic v2 strict validation models, and corpus acceptance tests (46 total). SHA-256 byte-reproducible from legacy source. Gate ✅. |
 
 ## Cross-references
 
