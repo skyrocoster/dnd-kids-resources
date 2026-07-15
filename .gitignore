@@ -50,3 +50,6 @@ data/seeds/archive/
 # Vendored AI tool skill dirs (not project code)
 .claude/skills/
 .cursor/skills/
+.agents/skills/
+.opencode/
+opencode.json
