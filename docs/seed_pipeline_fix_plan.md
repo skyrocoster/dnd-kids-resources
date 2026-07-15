@@ -2,7 +2,7 @@
 
 This plan fixes bugs and gaps in the seed export/import pipeline (`init_database.py`, `seed_database.py`, `export_db_seeds.py`) that risk silent data loss during backup/restore cycles. All fixes are in `scripts/`; no schema changes, no API changes, no frontend changes.
 
-> **Status:** S3–S5 queued. S3 next. S0–S2 shipped.
+> **Status:** S4–S5 queued. S4 next. S0–S3 shipped.
 
 ---
 
@@ -57,15 +57,6 @@ Six targeted fixes across three scripts. No new files, no new tables, no API cha
 <!-- ===== VERBOSE BLOCKS — one per un-shipped stage, in order. Delete a block and collapse it to a
      Shipped row the moment that stage ships; the remaining blocks stay until their own turn. ===== -->
 
-#### S3 — Remove phantom `skills` table (planned)
-
-- **Build:**
-  1. In `scripts/init_database.py:48`, remove `"skills"` from `tables_to_drop`.
-  2. In `scripts/seed_database.py:944`, remove `"skills"` from `tables_to_clear`.
-- **Inherits:** The `skills` table is never created by `init_database.py`; these entries are dead code swallowed by `try/except`.
-- **Tests:** `grep -n "skills" scripts/init_database.py scripts/seed_database.py` — only the `monsters.skills` column reference should remain, not table-level references.
-- **葡京 Gate:** Both lists match the actual set of created tables.
-
 #### S4 — Remove dead spell parser fallback (planned)
 
 - **Build:** In `scripts/seed_database.py`, replace lines 191-205 (the `parse_spells_to_db.py` fallback block) with:
@@ -100,6 +91,7 @@ Six targeted fixes across three scripts. No new files, no new tables, no API cha
 | **S0** | Added `items` and `loot_bundles` to `EXPORT_DEFINITIONS` and `transform_record()` in `export_db_seeds.py`. Dry-run confirms 15 tables exported. |
 | **S1** | Fixed `DFEFAULT` typo to `DEFAULT` in `init_database.py:235` npcs schema. |
 | **S2** | Replaced all `_dev/init_database.py` references with `scripts/init_database.py` in `seed_database.py`. |
+| **S3** | Removed phantom `skills` table from drop/clear lists in `init_database.py` and `seed_database.py`. |
 
 ---
 
@@ -114,4 +106,4 @@ Six targeted fixes across three scripts. No new files, no new tables, no API cha
 
 ## Next:
 
-S3 (remove phantom `skills` table) — unblocked, ready to implement.
+S4 (remove dead spell parser fallback) — unblocked, ready to implement.

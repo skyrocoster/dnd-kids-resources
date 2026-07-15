@@ -940,8 +940,7 @@ def clear_all_tables(cursor, conn):
         "dungeons",
         "encounter",
         "loot_bundle",
-        "items",
-        "skills"
+        "items"
     ]
     
     for table in tables_to_clear:
