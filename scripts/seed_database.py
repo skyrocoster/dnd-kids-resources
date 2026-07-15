@@ -22,7 +22,6 @@ Usage:
 
 import sqlite3
 import json
-import subprocess
 from pathlib import Path
 import argparse
 import sys
@@ -188,21 +187,8 @@ def populate_spells(cursor, conn, force=False):
         print(f"  [OK] Loaded {len(seeds)} spells from JSON seed file")
         return
 
-    print("  [INFO] No seed_spells.json file found; falling back to legacy 5eTools parser")
-    parser_script = Path(__file__).parent / "parse_spells_to_db.py"
-    if not parser_script.exists():
-        print(f"  [ERROR] Missing parser: {parser_script}")
-        return
-
-    command = [sys.executable, str(parser_script)]
-    if force:
-        command.append("--force")
-
-    result = subprocess.run(command, capture_output=True, text=True)
-    print(result.stdout)
-    if result.returncode != 0:
-        print(result.stderr)
-        raise RuntimeError(f"Spell import failed with exit code {result.returncode}")
+    print("  [WARNING] No seed_spells.json found. Create it with export_db_seeds.py or add it manually.")
+    return
 
 
 def populate_conditions(cursor, conn, force=False):
