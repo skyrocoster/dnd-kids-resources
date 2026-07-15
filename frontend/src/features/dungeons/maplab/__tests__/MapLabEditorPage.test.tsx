@@ -653,13 +653,40 @@ describe('MapLabEditorPage (Stage E3 — Toolbar reorganization & persistent ins
     const navRail = container.querySelector('.maplab-editor-nav-rail')
     expect(navRail).toBeInTheDocument()
     const floorTabs = navRail?.querySelector('.maplab-floor-tabs')
+    const floorActions = navRail?.querySelector('.maplab-editor-floor-actions')
     const roomList = navRail?.querySelector('.maplab-editor-room-list')
     expect(floorTabs).toBeInTheDocument()
+    expect(floorActions).toBeInTheDocument()
     expect(roomList).toBeInTheDocument()
 
     // Floor tabs precede the room list in document order (top of the column).
     const position = floorTabs?.compareDocumentPosition(roomList as Node)
     expect((position as number) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('adds a new floor above the current floor and activates it', async () => {
+    renderMapLabEditorPage()
+    await flush()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Add floor above' }))
+
+    const firstFloorTab = screen.getByRole('tab', { name: 'First Floor' })
+    expect(firstFloorTab).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByText('No rooms on this floor yet.')).toBeInTheDocument()
+  })
+
+  it('adds a new floor below the current floor and disables the add button once it exists', async () => {
+    renderMapLabEditorPage()
+    await flush()
+
+    const addBelow = screen.getByRole('button', { name: 'Add floor below' })
+    expect(addBelow).toBeEnabled()
+
+    fireEvent.click(addBelow)
+
+    const basementTab = screen.getByRole('tab', { name: 'Basement' })
+    expect(basementTab).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByRole('button', { name: 'Add floor above' })).toBeDisabled()
   })
 
   it('right inspector rail is persistent, showing placeholder when no fixture selected', async () => {

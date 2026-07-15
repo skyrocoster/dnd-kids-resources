@@ -32,6 +32,8 @@ export interface EditorState {
 
 export type EditorAction =
   | { type: 'addRoom' }
+  | { type: 'addFloorAbove' }
+  | { type: 'addFloorBelow' }
   | { type: 'selectRoom'; roomId: number | null }
   | { type: 'deleteRoom'; roomId: number }
   | { type: 'toggleCell'; roomId: number; cell: [number, number] }
@@ -64,6 +66,42 @@ export function mapLabEditorReducer(state: EditorState, action: EditorAction): E
         ...state,
         layout: { ...state.layout, rooms: [...state.layout.rooms, newRoom] },
         selectedRoomId: room_id,
+        selectedDoorId: null,
+        selectedPropId: null,
+        selectedStairId: null,
+        selectedPortalId: null,
+      }
+    }
+
+    case 'addFloorAbove': {
+      const z = state.activeZ + 1
+      if (state.layout.floors.some((floor) => floor.z === z)) return state
+      return {
+        ...state,
+        layout: {
+          ...state.layout,
+          floors: [...state.layout.floors, { z, title: defaultFloorTitle(z) }],
+        },
+        activeZ: z,
+        selectedRoomId: null,
+        selectedDoorId: null,
+        selectedPropId: null,
+        selectedStairId: null,
+        selectedPortalId: null,
+      }
+    }
+
+    case 'addFloorBelow': {
+      const z = state.activeZ - 1
+      if (state.layout.floors.some((floor) => floor.z === z)) return state
+      return {
+        ...state,
+        layout: {
+          ...state.layout,
+          floors: [...state.layout.floors, { z, title: defaultFloorTitle(z) }],
+        },
+        activeZ: z,
+        selectedRoomId: null,
         selectedDoorId: null,
         selectedPropId: null,
         selectedStairId: null,
@@ -510,4 +548,13 @@ export function initialEditorState(layout: MapLayout): EditorState {
     selectedPortalId: null,
     activeZ,
   }
+}
+
+function defaultFloorTitle(z: number): string {
+  if (z === 0) return 'Ground Floor'
+  if (z < 0) return z === -1 ? 'Basement' : `Basement ${Math.abs(z)}`
+
+  const ordinals = ['First', 'Second', 'Third', 'Fourth', 'Fifth']
+  const ordinal = ordinals[z - 1]
+  return ordinal ? `${ordinal} Floor` : `Floor ${z}`
 }

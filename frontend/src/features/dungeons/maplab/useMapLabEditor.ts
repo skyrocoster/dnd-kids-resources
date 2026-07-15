@@ -104,6 +104,8 @@ export function useMapLabEditor(dungeonId: number | null) {
   )
 
   const addRoom = useCallback(() => apply({ type: 'addRoom' }), [apply])
+  const addFloorAbove = useCallback(() => apply({ type: 'addFloorAbove' }), [apply])
+  const addFloorBelow = useCallback(() => apply({ type: 'addFloorBelow' }), [apply])
   const selectRoom = useCallback((roomId: number | null) => dispatch({ type: 'selectRoom', roomId }), [])
   const deleteRoom = useCallback((roomId: number) => apply({ type: 'deleteRoom', roomId }), [apply])
   const toggleCell = useCallback(
@@ -165,6 +167,8 @@ export function useMapLabEditor(dungeonId: number | null) {
     loadStatus,
     syncStatus,
     addRoom,
+    addFloorAbove,
+    addFloorBelow,
     selectRoom,
     deleteRoom,
     toggleCell,

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
-import { act, render, screen, fireEvent } from '@testing-library/react'
+import { act, render, screen, fireEvent, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import * as api from '../../../../api/client'
@@ -88,6 +88,7 @@ beforeEach(() => {
     name: 'Mira',
     notes: 'A careful scout.',
   } as NPC)
+  Element.prototype.scrollIntoView = vi.fn()
 })
 
 describe('MapLabPage (M0a scaffold)', () => {
@@ -102,9 +103,10 @@ describe('MapLabPage (M0a scaffold)', () => {
 describe('MapLabPage (M1 SVG renderer)', () => {
   it('renders an accessible SVG group with both Case-1 rooms and the door', async () => {
     await renderLoadedMapLabPage()
+    const canvas = screen.getByRole('group', { name: /dungeon floor map/i })
     expect(screen.getByRole('group', { name: /dungeon floor map/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Combat Training Hall' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Armoury' })).toBeInTheDocument()
+    expect(within(canvas).getByRole('button', { name: 'Armoury' })).toBeInTheDocument()
     expect(screen.getByText('Heavy Stone Door')).toBeInTheDocument()
   })
 
@@ -112,8 +114,9 @@ describe('MapLabPage (M1 SVG renderer)', () => {
     const user = userEvent.setup()
     await renderLoadedMapLabPage()
 
+    const canvas = screen.getByRole('group', { name: /dungeon floor map/i })
     const hall = screen.getByRole('button', { name: 'Combat Training Hall' })
-    const armoury = screen.getByRole('button', { name: 'Armoury' })
+    const armoury = within(canvas).getByRole('button', { name: 'Armoury' })
     expect(hall).toHaveAttribute('aria-pressed', 'true')
     expect(armoury).toHaveAttribute('aria-pressed', 'false')
 
@@ -126,7 +129,8 @@ describe('MapLabPage (M1 SVG renderer)', () => {
     const user = userEvent.setup()
     await renderLoadedMapLabPage()
 
-    const armoury = screen.getByRole('button', { name: 'Armoury' })
+    const canvas = screen.getByRole('group', { name: /dungeon floor map/i })
+    const armoury = within(canvas).getByRole('button', { name: 'Armoury' })
     armoury.focus()
     await user.keyboard('{Enter}')
     expect(armoury).toHaveAttribute('aria-pressed', 'true')
@@ -156,7 +160,7 @@ describe('MapLabPage (M2 stairs + second floor)', () => {
     expect(groundTab).toHaveAttribute('aria-selected', 'true')
     expect(firstTab).toHaveAttribute('aria-selected', 'false')
     expect(screen.getByRole('button', { name: 'Combat Training Hall' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Back Stairwell' })).toBeInTheDocument()
+    expect(within(screen.getByRole('group', { name: /dungeon floor map/i })).getByRole('button', { name: 'Back Stairwell' })).toBeInTheDocument()
   })
 
   it('switches floor via the floor tabs', async () => {
@@ -165,7 +169,7 @@ describe('MapLabPage (M2 stairs + second floor)', () => {
 
     await user.click(screen.getByRole('tab', { name: 'First Floor' }))
     expect(screen.getByRole('tab', { name: 'First Floor' })).toHaveAttribute('aria-selected', 'true')
-    expect(screen.getByRole('button', { name: 'First Floor Landing' })).toBeInTheDocument()
+    expect(within(screen.getByRole('group', { name: /dungeon floor map/i })).getByRole('button', { name: 'First Floor Landing' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Combat Training Hall' })).not.toBeInTheDocument()
   })
 
@@ -177,7 +181,7 @@ describe('MapLabPage (M2 stairs + second floor)', () => {
     await user.click(stair)
 
     expect(screen.getByRole('tab', { name: 'First Floor' })).toHaveAttribute('aria-selected', 'true')
-    expect(screen.getByRole('button', { name: 'First Floor Landing' })).toBeInTheDocument()
+    expect(within(screen.getByRole('group', { name: /dungeon floor map/i })).getByRole('button', { name: 'First Floor Landing' })).toBeInTheDocument()
   })
 
   it('stair endpoint cell stays coordinate-aligned across floors', async () => {
@@ -224,7 +228,7 @@ describe('MapLabPage (M2.2 grid canvas + scale)', () => {
   it("renders the Armoury's L-shaped footprint without the notch cell", async () => {
     renderMapLabPage()
     await flush()
-    const armoury = screen.getByRole('button', { name: 'Armoury' })
+    const armoury = within(screen.getByRole('group', { name: /dungeon floor map/i })).getByRole('button', { name: 'Armoury' })
     const cells = armoury.querySelectorAll('.maplab-room-cell')
     expect(cells).toHaveLength(12)
     expect(armoury.querySelector('rect[x="512"][y="128"]')).not.toBeInTheDocument() // notch [8,2]
@@ -236,7 +240,7 @@ describe('MapLabPage (M2.3 walls + door/stair affordances)', () => {
     const { container } = renderMapLabPage()
     await flush()
     const hall = screen.getByRole('button', { name: /Combat Training Hall/ })
-    const armoury = screen.getByRole('button', { name: /Armoury/ })
+    const armoury = within(screen.getByRole('group', { name: /dungeon floor map/i })).getByRole('button', { name: /Armoury/ })
     // Hall: 20 perimeter edges minus the 1 door edge = 19. Armoury: 16 minus 1 = 15.
     expect(hall.querySelectorAll('.maplab-wall')).toHaveLength(19)
     expect(armoury.querySelectorAll('.maplab-wall')).toHaveLength(15)
@@ -308,7 +312,7 @@ describe('MapLabPage (Stage 1 — Faithful L-shape rendering)', () => {
     const { container } = renderMapLabPage()
     await flush()
 
-    const armoury = screen.getByRole('button', { name: 'Armoury' })
+    const armoury = within(screen.getByRole('group', { name: /dungeon floor map/i })).getByRole('button', { name: 'Armoury' })
     await user.click(armoury)
     expect(armoury).toHaveAttribute('aria-pressed', 'true')
 
@@ -326,8 +330,9 @@ describe('MapLabPage (Stage 1 — Faithful L-shape rendering)', () => {
 
     await user.click(screen.getByRole('tab', { name: 'Two-Wing Test Layout' }))
 
-    const west = screen.getByRole('button', { name: 'West Wing' })
-    const east = screen.getByRole('button', { name: 'East Wing' })
+    const canvas = screen.getByRole('group', { name: /dungeon floor map/i })
+    const west = within(canvas).getByRole('button', { name: 'West Wing' })
+    const east = within(canvas).getByRole('button', { name: 'East Wing' })
     expect(west.querySelectorAll('.maplab-room-cell')).toHaveLength(8)
     expect(east.querySelectorAll('.maplab-room-cell')).toHaveLength(8)
 
@@ -409,7 +414,7 @@ describe('MapLabPage (Stage 3 — Generic inspector)', () => {
   it('shows the room descriptor on keyboard focus too, same as doors/stairs', async () => {
     const { container } = renderMapLabPage()
     await flush()
-    const armoury = screen.getByRole('button', { name: 'Armoury' })
+    const armoury = within(screen.getByRole('group', { name: /dungeon floor map/i })).getByRole('button', { name: 'Armoury' })
     fireEvent.focus(armoury)
 
     const panel = container.querySelector('.maplab-inspector-panel-container')!
@@ -848,16 +853,17 @@ describe('MapLabPage (R4 viewer room-reading surface)', () => {
   it('shows the default room details panel after load', async () => {
     await renderLoadedMapLabPage()
 
-    expect(screen.getByText('Training Hall')).toBeInTheDocument()
-    expect(screen.getByText('Features')).toBeInTheDocument()
-    expect(screen.getByText('Trap')).toBeInTheDocument()
+    const details = screen.getByLabelText('Room details')
+    expect(within(details).getByRole('heading', { name: 'Training Hall', level: 3 })).toBeInTheDocument()
+    expect(within(details).getByText('Features')).toBeInTheDocument()
+    expect(within(details).getByText('Trap')).toBeInTheDocument()
   })
 
   it('room click switches the details panel content', async () => {
     const user = userEvent.setup()
     await renderLoadedMapLabPage()
 
-    await user.click(screen.getByRole('button', { name: 'Armoury' }))
+    await user.click(within(screen.getByRole('group', { name: /dungeon floor map/i })).getByRole('button', { name: 'Armoury' }))
     expect(screen.getByText('Weapon Racks')).toBeInTheDocument()
     expect(screen.queryByText('Loose Flagstones')).not.toBeInTheDocument()
   })
@@ -866,7 +872,7 @@ describe('MapLabPage (R4 viewer room-reading surface)', () => {
     const user = userEvent.setup()
     await renderLoadedMapLabPage()
 
-    const armoury = screen.getByRole('button', { name: 'Armoury' })
+    const armoury = within(screen.getByRole('group', { name: /dungeon floor map/i })).getByRole('button', { name: 'Armoury' })
     armoury.focus()
     await user.keyboard('{Enter}')
     expect(screen.getByText('Weapon Racks')).toBeInTheDocument()
@@ -919,7 +925,7 @@ describe('MapLabPage (R4 viewer room-reading surface)', () => {
     const user = userEvent.setup()
     await renderLoadedMapLabPage()
 
-    await user.click(screen.getByRole('button', { name: 'Back Stairwell' }))
+    await user.click(within(screen.getByRole('group', { name: /dungeon floor map/i })).getByRole('button', { name: 'Back Stairwell' }))
     expect(screen.getByText('This room has no content data yet.')).toBeInTheDocument()
   })
 
@@ -929,12 +935,72 @@ describe('MapLabPage (R4 viewer room-reading surface)', () => {
 
     await user.hover(screen.getByRole('button', { name: /Heavy Stone Door/ }))
     expect(screen.getByText('Door')).toBeInTheDocument()
-    expect(screen.getByText('Training Hall')).toBeInTheDocument()
+    expect(within(screen.getByLabelText('Room details')).getByRole('heading', { name: 'Training Hall', level: 3 })).toBeInTheDocument()
   })
 
   it('data-only rooms are not invented on the map', async () => {
     await renderLoadedMapLabPage()
     expect(screen.queryByRole('button', { name: 'Data Only Room' })).not.toBeInTheDocument()
+  })
+})
+
+describe('MapLabPage (R5 viewer navigation rail)', () => {
+  it('shows the room navigation rail after load', async () => {
+    await renderLoadedMapLabPage()
+
+    expect(screen.getByRole('navigation', { name: 'Room navigation' })).toBeInTheDocument()
+  })
+
+  it('shows populated floor groups in the rail', async () => {
+    await renderLoadedMapLabPage()
+
+    const rail = screen.getByRole('navigation', { name: 'Room navigation' })
+    expect(within(rail).getByRole('heading', { name: 'Ground Floor', level: 4 })).toBeInTheDocument()
+    expect(within(rail).getByRole('heading', { name: 'First Floor', level: 4 })).toBeInTheDocument()
+    expect(within(rail).getByRole('button', { name: /Training Hall/i })).toBeInTheDocument()
+    expect(within(rail).getByRole('button', { name: 'First Floor Landing' })).toBeInTheDocument()
+  })
+
+  it('rail click switches the active room and details panel', async () => {
+    const user = userEvent.setup()
+    await renderLoadedMapLabPage()
+
+    const rail = screen.getByRole('navigation', { name: 'Room navigation' })
+    await user.click(within(rail).getByRole('button', { name: 'Armoury' }))
+    expect(screen.getByText('Weapon Racks')).toBeInTheDocument()
+    expect(screen.queryByText('Loose Flagstones')).not.toBeInTheDocument()
+  })
+
+  it('rail click on a different-floor room switches floor and room', async () => {
+    const user = userEvent.setup()
+    await renderLoadedMapLabPage()
+
+    const rail = screen.getByRole('navigation', { name: 'Room navigation' })
+    await user.click(within(rail).getByRole('button', { name: 'First Floor Landing' }))
+
+    expect(screen.getByRole('tab', { name: 'First Floor' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByText('Balcony')).toBeInTheDocument()
+  })
+
+  it('map room click updates the rail selection state', async () => {
+    const user = userEvent.setup()
+    await renderLoadedMapLabPage()
+
+    await user.click(screen.getAllByRole('button', { name: 'Armoury' })[0])
+
+    const rail = screen.getByRole('navigation', { name: 'Room navigation' })
+    expect(within(rail).getByRole('button', { name: 'Armoury' })).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('floor tab switches keep the rail selection synchronized', async () => {
+    const user = userEvent.setup()
+    await renderLoadedMapLabPage()
+
+    await user.click(screen.getByRole('tab', { name: 'First Floor' }))
+
+    const rail = screen.getByRole('navigation', { name: 'Room navigation' })
+    expect(within(rail).getByRole('button', { name: 'First Floor Landing' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByText('Balcony')).toBeInTheDocument()
   })
 })
 

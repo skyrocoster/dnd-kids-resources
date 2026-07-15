@@ -44,6 +44,16 @@
   list-style: none;
 }
 
+.maplab-editor-floor-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.maplab-editor-floor-action {
+  justify-content: flex-start;
+}
+
 .maplab-editor-room-item {
   display: flex;
   align-items: stretch;
