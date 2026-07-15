@@ -193,21 +193,104 @@ modal cannot be removed until production editing persists complete room data.
 
 #### R3 - Additive Shared Dungeon Shell (Next Up)
 
-- **Build:** add a shared outer wrapper around the existing Map Lab page bodies. It owns the real
-  dungeon title, return-to-browser control, R2 loading/error presentation, and adjacent **View** /
-  **Edit map** controls. Switching modes retains `dungeonId`; preserve floor and selected room
-  through URL search parameters only if the receiving page can honor them without duplicated state.
-  Replace prototype page titles/subtitles. Do not move Map Lab toolbars, floor tabs, canvas,
-  inspector, editor rails, or their local state into the shell.
-- **Inherits:** R2's loaded dungeon context, the rendered `MapLabPage`/`MapLabEditorPage` bodies,
-  `ToolbarTray`, current floor/canvas patterns, and app-shell navigation. The shell is a composition
-  wrapper, not a new map page.
-- **Tests:** both routes render the same title and shell landmarks; mode controls target the same
-  dungeon; browser return is correct; current floor/room context is retained where URL state is
-  implemented; narrow layouts keep mode controls and primary content reachable.
-- **Gate:** a DM can identify the dungeon and switch view/edit in one obvious operation without
-  landing in a sandbox, old room page, or browser detail card, while every shipped Map Lab control
-  remains present and behaves as before.
+> **Implementation note:** exploration of the codebase above is sufficient context for the executor.
+> Do not re-explore broadly; instead, verify each referenced file/line exists before editing it,
+> and rely on the specifics below for file paths and line numbers.
+
+- **Build:** insert a `DungeonShell` layout-route component between `AppShell` and the two Map Lab
+  pages. The shell renders the dungeon title, a return-to-browser link, **View** / **Edit map**
+  mode-toggle buttons, and R2 loading/error/missing states. It composes the child page body via
+  `<Outlet />`.
+
+  **Route restructuring** (`frontend/src/router.tsx`): replace the two flat dungeon routes
+  (lines 41-42) with a single layout route whose children are `index` (viewer) and `edit`
+  (editor). The old room route (line 43) stays untouched for now (R8 retires it). The new
+  structure:
+  ```
+  dungeons/:dungeonId          -> DungeonShell (layout, <Outlet />)
+    index                     -> MapLabPage
+    edit                      -> MapLabEditorPage
+  ```
+  This means `DungeonShell` owns the `:dungeonId` param; child pages receive it via their own
+  `useParams()` as before (React Router passes params to all nested routes).
+
+  **New file:** `frontend/src/features/dungeons/maplab/DungeonShell.tsx`.
+  - Calls `useDungeonRouteContext(dungeonIdStr)` **once** at the shell level (currently duplicated
+    in both pages at `MapLabPage.tsx:149-150` and `MapLabEditorPage.tsx:222-223`).
+  - Exposes the `DungeonRouteContext` via React Context so child pages can consume it instead of
+    each making their own `getDungeon` fetch. Create a small `DungeonShellContext` (or extend the
+    existing `dungeonRouteContext.ts` with a `Provider` wrapper).
+  - Renders the five early-return states (invalid, missing, error, loading, layout-error) that are
+    currently duplicated between `MapLabPage.tsx:270-288` and `MapLabEditorPage.tsx:433-455`.
+    Consolidate into one `MapLabRouteState` rendering block inside the shell. Update
+    `MapLabRouteState.tsx` (currently hardcodes `className="maplab-page"` at line 8) to accept a
+    `className` prop or remove the root div wrapper so the shell controls framing.
+  - Renders the dungeon title from `context.dungeon.title` in an `<h1>` using
+    `--type-headline-size` / `--type-headline-weight` tokens from `theme.css:175-178`. Remove the
+    hardcoded prototype `<h1>Map Lab</h1>` from `MapLabPage.tsx:333` and
+    `<h1>Map Lab Editor</h1>` from `MapLabEditorPage.tsx:459`.
+  - Renders a subtitle line appropriate to the current mode: the viewer gets a brief description
+    (replacing "Programmatic dungeon map prototype" at `MapLabPage.tsx:334`); the editor gets its
+    own (replacing "Create rooms, paint their footprint..." at `MapLabEditorPage.tsx:460`). The
+    subtitle content is a shell concern, not a child-page concern.
+  - Renders a **return-to-browser** link (`<Link to="/dungeons">`) styled as a breadcrumb or
+    back-arrow, visible on both modes.
+  - Renders **mode-toggle buttons**: two adjacent buttons/links — "View" linking to
+    `/dungeons/:dungeonId` and "Edit map" linking to `/dungeons/:dungeonId/edit`. The active
+    button gets a distinct style (filled/outlined variant from `theme.css`). Use `<Link>` so
+    navigation is standard browser behavior; do not use programmatic `navigate` for mode switching.
+  - The shell does **not** render floor tabs, toolbars, canvas, inspector, editor rails, or any
+    map-state controls. Those remain inside the child pages.
+
+  **CSS:** new file `frontend/src/features/dungeons/maplab/DungeonShell.css`. Define:
+  - `.dungeon-shell`: the outer frame (flex column, gap, padding replacing the per-page
+    `.maplab-page` / `.maplab-editor` root padding that currently stacks with `app-main`'s 1.5rem
+    to create 3rem).
+  - `.dungeon-shell-header`: flex row, title + mode buttons + back link, align-items center.
+  - `.dungeon-shell-body`: flex column, flex 1, contains `<Outlet />`.
+  - Mode button styles using existing token patterns (outlined vs filled for active/inactive).
+
+  **Child page edits (minimal):**
+  - `MapLabPage.tsx`: remove the `<h1>Map Lab</h1>` and `<p>Programmatic dungeon map prototype</p>`
+    (lines 333-334). Remove the five early-return route-state blocks (lines 270-288) since the
+    shell handles them. Consume dungeon context from the shell's provider instead of calling
+    `useDungeonRouteContext` directly. Remove root `padding` from `.maplab-page` in
+    `MapLabPage.css` (line 6) since the shell provides framing.
+  - `MapLabEditorPage.tsx`: same removals — prototype title/subtitle (lines 459-460), five
+    early-return blocks (lines 433-455), direct `useDungeonRouteContext` call, and root padding
+    from `.maplab-editor` in `MapLabEditor.css`.
+  - Both pages keep all floor tabs, toolbars, canvas, inspector, editor rails, and their local
+    state untouched.
+
+  **Preserve:** `MapLabRouteState.tsx` stays as the shared state-rendering component but loses its
+  hardcoded `className="maplab-page"`. It should either accept a `className` or render a minimal
+  wrapper that the shell styles. All shipped Map Lab interactions, `ToolbarTray`, floor tabs,
+  canvas, inspector, editor rails, marker components, and autosave behavior remain untouched.
+
+- **Inherits:** R2's `DungeonRouteContext` (dungeon record + status), `useMapLabLayout` layout
+  loading (which the child pages still call independently for their layout blobs — the shell does
+  **not** hoist layout loading, only dungeon-record loading), `MapLabRouteState`, `ToolbarTray`,
+  `AppShell` navigation, and all current floor/canvas/inspector composition inside each child page.
+  The shell is a thin composition wrapper — not a new map page, not a state container, and not a
+  replacement for either page's internal logic.
+
+- **Tests:**
+  - Both `/dungeons/:dungeonId` and `/dungeons/:dungeonId/edit` render the same dungeon title in
+    the shell header; mode buttons link to the correct sibling route for the same dungeon ID.
+  - The return-to-browser link navigates to `/dungeons`.
+  - Invalid/missing dungeon IDs render the shell error state (not a child page's internal state).
+  - A layout 404 renders the empty map in the child page while the shell still shows the dungeon
+    title (dungeon exists, layout does not).
+  - Narrow viewport: mode buttons and title remain visible and reachable; floor tabs and canvas
+    are not clipped by the shell header.
+  - Regression: all existing Map Lab tests (floor tabs, room selection, zoom/pan, editor autosave,
+    fixture placement) pass unchanged — the shell adds chrome around the pages, not inside them.
+
+- **Gate:** a DM can identify the dungeon by its real title, see which mode they are in, and
+  switch between view/edit in one click without losing the dungeon context, landing in a sandbox,
+  or seeing "Map Lab" / "Programmatic dungeon map prototype" anywhere. Every shipped Map Lab
+  control remains present and behaves as before. Run `npm run test`, `npm run typecheck`, and
+  `npm run build`; manual browser confirmation is user-performed per `CLAUDE.md`.
 
 #### R4 - Add Viewer Room-Reading Surface (Planned)
 
