@@ -45,7 +45,6 @@ def init_database():
         "abilities",
         "map_layout",
         "dungeons",
-        "skills",
         "encounter",
         "loot_bundle",
         "items",
