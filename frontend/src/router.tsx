@@ -3,7 +3,6 @@ import { DungeonBrowserPage } from './features/dungeons/DungeonBrowserPage'
 import { DungeonShell } from './features/dungeons/maplab/DungeonShell'
 import { MapLabPage } from './features/dungeons/maplab/MapLabPage'
 import { MapLabEditorPage } from './features/dungeons/maplab/MapLabEditorPage'
-import { DungeonViewPage } from './features/dungeons/DungeonViewPage'
 import { EncounterBrowserPage } from './features/encounters/EncounterBrowserPage'
 import { EncounterRunnerPage } from './features/encounters/EncounterRunnerPage'
 import { MonsterBrowserPage } from './features/monsters/MonsterBrowserPage'
@@ -47,7 +46,6 @@ export const router = createBrowserRouter([
           { path: 'edit', element: <MapLabEditorPage /> },
         ],
       },
-      { path: 'dungeons/:dungeonId/rooms/:roomId', element: <DungeonViewPage /> },
     ],
   },
 ])
