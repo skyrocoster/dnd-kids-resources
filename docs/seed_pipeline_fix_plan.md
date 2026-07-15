@@ -2,7 +2,7 @@
 
 This plan fixes bugs and gaps in the seed export/import pipeline (`init_database.py`, `seed_database.py`, `export_db_seeds.py`) that risk silent data loss during backup/restore cycles. All fixes are in `scripts/`; no schema changes, no API changes, no frontend changes.
 
-> **Status:** S5 queued. S5 next. S0–S4 shipped.
+> **Status:** S0–S5 all shipped.
 
 ---
 
@@ -57,17 +57,6 @@ Six targeted fixes across three scripts. No new files, no new tables, no API cha
 <!-- ===== VERBOSE BLOCKS — one per un-shipped stage, in order. Delete a block and collapse it to a
      Shipped row the moment that stage ships; the remaining blocks stay until their own turn. ===== -->
 
-#### S5 — Full round-trip verification (planned)
-
-- **Build:** Run the full pipeline:
-  1. `python scripts/init_database.py`
-  2. `python scripts/seed_database.py --force`
-  3. `python scripts/export_db_seeds.py --dry-run` — confirm all 15 tables listed
-  4. `pytest` — all tests green
-- **Inherits:** All prior stages (S0–S4) must be complete.
-- **Tests:** This IS the test — end-to-end pipeline verification.
-- **🚦 Gate:** `export_db_seeds.py --dry-run` lists 15 tables; `pytest` passes; no errors in init/seed/export output.
-
 <!-- ============================================================================================= -->
 
 ---
@@ -81,6 +70,7 @@ Six targeted fixes across three scripts. No new files, no new tables, no API cha
 | **S2** | Replaced all `_dev/init_database.py` references with `scripts/init_database.py` in `seed_database.py`. |
 | **S3** | Removed phantom `skills` table from drop/clear lists in `init_database.py` and `seed_database.py`. |
 | **S4** | Removed dead `parse_spells_to_db.py` fallback and `import subprocess` from `seed_database.py`. |
+| **S5** | Full round-trip verified: init → seed → export dry-run (15 tables) → pytest (143 passed, 91% coverage). |
 
 ---
 
@@ -95,4 +85,4 @@ Six targeted fixes across three scripts. No new files, no new tables, no API cha
 
 ## Next:
 
-S5 (full round-trip verification) — unblocked, ready to implement.
+All stages shipped. No remaining work.
