@@ -69,6 +69,14 @@ EXPORT_DEFINITIONS = {
         "file": "seed_encounters.json",
         "query": "SELECT id, name, units, created_at, updated_at FROM encounter ORDER BY name",
     },
+    "items": {
+        "file": "seed_items.json",
+        "query": "SELECT id, name, value_gp, category, description FROM items ORDER BY name",
+    },
+    "loot_bundles": {
+        "file": "seed_loot_bundles.json",
+        "query": "SELECT id, name, gold, contents FROM loot_bundle ORDER BY name",
+    },
 }
 
 
@@ -146,6 +154,11 @@ def transform_record(record, table_name):
             "light", "entries", "modify_speed", "ability"
         ]:
             record[field] = parse_json_value(record.get(field))
+        return record
+    if table_name == "items":
+        return record
+    if table_name == "loot_bundles":
+        record["contents"] = parse_json_value(record.get("contents"))
         return record
     return record
 
