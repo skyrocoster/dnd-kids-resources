@@ -96,7 +96,7 @@ CREATE TABLE statement inside `conftest.py`, stop** — the schema comes from
 
 ## Documentation Contract CI
 - GitHub Actions runs `Documentation Contract` for every pull request and every push to `main`.
-- The workflow installs `requirements.txt`, runs `python scripts/check_docs.py --check`, and on pull requests also runs `python scripts/check_docs.py --check --base <base-sha>`.
+- The workflow uses Python 3.12, installs `requirements.txt`, runs `python scripts/check_docs.py --check`, and on pull requests also runs `python scripts/check_docs.py --check --base <base-sha>`.
 - `documentation-contract` must be enabled as a required branch-protection check in GitHub repository settings. The workflow cannot enforce that repository setting itself.
 - Use the PR template to record that a fresh reader can route the change from `CLAUDE.md` through `docs/README.md` to the owning plan's minimum context.
 
