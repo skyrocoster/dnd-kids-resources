@@ -626,14 +626,14 @@
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 0.5rem 0;
+  gap: var(--space-2) 0;
 }
 
 .maplab-toolbar-group {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0 1rem;
+  gap: var(--space-2);
+  padding: 0 var(--space-4);
   border-left: 1px solid var(--md-outline-variant);
 }
 
@@ -662,7 +662,8 @@
 .maplab-toolbar-tray {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--space-2);
+  min-width: 0;
 }
 
 .maplab-toolbar-tray-toggle {
@@ -691,11 +692,12 @@
 .maplab-toolbar-tray-controls {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--space-2);
+  flex-wrap: wrap;
   max-width: 48rem;
   overflow: hidden;
   opacity: 1;
-  transition: max-width 0.2s ease, opacity 0.15s ease;
+  transition: max-width var(--motion-normal), opacity var(--motion-fast);
 }
 
 .maplab-toolbar-tray[data-collapsed] .maplab-toolbar-tray-controls {
@@ -886,21 +888,21 @@
   }
 
   .maplab-editor-layout {
-    gap: 1rem;
+    gap: var(--space-4);
   }
 
   .maplab-editor-nav-rail {
     flex-direction: column;
-    gap: 0.75rem;
+    gap: var(--space-3);
   }
 
   .maplab-floor-tabs {
     overflow-x: auto;
-    padding-bottom: 0.25rem;
+    padding-bottom: var(--space-1);
   }
 
   .maplab-viewer-rail {
-    gap: 0.75rem;
+    gap: var(--space-3);
   }
 
   .maplab-viewer-rail-floor {
@@ -926,11 +928,39 @@
   }
 
   .maplab-canvas-wrapper[data-fullscreen] {
-    padding: 0.75rem;
+    padding: var(--space-3);
   }
 
   .maplab-zoom-controls {
-    gap: 0.375rem;
+    gap: var(--space-2);
+  }
+
+  .maplab-toolbar {
+    align-items: stretch;
+  }
+
+  .maplab-toolbar-group {
+    flex: 1 1 100%;
+    padding: var(--space-2) 0;
+    border-left: none;
+    border-top: 1px solid var(--md-outline-variant);
+  }
+
+  .maplab-toolbar-group:first-child {
+    border-top: none;
+  }
+
+  .maplab-toolbar-tray {
+    flex: 1 1 auto;
+    align-items: flex-start;
+  }
+
+  .maplab-toolbar-tray-controls {
+    flex: 1 1 auto;
+  }
+
+  .maplab-toolbar-tray-controls .maplab-pill-button {
+    flex: 1 1 12rem;
   }
 
   .maplab-zoom-button-label {

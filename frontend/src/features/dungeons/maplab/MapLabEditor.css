@@ -1,7 +1,7 @@
 .maplab-editor {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: var(--space-4);
 }
 
 /* .maplab-editor-toolbar-button's base pill look comes from the shared `.maplab-pill-button`
@@ -11,7 +11,12 @@
 .maplab-editor-save-status {
   display: inline-flex;
   align-items: center;
-  gap: 0.375rem;
+  gap: var(--space-2);
+  min-height: var(--control-height);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--radius-full);
+  background: var(--md-surface-1);
   font-size: var(--type-body-sm-size);
   color: var(--md-on-surface-variant);
 }
@@ -30,7 +35,7 @@
 
 .maplab-editor-layout {
   display: flex;
-  gap: 1.5rem;
+  gap: var(--space-5);
   align-items: flex-start;
 }
 
@@ -38,7 +43,7 @@
   flex: 0 0 14rem;
   display: flex;
   flex-direction: column;
-  gap: 0.375rem;
+  gap: var(--space-2);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -47,7 +52,7 @@
 .maplab-editor-floor-actions {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--space-2);
 }
 
 .maplab-editor-floor-action {
@@ -57,9 +62,9 @@
 .maplab-editor-room-item {
   display: flex;
   align-items: stretch;
-  gap: 0.375rem;
+  gap: var(--space-2);
   border: 1px solid var(--md-outline-variant);
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   background: var(--md-surface-2);
 }
 
@@ -70,8 +75,8 @@
 
 .maplab-editor-room-item-select {
   flex: 1 1 auto;
-  min-height: 48px;
-  padding: 0.5rem 0.75rem;
+  min-height: var(--control-height);
+  padding: var(--space-2) var(--space-3);
   border: none;
   background: transparent;
   color: var(--md-on-surface);
@@ -89,8 +94,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  flex: 0 0 48px;
-  min-height: 48px;
+  flex: 0 0 var(--control-height);
+  min-height: var(--control-height);
   border: none;
   background: transparent;
   color: var(--md-on-surface-variant);
@@ -109,7 +114,7 @@
 .maplab-editor-room-list-empty {
   font-size: var(--type-body-sm-size);
   color: var(--md-on-surface-variant);
-  padding: 0.5rem 0;
+  padding: var(--space-2) 0;
 }
 
 .maplab-paint-cell {
@@ -204,10 +209,10 @@
 .maplab-placement-error {
   display: flex;
   align-items: center;
-  min-height: 48px;
-  padding: 0.5rem 0.75rem;
+  min-height: var(--control-height);
+  padding: var(--space-2) var(--space-3);
   border: 1px solid var(--md-error);
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   background: var(--md-error-container);
   color: var(--md-on-error-container);
 }
@@ -241,19 +246,22 @@
   outline: none;
 }
 
-.maplab-editor-inspector-actions {
+.maplab-inspector-actions {
   display: flex;
-  gap: 0.5rem;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--md-outline-variant);
 }
 
 .maplab-room-content-editor {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: var(--space-3);
 }
 
 .maplab-room-content-editor-form {
-  gap: 0.875rem;
+  gap: var(--space-3);
 }
 
 .maplab-room-content-field input,
@@ -268,7 +276,7 @@
 .maplab-room-content-entry-list {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: var(--space-3);
 }
 
 .maplab-room-content-readonly-row,
@@ -277,7 +285,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: var(--space-3);
 }
 
 .maplab-room-content-label,
@@ -305,7 +313,7 @@
 .maplab-room-content-checkbox-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: var(--space-2);
 }
 
 .maplab-room-content-checkbox-list {
@@ -315,29 +323,29 @@
 .maplab-room-content-checkbox-row {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--space-2);
   font-size: var(--type-body-sm-size);
   color: var(--md-on-surface);
 }
 
 .maplab-room-content-entry-card {
-  padding: 0.75rem;
+  padding: var(--space-3);
   border: 1px solid var(--md-outline-variant);
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
   background: var(--md-surface);
 }
 
 .maplab-room-content-textarea-row {
   display: flex;
   flex-direction: column;
-  gap: 0.375rem;
+  gap: var(--space-2);
 }
 
 .maplab-room-content-textarea-row textarea {
   min-height: 7rem;
-  padding: 0.5rem;
+  padding: var(--space-2);
   border: 1px solid var(--md-outline-variant);
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   background: var(--md-surface);
   color: var(--md-on-surface);
   resize: vertical;
@@ -351,10 +359,10 @@
 .maplab-fixture-form {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  padding: 0.75rem;
+  gap: var(--space-2);
+  padding: var(--space-3);
   border: 1px solid var(--md-outline-variant);
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   background: var(--md-surface-2);
 }
 
@@ -362,18 +370,24 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: var(--space-3);
+  min-height: var(--control-height);
   font-size: var(--type-body-sm-size);
   color: var(--md-on-surface);
+}
+
+.maplab-field-row input[type='checkbox'] {
+  min-width: var(--control-height-compact);
+  min-height: var(--control-height-compact);
 }
 
 .maplab-field-row input[type='text'],
 .maplab-field-row input[type='number'],
 .maplab-field-row select {
-  min-height: 36px;
-  padding: 0.25rem 0.5rem;
+  min-height: var(--control-height-compact);
+  padding: var(--space-1) var(--space-2);
   border: 1px solid var(--md-outline-variant);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: var(--md-surface);
   color: var(--md-on-surface);
   width: 8rem;
@@ -390,7 +404,7 @@
 }
 
 .maplab-field-row.maplab-loot-bundle-picker select {
-  min-height: 48px;
+  min-height: var(--control-height);
   border-color: var(--md-loot);
 }
 

@@ -32,6 +32,7 @@ import { DoorBadgeLayer, DoorMarker } from './DoorMarker'
 import { GhostFloorLayer } from './GhostFloorLayer'
 import { FIXTURE_TYPES } from './fixtureTypes'
 import { RoomContentEditor } from './RoomContentEditor'
+import { SelectionActions } from './SelectionActions'
 import {
   absoluteCells,
   canPaintCell,
@@ -567,7 +568,7 @@ export function MapLabEditorPage() {
           </button>
         </ToolbarTray>
         <ToolbarTray groupKey="editor-status" label="Status" extraClassName="maplab-toolbar-group-status">
-          <span className="maplab-editor-save-status" data-status={saveStatus.status} aria-live="polite">
+          <span className="maplab-editor-save-status" data-status={saveStatus.status} role="status" aria-live="polite">
             <SaveIcon width={16} height={16} aria-hidden="true" />
             {syncStatusLabel(saveStatus.status)}
           </span>
@@ -1137,23 +1138,11 @@ export function MapLabEditorPage() {
                 values={selectedDoor as unknown as Record<string, unknown>}
                 onChange={(key, value) => updateFixtureFlags(selectedDoor.door_id, 'door', { [key]: value })}
               />
-              <div className="maplab-editor-inspector-actions">
-                <button
-                  type="button"
-                  className="maplab-pill-button maplab-editor-toolbar-button"
-                  onClick={() => deleteDoor(selectedDoor.door_id)}
-                >
-                  <TrashIcon width={16} height={16} aria-hidden="true" />
-                  Delete door
-                </button>
-                <button
-                  type="button"
-                  className="maplab-pill-button maplab-editor-toolbar-button"
-                  onClick={() => selectDoor(null)}
-                >
-                  Close
-                </button>
-              </div>
+              <SelectionActions
+                deleteLabel="Delete door"
+                onDelete={() => deleteDoor(selectedDoor.door_id)}
+                onClose={() => selectDoor(null)}
+              />
             </>
           ) : selectedRoom ? (
             <>
@@ -1166,23 +1155,11 @@ export function MapLabEditorPage() {
                 onUpdateRoomNpcs={updateRoomNpcs}
                 onCreateRoomData={createRoomData}
               />
-              <div className="maplab-editor-inspector-actions">
-                <button
-                  type="button"
-                  className="maplab-pill-button maplab-editor-toolbar-button"
-                  onClick={() => deleteRoom(selectedRoom.room_id)}
-                >
-                  <TrashIcon width={16} height={16} aria-hidden="true" />
-                  Delete room
-                </button>
-                <button
-                  type="button"
-                  className="maplab-pill-button maplab-editor-toolbar-button"
-                  onClick={() => selectRoom(null)}
-                >
-                  Close
-                </button>
-              </div>
+              <SelectionActions
+                deleteLabel="Delete room"
+                onDelete={() => deleteRoom(selectedRoom.room_id)}
+                onClose={() => selectRoom(null)}
+              />
             </>
           ) : selectedProp ? (
             <>
@@ -1196,23 +1173,11 @@ export function MapLabEditorPage() {
                   })
                 }
               />
-              <div className="maplab-editor-inspector-actions">
-                <button
-                  type="button"
-                  className="maplab-pill-button maplab-editor-toolbar-button"
-                  onClick={() => deleteProp(selectedProp.prop_id)}
-                >
-                  <TrashIcon width={16} height={16} aria-hidden="true" />
-                  Delete prop
-                </button>
-                <button
-                  type="button"
-                  className="maplab-pill-button maplab-editor-toolbar-button"
-                  onClick={() => selectProp(null)}
-                >
-                  Close
-                </button>
-              </div>
+              <SelectionActions
+                deleteLabel="Delete prop"
+                onDelete={() => deleteProp(selectedProp.prop_id)}
+                onClose={() => selectProp(null)}
+              />
             </>
           ) : selectedStair ? (
             <>
@@ -1252,23 +1217,11 @@ export function MapLabEditorPage() {
                 values={selectedStair as unknown as Record<string, unknown>}
                 onChange={(key, value) => updateFixtureFlags(selectedStair.stair_id, 'stair', { [key]: value })}
               />
-              <div className="maplab-editor-inspector-actions">
-                <button
-                  type="button"
-                  className="maplab-pill-button maplab-editor-toolbar-button"
-                  onClick={() => deleteStair(selectedStair.stair_id)}
-                >
-                  <TrashIcon width={16} height={16} aria-hidden="true" />
-                  Delete stair
-                </button>
-                <button
-                  type="button"
-                  className="maplab-pill-button maplab-editor-toolbar-button"
-                  onClick={() => selectStair(null)}
-                >
-                  Close
-                </button>
-              </div>
+              <SelectionActions
+                deleteLabel="Delete stair"
+                onDelete={() => deleteStair(selectedStair.stair_id)}
+                onClose={() => selectStair(null)}
+              />
             </>
           ) : selectedPortal ? (
             <>
@@ -1279,23 +1232,11 @@ export function MapLabEditorPage() {
                 layout={state.layout}
                 onChange={(key, value) => updateFixtureFlags(selectedPortal.portal_id, 'portal', { [key]: value })}
               />
-              <div className="maplab-editor-inspector-actions">
-                <button
-                  type="button"
-                  className="maplab-pill-button maplab-editor-toolbar-button"
-                  onClick={() => deletePortal(selectedPortal.portal_id)}
-                >
-                  <TrashIcon width={16} height={16} aria-hidden="true" />
-                  Delete portal
-                </button>
-                <button
-                  type="button"
-                  className="maplab-pill-button maplab-editor-toolbar-button"
-                  onClick={() => selectPortal(null)}
-                >
-                  Close
-                </button>
-              </div>
+              <SelectionActions
+                deleteLabel="Delete portal"
+                onDelete={() => deletePortal(selectedPortal.portal_id)}
+                onClose={() => selectPortal(null)}
+              />
             </>
           ) : (
             <p className="maplab-inspector-rail-empty">Select a room, door, prop, stair, or portal to see its details.</p>
