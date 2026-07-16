@@ -85,7 +85,7 @@ describe('EncounterBrowserPage', () => {
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Ants' })).toBeInTheDocument())
 
     await user.click(screen.getByRole('button', { name: 'New Encounter' }))
-    expect(screen.getByRole('dialog', { name: 'Add new encounter' })).toBeInTheDocument()
+    expect(screen.getByRole('dialog', { name: 'Add New Encounter' })).toBeInTheDocument()
   })
 
   it('navigates to the runner page when Run is clicked', async () => {

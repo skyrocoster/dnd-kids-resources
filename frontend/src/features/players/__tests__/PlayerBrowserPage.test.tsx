@@ -47,7 +47,7 @@ describe('PlayerBrowserPage', () => {
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Lark' })).toBeInTheDocument())
 
     await user.click(screen.getByRole('button', { name: 'New Player' }))
-    expect(screen.getByRole('dialog', { name: 'Add new player' })).toBeInTheDocument()
+    expect(screen.getByRole('dialog', { name: 'Add New Player' })).toBeInTheDocument()
   })
 
   it('shows an error message when loading fails', async () => {

@@ -20,7 +20,7 @@ describe('ItemBrowserPage', () => {
     expect(await screen.findByRole('button', { name: /Ruby/ })).toBeInTheDocument()
     expect(screen.getAllByText('50 gp')).not.toHaveLength(0)
     await user.click(screen.getByRole('button', { name: 'Edit' }))
-    expect(screen.getByRole('dialog', { name: 'Edit Ruby' })).toBeInTheDocument()
+    expect(screen.getByRole('dialog', { name: 'Edit Item: Ruby' })).toBeInTheDocument()
   })
 
   it('shows the empty catalog state', async () => {

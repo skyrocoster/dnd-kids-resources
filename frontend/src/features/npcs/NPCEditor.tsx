@@ -1,7 +1,9 @@
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import type { FormEvent } from 'react'
 import * as api from '../../api/client'
 import type { NPC } from '../../api/types'
+import { Button } from '../../components/Button'
+import { Dialog } from '../../components/Dialog'
 import { TextField } from '../../components/form/TextField'
 import { emptyNPCForm, formStateToNPCInput, npcToFormState } from './npcForm'
 import type { NPCFormState } from './npcForm'
@@ -14,6 +16,7 @@ interface NPCEditorProps {
 }
 
 export function NPCEditor({ npc, onClose, onSaved }: NPCEditorProps) {
+  const formId = useId()
   const [form, setForm] = useState<NPCFormState>(() => (npc ? npcToFormState(npc) : emptyNPCForm()))
   const [status, setStatus] = useState<{ message: string; kind?: 'error' | 'success' }>({ message: '' })
   const [saving, setSaving] = useState(false)
@@ -36,24 +39,30 @@ export function NPCEditor({ npc, onClose, onSaved }: NPCEditorProps) {
   }
 
   return (
-    <div className="npc-editor-backdrop" role="presentation" onClick={onClose}>
-      <div
-        className="npc-editor-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-label={npc ? `Edit ${npc.name}` : 'Add new NPC'}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <header className="npc-editor-header">
-          <h2>{npc ? `Edit NPC: ${npc.name}` : 'Add New NPC'}</h2>
-          <button type="button" className="npc-editor-close" onClick={onClose} aria-label="Close">
-            ×
-          </button>
-        </header>
+    <Dialog
+      open
+      title={npc ? `Edit NPC: ${npc.name}` : 'Add New NPC'}
+      onClose={onClose}
+      pending={saving}
+      className="npc-editor-dialog"
+      footer={
+        <>
+          <Button type="button" variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button type="submit" form={formId} loading={saving}>
+            {npc ? 'Save Changes' : 'Create NPC'}
+          </Button>
+        </>
+      }
+    >
+      {status.message && (
+        <p role="status" className={`npc-editor-status ${status.kind || ''}`}>
+          {status.message}
+        </p>
+      )}
 
-        {status.message && <p className={`npc-editor-status ${status.kind || ''}`}>{status.message}</p>}
-
-        <form onSubmit={handleSubmit} className="npc-editor-form">
+      <form id={formId} onSubmit={handleSubmit} className="npc-editor-form">
           <div className="npc-editor-grid">
             <TextField label="Name" value={form.name} onChange={(e) => patch({ name: e.target.value })} required />
             <TextField label="Race" value={form.race} onChange={(e) => patch({ race: e.target.value })} />
@@ -118,17 +127,7 @@ export function NPCEditor({ npc, onClose, onSaved }: NPCEditorProps) {
           </section>
 
           <TextField label="Notes" multiline value={form.notes} onChange={(e) => patch({ notes: e.target.value })} />
-
-          <div className="npc-editor-actions">
-            <button type="button" className="npc-editor-cancel" onClick={onClose}>
-              Cancel
-            </button>
-            <button type="submit" className="npc-editor-save" disabled={saving}>
-              {npc ? 'Save Changes' : 'Create NPC'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+      </form>
+    </Dialog>
   )
 }

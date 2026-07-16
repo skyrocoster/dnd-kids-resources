@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import type { FormEvent } from 'react'
 import * as api from '../../api/client'
 import type { Condition, Encounter, Monster } from '../../api/types'
+import { Button } from '../../components/Button'
+import { Dialog } from '../../components/Dialog'
 import { TextField } from '../../components/form/TextField'
-import { CloseIcon, PlusIcon } from '../../components/icons'
+import { PlusIcon } from '../../components/icons'
 import { CreatureRowCard } from './CreatureRowCard'
 import type { EncounterCreatureRow, EncounterFormState } from './encounterForm'
 import { addEncounterCreatureRow, emptyEncounterForm, encounterToFormState, formStateToEncounterInput } from './encounterForm'
@@ -17,6 +19,7 @@ interface EncounterEditorProps {
 }
 
 export function EncounterEditor({ encounter, onClose, onSaved }: EncounterEditorProps) {
+  const formId = useId()
   const [form, setForm] = useState<EncounterFormState>(() =>
     encounter ? encounterToFormState(encounter) : emptyEncounterForm(),
   )
@@ -87,25 +90,30 @@ export function EncounterEditor({ encounter, onClose, onSaved }: EncounterEditor
   }
 
   return (
-    <div className="encounter-editor-backdrop" role="presentation" onClick={onClose}>
-      <div
-        className="encounter-editor-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-label={encounter ? `Edit ${encounter.title}` : 'Add new encounter'}
-        data-variant="monster"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <header className="encounter-editor-header">
-          <h2>{encounter ? `Edit Encounter: ${encounter.title}` : 'Add New Encounter'}</h2>
-          <button type="button" className="encounter-editor-close" onClick={onClose} aria-label="Close">
-            <CloseIcon size={20} aria-hidden />
-          </button>
-        </header>
+    <Dialog
+      open
+      title={encounter ? `Edit Encounter: ${encounter.title}` : 'Add New Encounter'}
+      onClose={onClose}
+      pending={saving}
+      className="encounter-editor-dialog"
+      footer={
+        <>
+          <Button type="button" variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button type="submit" form={formId} loading={saving}>
+            {encounter ? 'Save Changes' : 'Create Encounter'}
+          </Button>
+        </>
+      }
+    >
+      {status.message && (
+        <p role="status" className={`encounter-editor-status ${status.kind || ''}`}>
+          {status.message}
+        </p>
+      )}
 
-        {status.message && <p className={`encounter-editor-status ${status.kind || ''}`}>{status.message}</p>}
-
-        <form onSubmit={handleSubmit} className="encounter-editor-form">
+      <form id={formId} onSubmit={handleSubmit} className="encounter-editor-form">
           <TextField label="Title" value={form.title} onChange={(e) => patch({ title: e.target.value })} required />
 
           <section className="encounter-editor-section">
@@ -135,17 +143,7 @@ export function EncounterEditor({ encounter, onClose, onSaved }: EncounterEditor
               />
             ))}
           </section>
-
-          <div className="encounter-editor-actions">
-            <button type="button" className="encounter-editor-cancel" onClick={onClose}>
-              Cancel
-            </button>
-            <button type="submit" className="encounter-editor-save" disabled={saving}>
-              {encounter ? 'Save Changes' : 'Create Encounter'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+      </form>
+    </Dialog>
   )
 }

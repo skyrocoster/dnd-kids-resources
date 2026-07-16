@@ -236,7 +236,12 @@ On completion, do all of this in the stage's own commit:
 3. **Make the declared documentation-impact edit** — never use subjective wording such as "if needed." Update
    every named reference in the same change set, or retain the stage's explicit `None: <specific reason>`.
 4. **Consolidate discoveries before deleting the verbose block.** Update plan top matter, all affected future-stage
-   blocks, and canonical references as required by the Discovery consolidation rule.
+   blocks, and canonical references as required by the Discovery consolidation rule. Then re-read this stage's own
+   **Discovery consolidation** line verbatim, as a checklist, and confirm each location it names — by name, not by
+   category — actually has a diff. "I updated a canonical reference" does not satisfy a line that also names the
+   plan's own **Reusable pieces** section or a specific future-stage block; each named target needs its own edit.
+   A stage whose Discovery consolidation line names three places and whose diff touches one is not consolidated,
+   even if gates are green and the stage otherwise looks finished.
 5. **Commit code + plan-doc edit together**, referencing the stage ID and test counts.
 
 ### Shipped stages table (the collapsed record)
@@ -299,6 +304,9 @@ When there are no more planned delivery phases:
 - [ ] 🚦 gate met live (or suite-sufficient per policy); tests green; `npm run typecheck`/`npm run build` clean (`tsc -b`, not `--noEmit` — [it checks nothing here](DESIGN_SYSTEM.md)); `pytest` from repo root, ≥85% coverage.
 - [ ] Important discoveries consolidated into plan top matter, every affected future-stage block, and canonical
       references where they establish a durable contract. No later executor must rediscover a confirmed fact.
+- [ ] Re-read this stage's own Discovery consolidation line after making the edits above and checked off each
+      named target individually (`git diff` against that exact file/section) — not inferred from having done
+      "something in that category."
 - [ ] This stage's verbose block **deleted**, collapsed to one Shipped-table row (≤2 sentences); the
         un-shipped stages' verbose blocks left in place.
 - [ ] Status line rewritten; `## Next:` updated.
