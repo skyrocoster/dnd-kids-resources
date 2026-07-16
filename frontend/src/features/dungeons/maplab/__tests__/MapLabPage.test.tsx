@@ -76,10 +76,9 @@ async function flush() {
   })
 }
 
-// The runtime fixture fallback is now the full Isly Castle (islyCastleData.ts). These behavior
-// tests were written against the small `mapLabLayout` sample (6x4 hall, L-shape Armoury, seeded
-// chest/trap-door), so pin that as the default backend layout here; per-test `vi.spyOn` calls
-// still override it where a test supplies its own `backendLayout`.
+// These behavior tests were written against the small `mapLabLayout` sample from maplabData.ts
+// (6x4 hall, L-shape Armoury, seeded chest/trap-door), so pin that as the default backend layout
+// here; per-test `vi.spyOn` calls still override it where a test supplies its own `backendLayout`.
 beforeEach(() => {
   vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: mapLabLayout as unknown as Record<string, unknown> })
   vi.spyOn(api, 'listNPCs').mockResolvedValue([{ id: 9, name: 'Mira' }] as NPC[])

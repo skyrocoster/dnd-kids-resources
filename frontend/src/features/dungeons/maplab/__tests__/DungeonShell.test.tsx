@@ -91,6 +91,36 @@ describe('DungeonShell', () => {
     expect(screen.queryByRole('heading', { name: 'Test Dungeon' })).not.toBeInTheDocument()
   })
 
+  it('shows a recovery link when dungeon is missing', async () => {
+    vi.spyOn(api, 'getDungeon').mockRejectedValue(new api.ApiError(404, 'not found'))
+
+    renderDungeonRoute('/dungeons/4')
+    await flush()
+
+    const recovery = screen.getAllByRole('link', { name: 'Back to dungeons' })
+    expect(recovery.length).toBeGreaterThanOrEqual(1)
+    expect(recovery[0]).toHaveAttribute('href', '/dungeons')
+  })
+
+  it('shows a recovery link when dungeon ID is invalid', async () => {
+    renderDungeonRoute('/dungeons/not-a-number')
+    await flush()
+
+    const recovery = screen.getByRole('link', { name: 'Back to dungeons' })
+    expect(recovery).toHaveAttribute('href', '/dungeons')
+  })
+
+  it('shows a recovery link when dungeon fetch errors', async () => {
+    vi.spyOn(api, 'getDungeon').mockRejectedValue(new api.ApiError(500, 'server error'))
+
+    renderDungeonRoute('/dungeons/4')
+    await flush()
+
+    const recovery = screen.getAllByRole('link', { name: 'Back to dungeons' })
+    expect(recovery.length).toBeGreaterThanOrEqual(1)
+    expect(recovery[0]).toHaveAttribute('href', '/dungeons')
+  })
+
   it('layout 404 keeps the dungeon title visible while the child renders the blank map state', async () => {
     vi.spyOn(api, 'getDungeonLayout').mockRejectedValue(new api.ApiError(404, 'not found'))
 

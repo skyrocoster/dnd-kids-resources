@@ -16,7 +16,7 @@ export function SpellAssignment({ playerId }: SpellAssignmentProps) {
   const loadAssigned = () => {
     api
       .getPlayerSpells(playerId)
-      .then((spells) => setAssigned([...spells].sort((a, b) => a.spell_name.localeCompare(b.spell_name))))
+      .then((spells) => setAssigned([...spells].sort((a, b) => a.name.localeCompare(b.name))))
       .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load spells.'))
   }
 
@@ -30,7 +30,7 @@ export function SpellAssignment({ playerId }: SpellAssignmentProps) {
 
   const available = allSpells
     .filter((s) => !assigned.some((a) => a.id === s.id))
-    .sort((a, b) => a.spell_name.localeCompare(b.spell_name))
+    .sort((a, b) => a.name.localeCompare(b.name))
 
   const handleAdd = async () => {
     if (!pendingId) return
@@ -62,7 +62,7 @@ export function SpellAssignment({ playerId }: SpellAssignmentProps) {
         <ul className="player-assignment-list">
           {assigned.map((spell) => (
             <li key={spell.id}>
-              <span>{spell.spell_name}</span>
+              <span>{spell.name}</span>
               <button type="button" onClick={() => handleRemove(spell.id)}>
                 Remove
               </button>
@@ -76,7 +76,7 @@ export function SpellAssignment({ playerId }: SpellAssignmentProps) {
             label="Add Spell"
             value={pendingId}
             onChange={(e) => setPendingId(e.target.value)}
-            options={available.map((s) => ({ value: String(s.id), label: s.spell_name }))}
+            options={available.map((s) => ({ value: String(s.id), label: s.name }))}
             placeholder="Choose a spell…"
           />
           <button type="button" onClick={handleAdd} disabled={!pendingId}>

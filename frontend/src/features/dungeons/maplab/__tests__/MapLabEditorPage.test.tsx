@@ -34,6 +34,9 @@ describe('MapLabEditorPage', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
     vi.useFakeTimers()
+    vi.spyOn(api, 'getDungeon').mockResolvedValue({ id: 4, title: 'Test Dungeon', data: {} })
+    vi.spyOn(api, 'listNPCs').mockResolvedValue([])
+    vi.spyOn(api, 'updateDungeon').mockResolvedValue({ id: 4, title: 'Test Dungeon', data: {} })
   })
 
   afterEach(() => {
@@ -244,6 +247,71 @@ describe('MapLabEditorPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /delete door/i }))
     expect(container.querySelector('.maplab-fixture-form')).not.toBeInTheDocument()
   })
+
+  it('shows room content editing and persists room title changes', async () => {
+    const layout = {
+      meta: { cellSizeFt: 5, padding: 3 },
+      rooms: [{ room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0]], title: 'Room 1' }],
+      doors: [],
+      stairs: [],
+      floors: [{ z: 0, title: 'Ground Floor' }],
+      props: [],
+    }
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: layout })
+    vi.spyOn(api, 'getDungeon').mockResolvedValue({ id: 4, title: 'Test Dungeon', data: { rooms: [{ room_id: 1, title: 'Room 1', entries: [], npcs: [] }] } })
+    const updateDungeonSpy = vi.spyOn(api, 'updateDungeon').mockResolvedValue({ id: 4, title: 'Test Dungeon', data: {} })
+    vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: layout })
+
+    renderMapLabEditorPage()
+    await flush()
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Room 1' })[0])
+    const titleInput = screen.getByRole('textbox', { name: 'Title' }) as HTMLInputElement
+    expect(titleInput.value).toBe('Room 1')
+
+    fireEvent.change(titleInput, { target: { value: 'Renamed Room' } })
+
+    await act(async () => {
+      vi.advanceTimersByTime(700)
+      await Promise.resolve()
+    })
+
+    expect(updateDungeonSpy).toHaveBeenCalledTimes(1)
+    const payload = updateDungeonSpy.mock.calls[0][1].data as { rooms: Array<{ title: string }> }
+    expect(payload.rooms[0].title).toBe('Renamed Room')
+  })
+
+  it('shows the create-room-data action for layout-only rooms', async () => {
+    const layout = {
+      meta: { cellSizeFt: 5, padding: 3 },
+      rooms: [{ room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0]], title: 'Room 1' }],
+      doors: [],
+      stairs: [],
+      floors: [{ z: 0, title: 'Ground Floor' }],
+      props: [],
+    }
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: layout })
+    vi.spyOn(api, 'getDungeon').mockResolvedValue({ id: 4, title: 'Test Dungeon', data: { rooms: [] } })
+    const updateDungeonSpy = vi.spyOn(api, 'updateDungeon').mockResolvedValue({ id: 4, title: 'Test Dungeon', data: {} })
+    vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: layout })
+
+    renderMapLabEditorPage()
+    await flush()
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Room 1' })[0])
+    expect(screen.getByRole('button', { name: 'Create room data' })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Create room data' }))
+
+    await act(async () => {
+      vi.advanceTimersByTime(700)
+      await Promise.resolve()
+    })
+
+    expect(updateDungeonSpy).toHaveBeenCalledTimes(1)
+    const payload = updateDungeonSpy.mock.calls[0][1].data as { rooms: Array<{ room_id: number; title: string }> }
+    expect(payload.rooms[0]).toMatchObject({ room_id: 1, title: '' })
+  })
 })
 
 describe('MapLabEditorPage (Stage E2 — Canvas zoom & pan)', () => {
@@ -261,7 +329,11 @@ describe('MapLabEditorPage (Stage E2 — Canvas zoom & pan)', () => {
   let originalResizeObserver: unknown
 
   beforeEach(() => {
+    vi.restoreAllMocks()
     originalResizeObserver = (globalThis as { ResizeObserver?: unknown }).ResizeObserver
+    vi.spyOn(api, 'getDungeon').mockResolvedValue({ id: 4, title: 'Test Dungeon', data: {} })
+    vi.spyOn(api, 'listNPCs').mockResolvedValue([])
+    vi.spyOn(api, 'updateDungeon').mockResolvedValue({ id: 4, title: 'Test Dungeon', data: {} })
     class TestResizeObserver {
       private callback: () => void
       constructor(callback: () => void) {
@@ -392,6 +464,9 @@ describe('MapLabEditorPage (Phase K scaffolding)', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
     vi.useFakeTimers()
+    vi.spyOn(api, 'getDungeon').mockResolvedValue({ id: 4, title: 'Test Dungeon', data: {} })
+    vi.spyOn(api, 'listNPCs').mockResolvedValue([])
+    vi.spyOn(api, 'updateDungeon').mockResolvedValue({ id: 4, title: 'Test Dungeon', data: {} })
     vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: singleRoomLayout })
     vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: singleRoomLayout })
   })

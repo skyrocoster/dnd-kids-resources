@@ -31,6 +31,7 @@ import { StairMarker } from './StairMarker'
 import { DoorBadgeLayer, DoorMarker } from './DoorMarker'
 import { GhostFloorLayer } from './GhostFloorLayer'
 import { FIXTURE_TYPES } from './fixtureTypes'
+import { RoomContentEditor } from './RoomContentEditor'
 import {
   absoluteCells,
   canPaintCell,
@@ -223,8 +224,10 @@ export function MapLabEditorPage() {
     state,
     loading: layoutLoading,
     loadStatus,
-    syncStatus,
+    saveStatus,
+    dungeonData,
     addRoom,
+    createRoomData,
     addFloorAbove,
     addFloorBelow,
     selectRoom,
@@ -247,7 +250,10 @@ export function MapLabEditorPage() {
     addPortal,
     selectPortal,
     deletePortal,
-  } = useMapLabEditor(route.dungeonId)
+    updateRoomTitle,
+    updateRoomEntries,
+    updateRoomNpcs,
+  } = useMapLabEditor(route.dungeonId, route.dungeon)
   const [hoveredCell, setHoveredCell] = useState<MapCell | null>(null)
   const [isCanvasFullscreen, setIsCanvasFullscreen] = useState(false)
   const [roomFootprintSelection, setRoomFootprintSelection] = useState<RoomFootprintSelection>(null)
@@ -322,6 +328,10 @@ export function MapLabEditorPage() {
   const selectedRoom = useMemo(
     () => state.layout.rooms.find((room) => room.room_id === state.selectedRoomId) ?? null,
     [state.layout.rooms, state.selectedRoomId]
+  )
+  const selectedDungeonRoom = useMemo(
+    () => (selectedRoom ? dungeonData.rooms?.find((room) => room.room_id === selectedRoom.room_id) ?? null : null),
+    [dungeonData.rooms, selectedRoom]
   )
   const selectedProp = useMemo(
     () => state.layout.props.find((prop) => prop.prop_id === state.selectedPropId) ?? null,
@@ -433,7 +443,7 @@ export function MapLabEditorPage() {
   }, [clearRoomFootprintSelection, placeDoorMode, placePortalMode, placePropMode, placeStairMode, state.activeZ, state.selectedRoomId])
 
   if (route.status === 'loading' || layoutLoading) {
-    return <MapLabRouteState title="Loading map editor" message="Loading dungeon layout…" />
+    return <MapLabRouteState title="Loading map editor" message="Loading dungeon layout…" variant="loading" />
   }
 
   if (loadStatus.status === 'error') {
@@ -441,6 +451,7 @@ export function MapLabEditorPage() {
       <MapLabRouteState
         title={route.dungeon?.title ?? 'Dungeon layout unavailable'}
         message={loadStatus.error ?? 'Failed to load dungeon layout.'}
+        variant="error"
       />
     )
   }
@@ -556,9 +567,9 @@ export function MapLabEditorPage() {
           </button>
         </ToolbarTray>
         <ToolbarTray groupKey="editor-status" label="Status" extraClassName="maplab-toolbar-group-status">
-          <span className="maplab-editor-save-status" data-status={syncStatus.status} aria-live="polite">
+          <span className="maplab-editor-save-status" data-status={saveStatus.status} aria-live="polite">
             <SaveIcon width={16} height={16} aria-hidden="true" />
-            {syncStatusLabel(syncStatus.status)}
+            {syncStatusLabel(saveStatus.status)}
           </span>
         </ToolbarTray>
       </div>
@@ -1146,7 +1157,15 @@ export function MapLabEditorPage() {
             </>
           ) : selectedRoom ? (
             <>
-              <InspectorPanel target={{ kind: 'room', room: selectedRoom }} />
+              <RoomContentEditor
+                key={selectedRoom.room_id}
+                room={selectedRoom}
+                dungeonRoom={selectedDungeonRoom}
+                onUpdateRoomTitle={updateRoomTitle}
+                onUpdateRoomEntries={updateRoomEntries}
+                onUpdateRoomNpcs={updateRoomNpcs}
+                onCreateRoomData={createRoomData}
+              />
               <div className="maplab-editor-inspector-actions">
                 <button
                   type="button"

@@ -1,5 +1,7 @@
 # Phase E Recovery Plan — restore Map Lab zoom/unified-data after a commit accident
 
+> **Historical recovery plan, complete.** Current implementation guidance lives in the documentation manifest and canonical reference docs.
+
 **Audience:** an executor (Sonnet) running one stage per context. This doc is **self-contained** — read
 the "Shared context" section first every stage, then do exactly one stage. Do not skip ahead or combine
 stages. Each stage ends with a **🚦 live gate**: stop and get explicit user sign-off before the next stage.

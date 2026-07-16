@@ -73,6 +73,16 @@ export function mapLabEditorReducer(state: EditorState, action: EditorAction): E
       }
     }
 
+    case 'setRoomMeta': {
+      const room = state.layout.rooms.find((candidate) => candidate.room_id === action.roomId)
+      if (!room) return state
+
+      const rooms = state.layout.rooms.map((candidate) =>
+        candidate.room_id === action.roomId ? { ...candidate, ...action.meta } : candidate,
+      )
+      return { ...state, layout: { ...state.layout, rooms } }
+    }
+
     case 'addFloorAbove': {
       const z = state.activeZ + 1
       if (state.layout.floors.some((floor) => floor.z === z)) return state

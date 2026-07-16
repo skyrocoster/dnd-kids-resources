@@ -1,8 +1,5 @@
 """Tests for spell CRUD endpoints."""
 
-import json
-
-
 def test_list_spells(test_client):
     """Test GET /api/spells returns a list of spells."""
     response = test_client.get("/api/spells")
@@ -26,13 +23,14 @@ def test_list_spells_filter_by_level(test_client):
     assert response.status_code == 200
     data = response.json()
     # Magic Missile is level 1, Fireball is level 3
-    assert any(spell["spell_name"] == "Magic Missile" for spell in data)
-    assert not any(spell["spell_name"] == "Fireball" for spell in data)
+    assert any(spell["name"] == "Magic Missile" for spell in data)
+    assert not any(spell["name"] == "Fireball" for spell in data)
+    assert all(spell["level"] == 1 for spell in data)
 
 
 def test_list_spells_filter_by_school(test_client):
     """Test filtering spells by school."""
-    response = test_client.get("/api/spells?school=Evocation")
+    response = test_client.get("/api/spells?school=evocation")
     assert response.status_code == 200
     data = response.json()
     # Both spells are Evocation
@@ -50,7 +48,7 @@ def test_get_spell_by_id(test_client):
     assert response.status_code == 200
     spell = response.json()
     assert spell["id"] == spell_id
-    assert "spell_name" in spell
+    assert "name" in spell
     assert "level" in spell
 
 
@@ -65,8 +63,8 @@ def test_get_spell_by_title(test_client):
     response = test_client.get("/api/spells/by-title/Magic%20Missile")
     assert response.status_code == 200
     spell = response.json()
-    assert spell["spell_name"] == "Magic Missile"
-    assert spell["level"] == "1"
+    assert spell["name"] == "Magic Missile"
+    assert spell["level"] == 1
 
 
 def test_spell_json_columns_parsed(test_client):
@@ -75,72 +73,70 @@ def test_spell_json_columns_parsed(test_client):
     assert response.status_code == 200
     spell = response.json()
 
-    # components should be parsed from JSON to list
-    if spell.get("components"):
-        assert isinstance(spell["components"], list)
-        assert "V" in spell["components"]
-        assert "S" in spell["components"]
-
-    # classes should be parsed from JSON to list
-    if spell.get("classes"):
-        assert isinstance(spell["classes"], list)
-        assert "Wizard" in spell["classes"]
+    assert spell["components"] == ["V", "S"]
+    assert set(spell["healing"]) == {"amount", "temp_hp", "max_hp"}
 
 
-def test_create_spell_with_attack_type_round_trips_as_list(test_client):
-    """attack_type must parse back as structured JSON, not a raw string (regression)."""
+def test_create_spell_with_attacks_round_trips_as_list(test_client):
+    """attacks must parse back as structured JSON, not a raw string."""
     new_spell = {
-        "spell_name": "Scorching Ray",
-        "level": "2",
-        "school": "Evocation",
-        "attack_type": [{"name": "ray", "type": "spell"}],
-        "damage": [{"name": "ray", "damage": "2d6", "type": "fire"}],
+        "name": "Scorching Ray",
+        "level": 2,
+        "description": "Three rays of fire.",
+        "range": "120 feet",
+        "duration": "Instantaneous",
+        "concentration": False,
+        "ritual": False,
+        "components": ["V", "S"],
+        "attacks": [{"kind": "ranged", "saving_throws": []}],
     }
 
     response = test_client.post("/api/spells", json=new_spell)
     assert response.status_code == 201
     data = response.json()
-    assert isinstance(data["attack_type"], list)
-    assert data["attack_type"][0]["type"] == "spell"
+    assert isinstance(data["attacks"], list)
+    assert data["attacks"][0]["kind"] == "ranged"
 
     response = test_client.get(f"/api/spells/{data['id']}")
-    assert isinstance(response.json()["attack_type"], list)
+    assert isinstance(response.json()["attacks"], list)
 
 
 def test_create_spell(test_client):
     """Test POST /api/spells to create a new spell."""
     new_spell = {
-        "spell_name": "Test Spell",
-        "level": "2",
-        "school": "Transmutation",
-        "casting_time": "1 action",
+        "name": "Test Spell",
+        "level": 2,
+        "school": "transmutation",
+        "casting_times": ["1 action"],
         "range": "30 feet",
         "components": ["V", "S", "M"],
         "duration": "Concentration, up to 1 hour",
-        "spell_text": "A test spell",
-        "classes": ["Cleric", "Wizard"],
+        "description": "A test spell",
+        "concentration": False,
+        "ritual": False,
     }
 
     response = test_client.post("/api/spells", json=new_spell)
     assert response.status_code == 201
     data = response.json()
-    assert data["spell_name"] == "Test Spell"
-    assert data["level"] == "2"
+    assert data["name"] == "Test Spell"
+    assert data["level"] == 2
     assert data["id"] is not None
 
 
 def test_create_spell_duplicate_name_fails(test_client):
-    """Test that creating a spell with duplicate spell_name fails."""
+    """Test that creating a spell with a duplicate name fails."""
     new_spell = {
-        "spell_name": "Magic Missile",
-        "level": "1",
-        "school": "Evocation",
-        "casting_time": "1 action",
+        "name": "Magic Missile",
+        "level": 1,
+        "school": "evocation",
+        "casting_times": ["1 action"],
         "range": "120 feet",
         "components": ["V", "S"],
         "duration": "Instantaneous",
-        "spell_text": "Duplicate",
-        "classes": ["Wizard"],
+        "description": "Duplicate",
+        "concentration": False,
+        "ritual": False,
     }
 
     response = test_client.post("/api/spells", json=new_spell)
@@ -155,36 +151,38 @@ def test_update_spell(test_client):
     spell_id = spells[0]["id"]
 
     updated_spell = {
-        "spell_name": f"{spells[0]['spell_name']} Updated",
+        "name": f"{spells[0]['name']} Updated",
         "level": spells[0]["level"],
         "school": spells[0]["school"],
-        "casting_time": spells[0]["casting_time"],
+        "casting_times": spells[0]["casting_times"],
         "range": spells[0]["range"],
         "components": spells[0].get("components"),
         "duration": spells[0]["duration"],
-        "spell_text": "Updated description",
-        "classes": spells[0].get("classes"),
+        "description": "Updated description",
+        "concentration": spells[0]["concentration"],
+        "ritual": spells[0]["ritual"],
     }
 
     response = test_client.put(f"/api/spells/{spell_id}", json=updated_spell)
     assert response.status_code == 200
     data = response.json()
-    assert "Updated" in data["spell_name"]
-    assert data["spell_text"] == "Updated description"
+    assert "Updated" in data["name"]
+    assert data["description"] == "Updated description"
 
 
 def test_update_nonexistent_spell(test_client):
     """Test updating a nonexistent spell returns 404."""
     update = {
-        "spell_name": "Nonexistent",
-        "level": "1",
-        "school": "Evocation",
-        "casting_time": "1 action",
+        "name": "Nonexistent",
+        "level": 1,
+        "school": "evocation",
+        "casting_times": ["1 action"],
         "range": "30 feet",
         "components": ["V", "S"],
         "duration": "Instantaneous",
-        "spell_text": "Test",
-        "classes": ["Wizard"],
+        "description": "Test",
+        "concentration": False,
+        "ritual": False,
     }
 
     response = test_client.put("/api/spells/99999", json=update)
@@ -195,15 +193,16 @@ def test_delete_spell(test_client):
     """Test DELETE /api/spells/{id}."""
     # Create a spell to delete
     new_spell = {
-        "spell_name": "Delete Me",
-        "level": "1",
-        "school": "Evocation",
-        "casting_time": "1 action",
+        "name": "Delete Me",
+        "level": 1,
+        "school": "evocation",
+        "casting_times": ["1 action"],
         "range": "30 feet",
         "components": ["V", "S"],
         "duration": "Instantaneous",
-        "spell_text": "To be deleted",
-        "classes": ["Wizard"],
+        "description": "To be deleted",
+        "concentration": False,
+        "ritual": False,
     }
 
     response = test_client.post("/api/spells", json=new_spell)

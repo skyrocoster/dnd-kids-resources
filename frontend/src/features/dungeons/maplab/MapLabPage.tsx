@@ -287,7 +287,7 @@ export function MapLabPage() {
   const activeFloor = floors.find((floor) => floor.z === activeZ)
 
   if (route.status === 'loading' || layoutLoading) {
-    return <MapLabRouteState title="Loading map" message="Loading dungeon map…" />
+    return <MapLabRouteState title="Loading map" message="Loading dungeon map…" variant="loading" />
   }
 
   if (layoutStatus === 'error') {
@@ -295,6 +295,7 @@ export function MapLabPage() {
       <MapLabRouteState
         title={route.dungeon?.title ?? 'Dungeon layout unavailable'}
         message={layoutError?.message ?? 'Failed to load dungeon layout.'}
+        variant="error"
       />
     )
   }
@@ -637,8 +638,8 @@ function NpcDock({ npcId, onClose }: { npcId: number; onClose: () => void }) {
       storageKey="dungeon-npc-dock-position"
       onClose={onClose}
     >
-      {loading && <p className="maplab-affordance-placeholder">Loading NPC…</p>}
-      {!loading && error && <p className="maplab-affordance-placeholder">{error}</p>}
+      {loading && <div role="status"><p className="maplab-affordance-placeholder">Loading NPC…</p></div>}
+      {!loading && error && <div role="alert"><p className="maplab-affordance-placeholder">{error}</p></div>}
       {!loading && npc && <NPCStatCard npc={npc} compact />}
     </FloatingWindow>
   )

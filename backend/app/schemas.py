@@ -32,63 +32,6 @@ class WeaponProperty(BaseModel):
     description: Optional[str] = None
 
 
-class Spell(BaseModel):
-    id: int
-    spell_name: str
-    icon: Optional[str] = None
-    level: Optional[str] = None
-    school: Optional[str] = None
-    spell_text: Optional[str] = None
-    spell_alt_text: Optional[str] = None
-    damage: Optional[List[Dict[str, Any]]] = None
-    heal: Optional[Dict[str, Any]] = None
-    heal_at_spell_slots: Optional[Dict[str, Any]] = None
-    range: Optional[str] = None
-    higher_levels: Optional[str] = None
-    damage_at_higher_levels: Optional[str] = None
-    casting_time: Optional[str] = None
-    duration: Optional[str] = None
-    concentration: Optional[bool] = None
-    ritual: Optional[bool] = None
-    components: Optional[List[str]] = None
-    materials: Optional[str] = None
-    attack_type: Optional[List[Dict[str, Any]]] = None
-    area_of_effect: Optional[Dict[str, Any]] = None
-    action: Optional[str] = None
-    classes: Optional[List[str]] = None
-    subclasses: Optional[List[str]] = None
-
-
-class SpellCreate(BaseModel):
-    spell_name: str
-    icon: Optional[str] = None
-    level: Optional[str] = None
-    school: Optional[str] = None
-    spell_text: Optional[str] = None
-    spell_alt_text: Optional[str] = None
-    damage: Optional[List[Dict[str, Any]]] = None
-    heal: Optional[Dict[str, Any]] = None
-    heal_at_spell_slots: Optional[Dict[str, Any]] = None
-    range: Optional[str] = None
-    higher_levels: Optional[str] = None
-    damage_at_higher_levels: Optional[str] = None
-    casting_time: Optional[str] = None
-    duration: Optional[str] = None
-    concentration: Optional[bool] = None
-    ritual: Optional[bool] = None
-    components: Optional[List[str]] = None
-    materials: Optional[str] = None
-    attack_type: Optional[List[Dict[str, Any]]] = None
-    area_of_effect: Optional[Dict[str, Any]] = None
-    action: Optional[str] = None
-    classes: Optional[List[str]] = None
-    subclasses: Optional[List[str]] = None
-
-
-class SpellUpdate(SpellCreate):
-    pass
-
-
 class Skill(BaseModel):
     name: str
     ability: str
@@ -126,6 +69,83 @@ WINDOWS_RESERVED_AUDIO_STEMS = {
 
 class StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
+
+
+# ── Canonical spell contract (B2) ───────────────────────────────────────────
+
+
+class SpellDamage(StrictModel):
+    name: str = Field(min_length=1)
+    formula: str = Field(min_length=1)
+    damage_types: List[str] = Field(default_factory=list)
+
+
+class SpellHealing(StrictModel):
+    amount: Optional[str] = None
+    temp_hp: bool = False
+    max_hp: bool = False
+
+
+class SpellHigherLevels(StrictModel):
+    text: Optional[str] = None
+    damage_by_slot: Dict[str, str] = Field(default_factory=dict)
+
+
+class SpellAttack(StrictModel):
+    kind: Optional[Literal["melee", "ranged"]] = None
+    saving_throws: List[str] = Field(default_factory=list)
+
+
+class SpellAreaOfEffect(StrictModel):
+    shape: Optional[str] = None
+    size: Optional[int] = None
+
+
+class Spell(StrictModel):
+    """Response model for the 18-field canonical spell contract."""
+    id: int
+    name: str
+    level: int
+    school: Optional[str] = None
+    description: str
+    alternate_description: Optional[str] = None
+    damage: List[SpellDamage] = Field(default_factory=list)
+    healing: SpellHealing = Field(default_factory=SpellHealing)
+    range: str
+    higher_levels: SpellHigherLevels = Field(default_factory=SpellHigherLevels)
+    casting_times: List[str] = Field(default_factory=list)
+    duration: str
+    concentration: bool
+    ritual: bool
+    components: List[str] = Field(default_factory=list)
+    materials: Optional[str] = None
+    attacks: List[SpellAttack] = Field(default_factory=list)
+    area_of_effect: SpellAreaOfEffect = Field(default_factory=SpellAreaOfEffect)
+
+
+class SpellCreate(StrictModel):
+    """Create model for the 18-field canonical spell contract (no id)."""
+    name: str
+    level: int
+    school: Optional[str] = None
+    description: str
+    alternate_description: Optional[str] = None
+    damage: List[SpellDamage] = Field(default_factory=list)
+    healing: SpellHealing = Field(default_factory=SpellHealing)
+    range: str
+    higher_levels: SpellHigherLevels = Field(default_factory=SpellHigherLevels)
+    casting_times: List[str] = Field(default_factory=list)
+    duration: str
+    concentration: bool
+    ritual: bool
+    components: List[str] = Field(default_factory=list)
+    materials: Optional[str] = None
+    attacks: List[SpellAttack] = Field(default_factory=list)
+    area_of_effect: SpellAreaOfEffect = Field(default_factory=SpellAreaOfEffect)
+
+
+class SpellUpdate(SpellCreate):
+    pass
 
 
 class CreatureType(StrictModel):

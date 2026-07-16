@@ -29,6 +29,7 @@ def get_conn():
     """Get a SQLite connection with Row factory for dict-like access."""
     conn = sqlite3.connect(str(DB_PATH))
     conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA foreign_keys = ON")
     return conn
 
 
@@ -55,16 +56,13 @@ def parse_json_value(value):
 
 
 def parse_json_list(value):
-    """Parse a JSON column expected to hold a list. Falls back to comma-splitting
-    for legacy rows stored as a plain string (e.g. "V, S") instead of JSON."""
+    """Parse a JSON column expected to hold a list."""
     parsed = parse_json_value(value)
     if parsed is None:
         return None
-    if isinstance(parsed, list):
-        return parsed
-    if isinstance(parsed, str):
-        return [item.strip() for item in parsed.split(",") if item.strip()]
-    return [parsed]
+    if not isinstance(parsed, list):
+        raise TypeError(f"Expected JSON list, got {type(parsed).__name__}")
+    return parsed
 
 
 def dict_from_row(row):
@@ -75,11 +73,9 @@ def dict_from_row(row):
 
 
 # JSON-encoded spell columns, split by expected decoded shape. Kept here (not in a
-# router) so every endpoint that returns a spell row parses it identically — a
-# second, drifting copy of this list previously caused /api/players/{id}/spells
-# to 500 while /api/spells worked.
-_SPELL_OBJECT_COLUMNS = ["damage", "heal", "heal_at_spell_slots", "area_of_effect", "attack_type"]
-_SPELL_LIST_COLUMNS = ["components", "classes", "subclasses"]
+# router) so every endpoint that returns a spell row parses it identically.
+_SPELL_OBJECT_COLUMNS = ["healing", "higher_levels", "area_of_effect"]
+_SPELL_LIST_COLUMNS = ["damage", "casting_times", "components", "attacks"]
 
 
 def parse_spell_row(row):
@@ -93,13 +89,11 @@ def parse_spell_row(row):
         return None
 
     for field in _SPELL_OBJECT_COLUMNS:
-        if spell.get(field):
+        if field in spell and spell[field] is not None:
             spell[field] = parse_json_value(spell[field])
 
-    # List-typed columns; some legacy rows store them as a plain comma-separated
-    # string instead of a JSON array.
     for field in _SPELL_LIST_COLUMNS:
-        if spell.get(field):
+        if field in spell and spell[field] is not None:
             spell[field] = parse_json_list(spell[field])
 
     return spell

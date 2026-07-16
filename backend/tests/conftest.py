@@ -79,7 +79,6 @@ def _seed_real_data(db_path: str) -> None:
             seed_mod.populate_quests(cursor, conn)
             seed_mod.populate_spells(cursor, conn)
             seed_mod.populate_conditions(cursor, conn)
-            seed_mod.populate_dungeons(cursor, conn)
             seed_mod.populate_encounters(cursor, conn)
             seed_mod.populate_loot_bundles(cursor, conn)
             seed_mod.populate_players(cursor, conn)
@@ -94,7 +93,7 @@ def _seed_real_data(db_path: str) -> None:
 def _seed_curated_data(conn: sqlite3.Connection) -> None:
     """Insert a small, deliberately JSON-rich set of rows into a real-schema DB.
 
-    The spell "Firebolt Test" populates attack_type/heal/damage/components/classes so
+    The spell "Firebolt Test" populates damage/healing/attacks/components/casting_times so
     that the nested /api/players/{id}/spells path (which JSON-parses those columns)
     is exercised by the fast unit suite, not only by the real-data integration suite.
     """
@@ -113,32 +112,32 @@ def _seed_curated_data(conn: sqlite3.Connection) -> None:
         ("fire", "Fire", "🔥", "#FFA500"),
     )
 
-    # Plain spell (no JSON metadata) — mirrors legacy sparse rows.
+    # Plain spells (no JSON metadata) — mirrors sparse canonical rows.
     cursor.execute(
         """INSERT INTO spells
-           (spell_name, icon, level, school, spell_text, casting_time, range, components, duration, classes)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-        ("Magic Missile", "✨", "1", "Evocation", "Unerring magical projectiles", "1 action",
-         "120 feet", json.dumps(["V", "S"]), "Instantaneous", json.dumps(["Sorcerer", "Wizard"])),
+           (id, name, level, school, description, range, duration, casting_times, components)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        (1, "Magic Missile", 1, "evocation", "Unerring magical projectiles", "120 feet",
+         "Instantaneous", json.dumps(["1 action"]), json.dumps(["V", "S"])),
     )
     cursor.execute(
         """INSERT INTO spells
-           (spell_name, icon, level, school, spell_text, casting_time, range, components, duration, classes)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-        ("Fireball", "🔥", "3", "Evocation", "A ball of fire erupts", "1 action", "150 feet",
-         json.dumps(["V", "S", "M"]), "Instantaneous", json.dumps(["Sorcerer", "Wizard"])),
+           (id, name, level, school, description, range, duration, casting_times, components)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        (2, "Fireball", 3, "evocation", "A ball of fire erupts", "150 feet",
+         "Instantaneous", json.dumps(["1 action"]), json.dumps(["V", "S", "M"])),
     )
     # JSON-rich spell: every JSON-encoded column populated, matching real data shapes.
     cursor.execute(
         """INSERT INTO spells
-           (spell_name, icon, level, school, spell_text, casting_time, range, components,
-            duration, classes, damage, heal, attack_type, area_of_effect)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-        ("Firebolt Test", "🔥", "0", "Evocation", "A mote of fire", "1 action", "120 feet",
-         json.dumps(["V", "S"]), "Instantaneous", json.dumps(["Wizard"]),
-         json.dumps([{"amount": "1d10", "type": "fire"}]),
+           (id, name, level, school, description, range, duration, casting_times, components,
+            damage, healing, attacks, area_of_effect)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        (3, "Firebolt Test", 0, "evocation", "A mote of fire", "120 feet", "Instantaneous",
+         json.dumps(["1 action"]), json.dumps(["V", "S"]),
+         json.dumps([{"name": "primary", "formula": "1d10", "damage_types": ["fire"]}]),
          json.dumps({"amount": "1d4", "temp_hp": True, "max_hp": False}),
-         json.dumps([{"name": "initial", "type": "ranged", "save": []}]),
+         json.dumps([{"kind": "ranged", "saving_throws": []}]),
          json.dumps({"shape": "sphere", "size": 20})),
     )
 

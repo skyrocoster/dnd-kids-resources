@@ -51,7 +51,7 @@ four tokens: `--md-{role}`, `--md-on-{role}`, `--md-{role}-container`, `--md-on-
 | `--md-outline` | `#948f99` | Borders |
 | `--md-outline-variant` | `#49454f` | Subtle borders |
 
-**Content-role variants** are applied via `data-variant="spell|monster|weapon|npc|neutral"` on `Card` and
+**Content-role variants** are applied via `data-variant="spell|monster|weapon|loot|neutral"` on `Card` and
 `SearchList` components, mapping to `--variant-*` custom properties. Add a new content role by:
 1. Generating tokens via `scripts/generate-md3-tokens.mjs --seed <hex> --role <name>`
 2. Adding the four `--md-{role}` tokens to `theme.css`
@@ -119,25 +119,6 @@ A future design pass may introduce a numeric spacing scale if inconsistency beco
 
 ## Component anatomy
 
-### FeatureTile (`DungeonViewPage.tsx`)
-
-Every room entry. Structure:
-- **Type-icon badge** — 16px icon from `getEntryTypeIcon()` with accent-colored background
-- **Header row** — title (type-body), count badge (`×N`), hidden-DC badge (`KeyIcon` + `DC {n}`), reserved `.feature-tile-actions` slot
-- **Body** — `DiceText` rendering of `entry.content`
-- **Meta rows** — container (name + mechanics), treasure contents (quantity × name + gp value)
-- **Refs row** — chip badges for monster/encounter/trap cross-references
-
-### Door/stair choice-card grid (`DungeonViewPage.tsx`)
-
-Responsive 2-column grid of tall cards:
-- **Icon** (type-appropriate)
-- **Name** (type-title)
-- **Destination** arrow `→ Room Name` (type-body-sm)
-- **Meta footer** — mechanics summary, DC badges
-- **Reserved `.exit-card-actions` bar** for future controls
-Stairs render identically to doors.
-
 ### CombatantCard (`features/encounters/`)
 
 HP meter + controls for encounter runner:
@@ -160,11 +141,17 @@ Consumes `data-variant="npc"`.
 
 Generic draggable/touch dock for overlays:
 - **Grip header** — `GripIcon` drag handle, title, minimize (−/▢), close (×)
-- **Position persisted** to `sessionStorage` per `storageKey`
+- **Position and size persisted** to `sessionStorage` per `storageKey`
+- **Resize handle** — pointer drag and arrow-key operation, clamped to the viewport
 - **Body** — scrollable content area
 - **`role="dialog"`**, `aria-label` via title prop
 - **Minimized state** collapses body but keeps header visible
 Used verbatim by encounter runner dock and NPC dossier dock; multiple can be open simultaneously.
+
+### DiceText (`components/DiceText.tsx`)
+
+Renders dice notation as a rollable-die chip. The optional `role` applies the surrounding content-role variant;
+there is no universal gold pill.
 
 ### InspectorPanel + Inspectable (`maplab/`)
 
@@ -219,3 +206,11 @@ Independently collapsible toolbar group in Map Lab:
 - **`prefers-reduced-motion`** — all animations/transitions set to `0.001ms` duration via root CSS reset
 - **Touch targets** — ≥48px on all interactive controls (canvas SVG glyphs in Map Lab are the documented
   exception, following a marker-radius convention instead)
+
+<!-- GENERATED:DESIGN_SYSTEM:START -->
+### Generated Design Inventory
+
+CSS custom properties: `--md-arcane`, `--md-arcane-container`, `--md-boss`, `--md-boss-container`, `--md-cold`, `--md-cold-container`, `--md-divine`, `--md-divine-container`, `--md-door`, `--md-door-container`, `--md-error`, `--md-error-container`, `--md-fire`, `--md-fire-container`, `--md-lightning`, `--md-lightning-container`, `--md-loot`, `--md-loot-container`, `--md-nature`, `--md-nature-container`, `--md-npc`, `--md-npc-container`, `--md-on-arcane`, `--md-on-arcane-container`, `--md-on-boss`, `--md-on-boss-container`, `--md-on-cold`, `--md-on-cold-container`, `--md-on-divine`, `--md-on-divine-container`, `--md-on-door`, `--md-on-door-container`, `--md-on-error`, `--md-on-error-container`, `--md-on-fire`, `--md-on-fire-container`, `--md-on-lightning`, `--md-on-lightning-container`, `--md-on-loot`, `--md-on-loot-container`, `--md-on-nature`, `--md-on-nature-container`, `--md-on-npc`, `--md-on-npc-container`, `--md-on-passage-hidden`, `--md-on-passage-hidden-container`, `--md-on-passage-locked`, `--md-on-passage-locked-container`, `--md-on-poison`, `--md-on-poison-container`, `--md-on-primary`, `--md-on-primary-container`, `--md-on-psychic`, `--md-on-psychic-container`, `--md-on-secondary`, `--md-on-secondary-container`, `--md-on-skill`, `--md-on-skill-container`, `--md-on-surface`, `--md-on-surface-variant`, `--md-on-tertiary`, `--md-on-tertiary-container`, `--md-outline`, `--md-outline-variant`, `--md-passage-hidden`, `--md-passage-hidden-container`, `--md-passage-locked`, `--md-passage-locked-container`, `--md-poison`, `--md-poison-container`, `--md-primary`, `--md-primary-container`, `--md-psychic`, `--md-psychic-container`, `--md-secondary`, `--md-secondary-container`, `--md-skill`, `--md-skill-container`, `--md-surface`, `--md-surface-1`, `--md-surface-2`, `--md-surface-3`, `--md-surface-4`, `--md-surface-5`, `--md-tertiary`, `--md-tertiary-container`, `--type-body-line`, `--type-body-size`, `--type-body-sm-line`, `--type-body-sm-size`, `--type-body-sm-weight`, `--type-body-weight`, `--type-caption-line`, `--type-caption-size`, `--type-caption-tracking`, `--type-caption-weight`, `--type-face`, `--type-face-mono`, `--type-headline-line`, `--type-headline-size`, `--type-headline-weight`, `--type-label-line`, `--type-label-size`, `--type-label-weight`, `--type-title-line`, `--type-title-size`, `--type-title-weight`, `--variant-accent`, `--variant-container`, `--variant-on-accent`, `--variant-on-container`.
+
+Supported `data-variant` values: `arcane`, `boss`, `cold`, `divine`, `fire`, `lightning`, `loot`, `monster`, `nature`, `neutral`, `npc`, `poison`, `psychic`, `skill`, `spell`, `weapon`.
+<!-- GENERATED:DESIGN_SYSTEM:END -->

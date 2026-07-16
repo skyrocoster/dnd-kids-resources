@@ -1,5 +1,7 @@
 # D&D Kids Resources — v2 Rebuild Plan (staged)
 
+> **Historical rebuild plan, complete.** Current implementation guidance lives in the documentation manifest and canonical reference docs.
+
 ## Context
 
 v1 is a working, playtested vanilla-JS + Flask/SQLite app (`index.html` + 16 pages in `pages/`, 22 JS modules, a 150 KB `server_flask.py` monolith, 135 MB SQLite DB). It grew alongside data-ingestion experiments (5eTools dumps, dnd5eapi, donjon dungeon-HTML parsing), leaving parsing scripts, dead JS, empty tables, and stale docs mixed into the live app.

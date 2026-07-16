@@ -19,6 +19,8 @@ import sqlite3
 
 import pytest
 
+from backend.app.schemas import Spell
+
 # Whole module runs against the full frozen production seeds (slower, read-only).
 pytestmark = pytest.mark.integration
 
@@ -56,6 +58,19 @@ DETAIL_COLLECTIONS = [
     "/api/encounters",
     "/api/dungeons",
 ]
+
+_SPELL_FIELDS = set(Spell.model_fields)
+_LEGACY_SPELL_FIELDS = {
+    "spell_name", "icon", "spell_text", "spell_alt_text", "casting_time",
+    "heal", "attack_type", "damage_at_higher_levels", "heal_at_spell_slots",
+    "action", "classes", "subclasses",
+}
+
+
+def _assert_canonical_spell(spell: dict) -> None:
+    assert set(spell) == _SPELL_FIELDS
+    assert not _LEGACY_SPELL_FIELDS.intersection(spell)
+    Spell.model_validate(spell)
 
 
 @pytest.mark.parametrize("path", LIST_ENDPOINTS)
@@ -165,6 +180,28 @@ def test_every_monster_detail_serializes_with_target_contract(real_client):
     assert total == 2276
 
 
+def test_every_spell_list_and_detail_validates_with_canonical_contract(real_client):
+    """All 525 spell list and detail responses validate against the canonical model."""
+    offset = 0
+    total = 0
+    while True:
+        listing = real_client.get(f"/api/spells?limit=500&offset={offset}")
+        assert listing.status_code == 200, listing.text[:300]
+        batch = listing.json()
+        for listed_spell in batch:
+            _assert_canonical_spell(listed_spell)
+            detail = real_client.get(f"/api/spells/{listed_spell['id']}")
+            assert detail.status_code == 200, (
+                f"/api/spells/{listed_spell['id']} -> {detail.status_code}: {detail.text[:300]}"
+            )
+            _assert_canonical_spell(detail.json())
+        total += len(batch)
+        if len(batch) < 500:
+            break
+        offset += 500
+    assert total == 525
+
+
 def test_real_monster_sqlite_projection_preserves_ids_indexes_and_json(real_db_path):
     """The rebuilt SQLite projection keeps explicit IDs, JSON text columns, and both CR indexes."""
     conn = sqlite3.connect(real_db_path)
@@ -237,6 +274,8 @@ def test_every_player_nested_endpoints_serialize(real_client):
             f"/api/players/{pid}/spells -> {spells.status_code}: {spells.text[:300]}"
         )
         assert isinstance(spells.json(), list)
+        for spell in spells.json():
+            _assert_canonical_spell(spell)
 
         weapons = real_client.get(f"/api/players/{pid}/weapons")
         assert weapons.status_code == 200, (
@@ -253,18 +292,3 @@ def test_players_expose_class(real_client):
     assert players
     # At least one seeded player has a class set.
     assert any(p.get("class_") for p in players), "class column dropped for all players"
-
-
-def test_assigned_spell_json_columns_are_parsed(real_client):
-    """A spell fetched via a player must have list/dict JSON columns decoded, not raw strings."""
-    players = real_client.get("/api/players").json()
-    for player in players:
-        spells = real_client.get(f"/api/players/{player['id']}/spells").json()
-        for spell in spells:
-            if spell.get("attack_type") is not None:
-                assert isinstance(spell["attack_type"], list), (
-                    f"attack_type not parsed for spell {spell.get('spell_name')}"
-                )
-            if spell.get("components") is not None:
-                assert isinstance(spell["components"], list)
-            return  # one assigned-spell sample with attack_type is enough

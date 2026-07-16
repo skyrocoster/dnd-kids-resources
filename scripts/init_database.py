@@ -16,9 +16,10 @@ from pathlib import Path
 DB_PATH = Path(__file__).parent.parent / "dnd_kids_resources.db"
 
 
-def init_database():
+def init_database(db_path: Path | None = None):
     """Create database tables only (schema setup)"""
-    conn = sqlite3.connect(str(DB_PATH))
+    db_path = db_path or DB_PATH
+    conn = sqlite3.connect(str(db_path))
     cursor = conn.cursor()
 
     print("="*60)
@@ -45,7 +46,6 @@ def init_database():
         "abilities",
         "map_layout",
         "dungeons",
-        "skills",
         "encounter",
         "loot_bundle",
         "items",
@@ -140,36 +140,34 @@ def init_database():
         )
     """)
 
-    # Create spells table using the new staging schema
+    # Create spells table using the canonical target schema.
     cursor.execute("""
         CREATE TABLE spells (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            spell_name TEXT NOT NULL UNIQUE,
-            icon TEXT NOT NULL,
-            level TEXT NOT NULL,
+            name TEXT NOT NULL UNIQUE,
+            level INTEGER NOT NULL,
             school TEXT,
-            spell_text TEXT,
-            spell_alt_text TEXT,
-            damage TEXT,
-            heal TEXT,
-            heal_at_spell_slots TEXT,
-            range TEXT,
-            higher_levels TEXT,
-            damage_at_higher_levels TEXT,
-            casting_time TEXT,
-            duration TEXT,
-            concentration BOOLEAN DEFAULT 0,
-            ritual BOOLEAN DEFAULT 0,
-            components TEXT,
+            description TEXT NOT NULL,
+            alternate_description TEXT,
+            damage TEXT NOT NULL DEFAULT '[]',
+            healing TEXT NOT NULL DEFAULT '{"amount": null, "temp_hp": false, "max_hp": false}',
+            range TEXT NOT NULL,
+            higher_levels TEXT NOT NULL DEFAULT '{"text": null, "damage_by_slot": {}}',
+            casting_times TEXT NOT NULL DEFAULT '[]',
+            duration TEXT NOT NULL,
+            concentration BOOLEAN NOT NULL DEFAULT 0,
+            ritual BOOLEAN NOT NULL DEFAULT 0,
+            components TEXT NOT NULL DEFAULT '[]',
             materials TEXT,
-            attack_type TEXT,
-            area_of_effect TEXT,
-            action TEXT,
-            classes TEXT,
-            subclasses TEXT,
+            attacks TEXT NOT NULL DEFAULT '[]',
+            area_of_effect TEXT NOT NULL DEFAULT '{"shape": null, "size": null}',
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     """)
+
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_spells_name ON spells(name)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_spells_level ON spells(level)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_spells_school ON spells(school)")
 
     # Create conditions table
     cursor.execute("""
@@ -232,7 +230,7 @@ def init_database():
             speed TEXT,
             saving_throws JSON DEFAULT '{}',
             skills JSON DEFAULT '{}',
-            senses JSON DFEFAULT '[{}]',
+            senses JSON DEFAULT '[{}]',
             languages TEXT,
             appearance JSON DEFAULT '{}',
             notes TEXT,
@@ -300,22 +298,23 @@ def init_database():
         "CREATE INDEX IF NOT EXISTS idx_monsters_cr_sort ON monsters(cr_sort)"
     )
 
-    # Create dungeons table (v2: structured hand-authored dungeons only, no HTML)
+    # Runtime-created dungeon content; no dungeon seeds are loaded on rebuild.
     cursor.execute("""
         CREATE TABLE dungeons (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            title TEXT NOT NULL UNIQUE,
+            title TEXT NOT NULL,
             data TEXT NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
 
-    # Create map_layout table (Map Lab editor: additive coordinate/fixture layout per dungeon)
+    # Map Lab geometry belongs to its dungeon and is removed with it.
     cursor.execute("""
         CREATE TABLE map_layout (
             dungeon_id INTEGER PRIMARY KEY,
-            data TEXT NOT NULL
+            data TEXT NOT NULL,
+            FOREIGN KEY (dungeon_id) REFERENCES dungeons(id) ON DELETE CASCADE
         )
     """)
 
@@ -365,11 +364,11 @@ def init_database():
     conn.commit()
     conn.close()
 
-    print(f"\n[SUCCESS] Database initialized: {DB_PATH}")
-    print(f"   Size: {DB_PATH.stat().st_size / 1024:.1f} KB")
+    print(f"\n[SUCCESS] Database initialized: {db_path}")
+    print(f"   Size: {db_path.stat().st_size / 1024:.1f} KB")
     print("\nV2 SCHEMA - 16 tables (reduced from 18 for v2):")
     print("  [OK] abilities, damage_types, weapon_properties, weapons")
-    print("  [OK] spells (23 columns: spell_name, icon, level, school, spell_text, etc.)")
+    print("  [OK] spells (18 canonical fields + created_at: name, level, school, description, etc.)")
     print("  [OK] conditions, monsters, npcs, quests, encounter")
     print("  [OK] items, loot_bundle")
     print("  [OK] dungeons (id, title, data JSON for structured hand-authored dungeons)")

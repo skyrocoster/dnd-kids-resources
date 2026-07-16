@@ -1,8 +1,8 @@
 # Monster Target-Schema Decision
 
-> **Stage:** M1 - seed discovery and target schema
-> **Status:** Binding proposal for human review. M2 must not start until this document is accepted.
-> **Scope:** Discovery and schema decisions only; no production code or seed data is changed here.
+> **Status:** Historical decision, accepted and implemented. Current contracts live in `API_REFERENCE.md`,
+> `DATA_MODEL.md`, and `backend/app/schemas.py`.
+> **Scope:** Historical schema rationale; it does not define current behavior.
 
 ## Decision Summary
 

@@ -1,16 +1,35 @@
 from fastapi import APIRouter, HTTPException, Query
 from typing import List, Optional
 import json
+import sqlite3
 
 from ..db import get_db, parse_spell_row as _parse_spell_row
 from ..schemas import Spell, SpellCreate, SpellUpdate
 
 router = APIRouter(prefix="/api", tags=["spells"])
 
+_SPELL_COLUMNS = """
+    id, name, level, school, description, alternate_description,
+    damage, healing, range, higher_levels, casting_times, duration,
+    concentration, ritual, components, materials, attacks, area_of_effect
+"""
+
+
+def _spell_values(spell: SpellCreate) -> tuple:
+    data = spell.model_dump()
+    return (
+        data["name"], data["level"], data["school"], data["description"],
+        data["alternate_description"], json.dumps(data["damage"]),
+        json.dumps(data["healing"]), data["range"], json.dumps(data["higher_levels"]),
+        json.dumps(data["casting_times"]), data["duration"], data["concentration"],
+        data["ritual"], json.dumps(data["components"]), data["materials"],
+        json.dumps(data["attacks"]), json.dumps(data["area_of_effect"]),
+    )
+
 
 @router.get("/spells", response_model=List[Spell])
 def list_spells(
-    level: Optional[str] = Query(None, description="Filter by spell level"),
+    level: Optional[int] = Query(None, description="Filter by spell level"),
     school: Optional[str] = Query(None, description="Filter by spell school"),
     limit: int = Query(100, ge=1, le=500),
     offset: int = Query(0, ge=0),
@@ -28,19 +47,15 @@ def list_spells(
 
         if school is not None:
             where_clauses.append("school = ?")
-            params.append(school)
+            params.append(school.lower())
 
         where_clause = " AND ".join(where_clauses) if where_clauses else "1=1"
 
         query = f"""
-            SELECT id, spell_name, icon, level, school, spell_text, spell_alt_text,
-                   damage, heal, heal_at_spell_slots, range, higher_levels,
-                   damage_at_higher_levels, casting_time, duration, concentration,
-                   ritual, components, materials, attack_type, area_of_effect,
-                   action, classes, subclasses
+            SELECT {_SPELL_COLUMNS}
             FROM spells
             WHERE {where_clause}
-            ORDER BY level, spell_name
+            ORDER BY level, name
             LIMIT ? OFFSET ?
         """
         params.extend([limit, offset])
@@ -56,12 +71,7 @@ def get_spell(spell_id: int):
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute(
-            """SELECT id, spell_name, icon, level, school, spell_text, spell_alt_text,
-                      damage, heal, heal_at_spell_slots, range, higher_levels,
-                      damage_at_higher_levels, casting_time, duration, concentration,
-                      ritual, components, materials, attack_type, area_of_effect,
-                      action, classes, subclasses
-               FROM spells WHERE id = ?""",
+            f"SELECT {_SPELL_COLUMNS} FROM spells WHERE id = ?",
             (spell_id,)
         )
         row = cursor.fetchone()
@@ -76,12 +86,7 @@ def get_spell_by_title(spell_name: str):
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute(
-            """SELECT id, spell_name, icon, level, school, spell_text, spell_alt_text,
-                      damage, heal, heal_at_spell_slots, range, higher_levels,
-                      damage_at_higher_levels, casting_time, duration, concentration,
-                      ritual, components, materials, attack_type, area_of_effect,
-                      action, classes, subclasses
-               FROM spells WHERE spell_name = ?""",
+            f"SELECT {_SPELL_COLUMNS} FROM spells WHERE name = ?",
             (spell_name,)
         )
         row = cursor.fetchone()
@@ -99,52 +104,21 @@ def create_spell(spell: SpellCreate):
         try:
             cursor.execute(
                 """INSERT INTO spells
-                   (spell_name, icon, level, school, spell_text, spell_alt_text,
-                    damage, heal, heal_at_spell_slots, range, higher_levels,
-                    damage_at_higher_levels, casting_time, duration, concentration,
-                    ritual, components, materials, attack_type, area_of_effect,
-                    action, classes, subclasses)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                (
-                    spell.spell_name,
-                    spell.icon or "✨",  # icon is NOT NULL in the real schema; match the seeder default
-                    spell.level,
-                    spell.school,
-                    spell.spell_text,
-                    spell.spell_alt_text,
-                    json.dumps(spell.damage) if spell.damage else None,
-                    json.dumps(spell.heal) if spell.heal else None,
-                    json.dumps(spell.heal_at_spell_slots) if spell.heal_at_spell_slots else None,
-                    spell.range,
-                    spell.higher_levels,
-                    spell.damage_at_higher_levels,
-                    spell.casting_time,
-                    spell.duration,
-                    spell.concentration,
-                    spell.ritual,
-                    json.dumps(spell.components) if spell.components else None,
-                    spell.materials,
-                    json.dumps(spell.attack_type) if spell.attack_type else None,
-                    json.dumps(spell.area_of_effect) if spell.area_of_effect else None,
-                    spell.action,
-                    json.dumps(spell.classes) if spell.classes else None,
-                    json.dumps(spell.subclasses) if spell.subclasses else None,
-                )
+                   (name, level, school, description, alternate_description, damage, healing,
+                    range, higher_levels, casting_times, duration, concentration, ritual,
+                    components, materials, attacks, area_of_effect)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                _spell_values(spell),
             )
             conn.commit()
             spell_id = cursor.lastrowid
-        except Exception as e:
+        except sqlite3.IntegrityError:
             conn.rollback()
-            raise HTTPException(status_code=400, detail=f"Failed to create spell: {str(e)}")
+            raise HTTPException(status_code=400, detail="A spell with this name already exists")
 
         # Fetch the created spell
         cursor.execute(
-            """SELECT id, spell_name, icon, level, school, spell_text, spell_alt_text,
-                      damage, heal, heal_at_spell_slots, range, higher_levels,
-                      damage_at_higher_levels, casting_time, duration, concentration,
-                      ritual, components, materials, attack_type, area_of_effect,
-                      action, classes, subclasses
-               FROM spells WHERE id = ?""",
+            f"SELECT {_SPELL_COLUMNS} FROM spells WHERE id = ?",
             (spell_id,)
         )
         row = cursor.fetchone()
@@ -165,53 +139,21 @@ def update_spell(spell_id: int, spell: SpellUpdate):
         try:
             cursor.execute(
                 """UPDATE spells
-                   SET spell_name = ?, icon = ?, level = ?, school = ?, spell_text = ?,
-                       spell_alt_text = ?, damage = ?, heal = ?, heal_at_spell_slots = ?,
-                       range = ?, higher_levels = ?, damage_at_higher_levels = ?,
-                       casting_time = ?, duration = ?, concentration = ?, ritual = ?,
-                       components = ?, materials = ?, attack_type = ?, area_of_effect = ?,
-                       action = ?, classes = ?, subclasses = ?
+                   SET name = ?, level = ?, school = ?, description = ?, alternate_description = ?,
+                       damage = ?, healing = ?, range = ?, higher_levels = ?, casting_times = ?,
+                       duration = ?, concentration = ?, ritual = ?, components = ?, materials = ?,
+                       attacks = ?, area_of_effect = ?
                    WHERE id = ?""",
-                (
-                    spell.spell_name,
-                    spell.icon or "✨",  # icon is NOT NULL in the real schema; match the seeder default
-                    spell.level,
-                    spell.school,
-                    spell.spell_text,
-                    spell.spell_alt_text,
-                    json.dumps(spell.damage) if spell.damage else None,
-                    json.dumps(spell.heal) if spell.heal else None,
-                    json.dumps(spell.heal_at_spell_slots) if spell.heal_at_spell_slots else None,
-                    spell.range,
-                    spell.higher_levels,
-                    spell.damage_at_higher_levels,
-                    spell.casting_time,
-                    spell.duration,
-                    spell.concentration,
-                    spell.ritual,
-                    json.dumps(spell.components) if spell.components else None,
-                    spell.materials,
-                    json.dumps(spell.attack_type) if spell.attack_type else None,
-                    json.dumps(spell.area_of_effect) if spell.area_of_effect else None,
-                    spell.action,
-                    json.dumps(spell.classes) if spell.classes else None,
-                    json.dumps(spell.subclasses) if spell.subclasses else None,
-                    spell_id,
-                )
+                (*_spell_values(spell), spell_id),
             )
             conn.commit()
-        except Exception as e:
+        except sqlite3.IntegrityError:
             conn.rollback()
-            raise HTTPException(status_code=400, detail=f"Failed to update spell: {str(e)}")
+            raise HTTPException(status_code=400, detail="A spell with this name already exists")
 
         # Fetch and return the updated spell
         cursor.execute(
-            """SELECT id, spell_name, icon, level, school, spell_text, spell_alt_text,
-                      damage, heal, heal_at_spell_slots, range, higher_levels,
-                      damage_at_higher_levels, casting_time, duration, concentration,
-                      ritual, components, materials, attack_type, area_of_effect,
-                      action, classes, subclasses
-               FROM spells WHERE id = ?""",
+            f"SELECT {_SPELL_COLUMNS} FROM spells WHERE id = ?",
             (spell_id,)
         )
         row = cursor.fetchone()
