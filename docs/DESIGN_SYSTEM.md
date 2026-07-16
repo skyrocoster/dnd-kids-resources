@@ -107,13 +107,47 @@ at 16px. Icons inherit `currentColor` for seamless theming. No icon fonts, no CD
 
 ---
 
+## Foundation token scale (VF1)
+
+Named tokens in `theme.css` for spacing, radius, control size, elevation/backdrop, motion, and z-index. Values
+are derived from the dominant ad-hoc values already in use across the app, not invented — this pass formalizes
+the existing visual language rather than redesigning it. `Button.css`, `IconButton.css`, `PageHeader.css`,
+`StatePanel.css`, and `Dialog.css` consume these tokens; other component CSS still carries pre-VF1 ad-hoc values
+and adopts the scale incrementally as VW/VT stages touch it.
+
+| Token | Value | Notes |
+|-------|-------|-------|
+| `--space-1` … `--space-7` | `0.25rem, 0.5rem, 0.75rem, 1rem, 1.5rem, 2rem, 3rem` | General padding/gap/margin scale. |
+| `--radius-sm` / `--radius-md` / `--radius-lg` / `--radius-full` | `0.25rem / 0.375rem / 0.75rem / 999px` | Control, panel/dialog, and pill radii. |
+| `--control-height` / `--control-height-compact` | `48px / 32px` | Normal (touch-floor) and compact interactive control height. |
+| `--elevation-shadow` | `0 8px 32px rgb(0 0 0 / 0.4)` | Dialog/floating-surface drop shadow. |
+| `--backdrop-color` | `rgb(0 0 0 / 0.55)` | Modal backdrop scrim. |
+| `--motion-fast` / `--motion-normal` | `0.15s ease / 0.2s ease` | Control-state transitions vs. layout-affecting transitions (e.g. nav rail width). |
+| `--z-editor` / `--z-floating` / `--z-dialog` | `100 / 150 / 200` | Editor modal backdrops, floating docks, `Dialog`. |
+
+`--md-surface-variant` (previously referenced but undefined) now aliases `--md-surface-3`, the existing
+elevated/hover surface tone.
+
+### Responsive breakpoint convention
+
+Two widths cover the majority of existing `@media` usage (Monster routes): **520px** (narrow phone) and **768px**
+(tablet). Use these literal pixel values in `@media (max-width: …)` queries — CSS custom properties are not
+usable inside media features, so these are a documented convention rather than consumable tokens. A few existing
+surfaces (Dungeon shell, Map Lab) use `38rem`/`56rem` instead; reconcile them to this convention only when a VW/VT
+stage already has that file in its touch set, not as a standalone sweep.
+
+### Font roles
+
+No new display typeface is bundled in this pass. Bundling requires vetting license terms, shipping font files
+offline-safe with the build, and confirming legibility at the `--type-headline` size before it touches every
+route heading — that evaluation work doesn't have a payoff proportional to VF1's scope. Route headings continue
+to use `--type-face` (`'Roboto Flex', 'Segoe UI', system-ui, sans-serif`). A future stage may revisit a bundled
+display face for headings only if it stays offline-safe and license-compatible.
+
 ## Spacing & layout convention
 
-**Current reality — no formal spacing scale.** Ad-hoc rem values per component. Elevation is conveyed through
-the `--md-surface-1..5` tone steps rather than box shadows (though floating windows use
-`box-shadow: 0 8px 32px rgb(0 0 0 / 0.4)` for depth). Padding values cluster around 0.5rem–1.5rem in practice.
-
-A future design pass may introduce a numeric spacing scale if inconsistency becomes a real problem.
+Ad-hoc rem values remain in most component CSS outside the VF1 touch set (see the token table above). Padding
+values cluster around 0.5rem–1.5rem in practice. VW/VT stages adopt the spacing scale as they touch each file.
 
 ---
 
@@ -204,13 +238,15 @@ Independently collapsible toolbar group in Map Lab:
   globally
 - **Never hue-alone** — icons and text always back color cues; no information conveyed solely by color
 - **`prefers-reduced-motion`** — all animations/transitions set to `0.001ms` duration via root CSS reset
-- **Touch targets** — ≥48px on all interactive controls (canvas SVG glyphs in Map Lab are the documented
-  exception, following a marker-radius convention instead)
+- **Touch targets** — ≥48px (`--control-height`) on all interactive controls. Documented exceptions: canvas SVG
+  glyphs in Map Lab, following a marker-radius convention instead, and `Button`'s `compact` size
+  (`--control-height-compact`, 32px), reserved for documented desktop-only inspector controls per the visual
+  consistency plan's design-system-in-force contract.
 
 <!-- GENERATED:DESIGN_SYSTEM:START -->
 ### Generated Design Inventory
 
-CSS custom properties: `--md-arcane`, `--md-arcane-container`, `--md-boss`, `--md-boss-container`, `--md-cold`, `--md-cold-container`, `--md-divine`, `--md-divine-container`, `--md-door`, `--md-door-container`, `--md-error`, `--md-error-container`, `--md-fire`, `--md-fire-container`, `--md-lightning`, `--md-lightning-container`, `--md-loot`, `--md-loot-container`, `--md-nature`, `--md-nature-container`, `--md-npc`, `--md-npc-container`, `--md-on-arcane`, `--md-on-arcane-container`, `--md-on-boss`, `--md-on-boss-container`, `--md-on-cold`, `--md-on-cold-container`, `--md-on-divine`, `--md-on-divine-container`, `--md-on-door`, `--md-on-door-container`, `--md-on-error`, `--md-on-error-container`, `--md-on-fire`, `--md-on-fire-container`, `--md-on-lightning`, `--md-on-lightning-container`, `--md-on-loot`, `--md-on-loot-container`, `--md-on-nature`, `--md-on-nature-container`, `--md-on-npc`, `--md-on-npc-container`, `--md-on-passage-hidden`, `--md-on-passage-hidden-container`, `--md-on-passage-locked`, `--md-on-passage-locked-container`, `--md-on-poison`, `--md-on-poison-container`, `--md-on-primary`, `--md-on-primary-container`, `--md-on-psychic`, `--md-on-psychic-container`, `--md-on-secondary`, `--md-on-secondary-container`, `--md-on-skill`, `--md-on-skill-container`, `--md-on-surface`, `--md-on-surface-variant`, `--md-on-tertiary`, `--md-on-tertiary-container`, `--md-outline`, `--md-outline-variant`, `--md-passage-hidden`, `--md-passage-hidden-container`, `--md-passage-locked`, `--md-passage-locked-container`, `--md-poison`, `--md-poison-container`, `--md-primary`, `--md-primary-container`, `--md-psychic`, `--md-psychic-container`, `--md-secondary`, `--md-secondary-container`, `--md-skill`, `--md-skill-container`, `--md-surface`, `--md-surface-1`, `--md-surface-2`, `--md-surface-3`, `--md-surface-4`, `--md-surface-5`, `--md-tertiary`, `--md-tertiary-container`, `--type-body-line`, `--type-body-size`, `--type-body-sm-line`, `--type-body-sm-size`, `--type-body-sm-weight`, `--type-body-weight`, `--type-caption-line`, `--type-caption-size`, `--type-caption-tracking`, `--type-caption-weight`, `--type-face`, `--type-face-mono`, `--type-headline-line`, `--type-headline-size`, `--type-headline-weight`, `--type-label-line`, `--type-label-size`, `--type-label-weight`, `--type-title-line`, `--type-title-size`, `--type-title-weight`, `--variant-accent`, `--variant-container`, `--variant-on-accent`, `--variant-on-container`.
+CSS custom properties: `--backdrop-color`, `--control-height`, `--control-height-compact`, `--elevation-shadow`, `--md-arcane`, `--md-arcane-container`, `--md-boss`, `--md-boss-container`, `--md-cold`, `--md-cold-container`, `--md-divine`, `--md-divine-container`, `--md-door`, `--md-door-container`, `--md-error`, `--md-error-container`, `--md-fire`, `--md-fire-container`, `--md-lightning`, `--md-lightning-container`, `--md-loot`, `--md-loot-container`, `--md-nature`, `--md-nature-container`, `--md-npc`, `--md-npc-container`, `--md-on-arcane`, `--md-on-arcane-container`, `--md-on-boss`, `--md-on-boss-container`, `--md-on-cold`, `--md-on-cold-container`, `--md-on-divine`, `--md-on-divine-container`, `--md-on-door`, `--md-on-door-container`, `--md-on-error`, `--md-on-error-container`, `--md-on-fire`, `--md-on-fire-container`, `--md-on-lightning`, `--md-on-lightning-container`, `--md-on-loot`, `--md-on-loot-container`, `--md-on-nature`, `--md-on-nature-container`, `--md-on-npc`, `--md-on-npc-container`, `--md-on-passage-hidden`, `--md-on-passage-hidden-container`, `--md-on-passage-locked`, `--md-on-passage-locked-container`, `--md-on-poison`, `--md-on-poison-container`, `--md-on-primary`, `--md-on-primary-container`, `--md-on-psychic`, `--md-on-psychic-container`, `--md-on-secondary`, `--md-on-secondary-container`, `--md-on-skill`, `--md-on-skill-container`, `--md-on-surface`, `--md-on-surface-variant`, `--md-on-tertiary`, `--md-on-tertiary-container`, `--md-outline`, `--md-outline-variant`, `--md-passage-hidden`, `--md-passage-hidden-container`, `--md-passage-locked`, `--md-passage-locked-container`, `--md-poison`, `--md-poison-container`, `--md-primary`, `--md-primary-container`, `--md-psychic`, `--md-psychic-container`, `--md-secondary`, `--md-secondary-container`, `--md-skill`, `--md-skill-container`, `--md-surface`, `--md-surface-1`, `--md-surface-2`, `--md-surface-3`, `--md-surface-4`, `--md-surface-5`, `--md-surface-variant`, `--md-tertiary`, `--md-tertiary-container`, `--motion-fast`, `--motion-normal`, `--radius-full`, `--radius-lg`, `--radius-md`, `--radius-sm`, `--space-1`, `--space-2`, `--space-3`, `--space-4`, `--space-5`, `--space-6`, `--space-7`, `--type-body-line`, `--type-body-size`, `--type-body-sm-line`, `--type-body-sm-size`, `--type-body-sm-weight`, `--type-body-weight`, `--type-caption-line`, `--type-caption-size`, `--type-caption-tracking`, `--type-caption-weight`, `--type-face`, `--type-face-mono`, `--type-headline-line`, `--type-headline-size`, `--type-headline-weight`, `--type-label-line`, `--type-label-size`, `--type-label-weight`, `--type-title-line`, `--type-title-size`, `--type-title-weight`, `--variant-accent`, `--variant-container`, `--variant-on-accent`, `--variant-on-container`, `--z-dialog`, `--z-editor`, `--z-floating`.
 
 Supported `data-variant` values: `arcane`, `boss`, `cold`, `divine`, `fire`, `lightning`, `loot`, `monster`, `nature`, `neutral`, `npc`, `poison`, `psychic`, `skill`, `spell`, `weapon`.
 <!-- GENERATED:DESIGN_SYSTEM:END -->

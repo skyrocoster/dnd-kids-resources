@@ -1,0 +1,29 @@
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--control-height);
+  height: var(--control-height);
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: var(--radius-md);
+  color: var(--md-on-surface-variant);
+  cursor: pointer;
+  transition: background-color var(--motion-fast);
+}
+
+.icon-btn:hover:not(:disabled) {
+  background: var(--md-surface-3);
+  color: var(--md-on-surface);
+}
+
+.icon-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.icon-btn:focus-visible {
+  outline: 2px solid var(--md-primary);
+  outline-offset: 2px;
+}

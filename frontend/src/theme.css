@@ -171,6 +171,10 @@
   --md-on-surface-variant: #cac4d0;
   --md-outline: #948f99;
   --md-outline-variant: #49454f;
+  /* Canonical fill counterpart to --md-on-surface-variant (text). Aliases the
+     existing hover/elevated surface tone rather than minting a new color;
+     resolves a previously undefined --md-surface-variant reference. */
+  --md-surface-variant: var(--md-surface-3);
 
   /* Type scale */
   --type-face: 'Roboto Flex', 'Segoe UI', system-ui, sans-serif;
@@ -200,6 +204,43 @@
   --type-caption-line: 1rem;
   --type-caption-weight: 500;
   --type-caption-tracking: 0.05em;
+
+  /* Spacing scale — derived from the dominant ad-hoc rem values already in use
+     (0.25rem/0.5rem/0.75rem/1rem/1.5rem/2rem/3rem clusters). */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+
+  /* Radius scale — derived from the dominant existing border-radius values. */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.75rem;
+  --radius-full: 999px;
+
+  /* Control-size scale — 48px matches the documented touch-target floor and
+     the existing .btn--normal/.icon-btn sizing; 32px matches .btn--compact. */
+  --control-height: 48px;
+  --control-height-compact: 32px;
+
+  /* Elevation/backdrop — matches the dialog/floating-window shadow and
+     backdrop values already used consistently across modal surfaces. */
+  --elevation-shadow: 0 8px 32px rgb(0 0 0 / 0.4);
+  --backdrop-color: rgb(0 0 0 / 0.55);
+
+  /* Motion — matches the dominant 0.15s ease control transition; 0.2s ease is
+     reserved for layout-affecting transitions (e.g. nav rail width). */
+  --motion-fast: 0.15s ease;
+  --motion-normal: 0.2s ease;
+
+  /* Z-index — named after the dominant stacking tiers already in use:
+     editor modal backdrops (100), floating docks (150), Dialog (200). */
+  --z-editor: 100;
+  --z-floating: 150;
+  --z-dialog: 200;
 }
 
 /* Content-role variants consumed via data-variant on Card/SearchList. */

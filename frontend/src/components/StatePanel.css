@@ -1,0 +1,37 @@
+.state-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-7) var(--space-5);
+  text-align: center;
+  min-height: 200px;
+}
+
+.state-panel-title {
+  margin: 0;
+  font-size: var(--type-title-size);
+  line-height: var(--type-title-line);
+  font-weight: var(--type-title-weight);
+  color: var(--md-on-surface);
+}
+
+.state-panel-message {
+  margin: var(--space-2) 0 0;
+  font-size: var(--type-body-sm-size);
+  line-height: var(--type-body-sm-line);
+  color: var(--md-on-surface-variant);
+  max-width: 32ch;
+}
+
+.state-panel-action {
+  margin-top: var(--space-4);
+}
+
+.state-panel--loading .state-panel-title {
+  color: var(--md-on-surface-variant);
+}
+
+.state-panel--error .state-panel-title {
+  color: var(--md-error);
+}

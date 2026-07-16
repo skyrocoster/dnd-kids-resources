@@ -47,10 +47,17 @@ fresh executor, not a record of every command or implementation detail.
   design, testing, setup, or user-visible contract. Do not defer that required update to the final stage.
 - Keep transient exploration, command output, and detailed implementation narrative in the commit rather than
   making the plan a diary.
+- **Answer, don't point.** If a future stage's `Build` tells the executor to derive a value from the codebase
+  ("the dominant existing value," "the current convention," "whatever the existing pattern is"), the stage that
+  can already see that evidence must survey it and write the actual answer — the value, the count, the file list
+  it came from — directly into that stage's `Build`/`Read first`/`Key facts`. A pointer back to "go grep it
+  yourself" is not consolidation; it just moves the same exploration cost onto the next executor, one stage later.
 
 Scaffolding has the highest discovery expectation because it normally surveys and prepares the most affected
 files, but it follows the same rule as every other stage: consolidate its findings and revise later stages before
-it is collapsed.
+it is collapsed. When scaffolding's own touch set already spans the files a later stage would otherwise have to
+grep (e.g. it stubs every component whose CSS a token-formalization stage will later derive values from), it must
+run that survey once, while the evidence is already open, and hand the next stage numbers instead of file paths.
 
 ---
 
