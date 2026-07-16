@@ -1,9 +1,11 @@
-import { useReducer, useState } from 'react'
+import { useId, useReducer, useState } from 'react'
 import type { FormEvent } from 'react'
 import * as api from '../../api/client'
 import type { LootBundle } from '../../api/types'
+import { Button } from '../../components/Button'
+import { Dialog } from '../../components/Dialog'
 import { TextField } from '../../components/form/TextField'
-import { CloseIcon, PackageIcon, PlusIcon } from '../../components/icons'
+import { PackageIcon, PlusIcon } from '../../components/icons'
 import { categoryIcon } from './itemCategories'
 import { AddItemPanel } from './AddItemPanel'
 import { AddWeaponPanel } from './AddWeaponPanel'
@@ -25,6 +27,7 @@ interface LootBundleEditorProps {
 }
 
 export function LootBundleEditor({ bundle, onClose, onSaved }: LootBundleEditorProps) {
+  const formId = useId()
   const [form, dispatch] = useReducer(lootBundleFormReducer, bundle, (value) =>
     value ? lootBundleToFormState(value) : emptyLootBundleForm(),
   )
@@ -50,48 +53,59 @@ export function LootBundleEditor({ bundle, onClose, onSaved }: LootBundleEditorP
   }
 
   return (
-    <div className="loot-editor-backdrop" role="presentation" onClick={onClose}>
-      <div className="loot-editor-modal" role="dialog" aria-modal="true" aria-label={bundle ? `Edit ${bundle.name}` : 'Add new loot bundle'} onClick={(event) => event.stopPropagation()}>
-        <header className="loot-editor-header">
-          <h2>{bundle ? `Edit Loot Bundle: ${bundle.name}` : 'Add New Loot Bundle'}</h2>
-          <button type="button" onClick={onClose} aria-label="Close"><CloseIcon size={20} aria-hidden /></button>
-        </header>
-        {status.message && <p className={`loot-editor-status ${status.kind || ''}`}>{status.message}</p>}
-        <form onSubmit={handleSubmit}>
-          <TextField label="Name" value={form.name} onChange={(event) => dispatch({ type: 'setName', name: event.target.value })} required />
-          <TextField label="Gold (gp)" type="number" min="0" step="any" value={form.gold} onChange={(event) => dispatch({ type: 'setGold', gold: event.target.value })} required />
-          <section className="loot-editor-section">
-            <div className="loot-editor-section-header">
-              <h3>Contents</h3>
-              <div className="loot-editor-add-actions">
-                <button type="button" onClick={() => setPicker(picker === 'item' ? null : 'item')}><PlusIcon size={16} aria-hidden /> Add Item</button>
-                <button type="button" onClick={() => setPicker(picker === 'weapon' ? null : 'weapon')}><PlusIcon size={16} aria-hidden /> Add Weapon</button>
-              </div>
+    <Dialog
+      open
+      title={bundle ? `Edit Loot Bundle: ${bundle.name}` : 'Add New Loot Bundle'}
+      onClose={onClose}
+      pending={saving}
+      className="loot-editor-dialog"
+      footer={
+        <>
+          <Button type="button" variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button type="submit" form={formId} loading={saving}>
+            {bundle ? 'Save Changes' : 'Create Loot Bundle'}
+          </Button>
+        </>
+      }
+    >
+      {status.message && (
+        <p role="status" className={`loot-editor-status ${status.kind || ''}`}>
+          {status.message}
+        </p>
+      )}
+
+      <form id={formId} onSubmit={handleSubmit} className="loot-editor-form">
+        <TextField label="Name" value={form.name} onChange={(event) => dispatch({ type: 'setName', name: event.target.value })} required />
+        <TextField label="Gold (gp)" type="number" min="0" step="any" value={form.gold} onChange={(event) => dispatch({ type: 'setGold', gold: event.target.value })} required />
+        <section className="loot-editor-section">
+          <div className="loot-editor-section-header">
+            <h3>Contents</h3>
+            <div className="loot-editor-add-actions">
+              <button type="button" onClick={() => setPicker(picker === 'item' ? null : 'item')}><PlusIcon size={16} aria-hidden /> Add Item</button>
+              <button type="button" onClick={() => setPicker(picker === 'weapon' ? null : 'weapon')}><PlusIcon size={16} aria-hidden /> Add Weapon</button>
             </div>
-            {picker === 'item' && <AddItemPanel onAdd={(item) => dispatch({ type: 'addEntry', entry: itemToLootEntry(item) })} onClose={() => setPicker(null)} />}
-            {picker === 'weapon' && <AddWeaponPanel onAdd={(weapon) => dispatch({ type: 'addEntry', entry: weaponToLootEntry(weapon) })} onClose={() => setPicker(null)} />}
-            {form.contents.length === 0 ? <p className="loot-editor-empty">No items or weapons added.</p> : (
-              <ul className="loot-editor-contents">
-                {form.contents.map((entry, index) => {
-                  const EntryIcon = entry.kind === 'item' ? categoryIcon(entry.category) : PackageIcon
-                  return <li key={`${entry.kind}-${entry.ref_id}-${index}`}>
-                    <EntryIcon size={20} aria-hidden="true" />
-                    <span className="loot-editor-entry-name">{entry.name}</span>
-                    <span className="loot-editor-entry-value">{entry.value_gp == null ? 'Value pending' : formatGp(entry.value_gp)}</span>
-                    <label>Quantity <input type="number" min="1" step="1" value={entry.quantity} onChange={(event) => dispatch({ type: 'setQuantity', index, quantity: Number(event.target.value) })} /></label>
-                    <button type="button" className="loot-editor-remove" onClick={() => dispatch({ type: 'removeEntry', index })}>Remove</button>
-                  </li>
-                })}
-              </ul>
-            )}
-          </section>
-          <p className="loot-editor-total">Total value: <strong>{formatGp(total)}</strong></p>
-          <div className="loot-editor-actions">
-            <button type="button" onClick={onClose}>Cancel</button>
-            <button type="submit" className="loot-editor-save" disabled={saving}>{bundle ? 'Save Changes' : 'Create Loot Bundle'}</button>
           </div>
-        </form>
-      </div>
-    </div>
+          {picker === 'item' && <AddItemPanel onAdd={(item) => dispatch({ type: 'addEntry', entry: itemToLootEntry(item) })} onClose={() => setPicker(null)} />}
+          {picker === 'weapon' && <AddWeaponPanel onAdd={(weapon) => dispatch({ type: 'addEntry', entry: weaponToLootEntry(weapon) })} onClose={() => setPicker(null)} />}
+          {form.contents.length === 0 ? <p className="loot-editor-empty">No items or weapons added.</p> : (
+            <ul className="loot-editor-contents">
+              {form.contents.map((entry, index) => {
+                const EntryIcon = entry.kind === 'item' ? categoryIcon(entry.category) : PackageIcon
+                return <li key={`${entry.kind}-${entry.ref_id}-${index}`}>
+                  <EntryIcon size={20} aria-hidden="true" />
+                  <span className="loot-editor-entry-name">{entry.name}</span>
+                  <span className="loot-editor-entry-value">{entry.value_gp == null ? 'Value pending' : formatGp(entry.value_gp)}</span>
+                  <label>Quantity <input type="number" min="1" step="1" value={entry.quantity} onChange={(event) => dispatch({ type: 'setQuantity', index, quantity: Number(event.target.value) })} /></label>
+                  <button type="button" className="loot-editor-remove" onClick={() => dispatch({ type: 'removeEntry', index })}>Remove</button>
+                </li>
+              })}
+            </ul>
+          )}
+        </section>
+        <p className="loot-editor-total">Total value: <strong>{formatGp(total)}</strong></p>
+      </form>
+    </Dialog>
   )
 }

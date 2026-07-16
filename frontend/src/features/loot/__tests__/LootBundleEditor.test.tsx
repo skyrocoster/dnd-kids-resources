@@ -39,4 +39,85 @@ describe('LootBundleEditor', () => {
 
     await waitFor(() => expect(create).toHaveBeenCalledWith({ name: 'Chest', gold: 12.5, contents: [expect.objectContaining({ kind: 'item', name: 'Ruby', value_gp: 50, quantity: 1 })] }))
   })
+
+  it('duplicate selection increments quantity instead of adding a new row', async () => {
+    vi.spyOn(api, 'listItems').mockResolvedValue([{ id: 1, name: 'Ruby', value_gp: 50, category: 'gem', description: null }])
+    const user = userEvent.setup()
+    render(<LootBundleEditor onClose={() => {}} onSaved={() => {}} />)
+
+    await user.click(screen.getByRole('button', { name: 'Add Item' }))
+    const rubyButton = await screen.findByRole('button', { name: /Ruby/ })
+    await user.click(rubyButton)
+    expect(screen.getByDisplayValue('1')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /Ruby/ }))
+    expect(screen.getByDisplayValue('2')).toBeInTheDocument()
+  })
+
+  it('shows "Value pending" for weapons without a price', async () => {
+    vi.spyOn(api, 'listItems').mockResolvedValue([])
+    vi.spyOn(api, 'listWeapons').mockResolvedValue([{ id: 2, name: 'Longsword' }] as any)
+    const user = userEvent.setup()
+    render(<LootBundleEditor onClose={() => {}} onSaved={() => {}} />)
+
+    await user.click(screen.getByRole('button', { name: 'Add Weapon' }))
+    await user.click(await screen.findByRole('button', { name: /Longsword/ }))
+    expect(screen.getByText('Value pending')).toBeInTheDocument()
+  })
+
+  it('renders a long bundle with many items and updates the total', async () => {
+    const items = Array.from({ length: 10 }, (_, i) => ({ id: i + 1, name: `Item ${i + 1}`, value_gp: (i + 1) * 10, category: null, description: null }))
+    vi.spyOn(api, 'listItems').mockResolvedValue(items)
+    const user = userEvent.setup()
+    render(<LootBundleEditor onClose={() => {}} onSaved={() => {}} />)
+
+    await user.type(screen.getByLabelText('Name'), 'Big Pile')
+    await user.click(screen.getByRole('button', { name: 'Add Item' }))
+    for (const item of items) {
+      const button = await screen.findByText(item.name)
+      await user.click(button.closest('button')!)
+    }
+
+    const entryItems = screen.getByText('Total value:')
+    expect(entryItems).toHaveTextContent('550 gp')
+
+    expect(screen.getByText('Total value:')).toHaveTextContent('550 gp')
+  })
+})
+
+describe('LootBundleEditor Dialog contract', () => {
+  it('renders with the expected title for add mode', () => {
+    render(<LootBundleEditor onClose={() => {}} onSaved={() => {}} />)
+    expect(screen.getByRole('dialog', { name: 'Add New Loot Bundle' })).toBeInTheDocument()
+  })
+
+  it('renders with the expected title for edit mode', () => {
+    const existing: any = { id: 1, name: 'Chest', gold: 0, contents: [] }
+    render(<LootBundleEditor bundle={existing} onClose={() => {}} onSaved={() => {}} />)
+    expect(screen.getByRole('dialog', { name: 'Edit Loot Bundle: Chest' })).toBeInTheDocument()
+  })
+
+  it('closes on Cancel and on Escape', async () => {
+    const onClose = vi.fn()
+    const user = userEvent.setup()
+    render(<LootBundleEditor onClose={onClose} onSaved={() => {}} />)
+
+    await user.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(onClose).toHaveBeenCalledTimes(1)
+
+    await user.keyboard('{Escape}')
+    expect(onClose).toHaveBeenCalledTimes(2)
+  })
+
+  it('reports save status via an accessible status region', async () => {
+    vi.spyOn(api, 'createLootBundle').mockRejectedValue(new Error('Unable to save'))
+    vi.spyOn(api, 'listItems').mockResolvedValue([])
+    const user = userEvent.setup()
+    render(<LootBundleEditor onClose={() => {}} onSaved={() => {}} />)
+
+    await user.type(screen.getByLabelText('Name'), 'Chest')
+    await user.click(screen.getByRole('button', { name: 'Create Loot Bundle' }))
+
+    expect(await screen.findByRole('status')).toHaveTextContent('Unable to save')
+  })
 })

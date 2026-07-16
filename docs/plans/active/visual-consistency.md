@@ -1,6 +1,6 @@
 # Visual Consistency Plan — Cross-Cutting Aesthetic Remediation
 
-> **Status:** VF0-VF5, VW0-VW4 shipped. VW5 (complex authoring) is next.
+> **Status:** VF0-VF5, VW0-VW5 shipped. VW6 (workspace design pass) is next.
 
 - **Area guide:** [Visual Design](../../areas/visual-design.md).
 
@@ -251,54 +251,13 @@ depend on individual catalog migrations.
 | **VW2 — Role-rich browsers** | Standard | Migrate Monsters, NPCs, Items, and Loot. | Preserved specialist details and role consistency. ✅ |
 | **VW3 — Action browsers** | Standard | Migrate Encounters and Dungeons. | Primary Run/Enter flows and browser states. ✅ |
 | **VW4 — Standard editors** | Standard | Migrate six simple modal editors. | Shared dialogs, fields, and action rows. ✅ |
-| **VW5 — Complex authoring** | Standard | Migrate Encounter/Loot authoring and align Monster Editor framing. | Complex picker and route-editor conformance. |
+| **VW5 — Complex authoring** | Standard | Migrate Encounter/Loot authoring and align Monster Editor framing. | Complex picker and route-editor conformance. ✅ |
 | **VW6 — Workspace design pass** | High | Review every catalog/authoring route together. | Cross-route fixes and regression tests. |
 
 **Sequencing:** VW0 → VW1 → VW2 → VW3 → VW4 → VW5 → VW6. Do not migrate multiple cohorts in parallel because
 each changes shared browser/editor CSS and contracts.
 
-#### VW5 — Complex authoring (next up)
-
-- **Read first:** `docs/DESIGN_SYSTEM.md`'s "Standard editor contract (VW4)" section, `docs/TESTING.md`,
-  `EncounterEditor.tsx/.css`, `CreatureRowCard.tsx/.css`, `LootBundleEditor.tsx/.css`, `AddItemPanel.tsx`,
-  `AddWeaponPanel.tsx`, `AddCatalogPanel.css`, `MonsterEditor.tsx/.css`, and their editor/picker/row/form/total
-  tests. **VW4 confirmed:** `EncounterEditor` (like the other six standard editors) now renders the shared
-  `Dialog` directly — `open`, `title={encounter ? 'Edit Encounter: ${title}' : 'Add New Encounter'}`,
-  `onClose`, `pending={saving}`, `className="encounter-editor-dialog"` (a `width: min(760px, 96vw)` override),
-  and a `footer` of a `variant="secondary"` Cancel `Button` plus a `type="submit" form={formId}` Save `Button`
-  (`formId` from `useId()`, referencing the `<form id={formId}>` that is the Dialog's `children`). Its
-  `encounter?: Encounter` prop (undefined = create, defined = edit) and `onSaved: (encounter: Encounter) => void`
-  callback are unchanged. This stage's job is narrower than originally scoped: EncounterEditor's *outer* framing
-  is already done, so only its *inner* creature-roster/picker composition (`CreatureRowCard`, monster picker,
-  condition checkboxes) is in scope here, per the `Build` note below. DungeonBrowserPage has no modal editor —
-  DungeonShell's routed `MapLabEditorPage` owns dungeon content authoring and is excluded from this stage (it
-  belongs to VT3).
-- **Build:** EncounterEditor's outer modal framing is already the VW4 Dialog contract (see Read first) — do not
-  re-wrap it. Focus this stage's Encounter work on `CreatureRowCard`/monster-picker/condition-checkbox
-  composition only. Move Loot's outer modal framing to the same Dialog contract without changing model semantics.
-  Encounter monster re-pick must reset name/originalName/current/max HP/AC to source defaults, hand edits must
-  persist until re-pick, and legacy/custom conditions must round-trip. Loot's Item and Weapon panels remain
-  separate unless a single proven contract preserves their distinct metadata/variants and snapshot rows; both load
-  and sort their own catalogs, and duplicate selection increments quantity. Preserve totals and the unvalued-weapon
-  "Value pending" behavior. Keep MonsterEditor routed: retain its five fieldset regions, load/create/update/delete
-  error states, client validation, return to `/monsters` after save/delete, and the browser return-selection state.
-  Its existing `768px` and `520px` grids/action stacking are the reference responsive behavior.
-- **Inherits:** VW4 editor conventions, existing complex authoring components and MonsterEditor routes.
-- **Expected touch set:** the eight named authoring/framing files; Encounter/Loot/Monster editor tests and all
-  picker/row/form/total tests; `docs/DESIGN_SYSTEM.md` only if a shared picker contract is actually extracted; and
-  this plan. Retain LootBundleEditor's existing 600px rule until replaced by a verified 520px/768px composition;
-  do not touch Map Lab.
-- **Documentation impact:** This plan; update `docs/DESIGN_SYSTEM.md` only for a proven reusable shared picker or form contract.
-- **Tests:** Preserve Encounter stat-propagation/custom-condition tests, Loot snapshot/duplicate/total tests, and
-  Monster form mapping/validation/load/focus tests. Add Dialog focus/pending/overflow tests for Encounter/Loot,
-  long-bundle and condition-row narrow layouts, and Monster routed heading/action/save/delete return assertions.
-- **Gate:** Run frontend test/typecheck/build gates. User manually checks complex authoring at narrow desktop and
-  phone widths, including a long loot bundle and an encounter with conditions.
-- **Discovery consolidation:** Update `Reusable pieces` with any shared picker contract and `Key facts` with
-  complex authoring conventions. Revise VW6 block with exact authoring findings.
-- **Completion edit:** Collapse VW5, set VW6 as next, and point the manifest to VW6's anchor.
-
-#### VW6 — Workspace design pass (planned)
+#### VW6 — Workspace design pass (next up)
 
 - **Read first:** `docs/DESIGN_SYSTEM.md` (including its "Standard editor contract (VW4)" section), `docs/TESTING.md`,
   the ten browser TSX/CSS/test triples, the seven standard editor pairs and their tests, Encounter/Loot/Monster
@@ -498,6 +457,7 @@ changes in the same stage.
 | **VW2** | Migrated Monsters (routed New/Edit, no browser delete), NPCs, Items, and Loot to `BrowserLayout`/`RemoteState<T>`/Back-to-list, token-derived `MonsterStatBlock.css` (removed literal teal `rgb()` values), and added a `deleting`/`pending` confirm state to NPC/Items/Loot delete dialogs. Kept NPC on the `neutral` Card/SearchList variant (no typed `npc` variant added). Activated 7 VW0 role-rich seam tests (fixing two pre-existing test bugs: missing `initialEntries` and an ambiguous `getByText` match) and added deferred/empty/filtered-empty/error/chapter/back/pending-confirm coverage. 841 frontend tests, typecheck/build/lint clean. |
 | **VW3** | Migrated Encounters and Dungeons to `BrowserLayout`/`RemoteState<T>`/`Button`/foundation tokens with creature roster, Run/Enter primary flows, `Untitled Dungeon` creation, and pending delete state. Activated 5 VW0 action browser seam tests and added 22 focused coverage tests. 861 frontend tests, typecheck/build clean. |
 | **VW4** | Migrated all seven modal editors (Spell, Weapon, Player, NPC, Quest, Item, Encounter) onto the shared `Dialog`, replacing each duplicated backdrop/modal/header/action-row implementation; added an additive `className?` prop to `Dialog` for per-editor width overrides and a `role="status"` save-status region to each editor. Added new direct component test suites for Weapon/Player/NPC/Quest (previously mapping-only) and a Dialog-contract block (focus, Cancel/Escape, pending, save-status) to all seven; updated 8 browser-page tests whose `getByRole('dialog', …)` name assertions had relied on a pre-VW4 `aria-label` that differed from the visible heading. 900 frontend tests (6 pre-existing skips), typecheck/build/lint clean. |
+| **VW5** | Migrated LootBundleEditor's outer modal framing to the shared `Dialog` contract; preserved EncounterEditor's existing Dialog contract and focused on CreatureRowCard/picker/condition composition with re-pick HP/AC reset and hand-edit persistence tests; added MonsterEditor routed heading/action/save/delete return navigation tests; added long-bundle, duplicate-increment, and "Value pending" tests for Loot. 913 frontend tests (6 skipped), typecheck/build/lint clean. |
 
 ---
 
@@ -514,6 +474,6 @@ changes in the same stage.
 
 ## Next:
 
-**VW5 — Complex authoring** is next. It aligns Encounter's creature-roster/picker composition and Loot's outer
-modal framing with the VW4 `Dialog` contract, and reviews Monster Editor's routed framing, without changing
-model semantics.
+**VW6 — Workspace design pass** is next. It reviews every browser and editor route together for hierarchy,
+chapter-tab discipline, action ordering, state copy, responsive transitions, role-color consistency, and
+accessibility. It may begin after VW5 is committed.

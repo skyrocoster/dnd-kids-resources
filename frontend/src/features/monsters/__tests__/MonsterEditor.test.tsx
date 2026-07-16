@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
@@ -205,5 +205,115 @@ describe('MonsterEditor render', () => {
     const saveButton = screen.getByRole('button', { name: 'Create Monster' })
     saveButton.focus()
     expect(saveButton).toHaveFocus()
+  })
+
+  it('navigates to /monsters after saving a new monster', async () => {
+    const monster: Monster = {
+      id: 1,
+      name: 'New Monster',
+      aliases: [],
+      sizes: ['medium'],
+      family: null,
+      alignment: null,
+      creature_type: null,
+      ac: { value: 10, note: null, alternatives: [] },
+      hp: { average: 10, formula: null },
+      speed: [],
+      abilities: null,
+      saving_throws: {},
+      skills: {},
+      passive_perception: null,
+      damage_resistances: [],
+      damage_immunities: [],
+      damage_vulnerabilities: [],
+      condition_immunities: [],
+      senses: [],
+      languages: [],
+      audio_path: null,
+      features: { traits: [], spellcasting: [], actions: [], bonus_actions: [], reactions: [], reaction_intro: null, legendary_actions: [], legendary_intro: null, legendary_actions_per_round: null, mythic_actions: [] },
+      cr: null,
+      cr_sort: null,
+      cr_note: null,
+      experience_points: null,
+    }
+    vi.spyOn(api, 'createMonster').mockResolvedValue(monster)
+    const user = userEvent.setup()
+
+    render(
+      <MemoryRouter initialEntries={['/monsters/new']}>
+        <Routes>
+          <Route path="/monsters/new" element={<MonsterEditor />} />
+          <Route path="/monsters" element={<div>Monster list page</div>} />
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    await user.type(screen.getByLabelText('Name'), 'New Monster')
+    await user.click(screen.getByRole('button', { name: 'Create Monster' }))
+    await waitFor(() => expect(screen.getByText('Monster list page')).toBeInTheDocument())
+  })
+
+  it('navigates to /monsters after deleting an existing monster', async () => {
+    const monster: Monster = {
+      id: 99,
+      name: 'Delete Test',
+      aliases: [],
+      sizes: ['medium'],
+      family: null,
+      alignment: null,
+      creature_type: null,
+      ac: { value: 15, note: null, alternatives: [] },
+      hp: { average: 100, formula: null },
+      speed: [],
+      abilities: null,
+      saving_throws: {},
+      skills: {},
+      passive_perception: null,
+      damage_resistances: [],
+      damage_immunities: [],
+      damage_vulnerabilities: [],
+      condition_immunities: [],
+      senses: [],
+      languages: [],
+      audio_path: null,
+      features: { traits: [], spellcasting: [], actions: [], bonus_actions: [], reactions: [], reaction_intro: null, legendary_actions: [], legendary_intro: null, legendary_actions_per_round: null, mythic_actions: [] },
+      cr: null,
+      cr_sort: null,
+      cr_note: null,
+      experience_points: null,
+    }
+    vi.spyOn(api, 'getMonster').mockResolvedValue(monster)
+    vi.spyOn(api, 'deleteMonster').mockResolvedValue(undefined)
+    const user = userEvent.setup()
+
+    render(
+      <MemoryRouter initialEntries={['/monsters/99/edit']}>
+        <Routes>
+          <Route path="/monsters/:id/edit" element={<MonsterEditor />} />
+          <Route path="/monsters" element={<div>Monster list page</div>} />
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    expect(await screen.findByDisplayValue('Delete Test')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Delete' }))
+    await user.click(screen.getByRole('button', { name: 'Delete Monster' }))
+    await waitFor(() => expect(screen.getByText('Monster list page')).toBeInTheDocument())
+  })
+
+  it('navigates to /monsters on Cancel', async () => {
+    const user = userEvent.setup()
+
+    render(
+      <MemoryRouter initialEntries={['/monsters/new']}>
+        <Routes>
+          <Route path="/monsters/new" element={<MonsterEditor />} />
+          <Route path="/monsters" element={<div>Monster list page</div>} />
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(screen.getByText('Monster list page')).toBeInTheDocument()
   })
 })

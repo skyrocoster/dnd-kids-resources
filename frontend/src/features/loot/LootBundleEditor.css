@@ -1,45 +1,25 @@
-.loot-editor-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 100;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding: 2rem 1rem;
-  overflow-y: auto;
-  background: rgb(0 0 0 / 0.55);
+.loot-editor-dialog {
+  width: min(760px, 96vw);
 }
 
-.loot-editor-modal {
-  width: min(760px, 100%);
-  padding: 1.5rem;
-  color: var(--md-on-surface);
-  background: var(--md-surface-1, var(--md-surface));
-  border-radius: 0.75rem;
-  box-shadow: 0 8px 32px rgb(0 0 0 / 0.4);
-}
-
-.loot-editor-header, .loot-editor-section-header, .loot-editor-contents li, .loot-editor-actions {
+.loot-editor-section-header, .loot-editor-contents li {
   display: flex;
   align-items: center;
 }
 
-.loot-editor-header, .loot-editor-section-header { justify-content: space-between; gap: 1rem; }
-.loot-editor-header { margin-bottom: 1rem; }
-.loot-editor-header h2, .loot-editor-section-header h3 { margin: 0; }
+.loot-editor-section-header { justify-content: space-between; gap: 1rem; }
+.loot-editor-section-header h3 { margin: 0; }
 
-.loot-editor-header > button, .loot-editor-add-actions button, .loot-editor-actions button, .loot-editor-remove {
+.loot-editor-add-actions button, .loot-editor-remove {
   min-height: 3rem;
   border-radius: 0.375rem;
   cursor: pointer;
   touch-action: manipulation;
 }
 
-.loot-editor-header > button {
-  width: 2.75rem;
-  color: var(--md-on-surface);
-  background: none;
-  border: none;
+.loot-editor-form {
+  display: flex;
+  flex-direction: column;
 }
 
 .loot-editor-status { margin: 0 0 1rem; padding: 0.5rem 0.75rem; background: var(--md-surface-2, var(--md-surface)); border-radius: 0.375rem; }
@@ -60,13 +40,6 @@
 .loot-editor-contents input { width: 4.5rem; min-height: 3rem; padding: 0.25rem; color: var(--md-on-surface); background: var(--md-surface); border: 1px solid var(--md-outline); border-radius: 0.25rem; }
 .loot-editor-remove { padding: 0.35rem 0.75rem; color: var(--md-error); background: none; border: 1px solid var(--md-error); }
 .loot-editor-total { padding: 0.75rem; color: var(--md-on-loot-container); background: var(--md-loot-container); border-radius: 0.375rem; }
-.loot-editor-actions { justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem; }
-.loot-editor-actions button { padding: 0.5rem 1rem; color: var(--md-on-surface); background: none; border: 1px solid var(--md-outline-variant); }
-.loot-editor-actions .loot-editor-save { color: var(--md-on-loot); background: var(--md-loot); border: none; font-weight: var(--type-label-weight); }
-.loot-editor-save:disabled { opacity: 0.6; cursor: not-allowed; }
-
 @media (max-width: 600px) {
-  .loot-editor-backdrop { padding: 0.75rem; }
-  .loot-editor-modal { padding: 1rem; }
   .loot-editor-section-header { align-items: flex-start; flex-direction: column; }
 }
