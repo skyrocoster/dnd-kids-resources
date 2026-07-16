@@ -7,15 +7,36 @@
 }
 
 .app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
   padding: 1rem 1.5rem;
   background: var(--md-surface-2);
 }
 
-.app-header h1 {
-  margin: 0;
+.app-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--md-on-surface);
+  text-decoration: none;
   font-size: var(--type-headline-size);
   line-height: var(--type-headline-line);
   font-weight: var(--type-headline-weight);
+}
+
+.app-brand:hover {
+  color: var(--md-primary);
+}
+
+.app-brand:focus-visible {
+  outline: 2px solid var(--md-primary);
+  outline-offset: 2px;
+}
+
+.app-nav-mobile-trigger {
+  display: none;
 }
 
 .app-body {
@@ -58,15 +79,6 @@
 
 .app-nav--collapsed .app-nav-toggle {
   margin-left: 0;
-}
-
-.visually-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
 }
 
 .app-nav-section h2 {
@@ -145,4 +157,58 @@
   font-size: var(--type-caption-size);
   color: var(--md-on-surface-variant);
   background: var(--md-surface-2);
+}
+
+.app-nav-mobile h2 {
+  font-size: var(--type-caption-size);
+  line-height: var(--type-caption-line);
+  font-weight: var(--type-caption-weight);
+  text-transform: uppercase;
+  letter-spacing: var(--type-caption-tracking);
+  color: var(--md-on-surface-variant);
+  margin: var(--space-4) 0 var(--space-2);
+}
+
+.app-nav-mobile .app-nav-section:first-child h2 {
+  margin-top: 0;
+}
+
+.app-nav-mobile ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.app-nav-mobile a {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--control-height);
+  padding: 0.35rem var(--space-2);
+  margin: 0 calc(var(--space-2) * -1);
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  font-size: var(--type-label-size);
+  line-height: var(--type-label-line);
+  font-weight: var(--type-label-weight);
+  color: var(--md-on-surface);
+}
+
+.app-nav-mobile a:hover {
+  background: var(--md-surface-3);
+}
+
+.app-nav-mobile a.active {
+  background: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+}
+
+@media (max-width: 768px) {
+  .app-nav {
+    display: none;
+  }
+
+  .app-nav-mobile-trigger {
+    display: flex;
+  }
 }

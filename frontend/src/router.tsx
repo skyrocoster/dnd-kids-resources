@@ -18,13 +18,13 @@ import { AppShell } from './layout/AppShell'
 import { ComponentDemoPage } from './pages/ComponentDemoPage'
 import { HomePage } from './pages/HomePage'
 
-export const router = createBrowserRouter([
+export const routes = [
   {
     path: '/',
     element: <AppShell />,
     children: [
       { index: true, element: <HomePage /> },
-      { path: 'demo', element: <ComponentDemoPage /> },
+      ...(import.meta.env.DEV ? [{ path: 'demo', element: <ComponentDemoPage /> }] : []),
       { path: 'spells', element: <SpellBrowserPage /> },
       { path: 'monsters', element: <MonsterBrowserPage /> },
       { path: 'monsters/new', element: <MonsterEditor /> },
@@ -48,4 +48,6 @@ export const router = createBrowserRouter([
       },
     ],
   },
-])
+]
+
+export const router = createBrowserRouter(routes)

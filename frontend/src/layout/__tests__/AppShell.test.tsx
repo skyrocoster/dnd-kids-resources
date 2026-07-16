@@ -32,18 +32,37 @@ describe('AppShell', () => {
     window.localStorage.removeItem(STORAGE_KEY)
   })
 
+  it('renders the brand as a home link, not a route heading', () => {
+    renderShell()
+    const brand = screen.getByRole('link', { name: 'D&D Kids Resources' })
+    expect(brand).toBeInTheDocument()
+    expect(brand).toHaveAttribute('href', '/')
+    expect(screen.queryByRole('heading', { name: 'D&D Kids Resources' })).not.toBeInTheDocument()
+  })
+
   it('renders the header and nav sections', () => {
     renderShell()
-    expect(screen.getByText('D&D Kids Resources')).toBeInTheDocument()
     expect(screen.getByText('Reference')).toBeInTheDocument()
     expect(screen.getByText('Campaign')).toBeInTheDocument()
+    expect(screen.getByText('Loot')).toBeInTheDocument()
   })
 
   it('renders links for every kept feature area', () => {
     renderShell()
-    const labels = ['Spells', 'Monsters', 'Weapons', 'Players', 'NPCs', 'Quests', 'Encounters', 'Dungeons']
+    const labels = [
+      'Spells',
+      'Monsters',
+      'Weapons',
+      'Players',
+      'NPCs',
+      'Quests',
+      'Encounters',
+      'Dungeons',
+      'Items',
+      'Loot Bundles',
+    ]
     for (const label of labels) {
-      expect(screen.getByRole('link', { name: label })).toBeInTheDocument()
+      expect(screen.getAllByRole('link', { name: label }).length).toBeGreaterThan(0)
     }
   })
 
@@ -77,7 +96,7 @@ describe('AppShell', () => {
     renderShell()
     await user.click(screen.getByRole('button', { name: 'Collapse navigation' }))
 
-    const spellsLink = screen.getByRole('link', { name: 'Spells' })
+    const spellsLink = screen.getAllByRole('link', { name: 'Spells' })[0]
     expect(spellsLink).toBeInTheDocument()
     await user.click(spellsLink)
     expect(screen.getByText('spells content')).toBeInTheDocument()
@@ -90,5 +109,42 @@ describe('AppShell', () => {
 
     await user.tab()
     expect(document.activeElement).not.toBeNull()
+  })
+
+  it('opens a mobile navigation drawer with reachable links', async () => {
+    const user = userEvent.setup()
+    renderShell()
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Open navigation' }))
+
+    const dialog = screen.getByRole('dialog', { name: 'Navigate' })
+    expect(dialog).toBeInTheDocument()
+    expect(screen.getByRole('navigation', { name: 'Site navigation' })).toBeInTheDocument()
+  })
+
+  it('closes the mobile navigation drawer after selecting a link', async () => {
+    const user = userEvent.setup()
+    renderShell()
+
+    await user.click(screen.getByRole('button', { name: 'Open navigation' }))
+    const drawerSpellsLink = screen.getByRole('navigation', { name: 'Site navigation' }).querySelector(
+      'a[href="/spells"]',
+    ) as HTMLElement
+    await user.click(drawerSpellsLink)
+
+    expect(screen.getByText('spells content')).toBeInTheDocument()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('closes the mobile navigation drawer on Escape', async () => {
+    const user = userEvent.setup()
+    renderShell()
+
+    await user.click(screen.getByRole('button', { name: 'Open navigation' }))
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+
+    await user.keyboard('{Escape}')
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 })

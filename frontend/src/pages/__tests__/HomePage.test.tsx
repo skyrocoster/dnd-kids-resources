@@ -1,31 +1,45 @@
-import { render, screen, waitFor } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router-dom'
+import { describe, expect, it } from 'vitest'
 import { HomePage } from '../HomePage'
-import * as client from '../../api/client'
+
+function renderHomePage() {
+  return render(
+    <MemoryRouter>
+      <HomePage />
+    </MemoryRouter>,
+  )
+}
 
 describe('HomePage', () => {
-  beforeEach(() => {
-    vi.restoreAllMocks()
+  it('renders one route heading', () => {
+    renderHomePage()
+    expect(screen.getByRole('heading', { level: 1, name: 'Field Guide' })).toBeInTheDocument()
   })
 
-  it('renders abilities returned by the API', async () => {
-    vi.spyOn(client, 'getAbilities').mockResolvedValue([
-      { id: 1, code: 'str', name: 'Strength', description: null },
-      { id: 2, code: 'dex', name: 'Dexterity', description: null },
-    ])
-
-    render(<HomePage />)
-
-    expect(screen.getByText(/Loading abilities/)).toBeInTheDocument()
-    await waitFor(() => expect(screen.getByText('Strength')).toBeInTheDocument())
-    expect(screen.getByText('Dexterity')).toBeInTheDocument()
+  it('renders a chapter tab for every nav section', () => {
+    renderHomePage()
+    expect(screen.getByRole('tab', { name: 'Reference' })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'Campaign' })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'Loot' })).toBeInTheDocument()
   })
 
-  it('shows an error message when the API call fails', async () => {
-    vi.spyOn(client, 'getAbilities').mockRejectedValue(new Error('Bad Gateway'))
+  it('shows the Reference chapter links by default', () => {
+    renderHomePage()
+    expect(screen.getByRole('link', { name: 'Spells' })).toHaveAttribute('href', '/spells')
+    expect(screen.getByRole('link', { name: 'Monsters' })).toHaveAttribute('href', '/monsters')
+    expect(screen.getByRole('link', { name: 'Weapons' })).toHaveAttribute('href', '/weapons')
+  })
 
-    render(<HomePage />)
+  it('switches chapters when a tab is selected', async () => {
+    const user = userEvent.setup()
+    renderHomePage()
 
-    await waitFor(() => expect(screen.getByText(/API error: Bad Gateway/)).toBeInTheDocument())
+    await user.click(screen.getByRole('tab', { name: 'Loot' }))
+
+    expect(screen.getByRole('link', { name: 'Items' })).toHaveAttribute('href', '/items')
+    expect(screen.getByRole('link', { name: 'Loot Bundles' })).toHaveAttribute('href', '/loot')
+    expect(screen.queryByRole('link', { name: 'Spells' })).not.toBeInTheDocument()
   })
 })

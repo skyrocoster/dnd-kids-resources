@@ -112,8 +112,11 @@ at 16px. Icons inherit `currentColor` for seamless theming. No icon fonts, no CD
 Named tokens in `theme.css` for spacing, radius, control size, elevation/backdrop, motion, and z-index. Values
 are derived from the dominant ad-hoc values already in use across the app, not invented — this pass formalizes
 the existing visual language rather than redesigning it. `Button.css`, `IconButton.css`, `PageHeader.css`,
-`StatePanel.css`, and `Dialog.css` consume these tokens; other component CSS still carries pre-VF1 ad-hoc values
-and adopts the scale incrementally as VW/VT stages touch it.
+`StatePanel.css`, `Dialog.css`, `SearchList.css`, `form/form.css`, and `Card.css` (radius only) consume these
+tokens; other component CSS still carries pre-VF1 ad-hoc values and adopts the scale incrementally as VW/VT
+stages touch it. `SplitPane.css`'s outer-corner `0.5rem` radius is a documented one-off (VF2) rather than
+rounded onto `--radius-md`/`--radius-lg`, since either would visibly shrink or grow that specific corner
+treatment.
 
 | Token | Value | Notes |
 |-------|-------|-------|
@@ -148,6 +151,87 @@ display face for headings only if it stays offline-safe and license-compatible.
 
 Ad-hoc rem values remain in most component CSS outside the VF1 touch set (see the token table above). Padding
 values cluster around 0.5rem–1.5rem in practice. VW/VT stages adopt the spacing scale as they touch each file.
+
+---
+
+## Shared control and state contracts (VF2)
+
+- **`Button`/`IconButton`** — normal size (`.btn--normal`, `.icon-btn`) consumes `--control-height` (48px) for
+  both width and height, meeting the touch-target floor. `Button`'s `compact` size remains the documented
+  desktop-only exception.
+- **`StatePanel`** — `loading` status renders a `.state-panel-spinner` (a `--md-primary`-colored spinning ring,
+  `prefers-reduced-motion`-safe via the global animation-duration reset). All five statuses (`loading`, `empty`,
+  `filteredEmpty`, `error`, `noSelection`) have distinct default copy; `action` renders an arbitrary interactive
+  element; the root always carries `role="status" aria-live="polite"`.
+- **`SearchList`** — item rows use ordinary button-list semantics (`<ul><li><button>`, no `role="listbox"`/
+  `role="option"`), with the selected row marked via `aria-current="true"` rather than `aria-selected`. A new
+  `status?: 'ready' | 'loading' | 'error'` prop (default `'ready'`) renders the shared `StatePanel` for loading
+  and error states; when `status` is `'ready'`, an empty `items` array renders `StatePanel`'s `empty` state and
+  a non-empty `items` array with an empty filtered result renders its `filteredEmpty` state — these are now
+  visually and textually distinct. `emptyMessage` overrides the `StatePanel` message for whichever of those two
+  states is showing. The search input and each item row meet the 48px control-height floor.
+- **`SplitPane`** — the visible divider stays 4px wide (unchanged), but `.split-pane-handle::before` adds an
+  absolutely positioned, invisible hit-target region (14px on each side) so pointer users get a much larger
+  resize target without any layout shift or visual width change. Keyboard resizing (arrow/Home/End on the
+  focused separator) was already implemented in VF1 and is unchanged.
+- **Shared form controls** (`form/form.css`'s `.form-control`, consumed by `TextField`/`SelectField`) — meet the
+  48px floor via `min-height: var(--control-height)`; `.form-field-checkbox` (consumed by `CheckboxField` and
+  `MultiSelectField`) does the same for its checkbox+label row. `.form-textarea`'s explicit `6rem` min-height
+  (already above the floor) is unaffected.
+- **`visually-hidden`** — consolidated to a single definition in `index.css` (global, always loaded via
+  `main.tsx`). The previous duplicate definitions in `SearchList.css` and `AppShell.css` are removed; all
+  consumers (`SearchList`, `AppShell`, `CombatantCard`, and future components) share the one utility.
+
+---
+
+## Dialog contract (VF3)
+
+- **`Dialog`** (`components/Dialog.tsx`) is the one modal accessibility contract; `ConfirmDialog` is a consumer of
+  it, not a parallel implementation. Props: `open`, `title`, `description?`, `onClose`, `children?`, `footer?`,
+  `pending?` (default `false`), `role?` (`'dialog' | 'alertdialog'`, default `'dialog'`).
+- **Title/description association** — `title` renders as an `<h2>` wired via `aria-labelledby`; `description`
+  (optional) renders as a `<p>` wired via `aria-describedby`, both using `useId()`.
+- **Initial focus** — on open, focus moves to the first focusable element inside the dialog (in DOM order across
+  body and footer); if none exists, focus moves to the dialog surface itself (`tabIndex={-1}`).
+- **Focus containment** — Tab/Shift+Tab cycle only through focusable elements inside the dialog; tabbing past the
+  last element wraps to the first, and Shift+Tab off the first wraps to the last.
+- **Focus restoration** — the element focused immediately before open is refocused when the dialog closes.
+- **Escape and backdrop dismissal** — both call `onClose`, but neither fires while `pending` is `true` ("Escape
+  dismissal where allowed").
+- **Pending state** — body and footer content sit inside a `<fieldset disabled={pending}>` (styled
+  `display: contents` so it doesn't affect layout), disabling every interactive descendant in one place; the
+  dialog surface also carries `aria-busy="true"` while pending.
+- **`ConfirmDialog`** (`components/ConfirmDialog.tsx`) keeps its existing public API (`message`, `confirmLabel`
+  default `'Delete'`, `onConfirm`, `onCancel`) plus an additive `pending?` prop, and renders `Dialog` with
+  `role="alertdialog"` and `title={message}` (no separate body text — the title *is* the question). Its footer
+  renders shared `Button`s: `variant="secondary"` Cancel and `variant="danger"` confirm (`loading={pending}`).
+  `ConfirmDialog.css` was removed; there is no dialog-specific stylesheet left outside `Dialog.css`.
+
+---
+
+## Shell and entry-point contract (VF4)
+
+- **`AppShell`** (`layout/AppShell.tsx`) — the site brand (`.app-brand`) is a `Link to="/"`, not a route `h1`;
+  each routed page establishes its own `h1` via `PageHeader`. The persisted desktop rail (`useNavCollapse()`,
+  `.app-nav`) is unchanged from VF1-VF3. At the `768px` breakpoint the rail is hidden (`display: none`) and an
+  `.app-nav-mobile-trigger` `IconButton` (`aria-label="Open navigation"`) appears in the header, opening a
+  `Dialog`-based drawer (`title="Navigate"`) that lists the same nav sections; selecting a link closes the
+  drawer. `IconButton` does not merge a passed `className` (it hardcodes `className="icon-btn"` and spreads
+  `...rest` after it, so a caller `className` silently replaces it) — wrap it in a container element for any
+  responsive/positioning class instead of passing `className` directly to `IconButton`.
+- **`navSections`** (`layout/navSections.ts`) — the single source of truth for the nav-section → route mapping
+  (`{ label, icon, links: { to, label, linkIcon }[] }`), consumed by both `AppShell`'s desktop rail/mobile
+  drawer and `HomePage`'s chapter tabs. Add a new feature route's nav entry here once, not per-consumer.
+- **`HomePage`** (`pages/HomePage.tsx`) — a field-guide start page, not an API proof screen. Uses `PageHeader`
+  (`title="Field Guide"`) with one `chapterTabs` entry per `navSections` group (local `useState` selects the
+  active chapter, no route/URL state) and renders that chapter's routes as a `.home-page-grid` of icon+label
+  link cards (`.home-page-card`, `Link` to each route).
+- **`ComponentDemoPage`** — excluded from the production route tree. `router.tsx` exports a `routes` array
+  (consumed by `createBrowserRouter` to produce the exported `router`) that only includes the `demo` route when
+  `import.meta.env.DEV` is true; Vite dead-code-eliminates the disabled branch (and `ComponentDemoPage`'s
+  content) out of the production bundle. Test the route list via the exported `routes` array with
+  `vi.stubEnv('DEV', …)` + `vi.resetModules()` + dynamic `import()`, not by instantiating `router` (a data
+  router instance does not expose its route config for inspection).
 
 ---
 

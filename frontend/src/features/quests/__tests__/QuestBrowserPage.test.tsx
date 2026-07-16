@@ -23,7 +23,7 @@ describe('QuestBrowserPage', () => {
     render(<QuestBrowserPage />)
 
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Ancient Amphitheatre' })).toBeInTheDocument())
-    expect(screen.getByRole('option', { name: /Ancient Amphitheatre/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Ancient Amphitheatre/ })).toBeInTheDocument()
   })
 
   it('selecting a quest shows its detail card', async () => {

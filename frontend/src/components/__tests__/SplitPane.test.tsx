@@ -47,4 +47,15 @@ describe('SplitPane', () => {
     fireEvent.keyDown(handle, { key: 'Home' })
     expect(handle).toHaveAttribute('aria-valuenow', '180')
   })
+
+  // VF2: pointer hit target is wider than the visible divider, without changing its width
+  it('expands the pointer hit target without widening the visible divider', async () => {
+    const { readFileSync } = await import('node:fs')
+    const { resolve } = await import('node:path')
+    const css = readFileSync(resolve(process.cwd(), 'src/components/SplitPane.css'), 'utf-8')
+    const handleRule = css.match(/\.split-pane-handle\s*\{([^}]*)\}/)?.[1] ?? ''
+    expect(handleRule).toContain('width: 4px')
+    const hitTargetRule = css.match(/\.split-pane-handle::before\s*\{([^}]*)\}/)?.[1] ?? ''
+    expect(hitTargetRule).toContain('position: absolute')
+  })
 })

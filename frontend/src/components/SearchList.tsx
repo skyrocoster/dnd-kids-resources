@@ -1,7 +1,9 @@
 import { useId, useMemo, useState } from 'react'
+import { StatePanel } from './StatePanel'
 import './SearchList.css'
 
 export type SearchListVariant = 'spell' | 'monster' | 'weapon' | 'loot' | 'neutral'
+export type SearchListStatus = 'ready' | 'loading' | 'error'
 
 interface SearchListProps<T> {
   items: T[]
@@ -13,6 +15,7 @@ interface SearchListProps<T> {
   variant?: SearchListVariant
   searchPlaceholder?: string
   emptyMessage?: string
+  status?: SearchListStatus
 }
 
 export function SearchList<T>({
@@ -24,7 +27,8 @@ export function SearchList<T>({
   onSelect,
   variant = 'neutral',
   searchPlaceholder = 'Search…',
-  emptyMessage = 'No results.',
+  emptyMessage,
+  status = 'ready',
 }: SearchListProps<T>) {
   const [query, setQuery] = useState('')
   const inputId = useId()
@@ -34,6 +38,35 @@ export function SearchList<T>({
     if (!q) return items
     return items.filter((item) => getLabel(item).toLowerCase().includes(q))
   }, [items, query, getLabel])
+
+  const body = () => {
+    if (status === 'loading') return <StatePanel status="loading" />
+    if (status === 'error') return <StatePanel status="error" message={emptyMessage} />
+    if (items.length === 0) return <StatePanel status="empty" message={emptyMessage} />
+    if (filtered.length === 0) return <StatePanel status="filteredEmpty" message={emptyMessage} />
+    return (
+      <ul className="search-list-items">
+        {filtered.map((item) => {
+          const id = getId(item)
+          const isSelected = id === selectedId
+          const meta = getMeta?.(item)
+          return (
+            <li key={id}>
+              <button
+                type="button"
+                aria-current={isSelected ? 'true' : undefined}
+                className={isSelected ? 'search-list-item active' : 'search-list-item'}
+                onClick={() => onSelect(item)}
+              >
+                <span className="search-list-item-label">{getLabel(item)}</span>
+                {meta && <span className="search-list-item-meta">{meta}</span>}
+              </button>
+            </li>
+          )
+        })}
+      </ul>
+    )
+  }
 
   return (
     <div className="search-list" data-variant={variant}>
@@ -50,31 +83,7 @@ export function SearchList<T>({
           onChange={(event) => setQuery(event.target.value)}
         />
       </div>
-      {filtered.length === 0 ? (
-        <p className="search-list-empty">{emptyMessage}</p>
-      ) : (
-        <ul className="search-list-items" role="listbox" aria-label={searchPlaceholder}>
-          {filtered.map((item) => {
-            const id = getId(item)
-            const isSelected = id === selectedId
-            const meta = getMeta?.(item)
-            return (
-              <li key={id}>
-                <button
-                  type="button"
-                  role="option"
-                  aria-selected={isSelected}
-                  className={isSelected ? 'search-list-item active' : 'search-list-item'}
-                  onClick={() => onSelect(item)}
-                >
-                  <span className="search-list-item-label">{getLabel(item)}</span>
-                  {meta && <span className="search-list-item-meta">{meta}</span>}
-                </button>
-              </li>
-            )
-          })}
-        </ul>
-      )}
+      {body()}
     </div>
   )
 }

@@ -29,4 +29,15 @@ describe('Card', () => {
     render(<Card title="Longsword" variant="weapon" footer="Requires proficiency" />)
     expect(screen.getByText('Requires proficiency')).toBeInTheDocument()
   })
+
+  // VF2: Card migrates its radius values onto the foundation token scale
+  it('consumes the radius tokens for its outer and tag corners', async () => {
+    const { readFileSync } = await import('node:fs')
+    const { resolve } = await import('node:path')
+    const css = readFileSync(resolve(process.cwd(), 'src/components/Card.css'), 'utf-8')
+    const cardRule = css.match(/\.card\s*\{([^}]*)\}/)?.[1] ?? ''
+    expect(cardRule).toContain('border-radius: var(--radius-lg)')
+    const tagRule = css.match(/\.card-tag\s*\{([^}]*)\}/)?.[1] ?? ''
+    expect(tagRule).toContain('border-radius: var(--radius-full)')
+  })
 })
