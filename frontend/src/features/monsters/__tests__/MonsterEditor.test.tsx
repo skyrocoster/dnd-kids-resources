@@ -185,6 +185,19 @@ describe('MonsterEditor render', () => {
     spy.mockRestore()
   })
 
+  it('withholds the edit form until the monster is loaded', () => {
+    vi.spyOn(api, 'getMonster').mockImplementation(() => new Promise(() => {}))
+    render(
+      <MemoryRouter initialEntries={['/monsters/99/edit']}>
+        <Routes>
+          <Route path="/monsters/:id/edit" element={<MonsterEditor />} />
+        </Routes>
+      </MemoryRouter>,
+    )
+    expect(screen.getByText('Loading monster…')).toBeInTheDocument()
+    expect(screen.queryByTestId('monster-editor-form')).not.toBeInTheDocument()
+  })
+
   it('supports keyboard focus through the primary editor controls', async () => {
     const user = userEvent.setup()
 
@@ -283,7 +296,8 @@ describe('MonsterEditor render', () => {
       experience_points: null,
     }
     vi.spyOn(api, 'getMonster').mockResolvedValue(monster)
-    vi.spyOn(api, 'deleteMonster').mockResolvedValue(undefined)
+    let resolveDelete: () => void = () => {}
+    vi.spyOn(api, 'deleteMonster').mockImplementation(() => new Promise((resolve) => { resolveDelete = () => resolve(undefined) }))
     const user = userEvent.setup()
 
     render(
@@ -298,6 +312,8 @@ describe('MonsterEditor render', () => {
     expect(await screen.findByDisplayValue('Delete Test')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Delete' }))
     await user.click(screen.getByRole('button', { name: 'Delete Monster' }))
+    expect(screen.getByRole('alertdialog')).toHaveAttribute('aria-busy', 'true')
+    resolveDelete()
     await waitFor(() => expect(screen.getByText('Monster list page')).toBeInTheDocument())
   })
 
@@ -315,5 +331,13 @@ describe('MonsterEditor render', () => {
 
     await user.click(screen.getByRole('button', { name: 'Cancel' }))
     expect(screen.getByText('Monster list page')).toBeInTheDocument()
+  })
+
+  it('derives editor accents from monster role tokens', async () => {
+    const { readFileSync } = await import('node:fs')
+    const { resolve } = await import('node:path')
+    const css = readFileSync(resolve(process.cwd(), 'src/features/monsters/MonsterEditor.css'), 'utf-8')
+    expect(css).toContain('color-mix(in srgb, var(--md-tertiary) 5%, transparent)')
+    expect(css).toContain('color-mix(in srgb, var(--md-on-tertiary) 4%, transparent)')
   })
 })

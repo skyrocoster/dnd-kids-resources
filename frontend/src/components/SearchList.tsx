@@ -41,7 +41,7 @@ export function SearchList<T>({
 
   const body = () => {
     if (status === 'loading') return <StatePanel status="loading" />
-    if (status === 'error') return <StatePanel status="error" message={emptyMessage} />
+    if (status === 'error') return <StatePanel status="error" />
     if (items.length === 0) return <StatePanel status="empty" message={emptyMessage} />
     if (filtered.length === 0) return <StatePanel status="filteredEmpty" message={emptyMessage} />
     return (

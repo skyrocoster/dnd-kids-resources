@@ -109,6 +109,21 @@ describe('SearchList', () => {
     expect(screen.getByText('Something went wrong')).toBeInTheDocument()
   })
 
+  it('keeps empty-state copy out of an error state', () => {
+    render(
+      <SearchList
+        items={[]}
+        getId={(i: Item) => i.id}
+        getLabel={(i: Item) => i.name}
+        onSelect={() => {}}
+        emptyMessage="No spells found."
+        status="error"
+      />,
+    )
+    expect(screen.getByText('Something went wrong')).toBeInTheDocument()
+    expect(screen.queryByText('No spells found.')).not.toBeInTheDocument()
+  })
+
   // VF2: search target classes meet the 48px touch-target floor
   it('search input and item rows consume the control-height token', async () => {
     const { readFileSync } = await import('node:fs')

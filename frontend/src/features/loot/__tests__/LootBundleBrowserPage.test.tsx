@@ -39,6 +39,7 @@ describe('LootBundleBrowserPage', () => {
     vi.spyOn(api, 'listLootBundles').mockRejectedValue(new Error('bundle load failed'))
     render(<MemoryRouter><LootBundleBrowserPage /></MemoryRouter>)
     await waitFor(() => expect(screen.getByText(/bundle load failed/)).toBeInTheDocument())
+    expect(screen.queryByRole('heading', { name: 'Build the first reward' })).not.toBeInTheDocument()
   })
 
   it('filtering to no matches shows a filtered-empty state', async () => {

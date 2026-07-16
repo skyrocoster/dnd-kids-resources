@@ -52,6 +52,7 @@
   border: 1px solid var(--md-error);
   color: var(--md-error);
   border-radius: 0.375rem;
+  min-height: var(--control-height);
   padding: 0.15rem 0.5rem;
   cursor: pointer;
   font-size: var(--type-caption-size);
@@ -72,6 +73,7 @@
   color: var(--md-on-secondary-container);
   border: none;
   border-radius: 0.375rem;
+  min-height: var(--control-height);
   padding: 0.5rem 0.9rem;
   cursor: pointer;
   height: fit-content;

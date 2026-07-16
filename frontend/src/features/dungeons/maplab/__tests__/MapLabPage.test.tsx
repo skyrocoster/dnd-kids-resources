@@ -1126,3 +1126,89 @@ describe('Design Phase J1 — toolbar trays', () => {
     expect(screen.getByRole('button', { name: 'Expand Session tools' })).toBeInTheDocument()
   })
 })
+
+// ── VT0 scaffold seams ──────────────────────────────────────────────────────
+
+describe('VT0 — Viewer live-surface scaffolding seams', () => {
+  beforeEach(() => {
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: mapLabLayout as unknown as Record<string, unknown> })
+    vi.spyOn(api, 'listNPCs').mockResolvedValue([{ id: 9, name: 'Mira' }] as NPC[])
+    vi.spyOn(api, 'getNPC').mockResolvedValue({ id: 9, name: 'Mira', notes: 'A careful scout.' } as NPC)
+    Element.prototype.scrollIntoView = vi.fn()
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it.skip('room rail and map canvas are reachable at 520px without horizontal overflow (VT2 narrow viewer)', async () => {
+    // VT2: At 520px, the viewer room rail, map canvas, and details panel must all be
+    // reachable. The current layout has no narrow-screen adaptation — room rail and
+    // details panel are always visible side-by-side with the canvas.
+    renderMapLabPage()
+    await flush()
+
+    const page = document.querySelector('.maplab-page') as HTMLElement
+    if (page) {
+      Object.defineProperty(page, 'offsetWidth', { value: 520 })
+      expect(page.scrollWidth).toBeLessThanOrEqual(page.clientWidth + 1)
+    }
+
+    expect(screen.getByRole('navigation', { name: 'Room navigation' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Room details')).toBeInTheDocument()
+  })
+
+  it.skip('room rail click is reachable via touch at narrow widths (VT2 narrow room access)', async () => {
+    // VT2: At narrow widths, the room rail must remain reachable — either inline or via
+    // a toggle/drawer. Currently the rail is always visible alongside the canvas with
+    // no responsive collapse.
+    renderMapLabPage()
+    await flush()
+
+    const rail = screen.getByRole('navigation', { name: 'Room navigation' })
+    expect(rail).toBeVisible()
+    // The rail must have a minimum touch target for its room buttons.
+    const roomButton = within(rail).getAllByRole('button')[0]
+    const rect = roomButton.getBoundingClientRect()
+    expect(rect.height).toBeGreaterThanOrEqual(48)
+  })
+
+  it.skip('details panel is reachable at 520px (VT2 narrow details)', async () => {
+    // VT2: The RoomDetailsPanel must be reachable at narrow widths, either inline or
+    // via a toggle. Currently it's always visible in the layout with no collapse.
+    renderMapLabPage()
+    await flush()
+
+    const details = screen.getByLabelText('Room details')
+    expect(details).toBeInTheDocument()
+    expect(details).toBeVisible()
+  })
+
+  it.skip('encounter dock opens and is draggable at narrow widths (VT1 dock in viewer)', async () => {
+    // VT1: When an encounter marker is clicked in the viewer, the FloatingWindow dock
+    // must open and be draggable/resizeable within the viewport at narrow widths.
+    // Currently FloatingWindow has no viewport-edge clamping.
+    const user = userEvent.setup()
+    const encounterProp = {
+      prop_id: 502, kind: 'encounter', cell: [0, 0] as [number, number], z: 0,
+      title: 'Goblin Ambush', hidden: false, locked: false, trapped: false, encounter_id: 7,
+    }
+    const backendLayout = { ...mapLabLayout, props: [...mapLabLayout.props, encounterProp] }
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: backendLayout })
+    vi.spyOn(api, 'getEncounter').mockResolvedValue({ id: 7, title: 'Goblin Ambush', active_index: 0, creatures: [] })
+    vi.spyOn(api, 'getConditions').mockResolvedValue([])
+
+    renderMapLabPage()
+    await flush()
+
+    const marker = screen.getByRole('button', { name: /Goblin Ambush/i })
+    await user.click(marker)
+
+    const dock = await screen.findByRole('dialog', { name: 'Goblin Ambush' })
+    expect(dock).toBeInTheDocument()
+    // Dock must be positioned within the viewport (not off-screen).
+    const rect = dock.getBoundingClientRect()
+    expect(rect.left).toBeGreaterThanOrEqual(0)
+    expect(rect.top).toBeGreaterThanOrEqual(0)
+  })
+})

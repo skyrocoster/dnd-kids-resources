@@ -158,6 +158,15 @@ describe('Dialog', () => {
     expect(screen.getByRole('dialog')).toHaveAttribute('aria-busy', 'true')
   })
 
+  it('makes non-form interactive descendants inert while pending', () => {
+    render(
+      <Dialog open title="Confirm" onClose={vi.fn()} pending>
+        <a href="/help">Help</a>
+      </Dialog>,
+    )
+    expect(screen.getByRole('link', { name: 'Help' }).closest('fieldset')).toHaveAttribute('inert')
+  })
+
   it('associates description text via aria-describedby', () => {
     render(
       <Dialog open title="Confirm" description="This cannot be undone." onClose={vi.fn()}>
