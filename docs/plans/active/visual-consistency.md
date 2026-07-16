@@ -294,11 +294,12 @@ changes in the same stage.
   repeated inspector Delete/Close region into a feature-local selection-action component; improve toolbar-tray,
   placement-mode, save-status, and inspector hierarchy. Keep SVG dimensions, strokes, marker state precedence,
   fixture form semantics, reducer actions, dual save, zoom/pan, fullscreen, and autosave unchanged.
-- **Inherits:** VT2 framing and responsive breakpoints; the VW6-confirmed 520px narrow-editor breakpoint convention
-  already used by LootBundleEditor; VT1's 48px touch-target floor and action-grouping patterns; existing ToolbarTray,
-  MapLabEditorPage, FixturePropertiesForm, RoomContentEditor, maplab model/reducer/hooks, and visual marker contracts.
-  Apply same control-height and semantic grouping to inspector action buttons, toolbar controls, and compact field
-  labeling where accessibility targets are needed.
+- **Inherits:** VT2-confirmed responsive layout (520px/768px breakpoints stack editor nav rail, canvas, and inspector
+  vertically; no drawer/toggle patterns needed — scroll reachability is the pattern). The VW6-confirmed 520px narrow-editor 
+  breakpoint convention already used by LootBundleEditor; VT1's 48px touch-target floor and action-grouping patterns; 
+  existing ToolbarTray, MapLabEditorPage, FixturePropertiesForm, RoomContentEditor, maplab model/reducer/hooks, and 
+  visual marker contracts. Apply same control-height and semantic grouping to inspector action buttons, toolbar controls, 
+  and compact field labeling where accessibility targets are needed.
 - **Expected touch set:** `MapLabEditorPage.tsx`, `InspectorPanel.tsx`, `MapLabEditor.css`, selection-action
   component, Map Lab editor tests, `docs/DESIGN_SYSTEM.md` (compact-field accessibility exception), and this plan.
 - **Documentation impact:** `docs/DESIGN_SYSTEM.md` and this plan record the compact-field accessibility exception.
@@ -319,11 +320,12 @@ changes in the same stage.
 - **Build:** Perform a final `/frontend-design` review across every public route and all loading, empty, error,
   no-selection, modal, and narrow-screen states. Fix confirmed visual, accessibility, copy, density, and
   interaction regressions without adding feature scope.
-- **Inherits:** all VF, VW, and VT components including: VT1's 48px touch-target floor, action-grouping semantics,
-  viewport clamping, and load-error recovery patterns; VW6's SearchList error/empty-copy distinction and pending-Dialog
-  inertness; every specialized feature identity and existing data contract. Validate these patterns work consistently
-  across all routes at 320px, 375px, 520px, 768px, and desktop widths; verify keyboard focus, reduced-motion, and
-  absence of horizontal overflow.
+- **Inherits:** all VF, VW, and VT components including: VT2-confirmed responsive layout pattern (520px/768px breakpoints,
+  CSS flex-wrap stacking, no drawer/toggle overhead; scroll-reachability for all regions); VT1's 48px touch-target floor, 
+  action-grouping semantics, viewport clamping, and load-error recovery patterns; VW6's SearchList error/empty-copy 
+  distinction and pending-Dialog inertness; every specialized feature identity and existing data contract. Validate these 
+  patterns work consistently across all routes at 320px, 375px, 520px, 768px, and desktop widths; verify keyboard focus, 
+  reduced-motion, and absence of horizontal overflow. Confirm stacked layout reachability at narrow widths (no hidden regions).
 - **Expected touch set:** confirmed route defects/tests, canonical design or architecture references for durable corrections, and this plan.
 - **Documentation impact:** This plan; update `docs/DESIGN_SYSTEM.md` or `docs/ARCHITECTURE.md` only for confirmed durable contract corrections.
 - **Tests:** Add regression tests for each defect fixed. Run `npm run test`, `npm run lint`, `npm run typecheck`,
