@@ -1,6 +1,6 @@
 # Visual Consistency Plan — Cross-Cutting Aesthetic Remediation
 
-> **Status:** VF0-VF5 shipped. VW0 (workspace scaffolding) is next.
+> **Status:** VF0-VF5, VW0 shipped. VW1 (standard browsers) is next.
 
 - **Area guide:** [Visual Design](../../areas/visual-design.md).
 
@@ -69,6 +69,18 @@ of the bestiary field card, NPC dossier, encounter runner, and Map Lab.
 - **VF1 font-role decision:** no bundled display typeface was adopted. Evaluating, sourcing, licensing, and
   offline-bundling a new face wasn't proportional to this stage's scope; route headings keep using
   `--type-face`. A future stage may revisit this only if it stays offline-safe and license-compatible.
+- **VW0 confirmed browser composition:** all ten browser pages follow an identical structural pattern:
+  toolbar/header with `<h2>` title + "New" button, error `<p>`, `SplitPane` with `SearchList` left and detail
+  right, optional modal editor, optional `ConfirmDialog`. `BrowserLayout` (`components/BrowserLayout.tsx`) now
+  wraps this pattern: `title`, `actions?`, `error?`, `list`, `detail`, `editor?`, `dialog?`, `listLabel?` — it
+  uses `SplitPane` internally so consumers don't re-import it. `BrowserLayout.css` uses foundation tokens
+  (`--space-2`, `--md-error`). The component is currently unused (scaffolding only); VW1 will wire it into the
+  standard browser routes. **API naming gotcha:** `api.listNPCs` uses capital NPC (not `listNpcs`). All other
+  list methods use lowercase entity names (`listSpells`, `listWeapons`, `listMonsters`, `listItems`,
+  `listLootBundles`, `listQuests`, `listEncounters`, `listDungeons`, `listPlayers`). Type fixtures must use
+  structured types for Monster (`ArmorClass { value, note, alternatives }`, `HitPoints { average, formula }`,
+  `MovementSpeed { mode, feet, note, hover }`, `CreatureSize` lowercase strings), `Record<string, unknown>` for
+  NPC `stats` and `appearance`, and `string | null` for `Weapon.req_attune`.
 - The existing palette is broadly token-compliant. The material issue is composition and interaction drift:
   duplicated component families, conflicting responsive breakpoints outside the VF1 convention above, and
   inconsistent state/action hierarchy.
@@ -151,6 +163,10 @@ contracts.
   cards. `router.tsx` exports a `routes` array (consumed to build the exported `router`); the `demo` route is
   spliced in only when `import.meta.env.DEV` is true, so it's dead-code-eliminated from production builds.
 - `frontend/src/components/icons/index.ts` — only import point for Lucide icons.
+- **Confirmed VW0 contract** — `BrowserLayout` (`components/BrowserLayout.tsx`) wraps toolbar + error +
+  `SplitPane` (list left, detail right) + editor + dialog slots. Props: `title`, `actions?: ReactNode`,
+  `error?: string | null`, `list: ReactNode`, `detail: ReactNode`, `editor?: ReactNode`, `dialog?: ReactNode`,
+  `listLabel?: string`. CSS uses `--space-2` and `--md-error` tokens. Not yet rendered from any route.
 - `MonsterStatBlock`, `NPCStatCard`, `CombatantCard`, `MapCanvas`, Map Lab marker components, and the Map Lab
   reducer/hooks — feature signatures to frame consistently, not genericize.
 - `ToolbarTray`, `InspectorPanel`, `RoomDetailsPanel`, and Map Lab's fixture/form model — retain their existing
@@ -183,7 +199,7 @@ depend on individual catalog migrations.
 
 | Stage | Required strength | Summary | Deliverables |
 |-------|-------|---------|--------------|
-| **VW0 — Workspace scaffolding** | Light | Create opt-in browser/editor migration seams. | `BrowserLayout` stubs and skipped route tests. |
+| **VW0 — Workspace scaffolding** | Light | Create opt-in browser/editor migration seams. | `BrowserLayout` stubs and skipped route tests. ✅ |
 | **VW1 — Standard browsers** | Standard | Migrate Spells, Weapons, Players, and Quests. | Responsive list/detail and remote states. |
 | **VW2 — Role-rich browsers** | Standard | Migrate Monsters, NPCs, Items, and Loot. | Preserved specialist details and role consistency. |
 | **VW3 — Action browsers** | Standard | Migrate Encounters and Dungeons. | Primary Run/Enter flows and browser states. |
@@ -194,38 +210,39 @@ depend on individual catalog migrations.
 **Sequencing:** VW0 → VW1 → VW2 → VW3 → VW4 → VW5 → VW6. Do not migrate multiple cohorts in parallel because
 each changes shared browser/editor CSS and contracts.
 
-#### VW0 — Workspace scaffolding (next up)
+#### VW1 — Standard browsers (next up)
 
-- **Read first:** `docs/DESIGN_SYSTEM.md`, `docs/ARCHITECTURE.md`, `docs/TESTING.md`, shared browser components, and browser route tests.
-- **Build:** Add unused `BrowserLayout` and remote-state scaffolding with slots for header, list, detail, primary
-  action, and action footer; add placeholder classes and `it.skip` migration tests for every browser cohort. Do
-  not render the scaffold from a route or alter current browser behavior.
-- **Inherits:** VF primitives, `SplitPane`, `SearchList`, `Card`, and existing browser tests.
-- **Expected touch set:** shared browser-layout scaffolding, skipped browser tests, and this plan only.
-- **Documentation impact:** This plan only: inert scaffolding creates no durable product contract.
-- **Tests:** Existing browser tests stay green; skipped tests name the loading, empty, error, selection, and
-  narrow-screen contracts each later stage will satisfy.
-- **Gate:** Suite-sufficient: frontend test/typecheck/build clean, production rendering unchanged.
-- **Discovery consolidation:** Revise VW1-VW6 `Read first`, `Build`, and `Expected touch set` blocks with
-  confirmed browser-route file paths, shared-component APIs, and test-setup findings.
-- **Completion edit:** Collapse VW0, set VW1 as next, and point the manifest to VW1's anchor.
-
-#### VW1 — Standard browsers (planned)
-
-- **Read first:** `docs/DESIGN_SYSTEM.md`, `docs/ARCHITECTURE.md`, `docs/TESTING.md`, `BrowserLayout`, and the four named browser routes/tests.
-- **Build:** Implement the `BrowserLayout` responsive master/detail contract and migrate
-  `SpellBrowserPage`, `WeaponBrowserPage`, `PlayerBrowserPage`, and `QuestBrowserPage`. Add explicit loading,
-  request-error, empty-collection, filtered-empty, and no-selection rendering. On narrow screens, use an
-  intentional list-to-detail flow rather than a permanently compressed horizontal split. Use `PageHeader`,
-  role-aware chapter tabs, and shared action buttons without changing data/API semantics. Reuse each route's
-  existing icon from `frontend/src/layout/navSections.ts` (`WandIcon` spells, `SwordsIcon` weapons, `UsersIcon`
-  players, `ScrollIcon` quests) for its `PageHeader` rather than picking a new one, so the nav rail/drawer and
-  the route's own chapter tab stay visually consistent.
+- **Read first:** `docs/DESIGN_SYSTEM.md`, `docs/ARCHITECTURE.md`, `docs/TESTING.md`, `BrowserLayout`
+  (`components/BrowserLayout.tsx` + `BrowserLayout.css`), and the four named browser routes and their tests:
+  - `features/spells/SpellBrowserPage.tsx` + `__tests__/SpellBrowserPage.test.tsx`
+  - `features/weapons/WeaponBrowserPage.tsx` + `__tests__/WeaponBrowserPage.test.tsx`
+  - `features/players/PlayerBrowserPage.tsx` + `__tests__/PlayerBrowserPage.test.tsx`
+  - `features/quests/QuestBrowserPage.tsx` + `__tests__/QuestBrowserPage.test.tsx`
+  All four use `SplitPane` + `SearchList` + `Card` + `ConfirmDialog`; none use `useNavigate` (fully local
+  state). QuestBrowserPage also loads `listNPCs` + `listDungeons` for cross-reference display.
+- **Build:** Replace each page's hand-rolled toolbar + error + `SplitPane` shell with `<BrowserLayout>`,
+  passing `title`, `actions` (New button), `error`, `list` (`SearchList`), `detail` (selected Card or
+  empty state), `editor` (conditional modal), and `dialog` (conditional `ConfirmDialog`). Keep each page's
+  existing state management, sort logic, editor, and delete confirmation unchanged. Add explicit loading
+  state by switching from `useState<T[]>([])` to using `remoteState.ts`'s `RemoteState<T>` (or equivalent)
+  so the `SearchList` receives `status="loading"` while the API call is in flight. On narrow screens
+  (`@media (max-width: 520px)`), hide the detail pane and show a back-to-list button when an item is
+  selected, rather than compressing the split. Unskip the VW0 scaffolding tests for these four routes and
+  verify the real assertions pass. Reuse each route's existing icon from `frontend/src/layout/navSections.ts`
+  (`WandIcon` spells, `SwordsIcon` weapons, `UsersIcon` players, `ScrollIcon` quests) for its `PageHeader`
+  rather than picking a new one, so the nav rail/drawer and the route's own chapter tab stay visually
+  consistent.
 - **Inherits:** VF5 and VW0; existing sort, selection, editor, confirmation, Card, and DiceText behavior.
-- **Expected touch set:** `BrowserLayout`, the Spell/Weapon/Player/Quest browser routes and tests, shared CSS, `docs/ARCHITECTURE.md`, and this plan.
-- **Documentation impact:** `docs/ARCHITECTURE.md` and this plan record the shared browser and responsive navigation convention.
-- **Tests:** For each route, use deferred API promises to prove loading does not flash an empty state; test empty,
-  filter no-results, error, selection, action labels, and narrow-screen detail return behavior.
+  `BrowserLayout` wraps `SplitPane` internally — do not add a second `SplitPane` inside its slots.
+- **Expected touch set:** `BrowserLayout` (if slot API needs adjustment), the four browser routes listed
+  above, their four test files, `features/quests/QuestBrowserPage.tsx` (loads `listNPCs`/`listDungeons`),
+  their four CSS files, `docs/ARCHITECTURE.md`, and this plan.
+- **Documentation impact:** `docs/ARCHITECTURE.md` and this plan record the shared browser and responsive
+  navigation convention.
+- **Tests:** Unskip the four Spells/Weapons/Players/Quests tests in
+  `components/__tests__/BrowserLayout.vw0.test.tsx` and verify real assertions pass. For each route, use
+  deferred API promises to prove loading does not flash an empty state; test empty, filter no-results,
+  error, selection, action labels, and narrow-screen detail return behavior.
 - **Gate:** Run frontend test/typecheck/build gates. User manually checks all four routes at phone/tablet/desktop
   widths and confirms spell/weapon/player/quest edits still reach their existing editor flows.
 - **Discovery consolidation:** Update `Reusable pieces` with confirmed BrowserLayout API and migration
@@ -482,6 +499,7 @@ changes in the same stage.
 | **VF3** | Finalized `Dialog` into a full accessibility contract (title/description association, initial focus, Tab-trap, Escape/backdrop dismissal suppressed while pending, focus restoration, a `<fieldset disabled={pending}>` wrapping body+footer, `role` prop); unskipped and expanded its 7 VF3 test seams into 12 passing tests. Refactored `ConfirmDialog` into a thin `Dialog` consumer (`role="alertdialog"`, `title={message}`, shared `Button` footer) preserving its public API plus an additive `pending?` prop; deleted `ConfirmDialog.css`. 778 frontend tests (6 pre-existing skips unrelated to VF3), typecheck/build/lint clean. |
 | **VF4** | Made the `AppShell` brand a home `Link` (no route `h1`); added a `768px`-breakpoint mobile nav drawer using the `Dialog` contract, opened via an `IconButton`; extracted `layout/navSections.ts` as the shared nav-section map for both the rail/drawer and the new `HomePage`. Replaced `HomePage`'s API proof screen with a `PageHeader`-chapter-tabbed field-guide link grid; gated `ComponentDemoPage`'s route behind `import.meta.env.DEV` (confirmed excluded from the production bundle). 786 frontend tests, typecheck/build/lint clean. |
 | **VF5** | Conducted a foundation design review and repaired three defects: migrated `AppShell.css` ad-hoc spacing to foundation tokens, added a missing `focus-visible` outline to `SearchList` input, and removed a redundant local `prefers-reduced-motion` override from `FloatingWindow.css`. 789 frontend tests (3 new regression tests), typecheck/build/lint/documentation-check clean. |
+| **VW0** | Created `BrowserLayout` component (wraps toolbar + error + `SplitPane` + editor/dialog slots) with foundation-token CSS; added 28 `it.skip` scaffolding tests across all 10 browser cohorts with real assertion bodies in `components/__tests__/BrowserLayout.vw0.test.tsx`. Confirmed browser-route file paths, API naming (`listNPCs` capital NPC), and type shapes for later stages. 789 tests, typecheck/build/lint clean. |
 
 ---
 
@@ -498,5 +516,5 @@ changes in the same stage.
 
 ## Next:
 
-**VW0 — Workspace scaffolding** is unblocked. It adds unused `BrowserLayout` scaffolding and skipped route
-tests without changing production UI; VW1 begins only after VW0 is committed and collapsed into the shipped-stages table.
+**VW1 — Standard browsers** is unblocked. It migrates Spells, Weapons, Players, and Quests to `BrowserLayout`
+with loading/empty/error states and narrow-screen list-to-detail flow; VW1 must complete before VW2 begins.

@@ -9,7 +9,7 @@ This is the complete documentation inventory and task router. Read [../CLAUDE.md
 | Task | Area / current stage | Read first |
 |---|---|---|
 | Documentation maintenance | [Documentation Governance](areas/documentation.md) | `PLAN_TEMPLATE.md`, `scripts/check_docs.py`, `TESTING.md`, and existing GitHub workflow files |
-| Visual consistency work | [Visual Design: VW0](plans/active/visual-consistency.md#vw0-workspace-scaffolding-next-up) | `areas/visual-design.md`, `DESIGN_SYSTEM.md`, `ARCHITECTURE.md`, `TESTING.md` |
+| Visual consistency work | [Visual Design: VW1](plans/active/visual-consistency.md#vw1-standard-browsers-next-up) | `areas/visual-design.md`, `DESIGN_SYSTEM.md`, `ARCHITECTURE.md`, `TESTING.md` |
 | Existing dungeon, encounter, monster, spell, or loot behavior | Its area guide | `ARCHITECTURE.md`, `API_REFERENCE.md`, `DATA_MODEL.md`, `TESTING.md`, then the guide's active plan |
 | API route or client contract | Relevant area guide; create a focused plan if it has none | `API_REFERENCE.md`, `ARCHITECTURE.md`, `TESTING.md` |
 | Database schema, seed, import, or export | Relevant area guide; create a focused plan if it has none | `DATA_MODEL.md`, `ARCHITECTURE.md`, `TESTING.md` |
@@ -38,8 +38,8 @@ Authority: **Canonical** documents define current contracts. **Working** documen
 | [areas/monsters.md](areas/monsters.md) | Area guide | Canonical | No active plan | Monster behavior | Monster ownership, source map, or active work changes |
 | [areas/reference-catalogs.md](areas/reference-catalogs.md) | Area guide | Canonical | No active plan | Weapons, items, players, NPCs, or quests | Catalog ownership, source map, or active work changes |
 | [areas/spells.md](areas/spells.md) | Area guide | Canonical | No active plan | Spell behavior | Spell ownership, source map, or active work changes |
-| [areas/visual-design.md](areas/visual-design.md) | Area guide | Canonical | VW0 active | Shared UI, tokens, shell, or accessibility | Visual routing or active work changes |
-| [plans/active/visual-consistency.md](plans/active/visual-consistency.md#vw0-workspace-scaffolding-next-up) | Execution plan | Working | VW0 next | Current visual consistency work | Its active stage ships or its declared docs change |
+| [areas/visual-design.md](areas/visual-design.md) | Area guide | Canonical | VW1 active | Shared UI, tokens, shell, or accessibility | Visual routing or active work changes |
+| [plans/active/visual-consistency.md](plans/active/visual-consistency.md#vw1-standard-browsers-next-up) | Execution plan | Working | VW1 next | Current visual consistency work | Its active stage ships or its declared docs change |
 | [complete/documentation-plan-closeout-correction.md](complete/documentation-plan-closeout-correction.md) | Historical plan | Historical | Complete | Plan closeout correction history | Do not update except to repair archival metadata |
 | [complete/documentation-plan-template-workflow.md](complete/documentation-plan-template-workflow.md) | Historical plan | Historical | Complete | Plan-template workflow history | Do not update except to repair archival metadata |
 | [Analysis/README.md](Analysis/README.md) | Archive index | Historical | Active | Tracing analysis or decision provenance | Analysis/archive organization changes |
