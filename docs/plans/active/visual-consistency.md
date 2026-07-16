@@ -1,6 +1,6 @@
 # Visual Consistency Plan — Cross-Cutting Aesthetic Remediation
 
-> **Status:** VF0-VF1 shipped. VF2 (controls and states) is next; production UI is unchanged.
+> **Status:** VF0-VF4 shipped. VF5 (foundation design pass) is next; production UI now includes the shell/entry-point changes described below.
 
 - **Area guide:** [Visual Design](../../areas/visual-design.md).
 
@@ -31,19 +31,30 @@ of the bestiary field card, NPC dossier, encounter runner, and Map Lab.
   controls. Monster editing is intentionally a routed full-page editor and must remain one.
 - `SearchList` currently treats an unresolved request, a truly empty collection, and a filtered-empty result as
   the same state. Browser routes generally initialize with an empty array and have no loading state.
-- The current global shell has a desktop side rail at all viewport sizes. `SplitPane` is horizontal by default;
-  feature-level CSS currently owns its responsive behavior.
-- The documented 48px touch-target floor is not met by several shared controls and many older feature controls.
-  Map Lab SVG marker geometry is the documented exception; ordinary controls are not.
+- **VF4 confirmed shell composition:** the desktop side rail (`useNavCollapse()`-persisted) now only renders
+  above `768px`; below that it's hidden and replaced by a `Dialog`-based mobile drawer opened from an
+  `.app-nav-mobile-trigger`-wrapped `IconButton` in the header (see `docs/DESIGN_SYSTEM.md`'s "Shell and
+  entry-point contract (VF4)" section for the full contract). The nav-section → route map that drives both the
+  rail/drawer and `HomePage`'s chapter tabs lives in `frontend/src/layout/navSections.ts` — extend it once for
+  a new feature route rather than duplicating the list per consumer. `SplitPane` is still horizontal by default;
+  feature-level CSS still owns its own responsive behavior (VF4 did not touch `SplitPane`).
+- **Gotcha:** `IconButton` (`components/IconButton.tsx`) hardcodes `className="icon-btn"` and spreads `...rest`
+  after it, so passing a `className` prop silently replaces `"icon-btn"` instead of merging. Wrap it in a
+  container element for any positioning/responsive class instead.
+- The documented 48px touch-target floor is now met by the VF1/VF2 shared primitives (`Button` normal size,
+  `IconButton`, `SearchList`'s input/item rows, and the shared `form/form.css` controls). It is still not met by
+  many older feature-owned controls outside those files. Map Lab SVG marker geometry is the documented exception;
+  ordinary controls are not.
 - **VF1 confirmed token scale** (`frontend/src/theme.css`, documented in `docs/DESIGN_SYSTEM.md`'s "Foundation
   token scale" section): `--space-1..7` (0.25rem→3rem), `--radius-sm/md/lg/full` (0.25rem/0.375rem/0.75rem/999px),
   `--control-height`/`--control-height-compact` (48px/32px), `--elevation-shadow`/`--backdrop-color`,
   `--motion-fast`/`--motion-normal` (0.15s/0.2s ease), `--z-editor`/`--z-floating`/`--z-dialog` (100/150/200).
   `--md-surface-variant` now aliases `--md-surface-3`, resolving the prior undefined reference in
   `MapLabPage.css` (not touched this stage; VW/VT stages adopting that file inherit the fix automatically).
-  Only `Button.css`, `IconButton.css`, `PageHeader.css`, `StatePanel.css`, and `Dialog.css` consume the new
-  tokens so far — every other component CSS file still carries pre-VF1 ad-hoc values and should migrate to the
-  scale as its owning VW/VT stage touches it, not as a standalone sweep.
+  `Button.css`, `IconButton.css`, `PageHeader.css`, `StatePanel.css`, `Dialog.css`, `SearchList.css`,
+  `form/form.css`, and `Card.css` (radius only) consume the new tokens so far — every other component CSS file
+  still carries pre-VF1 ad-hoc values and should migrate to the scale as its owning VW/VT stage touches it, not
+  as a standalone sweep. `SplitPane.css`'s `0.5rem` outer-corner radius is a documented one-off, not migrated.
 - **VF1 responsive breakpoint convention** (documented, not CSS custom properties — media features can't consume
   `var()`): `520px` (narrow phone) and `768px` (tablet), matching the majority existing `@media` usage (Monster
   routes). `DungeonShell.css`/`MapLabPage.css` still use `38rem`/`56rem`; reconcile only when a VT stage already
@@ -99,6 +110,39 @@ contracts.
 - `frontend/src/components/Card.tsx`, `SearchList.tsx`, `SplitPane.tsx`, `ConfirmDialog.tsx`,
   `FloatingWindow.tsx`, `DiceText.tsx`, and `components/form/` — evolve their contracts; do not create parallel
   versions.
+- **Confirmed VF2 contracts** — `SearchList` takes an additive `status?: 'ready' | 'loading' | 'error'` prop
+  (default `'ready'`) and renders the shared `StatePanel` for its loading/error/empty/filtered-empty states;
+  its item rows are plain buttons (`aria-current="true"` marks the selected row, not `aria-selected`/
+  `role="option"`). `StatePanel` renders a `.state-panel-spinner` only when `status="loading"`. `SplitPane`'s
+  visible divider is unchanged (4px); its pointer hit target is widened via `.split-pane-handle::before`
+  (14px each side, absolutely positioned) rather than by resizing the element. `.form-control` and
+  `.form-field-checkbox` (in `form/form.css`) meet the 48px `--control-height` floor; `TextField`/
+  `SelectField`/`CheckboxField`/`MultiSelectField` inherit this for free since they all render those classes.
+  `.visually-hidden` now lives only in `index.css` (global) — do not redefine it in feature or component CSS.
+- **Confirmed VF3 contracts** — `Dialog` (`components/Dialog.tsx`) is the one modal accessibility contract:
+  `open`/`title`/`description?`/`onClose`/`children?`/`footer?`/`pending?` (default `false`)/`role?`
+  (`'dialog' | 'alertdialog'`, default `'dialog'`). It handles title/description `useId()` association,
+  initial focus (first focusable element, else the dialog surface), Tab/Shift+Tab focus containment,
+  Escape and backdrop dismissal (both call `onClose`, both suppressed while `pending`), focus restoration
+  to the pre-open active element, and a `<fieldset disabled={pending}>` (styled `display: contents`)
+  wrapping body+footer so pending disables every interactive descendant in one place; the dialog surface
+  also carries `aria-busy` while pending. `ConfirmDialog` (`components/ConfirmDialog.tsx`) is now a thin
+  `Dialog` consumer: same public API (`message`, `confirmLabel` default `'Delete'`, `onConfirm`,
+  `onCancel`) plus an additive `pending?` prop; it passes `role="alertdialog"` and `title={message}` (no
+  duplicate body text) and renders shared `Button`s (`variant="secondary"` Cancel,
+  `variant="danger"` confirm with `loading={pending}`) as the footer. `ConfirmDialog.css` was deleted —
+  all dialog styling lives in `Dialog.css` now.
+- **Confirmed VF4 contracts** — `layout/navSections.ts` exports `navSections: NavSection[]`
+  (`{ label, icon: LucideIcon, links: { to, label, linkIcon: LucideIcon }[] }`), the single source of truth
+  for the nav-section → route map; `AppShell`'s desktop rail, its mobile drawer, and `HomePage`'s chapter tabs
+  all read from it. `AppShell`'s `.app-brand` is a `react-router-dom` `Link to="/"` (not an `h1`); its mobile
+  nav drawer is a `Dialog` (`title="Navigate"`) opened by an `IconButton` (`aria-label="Open navigation"`)
+  wrapped in a `.app-nav-mobile-trigger` container — the container carries the responsive class because
+  `IconButton` does not merge a passed `className` (see the `IconButton` gotcha in `Key facts`). The rail/drawer
+  swap happens at the shared `768px` breakpoint. `HomePage` renders one `PageHeader` `chapterTabs` entry per
+  `navSections` group (local `useState`, no URL state) over a `.home-page-grid` of `Link`-based icon+label
+  cards. `router.tsx` exports a `routes` array (consumed to build the exported `router`); the `demo` route is
+  spliced in only when `import.meta.env.DEV` is true, so it's dead-code-eliminated from production builds.
 - `frontend/src/components/icons/index.ts` — only import point for Lucide icons.
 - `MonsterStatBlock`, `NPCStatCard`, `CombatantCard`, `MapCanvas`, Map Lab marker components, and the Map Lab
   reducer/hooks — feature signatures to frame consistently, not genericize.
@@ -142,107 +186,24 @@ implementation until VF5 is committed.
 **Sequencing:** VF0 → VF1 → VF2 → VF3 → VF4 → VF5. VF2 and VF3 may share only VF1's completed tokens; keep them
 sequential to avoid conflicts in shared control CSS.
 
-#### VF2 — Controls and states (next up)
+#### VF5 — Foundation design pass (next up)
 
-- **Read first:** `docs/DESIGN_SYSTEM.md`, `docs/TESTING.md`, `frontend/src/components/Button.tsx`,
-  `frontend/src/components/IconButton.tsx`, `frontend/src/components/PageHeader.tsx`,
-  `frontend/src/components/StatePanel.tsx`, `frontend/src/components/SearchList.tsx`,
-  `frontend/src/components/SplitPane.tsx`, `frontend/src/components/Card.tsx`,
-  `frontend/src/components/form/`, `frontend/src/theme.css`, and their colocated tests under
-  `frontend/src/components/__tests__/`.
-- **Build:** Finalize `Button` (variant/size/loading/disabled contracts), `IconButton` (accessible label,
-  touch target), `PageHeader` (chapter-tab navigation, actions slot), and `StatePanel` (status-specific
-  copy, action slot, aria-live). Evolve shared form controls and `SearchList` to consume foundation tokens,
-  inherit font settings, meet the 48px floor, and distinguish loading, empty collection, filtered-empty,
-  error, and no-selection states. Replace the incomplete listbox semantics in `SearchList` with ordinary
-  button-list semantics unless full keyboard listbox behavior is implemented. Expand `SplitPane`'s
-  pointer/keyboard resize target without changing its visible divider width. Consolidate `visually-hidden`
-  to one global utility. Unskip and verify the `it.skip` seams in `Button.test.tsx`, `IconButton.test.tsx`,
-  `PageHeader.test.tsx`, and `StatePanel.test.tsx`.
-- **Inherits:** VF1 token and typography contracts; existing Card/SearchList/SplitPane APIs unless a migration
-  contract requires an additive prop; `remoteState.ts` types for browser migration state.
-- **Confirmed radius values in this stage's touch set** (surveyed during VF1's codebase-wide radius grep, not
-  yet applied): `Card.css` uses `0.75rem` (matches `--radius-lg`) and `999px` (matches `--radius-full`);
-  `SearchList.css` and `form/form.css` both use `0.375rem` (matches `--radius-md`) — all three migrate directly.
-  `SplitPane.css` uses `0.5rem` for its outer corners (`border-radius: 0.5rem 0 0 0.5rem` / `0 0.5rem 0.5rem 0`),
-  which does not match any of `--radius-sm/md/lg/full` (0.25/0.375/0.75rem); decide whether to round it to
-  `--radius-md` or treat it as a documented one-off before touching that file.
-- **Expected touch set:** `Button.tsx`, `IconButton.tsx`, `PageHeader.tsx`, `StatePanel.tsx`, `SearchList.tsx`,
-  `SplitPane.tsx`, `Card.tsx`, `form/`, their tests, `docs/DESIGN_SYSTEM.md`, and this plan.
-- **Documentation impact:** `docs/DESIGN_SYSTEM.md` and this plan record shared primitive and accessibility contracts.
-- **Tests:** Render tests for button tones/kinds/loading/disabled labels, icon-button accessible names, state
-  roles and actions, field/search target classes, filtered-empty versus data-empty states, and SplitPane keyboard
-  operation.
-- **Gate:** Run frontend test/typecheck/build gates. User checks focus visibility, touch-sized controls, and
-  reduced-motion behavior on the component demo or focused test route without using it as a public product route.
-- **Discovery consolidation:** Update `Reusable pieces` with confirmed component APIs, prop changes, and
-  merged CSS contracts. Revise VF3-VF5 blocks with exact component signatures and accessibility findings.
-- **Completion edit:** Collapse VF2, set VF3 as next, and point the manifest to VF3's anchor.
-
-#### VF3 — Dialog contract (planned)
-
-- **Read first:** `docs/DESIGN_SYSTEM.md`, `docs/TESTING.md`, `frontend/src/components/Dialog.tsx`,
-  `frontend/src/components/Dialog.css`, `frontend/src/components/__tests__/Dialog.test.tsx`,
-  `frontend/src/components/ConfirmDialog.tsx`, `frontend/src/components/ConfirmDialog.css`, and
-  existing ConfirmDialog tests.
-- **Build:** Finalize the `Dialog` stub into a full accessibility contract: title/description association
-  via `useId()`, initial focus, Tab/Shift+Tab focus containment, Escape dismissal where allowed, focus
-  restoration, pending/saving state, and explicit backdrop policy. Unskip and verify the `it.skip` seams
-  in `Dialog.test.tsx`. Refactor `ConfirmDialog` to use it while retaining its current public API where
-  practical. Do not yet migrate domain editors.
-- **Inherits:** VF1 tokens and VF2 buttons/icon buttons; existing `ConfirmDialog` callers and test labels;
-  `Dialog.tsx` already has `open`/`title`/`description`/`onClose`/`footer`/`pending` props and
-  `useId()` for aria-labelledby/describedby.
-- **Expected touch set:** `frontend/src/components/Dialog.tsx`, `Dialog.css`, `ConfirmDialog.tsx`,
-  `ConfirmDialog.css`, `frontend/src/components/__tests__/Dialog.test.tsx`, related ConfirmDialog tests,
-  `docs/DESIGN_SYSTEM.md`, and this plan.
-- **Documentation impact:** `docs/DESIGN_SYSTEM.md` and this plan record the modal accessibility contract.
-- **Tests:** Add dialog unit/integration tests for dialog semantics, initial focus, focus loop, Escape,
-  restoration to trigger, backdrop behavior, and pending confirmation. Preserve existing deletion-flow tests.
-- **Gate:** Run frontend test/typecheck/build gates. User manually verifies keyboard-only confirmation and a
-  pointer confirmation flow; no feature editor is changed in this stage.
-- **Discovery consolidation:** Update `Reusable pieces` with the confirmed Dialog API. Revise VF4-VF5 blocks
-  with exact dialog behavior contracts and ConfirmDialog migration findings.
-- **Completion edit:** Collapse VF3, set VF4 as next, and point the manifest to VF4's anchor.
-
-#### VF4 — Shell and entry point (planned)
-
-- **Read first:** `docs/ARCHITECTURE.md`, `docs/DESIGN_SYSTEM.md`, `docs/TESTING.md`,
-  `frontend/src/layout/AppShell.tsx`, `frontend/src/layout/AppShell.css`,
-  `frontend/src/components/PageHeader.tsx`, `frontend/src/components/PageHeader.css`,
-  `frontend/src/layout/__tests__/AppShell.test.tsx`, `frontend/src/pages/HomePage.tsx`, and
-  `frontend/src/router.tsx`.
-- **Build:** Refactor `AppShell` so the site brand is a home link rather than a route `h1`; add `PageHeader`
-  to establish one route heading and the icon-and-text chapter-tab signature (`chapterTabs` prop with
-  `{key, label, icon}` entries). Provide a mobile navigation drawer or equivalent reachable navigation while
-  retaining the persisted desktop rail (`useNavCollapse()`). Replace `HomePage`'s API proof screen with a
-  field-guide start page linking to Dungeons, Encounters, reference catalogs, and campaign work. Restrict
-  `ComponentDemoPage` to development-only routing or remove it from production router exposure.
-- **Inherits:** VF1-VF3 primitives and the current `useNavCollapse()` persistence behavior. `PageHeader`
-  already provides `title`/`subtitle`/`chapterTabs`/`actions` props and tab keyboard navigation. Keep the
-  room-index rail separate from site navigation.
-- **Expected touch set:** `frontend/src/layout/`, `frontend/src/pages/HomePage*`, `router.tsx`,
-  `PageHeader.tsx`, router tests, `docs/ARCHITECTURE.md`, `docs/DESIGN_SYSTEM.md`, and this plan.
-- **Documentation impact:** `docs/ARCHITECTURE.md`, `docs/DESIGN_SYSTEM.md`, and this plan record shell and route-heading conventions.
-- **Tests:** Update `layout/__tests__/AppShell.test.tsx` for brand link, all navigation areas including Items and
-  Loot, mobile navigation semantics, and route heading behavior; replace HomePage API assertions with user-facing
-  navigation tests; add router coverage for the demo-route decision.
-- **Gate:** Run frontend test/typecheck/build gates. User manually verifies navigation and route hierarchy at
-  320px, 375px, 768px, and desktop widths; no browser automation is required by repository policy.
-- **Discovery consolidation:** Update `Key facts` with confirmed shell composition, navigation contracts, and
-  home-page structure. Revise VF5 and all VW blocks with exact layout conventions and router findings.
-- **Completion edit:** Collapse VF4, set VF5 as next, and point the manifest to VF5's anchor.
-
-#### VF5 — Foundation design pass (planned)
-
-- **Read first:** `docs/DESIGN_SYSTEM.md`, `docs/TESTING.md`, `frontend/src/components/Button.tsx`,
-  `IconButton.tsx`, `PageHeader.tsx`, `StatePanel.tsx`, `Dialog.tsx`, `remoteState.ts`, the VF1-VF4
-  touched components, and their tests under `frontend/src/components/__tests__/`.
+- **Read first:** `docs/DESIGN_SYSTEM.md` (its "Shell and entry-point contract (VF4)" section), `docs/TESTING.md`,
+  `frontend/src/components/Button.tsx`, `IconButton.tsx`, `PageHeader.tsx`, `StatePanel.tsx`, `Dialog.tsx`,
+  `remoteState.ts`, `frontend/src/layout/AppShell.tsx`, `AppShell.css`, `navSections.ts`,
+  `frontend/src/pages/HomePage.tsx`, `HomePage.css`, and their tests under `frontend/src/components/__tests__/`,
+  `frontend/src/layout/__tests__/`, and `frontend/src/pages/__tests__/`.
 - **Build:** Conduct a `/frontend-design` review of the shared foundation. Repair spacing, hierarchy, wrapping,
-  focus, contrast, reduced-motion, and mobile defects discovered across the shell, primitive demo, home page,
-  and one representative legacy browser without beginning the browser-family migration.
+  focus, contrast, reduced-motion, and mobile defects discovered across the shell (desktop rail, mobile drawer,
+  brand link), the primitive demo, the `HomePage` field-guide start page, and one representative legacy browser
+  without beginning the browser-family migration.
 - **Inherits:** VF0-VF4, the canonical design reference, and all existing user-facing content-role colors.
-  VF0 stubs: `Button`, `IconButton`, `PageHeader`, `StatePanel`, `Dialog`, and `remoteState.ts`.
+  VF0 stubs: `Button`, `IconButton`, `PageHeader`, `StatePanel`, `Dialog`, and `remoteState.ts`. VF4 shipped:
+  `AppShell`'s brand-as-home-link header, the `768px`-breakpoint mobile nav drawer (`Dialog`-based, opened via
+  an `.app-nav-mobile-trigger`-wrapped `IconButton`), the shared `layout/navSections.ts` nav-section map, and
+  `HomePage`'s `PageHeader`-chapter-tabbed link-card grid. Note: `IconButton` does not merge a passed
+  `className` (it hardcodes `className="icon-btn"` after spreading `...rest`) — wrap it in a container element
+  for positioning/responsive classes rather than passing `className` to it directly.
 - **Expected touch set:** confirmed shared foundation files, their regression tests, `docs/DESIGN_SYSTEM.md`
   when a durable contract changes, and this plan.
 - **Documentation impact:** This plan; update `docs/DESIGN_SYSTEM.md` only for a confirmed durable shared-contract correction.
@@ -300,7 +261,10 @@ each changes shared browser/editor CSS and contracts.
   `SpellBrowserPage`, `WeaponBrowserPage`, `PlayerBrowserPage`, and `QuestBrowserPage`. Add explicit loading,
   request-error, empty-collection, filtered-empty, and no-selection rendering. On narrow screens, use an
   intentional list-to-detail flow rather than a permanently compressed horizontal split. Use `PageHeader`,
-  role-aware chapter tabs, and shared action buttons without changing data/API semantics.
+  role-aware chapter tabs, and shared action buttons without changing data/API semantics. Reuse each route's
+  existing icon from `frontend/src/layout/navSections.ts` (`WandIcon` spells, `SwordsIcon` weapons, `UsersIcon`
+  players, `ScrollIcon` quests) for its `PageHeader` rather than picking a new one, so the nav rail/drawer and
+  the route's own chapter tab stay visually consistent.
 - **Inherits:** VF5 and VW0; existing sort, selection, editor, confirmation, Card, and DiceText behavior.
 - **Expected touch set:** `BrowserLayout`, the Spell/Weapon/Player/Quest browser routes and tests, shared CSS, `docs/ARCHITECTURE.md`, and this plan.
 - **Documentation impact:** `docs/ARCHITECTURE.md` and this plan record the shared browser and responsive navigation convention.
@@ -354,7 +318,11 @@ each changes shared browser/editor CSS and contracts.
 - **Build:** Migrate Spell, Weapon, Player, NPC, Quest, and Item editors to `Dialog`, shared fields, shared
   button/action ordering, and status messaging. Maintain each form's existing data mapping and validation. Use
   content-role accents only where they clarify the form's domain; do not make every modal heavily themed.
-- **Inherits:** VF3 dialog behavior, VF2 field/buttons, and existing editor/form helpers/tests.
+- **Inherits:** VF3's confirmed `Dialog` contract (`open`/`title`/`description?`/`onClose`/`children?`/
+  `footer?`/`pending?`/`role?`; initial focus, Tab-trap, Escape/backdrop dismissal disabled while `pending`,
+  focus restoration on close, and a `<fieldset disabled={pending}>` wrapping body+footer — see
+  `docs/DESIGN_SYSTEM.md`'s "Dialog contract (VF3)" section), VF2 field/buttons, and existing editor/form
+  helpers/tests.
 - **Expected touch set:** six editor components/tests, shared form/dialog CSS where required, `docs/DESIGN_SYSTEM.md`, and this plan.
 - **Documentation impact:** `docs/DESIGN_SYSTEM.md` and this plan record any durable shared form or dialog contract.
 - **Tests:** Retain all field validation and save tests; add focus restoration, Escape/backdrop policy, pending
@@ -554,6 +522,9 @@ changes in the same stage.
 |-------|------------------------------|
 | **VF0** | Created compile-safe stubs for `Button`, `IconButton`, `PageHeader`, `StatePanel`, and `Dialog` with placeholder CSS and `it.skip` test seams. Added `remoteState.ts` types for later browser migrations. All gates green; production UI unchanged. |
 | **VF1** | Added the spacing/radius/control-size/elevation/motion/z-index token scale to `theme.css`, resolved undefined `--md-surface-variant`, and normalized `color-scheme`/native-control font inheritance/body typography in `index.css`. Migrated `Button.css`, `IconButton.css`, `PageHeader.css`, `StatePanel.css`, and `Dialog.css` to the new tokens; unskipped the VF1-tagged Button/IconButton/PageHeader tests; deferred bundling a display typeface. 753 frontend tests, typecheck/build/lint clean. |
+| **VF2** | Added a `StatePanel` loading spinner and unskipped its five VF2 tests; gave `SearchList` a `status` prop (`ready`/`loading`/`error`) rendering the shared `StatePanel` and replaced its listbox semantics with ordinary buttons (`aria-current` for selection); expanded `SplitPane`'s pointer hit target via an invisible `::before` without changing its visible 4px divider; migrated `Card.css`/`form/form.css`/`SearchList.css` radius and the 48px control-height floor onto foundation tokens; consolidated `visually-hidden` into `index.css`. Updated 7 downstream browser/panel tests that asserted the old `role="option"` semantics. 769 frontend tests (13 skipped for VF3+), typecheck/build/lint clean. |
+| **VF3** | Finalized `Dialog` into a full accessibility contract (title/description association, initial focus, Tab-trap, Escape/backdrop dismissal suppressed while pending, focus restoration, a `<fieldset disabled={pending}>` wrapping body+footer, `role` prop); unskipped and expanded its 7 VF3 test seams into 12 passing tests. Refactored `ConfirmDialog` into a thin `Dialog` consumer (`role="alertdialog"`, `title={message}`, shared `Button` footer) preserving its public API plus an additive `pending?` prop; deleted `ConfirmDialog.css`. 778 frontend tests (6 pre-existing skips unrelated to VF3), typecheck/build/lint clean. |
+| **VF4** | Made the `AppShell` brand a home `Link` (no route `h1`); added a `768px`-breakpoint mobile nav drawer using the `Dialog` contract, opened via an `IconButton`; extracted `layout/navSections.ts` as the shared nav-section map for both the rail/drawer and the new `HomePage`. Replaced `HomePage`'s API proof screen with a `PageHeader`-chapter-tabbed field-guide link grid; gated `ComponentDemoPage`'s route behind `import.meta.env.DEV` (confirmed excluded from the production bundle). 786 frontend tests, typecheck/build/lint clean. |
 
 ---
 
@@ -570,6 +541,6 @@ changes in the same stage.
 
 ## Next:
 
-**VF2 — Controls and states** is unblocked. It finalizes `Button`, `IconButton`, `PageHeader`, and `StatePanel`
-contracts and migrates `SearchList`/`SplitPane`/`Card`/`form/` to the VF1 token scale; begin VF3 only after VF2
-is committed and collapsed into the shipped-stages table.
+**VF5 — Foundation design pass** is unblocked. It conducts a `/frontend-design` review across the shared
+foundation — including the new VF4 shell and `HomePage` — and repairs discovered defects; VW0 begins only
+after VF5 is committed and collapsed into the shipped-stages table.

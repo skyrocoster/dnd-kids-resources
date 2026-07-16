@@ -15,8 +15,9 @@
 }
 
 .form-control {
+  min-height: var(--control-height);
   padding: 0.5rem 0.75rem;
-  border-radius: 0.375rem;
+  border-radius: var(--radius-md);
   border: 1px solid var(--md-outline-variant);
   background: var(--md-surface);
   color: var(--md-on-surface);
@@ -47,6 +48,7 @@
   flex-direction: row;
   align-items: center;
   gap: 0.5rem;
+  min-height: var(--control-height);
   margin-bottom: 0.35rem;
 }
 

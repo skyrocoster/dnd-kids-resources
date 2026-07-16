@@ -49,8 +49,8 @@ This doc describes the folder structure, backend/frontend conventions, and reque
 | `components/` | Shared UI primitives (Card, ConfirmDialog, DiceText, FloatingWindow, SearchList, SplitPane) + subdirs for form inputs and icon components |
 | `features/` | Domain modules — `dungeons/`, `encounters/`, `items/`, `loot/`, `monsters/`, `npcs/`, `players/`, `quests/`, `spells/`, `weapons/`. Each feature dir contains pages, editor forms, and local state management. |
 | `pages/` | Top-level router pages (HomePage, ComponentDemoPage, StubPage) — entry points for each route |
-| `layout/` | AppShell.tsx — header, nav, footer layout that wraps all pages |
-| `router.tsx` | React Router configuration (routes, page-to-path mappings) |
+| `layout/` | AppShell.tsx — header, nav, footer layout that wraps all pages; navSections.ts — shared nav-section → route map consumed by AppShell's rail/drawer and HomePage's chapter tabs |
+| `router.tsx` | React Router configuration; exports a `routes` array (dev-only `demo` route gated by `import.meta.env.DEV`) and the `router` built from it |
 | `theme.css` | Material Design 3 dark-mode tokens (--md-primary, --md-surface-1, --type-headline, etc.) — design system; consume these, never hand-pick colors |
 | `index.css` | Global resets and baseline styles |
 | `main.tsx` | React app entry point (React.createRoot) |

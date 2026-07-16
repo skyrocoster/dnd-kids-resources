@@ -1,61 +1,29 @@
-import { NavLink, Outlet } from 'react-router-dom'
+import { useState } from 'react'
+import { Link, NavLink, Outlet } from 'react-router-dom'
 import { useNavCollapse } from '../hooks/useNavCollapse'
-import {
-  DoorIcon,
-  GemIcon,
-  CoinsIcon,
-  MasksIcon,
-  NavCollapseIcon,
-  NavExpandIcon,
-  ScrollIcon,
-  ShieldIcon,
-  SkullIcon,
-  SwordsIcon,
-  UsersIcon,
-  WandIcon,
-} from '../components/icons'
-import type { LucideIcon } from '../components/icons'
+import { navSections } from './navSections'
+import { Dialog } from '../components/Dialog'
+import { IconButton } from '../components/IconButton'
+import { MapIcon, MenuIcon, NavCollapseIcon, NavExpandIcon } from '../components/icons'
 import './AppShell.css'
-
-const navSections: {
-  label: string
-  links: { to: string; label: string; linkIcon: LucideIcon }[]
-}[] = [
-  {
-    label: 'Reference',
-    links: [
-      { to: '/spells', label: 'Spells', linkIcon: WandIcon },
-      { to: '/monsters', label: 'Monsters', linkIcon: SkullIcon },
-      { to: '/weapons', label: 'Weapons', linkIcon: SwordsIcon },
-    ],
-  },
-  {
-    label: 'Campaign',
-    links: [
-      { to: '/players', label: 'Players', linkIcon: UsersIcon },
-      { to: '/npcs', label: 'NPCs', linkIcon: MasksIcon },
-      { to: '/quests', label: 'Quests', linkIcon: ScrollIcon },
-      { to: '/encounters', label: 'Encounters', linkIcon: ShieldIcon },
-      { to: '/dungeons', label: 'Dungeons', linkIcon: DoorIcon },
-    ],
-  },
-  {
-    label: 'Loot',
-    links: [
-      { to: '/items', label: 'Items', linkIcon: GemIcon },
-      { to: '/loot', label: 'Loot Bundles', linkIcon: CoinsIcon },
-    ],
-  },
-]
 
 export function AppShell() {
   const { collapsed, toggle } = useNavCollapse()
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const ToggleIcon = collapsed ? NavExpandIcon : NavCollapseIcon
 
   return (
     <div className="app-shell">
       <header className="app-header">
-        <h1>D&D Kids Resources</h1>
+        <Link to="/" className="app-brand">
+          <MapIcon size={22} aria-hidden="true" />
+          <span>D&D Kids Resources</span>
+        </Link>
+        <div className="app-nav-mobile-trigger">
+          <IconButton label="Open navigation" onClick={() => setMobileNavOpen(true)}>
+            <MenuIcon size={20} aria-hidden="true" />
+          </IconButton>
+        </div>
       </header>
       <div className="app-body">
         <nav className={`app-nav ${collapsed ? 'app-nav--collapsed' : ''}`}>
@@ -96,6 +64,29 @@ export function AppShell() {
       <footer className="app-footer">
         <span>Built for running games at the table.</span>
       </footer>
+      <Dialog open={mobileNavOpen} title="Navigate" onClose={() => setMobileNavOpen(false)}>
+        <nav className="app-nav-mobile" aria-label="Site navigation">
+          {navSections.map((section) => (
+            <div className="app-nav-section" key={section.label}>
+              <h2>{section.label}</h2>
+              <ul>
+                {section.links.map((link) => (
+                  <li key={link.to}>
+                    <NavLink
+                      to={link.to}
+                      className={({ isActive }) => (isActive ? 'active' : '')}
+                      onClick={() => setMobileNavOpen(false)}
+                    >
+                      <link.linkIcon size={20} aria-hidden="true" />
+                      <span>{link.label}</span>
+                    </NavLink>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </nav>
+      </Dialog>
     </div>
   )
 }

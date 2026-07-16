@@ -62,7 +62,7 @@ describe('EncounterBrowserPage', () => {
     renderPage()
 
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Ants' })).toBeInTheDocument())
-    expect(screen.getByRole('option', { name: /Ants/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Ants/ })).toBeInTheDocument()
     expect(screen.getByText('Giant Toad')).toBeInTheDocument()
   })
 

@@ -1,32 +1,38 @@
-import './ConfirmDialog.css'
+import { Button } from './Button'
+import { Dialog } from './Dialog'
 
 interface ConfirmDialogProps {
   message: string
   confirmLabel?: string
   onConfirm: () => void
   onCancel: () => void
+  pending?: boolean
 }
 
-export function ConfirmDialog({ message, confirmLabel = 'Delete', onConfirm, onCancel }: ConfirmDialogProps) {
+export function ConfirmDialog({
+  message,
+  confirmLabel = 'Delete',
+  onConfirm,
+  onCancel,
+  pending = false,
+}: ConfirmDialogProps) {
   return (
-    <div className="confirm-dialog-backdrop" role="presentation" onClick={onCancel}>
-      <div
-        className="confirm-dialog"
-        role="alertdialog"
-        aria-modal="true"
-        aria-label={message}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <p>{message}</p>
-        <div className="confirm-dialog-actions">
-          <button type="button" className="confirm-dialog-cancel" onClick={onCancel}>
+    <Dialog
+      open
+      role="alertdialog"
+      title={message}
+      onClose={onCancel}
+      pending={pending}
+      footer={
+        <>
+          <Button type="button" variant="secondary" onClick={onCancel}>
             Cancel
-          </button>
-          <button type="button" className="confirm-dialog-confirm" onClick={onConfirm}>
+          </Button>
+          <Button type="button" variant="danger" onClick={onConfirm} loading={pending}>
             {confirmLabel}
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </>
+      }
+    />
   )
 }

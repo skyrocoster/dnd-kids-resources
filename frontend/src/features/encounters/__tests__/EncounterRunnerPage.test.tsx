@@ -174,7 +174,7 @@ describe('EncounterRunnerPage', () => {
     await act(async () => {
       await Promise.resolve()
     })
-    fireEvent.click(screen.getByRole('option', { name: /Owlbear/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Owlbear/ }))
 
     expect(allCardNames()).toEqual(['Goblin', 'Wolf', 'Owlbear'])
   })

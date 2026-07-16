@@ -8,14 +8,30 @@
   flex-shrink: 0;
   overflow-y: auto;
   background: var(--md-surface-1);
+  /* 0.5rem does not match --radius-md/--radius-lg (0.375rem/0.75rem); documented
+     one-off (VF2) rather than rounded onto the scale, to avoid a visible corner
+     shrink on this specific outer-panel treatment. */
   border-radius: 0.5rem 0 0 0.5rem;
 }
 
 .split-pane-handle {
   flex-shrink: 0;
+  position: relative;
+  z-index: 1;
   width: 4px;
   cursor: col-resize;
   background: var(--md-outline-variant);
+}
+
+/* Expand the pointer/keyboard hit target beyond the 4px visible divider
+   without changing its layout width or visible appearance. */
+.split-pane-handle::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -14px;
+  right: -14px;
 }
 
 .split-pane-handle:hover,
@@ -28,5 +44,6 @@
   min-width: 0;
   overflow-y: auto;
   background: var(--md-surface-2);
+  /* See .split-pane-left: documented one-off, not on the --radius-* scale. */
   border-radius: 0 0.5rem 0.5rem 0;
 }

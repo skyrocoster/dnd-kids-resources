@@ -15,8 +15,8 @@ describe('loot catalog pickers', () => {
     const user = userEvent.setup()
     render(<><AddItemPanel onAdd={addItem} onClose={() => {}} /><AddWeaponPanel onAdd={addWeapon} onClose={() => {}} /></>)
 
-    await user.click(await screen.findByRole('option', { name: /Ruby/ }))
-    await user.click(await screen.findByRole('option', { name: /Longsword/ }))
+    await user.click(await screen.findByRole('button', { name: /Ruby/ }))
+    await user.click(await screen.findByRole('button', { name: /Longsword/ }))
     expect(addItem).toHaveBeenCalledWith(expect.objectContaining({ name: 'Ruby', value_gp: 50 }))
     expect(addWeapon).toHaveBeenCalledWith(expect.objectContaining({ name: 'Longsword' }))
   })
@@ -33,7 +33,7 @@ describe('LootBundleEditor', () => {
     await user.clear(screen.getByLabelText('Gold (gp)'))
     await user.type(screen.getByLabelText('Gold (gp)'), '12.5')
     await user.click(screen.getByRole('button', { name: 'Add Item' }))
-    await user.click(await screen.findByRole('option', { name: /Ruby/ }))
+    await user.click(await screen.findByRole('button', { name: /Ruby/ }))
     expect(screen.getByText('Total value:')).toHaveTextContent('62.5 gp')
     await user.click(screen.getByRole('button', { name: 'Create Loot Bundle' }))
 

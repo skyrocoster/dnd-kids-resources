@@ -40,7 +40,7 @@ describe('DungeonBrowserPage', () => {
     )
 
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Greenhouse' })).toBeInTheDocument())
-    expect(screen.getByRole('option', { name: /Greenhouse/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Greenhouse/ })).toBeInTheDocument()
   })
 
   it('selecting a dungeon shows its title, room count, and map editor guidance', async () => {

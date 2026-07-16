@@ -61,5 +61,11 @@ describe('Button', () => {
   })
 
   // VF2: touch target meets 48px floor at normal size
-  it.skip('normal button has min-height of at least 48px', () => {})
+  it('normal button has min-height of at least 48px', async () => {
+    const { readFileSync } = await import('node:fs')
+    const { resolve } = await import('node:path')
+    const css = readFileSync(resolve(process.cwd(), 'src/components/Button.css'), 'utf-8')
+    const rule = css.match(/\.btn--normal\s*\{([^}]*)\}/)?.[1] ?? ''
+    expect(rule).toContain('var(--control-height)')
+  })
 })

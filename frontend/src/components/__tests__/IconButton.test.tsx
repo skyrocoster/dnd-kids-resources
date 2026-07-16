@@ -44,5 +44,12 @@ describe('IconButton', () => {
   })
 
   // VF2: touch target is at least 48x48px
-  it.skip('button has 48px minimum width and height', () => {})
+  it('button has 48px minimum width and height', async () => {
+    const { readFileSync } = await import('node:fs')
+    const { resolve } = await import('node:path')
+    const css = readFileSync(resolve(process.cwd(), 'src/components/IconButton.css'), 'utf-8')
+    const rule = css.match(/\.icon-btn\s*\{([^}]*)\}/)?.[1] ?? ''
+    expect(rule).toContain('width: var(--control-height)')
+    expect(rule).toContain('height: var(--control-height)')
+  })
 })

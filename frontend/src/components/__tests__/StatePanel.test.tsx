@@ -26,17 +26,37 @@ describe('StatePanel', () => {
   })
 
   // VF2: loading state shows a spinner or visual indicator
-  it.skip('renders a visual loading indicator for loading status', () => {})
+  it('renders a visual loading indicator for loading status', () => {
+    const { container } = render(<StatePanel status="loading" />)
+    expect(container.querySelector('.state-panel-spinner')).toBeInTheDocument()
+  })
+
+  it('does not render a loading indicator for non-loading statuses', () => {
+    const { container } = render(<StatePanel status="empty" />)
+    expect(container.querySelector('.state-panel-spinner')).not.toBeInTheDocument()
+  })
 
   // VF2: filteredEmpty differs from empty in copy
-  it.skip('filteredEmpty uses distinct default copy from empty', () => {})
+  it('filteredEmpty uses distinct default copy from empty', () => {
+    render(<StatePanel status="filteredEmpty" />)
+    expect(screen.getByText('No matches')).toBeInTheDocument()
+  })
 
   // VF2: noSelection state has distinct copy
-  it.skip('noSelection uses distinct default copy', () => {})
+  it('noSelection uses distinct default copy', () => {
+    render(<StatePanel status="noSelection" />)
+    expect(screen.getByText('Select an item')).toBeInTheDocument()
+  })
 
   // VF2: action slot renders an interactive element
-  it.skip('renders an action element in the action slot', () => {})
+  it('renders an action element in the action slot', () => {
+    render(<StatePanel status="error" action={<button type="button">Retry</button>} />)
+    expect(screen.getByRole('button', { name: 'Retry' })).toBeInTheDocument()
+  })
 
   // VF2: aria-live polite for dynamic status updates
-  it.skip('has aria-live=polite for screen reader announcements', () => {})
+  it('has aria-live=polite for screen reader announcements', () => {
+    render(<StatePanel status="loading" />)
+    expect(screen.getByRole('status')).toHaveAttribute('aria-live', 'polite')
+  })
 })

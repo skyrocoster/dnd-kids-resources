@@ -22,6 +22,7 @@ export function StatePanel({ status, title, message, action }: StatePanelProps) 
   const copy = defaultCopy[status]
   return (
     <div className={`state-panel state-panel--${status}`} role="status" aria-live="polite">
+      {status === 'loading' && <div className="state-panel-spinner" aria-hidden="true" />}
       <h3 className="state-panel-title">{title || copy.title}</h3>
       <p className="state-panel-message">{message || copy.message}</p>
       {action && <div className="state-panel-action">{action}</div>}

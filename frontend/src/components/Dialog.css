@@ -38,6 +38,14 @@
   color: var(--md-on-surface-variant);
 }
 
+.dialog-fieldset {
+  display: contents;
+  border: none;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+
 .dialog-body {
   flex: 1;
   overflow-y: auto;

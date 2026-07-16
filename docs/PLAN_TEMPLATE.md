@@ -52,12 +52,34 @@ fresh executor, not a record of every command or implementation detail.
   can already see that evidence must survey it and write the actual answer — the value, the count, the file list
   it came from — directly into that stage's `Build`/`Read first`/`Key facts`. A pointer back to "go grep it
   yourself" is not consolidation; it just moves the same exploration cost onto the next executor, one stage later.
+- **A planned semantics change is a planned blast radius, survey it before the stage starts.** If a stage's
+  `Build` calls for changing a shared component's *rendered contract* — ARIA role/attribute, DOM shape, class
+  name, or default copy that other files assert against — the prior stage (or that stage's own `Read first` pass,
+  before writing any code) must grep the whole tree for the old contract (e.g. `getByRole('option'`,
+  `role="listbox"`, a literal default-copy string) and write the exact matching file list into that stage's
+  `Expected touch set`, not just the component's own files and tests. A component rename or style migration
+  rarely breaks callers; a semantics/markup change almost always does, and finding out via failing test runs one
+  file at a time is the exploration cost this rule exists to front-load.
+  - This applies even when the component being changed **predates the phase and was never itself stubbed** by an
+    earlier stage. A future stage's `Build` naming a refactor target (e.g. "retain its current public API where
+    practical") is itself the signal to run this survey the moment that target is named in the plan — do not wait
+    until that stage is next-up. Concretely: grep every caller of the component being refactored (not just its own
+    file and its own test file) and grep the whole tree for any test asserting its rendered contract (role, DOM
+    shape, accessible-name computation). Write the caller list, the prop shapes actually in use across those
+    callers, and any load-bearing test (file:line + what it asserts) directly into that future stage's `Read
+    first`/`Build`/`Expected touch set` — this is often the single fact that determines the whole implementation
+    (e.g. discovering a test asserts `getByRole('alertdialog', { name: <message> })` dictates that the refactored
+    component needs a `role` prop and must not render duplicate title/body text).
 
 Scaffolding has the highest discovery expectation because it normally surveys and prepares the most affected
 files, but it follows the same rule as every other stage: consolidate its findings and revise later stages before
 it is collapsed. When scaffolding's own touch set already spans the files a later stage would otherwise have to
 grep (e.g. it stubs every component whose CSS a token-formalization stage will later derive values from), it must
 run that survey once, while the evidence is already open, and hand the next stage numbers instead of file paths.
+When scaffolding adds an `it.skip` seam, write the seam's real assertion body (render the real component/props,
+assert the real expectation), not an empty callback — a later stage should only need to delete `.skip`, not author
+the test from scratch. If the real assertion cannot be written yet because the contract itself is undecided,
+say so explicitly in the seam's comment rather than leaving a silent empty function.
 
 ---
 
@@ -148,6 +170,9 @@ execution plan. Note any parallelism.
 - **Build:** concrete algorithms, reducer actions, component shapes, exact file paths.
 - **Inherits:** what earlier stages already provide that this one builds on (don't re-derive).
 - **Expected touch set:** exact files or directories expected to change; state why any broad directory is necessary.
+  If `Build` changes a shared component's rendered contract (ARIA role/attribute, DOM shape, class name, default
+  copy), name every consumer file whose tests assert against the old contract — surveyed per the Discovery
+  consolidation rule below, not discovered by running the suite stage-by-stage.
 - **Documentation impact:** exact reference and plan documents to update, or `None: <specific reason>`.
 - **Tests:** unit (reducer/selector/render) + integration (full flow) to write, including exact commands.
 - **Gate:** the live end-to-end confirmation that proves it works — not just test-green. State whether a browser

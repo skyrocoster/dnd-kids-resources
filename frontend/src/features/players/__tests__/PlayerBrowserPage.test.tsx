@@ -25,7 +25,7 @@ describe('PlayerBrowserPage', () => {
     render(<PlayerBrowserPage />)
 
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Lark' })).toBeInTheDocument())
-    expect(screen.getByRole('option', { name: /Lark/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Lark/ })).toBeInTheDocument()
   })
 
   it('selecting a player shows their detail card', async () => {
