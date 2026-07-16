@@ -126,7 +126,7 @@ data/seeds/*.json (canonical reference and campaign data)
 <!-- GENERATED:ARCHITECTURE:START -->
 ### Generated Registration Inventory
 
-Backend routers registered in `main.py`: `reference.py`, `spells.py`, `monsters.py`, `weapons.py`, `items.py`, `loot.py`, `players.py`, `npcs.py`, `quests.py`, `encounters.py`, `dungeons.py`, `layouts.py`.
+Backend routers registered in `main.py`: `reference.py`, `spells.py`, `monsters.py`, `weapons.py`, `items.py`, `loot.py`, `players.py`, `npcs.py`, `quests.py`, `encounters.py`, `dungeons.py`, `layouts.py`, `loom.py`.
 
 Frontend feature directories: `dungeons/`, `encounters/`, `items/`, `loot/`, `monsters/`, `npcs/`, `players/`, `quests/`, `spells/`, `weapons/`.
 <!-- GENERATED:ARCHITECTURE:END -->

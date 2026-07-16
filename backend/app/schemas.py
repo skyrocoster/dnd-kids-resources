@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator, model_validator
 from typing import Annotated, Literal, Optional, List, Dict, Any, TypeAlias
 from datetime import datetime
 
@@ -448,6 +448,94 @@ class QuestCreate(BaseModel):
 
 class QuestUpdate(QuestCreate):
     pass
+
+
+ThreadColor = Annotated[str, StringConstraints(pattern=r"^thread-[1-6]$")]
+
+
+class LoomThread(BaseModel):
+    id: int
+    name: str
+    color: ThreadColor
+    description: Optional[str] = None
+
+
+class LoomThreadCreate(BaseModel):
+    name: str
+    color: ThreadColor = "thread-1"
+    description: Optional[str] = None
+
+
+class LoomThreadUpdate(LoomThreadCreate):
+    pass
+
+
+def _validate_loom_kind_status(kind: str, status: Optional[str]) -> None:
+    if kind == "update" and status is not None:
+        raise ValueError("update nodes must not carry a status")
+    if kind == "anchor" and status not in ("planned", "reached", "abandoned"):
+        raise ValueError("anchor nodes require status planned, reached, or abandoned")
+
+
+class LoomNode(BaseModel):
+    id: int
+    kind: Literal["anchor", "update"]
+    title: str
+    body: Optional[str] = None
+    status: Optional[Literal["planned", "reached", "abandoned"]] = None
+    session_tag: Optional[str] = None
+    x: float
+    y: float
+    thread_ids: List[int] = Field(default_factory=list)
+
+
+class LoomNodeCreate(BaseModel):
+    kind: Literal["anchor", "update"]
+    title: str
+    body: Optional[str] = None
+    status: Optional[Literal["planned", "reached", "abandoned"]] = None
+    session_tag: Optional[str] = None
+    x: float = 0
+    y: float = 0
+    thread_ids: List[int] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def check_kind_status_coherence(self):
+        _validate_loom_kind_status(self.kind, self.status)
+        return self
+
+
+class LoomNodeUpdate(BaseModel):
+    kind: Literal["anchor", "update"]
+    title: str
+    body: Optional[str] = None
+    status: Optional[Literal["planned", "reached", "abandoned"]] = None
+    session_tag: Optional[str] = None
+    x: float = 0
+    y: float = 0
+    thread_ids: List[int] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def check_kind_status_coherence(self):
+        _validate_loom_kind_status(self.kind, self.status)
+        return self
+
+
+class LoomEdge(BaseModel):
+    id: int
+    source_id: int
+    target_id: int
+
+
+class LoomEdgeCreate(BaseModel):
+    source_id: int
+    target_id: int
+
+
+class LoomTapestry(BaseModel):
+    threads: List[LoomThread]
+    nodes: List[LoomNode]
+    edges: List[LoomEdge]
 
 
 class Encounter(BaseModel):

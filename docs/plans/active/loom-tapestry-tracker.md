@@ -1,6 +1,6 @@
 # The Loom — Tapestry Story-Thread Tracker
 
-> **Status:** Nothing shipped yet. LM0 - Schema and demo seeds is next.
+> **Status:** LM0–LM1 shipped. LM2 — Bridge, position PATCH, and seed wiring is next.
 
 - **Area guide:** [The Loom](../../areas/loom.md).
 
@@ -97,84 +97,6 @@ SELECT 1 FROM reachable WHERE id = ? LIMIT 1;   -- source_id; any row means reje
 
 ---
 
-## Delivery Phase A — Data foundation
-
-Create the loom schema and the frozen demo tapestry so every later stage has real data to build against.
-**Depends on:** nothing. **Depended on by:** all later phases.
-
-| Stage | Required strength | Summary | Deliverables |
-|-------|-------|---------|--------------|
-| **LM0 — Schema and demo seeds** | Light | Add the four loom tables + indexes to the canonical schema and author the demo tapestry seed files. | Tables build via conftest; seeds validate; DATA_MODEL updated. |
-
-**Sequencing:** LM0 alone.
-
-#### LM0 — Schema and demo seeds (next up)
-
-- **Read first:** This plan's `Key facts / data facts`; `scripts/init_database.py`; `docs/DATA_MODEL.md`; `data/seeds/seed_player_spells.json` (junction-seed precedent).
-- **Build:** Add these four CREATE TABLE statements and three indexes to `scripts/init_database.py`, verbatim:
-
-```sql
-CREATE TABLE loom_threads (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL UNIQUE,
-    color TEXT NOT NULL DEFAULT 'thread-1',
-    description TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE loom_nodes (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    kind TEXT NOT NULL CHECK (kind IN ('anchor', 'update')),
-    title TEXT NOT NULL,
-    body TEXT,
-    status TEXT CHECK (
-        (kind = 'update' AND status IS NULL)
-        OR (kind = 'anchor' AND status IS NOT NULL
-            AND status IN ('planned', 'reached', 'abandoned'))
-    ),
-    session_tag TEXT,
-    x REAL NOT NULL DEFAULT 0,
-    y REAL NOT NULL DEFAULT 0,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE loom_node_threads (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    node_id INTEGER NOT NULL,
-    thread_id INTEGER NOT NULL,
-    UNIQUE (node_id, thread_id),
-    FOREIGN KEY (node_id) REFERENCES loom_nodes(id) ON DELETE CASCADE,
-    FOREIGN KEY (thread_id) REFERENCES loom_threads(id) ON DELETE CASCADE
-);
-
-CREATE TABLE loom_edges (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    source_id INTEGER NOT NULL,
-    target_id INTEGER NOT NULL,
-    UNIQUE (source_id, target_id),
-    CHECK (source_id != target_id),
-    FOREIGN KEY (source_id) REFERENCES loom_nodes(id) ON DELETE CASCADE,
-    FOREIGN KEY (target_id) REFERENCES loom_nodes(id) ON DELETE CASCADE
-);
-
-CREATE INDEX idx_loom_edges_source ON loom_edges(source_id);
-CREATE INDEX idx_loom_edges_target ON loom_edges(target_id);
-CREATE INDEX idx_loom_node_threads_thread ON loom_node_threads(thread_id);
-```
-
-  The compound `status` CHECK deliberately includes `status IS NOT NULL` — SQLite CHECKs pass on NULL, so without it an anchor with NULL status would slip through. Design intent to record in DATA_MODEL: deleting a node cascades its edges and memberships (the wires go with the node); deleting a thread cascades **only** junction rows — nodes survive, because retiring a thread must never destroy narrative history. Add `"loom_edges", "loom_node_threads", "loom_nodes", "loom_threads"` (children first) to the top of `tables_to_drop` (`scripts/init_database.py:34-52`) and update the summary print near the end of the file (currently "V2 SCHEMA - 16 tables"; becomes 20 with a loom line). Author `data/seeds/seed_loom_threads.json`, `seed_loom_nodes.json`, `seed_loom_node_threads.json`, and `seed_loom_edges.json` with exactly the demo tapestry from `Key facts` (spread x 0–800 in edge order, y by thread lane; vault node offset below). Seed files are inert this stage — loader wiring is LM2.
-- **Inherits:** Nothing — first stage. The plan doc, area guide, and manifest registration already exist.
-- **Expected touch set:** `scripts/init_database.py`; `data/seeds/seed_loom_threads.json`, `seed_loom_nodes.json`, `seed_loom_node_threads.json`, `seed_loom_edges.json` (new); `docs/DATA_MODEL.md`; this plan.
-- **Documentation impact:** `docs/DATA_MODEL.md` — refresh the generated schema inventory (`python scripts/check_docs.py --write-generated`) and add a hand-written loom subsection covering the cascade semantics, the anchor-status CHECK, and the token-key color rule. This is checker-enforced in the same change set as `scripts/init_database.py`.
-- **Tests:** Full `pytest` from the repo root (conftest builds the real schema — the new tables must not break anything); `python scripts/check_docs.py --check`.
-- **Gate:** `python scripts/init_database.py` runs clean and prints the corrected table count; full `pytest` green. Suite-sufficient; no browser pass.
-- **Discovery consolidation:** If any DDL detail changes during implementation, update this plan's `Key facts` graph-semantics section and the LM1/LM2 Build blocks to match, and reflect it in the DATA_MODEL loom subsection. Confirm the demo-seed assertable truths still hold and correct `Key facts` if node/edge ids shift.
-- **Completion edit:** Collapse LM0 to a Shipped row; rewrite the Status line; mark LM1 `(next up)`; re-point the `docs/README.md` manifest rows and `docs/areas/loom.md`'s Active-plan link to LM1's new anchor; delete Phase A (single-stage phase).
-
----
-
 ## Delivery Phase B — Backend API
 
 Ship the loom router: CRUD, the one-shot tapestry read, structural integrity, the bridge transaction, and seed wiring.
@@ -182,24 +104,11 @@ Ship the loom router: CRUD, the one-shot tapestry read, structural integrity, th
 
 | Stage | Required strength | Summary | Deliverables |
 |-------|-------|---------|--------------|
-| **LM1 — Backend CRUD and tapestry API** | Standard | Loom router with thread/node/edge CRUD, cycle-guard CTE, and `GET /api/loom/tapestry`. | Router + schemas + full error-branch tests. |
-| **LM2 — Bridge, position PATCH, and seed wiring** | Standard | Transactional bridge endpoint, node position PATCH, and seed loader/export/conftest wiring. | Bridge semantics tested; demo tapestry loads end-to-end. |
+| **LM2 — Bridge, position PATCH, and seed wiring** (next up) | Standard | Transactional bridge endpoint, node position PATCH, and seed loader/export/conftest wiring. | Bridge semantics tested; demo tapestry loads end-to-end. |
 
 **Sequencing:** LM1 → LM2.
 
-#### LM1 — Backend CRUD and tapestry API (planned)
-
-- **Read first:** This plan's `Key facts` (graph semantics + backend conventions); `backend/app/routers/quests.py` and `backend/app/routers/layouts.py`; `backend/app/db.py`; `backend/app/schemas.py`; `backend/tests/routers/test_resources.py`; `backend/tests/conftest.py`.
-- **Build:** Create `backend/app/routers/loom.py` (`APIRouter(prefix="/api", tags=["loom"])`) with: `GET /api/loom/tapestry` → 200 `{threads, nodes, edges}` where each node carries `thread_ids` (one junction query grouped in Python); `GET /api/loom/threads` (limit/offset like quests) and `POST` → 201, 400 on duplicate name; `PUT/DELETE /api/loom/threads/{id}` → 200/204, 404 (delete cascades junction rows only); `POST /api/loom/nodes` → 201 with payload `{kind, title, body?, status?, session_tag?, x, y, thread_ids}` (node + junction rows in one transaction; 422 on unknown thread_id); `PUT /api/loom/nodes/{id}` → 200 full update including `thread_ids` (delete-then-reinsert) and anchor status transitions, `kind` immutable → 422; `DELETE /api/loom/nodes/{id}` → 204 (edges/memberships cascade); `POST /api/loom/edges` → 201, **409** on `UNIQUE(source_id, target_id)` duplicate (deliberate deviation from the 400 catch-all: the client acts on "already connected" differently), 422 on self-loop, unknown node, or **cycle** via the reachability CTE in `Key facts`; `DELETE /api/loom/edges/{id}` → 204. Pydantic models appended after `QuestUpdate` in `backend/app/schemas.py` (~line 449): `LoomThread(+Create/Update)` with color pattern `^thread-[1-6]$`, `LoomNode(+Create/Update)` with a kind/status coherence validator mirroring the DB CHECK, `LoomEdge(+Create)`, `LoomTapestry`. Register per `Key facts` backend conventions.
-- **Inherits:** LM0 tables and demo-seed JSON files (not yet loaded by any fixture — unit tests insert their own rows).
-- **Expected touch set:** `backend/app/routers/loom.py` (new); `backend/app/schemas.py`; `backend/app/main.py`; `backend/tests/routers/test_loom.py` (new); `docs/API_REFERENCE.md`; `docs/ARCHITECTURE.md`; this plan.
-- **Documentation impact:** Regenerate `docs/API_REFERENCE.md` and `docs/ARCHITECTURE.md` generated sections (`python scripts/check_docs.py --write-generated`); add the loom router to any hand-written router narrative in those docs.
-- **Tests:** `backend/tests/routers/test_loom.py`: thread CRUD happy paths + duplicate-name 400 + 404s; node create with memberships; PUT junction replace; kind-immutability 422; anchor-without-status and update-with-status 422s; edge 201 / duplicate 409 / self-loop 422 / unknown-node 422; three-node cycle rejection (A→B, B→C, then C→A → 422); tapestry shape (nodes carry `thread_ids`). Command: `pytest` from the repo root — the 90% gate requires every branch above.
-- **Gate:** Full `pytest` green at ≥90% coverage; manual curl of `/api/loom/tapestry` against a seeded dev DB returns valid JSON. No browser pass.
-- **Discovery consolidation:** Record any deviation from the endpoint contract above (paths, codes, payload shapes) in this plan's `Key facts` and revise LM3's client-method list to match; the regenerated `docs/API_REFERENCE.md` is the canonical contract from here on.
-- **Completion edit:** Collapse LM1 to a Shipped row; rewrite the Status line; mark LM2 `(next up)`; re-point the manifest and area-guide anchors.
-
-#### LM2 — Bridge, position PATCH, and seed wiring (planned)
+#### LM2 — Bridge, position PATCH, and seed wiring (next up)
 
 - **Read first:** This plan's `Key facts`; `backend/app/routers/loom.py` (from LM1); `scripts/seed_database.py` (`populate_quests` ~line 368 as the loader pattern; CLI flags ~951–1011; clear list ~914); `scripts/export_db_seeds.py` (~lines 36–38, 132); `backend/tests/conftest.py` (`_seed_real_data`); `backend/tests/test_integration_real_data.py`.
 - **Build:** `POST /api/loom/bridge` → 201, one transaction with rollback on failure: ① load source; require `past(source)` else 422 "bridge source must be a past node"; ② load anchor; require `kind='anchor' AND status='planned'` else 422 "bridge target must be a planned anchor"; ③ cycle guard: reachability CTE from anchor — if source reachable, 422 "bridge would create a cycle"; ④ INSERT update node N (`kind='update'`, `status=NULL`, title/body/session_tag from payload; position = payload x/y if given else the midpoint of source and anchor); ⑤ memberships = payload `thread_ids` if provided, else the **union** of source's and anchor's memberships; ⑥ INSERT edges source→N and N→anchor; ⑦ DELETE the direct source→anchor edge if present; ⑧ commit. Response `{node, created_edges, deleted_edge_id}`. Also `PATCH /api/loom/nodes/{id}/position` → 200 with body `{x, y}` only (404 on missing node) — the codebase's first PATCH endpoint. Seed wiring: four `populate_loom_*` functions + `--loom` CLI flag + dispatch + clear-list entries (FK order: threads → nodes → node_threads → edges) in `scripts/seed_database.py`; four `EXPORT_DEFINITIONS` entries in `scripts/export_db_seeds.py` (loom data is runtime-authored, so export support lets the DM freeze campaign state before a rebuild); the four populate calls in `backend/tests/conftest.py::_seed_real_data`; add `/api/loom/tapestry` and `/api/loom/threads` to the collection lists in `backend/tests/test_integration_real_data.py` (~lines 40, 57).
@@ -326,6 +235,8 @@ With the Loom live, remove the quests domain end-to-end. Nothing outside `featur
 
 | Stage | What shipped (≤2 sentences) |
 |-------|------------------------------|
+| LM0 | Four loom tables + indexes added to canonical schema (`scripts/init_database.py`), four demo-tapestry seed files authored, `docs/DATA_MODEL.md` updated with loom subsection and regenerated schema inventory. Tables build via conftest; seeds validate; full pytest green at 91.27% coverage. |
+| LM1 | `backend/app/routers/loom.py` router (thread/node/edge CRUD, `GET /api/loom/tapestry`, reachability-CTE cycle guard) plus `LoomThread`/`LoomNode`/`LoomEdge`/`LoomTapestry` schemas in `backend/app/schemas.py`, registered in `main.py`. No deviation from the planned endpoint contract; full pytest green at 90.99% coverage; manual tapestry curl against a freshly initialized dev DB returned valid JSON. |
 
 ---
 
@@ -348,4 +259,4 @@ Seed the demo tapestry (`python scripts/seed_database.py --loom --force`), open 
 
 ## Next:
 
-**LM0 — Schema and demo seeds** is next. It is unblocked: the plan, area guide, and manifest registration exist; no code has shipped.
+**LM2 — Bridge, position PATCH, and seed wiring** is next. It is unblocked: LM1 shipped the router and schemas it builds on.

@@ -10,6 +10,7 @@ from .routers import (
     dungeons,
     items,
     layouts,
+    loom,
     loot,
     monsters,
     npcs,
@@ -52,6 +53,7 @@ app.include_router(quests.router)
 app.include_router(encounters.router)
 app.include_router(dungeons.router)
 app.include_router(layouts.router)
+app.include_router(loom.router)
 
 # Serve the built frontend (frontend/dist), if present, with an SPA fallback
 # for client-side routes. All API routes are under /api, so anything else
