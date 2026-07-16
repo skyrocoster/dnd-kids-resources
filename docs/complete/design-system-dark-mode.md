@@ -4,7 +4,7 @@
 
 # Dark Mode Design Plan — Material Design 3
 
-**Status:** plan, not yet implemented. Read this before Task 8 (Shared UI components) starts — it's the token system those components should be built against, and it should land as `frontend/src/theme.css` (or equivalent) as part of that task.
+**Historical status:** Superseded. This proposal describes the design-system direction before implementation; use [../DESIGN_SYSTEM.md](../DESIGN_SYSTEM.md) for the current contract.
 
 ## Why this exists now
 

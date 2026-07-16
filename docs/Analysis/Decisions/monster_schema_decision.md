@@ -87,7 +87,7 @@ being non-empty does not imply that they contain data.
 
 ### Corrections to the Planning Assumptions
 
-The broad concerns in `docs/monsters_plan.md` are valid, but the full audit corrects three details that affect the
+The broad concerns in the [Monsters area guide](../../areas/monsters.md) are valid, but the full audit corrects three details that affect the
 contract:
 
 - The 525 rows described as "AC-less" have an AC value and no annotation, for example `{"12": null}`. They
