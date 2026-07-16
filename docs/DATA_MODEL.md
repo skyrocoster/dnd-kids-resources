@@ -4,36 +4,37 @@ Reference for seed files, tables, relationships, and JSON-encoded columns.
 
 ## Source of Truth
 
-**Seeds are canonical; the database is built, not edited.** Never hand-edit `dnd_kids_resources.db` (it's gitignored). Instead:
+**Seeds are canonical rebuild inputs for seed-backed domains; dungeons are runtime-authored.** Normal API/UI operations read and write `dnd_kids_resources.db`; never hand-edit that gitignored database. To apply seed changes:
 
 1. Edit `data/seeds/*.json` — the source files.
 2. Run `python scripts/init_database.py` — builds the schema.
 3. Run `python scripts/seed_database.py` — loads the seed files into the database.
 
-This ensures schema and data stay synced with the codebase and can be reliably rebuilt in any environment (CI, another machine, etc.).
+This ensures schema and seed-backed data stay synced with the codebase. Dungeons and Map Lab layouts are created through the API, persist in the local database during normal use, and are intentionally cleared by a database rebuild.
 
 ## Domains and Tables
 
-16 seed files populate 16 main tables (plus a few junction/lookup tables for many-to-many relationships).
+15 seed files populate 15 seed-backed tables (plus a few junction/lookup tables for many-to-many relationships). Dungeon records and their map layouts are created at runtime and are intentionally not seeded.
 
 | Seed file | Table(s) | Description | Routers |
 |---|---|---|---|
-| `seed_abilities.json` | `abilities` | Character ability scores (Strength, Dexterity, etc.) and modifiers | `/abilities` (ref.py) |
-| `seed_conditions.json` | `conditions` | D&D 5e conditions (poisoned, stunned, etc.) | `/conditions` (ref.py) |
-| `seed_damage_types.json` | `damage_types` | Damage types (fire, cold, necrotic, etc.) | `/damage_types` (ref.py) |
-| `seed_weapon_properties.json` | `weapon_properties` | Weapon property tags (finesse, reach, heavy, etc.) | `/weapon_properties` (ref.py) |
-| `seed_spells.json` | `spells` | D&D 5e spells (name, level, school, damage, components, classes, etc.) | `/spells`, `/players/{id}/spells` |
-| `seed_monsters.json` | `monsters` | D&D 5e monsters/creatures (AC, HP, abilities, actions, CR) | `/monsters` |
-| `seed_weapons.json` | `weapons` | D&D 5e weapons (name, rarity, base weapon, properties, attack data) | `/weapons`, `/players/{id}/weapons` |
-| `seed_items.json` | `items` | Reusable treasure item catalog (name, gp value, category, description) | `/items` |
-| `seed_loot_bundles.json` | `loot_bundle` | Hand-authored loot bundles (gold and JSON snapshotted item/weapon contents) | `/loot-bundles` |
-| `seed_dungeons.json` | `dungeons` | Dungeon modules (room layout, encounter placement, NPC locations) | `/dungeons`, `/dungeons/{id}/layout` |
-| `seed_encounters.json` | `encounters` | Combat encounters (creature roster, active creature index) | `/encounters` |
-| `seed_npcs.json` | `npcs` | Non-player characters (name, race, stats, appearance, notes) | `/npcs` |
-| `seed_players.json` | `players` | Player characters (name, class, level) | `/players` |
-| `seed_player_spells.json` | `player_spells` (junction) | Many-to-many: which spells does each player have? | (routed via `/players/{id}/spells`) |
-| `seed_player_weapons.json` | `player_weapons` (junction) | Many-to-many: which weapons does each player have? | (routed via `/players/{id}/weapons`) |
-| `seed_quests.json` | `quests` | Quests/missions (title, objectives, reward, quest giver, location) | `/quests` |
+| `seed_abilities.json` | `abilities` | Character ability scores and modifiers | `/api/abilities` (`reference.py`) |
+| `seed_conditions.json` | `conditions` | D&D 5e conditions | `/api/conditions` (`reference.py`) |
+| `seed_damage_types.json` | `damage_types` | Damage types | `/api/damage_types` (`reference.py`) |
+| `seed_weapon_properties.json` | `weapon_properties` | Weapon property tags | `/api/weapon_properties` (`reference.py`) |
+| `seed_spells.json` | `spells` | D&D 5e spells in the canonical 18-field contract | `/api/spells`, `/api/players/{id}/spells` |
+| `seed_monsters.json` | `monsters` | D&D 5e monsters/creatures | `/api/monsters` |
+| `seed_weapons.json` | `weapons` | D&D 5e weapons | `/api/weapons`, `/api/players/{id}/weapons` |
+| `seed_items.json` | `items` | Reusable treasure item catalog | `/api/items` |
+| `seed_loot_bundles.json` | `loot_bundle` | Hand-authored loot bundles with snapshotted contents | `/api/loot-bundles` |
+| (runtime-created) | `dungeons` | Dungeon title and room-reading content | `/api/dungeons` |
+| (editor-generated) | `map_layout` | Map geometry; deleted with its dungeon | `/api/dungeons/{id}/layout` |
+| `seed_encounters.json` | `encounter` | Combat encounters, roster, and active index | `/api/encounters` |
+| `seed_npcs.json` | `npcs` | Non-player characters | `/api/npcs` |
+| `seed_players.json` | `players` | Player characters | `/api/players` |
+| `seed_player_spells.json` | `player_spells` (junction) | Player spell assignments | `/api/players/{id}/spells` |
+| `seed_player_weapons.json` | `player_weapons` (junction) | Player weapon assignments | `/api/players/{id}/weapons` |
+| `seed_quests.json` | `quests` | Quests/missions | `/api/quests` |
 
 ## Relationships
 
@@ -41,26 +42,25 @@ Non-obvious foreign-key-like relationships (skip any self-evident from naming):
 
 - **`players` → `player_spells` ↔ `spells`** — Many-to-many via junction table. A player can have multiple spells; a spell can be known by multiple players.
 - **`players` → `player_weapons` ↔ `weapons`** — Many-to-many via junction table. A player can have multiple weapons; a weapon can be owned by multiple players.
-- **`encounters`** — Contains `creatures` (JSON array of creature references, typically monsters). No explicit foreign key in the current schema; monsters are referenced by name or ID within the JSON.
+- **`encounter`** — Stores `name`, JSON `units`, and `active_index`. The API aliases the first two as `title` and `creatures`; units may be monsters or `kind: "player"` session entries. No explicit foreign key is enforced.
 - **`loot_bundle`** — Contains `contents`, a JSON array of item/weapon snapshots. Entries keep a soft `ref_id` to the catalog source, but retain their name, item category, per-unit `value_gp`, and quantity after source edits or deletion.
-- **`dungeons`** — Contains `data` (complex JSON) storing room layout, encounters, NPC placements. No explicit foreign keys; references are embedded in the JSON blob.
+- **`dungeons`** — Contains `data` (room-reading content) while `map_layout.data` independently stores geometry. Both use the same room IDs; room titles/content belong to `dungeons.data`, while layout room titles are render caches. Missing layout data is treated as a transient empty layout; a missing dungeon is an error.
 - **`quests` → `quest_giver`** — Optional foreign key to `npcs.id`. A quest is given by an NPC (or none if quest_giver is NULL).
 - **`quests` → `dungeon_id`** — Optional foreign key to `dungeons.id`. A quest can be tied to a specific dungeon.
 
 ## JSON-Encoded Columns
 
-Some tables store complex structured data as JSON strings. The backend's Pydantic schemas deserialize these automatically; the database stores them as `TEXT` columns.
+Some tables store complex structured data as JSON strings. Router and database helpers explicitly decode and encode these values; Pydantic validates the resulting API shapes. The database stores them as `TEXT` columns.
 
 | Table | Column | Contents | Example |
 |---|---|---|---|
-| `spells` | `damage` | List of damage rolls (`[{"damage_type": "fire", "dice": "8d6"}]`) | `[{"damage_type": "fire", "dice": "8d6"}]` |
-| `spells` | `heal` | Healing roll dict | `{"dice": "1d4+1"}` |
-| `spells` | `heal_at_higher_levels` | Healing by spell slot (`{"1": "1d4+1", "5": "2d4+1"}`) | `{"1": "1d4+1"}` |
+| `spells` | `damage` | List of named damage expressions | `[{"name":"primary","formula":"8d6","damage_types":["fire"]}]` |
+| `spells` | `healing` | Healing expression and flags | `{"amount":"1d4+1","temp_hp":false,"max_hp":false}` |
+| `spells` | `higher_levels` | Higher-level prose and damage-by-slot expressions | `{"text":null,"damage_by_slot":{"3":"8d6"}}` |
+| `spells` | `casting_times` | One or more casting-time descriptions | `["1 action"]` |
 | `spells` | `components` | List of spell components (`["V", "S", "M"]`) | `["V", "S"]` |
-| `spells` | `attack_type` | List of attack roll definitions | `[{"type": "melee", "hit_bonus": 4}]` |
-| `spells` | `area_of_effect` | Area of effect dict (`{"type": "cone", "size": 15}`) | `{"type": "sphere", "size": 20}` |
-| `spells` | `classes` | List of classes that can learn this spell | `["Cleric", "Wizard"]` |
-| `spells` | `subclasses` | List of subclasses that can learn this spell | `["Lore Master"]` |
+| `spells` | `attacks` | Attack kinds and saving throws | `[{"kind":"melee","saving_throws":["str"]}]` |
+| `spells` | `area_of_effect` | Area shape and optional size | `{"shape":"sphere","size":20}` |
 | `monsters` | `aliases` | Alternate search/display names | `["fiendish hawk"]` |
 | `monsters` | `sizes` | Creature sizes | `["medium"]` |
 | `monsters` | `creature_type` | Category, subtype tags, and optional swarm size | `{"category":"dragon","tags":[],"swarm_size":null}` |
@@ -85,15 +85,16 @@ Some tables store complex structured data as JSON strings. The backend's Pydanti
 | `quests` | `objectives` | List of quest objectives (strings) | `["Retrieve the amulet", "Return to the tavern"]` |
 | `quests` | `details` | List of quest details/lore (strings) | `["The amulet was stolen by goblins"]` |
 | `quests` | `reward` | List of rewards (strings or formatted descriptions) | `["500 gold", "Amulet of Protection"]` |
-| `encounters` | `creatures` | List of creature roster entries (name, HP, initiative, etc.) | `[{"name": "Goblin", "hp": 7}, ...]` |
-| `dungeons` | `data` | Complex dungeon structure (rooms, exits, encounters, NPCs, props) | (large JSON blob per dungeon) |
+| `encounter` | `units` | List of monster or player session roster entries | `[{"name": "Goblin", "hp": 7}, ...]` |
+| `dungeons` | `data` | DungeonData shape: general_info and rooms (with entries, NPCs); map geometry and navigation fixtures are not stored here | (large JSON blob per dungeon) |
+| `map_layout` | `data` | MapLayout blob: rooms, doors, stairs, floors, props, portals, fixtures. Props may soft-reference a loot bundle by `bundle_id` with cached `bundle_name`; bundle contents resolve live. | (JSON blob per dungeon) |
 | `player_spells` | (implicit in junction) | (Many-to-many, no direct column; routes expose via `/players/{id}/spells`) | |
 | `player_weapons` | (implicit in junction) | (Many-to-many, no direct column; routes expose via `/players/{id}/weapons`) | |
 | `weapons` | `attack` | List of attack definitions (similar to spells) | `[{"type": "melee", "damage": "1d8"}]` |
 | `weapons` | `entries` | List of flavor text or special descriptions | `["A well-crafted longsword"]` |
 | `loot_bundle` | `contents` | Item/weapon snapshots with quantity and soft source ID | `[{"kind":"item","ref_id":1,"name":"Ruby","value_gp":50,"category":"gem","quantity":1}]` |
 
-When querying or updating any of these columns, use `json.loads()` to deserialize on read and `json.dumps()` to serialize on write. The Pydantic schemas in `backend/app/schemas.py` handle this automatically for API requests/responses.
+When querying or updating any of these columns, use `json.loads()` to deserialize on read and `json.dumps()` to serialize on write. Schemas validate the parsed request and response values.
 
 ## Rebuilding the Database
 
@@ -107,10 +108,303 @@ python scripts/seed_database.py    # Loads all seed files
 
 This destroys and rebuilds `dnd_kids_resources.db` (gitignored, so no commit impact). Use this workflow in development and in CI before running tests.
 
-To export the current database state back to seed files (one-off data updates):
+To export the current database state back to seed files (one-off data updates), inspect a dry run first:
 
 ```bash
-python scripts/export_db_seeds.py
+python scripts/export_db_seeds.py --dry-run
 ```
 
-This overwrites `data/seeds/*.json` with the current DB contents — useful after adding data via the UI, but generally prefer editing seed files directly.
+Omit `--dry-run` only after review; this overwrites seed-backed `data/seeds/*.json` files. Dungeons and Map Lab layouts are runtime-created and are never exported.
+
+<!-- GENERATED:DATA_MODEL:START -->
+### Generated Schema Inventory
+
+#### `abilities`
+
+| Column | Type | Required | Default |
+|---|---|---|---|
+| `id` | `INTEGER` | yes | `-` |
+| `code` | `TEXT` | yes | `-` |
+| `name` | `TEXT` | yes | `-` |
+| `emoji` | `TEXT` | yes | `-` |
+| `color` | `TEXT` | yes | `-` |
+| `type` | `TEXT` | yes | `'stat'` |
+| `created_at` | `DATETIME` | no | `CURRENT_TIMESTAMP` |
+
+Indexes: `sqlite_autoindex_abilities_2`, `sqlite_autoindex_abilities_1`.
+
+#### `conditions`
+
+| Column | Type | Required | Default |
+|---|---|---|---|
+| `id` | `INTEGER` | yes | `-` |
+| `title` | `TEXT` | yes | `-` |
+| `icon` | `TEXT` | yes | `'⚠️'` |
+| `explanation` | `TEXT` | no | `-` |
+| `details` | `TEXT` | no | `-` |
+| `created_at` | `DATETIME` | no | `CURRENT_TIMESTAMP` |
+
+Indexes: `sqlite_autoindex_conditions_1`.
+
+#### `damage_types`
+
+| Column | Type | Required | Default |
+|---|---|---|---|
+| `id` | `INTEGER` | yes | `-` |
+| `code` | `TEXT` | yes | `-` |
+| `name` | `TEXT` | yes | `-` |
+| `emoji` | `TEXT` | yes | `-` |
+| `color` | `TEXT` | yes | `-` |
+| `created_at` | `DATETIME` | no | `CURRENT_TIMESTAMP` |
+
+Indexes: `sqlite_autoindex_damage_types_1`.
+
+#### `dungeons`
+
+| Column | Type | Required | Default |
+|---|---|---|---|
+| `id` | `INTEGER` | yes | `-` |
+| `title` | `TEXT` | yes | `-` |
+| `data` | `TEXT` | yes | `-` |
+| `created_at` | `TIMESTAMP` | no | `CURRENT_TIMESTAMP` |
+| `updated_at` | `TIMESTAMP` | no | `CURRENT_TIMESTAMP` |
+
+#### `encounter`
+
+| Column | Type | Required | Default |
+|---|---|---|---|
+| `id` | `INTEGER` | yes | `-` |
+| `name` | `TEXT` | yes | `-` |
+| `units` | `TEXT` | yes | `'[]'` |
+| `active_index` | `INTEGER` | no | `-` |
+| `created_at` | `DATETIME` | no | `CURRENT_TIMESTAMP` |
+| `updated_at` | `DATETIME` | no | `CURRENT_TIMESTAMP` |
+
+#### `items`
+
+| Column | Type | Required | Default |
+|---|---|---|---|
+| `id` | `INTEGER` | yes | `-` |
+| `name` | `TEXT` | yes | `-` |
+| `value_gp` | `REAL` | yes | `0` |
+| `category` | `TEXT` | no | `-` |
+| `description` | `TEXT` | no | `-` |
+| `created_at` | `DATETIME` | no | `CURRENT_TIMESTAMP` |
+| `updated_at` | `DATETIME` | no | `CURRENT_TIMESTAMP` |
+
+#### `loot_bundle`
+
+| Column | Type | Required | Default |
+|---|---|---|---|
+| `id` | `INTEGER` | yes | `-` |
+| `name` | `TEXT` | yes | `-` |
+| `gold` | `REAL` | yes | `0` |
+| `contents` | `TEXT` | yes | `'[]'` |
+| `created_at` | `DATETIME` | no | `CURRENT_TIMESTAMP` |
+| `updated_at` | `DATETIME` | no | `CURRENT_TIMESTAMP` |
+
+#### `map_layout`
+
+| Column | Type | Required | Default |
+|---|---|---|---|
+| `dungeon_id` | `INTEGER` | yes | `-` |
+| `data` | `TEXT` | yes | `-` |
+
+Foreign keys: `dungeon_id` -> `dungeons.id` (CASCADE).
+
+#### `monsters`
+
+| Column | Type | Required | Default |
+|---|---|---|---|
+| `id` | `INTEGER` | yes | `-` |
+| `name` | `TEXT` | yes | `-` |
+| `aliases` | `TEXT` | yes | `'[]'` |
+| `sizes` | `TEXT` | yes | `'[]'` |
+| `family` | `TEXT` | no | `-` |
+| `alignment` | `TEXT` | no | `-` |
+| `creature_type` | `TEXT` | no | `-` |
+| `ac` | `TEXT` | no | `-` |
+| `hp` | `TEXT` | no | `-` |
+| `speed` | `TEXT` | yes | `'[]'` |
+| `abilities` | `TEXT` | no | `-` |
+| `saving_throws` | `TEXT` | yes | `'{}'` |
+| `skills` | `TEXT` | yes | `'{}'` |
+| `passive_perception` | `INTEGER` | no | `-` |
+| `damage_resistances` | `TEXT` | yes | `'[]'` |
+| `damage_immunities` | `TEXT` | yes | `'[]'` |
+| `damage_vulnerabilities` | `TEXT` | yes | `'[]'` |
+| `condition_immunities` | `TEXT` | yes | `'[]'` |
+| `senses` | `TEXT` | yes | `'[]'` |
+| `languages` | `TEXT` | yes | `'[]'` |
+| `audio_path` | `TEXT` | no | `-` |
+| `features` | `TEXT` | yes | `'{}'` |
+| `cr` | `TEXT` | no | `-` |
+| `cr_sort` | `REAL` | no | `-` |
+| `cr_note` | `TEXT` | no | `-` |
+| `experience_points` | `INTEGER` | no | `-` |
+| `created_at` | `DATETIME` | no | `CURRENT_TIMESTAMP` |
+| `updated_at` | `DATETIME` | no | `CURRENT_TIMESTAMP` |
+
+Indexes: `idx_monsters_cr_sort`, `idx_monsters_cr`, `sqlite_autoindex_monsters_1`.
+
+#### `npcs`
+
+| Column | Type | Required | Default |
+|---|---|---|---|
+| `id` | `INTEGER` | yes | `-` |
+| `name` | `TEXT` | yes | `-` |
+| `race` | `TEXT` | no | `-` |
+| `gender` | `TEXT` | no | `-` |
+| `background` | `TEXT` | no | `-` |
+| `size` | `TEXT` | no | `-` |
+| `stats` | `JSON` | yes | `'{}'` |
+| `armor_class` | `INTEGER` | no | `-` |
+| `hit_points` | `INTEGER` | no | `-` |
+| `speed` | `TEXT` | no | `-` |
+| `saving_throws` | `JSON` | no | `'{}'` |
+| `skills` | `JSON` | no | `'{}'` |
+| `senses` | `JSON` | no | `'[{}]'` |
+| `languages` | `TEXT` | no | `-` |
+| `appearance` | `JSON` | no | `'{}'` |
+| `notes` | `TEXT` | no | `-` |
+| `created_at` | `DATETIME` | no | `CURRENT_TIMESTAMP` |
+| `updated_at` | `DATETIME` | no | `CURRENT_TIMESTAMP` |
+
+Indexes: `sqlite_autoindex_npcs_1`.
+
+#### `player_spells`
+
+| Column | Type | Required | Default |
+|---|---|---|---|
+| `id` | `INTEGER` | yes | `-` |
+| `player_id` | `INTEGER` | yes | `-` |
+| `spell_id` | `INTEGER` | yes | `-` |
+| `at_will` | `BOOLEAN` | yes | `0` |
+| `added_at` | `DATETIME` | no | `CURRENT_TIMESTAMP` |
+
+Foreign keys: `spell_id` -> `spells.id` (CASCADE), `player_id` -> `players.id` (CASCADE).
+
+Indexes: `sqlite_autoindex_player_spells_1`.
+
+#### `player_weapons`
+
+| Column | Type | Required | Default |
+|---|---|---|---|
+| `id` | `INTEGER` | yes | `-` |
+| `player_id` | `INTEGER` | yes | `-` |
+| `weapon_id` | `INTEGER` | yes | `-` |
+| `added_at` | `DATETIME` | no | `CURRENT_TIMESTAMP` |
+
+Foreign keys: `weapon_id` -> `weapons.id` (CASCADE), `player_id` -> `players.id` (CASCADE).
+
+Indexes: `sqlite_autoindex_player_weapons_1`.
+
+#### `players`
+
+| Column | Type | Required | Default |
+|---|---|---|---|
+| `id` | `INTEGER` | yes | `-` |
+| `name` | `TEXT` | yes | `'Unnamed Player'` |
+| `class` | `TEXT` | no | `-` |
+| `level` | `INTEGER` | no | `-` |
+| `total_spell_slots` | `TEXT` | no | `'{}'` |
+| `current_spell_slots` | `TEXT` | no | `'{}'` |
+| `created_at` | `DATETIME` | no | `CURRENT_TIMESTAMP` |
+| `updated_at` | `DATETIME` | no | `CURRENT_TIMESTAMP` |
+
+#### `quests`
+
+| Column | Type | Required | Default |
+|---|---|---|---|
+| `id` | `INTEGER` | yes | `-` |
+| `name` | `TEXT` | yes | `-` |
+| `summary` | `TEXT` | no | `-` |
+| `reward` | `TEXT` | yes | `'[]'` |
+| `objectives` | `TEXT` | yes | `'[]'` |
+| `details` | `TEXT` | yes | `'[]'` |
+| `quest_giver` | `INTEGER` | no | `-` |
+| `dungeon_id` | `INTEGER` | no | `-` |
+| `location` | `TEXT` | no | `-` |
+| `created_at` | `DATETIME` | no | `CURRENT_TIMESTAMP` |
+| `updated_at` | `DATETIME` | no | `CURRENT_TIMESTAMP` |
+
+Foreign keys: `quest_giver` -> `npcs.id` (SET NULL).
+
+Indexes: `sqlite_autoindex_quests_1`.
+
+#### `spells`
+
+| Column | Type | Required | Default |
+|---|---|---|---|
+| `id` | `INTEGER` | yes | `-` |
+| `name` | `TEXT` | yes | `-` |
+| `level` | `INTEGER` | yes | `-` |
+| `school` | `TEXT` | no | `-` |
+| `description` | `TEXT` | yes | `-` |
+| `alternate_description` | `TEXT` | no | `-` |
+| `damage` | `TEXT` | yes | `'[]'` |
+| `healing` | `TEXT` | yes | `'{"amount": null, "temp_hp": false, "max_hp": false}'` |
+| `range` | `TEXT` | yes | `-` |
+| `higher_levels` | `TEXT` | yes | `'{"text": null, "damage_by_slot": {}}'` |
+| `casting_times` | `TEXT` | yes | `'[]'` |
+| `duration` | `TEXT` | yes | `-` |
+| `concentration` | `BOOLEAN` | yes | `0` |
+| `ritual` | `BOOLEAN` | yes | `0` |
+| `components` | `TEXT` | yes | `'[]'` |
+| `materials` | `TEXT` | no | `-` |
+| `attacks` | `TEXT` | yes | `'[]'` |
+| `area_of_effect` | `TEXT` | yes | `'{"shape": null, "size": null}'` |
+| `created_at` | `DATETIME` | no | `CURRENT_TIMESTAMP` |
+
+Indexes: `idx_spells_school`, `idx_spells_level`, `idx_spells_name`, `sqlite_autoindex_spells_1`.
+
+#### `weapon_properties`
+
+| Column | Type | Required | Default |
+|---|---|---|---|
+| `id` | `INTEGER` | yes | `-` |
+| `code` | `TEXT` | yes | `-` |
+| `name` | `TEXT` | yes | `-` |
+| `description` | `TEXT` | no | `-` |
+| `created_at` | `DATETIME` | no | `CURRENT_TIMESTAMP` |
+
+Indexes: `sqlite_autoindex_weapon_properties_1`.
+
+#### `weapons`
+
+| Column | Type | Required | Default |
+|---|---|---|---|
+| `id` | `INTEGER` | yes | `-` |
+| `name` | `TEXT` | yes | `-` |
+| `base_weapon` | `TEXT` | no | `-` |
+| `baseitems` | `BOOLEAN` | yes | `0` |
+| `rarity` | `TEXT` | no | `-` |
+| `weapon_category` | `TEXT` | no | `-` |
+| `weight` | `REAL` | no | `-` |
+| `req_attune` | `TEXT` | no | `-` |
+| `sentient` | `BOOLEAN` | yes | `0` |
+| `curse` | `BOOLEAN` | yes | `0` |
+| `resist` | `TEXT` | yes | `'[]'` |
+| `property` | `TEXT` | yes | `'[]'` |
+| `focus` | `TEXT` | yes | `'[]'` |
+| `spells` | `TEXT` | yes | `'[]'` |
+| `attack` | `TEXT` | yes | `'[]'` |
+| `recharge` | `TEXT` | yes | `'{}'` |
+| `light` | `TEXT` | yes | `'[]'` |
+| `entries` | `TEXT` | yes | `'[]'` |
+| `tier` | `TEXT` | no | `-` |
+| `grants_language` | `BOOLEAN` | yes | `0` |
+| `bonus_spell_attack` | `INTEGER` | no | `-` |
+| `bonus_spell_save_dc` | `INTEGER` | no | `-` |
+| `bonus_ac` | `INTEGER` | no | `-` |
+| `bonus_saving_throw` | `INTEGER` | no | `-` |
+| `crit_threshold` | `INTEGER` | no | `-` |
+| `ammo_type` | `TEXT` | no | `-` |
+| `grants_proficiency` | `BOOLEAN` | yes | `0` |
+| `modify_speed` | `TEXT` | yes | `'{}'` |
+| `ability` | `TEXT` | yes | `'{}'` |
+| `created_at` | `DATETIME` | no | `CURRENT_TIMESTAMP` |
+| `updated_at` | `DATETIME` | no | `CURRENT_TIMESTAMP` |
+
+Indexes: `sqlite_autoindex_weapons_1`.
+<!-- GENERATED:DATA_MODEL:END -->

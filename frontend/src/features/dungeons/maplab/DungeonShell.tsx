@@ -18,15 +18,15 @@ export function DungeonShell() {
   const location = useLocation()
   const route = useDungeonRouteContext(dungeonIdParam)
 
-  let routeState: { title: string; message: string } | null = null
+  let routeState: { title: string; message: string; variant: 'error' | 'loading' } | null = null
   if (route.status === 'invalid') {
-    routeState = { title: 'Invalid dungeon', message: 'Invalid dungeon URL.' }
+    routeState = { title: 'Invalid dungeon', message: 'Invalid dungeon URL.', variant: 'error' }
   } else if (route.status === 'missing') {
-    routeState = { title: 'Dungeon missing', message: 'This dungeon does not exist.' }
+    routeState = { title: 'Dungeon missing', message: 'This dungeon does not exist.', variant: 'error' }
   } else if (route.status === 'error') {
-    routeState = { title: 'Dungeon unavailable', message: route.error?.message ?? 'Failed to load dungeon.' }
+    routeState = { title: 'Dungeon unavailable', message: route.error?.message ?? 'Failed to load dungeon.', variant: 'error' }
   } else if (route.status === 'loading') {
-    routeState = { title: 'Loading dungeon', message: 'Loading dungeon details…' }
+    routeState = { title: 'Loading dungeon', message: 'Loading dungeon details…', variant: 'loading' }
   }
 
   const dungeonId = route.dungeonId
@@ -38,7 +38,12 @@ export function DungeonShell() {
     <DungeonRouteContextProvider value={route}>
       <section className="dungeon-shell">
         {routeState ? (
-          <MapLabRouteState className="dungeon-shell-route-state" title={routeState.title} message={routeState.message} />
+          <>
+            <MapLabRouteState className="dungeon-shell-route-state" title={routeState.title} message={routeState.message} variant={routeState.variant} />
+            <Link to="/dungeons" className="dungeon-shell-back-link">
+              Back to dungeons
+            </Link>
+          </>
         ) : (
           <>
             <header className="dungeon-shell-header">

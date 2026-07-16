@@ -8,6 +8,7 @@ import {
   getAbilities,
   updateMonster,
 } from '../client'
+import { targetSpell } from '../../features/spells/__tests__/spellFixtures'
 
 function mockFetchOnce(response: Partial<Response> & { jsonBody?: unknown }) {
   const { jsonBody, ...rest } = response
@@ -38,14 +39,15 @@ describe('api client', () => {
   })
 
   it('POST requests send a JSON body', async () => {
-    const fetchMock = mockFetchOnce({ jsonBody: { id: 1, spell_name: 'Fireball' } })
+    const { id, ...spell } = targetSpell
+    const fetchMock = mockFetchOnce({ jsonBody: targetSpell })
 
-    await createSpell({ spell_name: 'Fireball' } as never)
+    await createSpell(spell)
 
     const [path, options] = fetchMock.mock.calls[0]
     expect(path).toBe('/api/spells')
     expect(options.method).toBe('POST')
-    expect(JSON.parse(options.body)).toEqual({ spell_name: 'Fireball' })
+    expect(JSON.parse(options.body)).toEqual(spell)
   })
 
   it('DELETE requests return undefined on a 204 response', async () => {
