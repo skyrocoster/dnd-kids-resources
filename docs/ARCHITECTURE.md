@@ -118,7 +118,7 @@ data/seeds/*.json (canonical reference and campaign data)
 - **API endpoint inventory:** [`docs/API_REFERENCE.md`](API_REFERENCE.md)
 - **Seed domains & table relationships:** [`docs/DATA_MODEL.md`](DATA_MODEL.md)
 - **Test pass/fail contract:** [`docs/TESTING.md`](TESTING.md)
-- **Feature plan (current stage, next steps):** `docs/<feature>_plan.md` (e.g., `dungeon_plan.md`, `encounters_plan.md`)
+- **Area routing and active work:** [`docs/areas/`](areas/) — open the relevant area guide, then follow its active-plan link when present
 - **Design system reference:** [`docs/DESIGN_SYSTEM.md`](DESIGN_SYSTEM.md) — color tokens, type scale, icons, component anatomy, accessibility floor
 
 <!-- GENERATED:ARCHITECTURE:START -->

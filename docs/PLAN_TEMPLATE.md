@@ -1,10 +1,9 @@
 # Plan Doc Template & Lifecycle
 
-Copy this to `docs/<feature>_plan.md` when starting a new feature or cross-cutting design phase.
+Copy this to `docs/plans/active/<area>-<outcome>.md` when starting an implementation outcome or cross-cutting phase.
 It encodes the staged methodology from `CLAUDE.md` **plus the collapse discipline that keeps a plan
-doc from growing unbounded**. `design_plan.md` is the reference for how a healthy doc reads;
-`dungeon_plan.md` (933 lines, every shipped stage still carrying its full authoring paragraph) is the
-failure mode this template exists to prevent.
+doc from growing unbounded**. An area guide is the durable router for a domain; this execution plan is
+the temporary, forward-looking authorization to change it.
 
 **The core rule:** the plan doc is a *forward-looking* working document, not a changelog. Detail is
 verbose while a stage is being built, condensed to one row the moment it ships, and removed with its phase
@@ -29,6 +28,25 @@ verbose future-stage blocks on top of a thin table of shipped rows; nothing in b
 **As work moves forward, content flows ①→②→③ and *shrinks* at the ②→③ step.** A stage that just shipped
 gets its verbose block deleted and replaced by a single row in the Shipped table; the still-future stages
 keep their verbose blocks until their own turn to ship.
+
+---
+
+## Area guides and focused plans
+
+Each domain has one durable guide in `docs/areas/`. It records scope, minimum references, source/test map,
+invariants, work queue, and a link to at most one active execution plan. Keep it short and update it when
+the domain's signposting changes; it is not a stage log or implementation authorization.
+
+Every execution plan starts with this line immediately after its status block:
+
+```md
+- **Area guide:** [Dungeons](../../areas/dungeons.md)
+```
+
+Use one active plan per area at most. Name the plan for a concrete outcome, such as
+`dungeon-passage-session.md`, rather than the whole domain. The manifest links directly to the current-stage
+anchor; the area guide links to the same plan. If the guide says `None`, create a focused plan before changing
+implementation code.
 
 ---
 
@@ -148,8 +166,9 @@ When there are no more planned phases:
 
 1. Reduce the entire doc to: the Reference top-matter (still useful as living context), the Shipped-stages
    table, and a final **Verification** section (how to confirm the whole feature end-to-end).
-2. Move the doc to `docs/complete/<feature>_plan.md` and leave a redirect stub at its former path when a link may
-   remain, so `docs/` shows only active plans. Update `docs/README.md` in the same change set.
+2. Move the doc to `docs/plans/complete/<area>-<outcome>.md`. Update the area guide to `None` or its next active
+   plan, and update `docs/README.md` in the same change set. Leave a redirect stub only when a known inbound link
+   must survive.
 
 ---
 
@@ -158,6 +177,7 @@ When there are no more planned phases:
 - **## Known debt / deferred work (NOT yet built)** — the running non-goals list, added to as phases
   surface deferred work.
 - **## Cross-references** — links to sibling plan docs and the reference docs this one writes into.
+- **Area guide line** — immediately after the status block, linking to the guide that owns this work.
 - **## Next:** — one line naming the next queued stage/phase and whether it's unblocked.
 
 ---

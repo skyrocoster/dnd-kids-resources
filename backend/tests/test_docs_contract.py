@@ -84,6 +84,8 @@ def test_parse_execution_stage_fields():
     content = """#### F1 — Feature (next up)
 
 - **Read first:** `docs/README.md`
+- **Build:** Implement the focused change.
+- **Inherits:** Existing shared contracts.
 - **Expected touch set:** `src/feature.py`
 - **Documentation impact:** None: behavior is unchanged.
 - **Tests:** `pytest`
@@ -127,22 +129,24 @@ def test_execution_contract_reports_verbose_shipped_block(tmp_path: Path):
 
 def test_manifest_reports_invalid_current_stage_anchor(tmp_path: Path):
     fields = "\n".join(f"- **{field}:** present" for field in cd.EXECUTION_FIELDS)
-    _write_docs_tree(
+    docs = _write_docs_tree(
         tmp_path,
-        manifest="| [foo_plan.md](foo_plan.md#wrong-stage) |\n",
-        plans={"foo_plan.md": f"> **Status:** F0 queued.\n\n#### F0 — Work (next up)\n{fields}"},
+        manifest="| [foo](plans/active/foo.md#wrong-stage) |\n",
     )
-    errs = cd.check_manifest_current_stage_anchors(tmp_path / "docs", tmp_path / "docs" / "README.md")
+    active = docs / "plans" / "active"
+    active.mkdir(parents=True)
+    (active / "foo.md").write_text(f"> **Status:** F0 queued.\n\n#### F0 — Work (next up)\n{fields}", encoding="utf-8")
+    errs = cd.check_manifest_current_stage_anchors(docs, docs / "README.md")
     assert any("current-stage anchor" in error.message for error in errs)
 
 
-def test_find_plan_files(tmp_path: Path):
+def test_find_legacy_plan_files(tmp_path: Path):
     (tmp_path / "alpha_plan.md").write_text("# Alpha", encoding="utf-8")
     (tmp_path / "beta_plan.md").write_text("# Beta", encoding="utf-8")
     (tmp_path / "PLAN_TEMPLATE.md").write_text("# Template", encoding="utf-8")
     (tmp_path / "README.md").write_text("# Docs", encoding="utf-8")
     (tmp_path / "notaplan.md").write_text("# Other", encoding="utf-8")
-    plans = cd.find_plan_files(tmp_path)
+    plans = cd.find_legacy_plan_files(tmp_path)
     names = [p.name for p in plans]
     assert "alpha_plan.md" in names
     assert "beta_plan.md" in names
@@ -150,9 +154,9 @@ def test_find_plan_files(tmp_path: Path):
     assert "notaplan.md" not in names
 
 
-def test_find_plan_files_accepts_underscored_feature_names(tmp_path: Path):
+def test_find_legacy_plan_files_accepts_underscored_feature_names(tmp_path: Path):
     (tmp_path / "documentation_rework_plan.md").write_text("# Docs", encoding="utf-8")
-    assert [path.name for path in cd.find_plan_files(tmp_path)] == ["documentation_rework_plan.md"]
+    assert [path.name for path in cd.find_legacy_plan_files(tmp_path)] == ["documentation_rework_plan.md"]
 
 
 # ── Temporary-repository fixture tests ──────────────────────────────
@@ -448,6 +452,8 @@ def test_cli_check_with_base(tmp_path: Path, monkeypatch):
 def test_diff_checks_require_owner_plan_and_declared_documentation(tmp_path: Path, monkeypatch):
     fields = "\n".join([
         "- **Read first:** docs",
+        "- **Build:** change documentation validation",
+        "- **Inherits:** existing documentation contract",
         "- **Expected touch set:** scripts/check_docs.py",
         "- **Documentation impact:** `docs/DATA_MODEL.md`.",
         "- **Tests:** pytest",
@@ -456,14 +462,16 @@ def test_diff_checks_require_owner_plan_and_declared_documentation(tmp_path: Pat
     ])
     docs = _write_docs_tree(
         tmp_path,
-        manifest="[foo_plan.md](foo_plan.md#f0-work-next-up)\n",
-        plans={"foo_plan.md": f"> **Status:** F0 queued.\n\n#### F0 — Work (next up)\n{fields}\n"},
+        manifest="[foo](plans/active/foo.md#f0-work-next-up)\n",
     )
+    active = docs / "plans" / "active"
+    active.mkdir(parents=True)
+    (active / "foo.md").write_text(f"> **Status:** F0 queued.\n\n#### F0 — Work (next up)\n{fields}\n", encoding="utf-8")
 
     def fake_run(command, **_kwargs):
         if command[1:4] == ["rev-parse", "--verify", "HEAD"]:
             return subprocess.CompletedProcess(command, 0)
-        return subprocess.CompletedProcess(command, 0, stdout="scripts/init_database.py\ndocs/foo_plan.md\n")
+        return subprocess.CompletedProcess(command, 0, stdout="scripts/init_database.py\ndocs/plans/active/foo.md\n")
 
     monkeypatch.setattr(cd.subprocess, "run", fake_run)
     monkeypatch.setattr(cd, "REPO_ROOT", tmp_path)

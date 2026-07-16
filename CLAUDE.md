@@ -6,18 +6,18 @@ This is the single authoritative instruction file for AI work in this repository
 
 1. Open the [documentation manifest](docs/README.md).
 2. Select the row for the task you are performing and read its declared minimum context.
-3. For implementation work, open the owning plan and begin at its linked current-stage anchor.
+3. For area work, open the area guide it names, then open that guide's active execution plan at its linked current-stage anchor.
 4. Read only that stage's **Read first** files before exploring source.
 5. Make the plan and exact documentation-impact updates declared by the stage, then run `python scripts/check_docs.py --check`.
 
-No documentation-maintenance plan is currently active; create a focused plan before new documentation-contract work. The manifest, rather than this file, is the source for active-plan status and task routing.
+No documentation-maintenance plan is currently active; create a focused plan before new documentation-contract work. The manifest and area guides, rather than this file, are the sources for active-plan status and task routing.
 
 ## Documentation Contract
 
-- Every implementation change belongs to an active plan. Create a focused plan before editing when no plan owns the work.
+- Every implementation change belongs to an active execution plan. Area guides route work and record durable ownership, but never authorize implementation. Create a focused plan before editing when an area has no active plan for the outcome.
 - Every executable stage declares **Read first**, **Expected touch set**, **Documentation impact**, **Tests**, **Gate**, and **Completion edit**. Complete its expected touch set and exact documentation-impact requirements in the same change set as the implementation.
 - Update the relevant reference document when an API contract, data model, architecture, design system, testing contract, setup instruction, or user-visible capability changes.
-- Collapse shipped stages and update their plan status as specified by [PLAN_TEMPLATE.md](docs/PLAN_TEMPLATE.md). Archive every completed plan; leave a redirect stub when an existing link may remain. `MEMORY.md` is not a parallel plan-status registry.
+- Collapse shipped stages and update their plan status as specified by [PLAN_TEMPLATE.md](docs/PLAN_TEMPLATE.md). Archive every completed execution plan; leave a redirect stub only when a known link must survive. Update its area guide and the manifest in the same change set. `MEMORY.md` is not a parallel plan-status registry.
 - Run `python scripts/check_docs.py --check`; before completion also run `python scripts/check_docs.py --check --base <base-ref>` when a valid base ref is available.
 - The checker validates active-document links and anchors, plan lifecycle and manifest entries, AI-entry precedence, configured test commands, legacy guidance, generated reference inventories, and base-diff documentation impact.
 - GitHub Actions runs the `documentation-contract` check on every pull request and push to `main`; enable it as a required branch-protection check in GitHub settings. The PR template records the required fresh-reader routing validation.
