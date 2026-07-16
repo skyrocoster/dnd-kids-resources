@@ -77,6 +77,22 @@ EXPORT_DEFINITIONS = {
         "file": "seed_loot_bundles.json",
         "query": "SELECT id, name, gold, contents FROM loot_bundle ORDER BY name",
     },
+    "loom_threads": {
+        "file": "seed_loom_threads.json",
+        "query": "SELECT id, name, color, description FROM loom_threads ORDER BY id",
+    },
+    "loom_nodes": {
+        "file": "seed_loom_nodes.json",
+        "query": "SELECT id, kind, title, body, status, session_tag, x, y FROM loom_nodes ORDER BY id",
+    },
+    "loom_node_threads": {
+        "file": "seed_loom_node_threads.json",
+        "query": "SELECT id, node_id, thread_id FROM loom_node_threads ORDER BY id",
+    },
+    "loom_edges": {
+        "file": "seed_loom_edges.json",
+        "query": "SELECT id, source_id, target_id FROM loom_edges ORDER BY id",
+    },
 }
 
 

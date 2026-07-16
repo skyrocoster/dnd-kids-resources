@@ -40,6 +40,7 @@ LIST_ENDPOINTS = [
     "/api/quests",
     "/api/encounters",
     "/api/dungeons",
+    "/api/loom/threads",
 ]
 
 # Collections that support ?limit=&offset= pagination and back a browser page.
@@ -253,6 +254,20 @@ def test_detail_endpoints_serialize(real_client, base):
             f"{base}/{item['id']} -> {resp.status_code}: {resp.text[:300]}"
         )
         assert resp.json()["id"] == item["id"]
+
+
+def test_loom_tapestry_serializes_demo_fixture(real_client):
+    """The one-shot tapestry read serializes the frozen demo tapestry (2 threads / 7 nodes / 5 edges).
+
+    /api/loom/tapestry returns a dict, not a list, so it cannot join LIST_ENDPOINTS;
+    it also has no GET-by-id detail route, so it cannot join DETAIL_COLLECTIONS.
+    """
+    resp = real_client.get("/api/loom/tapestry")
+    assert resp.status_code == 200, f"/api/loom/tapestry -> {resp.status_code}: {resp.text[:300]}"
+    payload = resp.json()
+    assert len(payload["threads"]) == 2
+    assert len(payload["nodes"]) == 7
+    assert len(payload["edges"]) == 5
 
 
 def test_every_player_nested_endpoints_serialize(real_client):

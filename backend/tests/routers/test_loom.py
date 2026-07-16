@@ -279,3 +279,174 @@ def test_tapestry_shape(test_client):
     assert "threads" in data and "nodes" in data and "edges" in data
     node_a = next(n for n in data["nodes"] if n["id"] == a["id"])
     assert node_a["thread_ids"] == [thread["id"]]
+
+
+# ---------------------------------------------------------------------------
+# Node position PATCH
+# ---------------------------------------------------------------------------
+
+
+def test_patch_node_position_200(test_client):
+    node = _make_node(test_client, "Positioned")
+    response = test_client.patch(f"/api/loom/nodes/{node['id']}/position", json={"x": 42, "y": 99})
+    assert response.status_code == 200
+    body = response.json()
+    assert body["x"] == 42
+    assert body["y"] == 99
+
+
+def test_patch_node_position_404(test_client):
+    response = test_client.patch("/api/loom/nodes/9999/position", json={"x": 1, "y": 1})
+    assert response.status_code == 404
+
+
+# ---------------------------------------------------------------------------
+# Bridge
+# ---------------------------------------------------------------------------
+
+
+def test_bridge_happy_path_midpoint_and_union_memberships(test_client):
+    thread_a = test_client.post("/api/loom/threads", json={"name": "Bridge Thread A", "color": "thread-1"}).json()
+    thread_b = test_client.post("/api/loom/threads", json={"name": "Bridge Thread B", "color": "thread-2"}).json()
+
+    source = test_client.post(
+        "/api/loom/nodes",
+        json={"kind": "update", "title": "Source", "x": 0, "y": 0, "thread_ids": [thread_a["id"]]},
+    ).json()
+    anchor = test_client.post(
+        "/api/loom/nodes",
+        json={
+            "kind": "anchor",
+            "title": "Anchor",
+            "status": "planned",
+            "x": 100,
+            "y": 200,
+            "thread_ids": [thread_b["id"]],
+        },
+    ).json()
+    direct_edge = test_client.post(
+        "/api/loom/edges", json={"source_id": source["id"], "target_id": anchor["id"]}
+    ).json()
+
+    response = test_client.post(
+        "/api/loom/bridge",
+        json={"source_id": source["id"], "anchor_id": anchor["id"], "title": "Bridge update"},
+    )
+    assert response.status_code == 201
+    result = response.json()
+
+    node = result["node"]
+    assert node["title"] == "Bridge update"
+    assert node["kind"] == "update"
+    assert node["status"] is None
+    assert node["x"] == 50
+    assert node["y"] == 100
+    assert sorted(node["thread_ids"]) == sorted([thread_a["id"], thread_b["id"]])
+
+    edges = result["created_edges"]
+    assert len(edges) == 2
+    assert {(e["source_id"], e["target_id"]) for e in edges} == {
+        (source["id"], node["id"]),
+        (node["id"], anchor["id"]),
+    }
+    assert result["deleted_edge_id"] == direct_edge["id"]
+
+    tapestry = test_client.get("/api/loom/tapestry").json()
+    assert not any(e["id"] == direct_edge["id"] for e in tapestry["edges"])
+
+
+def test_bridge_explicit_thread_ids_override(test_client):
+    thread_a = test_client.post("/api/loom/threads", json={"name": "Explicit A", "color": "thread-1"}).json()
+    thread_c = test_client.post("/api/loom/threads", json={"name": "Explicit C", "color": "thread-3"}).json()
+
+    source = test_client.post(
+        "/api/loom/nodes",
+        json={"kind": "update", "title": "Source", "x": 0, "y": 0, "thread_ids": [thread_a["id"]]},
+    ).json()
+    anchor = test_client.post(
+        "/api/loom/nodes",
+        json={"kind": "anchor", "title": "Anchor", "status": "planned", "x": 0, "y": 0},
+    ).json()
+
+    response = test_client.post(
+        "/api/loom/bridge",
+        json={
+            "source_id": source["id"],
+            "anchor_id": anchor["id"],
+            "title": "Bridge update",
+            "thread_ids": [thread_c["id"]],
+        },
+    )
+    assert response.status_code == 201
+    assert response.json()["node"]["thread_ids"] == [thread_c["id"]]
+
+
+def test_bridge_source_not_past_422(test_client):
+    source = test_client.post(
+        "/api/loom/nodes",
+        json={"kind": "anchor", "title": "Planned source", "status": "planned", "x": 0, "y": 0},
+    ).json()
+    anchor = test_client.post(
+        "/api/loom/nodes",
+        json={"kind": "anchor", "title": "Anchor", "status": "planned", "x": 0, "y": 0},
+    ).json()
+
+    response = test_client.post(
+        "/api/loom/bridge",
+        json={"source_id": source["id"], "anchor_id": anchor["id"], "title": "Bridge"},
+    )
+    assert response.status_code == 422
+
+
+def test_bridge_target_not_planned_anchor_422(test_client):
+    source = _make_node(test_client, "Source")
+    update_target = _make_node(test_client, "Not an anchor")
+
+    response = test_client.post(
+        "/api/loom/bridge",
+        json={"source_id": source["id"], "anchor_id": update_target["id"], "title": "Bridge"},
+    )
+    assert response.status_code == 422
+
+
+def test_bridge_target_reached_anchor_422(test_client):
+    source = _make_node(test_client, "Source")
+    reached_anchor = test_client.post(
+        "/api/loom/nodes",
+        json={"kind": "anchor", "title": "Reached", "status": "reached", "x": 0, "y": 0},
+    ).json()
+
+    response = test_client.post(
+        "/api/loom/bridge",
+        json={"source_id": source["id"], "anchor_id": reached_anchor["id"], "title": "Bridge"},
+    )
+    assert response.status_code == 422
+
+
+def test_bridge_target_abandoned_anchor_422(test_client):
+    source = _make_node(test_client, "Source")
+    abandoned_anchor = test_client.post(
+        "/api/loom/nodes",
+        json={"kind": "anchor", "title": "Abandoned", "status": "abandoned", "x": 0, "y": 0},
+    ).json()
+
+    response = test_client.post(
+        "/api/loom/bridge",
+        json={"source_id": source["id"], "anchor_id": abandoned_anchor["id"], "title": "Bridge"},
+    )
+    assert response.status_code == 422
+
+
+def test_bridge_cycle_rejected_422(test_client):
+    a = _make_node(test_client, "A")
+    anchor = test_client.post(
+        "/api/loom/nodes",
+        json={"kind": "anchor", "title": "Anchor", "status": "planned", "x": 0, "y": 0},
+    ).json()
+    test_client.post("/api/loom/edges", json={"source_id": anchor["id"], "target_id": a["id"]})
+
+    response = test_client.post(
+        "/api/loom/bridge",
+        json={"source_id": a["id"], "anchor_id": anchor["id"], "title": "Bridge"},
+    )
+    assert response.status_code == 422

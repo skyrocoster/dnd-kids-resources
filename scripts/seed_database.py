@@ -415,6 +415,142 @@ def populate_quests(cursor, conn, force=False):
     print(f"  [OK] Loaded {len(seeds)} quests")
 
 
+def populate_loom_threads(cursor, conn, force=False):
+    """Populate loom_threads table from seed_loom_threads.json (frozen demo tapestry)."""
+    print("\n[LOOM] Loading loom threads...")
+    try:
+        cursor.execute("SELECT COUNT(*) FROM loom_threads")
+        count = cursor.fetchone()[0]
+    except sqlite3.OperationalError:
+        count = 0
+
+    if count > 0 and not force:
+        print(f"  [INFO] Loom threads table already has {count} records. Skip (use --force to override)")
+        return
+
+    seeds = load_json_file(SEEDS_DIR / "seed_loom_threads.json")
+    if not seeds:
+        print("  [WARNING]  No loom thread seeds found")
+        return
+
+    for thread in seeds:
+        try:
+            cursor.execute(
+                "INSERT INTO loom_threads (id, name, color, description) VALUES (?, ?, ?, ?)",
+                (thread.get('id'), thread.get('name'), thread.get('color'), thread.get('description')),
+            )
+            print(f"  [CHECK] {thread.get('name')}")
+        except sqlite3.IntegrityError as e:
+            print(f"  [WARNING]  Duplicate or error: {thread.get('name')} - {e}")
+
+    conn.commit()
+    print(f"  [OK] Loaded {len(seeds)} loom threads")
+
+
+def populate_loom_nodes(cursor, conn, force=False):
+    """Populate loom_nodes table from seed_loom_nodes.json (frozen demo tapestry)."""
+    print("\n[LOOM] Loading loom nodes...")
+    try:
+        cursor.execute("SELECT COUNT(*) FROM loom_nodes")
+        count = cursor.fetchone()[0]
+    except sqlite3.OperationalError:
+        count = 0
+
+    if count > 0 and not force:
+        print(f"  [INFO] Loom nodes table already has {count} records. Skip (use --force to override)")
+        return
+
+    seeds = load_json_file(SEEDS_DIR / "seed_loom_nodes.json")
+    if not seeds:
+        print("  [WARNING]  No loom node seeds found")
+        return
+
+    for node in seeds:
+        try:
+            cursor.execute(
+                """INSERT INTO loom_nodes (id, kind, title, body, status, session_tag, x, y)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                (
+                    node.get('id'),
+                    node.get('kind'),
+                    node.get('title'),
+                    node.get('body'),
+                    node.get('status'),
+                    node.get('session_tag'),
+                    node.get('x', 0),
+                    node.get('y', 0),
+                ),
+            )
+            print(f"  [CHECK] {node.get('title')}")
+        except sqlite3.IntegrityError as e:
+            print(f"  [WARNING]  Duplicate or error: {node.get('title')} - {e}")
+
+    conn.commit()
+    print(f"  [OK] Loaded {len(seeds)} loom nodes")
+
+
+def populate_loom_node_threads(cursor, conn, force=False):
+    """Populate loom_node_threads table from seed_loom_node_threads.json (frozen demo tapestry)."""
+    print("\n[LOOM] Loading loom node-thread memberships...")
+    try:
+        cursor.execute("SELECT COUNT(*) FROM loom_node_threads")
+        count = cursor.fetchone()[0]
+    except sqlite3.OperationalError:
+        count = 0
+
+    if count > 0 and not force:
+        print(f"  [INFO] Loom node_threads table already has {count} records. Skip (use --force to override)")
+        return
+
+    seeds = load_json_file(SEEDS_DIR / "seed_loom_node_threads.json")
+    if not seeds:
+        print("  [WARNING]  No loom node-thread seeds found")
+        return
+
+    for membership in seeds:
+        try:
+            cursor.execute(
+                "INSERT INTO loom_node_threads (id, node_id, thread_id) VALUES (?, ?, ?)",
+                (membership.get('id'), membership.get('node_id'), membership.get('thread_id')),
+            )
+        except sqlite3.IntegrityError as e:
+            print(f"  [WARNING]  Duplicate or error: {membership} - {e}")
+
+    conn.commit()
+    print(f"  [OK] Loaded {len(seeds)} loom node-thread memberships")
+
+
+def populate_loom_edges(cursor, conn, force=False):
+    """Populate loom_edges table from seed_loom_edges.json (frozen demo tapestry)."""
+    print("\n[LOOM] Loading loom edges...")
+    try:
+        cursor.execute("SELECT COUNT(*) FROM loom_edges")
+        count = cursor.fetchone()[0]
+    except sqlite3.OperationalError:
+        count = 0
+
+    if count > 0 and not force:
+        print(f"  [INFO] Loom edges table already has {count} records. Skip (use --force to override)")
+        return
+
+    seeds = load_json_file(SEEDS_DIR / "seed_loom_edges.json")
+    if not seeds:
+        print("  [WARNING]  No loom edge seeds found")
+        return
+
+    for edge in seeds:
+        try:
+            cursor.execute(
+                "INSERT INTO loom_edges (id, source_id, target_id) VALUES (?, ?, ?)",
+                (edge.get('id'), edge.get('source_id'), edge.get('target_id')),
+            )
+        except sqlite3.IntegrityError as e:
+            print(f"  [WARNING]  Duplicate or error: {edge} - {e}")
+
+    conn.commit()
+    print(f"  [OK] Loaded {len(seeds)} loom edges")
+
+
 def populate_damage_types(cursor, conn, force=False):
     """Populate damage_types table from seed_damage_types.json. Requires schema created by init_database.py."""
     print("\n[BOOM] Loading damage types...")
@@ -921,7 +1057,11 @@ def clear_all_tables(cursor, conn):
         "dungeons",
         "encounter",
         "loot_bundle",
-        "items"
+        "items",
+        "loom_edges",
+        "loom_node_threads",
+        "loom_nodes",
+        "loom_threads",
     ]
     
     for table in tables_to_clear:
@@ -963,15 +1103,18 @@ def main():
     parser.add_argument('--players', action='store_true', help='Load only players')
     parser.add_argument('--player-spells', action='store_true', help='Load only player spell assignments')
     parser.add_argument('--player-weapons', action='store_true', help='Load only player weapon assignments')
+    parser.add_argument('--loom', action='store_true', help='Load only the loom demo tapestry (test/playtest fixture, not loaded by default)')
     parser.add_argument('--force', action='store_true', help='Force reload (clear existing data first)')
-    
+
     args = parser.parse_args()
-    # If no specific tables selected, load all
+    # If no specific tables selected, load all canonical catalog tables.
+    # --loom is never part of "load all": the loom demo tapestry is a frozen
+    # test/playtest fixture, not canonical campaign data (see docs/areas/loom.md).
     load_all = not any([
         args.abilities, args.spells, args.conditions, args.monsters, args.quests,
         args.npcs, args.players, args.player_spells, args.player_weapons,
         args.damage_types, args.weapon_properties, args.weapons,
-        args.encounters, args.items, args.loot_bundles
+        args.encounters, args.items, args.loot_bundles, args.loom
     ])
     
     print("="*60)
@@ -1023,7 +1166,12 @@ def main():
             populate_player_spells(cursor, conn, args.force)
         if load_all or args.player_weapons:
             populate_player_weapons(cursor, conn, args.force)
-        
+        if args.loom:
+            populate_loom_threads(cursor, conn, args.force)
+            populate_loom_nodes(cursor, conn, args.force)
+            populate_loom_node_threads(cursor, conn, args.force)
+            populate_loom_edges(cursor, conn, args.force)
+
         conn.close()
         
         print("\n" + "="*60)

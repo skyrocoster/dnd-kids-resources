@@ -13,6 +13,9 @@ from ..schemas import (
     LoomEdge,
     LoomEdgeCreate,
     LoomTapestry,
+    LoomBridgeCreate,
+    LoomBridgeResult,
+    LoomNodePosition,
 )
 
 router = APIRouter(prefix="/api", tags=["loom"])
@@ -253,6 +256,23 @@ def update_node(node_id: int, node: LoomNodeUpdate):
         return _load_node(cursor, node_id)
 
 
+@router.patch("/loom/nodes/{node_id}/position", response_model=LoomNode)
+def patch_node_position(node_id: int, position: LoomNodePosition):
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT id FROM loom_nodes WHERE id = ?", (node_id,))
+        if not cursor.fetchone():
+            raise HTTPException(status_code=404, detail="Node not found")
+
+        cursor.execute(
+            "UPDATE loom_nodes SET x = ?, y = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+            (position.x, position.y, node_id),
+        )
+        conn.commit()
+
+        return _load_node(cursor, node_id)
+
+
 @router.delete("/loom/nodes/{node_id}", status_code=204)
 def delete_node(node_id: int):
     with get_db() as conn:
@@ -322,3 +342,89 @@ def delete_edge(edge_id: int):
         except Exception as e:
             conn.rollback()
             raise HTTPException(status_code=400, detail=f"Failed to delete edge: {str(e)}")
+
+
+# ---------------------------------------------------------------------------
+# Bridge
+# ---------------------------------------------------------------------------
+
+
+def _is_past(node: dict) -> bool:
+    return node["kind"] == "update" or (node["kind"] == "anchor" and node["status"] == "reached")
+
+
+@router.post("/loom/bridge", response_model=LoomBridgeResult, status_code=201)
+def create_bridge(bridge: LoomBridgeCreate):
+    with get_db() as conn:
+        cursor = conn.cursor()
+
+        source = _load_node(cursor, bridge.source_id)
+        if not source:
+            raise HTTPException(status_code=404, detail="Source node not found")
+        if not _is_past(source):
+            raise HTTPException(status_code=422, detail="bridge source must be a past node")
+
+        anchor = _load_node(cursor, bridge.anchor_id)
+        if not anchor:
+            raise HTTPException(status_code=404, detail="Anchor node not found")
+        if anchor["kind"] != "anchor" or anchor["status"] != "planned":
+            raise HTTPException(status_code=422, detail="bridge target must be a planned anchor")
+
+        if _would_cycle(cursor, bridge.source_id, bridge.anchor_id):
+            raise HTTPException(status_code=422, detail="bridge would create a cycle")
+
+        x = bridge.x if bridge.x is not None else (source["x"] + anchor["x"]) / 2
+        y = bridge.y if bridge.y is not None else (source["y"] + anchor["y"]) / 2
+
+        if bridge.thread_ids is not None:
+            thread_ids = bridge.thread_ids
+        else:
+            thread_ids = sorted(set(source["thread_ids"]) | set(anchor["thread_ids"]))
+
+        try:
+            cursor.execute(
+                """INSERT INTO loom_nodes (kind, title, body, status, session_tag, x, y)
+                   VALUES ('update', ?, ?, NULL, ?, ?, ?)""",
+                (bridge.title, bridge.body, bridge.session_tag, x, y),
+            )
+            node_id = cursor.lastrowid
+            for thread_id in thread_ids:
+                cursor.execute(
+                    "INSERT INTO loom_node_threads (node_id, thread_id) VALUES (?, ?)",
+                    (node_id, thread_id),
+                )
+
+            cursor.execute(
+                "SELECT id FROM loom_edges WHERE source_id = ? AND target_id = ?",
+                (bridge.source_id, bridge.anchor_id),
+            )
+            direct_edge = cursor.fetchone()
+            deleted_edge_id = direct_edge["id"] if direct_edge else None
+
+            cursor.execute(
+                "INSERT INTO loom_edges (source_id, target_id) VALUES (?, ?)",
+                (bridge.source_id, node_id),
+            )
+            first_edge_id = cursor.lastrowid
+            cursor.execute(
+                "INSERT INTO loom_edges (source_id, target_id) VALUES (?, ?)",
+                (node_id, bridge.anchor_id),
+            )
+            second_edge_id = cursor.lastrowid
+
+            if deleted_edge_id is not None:
+                cursor.execute("DELETE FROM loom_edges WHERE id = ?", (deleted_edge_id,))
+
+            conn.commit()
+        except Exception as e:
+            conn.rollback()
+            raise HTTPException(status_code=400, detail=f"Failed to create bridge: {str(e)}")
+
+        node = _load_node(cursor, node_id)
+        cursor.execute(
+            "SELECT id, source_id, target_id FROM loom_edges WHERE id IN (?, ?)",
+            (first_edge_id, second_edge_id),
+        )
+        created_edges = [dict_from_row(row) for row in cursor.fetchall()]
+
+        return {"node": node, "created_edges": created_edges, "deleted_edge_id": deleted_edge_id}

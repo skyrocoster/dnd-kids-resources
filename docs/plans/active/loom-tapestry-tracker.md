@@ -1,6 +1,6 @@
 # The Loom — Tapestry Story-Thread Tracker
 
-> **Status:** LM0–LM1 shipped. LM2 — Bridge, position PATCH, and seed wiring is next.
+> **Status:** LM0–LM2 shipped. LM3 — Frontend data layer and graph model is next.
 
 - **Area guide:** [The Loom](../../areas/loom.md).
 
@@ -49,6 +49,8 @@ SELECT 1 FROM reachable WHERE id = ? LIMIT 1;   -- source_id; any row means reje
 - Pydantic models live in `backend/app/schemas.py`; append loom models after `QuestUpdate` (~line 449).
 - Schema is canonical in `scripts/init_database.py`; backend tests build the real schema by importing it (`backend/tests/conftest.py::_create_real_schema`) — never hand-copy DDL into fixtures. Changing `scripts/init_database.py` requires `docs/DATA_MODEL.md` in the same change set (checker-enforced).
 - `pytest` from the repo root; coverage gate `--cov=backend/app --cov-fail-under=90` — every loom error branch needs a direct test or the whole suite fails. Integration tests (`@pytest.mark.integration`) seed from frozen `data/seeds/*.json` via `scripts/seed_database.py`.
+- **Bridge and position-PATCH contract (confirmed, LM2):** `POST /api/loom/bridge` → 201 `{node: LoomNode, created_edges: LoomEdge[2] (source→N, N→anchor), deleted_edge_id: int | null}`; 404 if `source_id`/`anchor_id` don't reference existing nodes, 422 for the three semantic guards (source not past, anchor not a planned anchor, would-cycle). `PATCH /api/loom/nodes/{id}/position` body `{x, y}` → 200 returns the **full** `LoomNode` (not a partial), 404 if missing. Verified live against the seeded demo tapestry: bridging node 3 → anchor 4 produced midpoint `(300, 75)`, thread union `[1, 2]`, and deleted the direct 3→4 edge.
+- **Loom seed loading is opt-in, not part of "load all":** `scripts/seed_database.py --loom [--force]` is required to load the four demo-tapestry seed files; a bare `scripts/seed_database.py` (no flags) never loads or clears loom data as a side effect of "load all" (though `--force` alone still clears loom tables along with everything else, matching the dungeons precedent). `backend/tests/conftest.py::_seed_real_data` always loads the loom fixture. `scripts/export_db_seeds.py` (no `--tables` filter) now includes the four loom tables by default.
 
 ### Frontend conventions (surveyed 2026-07-17)
 
@@ -97,46 +99,21 @@ SELECT 1 FROM reachable WHERE id = ? LIMIT 1;   -- source_id; any row means reje
 
 ---
 
-## Delivery Phase B — Backend API
-
-Ship the loom router: CRUD, the one-shot tapestry read, structural integrity, the bridge transaction, and seed wiring.
-**Depends on:** LM0 committed. **Depended on by:** Phase C.
-
-| Stage | Required strength | Summary | Deliverables |
-|-------|-------|---------|--------------|
-| **LM2 — Bridge, position PATCH, and seed wiring** (next up) | Standard | Transactional bridge endpoint, node position PATCH, and seed loader/export/conftest wiring. | Bridge semantics tested; demo tapestry loads end-to-end. |
-
-**Sequencing:** LM1 → LM2.
-
-#### LM2 — Bridge, position PATCH, and seed wiring (next up)
-
-- **Read first:** This plan's `Key facts`; `backend/app/routers/loom.py` (from LM1); `scripts/seed_database.py` (`populate_quests` ~line 368 as the loader pattern; CLI flags ~951–1011; clear list ~914); `scripts/export_db_seeds.py` (~lines 36–38, 132); `backend/tests/conftest.py` (`_seed_real_data`); `backend/tests/test_integration_real_data.py`.
-- **Build:** `POST /api/loom/bridge` → 201, one transaction with rollback on failure: ① load source; require `past(source)` else 422 "bridge source must be a past node"; ② load anchor; require `kind='anchor' AND status='planned'` else 422 "bridge target must be a planned anchor"; ③ cycle guard: reachability CTE from anchor — if source reachable, 422 "bridge would create a cycle"; ④ INSERT update node N (`kind='update'`, `status=NULL`, title/body/session_tag from payload; position = payload x/y if given else the midpoint of source and anchor); ⑤ memberships = payload `thread_ids` if provided, else the **union** of source's and anchor's memberships; ⑥ INSERT edges source→N and N→anchor; ⑦ DELETE the direct source→anchor edge if present; ⑧ commit. Response `{node, created_edges, deleted_edge_id}`. Also `PATCH /api/loom/nodes/{id}/position` → 200 with body `{x, y}` only (404 on missing node) — the codebase's first PATCH endpoint. Seed wiring: four `populate_loom_*` functions + `--loom` CLI flag + dispatch + clear-list entries (FK order: threads → nodes → node_threads → edges) in `scripts/seed_database.py`; four `EXPORT_DEFINITIONS` entries in `scripts/export_db_seeds.py` (loom data is runtime-authored, so export support lets the DM freeze campaign state before a rebuild); the four populate calls in `backend/tests/conftest.py::_seed_real_data`; add `/api/loom/tapestry` and `/api/loom/threads` to the collection lists in `backend/tests/test_integration_real_data.py` (~lines 40, 57).
-- **Inherits:** LM1 router and schemas; LM0 seed JSONs.
-- **Expected touch set:** `backend/app/routers/loom.py`; `backend/app/schemas.py` (`LoomBridgeCreate`, `LoomBridgeResult`, `LoomNodePosition`); `scripts/seed_database.py`; `scripts/export_db_seeds.py`; `backend/tests/conftest.py`; `backend/tests/test_integration_real_data.py`; `backend/tests/routers/test_loom.py`; `docs/API_REFERENCE.md`; `docs/DATA_MODEL.md`; this plan.
-- **Documentation impact:** Regenerate `docs/API_REFERENCE.md`; update `docs/DATA_MODEL.md`'s seed inventory for the four loom seed files and note the export-before-rebuild rule.
-- **Tests:** Bridge happy path (node at midpoint default, both edges created, direct edge deleted, memberships = union); explicit `thread_ids` override; bridge 422 branches (source is a planned anchor; target is an update; target is a reached/abandoned anchor; cycle); position PATCH 200 + 404; integration smoke over the seeded demo tapestry (`pytest` runs the `integration` mark by default). Command: `pytest`.
-- **Gate:** Full `pytest` green; `python scripts/seed_database.py --loom --force` then a tapestry curl shows 2 threads / 7 nodes / 5 edges. No browser pass.
-- **Discovery consolidation:** Confirm the bridge response shape and record it in `Key facts`; revise LM6's Build if it differs. Re-verify the demo-tapestry assertable truths against the live endpoint.
-- **Completion edit:** Collapse LM2; rewrite the Status line; mark LM3 `(next up)`; re-point the manifest and area-guide anchors; delete Phase B.
-
----
-
 ## Delivery Phase C — Frontend tapestry
 
 Build the data layer, the pure graph model, and the React Flow canvas: read-only first, then mutations, then the bridge/anchor workflow.
-**Depends on:** LM1 committed (LM2's bridge endpoint is first consumed in LM6). **Depended on by:** Phase D.
+**Depends on:** LM2 committed (shipped — its bridge endpoint is first consumed in LM6). **Depended on by:** Phase D.
 
 | Stage | Required strength | Summary | Deliverables |
 |-------|-------|---------|--------------|
-| **LM3 — Frontend data layer and graph model** | Standard | API types/client methods and the pure `loomGraph.ts`/`loomFlow.ts` modules. No UI. | Exhaustive unit coverage of the graph semantics. |
+| **LM3 — Frontend data layer and graph model** (next up) | Standard | API types/client methods and the pure `loomGraph.ts`/`loomFlow.ts` modules. No UI. | Exhaustive unit coverage of the graph semantics. |
 | **LM4 — React Flow canvas, read-only and themed** | High | Install React Flow, mint loom tokens, render the tapestry with badges/chips/vault panel. | Themed canvas at `/loom`; live browser gate. |
 | **LM5 — Canvas mutations** | Standard | Node/thread CRUD dialogs, edge connect with cycle rejection surfaced, drag persistence. | Full editing loop on canvas. |
 | **LM6 — Bridge workflow and anchor lifecycle** | Standard | Selection-driven bridge flow, mark reached/abandoned, head/next recompute, empty state. | The complete DM loop, live-verified. |
 
 **Sequencing:** LM3 → LM4 → LM5 → LM6.
 
-#### LM3 — Frontend data layer and graph model (planned)
+#### LM3 — Frontend data layer and graph model (next up)
 
 - **Read first:** This plan's `Key facts` (graph semantics + frontend conventions); `frontend/src/api/client.ts`; `frontend/src/api/types.ts`; `frontend/src/features/dungeons/maplab/maplabEditor.ts` (pure-model layering example); the LM0 seed JSONs (fixture source).
 - **Build:** Add `LoomThread`, `LoomNode`, `LoomEdge`, `LoomTapestry`, `LoomBridgeResult`, and input types to `frontend/src/api/types.ts`. Add a `patch<T>` helper beside `get/post/put/del` in `frontend/src/api/client.ts` and a `// Loom` block of methods: `getLoomTapestry`, `createLoomThread`, `updateLoomThread`, `deleteLoomThread`, `createLoomNode`, `updateLoomNode`, `patchLoomNodePosition`, `deleteLoomNode`, `createLoomEdge`, `deleteLoomEdge`, `createLoomBridge`. Write `frontend/src/features/loom/loomGraph.ts` implementing the `Key facts` semantics verbatim (`isPast`, `isFuture`, `buildAdjacency`, `headsByThread`, `nearestFutureAnchors`, `vaultNodes`, `edgeThreads`, `wouldCycle`) and `loomFlow.ts` mapping tapestry + derived flags to canvas node/edge shapes. **Do not import `@xyflow/react` here** (it installs in LM4): define minimal local `FlowNode`/`FlowEdge` structural types (`{id, type, position:{x,y}, data}` / `{id, source, target}`) that React Flow accepts as-is.
@@ -237,6 +214,7 @@ With the Loom live, remove the quests domain end-to-end. Nothing outside `featur
 |-------|------------------------------|
 | LM0 | Four loom tables + indexes added to canonical schema (`scripts/init_database.py`), four demo-tapestry seed files authored, `docs/DATA_MODEL.md` updated with loom subsection and regenerated schema inventory. Tables build via conftest; seeds validate; full pytest green at 91.27% coverage. |
 | LM1 | `backend/app/routers/loom.py` router (thread/node/edge CRUD, `GET /api/loom/tapestry`, reachability-CTE cycle guard) plus `LoomThread`/`LoomNode`/`LoomEdge`/`LoomTapestry` schemas in `backend/app/schemas.py`, registered in `main.py`. No deviation from the planned endpoint contract; full pytest green at 90.99% coverage; manual tapestry curl against a freshly initialized dev DB returned valid JSON. |
+| LM2 | `POST /api/loom/bridge` and `PATCH /api/loom/nodes/{id}/position` plus `LoomBridgeCreate`/`LoomBridgeResult`/`LoomNodePosition` schemas; four `populate_loom_*` seed loaders behind an opt-in `--loom` CLI flag (never part of "load all") wired into `seed_database.py`, `export_db_seeds.py`, and `conftest.py::_seed_real_data`; a dedicated `/api/loom/tapestry` integration smoke test (it returns a dict, not a list, so it couldn't join the existing generic collection-list tests). No deviation from the planned response contract; full pytest green at 91.07% coverage; live-verified bridge + position PATCH against the seeded demo tapestry. |
 
 ---
 
@@ -259,4 +237,4 @@ Seed the demo tapestry (`python scripts/seed_database.py --loom --force`), open 
 
 ## Next:
 
-**LM2 — Bridge, position PATCH, and seed wiring** is next. It is unblocked: LM1 shipped the router and schemas it builds on.
+**LM3 — Frontend data layer and graph model** is next. It is unblocked: LM1 and LM2 shipped the router, schemas, and bridge/position endpoints it builds on.
