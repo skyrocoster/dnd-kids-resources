@@ -1,0 +1,54 @@
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--backdrop-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-dialog);
+}
+
+.dialog {
+  background: var(--md-surface-2, var(--md-surface));
+  color: var(--md-on-surface);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  width: min(480px, 90vw);
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--elevation-shadow);
+}
+
+.dialog-header {
+  flex-shrink: 0;
+}
+
+.dialog-title {
+  margin: 0;
+  font-size: var(--type-title-size);
+  line-height: var(--type-title-line);
+  font-weight: var(--type-title-weight);
+}
+
+.dialog-description {
+  margin: 0.25rem 0 0;
+  font-size: var(--type-body-sm-size);
+  line-height: var(--type-body-sm-line);
+  color: var(--md-on-surface-variant);
+}
+
+.dialog-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-4) 0;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  flex-shrink: 0;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--md-outline-variant);
+}

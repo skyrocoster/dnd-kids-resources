@@ -1,6 +1,6 @@
 # Visual Consistency Plan — Cross-Cutting Aesthetic Remediation
 
-> **Status:** No stages shipped. VF0 (foundation scaffolding) is queued next; production UI is unchanged.
+> **Status:** VF0-VF1 shipped. VF2 (controls and states) is next; production UI is unchanged.
 
 - **Area guide:** [Visual Design](../../areas/visual-design.md).
 
@@ -35,9 +35,25 @@ of the bestiary field card, NPC dossier, encounter runner, and Map Lab.
   feature-level CSS currently owns its responsive behavior.
 - The documented 48px touch-target floor is not met by several shared controls and many older feature controls.
   Map Lab SVG marker geometry is the documented exception; ordinary controls are not.
-- The existing palette is broadly token-compliant. The material issue is composition and interaction drift: no
-  formal spacing/radius/control/elevation scale, duplicated component families, conflicting responsive
-  breakpoints, and inconsistent state/action hierarchy.
+- **VF1 confirmed token scale** (`frontend/src/theme.css`, documented in `docs/DESIGN_SYSTEM.md`'s "Foundation
+  token scale" section): `--space-1..7` (0.25rem→3rem), `--radius-sm/md/lg/full` (0.25rem/0.375rem/0.75rem/999px),
+  `--control-height`/`--control-height-compact` (48px/32px), `--elevation-shadow`/`--backdrop-color`,
+  `--motion-fast`/`--motion-normal` (0.15s/0.2s ease), `--z-editor`/`--z-floating`/`--z-dialog` (100/150/200).
+  `--md-surface-variant` now aliases `--md-surface-3`, resolving the prior undefined reference in
+  `MapLabPage.css` (not touched this stage; VW/VT stages adopting that file inherit the fix automatically).
+  Only `Button.css`, `IconButton.css`, `PageHeader.css`, `StatePanel.css`, and `Dialog.css` consume the new
+  tokens so far — every other component CSS file still carries pre-VF1 ad-hoc values and should migrate to the
+  scale as its owning VW/VT stage touches it, not as a standalone sweep.
+- **VF1 responsive breakpoint convention** (documented, not CSS custom properties — media features can't consume
+  `var()`): `520px` (narrow phone) and `768px` (tablet), matching the majority existing `@media` usage (Monster
+  routes). `DungeonShell.css`/`MapLabPage.css` still use `38rem`/`56rem`; reconcile only when a VT stage already
+  has that file in its touch set.
+- **VF1 font-role decision:** no bundled display typeface was adopted. Evaluating, sourcing, licensing, and
+  offline-bundling a new face wasn't proportional to this stage's scope; route headings keep using
+  `--type-face`. A future stage may revisit this only if it stays offline-safe and license-compatible.
+- The existing palette is broadly token-compliant. The material issue is composition and interaction drift:
+  duplicated component families, conflicting responsive breakpoints outside the VF1 convention above, and
+  inconsistent state/action hierarchy.
 - The intended visual language is a **tabletop field guide**: dark, calm, and legible at table speed. Existing
   role colors identify content domains; page structure, iconography, and direct language communicate function.
 - Each content domain gets a restrained icon-and-text chapter tab in its route header. This is the plan's
@@ -114,120 +130,129 @@ repairs global accessibility gaps, and delivers a responsive shell and useful en
 data flow. **Depends on:** no implementation stage. **Depended on by:** all VW and VT stages; do not begin their
 implementation until VF5 is committed.
 
-| Stage | Model | Summary | Deliverables |
+| Stage | Required strength | Summary | Deliverables |
 |-------|-------|---------|--------------|
-| **VF0 — Foundation scaffolding** | Haiku | Create compile-safe seams and skipped tests only. | Primitive stubs; no visual change. |
-| **VF1 — System contract** | Sonnet | Formalize the missing global visual scales. | Tokens, bundled-font decision, reference-doc update, token tests. |
-| **VF2 — Controls and states** | Sonnet | Make ordinary controls, fields, lists, and async states consistent and accessible. | Buttons, state panels, shared-control migrations, tests. |
-| **VF3 — Dialog contract** | Sonnet | Make modal behavior one tested accessibility contract. | `Dialog`, migrated confirmation, focus tests. |
-| **VF4 — Shell and entry point** | Sonnet | Establish responsive navigation, route hierarchy, and a real product start page. | App shell, home page, route tests. |
-| **VF5 — Foundation design pass** | Sonnet | Review and repair the foundation as a whole. | Responsive/a11y fixes and design regression tests. |
+| **VF0 — Foundation scaffolding** | Light | Create compile-safe seams and skipped tests only. | Primitive stubs; no visual change. |
+| **VF1 — System contract** | Standard | Formalize the missing global visual scales. | Tokens, bundled-font decision, reference-doc update, token tests. |
+| **VF2 — Controls and states** | Standard | Make ordinary controls, fields, lists, and async states consistent and accessible. | Buttons, state panels, shared-control migrations, tests. |
+| **VF3 — Dialog contract** | Standard | Make modal behavior one tested accessibility contract. | `Dialog`, migrated confirmation, focus tests. |
+| **VF4 — Shell and entry point** | Standard | Establish responsive navigation, route hierarchy, and a real product start page. | App shell, home page, route tests. |
+| **VF5 — Foundation design pass** | Standard | Review and repair the foundation as a whole. | Responsive/a11y fixes and design regression tests. |
 
 **Sequencing:** VF0 → VF1 → VF2 → VF3 → VF4 → VF5. VF2 and VF3 may share only VF1's completed tokens; keep them
 sequential to avoid conflicts in shared control CSS.
 
-#### VF0 — Foundation scaffolding (next up)
+#### VF2 — Controls and states (next up)
 
-- **Read first:** `docs/DESIGN_SYSTEM.md`, `docs/ARCHITECTURE.md`, `docs/TESTING.md`, `frontend/src/components/`, and the existing component test setup.
-- **Build:** Add compile-safe, unused stubs and placeholder CSS for `Button`, `IconButton`, `PageHeader`,
-  `StatePanel`, and `Dialog` under `frontend/src/components/`; add explicit remote-state types/hooks only where
-  later migrations need them; add `it.skip` render/keyboard test seams. Do not render these primitives from a
-  production route, alter existing CSS selectors, or add tokens with visible effects.
-- **Inherits:** `theme.css`, `components/icons/index.ts`, existing shared components, and the Vitest setup.
-- **Expected touch set:** `frontend/src/components/`, colocated component tests, and this plan only.
-- **Documentation impact:** This plan only: this inert scaffolding stage creates no durable product contract.
-- **Tests:** Confirm all stubs compile and existing suites remain green; keep only intentional skipped tests for
-  VF1-VF4 behavior.
-- **🚦 Gate:** Suite-sufficient. Run `npm run test`, `npm run typecheck`, and `npm run build`; the app must render
-  identically in manual user verification.
-- **Completion edit:** Collapse VF0, set VF1 as next, and point the manifest to VF1's anchor.
-
-#### VF1 — System contract (planned)
-
-- **Read first:** `docs/DESIGN_SYSTEM.md`, `docs/TESTING.md`, `frontend/src/theme.css`, `frontend/src/index.css`, and `frontend/src/__tests__/theme-tokens.test.mjs`.
-- **Build:** Add named spacing, radius, control-size, elevation/backdrop, motion, z-index, and breakpoint tokens
-  in `frontend/src/theme.css`; resolve the undefined `--md-surface-variant` use with a canonical token or
-  replacement; normalize `color-scheme`, native-control font inheritance, and root body typography in
-  `index.css`. Evaluate a locally bundled display typeface for restrained route headings; adopt it only if it is
-  offline-safe, license-compatible, and does not compromise legibility. Update `docs/DESIGN_SYSTEM.md` with the
-  exact token scale, font roles, responsive convention, and documented compact-control exception.
-- **Inherits:** VF0 primitive seams and the existing MD3 role palette/type tokens.
-- **Expected touch set:** `frontend/src/theme.css`, `frontend/src/index.css`, token tests, `docs/DESIGN_SYSTEM.md`, and this plan.
-- **Documentation impact:** `docs/DESIGN_SYSTEM.md` and this plan record the durable token, typography, and compact-control contracts.
-- **Tests:** Extend `frontend/src/__tests__/theme-tokens.test.mjs` for every added token family and undefined-token
-  regressions; add a focused global-style test only where jsdom can verify the contract.
-- **🚦 Gate:** Run frontend test/typecheck/build gates. User manually checks default text, form controls, focus,
-  and representative page headings at desktop and narrow widths; no route-specific migration occurs here.
-- **Completion edit:** Collapse VF1, set VF2 as next, and point the manifest to VF2's anchor.
-
-#### VF2 — Controls and states (planned)
-
-- **Read first:** `docs/DESIGN_SYSTEM.md`, `docs/TESTING.md`, `frontend/src/components/`, `frontend/src/theme.css`, and shared component tests.
-- **Build:** Implement `Button`, `IconButton`, `PageHeader`, and `StatePanel`; evolve shared form controls and
-  `SearchList` to consume foundation tokens, inherit font settings, meet the 48px floor, and distinguish loading,
-  empty collection, filtered-empty, error, and no-selection states. Replace the incomplete listbox semantics in
-  `SearchList` with ordinary button-list semantics unless full keyboard listbox behavior is implemented. Expand
-  `SplitPane`'s pointer/keyboard resize target without changing its visible divider width. Consolidate
-  `visually-hidden` to one global utility.
+- **Read first:** `docs/DESIGN_SYSTEM.md`, `docs/TESTING.md`, `frontend/src/components/Button.tsx`,
+  `frontend/src/components/IconButton.tsx`, `frontend/src/components/PageHeader.tsx`,
+  `frontend/src/components/StatePanel.tsx`, `frontend/src/components/SearchList.tsx`,
+  `frontend/src/components/SplitPane.tsx`, `frontend/src/components/Card.tsx`,
+  `frontend/src/components/form/`, `frontend/src/theme.css`, and their colocated tests under
+  `frontend/src/components/__tests__/`.
+- **Build:** Finalize `Button` (variant/size/loading/disabled contracts), `IconButton` (accessible label,
+  touch target), `PageHeader` (chapter-tab navigation, actions slot), and `StatePanel` (status-specific
+  copy, action slot, aria-live). Evolve shared form controls and `SearchList` to consume foundation tokens,
+  inherit font settings, meet the 48px floor, and distinguish loading, empty collection, filtered-empty,
+  error, and no-selection states. Replace the incomplete listbox semantics in `SearchList` with ordinary
+  button-list semantics unless full keyboard listbox behavior is implemented. Expand `SplitPane`'s
+  pointer/keyboard resize target without changing its visible divider width. Consolidate `visually-hidden`
+  to one global utility. Unskip and verify the `it.skip` seams in `Button.test.tsx`, `IconButton.test.tsx`,
+  `PageHeader.test.tsx`, and `StatePanel.test.tsx`.
 - **Inherits:** VF1 token and typography contracts; existing Card/SearchList/SplitPane APIs unless a migration
-  contract requires an additive prop.
-- **Expected touch set:** shared components and form controls, their tests, `docs/DESIGN_SYSTEM.md`, and this plan.
+  contract requires an additive prop; `remoteState.ts` types for browser migration state.
+- **Confirmed radius values in this stage's touch set** (surveyed during VF1's codebase-wide radius grep, not
+  yet applied): `Card.css` uses `0.75rem` (matches `--radius-lg`) and `999px` (matches `--radius-full`);
+  `SearchList.css` and `form/form.css` both use `0.375rem` (matches `--radius-md`) — all three migrate directly.
+  `SplitPane.css` uses `0.5rem` for its outer corners (`border-radius: 0.5rem 0 0 0.5rem` / `0 0.5rem 0.5rem 0`),
+  which does not match any of `--radius-sm/md/lg/full` (0.25/0.375/0.75rem); decide whether to round it to
+  `--radius-md` or treat it as a documented one-off before touching that file.
+- **Expected touch set:** `Button.tsx`, `IconButton.tsx`, `PageHeader.tsx`, `StatePanel.tsx`, `SearchList.tsx`,
+  `SplitPane.tsx`, `Card.tsx`, `form/`, their tests, `docs/DESIGN_SYSTEM.md`, and this plan.
 - **Documentation impact:** `docs/DESIGN_SYSTEM.md` and this plan record shared primitive and accessibility contracts.
 - **Tests:** Render tests for button tones/kinds/loading/disabled labels, icon-button accessible names, state
   roles and actions, field/search target classes, filtered-empty versus data-empty states, and SplitPane keyboard
   operation.
-- **🚦 Gate:** Run frontend test/typecheck/build gates. User checks focus visibility, touch-sized controls, and
+- **Gate:** Run frontend test/typecheck/build gates. User checks focus visibility, touch-sized controls, and
   reduced-motion behavior on the component demo or focused test route without using it as a public product route.
+- **Discovery consolidation:** Update `Reusable pieces` with confirmed component APIs, prop changes, and
+  merged CSS contracts. Revise VF3-VF5 blocks with exact component signatures and accessibility findings.
 - **Completion edit:** Collapse VF2, set VF3 as next, and point the manifest to VF3's anchor.
 
 #### VF3 — Dialog contract (planned)
 
-- **Read first:** `docs/DESIGN_SYSTEM.md`, `docs/TESTING.md`, `frontend/src/components/ConfirmDialog.tsx`, and its tests.
-- **Build:** Implement a shared `Dialog` with title/description association, initial focus, Tab/Shift+Tab focus
-  containment, Escape dismissal where allowed, focus restoration, pending/saving state, and explicit backdrop
-  policy. Refactor `ConfirmDialog` to use it while retaining its current public API where practical. Do not yet
-  migrate domain editors.
-- **Inherits:** VF1 tokens and VF2 buttons/icon buttons; existing `ConfirmDialog` callers and test labels.
-- **Expected touch set:** `frontend/src/components/Dialog*`, `ConfirmDialog*`, related tests, `docs/DESIGN_SYSTEM.md`, and this plan.
+- **Read first:** `docs/DESIGN_SYSTEM.md`, `docs/TESTING.md`, `frontend/src/components/Dialog.tsx`,
+  `frontend/src/components/Dialog.css`, `frontend/src/components/__tests__/Dialog.test.tsx`,
+  `frontend/src/components/ConfirmDialog.tsx`, `frontend/src/components/ConfirmDialog.css`, and
+  existing ConfirmDialog tests.
+- **Build:** Finalize the `Dialog` stub into a full accessibility contract: title/description association
+  via `useId()`, initial focus, Tab/Shift+Tab focus containment, Escape dismissal where allowed, focus
+  restoration, pending/saving state, and explicit backdrop policy. Unskip and verify the `it.skip` seams
+  in `Dialog.test.tsx`. Refactor `ConfirmDialog` to use it while retaining its current public API where
+  practical. Do not yet migrate domain editors.
+- **Inherits:** VF1 tokens and VF2 buttons/icon buttons; existing `ConfirmDialog` callers and test labels;
+  `Dialog.tsx` already has `open`/`title`/`description`/`onClose`/`footer`/`pending` props and
+  `useId()` for aria-labelledby/describedby.
+- **Expected touch set:** `frontend/src/components/Dialog.tsx`, `Dialog.css`, `ConfirmDialog.tsx`,
+  `ConfirmDialog.css`, `frontend/src/components/__tests__/Dialog.test.tsx`, related ConfirmDialog tests,
+  `docs/DESIGN_SYSTEM.md`, and this plan.
 - **Documentation impact:** `docs/DESIGN_SYSTEM.md` and this plan record the modal accessibility contract.
 - **Tests:** Add dialog unit/integration tests for dialog semantics, initial focus, focus loop, Escape,
   restoration to trigger, backdrop behavior, and pending confirmation. Preserve existing deletion-flow tests.
-- **🚦 Gate:** Run frontend test/typecheck/build gates. User manually verifies keyboard-only confirmation and a
+- **Gate:** Run frontend test/typecheck/build gates. User manually verifies keyboard-only confirmation and a
   pointer confirmation flow; no feature editor is changed in this stage.
+- **Discovery consolidation:** Update `Reusable pieces` with the confirmed Dialog API. Revise VF4-VF5 blocks
+  with exact dialog behavior contracts and ConfirmDialog migration findings.
 - **Completion edit:** Collapse VF3, set VF4 as next, and point the manifest to VF4's anchor.
 
 #### VF4 — Shell and entry point (planned)
 
-- **Read first:** `docs/ARCHITECTURE.md`, `docs/DESIGN_SYSTEM.md`, `docs/TESTING.md`, `frontend/src/layout/AppShell.tsx`, and router tests.
-- **Build:** Refactor `AppShell` so the site brand is a home link rather than a route `h1`; add `PageHeader` to
-  establish one route heading and the icon-and-text chapter-tab signature; provide a mobile navigation drawer or
-  equivalent reachable navigation while retaining the persisted desktop rail. Replace `HomePage`'s API proof
-  screen with a field-guide start page linking to Dungeons, Encounters, reference catalogs, and campaign work.
-  Restrict `ComponentDemoPage` to development-only routing or remove it from production router exposure.
-- **Inherits:** VF1-VF3 primitives and the current `useNavCollapse()` persistence behavior. Keep the room-index
-  rail separate from site navigation.
-- **Expected touch set:** `frontend/src/layout/`, `frontend/src/pages/HomePage*`, router files and tests, `docs/ARCHITECTURE.md`, `docs/DESIGN_SYSTEM.md`, and this plan.
+- **Read first:** `docs/ARCHITECTURE.md`, `docs/DESIGN_SYSTEM.md`, `docs/TESTING.md`,
+  `frontend/src/layout/AppShell.tsx`, `frontend/src/layout/AppShell.css`,
+  `frontend/src/components/PageHeader.tsx`, `frontend/src/components/PageHeader.css`,
+  `frontend/src/layout/__tests__/AppShell.test.tsx`, `frontend/src/pages/HomePage.tsx`, and
+  `frontend/src/router.tsx`.
+- **Build:** Refactor `AppShell` so the site brand is a home link rather than a route `h1`; add `PageHeader`
+  to establish one route heading and the icon-and-text chapter-tab signature (`chapterTabs` prop with
+  `{key, label, icon}` entries). Provide a mobile navigation drawer or equivalent reachable navigation while
+  retaining the persisted desktop rail (`useNavCollapse()`). Replace `HomePage`'s API proof screen with a
+  field-guide start page linking to Dungeons, Encounters, reference catalogs, and campaign work. Restrict
+  `ComponentDemoPage` to development-only routing or remove it from production router exposure.
+- **Inherits:** VF1-VF3 primitives and the current `useNavCollapse()` persistence behavior. `PageHeader`
+  already provides `title`/`subtitle`/`chapterTabs`/`actions` props and tab keyboard navigation. Keep the
+  room-index rail separate from site navigation.
+- **Expected touch set:** `frontend/src/layout/`, `frontend/src/pages/HomePage*`, `router.tsx`,
+  `PageHeader.tsx`, router tests, `docs/ARCHITECTURE.md`, `docs/DESIGN_SYSTEM.md`, and this plan.
 - **Documentation impact:** `docs/ARCHITECTURE.md`, `docs/DESIGN_SYSTEM.md`, and this plan record shell and route-heading conventions.
 - **Tests:** Update `layout/__tests__/AppShell.test.tsx` for brand link, all navigation areas including Items and
   Loot, mobile navigation semantics, and route heading behavior; replace HomePage API assertions with user-facing
   navigation tests; add router coverage for the demo-route decision.
-- **🚦 Gate:** Run frontend test/typecheck/build gates. User manually verifies navigation and route hierarchy at
+- **Gate:** Run frontend test/typecheck/build gates. User manually verifies navigation and route hierarchy at
   320px, 375px, 768px, and desktop widths; no browser automation is required by repository policy.
+- **Discovery consolidation:** Update `Key facts` with confirmed shell composition, navigation contracts, and
+  home-page structure. Revise VF5 and all VW blocks with exact layout conventions and router findings.
 - **Completion edit:** Collapse VF4, set VF5 as next, and point the manifest to VF5's anchor.
 
 #### VF5 — Foundation design pass (planned)
 
-- **Read first:** `docs/DESIGN_SYSTEM.md`, `docs/TESTING.md`, the VF1-VF4 touched components, and their tests.
+- **Read first:** `docs/DESIGN_SYSTEM.md`, `docs/TESTING.md`, `frontend/src/components/Button.tsx`,
+  `IconButton.tsx`, `PageHeader.tsx`, `StatePanel.tsx`, `Dialog.tsx`, `remoteState.ts`, the VF1-VF4
+  touched components, and their tests under `frontend/src/components/__tests__/`.
 - **Build:** Conduct a `/frontend-design` review of the shared foundation. Repair spacing, hierarchy, wrapping,
-  focus, contrast, reduced-motion, and mobile defects discovered across the shell, primitive demo, home page, and
-  one representative legacy browser without beginning the browser-family migration.
+  focus, contrast, reduced-motion, and mobile defects discovered across the shell, primitive demo, home page,
+  and one representative legacy browser without beginning the browser-family migration.
 - **Inherits:** VF0-VF4, the canonical design reference, and all existing user-facing content-role colors.
-- **Expected touch set:** confirmed shared foundation files, their regression tests, `docs/DESIGN_SYSTEM.md` when a durable contract changes, and this plan.
+  VF0 stubs: `Button`, `IconButton`, `PageHeader`, `StatePanel`, `Dialog`, and `remoteState.ts`.
+- **Expected touch set:** confirmed shared foundation files, their regression tests, `docs/DESIGN_SYSTEM.md`
+  when a durable contract changes, and this plan.
 - **Documentation impact:** This plan; update `docs/DESIGN_SYSTEM.md` only for a confirmed durable shared-contract correction.
 - **Tests:** Add regression tests for defects fixed in this stage; run the full frontend suite, lint, typecheck,
   and production build.
-- **🚦 Gate:** User verifies the documented viewport matrix and keyboard navigation. The phase is complete only
+- **Gate:** User verifies the documented viewport matrix and keyboard navigation. The phase is complete only
   when all frontend gates pass and no unresolved foundation defect blocks VW1.
+- **Discovery consolidation:** Update `Key facts` and `Design system in force` with confirmed foundation
+  contracts and corrected design defects. Revise VW and VT blocks with exact foundation dependencies and
+  regression findings. Update `docs/DESIGN_SYSTEM.md` with any durable corrections.
 - **Completion edit:** Collapse VF5, remove the completed VF phase, set VW0 as next, and point the manifest to VW0's anchor.
 
 ---
@@ -239,15 +264,15 @@ frame, state, actions, and modal behavior, while each domain retains its own con
 **Depends on:** VF5 committed. **Depended on by:** VT stages inherit shared browser/editor conventions but do not
 depend on individual catalog migrations.
 
-| Stage | Model | Summary | Deliverables |
+| Stage | Required strength | Summary | Deliverables |
 |-------|-------|---------|--------------|
-| **VW0 — Workspace scaffolding** | Haiku | Create opt-in browser/editor migration seams. | `BrowserLayout` stubs and skipped route tests. |
-| **VW1 — Standard browsers** | Sonnet | Migrate Spells, Weapons, Players, and Quests. | Responsive list/detail and remote states. |
-| **VW2 — Role-rich browsers** | Sonnet | Migrate Monsters, NPCs, Items, and Loot. | Preserved specialist details and role consistency. |
-| **VW3 — Action browsers** | Sonnet | Migrate Encounters and Dungeons. | Primary Run/Enter flows and browser states. |
-| **VW4 — Standard editors** | Sonnet | Migrate six simple modal editors. | Shared dialogs, fields, and action rows. |
-| **VW5 — Complex authoring** | Sonnet | Migrate Encounter/Loot authoring and align Monster Editor framing. | Complex picker and route-editor conformance. |
-| **VW6 — Workspace design pass** | Sonnet | Review every catalog/authoring route together. | Cross-route fixes and regression tests. |
+| **VW0 — Workspace scaffolding** | Light | Create opt-in browser/editor migration seams. | `BrowserLayout` stubs and skipped route tests. |
+| **VW1 — Standard browsers** | Standard | Migrate Spells, Weapons, Players, and Quests. | Responsive list/detail and remote states. |
+| **VW2 — Role-rich browsers** | Standard | Migrate Monsters, NPCs, Items, and Loot. | Preserved specialist details and role consistency. |
+| **VW3 — Action browsers** | Standard | Migrate Encounters and Dungeons. | Primary Run/Enter flows and browser states. |
+| **VW4 — Standard editors** | Standard | Migrate six simple modal editors. | Shared dialogs, fields, and action rows. |
+| **VW5 — Complex authoring** | Standard | Migrate Encounter/Loot authoring and align Monster Editor framing. | Complex picker and route-editor conformance. |
+| **VW6 — Workspace design pass** | High | Review every catalog/authoring route together. | Cross-route fixes and regression tests. |
 
 **Sequencing:** VW0 → VW1 → VW2 → VW3 → VW4 → VW5 → VW6. Do not migrate multiple cohorts in parallel because
 each changes shared browser/editor CSS and contracts.
@@ -263,7 +288,9 @@ each changes shared browser/editor CSS and contracts.
 - **Documentation impact:** This plan only: inert scaffolding creates no durable product contract.
 - **Tests:** Existing browser tests stay green; skipped tests name the loading, empty, error, selection, and
   narrow-screen contracts each later stage will satisfy.
-- **🚦 Gate:** Suite-sufficient: frontend test/typecheck/build clean, production rendering unchanged.
+- **Gate:** Suite-sufficient: frontend test/typecheck/build clean, production rendering unchanged.
+- **Discovery consolidation:** Revise VW1-VW6 `Read first`, `Build`, and `Expected touch set` blocks with
+  confirmed browser-route file paths, shared-component APIs, and test-setup findings.
 - **Completion edit:** Collapse VW0, set VW1 as next, and point the manifest to VW1's anchor.
 
 #### VW1 — Standard browsers (planned)
@@ -279,8 +306,10 @@ each changes shared browser/editor CSS and contracts.
 - **Documentation impact:** `docs/ARCHITECTURE.md` and this plan record the shared browser and responsive navigation convention.
 - **Tests:** For each route, use deferred API promises to prove loading does not flash an empty state; test empty,
   filter no-results, error, selection, action labels, and narrow-screen detail return behavior.
-- **🚦 Gate:** Run frontend test/typecheck/build gates. User manually checks all four routes at phone/tablet/desktop
+- **Gate:** Run frontend test/typecheck/build gates. User manually checks all four routes at phone/tablet/desktop
   widths and confirms spell/weapon/player/quest edits still reach their existing editor flows.
+- **Discovery consolidation:** Update `Reusable pieces` with confirmed BrowserLayout API and migration
+  patterns. Revise VW2-VW6 blocks with exact route compositions and state-rendering contracts.
 - **Completion edit:** Collapse VW1, set VW2 as next, and point the manifest to VW2's anchor.
 
 #### VW2 — Role-rich browsers (planned)
@@ -296,8 +325,10 @@ each changes shared browser/editor CSS and contracts.
 - **Documentation impact:** This plan; update `docs/DESIGN_SYSTEM.md` only if a supported shared visual variant changes.
 - **Tests:** Extend browser tests for domain role labels, specialist detail rendering, rich empty states, loading
   and errors, responsive list/detail behavior, and Monster Editor navigation/return selection.
-- **🚦 Gate:** Run frontend test/typecheck/build gates. User checks that bestiary, dossier, items, and loot remain
+- **Gate:** Run frontend test/typecheck/build gates. User checks that bestiary, dossier, items, and loot remain
   visually distinguishable while their framing/actions now read as one application.
+- **Discovery consolidation:** Update `Reusable pieces` with confirmed specialist component contracts and
+  Card/SearchList variant unions. Revise VW3-VW6 blocks with exact domain-role and detail-rendering findings.
 - **Completion edit:** Collapse VW2, set VW3 as next, and point the manifest to VW3's anchor.
 
 #### VW3 — Action browsers (planned)
@@ -311,8 +342,10 @@ each changes shared browser/editor CSS and contracts.
 - **Documentation impact:** `docs/ARCHITECTURE.md` and this plan record any durable route-flow convention.
 - **Tests:** Cover create, select, Run/Enter, Edit, Delete, errors, empty collections, and narrow-screen return
   navigation. Preserve current dungeon browser routing assertions and encounter runner-link tests.
-- **🚦 Gate:** Run frontend test/typecheck/build gates. User manually verifies a create-to-editor and
+- **Gate:** Run frontend test/typecheck/build gates. User manually verifies a create-to-editor and
   create-to-run workflow without data-contract changes.
+- **Discovery consolidation:** Update `Key facts` with confirmed action-flow conventions for encounter and
+  dungeon routes. Revise VW4-VW6 blocks with exact routing and confirmation contracts.
 - **Completion edit:** Collapse VW3, set VW4 as next, and point the manifest to VW4's anchor.
 
 #### VW4 — Standard editors (planned)
@@ -326,8 +359,10 @@ each changes shared browser/editor CSS and contracts.
 - **Documentation impact:** `docs/DESIGN_SYSTEM.md` and this plan record any durable shared form or dialog contract.
 - **Tests:** Retain all field validation and save tests; add focus restoration, Escape/backdrop policy, pending
   save, status-message role, overflow, and dirty-close behavior where forms have unsaved editable state.
-- **🚦 Gate:** Run frontend test/typecheck/build gates. User manually verifies create, edit, validation failure,
+- **Gate:** Run frontend test/typecheck/build gates. User manually verifies create, edit, validation failure,
   cancel, and delete-confirmation paths for a representative editor from each migrated domain.
+- **Discovery consolidation:** Update `Reusable pieces` with confirmed dialog/form editor contracts. Revise
+  VW5-VW6 blocks with exact editor signatures and shared-field findings.
 - **Completion edit:** Collapse VW4, set VW5 as next, and point the manifest to VW5's anchor.
 
 #### VW5 — Complex authoring (planned)
@@ -343,8 +378,10 @@ each changes shared browser/editor CSS and contracts.
 - **Documentation impact:** This plan; update `docs/DESIGN_SYSTEM.md` only for a proven reusable shared picker or form contract.
 - **Tests:** Preserve dynamic row, picker, total, and model tests; add dialog focus/overflow coverage for
   Encounter/Loot and routed heading/action/return tests for MonsterEditor.
-- **🚦 Gate:** Run frontend test/typecheck/build gates. User manually checks complex authoring at narrow desktop and
+- **Gate:** Run frontend test/typecheck/build gates. User manually checks complex authoring at narrow desktop and
   phone widths, including a long loot bundle and an encounter with conditions.
+- **Discovery consolidation:** Update `Reusable pieces` with any shared picker contract and `Key facts` with
+  complex authoring conventions. Revise VW6 block with exact authoring findings.
 - **Completion edit:** Collapse VW5, set VW6 as next, and point the manifest to VW6's anchor.
 
 #### VW6 — Workspace design pass (planned)
@@ -357,8 +394,11 @@ each changes shared browser/editor CSS and contracts.
 - **Expected touch set:** confirmed browser/editor defects and tests, `docs/DESIGN_SYSTEM.md` for durable corrections, and this plan.
 - **Documentation impact:** This plan; update `docs/DESIGN_SYSTEM.md` only for confirmed shared-contract corrections.
 - **Tests:** Add regression tests for confirmed defects and run frontend test/lint/typecheck/build gates.
-- **🚦 Gate:** User checks the full browser/editor matrix across supported widths and keyboard flows. VT work may
+- **Gate:** User checks the full browser/editor matrix across supported widths and keyboard flows. VT work may
   begin only after all workspace regressions are resolved.
+- **Discovery consolidation:** Update `Key facts` and `Reusable pieces` with confirmed browser/editor
+  conventions and regression findings. Revise VT blocks with exact workspace dependencies. Update
+  `docs/DESIGN_SYSTEM.md` for any durable corrections.
 - **Completion edit:** Collapse VW6, remove the completed VW phase, set VT0 as next, and point the manifest to VT0's anchor.
 
 ---
@@ -370,13 +410,13 @@ affordances. Changes are deliberately separated from geometry, reducer, and pers
 **Depends on:** VF5 committed; VW completion is recommended but not required for existing live-feature behavior.
 **Depended on by:** no queued phase.
 
-| Stage | Model | Summary | Deliverables |
+| Stage | Required strength | Summary | Deliverables |
 |-------|-------|---------|--------------|
-| **VT0 — Live-surface scaffolding** | Haiku | Add non-rendering style/test seams. | Skipped touch and narrow-layout tests. |
-| **VT1 — Encounter runner** | Sonnet | Clarify combat priority and repair ordinary control targets. | Runner/dock hierarchy and failure state. |
-| **VT2 — Dungeon viewer** | Sonnet | Align shell/viewer framing and narrow-screen room access. | Viewer layout and responsive tests. |
-| **VT3 — Map Lab editor** | Sonnet | Improve editor control hierarchy without touching map mechanics. | Compact-field contract and inspector actions. |
-| **VT4 — Final design pass** | Sonnet | Validate the entire routed product as one system. | Site-wide fixes and verification matrix. |
+| **VT0 — Live-surface scaffolding** | Light | Add non-rendering style/test seams. | Skipped touch and narrow-layout tests. |
+| **VT1 — Encounter runner** | Standard | Clarify combat priority and repair ordinary control targets. | Runner/dock hierarchy and failure state. |
+| **VT2 — Dungeon viewer** | Standard | Align shell/viewer framing and narrow-screen room access. | Viewer layout and responsive tests. |
+| **VT3 — Map Lab editor** | Standard | Improve editor control hierarchy without touching map mechanics. | Compact-field contract and inspector actions. |
+| **VT4 — Final design pass** | High | Validate the entire routed product as one system. | Site-wide fixes and verification matrix. |
 
 **Sequencing:** VT0 → VT1 → VT2 → VT3 → VT4. Do not combine Map Lab CSS refactoring with fixture/geometry/model
 changes in the same stage.
@@ -392,7 +432,9 @@ changes in the same stage.
 - **Documentation impact:** This plan only: inert scaffolding creates no durable product contract.
 - **Tests:** Add `it.skip` cases for target sizes, load-error recovery, narrow-screen reachability, and inspector
   action grouping; retain all existing behavior tests.
-- **🚦 Gate:** Suite-sufficient: frontend test/typecheck/build clean and no visual production change.
+- **Gate:** Suite-sufficient: frontend test/typecheck/build clean and no visual production change.
+- **Discovery consolidation:** Revise VT1-VT4 `Read first`, `Build`, and `Expected touch set` blocks with
+  confirmed encounter-runner and Map Lab file paths, component shapes, and test-setup findings.
 - **Completion edit:** Collapse VT0, set VT1 as next, and point the manifest to VT1's anchor.
 
 #### VT1 — Encounter runner (planned)
@@ -408,8 +450,10 @@ changes in the same stage.
 - **Documentation impact:** `docs/DESIGN_SYSTEM.md` and this plan record any durable control-size or live-surface accessibility contract.
 - **Tests:** Cover failed encounter load and recovery, action grouping/labels, compact mode, keyboard reorder,
   player-card behavior, and control-size class contracts. Preserve all reducer and persistence tests.
-- **🚦 Gate:** Run frontend test/typecheck/build gates. User manually verifies a standalone runner and Map Lab dock
+- **Gate:** Run frontend test/typecheck/build gates. User manually verifies a standalone runner and Map Lab dock
   with a touch device or touch simulation, including narrow-window resizing and condition editing.
+- **Discovery consolidation:** Update `Key facts` with confirmed runner/dock control contracts and
+  load-error recovery patterns. Revise VT2-VT4 blocks with exact encounter-surface findings.
 - **Completion edit:** Collapse VT1, set VT2 as next, and point the manifest to VT2's anchor.
 
 #### VT2 — Dungeon viewer (planned)
@@ -425,8 +469,10 @@ changes in the same stage.
 - **Documentation impact:** `docs/ARCHITECTURE.md`, `docs/DESIGN_SYSTEM.md`, and this plan record durable viewer composition conventions.
 - **Tests:** Preserve existing Map Lab viewer, room selection, floor, marker, dock, and fullscreen tests; add
   responsive composition tests for selected-room reachability, mode navigation, and ordinary control targets.
-- **🚦 Gate:** Run frontend test/typecheck/build gates. User manually verifies room selection by rail and map,
+- **Gate:** Run frontend test/typecheck/build gates. User manually verifies room selection by rail and map,
   encounter/NPC docks, floor changes, fullscreen, and a narrow viewport without changing authored data.
+- **Discovery consolidation:** Update `Reusable pieces` with confirmed viewer composition contracts. Revise
+  VT3-VT4 blocks with exact shell/viewer layout findings and responsive exceptions.
 - **Completion edit:** Collapse VT2, set VT3 as next, and point the manifest to VT3's anchor.
 
 #### VT3 — Map Lab editor (planned)
@@ -443,8 +489,11 @@ changes in the same stage.
 - **Documentation impact:** `docs/DESIGN_SYSTEM.md` and this plan record the compact-field accessibility exception.
 - **Tests:** Preserve all editor reducer, geometry, fixture, keyboard, save, zoom, and fullscreen tests. Add
   focused tests for compact field labeling, selection actions, save status, and narrow layout ordering.
-- **🚦 Gate:** Run frontend test/typecheck/build gates. User manually verifies every editor tool family, room and
+- **Gate:** Run frontend test/typecheck/build gates. User manually verifies every editor tool family, room and
   fixture placement, editing, undo-free persistence path, fullscreen, and keyboard footprint editing.
+- **Discovery consolidation:** Update `Key facts` and `Reusable pieces` with confirmed compact-field
+  exceptions and inspector action contracts. Revise VT4 block with exact editor findings. Update
+  `docs/DESIGN_SYSTEM.md` with the compact-field accessibility exception.
 - **Completion edit:** Collapse VT3, set VT4 as next, and point the manifest to VT4's anchor.
 
 #### VT4 — Final design pass (planned)
@@ -458,10 +507,44 @@ changes in the same stage.
 - **Documentation impact:** This plan; update `docs/DESIGN_SYSTEM.md` or `docs/ARCHITECTURE.md` only for confirmed durable contract corrections.
 - **Tests:** Add regression tests for each defect fixed. Run `npm run test`, `npm run lint`, `npm run typecheck`,
   and `npm run build`; run backend tests only if an unrelated backend change is included.
-- **🚦 Gate:** User performs the final manual matrix at 320px, 375px, 768px, 1024px, and desktop: navigation,
+- **Gate:** User performs the final manual matrix at 320px, 375px, 768px, 1024px, and desktop: navigation,
   browser selection, create/edit/delete, dialogs, encounter runner, dungeon viewer, and Map Lab editor. Verify
   keyboard focus, touch targets, reduced motion, role-color meaning, and absence of horizontal overflow.
-- **Completion edit:** Collapse VT4, mark the plan complete, archive it under `docs/complete/`, and leave a redirect stub if links remain.
+- **Discovery consolidation:** Update `Key facts` and `Design system in force` with all confirmed
+  site-wide contracts and regression findings. Update `docs/DESIGN_SYSTEM.md` and `docs/ARCHITECTURE.md`
+  for any durable corrections discovered across the final review.
+- **Completion edit:** Collapse VT4, remove the completed VT phase, set the Plan Closeout as next, and
+  point the manifest to the Plan Closeout's anchor.
+
+---
+
+## Plan Closeout — Documentation Update
+
+| Stage | Required strength | Summary | Deliverables |
+|-------|-------------------|---------|--------------|
+| **VT5 — Documentation update** | Standard | Reconcile accumulated plan context and complete the documentation workflow. | Canonical references, routing, validation, and archival complete. |
+
+#### VT5 — Documentation update (final stage of the plan)
+
+- **Read first:** `CLAUDE.md`, `docs/README.md`, the owning area guide (`docs/areas/visual-design.md`), this plan, `docs/PLAN_TEMPLATE.md`,
+  `docs/TESTING.md`, `scripts/check_docs.py`, every reference named by prior stages, and relevant workflow/PR files.
+- **Build:** Reconcile the plan's accumulated Key facts, reusable pieces, debt, shipped rows, and future-stage
+  handoffs with the code that shipped. Complete every outstanding named canonical-reference update, refresh
+  generated inventories when their source contracts changed, update area-guide and manifest routing, and prepare
+  the plan archive.
+- **Inherits:** all prior-stage documentation-impact edits and discovery consolidations; this stage verifies and
+  closes them, rather than deferring implementation-stage documentation.
+- **Expected touch set:** this plan, its area guide (`docs/areas/visual-design.md`), `docs/README.md`, every outstanding named canonical reference,
+  generated references when applicable, and the archive/redirect location.
+- **Documentation impact:** `docs/README.md`, `docs/areas/visual-design.md`, `docs/DESIGN_SYSTEM.md`, `docs/ARCHITECTURE.md`, `docs/TESTING.md`, and this plan.
+- **Tests:** run `python scripts/check_docs.py --check`; run `python scripts/check_docs.py --check --base <base-ref>`
+  when a valid base ref is available; run any documentation-validator tests changed by this outcome.
+- **Gate:** A fresh reader can route from `CLAUDE.md` through `docs/README.md`, the area guide, and the current plan
+  context without rediscovering essential facts. Documentation checks and applicable tests pass.
+- **Discovery consolidation:** promote remaining durable facts to the appropriate canonical reference or retained
+  plan top matter before archival; no unprocessed discovery remains only in a shipped-stage block or commit.
+- **Completion edit:** collapse this stage, mark the outcome complete, archive the plan under `docs/complete/visual-consistency.md`,
+  update the area guide and manifest, and create a redirect only for a known inbound link.
 
 ---
 
@@ -469,6 +552,8 @@ changes in the same stage.
 
 | Stage | What shipped (≤2 sentences) |
 |-------|------------------------------|
+| **VF0** | Created compile-safe stubs for `Button`, `IconButton`, `PageHeader`, `StatePanel`, and `Dialog` with placeholder CSS and `it.skip` test seams. Added `remoteState.ts` types for later browser migrations. All gates green; production UI unchanged. |
+| **VF1** | Added the spacing/radius/control-size/elevation/motion/z-index token scale to `theme.css`, resolved undefined `--md-surface-variant`, and normalized `color-scheme`/native-control font inheritance/body typography in `index.css`. Migrated `Button.css`, `IconButton.css`, `PageHeader.css`, `StatePanel.css`, and `Dialog.css` to the new tokens; unskipped the VF1-tagged Button/IconButton/PageHeader tests; deferred bundling a display typeface. 753 frontend tests, typecheck/build/lint clean. |
 
 ---
 
@@ -485,5 +570,6 @@ changes in the same stage.
 
 ## Next:
 
-**VF0 — Foundation scaffolding** is unblocked. It must remain an inert Haiku scaffolding stage; begin VF1 only
-after VF0 is committed and collapsed into the shipped-stages table.
+**VF2 — Controls and states** is unblocked. It finalizes `Button`, `IconButton`, `PageHeader`, and `StatePanel`
+contracts and migrates `SearchList`/`SplitPane`/`Card`/`form/` to the VF1 token scale; begin VF3 only after VF2
+is committed and collapsed into the shipped-stages table.

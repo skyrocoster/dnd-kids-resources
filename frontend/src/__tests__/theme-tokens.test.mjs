@@ -1,6 +1,10 @@
 // DP1: Token derivation format validation
 // (Full deriveTokens unit tests run in Node via scripts/generate-md3-tokens.mjs --test)
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { describe, it, expect } from 'vitest'
+
+const themeCss = readFileSync(resolve(process.cwd(), 'src/theme.css'), 'utf-8')
 
 describe('theme tokens', () => {
   it('MD3 custom-color tokens follow the role naming format', () => {
@@ -102,6 +106,48 @@ describe('theme tokens', () => {
       const value = parseInt(hex, 16)
       const brightness = (value >> 16) * 0.299 + ((value >> 8) & 0xff) * 0.587 + (value & 0xff) * 0.114
       expect(brightness).toBeLessThan(100) // dark (tone 20)
+    })
+  })
+
+  // VF1: foundation scale — spacing, radius, control size, elevation/backdrop, motion, z-index
+  describe('VF1 foundation token scale', () => {
+    it('defines the spacing scale', () => {
+      ;['--space-1', '--space-2', '--space-3', '--space-4', '--space-5', '--space-6', '--space-7'].forEach(
+        (token) => {
+          expect(themeCss).toMatch(new RegExp(`${token}:\\s*[^;]+;`))
+        },
+      )
+    })
+
+    it('defines the radius scale', () => {
+      ;['--radius-sm', '--radius-md', '--radius-lg', '--radius-full'].forEach((token) => {
+        expect(themeCss).toMatch(new RegExp(`${token}:\\s*[^;]+;`))
+      })
+    })
+
+    it('defines the control-size scale', () => {
+      expect(themeCss).toMatch(/--control-height:\s*48px;/)
+      expect(themeCss).toMatch(/--control-height-compact:\s*32px;/)
+    })
+
+    it('defines elevation and backdrop tokens', () => {
+      expect(themeCss).toMatch(/--elevation-shadow:\s*[^;]+;/)
+      expect(themeCss).toMatch(/--backdrop-color:\s*[^;]+;/)
+    })
+
+    it('defines the motion scale', () => {
+      expect(themeCss).toMatch(/--motion-fast:\s*0\.15s ease;/)
+      expect(themeCss).toMatch(/--motion-normal:\s*0\.2s ease;/)
+    })
+
+    it('defines the z-index scale', () => {
+      expect(themeCss).toMatch(/--z-editor:\s*100;/)
+      expect(themeCss).toMatch(/--z-floating:\s*150;/)
+      expect(themeCss).toMatch(/--z-dialog:\s*200;/)
+    })
+
+    it('resolves the previously undefined --md-surface-variant token', () => {
+      expect(themeCss).toMatch(/--md-surface-variant:\s*var\(--md-surface-3\);/)
     })
   })
 })

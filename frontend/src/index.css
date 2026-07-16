@@ -1,12 +1,21 @@
 @import './theme.css';
 
 :root {
-  color-scheme: light dark;
-  font: 16px/145% var(--type-face);
+  /* Dark-only app (index.html always sets data-theme="dark"); declaring only
+     "dark" keeps native form controls/scrollbars in the matching theme
+     instead of following the OS light preference. */
+  color-scheme: dark;
 }
 
 * {
   box-sizing: border-box;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
 }
 
 body {
@@ -14,6 +23,9 @@ body {
   min-height: 100vh;
   background: var(--md-surface);
   color: var(--md-on-surface);
+  font-family: var(--type-face);
+  font-size: var(--type-body-size);
+  line-height: var(--type-body-line);
 }
 
 #root {
