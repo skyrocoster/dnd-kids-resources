@@ -1,4 +1,5 @@
 import { useNavigate, useParams } from 'react-router-dom'
+import { StatePanel } from '../../components/StatePanel'
 import { useEncounterRunner } from './useEncounterRunner'
 import { EncounterRunnerBoard } from './EncounterRunnerBoard'
 import './EncounterRunnerPage.css'
@@ -30,7 +31,15 @@ export function EncounterRunnerPage() {
         </button>
       </div>
 
-      {!runner.loading && <EncounterRunnerBoard runner={runner} />}
+      {runner.loadError && (
+        <StatePanel
+          status="error"
+          title="Error loading encounter"
+          message={runner.loadError}
+          action={<button type="button" onClick={() => window.location.reload()}>Retry</button>}
+        />
+      )}
+      {!runner.loading && !runner.loadError && <EncounterRunnerBoard runner={runner} />}
     </div>
   )
 }

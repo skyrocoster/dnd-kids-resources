@@ -99,14 +99,14 @@
   padding: 0;
 }
 
-@media (max-width: 56rem) {
+@media (max-width: 768px) {
   .dungeon-shell-header {
     align-items: flex-start;
     flex-direction: column;
   }
 }
 
-@media (max-width: 38rem) {
+@media (max-width: 520px) {
   .dungeon-shell {
     padding: 1rem;
   }

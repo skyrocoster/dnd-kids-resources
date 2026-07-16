@@ -20,6 +20,7 @@ export interface UseEncounterRunnerResult {
   state: RunnerState
   title: string
   loading: boolean
+  loadError: string | null
   syncStatus: SyncStatus
   conditions: Condition[]
   adjustHp: (clientId: string, delta: number) => void
@@ -42,6 +43,7 @@ export function useEncounterRunner(encounterId: number): UseEncounterRunnerResul
   const [state, setState] = useState<RunnerState>(createInitialState)
   const [title, setTitle] = useState('')
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('idle')
   const [conditions, setConditionsList] = useState<Condition[]>([])
 
@@ -55,12 +57,20 @@ export function useEncounterRunner(encounterId: number): UseEncounterRunnerResul
     let cancelled = false
     setLoading(true)
     setSyncStatus('idle')
-    getEncounter(encounterId).then((encounter) => {
-      if (cancelled) return
-      setTitle(encounter.title)
-      setState(encounterRunnerReducer(createInitialState(), { type: 'hydrate', encounter }))
-      setLoading(false)
-    })
+    setLoadError(null)
+    getEncounter(encounterId)
+      .then((encounter) => {
+        if (cancelled) return
+        setTitle(encounter.title)
+        setState(encounterRunnerReducer(createInitialState(), { type: 'hydrate', encounter }))
+        setLoadError(null)
+        setLoading(false)
+      })
+      .catch((err) => {
+        if (cancelled) return
+        setLoadError(err instanceof Error ? err.message : 'Failed to load encounter')
+        setLoading(false)
+      })
     return () => {
       cancelled = true
     }
@@ -123,6 +133,7 @@ export function useEncounterRunner(encounterId: number): UseEncounterRunnerResul
     state,
     title,
     loading,
+    loadError,
     syncStatus,
     conditions,
     adjustHp,

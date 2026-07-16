@@ -10,7 +10,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
-  min-height: 2.75rem;
+  min-height: var(--control-height);
   padding: 0 0.75rem;
   background-color: var(--md-surface-3);
   color: var(--md-on-surface);
@@ -52,6 +52,6 @@
 }
 
 .condition-picker-panel .form-field-checkbox {
-  min-height: 2.75rem;
+  min-height: var(--control-height);
   margin-bottom: 0;
 }

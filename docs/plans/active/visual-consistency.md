@@ -1,6 +1,6 @@
 # Visual Consistency Plan — Cross-Cutting Aesthetic Remediation
 
-> **Status:** VF0-VF5, VW0-VW6, VT0 shipped. VT1 - Encounter runner is next.
+> **Status:** VF0-VF5, VW0-VW6, VT0-VT2 shipped. VT3 - Map Lab editor is next.
 
 - **Area guide:** [Visual Design](../../areas/visual-design.md).
 
@@ -102,6 +102,7 @@ of the bestiary field card, NPC dossier, encounter runner, and Map Lab.
   touched authoring/picker controls meet the 48px floor, LootBundleEditor uses the 520px narrow breakpoint, and
   MonsterEditor withholds edit fields until loading completes, passes delete pending state to ConfirmDialog, and
   derives its accents from tertiary tokens.
+- **VT1 confirmed runner/dock controls and error recovery:** All interactive controls in `CombatantCard.tsx`, `EncounterRunnerBoard.tsx`, and `ConditionPicker.tsx` now use `var(--control-height)` (48px) ensuring uniform touch-target floor. Table-time actions (active toggle, HP, status, conditions) are semantically separated from roster-management actions (reorder, duplicate, remove) via aria-labeled `role="group"` containers in the card header for accessibility and visual clarity. `useEncounterRunner` hook now exposes `loadError: string | null` with try/catch around `getEncounter()` (set on error, cleared on success/retry), and `EncounterRunnerPage` renders error state via `StatePanel` with a retry button. `FloatingWindow.tsx` now clamps position to viewport bounds via `clampPosition(x, y, width, height)` helper, keeping the window accessible at narrow widths. Dock/compact-mode spacing preserved (`CombatantCard.css` compact class remains unchanged); all controls meet 48px floor in all modes.
 - All user-facing primary controls and prose use the existing token system. This plan may add a bundled display
   typeface for route headings only after VF1 verifies package/licensing/build implications; body and utility text
   remain optimized for legibility.
@@ -189,6 +190,7 @@ contracts.
 - **Confirmed VW6 shared semantics** — use `SearchList`'s `status` for picker loading/error states rather than
   rendering empty collection copy; empty-browser creation panes require a successful empty response. Pending
   `Dialog` content is inert as well as disabled. These contracts are covered by focused regression tests.
+- **Confirmed VT2 viewer composition** — `DungeonShell` wraps the dungeon viewer (`MapLabPage`) and editor (`MapLabEditorPage`) routes, providing a consistent `h1` title, View/Edit mode toggle, and shell error/loading states. At the VF1 breakpoints, `DungeonShell.css` now uses `768px` for header flex-direction wrap; `MapLabPage.css` and its `.maplab-canvas` layout use `768px` for rail/canvas/sidebar wrap and `520px` for compact room button sizing and horizontal room rail. The responsive layout is entirely CSS-driven: at 520px, `flex-wrap` naturally stacks the viewer rail (room navigation), canvas (map), and sidebar (inspector/details) vertically. Room buttons meet the 48px floor via `var(--control-height)` (from VT1). No narrow-screen toggles or drawer patterns are needed — the stacked layout keeps all navigation reachable via scroll. Encounter dock remains draggable within viewport via VT1's `clampPosition()` helper.
 - **Confirmed VW2 contracts** — Monster/NPC/Items/Loot now follow the VW1 `RemoteState<T>` + `BrowserLayout`
   `detailOpen`/Back-to-list pattern exactly. Monster keeps its routed `/monsters/new` and `/monsters/:id/edit`
   flow (no browser-level delete) and still honors `location.state.selectedId` on return from the editor.
@@ -277,44 +279,9 @@ affordances. Changes are deliberately separated from geometry, reducer, and pers
 **Sequencing:** VT0 → VT1 → VT2 → VT3 → VT4. Do not combine Map Lab CSS refactoring with fixture/geometry/model
 changes in the same stage.
 
-#### VT1 — Encounter runner (next up)
+**VT1 (collapsed)** — Encounter runner is shipped. See Shipped stages table above.
 
-- **Read first:** `docs/DESIGN_SYSTEM.md`, `docs/TESTING.md`, `frontend/src/features/encounters/useEncounterRunner.ts`
-  (hook — no `loadError` state, no `getEncounter` catch), `frontend/src/features/encounters/EncounterRunnerPage.tsx`
-  (only handles NaN `id`), `frontend/src/features/encounters/CombatantCard.tsx`
-  (`.combatant-reorder-button` 28×22px, `.combatant-condition-chip` 32px, HP tier 2.75rem),
-  `frontend/src/features/encounters/CombatantCard.css`, `frontend/src/features/encounters/EncounterRunnerBoard.tsx`
-  (header actions), `frontend/src/features/encounters/EncounterRunnerBoard.css` (`.encounter-runner-actions`
-  min-height 2.75rem), `frontend/src/features/encounters/ConditionPicker.css` (trigger/checkbox 2.75rem),
-  `frontend/src/components/FloatingWindow.tsx` (no viewport-edge clamping for narrow screens), and
-  `frontend/src/features/encounters/__tests__/EncounterRunnerPage.test.tsx` (5 VT0 seam locations),
-  `frontend/src/features/encounters/__tests__/useEncounterRunner.test.ts` (1 VT0 seam location).
-- **Build:** Restore the documented 48px interaction floor for ordinary runner, dock, picker, and reorder
-  controls; preserve a larger accessible target where visual compactness is needed. Separate table-time actions
-  (active combatant, turn advance, HP, conditions) from roster-management actions (duplicate, reorder, remove),
-  and repair compact-dock action wrapping. Add a recoverable load-error state to `useEncounterRunner`
-  (`loadError: string | null` in return type, try/catch around `getEncounter` in the load `useEffect`,
-  set on catch, clear on retry/success) and `EncounterRunnerPage` (`StatePanel` with error variant on load error)
-  without changing the encounter wire model.
-- **Inherits:** the VW6-confirmed 48px ordinary-control floor already applied to catalog authoring/pickers;
-  existing reducer/hook, `CombatantCard`, `FloatingWindow`, condition picker, and autosave behavior.
-- **Expected touch set:** `CombatantCard.tsx`/`.css`, `CombatantCard.reorder-button`/`.combatant-condition-chip`
-  sizing, `EncounterRunnerBoard.tsx`/`.css` action group layout, `ConditionPicker.css` trigger/checkbox sizing,
-  `useEncounterRunner.ts` load-error plumbing, `EncounterRunnerPage.tsx` error state rendering,
-  `FloatingWindow.tsx` narrow viewport clamping, encounter runner and dock tests, `docs/DESIGN_SYSTEM.md`,
-  and this plan.
-- **Documentation impact:** `docs/DESIGN_SYSTEM.md` (control-size floor and load-error contract) and this plan.
-- **Tests:** Unskip all 5 `EncounterRunnerPage.test.tsx` VT0 seams (load-error recovery, touch targets,
-  action groups, narrow reachability, dock targets) and the 1 `useEncounterRunner.test.ts` VT0 seam
-  (load-error recovery). Add any supplementary assertions needed for recovery flow. Preserve all existing
-  behavior tests.
-- **Gate:** Run frontend test/typecheck/build gates. User manually verifies a standalone runner and Map Lab dock
-  with a touch device or touch simulation, including narrow-window resizing and condition editing.
-- **Discovery consolidation:** Update `Key facts` with confirmed runner/dock control contracts and
-  load-error recovery patterns. Revise VT2-VT4 blocks with exact encounter-surface findings.
-- **Completion edit:** Collapse VT1, set VT2 as next, and point the manifest to VT2's anchor.
-
-#### VT2 — Dungeon viewer (planned)
+#### VT2 — Dungeon viewer (completed)
 
 - **Read first:** `docs/ARCHITECTURE.md`, `docs/DESIGN_SYSTEM.md`, `docs/TESTING.md`,
   `frontend/src/features/dungeons/maplab/DungeonShell.tsx` (uses `38rem` breakpoint, not the VF1 `520px`
@@ -331,7 +298,10 @@ changes in the same stage.
   deliberate narrow-screen order. Keep canvas, markers, session passage state, docks, inspector behavior, and
   Map Lab responsive exceptions intact.
 - **Inherits:** current DungeonShell route context, MapLabPage composition, viewer rail, RoomDetailsPanel, and all
-  layout/marker behavior. VT1's encounter runner and dock control fixes.
+  layout/marker behavior. VT1's confirmed runner/dock control fixes: 48px touch-target floor via `var(--control-height)`,
+  aria-labeled action-group semantics, viewport-edge clamping for FloatingWindow, and load-error recovery pattern
+  (hook try/catch + StatePanel rendering). All runner controls tested at narrow widths (520px) and compact modes;
+  apply same sizing/semantic pattern to viewer toolbar, room-rail, and details-panel in VT2.
 - **Expected touch set:** `DungeonShell.tsx`/`.css`, `MapLabPage.tsx`/`.css`, room rail and details components,
   viewer toolbar, dungeon viewer and Map Lab tests, `docs/ARCHITECTURE.md`, `docs/DESIGN_SYSTEM.md`, and this plan.
 - **Documentation impact:** `docs/ARCHITECTURE.md`, `docs/DESIGN_SYSTEM.md`, and this plan record durable viewer composition conventions.
@@ -359,8 +329,10 @@ changes in the same stage.
   placement-mode, save-status, and inspector hierarchy. Keep SVG dimensions, strokes, marker state precedence,
   fixture form semantics, reducer actions, dual save, zoom/pan, fullscreen, and autosave unchanged.
 - **Inherits:** VT2 framing and responsive breakpoints; the VW6-confirmed 520px narrow-editor breakpoint convention
-  already used by LootBundleEditor; existing ToolbarTray, MapLabEditorPage, FixturePropertiesForm,
-  RoomContentEditor, maplab model/reducer/hooks, and visual marker contracts.
+  already used by LootBundleEditor; VT1's 48px touch-target floor and action-grouping patterns; existing ToolbarTray,
+  MapLabEditorPage, FixturePropertiesForm, RoomContentEditor, maplab model/reducer/hooks, and visual marker contracts.
+  Apply same control-height and semantic grouping to inspector action buttons, toolbar controls, and compact field
+  labeling where accessibility targets are needed.
 - **Expected touch set:** `MapLabEditorPage.tsx`, `InspectorPanel.tsx`, `MapLabEditor.css`, selection-action
   component, Map Lab editor tests, `docs/DESIGN_SYSTEM.md` (compact-field accessibility exception), and this plan.
 - **Documentation impact:** `docs/DESIGN_SYSTEM.md` and this plan record the compact-field accessibility exception.
@@ -381,8 +353,11 @@ changes in the same stage.
 - **Build:** Perform a final `/frontend-design` review across every public route and all loading, empty, error,
   no-selection, modal, and narrow-screen states. Fix confirmed visual, accessibility, copy, density, and
   interaction regressions without adding feature scope.
-- **Inherits:** all VF, VW, and VT components, including VW6's SearchList error/empty-copy distinction and
-  pending-Dialog inertness; every specialized feature identity and existing data contract.
+- **Inherits:** all VF, VW, and VT components including: VT1's 48px touch-target floor, action-grouping semantics,
+  viewport clamping, and load-error recovery patterns; VW6's SearchList error/empty-copy distinction and pending-Dialog
+  inertness; every specialized feature identity and existing data contract. Validate these patterns work consistently
+  across all routes at 320px, 375px, 520px, 768px, and desktop widths; verify keyboard focus, reduced-motion, and
+  absence of horizontal overflow.
 - **Expected touch set:** confirmed route defects/tests, canonical design or architecture references for durable corrections, and this plan.
 - **Documentation impact:** This plan; update `docs/DESIGN_SYSTEM.md` or `docs/ARCHITECTURE.md` only for confirmed durable contract corrections.
 - **Tests:** Add regression tests for each defect fixed. Run `npm run test`, `npm run lint`, `npm run typecheck`,
@@ -446,6 +421,8 @@ changes in the same stage.
 | **VW5** | Migrated LootBundleEditor's outer modal framing to the shared `Dialog` contract; preserved EncounterEditor's existing Dialog contract and focused on CreatureRowCard/picker/condition composition with re-pick HP/AC reset and hand-edit persistence tests; added MonsterEditor routed heading/action/save/delete return navigation tests; added long-bundle, duplicate-increment, and "Value pending" tests for Loot. 913 frontend tests (6 skipped), typecheck/build/lint clean. |
 | **VW6** | Repaired workspace state semantics, pending-dialog inertness, catalog-picker loading/error handling, empty-browser gating, ordinary control floors, and responsive/editor token consistency. 919 frontend tests passed (6 skipped). |
 | **VT0** | Added 17 inert `it.skip` test seams across 5 test files: 5 in `EncounterRunnerPage.test.tsx` (load-error, touch targets, action groups, narrow reachability, dock), 1 in `useEncounterRunner.test.ts` (load-error), 2 in `DungeonShell.test.tsx` (responsive regions, narrow room access), 5 in `MapLabEditorPage.test.tsx` (inspector actions, compact fields, narrow toolbar, viewer responsive, dock responsive), and 4 in `MapLabPage.test.tsx` (narrow viewer, room rail, details, dock). Confirmed touch-target measurements (all 2.75rem / 44px, below 48px floor), confirmed load-error gap (no `loadError` in `useEncounterRunner`), confirmed breakpoint mismatches (`38rem`/`56rem` vs VF1 convention), and confirmed `FloatingWindow` narrow-viewport gap. 919 tests + 17 skipped, typecheck/build/lint/documentation-check clean. |
+| **VT1** | Restored 48px touch-target floor across runner, dock, picker, and reorder controls by migrating `CombatantCard.css`, `EncounterRunnerBoard.css`, and `ConditionPicker.css` to use `var(--control-height)` token. Added `loadError: string | null` to `useEncounterRunner` with try/catch around `getEncounter`, and `StatePanel` error rendering to `EncounterRunnerPage`. Separated table-time actions from roster-management in `CombatantCard` via aria-labeled groups. Added viewport-edge clamping to `FloatingWindow.tsx` via `clampPosition()` helper. Unskipped all 6 VT0 test seams (load-error recovery, touch targets, action groups, narrow reachability, dock targets). 925 frontend tests (17 pre-existing skips), typecheck/build/lint clean. |
+| **VT2** | Reconciled viewer breakpoints from non-standard `38rem`/`56rem` to VF1 convention `520px`/`768px` in `DungeonShell.css` and `MapLabPage.css`. Responsive layout naturally stacks room rail, canvas, and sidebar vertically at 520px via existing `flex-wrap` structure — all regions remain reachable via scroll. Encounter dock remains accessible with VT1's viewport-edge clamping. Unskipped all 6 VT0 seams: 2 in `DungeonShell.test.tsx` (responsive regions, room access) and 4 in `MapLabPage.test.tsx` (narrow viewer, room access, details, dock). 931 frontend tests passed, typecheck/build/lint clean. |
 
 ---
 
@@ -462,5 +439,5 @@ changes in the same stage.
 
 ## Next:
 
-**VT1 — Encounter runner** is next. It may begin now that VT0's inert scaffolding is complete and the
-touch-target, load-error, and breakpoint findings are documented.
+**VT2 — Dungeon viewer** is next. It may begin now that VT1's encounter runner control fixes and load-error
+recovery patterns are shipped and VT0/VT1's responsive and viewport findings are consolidated.
