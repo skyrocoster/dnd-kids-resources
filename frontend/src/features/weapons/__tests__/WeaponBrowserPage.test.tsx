@@ -70,4 +70,26 @@ describe('WeaponBrowserPage', () => {
     await user.click(screen.getByRole('button', { name: 'New Weapon' }))
     expect(screen.getByRole('dialog', { name: 'Add new weapon' })).toBeInTheDocument()
   })
+
+  it('shows loading before empty data and reports errors', async () => {
+    let reject!: (reason?: unknown) => void
+    vi.spyOn(api, 'listWeapons').mockReturnValue(new Promise((_, fail) => { reject = fail }))
+    render(<WeaponBrowserPage />)
+
+    expect(screen.getByText('Loading…')).toBeInTheDocument()
+    reject(new Error('network down'))
+    expect(await screen.findByText('network down')).toBeInTheDocument()
+  })
+
+  it('shows filtered-empty state and returns from the detail view', async () => {
+    vi.spyOn(api, 'listWeapons').mockResolvedValue(weapons)
+    const user = userEvent.setup()
+    render(<WeaponBrowserPage />)
+
+    await screen.findByRole('heading', { name: /Moon Sickle/ })
+    await user.type(screen.getByRole('searchbox'), 'missing')
+    expect(screen.getByText('No matches')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Back to weapons' }))
+    expect(screen.getByText('Select an item')).toBeInTheDocument()
+  })
 })

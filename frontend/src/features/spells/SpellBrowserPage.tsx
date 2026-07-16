@@ -2,10 +2,15 @@ import { useEffect, useState } from 'react'
 import * as api from '../../api/client'
 import type { Spell } from '../../api/types'
 import { Card } from '../../components/Card'
+import { BrowserLayout } from '../../components/BrowserLayout'
+import { Button } from '../../components/Button'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
 import { DiceText } from '../../components/DiceText'
 import { SearchList } from '../../components/SearchList'
-import { SplitPane } from '../../components/SplitPane'
+import { StatePanel } from '../../components/StatePanel'
+import { initialRemoteState, remoteError, remoteLoading, remoteSuccess } from '../../components/remoteState'
+import type { RemoteState } from '../../components/remoteState'
+import { WandIcon } from '../../components/icons'
 import { levelLabel } from './constants'
 import { SpellEditor } from './SpellEditor'
 import './SpellBrowserPage.css'
@@ -20,29 +25,29 @@ function sortSpells(spells: Spell[]): Spell[] {
 }
 
 export function SpellBrowserPage() {
-  const [spells, setSpells] = useState<Spell[]>([])
+  const [spellsRemote, setSpellsRemote] = useState<RemoteState<Spell[]>>(initialRemoteState)
   const [selectedId, setSelectedId] = useState<number | null>(null)
-  const [loadError, setLoadError] = useState<string | null>(null)
   const [editorOpen, setEditorOpen] = useState(false)
   const [editingSpell, setEditingSpell] = useState<Spell | undefined>(undefined)
   const [pendingDelete, setPendingDelete] = useState<Spell | null>(null)
 
   const load = () => {
+    setSpellsRemote(remoteLoading())
     api
       .listSpells()
       .then((data) => {
         const sorted = sortSpells(data)
-        setSpells(sorted)
-        setLoadError(null)
+        setSpellsRemote(remoteSuccess(sorted))
         if (sorted.length > 0 && selectedId == null) {
           setSelectedId(sorted[0].id)
         }
       })
-      .catch((error) => setLoadError(error instanceof Error ? error.message : 'Failed to load spells.'))
+      .catch((error) => setSpellsRemote(remoteError(error instanceof Error ? error.message : 'Failed to load spells.')))
   }
 
   useEffect(load, [])
 
+  const spells = spellsRemote.status === 'success' ? spellsRemote.data : []
   const selected = spells.find((s) => s.id === selectedId) || null
 
   const openCreate = () => {
@@ -71,19 +76,14 @@ export function SpellBrowserPage() {
 
   return (
     <div className="spell-browser-page">
-      <div className="spell-browser-toolbar">
-        <h2>Spells</h2>
-        <button type="button" className="spell-browser-new" onClick={openCreate}>
-          New Spell
-        </button>
-      </div>
-
-      {loadError && <p className="spell-browser-error">{loadError}</p>}
-
-      <div className="spell-browser-split">
-        <SplitPane
-          leftLabel="spell list"
-          left={
+      <BrowserLayout
+        title="Spells"
+        chapterIcon={<WandIcon size={18} aria-hidden="true" />}
+        detailOpen={selected !== null}
+        actions={<Button type="button" onClick={openCreate}>New Spell</Button>}
+        error={spellsRemote.status === 'error' ? spellsRemote.error : null}
+        listLabel="spell list"
+        list={
             <SearchList
               items={spells}
               getId={(s) => s.id}
@@ -94,30 +94,24 @@ export function SpellBrowserPage() {
               variant="spell"
               searchPlaceholder="Search spells…"
               emptyMessage="No spells found."
+              status={spellsRemote.status === 'loading' || spellsRemote.status === 'idle' ? 'loading' : spellsRemote.status === 'error' ? 'error' : 'ready'}
             />
-          }
-          right={
+        }
+        detail={
             selected ? (
               <div className="spell-browser-detail">
+                <Button className="browser-layout-back" variant="ghost" onClick={() => setSelectedId(null)}>Back to spells</Button>
                 <Card
                   title={selected.name}
                   subtitle={`${levelLabel(selected.level)}${selected.school ? ` · ${selected.school}` : ''}`}
                   tag={selected.concentration ? 'Concentration' : selected.ritual ? 'Ritual' : undefined}
-                  variant="spell"
-                  footer={
-                    <div className="spell-browser-actions">
-                      <button type="button" onClick={() => openEdit(selected)}>
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        className="spell-browser-delete"
-                        onClick={() => setPendingDelete(selected)}
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  }
+                    variant="spell"
+                    footer={
+                      <div className="spell-browser-actions">
+                        <Button variant="secondary" onClick={() => openEdit(selected)}>Edit</Button>
+                        <Button variant="danger" onClick={() => setPendingDelete(selected)}>Delete</Button>
+                      </div>
+                    }
                 >
                   <dl className="spell-browser-meta">
                     {selected.casting_times.length > 0 && (
@@ -168,23 +162,20 @@ export function SpellBrowserPage() {
                 </Card>
               </div>
             ) : (
-              <p className="spell-browser-empty">Select a spell to see its details.</p>
+              <StatePanel status="noSelection" message="Choose a spell from the list to view its details." />
             )
-          }
-        />
-      </div>
-
-      {editorOpen && (
+        }
+        editor={editorOpen && (
         <SpellEditor spell={editingSpell} onClose={() => setEditorOpen(false)} onSaved={handleSaved} />
       )}
-
-      {pendingDelete && (
+        dialog={pendingDelete && (
         <ConfirmDialog
           message={`Delete ${pendingDelete.name}?`}
           onConfirm={confirmDelete}
           onCancel={() => setPendingDelete(null)}
         />
       )}
+      />
     </div>
   )
 }
