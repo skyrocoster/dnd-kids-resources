@@ -559,7 +559,7 @@ describe('VW0 action browsers', () => {
     vi.restoreAllMocks()
   })
 
-  it.skip('EncounterBrowser: lists encounters, first selected, detail shows creature list', async () => {
+  it('EncounterBrowser: lists encounters, first selected, detail shows creature list', async () => {
     vi.spyOn(api, 'listEncounters').mockResolvedValue([encounterB, encounterA])
     vi.spyOn(api, 'listMonsters').mockResolvedValue([])
     const user = userEvent.setup()
@@ -575,11 +575,11 @@ describe('VW0 action browsers', () => {
     expect(screen.getByText('Goblin')).toBeInTheDocument()
 
     await user.click(screen.getByText('Orc Warband'))
-    expect(screen.getByRole('heading', { name: /Orc Warband/ })).toBeInTheDocument()
+    await waitFor(() => expect(screen.getByRole('heading', { name: /Orc Warband/ })).toBeInTheDocument())
     expect(screen.getByText('No creatures in this encounter.')).toBeInTheDocument()
   })
 
-  it.skip('EncounterBrowser: Run button navigates to runner route', async () => {
+  it('EncounterBrowser: Run button navigates to runner route', async () => {
     vi.spyOn(api, 'listEncounters').mockResolvedValue([encounterA])
     vi.spyOn(api, 'listMonsters').mockResolvedValue([])
 
@@ -598,7 +598,7 @@ describe('VW0 action browsers', () => {
     expect(screen.getByText('Runner page')).toBeInTheDocument()
   })
 
-  it.skip('DungeonBrowser: lists dungeons, first selected, detail shows room count', async () => {
+  it('DungeonBrowser: lists dungeons, first selected, detail shows room count', async () => {
     vi.spyOn(api, 'listDungeons').mockResolvedValue([dungeonB, dungeonA])
 
     const { DungeonBrowserPage } = await import('../../features/dungeons/DungeonBrowserPage')
@@ -611,7 +611,7 @@ describe('VW0 action browsers', () => {
     await waitFor(() => expect(screen.getByRole('heading', { name: /Cave of Wonders/ })).toBeInTheDocument())
   })
 
-  it.skip('DungeonBrowser: create button navigates to editor route', async () => {
+  it('DungeonBrowser: create button navigates to editor route', async () => {
     vi.spyOn(api, 'listDungeons').mockResolvedValue([])
     vi.spyOn(api, 'createDungeon').mockResolvedValue({ id: 99, title: 'Untitled Dungeon', data: {} })
 
@@ -630,7 +630,7 @@ describe('VW0 action browsers', () => {
     await waitFor(() => expect(screen.getByText('Edit dungeon')).toBeInTheDocument())
   })
 
-  it.skip('DungeonBrowser: Enter button navigates to dungeon route', async () => {
+  it('DungeonBrowser: Enter button navigates to dungeon route', async () => {
     vi.spyOn(api, 'listDungeons').mockResolvedValue([dungeonA])
 
     const { DungeonBrowserPage } = await import('../../features/dungeons/DungeonBrowserPage')

@@ -1,6 +1,6 @@
 # Visual Consistency Plan — Cross-Cutting Aesthetic Remediation
 
-> **Status:** VF0-VF5, VW0-VW2 shipped. VW3 (action browsers) is next.
+> **Status:** VF0-VF5, VW0-VW3 shipped. VW4 (standard editors) is next.
 
 - **Area guide:** [Visual Design](../../areas/visual-design.md).
 
@@ -89,6 +89,12 @@ of the bestiary field card, NPC dossier, encounter runner, and Map Lab.
 - Each content domain gets a restrained icon-and-text chapter tab in its route header. This is the plan's
   signature device: it makes the app's campaign structure visible without adding fantasy ornament or relying on
   hue alone.
+- **VW3 confirmed action-flow routing:** Encounter browser primary action is Run → `/encounters/:id/run` (the
+  encounter runner route). Dungeon browser primary actions are Enter → `/dungeons/:id` (the dungeon viewer, a
+  `DungeonShell` layout route) and Edit → `/dungeons/:id/edit` (the Map Lab editor, a child of `DungeonShell`).
+  Dungeon creation uses `api.createDungeon({ title, data })` → `/dungeons/:id/edit` with an `Untitled Dungeon [n]`
+  title-disambiguation algorithm. DungeonBrowserPage's `react-router-dom` mock (`useNavigate` → `mockNavigate`) is
+  preserved in the dedicated test file; VW0 seam tests use `MemoryRouter` with `Routes` instead.
 - All user-facing primary controls and prose use the existing token system. This plan may add a bundled display
   typeface for route headings only after VF1 verifies package/licensing/build implications; body and utility text
   remain optimized for legibility.
@@ -186,6 +192,15 @@ contracts.
   `MonsterStatBlock.css`'s literal teal (`rgb(160 208 190 / …)`, `rgb(188 236 217 / …)`, `rgb(29 79 64 / 0.72)`)
   is now derived via `color-mix(in srgb, var(--md-tertiary) …%, …)` — no visual change intended, just
   token-sourced instead of hand-picked hex.
+- **Confirmed VW3 contracts** — Encounter and Dungeon browsers now follow the VW1 `RemoteState<T>` +
+  `BrowserLayout` `detailOpen`/Back-to-list pattern. Encounter uses `ShieldIcon` as its chapter marker, Run
+  as the primary action (`variant="primary"`), and Edit/Delete as secondary/danger; creature roster HP/AC/status
+  detail is preserved. Dungeon uses `DoorIcon` as its chapter marker, Enter as `variant="secondary"` (navigates
+  to `/dungeons/:id`), Edit navigates to `/dungeons/:id/edit`, and Delete is `variant="danger"`; the
+  `Untitled Dungeon [n]` creation algorithm and immediate `createDungeon` → editor navigation are preserved.
+  Both track a `deleting` boolean passed as `ConfirmDialog`'s `pending` prop. DungeonBrowserPage's
+  `react-router-dom` mock (`useNavigate` → `mockNavigate`) is preserved in the dedicated test file; VW0 seam
+  tests use `MemoryRouter` with `Routes` instead.
 - `ToolbarTray`, `InspectorPanel`, `RoomDetailsPanel`, and Map Lab's fixture/form model — retain their existing
   behavior and domain-specific information density.
 - Existing Vitest/React Testing Library suites colocated with components and features — extend them rather than
@@ -219,7 +234,7 @@ depend on individual catalog migrations.
 | **VW0 — Workspace scaffolding** | Light | Create opt-in browser/editor migration seams. | `BrowserLayout` stubs and skipped route tests. ✅ |
 | **VW1 — Standard browsers** | Standard | Migrate Spells, Weapons, Players, and Quests. | Responsive list/detail and remote states. ✅ |
 | **VW2 — Role-rich browsers** | Standard | Migrate Monsters, NPCs, Items, and Loot. | Preserved specialist details and role consistency. ✅ |
-| **VW3 — Action browsers** | Standard | Migrate Encounters and Dungeons. | Primary Run/Enter flows and browser states. |
+| **VW3 — Action browsers** | Standard | Migrate Encounters and Dungeons. | Primary Run/Enter flows and browser states. ✅ |
 | **VW4 — Standard editors** | Standard | Migrate six simple modal editors. | Shared dialogs, fields, and action rows. |
 | **VW5 — Complex authoring** | Standard | Migrate Encounter/Loot authoring and align Monster Editor framing. | Complex picker and route-editor conformance. |
 | **VW6 — Workspace design pass** | High | Review every catalog/authoring route together. | Cross-route fixes and regression tests. |
@@ -227,59 +242,42 @@ depend on individual catalog migrations.
 **Sequencing:** VW0 → VW1 → VW2 → VW3 → VW4 → VW5 → VW6. Do not migrate multiple cohorts in parallel because
 each changes shared browser/editor CSS and contracts.
 
-#### VW3 — Action browsers (next up)
-
-- **Read first:** `docs/DESIGN_SYSTEM.md`, `docs/ARCHITECTURE.md`, `docs/TESTING.md`, BrowserLayout/RemoteState,
-  `features/encounters/EncounterBrowserPage.tsx` + `.css` + test, and
-  `features/dungeons/DungeonBrowserPage.tsx` + `.css` + test; read the action-browser VW0 seams at
-  `BrowserLayout.vw0.test.tsx:562-650` and `router.tsx:21-53`.
-- **Build:** Apply the VW1 browser state/520px detail contract. Encounter's local modal CRUD loads
-  `listEncounters`; retain creature roster HP/AC/status detail and Run → `/encounters/:id/run`, with Run primary
-  and Edit/Delete secondary/danger. Dungeon loads/sorts `listDungeons`; retain its unique `Untitled Dungeon [n]`
-  creation algorithm and immediate `createDungeon` → `/dungeons/:id/edit`, Enter → `/dungeons/:id`, and Edit →
-  `/dungeons/:id/edit`. Add explicit loading/error/empty/no-selection states without changing either wire model.
-- **Inherits:** VW1-VW2 browser contract, existing encounter/dungeon routing and confirmation behavior.
-- **Expected touch set:** Encounter/Dungeon browser TSX/CSS/tests, their VW0 seam block, and this plan; modify
-  `BrowserLayout`/`remoteState` only if the existing VW1 contract proves insufficient. Preserve Dungeon test's
-  partial `react-router-dom` mock and `mockNavigate`; update `docs/ARCHITECTURE.md` for any confirmed durable
-  route-flow change.
-- **Documentation impact:** `docs/ARCHITECTURE.md` and this plan record any durable route-flow convention.
-- **Tests:** Preserve the Dungeon in-flight-create and delete coverage plus encounter runner-link tests. Add
-  deferred loading, filtered-empty, error, no-selection, chapter marker, Back-to-list, create/edit selection,
-  pending-confirm, Run, Enter, and direct-create-to-editor assertions; activate the two VW0 action cohorts.
-- **Gate:** Run frontend test/typecheck/build gates. User manually verifies a create-to-editor and
-  create-to-run workflow without data-contract changes.
-- **Discovery consolidation:** Update `Key facts` with confirmed action-flow conventions for encounter and
-  dungeon routes. Revise VW4-VW6 blocks with exact routing and confirmation contracts.
-- **Completion edit:** Collapse VW3, set VW4 as next, and point the manifest to VW4's anchor.
-
-#### VW4 — Standard editors (planned)
+#### VW4 — Standard editors (next up)
 
 - **Read first:** `docs/DESIGN_SYSTEM.md`, `docs/TESTING.md`, `components/Dialog.tsx` + `.css`,
   `components/form/`, and each exact editor pair: Spell (760px legacy modal), Weapon (680px), Player (520px), NPC
   (720px), Quest (640px), and Item (580px), their CSS, direct tests where present, and the six `*Form.test.ts`
   conversion suites. Also read the reference-data calls before changing fields: Spell abilities/components,
-  Weapon properties/damage types, and Quest NPCs/dungeons.
-- **Build:** Replace the six duplicated fixed `z-index:100`/backdrop/modal/action/status implementations with
-  `Dialog`; preserve each existing create/update mapping, validation, and reference-data request. Use `Dialog`
-  `footer` for consistently ordered Cancel then Save actions and pass pending save state so its fieldset disables
-  all descendants. The current editor CSS has no media queries, so establish overflow/narrow behavior through the
-  shared dialog rather than adding six unrelated breakpoints. Do not invent a dirty-close policy: determine which
-  editors already track unsaved state and retain their actual behavior.
+  Weapon properties/damage types, and Quest NPCs/dungeons. **VW3 confirmed:** DungeonBrowserPage has no modal
+  editor — it navigates directly to `/dungeons/:id/edit` (a routed editor like MonsterEditor). EncounterEditor
+  opens modally from the browser with `onClose`/`onSaved` callbacks and a `encounter?: Encounter` prop for create
+  vs. edit; it will be wrapped in Dialog as part of the six editors below. The seven modal editors to migrate
+  are: SpellEditor, WeaponEditor, PlayerEditor, NPCEditor, QuestEditor, ItemEditor, and EncounterEditor.
+- **Build:** Replace the seven (not six — VW3 confirmed EncounterEditor as a modal editor) duplicated fixed
+  `z-index:100`/backdrop/modal/action/status implementations with `Dialog`; preserve each existing create/update
+  mapping, validation, and reference-data request. Use `Dialog` `footer` for consistently ordered Cancel then Save
+  actions and pass pending save state so its fieldset disables all descendants. The current editor CSS has no media
+  queries, so establish overflow/narrow behavior through the shared dialog rather than adding unrelated breakpoints.
+  Do not invent a dirty-close policy: determine which editors already track unsaved state and retain their actual
+  behavior. EncounterEditor's `encounter?: Encounter` prop (undefined = create, defined = edit) and
+  `onSaved: (encounter: Encounter) => void` callback follow the same pattern as the other six editors — no special
+  routing contract needed.
 - **Inherits:** VF3's confirmed `Dialog` contract (`open`/`title`/`description?`/`onClose`/`children?`/
   `footer?`/`pending?`/`role?`; initial focus, Tab-trap, Escape/backdrop dismissal disabled while `pending`,
   focus restoration on close, and a `<fieldset disabled={pending}>` wrapping body+footer — see
   `docs/DESIGN_SYSTEM.md`'s "Dialog contract (VF3)" section), VF2 field/buttons, and existing editor/form
-  helpers/tests.
-- **Expected touch set:** `SpellEditor`, `WeaponEditor`, `PlayerEditor`, `NPCEditor`, `QuestEditor`, and
-  `ItemEditor` TSX/CSS; their direct tests plus new direct component tests for Weapon/Player/NPC/Quest (which
-  currently have only mapping suites); retain all six form tests; `Dialog.css` only for a proven shared overflow
+  helpers/tests. VW1-VW3 confirmed all browser routes now use `BrowserLayout` and do not open editors themselves
+  beyond calling `setEditorOpen(true)` — no browser-route modal state needs modification in this stage.
+- **Expected touch set:** `SpellEditor`, `WeaponEditor`, `PlayerEditor`, `NPCEditor`, `QuestEditor`,
+  `ItemEditor`, and `EncounterEditor` TSX/CSS; their direct tests plus new direct component tests for
+  Weapon/Player/NPC/Quest (which currently have only mapping suites); retain all form tests including
+  `EncounterEditor`'s creature-propagation and condition tests; `Dialog.css` only for a proven shared overflow
   change; `docs/DESIGN_SYSTEM.md` and this plan. Do not modify browser route modal state in this stage.
 - **Documentation impact:** `docs/DESIGN_SYSTEM.md` and this plan record any durable shared form or dialog contract.
-- **Tests:** Preserve Spell create/API-failure and Item create/update tests and every conversion-model fixture.
-  Add focus restoration, first-focus, Escape/backdrop suppression while pending, disabled fieldset, save-status
-  role, narrow overflow, cancel, validation, create, and edit tests for all six. Keep the browser tests responsible
-  for editor opening; these new tests prove the modal contract itself.
+- **Tests:** Preserve Spell create/API-failure, Item create/update, and Encounter stat-propagation tests and every
+  conversion-model fixture. Add focus restoration, first-focus, Escape/backdrop suppression while pending, disabled
+  fieldset, save-status role, narrow overflow, cancel, validation, create, and edit tests for all seven. Keep the
+  browser tests responsible for editor opening; these new tests prove the modal contract itself.
 - **Gate:** Run frontend test/typecheck/build gates. User manually verifies create, edit, validation failure,
   cancel, and delete-confirmation paths for a representative editor from each migrated domain.
 - **Discovery consolidation:** Update `Reusable pieces` with confirmed dialog/form editor contracts. Revise
@@ -290,13 +288,19 @@ each changes shared browser/editor CSS and contracts.
 
 - **Read first:** `docs/DESIGN_SYSTEM.md`, `docs/TESTING.md`, `EncounterEditor.tsx/.css`,
   `CreatureRowCard.tsx/.css`, `LootBundleEditor.tsx/.css`, `AddItemPanel.tsx`, `AddWeaponPanel.tsx`,
-  `AddCatalogPanel.css`, `MonsterEditor.tsx/.css`, and their editor/picker/row/form/total tests.
+  `AddCatalogPanel.css`, `MonsterEditor.tsx/.css`, and their editor/picker/row/form/total tests. **VW3
+  confirmed:** EncounterEditor receives an optional `encounter?: Encounter` prop (undefined = create, defined =
+  edit) and calls `onSaved: (encounter: Encounter) => void` on success; its creature roster renders
+  `EncounterCreature[]` with `name`, `hp_current`, `hp_max`, `ac`, `status`, and `conditions` fields. If VW4
+  wraps it in Dialog, this stage moves that Dialog-framed editor's outer framing without changing its model
+  semantics. DungeonBrowserPage has no modal editor — DungeonShell's routed `MapLabEditorPage` owns dungeon
+  content authoring and is excluded from this stage (it belongs to VT3).
 - **Build:** Move Encounter/Loot outer modal framing to the VW4 Dialog contract without changing model semantics.
   Encounter monster re-pick must reset name/originalName/current/max HP/AC to source defaults, hand edits must
   persist until re-pick, and legacy/custom conditions must round-trip. Loot's Item and Weapon panels remain
   separate unless a single proven contract preserves their distinct metadata/variants and snapshot rows; both load
   and sort their own catalogs, and duplicate selection increments quantity. Preserve totals and the unvalued-weapon
-  “Value pending” behavior. Keep MonsterEditor routed: retain its five fieldset regions, load/create/update/delete
+  "Value pending" behavior. Keep MonsterEditor routed: retain its five fieldset regions, load/create/update/delete
   error states, client validation, return to `/monsters` after save/delete, and the browser return-selection state.
   Its existing `768px` and `520px` grids/action stacking are the reference responsive behavior.
 - **Inherits:** VW4 editor conventions, existing complex authoring components and MonsterEditor routes.
@@ -316,15 +320,21 @@ each changes shared browser/editor CSS and contracts.
 
 #### VW6 — Workspace design pass (planned)
 
-- **Read first:** `docs/DESIGN_SYSTEM.md`, `docs/TESTING.md`, the ten browser TSX/CSS/test triples, six standard
-  editor pairs and form suites, Encounter/Loot/Monster authoring files/tests, `BrowserLayout`, `Dialog`, `Card`,
-  and `SearchList`. Exclude Map Lab, DungeonShell, and encounter runner: they belong to VT unless a VW change
-  demonstrably regresses them.
+- **Read first:** `docs/DESIGN_SYSTEM.md`, `docs/TESTING.md`, the ten browser TSX/CSS/test triples, seven
+  standard editor pairs and form suites (VW4 confirmed EncounterEditor as the seventh), Encounter/Loot/Monster
+  authoring files/tests, `BrowserLayout`, `Dialog`, `Card`, and `SearchList`. Exclude Map Lab, DungeonShell, and
+  encounter runner: they belong to VT unless a VW change demonstrably regresses them. **VW3 confirmed:** all ten
+  browsers now use `BrowserLayout`/`RemoteState<T>`/`Button`/foundation-token CSS; chapter-tab icons are:
+  Spells→WandIcon, Monsters→SkullIcon, Weapons→SwordsIcon, Players→UsersIcon, NPCs→MasksIcon,
+  Quests→ScrollIcon, Encounters→ShieldIcon, Dungeons→DoorIcon, Items→GemIcon, Loot→CoinsIcon. Action browsers
+  have primary action variants: Encounter Run→`variant="primary"`, Dungeon Enter/Edit→`variant="secondary"`,
+  all Delete→`variant="danger"`. Action browser CSS is foundation-token clean (no ad-hoc values remaining).
 - **Build:** Review all browser/editor routes for hierarchy, chapter-tab discipline, action ordering, state copy,
   responsive transitions, role-color consistency, and accessibility. Repair only discovered design defects; do
-  not add new feature capability.
+  not add new feature capability. Confirm all ten chapter-tab icons are consistent with navSections.ts linkIcons
+  and that primary/secondary/danger action ordering is uniform across all browsers.
 - **Inherits:** VW0-VW5 and all legacy feature-specific rendering/data contracts.
-- **Expected touch set:** only confirmed defects among the ten browser routes, nine editor/authoring surfaces,
+- **Expected touch set:** only confirmed defects among the ten browser routes, seven editor/authoring surfaces,
   specialist detail/picker CSS, and shared BrowserLayout/Dialog/Card/SearchList; their regression tests;
   `docs/DESIGN_SYSTEM.md` only for a durable shared correction; and this plan. Do not perform a broad CSS sweep.
 - **Documentation impact:** This plan; update `docs/DESIGN_SYSTEM.md` only for confirmed shared-contract corrections.
@@ -496,6 +506,7 @@ changes in the same stage.
 | **VW0** | Created `BrowserLayout` component (wraps toolbar + error + `SplitPane` + editor/dialog slots) with foundation-token CSS; added 28 `it.skip` scaffolding tests across all 10 browser cohorts with real assertion bodies in `components/__tests__/BrowserLayout.vw0.test.tsx`. Confirmed browser-route file paths, API naming (`listNPCs` capital NPC), and type shapes for later stages. 789 tests, typecheck/build/lint clean. |
 | **VW1** | Migrated Spells, Weapons, Players, and Quests to `BrowserLayout` with remote loading/empty/error states, nav-aligned chapter tabs, shared actions, and a 520px Back-to-list detail flow while retaining local editors, confirmations, sorting, and Quest references. Activated 15 VW0 standard/layout assertions and added focused remote-state/filter/return coverage. |
 | **VW2** | Migrated Monsters (routed New/Edit, no browser delete), NPCs, Items, and Loot to `BrowserLayout`/`RemoteState<T>`/Back-to-list, token-derived `MonsterStatBlock.css` (removed literal teal `rgb()` values), and added a `deleting`/`pending` confirm state to NPC/Items/Loot delete dialogs. Kept NPC on the `neutral` Card/SearchList variant (no typed `npc` variant added). Activated 7 VW0 role-rich seam tests (fixing two pre-existing test bugs: missing `initialEntries` and an ambiguous `getByText` match) and added deferred/empty/filtered-empty/error/chapter/back/pending-confirm coverage. 841 frontend tests, typecheck/build/lint clean. |
+| **VW3** | Migrated Encounters and Dungeons to `BrowserLayout`/`RemoteState<T>`/`Button`/foundation tokens with creature roster, Run/Enter primary flows, `Untitled Dungeon` creation, and pending delete state. Activated 5 VW0 action browser seam tests and added 22 focused coverage tests. 861 frontend tests, typecheck/build clean. |
 
 ---
 
@@ -512,5 +523,5 @@ changes in the same stage.
 
 ## Next:
 
-**VW3 — Action browsers** is unblocked. It migrates Encounters and Dungeons while preserving their Run/Enter
-primary flows and inheriting VW1-VW2's shared browser-state and narrow-screen behavior.
+**VW4 — Standard editors** is next. It replaces six duplicated fixed-modal implementations with the shared
+`Dialog` contract while preserving each editor's create/update mapping, validation, and reference-data requests.
