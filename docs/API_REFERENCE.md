@@ -288,5 +288,4 @@ All optional fields are `Optional[...]` in the schema; required fields have no `
 | DELETE | `/api/weapons/{weapon_id}` | `weapon_id` (path, required) | - | 204: -, 422: HTTPValidationError |
 | GET | `/api/weapons/{weapon_id}` | `weapon_id` (path, required) | - | 200: Weapon, 422: HTTPValidationError |
 | PUT | `/api/weapons/{weapon_id}` | `weapon_id` (path, required) | WeaponUpdate | 200: Weapon, 422: HTTPValidationError |
-| GET | `/{full_path}` | `full_path` (path, required) | - | 200: -, 422: HTTPValidationError |
 <!-- GENERATED:API:END -->
