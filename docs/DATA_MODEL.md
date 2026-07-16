@@ -109,7 +109,8 @@ The loom tables model a directed acyclic graph (DAG) of narrative story threads.
 - **Anchor-status CHECK:** The compound `status` CHECK on `loom_nodes` deliberately includes `status IS NOT NULL`. SQLite CHECKs pass on NULL, so without it an anchor with NULL status would slip through. Updates always have `status = NULL`; anchors always have one of `planned`, `reached`, or `abandoned`.
 - **Cascade semantics:** Deleting a node cascades its edges and memberships (the wires go with the node). Deleting a thread cascades **only** junction rows — nodes survive, because retiring a thread must never destroy narrative history.
 - **Token-key colors:** `loom_threads.color` stores a token key (`thread-1`…`thread-6`), validated by Pydantic pattern `^thread-[1-6]$`. This is not a DB CHECK, so the palette can grow without a schema change. The actual colors are generated MD3 token sets in `frontend/src/theme.css`.
-- **Seed files are inert in v1:** The four loom seed files (`seed_loom_threads.json`, `seed_loom_nodes.json`, `seed_loom_node_threads.json`, `seed_loom_edges.json`) define the frozen demo tapestry. Seed loader wiring is LM2.
+- **Seed loading is explicit, not part of "load all":** The four loom seed files (`seed_loom_threads.json`, `seed_loom_nodes.json`, `seed_loom_node_threads.json`, `seed_loom_edges.json`) define the frozen demo tapestry — a test/playtest fixture, not canonical campaign data. `python scripts/seed_database.py --loom [--force]` loads them; a plain `python scripts/seed_database.py` (no flags) does not, so the demo tapestry never overwrites a live campaign. `backend/tests/conftest.py::_seed_real_data` always loads them for the integration test DB.
+- **Export before rebuild:** Loom data is runtime-authored through the API/UI, like dungeons and Map Lab layouts, but unlike them the loom **does** support `scripts/export_db_seeds.py` — freeze live campaign state to the four seed files above before running `scripts/init_database.py` (which drops and recreates the loom tables). This is a deliberate divergence from the dungeons/layouts domain.
 
 ## Rebuilding the Database
 
@@ -129,7 +130,7 @@ To export the current database state back to seed files (one-off data updates), 
 python scripts/export_db_seeds.py --dry-run
 ```
 
-Omit `--dry-run` only after review; this overwrites seed-backed `data/seeds/*.json` files. Dungeons and Map Lab layouts are runtime-created and are never exported.
+Omit `--dry-run` only after review; this overwrites seed-backed `data/seeds/*.json` files, including the four loom seed files. Dungeons and Map Lab layouts are runtime-created and are never exported.
 
 <!-- GENERATED:DATA_MODEL:START -->
 ### Generated Schema Inventory

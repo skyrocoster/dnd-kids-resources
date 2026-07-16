@@ -538,6 +538,28 @@ class LoomTapestry(BaseModel):
     edges: List[LoomEdge]
 
 
+class LoomBridgeCreate(BaseModel):
+    source_id: int
+    anchor_id: int
+    title: str
+    body: Optional[str] = None
+    session_tag: Optional[str] = None
+    x: Optional[float] = None
+    y: Optional[float] = None
+    thread_ids: Optional[List[int]] = None
+
+
+class LoomBridgeResult(BaseModel):
+    node: LoomNode
+    created_edges: List[LoomEdge]
+    deleted_edge_id: Optional[int] = None
+
+
+class LoomNodePosition(BaseModel):
+    x: float
+    y: float
+
+
 class Encounter(BaseModel):
     id: int
     title: str
