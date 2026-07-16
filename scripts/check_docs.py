@@ -601,7 +601,7 @@ def generate_api_inventory(repo_root: Path) -> str:
         sys.path.pop(0)
 
     lines = ["### Generated API Inventory", "", "| Method | Path | Parameters | Request | Responses |", "|---|---|---|---|---|"]
-    for path in sorted(paths):
+    for path in sorted(path for path in paths if path.startswith("/api/")):
         for method, operation in sorted(paths[path].items()):
             if method not in {"get", "post", "put", "patch", "delete"}:
                 continue
