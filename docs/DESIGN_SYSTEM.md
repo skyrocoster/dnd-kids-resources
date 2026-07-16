@@ -188,7 +188,9 @@ values cluster around 0.5rem–1.5rem in practice. VW/VT stages adopt the spacin
 
 - **`Dialog`** (`components/Dialog.tsx`) is the one modal accessibility contract; `ConfirmDialog` is a consumer of
   it, not a parallel implementation. Props: `open`, `title`, `description?`, `onClose`, `children?`, `footer?`,
-  `pending?` (default `false`), `role?` (`'dialog' | 'alertdialog'`, default `'dialog'`).
+  `pending?` (default `false`), `role?` (`'dialog' | 'alertdialog'`, default `'dialog'`), `className?` (merged
+  onto the `.dialog` element, e.g. for a per-consumer width override — see the Standard editor contract (VW4)
+  below).
 - **Title/description association** — `title` renders as an `<h2>` wired via `aria-labelledby`; `description`
   (optional) renders as a `<p>` wired via `aria-describedby`, both using `useId()`.
 - **Initial focus** — on open, focus moves to the first focusable element inside the dialog (in DOM order across
@@ -232,6 +234,39 @@ values cluster around 0.5rem–1.5rem in practice. VW/VT stages adopt the spacin
   content) out of the production bundle. Test the route list via the exported `routes` array with
   `vi.stubEnv('DEV', …)` + `vi.resetModules()` + dynamic `import()`, not by instantiating `router` (a data
   router instance does not expose its route config for inspection).
+
+---
+
+## Standard editor contract (VW4)
+
+- All seven modal editors (`SpellEditor`, `WeaponEditor`, `PlayerEditor`, `NPCEditor`, `QuestEditor`,
+  `ItemEditor`, `EncounterEditor`) render the shared `Dialog` (VF3) instead of a duplicated fixed backdrop/modal
+  implementation. Each keeps its own `<form>` (with a `useId()`-generated `id`) as the Dialog's `children`; the
+  Dialog `footer` holds a `variant="secondary"` Cancel `Button` and a `variant="primary"` (default) Save `Button`
+  with `type="submit" form={formId}` — this lets the Save button live in the Dialog footer (outside the `<form>`
+  element in the DOM) while still submitting it, per the standard HTML `form` attribute. `Dialog`'s `pending`
+  prop is passed the editor's existing `saving` boolean, so the shared `<fieldset disabled={pending}>` disables
+  every field and both footer buttons during save, and Escape/backdrop dismissal is suppressed — no editor needed
+  a bespoke dirty-close policy beyond what `Dialog` already provides.
+- **Title** — each editor's existing `Edit ${x.name}` / `Add New X` string becomes the Dialog `title` verbatim
+  (no separate `aria-label`); the Dialog's `aria-labelledby` makes this string the dialog's accessible name, so
+  tests must assert `getByRole('dialog', { name: 'Add New Spell' })`, not the pre-VW4 lowercase `aria-label`
+  text (`'Add new spell'`) that some editors used to carry separately from their visible heading.
+- **Width** — Dialog's own `.dialog` rule (`width: min(480px, 90vw)`) is a default, not a ceiling. Each editor
+  keeps a single feature-owned width override class passed via Dialog's additive `className?` prop (merged onto
+  `.dialog`, not replacing it): `spell-editor-dialog`/`encounter-editor-dialog` `min(760px, 96vw)`,
+  `npc-editor-dialog` `min(720px, 96vw)`, `weapon-editor-dialog` `min(680px, 96vw)`, `quest-editor-dialog`
+  `min(640px, 96vw)`, `item-editor-dialog` `min(580px, 96vw)`, `player-editor-dialog` `min(520px, 96vw)`. No new
+  breakpoints were added — `Dialog.css`'s existing `dialog-body` scroll/`max-height: 85vh` already supplies
+  narrow/overflow behavior for every width.
+- **Save status** — each editor's existing status paragraph (`{editor}-status`, success/error `kind` modifier)
+  gained `role="status"` so assistive tech announces save results; no other markup changed.
+- **Removed per-editor chrome** — each editor's own backdrop, modal surface, header (`<h2>` + close button),
+  and Cancel/Save action-row markup and CSS were deleted (all now supplied by `Dialog`); `ItemEditor` and
+  `EncounterEditor` dropped their unused `CloseIcon` import as part of this. `EncounterEditor`'s outer
+  `data-variant="monster"` attribute was also dropped: every consumer of the `--variant-*` custom properties it
+  scoped (`.encounter-editor-add`, `CreatureRowCard`) already specifies the same tertiary values as its
+  `var(--variant-x, var(--md-tertiary...))` fallback, so removing the ancestor attribute is visually inert.
 
 ---
 

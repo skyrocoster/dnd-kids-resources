@@ -190,4 +190,38 @@ describe('EncounterEditor', () => {
       expect(await screen.findByLabelText('stunned (legacy) (custom)')).toBeChecked()
     })
   })
+
+  describe('Dialog contract', () => {
+    it('renders with the expected title and focuses the first field', async () => {
+      vi.spyOn(api, 'listMonsters').mockResolvedValue([])
+      render(<EncounterEditor onClose={() => {}} onSaved={() => {}} />)
+      expect(screen.getByRole('dialog', { name: 'Add New Encounter' })).toBeInTheDocument()
+      expect(screen.getByLabelText('Title')).toHaveFocus()
+    })
+
+    it('closes on Cancel and on Escape', async () => {
+      vi.spyOn(api, 'listMonsters').mockResolvedValue([])
+      const onClose = vi.fn()
+      const user = userEvent.setup()
+      render(<EncounterEditor onClose={onClose} onSaved={() => {}} />)
+
+      await user.click(screen.getByRole('button', { name: 'Cancel' }))
+      expect(onClose).toHaveBeenCalledTimes(1)
+
+      await user.keyboard('{Escape}')
+      expect(onClose).toHaveBeenCalledTimes(2)
+    })
+
+    it('reports save status via an accessible status region', async () => {
+      vi.spyOn(api, 'listMonsters').mockResolvedValue([])
+      vi.spyOn(api, 'createEncounter').mockRejectedValue(new Error('Unable to save'))
+      const user = userEvent.setup()
+      render(<EncounterEditor onClose={() => {}} onSaved={() => {}} />)
+
+      await user.type(screen.getByLabelText('Title'), 'Test')
+      await user.click(screen.getByRole('button', { name: 'Create Encounter' }))
+
+      expect(await screen.findByRole('status')).toHaveTextContent('Unable to save')
+    })
+  })
 })

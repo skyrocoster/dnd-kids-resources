@@ -49,6 +49,59 @@ describe('SpellEditor', () => {
     await user.click(screen.getByRole('button', { name: 'Create Spell' }))
 
     expect(await screen.findByText('Unable to save')).toBeInTheDocument()
-    expect(screen.getByRole('dialog', { name: 'Add new spell' })).toBeInTheDocument()
+    expect(screen.getByRole('dialog', { name: 'Add New Spell' })).toBeInTheDocument()
+  })
+
+  describe('Dialog contract', () => {
+    it('focuses the first field on open', () => {
+      render(<SpellEditor onClose={vi.fn()} onSaved={vi.fn()} />)
+      expect(screen.getByLabelText('Spell Name')).toHaveFocus()
+    })
+
+    it('closes on Cancel and on Escape', async () => {
+      const onClose = vi.fn()
+      const user = userEvent.setup()
+      render(<SpellEditor onClose={onClose} onSaved={vi.fn()} />)
+
+      await user.click(screen.getByRole('button', { name: 'Cancel' }))
+      expect(onClose).toHaveBeenCalledTimes(1)
+
+      await user.keyboard('{Escape}')
+      expect(onClose).toHaveBeenCalledTimes(2)
+    })
+
+    it('reports save status via an accessible status region', async () => {
+      vi.spyOn(api, 'createSpell').mockRejectedValue(new Error('Unable to save'))
+      const user = userEvent.setup()
+      render(<SpellEditor onClose={vi.fn()} onSaved={vi.fn()} />)
+
+      await user.type(screen.getByLabelText('Spell Name'), 'Failed Spell')
+      await user.click(screen.getByRole('button', { name: 'Create Spell' }))
+
+      expect(await screen.findByRole('status')).toHaveTextContent('Unable to save')
+    })
+
+    it('disables Cancel and Save while saving, suppressing Escape', async () => {
+      let resolveCreate: (spell: typeof targetSpell) => void = () => {}
+      vi.spyOn(api, 'createSpell').mockReturnValue(
+        new Promise((resolve) => {
+          resolveCreate = resolve
+        }),
+      )
+      const onClose = vi.fn()
+      const user = userEvent.setup()
+      render(<SpellEditor onClose={onClose} onSaved={vi.fn()} />)
+
+      await user.type(screen.getByLabelText('Spell Name'), 'Pending Spell')
+      await user.click(screen.getByRole('button', { name: 'Create Spell' }))
+
+      expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled()
+      expect(screen.getByRole('button', { name: 'Create Spell' })).toBeDisabled()
+
+      await user.keyboard('{Escape}')
+      expect(onClose).not.toHaveBeenCalled()
+
+      resolveCreate(targetSpell)
+    })
   })
 })

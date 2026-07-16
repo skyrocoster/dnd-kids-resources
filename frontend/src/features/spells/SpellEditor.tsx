@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import type { FormEvent } from 'react'
 import * as api from '../../api/client'
 import type { Spell } from '../../api/types'
+import { Button } from '../../components/Button'
+import { Dialog } from '../../components/Dialog'
 import { CheckboxField } from '../../components/form/CheckboxField'
 import { MultiSelectField } from '../../components/form/MultiSelectField'
 import { SelectField } from '../../components/form/SelectField'
@@ -19,6 +21,7 @@ interface SpellEditorProps {
 }
 
 export function SpellEditor({ spell, onClose, onSaved }: SpellEditorProps) {
+  const formId = useId()
   const [form, setForm] = useState<SpellFormState>(() => (spell ? spellToFormState(spell) : emptySpellForm()))
   const [damageTypeOptions, setDamageTypeOptions] = useState<{ value: string; label: string }[]>([])
   const [abilityOptions, setAbilityOptions] = useState<{ value: string; label: string }[]>([])
@@ -84,24 +87,30 @@ export function SpellEditor({ spell, onClose, onSaved }: SpellEditorProps) {
   }
 
   return (
-    <div className="spell-editor-backdrop" role="presentation" onClick={onClose}>
-      <div
-        className="spell-editor-modal"
-        role="dialog"
-        aria-modal="true"
-          aria-label={spell ? `Edit ${spell.name}` : 'Add new spell'}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <header className="spell-editor-header">
-          <h2>{spell ? `Edit Spell: ${spell.name}` : 'Add New Spell'}</h2>
-          <button type="button" className="spell-editor-close" onClick={onClose} aria-label="Close">
-            ×
-          </button>
-        </header>
+    <Dialog
+      open
+      title={spell ? `Edit Spell: ${spell.name}` : 'Add New Spell'}
+      onClose={onClose}
+      pending={saving}
+      className="spell-editor-dialog"
+      footer={
+        <>
+          <Button type="button" variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button type="submit" form={formId} loading={saving}>
+            {spell ? 'Save Changes' : 'Create Spell'}
+          </Button>
+        </>
+      }
+    >
+      {status.message && (
+        <p role="status" className={`spell-editor-status ${status.kind || ''}`}>
+          {status.message}
+        </p>
+      )}
 
-        {status.message && <p className={`spell-editor-status ${status.kind || ''}`}>{status.message}</p>}
-
-        <form onSubmit={handleSubmit} className="spell-editor-form">
+      <form id={formId} onSubmit={handleSubmit} className="spell-editor-form">
           <div className="spell-editor-grid">
             <TextField
               label="Spell Name"
@@ -303,17 +312,7 @@ export function SpellEditor({ spell, onClose, onSaved }: SpellEditorProps) {
             value={form.alternateDescription}
             onChange={(e) => patch({ alternateDescription: e.target.value })}
           />
-
-          <div className="spell-editor-actions">
-            <button type="button" className="spell-editor-cancel" onClick={onClose}>
-              Cancel
-            </button>
-            <button type="submit" className="spell-editor-save" disabled={saving}>
-              {spell ? 'Save Changes' : 'Create Spell'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+      </form>
+    </Dialog>
   )
 }

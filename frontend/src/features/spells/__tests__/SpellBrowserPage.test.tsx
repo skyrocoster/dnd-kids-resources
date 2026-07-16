@@ -54,7 +54,7 @@ describe('SpellBrowserPage', () => {
     await waitFor(() => expect(screen.getByRole('heading', { name: /Cure Wounds/ })).toBeInTheDocument())
 
     await user.click(screen.getByRole('button', { name: 'New Spell' }))
-    expect(screen.getByRole('dialog', { name: 'Add new spell' })).toBeInTheDocument()
+    expect(screen.getByRole('dialog', { name: 'Add New Spell' })).toBeInTheDocument()
   })
 
   it('shows an error message when loading fails', async () => {

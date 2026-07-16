@@ -68,7 +68,7 @@ describe('WeaponBrowserPage', () => {
     await waitFor(() => expect(screen.getByText('Longsword')).toBeInTheDocument())
 
     await user.click(screen.getByRole('button', { name: 'New Weapon' }))
-    expect(screen.getByRole('dialog', { name: 'Add new weapon' })).toBeInTheDocument()
+    expect(screen.getByRole('dialog', { name: 'Add New Weapon' })).toBeInTheDocument()
   })
 
   it('shows loading before empty data and reports errors', async () => {

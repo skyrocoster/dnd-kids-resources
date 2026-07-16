@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import type { FormEvent } from 'react'
 import * as api from '../../api/client'
 import type { Dungeon, NPC, Quest } from '../../api/types'
+import { Button } from '../../components/Button'
+import { Dialog } from '../../components/Dialog'
 import { SelectField } from '../../components/form/SelectField'
 import { TextField } from '../../components/form/TextField'
 import { emptyQuestForm, formStateToQuestInput, questToFormState } from './questForm'
@@ -15,6 +17,7 @@ interface QuestEditorProps {
 }
 
 export function QuestEditor({ quest, onClose, onSaved }: QuestEditorProps) {
+  const formId = useId()
   const [form, setForm] = useState<QuestFormState>(() => (quest ? questToFormState(quest) : emptyQuestForm()))
   const [npcs, setNPCs] = useState<NPC[]>([])
   const [dungeons, setDungeons] = useState<Dungeon[]>([])
@@ -50,24 +53,30 @@ export function QuestEditor({ quest, onClose, onSaved }: QuestEditorProps) {
   }
 
   return (
-    <div className="quest-editor-backdrop" role="presentation" onClick={onClose}>
-      <div
-        className="quest-editor-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-label={quest ? `Edit ${quest.title}` : 'Add new quest'}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <header className="quest-editor-header">
-          <h2>{quest ? `Edit Quest: ${quest.title}` : 'Add New Quest'}</h2>
-          <button type="button" className="quest-editor-close" onClick={onClose} aria-label="Close">
-            ×
-          </button>
-        </header>
+    <Dialog
+      open
+      title={quest ? `Edit Quest: ${quest.title}` : 'Add New Quest'}
+      onClose={onClose}
+      pending={saving}
+      className="quest-editor-dialog"
+      footer={
+        <>
+          <Button type="button" variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button type="submit" form={formId} loading={saving}>
+            {quest ? 'Save Changes' : 'Create Quest'}
+          </Button>
+        </>
+      }
+    >
+      {status.message && (
+        <p role="status" className={`quest-editor-status ${status.kind || ''}`}>
+          {status.message}
+        </p>
+      )}
 
-        {status.message && <p className={`quest-editor-status ${status.kind || ''}`}>{status.message}</p>}
-
-        <form onSubmit={handleSubmit} className="quest-editor-form">
+      <form id={formId} onSubmit={handleSubmit} className="quest-editor-form">
           <TextField label="Title" value={form.title} onChange={(e) => patch({ title: e.target.value })} required />
           <TextField
             label="Summary"
@@ -112,17 +121,7 @@ export function QuestEditor({ quest, onClose, onSaved }: QuestEditorProps) {
             value={form.rewardText}
             onChange={(e) => patch({ rewardText: e.target.value })}
           />
-
-          <div className="quest-editor-actions">
-            <button type="button" className="quest-editor-cancel" onClick={onClose}>
-              Cancel
-            </button>
-            <button type="submit" className="quest-editor-save" disabled={saving}>
-              {quest ? 'Save Changes' : 'Create Quest'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+      </form>
+    </Dialog>
   )
 }

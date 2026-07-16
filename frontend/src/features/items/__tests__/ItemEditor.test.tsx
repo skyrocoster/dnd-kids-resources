@@ -27,4 +27,42 @@ describe('ItemEditor', () => {
     await user.click(screen.getByRole('button', { name: 'Save Changes' }))
     await waitFor(() => expect(updateItem).toHaveBeenCalledWith(4, { name: 'Ruby', value_gp: 50, category: 'gem', description: null }))
   })
+
+  describe('Dialog contract', () => {
+    it('renders with the expected title and focuses the first field', () => {
+      render(<ItemEditor onClose={() => {}} onSaved={() => {}} />)
+      expect(screen.getByRole('dialog', { name: 'Add New Item' })).toBeInTheDocument()
+      expect(screen.getByLabelText('Name')).toHaveFocus()
+    })
+
+    it('uses the item title when editing', () => {
+      const item: Item = { id: 4, name: 'Ruby', value_gp: 50, category: 'gem', description: null }
+      render(<ItemEditor item={item} onClose={() => {}} onSaved={() => {}} />)
+      expect(screen.getByRole('dialog', { name: 'Edit Item: Ruby' })).toBeInTheDocument()
+    })
+
+    it('closes on Cancel and on Escape', async () => {
+      const onClose = vi.fn()
+      const user = userEvent.setup()
+      render(<ItemEditor onClose={onClose} onSaved={() => {}} />)
+
+      await user.click(screen.getByRole('button', { name: 'Cancel' }))
+      expect(onClose).toHaveBeenCalledTimes(1)
+
+      await user.keyboard('{Escape}')
+      expect(onClose).toHaveBeenCalledTimes(2)
+    })
+
+    it('reports save status via an accessible status region', async () => {
+      vi.spyOn(api, 'createItem').mockRejectedValue(new Error('Unable to save'))
+      const user = userEvent.setup()
+      render(<ItemEditor onClose={() => {}} onSaved={() => {}} />)
+
+      await user.type(screen.getByLabelText('Name'), 'Rope')
+      await user.type(screen.getByLabelText('Value (gp)'), '1')
+      await user.click(screen.getByRole('button', { name: 'Create Item' }))
+
+      expect(await screen.findByRole('status')).toHaveTextContent('Unable to save')
+    })
+  })
 })

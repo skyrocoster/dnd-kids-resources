@@ -11,6 +11,7 @@ interface DialogProps {
   footer?: ReactNode
   pending?: boolean
   role?: 'dialog' | 'alertdialog'
+  className?: string
 }
 
 const FOCUSABLE_SELECTOR =
@@ -25,6 +26,7 @@ export function Dialog({
   footer,
   pending = false,
   role = 'dialog',
+  className,
 }: DialogProps) {
   const titleId = useId()
   const descId = useId()
@@ -87,7 +89,7 @@ export function Dialog({
     <div className="dialog-backdrop" role="presentation" onClick={handleBackdropClick}>
       <div
         ref={dialogRef}
-        className="dialog"
+        className={className ? `dialog ${className}` : 'dialog'}
         role={role}
         aria-modal="true"
         aria-busy={pending || undefined}

@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import type { FormEvent } from 'react'
 import * as api from '../../api/client'
 import type { Weapon } from '../../api/types'
+import { Button } from '../../components/Button'
+import { Dialog } from '../../components/Dialog'
 import { MultiSelectField } from '../../components/form/MultiSelectField'
 import { SelectField } from '../../components/form/SelectField'
 import { TextField } from '../../components/form/TextField'
@@ -23,6 +25,7 @@ const ATTACK_TYPE_OPTIONS = [
 ]
 
 export function WeaponEditor({ weapon, onClose, onSaved }: WeaponEditorProps) {
+  const formId = useId()
   const [form, setForm] = useState<WeaponFormState>(() => (weapon ? weaponToFormState(weapon) : emptyWeaponForm()))
   const [propertyOptions, setPropertyOptions] = useState<{ value: string; label: string }[]>([])
   const [damageTypeOptions, setDamageTypeOptions] = useState<{ value: string; label: string }[]>([])
@@ -65,24 +68,30 @@ export function WeaponEditor({ weapon, onClose, onSaved }: WeaponEditorProps) {
   }
 
   return (
-    <div className="weapon-editor-backdrop" role="presentation" onClick={onClose}>
-      <div
-        className="weapon-editor-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-label={weapon ? `Edit ${weapon.name}` : 'Add new weapon'}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <header className="weapon-editor-header">
-          <h2>{weapon ? `Edit Weapon: ${weapon.name}` : 'Add New Weapon'}</h2>
-          <button type="button" className="weapon-editor-close" onClick={onClose} aria-label="Close">
-            ×
-          </button>
-        </header>
+    <Dialog
+      open
+      title={weapon ? `Edit Weapon: ${weapon.name}` : 'Add New Weapon'}
+      onClose={onClose}
+      pending={saving}
+      className="weapon-editor-dialog"
+      footer={
+        <>
+          <Button type="button" variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button type="submit" form={formId} loading={saving}>
+            {weapon ? 'Save Changes' : 'Create Weapon'}
+          </Button>
+        </>
+      }
+    >
+      {status.message && (
+        <p role="status" className={`weapon-editor-status ${status.kind || ''}`}>
+          {status.message}
+        </p>
+      )}
 
-        {status.message && <p className={`weapon-editor-status ${status.kind || ''}`}>{status.message}</p>}
-
-        <form onSubmit={handleSubmit} className="weapon-editor-form">
+      <form id={formId} onSubmit={handleSubmit} className="weapon-editor-form">
           <div className="weapon-editor-grid">
             <TextField label="Name" value={form.name} onChange={(e) => patch({ name: e.target.value })} required />
             <TextField
@@ -180,17 +189,7 @@ export function WeaponEditor({ weapon, onClose, onSaved }: WeaponEditorProps) {
             value={form.entries}
             onChange={(e) => patch({ entries: e.target.value })}
           />
-
-          <div className="weapon-editor-actions">
-            <button type="button" className="weapon-editor-cancel" onClick={onClose}>
-              Cancel
-            </button>
-            <button type="submit" className="weapon-editor-save" disabled={saving}>
-              {weapon ? 'Save Changes' : 'Create Weapon'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+      </form>
+    </Dialog>
   )
 }

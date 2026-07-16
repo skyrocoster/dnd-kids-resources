@@ -60,7 +60,7 @@ describe('NPCBrowserPage', () => {
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Emery Hart' })).toBeInTheDocument())
 
     await user.click(screen.getByRole('button', { name: 'New NPC' }))
-    expect(screen.getByRole('dialog', { name: 'Add new NPC' })).toBeInTheDocument()
+    expect(screen.getByRole('dialog', { name: 'Add New NPC' })).toBeInTheDocument()
   })
 
   it('shows an error message when loading fails', async () => {

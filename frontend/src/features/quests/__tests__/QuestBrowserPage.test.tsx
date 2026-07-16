@@ -46,7 +46,7 @@ describe('QuestBrowserPage', () => {
     await waitFor(() => expect(screen.getByText('Lost Puppy')).toBeInTheDocument())
 
     await user.click(screen.getByRole('button', { name: 'New Quest' }))
-    expect(screen.getByRole('dialog', { name: 'Add new quest' })).toBeInTheDocument()
+    expect(screen.getByRole('dialog', { name: 'Add New Quest' })).toBeInTheDocument()
   })
 
   it('shows loading before an API error', async () => {
