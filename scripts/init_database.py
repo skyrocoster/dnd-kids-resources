@@ -16,9 +16,10 @@ from pathlib import Path
 DB_PATH = Path(__file__).parent.parent / "dnd_kids_resources.db"
 
 
-def init_database():
+def init_database(db_path: Path | None = None):
     """Create database tables only (schema setup)"""
-    conn = sqlite3.connect(str(DB_PATH))
+    db_path = db_path or DB_PATH
+    conn = sqlite3.connect(str(db_path))
     cursor = conn.cursor()
 
     print("="*60)
@@ -363,8 +364,8 @@ def init_database():
     conn.commit()
     conn.close()
 
-    print(f"\n[SUCCESS] Database initialized: {DB_PATH}")
-    print(f"   Size: {DB_PATH.stat().st_size / 1024:.1f} KB")
+    print(f"\n[SUCCESS] Database initialized: {db_path}")
+    print(f"   Size: {db_path.stat().st_size / 1024:.1f} KB")
     print("\nV2 SCHEMA - 16 tables (reduced from 18 for v2):")
     print("  [OK] abilities, damage_types, weapon_properties, weapons")
     print("  [OK] spells (18 canonical fields + created_at: name, level, school, description, etc.)")

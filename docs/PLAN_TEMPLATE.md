@@ -78,16 +78,22 @@ sequencing constraints ("do not start J3 before DP1 is committed").
 
 #### X<n> — <name> (next up)
 
+- **Read first:** the smallest exact set of plans, references, source files, and tests required before exploring.
 - **Build:** concrete algorithms, reducer actions, component shapes, exact file paths.
 - **Inherits:** what earlier stages already provide that this one builds on (don't re-derive).
-- **Tests:** unit (reducer/selector/render) + integration (full flow) to write.
-- **🚦 Gate:** the live end-to-end confirmation that proves it works — not just test-green. State
-  whether a browser pass is required (per `CLAUDE.md`'s browser-automation policy) or the suite suffices.
+- **Expected touch set:** exact files or directories expected to change; state why any broad directory is necessary.
+- **Documentation impact:** exact reference and plan documents to update, or `None: <specific reason>`.
+- **Tests:** unit (reducer/selector/render) + integration (full flow) to write, including exact commands.
+- **Gate:** the live end-to-end confirmation that proves it works — not just test-green. State whether a browser
+  pass is required (per `CLAUDE.md`'s browser-automation policy) or the suite suffices.
+- **Completion edit:** the Shipped-table row, status line, next-stage target, and any archival edit required when
+  this stage ships.
 
 #### X<n+1> — <name> (planned)
 
-- **Build / Inherits / Tests / 🚦 Gate:** same four-part shape as above, one block per remaining stage.
-  Keep each as specific as the next-up block — future stages earn full detail, not a placeholder.
+- **Read first / Build / Inherits / Expected touch set / Documentation impact / Tests / Gate / Completion edit:**
+  same eight-part shape as above, one block per remaining stage. Keep each as specific as the next-up block —
+  future stages earn full detail, not a placeholder.
 
 <!-- ============================================================================================= -->
 
@@ -102,8 +108,8 @@ On completion, do all of this in the stage's own commit:
    ≤2 sentences. The detailed authoring narrative goes in the **commit message**, not the doc. Leave the
    verbose blocks of the still-un-shipped stages untouched.
 2. **Rewrite the Status line** to show this stage shipped and name the next one.
-3. **Update reference docs if structure changed** — a new router/endpoint/table/folder means
-   `ARCHITECTURE.md` / `API_REFERENCE.md` / `DATA_MODEL.md` updates in the *same* commit (per `CLAUDE.md`).
+3. **Make the declared documentation-impact edit** — never use subjective wording such as "if needed." Update
+   every named reference in the same change set, or retain the stage's explicit `None: <specific reason>`.
 4. **Commit code + plan-doc edit together**, referencing the stage ID and test counts.
 
 ### Shipped stages table (the collapsed record)
@@ -142,10 +148,8 @@ When there are no more planned phases:
 
 1. Reduce the entire doc to: the Reference top-matter (still useful as living context), the Shipped-stages
    table, and a final **Verification** section (how to confirm the whole feature end-to-end).
-2. Consider moving the doc to `docs/complete/<feature>_plan.md` (the repo's convention for superseded/
-   done plan docs) and leaving a pointer, so `docs/` shows only *active* plans.
-3. Record the completion in project memory (`MEMORY.md`) with a one-line pointer to the plan doc's
-   collapsed summary — so future sessions get the outcome without loading 900 lines.
+2. Move the doc to `docs/complete/<feature>_plan.md` and leave a redirect stub at its former path when a link may
+   remain, so `docs/` shows only active plans. Update `docs/README.md` in the same change set.
 
 ---
 
@@ -164,7 +168,7 @@ When there are no more planned phases:
 - [ ] This stage's verbose block **deleted**, collapsed to one Shipped-table row (≤2 sentences); the
        un-shipped stages' verbose blocks left in place.
 - [ ] Status line rewritten; `## Next:` updated.
-- [ ] Reference docs updated *if* structure changed (same commit).
+- [ ] Exact documentation-impact requirement completed, or its specific `None:` rationale remains valid.
 - [ ] Code + plan-doc edit committed together, stage ID + test counts in the message.
 - [ ] If this was the phase's last stage: phase section deleted; durable facts promoted to top matter or
        reference docs; deferred items moved to the Known-debt list.

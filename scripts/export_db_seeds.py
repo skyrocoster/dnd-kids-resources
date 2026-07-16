@@ -51,7 +51,7 @@ EXPORT_DEFINITIONS = {
     },
     "spells": {
         "file": "seed_spells.json",
-        "query": "SELECT id, spell_name, icon, level, school, spell_text, spell_alt_text, damage, heal, heal_at_spell_slots, range, higher_levels, damage_at_higher_levels, casting_time, duration, concentration, ritual, components, materials, attack_type, action, area_of_effect, classes, subclasses FROM spells ORDER BY spell_name",
+        "query": "SELECT id, name, level, school, description, alternate_description, damage, healing, range, higher_levels, casting_times, duration, concentration, ritual, components, materials, attacks, area_of_effect FROM spells ORDER BY name",
     },
     "players": {
         "file": "seed_players.json",
@@ -134,7 +134,7 @@ def transform_record(record, table_name):
             record[field] = parse_json_value(record.get(field))
         return record
     if table_name == "spells":
-        for field in ["damage", "classes", "subclasses", "attack_type"]:
+        for field in ["damage", "healing", "higher_levels", "casting_times", "components", "attacks", "area_of_effect"]:
             record[field] = parse_json_value(record.get(field))
         return record
     if table_name == "player_spells":

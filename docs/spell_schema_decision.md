@@ -1,9 +1,8 @@
 # Spell Target-Schema Decision
 
-> **Stage:** S1 - schema decision
-> **Status:** Accepted binding decision. S2 implements this contract without reinterpretation.
-> **Scope:** Canonical seed shape and deterministic source-to-target rules only. This stage does not change the
-> seed, database, API, or frontend contract.
+> **Status:** Historical decision, accepted and implemented. Current contracts live in `API_REFERENCE.md`,
+> `DATA_MODEL.md`, and `backend/app/schemas.py`.
+> **Scope:** Historical schema rationale; it does not define current behavior.
 
 ## Decision Summary
 

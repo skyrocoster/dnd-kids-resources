@@ -70,7 +70,8 @@ pytest -m "not integration"                        # skip the slower real-data b
 ```
 
 ## Frontend
-- `cd frontend && npm run test` → vitest run. 88 tests across 27 files at last check.
+- `cd frontend && npm run test` → vitest run. Test totals are intentionally not recorded here; run the command for the current count.
+- `cd frontend && npm run lint` → oxlint. Run it with `npm run typecheck` and `npm run build` before shipping frontend changes.
 - Component tests mock `api/client`, so they verify UI wiring, not backend
   serialization — that's the backend integration layer's job. Keep the two honest
   about their boundary: don't rely on frontend tests to catch API-shape drift.
@@ -81,7 +82,7 @@ pytest -m "not integration"                        # skip the slower real-data b
   `"files": []` (it only exists to reference the app/node sub-projects), so
   `tsc --noEmit` silently checks *nothing* and reports success even with real type
   errors in the tree — a false green that hid ~40 errors during the Phase E recovery
-  (2026-07-12; see `docs/phase-e-recovery-plan.md`). `tsc -b` (`npm run typecheck` /
+   (see `complete/phase-e-recovery-plan.md`). `tsc -b` (`npm run typecheck` /
   `npm run build`) is the only real check — it builds the referenced sub-projects.
 
 ## Why this exists (the failure this prevents)
@@ -92,3 +93,24 @@ thin seed rows were too simplified to trigger it — so it passed CI and broke l
 from the real schema + real seeds closes that gap. **If you find yourself editing a
 CREATE TABLE statement inside `conftest.py`, stop** — the schema comes from
 `scripts/init_database.py`, and the fixtures build from it.
+
+## Documentation Contract CI
+- GitHub Actions runs `Documentation Contract` for every pull request and every push to `main`.
+- The workflow installs `requirements.txt`, runs `python scripts/check_docs.py --check`, and on pull requests also runs `python scripts/check_docs.py --check --base <base-sha>`.
+- `documentation-contract` must be enabled as a required branch-protection check in GitHub repository settings. The workflow cannot enforce that repository setting itself.
+- Use the PR template to record that a fresh reader can route the change from `CLAUDE.md` through `docs/README.md` to the owning plan's minimum context.
+
+<!-- GENERATED:TESTING:START -->
+### Generated Test Configuration
+
+- Pytest paths: `backend/tests`.
+- Pytest coverage threshold: `90%`.
+- Pytest default options: `-q --strict-markers --strict-config --cov=backend/app --cov-report=term-missing --cov-fail-under=90`.
+- Frontend scripts:
+  - `npm run build`: `tsc -b && vite build`
+  - `npm run dev`: `vite`
+  - `npm run lint`: `oxlint`
+  - `npm run preview`: `vite preview`
+  - `npm run test`: `vitest run`
+  - `npm run typecheck`: `tsc -b`
+<!-- GENERATED:TESTING:END -->

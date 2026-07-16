@@ -9,11 +9,11 @@
 ## v2 Stack
 
 This is a **ground-up rebuild** running on:
-- **Frontend:** React 18 + Vite + TypeScript
+- **Frontend:** React 19 + Vite + TypeScript
 - **Backend:** FastAPI + SQLite
-- **Data:** Frozen seeds in `data/seeds/` (canonical source of truth)
+- **Data:** Frozen seeds in `data/seeds/` (canonical rebuild inputs)
 
-**Status:** v2 rebuild complete. See [`docs/v2-rebuild-plan.md`](docs/v2-rebuild-plan.md) for the staged task breakdown.
+**Status:** v2 rebuild complete. Current maintenance work is tracked in the [documentation manifest](docs/README.md).
 
 ---
 
@@ -25,10 +25,10 @@ python scripts/init_database.py
 python scripts/seed_database.py
 ```
 
-### 2. Run the FastAPI backend
+### 2. Install and run the FastAPI backend
 ```bash
-cd backend
 pip install -r requirements.txt
+cd backend
 uvicorn app.main:app --reload
 ```
 
@@ -84,20 +84,20 @@ Canonical seed files in `data/seeds/`:
 - `seed_quests.json`, `seed_encounters.json` — campaign data
 - `seed_conditions.json`, `seed_damage_types.json`, `seed_weapon_properties.json`
 
-To export seed-backed DB changes back to seeds:
+To export seed-backed database changes back to seeds:
 ```bash
-python scripts/export_db_seeds.py
+python scripts/export_db_seeds.py --dry-run
 ```
 
-Dungeons and Map Lab layouts are runtime-created and intentionally are not exported as seeds.
+Review the dry-run output first, then omit `--dry-run` to overwrite seed files. Dungeons and Map Lab layouts
+are runtime-created and intentionally are not exported as seeds.
 
 ---
 
 ## Documentation
 
-- [`docs/v2-rebuild-plan.md`](docs/v2-rebuild-plan.md) — Full task breakdown
-- [`docs/design-system-dark-mode.md`](docs/design-system-dark-mode.md) — Material Design 3 dark-mode token system used by `frontend/src/theme.css` and every shared component in `frontend/src/components/`
-- [`docs/`](docs/) — Additional guides and architecture notes
+- [Documentation manifest](docs/README.md) — task routing, active-plan status, and the complete documentation inventory
+- [AI instructions](CLAUDE.md) — authoritative workflow and documentation contract for AI contributors
 
 ---
 

@@ -8,7 +8,7 @@ Hand-written endpoint inventory. For response/request shapes, refer to `backend/
 - **Request/response format:** JSON
 - **Response on success:** `2xx` status, JSON body with resource(s) or null
 - **Response on error:** `4xx` or `5xx` status, JSON error message
-- **JSON-encoded columns:** Several tables store complex data (spell damage/healing, monster features, etc.) as `TEXT` JSON — see `docs/DATA_MODEL.md` for the full list. These are automatically deserialized on read and serialized on write.
+- **JSON-encoded columns:** Several tables store complex data as `TEXT` JSON — see `DATA_MODEL.md`. Router and database helpers explicitly deserialize on read and serialize on write.
 
 ## Adding an Endpoint
 
@@ -27,12 +27,12 @@ When adding a new endpoint:
 
 | Method | Path | Purpose | Request schema | Response schema |
 |---|---|---|---|---|
-| GET | `/spells` | List all spells | query params: `level` (int), `school`, `limit`, `offset` | `List[Spell]` |
-| GET | `/spells/{spell_id}` | Fetch spell by ID | (path param) | `Spell` |
-| GET | `/spells/by-title/{spell_name}` | Fetch spell by exact title | (path param) | `Spell` |
-| POST | `/spells` | Create spell | `SpellCreate` | `Spell` (201) |
-| PUT | `/spells/{spell_id}` | Update spell | `SpellUpdate` | `Spell` |
-| DELETE | `/spells/{spell_id}` | Delete spell | (path param) | (204 No Content) |
+| GET | `/api/spells` | List all spells | `level`, `school`, `limit` (1-500; default 100), `offset` (default 0) | `List[Spell]` |
+| GET | `/api/spells/{spell_id}` | Fetch spell by ID | (path param) | `Spell` |
+| GET | `/api/spells/by-title/{spell_name}` | Fetch spell by exact title | (path param) | `Spell` |
+| POST | `/api/spells` | Create spell | `SpellCreate` | `Spell` (201) |
+| PUT | `/api/spells/{spell_id}` | Update spell | `SpellUpdate` | `Spell` |
+| DELETE | `/api/spells/{spell_id}` | Delete spell | (path param) | (204 No Content) |
 
 ---
 
@@ -42,12 +42,12 @@ When adding a new endpoint:
 
 | Method | Path | Purpose | Request schema | Response schema |
 |---|---|---|---|---|
-| GET | `/monsters` | List all monsters | (query params: none) | `List[Monster]` |
-| GET | `/monsters/{monster_id}` | Fetch monster by ID | (path param) | `Monster` |
-| GET | `/monsters/by-name/{name}` | Fetch monster by exact name | (path param) | `Monster` |
-| POST | `/monsters` | Create monster | `MonsterCreate` | `Monster` (201) |
-| PUT | `/monsters/{monster_id}` | Update monster | `MonsterUpdate` | `Monster` |
-| DELETE | `/monsters/{monster_id}` | Delete monster | (path param) | (204 No Content) |
+| GET | `/api/monsters` | List all monsters | `limit` (1-500; default 100), `offset` (default 0) | `List[Monster]` |
+| GET | `/api/monsters/{monster_id}` | Fetch monster by ID | (path param) | `Monster` |
+| GET | `/api/monsters/by-name/{name}` | Fetch monster by exact name | (path param) | `Monster` |
+| POST | `/api/monsters` | Create monster | `MonsterCreate` | `Monster` (201) |
+| PUT | `/api/monsters/{monster_id}` | Update monster | `MonsterUpdate` | `Monster` |
+| DELETE | `/api/monsters/{monster_id}` | Delete monster | (path param) | (204 No Content) |
 
 ---
 
@@ -57,12 +57,12 @@ When adding a new endpoint:
 
 | Method | Path | Purpose | Request schema | Response schema |
 |---|---|---|---|---|
-| GET | `/weapons` | List all weapons | (query params: none) | `List[Weapon]` |
-| GET | `/weapons/{weapon_id}` | Fetch weapon by ID | (path param) | `Weapon` |
-| GET | `/weapons/by-name/{name}` | Fetch weapon by exact name | (path param) | `Weapon` |
-| POST | `/weapons` | Create weapon | `WeaponCreate` | `Weapon` (201) |
-| PUT | `/weapons/{weapon_id}` | Update weapon | `WeaponUpdate` | `Weapon` |
-| DELETE | `/weapons/{weapon_id}` | Delete weapon | (path param) | (204 No Content) |
+| GET | `/api/weapons` | List all weapons | `limit` (1-500; default 100), `offset` (default 0) | `List[Weapon]` |
+| GET | `/api/weapons/{weapon_id}` | Fetch weapon by ID | (path param) | `Weapon` |
+| GET | `/api/weapons/by-name/{name}` | Fetch weapon by exact name | (path param) | `Weapon` |
+| POST | `/api/weapons` | Create weapon | `WeaponCreate` | `Weapon` (201) |
+| PUT | `/api/weapons/{weapon_id}` | Update weapon | `WeaponUpdate` | `Weapon` |
+| DELETE | `/api/weapons/{weapon_id}` | Delete weapon | (path param) | (204 No Content) |
 
 ---
 
@@ -72,11 +72,11 @@ When adding a new endpoint:
 
 | Method | Path | Purpose | Request schema | Response schema |
 |---|---|---|---|---|
-| GET | `/items` | List catalog items | (query params: `limit`, `offset`) | `List[Item]` |
-| GET | `/items/{item_id}` | Fetch item by ID | (path param) | `Item` |
-| POST | `/items` | Create catalog item | `ItemCreate` | `Item` (201) |
-| PUT | `/items/{item_id}` | Update catalog item | `ItemUpdate` | `Item` |
-| DELETE | `/items/{item_id}` | Delete catalog item | (path param) | (204 No Content) |
+| GET | `/api/items` | List catalog items | `limit` (1-500; default 100), `offset` (default 0) | `List[Item]` |
+| GET | `/api/items/{item_id}` | Fetch item by ID | (path param) | `Item` |
+| POST | `/api/items` | Create catalog item | `ItemCreate` | `Item` (201) |
+| PUT | `/api/items/{item_id}` | Update catalog item | `ItemUpdate` | `Item` |
+| DELETE | `/api/items/{item_id}` | Delete catalog item | (path param) | (204 No Content) |
 
 ---
 
@@ -86,11 +86,11 @@ When adding a new endpoint:
 
 | Method | Path | Purpose | Request schema | Response schema |
 |---|---|---|---|---|
-| GET | `/loot-bundles` | List loot bundles | (query params: `limit`, `offset`) | `List[LootBundle]` |
-| GET | `/loot-bundles/{bundle_id}` | Fetch loot bundle by ID | (path param) | `LootBundle` |
-| POST | `/loot-bundles` | Create loot bundle | `LootBundleCreate` | `LootBundle` (201) |
-| PUT | `/loot-bundles/{bundle_id}` | Update loot bundle | `LootBundleUpdate` | `LootBundle` |
-| DELETE | `/loot-bundles/{bundle_id}` | Delete loot bundle | (path param) | (204 No Content) |
+| GET | `/api/loot-bundles` | List loot bundles | `limit` (1-500; default 100), `offset` (default 0) | `List[LootBundle]` |
+| GET | `/api/loot-bundles/{bundle_id}` | Fetch loot bundle by ID | (path param) | `LootBundle` |
+| POST | `/api/loot-bundles` | Create loot bundle | `LootBundleCreate` | `LootBundle` (201) |
+| PUT | `/api/loot-bundles/{bundle_id}` | Update loot bundle | `LootBundleUpdate` | `LootBundle` |
+| DELETE | `/api/loot-bundles/{bundle_id}` | Delete loot bundle | (path param) | (204 No Content) |
 
 ---
 
@@ -100,17 +100,17 @@ When adding a new endpoint:
 
 | Method | Path | Purpose | Request schema | Response schema |
 |---|---|---|---|---|
-| GET | `/players` | List all players | (query params: none) | `List[Player]` |
-| GET | `/players/{player_id}` | Fetch player by ID | (path param) | `Player` |
-| POST | `/players` | Create player | `PlayerCreate` | `Player` (201) |
-| PUT | `/players/{player_id}` | Update player | `PlayerUpdate` | `Player` |
-| DELETE | `/players/{player_id}` | Delete player | (path param) | (204 No Content) |
-| GET | `/players/{player_id}/spells` | List player's spells | (path param) | `List[Spell]` |
-| POST | `/players/{player_id}/spells/{spell_id}` | Add spell to player's roster | (path params) | (201 No Content) |
-| DELETE | `/players/{player_id}/spells/{spell_id}` | Remove spell from player's roster | (path params) | (204 No Content) |
-| GET | `/players/{player_id}/weapons` | List player's weapons | (path param) | `List[Weapon]` |
-| POST | `/players/{player_id}/weapons/{weapon_id}` | Add weapon to player's roster | (path params) | (201 No Content) |
-| DELETE | `/players/{player_id}/weapons/{weapon_id}` | Remove weapon from player's roster | (path params) | (204 No Content) |
+| GET | `/api/players` | List all players | `limit` (1-500; default 100), `offset` (default 0) | `List[Player]` |
+| GET | `/api/players/{player_id}` | Fetch player by ID | (path param) | `Player` |
+| POST | `/api/players` | Create player | `PlayerCreate` | `Player` (201) |
+| PUT | `/api/players/{player_id}` | Update player | `PlayerUpdate` | `Player` |
+| DELETE | `/api/players/{player_id}` | Delete player | (path param) | (204 No Content) |
+| GET | `/api/players/{player_id}/spells` | List player's spells | (path param) | `List[Spell]` |
+| POST | `/api/players/{player_id}/spells/{spell_id}` | Add spell to player's roster | (path params) | (201 No Content) |
+| DELETE | `/api/players/{player_id}/spells/{spell_id}` | Remove spell from player's roster | (path params) | (204 No Content) |
+| GET | `/api/players/{player_id}/weapons` | List player's weapons | (path param) | `List[Weapon]` |
+| POST | `/api/players/{player_id}/weapons/{weapon_id}` | Add weapon to player's roster | (path params) | (201 No Content) |
+| DELETE | `/api/players/{player_id}/weapons/{weapon_id}` | Remove weapon from player's roster | (path params) | (204 No Content) |
 
 ---
 
@@ -120,11 +120,11 @@ When adding a new endpoint:
 
 | Method | Path | Purpose | Request schema | Response schema |
 |---|---|---|---|---|
-| GET | `/npcs` | List all NPCs | (query params: none) | `List[NPC]` |
-| GET | `/npcs/{npc_id}` | Fetch NPC by ID | (path param) | `NPC` |
-| POST | `/npcs` | Create NPC | `NPCCreate` | `NPC` (201) |
-| PUT | `/npcs/{npc_id}` | Update NPC | `NPCUpdate` | `NPC` |
-| DELETE | `/npcs/{npc_id}` | Delete NPC | (path param) | (204 No Content) |
+| GET | `/api/npcs` | List all NPCs | `limit` (1-500; default 100), `offset` (default 0) | `List[NPC]` |
+| GET | `/api/npcs/{npc_id}` | Fetch NPC by ID | (path param) | `NPC` |
+| POST | `/api/npcs` | Create NPC | `NPCCreate` | `NPC` (201) |
+| PUT | `/api/npcs/{npc_id}` | Update NPC | `NPCUpdate` | `NPC` |
+| DELETE | `/api/npcs/{npc_id}` | Delete NPC | (path param) | (204 No Content) |
 
 ---
 
@@ -134,11 +134,11 @@ When adding a new endpoint:
 
 | Method | Path | Purpose | Request schema | Response schema |
 |---|---|---|---|---|
-| GET | `/quests` | List all quests | (query params: none) | `List[Quest]` |
-| GET | `/quests/{quest_id}` | Fetch quest by ID | (path param) | `Quest` |
-| POST | `/quests` | Create quest | `QuestCreate` | `Quest` (201) |
-| PUT | `/quests/{quest_id}` | Update quest | `QuestUpdate` | `Quest` |
-| DELETE | `/quests/{quest_id}` | Delete quest | (path param) | (204 No Content) |
+| GET | `/api/quests` | List all quests | `limit` (1-500; default 100), `offset` (default 0) | `List[Quest]` |
+| GET | `/api/quests/{quest_id}` | Fetch quest by ID | (path param) | `Quest` |
+| POST | `/api/quests` | Create quest | `QuestCreate` | `Quest` (201) |
+| PUT | `/api/quests/{quest_id}` | Update quest | `QuestUpdate` | `Quest` |
+| DELETE | `/api/quests/{quest_id}` | Delete quest | (path param) | (204 No Content) |
 
 ---
 
@@ -148,11 +148,11 @@ When adding a new endpoint:
 
 | Method | Path | Purpose | Request schema | Response schema |
 |---|---|---|---|---|
-| GET | `/encounters` | List all encounters | (query params: none) | `List[Encounter]` |
-| GET | `/encounters/{encounter_id}` | Fetch encounter by ID | (path param) | `Encounter` |
-| POST | `/encounters` | Create encounter | `EncounterCreate` | `Encounter` (201) |
-| PUT | `/encounters/{encounter_id}` | Update encounter | `EncounterUpdate` | `Encounter` |
-| DELETE | `/encounters/{encounter_id}` | Delete encounter | (path param) | (204 No Content) |
+| GET | `/api/encounters` | List all encounters | `limit` (1-500; default 100), `offset` (default 0) | `List[Encounter]` |
+| GET | `/api/encounters/{encounter_id}` | Fetch encounter by ID | (path param) | `Encounter` |
+| POST | `/api/encounters` | Create encounter | `EncounterCreate` | `Encounter` (201) |
+| PUT | `/api/encounters/{encounter_id}` | Update encounter | `EncounterUpdate` | `Encounter` |
+| DELETE | `/api/encounters/{encounter_id}` | Delete encounter | (path param) | (204 No Content) |
 
 ---
 
@@ -162,11 +162,11 @@ When adding a new endpoint:
 
 | Method | Path | Purpose | Request schema | Response schema |
 |---|---|---|---|---|
-| GET | `/dungeons` | List all dungeons | (query params: none) | `List[Dungeon]` |
-| GET | `/dungeons/{dungeon_id}` | Fetch dungeon by ID | (path param) | `Dungeon` |
-| POST | `/dungeons` | Create dungeon | `DungeonCreate` | `Dungeon` (201) |
-| PUT | `/dungeons/{dungeon_id}` | Update dungeon | `DungeonUpdate` | `Dungeon` |
-| DELETE | `/dungeons/{dungeon_id}` | Delete dungeon | (path param) | (204 No Content) |
+| GET | `/api/dungeons` | List all dungeons | `limit` (1-500; default 100), `offset` (default 0) | `List[Dungeon]` |
+| GET | `/api/dungeons/{dungeon_id}` | Fetch dungeon by ID | (path param) | `Dungeon` |
+| POST | `/api/dungeons` | Create dungeon | `DungeonCreate` | `Dungeon` (201) |
+| PUT | `/api/dungeons/{dungeon_id}` | Update dungeon | `DungeonUpdate` | `Dungeon` |
+| DELETE | `/api/dungeons/{dungeon_id}` | Delete dungeon | (path param) | (204 No Content) |
 
 ---
 
@@ -176,8 +176,8 @@ When adding a new endpoint:
 
 | Method | Path | Purpose | Request schema | Response schema |
 |---|---|---|---|---|
-| GET | `/dungeons/{dungeon_id}/layout` | Fetch dungeon map layout | (path param) | `MapLayoutBlob` |
-| PUT | `/dungeons/{dungeon_id}/layout` | Save/update dungeon map layout | `MapLayoutBlob` | `MapLayoutBlob` |
+| GET | `/api/dungeons/{dungeon_id}/layout` | Fetch dungeon map layout | (path param) | `MapLayoutBlob` |
+| PUT | `/api/dungeons/{dungeon_id}/layout` | Save/update dungeon map layout | `MapLayoutBlob` | `MapLayoutBlob` |
 
 Layout data (`map_layout`) and dungeon content data (`dungeons.data`) are saved independently via separate endpoints and debounced separately in the editor.
 
@@ -189,12 +189,12 @@ Layout data (`map_layout`) and dungeon content data (`dungeons.data`) are saved 
 
 | Method | Path | Purpose | Request schema | Response schema |
 |---|---|---|---|---|
-| GET | `/abilities` | List all abilities | (query params: none) | `List[Ability]` |
-| GET | `/conditions` | List all conditions | (query params: none) | `List[Condition]` |
-| GET | `/damage_types` | List all damage types | (query params: none) | `List[DamageType]` |
-| GET | `/weapon_properties` | List all weapon properties | (query params: none) | `List[WeaponProperty]` |
-| GET | `/skills` | List all skills | (query params: none) | `List[Skill]` |
-| GET | `/spell-components` | List all spell components (V, S, M, etc.) | (query params: none) | `List[SpellComponent]` |
+| GET | `/api/abilities` | List all abilities | (query params: none) | `List[Ability]` |
+| GET | `/api/conditions` | List all conditions | (query params: none) | `List[Condition]` |
+| GET | `/api/damage_types` | List all damage types | (query params: none) | `List[DamageType]` |
+| GET | `/api/weapon_properties` | List all weapon properties | (query params: none) | `List[WeaponProperty]` |
+| GET | `/api/skills` | List all skills | (query params: none) | `List[Skill]` |
+| GET | `/api/spell-components` | List all spell components | (query params: none) | `List[SpellComponent]` |
 
 ---
 
@@ -215,3 +215,78 @@ All request and response body shapes are defined in `backend/app/schemas.py` as 
 - **MapLayoutBlob:** data (JSON)
 
 All optional fields are `Optional[...]` in the schema; required fields have no `Optional` wrapper. For full detail, read the schema definitions directly in the source file.
+
+<!-- GENERATED:API:START -->
+### Generated API Inventory
+
+| Method | Path | Parameters | Request | Responses |
+|---|---|---|---|---|
+| GET | `/api/abilities` | - | - | 200: List[Ability] |
+| GET | `/api/conditions` | - | - | 200: List[Condition] |
+| GET | `/api/damage_types` | - | - | 200: List[DamageType] |
+| GET | `/api/dungeons` | `limit` (query), `offset` (query) | - | 200: List[Dungeon], 422: HTTPValidationError |
+| POST | `/api/dungeons` | - | DungeonCreate | 201: Dungeon, 422: HTTPValidationError |
+| DELETE | `/api/dungeons/{dungeon_id}` | `dungeon_id` (path, required) | - | 204: -, 422: HTTPValidationError |
+| GET | `/api/dungeons/{dungeon_id}` | `dungeon_id` (path, required) | - | 200: Dungeon, 422: HTTPValidationError |
+| PUT | `/api/dungeons/{dungeon_id}` | `dungeon_id` (path, required) | DungeonUpdate | 200: Dungeon, 422: HTTPValidationError |
+| GET | `/api/dungeons/{dungeon_id}/layout` | `dungeon_id` (path, required) | - | 200: MapLayoutBlob, 422: HTTPValidationError |
+| PUT | `/api/dungeons/{dungeon_id}/layout` | `dungeon_id` (path, required) | MapLayoutBlob | 200: MapLayoutBlob, 422: HTTPValidationError |
+| GET | `/api/encounters` | `limit` (query), `offset` (query) | - | 200: List[Encounter], 422: HTTPValidationError |
+| POST | `/api/encounters` | - | EncounterCreate | 201: Encounter, 422: HTTPValidationError |
+| DELETE | `/api/encounters/{encounter_id}` | `encounter_id` (path, required) | - | 204: -, 422: HTTPValidationError |
+| GET | `/api/encounters/{encounter_id}` | `encounter_id` (path, required) | - | 200: Encounter, 422: HTTPValidationError |
+| PUT | `/api/encounters/{encounter_id}` | `encounter_id` (path, required) | EncounterUpdate | 200: Encounter, 422: HTTPValidationError |
+| GET | `/api/items` | `limit` (query), `offset` (query) | - | 200: List[Item], 422: HTTPValidationError |
+| POST | `/api/items` | - | ItemCreate | 201: Item, 422: HTTPValidationError |
+| DELETE | `/api/items/{item_id}` | `item_id` (path, required) | - | 204: -, 422: HTTPValidationError |
+| GET | `/api/items/{item_id}` | `item_id` (path, required) | - | 200: Item, 422: HTTPValidationError |
+| PUT | `/api/items/{item_id}` | `item_id` (path, required) | ItemUpdate | 200: Item, 422: HTTPValidationError |
+| GET | `/api/loot-bundles` | `limit` (query), `offset` (query) | - | 200: List[LootBundle], 422: HTTPValidationError |
+| POST | `/api/loot-bundles` | - | LootBundleCreate | 201: LootBundle, 422: HTTPValidationError |
+| DELETE | `/api/loot-bundles/{bundle_id}` | `bundle_id` (path, required) | - | 204: -, 422: HTTPValidationError |
+| GET | `/api/loot-bundles/{bundle_id}` | `bundle_id` (path, required) | - | 200: LootBundle, 422: HTTPValidationError |
+| PUT | `/api/loot-bundles/{bundle_id}` | `bundle_id` (path, required) | LootBundleUpdate | 200: LootBundle, 422: HTTPValidationError |
+| GET | `/api/monsters` | `limit` (query), `offset` (query) | - | 200: List[Monster], 422: HTTPValidationError |
+| POST | `/api/monsters` | - | MonsterCreate | 201: Monster, 422: HTTPValidationError |
+| GET | `/api/monsters/by-name/{name}` | `name` (path, required) | - | 200: Monster, 422: HTTPValidationError |
+| DELETE | `/api/monsters/{monster_id}` | `monster_id` (path, required) | - | 204: -, 422: HTTPValidationError |
+| GET | `/api/monsters/{monster_id}` | `monster_id` (path, required) | - | 200: Monster, 422: HTTPValidationError |
+| PUT | `/api/monsters/{monster_id}` | `monster_id` (path, required) | MonsterUpdate | 200: Monster, 422: HTTPValidationError |
+| GET | `/api/npcs` | `limit` (query), `offset` (query) | - | 200: List[NPC], 422: HTTPValidationError |
+| POST | `/api/npcs` | - | NPCCreate | 201: NPC, 422: HTTPValidationError |
+| DELETE | `/api/npcs/{npc_id}` | `npc_id` (path, required) | - | 204: -, 422: HTTPValidationError |
+| GET | `/api/npcs/{npc_id}` | `npc_id` (path, required) | - | 200: NPC, 422: HTTPValidationError |
+| PUT | `/api/npcs/{npc_id}` | `npc_id` (path, required) | NPCUpdate | 200: NPC, 422: HTTPValidationError |
+| GET | `/api/players` | `limit` (query), `offset` (query) | - | 200: List[Player], 422: HTTPValidationError |
+| POST | `/api/players` | - | PlayerCreate | 201: Player, 422: HTTPValidationError |
+| DELETE | `/api/players/{player_id}` | `player_id` (path, required) | - | 204: -, 422: HTTPValidationError |
+| GET | `/api/players/{player_id}` | `player_id` (path, required) | - | 200: Player, 422: HTTPValidationError |
+| PUT | `/api/players/{player_id}` | `player_id` (path, required) | PlayerUpdate | 200: Player, 422: HTTPValidationError |
+| GET | `/api/players/{player_id}/spells` | `player_id` (path, required) | - | 200: List[Spell], 422: HTTPValidationError |
+| DELETE | `/api/players/{player_id}/spells/{spell_id}` | `player_id` (path, required), `spell_id` (path, required) | - | 204: -, 422: HTTPValidationError |
+| POST | `/api/players/{player_id}/spells/{spell_id}` | `player_id` (path, required), `spell_id` (path, required) | - | 201: -, 422: HTTPValidationError |
+| GET | `/api/players/{player_id}/weapons` | `player_id` (path, required) | - | 200: List[Weapon], 422: HTTPValidationError |
+| DELETE | `/api/players/{player_id}/weapons/{weapon_id}` | `player_id` (path, required), `weapon_id` (path, required) | - | 204: -, 422: HTTPValidationError |
+| POST | `/api/players/{player_id}/weapons/{weapon_id}` | `player_id` (path, required), `weapon_id` (path, required) | - | 201: -, 422: HTTPValidationError |
+| GET | `/api/quests` | `limit` (query), `offset` (query) | - | 200: List[Quest], 422: HTTPValidationError |
+| POST | `/api/quests` | - | QuestCreate | 201: Quest, 422: HTTPValidationError |
+| DELETE | `/api/quests/{quest_id}` | `quest_id` (path, required) | - | 204: -, 422: HTTPValidationError |
+| GET | `/api/quests/{quest_id}` | `quest_id` (path, required) | - | 200: Quest, 422: HTTPValidationError |
+| PUT | `/api/quests/{quest_id}` | `quest_id` (path, required) | QuestUpdate | 200: Quest, 422: HTTPValidationError |
+| GET | `/api/skills` | - | - | 200: List[Skill] |
+| GET | `/api/spell-components` | - | - | 200: List[SpellComponent] |
+| GET | `/api/spells` | `level` (query), `school` (query), `limit` (query), `offset` (query) | - | 200: List[Spell], 422: HTTPValidationError |
+| POST | `/api/spells` | - | SpellCreate | 201: Spell, 422: HTTPValidationError |
+| GET | `/api/spells/by-title/{spell_name}` | `spell_name` (path, required) | - | 200: Spell, 422: HTTPValidationError |
+| DELETE | `/api/spells/{spell_id}` | `spell_id` (path, required) | - | 204: -, 422: HTTPValidationError |
+| GET | `/api/spells/{spell_id}` | `spell_id` (path, required) | - | 200: Spell, 422: HTTPValidationError |
+| PUT | `/api/spells/{spell_id}` | `spell_id` (path, required) | SpellUpdate | 200: Spell, 422: HTTPValidationError |
+| GET | `/api/weapon_properties` | - | - | 200: List[WeaponProperty] |
+| GET | `/api/weapons` | `limit` (query), `offset` (query) | - | 200: List[Weapon], 422: HTTPValidationError |
+| POST | `/api/weapons` | - | WeaponCreate | 201: Weapon, 422: HTTPValidationError |
+| GET | `/api/weapons/by-name/{name}` | `name` (path, required) | - | 200: Weapon, 422: HTTPValidationError |
+| DELETE | `/api/weapons/{weapon_id}` | `weapon_id` (path, required) | - | 204: -, 422: HTTPValidationError |
+| GET | `/api/weapons/{weapon_id}` | `weapon_id` (path, required) | - | 200: Weapon, 422: HTTPValidationError |
+| PUT | `/api/weapons/{weapon_id}` | `weapon_id` (path, required) | WeaponUpdate | 200: Weapon, 422: HTTPValidationError |
+| GET | `/{full_path}` | `full_path` (path, required) | - | 200: -, 422: HTTPValidationError |
+<!-- GENERATED:API:END -->
