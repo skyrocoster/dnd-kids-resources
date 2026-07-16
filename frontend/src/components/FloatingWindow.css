@@ -112,10 +112,3 @@
   border-radius: 0 0 0.5rem 0;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .floating-window-resize-ridges {
-    transition: none;
-    transform: none;
-  }
-}
-

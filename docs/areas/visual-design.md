@@ -1,6 +1,6 @@
 # Visual Design Area Guide
 
-> **Active plan:** [Visual Consistency](../plans/active/visual-consistency.md#vf5-foundation-design-pass-next-up).
+> **Active plan:** [Visual Consistency](../plans/active/visual-consistency.md#vw0-workspace-scaffolding-next-up).
 
 ## Scope
 

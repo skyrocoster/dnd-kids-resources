@@ -144,4 +144,12 @@ describe('FloatingWindow resize', () => {
     fireEvent(window, new PointerEvent('pointerup', {}))
     expect(windowEl.style.height).toBe(`${480}px`)
   })
+
+  // VF5: FloatingWindow.css relies on the global reduced-motion reset; no local redundant override
+  it('FloatingWindow.css has no local prefers-reduced-motion block', async () => {
+    const { readFileSync } = await import('node:fs')
+    const { resolve } = await import('node:path')
+    const css = readFileSync(resolve(process.cwd(), 'src/components/FloatingWindow.css'), 'utf-8')
+    expect(css).not.toContain('@media (prefers-reduced-motion')
+  })
 })
