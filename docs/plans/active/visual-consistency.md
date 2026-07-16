@@ -281,41 +281,7 @@ changes in the same stage.
 
 **VT1 (collapsed)** — Encounter runner is shipped. See Shipped stages table above.
 
-#### VT2 — Dungeon viewer (completed)
-
-- **Read first:** `docs/ARCHITECTURE.md`, `docs/DESIGN_SYSTEM.md`, `docs/TESTING.md`,
-  `frontend/src/features/dungeons/maplab/DungeonShell.tsx` (uses `38rem` breakpoint, not the VF1 `520px`
-  convention), `frontend/src/features/dungeons/maplab/MapLabPage.css` (uses `56rem` breakpoint,
-  not the VF1 `768px` convention), `frontend/src/features/dungeons/maplab/MapLabPage.tsx` (viewer
-  composition — 4 VT0 seams added for narrow viewer, room rail, details, dock), and
-  `frontend/src/features/dungeons/maplab/__tests__/DungeonShell.test.tsx` (2 VT0 seams for responsive
-  regions and narrow room access), `frontend/src/features/dungeons/maplab/__tests__/MapLabPage.test.tsx`
-  (4 VT0 seams for narrow viewer/rail/details/dock).
-- **Build:** Align `DungeonShell`, `MapLabPage`, room rail, room-details panel, and viewer toolbar with the shared
-  route-header and spacing contracts. Reconcile `DungeonShell.css`'s `38rem` and `MapLabPage.css`'s `56rem`
-  breakpoints to the VF1 convention where the VT2 touch set already owns those files. Remove avoidable nested
-  page padding, preserve the selected-room surface, and make room rail, map, and details reachable in a
-  deliberate narrow-screen order. Keep canvas, markers, session passage state, docks, inspector behavior, and
-  Map Lab responsive exceptions intact.
-- **Inherits:** current DungeonShell route context, MapLabPage composition, viewer rail, RoomDetailsPanel, and all
-  layout/marker behavior. VT1's confirmed runner/dock control fixes: 48px touch-target floor via `var(--control-height)`,
-  aria-labeled action-group semantics, viewport-edge clamping for FloatingWindow, and load-error recovery pattern
-  (hook try/catch + StatePanel rendering). All runner controls tested at narrow widths (520px) and compact modes;
-  apply same sizing/semantic pattern to viewer toolbar, room-rail, and details-panel in VT2.
-- **Expected touch set:** `DungeonShell.tsx`/`.css`, `MapLabPage.tsx`/`.css`, room rail and details components,
-  viewer toolbar, dungeon viewer and Map Lab tests, `docs/ARCHITECTURE.md`, `docs/DESIGN_SYSTEM.md`, and this plan.
-- **Documentation impact:** `docs/ARCHITECTURE.md`, `docs/DESIGN_SYSTEM.md`, and this plan record durable viewer composition conventions.
-- **Tests:** Unskip all 2 `DungeonShell.test.tsx` VT0 seams (responsive regions, narrow room access) and all 4
-  `MapLabPage.test.tsx` VT0 seams (narrow viewer, narrow room rail, narrow details, dock at narrow widths).
-  Preserve existing Map Lab viewer, room selection, floor, marker, dock, and fullscreen tests; add responsive
-  composition tests for selected-room reachability, mode navigation, and ordinary control targets.
-- **Gate:** Run frontend test/typecheck/build gates. User manually verifies room selection by rail and map,
-  encounter/NPC docks, floor changes, fullscreen, and a narrow viewport without changing authored data.
-- **Discovery consolidation:** Update `Reusable pieces` with confirmed viewer composition contracts. Revise
-  VT3-VT4 blocks with exact shell/viewer layout findings and responsive exceptions.
-- **Completion edit:** Collapse VT2, set VT3 as next, and point the manifest to VT3's anchor.
-
-#### VT3 — Map Lab editor (planned)
+#### VT3 — Map Lab editor (next up)
 
 - **Read first:** `docs/DESIGN_SYSTEM.md`, `docs/TESTING.md`, `frontend/src/features/dungeons/maplab/MapLabEditorPage.tsx`
   (inspector selection actions need grouping into a shared component, compact fields need documentation,
@@ -439,5 +405,5 @@ changes in the same stage.
 
 ## Next:
 
-**VT2 — Dungeon viewer** is next. It may begin now that VT1's encounter runner control fixes and load-error
-recovery patterns are shipped and VT0/VT1's responsive and viewport findings are consolidated.
+**VT3 — Map Lab editor** is next. It may begin now that VT2's viewer layout and breakpoint findings are 
+consolidated and the viewer/editor shell composition contracts are established.
