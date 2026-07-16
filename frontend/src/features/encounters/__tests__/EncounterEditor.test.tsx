@@ -191,6 +191,63 @@ describe('EncounterEditor', () => {
     })
   })
 
+  describe('C3: Creature re-pick and hand-edit persistence', () => {
+    it('hand-edits to HP/AC persist until monster is re-picked', async () => {
+      vi.spyOn(api, 'listMonsters').mockResolvedValue([goblin])
+      const user = userEvent.setup()
+
+      render(<EncounterEditor onClose={() => {}} onSaved={() => {}} />)
+      await user.click(screen.getByRole('button', { name: 'Add Creature' }))
+      await waitFor(() => expect(screen.getByRole('option', { name: 'Goblin' })).toBeInTheDocument())
+
+      await user.selectOptions(screen.getByLabelText('Monster'), 'Goblin')
+      expect(screen.getByLabelText('HP Current')).toHaveValue(7)
+
+      await user.clear(screen.getByLabelText('HP Current'))
+      await user.type(screen.getByLabelText('HP Current'), '5')
+
+      await user.selectOptions(screen.getByLabelText('Monster'), 'Goblin')
+      expect(screen.getByLabelText('HP Current')).toHaveValue(7)
+    })
+  })
+
+  describe('C4: Creature row collapse', () => {
+    it('toggles creature row body visibility', async () => {
+      vi.spyOn(api, 'listMonsters').mockResolvedValue([goblin])
+      const user = userEvent.setup()
+
+      render(<EncounterEditor onClose={() => {}} onSaved={() => {}} />)
+      await user.click(screen.getByRole('button', { name: 'Add Creature' }))
+      await waitFor(() => expect(screen.getByLabelText('Monster')).toBeInTheDocument())
+
+      expect(screen.getByLabelText('Monster')).toBeVisible()
+
+      const toggle = screen.getByRole('button', { name: 'Unnamed creature' })
+      await user.click(toggle)
+
+      expect(screen.queryByLabelText('Monster')).not.toBeInTheDocument()
+
+      const toggleAgain = screen.getByRole('button', { name: 'Unnamed creature' })
+      await user.click(toggleAgain)
+      expect(screen.getByLabelText('Monster')).toBeVisible()
+    })
+  })
+
+  describe('C5: Long creature list', () => {
+    it('renders multiple creature rows', async () => {
+      vi.spyOn(api, 'listMonsters').mockResolvedValue([goblin])
+      const user = userEvent.setup()
+
+      render(<EncounterEditor onClose={() => {}} onSaved={() => {}} />)
+      for (let i = 0; i < 5; i++) {
+        await user.click(screen.getByRole('button', { name: 'Add Creature' }))
+      }
+
+      const rows = screen.getAllByText(/Unnamed creature/)
+      expect(rows).toHaveLength(5)
+    })
+  })
+
   describe('Dialog contract', () => {
     it('renders with the expected title and focuses the first field', async () => {
       vi.spyOn(api, 'listMonsters').mockResolvedValue([])

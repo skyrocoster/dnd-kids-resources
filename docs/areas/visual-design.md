@@ -1,6 +1,6 @@
 # Visual Design Area Guide
 
-> **Active plan:** [Visual Consistency](../plans/active/visual-consistency.md#vw5-complex-authoring-next-up).
+> **Active plan:** [Visual Consistency](../plans/active/visual-consistency.md#vw6-workspace-design-pass-next-up).
 
 ## Scope
 
