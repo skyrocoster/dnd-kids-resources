@@ -45,6 +45,8 @@ def _safe_rel(path: Path, anchor: Path = REPO_ROOT) -> str:
 PLAN_TEMPLATE = DOCS_DIR / "PLAN_TEMPLATE.md"
 README = DOCS_DIR / "README.md"
 CLAUDE_MD = REPO_ROOT / "CLAUDE.md"
+AREA_GUIDES_DIR = DOCS_DIR / "areas"
+ACTIVE_PLANS_DIR = DOCS_DIR / "plans" / "active"
 
 STATUS_RE = re.compile(r"^>\s*\*\*Status:\*\*\s*(.+)$", re.MULTILINE)
 STAGE_HEADING_RE = re.compile(r"^#{2,6}\s+(.+?)\s*\(next up\)", re.MULTILINE)
@@ -53,7 +55,7 @@ EXECUTABLE_STAGE_RE = re.compile(
     re.MULTILINE,
 )
 EXECUTION_FIELDS = (
-    "Read first", "Expected touch set", "Documentation impact", "Tests", "Gate", "Completion edit",
+    "Read first", "Build", "Inherits", "Expected touch set", "Documentation impact", "Tests", "Gate", "Completion edit",
 )
 EXECUTION_FIELD_RE = re.compile(r"^\s*-\s+\*\*([^:]+):\*\*\s*(.+)$", re.MULTILINE)
 SHIPPED_STAGE_RE = re.compile(r"^\|\s+\*\*([A-Z]+\d+)\*\*\s+\|", re.MULTILINE)
@@ -68,6 +70,9 @@ GUIDE_PATHS = [
 ]
 MARKDOWN_LINK_RE = re.compile(r"(?<!!)\[[^\]]*\]\(([^)]+)\)")
 HEADING_RE = re.compile(r"^#{1,6}\s+(.+?)\s*#*\s*$", re.MULTILINE)
+ACTIVE_PLAN_RE = re.compile(r"^>\s*\*\*Active plan:\*\*\s*(.+?)\s*$", re.MULTILINE)
+AREA_GUIDE_RE = re.compile(r"^\s*-\s+\*\*Area guide:\*\*\s*\[[^\]]+\]\(([^)]+)\)\.?\s*$", re.MULTILINE)
+AREA_GUIDE_HEADINGS = {"scope", "read-first", "source-map", "invariants", "work-queue", "cross-references"}
 IMPLEMENTATION_PREFIXES = ("backend/", "frontend/", "scripts/", "data/", ".github/")
 GENERATED_CONTRACT_REFERENCES = {
     "scripts/init_database.py": {"docs/DATA_MODEL.md"},
@@ -161,8 +166,8 @@ def parse_execution_stages(text: str) -> list[dict[str, object]]:
     return stages
 
 
-def find_plan_files(docs_dir: Path) -> list[Path]:
-    """Return *_plan.md files in docs_dir, excluding PLAN_TEMPLATE.md.
+def find_legacy_plan_files(docs_dir: Path) -> list[Path]:
+    """Return legacy root *_plan.md files, excluding PLAN_TEMPLATE.md.
 
     Matches the naming convention ``<feature>_plan.md`` where <feature>
     contains lowercase letters, digits, underscores, and hyphens (the project's
@@ -174,6 +179,18 @@ def find_plan_files(docs_dir: Path) -> list[Path]:
         if p.name != "PLAN_TEMPLATE.md"
         and re.fullmatch(r"[a-z0-9_-]+_plan\.md", p.name)
     ]
+
+
+def find_active_plan_files(docs_dir: Path) -> list[Path]:
+    """Return focused execution plans from the active-plan directory."""
+    active_dir = docs_dir / "plans" / "active"
+    return sorted(active_dir.glob("*.md")) if active_dir.exists() else []
+
+
+def find_area_guides(docs_dir: Path) -> list[Path]:
+    """Return durable area guides from the area-guide directory."""
+    area_dir = docs_dir / "areas"
+    return sorted(area_dir.glob("*.md")) if area_dir.exists() else []
 
 
 def parse_manifest_plan_files(readme_path: Path) -> list[str]:
@@ -290,16 +307,14 @@ def check_manifest_current_stage_anchors(docs_dir: Path, readme_path: Path) -> l
     """Require every active plan's manifest row to link to its current stage."""
     errors: list[CheckError] = []
     manifest = readme_path.read_text(encoding="utf-8")
-    for plan_path in find_plan_files(docs_dir):
+    for plan_path in find_active_plan_files(docs_dir):
         content = plan_path.read_text(encoding="utf-8")
-        if _is_redirect(content):
-            continue
         metadata = parse_plan_metadata(content)
         if metadata["current_stage"] is None:
             continue
         heading_match = STAGE_HEADING_RE.search(content)
         assert heading_match is not None
-        expected = f"({plan_path.name}#{github_anchor(heading_match.group(0).lstrip('#').strip())})"
+        expected = f"(plans/active/{plan_path.name}#{github_anchor(heading_match.group(0).lstrip('#').strip())})"
         if expected not in manifest:
             errors.append(CheckError(
                 "docs/README.md",
@@ -310,10 +325,10 @@ def check_manifest_current_stage_anchors(docs_dir: Path, readme_path: Path) -> l
 
 
 def check_manifest_completeness(docs_dir: Path, readme_path: Path) -> list[CheckError]:
-    """Validate that docs/README.md lists every *_plan.md in docs/."""
+    """Validate that the manifest lists legacy redirects and every area guide."""
     errors: list[CheckError] = []
 
-    actual = [p.name for p in find_plan_files(docs_dir)]
+    actual = [p.name for p in find_legacy_plan_files(docs_dir)]
     listed = parse_manifest_plan_files(readme_path)
 
     missing = [name for name in actual if name not in listed]
@@ -323,6 +338,14 @@ def check_manifest_completeness(docs_dir: Path, readme_path: Path) -> list[Check
             f"Missing plan files in manifest: {', '.join(missing)}",
             "Add a row to the Feature Plans table in docs/README.md",
         ))
+    for guide in find_area_guides(docs_dir):
+        expected = f"areas/{guide.name}"
+        if expected not in readme_path.read_text(encoding="utf-8"):
+            errors.append(CheckError(
+                "docs/README.md",
+                f"Missing area guide in manifest: {expected}",
+                "Add a canonical area-guide row to docs/README.md",
+            ))
 
     return errors
 
@@ -387,10 +410,10 @@ def check_local_links(docs_dir: Path, repo_root: Path) -> list[CheckError]:
 
 
 def check_plan_lifecycle(docs_dir: Path, readme_path: Path) -> list[CheckError]:
-    """Ensure root plans are either active plans or redirect stubs listed by the manifest."""
+    """Ensure legacy root plans are valid redirects to their historical archive."""
     errors: list[CheckError] = []
     manifest = readme_path.read_text(encoding="utf-8")
-    for plan_path in find_plan_files(docs_dir):
+    for plan_path in find_legacy_plan_files(docs_dir):
         content = plan_path.read_text(encoding="utf-8")
         if _is_redirect(content):
             target = docs_dir / "complete" / plan_path.name
@@ -401,18 +424,92 @@ def check_plan_lifecycle(docs_dir: Path, readme_path: Path) -> list[CheckError]:
                     f"Move the completed plan to docs/complete/{plan_path.name} or repair the redirect",
                 ))
             continue
-        metadata = parse_plan_metadata(content)
-        if metadata["status"] and "complete" in metadata["status"].lower():
-            errors.append(CheckError(
-                _safe_rel(plan_path),
-                "Completed plan remains active at the docs root",
-                "Archive it under docs/complete/ and leave a redirect stub if links remain",
-            ))
         if plan_path.name not in manifest:
             errors.append(CheckError(
                 "docs/README.md",
-                f"Plan lifecycle is not represented in the manifest: {plan_path.name}",
-                "Add or repair the plan's manifest row",
+                f"Legacy plan redirect is not represented in the manifest: {plan_path.name}",
+                "Add or repair the redirect's manifest row",
+            ))
+    return errors
+
+
+def check_area_guide_contract(docs_dir: Path) -> list[CheckError]:
+    """Ensure guides and active plans form one unambiguous ownership relationship."""
+    errors: list[CheckError] = []
+    guides = find_area_guides(docs_dir)
+    active_plans = find_active_plan_files(docs_dir)
+    guide_paths = {guide.resolve() for guide in guides}
+    active_paths = {plan.resolve() for plan in active_plans}
+    guide_targets: dict[Path, Path] = {}
+
+    for guide in guides:
+        content = guide.read_text(encoding="utf-8")
+        headings = {github_anchor(match.group(1)) for match in HEADING_RE.finditer(content)}
+        missing = sorted(AREA_GUIDE_HEADINGS - headings)
+        if missing:
+            errors.append(CheckError(
+                _safe_rel(guide),
+                f"Missing required area-guide sections: {', '.join(missing)}",
+                "Add the required sections from PLAN_TEMPLATE.md",
+            ))
+        status = ACTIVE_PLAN_RE.search(content)
+        if not status:
+            errors.append(CheckError(
+                _safe_rel(guide),
+                "Missing active-plan status blockquote",
+                "Add '> **Active plan:** None.' or a link to one active execution plan",
+            ))
+            continue
+        link = MARKDOWN_LINK_RE.search(status.group(1))
+        if not link:
+            if not status.group(1).strip().lower().startswith("none"):
+                errors.append(CheckError(
+                    _safe_rel(guide),
+                    "Active-plan status must be None or a Markdown link",
+                    "Link directly to the active plan's current-stage anchor",
+                ))
+            continue
+        resolved = _local_link_target(guide, link.group(1), REPO_ROOT)
+        if resolved is None or resolved[0].resolve() not in active_paths:
+            errors.append(CheckError(
+                _safe_rel(guide),
+                "Active-plan link does not target an active execution plan",
+                "Point it at a file under docs/plans/active/",
+            ))
+            continue
+        target, anchor = resolved
+        if not anchor:
+            errors.append(CheckError(
+                _safe_rel(guide),
+                "Active-plan link must include the current-stage anchor",
+                "Link directly to the plan's '(next up)' heading",
+            ))
+            continue
+        guide_targets[target.resolve()] = guide.resolve()
+
+    for plan in active_plans:
+        content = plan.read_text(encoding="utf-8")
+        match = AREA_GUIDE_RE.search(content)
+        if not match:
+            errors.append(CheckError(
+                _safe_rel(plan),
+                "Missing Area guide line",
+                "Add an Area guide Markdown link immediately after the status block",
+            ))
+            continue
+        resolved = _local_link_target(plan, match.group(1), REPO_ROOT)
+        if resolved is None or resolved[0].resolve() not in guide_paths:
+            errors.append(CheckError(
+                _safe_rel(plan),
+                "Area guide link does not target a file under docs/areas/",
+                "Link this plan to its owning area guide",
+            ))
+            continue
+        if guide_targets.get(plan.resolve()) != resolved[0].resolve():
+            errors.append(CheckError(
+                _safe_rel(plan),
+                "Owning area guide does not point back to this active plan",
+                "Update the guide's Active plan link to this plan's current-stage anchor",
             ))
     return errors
 
@@ -496,7 +593,7 @@ def run_all_checks(docs_dir: Path) -> list[CheckError]:
         ))
         return errors
 
-    for plan in find_plan_files(docs_dir):
+    for plan in find_active_plan_files(docs_dir):
         errors.extend(check_plan_metadata(plan))
         errors.extend(check_plan_execution_contract(plan))
 
@@ -504,6 +601,7 @@ def run_all_checks(docs_dir: Path) -> list[CheckError]:
     errors.extend(check_manifest_current_stage_anchors(docs_dir, readme))
     errors.extend(check_forbidden_references(docs_dir))
     errors.extend(check_plan_lifecycle(docs_dir, readme))
+    errors.extend(check_area_guide_contract(docs_dir))
 
     return errors
 
@@ -552,7 +650,7 @@ def run_diff_checks(docs_dir: Path, base: str) -> list[CheckError]:
         if line
     }
     implementation_changed = any(path.startswith(IMPLEMENTATION_PREFIXES) for path in changed)
-    active_plans = [plan for plan in find_plan_files(docs_dir) if not _is_redirect(plan.read_text(encoding="utf-8"))]
+    active_plans = find_active_plan_files(docs_dir)
     changed_plans = [
         plan for plan in active_plans
         if str(plan.relative_to(docs_dir.parent)).replace("\\", "/") in changed

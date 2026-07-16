@@ -4,17 +4,17 @@ This is the complete documentation inventory and task router. Read [../CLAUDE.md
 
 ## Task Router
 
-| Task | Owning plan / current stage | Read first |
+| Task | Area / current stage | Read first |
 |---|---|---|
-| Documentation maintenance | Create a focused active plan | `PLAN_TEMPLATE.md`, `scripts/check_docs.py`, `TESTING.md`, and existing GitHub workflow files |
-| Visual consistency work | [visual_consistency_plan.md: VF0](visual_consistency_plan.md#vf0-foundation-scaffolding-next-up) | `visual_consistency_plan.md`, `DESIGN_SYSTEM.md`, `ARCHITECTURE.md`, `TESTING.md` |
-| Existing dungeon, encounter, monster, spell, or loot behavior | Its listed feature plan, if applicable | `ARCHITECTURE.md`, `API_REFERENCE.md`, `DATA_MODEL.md`, `TESTING.md`, then the feature plan |
-| API route or client contract | A focused active plan, creating one if absent | `API_REFERENCE.md`, `ARCHITECTURE.md`, `TESTING.md` |
-| Database schema, seed, import, or export | A focused active plan, creating one if absent | `DATA_MODEL.md`, `ARCHITECTURE.md`, `TESTING.md` |
-| Shared UI, tokens, icons, or accessibility | A focused active plan, creating one if absent | `DESIGN_SYSTEM.md`, `ARCHITECTURE.md`, `TESTING.md` |
-| Test tooling, fixtures, coverage, or CI | A focused active plan, creating one if absent | `TESTING.md`, `ARCHITECTURE.md` |
+| Documentation maintenance | [Documentation Governance](areas/documentation.md) | `PLAN_TEMPLATE.md`, `scripts/check_docs.py`, `TESTING.md`, and existing GitHub workflow files |
+| Visual consistency work | [Visual Design: VF0](plans/active/visual-consistency.md#vf0-foundation-scaffolding-next-up) | `areas/visual-design.md`, `DESIGN_SYSTEM.md`, `ARCHITECTURE.md`, `TESTING.md` |
+| Existing dungeon, encounter, monster, spell, or loot behavior | Its area guide | `ARCHITECTURE.md`, `API_REFERENCE.md`, `DATA_MODEL.md`, `TESTING.md`, then the guide's active plan |
+| API route or client contract | Relevant area guide; create a focused plan if it has none | `API_REFERENCE.md`, `ARCHITECTURE.md`, `TESTING.md` |
+| Database schema, seed, import, or export | Relevant area guide; create a focused plan if it has none | `DATA_MODEL.md`, `ARCHITECTURE.md`, `TESTING.md` |
+| Shared UI, tokens, icons, or accessibility | [Visual Design](areas/visual-design.md) | `DESIGN_SYSTEM.md`, `ARCHITECTURE.md`, `TESTING.md` |
+| Test tooling, fixtures, coverage, or CI | Relevant area guide; create a focused plan if it has none | `TESTING.md`, `ARCHITECTURE.md` |
 
-An implementation must update its owning plan and every exact reference document named by that plan's documentation-impact requirement. Each executable plan stage declares **Read first**, **Expected touch set**, **Documentation impact**, **Tests**, **Gate**, and **Completion edit**; `None` requires a specific reason. Historical documents are context only; they do not define current behavior.
+An implementation must update its owning active execution plan and every exact reference document named by that plan's documentation-impact requirement. Area guides are durable routing documents, not plans. Each executable plan stage declares **Read first**, **Build**, **Inherits**, **Expected touch set**, **Documentation impact**, **Tests**, **Gate**, and **Completion edit**; `None` requires a specific reason. Historical documents are context only; they do not define current behavior.
 
 ## Document Inventory
 
@@ -28,8 +28,16 @@ Authority: **Canonical** documents define current contracts. **Working** documen
 | [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) | Reference | Canonical | Active | Shared tokens, icons, visual primitives, or accessibility | A shared design contract changes |
 | [TESTING.md](TESTING.md) | Reference | Canonical | Active | Commands, fixtures, coverage, or test locations | A test command, fixture topology, coverage gate, or CI contract changes |
 | [PLAN_TEMPLATE.md](PLAN_TEMPLATE.md) | Template | Canonical | Active | Creating, executing, or closing a plan | Plan execution or lifecycle requirements change |
+| [areas/documentation.md](areas/documentation.md) | Area guide | Canonical | No active plan | Documentation contract or validator work | Documentation routing or validation changes |
+| [areas/dungeons.md](areas/dungeons.md) | Area guide | Canonical | No active plan | Dungeon behavior | Dungeon ownership, source map, or active work changes |
+| [areas/encounters.md](areas/encounters.md) | Area guide | Canonical | No active plan | Encounter behavior | Encounter ownership, source map, or active work changes |
+| [areas/loot.md](areas/loot.md) | Area guide | Canonical | No active plan | Loot or item-bundle behavior | Loot ownership, source map, or active work changes |
+| [areas/monsters.md](areas/monsters.md) | Area guide | Canonical | No active plan | Monster behavior | Monster ownership, source map, or active work changes |
+| [areas/reference-catalogs.md](areas/reference-catalogs.md) | Area guide | Canonical | No active plan | Weapons, items, players, NPCs, or quests | Catalog ownership, source map, or active work changes |
+| [areas/spells.md](areas/spells.md) | Area guide | Canonical | No active plan | Spell behavior | Spell ownership, source map, or active work changes |
+| [areas/visual-design.md](areas/visual-design.md) | Area guide | Canonical | VF0 active | Shared UI, tokens, shell, or accessibility | Visual routing or active work changes |
+| [plans/active/visual-consistency.md](plans/active/visual-consistency.md#vf0-foundation-scaffolding-next-up) | Execution plan | Working | VF0 next | Current visual consistency work | Its active stage ships or its declared docs change |
 | [documentation_rework_plan.md](documentation_rework_plan.md) | Redirect | Redirect | Complete | Following documentation-contract history | Only if the archived target moves again |
-| [visual_consistency_plan.md](visual_consistency_plan.md) | Plan | Working | VF0 next | Cross-cutting visual consistency work | Its active stage ships or its declared docs change |
 | [dungeon_plan.md](dungeon_plan.md) | Redirect | Redirect | Complete | Following legacy dungeon-plan links | Only if the archived target moves again |
 | [encounters_plan.md](encounters_plan.md) | Redirect | Redirect | Complete | Following legacy encounter-plan links | Only if the archived target moves again |
 | [monsters_plan.md](monsters_plan.md) | Redirect | Redirect | Complete | Following legacy monster-plan links | Only if the archived target moves again |
