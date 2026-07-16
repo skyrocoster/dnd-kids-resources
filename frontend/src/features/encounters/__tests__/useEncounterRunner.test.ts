@@ -186,6 +186,27 @@ describe('useEncounterRunner', () => {
     expect(players[0].conditions).toEqual(['prone'])
   })
 
+  // ── VT0 scaffold seams ────────────────────────────────────────────────────
+
+  it.skip('exposes a load-error state when getEncounter fails (VT1 load-error recovery)', async () => {
+    // VT1: useEncounterRunner must surface an error state for failed initial loads.
+    // Currently the hook has no error handling for the getEncounter call — it would throw unhandled.
+    // Expected: result.current.loading becomes false, result.current.loadError is truthy,
+    // result.current.state remains the empty initial state.
+    vi.spyOn(api, 'getEncounter').mockRejectedValue(new Error('network down'))
+
+    const { result } = renderHook(() => useEncounterRunner(1))
+
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    expect(result.current.loading).toBe(false)
+    // VT1 target: hook must expose loadError on the result type
+    expect((result.current as unknown as Record<string, unknown>).loadError).toBeTruthy()
+    expect(result.current.state.combatants).toHaveLength(0)
+  })
+
   it('sets syncStatus to error on save failure but preserves local state', async () => {
     vi.spyOn(api, 'getEncounter').mockResolvedValue(baseEncounter)
     vi.spyOn(api, 'updateEncounter').mockRejectedValue(new Error('network down'))

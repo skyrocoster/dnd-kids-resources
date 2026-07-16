@@ -334,6 +334,89 @@ describe('EncounterRunnerPage', () => {
     expect(within(playerCard).getByRole('group', { name: 'Conditions' })).toBeInTheDocument()
   })
 
+  // ── VT0 scaffold seams ────────────────────────────────────────────────────
+  // These it.skip seams carry real assertion bodies for VT1 to unskip.
+
+  it.skip('shows a recoverable error state when the encounter fails to load (VT1 load-error)', async () => {
+    // VT1: useEncounterRunner must surface a load-error state; EncounterRunnerPage
+    // must render it with a retry action and a link back to /encounters.
+    vi.spyOn(api, 'getEncounter').mockRejectedValue(new Error('network down'))
+
+    renderPage()
+
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    expect(screen.getByRole('alert')).toBeInTheDocument()
+    expect(screen.getByText(/could not load/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /back to encounters/i })).toBeInTheDocument()
+  })
+
+  it.skip('ordinary runner controls meet the 48px touch-target floor (VT1 touch targets)', async () => {
+    // VT1: header buttons (Next turn, Add monster, Add player) and card controls
+    // (stepper, reorder, status chip, condition picker trigger) must meet --control-height (48px).
+    vi.spyOn(api, 'getEncounter').mockResolvedValue(baseEncounter)
+    vi.spyOn(api, 'updateEncounter').mockResolvedValue(baseEncounter)
+    vi.spyOn(api, 'getConditions').mockResolvedValue(conditionList)
+
+    renderPage()
+    await act(async () => { await Promise.resolve() })
+
+    const nextTurn = screen.getByText('Next turn').closest('button')!
+    const addMonster = screen.getByText('Add monster').closest('button')!
+    const addPlayer = screen.getByText('Add player').closest('button')!
+    const card = cardByName('Goblin')
+    const stepper = within(card).getByLabelText('Damage 1')
+    const reorderUp = within(card).getByLabelText(/Move.*up/)
+    const statusChip = within(card).getByLabelText(/alive/i)
+    const conditionTrigger = within(card).getByText('No conditions')
+
+    for (const el of [nextTurn, addMonster, addPlayer, stepper, reorderUp, statusChip, conditionTrigger]) {
+      const rect = el.getBoundingClientRect()
+      expect(rect.height).toBeGreaterThanOrEqual(48)
+    }
+  })
+
+  it.skip('table-time actions are visually separated from roster-management actions (VT1 action groups)', async () => {
+    // VT1: CombatantCard must group table-time controls (HP stepper, status, conditions)
+    // separately from roster-management controls (duplicate, remove, reorder).
+    // Assert via distinct group containers with aria-label or role="group".
+    vi.spyOn(api, 'getEncounter').mockResolvedValue(baseEncounter)
+    vi.spyOn(api, 'updateEncounter').mockResolvedValue(baseEncounter)
+    vi.spyOn(api, 'getConditions').mockResolvedValue(conditionList)
+
+    renderPage()
+    await act(async () => { await Promise.resolve() })
+
+    const card = cardByName('Goblin')
+    expect(within(card).getByRole('group', { name: /combat actions/i })).toBeInTheDocument()
+    expect(within(card).getByRole('group', { name: /roster management/i })).toBeInTheDocument()
+  })
+
+  it.skip('runner header actions are reachable in a narrow viewport (VT1 narrow reachability)', async () => {
+    // VT1: at 520px width, the runner header must keep Next turn, Add monster, Add player
+    // reachable without horizontal overflow. The combatant list must remain scrollable.
+    vi.spyOn(api, 'getEncounter').mockResolvedValue(baseEncounter)
+    vi.spyOn(api, 'updateEncounter').mockResolvedValue(baseEncounter)
+
+    renderPage()
+    await act(async () => { await Promise.resolve() })
+
+    Object.defineProperty(document.querySelector('.encounter-runner-header')!, 'offsetWidth', { value: 520 })
+    const header = screen.getByText('Round 1').closest('.encounter-runner-header')!
+    expect(header.scrollWidth).toBeLessThanOrEqual(header.clientWidth + 1)
+  })
+
+  it.skip('compact dock mode controls meet the 48px touch-target floor (VT1 dock targets)', async () => {
+    // VT1: EncounterDock wraps EncounterRunnerBoard in compact mode.
+    // Even in compact mode, interactive controls must remain >= 48px or document a compact exception.
+    // This seam verifies the intent — the actual compact-mode rendering needs a dock harness.
+    // Expected: stepper buttons, status chips, condition picker trigger remain >= 48px in compact mode.
+    expect(true).toBe(true) // placeholder — VT1 will render the actual compact dock
+  })
+
   it('conditions persist through save/reload', async () => {
     vi.spyOn(api, 'getEncounter').mockResolvedValue(baseEncounter)
     const updateSpy = vi.spyOn(api, 'updateEncounter').mockResolvedValue(baseEncounter)

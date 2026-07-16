@@ -20,6 +20,17 @@ describe('loot catalog pickers', () => {
     expect(addItem).toHaveBeenCalledWith(expect.objectContaining({ name: 'Ruby', value_gp: 50 }))
     expect(addWeapon).toHaveBeenCalledWith(expect.objectContaining({ name: 'Longsword' }))
   })
+
+  it('uses shared loading and error states instead of an empty catalog', async () => {
+    vi.spyOn(api, 'listItems').mockRejectedValue(new Error('catalog unavailable'))
+    vi.spyOn(api, 'listWeapons').mockRejectedValue(new Error('catalog unavailable'))
+    render(<><AddItemPanel onAdd={() => {}} onClose={() => {}} /><AddWeaponPanel onAdd={() => {}} onClose={() => {}} /></>)
+
+    expect(screen.getAllByText('Loading…')).toHaveLength(2)
+    expect(await screen.findAllByText('Something went wrong')).toHaveLength(2)
+    expect(screen.queryByText('No items found.')).not.toBeInTheDocument()
+    expect(screen.queryByText('No weapons found.')).not.toBeInTheDocument()
+  })
 })
 
 describe('LootBundleEditor', () => {
@@ -119,5 +130,15 @@ describe('LootBundleEditor Dialog contract', () => {
     await user.click(screen.getByRole('button', { name: 'Create Loot Bundle' }))
 
     expect(await screen.findByRole('status')).toHaveTextContent('Unable to save')
+  })
+})
+
+describe('VW6 control conventions', () => {
+  it('uses the workspace touch target and narrow breakpoint conventions', async () => {
+    const { readFileSync } = await import('node:fs')
+    const { resolve } = await import('node:path')
+    const root = process.cwd()
+    expect(readFileSync(resolve(root, 'src/features/loot/AddCatalogPanel.css'), 'utf-8')).toContain('width: var(--control-height)')
+    expect(readFileSync(resolve(root, 'src/features/loot/LootBundleEditor.css'), 'utf-8')).toContain('@media (max-width: 520px)')
   })
 })

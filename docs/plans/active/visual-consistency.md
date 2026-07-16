@@ -1,6 +1,6 @@
 # Visual Consistency Plan — Cross-Cutting Aesthetic Remediation
 
-> **Status:** VF0-VF5, VW0-VW5 shipped. VW6 (workspace design pass) is next.
+> **Status:** VF0-VF5, VW0-VW6, VT0 shipped. VT1 - Encounter runner is next.
 
 - **Area guide:** [Visual Design](../../areas/visual-design.md).
 
@@ -95,6 +95,13 @@ of the bestiary field card, NPC dossier, encounter runner, and Map Lab.
   Dungeon creation uses `api.createDungeon({ title, data })` → `/dungeons/:id/edit` with an `Untitled Dungeon [n]`
   title-disambiguation algorithm. DungeonBrowserPage's `react-router-dom` mock (`useNavigate` → `mockNavigate`) is
   preserved in the dedicated test file; VW0 seam tests use `MemoryRouter` with `Routes` instead.
+- **VW6 confirmed workspace pass:** `SearchList` reserves `emptyMessage` for ready empty/filtered-empty states,
+  retaining default error copy on failures. `Dialog` pending content is disabled and inert, including links and
+  other non-form focusables. Item/Loot first-run panes render only after a successful empty response; loot catalog
+  pickers use `RemoteState` with `SearchList` status so loading/error never masquerades as an empty catalog. The
+  touched authoring/picker controls meet the 48px floor, LootBundleEditor uses the 520px narrow breakpoint, and
+  MonsterEditor withholds edit fields until loading completes, passes delete pending state to ConfirmDialog, and
+  derives its accents from tertiary tokens.
 - All user-facing primary controls and prose use the existing token system. This plan may add a bundled display
   typeface for route headings only after VF1 verifies package/licensing/build implications; body and utility text
   remain optimized for legibility.
@@ -179,6 +186,9 @@ contracts.
   Standard detail actions use shared `Button` variants, while content details remain feature-owned.
 - `MonsterStatBlock`, `NPCStatCard`, `CombatantCard`, `MapCanvas`, Map Lab marker components, and the Map Lab
   reducer/hooks — feature signatures to frame consistently, not genericize.
+- **Confirmed VW6 shared semantics** — use `SearchList`'s `status` for picker loading/error states rather than
+  rendering empty collection copy; empty-browser creation panes require a successful empty response. Pending
+  `Dialog` content is inert as well as disabled. These contracts are covered by focused regression tests.
 - **Confirmed VW2 contracts** — Monster/NPC/Items/Loot now follow the VW1 `RemoteState<T>` + `BrowserLayout`
   `detailOpen`/Back-to-list pattern exactly. Monster keeps its routed `/monsters/new` and `/monsters/:id/edit`
   flow (no browser-level delete) and still honors `location.state.selectedId` on return from the editor.
@@ -220,6 +230,18 @@ contracts.
   behavior and domain-specific information density.
 - Existing Vitest/React Testing Library suites colocated with components and features — extend them rather than
   replacing behavior coverage with visual snapshots.
+- **VT0 confirmed touch-target gap:** All encounter runner controls use `min-height: 2.75rem` (44px), below the
+  48px `--control-height` floor. Worst offenders: `.combatant-reorder-button` (28×22px), `.combatant-condition-chip`
+  (32px), `ConditionPicker` trigger/checkbox (2.75rem). The documented SVG marker exception does not apply to
+  ordinary controls.
+- **VT0 confirmed load-error gap:** `useEncounterRunner` has no `try/catch` around `getEncounter()` and no
+  `loadError` in its return type. An API failure would throw unhandled. `EncounterRunnerPage` only handles
+  NaN `id`; no error state exists.
+- **VT0 confirmed breakpoint mismatches:** `DungeonShell.css` uses `38rem` and `MapLabPage.css` uses `56rem`,
+  neither matching the VF1 convention (`520px` narrow / `768px` tablet). Reconcile when a VT stage already
+  has that file in its touch set.
+- **VT0 confirmed `FloatingWindow` gap:** `FloatingWindow.tsx` has no viewport-edge clamping for narrow screens;
+  the floating surface can clip off-screen at small widths.
 
 ---
 
@@ -234,66 +256,6 @@ contracts.
 - Do not replace Map Lab geometry, marker behavior, autosave, zoom/pan, fullscreen, fixture reducers, or layout
   persistence while improving its framing and control hierarchy.
 - Do not introduce a global state library, CSS framework, runtime styling library, or component-library migration.
-
----
-
-## Design Phase VW — Browsers and Authoring
-
-Migrate catalog and authoring routes in bounded cohorts after the foundation is stable. The phase standardizes
-frame, state, actions, and modal behavior, while each domain retains its own content presentation.
-**Depends on:** VF5 committed. **Depended on by:** VT stages inherit shared browser/editor conventions but do not
-depend on individual catalog migrations.
-
-| Stage | Required strength | Summary | Deliverables |
-|-------|-------|---------|--------------|
-| **VW0 — Workspace scaffolding** | Light | Create opt-in browser/editor migration seams. | `BrowserLayout` stubs and skipped route tests. ✅ |
-| **VW1 — Standard browsers** | Standard | Migrate Spells, Weapons, Players, and Quests. | Responsive list/detail and remote states. ✅ |
-| **VW2 — Role-rich browsers** | Standard | Migrate Monsters, NPCs, Items, and Loot. | Preserved specialist details and role consistency. ✅ |
-| **VW3 — Action browsers** | Standard | Migrate Encounters and Dungeons. | Primary Run/Enter flows and browser states. ✅ |
-| **VW4 — Standard editors** | Standard | Migrate six simple modal editors. | Shared dialogs, fields, and action rows. ✅ |
-| **VW5 — Complex authoring** | Standard | Migrate Encounter/Loot authoring and align Monster Editor framing. | Complex picker and route-editor conformance. ✅ |
-| **VW6 — Workspace design pass** | High | Review every catalog/authoring route together. | Cross-route fixes and regression tests. |
-
-**Sequencing:** VW0 → VW1 → VW2 → VW3 → VW4 → VW5 → VW6. Do not migrate multiple cohorts in parallel because
-each changes shared browser/editor CSS and contracts.
-
-#### VW6 — Workspace design pass (next up)
-
-- **Read first:** `docs/DESIGN_SYSTEM.md` (including its "Standard editor contract (VW4)" section), `docs/TESTING.md`,
-  the ten browser TSX/CSS/test triples, the seven standard editor pairs and their tests, Encounter/Loot/Monster
-  authoring files/tests, `BrowserLayout`, `Dialog`, `Card`, and `SearchList`. Exclude Map Lab, DungeonShell, and
-  encounter runner: they belong to VT unless a VW change demonstrably regresses them. **VW3 confirmed:** all ten
-  browsers now use `BrowserLayout`/`RemoteState<T>`/`Button`/foundation-token CSS; chapter-tab icons are:
-  Spells→WandIcon, Monsters→SkullIcon, Weapons→SwordsIcon, Players→UsersIcon, NPCs→MasksIcon,
-  Quests→ScrollIcon, Encounters→ShieldIcon, Dungeons→DoorIcon, Items→GemIcon, Loot→CoinsIcon. Action browsers
-  have primary action variants: Encounter Run→`variant="primary"`, Dungeon Enter/Edit→`variant="secondary"`,
-  all Delete→`variant="danger"`. Action browser CSS is foundation-token clean (no ad-hoc values remaining).
-  **VW4 confirmed:** all seven modal editors (`SpellEditor`, `WeaponEditor`, `PlayerEditor`, `NPCEditor`,
-  `QuestEditor`, `ItemEditor`, `EncounterEditor`) now render the shared `Dialog`, with Cancel as
-  `variant="secondary"` and Save as the default `variant="primary"` `Button` in the footer — this is a
-  deliberate normalization to the same generic action coloring the ten browsers already use, so it drops the one
-  domain-tinted exception that existed pre-VW4 (`EncounterEditor`'s Save button was `--variant-accent`/tertiary
-  teal; it is now primary-colored like every other editor's Save button). Treat that as intentional consistency,
-  not a regression to flag, unless a fresh review of the shipped ten browsers' Run/Enter buttons shows the
-  workspace still expects domain-tinted primary actions elsewhere — if so, reconcile in both places, not just
-  the editors. Each editor keeps one small width-override class passed via `Dialog`'s additive `className?` prop
-  (values listed in `docs/DESIGN_SYSTEM.md`); no new responsive breakpoints were added.
-- **Build:** Review all browser/editor routes for hierarchy, chapter-tab discipline, action ordering, state copy,
-  responsive transitions, role-color consistency, and accessibility. Repair only discovered design defects; do
-  not add new feature capability. Confirm all ten chapter-tab icons are consistent with navSections.ts linkIcons
-  and that primary/secondary/danger action ordering is uniform across all browsers.
-- **Inherits:** VW0-VW5 and all legacy feature-specific rendering/data contracts.
-- **Expected touch set:** only confirmed defects among the ten browser routes, seven editor/authoring surfaces,
-  specialist detail/picker CSS, and shared BrowserLayout/Dialog/Card/SearchList; their regression tests;
-  `docs/DESIGN_SYSTEM.md` only for a durable shared correction; and this plan. Do not perform a broad CSS sweep.
-- **Documentation impact:** This plan; update `docs/DESIGN_SYSTEM.md` only for confirmed shared-contract corrections.
-- **Tests:** Add regression tests for confirmed defects and run frontend test/lint/typecheck/build gates.
-- **Gate:** User checks the full browser/editor matrix across supported widths and keyboard flows. VT work may
-  begin only after all workspace regressions are resolved.
-- **Discovery consolidation:** Update `Key facts` and `Reusable pieces` with confirmed browser/editor
-  conventions and regression findings. Revise VT blocks with exact workspace dependencies. Update
-  `docs/DESIGN_SYSTEM.md` for any durable corrections.
-- **Completion edit:** Collapse VW6, remove the completed VW phase, set VT0 as next, and point the manifest to VT0's anchor.
 
 ---
 
@@ -315,35 +277,37 @@ affordances. Changes are deliberately separated from geometry, reducer, and pers
 **Sequencing:** VT0 → VT1 → VT2 → VT3 → VT4. Do not combine Map Lab CSS refactoring with fixture/geometry/model
 changes in the same stage.
 
-#### VT0 — Live-surface scaffolding (next after applicable dependencies)
+#### VT1 — Encounter runner (next up)
 
-- **Read first:** `docs/DESIGN_SYSTEM.md`, `docs/ARCHITECTURE.md`, `docs/TESTING.md`, encounter runner and Map Lab tests, and shared foundation components.
-- **Build:** Add inert class/test seams for encounter action groups, load failures, viewer responsive regions,
-  compact Map Lab fields, and shared inspector selection actions. Do not alter runner behavior, map geometry,
-  reducers, autosave, marker layout, or page rendering.
-- **Inherits:** VF foundation and all current encounter/Map Lab components, hooks, models, and test suites.
-- **Expected touch set:** inert live-surface style/test seams and this plan only.
-- **Documentation impact:** This plan only: inert scaffolding creates no durable product contract.
-- **Tests:** Add `it.skip` cases for target sizes, load-error recovery, narrow-screen reachability, and inspector
-  action grouping; retain all existing behavior tests.
-- **Gate:** Suite-sufficient: frontend test/typecheck/build clean and no visual production change.
-- **Discovery consolidation:** Revise VT1-VT4 `Read first`, `Build`, and `Expected touch set` blocks with
-  confirmed encounter-runner and Map Lab file paths, component shapes, and test-setup findings.
-- **Completion edit:** Collapse VT0, set VT1 as next, and point the manifest to VT1's anchor.
-
-#### VT1 — Encounter runner (planned)
-
-- **Read first:** `docs/DESIGN_SYSTEM.md`, `docs/TESTING.md`, the encounter runner hook/components, Map Lab dock integration, and their tests.
+- **Read first:** `docs/DESIGN_SYSTEM.md`, `docs/TESTING.md`, `frontend/src/features/encounters/useEncounterRunner.ts`
+  (hook — no `loadError` state, no `getEncounter` catch), `frontend/src/features/encounters/EncounterRunnerPage.tsx`
+  (only handles NaN `id`), `frontend/src/features/encounters/CombatantCard.tsx`
+  (`.combatant-reorder-button` 28×22px, `.combatant-condition-chip` 32px, HP tier 2.75rem),
+  `frontend/src/features/encounters/CombatantCard.css`, `frontend/src/features/encounters/EncounterRunnerBoard.tsx`
+  (header actions), `frontend/src/features/encounters/EncounterRunnerBoard.css` (`.encounter-runner-actions`
+  min-height 2.75rem), `frontend/src/features/encounters/ConditionPicker.css` (trigger/checkbox 2.75rem),
+  `frontend/src/components/FloatingWindow.tsx` (no viewport-edge clamping for narrow screens), and
+  `frontend/src/features/encounters/__tests__/EncounterRunnerPage.test.tsx` (5 VT0 seam locations),
+  `frontend/src/features/encounters/__tests__/useEncounterRunner.test.ts` (1 VT0 seam location).
 - **Build:** Restore the documented 48px interaction floor for ordinary runner, dock, picker, and reorder
   controls; preserve a larger accessible target where visual compactness is needed. Separate table-time actions
   (active combatant, turn advance, HP, conditions) from roster-management actions (duplicate, reorder, remove),
-  and repair compact-dock action wrapping. Add a recoverable load-error state to `useEncounterRunner`/
-  `EncounterRunnerPage` without changing the encounter wire model.
-- **Inherits:** existing reducer/hook, `CombatantCard`, `FloatingWindow`, condition picker, and autosave behavior.
-- **Expected touch set:** encounter runner and dock components/tests, shared control CSS where required, `docs/DESIGN_SYSTEM.md`, and this plan.
-- **Documentation impact:** `docs/DESIGN_SYSTEM.md` and this plan record any durable control-size or live-surface accessibility contract.
-- **Tests:** Cover failed encounter load and recovery, action grouping/labels, compact mode, keyboard reorder,
-  player-card behavior, and control-size class contracts. Preserve all reducer and persistence tests.
+  and repair compact-dock action wrapping. Add a recoverable load-error state to `useEncounterRunner`
+  (`loadError: string | null` in return type, try/catch around `getEncounter` in the load `useEffect`,
+  set on catch, clear on retry/success) and `EncounterRunnerPage` (`StatePanel` with error variant on load error)
+  without changing the encounter wire model.
+- **Inherits:** the VW6-confirmed 48px ordinary-control floor already applied to catalog authoring/pickers;
+  existing reducer/hook, `CombatantCard`, `FloatingWindow`, condition picker, and autosave behavior.
+- **Expected touch set:** `CombatantCard.tsx`/`.css`, `CombatantCard.reorder-button`/`.combatant-condition-chip`
+  sizing, `EncounterRunnerBoard.tsx`/`.css` action group layout, `ConditionPicker.css` trigger/checkbox sizing,
+  `useEncounterRunner.ts` load-error plumbing, `EncounterRunnerPage.tsx` error state rendering,
+  `FloatingWindow.tsx` narrow viewport clamping, encounter runner and dock tests, `docs/DESIGN_SYSTEM.md`,
+  and this plan.
+- **Documentation impact:** `docs/DESIGN_SYSTEM.md` (control-size floor and load-error contract) and this plan.
+- **Tests:** Unskip all 5 `EncounterRunnerPage.test.tsx` VT0 seams (load-error recovery, touch targets,
+  action groups, narrow reachability, dock targets) and the 1 `useEncounterRunner.test.ts` VT0 seam
+  (load-error recovery). Add any supplementary assertions needed for recovery flow. Preserve all existing
+  behavior tests.
 - **Gate:** Run frontend test/typecheck/build gates. User manually verifies a standalone runner and Map Lab dock
   with a touch device or touch simulation, including narrow-window resizing and condition editing.
 - **Discovery consolidation:** Update `Key facts` with confirmed runner/dock control contracts and
@@ -352,17 +316,29 @@ changes in the same stage.
 
 #### VT2 — Dungeon viewer (planned)
 
-- **Read first:** `docs/ARCHITECTURE.md`, `docs/DESIGN_SYSTEM.md`, `docs/TESTING.md`, `DungeonShell`, `MapLabPage`, and viewer tests.
+- **Read first:** `docs/ARCHITECTURE.md`, `docs/DESIGN_SYSTEM.md`, `docs/TESTING.md`,
+  `frontend/src/features/dungeons/maplab/DungeonShell.tsx` (uses `38rem` breakpoint, not the VF1 `520px`
+  convention), `frontend/src/features/dungeons/maplab/MapLabPage.css` (uses `56rem` breakpoint,
+  not the VF1 `768px` convention), `frontend/src/features/dungeons/maplab/MapLabPage.tsx` (viewer
+  composition — 4 VT0 seams added for narrow viewer, room rail, details, dock), and
+  `frontend/src/features/dungeons/maplab/__tests__/DungeonShell.test.tsx` (2 VT0 seams for responsive
+  regions and narrow room access), `frontend/src/features/dungeons/maplab/__tests__/MapLabPage.test.tsx`
+  (4 VT0 seams for narrow viewer/rail/details/dock).
 - **Build:** Align `DungeonShell`, `MapLabPage`, room rail, room-details panel, and viewer toolbar with the shared
-  route-header and spacing contracts. Remove avoidable nested page padding, preserve the selected-room surface,
-  and make room rail, map, and details reachable in a deliberate narrow-screen order. Keep canvas, markers,
-  session passage state, docks, inspector behavior, and Map Lab responsive exceptions intact.
+  route-header and spacing contracts. Reconcile `DungeonShell.css`'s `38rem` and `MapLabPage.css`'s `56rem`
+  breakpoints to the VF1 convention where the VT2 touch set already owns those files. Remove avoidable nested
+  page padding, preserve the selected-room surface, and make room rail, map, and details reachable in a
+  deliberate narrow-screen order. Keep canvas, markers, session passage state, docks, inspector behavior, and
+  Map Lab responsive exceptions intact.
 - **Inherits:** current DungeonShell route context, MapLabPage composition, viewer rail, RoomDetailsPanel, and all
-  layout/marker behavior.
-- **Expected touch set:** dungeon shell/viewer components and tests, shared layout CSS, `docs/ARCHITECTURE.md`, `docs/DESIGN_SYSTEM.md`, and this plan.
+  layout/marker behavior. VT1's encounter runner and dock control fixes.
+- **Expected touch set:** `DungeonShell.tsx`/`.css`, `MapLabPage.tsx`/`.css`, room rail and details components,
+  viewer toolbar, dungeon viewer and Map Lab tests, `docs/ARCHITECTURE.md`, `docs/DESIGN_SYSTEM.md`, and this plan.
 - **Documentation impact:** `docs/ARCHITECTURE.md`, `docs/DESIGN_SYSTEM.md`, and this plan record durable viewer composition conventions.
-- **Tests:** Preserve existing Map Lab viewer, room selection, floor, marker, dock, and fullscreen tests; add
-  responsive composition tests for selected-room reachability, mode navigation, and ordinary control targets.
+- **Tests:** Unskip all 2 `DungeonShell.test.tsx` VT0 seams (responsive regions, narrow room access) and all 4
+  `MapLabPage.test.tsx` VT0 seams (narrow viewer, narrow room rail, narrow details, dock at narrow widths).
+  Preserve existing Map Lab viewer, room selection, floor, marker, dock, and fullscreen tests; add responsive
+  composition tests for selected-room reachability, mode navigation, and ordinary control targets.
 - **Gate:** Run frontend test/typecheck/build gates. User manually verifies room selection by rail and map,
   encounter/NPC docks, floor changes, fullscreen, and a narrow viewport without changing authored data.
 - **Discovery consolidation:** Update `Reusable pieces` with confirmed viewer composition contracts. Revise
@@ -371,18 +347,27 @@ changes in the same stage.
 
 #### VT3 — Map Lab editor (planned)
 
-- **Read first:** `docs/DESIGN_SYSTEM.md`, `docs/TESTING.md`, `MapLabEditor.css`, Map Lab editor components, model/reducer hooks, and tests.
+- **Read first:** `docs/DESIGN_SYSTEM.md`, `docs/TESTING.md`, `frontend/src/features/dungeons/maplab/MapLabEditorPage.tsx`
+  (inspector selection actions need grouping into a shared component, compact fields need documentation,
+  toolbar narrow layout needs work — 5 VT0 seams added), `frontend/src/features/dungeons/maplab/InspectorPanel.tsx`
+  (selection actions repeated in Delete/Close region), `frontend/src/features/dungeons/maplab/MapLabEditor.css`,
+  `frontend/src/features/dungeons/maplab/__tests__/MapLabEditorPage.test.tsx` (5 VT0 seams for inspector
+  actions, compact fields, narrow toolbar, viewer responsive, dock responsive).
 - **Build:** Adopt foundation spacing/radius/elevation tokens in `MapLabEditor.css` only where visual geometry is
   unaffected; make its compact field density an explicit documented exception with accessible targets; extract the
   repeated inspector Delete/Close region into a feature-local selection-action component; improve toolbar-tray,
   placement-mode, save-status, and inspector hierarchy. Keep SVG dimensions, strokes, marker state precedence,
   fixture form semantics, reducer actions, dual save, zoom/pan, fullscreen, and autosave unchanged.
-- **Inherits:** VT2 framing, existing ToolbarTray, MapLabEditorPage, FixturePropertiesForm, RoomContentEditor,
-  maplab model/reducer/hooks, and visual marker contracts.
-- **Expected touch set:** Map Lab editor framing/components/tests, `MapLabEditor.css`, `docs/DESIGN_SYSTEM.md`, and this plan.
+- **Inherits:** VT2 framing and responsive breakpoints; the VW6-confirmed 520px narrow-editor breakpoint convention
+  already used by LootBundleEditor; existing ToolbarTray, MapLabEditorPage, FixturePropertiesForm,
+  RoomContentEditor, maplab model/reducer/hooks, and visual marker contracts.
+- **Expected touch set:** `MapLabEditorPage.tsx`, `InspectorPanel.tsx`, `MapLabEditor.css`, selection-action
+  component, Map Lab editor tests, `docs/DESIGN_SYSTEM.md` (compact-field accessibility exception), and this plan.
 - **Documentation impact:** `docs/DESIGN_SYSTEM.md` and this plan record the compact-field accessibility exception.
-- **Tests:** Preserve all editor reducer, geometry, fixture, keyboard, save, zoom, and fullscreen tests. Add
-  focused tests for compact field labeling, selection actions, save status, and narrow layout ordering.
+- **Tests:** Unskip all 5 `MapLabEditorPage.test.tsx` VT0 seams (inspector action grouping, compact fields,
+  narrow toolbar, viewer responsive, dock responsive). Preserve all editor reducer, geometry, fixture,
+  keyboard, save, zoom, and fullscreen tests. Add focused tests for compact field labeling, selection actions,
+  save status, and narrow layout ordering.
 - **Gate:** Run frontend test/typecheck/build gates. User manually verifies every editor tool family, room and
   fixture placement, editing, undo-free persistence path, fullscreen, and keyboard footprint editing.
 - **Discovery consolidation:** Update `Key facts` and `Reusable pieces` with confirmed compact-field
@@ -396,7 +381,8 @@ changes in the same stage.
 - **Build:** Perform a final `/frontend-design` review across every public route and all loading, empty, error,
   no-selection, modal, and narrow-screen states. Fix confirmed visual, accessibility, copy, density, and
   interaction regressions without adding feature scope.
-- **Inherits:** all VF, VW, and VT components; every specialized feature identity and existing data contract.
+- **Inherits:** all VF, VW, and VT components, including VW6's SearchList error/empty-copy distinction and
+  pending-Dialog inertness; every specialized feature identity and existing data contract.
 - **Expected touch set:** confirmed route defects/tests, canonical design or architecture references for durable corrections, and this plan.
 - **Documentation impact:** This plan; update `docs/DESIGN_SYSTEM.md` or `docs/ARCHITECTURE.md` only for confirmed durable contract corrections.
 - **Tests:** Add regression tests for each defect fixed. Run `npm run test`, `npm run lint`, `npm run typecheck`,
@@ -458,6 +444,8 @@ changes in the same stage.
 | **VW3** | Migrated Encounters and Dungeons to `BrowserLayout`/`RemoteState<T>`/`Button`/foundation tokens with creature roster, Run/Enter primary flows, `Untitled Dungeon` creation, and pending delete state. Activated 5 VW0 action browser seam tests and added 22 focused coverage tests. 861 frontend tests, typecheck/build clean. |
 | **VW4** | Migrated all seven modal editors (Spell, Weapon, Player, NPC, Quest, Item, Encounter) onto the shared `Dialog`, replacing each duplicated backdrop/modal/header/action-row implementation; added an additive `className?` prop to `Dialog` for per-editor width overrides and a `role="status"` save-status region to each editor. Added new direct component test suites for Weapon/Player/NPC/Quest (previously mapping-only) and a Dialog-contract block (focus, Cancel/Escape, pending, save-status) to all seven; updated 8 browser-page tests whose `getByRole('dialog', …)` name assertions had relied on a pre-VW4 `aria-label` that differed from the visible heading. 900 frontend tests (6 pre-existing skips), typecheck/build/lint clean. |
 | **VW5** | Migrated LootBundleEditor's outer modal framing to the shared `Dialog` contract; preserved EncounterEditor's existing Dialog contract and focused on CreatureRowCard/picker/condition composition with re-pick HP/AC reset and hand-edit persistence tests; added MonsterEditor routed heading/action/save/delete return navigation tests; added long-bundle, duplicate-increment, and "Value pending" tests for Loot. 913 frontend tests (6 skipped), typecheck/build/lint clean. |
+| **VW6** | Repaired workspace state semantics, pending-dialog inertness, catalog-picker loading/error handling, empty-browser gating, ordinary control floors, and responsive/editor token consistency. 919 frontend tests passed (6 skipped). |
+| **VT0** | Added 17 inert `it.skip` test seams across 5 test files: 5 in `EncounterRunnerPage.test.tsx` (load-error, touch targets, action groups, narrow reachability, dock), 1 in `useEncounterRunner.test.ts` (load-error), 2 in `DungeonShell.test.tsx` (responsive regions, narrow room access), 5 in `MapLabEditorPage.test.tsx` (inspector actions, compact fields, narrow toolbar, viewer responsive, dock responsive), and 4 in `MapLabPage.test.tsx` (narrow viewer, room rail, details, dock). Confirmed touch-target measurements (all 2.75rem / 44px, below 48px floor), confirmed load-error gap (no `loadError` in `useEncounterRunner`), confirmed breakpoint mismatches (`38rem`/`56rem` vs VF1 convention), and confirmed `FloatingWindow` narrow-viewport gap. 919 tests + 17 skipped, typecheck/build/lint/documentation-check clean. |
 
 ---
 
@@ -474,6 +462,5 @@ changes in the same stage.
 
 ## Next:
 
-**VW6 — Workspace design pass** is next. It reviews every browser and editor route together for hierarchy,
-chapter-tab discipline, action ordering, state copy, responsive transitions, role-color consistency, and
-accessibility. It may begin after VW5 is committed.
+**VT1 — Encounter runner** is next. It may begin now that VT0's inert scaffolding is complete and the
+touch-target, load-error, and breakpoint findings are documented.

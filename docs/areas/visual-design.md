@@ -1,6 +1,6 @@
 # Visual Design Area Guide
 
-> **Active plan:** [Visual Consistency](../plans/active/visual-consistency.md#vw6-workspace-design-pass-next-up).
+> **Active plan:** [Visual Consistency](../plans/active/visual-consistency.md#vt1-encounter-runner-next-up).
 
 ## Scope
 

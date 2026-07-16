@@ -40,6 +40,6 @@
 .loot-editor-contents input { width: 4.5rem; min-height: 3rem; padding: 0.25rem; color: var(--md-on-surface); background: var(--md-surface); border: 1px solid var(--md-outline); border-radius: 0.25rem; }
 .loot-editor-remove { padding: 0.35rem 0.75rem; color: var(--md-error); background: none; border: 1px solid var(--md-error); }
 .loot-editor-total { padding: 0.75rem; color: var(--md-on-loot-container); background: var(--md-loot-container); border-radius: 0.375rem; }
-@media (max-width: 600px) {
+@media (max-width: 520px) {
   .loot-editor-section-header { align-items: flex-start; flex-direction: column; }
 }

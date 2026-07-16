@@ -33,7 +33,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
-  min-height: 2.75rem;
+  min-height: var(--control-height);
   background: var(--variant-container, var(--md-tertiary-container));
   color: var(--variant-on-container, var(--md-on-tertiary-container));
   border: none;

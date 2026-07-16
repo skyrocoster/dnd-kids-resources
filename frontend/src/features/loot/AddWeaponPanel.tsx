@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import * as api from '../../api/client'
 import type { Weapon } from '../../api/types'
 import { SearchList } from '../../components/SearchList'
+import { initialRemoteState, remoteError, remoteLoading, remoteSuccess } from '../../components/remoteState'
+import type { RemoteState } from '../../components/remoteState'
 import './AddCatalogPanel.css'
 
 interface AddWeaponPanelProps {
@@ -10,18 +12,19 @@ interface AddWeaponPanelProps {
 }
 
 export function AddWeaponPanel({ onAdd, onClose }: AddWeaponPanelProps) {
-  const [weapons, setWeapons] = useState<Weapon[]>([])
-  const [loadError, setLoadError] = useState<string | null>(null)
+  const [weaponsRemote, setWeaponsRemote] = useState<RemoteState<Weapon[]>>(initialRemoteState)
 
   useEffect(() => {
+    setWeaponsRemote(remoteLoading())
     api
       .listWeapons()
       .then((data) => {
-        setWeapons([...data].sort((a, b) => a.name.localeCompare(b.name)))
-        setLoadError(null)
+        setWeaponsRemote(remoteSuccess([...data].sort((a, b) => a.name.localeCompare(b.name))))
       })
-      .catch((error) => setLoadError(error instanceof Error ? error.message : 'Failed to load weapons.'))
+      .catch((error) => setWeaponsRemote(remoteError(error instanceof Error ? error.message : 'Failed to load weapons.')))
   }, [])
+
+  const weapons = weaponsRemote.status === 'success' ? weaponsRemote.data : []
 
   return (
     <div className="add-catalog-panel">
@@ -29,7 +32,6 @@ export function AddWeaponPanel({ onAdd, onClose }: AddWeaponPanelProps) {
         <h3>Add weapon</h3>
         <button type="button" onClick={onClose} aria-label="Close add weapon panel">×</button>
       </div>
-      {loadError && <p className="add-catalog-panel-error">{loadError}</p>}
       <SearchList
         items={weapons}
         getId={(weapon) => weapon.id}
@@ -39,6 +41,7 @@ export function AddWeaponPanel({ onAdd, onClose }: AddWeaponPanelProps) {
         variant="weapon"
         searchPlaceholder="Search weapons…"
         emptyMessage="No weapons found."
+        status={weaponsRemote.status === 'loading' || weaponsRemote.status === 'idle' ? 'loading' : weaponsRemote.status === 'error' ? 'error' : 'ready'}
       />
     </div>
   )

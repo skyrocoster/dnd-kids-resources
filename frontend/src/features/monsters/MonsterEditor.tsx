@@ -3,6 +3,7 @@ import type { FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import * as api from '../../api/client'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
+import { StatePanel } from '../../components/StatePanel'
 import { TextField } from '../../components/form/TextField'
 import {
   emptyMonsterForm,
@@ -23,23 +24,39 @@ export function MonsterEditor() {
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [validationErrors, setValidationErrors] = useState<string[]>([])
   const [saving, setSaving] = useState(false)
+  const [loading, setLoading] = useState(isEdit)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [originalId, setOriginalId] = useState<number | null>(null)
 
   useEffect(() => {
-    if (!isEdit) return
+    if (!isEdit) {
+      setLoading(false)
+      return
+    }
+    setLoading(true)
+    setLoadError(null)
+    setOriginalId(null)
     const monsterId = Number(id)
     if (Number.isNaN(monsterId)) {
       setLoadError('Invalid monster ID.')
+      setLoading(false)
       return
     }
+    let active = true
     api
       .getMonster(monsterId)
       .then((monster) => {
+        if (!active) return
         setForm(monsterToFormState(monster))
         setOriginalId(monster.id)
       })
-      .catch((error) => setLoadError(error instanceof Error ? error.message : 'Failed to load monster.'))
+      .catch((error) => {
+        if (active) setLoadError(error instanceof Error ? error.message : 'Failed to load monster.')
+      })
+      .finally(() => {
+        if (active) setLoading(false)
+      })
+    return () => { active = false }
   }, [id, isEdit])
 
   const patch = (fields: Partial<MonsterFormState>) => {
@@ -96,6 +113,10 @@ export function MonsterEditor() {
         </button>
       </div>
     )
+  }
+
+  if (loading) {
+    return <div className="monster-editor"><StatePanel status="loading" message="Loading monster…" /></div>
   }
 
   return (
@@ -197,6 +218,7 @@ export function MonsterEditor() {
           confirmLabel="Delete Monster"
           onConfirm={handleDelete}
           onCancel={() => setShowDeleteConfirm(false)}
+          pending={saving}
         />
       )}
     </div>

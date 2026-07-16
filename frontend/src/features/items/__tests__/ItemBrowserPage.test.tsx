@@ -35,6 +35,7 @@ describe('ItemBrowserPage', () => {
     vi.spyOn(api, 'listItems').mockRejectedValue(new Error('load failed'))
     render(<ItemBrowserPage />)
     await waitFor(() => expect(screen.getByText(/load failed/)).toBeInTheDocument())
+    expect(screen.queryByRole('heading', { name: 'Start your item catalog' })).not.toBeInTheDocument()
   })
 
   it('filtering to no matches shows a filtered-empty state', async () => {

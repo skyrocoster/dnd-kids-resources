@@ -18,8 +18,8 @@
 .add-catalog-panel-header h3 { margin: 0; font-size: var(--type-title-size); }
 
 .add-catalog-panel-header button {
-  width: 2.75rem;
-  height: 2.75rem;
+  width: var(--control-height);
+  height: var(--control-height);
   background: transparent;
   border: none;
   color: var(--md-on-surface-variant);

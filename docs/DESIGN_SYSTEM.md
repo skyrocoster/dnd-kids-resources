@@ -168,8 +168,9 @@ values cluster around 0.5rem–1.5rem in practice. VW/VT stages adopt the spacin
   `status?: 'ready' | 'loading' | 'error'` prop (default `'ready'`) renders the shared `StatePanel` for loading
   and error states; when `status` is `'ready'`, an empty `items` array renders `StatePanel`'s `empty` state and
   a non-empty `items` array with an empty filtered result renders its `filteredEmpty` state — these are now
-  visually and textually distinct. `emptyMessage` overrides the `StatePanel` message for whichever of those two
-  states is showing. The search input and each item row meet the 48px control-height floor.
+   visually and textually distinct. `emptyMessage` overrides the `StatePanel` message only for those ready empty
+   states; an error always retains `StatePanel`'s error copy. The search input and each item row meet the 48px
+   control-height floor.
 - **`SplitPane`** — the visible divider stays 4px wide (unchanged), but `.split-pane-handle::before` adds an
   absolutely positioned, invisible hit-target region (14px on each side) so pointer users get a much larger
   resize target without any layout shift or visual width change. Keyboard resizing (arrow/Home/End on the
@@ -200,9 +201,10 @@ values cluster around 0.5rem–1.5rem in practice. VW/VT stages adopt the spacin
 - **Focus restoration** — the element focused immediately before open is refocused when the dialog closes.
 - **Escape and backdrop dismissal** — both call `onClose`, but neither fires while `pending` is `true` ("Escape
   dismissal where allowed").
-- **Pending state** — body and footer content sit inside a `<fieldset disabled={pending}>` (styled
-  `display: contents` so it doesn't affect layout), disabling every interactive descendant in one place; the
-  dialog surface also carries `aria-busy="true"` while pending.
+- **Pending state** — body and footer content sit inside a `<fieldset disabled={pending} inert={pending}>`
+  (styled `display: contents` so it doesn't affect layout), disabling form controls and making links or other
+  non-form focusable descendants inert in one place; the dialog surface also carries `aria-busy="true"` while
+  pending.
 - **`ConfirmDialog`** (`components/ConfirmDialog.tsx`) keeps its existing public API (`message`, `confirmLabel`
   default `'Delete'`, `onConfirm`, `onCancel`) plus an additive `pending?` prop, and renders `Dialog` with
   `role="alertdialog"` and `title={message}` (no separate body text — the title *is* the question). Its footer
@@ -360,7 +362,8 @@ Independently collapsible toolbar group in Map Lab:
 - **Touch targets** — ≥48px (`--control-height`) on all interactive controls. Documented exceptions: canvas SVG
   glyphs in Map Lab, following a marker-radius convention instead, and `Button`'s `compact` size
   (`--control-height-compact`, 32px), reserved for documented desktop-only inspector controls per the visual
-  consistency plan's design-system-in-force contract.
+  consistency plan's design-system-in-force contract. The ordinary catalog authoring and picker controls touched
+  by VW6 also consume this floor.
 
 <!-- GENERATED:DESIGN_SYSTEM:START -->
 ### Generated Design Inventory

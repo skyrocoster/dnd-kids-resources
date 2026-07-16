@@ -113,7 +113,7 @@ export function ItemBrowserPage() {
                 {selected.description && <p>{selected.description}</p>}
               </Card>
             </div>
-          ) : items.length === 0 ? (
+          ) : itemsRemote.status === 'success' && items.length === 0 ? (
             <div className="item-browser-empty">
               <PackageIcon size={32} aria-hidden="true" />
               <h3>Start your item catalog</h3>

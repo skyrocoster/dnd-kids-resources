@@ -102,7 +102,7 @@ export function Dialog({
           <h2 id={titleId} className="dialog-title">{title}</h2>
           {description && <p id={descId} className="dialog-description">{description}</p>}
         </header>
-        <fieldset className="dialog-fieldset" disabled={pending}>
+        <fieldset className="dialog-fieldset" disabled={pending} inert={pending}>
           {children && <div className="dialog-body">{children}</div>}
           {footer && <footer className="dialog-footer">{footer}</footer>}
         </fieldset>

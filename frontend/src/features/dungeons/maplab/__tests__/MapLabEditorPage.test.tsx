@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MemoryRouter } from 'react-router-dom'
 import * as api from '../../../../api/client'
@@ -1605,5 +1605,98 @@ describe('MapLabEditorPage (Stage I3 — grid marker layout)', () => {
       await Promise.resolve()
     })
     expect(saveSpy).not.toHaveBeenCalled()
+  })
+})
+
+// ── VT0 scaffold seams ──────────────────────────────────────────────────────
+
+describe('VT0 — Live-surface scaffolding seams', () => {
+  const oneRoomLayout = {
+    meta: { cellSizeFt: 5, padding: 3 },
+    rooms: [{ room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0]], title: 'Room 1' }],
+    doors: [],
+    stairs: [],
+    floors: [{ z: 0, title: 'Ground Floor' }],
+    props: [],
+  }
+
+  beforeEach(() => {
+    vi.restoreAllMocks()
+    vi.useFakeTimers()
+    vi.spyOn(api, 'getDungeon').mockResolvedValue({ id: 4, title: 'Test Dungeon', data: {} })
+    vi.spyOn(api, 'listNPCs').mockResolvedValue([])
+    vi.spyOn(api, 'updateDungeon').mockResolvedValue({ id: 4, title: 'Test Dungeon', data: {} })
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: oneRoomLayout })
+    vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: oneRoomLayout })
+  })
+
+  afterEach(() => {
+    vi.runOnlyPendingTimers()
+    vi.useRealTimers()
+  })
+
+  it.skip('inspector Delete/Close actions are grouped in a distinct selection-action region (VT3 inspector actions)', async () => {
+    // VT3: The inspector rail's Delete room / Close fixture form actions must live in a
+    // feature-local selection-action component with its own group label, separate from
+    // fixture property fields. Assert via a role="group" or aria-label container.
+    const { container } = renderMapLabEditorPage()
+    await flush()
+
+    fireEvent.click(container.querySelector('.maplab-editor-room-item-select') as Element)
+
+    const actionRegion = container.querySelector('.maplab-inspector-actions')
+    expect(actionRegion).toBeInTheDocument()
+    expect(within(actionRegion as HTMLElement).getByRole('button', { name: /delete room/i })).toBeInTheDocument()
+    expect(within(actionRegion as HTMLElement).getByRole('button', { name: /close/i })).toBeInTheDocument()
+  })
+
+  it.skip('inspector rail fields meet the 48px touch-target floor in normal density (VT3 compact fields)', async () => {
+    // VT3: The inspector rail's interactive controls (delete, close, checkboxes, selects)
+    // must meet --control-height (48px). Compact density (below 48px) requires an explicit
+    // documented exception with equivalent accessible target.
+    const layoutWithDoor = {
+      ...oneRoomLayout,
+      doors: [{ door_id: 1, cell: [0, 0], side: 'N', hidden: false, locked: false, trapped: false }],
+    }
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: layoutWithDoor })
+
+    const { container } = renderMapLabEditorPage()
+    await flush()
+
+    fireEvent.click(container.querySelector('.maplab-door') as Element)
+
+    const deleteBtn = screen.getByRole('button', { name: /delete door/i })
+    const closeBtn = screen.getByRole('button', { name: /close/i })
+    for (const el of [deleteBtn, closeBtn]) {
+      const rect = el.getBoundingClientRect()
+      expect(rect.height).toBeGreaterThanOrEqual(48)
+    }
+  })
+
+  it.skip('toolbar action groups (Create/Session/View) are reachable at 520px without horizontal overflow (VT3 narrow toolbar)', async () => {
+    // VT3: The editor toolbar's button groups must not overflow horizontally at the 520px
+    // narrow breakpoint. Buttons should wrap or reflow into a vertical layout.
+    const { container } = renderMapLabEditorPage()
+    await flush()
+
+    const toolbar = container.querySelector('.maplab-toolbar') as HTMLElement
+    if (toolbar) {
+      Object.defineProperty(toolbar, 'offsetWidth', { value: 520 })
+      expect(toolbar.scrollWidth).toBeLessThanOrEqual(toolbar.clientWidth + 1)
+    }
+  })
+
+  it.skip('viewer room rail and details panel are reachable at 520px (VT2 viewer responsive)', async () => {
+    // VT2: At 520px, the viewer's room rail and details panel must be accessible.
+    // Currently MapLabPage has no narrow-screen adaptation for these regions.
+    // This is a cross-file seam (DungeonShell + MapLabPage).
+    expect(true).toBe(true) // placeholder — VT2 will implement the actual responsive behavior
+  })
+
+  it.skip('encounter dock FloatingWindow is reachable and resizable at narrow widths (VT1 dock responsive)', async () => {
+    // VT1: The encounter dock (FloatingWindow) opened from the viewer must be draggable
+    // and resizable within the viewport at narrow widths (320px-520px).
+    // Currently FloatingWindow has no viewport-edge clamping for narrow screens.
+    expect(true).toBe(true) // placeholder — VT1 will implement dock responsive behavior
   })
 })

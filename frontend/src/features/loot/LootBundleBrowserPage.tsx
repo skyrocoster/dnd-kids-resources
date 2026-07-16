@@ -111,7 +111,7 @@ export function LootBundleBrowserPage() {
                 )}
               </Card>
             </div>
-          ) : bundles.length === 0 ? (
+          ) : bundlesRemote.status === 'success' && bundles.length === 0 ? (
             <div className="loot-browser-empty">
               <CoinsIcon size={32} aria-hidden="true" />
               <h3>Build the first reward</h3>
