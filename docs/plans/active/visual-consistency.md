@@ -1,6 +1,6 @@
 # Visual Consistency Plan — Cross-Cutting Aesthetic Remediation
 
-> **Status:** VF0-VF4 shipped. VF5 (foundation design pass) is next; production UI now includes the shell/entry-point changes described below.
+> **Status:** VF0-VF5 shipped. VW0 (workspace scaffolding) is next.
 
 - **Area guide:** [Visual Design](../../areas/visual-design.md).
 
@@ -55,6 +55,13 @@ of the bestiary field card, NPC dossier, encounter runner, and Map Lab.
   `form/form.css`, and `Card.css` (radius only) consume the new tokens so far — every other component CSS file
   still carries pre-VF1 ad-hoc values and should migrate to the scale as its owning VW/VT stage touches it, not
   as a standalone sweep. `SplitPane.css`'s `0.5rem` outer-corner radius is a documented one-off, not migrated.
+- **VF5 confirmed token migration status:** `AppShell.css` now fully consumes foundation tokens (spacing,
+  radius, control-height, motion-normal for the nav transition). `SearchList.css` input now has a
+  `focus-visible` outline (`2px solid var(--md-primary)` + `2px offset`) matching the accessibility floor.
+  `FloatingWindow.css` no longer carries a redundant local `@media (prefers-reduced-motion)` block — it relies
+  on the global `!important` reset in `theme.css`. All shared foundation CSS files (Button, IconButton,
+  PageHeader, StatePanel, Dialog, SearchList, Card, AppShell) now consume tokens; `SplitPane.css`'s
+  documented one-off radius remains unchanged.
 - **VF1 responsive breakpoint convention** (documented, not CSS custom properties — media features can't consume
   `var()`): `520px` (narrow phone) and `768px` (tablet), matching the majority existing `@media` usage (Monster
   routes). `DungeonShell.css`/`MapLabPage.css` still use `38rem`/`56rem`; reconcile only when a VT stage already
@@ -167,57 +174,6 @@ contracts.
 
 ---
 
-## Design Phase VF — Visual Foundation
-
-Establish the shared contracts before any route family migrates. This phase makes the visual language explicit,
-repairs global accessibility gaps, and delivers a responsive shell and useful entry point without changing domain
-data flow. **Depends on:** no implementation stage. **Depended on by:** all VW and VT stages; do not begin their
-implementation until VF5 is committed.
-
-| Stage | Required strength | Summary | Deliverables |
-|-------|-------|---------|--------------|
-| **VF0 — Foundation scaffolding** | Light | Create compile-safe seams and skipped tests only. | Primitive stubs; no visual change. |
-| **VF1 — System contract** | Standard | Formalize the missing global visual scales. | Tokens, bundled-font decision, reference-doc update, token tests. |
-| **VF2 — Controls and states** | Standard | Make ordinary controls, fields, lists, and async states consistent and accessible. | Buttons, state panels, shared-control migrations, tests. |
-| **VF3 — Dialog contract** | Standard | Make modal behavior one tested accessibility contract. | `Dialog`, migrated confirmation, focus tests. |
-| **VF4 — Shell and entry point** | Standard | Establish responsive navigation, route hierarchy, and a real product start page. | App shell, home page, route tests. |
-| **VF5 — Foundation design pass** | Standard | Review and repair the foundation as a whole. | Responsive/a11y fixes and design regression tests. |
-
-**Sequencing:** VF0 → VF1 → VF2 → VF3 → VF4 → VF5. VF2 and VF3 may share only VF1's completed tokens; keep them
-sequential to avoid conflicts in shared control CSS.
-
-#### VF5 — Foundation design pass (next up)
-
-- **Read first:** `docs/DESIGN_SYSTEM.md` (its "Shell and entry-point contract (VF4)" section), `docs/TESTING.md`,
-  `frontend/src/components/Button.tsx`, `IconButton.tsx`, `PageHeader.tsx`, `StatePanel.tsx`, `Dialog.tsx`,
-  `remoteState.ts`, `frontend/src/layout/AppShell.tsx`, `AppShell.css`, `navSections.ts`,
-  `frontend/src/pages/HomePage.tsx`, `HomePage.css`, and their tests under `frontend/src/components/__tests__/`,
-  `frontend/src/layout/__tests__/`, and `frontend/src/pages/__tests__/`.
-- **Build:** Conduct a `/frontend-design` review of the shared foundation. Repair spacing, hierarchy, wrapping,
-  focus, contrast, reduced-motion, and mobile defects discovered across the shell (desktop rail, mobile drawer,
-  brand link), the primitive demo, the `HomePage` field-guide start page, and one representative legacy browser
-  without beginning the browser-family migration.
-- **Inherits:** VF0-VF4, the canonical design reference, and all existing user-facing content-role colors.
-  VF0 stubs: `Button`, `IconButton`, `PageHeader`, `StatePanel`, `Dialog`, and `remoteState.ts`. VF4 shipped:
-  `AppShell`'s brand-as-home-link header, the `768px`-breakpoint mobile nav drawer (`Dialog`-based, opened via
-  an `.app-nav-mobile-trigger`-wrapped `IconButton`), the shared `layout/navSections.ts` nav-section map, and
-  `HomePage`'s `PageHeader`-chapter-tabbed link-card grid. Note: `IconButton` does not merge a passed
-  `className` (it hardcodes `className="icon-btn"` after spreading `...rest`) — wrap it in a container element
-  for positioning/responsive classes rather than passing `className` to it directly.
-- **Expected touch set:** confirmed shared foundation files, their regression tests, `docs/DESIGN_SYSTEM.md`
-  when a durable contract changes, and this plan.
-- **Documentation impact:** This plan; update `docs/DESIGN_SYSTEM.md` only for a confirmed durable shared-contract correction.
-- **Tests:** Add regression tests for defects fixed in this stage; run the full frontend suite, lint, typecheck,
-  and production build.
-- **Gate:** User verifies the documented viewport matrix and keyboard navigation. The phase is complete only
-  when all frontend gates pass and no unresolved foundation defect blocks VW1.
-- **Discovery consolidation:** Update `Key facts` and `Design system in force` with confirmed foundation
-  contracts and corrected design defects. Revise VW and VT blocks with exact foundation dependencies and
-  regression findings. Update `docs/DESIGN_SYSTEM.md` with any durable corrections.
-- **Completion edit:** Collapse VF5, remove the completed VF phase, set VW0 as next, and point the manifest to VW0's anchor.
-
----
-
 ## Design Phase VW — Browsers and Authoring
 
 Migrate catalog and authoring routes in bounded cohorts after the foundation is stable. The phase standardizes
@@ -238,7 +194,7 @@ depend on individual catalog migrations.
 **Sequencing:** VW0 → VW1 → VW2 → VW3 → VW4 → VW5 → VW6. Do not migrate multiple cohorts in parallel because
 each changes shared browser/editor CSS and contracts.
 
-#### VW0 — Workspace scaffolding (next after VF5)
+#### VW0 — Workspace scaffolding (next up)
 
 - **Read first:** `docs/DESIGN_SYSTEM.md`, `docs/ARCHITECTURE.md`, `docs/TESTING.md`, shared browser components, and browser route tests.
 - **Build:** Add unused `BrowserLayout` and remote-state scaffolding with slots for header, list, detail, primary
@@ -525,6 +481,7 @@ changes in the same stage.
 | **VF2** | Added a `StatePanel` loading spinner and unskipped its five VF2 tests; gave `SearchList` a `status` prop (`ready`/`loading`/`error`) rendering the shared `StatePanel` and replaced its listbox semantics with ordinary buttons (`aria-current` for selection); expanded `SplitPane`'s pointer hit target via an invisible `::before` without changing its visible 4px divider; migrated `Card.css`/`form/form.css`/`SearchList.css` radius and the 48px control-height floor onto foundation tokens; consolidated `visually-hidden` into `index.css`. Updated 7 downstream browser/panel tests that asserted the old `role="option"` semantics. 769 frontend tests (13 skipped for VF3+), typecheck/build/lint clean. |
 | **VF3** | Finalized `Dialog` into a full accessibility contract (title/description association, initial focus, Tab-trap, Escape/backdrop dismissal suppressed while pending, focus restoration, a `<fieldset disabled={pending}>` wrapping body+footer, `role` prop); unskipped and expanded its 7 VF3 test seams into 12 passing tests. Refactored `ConfirmDialog` into a thin `Dialog` consumer (`role="alertdialog"`, `title={message}`, shared `Button` footer) preserving its public API plus an additive `pending?` prop; deleted `ConfirmDialog.css`. 778 frontend tests (6 pre-existing skips unrelated to VF3), typecheck/build/lint clean. |
 | **VF4** | Made the `AppShell` brand a home `Link` (no route `h1`); added a `768px`-breakpoint mobile nav drawer using the `Dialog` contract, opened via an `IconButton`; extracted `layout/navSections.ts` as the shared nav-section map for both the rail/drawer and the new `HomePage`. Replaced `HomePage`'s API proof screen with a `PageHeader`-chapter-tabbed field-guide link grid; gated `ComponentDemoPage`'s route behind `import.meta.env.DEV` (confirmed excluded from the production bundle). 786 frontend tests, typecheck/build/lint clean. |
+| **VF5** | Conducted a foundation design review and repaired three defects: migrated `AppShell.css` ad-hoc spacing to foundation tokens, added a missing `focus-visible` outline to `SearchList` input, and removed a redundant local `prefers-reduced-motion` override from `FloatingWindow.css`. 789 frontend tests (3 new regression tests), typecheck/build/lint/documentation-check clean. |
 
 ---
 
@@ -541,6 +498,5 @@ changes in the same stage.
 
 ## Next:
 
-**VF5 — Foundation design pass** is unblocked. It conducts a `/frontend-design` review across the shared
-foundation — including the new VF4 shell and `HomePage` — and repairs discovered defects; VW0 begins only
-after VF5 is committed and collapsed into the shipped-stages table.
+**VW0 — Workspace scaffolding** is unblocked. It adds unused `BrowserLayout` scaffolding and skipped route
+tests without changing production UI; VW1 begins only after VW0 is committed and collapsed into the shipped-stages table.

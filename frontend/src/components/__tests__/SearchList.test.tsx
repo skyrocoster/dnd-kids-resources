@@ -117,4 +117,14 @@ describe('SearchList', () => {
     expect(css).toMatch(/\.search-list-input\s*\{[^}]*min-height:\s*var\(--control-height\)/)
     expect(css).toMatch(/\.search-list-item\s*\{[^}]*min-height:\s*var\(--control-height\)/)
   })
+
+  // VF5: search input has a visible focus ring matching the accessibility floor
+  it('search input has a focus-visible outline using --md-primary token', async () => {
+    const { readFileSync } = await import('node:fs')
+    const { resolve } = await import('node:path')
+    const css = readFileSync(resolve(process.cwd(), 'src/components/SearchList.css'), 'utf-8')
+    const focusRule = css.match(/\.search-list-input:focus-visible\s*\{([^}]*)\}/)?.[1] ?? ''
+    expect(focusRule).toContain('outline: 2px solid var(--md-primary)')
+    expect(focusRule).toContain('outline-offset: 2px')
+  })
 })

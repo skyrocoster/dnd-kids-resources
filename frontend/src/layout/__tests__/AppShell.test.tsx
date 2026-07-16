@@ -147,4 +147,19 @@ describe('AppShell', () => {
     await user.keyboard('{Escape}')
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
+
+  // VF5: shell CSS uses foundation spacing tokens, not ad-hoc values
+  it('AppShell.css uses spacing tokens for header, nav, and footer', async () => {
+    const { readFileSync } = await import('node:fs')
+    const { resolve } = await import('node:path')
+    const css = readFileSync(resolve(process.cwd(), 'src/layout/AppShell.css'), 'utf-8')
+    expect(css).toContain('var(--space-')
+    expect(css).toContain('var(--radius-sm)')
+    expect(css).toContain('var(--control-height)')
+    expect(css).toContain('var(--motion-normal)')
+    // Verify no ad-hoc header/nav/footer padding remains
+    expect(css).not.toMatch(/padding:\s*1rem\s+1\.5rem/)
+    expect(css).not.toMatch(/padding:\s*1\.5rem\s*;/)
+    expect(css).not.toMatch(/padding:\s*0\.5rem\s+1\.5rem/)
+  })
 })
