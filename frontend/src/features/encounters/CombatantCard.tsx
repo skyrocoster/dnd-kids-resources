@@ -102,27 +102,6 @@ export function CombatantCard({
           <GripIcon size={20} aria-hidden />
         </button>
 
-        <div className="combatant-reorder-buttons">
-          <button
-            type="button"
-            className="combatant-reorder-button"
-            onClick={onMoveUp}
-            disabled={index === 0}
-            aria-label={`Move ${combatant.name || 'combatant'} up`}
-          >
-            <ChevronUpIcon size={16} aria-hidden />
-          </button>
-          <button
-            type="button"
-            className="combatant-reorder-button"
-            onClick={onMoveDown}
-            disabled={index === count - 1}
-            aria-label={`Move ${combatant.name || 'combatant'} down`}
-          >
-            <ChevronDownIcon size={16} aria-hidden />
-          </button>
-        </div>
-
         {isPlayer && (
           <span className="combatant-kind-badge" aria-label="Player character">
             <UserIcon size={16} aria-hidden />
@@ -144,26 +123,50 @@ export function CombatantCard({
           </span>
         )}
 
-        <button
-          type="button"
-          className={`combatant-active-toggle ${isActive ? 'active' : ''}`}
-          onClick={onSetActive}
-          aria-pressed={isActive}
-        >
-          {isActive ? 'Active' : 'Set active'}
-        </button>
+        <div role="group" aria-label="Combat actions">
+          <button
+            type="button"
+            className={`combatant-active-toggle ${isActive ? 'active' : ''}`}
+            onClick={onSetActive}
+            aria-pressed={isActive}
+          >
+            {isActive ? 'Active' : 'Set active'}
+          </button>
+        </div>
 
-        <button type="button" className="combatant-icon-button" onClick={onDuplicate} aria-label="Duplicate combatant">
-          <CopyIcon size={18} aria-hidden />
-        </button>
-        <button
-          type="button"
-          className="combatant-icon-button combatant-remove"
-          onClick={onRemove}
-          aria-label="Remove combatant"
-        >
-          <TrashIcon size={18} aria-hidden />
-        </button>
+        <div role="group" aria-label="Roster management">
+          <div className="combatant-reorder-buttons">
+            <button
+              type="button"
+              className="combatant-reorder-button"
+              onClick={onMoveUp}
+              disabled={index === 0}
+              aria-label={`Move ${combatant.name || 'combatant'} up`}
+            >
+              <ChevronUpIcon size={16} aria-hidden />
+            </button>
+            <button
+              type="button"
+              className="combatant-reorder-button"
+              onClick={onMoveDown}
+              disabled={index === count - 1}
+              aria-label={`Move ${combatant.name || 'combatant'} down`}
+            >
+              <ChevronDownIcon size={16} aria-hidden />
+            </button>
+          </div>
+          <button type="button" className="combatant-icon-button" onClick={onDuplicate} aria-label="Duplicate combatant">
+            <CopyIcon size={18} aria-hidden />
+          </button>
+          <button
+            type="button"
+            className="combatant-icon-button combatant-remove"
+            onClick={onRemove}
+            aria-label="Remove combatant"
+          >
+            <TrashIcon size={18} aria-hidden />
+          </button>
+        </div>
       </div>
 
       {!isPlayer && (

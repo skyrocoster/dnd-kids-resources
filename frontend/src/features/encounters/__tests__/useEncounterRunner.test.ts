@@ -188,7 +188,7 @@ describe('useEncounterRunner', () => {
 
   // ── VT0 scaffold seams ────────────────────────────────────────────────────
 
-  it.skip('exposes a load-error state when getEncounter fails (VT1 load-error recovery)', async () => {
+  it('exposes a load-error state when getEncounter fails (VT1 load-error recovery)', async () => {
     // VT1: useEncounterRunner must surface an error state for failed initial loads.
     // Currently the hook has no error handling for the getEncounter call — it would throw unhandled.
     // Expected: result.current.loading becomes false, result.current.loadError is truthy,

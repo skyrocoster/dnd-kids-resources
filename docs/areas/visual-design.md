@@ -1,6 +1,6 @@
 # Visual Design Area Guide
 
-> **Active plan:** [Visual Consistency](../plans/active/visual-consistency.md#vt1-encounter-runner-next-up).
+> **Active plan:** [Visual Consistency](../plans/active/visual-consistency.md#vt3-map-lab-editor-next-up).
 
 ## Scope
 

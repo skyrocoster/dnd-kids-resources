@@ -830,7 +830,7 @@
   stroke-width: 4;
 }
 
-@media (max-width: 56rem) {
+@media (max-width: 768px) {
   .maplab-canvas {
     flex-wrap: wrap;
   }
@@ -879,7 +879,7 @@
   }
 }
 
-@media (max-width: 38rem) {
+@media (max-width: 520px) {
   .maplab-editor,
   .maplab-page {
     padding: 1rem;

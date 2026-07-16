@@ -43,6 +43,16 @@ export function clampSize(width: number, height: number): Size {
 
 const DEFAULT_POSITION: Position = { x: 24, y: 24 }
 
+/** Clamp position to keep the window within viewport bounds. */
+function clampPosition(x: number, y: number, windowWidth: number, windowHeight: number): Position {
+  const maxX = Math.max(0, window.innerWidth - windowWidth)
+  const maxY = Math.max(0, window.innerHeight - windowHeight)
+  return {
+    x: Math.max(0, Math.min(x, maxX)),
+    y: Math.max(0, Math.min(y, maxY)),
+  }
+}
+
 function loadPosition(storageKey: string): Position {
   try {
     const stored = sessionStorage.getItem(storageKey)
@@ -99,8 +109,10 @@ export function FloatingWindow({ title, storageKey, onClose, children }: Floatin
   const handlePointerMove = useCallback((event: PointerEvent) => {
     if (!dragState.current) return
     const { startX, startY, originX, originY } = dragState.current
-    setPosition({ x: originX + (event.clientX - startX), y: originY + (event.clientY - startY) })
-  }, [])
+    const newX = originX + (event.clientX - startX)
+    const newY = originY + (event.clientY - startY)
+    setPosition(clampPosition(newX, newY, size.width, size.height))
+  }, [size.width, size.height])
 
   const stopDragging = useCallback(() => {
     dragState.current = null
