@@ -1,6 +1,6 @@
 # The Loom Area Guide
 
-> **Active plan:** [Loom Tapestry Tracker: LM0](../plans/active/loom-tapestry-tracker.md#lm0-schema-and-demo-seeds-next-up).
+> **Active plan:** [Loom Tapestry Tracker: LM2](../plans/active/loom-tapestry-tracker.md#lm2-bridge-position-patch-and-seed-wiring-next-up).
 
 ## Scope
 

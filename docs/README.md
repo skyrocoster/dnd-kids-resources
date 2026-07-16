@@ -10,7 +10,7 @@ This is the complete documentation inventory and task router. Read [../CLAUDE.md
 |---|---|---|
 | Documentation maintenance | [Documentation Governance](areas/documentation.md) | `PLAN_TEMPLATE.md`, `scripts/check_docs.py`, `TESTING.md`, and existing GitHub workflow files |
 | Visual consistency work | [Visual Design: VT4](plans/active/visual-consistency.md#vt4-final-design-pass-next-up) | `areas/visual-design.md`, `DESIGN_SYSTEM.md`, `ARCHITECTURE.md`, `TESTING.md` |
-| Story threads, anchors, or the Loom tapestry | [The Loom: LM0](plans/active/loom-tapestry-tracker.md#lm0-schema-and-demo-seeds-next-up) | `areas/loom.md`, `DATA_MODEL.md`, `API_REFERENCE.md`, `TESTING.md` |
+| Story threads, anchors, or the Loom tapestry | [The Loom: LM2](plans/active/loom-tapestry-tracker.md#lm2-bridge-position-patch-and-seed-wiring-next-up) | `areas/loom.md`, `DATA_MODEL.md`, `API_REFERENCE.md`, `TESTING.md` |
 | Existing dungeon, encounter, monster, spell, or loot behavior | Its area guide | `ARCHITECTURE.md`, `API_REFERENCE.md`, `DATA_MODEL.md`, `TESTING.md`, then the guide's active plan |
 | API route or client contract | Relevant area guide; create a focused plan if it has none | `API_REFERENCE.md`, `ARCHITECTURE.md`, `TESTING.md` |
 | Database schema, seed, import, or export | Relevant area guide; create a focused plan if it has none | `DATA_MODEL.md`, `ARCHITECTURE.md`, `TESTING.md` |
@@ -36,13 +36,13 @@ Authority: **Canonical** documents define current contracts. **Working** documen
 | [areas/dungeons.md](areas/dungeons.md) | Area guide | Canonical | No active plan | Dungeon behavior | Dungeon ownership, source map, or active work changes |
 | [areas/encounters.md](areas/encounters.md) | Area guide | Canonical | No active plan | Encounter behavior | Encounter ownership, source map, or active work changes |
 | [areas/loot.md](areas/loot.md) | Area guide | Canonical | No active plan | Loot or item-bundle behavior | Loot ownership, source map, or active work changes |
-| [areas/loom.md](areas/loom.md) | Area guide | Canonical | LM0 active | Story-thread (Loom) behavior | Loom ownership, source map, or active work changes |
+| [areas/loom.md](areas/loom.md) | Area guide | Canonical | LM2 active | Story-thread (Loom) behavior | Loom ownership, source map, or active work changes |
 | [areas/monsters.md](areas/monsters.md) | Area guide | Canonical | No active plan | Monster behavior | Monster ownership, source map, or active work changes |
 | [areas/reference-catalogs.md](areas/reference-catalogs.md) | Area guide | Canonical | No active plan | Weapons, items, players, NPCs, or quests | Catalog ownership, source map, or active work changes |
 | [areas/spells.md](areas/spells.md) | Area guide | Canonical | No active plan | Spell behavior | Spell ownership, source map, or active work changes |
 | [areas/visual-design.md](areas/visual-design.md) | Area guide | Canonical | VT4 active | Shared UI, tokens, shell, or accessibility | Visual routing or active work changes |
 | [plans/active/visual-consistency.md](plans/active/visual-consistency.md#vt4-final-design-pass-next-up) | Execution plan | Working | VT4 next | Current visual consistency work | Its active stage ships or its declared docs change |
-| [plans/active/loom-tapestry-tracker.md](plans/active/loom-tapestry-tracker.md#lm0-schema-and-demo-seeds-next-up) | Execution plan | Working | LM0 next | Current Loom story-thread tracker work | Its active stage ships or its declared docs change |
+| [plans/active/loom-tapestry-tracker.md](plans/active/loom-tapestry-tracker.md#lm2-bridge-position-patch-and-seed-wiring-next-up) | Execution plan | Working | LM2 next | Current Loom story-thread tracker work | Its active stage ships or its declared docs change |
 | [complete/documentation-plan-closeout-correction.md](complete/documentation-plan-closeout-correction.md) | Historical plan | Historical | Complete | Plan closeout correction history | Do not update except to repair archival metadata |
 | [complete/documentation-plan-template-workflow.md](complete/documentation-plan-template-workflow.md) | Historical plan | Historical | Complete | Plan-template workflow history | Do not update except to repair archival metadata |
 | [Analysis/README.md](Analysis/README.md) | Archive index | Historical | Active | Tracing analysis or decision provenance | Analysis/archive organization changes |

@@ -14,7 +14,7 @@ This ensures schema and seed-backed data stay synced with the codebase. Dungeons
 
 ## Domains and Tables
 
-15 seed files populate 15 seed-backed tables (plus a few junction/lookup tables for many-to-many relationships). Dungeon records and their map layouts are created at runtime and are intentionally not seeded.
+19 seed files populate 19 seed-backed tables (plus junction/lookup tables for many-to-many relationships). Dungeon records and their map layouts are created at runtime and are intentionally not seeded.
 
 | Seed file | Table(s) | Description | Routers |
 |---|---|---|---|
@@ -35,6 +35,10 @@ This ensures schema and seed-backed data stay synced with the codebase. Dungeons
 | `seed_player_spells.json` | `player_spells` (junction) | Player spell assignments | `/api/players/{id}/spells` |
 | `seed_player_weapons.json` | `player_weapons` (junction) | Player weapon assignments | `/api/players/{id}/weapons` |
 | `seed_quests.json` | `quests` | Quests/missions | `/api/quests` |
+| `seed_loom_threads.json` | `loom_threads` | Tapestry story-thread lanes | `/api/loom/threads` |
+| `seed_loom_nodes.json` | `loom_nodes` | Tapestry anchor and update nodes | `/api/loom/nodes` |
+| `seed_loom_node_threads.json` | `loom_node_threads` (junction) | Node-to-thread membership | `/api/loom/tapestry` |
+| `seed_loom_edges.json` | `loom_edges` | Directed narrative edges between nodes | `/api/loom/edges` |
 
 ## Relationships
 
@@ -47,6 +51,8 @@ Non-obvious foreign-key-like relationships (skip any self-evident from naming):
 - **`dungeons`** — Contains `data` (room-reading content) while `map_layout.data` independently stores geometry. Both use the same room IDs; room titles/content belong to `dungeons.data`, while layout room titles are render caches. Missing layout data is treated as a transient empty layout; a missing dungeon is an error.
 - **`quests` → `quest_giver`** — Optional foreign key to `npcs.id`. A quest is given by an NPC (or none if quest_giver is NULL).
 - **`quests` → `dungeon_id`** — Optional foreign key to `dungeons.id`. A quest can be tied to a specific dungeon.
+- **`loom_threads` → `loom_node_threads` ↔ `loom_nodes`** — Many-to-many via junction table. A thread contains many nodes; a node can belong to many threads. Deleting a thread cascades **only junction rows** — nodes survive, because retiring a thread must never destroy narrative history. Deleting a node cascades its edges and memberships (the wires go with the node).
+- **`loom_edges`** — Directed edges between nodes. `source_id` → `target_id` represents forward-only narrative time. Acyclicity is enforced server-side; the `UNIQUE(source_id, target_id)` constraint prevents duplicate edges.
 
 ## JSON-Encoded Columns
 
@@ -95,6 +101,15 @@ Some tables store complex structured data as JSON strings. Router and database h
 | `loot_bundle` | `contents` | Item/weapon snapshots with quantity and soft source ID | `[{"kind":"item","ref_id":1,"name":"Ruby","value_gp":50,"category":"gem","quantity":1}]` |
 
 When querying or updating any of these columns, use `json.loads()` to deserialize on read and `json.dumps()` to serialize on write. Schemas validate the parsed request and response values.
+
+## Loom — Tapestry Schema Notes
+
+The loom tables model a directed acyclic graph (DAG) of narrative story threads. Key design facts:
+
+- **Anchor-status CHECK:** The compound `status` CHECK on `loom_nodes` deliberately includes `status IS NOT NULL`. SQLite CHECKs pass on NULL, so without it an anchor with NULL status would slip through. Updates always have `status = NULL`; anchors always have one of `planned`, `reached`, or `abandoned`.
+- **Cascade semantics:** Deleting a node cascades its edges and memberships (the wires go with the node). Deleting a thread cascades **only** junction rows — nodes survive, because retiring a thread must never destroy narrative history.
+- **Token-key colors:** `loom_threads.color` stores a token key (`thread-1`…`thread-6`), validated by Pydantic pattern `^thread-[1-6]$`. This is not a DB CHECK, so the palette can grow without a schema change. The actual colors are generated MD3 token sets in `frontend/src/theme.css`.
+- **Seed files are inert in v1:** The four loom seed files (`seed_loom_threads.json`, `seed_loom_nodes.json`, `seed_loom_node_threads.json`, `seed_loom_edges.json`) define the frozen demo tapestry. Seed loader wiring is LM2.
 
 ## Rebuilding the Database
 
@@ -191,6 +206,58 @@ Indexes: `sqlite_autoindex_damage_types_1`.
 | `description` | `TEXT` | no | `-` |
 | `created_at` | `DATETIME` | no | `CURRENT_TIMESTAMP` |
 | `updated_at` | `DATETIME` | no | `CURRENT_TIMESTAMP` |
+
+#### `loom_edges`
+
+| Column | Type | Required | Default |
+|---|---|---|---|
+| `id` | `INTEGER` | yes | `-` |
+| `source_id` | `INTEGER` | yes | `-` |
+| `target_id` | `INTEGER` | yes | `-` |
+
+Foreign keys: `target_id` -> `loom_nodes.id` (CASCADE), `source_id` -> `loom_nodes.id` (CASCADE).
+
+Indexes: `idx_loom_edges_target`, `idx_loom_edges_source`, `sqlite_autoindex_loom_edges_1`.
+
+#### `loom_node_threads`
+
+| Column | Type | Required | Default |
+|---|---|---|---|
+| `id` | `INTEGER` | yes | `-` |
+| `node_id` | `INTEGER` | yes | `-` |
+| `thread_id` | `INTEGER` | yes | `-` |
+
+Foreign keys: `thread_id` -> `loom_threads.id` (CASCADE), `node_id` -> `loom_nodes.id` (CASCADE).
+
+Indexes: `idx_loom_node_threads_thread`, `sqlite_autoindex_loom_node_threads_1`.
+
+#### `loom_nodes`
+
+| Column | Type | Required | Default |
+|---|---|---|---|
+| `id` | `INTEGER` | yes | `-` |
+| `kind` | `TEXT` | yes | `-` |
+| `title` | `TEXT` | yes | `-` |
+| `body` | `TEXT` | no | `-` |
+| `status` | `TEXT` | no | `-` |
+| `session_tag` | `TEXT` | no | `-` |
+| `x` | `REAL` | yes | `0` |
+| `y` | `REAL` | yes | `0` |
+| `created_at` | `DATETIME` | no | `CURRENT_TIMESTAMP` |
+| `updated_at` | `DATETIME` | no | `CURRENT_TIMESTAMP` |
+
+#### `loom_threads`
+
+| Column | Type | Required | Default |
+|---|---|---|---|
+| `id` | `INTEGER` | yes | `-` |
+| `name` | `TEXT` | yes | `-` |
+| `color` | `TEXT` | yes | `'thread-1'` |
+| `description` | `TEXT` | no | `-` |
+| `created_at` | `DATETIME` | no | `CURRENT_TIMESTAMP` |
+| `updated_at` | `DATETIME` | no | `CURRENT_TIMESTAMP` |
+
+Indexes: `sqlite_autoindex_loom_threads_1`.
 
 #### `loot_bundle`
 

@@ -241,6 +241,16 @@ All optional fields are `Optional[...]` in the schema; required fields have no `
 | DELETE | `/api/items/{item_id}` | `item_id` (path, required) | - | 204: -, 422: HTTPValidationError |
 | GET | `/api/items/{item_id}` | `item_id` (path, required) | - | 200: Item, 422: HTTPValidationError |
 | PUT | `/api/items/{item_id}` | `item_id` (path, required) | ItemUpdate | 200: Item, 422: HTTPValidationError |
+| POST | `/api/loom/edges` | - | LoomEdgeCreate | 201: LoomEdge, 422: HTTPValidationError |
+| DELETE | `/api/loom/edges/{edge_id}` | `edge_id` (path, required) | - | 204: -, 422: HTTPValidationError |
+| POST | `/api/loom/nodes` | - | LoomNodeCreate | 201: LoomNode, 422: HTTPValidationError |
+| DELETE | `/api/loom/nodes/{node_id}` | `node_id` (path, required) | - | 204: -, 422: HTTPValidationError |
+| PUT | `/api/loom/nodes/{node_id}` | `node_id` (path, required) | LoomNodeUpdate | 200: LoomNode, 422: HTTPValidationError |
+| GET | `/api/loom/tapestry` | - | - | 200: LoomTapestry |
+| GET | `/api/loom/threads` | `limit` (query), `offset` (query) | - | 200: List[LoomThread], 422: HTTPValidationError |
+| POST | `/api/loom/threads` | - | LoomThreadCreate | 201: LoomThread, 422: HTTPValidationError |
+| DELETE | `/api/loom/threads/{thread_id}` | `thread_id` (path, required) | - | 204: -, 422: HTTPValidationError |
+| PUT | `/api/loom/threads/{thread_id}` | `thread_id` (path, required) | LoomThreadUpdate | 200: LoomThread, 422: HTTPValidationError |
 | GET | `/api/loot-bundles` | `limit` (query), `offset` (query) | - | 200: List[LootBundle], 422: HTTPValidationError |
 | POST | `/api/loot-bundles` | - | LootBundleCreate | 201: LootBundle, 422: HTTPValidationError |
 | DELETE | `/api/loot-bundles/{bundle_id}` | `bundle_id` (path, required) | - | 204: -, 422: HTTPValidationError |
