@@ -1,4 +1,4 @@
-**Superseded — see `docs/dungeon_plan.md` § "Design system in force"**. This doc served as the design foundation for Material Design 3 dark-mode tokens (Task 8); the live implementation is documented in dungeon_plan.md's design section, which is the authoritative reference.
+> **Historical proposal, superseded.** Current design-system rules live in [../DESIGN_SYSTEM.md](../DESIGN_SYSTEM.md).
 
 ---
 

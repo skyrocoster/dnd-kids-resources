@@ -1,7 +1,8 @@
 # seed_spells.json Deep-Dive Analysis
 
-> **Status:** Complete. Ready for second-pass AI review to design the new spell schema.
-> **Scope:** Structural analysis only. No source files modified.
+> **Status:** Historical analysis, complete. The accepted decision and canonical references supersede it as a
+> current-status source.
+> **Scope:** Historical structural analysis only.
 
 ---
 
