@@ -2,10 +2,15 @@ import { useEffect, useState } from 'react'
 import * as api from '../../api/client'
 import type { Weapon } from '../../api/types'
 import { Card } from '../../components/Card'
+import { BrowserLayout } from '../../components/BrowserLayout'
+import { Button } from '../../components/Button'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
 import { DiceText } from '../../components/DiceText'
 import { SearchList } from '../../components/SearchList'
-import { SplitPane } from '../../components/SplitPane'
+import { StatePanel } from '../../components/StatePanel'
+import { initialRemoteState, remoteError, remoteLoading, remoteSuccess } from '../../components/remoteState'
+import type { RemoteState } from '../../components/remoteState'
+import { SwordsIcon } from '../../components/icons'
 import { WeaponEditor } from './WeaponEditor'
 import './WeaponBrowserPage.css'
 
@@ -28,27 +33,27 @@ function entryToText(entry: unknown): string {
 }
 
 export function WeaponBrowserPage() {
-  const [weapons, setWeapons] = useState<Weapon[]>([])
+  const [weaponsRemote, setWeaponsRemote] = useState<RemoteState<Weapon[]>>(initialRemoteState)
   const [selectedId, setSelectedId] = useState<number | null>(null)
-  const [loadError, setLoadError] = useState<string | null>(null)
   const [editorOpen, setEditorOpen] = useState(false)
   const [editingWeapon, setEditingWeapon] = useState<Weapon | undefined>(undefined)
   const [pendingDelete, setPendingDelete] = useState<Weapon | null>(null)
 
   const load = () => {
+    setWeaponsRemote(remoteLoading())
     api
       .listWeapons()
       .then((data) => {
         const sorted = [...data].sort((a, b) => a.name.localeCompare(b.name))
-        setWeapons(sorted)
-        setLoadError(null)
+        setWeaponsRemote(remoteSuccess(sorted))
         if (sorted.length > 0 && selectedId == null) setSelectedId(sorted[0].id)
       })
-      .catch((error) => setLoadError(error instanceof Error ? error.message : 'Failed to load weapons.'))
+      .catch((error) => setWeaponsRemote(remoteError(error instanceof Error ? error.message : 'Failed to load weapons.')))
   }
 
   useEffect(load, [])
 
+  const weapons = weaponsRemote.status === 'success' ? weaponsRemote.data : []
   const selected = weapons.find((w) => w.id === selectedId) || null
 
   const openCreate = () => {
@@ -74,19 +79,14 @@ export function WeaponBrowserPage() {
 
   return (
     <div className="weapon-browser-page">
-      <div className="weapon-browser-toolbar">
-        <h2>Weapons</h2>
-        <button type="button" className="weapon-browser-new" onClick={openCreate}>
-          New Weapon
-        </button>
-      </div>
-
-      {loadError && <p className="weapon-browser-error">{loadError}</p>}
-
-      <div className="weapon-browser-split">
-        <SplitPane
-          leftLabel="weapon list"
-          left={
+      <BrowserLayout
+        title="Weapons"
+        chapterIcon={<SwordsIcon size={18} aria-hidden="true" />}
+        detailOpen={selected !== null}
+        actions={<Button type="button" onClick={openCreate}>New Weapon</Button>}
+        error={weaponsRemote.status === 'error' ? weaponsRemote.error : null}
+        listLabel="weapon list"
+        list={
             <SearchList
               items={weapons}
               getId={(w) => w.id}
@@ -97,30 +97,24 @@ export function WeaponBrowserPage() {
               variant="weapon"
               searchPlaceholder="Search weapons…"
               emptyMessage="No weapons found."
+              status={weaponsRemote.status === 'loading' || weaponsRemote.status === 'idle' ? 'loading' : weaponsRemote.status === 'error' ? 'error' : 'ready'}
             />
-          }
-          right={
+        }
+        detail={
             selected ? (
               <div className="weapon-browser-detail">
+                <Button className="browser-layout-back" variant="ghost" onClick={() => setSelectedId(null)}>Back to weapons</Button>
                 <Card
                   title={selected.name}
                   subtitle={selected.base_weapon || selected.weapon_category || undefined}
                   tag={selected.rarity || undefined}
-                  variant="weapon"
-                  footer={
-                    <div className="weapon-browser-actions">
-                      <button type="button" onClick={() => openEdit(selected)}>
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        className="weapon-browser-delete"
-                        onClick={() => setPendingDelete(selected)}
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  }
+                    variant="weapon"
+                    footer={
+                      <div className="weapon-browser-actions">
+                        <Button variant="secondary" onClick={() => openEdit(selected)}>Edit</Button>
+                        <Button variant="danger" onClick={() => setPendingDelete(selected)}>Delete</Button>
+                      </div>
+                    }
                 >
                   <dl className="weapon-browser-meta">
                     {selected.weapon_category && (
@@ -177,23 +171,21 @@ export function WeaponBrowserPage() {
                 </Card>
               </div>
             ) : (
-              <p className="weapon-browser-empty">Select a weapon to see its details.</p>
+              <StatePanel status="noSelection" message="Choose a weapon from the list to view its details." />
             )
-          }
-        />
-      </div>
-
-      {editorOpen && (
+        }
+        editor={editorOpen && (
         <WeaponEditor weapon={editingWeapon} onClose={() => setEditorOpen(false)} onSaved={handleSaved} />
       )}
 
-      {pendingDelete && (
+        dialog={pendingDelete && (
         <ConfirmDialog
           message={`Delete ${pendingDelete.name}?`}
           onConfirm={confirmDelete}
           onCancel={() => setPendingDelete(null)}
         />
       )}
+      />
     </div>
   )
 }

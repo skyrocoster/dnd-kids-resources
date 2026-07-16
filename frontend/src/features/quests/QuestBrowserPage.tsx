@@ -2,32 +2,36 @@ import { useEffect, useState } from 'react'
 import * as api from '../../api/client'
 import type { Dungeon, NPC, Quest } from '../../api/types'
 import { Card } from '../../components/Card'
+import { BrowserLayout } from '../../components/BrowserLayout'
+import { Button } from '../../components/Button'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
 import { SearchList } from '../../components/SearchList'
-import { SplitPane } from '../../components/SplitPane'
+import { StatePanel } from '../../components/StatePanel'
+import { initialRemoteState, remoteError, remoteLoading, remoteSuccess } from '../../components/remoteState'
+import type { RemoteState } from '../../components/remoteState'
+import { ScrollIcon } from '../../components/icons'
 import { QuestEditor } from './QuestEditor'
 import './QuestBrowserPage.css'
 
 export function QuestBrowserPage() {
-  const [quests, setQuests] = useState<Quest[]>([])
+  const [questsRemote, setQuestsRemote] = useState<RemoteState<Quest[]>>(initialRemoteState)
   const [npcs, setNPCs] = useState<NPC[]>([])
   const [dungeons, setDungeons] = useState<Dungeon[]>([])
   const [selectedId, setSelectedId] = useState<number | null>(null)
-  const [loadError, setLoadError] = useState<string | null>(null)
   const [editorOpen, setEditorOpen] = useState(false)
   const [editingQuest, setEditingQuest] = useState<Quest | undefined>(undefined)
   const [pendingDelete, setPendingDelete] = useState<Quest | null>(null)
 
   const load = () => {
+    setQuestsRemote(remoteLoading())
     api
       .listQuests()
       .then((data) => {
         const sorted = [...data].sort((a, b) => a.title.localeCompare(b.title))
-        setQuests(sorted)
-        setLoadError(null)
+        setQuestsRemote(remoteSuccess(sorted))
         if (sorted.length > 0 && selectedId == null) setSelectedId(sorted[0].id)
       })
-      .catch((error) => setLoadError(error instanceof Error ? error.message : 'Failed to load quests.'))
+      .catch((error) => setQuestsRemote(remoteError(error instanceof Error ? error.message : 'Failed to load quests.')))
   }
 
   useEffect(load, [])
@@ -42,6 +46,7 @@ export function QuestBrowserPage() {
       .catch(() => setDungeons([]))
   }, [])
 
+  const quests = questsRemote.status === 'success' ? questsRemote.data : []
   const selected = quests.find((q) => q.id === selectedId) || null
   const questGiverName = selected?.quest_giver != null ? npcs.find((n) => n.id === selected.quest_giver)?.name : undefined
   const dungeonTitle = selected?.dungeon_id != null ? dungeons.find((d) => d.id === selected.dungeon_id)?.title : undefined
@@ -69,19 +74,14 @@ export function QuestBrowserPage() {
 
   return (
     <div className="quest-browser-page">
-      <div className="quest-browser-toolbar">
-        <h2>Quests</h2>
-        <button type="button" className="quest-browser-new" onClick={openCreate}>
-          New Quest
-        </button>
-      </div>
-
-      {loadError && <p className="quest-browser-error">{loadError}</p>}
-
-      <div className="quest-browser-split">
-        <SplitPane
-          leftLabel="quest list"
-          left={
+      <BrowserLayout
+        title="Quests"
+        chapterIcon={<ScrollIcon size={18} aria-hidden="true" />}
+        detailOpen={selected !== null}
+        actions={<Button type="button" onClick={openCreate}>New Quest</Button>}
+        error={questsRemote.status === 'error' ? questsRemote.error : null}
+        listLabel="quest list"
+        list={
             <SearchList
               items={quests}
               getId={(q) => q.id}
@@ -92,29 +92,23 @@ export function QuestBrowserPage() {
               variant="neutral"
               searchPlaceholder="Search quests…"
               emptyMessage="No quests found."
+              status={questsRemote.status === 'loading' || questsRemote.status === 'idle' ? 'loading' : questsRemote.status === 'error' ? 'error' : 'ready'}
             />
-          }
-          right={
+        }
+        detail={
             selected ? (
               <div className="quest-browser-detail">
+                <Button className="browser-layout-back" variant="ghost" onClick={() => setSelectedId(null)}>Back to quests</Button>
                 <Card
                   title={selected.title}
                   subtitle={selected.location || undefined}
-                  variant="neutral"
-                  footer={
-                    <div className="quest-browser-actions">
-                      <button type="button" onClick={() => openEdit(selected)}>
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        className="quest-browser-delete"
-                        onClick={() => setPendingDelete(selected)}
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  }
+                    variant="neutral"
+                    footer={
+                      <div className="quest-browser-actions">
+                        <Button variant="secondary" onClick={() => openEdit(selected)}>Edit</Button>
+                        <Button variant="danger" onClick={() => setPendingDelete(selected)}>Delete</Button>
+                      </div>
+                    }
                 >
                   {selected.summary && <p>{selected.summary}</p>}
 
@@ -166,21 +160,18 @@ export function QuestBrowserPage() {
                 </Card>
               </div>
             ) : (
-              <p className="quest-browser-empty">Select a quest to see its details.</p>
+              <StatePanel status="noSelection" message="Choose a quest from the list to view its details." />
             )
-          }
-        />
-      </div>
-
-      {editorOpen && <QuestEditor quest={editingQuest} onClose={() => setEditorOpen(false)} onSaved={handleSaved} />}
-
-      {pendingDelete && (
+        }
+        editor={editorOpen && <QuestEditor quest={editingQuest} onClose={() => setEditorOpen(false)} onSaved={handleSaved} />}
+        dialog={pendingDelete && (
         <ConfirmDialog
           message={`Delete ${pendingDelete.title}?`}
           onConfirm={confirmDelete}
           onCancel={() => setPendingDelete(null)}
         />
       )}
+      />
     </div>
   )
 }

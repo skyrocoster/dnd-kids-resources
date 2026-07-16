@@ -56,4 +56,24 @@ describe('PlayerBrowserPage', () => {
     render(<PlayerBrowserPage />)
     await waitFor(() => expect(screen.getByText('boom')).toBeInTheDocument())
   })
+
+  it('keeps loading distinct from an empty collection', () => {
+    vi.spyOn(api, 'listPlayers').mockReturnValue(new Promise(() => {}))
+    render(<PlayerBrowserPage />)
+
+    expect(screen.getByText('Loading…')).toBeInTheDocument()
+    expect(screen.queryByText('No players found.')).not.toBeInTheDocument()
+  })
+
+  it('shows filtered-empty state and returns from the detail view', async () => {
+    vi.spyOn(api, 'listPlayers').mockResolvedValue(players)
+    const user = userEvent.setup()
+    render(<PlayerBrowserPage />)
+
+    await screen.findByRole('heading', { name: 'Lark' })
+    await user.type(screen.getByRole('searchbox'), 'missing')
+    expect(screen.getByText('No matches')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Back to players' }))
+    expect(screen.getByText('Select an item')).toBeInTheDocument()
+  })
 })

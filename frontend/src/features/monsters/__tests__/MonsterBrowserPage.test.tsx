@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import * as api from '../../../api/client'
 import type { Monster } from '../../../api/types'
 import { MonsterBrowserPage } from '../MonsterBrowserPage'
@@ -142,6 +142,24 @@ describe('MonsterBrowserPage', () => {
     expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument()
   })
 
+  it('deferred load shows loading state, then empty state with no monsters', async () => {
+    vi.spyOn(api, 'listMonsters').mockResolvedValue([])
+
+    renderPage()
+
+    await waitFor(() => expect(screen.getByText('No monsters found.')).toBeInTheDocument())
+    expect(screen.getByText(/Choose a monster/)).toBeInTheDocument()
+  })
+
+  it('shows chapter icon in header', async () => {
+    vi.spyOn(api, 'listMonsters').mockResolvedValue(monsters)
+
+    renderPage()
+
+    await waitFor(() => expect(screen.getByText('Owlbear')).toBeInTheDocument())
+    expect(screen.getByRole('tab', { name: 'Monsters' })).toBeInTheDocument()
+  })
+
   it('selecting a monster shows its stat block details', async () => {
     vi.spyOn(api, 'listMonsters').mockResolvedValue(monsters)
     const user = userEvent.setup()
@@ -160,6 +178,18 @@ describe('MonsterBrowserPage', () => {
     renderPage()
     await waitFor(() => expect(screen.getByText(/server error/)).toBeInTheDocument())
   })
+
+  it('Back to monsters clears the selected detail', async () => {
+    vi.spyOn(api, 'listMonsters').mockResolvedValue(monsters)
+    const user = userEvent.setup()
+
+    renderPage()
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Aarakocra' })).toBeInTheDocument())
+
+    await user.click(screen.getByRole('button', { name: 'Back to monsters' }))
+    expect(screen.queryByRole('heading', { name: 'Aarakocra' })).not.toBeInTheDocument()
+    expect(screen.getByText(/Choose a monster/)).toBeInTheDocument()
+  })
 })
 
 describe('Monster data (M2 shape)', () => {
@@ -175,6 +205,62 @@ describe('Monster data (M2 shape)', () => {
 
   it.skip('hides sections when data is absent', () => {
     // X1: a bare beast hides Actions and Lore sections
+  })
+})
+
+describe('Monster New/Edit navigation', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('Add Monster navigates to /monsters/new', async () => {
+    vi.spyOn(api, 'listMonsters').mockResolvedValue(monsters)
+    const user = userEvent.setup()
+
+    render(
+      <MemoryRouter initialEntries={['/monsters']}>
+        <Routes>
+          <Route path="/monsters" element={<MonsterBrowserPage />} />
+          <Route path="/monsters/new" element={<p>New monster page</p>} />
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Aarakocra' })).toBeInTheDocument())
+    await user.click(screen.getByRole('button', { name: 'Add Monster' }))
+    expect(screen.getByText('New monster page')).toBeInTheDocument()
+  })
+
+  it('Edit navigates to /monsters/:id/edit', async () => {
+    vi.spyOn(api, 'listMonsters').mockResolvedValue(monsters)
+    const user = userEvent.setup()
+
+    render(
+      <MemoryRouter initialEntries={['/monsters']}>
+        <Routes>
+          <Route path="/monsters" element={<MonsterBrowserPage />} />
+          <Route path="/monsters/:id/edit" element={<p>Edit monster page</p>} />
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Aarakocra' })).toBeInTheDocument())
+    await user.click(screen.getByRole('button', { name: 'Edit' }))
+    expect(screen.getByText('Edit monster page')).toBeInTheDocument()
+  })
+
+  it('honors editor-return location.state.selectedId', async () => {
+    vi.spyOn(api, 'listMonsters').mockResolvedValue(monsters)
+
+    render(
+      <MemoryRouter initialEntries={[{ pathname: '/monsters', state: { selectedId: 2 } }]}>
+        <Routes>
+          <Route path="/monsters" element={<MonsterBrowserPage />} />
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Owlbear' })).toBeInTheDocument())
   })
 })
 

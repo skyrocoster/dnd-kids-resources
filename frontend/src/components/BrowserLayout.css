@@ -4,17 +4,6 @@
   height: 100%;
 }
 
-.browser-layout-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: var(--space-2);
-}
-
-.browser-layout-title {
-  margin: 0;
-}
-
 .browser-layout-error {
   color: var(--md-error);
 }
@@ -22,4 +11,24 @@
 .browser-layout-split {
   flex: 1;
   min-height: 420px;
+}
+
+.browser-layout-back {
+  display: none;
+}
+
+@media (max-width: 520px) {
+  .browser-layout--detail-open .split-pane-left,
+  .browser-layout--detail-open .split-pane-handle {
+    display: none;
+  }
+
+  .browser-layout--detail-open .split-pane-right {
+    width: 100%;
+    border-radius: var(--radius-md);
+  }
+
+  .browser-layout--detail-open .browser-layout-back {
+    display: inline-flex;
+  }
 }

@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as api from '../../../api/client'
@@ -68,5 +68,64 @@ describe('NPCBrowserPage', () => {
 
     render(<NPCBrowserPage />)
     await waitFor(() => expect(screen.getByText('boom')).toBeInTheDocument())
+  })
+
+  it('shows empty state when there are no NPCs', async () => {
+    vi.spyOn(api, 'listNPCs').mockResolvedValue([])
+
+    render(<NPCBrowserPage />)
+    await waitFor(() => expect(screen.getByText('No NPCs found.')).toBeInTheDocument())
+    expect(screen.getByText(/Choose an NPC/)).toBeInTheDocument()
+  })
+
+  it('filtering to no matches shows filtered-empty state', async () => {
+    vi.spyOn(api, 'listNPCs').mockResolvedValue(npcs)
+    const user = userEvent.setup()
+
+    render(<NPCBrowserPage />)
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Emery Hart' })).toBeInTheDocument())
+
+    await user.type(screen.getByRole('searchbox'), 'zzz-no-match')
+    await waitFor(() => expect(screen.getByText('No NPCs found.')).toBeInTheDocument())
+  })
+
+  it('shows chapter icon tab in header', async () => {
+    vi.spyOn(api, 'listNPCs').mockResolvedValue(npcs)
+
+    render(<NPCBrowserPage />)
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Emery Hart' })).toBeInTheDocument())
+    expect(screen.getByRole('tab', { name: 'NPCs' })).toBeInTheDocument()
+  })
+
+  it('Back to NPCs clears the selected detail', async () => {
+    vi.spyOn(api, 'listNPCs').mockResolvedValue(npcs)
+    const user = userEvent.setup()
+
+    render(<NPCBrowserPage />)
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Emery Hart' })).toBeInTheDocument())
+
+    await user.click(screen.getByRole('button', { name: 'Back to NPCs' }))
+    expect(screen.queryByRole('heading', { name: 'Emery Hart' })).not.toBeInTheDocument()
+    expect(screen.getByText(/Choose an NPC/)).toBeInTheDocument()
+  })
+
+  it('shows a pending confirm dialog while deleting', async () => {
+    vi.spyOn(api, 'listNPCs').mockResolvedValue(npcs)
+    let resolveDelete: () => void = () => {}
+    vi.spyOn(api, 'deleteNPC').mockImplementation(() => new Promise((resolve) => { resolveDelete = () => resolve(undefined) }))
+    const user = userEvent.setup()
+
+    render(<NPCBrowserPage />)
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Emery Hart' })).toBeInTheDocument())
+
+    await user.click(screen.getByRole('button', { name: 'Delete' }))
+    const dialog = screen.getByRole('alertdialog')
+    expect(dialog).toBeInTheDocument()
+
+    await user.click(within(dialog).getByRole('button', { name: 'Delete' }))
+    await waitFor(() => expect(screen.getByRole('alertdialog')).toHaveAttribute('aria-busy', 'true'))
+
+    resolveDelete()
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument())
   })
 })

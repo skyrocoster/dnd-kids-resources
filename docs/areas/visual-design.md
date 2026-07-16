@@ -1,6 +1,6 @@
 # Visual Design Area Guide
 
-> **Active plan:** [Visual Consistency](../plans/active/visual-consistency.md#vw1-standard-browsers-next-up).
+> **Active plan:** [Visual Consistency](../plans/active/visual-consistency.md#vw3-action-browsers-next-up).
 
 ## Scope
 

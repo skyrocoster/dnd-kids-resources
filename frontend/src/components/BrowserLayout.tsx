@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { PageHeader } from './PageHeader'
 import { SplitPane } from './SplitPane'
 import './BrowserLayout.css'
 
@@ -11,6 +12,8 @@ interface BrowserLayoutProps {
   editor?: ReactNode
   dialog?: ReactNode
   listLabel?: string
+  chapterIcon?: ReactNode
+  detailOpen?: boolean
 }
 
 export function BrowserLayout({
@@ -22,13 +25,17 @@ export function BrowserLayout({
   editor,
   dialog,
   listLabel,
+  chapterIcon,
+  detailOpen = false,
 }: BrowserLayoutProps) {
   return (
-    <div className="browser-layout">
-      <div className="browser-layout-toolbar">
-        <h2 className="browser-layout-title">{title}</h2>
-        {actions && <div className="browser-layout-actions">{actions}</div>}
-      </div>
+    <div className={`browser-layout ${detailOpen ? 'browser-layout--detail-open' : ''}`}>
+      <PageHeader
+        title={title}
+        actions={actions}
+        chapterTabs={chapterIcon ? [{ key: title, label: title, icon: chapterIcon }] : undefined}
+        activeTab={chapterIcon ? title : undefined}
+      />
 
       {error && <p className="browser-layout-error" role="alert">{error}</p>}
 

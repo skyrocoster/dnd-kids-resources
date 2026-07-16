@@ -48,4 +48,26 @@ describe('QuestBrowserPage', () => {
     await user.click(screen.getByRole('button', { name: 'New Quest' }))
     expect(screen.getByRole('dialog', { name: 'Add new quest' })).toBeInTheDocument()
   })
+
+  it('shows loading before an API error', async () => {
+    let reject!: (reason?: unknown) => void
+    vi.spyOn(api, 'listQuests').mockReturnValue(new Promise((_, fail) => { reject = fail }))
+    render(<QuestBrowserPage />)
+
+    expect(screen.getByText('Loading…')).toBeInTheDocument()
+    reject(new Error('network down'))
+    expect(await screen.findByText('network down')).toBeInTheDocument()
+  })
+
+  it('shows filtered-empty state and returns from the detail view', async () => {
+    vi.spyOn(api, 'listQuests').mockResolvedValue(quests)
+    const user = userEvent.setup()
+    render(<QuestBrowserPage />)
+
+    await screen.findByRole('heading', { name: 'Ancient Amphitheatre' })
+    await user.type(screen.getByRole('searchbox'), 'missing')
+    expect(screen.getByText('No matches')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Back to quests' }))
+    expect(screen.getByText('Select an item')).toBeInTheDocument()
+  })
 })
