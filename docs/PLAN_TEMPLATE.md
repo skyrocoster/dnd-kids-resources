@@ -8,7 +8,9 @@ the temporary, forward-looking authorization to change it.
 **The core rule:** the plan doc is a *forward-looking* working document, not a changelog. Detail is
 verbose while a stage is being built, condensed to one row the moment it ships, and removed with its phase
 when that phase is done. **The durable record of *how* a stage was built is its git
-commit — never duplicate that prose into the plan doc permanently.**
+commit — never duplicate that prose into the plan doc permanently.** Important discoveries are different:
+consolidate them into the plan's working context and affected future stages so a later context does not need
+to rediscover the codebase.
 
 ---
 
@@ -28,6 +30,27 @@ verbose future-stage blocks on top of a thin table of shipped rows; nothing in b
 **As work moves forward, content flows ①→②→③ and *shrinks* at the ②→③ step.** A stage that just shipped
 gets its verbose block deleted and replaced by a single row in the Shipped table; the still-future stages
 keep their verbose blocks until their own turn to ship.
+
+### Discovery consolidation
+
+Every stage informs later work before it ships. Treat the plan as the outcome-specific context packet for a
+fresh executor, not a record of every command or implementation detail.
+
+- Add durable discoveries to **Key facts / data facts**: confirmed code shapes, invariants, conventions,
+  constraints, gotchas, and decisions that prevent rediscovery.
+- Add confirmed extension points to **Reusable pieces (do not rebuild)** and deliberate non-work to **Known debt /
+  deferred**.
+- Revise every affected future stage's **Read first**, **Build**, **Inherits**, **Expected touch set**,
+  **Documentation impact**, **Tests**, or **Gate**. Do this even when the new fact comes from an implementation,
+  integration, design, or documentation stage.
+- Update the relevant canonical reference when the discovery establishes a durable API, data, architecture,
+  design, testing, setup, or user-visible contract. Do not defer that required update to the final stage.
+- Keep transient exploration, command output, and detailed implementation narrative in the commit rather than
+  making the plan a diary.
+
+Scaffolding has the highest discovery expectation because it normally surveys and prepares the most affected
+files, but it follows the same rule as every other stage: consolidate its findings and revise later stages before
+it is collapsed.
 
 ---
 
@@ -71,25 +94,43 @@ are **not** a history of the phase. Keep them current; don't append to them per 
 
 ---
 
+## Required model strength
+
+Use a capability requirement, never a provider or model name. Select the lowest strength that can safely perform
+the stage after reading its declared context.
+
+| Strength | Use when |
+|----------|----------|
+| **Light** | The work is bounded and mechanical: inert scaffolding, isolated renames, straightforward documentation routing, or a narrow test seam. |
+| **Standard** | The work requires ordinary implementation reasoning across a small, well-understood touch set and tests. |
+| **High** | The work requires broad codebase synthesis, architecture or data-contract decisions, difficult debugging, sensitive migration, or a final cross-surface review. |
+
+Raise the required strength when discoveries expand the risk or ambiguity of a later stage; record that change in
+the affected future-stage table and block.
+
+---
+
 ## The phase plan (the forward-looking core)
 
-One section per phase. While the phase is active, it holds the **stage table** and a **verbose block
-for every stage that has not yet shipped** (the next stage and all planned stages after it). Shipped
-stages have no block here — only a row in the Shipped table.
+One section per delivery phase. While the phase is active, it holds the **stage table** and a **verbose block
+for every stage that has not yet shipped** (the next stage and all planned stages after it). Shipped stages have
+no block here — only a row in the Shipped table. Do not add a documentation-update stage to a delivery phase:
+after all delivery phases, add the single plan-closeout phase shown below.
 
 ### Design Phase <X> — <Name>
 
 One paragraph: what this phase delivers and why. **Depends on / Depended on by:** name the cross-doc
 sequencing constraints ("do not start J3 before DP1 is committed").
 
-| Stage | Model | Summary | Deliverables |
+| Stage | Required strength | Summary | Deliverables |
 |-------|-------|---------|--------------|
-| **X0 — Scaffolding** | Haiku | Types/stubs/placeholder CSS/`it.skip` tests, no implementation. One context. | Stubs compile; app renders unchanged. |
-| **X1 — <name>** | Sonnet | One-line intent. | Reducer/component/tests named. |
-| **X2 — <name>** | Sonnet | One-line intent. | … |
-| **X3 — Design pass** | Sonnet | `/frontend-design` review, a11y, zero-bug. | Fixes + design tests. |
+| **X0 — Scaffolding** | Light | Types/stubs/placeholder CSS/`it.skip` tests, no implementation. Survey likely touch points and carry findings forward. | Stubs compile; app renders unchanged; later stages revised from confirmed findings. |
+| **X1 — <name>** | Standard | One-line implementation intent. | Reducer/component/tests named. |
+| **X2 — <name>** | Standard or High | One-line integration, migration, or review intent. | … |
 
-**Sequencing:** X0 (Haiku, first) → X1 → X2 → X3. Note any parallelism.
+**Sequencing:** X0 (when useful) → implementation/review stages. Add only the stages the outcome needs. After all
+delivery phases ship and collapse, run the one plan-closeout documentation stage; it is the last stage of the entire
+execution plan. Note any parallelism.
 
 <!-- ===== VERBOSE BLOCKS — one per un-shipped stage, in order. Delete a block and collapse it to a
      Shipped row the moment that stage ships; the remaining blocks stay until their own turn. ===== -->
@@ -104,14 +145,48 @@ sequencing constraints ("do not start J3 before DP1 is committed").
 - **Tests:** unit (reducer/selector/render) + integration (full flow) to write, including exact commands.
 - **Gate:** the live end-to-end confirmation that proves it works — not just test-green. State whether a browser
   pass is required (per `CLAUDE.md`'s browser-automation policy) or the suite suffices.
+- **Discovery consolidation:** exact plan top-matter sections, future-stage blocks, and canonical references to
+  revise from expected findings; update the list with actual discoveries before this stage is collapsed.
 - **Completion edit:** the Shipped-table row, status line, next-stage target, and any archival edit required when
   this stage ships.
 
 #### X<n+1> — <name> (planned)
 
-- **Read first / Build / Inherits / Expected touch set / Documentation impact / Tests / Gate / Completion edit:**
-  same eight-part shape as above, one block per remaining stage. Keep each as specific as the next-up block —
-  future stages earn full detail, not a placeholder.
+- **Read first / Build / Inherits / Expected touch set / Documentation impact / Tests / Gate / Discovery
+  consolidation / Completion edit:** same nine-part shape as above, one block per remaining stage. Keep each as
+  specific as the next-up block — future stages earn full detail, not a placeholder.
+
+### Plan Closeout — Documentation Update
+
+Add this as the sole final phase after every delivery phase has shipped and been removed. It has exactly one stage:
+the final stage of the entire execution plan. It reconciles and validates the documentation work already completed
+with each delivery stage, then archives the completed plan.
+
+| Stage | Required strength | Summary | Deliverables |
+|-------|-------------------|---------|--------------|
+| **X<n> — Documentation update** | Standard | Reconcile accumulated plan context and complete the documentation workflow. | Canonical references, routing, validation, and archival complete. |
+
+#### X<n> — Documentation update (final stage of the plan)
+
+- **Read first:** `CLAUDE.md`, `docs/README.md`, the owning area guide, this plan, `docs/PLAN_TEMPLATE.md`,
+  `docs/TESTING.md`, `scripts/check_docs.py`, every reference named by prior stages, and relevant workflow/PR files.
+- **Build:** Reconcile the plan's accumulated Key facts, reusable pieces, debt, shipped rows, and future-stage
+  handoffs with the code that shipped. Complete every outstanding named canonical-reference update, refresh
+  generated inventories when their source contracts changed, update area-guide and manifest routing, and prepare
+  the plan archive.
+- **Inherits:** all prior-stage documentation-impact edits and discovery consolidations; this stage verifies and
+  closes them, rather than deferring implementation-stage documentation.
+- **Expected touch set:** this plan, its area guide, `docs/README.md`, every outstanding named canonical reference,
+  generated references when applicable, and the archive/redirect location.
+- **Documentation impact:** list the exact documents being reconciled. `None` is invalid for this final stage.
+- **Tests:** run `python scripts/check_docs.py --check`; run `python scripts/check_docs.py --check --base <base-ref>`
+  when a valid base ref is available; run any documentation-validator tests changed by this outcome.
+- **Gate:** A fresh reader can route from `CLAUDE.md` through `docs/README.md`, the area guide, and the current plan
+  context without rediscovering essential facts. Documentation checks and applicable tests pass.
+- **Discovery consolidation:** promote remaining durable facts to the appropriate canonical reference or retained
+  plan top matter before archival; no unprocessed discovery remains only in a shipped-stage block or commit.
+- **Completion edit:** collapse this stage, mark the outcome complete, archive the plan, update the area guide and
+  manifest, and create a redirect only for a known inbound link.
 
 <!-- ============================================================================================= -->
 
@@ -128,7 +203,9 @@ On completion, do all of this in the stage's own commit:
 2. **Rewrite the Status line** to show this stage shipped and name the next one.
 3. **Make the declared documentation-impact edit** — never use subjective wording such as "if needed." Update
    every named reference in the same change set, or retain the stage's explicit `None: <specific reason>`.
-4. **Commit code + plan-doc edit together**, referencing the stage ID and test counts.
+4. **Consolidate discoveries before deleting the verbose block.** Update plan top matter, all affected future-stage
+   blocks, and canonical references as required by the Discovery consolidation rule.
+5. **Commit code + plan-doc edit together**, referencing the stage ID and test counts.
 
 ### Shipped stages table (the collapsed record)
 
@@ -148,9 +225,9 @@ never carry the paragraph that was in the stage's verbose block.
 
 ## How to complete a phase
 
-When every stage in a phase has shipped, remove the phase completely so the plan is clean for the next
-forward-looking phase. Its concise stage rows remain in the Shipped-stages table; the commit history is the
-record of implementation detail.
+When every stage in a delivery phase has shipped, remove the phase so the plan is clean for the next forward-looking
+phase. Each stage has already completed its declared documentation impact and discovery consolidation. Its concise
+stage rows remain in the Shipped-stages table; the commit history is the record of implementation detail.
 
 1. **Delete the phase section.** Remove its overview, stage table, sequencing, and any active-stage block.
    Do not leave a shipped-phase summary section behind.
@@ -158,15 +235,18 @@ record of implementation detail.
    `Reusable pieces`, `Key facts`, or the appropriate `DESIGN_SYSTEM.md` / `DATA_MODEL.md` /
    `API_REFERENCE.md` reference.
 3. **Move deferred items to the shared "Known debt" list** so they are not buried in a completed phase.
-4. **Update the Status line and the `## Next:` section** to point at the next phase.
+4. **Update the Status line and the `## Next:` section** to point at the next phase, or the final Plan Closeout
+   phase when all delivery work is complete.
 
 ### When the *whole feature* is complete
 
-When there are no more planned phases:
+When there are no more planned delivery phases:
 
-1. Reduce the entire doc to: the Reference top-matter (still useful as living context), the Shipped-stages
+1. Add the one **Plan Closeout — Documentation Update** phase if it is not already present, then complete its sole
+   final stage, including its fresh-reader routing and documentation checks.
+2. Reduce the entire doc to: the Reference top-matter (still useful as living context), the Shipped-stages
    table, and a final **Verification** section (how to confirm the whole feature end-to-end).
-2. Move the doc to `docs/plans/complete/<area>-<outcome>.md`. Update the area guide to `None` or its next active
+3. Move the doc to `docs/complete/<area>-<outcome>.md`. Update the area guide to `None` or its next active
    plan, and update `docs/README.md` in the same change set. Leave a redirect stub only when a known inbound link
    must survive.
 
@@ -185,10 +265,13 @@ When there are no more planned phases:
 ## Quick checklist per stage
 
 - [ ] 🚦 gate met live (or suite-sufficient per policy); tests green; `npm run typecheck`/`npm run build` clean (`tsc -b`, not `--noEmit` — [it checks nothing here](DESIGN_SYSTEM.md)); `pytest` from repo root, ≥85% coverage.
+- [ ] Important discoveries consolidated into plan top matter, every affected future-stage block, and canonical
+      references where they establish a durable contract. No later executor must rediscover a confirmed fact.
 - [ ] This stage's verbose block **deleted**, collapsed to one Shipped-table row (≤2 sentences); the
-       un-shipped stages' verbose blocks left in place.
+        un-shipped stages' verbose blocks left in place.
 - [ ] Status line rewritten; `## Next:` updated.
 - [ ] Exact documentation-impact requirement completed, or its specific `None:` rationale remains valid.
 - [ ] Code + plan-doc edit committed together, stage ID + test counts in the message.
-- [ ] If this was the phase's last stage: phase section deleted; durable facts promoted to top matter or
-       reference docs; deferred items moved to the Known-debt list.
+- [ ] If this was a delivery phase's last stage: phase section deleted; durable facts promoted to top matter or
+        reference docs; deferred items moved to the Known-debt list. Add the one Plan Closeout phase only after all
+        delivery phases are complete; its documentation-update stage archives the entire plan.

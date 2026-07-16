@@ -2,6 +2,8 @@
 
 This is the complete documentation inventory and task router. Read [../CLAUDE.md](../CLAUDE.md) first, then use this manifest instead of exploring source to find the smallest relevant context packet.
 
+`../scratch/` is deliberately outside this inventory and documentation contract. AI must not explore it unless the user explicitly names a path there.
+
 ## Task Router
 
 | Task | Area / current stage | Read first |
@@ -14,7 +16,7 @@ This is the complete documentation inventory and task router. Read [../CLAUDE.md
 | Shared UI, tokens, icons, or accessibility | [Visual Design](areas/visual-design.md) | `DESIGN_SYSTEM.md`, `ARCHITECTURE.md`, `TESTING.md` |
 | Test tooling, fixtures, coverage, or CI | Relevant area guide; create a focused plan if it has none | `TESTING.md`, `ARCHITECTURE.md` |
 
-An implementation must update its owning active execution plan and every exact reference document named by that plan's documentation-impact requirement. Area guides are durable routing documents, not plans. Each executable plan stage declares **Read first**, **Build**, **Inherits**, **Expected touch set**, **Documentation impact**, **Tests**, **Gate**, and **Completion edit**; `None` requires a specific reason. Historical documents are context only; they do not define current behavior.
+An implementation must update its owning active execution plan and every exact reference document named by that plan's documentation-impact requirement. Area guides are durable routing documents, not plans. Each executable plan stage declares **Read first**, **Build**, **Inherits**, **Expected touch set**, **Documentation impact**, **Tests**, **Gate**, and **Completion edit**; `None` requires a specific reason. Before a stage ships, consolidate important discoveries into the plan's durable context and every affected future stage so a fresh executor does not rediscover confirmed facts; update canonical references for durable product contracts. Historical documents are context only; they do not define current behavior.
 
 ## Document Inventory
 
@@ -27,6 +29,7 @@ Authority: **Canonical** documents define current contracts. **Working** documen
 | [DATA_MODEL.md](DATA_MODEL.md) | Reference | Canonical | Active | Tables, relationships, seeds, JSON storage, or database rebuilds | DDL, seed shape, importer, or exporter changes |
 | [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) | Reference | Canonical | Active | Shared tokens, icons, visual primitives, or accessibility | A shared design contract changes |
 | [TESTING.md](TESTING.md) | Reference | Canonical | Active | Commands, fixtures, coverage, or test locations | A test command, fixture topology, coverage gate, or CI contract changes |
+| [README.md](README.md) | Manifest | Canonical | Active | Routing a task or locating documentation | Documentation inventory, routing, or plan status changes |
 | [PLAN_TEMPLATE.md](PLAN_TEMPLATE.md) | Template | Canonical | Active | Creating, executing, or closing a plan | Plan execution or lifecycle requirements change |
 | [areas/documentation.md](areas/documentation.md) | Area guide | Canonical | No active plan | Documentation contract or validator work | Documentation routing or validation changes |
 | [areas/dungeons.md](areas/dungeons.md) | Area guide | Canonical | No active plan | Dungeon behavior | Dungeon ownership, source map, or active work changes |
@@ -37,17 +40,12 @@ Authority: **Canonical** documents define current contracts. **Working** documen
 | [areas/spells.md](areas/spells.md) | Area guide | Canonical | No active plan | Spell behavior | Spell ownership, source map, or active work changes |
 | [areas/visual-design.md](areas/visual-design.md) | Area guide | Canonical | VF0 active | Shared UI, tokens, shell, or accessibility | Visual routing or active work changes |
 | [plans/active/visual-consistency.md](plans/active/visual-consistency.md#vf0-foundation-scaffolding-next-up) | Execution plan | Working | VF0 next | Current visual consistency work | Its active stage ships or its declared docs change |
-| [documentation_rework_plan.md](documentation_rework_plan.md) | Redirect | Redirect | Complete | Following documentation-contract history | Only if the archived target moves again |
-| [dungeon_plan.md](dungeon_plan.md) | Redirect | Redirect | Complete | Following legacy dungeon-plan links | Only if the archived target moves again |
-| [encounters_plan.md](encounters_plan.md) | Redirect | Redirect | Complete | Following legacy encounter-plan links | Only if the archived target moves again |
-| [monsters_plan.md](monsters_plan.md) | Redirect | Redirect | Complete | Following legacy monster-plan links | Only if the archived target moves again |
-| [spells_plan.md](spells_plan.md) | Redirect | Redirect | Complete | Following legacy spell-plan links | Only if the archived target moves again |
-| [design_plan.md](design_plan.md) | Redirect | Redirect | Complete | Following legacy design-plan links | Only if the archived target moves again |
-| [loot_plan.md](loot_plan.md) | Redirect | Redirect | Complete | Following legacy loot-plan links | Only if the archived target moves again |
-| [spell_schema_decision.md](spell_schema_decision.md) | Decision | Historical | Accepted | Spell-contract provenance | Supersede with a new decision; do not edit past rationale |
-| [monster_schema_decision.md](monster_schema_decision.md) | Decision | Historical | Accepted | Monster-contract provenance | Supersede with a new decision; do not edit past rationale |
-| [seed_spells_analysis.md](seed_spells_analysis.md) | Analysis | Historical | Complete | Spell migration provenance | Do not update; add a new analysis if needed |
-| [personal ideas.md](personal%20ideas.md) | Ideas | Historical | Backlog | Considering unplanned product work | Promote an approved item into a focused plan |
+| [complete/documentation-plan-closeout-correction.md](complete/documentation-plan-closeout-correction.md) | Historical plan | Historical | Complete | Plan closeout correction history | Do not update except to repair archival metadata |
+| [complete/documentation-plan-template-workflow.md](complete/documentation-plan-template-workflow.md) | Historical plan | Historical | Complete | Plan-template workflow history | Do not update except to repair archival metadata |
+| [Analysis/README.md](Analysis/README.md) | Archive index | Historical | Active | Tracing analysis or decision provenance | Analysis/archive organization changes |
+| [Analysis/Decisions/spell_schema_decision.md](Analysis/Decisions/spell_schema_decision.md) | Decision | Historical | Accepted | Spell-contract provenance | Supersede with a new decision; do not edit past rationale |
+| [Analysis/Decisions/monster_schema_decision.md](Analysis/Decisions/monster_schema_decision.md) | Decision | Historical | Accepted | Monster-contract provenance | Supersede with a new decision; do not edit past rationale |
+| [Analysis/seed_spells_analysis.md](Analysis/seed_spells_analysis.md) | Analysis | Historical | Complete | Spell migration provenance | Do not update; add a new analysis if needed |
 | [complete/design-system-dark-mode.md](complete/design-system-dark-mode.md) | Historical plan | Historical | Complete | Design-system migration provenance | Do not update; `DESIGN_SYSTEM.md` owns current facts |
 | [complete/design_plan.md](complete/design_plan.md) | Archived plan | Historical | Complete | Shared-design implementation history | Do not update except to repair archival metadata |
 | [complete/dungeon_plan.md](complete/dungeon_plan.md) | Archived plan | Historical | Complete | Dungeon implementation history | Do not update except to repair archival metadata |

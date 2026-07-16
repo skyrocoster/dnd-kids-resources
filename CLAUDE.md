@@ -10,12 +10,15 @@ This is the single authoritative instruction file for AI work in this repository
 4. Read only that stage's **Read first** files before exploring source.
 5. Make the plan and exact documentation-impact updates declared by the stage, then run `python scripts/check_docs.py --check`.
 
+`scratch/` is a user-owned workspace for temporary notes and artifacts. Do not explore, read, index, or update anything under it unless the user explicitly names a path there.
+
 No documentation-maintenance plan is currently active; create a focused plan before new documentation-contract work. The manifest and area guides, rather than this file, are the sources for active-plan status and task routing.
 
 ## Documentation Contract
 
 - Every implementation change belongs to an active execution plan. Area guides route work and record durable ownership, but never authorize implementation. Create a focused plan before editing when an area has no active plan for the outcome.
 - Every executable stage declares **Read first**, **Expected touch set**, **Documentation impact**, **Tests**, **Gate**, and **Completion edit**. Complete its expected touch set and exact documentation-impact requirements in the same change set as the implementation.
+- Every stage consolidates important discoveries before it ships: update the active plan's durable context, every affected future stage, and any canonical reference whose contract changed. Scaffolding normally discovers the most because it prepares the broadest touch set, but this handoff is required for every stage.
 - Update the relevant reference document when an API contract, data model, architecture, design system, testing contract, setup instruction, or user-visible capability changes.
 - Collapse shipped stages and update their plan status as specified by [PLAN_TEMPLATE.md](docs/PLAN_TEMPLATE.md). Archive every completed execution plan; leave a redirect stub only when a known link must survive. Update its area guide and the manifest in the same change set. `MEMORY.md` is not a parallel plan-status registry.
 - Run `python scripts/check_docs.py --check`; before completion also run `python scripts/check_docs.py --check --base <base-ref>` when a valid base ref is available.
