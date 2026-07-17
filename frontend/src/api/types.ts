@@ -492,3 +492,83 @@ export type DungeonInput = Omit<Dungeon, 'id'>
 export interface MapLayoutBlob {
   data: Record<string, unknown>
 }
+
+export type ThreadColor = `thread-${1 | 2 | 3 | 4 | 5 | 6}`
+
+export interface LoomThread {
+  id: number
+  name: string
+  color: ThreadColor
+  description?: string | null
+}
+
+export interface LoomThreadInput {
+  name: string
+  color?: ThreadColor
+  description?: string | null
+}
+
+export type LoomNodeKind = 'anchor' | 'update'
+export type LoomAnchorStatus = 'planned' | 'reached' | 'abandoned'
+
+export interface LoomNode {
+  id: number
+  kind: LoomNodeKind
+  title: string
+  body?: string | null
+  status?: LoomAnchorStatus | null
+  session_tag?: string | null
+  x: number
+  y: number
+  thread_ids: number[]
+}
+
+export interface LoomNodeInput {
+  kind: LoomNodeKind
+  title: string
+  body?: string | null
+  status?: LoomAnchorStatus | null
+  session_tag?: string | null
+  x?: number
+  y?: number
+  thread_ids?: number[]
+}
+
+export interface LoomEdge {
+  id: number
+  source_id: number
+  target_id: number
+}
+
+export interface LoomEdgeInput {
+  source_id: number
+  target_id: number
+}
+
+export interface LoomTapestry {
+  threads: LoomThread[]
+  nodes: LoomNode[]
+  edges: LoomEdge[]
+}
+
+export interface LoomBridgeInput {
+  source_id: number
+  anchor_id: number
+  title: string
+  body?: string | null
+  session_tag?: string | null
+  x?: number | null
+  y?: number | null
+  thread_ids?: number[] | null
+}
+
+export interface LoomBridgeResult {
+  node: LoomNode
+  created_edges: LoomEdge[]
+  deleted_edge_id?: number | null
+}
+
+export interface LoomNodePositionInput {
+  x: number
+  y: number
+}

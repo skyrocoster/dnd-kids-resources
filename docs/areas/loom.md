@@ -1,6 +1,6 @@
 # The Loom Area Guide
 
-> **Active plan:** [Loom Tapestry Tracker: LM3](../plans/active/loom-tapestry-tracker.md#lm3-frontend-data-layer-and-graph-model-next-up).
+> **Active plan:** [Loom Tapestry Tracker: LM5](../plans/active/loom-tapestry-tracker.md#lm5--canvas-mutations-next-up).
 
 ## Scope
 

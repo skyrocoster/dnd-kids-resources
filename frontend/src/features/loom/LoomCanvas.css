@@ -1,0 +1,198 @@
+/* React Flow re-themed onto MD3 tokens — see docs/DESIGN_SYSTEM.md's loom section. */
+.loom-page {
+  display: flex;
+  height: calc(100vh - var(--control-height) * 2);
+  gap: var(--space-4);
+}
+
+.loom-canvas-area {
+  flex: 1;
+  min-width: 0;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 1px solid var(--md-outline-variant);
+}
+
+.loom-canvas-area .react-flow {
+  --xy-background-color: var(--md-surface);
+  --xy-background-pattern-dots-color: var(--md-outline-variant);
+  --xy-edge-stroke: var(--md-outline);
+  --xy-edge-stroke-width: 2;
+  --xy-edge-stroke-selected: var(--md-primary);
+  --xy-connectionline-stroke: var(--md-primary);
+  --xy-node-color: var(--md-on-surface);
+  --xy-node-border: none;
+  --xy-node-background-color: transparent;
+  --xy-node-boxshadow-hover: 0 0 0 2px var(--md-outline-variant);
+  --xy-node-boxshadow-selected: 0 0 0 2px var(--md-primary);
+  --xy-handle-background-color: var(--md-outline);
+  --xy-handle-border-color: var(--md-surface);
+  --xy-selection-background-color: rgb(208 188 255 / 0.12);
+  --xy-selection-border: 1px dotted var(--md-primary);
+  --xy-controls-button-background-color: var(--md-surface-2);
+  --xy-controls-button-background-color-hover: var(--md-surface-3);
+  --xy-controls-button-color: var(--md-on-surface);
+  --xy-controls-button-border-color: var(--md-outline-variant);
+  --xy-attribution-background-color: transparent;
+}
+
+.loom-canvas-area .react-flow__attribution {
+  color: var(--md-on-surface-variant);
+  font: var(--type-caption-size) var(--type-face);
+  padding: 2px var(--space-2);
+}
+
+.loom-canvas-area .react-flow__attribution a {
+  color: var(--md-on-surface-variant);
+}
+
+/* ─── Node cards ──────────────────────────────────────────────────────── */
+
+.loom-node {
+  position: relative;
+  min-width: 160px;
+  max-width: 220px;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  font: var(--type-body-sm-size) var(--type-face);
+}
+
+.loom-node--anchor {
+  background: var(--md-loom-anchor-container);
+  color: var(--md-on-loom-anchor-container);
+  border: 2px solid var(--md-loom-anchor);
+}
+
+.loom-node--anchor[data-status='reached'] {
+  background: var(--md-loom-anchor);
+  color: var(--md-on-loom-anchor);
+  border-style: solid;
+}
+
+.loom-node--anchor[data-status='planned'] {
+  box-shadow: 0 0 12px 1px color-mix(in srgb, var(--md-loom-anchor) 55%, transparent);
+}
+
+.loom-node--anchor[data-status='abandoned'] {
+  border-style: dashed;
+  opacity: 0.55;
+}
+
+.loom-node--update {
+  background: var(--md-loom-update-container);
+  color: var(--md-on-loom-update-container);
+  border: 2px solid var(--md-loom-update);
+}
+
+.loom-node[data-head] {
+  box-shadow: 0 0 0 3px var(--md-primary);
+}
+
+.loom-node-title {
+  font-weight: var(--type-title-weight);
+}
+
+.loom-node-session {
+  margin-top: var(--space-1);
+  font-size: var(--type-caption-size);
+  color: var(--md-on-surface-variant);
+}
+
+.loom-node-badge {
+  position: absolute;
+  top: -10px;
+  right: -6px;
+  padding: 1px var(--space-2);
+  border-radius: var(--radius-full);
+  font-size: var(--type-caption-size);
+  font-weight: var(--type-caption-weight);
+  letter-spacing: var(--type-caption-tracking);
+  text-transform: uppercase;
+}
+
+.loom-node-badge--now {
+  background: var(--md-primary);
+  color: var(--md-on-primary);
+}
+
+.loom-node-badge--next {
+  right: auto;
+  left: -6px;
+  background: var(--md-secondary);
+  color: var(--md-on-secondary);
+}
+
+/* ─── Thread-chip strip ───────────────────────────────────────────────── */
+
+.loom-thread-chips {
+  display: flex;
+  gap: 4px;
+  margin-top: var(--space-2);
+}
+
+.loom-thread-chip {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+}
+
+/* ─── Idea Vault panel ────────────────────────────────────────────────── */
+
+.loom-vault-panel {
+  width: 240px;
+  flex-shrink: 0;
+  background: var(--md-surface-1);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3);
+  height: fit-content;
+  max-height: 100%;
+  overflow-y: auto;
+}
+
+.loom-vault-panel-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: var(--control-height-compact);
+  background: transparent;
+  border: none;
+  color: var(--md-on-surface);
+  font: var(--type-title-size) var(--type-face);
+  font-weight: var(--type-title-weight);
+  cursor: pointer;
+}
+
+.loom-vault-panel-list {
+  list-style: none;
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.loom-vault-panel-empty {
+  color: var(--md-on-surface-variant);
+  font-size: var(--type-body-sm-size);
+  padding: var(--space-2) 0;
+}
+
+.loom-vault-panel-item {
+  width: 100%;
+  min-height: var(--control-height-compact);
+  text-align: left;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  border: none;
+  background: var(--md-surface-2);
+  color: var(--md-on-surface);
+  cursor: pointer;
+  transition: background var(--motion-fast);
+}
+
+.loom-vault-panel-item:hover,
+.loom-vault-panel-item:focus-visible {
+  background: var(--md-surface-3);
+}

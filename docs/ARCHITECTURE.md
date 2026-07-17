@@ -5,7 +5,7 @@ This doc describes the folder structure, backend/frontend conventions, and reque
 ## Stack
 
 - **Backend:** FastAPI + SQLite (no ORM, raw SQL via `db.py`)
-- **Frontend:** React + Vite + TypeScript, no global state library (local/component state only)
+- **Frontend:** React + Vite + TypeScript, no global state library (local/component state only); `@xyflow/react` (React Flow) for the Loom tapestry canvas
 - **Database:** SQLite, gitignored and rebuilt from seed files; dungeons and Map Lab layouts are runtime-authored records
 
 ## Backend Layout
@@ -128,5 +128,5 @@ data/seeds/*.json (canonical reference and campaign data)
 
 Backend routers registered in `main.py`: `reference.py`, `spells.py`, `monsters.py`, `weapons.py`, `items.py`, `loot.py`, `players.py`, `npcs.py`, `quests.py`, `encounters.py`, `dungeons.py`, `layouts.py`, `loom.py`.
 
-Frontend feature directories: `dungeons/`, `encounters/`, `items/`, `loot/`, `monsters/`, `npcs/`, `players/`, `quests/`, `spells/`, `weapons/`.
+Frontend feature directories: `dungeons/`, `encounters/`, `items/`, `loom/`, `loot/`, `monsters/`, `npcs/`, `players/`, `quests/`, `spells/`, `weapons/`.
 <!-- GENERATED:ARCHITECTURE:END -->

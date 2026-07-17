@@ -14,6 +14,7 @@ import { SpellBrowserPage } from './features/spells/SpellBrowserPage'
 import { WeaponBrowserPage } from './features/weapons/WeaponBrowserPage'
 import { ItemBrowserPage } from './features/items/ItemBrowserPage'
 import { LootBundleBrowserPage } from './features/loot/LootBundleBrowserPage'
+import { LoomPage } from './features/loom/LoomPage'
 import { AppShell } from './layout/AppShell'
 import { ComponentDemoPage } from './pages/ComponentDemoPage'
 import { HomePage } from './pages/HomePage'
@@ -35,6 +36,7 @@ export const routes = [
       { path: 'players', element: <PlayerBrowserPage /> },
       { path: 'npcs', element: <NPCBrowserPage /> },
       { path: 'quests', element: <QuestBrowserPage /> },
+      { path: 'loom', element: <LoomPage /> },
       { path: 'encounters', element: <EncounterBrowserPage /> },
       { path: 'encounters/:id/run', element: <EncounterRunnerPage /> },
       { path: 'dungeons', element: <DungeonBrowserPage /> },
