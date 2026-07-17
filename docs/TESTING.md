@@ -78,6 +78,15 @@ pytest -m "not integration"                        # skip the slower real-data b
 - `npm run build` (`tsc -b && vite build`) must also succeed before shipping — it
   type-checks the whole app. Use `npm run typecheck` (`tsc -b`) for a fast type-only
   check without the Vite build step.
+- **React Flow under jsdom** requires three stubs in `frontend/src/test/setup.ts`:
+  `ResizeObserver` (no-op observe/unobserve/disconnect), `DOMMatrixReadOnly` (no-op constructor),
+  and element `offsetWidth`/`offsetHeight` getters (set to 1000/800). These are assigned via `??=`
+  or `Object.defineProperties` so they don't overwrite a real implementation when present.
+  Coverage of React Flow–rendered components is limited to render smoke tests (node badges,
+  vault panel listing); never attempt drag/connect interaction tests in jsdom — those belong in
+  live browser gates. Pure graph-semantic modules (`loomGraph.ts`, `loomFlow.ts`) are fully
+  unit-tested without any React Flow dependency.
+
 - **Do not use `tsc --noEmit` as a gate.** The root `frontend/tsconfig.json` has
   `"files": []` (it only exists to reference the app/node sub-projects), so
   `tsc --noEmit` silently checks *nothing* and reports success even with real type

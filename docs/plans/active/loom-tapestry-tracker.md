@@ -1,6 +1,6 @@
 # The Loom — Tapestry Story-Thread Tracker
 
-> **Status:** LM0–LM2 shipped. LM3 — Frontend data layer and graph model is next.
+> **Status:** LM0–LM4 shipped. LM5 — Canvas mutations is next.
 
 - **Area guide:** [The Loom](../../areas/loom.md).
 
@@ -73,8 +73,8 @@ SELECT 1 FROM reachable WHERE id = ? LIMIT 1;   -- source_id; any row means reje
   - `--seed 8fb3d9 --role loom-update` (cool slate blue — recorded past)
   - Thread accents `loom-thread-1`…`loom-thread-6` with hue-spread seeds `e05d5d`, `e09a3d`, `7bc47b`, `4fb8c9`, `7d8fe0`, `c97bd0`.
 - Thread `color` is stored as a token key (`thread-1`…`thread-6`), validated by Pydantic pattern `^thread-[1-6]$` — not a DB CHECK, so the palette can grow without a schema change.
-- Re-theme React Flow via its own CSS variables mapped to MD3 tokens in `LoomCanvas.css` (e.g. `--xy-background-color: var(--md-surface)`, `--xy-edge-stroke: var(--md-outline)`); import `@xyflow/react/dist/style.css` once in `LoomPage.tsx`.
-- Multi-thread nodes wear a **thread-chip strip** (one small dot per membership); edges take the single thread accent in `threads(source) ∩ threads(target)`, else neutral `--md-outline`. Fallback if illegible at zoom-out (decide at LM4's live gate): border by first thread + chips.
+- Re-theme React Flow via its own CSS variables mapped to MD3 tokens in `LoomCanvas.css` (e.g. `--xy-background-color: var(--md-surface)`, `--xy-edge-stroke: var(--md-outline)`); import `@xyflow/react/dist/style.css` once in `LoomPage.tsx`. Confirmed contract (LM4): 20 `--xy-*` variables re-themed — background, pattern dots, edges, handles, selection, controls, and attribution all resolve to MD3 tokens.
+- Multi-thread nodes wear a **thread-chip strip** (one 8×8px colored dot per membership); edges take the single thread accent in `threads(source) ∩ threads(target)`, else neutral `--md-outline`. Chip strip is `aria-hidden="true"` — never the sole thread cue. Standard approach kept (no fallback needed at zoom-out).
 - Honor the existing floors: foundation spacing/radius/motion/z tokens, 48px touch targets for ordinary controls, visible focus, no hue-alone cues. Changing `frontend/src/theme.css` requires `docs/DESIGN_SYSTEM.md` in the same change set (checker-enforced); adding a dependency to `frontend/package.json` requires `docs/TESTING.md` likewise.
 
 ---
@@ -85,6 +85,13 @@ SELECT 1 FROM reachable WHERE id = ? LIMIT 1;   -- source_id; any row means reje
 - `frontend/src/layout/navSections.ts` — extend once for the new route; never duplicate the nav list.
 - `scripts/generate-md3-tokens.mjs` — the only way to mint loom colors.
 - Map Lab's layering (`frontend/src/features/dungeons/maplab/`): pure model module → reducer-style hook → page component. The Loom follows the same layering (`loomGraph.ts` → `useLoomTapestry.ts` → `LoomPage.tsx`); React Flow replaces only Map Lab's hand-rolled canvas/zoom layer, so do not replicate `MapCanvas`/`useMapCanvasZoom`.
+- **`frontend/src/features/loom/loomGraph.ts`** (LM3, pure, no React/React Flow import): `isPast(node)`, `isFuture(node)`, `buildAdjacency(edges): Map<number, number[]>` (source id → target ids), `headsByThread(tapestry): Map<number, Set<number>>` (thread id → head node ids), `nearestFutureAnchors(headId, tapestry, adjacency?): number[]`, `vaultNodes(tapestry): LoomNode[]`, `edgeThreads(edge, tapestry): number[]`, `wouldCycle(edges, sourceId, targetId): boolean`. All take/return plain `LoomNode`/`LoomEdge`/`LoomTapestry` from `api/types.ts`.
+- **`frontend/src/features/loom/loomFlow.ts`** (LM3, pure): `buildFlowNodes(tapestry): FlowNode[]` and `buildFlowEdges(tapestry): FlowEdge[]`. `FlowNode = {id: string, type: 'anchor'|'update', position: {x,y}, data: {node: LoomNode, isHead: boolean, isNextAnchor: boolean}}`; `FlowEdge = {id: string, source: string, target: string, data: {threadIds: number[]}}`. Ids are `String(node.id)`/`String(edge.id)` (React Flow expects string ids).
+- **`frontend/src/features/loom/LoomPage.tsx`** (LM4): React Flow composition with `<ReactFlow>`, `<Background>`, `<Controls>`, custom `nodeTypes = { anchor: AnchorNode, update: UpdateNode }`, and `LoomThreadsContext.Provider` for thread-color resolution in child nodes. Imports `@xyflow/react/dist/style.css` and `LoomCanvas.css`.
+- **`frontend/src/features/loom/LoomCanvas.css`** (LM4): Twenty `--xy-*` CSS variables mapped to MD3 tokens (scoped under `.loom-canvas-area .react-flow`); node status treatments via `data-status`/`data-head` attributes; thread chip strip; vault panel styles. Attribution restyled but never removed.
+- **`frontend/src/features/loom/useLoomTapestry.ts`** (LM4): Read-path fetch hook returning `RemoteState<LoomTapestry>` + `reload` callback. No mutation plumbing yet (LM5).
+- **`frontend/src/features/loom/nodes/AnchorNode.tsx`**, **`UpdateNode.tsx`**, **`ThreadChips.tsx`**, **`loomThreadsContext.ts`** (LM4): Memoized custom React Flow node components; thread data rides via context since React Flow only forwards `data` to node types. Thread chips are `aria-hidden="true"` (never the sole thread cue).
+- **`frontend/src/features/loom/LoomVaultPanel.tsx`** (LM4): Collapsible side panel listing vault nodes (degree 0); `onSelectNode` callback pans viewport via `rfInstance.setCenter()`.
 - Backend: `backend/app/db.py` helpers (`get_db`, `dict_from_row`, `parse_json_list`), the `quests.py`/`layouts.py` router idioms, and `backend/tests/conftest.py`'s real-schema fixtures.
 
 ---
@@ -106,38 +113,14 @@ Build the data layer, the pure graph model, and the React Flow canvas: read-only
 
 | Stage | Required strength | Summary | Deliverables |
 |-------|-------|---------|--------------|
-| **LM3 — Frontend data layer and graph model** (next up) | Standard | API types/client methods and the pure `loomGraph.ts`/`loomFlow.ts` modules. No UI. | Exhaustive unit coverage of the graph semantics. |
-| **LM4 — React Flow canvas, read-only and themed** | High | Install React Flow, mint loom tokens, render the tapestry with badges/chips/vault panel. | Themed canvas at `/loom`; live browser gate. |
-| **LM5 — Canvas mutations** | Standard | Node/thread CRUD dialogs, edge connect with cycle rejection surfaced, drag persistence. | Full editing loop on canvas. |
+| LM3 — Frontend data layer and graph model | Standard | API types/client methods and the pure `loomGraph.ts`/`loomFlow.ts` modules. No UI. | Exhaustive unit coverage of the graph semantics. |
+| LM4 — React Flow canvas, read-only and themed | High | Install React Flow, mint loom tokens, render the tapestry with badges/chips/vault panel. | Themed canvas at `/loom`; live browser gate. |
+| **LM5 — Canvas mutations** (next up) | Standard | Node/thread CRUD dialogs, edge connect with cycle rejection surfaced, drag persistence. | Full editing loop on canvas. |
 | **LM6 — Bridge workflow and anchor lifecycle** | Standard | Selection-driven bridge flow, mark reached/abandoned, head/next recompute, empty state. | The complete DM loop, live-verified. |
 
 **Sequencing:** LM3 → LM4 → LM5 → LM6.
 
-#### LM3 — Frontend data layer and graph model (next up)
-
-- **Read first:** This plan's `Key facts` (graph semantics + frontend conventions); `frontend/src/api/client.ts`; `frontend/src/api/types.ts`; `frontend/src/features/dungeons/maplab/maplabEditor.ts` (pure-model layering example); the LM0 seed JSONs (fixture source).
-- **Build:** Add `LoomThread`, `LoomNode`, `LoomEdge`, `LoomTapestry`, `LoomBridgeResult`, and input types to `frontend/src/api/types.ts`. Add a `patch<T>` helper beside `get/post/put/del` in `frontend/src/api/client.ts` and a `// Loom` block of methods: `getLoomTapestry`, `createLoomThread`, `updateLoomThread`, `deleteLoomThread`, `createLoomNode`, `updateLoomNode`, `patchLoomNodePosition`, `deleteLoomNode`, `createLoomEdge`, `deleteLoomEdge`, `createLoomBridge`. Write `frontend/src/features/loom/loomGraph.ts` implementing the `Key facts` semantics verbatim (`isPast`, `isFuture`, `buildAdjacency`, `headsByThread`, `nearestFutureAnchors`, `vaultNodes`, `edgeThreads`, `wouldCycle`) and `loomFlow.ts` mapping tapestry + derived flags to canvas node/edge shapes. **Do not import `@xyflow/react` here** (it installs in LM4): define minimal local `FlowNode`/`FlowEdge` structural types (`{id, type, position:{x,y}, data}` / `{id, source, target}`) that React Flow accepts as-is.
-- **Inherits:** The LM1/LM2 API contract as recorded in `docs/API_REFERENCE.md` and this plan's `Key facts`.
-- **Expected touch set:** `frontend/src/api/types.ts`; `frontend/src/api/client.ts`; `frontend/src/features/loom/loomGraph.ts`, `loomFlow.ts` (new); `frontend/src/features/loom/__tests__/loomGraph.test.ts`, `loomFlow.test.ts` (new); this plan.
-- **Documentation impact:** None: purely additive frontend data layer; the API contract is already recorded in `docs/API_REFERENCE.md` and no user-visible capability ships until LM4.
-- **Tests:** Vitest units against a fixture mirroring the demo tapestry: `headsByThread` = {3} for both threads; a two-head split case; `nearestFutureAnchors(3)` = {4, 6}; an abandoned anchor terminates the walk unreported; marking an anchor reached makes it the head; `vault` = {7}; `edgeThreads` single/none/multi intersection cases; `wouldCycle` direct and transitive. Commands: `npm run test`, `npm run lint`, `npm run typecheck`.
-- **Gate:** Suite-sufficient — pure code with no runtime surface; no browser pass.
-- **Discovery consolidation:** Promote the confirmed `loomGraph.ts` export signatures into `Reusable pieces`; revise LM4/LM5/LM6 Build blocks if signatures differ from the names above.
-- **Completion edit:** Collapse LM3; rewrite the Status line; mark LM4 `(next up)`; re-point the manifest and area-guide anchors.
-
-#### LM4 — React Flow canvas, read-only and themed (planned)
-
-- **Read first:** This plan's `Design system in force` and `Key facts` (frontend conventions); `frontend/src/theme.css`; `frontend/src/router.tsx`; `frontend/src/layout/navSections.ts`; `frontend/src/components/icons/index.ts`; `frontend/src/test/setup.ts`; `docs/DESIGN_SYSTEM.md`; `frontend/src/features/loom/loomGraph.ts`.
-- **Build:** `npm install @xyflow/react` (^12.8). Mint the eight `--md-loom-*` token sets with the exact commands in `Design system in force` and paste the generated blocks into `frontend/src/theme.css` after the `--md-npc` block. Build `frontend/src/features/loom/LoomPage.tsx` (React Flow composition; imports `@xyflow/react/dist/style.css` once), `LoomCanvas.css` (React Flow CSS vars → MD3 tokens; `.react-flow__attribution` restyled, never removed), `useLoomTapestry.ts` (fetch/refetch read path), and `nodes/AnchorNode.tsx` + `nodes/UpdateNode.tsx` (memoized; registered via `nodeTypes = { anchor, update }`). Anchor visuals: planned = outlined `--md-loom-anchor` with subtle glow; reached = filled `--md-loom-anchor-container`; abandoned = dashed + reduced opacity. Update = card on `--md-loom-update-container`. Heads get a "Now" badge + accent ring; nearest future anchors get "Next" — both driven by flags injected into node `data` by `loomFlow.ts`, never computed inside node components. Thread-chip strip on nodes; edge stroke per `edgeThreads`. Collapsible "Idea Vault" side panel listing `vaultNodes` (they also stay on-canvas at their stored x/y); clicking an entry pans the viewport to the node. Route `{ path: 'loom', element: <LoomPage /> }` in `frontend/src/router.tsx` and a "The Loom" link (lucide `Waypoints` via the icon barrel) in the Campaign section of `frontend/src/layout/navSections.ts` — quests stays for now. Add the jsdom stubs (`ResizeObserver`, `DOMMatrixReadOnly`, `offsetWidth`/`offsetHeight` getters) to `frontend/src/test/setup.ts`.
-- **Inherits:** LM3 model, mappers, client methods; LM2 seeded demo tapestry.
-- **Expected touch set:** `frontend/package.json` + lockfile; `frontend/src/theme.css`; `frontend/src/features/loom/` (LoomPage.tsx, LoomCanvas.css, useLoomTapestry.ts, nodes/, `__tests__/`); `frontend/src/router.tsx`; `frontend/src/layout/navSections.ts`; `frontend/src/components/icons/index.ts`; `frontend/src/test/setup.ts`; `frontend/src/layout/__tests__/AppShell.test.tsx` (nav assertion); `docs/DESIGN_SYSTEM.md`; `docs/TESTING.md`; `docs/ARCHITECTURE.md`; this plan.
-- **Documentation impact:** `docs/DESIGN_SYSTEM.md` — regenerate the token inventory (same change set as `theme.css`, checker-enforced) and note the loom token sets + React Flow re-theming approach; `docs/TESTING.md` — same change set as `package.json` (checker-enforced): document the React Flow jsdom mock boundary (pure-module coverage; no drag/connect tests in jsdom); `docs/ARCHITECTURE.md` — record the new runtime dependency and the loom route.
-- **Tests:** AnchorNode/UpdateNode render tests (three anchor statuses, chips, Now/Next badges); vault-panel test; one `LoomPage` smoke render with a mocked client; update the AppShell nav assertion. Full `npm run test && npm run lint && npm run typecheck && npm run build`. If the jsdom mocks prove flaky, drop the smoke test (no frontend coverage gate) — the live gate covers rendering.
-- **Gate:** **Live browser pass required** — with the demo tapestry seeded, `/loom` renders 7 nodes and 5 edges with correct Now/Next badges, anchor status treatments, and thread chips at desktop and 768px; canvas background/controls/attribution visibly match MD3 tokens.
-- **Discovery consolidation:** Record the confirmed React Flow theming contract (which CSS variables actually took effect) and the final jsdom stub set in `Key facts` and `docs/TESTING.md`; if chip-strip legibility fails at zoom-out, record the chosen fallback (first-thread border + chips) in `Design system in force` and revise LM5/LM6 visuals accordingly.
-- **Completion edit:** Collapse LM4; rewrite the Status line; mark LM5 `(next up)`; re-point the manifest and area-guide anchors.
-
-#### LM5 — Canvas mutations (planned)
+#### LM5 — Canvas mutations (next up)
 
 - **Read first:** LM4's page/hook code; `frontend/src/components/Dialog.tsx`, `ConfirmDialog.tsx`, `components/form/`; this plan's `Key facts` (API surface, no-toast rule); `docs/DESIGN_SYSTEM.md`'s standard editor contract (VW4 section).
 - **Build:** Node create/edit dialog on the shared `Dialog` (title, body, kind chosen at create only, status select for anchors, session_tag, thread multi-select) and delete via `ConfirmDialog` with pending state. Thread manager panel: create/rename/recolor/delete with the six `--md-loom-thread-N` swatches as the color-key picker. `onConnect` → `createLoomEdge` with 409 ("already connected") and 422 (cycle/self-loop) surfaced in a feature-local dismissible error banner (`--md-error` tokens); wire React Flow's `isValidConnection` to `wouldCycle` for instant feedback (server remains authoritative). Edge select + delete. `onNodeDragStop` → `patchLoomNodePosition` (one PATCH per drag; no debounce machinery).
@@ -215,6 +198,8 @@ With the Loom live, remove the quests domain end-to-end. Nothing outside `featur
 | LM0 | Four loom tables + indexes added to canonical schema (`scripts/init_database.py`), four demo-tapestry seed files authored, `docs/DATA_MODEL.md` updated with loom subsection and regenerated schema inventory. Tables build via conftest; seeds validate; full pytest green at 91.27% coverage. |
 | LM1 | `backend/app/routers/loom.py` router (thread/node/edge CRUD, `GET /api/loom/tapestry`, reachability-CTE cycle guard) plus `LoomThread`/`LoomNode`/`LoomEdge`/`LoomTapestry` schemas in `backend/app/schemas.py`, registered in `main.py`. No deviation from the planned endpoint contract; full pytest green at 90.99% coverage; manual tapestry curl against a freshly initialized dev DB returned valid JSON. |
 | LM2 | `POST /api/loom/bridge` and `PATCH /api/loom/nodes/{id}/position` plus `LoomBridgeCreate`/`LoomBridgeResult`/`LoomNodePosition` schemas; four `populate_loom_*` seed loaders behind an opt-in `--loom` CLI flag (never part of "load all") wired into `seed_database.py`, `export_db_seeds.py`, and `conftest.py::_seed_real_data`; a dedicated `/api/loom/tapestry` integration smoke test (it returns a dict, not a list, so it couldn't join the existing generic collection-list tests). No deviation from the planned response contract; full pytest green at 91.07% coverage; live-verified bridge + position PATCH against the seeded demo tapestry. |
+| LM3 | Loom types + `patch<T>` client methods added to `frontend/src/api/{types,client}.ts`; pure `frontend/src/features/loom/loomGraph.ts` (graph semantics) and `loomFlow.ts` (React-Flow-shaped mappers, no `@xyflow/react` dependency). No deviation from the planned export surface (see `Reusable pieces`); 19 new Vitest unit tests green (full suite 955 passed/6 skipped), lint and `tsc -b` clean. |
+| LM4 | `@xyflow/react` ^12.11.2 installed; eight loom token sets (`loom-anchor`, `loom-update`, `loom-thread-1`…`loom-thread-6`) minted and wired in `theme.css`; themed read-only canvas at `/loom` with `LoomPage`, `LoomCanvas.css` (20 `--xy-*` vars re-themed), `useLoomTapestry`, `AnchorNode`/`UpdateNode`/`ThreadChips`/`LoomVaultPanel` components, and jsdom stubs. `docs/DESIGN_SYSTEM.md` token inventory regenerated + narrative section added; `docs/TESTING.md` React Flow jsdom boundary documented; `docs/ARCHITECTURE.md` dependency noted. 966 frontend tests + 91% backend coverage, lint/typecheck clean. |
 
 ---
 
@@ -237,4 +222,4 @@ Seed the demo tapestry (`python scripts/seed_database.py --loom --force`), open 
 
 ## Next:
 
-**LM3 — Frontend data layer and graph model** is next. It is unblocked: LM1 and LM2 shipped the router, schemas, and bridge/position endpoints it builds on.
+**LM5 — Canvas mutations** is next. It is unblocked: LM4 shipped the themed React Flow canvas, hook, and node components that LM5 extends with CRUD dialogs, edge connect, and drag persistence.

@@ -1,0 +1,25 @@
+import { memo } from 'react'
+import { Handle, Position, type Node, type NodeProps } from '@xyflow/react'
+import type { FlowNodeData } from '../loomFlow'
+import { ThreadChips } from './ThreadChips'
+
+export type AnchorFlowNode = Node<FlowNodeData, 'anchor'>
+
+function AnchorNodeImpl({ data }: NodeProps<AnchorFlowNode>) {
+  const { node, isHead, isNextAnchor } = data
+  const status = node.status ?? 'planned'
+
+  return (
+    <div className="loom-node loom-node--anchor" data-status={status} data-head={isHead || undefined}>
+      <Handle type="target" position={Position.Top} />
+      <Handle type="source" position={Position.Bottom} />
+      {isHead && <span className="loom-node-badge loom-node-badge--now">Now</span>}
+      {isNextAnchor && <span className="loom-node-badge loom-node-badge--next">Next</span>}
+      <div className="loom-node-title">{node.title}</div>
+      {node.session_tag && <div className="loom-node-session">{node.session_tag}</div>}
+      <ThreadChips threadIds={node.thread_ids} />
+    </div>
+  )
+}
+
+export const AnchorNode = memo(AnchorNodeImpl)

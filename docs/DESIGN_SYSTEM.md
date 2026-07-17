@@ -353,6 +353,34 @@ Independently collapsible toolbar group in Map Lab:
 
 ---
 
+### Loom tokens and React Flow re-theming (LM4)
+
+The Loom canvas uses `@xyflow/react` (≥12.4 for React 19 compatibility, pinned `^12.8`). Its internal
+styling is replaced by mapping React Flow's `--xy-*` CSS custom properties to MD3 tokens in
+`LoomCanvas.css` (scoped under `.loom-canvas-area .react-flow`). Twenty `--xy-*` variables are
+re-themed: background, edges, handles, selection, controls, and attribution all resolve to
+`--md-surface`, `--md-outline`, `--md-primary`, etc.
+
+Eight loom-specific token sets were generated via `scripts/generate-md3-tokens.mjs`:
+- **`loom-anchor`** (warm beacon gold, seed `#e8b33d`) — planned/future milestones
+- **`loom-update`** (cool slate blue, seed `#8fb3d9`) — recorded past nodes
+- **`loom-thread-1`…`loom-thread-6`** — thread accent colors with hue-spread seeds for mutual
+  distinguishability; stored as token keys (`thread-1`…`thread-6`) in the database, never as hex
+
+Node status treatments are CSS-driven via `data-status` and `data-head` attributes:
+- Planned anchors: outlined with `--md-loom-anchor` + subtle glow
+- Reached anchors: filled `--md-loom-anchor` background
+- Abandoned anchors: dashed border + reduced opacity
+- Update nodes: card on `--md-loom-update-container`
+- Heads: accent ring via `box-shadow` + "Now" badge on `--md-primary`
+- Nearest future anchors: "Next" badge on `--md-secondary`
+
+Thread-chip strips (8×8px colored dots, `aria-hidden="true"`) appear on nodes; edges take the
+single thread accent from `threads(source) ∩ threads(target)`, falling back to `--md-outline`.
+The React Flow attribution is restyled but never removed (license requirement).
+
+---
+
 ## Accessibility floor
 
 - **Visible focus rings** — `:focus-visible` with `2px solid var(--md-primary)` + `2px offset`, applied
@@ -370,7 +398,7 @@ Independently collapsible toolbar group in Map Lab:
 <!-- GENERATED:DESIGN_SYSTEM:START -->
 ### Generated Design Inventory
 
-CSS custom properties: `--backdrop-color`, `--control-height`, `--control-height-compact`, `--elevation-shadow`, `--md-arcane`, `--md-arcane-container`, `--md-boss`, `--md-boss-container`, `--md-cold`, `--md-cold-container`, `--md-divine`, `--md-divine-container`, `--md-door`, `--md-door-container`, `--md-error`, `--md-error-container`, `--md-fire`, `--md-fire-container`, `--md-lightning`, `--md-lightning-container`, `--md-loot`, `--md-loot-container`, `--md-nature`, `--md-nature-container`, `--md-npc`, `--md-npc-container`, `--md-on-arcane`, `--md-on-arcane-container`, `--md-on-boss`, `--md-on-boss-container`, `--md-on-cold`, `--md-on-cold-container`, `--md-on-divine`, `--md-on-divine-container`, `--md-on-door`, `--md-on-door-container`, `--md-on-error`, `--md-on-error-container`, `--md-on-fire`, `--md-on-fire-container`, `--md-on-lightning`, `--md-on-lightning-container`, `--md-on-loot`, `--md-on-loot-container`, `--md-on-nature`, `--md-on-nature-container`, `--md-on-npc`, `--md-on-npc-container`, `--md-on-passage-hidden`, `--md-on-passage-hidden-container`, `--md-on-passage-locked`, `--md-on-passage-locked-container`, `--md-on-poison`, `--md-on-poison-container`, `--md-on-primary`, `--md-on-primary-container`, `--md-on-psychic`, `--md-on-psychic-container`, `--md-on-secondary`, `--md-on-secondary-container`, `--md-on-skill`, `--md-on-skill-container`, `--md-on-surface`, `--md-on-surface-variant`, `--md-on-tertiary`, `--md-on-tertiary-container`, `--md-outline`, `--md-outline-variant`, `--md-passage-hidden`, `--md-passage-hidden-container`, `--md-passage-locked`, `--md-passage-locked-container`, `--md-poison`, `--md-poison-container`, `--md-primary`, `--md-primary-container`, `--md-psychic`, `--md-psychic-container`, `--md-secondary`, `--md-secondary-container`, `--md-skill`, `--md-skill-container`, `--md-surface`, `--md-surface-1`, `--md-surface-2`, `--md-surface-3`, `--md-surface-4`, `--md-surface-5`, `--md-surface-variant`, `--md-tertiary`, `--md-tertiary-container`, `--motion-fast`, `--motion-normal`, `--radius-full`, `--radius-lg`, `--radius-md`, `--radius-sm`, `--space-1`, `--space-2`, `--space-3`, `--space-4`, `--space-5`, `--space-6`, `--space-7`, `--type-body-line`, `--type-body-size`, `--type-body-sm-line`, `--type-body-sm-size`, `--type-body-sm-weight`, `--type-body-weight`, `--type-caption-line`, `--type-caption-size`, `--type-caption-tracking`, `--type-caption-weight`, `--type-face`, `--type-face-mono`, `--type-headline-line`, `--type-headline-size`, `--type-headline-weight`, `--type-label-line`, `--type-label-size`, `--type-label-weight`, `--type-title-line`, `--type-title-size`, `--type-title-weight`, `--variant-accent`, `--variant-container`, `--variant-on-accent`, `--variant-on-container`, `--z-dialog`, `--z-editor`, `--z-floating`.
+CSS custom properties: `--backdrop-color`, `--control-height`, `--control-height-compact`, `--elevation-shadow`, `--md-arcane`, `--md-arcane-container`, `--md-boss`, `--md-boss-container`, `--md-cold`, `--md-cold-container`, `--md-divine`, `--md-divine-container`, `--md-door`, `--md-door-container`, `--md-error`, `--md-error-container`, `--md-fire`, `--md-fire-container`, `--md-lightning`, `--md-lightning-container`, `--md-loom-anchor`, `--md-loom-anchor-container`, `--md-loom-thread-1`, `--md-loom-thread-1-container`, `--md-loom-thread-2`, `--md-loom-thread-2-container`, `--md-loom-thread-3`, `--md-loom-thread-3-container`, `--md-loom-thread-4`, `--md-loom-thread-4-container`, `--md-loom-thread-5`, `--md-loom-thread-5-container`, `--md-loom-thread-6`, `--md-loom-thread-6-container`, `--md-loom-update`, `--md-loom-update-container`, `--md-loot`, `--md-loot-container`, `--md-nature`, `--md-nature-container`, `--md-npc`, `--md-npc-container`, `--md-on-arcane`, `--md-on-arcane-container`, `--md-on-boss`, `--md-on-boss-container`, `--md-on-cold`, `--md-on-cold-container`, `--md-on-divine`, `--md-on-divine-container`, `--md-on-door`, `--md-on-door-container`, `--md-on-error`, `--md-on-error-container`, `--md-on-fire`, `--md-on-fire-container`, `--md-on-lightning`, `--md-on-lightning-container`, `--md-on-loom-anchor`, `--md-on-loom-anchor-container`, `--md-on-loom-thread-1`, `--md-on-loom-thread-1-container`, `--md-on-loom-thread-2`, `--md-on-loom-thread-2-container`, `--md-on-loom-thread-3`, `--md-on-loom-thread-3-container`, `--md-on-loom-thread-4`, `--md-on-loom-thread-4-container`, `--md-on-loom-thread-5`, `--md-on-loom-thread-5-container`, `--md-on-loom-thread-6`, `--md-on-loom-thread-6-container`, `--md-on-loom-update`, `--md-on-loom-update-container`, `--md-on-loot`, `--md-on-loot-container`, `--md-on-nature`, `--md-on-nature-container`, `--md-on-npc`, `--md-on-npc-container`, `--md-on-passage-hidden`, `--md-on-passage-hidden-container`, `--md-on-passage-locked`, `--md-on-passage-locked-container`, `--md-on-poison`, `--md-on-poison-container`, `--md-on-primary`, `--md-on-primary-container`, `--md-on-psychic`, `--md-on-psychic-container`, `--md-on-secondary`, `--md-on-secondary-container`, `--md-on-skill`, `--md-on-skill-container`, `--md-on-surface`, `--md-on-surface-variant`, `--md-on-tertiary`, `--md-on-tertiary-container`, `--md-outline`, `--md-outline-variant`, `--md-passage-hidden`, `--md-passage-hidden-container`, `--md-passage-locked`, `--md-passage-locked-container`, `--md-poison`, `--md-poison-container`, `--md-primary`, `--md-primary-container`, `--md-psychic`, `--md-psychic-container`, `--md-secondary`, `--md-secondary-container`, `--md-skill`, `--md-skill-container`, `--md-surface`, `--md-surface-1`, `--md-surface-2`, `--md-surface-3`, `--md-surface-4`, `--md-surface-5`, `--md-surface-variant`, `--md-tertiary`, `--md-tertiary-container`, `--motion-fast`, `--motion-normal`, `--radius-full`, `--radius-lg`, `--radius-md`, `--radius-sm`, `--space-1`, `--space-2`, `--space-3`, `--space-4`, `--space-5`, `--space-6`, `--space-7`, `--type-body-line`, `--type-body-size`, `--type-body-sm-line`, `--type-body-sm-size`, `--type-body-sm-weight`, `--type-body-weight`, `--type-caption-line`, `--type-caption-size`, `--type-caption-tracking`, `--type-caption-weight`, `--type-face`, `--type-face-mono`, `--type-headline-line`, `--type-headline-size`, `--type-headline-weight`, `--type-label-line`, `--type-label-size`, `--type-label-weight`, `--type-title-line`, `--type-title-size`, `--type-title-weight`, `--variant-accent`, `--variant-container`, `--variant-on-accent`, `--variant-on-container`, `--z-dialog`, `--z-editor`, `--z-floating`.
 
 Supported `data-variant` values: `arcane`, `boss`, `cold`, `divine`, `fire`, `lightning`, `loot`, `monster`, `nature`, `neutral`, `npc`, `poison`, `psychic`, `skill`, `spell`, `weapon`.
 <!-- GENERATED:DESIGN_SYSTEM:END -->

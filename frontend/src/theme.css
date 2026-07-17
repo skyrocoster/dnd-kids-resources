@@ -78,6 +78,61 @@
   --md-npc-container: #6c325e;
   --md-on-npc-container: #ffd7ef;
 
+  /* loom-anchor — generated via material-color-utilities from source #e8b33d,
+     Blend.harmonize()'d toward primary seed #d0bcff (hue 69.2, chroma 40),
+     tones 80/20/30/90. Planned/future milestones on the Loom canvas. */
+  --md-loom-anchor: #FDB967;
+  --md-on-loom-anchor: #472A00;
+  --md-loom-anchor-container: #663E00;
+  --md-on-loom-anchor-container: #FFDDB9;
+
+  /* loom-update — generated via material-color-utilities from source #8fb3d9,
+     Blend.harmonize()'d toward primary seed #d0bcff (hue 264, chroma 30.2),
+     tones 80/20/30/90. Recorded past nodes on the Loom canvas. */
+  --md-loom-update: #B1C7F5;
+  --md-on-loom-update: #183056;
+  --md-loom-update-container: #31476E;
+  --md-on-loom-update-container: #D7E2FF;
+
+  /* Loom thread accents — hue-spread seeds so the six thread colors stay
+     mutually distinguishable at a glance. Generated via
+     scripts/generate-md3-tokens.mjs; regenerate if seed hues change. */
+  /* loom-thread-1 — source #e05d5d, harmonized hue 5.5, chroma 40 */
+  --md-loom-thread-1: #FFB1C1;
+  --md-on-loom-thread-1: #59192C;
+  --md-loom-thread-1-container: #753042;
+  --md-on-loom-thread-1-container: #FFD9DF;
+
+  /* loom-thread-2 — source #e09a3d, harmonized hue 54.3, chroma 40 */
+  --md-loom-thread-2: #FFB784;
+  --md-on-loom-thread-2: #4F2500;
+  --md-loom-thread-2-container: #703701;
+  --md-on-loom-thread-2-container: #FFDCC5;
+
+  /* loom-thread-3 — source #7bc47b, harmonized hue 162.4, chroma 40 */
+  --md-loom-thread-3: #87D7AB;
+  --md-on-loom-thread-3: #003822;
+  --md-loom-thread-3-container: #005234;
+  --md-on-loom-thread-3-container: #A3F4C6;
+
+  /* loom-thread-4 — source #4fb8c9, harmonized hue 226, chroma 40 */
+  --md-loom-thread-4: #7ED1F3;
+  --md-on-loom-thread-4: #003545;
+  --md-loom-thread-4-container: #004D62;
+  --md-on-loom-thread-4-container: #BAEAFF;
+
+  /* loom-thread-5 — source #7d8fe0, harmonized hue 288.1, chroma 40 */
+  --md-loom-thread-5: #C4C0FF;
+  --md-on-loom-thread-5: #2B2867;
+  --md-loom-thread-5-container: #423F7F;
+  --md-on-loom-thread-5-container: #E3DFFF;
+
+  /* loom-thread-6 — source #c97bd0, harmonized hue 314.2, chroma 40 */
+  --md-loom-thread-6: #E1B6FD;
+  --md-on-loom-thread-6: #43205C;
+  --md-loom-thread-6-container: #5B3774;
+  --md-on-loom-thread-6-container: #F3DAFF;
+
   /* ─── Banked — damage-type and domain roles (reserved for future use) ──── */
 
   /* divine — healing, cleric, paladin, radiant damage. Generated via material-color-utilities

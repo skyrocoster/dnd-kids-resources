@@ -26,6 +26,16 @@ import type {
   Dungeon,
   DungeonInput,
   MapLayoutBlob,
+  LoomThread,
+  LoomThreadInput,
+  LoomNode,
+  LoomNodeInput,
+  LoomEdge,
+  LoomEdgeInput,
+  LoomTapestry,
+  LoomBridgeInput,
+  LoomBridgeResult,
+  LoomNodePositionInput,
 } from './types'
 
 export class ApiError extends Error {
@@ -60,6 +70,8 @@ const post = <T>(path: string, body: unknown) =>
   request<T>(path, { method: 'POST', body: JSON.stringify(body) })
 const put = <T>(path: string, body: unknown) =>
   request<T>(path, { method: 'PUT', body: JSON.stringify(body) })
+const patch = <T>(path: string, body: unknown) =>
+  request<T>(path, { method: 'PATCH', body: JSON.stringify(body) })
 const del = (path: string) => request<void>(path, { method: 'DELETE' })
 
 // Reference data
@@ -159,3 +171,18 @@ export const deleteDungeon = (id: number) => del(`/dungeons/${id}`)
 export const getDungeonLayout = (dungeonId: number) => get<MapLayoutBlob>(`/dungeons/${dungeonId}/layout`)
 export const saveDungeonLayout = (dungeonId: number, blob: MapLayoutBlob) =>
   put<MapLayoutBlob>(`/dungeons/${dungeonId}/layout`, blob)
+
+// Loom
+export const getLoomTapestry = () => get<LoomTapestry>('/loom/tapestry')
+export const createLoomThread = (thread: LoomThreadInput) => post<LoomThread>('/loom/threads', thread)
+export const updateLoomThread = (id: number, thread: LoomThreadInput) =>
+  put<LoomThread>(`/loom/threads/${id}`, thread)
+export const deleteLoomThread = (id: number) => del(`/loom/threads/${id}`)
+export const createLoomNode = (node: LoomNodeInput) => post<LoomNode>('/loom/nodes', node)
+export const updateLoomNode = (id: number, node: LoomNodeInput) => put<LoomNode>(`/loom/nodes/${id}`, node)
+export const patchLoomNodePosition = (id: number, position: LoomNodePositionInput) =>
+  patch<LoomNode>(`/loom/nodes/${id}/position`, position)
+export const deleteLoomNode = (id: number) => del(`/loom/nodes/${id}`)
+export const createLoomEdge = (edge: LoomEdgeInput) => post<LoomEdge>('/loom/edges', edge)
+export const deleteLoomEdge = (id: number) => del(`/loom/edges/${id}`)
+export const createLoomBridge = (bridge: LoomBridgeInput) => post<LoomBridgeResult>('/loom/bridge', bridge)

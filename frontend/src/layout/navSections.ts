@@ -9,6 +9,7 @@ import {
   SwordsIcon,
   UsersIcon,
   WandIcon,
+  WaypointsIcon,
 } from '../components/icons'
 import type { LucideIcon } from '../components/icons'
 
@@ -41,6 +42,7 @@ export const navSections: NavSection[] = [
       { to: '/players', label: 'Players', linkIcon: UsersIcon },
       { to: '/npcs', label: 'NPCs', linkIcon: MasksIcon },
       { to: '/quests', label: 'Quests', linkIcon: ScrollIcon },
+      { to: '/loom', label: 'The Loom', linkIcon: WaypointsIcon },
       { to: '/encounters', label: 'Encounters', linkIcon: ShieldIcon },
       { to: '/dungeons', label: 'Dungeons', linkIcon: DoorIcon },
     ],
