@@ -1,6 +1,6 @@
 # The Loom — Weaver's Workspace (UI/UX Pass)
 
-> **Status:** LU0–LU1 shipped. LU2 (Weaver's panel) next up.
+> **Status:** LU0–LU2 shipped. LU3 (woven canvas & thread focus) next up.
 
 - **Area guide:** [The Loom](../../areas/loom.md).
 
@@ -40,16 +40,14 @@ strengthened shuttle glow on heads. Everything else stays quiet.
 
 ### Current UI shape (what exists to change)
 
-- **`LoomPage.tsx`** is the whole page: a flex row of `.loom-canvas-column` (toolbar + conditional
-  banner/inspector strips + `.loom-canvas-area` React Flow) and `LoomVaultPanel` (240px right rail).
-  It owns all selection/dialog state and every mutation handler; the design pass keeps that state model
-  and only re-homes what it *renders*.
-- **Toolbar** (`LoomPage.tsx:280–296`) is three identical `variant="secondary"` buttons: New Update, New
-  Anchor, Manage Threads. No primary emphasis, no icons.
-- **Inspector** is the transient strip (`.loom-inspector`, `LoomEditor.css:40–58`) rendered in four modes:
-  bridging-in-progress, node selected, edge selected. Contextual actions live here: **Bridge to Anchor…**
-  (only when `canBridgeFromSelected` = selected node `isPast` && `isHead`), **Mark Reached / Mark Abandoned**
-  (planned anchor), **Edit**, **Delete**, and **Delete Edge**.
+- **`LoomPage.tsx`** is the whole page: a flex row of `.loom-canvas-column` (error banner +
+  `.loom-canvas-area` React Flow) and `LoomWeaverPanel` (persistent right rail). It still owns all
+  selection/dialog state and every mutation handler; LU2 only re-homed what that state renders.
+- **Toolbar** now lives in `PageHeader.actions` as a wrapped `loom-command-bar`: `New Update` is the one
+  `variant="primary"` command and `New Anchor` / `Manage Threads` stay `secondary`, all with Loom icons.
+- **Selection chrome** now lives in the Weaver's panel instead of a transient strip. The rail's top section
+  renders the bridge-in-progress hint, selected-node details/actions, selected-edge delete action, or the
+  legend when nothing is selected.
 - **Node cards** (`nodes/AnchorNode.tsx`, `nodes/UpdateNode.tsx`, styled in `LoomCanvas.css:58–147`):
   anchor = gold container/border with `data-status` treatments (planned = glow, reached = filled, abandoned =
   dashed + dim); update = slate container. Both show a `Now` badge when `isHead`; anchors show a `Next` badge
@@ -60,6 +58,14 @@ strengthened shuttle glow on heads. Everything else stays quiet.
   `MapPinIcon` (New Anchor), `WaypointsIcon` (Manage Threads). `PageHeader` actions wrap normally once the
   viewport narrows, so LU4's responsive pass only needs to preserve that wrap behavior while keeping the canvas
   flex height owned by `.loom-route`/`.loom-page`.
+- **LU2 rail contract (implemented 2026-07-17):** `LoomWeaverPanel` props are `selectedNode`, `selectedEdge`,
+  `threads`, `vaultNodes`, `canBridgeFromSelected`, `bridgeSource`, `deletingEdge`, `onBridge`,
+  `onMarkReached`, `onMarkAbandoned`, `onEdit`, `onDeleteNode`, `onDeleteEdge`, `onSelectVaultNode`,
+  `onOpenThreadManager`, and `onCancelBridge`. Section order is **Selection/Legend → Threads → Idea Vault**.
+  `LoomVaultPanel` survives as the embedded vault subsection; it was not folded into a monolith. LU3's
+  thread-focus hooks live on
+  `.loom-weaver-threads`, `.loom-weaver-thread-list`, `.loom-weaver-thread-row`, `.loom-weaver-thread-swatch`,
+  and `.loom-weaver-vault`.
 - **`LoomVaultPanel.tsx`** is a self-contained collapsible list of degree-0 nodes; clicking one calls
   `rfInstance.setCenter(node.x, node.y, …)` via `onSelectNode`.
 - **Derived presentation data already available** (no new computation needed): `FlowNodeData` carries
@@ -150,7 +156,8 @@ minimum below. Compact token/type/layout/signature system for this outcome:
 `PageHeader`, `Button`, `Dialog`/`ConfirmDialog`, `StatePanel`, the `icons` barrel, and every existing Loom
 dialog (`LoomNodeEditor`, `LoomThreadManager`, `LoomBridgeDialog`, `LoomErrorBanner`). All loom color token
 sets, the foundation scale, `loomGraph.ts` derivations, and `loomFlow.ts`'s `isHead`/`isNextAnchor` per-node
-flags. `LoomPage.tsx`'s existing selection/mutation state model.
+flags. `LoomPage.tsx`'s existing selection/mutation state model, plus LU2's `LoomWeaverPanel`, `LoomLegend`,
+and embedded `LoomVaultPanel` section.
 
 ## Known debt / deferred (NOT built here)
 
@@ -202,53 +209,9 @@ seam of the command bar vs. the rail; keep them sequential to avoid churn in `Lo
 |-------|-------------|
 | **LU0** | Scaffolding: component/CSS stubs, `it.skip` seams in `LoomPage.test.tsx` and `LoomWeaverPanel.test.tsx`, `LoomWeaverPanelProps` interface finalized. App renders unchanged. Gate ✅. |
 | **LU1** | Added the Loom route shell, eyebrow, `PageHeader`, and primary/secondary command-bar hierarchy using `PlusIcon`, `MapPinIcon`, and `WaypointsIcon`; un-skipped the header seam in `LoomPage.test.tsx`. Frontend `npm run test`, `npm run lint`, `npm run typecheck`, `npm run build`, and the docs check via `.venv\Scripts\python.exe scripts/check_docs.py --check` all passed. Gate ✅. |
+| **LU2** | Replaced the transient inspector strip and standalone vault with a persistent `LoomWeaverPanel` rail that renders Selection/Legend, Threads, and embedded Idea Vault sections while preserving the existing selection/mutation handlers. Frontend `npm run test`, `npm run lint`, `npm run typecheck`, `npm run build`, and `.venv\Scripts\python.exe scripts/check_docs.py --check` passed. Gate ✅. |
 
-#### LU2 — Weaver's panel (next up)
-
-- **Read first:** this plan, `LoomPage.tsx:276–435` (full return + all inspector/vault rendering and their
-  handlers), `LoomVaultPanel.tsx`, `LoomCanvas.css:148–208` (vault styles), `LoomEditor.css:40–58`
-  (`.loom-inspector`), the `LoomWeaverPanel`/`LoomLegend` stubs, `__tests__/LoomPage.test.tsx` and the LU0
-  list of assertions referencing `.loom-inspector`/`Idea Vault`.
-- **Build:** implement `LoomWeaverPanel` as the one persistent right-hand rail and delete the transient strip.
-  - The rail always renders and stacks sections: **Selection** (when a node or edge is selected) showing the
-    node's title, kind (Anchor/Update with an icon+text label — not hue alone), status (planned/reached/
-    abandoned or "recorded"), session tag, body excerpt, and thread names; and the contextual action buttons
-    currently in `.loom-inspector` (**Bridge to Anchor…** gated by `canBridgeFromSelected`, **Mark Reached/
-    Abandoned**, **Edit**, **Delete**; **Delete Edge** for an edge selection; the bridging-in-progress hint +
-    Cancel). Reuse the existing handlers/state from `LoomPage.tsx` verbatim — pass them in as props.
-  - **Legend** (`LoomLegend`) renders as the rail's default section when nothing is selected: keyed rows for
-    Woven update, Beacon (planned anchor), Reached anchor, Abandoned, "Now" (head/shuttle), "Next" (nearest
-    future anchor) — each an icon/shape + label, never color alone.
-  - **Idea Vault** moves into the rail as a section (fold `LoomVaultPanel`'s list + collapse + `onSelectNode`
-    center-on-click behavior in; keep the accessible name text "Idea Vault (N)" so the existing test passes, or
-    update that test in the same change set if the label changes — decide in LU0 handoff and record it).
-  - Update `.loom-page` layout: the rail is a persistent flex child; remove the `.loom-inspector` strip and its
-    layout-shift entirely.
-- **Inherits:** all `LoomPage.tsx` selection/mutation state and dialog wiring (unchanged); the LU1 `loom-route`
-  shell, eyebrow copy (`TAPESTRY · CONTINUITY`), subtitle copy ("Track where every story thread stands between
-  sessions."), `PageHeader`, wrapped command bar, and icon choices (`PlusIcon`, `MapPinIcon`, `WaypointsIcon`);
-  LU0 stubs.
-- **Expected touch set:** `LoomPage.tsx` (render rail, remove strip, pass props), `LoomWeaverPanel.tsx`,
-  `LoomLegend.tsx`, `LoomVaultPanel.tsx` (folded in or reduced to the rail's vault section — decide + record),
-  `LoomCanvas.css` + `LoomEditor.css` (rail sections; delete `.loom-inspector` rules; re-home vault styles),
-  `__tests__/LoomPage.test.tsx` (un-skip rail seams; retarget vault/selection assertions), new
-  `__tests__/LoomWeaverPanel.test.tsx`, and `__tests__/LoomVaultPanel.test.tsx` (retarget or fold). **Contract
-  survey:** grep the loom `__tests__` tree for `loom-inspector`, `Idea Vault`, and `LoomVaultPanel` and update
-  every asserting file listed by LU0 — do not discover them by running the suite file-by-file.
-- **Documentation impact:** `docs/DESIGN_SYSTEM.md` — add the Weaver's-panel/rail anatomy to the Loom section
-  (persistent rail replaces the transient strip; Selection/Legend/Vault sections). Update the Loom **area
-  guide** source map only if a file is added/removed (record the new components).
-- **Tests:** render `LoomWeaverPanel` in isolation with a selected node → asserts details + the right action
-  buttons; with `selection=null` → asserts the legend; vault click still calls the center callback. `npm run
-  test/lint/typecheck/build` green.
-- **Gate:** suite-sufficient for the panel's render logic; the full click-through (select node on canvas →
-  rail updates → act) is confirmed at LU4's live gate because node clicks can't run under jsdom.
-- **Discovery consolidation:** into this plan and `DESIGN_SYSTEM.md`: record the final `LoomWeaverPanelProps`,
-  whether `LoomVaultPanel` survives or folds, and the final section order; revise LU3's touch set with the rail
-  class names its thread-focus section will hook into.
-- **Completion edit:** collapse to a Shipped row; Status → "LU3 next up".
-
-#### LU3 — Woven canvas & thread focus (planned)
+#### LU3 — Woven canvas & thread focus (next up)
 
 - **Read first:** this plan, `LoomCanvas.css` (full), `nodes/AnchorNode.tsx`, `nodes/UpdateNode.tsx`,
   `nodes/ThreadChips.tsx`, `loomFlow.ts`, `loomGraph.ts` (`headsByThread`, `nearestFutureAnchors`,
@@ -274,8 +237,10 @@ seam of the command bar vs. the rail; keep them sequential to avoid churn in `Lo
     affordance; focus is presentation-only (no persistence, no server call).
   - Route any genuinely new CSS variable (warp opacity, spine width, dim opacity) through `theme.css`'s Loom
     area and document it; **add no new seeded color**.
-- **Inherits:** LU2's rail (the Threads section slots into it); `loomGraph`/`loomFlow` derivations; existing
-  node components and token sets.
+- **Inherits:** LU2's persistent rail (`LoomWeaverPanel` section order = Selection/Legend → Threads → Idea
+  Vault, with stable hooks `.loom-weaver-threads`, `.loom-weaver-thread-list`, `.loom-weaver-thread-row`,
+  `.loom-weaver-thread-swatch`, and `.loom-weaver-vault`); `loomGraph`/`loomFlow` derivations; existing node
+  components and token sets.
 - **Expected touch set:** `LoomCanvas.css`, `nodes/AnchorNode.tsx`, `nodes/UpdateNode.tsx` (spine element),
   `loomFlow.ts` or a small helper for the live-warp edge set (+ its unit test), `LoomPage.tsx` (edge data/
   attributes + thread-focus state + dim wiring), `LoomWeaverPanel.tsx` (Threads section), `frontend/src/
@@ -381,4 +346,4 @@ Sole final stage; runs after Phase LU has shipped and been removed.
 
 ## Next:
 
-**LU2 — Weaver's panel** (unblocked): persistent Selection/Legend/Vault rail, remove `.loom-inspector`, retarget vault/selection tests.
+**LU3 — Woven canvas & thread focus** (unblocked): add the warp-textured canvas, thread spines, live-warp edges, and interactive thread focus on the LU2 rail hooks.

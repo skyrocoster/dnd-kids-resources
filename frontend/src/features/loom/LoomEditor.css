@@ -1,4 +1,4 @@
-/* Canvas mutation UI: command bar, inspector, error banner, thread manager. */
+/* Canvas mutation UI: command bar, error banner, thread manager. */
 
 .loom-page-header {
   display: flex;
@@ -59,26 +59,6 @@
 .loom-error-banner-dismiss:hover,
 .loom-error-banner-dismiss:focus-visible {
   background: color-mix(in srgb, var(--md-on-error-container) 12%, transparent);
-}
-
-.loom-inspector {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-  padding: var(--space-2) var(--space-3);
-  background: var(--md-surface-1);
-  border: 1px solid var(--md-outline-variant);
-  border-radius: var(--radius-md);
-}
-
-.loom-inspector-title {
-  font-weight: var(--type-title-weight);
-}
-
-.loom-inspector-actions {
-  display: flex;
-  gap: var(--space-2);
 }
 
 /* ─── Node editor dialog ──────────────────────────────────────────────── */

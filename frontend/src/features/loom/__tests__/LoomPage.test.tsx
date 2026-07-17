@@ -63,8 +63,9 @@ describe('LoomPage', () => {
     await waitFor(() => expect(screen.getByText('Puppy goes missing in the village')).toBeInTheDocument())
     await user.click(screen.getByRole('button', { name: 'Manage Threads' }))
 
-    expect(screen.getByRole('dialog', { name: 'Manage Threads' })).toBeInTheDocument()
-    expect(screen.getByText('The Lost Puppy')).toBeInTheDocument()
+    const dialog = screen.getByRole('dialog', { name: 'Manage Threads' })
+    expect(dialog).toBeInTheDocument()
+    expect(dialog).toHaveTextContent('The Lost Puppy')
   })
 
   it('shows the empty-tapestry state when there are no threads or nodes', async () => {
@@ -81,16 +82,15 @@ describe('LoomPage', () => {
     await waitFor(() => expect(screen.getByRole('heading', { name: 'The Loom' })).toBeInTheDocument())
   })
 
-  it.skip('renders the Weaver\'s panel rail', async () => {
-    // LU2 — Weaver's panel: un-skip when LoomWeaverPanel is rendered in the page layout
+  it('renders the Weaver\'s panel rail', async () => {
     vi.spyOn(api, 'getLoomTapestry').mockResolvedValue(demoTapestry())
     render(<LoomPage />)
     await waitFor(() => expect(screen.getByText('Puppy goes missing in the village')).toBeInTheDocument())
-    expect(screen.getByRole('complementary')).toBeInTheDocument()
+    expect(screen.getByRole('complementary', { name: "Weaver's panel" })).toBeInTheDocument()
+    expect(screen.getByText('Idea Vault (1)')).toBeInTheDocument()
   })
 
-  it.skip('does not render the old .loom-inspector strip', async () => {
-    // LU2 — Weaver's panel: un-skip after the transient inspector strip is removed from LoomPage
+  it('does not render the old .loom-inspector strip', async () => {
     vi.spyOn(api, 'getLoomTapestry').mockResolvedValue(demoTapestry())
     render(<LoomPage />)
     await waitFor(() => expect(screen.getByText('Puppy goes missing in the village')).toBeInTheDocument())
