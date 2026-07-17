@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import type { LoomEdge, LoomNode, LoomTapestry } from '../../../api/types'
 import {
   buildAdjacency,
+  buildNodeStatusUpdate,
   edgeThreads,
   headsByThread,
   isFuture,
@@ -84,6 +85,32 @@ describe('headsByThread', () => {
     const heads = headsByThread(tapestry)
     expect(heads.get(1)).toEqual(new Set([4]))
     expect(heads.get(2)).toEqual(new Set([4]))
+  })
+
+  it('bridging node 3 to anchor 4 (splicing a new update in between) makes the new node the head', () => {
+    const tapestry = demoTapestry()
+    // Mirrors POST /api/loom/bridge splicing an update node 8 between head 3 and anchor 4,
+    // deleting the direct 3->4 edge (LM2's confirmed bridge contract).
+    tapestry.nodes.push({
+      id: 8,
+      kind: 'update',
+      title: 'Session recap',
+      status: null,
+      x: 300,
+      y: 75,
+      thread_ids: [1, 2],
+    })
+    tapestry.edges = tapestry.edges
+      .filter((edge) => !(edge.source_id === 3 && edge.target_id === 4))
+      .concat([
+        { id: 6, source_id: 3, target_id: 8 },
+        { id: 7, source_id: 8, target_id: 4 },
+      ])
+
+    const heads = headsByThread(tapestry)
+    expect(heads.get(1)).toEqual(new Set([8]))
+    expect(heads.get(2)).toEqual(new Set([8]))
+    expect(nearestFutureAnchors(8, tapestry)).toEqual([4])
   })
 
   it('a hand-off edge into another thread does not steal this thread\'s head', () => {
@@ -195,6 +222,48 @@ describe('wouldCycle', () => {
 
   it('allows a non-cyclic edge', () => {
     expect(wouldCycle(edges, 1, 3)).toBe(false)
+  })
+})
+
+describe('buildNodeStatusUpdate', () => {
+  it('resubmits every field unchanged except the new status (PUT is a full replace)', () => {
+    const anchor: LoomNode = {
+      id: 4,
+      kind: 'anchor',
+      title: 'Confront the goblin chief',
+      body: 'The chief awaits in the cave.',
+      status: 'planned',
+      session_tag: 'Session 9',
+      x: 400,
+      y: 75,
+      thread_ids: [1, 2],
+    }
+    expect(buildNodeStatusUpdate(anchor, 'reached')).toEqual({
+      kind: 'anchor',
+      title: 'Confront the goblin chief',
+      body: 'The chief awaits in the cave.',
+      status: 'reached',
+      session_tag: 'Session 9',
+      x: 400,
+      y: 75,
+      thread_ids: [1, 2],
+    })
+  })
+
+  it('normalizes missing optional fields to null', () => {
+    const anchor: LoomNode = {
+      id: 5,
+      kind: 'anchor',
+      title: 'Puppy reunion festival',
+      status: 'planned',
+      x: 600,
+      y: 0,
+      thread_ids: [],
+    }
+    const update = buildNodeStatusUpdate(anchor, 'abandoned')
+    expect(update.body).toBeNull()
+    expect(update.session_tag).toBeNull()
+    expect(update.status).toBe('abandoned')
   })
 })
 

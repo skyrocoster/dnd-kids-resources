@@ -1,4 +1,4 @@
-import type { LoomEdge, LoomNode, LoomTapestry } from '../../api/types'
+import type { LoomAnchorStatus, LoomEdge, LoomNode, LoomNodeInput, LoomTapestry } from '../../api/types'
 
 export function isPast(node: LoomNode): boolean {
   return node.kind === 'update' || (node.kind === 'anchor' && node.status === 'reached')
@@ -115,6 +115,23 @@ export function edgeThreads(edge: LoomEdge, tapestry: LoomTapestry): number[] {
   if (!source || !target) return []
   const targetThreads = new Set(target.thread_ids)
   return source.thread_ids.filter((threadId) => targetThreads.has(threadId))
+}
+
+/**
+ * `PUT /loom/nodes/{id}` is a full replace, so an anchor status transition
+ * (mark reached/abandoned) must resubmit every field unchanged except `status`.
+ */
+export function buildNodeStatusUpdate(node: LoomNode, status: LoomAnchorStatus): LoomNodeInput {
+  return {
+    kind: node.kind,
+    title: node.title,
+    body: node.body ?? null,
+    status,
+    session_tag: node.session_tag ?? null,
+    x: node.x,
+    y: node.y,
+    thread_ids: node.thread_ids,
+  }
 }
 
 /**

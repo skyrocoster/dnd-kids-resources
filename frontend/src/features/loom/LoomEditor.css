@@ -1,0 +1,134 @@
+/* Canvas mutation UI: toolbar, inspector, error banner, thread manager. */
+
+.loom-toolbar {
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border-bottom: 1px solid var(--md-outline-variant);
+}
+
+.loom-error-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  background: var(--md-error-container);
+  color: var(--md-on-error-container);
+  border-radius: var(--radius-md);
+  font: var(--type-body-sm-size) var(--type-face);
+}
+
+.loom-error-banner-dismiss {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  min-height: 32px;
+  background: transparent;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+
+.loom-error-banner-dismiss:hover,
+.loom-error-banner-dismiss:focus-visible {
+  background: color-mix(in srgb, var(--md-on-error-container) 12%, transparent);
+}
+
+.loom-inspector {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  background: var(--md-surface-1);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--radius-md);
+}
+
+.loom-inspector-title {
+  font-weight: var(--type-title-weight);
+}
+
+.loom-inspector-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+/* ─── Node editor dialog ──────────────────────────────────────────────── */
+
+.loom-node-editor-dialog {
+  width: min(560px, 92vw);
+}
+
+.loom-node-editor-error {
+  margin: 0 0 var(--space-3);
+  color: var(--md-error);
+  font-size: var(--type-body-sm-size);
+}
+
+/* ─── Thread manager dialog ───────────────────────────────────────────── */
+
+.loom-thread-manager-dialog {
+  width: min(520px, 92vw);
+}
+
+.loom-thread-manager-list {
+  list-style: none;
+  margin: 0 0 var(--space-3);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.loom-thread-manager-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--control-height-compact);
+}
+
+.loom-thread-manager-name {
+  flex: 1;
+}
+
+.loom-thread-manager-empty {
+  color: var(--md-on-surface-variant);
+  font-size: var(--type-body-sm-size);
+  padding: var(--space-2) 0;
+}
+
+.loom-thread-manager-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.loom-thread-color-picker {
+  display: flex;
+  gap: var(--space-2);
+  margin: var(--space-1) 0 var(--space-3);
+}
+
+.loom-thread-swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-full);
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+}
+
+.loom-thread-swatch[data-selected] {
+  border-color: var(--md-on-surface);
+}
+
+.loom-thread-swatch--static {
+  width: 16px;
+  height: 16px;
+  cursor: default;
+}

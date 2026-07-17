@@ -16,7 +16,7 @@ export function ThreadChips({ threadIds }: { threadIds: number[] }) {
           <span
             key={id}
             className="loom-thread-chip"
-            style={{ backgroundColor: `var(--md-${thread.color})` }}
+            style={{ backgroundColor: `var(--md-loom-${thread.color})` }}
             title={thread.name}
           />
         )
