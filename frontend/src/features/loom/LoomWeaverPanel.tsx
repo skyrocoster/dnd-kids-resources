@@ -22,6 +22,7 @@ export interface LoomWeaverPanelProps {
   onOpenThreadManager: () => void
   onFocusThread: (threadId: number) => void
   onClearThreadFocus: () => void
+  onReorderBeats: (threadId: number) => void
 }
 
 function kindLabel(node: LoomNode): string {
@@ -63,6 +64,7 @@ export function LoomWeaverPanel({
   onOpenThreadManager,
   onFocusThread,
   onClearThreadFocus,
+  onReorderBeats,
 }: LoomWeaverPanelProps) {
   const threadNamesById = new Map(threads.map((thread) => [thread.id, thread.name]))
   const selectedThreadNames =
@@ -160,9 +162,14 @@ export function LoomWeaverPanel({
           <h2 className="loom-weaver-section-title">Threads</h2>
           <div className="loom-weaver-section-actions">
             {focusedThreadId != null && (
-              <Button variant="secondary" size="compact" onClick={onClearThreadFocus}>
-                Clear focus
-              </Button>
+              <>
+                <Button variant="secondary" size="compact" onClick={() => onReorderBeats(focusedThreadId)}>
+                  Reorder Beats
+                </Button>
+                <Button variant="secondary" size="compact" onClick={onClearThreadFocus}>
+                  Clear focus
+                </Button>
+              </>
             )}
             <Button variant="secondary" size="compact" onClick={onOpenThreadManager}>
               Manage
