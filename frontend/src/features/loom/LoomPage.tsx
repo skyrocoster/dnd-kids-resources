@@ -56,6 +56,7 @@ export function LoomPage() {
 
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null)
+  const [focusedThreadId, setFocusedThreadId] = useState<number | null>(null)
   const [nodeEditor, setNodeEditor] = useState<{
     node?: LoomNodeType
     initialKind?: LoomNodeKind
@@ -86,6 +87,14 @@ export function LoomPage() {
   const flowEdges = useMemo(() => (tapestry.status === 'success' ? buildFlowEdges(tapestry.data) : []), [tapestry])
   const vault = useMemo(() => (tapestry.status === 'success' ? vaultNodes(tapestry.data) : []), [tapestry])
   const threads = useMemo(() => (tapestry.status === 'success' ? tapestry.data.threads : []), [tapestry])
+  const threadCounts = useMemo<Record<number, number>>(() => {
+    if (tapestry.status !== 'success') return {}
+
+    return tapestry.data.nodes.reduce<Record<number, number>>((counts, node) => {
+      for (const threadId of node.thread_ids) counts[threadId] = (counts[threadId] ?? 0) + 1
+      return counts
+    }, {})
+  }, [tapestry])
 
   // React Flow owns node state so it can attach its own internals (measured
   // dimensions, `dragging`) via `onNodesChange`. Rebuilding the array from
@@ -101,12 +110,22 @@ export function LoomPage() {
       const prevById = new Map(prev.map((n) => [n.id, n]))
       return flowNodes.map((fn) => {
         const existing = prevById.get(fn.id)
+        const isDimmed = focusedThreadId != null && !fn.data.node.thread_ids.includes(focusedThreadId)
         return existing
-          ? { ...existing, data: fn.data, selected: fn.id === selectedNodeId }
-          : { ...fn, selected: fn.id === selectedNodeId }
+          ? {
+              ...existing,
+              data: fn.data,
+              selected: fn.id === selectedNodeId,
+              className: isDimmed ? 'loom-node-wrapper--dimmed' : undefined,
+            }
+          : {
+              ...fn,
+              selected: fn.id === selectedNodeId,
+              className: isDimmed ? 'loom-node-wrapper--dimmed' : undefined,
+            }
       })
     })
-  }, [flowNodes, selectedNodeId, setNodes])
+  }, [flowNodes, focusedThreadId, selectedNodeId, setNodes])
 
   const edges: Edge[] = useMemo(
     () =>
@@ -115,9 +134,15 @@ export function LoomPage() {
         source: edge.source,
         target: edge.target,
         selected: edge.id === selectedEdgeId,
+        className: [
+          edge.data.isLiveWarp ? 'loom-edge--live-warp' : null,
+          focusedThreadId != null && !edge.data.threadIds.includes(focusedThreadId) ? 'loom-edge--dimmed' : null,
+        ]
+          .filter(Boolean)
+          .join(' '),
         style: { stroke: edgeColor(edge.data.threadIds, threads) },
       })),
-    [flowEdges, threads, selectedEdgeId],
+    [flowEdges, focusedThreadId, threads, selectedEdgeId],
   )
 
   const selectedNode =
@@ -339,7 +364,7 @@ export function LoomPage() {
                 fitView
                 proOptions={{ hideAttribution: false }}
               >
-                <Background />
+                <Background gap={24} size={1} color="color-mix(in srgb, var(--md-outline-variant) 68%, transparent)" />
                 <Controls />
               </ReactFlow>
             </div>
@@ -348,7 +373,9 @@ export function LoomPage() {
             selectedNode={selectedNode}
             selectedEdge={selectedEdge}
             threads={threads}
+            threadCounts={threadCounts}
             vaultNodes={vault}
+            focusedThreadId={focusedThreadId}
             canBridgeFromSelected={canBridgeFromSelected}
             bridgeSource={bridgeSource}
             deletingEdge={deletingEdge}
@@ -376,6 +403,8 @@ export function LoomPage() {
             onDeleteEdge={handleDeleteEdge}
             onSelectVaultNode={handleSelectVaultNode}
             onOpenThreadManager={() => setThreadManagerOpen(true)}
+            onFocusThread={(threadId) => setFocusedThreadId(threadId)}
+            onClearThreadFocus={() => setFocusedThreadId(null)}
             onCancelBridge={() => setBridgeSource(null)}
           />
         </div>

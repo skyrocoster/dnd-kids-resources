@@ -7,7 +7,9 @@ export interface LoomWeaverPanelProps {
   selectedNode: LoomNode | null
   selectedEdge: LoomEdge | null
   threads: LoomThread[]
+  threadCounts: Record<number, number>
   vaultNodes: LoomNode[]
+  focusedThreadId: number | null
   canBridgeFromSelected: boolean
   bridgeSource: LoomNode | null
   deletingEdge?: boolean
@@ -19,6 +21,8 @@ export interface LoomWeaverPanelProps {
   onDeleteEdge: () => void
   onSelectVaultNode: (node: LoomNode) => void
   onOpenThreadManager: () => void
+  onFocusThread: (threadId: number) => void
+  onClearThreadFocus: () => void
   onCancelBridge: () => void
 }
 
@@ -44,7 +48,9 @@ export function LoomWeaverPanel({
   selectedNode,
   selectedEdge,
   threads,
+  threadCounts,
   vaultNodes,
+  focusedThreadId,
   canBridgeFromSelected,
   bridgeSource,
   deletingEdge = false,
@@ -56,6 +62,8 @@ export function LoomWeaverPanel({
   onDeleteEdge,
   onSelectVaultNode,
   onOpenThreadManager,
+  onFocusThread,
+  onClearThreadFocus,
   onCancelBridge,
 }: LoomWeaverPanelProps) {
   const threadNamesById = new Map(threads.map((thread) => [thread.id, thread.name]))
@@ -163,22 +171,43 @@ export function LoomWeaverPanel({
       <section className="loom-weaver-section loom-weaver-threads">
         <div className="loom-weaver-section-heading">
           <h2 className="loom-weaver-section-title">Threads</h2>
-          <Button variant="secondary" size="compact" onClick={onOpenThreadManager}>
-            Manage
-          </Button>
+          <div className="loom-weaver-section-actions">
+            {focusedThreadId != null && (
+              <Button variant="secondary" size="compact" onClick={onClearThreadFocus}>
+                Clear focus
+              </Button>
+            )}
+            <Button variant="secondary" size="compact" onClick={onOpenThreadManager}>
+              Manage
+            </Button>
+          </div>
         </div>
         {threads.length > 0 ? (
           <ul className="loom-weaver-thread-list">
             {threads.map((thread) => (
               <li key={thread.id} className="loom-weaver-thread-row">
-                <span className="loom-weaver-thread-swatch" data-color={thread.color} aria-hidden="true" />
-                <span className="loom-weaver-thread-name">{thread.name}</span>
-                <span className="loom-weaver-thread-count">{thread.id === selectedNode?.thread_ids[0] ? 'Selected' : ''}</span>
+                <button
+                  type="button"
+                  className="loom-weaver-thread-button"
+                  aria-pressed={focusedThreadId === thread.id}
+                  onClick={() => onFocusThread(thread.id)}
+                >
+                  <span className="loom-weaver-thread-swatch" data-color={thread.color} aria-hidden="true" />
+                  <span className="loom-weaver-thread-name">{thread.name}</span>
+                  <span className="loom-weaver-thread-count">
+                    {threadCounts[thread.id] ?? 0} {(threadCounts[thread.id] ?? 0) === 1 ? 'node' : 'nodes'}
+                  </span>
+                </button>
               </li>
             ))}
           </ul>
         ) : (
           <p className="loom-weaver-copy">No threads yet.</p>
+        )}
+        {focusedThreadId != null && (
+          <p className="loom-weaver-copy">
+            Focus keeps this thread bright on the tapestry and dims every unrelated node and edge.
+          </p>
         )}
       </section>
 

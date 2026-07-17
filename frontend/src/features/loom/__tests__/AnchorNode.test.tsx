@@ -37,10 +37,11 @@ function renderAnchor(node: LoomNode, isHead = false, isNextAnchor = false) {
 describe('AnchorNode', () => {
   it('renders a planned anchor with the Next badge and thread chips', () => {
     const node: LoomNode = { id: 4, kind: 'anchor', title: 'Confront the goblin chief', status: 'planned', x: 0, y: 0, thread_ids: [1, 2] }
-    renderAnchor(node, false, true)
+    const { container } = renderAnchor(node, false, true)
     expect(screen.getByText('Confront the goblin chief')).toBeInTheDocument()
     expect(screen.getByText('Next')).toBeInTheDocument()
     expect(document.querySelectorAll('.loom-thread-chip')).toHaveLength(2)
+    expect(container.querySelector('.loom-node-spine')).toHaveAttribute('data-color', 'thread-3')
   })
 
   it('renders a reached anchor as a head with the Now badge', () => {

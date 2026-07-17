@@ -1,6 +1,6 @@
 # The Loom — Weaver's Workspace (UI/UX Pass)
 
-> **Status:** LU0–LU2 shipped. LU3 (woven canvas & thread focus) next up.
+> **Status:** LU0–LU3 shipped. LU4 (motion, first-run, a11y & live gate) next up.
 
 - **Area guide:** [The Loom](../../areas/loom.md).
 
@@ -66,6 +66,12 @@ strengthened shuttle glow on heads. Everything else stays quiet.
   thread-focus hooks live on
   `.loom-weaver-threads`, `.loom-weaver-thread-list`, `.loom-weaver-thread-row`, `.loom-weaver-thread-swatch`,
   and `.loom-weaver-vault`.
+- **LU3 canvas contracts (implemented 2026-07-17):** `loomFlow.ts` now exports
+  `buildLiveWarpEdgeIds(tapestry): Set<string>`, which derives the live-warp edge set from `headsByThread` and
+  `nearestFutureAnchors` and maps it onto `FlowEdgeData.isLiveWarp`. `LoomPage.tsx` owns presentation-only
+  `focusedThreadId` state and maps it to `.loom-node-wrapper--dimmed`, `.loom-edge--dimmed`, and
+  `.loom-edge--live-warp` classes; `LoomWeaverPanel`'s Threads section now consumes `threadCounts`,
+  `focusedThreadId`, `onFocusThread`, and `onClearThreadFocus` to render 48px focus buttons with node counts.
 - **`LoomVaultPanel.tsx`** is a self-contained collapsible list of degree-0 nodes; clicking one calls
   `rfInstance.setCenter(node.x, node.y, …)` via `onSelectNode`.
 - **Derived presentation data already available** (no new computation needed): `FlowNodeData` carries
@@ -210,61 +216,9 @@ seam of the command bar vs. the rail; keep them sequential to avoid churn in `Lo
 | **LU0** | Scaffolding: component/CSS stubs, `it.skip` seams in `LoomPage.test.tsx` and `LoomWeaverPanel.test.tsx`, `LoomWeaverPanelProps` interface finalized. App renders unchanged. Gate ✅. |
 | **LU1** | Added the Loom route shell, eyebrow, `PageHeader`, and primary/secondary command-bar hierarchy using `PlusIcon`, `MapPinIcon`, and `WaypointsIcon`; un-skipped the header seam in `LoomPage.test.tsx`. Frontend `npm run test`, `npm run lint`, `npm run typecheck`, `npm run build`, and the docs check via `.venv\Scripts\python.exe scripts/check_docs.py --check` all passed. Gate ✅. |
 | **LU2** | Replaced the transient inspector strip and standalone vault with a persistent `LoomWeaverPanel` rail that renders Selection/Legend, Threads, and embedded Idea Vault sections while preserving the existing selection/mutation handlers. Frontend `npm run test`, `npm run lint`, `npm run typecheck`, `npm run build`, and `.venv\Scripts\python.exe scripts/check_docs.py --check` passed. Gate ✅. |
+| **LU3** | Added the woven-canvas pass: warp-textured canvas layers, node thread spines, stronger head/beacon hierarchy, live-warp edge styling from `buildLiveWarpEdgeIds(tapestry)`, and presentation-only thread focus with node counts and dimming. Frontend `npm run test`, `npm run lint`, `npm run typecheck`, and `npm run build` passed; the live browser gate is intentionally deferred to LU4's single DM-loop verification. |
 
-#### LU3 — Woven canvas & thread focus (next up)
-
-- **Read first:** this plan, `LoomCanvas.css` (full), `nodes/AnchorNode.tsx`, `nodes/UpdateNode.tsx`,
-  `nodes/ThreadChips.tsx`, `loomFlow.ts`, `loomGraph.ts` (`headsByThread`, `nearestFutureAnchors`,
-  `edgeThreads`), `LoomPage.tsx` (edge/node building at lines 81–117 and `LoomWeaverPanel` wiring),
-  `docs/DESIGN_SYSTEM.md` (Loom section + accessibility floor), `scripts/generate-md3-tokens.mjs` (only if a
-  new non-color variable is truly needed).
-- **Build:** deliver the signature and the thread-focus interaction.
-  - **Warp-textured canvas:** replace the plain `Background` dots with a subtle directional warp pattern built
-    from existing neutral tokens (React Flow `Background` `variant`/`gap`, or a CSS layer under `.react-flow`);
-    keep it low-contrast so nodes/edges stay dominant.
-  - **Node hierarchy:** add a thread-colored **spine** (`.loom-node-spine`, thread accent from the node's
-    primary thread) to each card so thread identity reads without relying on the 8×8 chips; strengthen the
-    beacon (planned anchor) vs woven (update/reached) vs abandoned treatments already in `LoomCanvas.css`; make
-    the head "shuttle" glow more prominent than the current `0 0 0 3px` ring. Keep every status legible without
-    color (icon/shape + the existing badges).
-  - **Live-warp edges:** compute the set `{ head → nearestFutureAnchor }` (heads from `headsByThread`, targets
-    from `nearestFutureAnchors`; both already used by `loomFlow`) and mark those edges (e.g. `data-live-warp`
-    / a class) so `LoomCanvas.css` gives them an animated dashed "being woven" treatment. Animation is
-    **disabled under `prefers-reduced-motion`** (falls back to a static distinct style).
-  - **Thread focus:** add a **Threads** section to `LoomWeaverPanel` (swatch + name + node count per thread,
-    swatch never the sole cue) with click-to-focus. Focusing a thread sets Loom-local state that dims
-    non-member nodes/edges on the canvas (a `data-dimmed` attribute + CSS opacity), with a clear "clear focus"
-    affordance; focus is presentation-only (no persistence, no server call).
-  - Route any genuinely new CSS variable (warp opacity, spine width, dim opacity) through `theme.css`'s Loom
-    area and document it; **add no new seeded color**.
-- **Inherits:** LU2's persistent rail (`LoomWeaverPanel` section order = Selection/Legend → Threads → Idea
-  Vault, with stable hooks `.loom-weaver-threads`, `.loom-weaver-thread-list`, `.loom-weaver-thread-row`,
-  `.loom-weaver-thread-swatch`, and `.loom-weaver-vault`); `loomGraph`/`loomFlow` derivations; existing node
-  components and token sets.
-- **Expected touch set:** `LoomCanvas.css`, `nodes/AnchorNode.tsx`, `nodes/UpdateNode.tsx` (spine element),
-  `loomFlow.ts` or a small helper for the live-warp edge set (+ its unit test), `LoomPage.tsx` (edge data/
-  attributes + thread-focus state + dim wiring), `LoomWeaverPanel.tsx` (Threads section), `frontend/src/
-  theme.css` (only if a new non-color var is added), `docs/DESIGN_SYSTEM.md` (Loom section: node spine, warp
-  background, live-warp edges, thread-focus dimming, eyebrow type treatment from LU1), and the affected loom
-  tests (`__tests__/loomFlow.test.ts`, `__tests__/AnchorNode.test.tsx`, `__tests__/UpdateNode.test.tsx`,
-  `__tests__/LoomWeaverPanel.test.tsx`). **Contract survey:** if the node DOM gains a spine element or the
-  `data-live-warp` attribute, grep the node tests for the asserted DOM shape and list them here before coding.
-- **Documentation impact:** `docs/DESIGN_SYSTEM.md` — Loom section gains the node-spine, warp-background,
-  live-warp-edge, thread-focus, and Roboto-Flex eyebrow contracts; if `theme.css` changes, that edit is
-  **required in the same change set** (checker-enforced). Regenerate the design inventory block if variables
-  were added.
-- **Tests:** unit — live-warp edge-set helper (heads→nearest-anchor pairs on the demo tapestry: `{3→4, 3→6}`);
-  node render tests assert the spine reflects the primary thread and status classes are intact. `npm run test/
-  lint/typecheck/build` green.
-- **Gate:** **live browser pass required** here or deferred to LU4 — the warp animation, live-warp edges, head
-  glow, and thread-focus dimming are canvas-visual and cannot be verified in jsdom. Prefer verifying them as
-  part of LU4's single DM-loop gate to avoid two browser sessions; state which in the completion edit.
-- **Discovery consolidation:** into `DESIGN_SYSTEM.md` (the durable visual contract) and this plan (final
-  variable names/values, the live-warp helper's location and signature); revise LU4's a11y-sweep checklist with
-  the exact motion/contrast items introduced here.
-- **Completion edit:** collapse to a Shipped row; Status → "LU4 next up".
-
-#### LU4 — Motion, first-run, a11y & live gate (planned)
+#### LU4 — Motion, first-run, a11y & live gate (next up)
 
 - **Read first:** this plan (all prior handoffs), `docs/DESIGN_SYSTEM.md` accessibility floor + responsive
   breakpoint convention (520/768px), `LoomPage.tsx`, `LoomCanvas.css`, `LoomEditor.css`, the empty/first-run
@@ -272,14 +226,17 @@ seam of the command bar vs. the rail; keep them sequential to avoid churn in `Lo
   `docs/areas/loom.md` (the outstanding live DM-loop gate).
 - **Build:** the finishing sweep over the already-built surface.
   - **Motion:** a restrained page-load reveal for the rail/header (respecting `prefers-reduced-motion` via the
-    global reset); confirm the warp/live-warp animations honor reduced motion.
+    global reset); confirm the LU3 warp pseudo-layers stay static enough behind content and the live-warp edge
+    treatment fully falls back from `loom-live-warp` animation to its static dashed style under reduced motion.
   - **First-run/empty:** polish the empty-tapestry state (`StatePanel`) copy/visuals to match the new identity;
     ensure the legend is discoverable on first load (rail default).
   - **Responsive:** at ≤768px the Weaver's panel collapses/moves (e.g. below the canvas or into a toggle) so the
     canvas stays usable; command bar wraps gracefully; use the documented 520/768 breakpoints.
-  - **A11y sweep:** visible focus on every new control, thread-focus reachable by keyboard, contrast of spine/
-    warp/dim against surfaces, all status/kind cues backed by text or icon (never hue-alone), 48px targets on
-    ordinary controls (compact only where already sanctioned).
+  - **A11y sweep:** visible focus on every new control, thread-focus reachable by keyboard via the
+    `aria-pressed` thread buttons and clear-focus action, contrast of the node spine / warp overlays / dimmed
+    opacity against surfaces, live-warp edges, and head glow, and all status/kind/thread cues still backed by
+    text or icon (never hue-alone). Keep the thread buttons at the 48px floor; compact remains limited to the
+    documented panel action exception.
 - **Inherits:** the full LU1–LU3 surface.
 - **Expected touch set:** `LoomPage.tsx`, `LoomCanvas.css`, `LoomEditor.css`, possibly `LoomWeaverPanel.tsx`
   (responsive toggle), the empty-state markup, and relevant `__tests__` (empty-state + responsive-structure
@@ -346,4 +303,4 @@ Sole final stage; runs after Phase LU has shipped and been removed.
 
 ## Next:
 
-**LU3 — Woven canvas & thread focus** (unblocked): add the warp-textured canvas, thread spines, live-warp edges, and interactive thread focus on the LU2 rail hooks.
+**LU4 — Motion, first-run, a11y & live gate** (unblocked): finish the responsive and reduced-motion sweep, polish the empty state, and complete the single live browser DM-loop verification for the full Loom surface.

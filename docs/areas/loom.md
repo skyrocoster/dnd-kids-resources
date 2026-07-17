@@ -1,6 +1,6 @@
 # The Loom Area Guide
 
-> **Active plan:** [Weaver's Workspace (UI/UX pass)](../plans/active/loom-weavers-workspace.md#lu3-woven-canvas-thread-focus-next-up) — LU3 next.
+> **Active plan:** [Weaver's Workspace (UI/UX pass)](../plans/active/loom-weavers-workspace.md#lu4-motion-first-run-a11y-live-gate-next-up) — LU4 next.
 
 ## Scope
 
