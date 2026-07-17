@@ -1,6 +1,6 @@
 # The Loom — Weaver's Workspace (UI/UX Pass)
 
-> **Status:** LU0 (scaffolding) next up. No stage shipped yet.
+> **Status:** LU0 shipped. LU1 (Identity & command bar) next up.
 
 - **Area guide:** [The Loom](../../areas/loom.md).
 
@@ -191,44 +191,13 @@ seam of the command bar vs. the rail; keep them sequential to avoid churn in `Lo
 
 <!-- ===== VERBOSE BLOCKS — one per un-shipped stage ===== -->
 
-#### LU0 — Scaffolding (next up)
+### Shipped Stages
 
-- **Read first:** `docs/areas/loom.md`, this plan, `docs/DESIGN_SYSTEM.md` (Loom section + accessibility
-  floor), `frontend/src/features/loom/LoomPage.tsx`, `LoomCanvas.css`, `LoomEditor.css`,
-  `LoomVaultPanel.tsx`, `components/PageHeader.tsx`, `components/Button.tsx`.
-- **Build:** create inert stubs and CSS seams only — no behavior change, no rendered difference:
-  - New file `frontend/src/features/loom/LoomWeaverPanel.tsx` exporting a placeholder component
-    (`export function LoomWeaverPanel(_: LoomWeaverPanelProps) { return null }`) with the real prop interface
-    (selection node/edge, threads, vault nodes, and the action callbacks LU2 will wire), plus a documenting
-    comment naming LU2 as its implementer.
-  - New file `frontend/src/features/loom/LoomLegend.tsx` exporting a placeholder returning `null`.
-  - Add empty CSS rule stubs to `LoomCanvas.css`/`LoomEditor.css` for the classes LU1–LU3 will fill
-    (`.loom-eyebrow`, `.loom-command-bar`, `.loom-weaver-panel`, `.loom-weaver-section`, `.loom-legend`,
-    `.loom-node-spine`, `.loom-canvas-area .react-flow__edge[data-live-warp]`) with a `/* LU<n>: … */` marker
-    each, so no rule silently changes current appearance.
-  - Add `it.skip` seams with **real assertion bodies** (render real component/props, assert the real
-    expectation) in: `__tests__/LoomPage.test.tsx` (header `h1` "The Loom" present; rail present; old
-    `.loom-inspector` strip absent) and a new `__tests__/LoomWeaverPanel.test.tsx` (renders a selected node's
-    title + kind + status; renders the legend when selection is null). Comment each seam with the stage that
-    un-skips it.
-- **Inherits:** the existing page/state model; nothing rendered yet.
-- **Expected touch set:** `frontend/src/features/loom/LoomWeaverPanel.tsx` (new),
-  `LoomLegend.tsx` (new), `LoomCanvas.css`, `LoomEditor.css`, `__tests__/LoomPage.test.tsx` (add skipped
-  seams only), `__tests__/LoomWeaverPanel.test.tsx` (new).
-- **Documentation impact:** `None: scaffolding introduces no rendered contract; DESIGN_SYSTEM's Loom section is
-  updated by LU3 when tokens/node contract actually change.`
-- **Tests:** `cd frontend && npm run test`, `npm run lint`, `npm run typecheck`, `npm run build` — all green
-  with the new stubs; skipped seams reported as skipped, not failing.
-- **Gate:** suite-sufficient. Confirm `npm run build` is clean and the Loom route renders byte-for-byte as
-  before (stubs return `null` / add no rules). No browser pass required (nothing visible changed).
-- **Discovery consolidation:** into this plan — confirm/replace each LU1–LU4 **Expected touch set** and
-  **Build** with the actual prop shapes the stubs settle on (especially `LoomWeaverPanelProps`), and record the
-  exact list of tests in `LoomPage.test.tsx` that assert the old `.loom-inspector` strip so LU2 knows every
-  file to update. Write the seam assertion bodies so LU1/LU2 only delete `.skip`.
-- **Completion edit:** collapse this block to a Shipped row; set Status to "LU1 next up"; leave LU1–LU4 blocks
-  intact.
+| Stage | What shipped |
+|-------|-------------|
+| **LU0** | Scaffolding: component/CSS stubs, `it.skip` seams in `LoomPage.test.tsx` and `LoomWeaverPanel.test.tsx`, `LoomWeaverPanelProps` interface finalized. App renders unchanged. Gate ✅. |
 
-#### LU1 — Identity & command bar (planned)
+#### LU1 — Identity & command bar (next up)
 
 - **Read first:** this plan (LU0 handoff), `components/PageHeader.tsx`, `components/Button.tsx`,
   `components/icons/index.ts` (pick glyphs), `LoomPage.tsx:276–296`, `LoomEditor.css:1–8`,
@@ -435,5 +404,4 @@ Sole final stage; runs after Phase LU has shipped and been removed.
 
 ## Next:
 
-**LU0 — Scaffolding** (unblocked): inert stubs, CSS seams, and `it.skip` assertion bodies; survey and hand
-LU1–LU4 their exact touch sets.
+**LU1 — Identity & command bar** (unblocked): PageHeader, command bar, eyebrow. Un-skip the header seam in `LoomPage.test.tsx`.

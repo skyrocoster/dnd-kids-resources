@@ -70,4 +70,27 @@ describe('LoomPage', () => {
     expect(await screen.findByText('Your tapestry is empty')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Create your first thread' })).toBeInTheDocument()
   })
+
+  it.skip('renders the PageHeader with title "The Loom"', async () => {
+    // LU1 — Identity & command bar: un-skip when PageHeader is rendered at the top of LoomPage
+    vi.spyOn(api, 'getLoomTapestry').mockResolvedValue(demoTapestry())
+    render(<LoomPage />)
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'The Loom' })).toBeInTheDocument())
+  })
+
+  it.skip('renders the Weaver\'s panel rail', async () => {
+    // LU2 — Weaver's panel: un-skip when LoomWeaverPanel is rendered in the page layout
+    vi.spyOn(api, 'getLoomTapestry').mockResolvedValue(demoTapestry())
+    render(<LoomPage />)
+    await waitFor(() => expect(screen.getByText('Puppy goes missing in the village')).toBeInTheDocument())
+    expect(screen.getByRole('complementary')).toBeInTheDocument()
+  })
+
+  it.skip('does not render the old .loom-inspector strip', async () => {
+    // LU2 — Weaver's panel: un-skip after the transient inspector strip is removed from LoomPage
+    vi.spyOn(api, 'getLoomTapestry').mockResolvedValue(demoTapestry())
+    render(<LoomPage />)
+    await waitFor(() => expect(screen.getByText('Puppy goes missing in the village')).toBeInTheDocument())
+    expect(document.querySelector('.loom-inspector')).not.toBeInTheDocument()
+  })
 })

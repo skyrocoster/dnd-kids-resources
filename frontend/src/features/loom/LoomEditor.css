@@ -132,3 +132,8 @@
   height: 16px;
   cursor: default;
 }
+
+/* ─── Scaffolding stubs — LU1: Identity & command bar ───────────────────── */
+
+/* LU1: .loom-command-bar — restyled toolbar with primary/secondary button hierarchy */
+/* LU1: .loom-eyebrow — wide, tracked eyebrow above the page header */
