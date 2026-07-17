@@ -205,3 +205,14 @@
 .loom-vault-panel-item:focus-visible {
   background: var(--md-surface-3);
 }
+
+/* ─── Scaffolding stubs — LU2: Weaver's panel ──────────────────────────── */
+
+/* LU2: .loom-weaver-panel — persistent right-hand rail */
+/* LU2: .loom-weaver-section — collapsible section inside the rail */
+/* LU2: .loom-legend — legend section styles */
+
+/* ─── Scaffolding stubs — LU3: Woven canvas ────────────────────────────── */
+
+/* LU3: .loom-node-spine — thread-colored spine on node cards */
+/* LU3: .loom-canvas-area .react-flow__edge[data-live-warp] — animated live-warp edge */

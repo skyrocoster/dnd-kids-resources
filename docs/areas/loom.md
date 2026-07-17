@@ -1,6 +1,6 @@
 # The Loom Area Guide
 
-> **Active plan:** [Weaver's Workspace (UI/UX pass)](../plans/active/loom-weavers-workspace.md#lu0-scaffolding-next-up) — LU0 next.
+> **Active plan:** [Weaver's Workspace (UI/UX pass)](../plans/active/loom-weavers-workspace.md#lu1-identity-command-bar-next-up) — LU1 next.
 
 ## Scope
 
