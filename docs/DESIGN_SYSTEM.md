@@ -405,16 +405,18 @@ transient `.loom-inspector` strip. Its section order is fixed for the remaining 
 - **Threads** — a quiet list plus Manage button in LU2. LU3 hangs thread-focus controls on the stable
   `.loom-weaver-threads`, `.loom-weaver-thread-list`, `.loom-weaver-thread-row`, and `.loom-weaver-thread-swatch`
   class hooks rather than inventing another rail subsection.
-- **Idea Vault** — still powered by `LoomVaultPanel`, now embedded as the rail's final section instead of a
-  standalone sibling of the canvas. The accessible text `Idea Vault (N)` remains the contract for tests and
+- **Beat Bank** — powered by `LoomVaultPanel`, embedded as the rail's final section instead of a
+  standalone sibling of the canvas. Shows banked beats (nodes with zero membership) and supports
+  restore/replace actions. The accessible text pattern `Beat Bank (N)` is the contract for tests and
   screen-reader users.
 
 `LoomWeaverPanel` owns the rail contract with props:
-`selectedNode`, `selectedEdge`, `threads`, `vaultNodes`, `canBridgeFromSelected`, `bridgeSource`, `onBridge`,
-`deletingEdge`, `onMarkReached`, `onMarkAbandoned`, `onEdit`, `onDeleteNode`, `onDeleteEdge`,
-`onSelectVaultNode`, `onOpenThreadManager`, and `onCancelBridge`. `LoomPage.tsx` continues to own the
-underlying selection/mutation state and passes those handlers through unchanged. `LoomVaultPanel` survives as a
-focused subsection component; it was not folded away in LU2.
+`selectedNode`, `threads`, `threadCounts`, `bankedNodes`, `focusedThreadId`, `onEdit`, `onDeleteNode`,
+`onSelectBankedNode`, `onRestoreNode`, `onFulfilNode`, `onBankNode`, `onReplaceNode`, `onSpawnThread`,
+`onChangeEnding`, `onUndoFulfil`, `onOpenThreadManager`, `onFocusThread`, and `onClearThreadFocus`.
+`LoomPage.tsx` continues to own the underlying selection/mutation state and passes those handlers through
+unchanged. `LoomVaultPanel` survives as a focused subsection component (now the Beat Bank panel); it was not
+folded away in LU2.
 
 ---
 

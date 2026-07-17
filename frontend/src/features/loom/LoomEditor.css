@@ -136,3 +136,64 @@
   height: 16px;
   cursor: default;
 }
+
+/* ─── Beat reorder dialog ─────────────────────────────────────────────── */
+
+.loom-beat-reorder-dialog {
+  width: min(520px, 92vw);
+}
+
+.loom-beat-reorder-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.loom-beat-reorder-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--control-height);
+  padding: var(--space-2);
+  background: var(--md-surface-2);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--radius-md);
+  color: var(--md-on-surface);
+}
+
+.loom-beat-reorder-row[data-dragging] {
+  background: var(--md-surface-4);
+  box-shadow: var(--elevation-2);
+}
+
+.loom-beat-reorder-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--control-height);
+  min-height: var(--control-height);
+  margin: calc(-1 * var(--space-2));
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-sm);
+  color: var(--md-on-surface-variant);
+  cursor: grab;
+  touch-action: none;
+}
+
+.loom-beat-reorder-handle:active {
+  cursor: grabbing;
+}
+
+.loom-beat-reorder-handle:focus-visible {
+  outline: 2px solid var(--md-primary);
+  outline-offset: 2px;
+}
+
+.loom-beat-reorder-empty {
+  margin: 0;
+  color: var(--md-on-surface-variant);
+}

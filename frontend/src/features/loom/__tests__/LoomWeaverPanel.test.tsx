@@ -46,6 +46,7 @@ const baseProps = {
   onOpenThreadManager: noop,
   onFocusThread: noop,
   onClearThreadFocus: noop,
+  onReorderBeats: noop,
 }
 
 describe('LoomWeaverPanel', () => {

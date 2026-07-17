@@ -24,6 +24,7 @@ import { SessionNode } from './nodes/SessionNode'
 import { LoomWeaverPanel } from './LoomWeaverPanel'
 import { LoomNodeEditor } from './LoomNodeEditor'
 import { LoomThreadManager } from './LoomThreadManager'
+import { LoomBeatReorderDialog } from './LoomBeatReorderDialog'
 import { LoomErrorBanner } from './LoomErrorBanner'
 import { StatePanel } from '../../components/StatePanel'
 import { Button } from '../../components/Button'
@@ -55,6 +56,7 @@ export function LoomPage() {
 
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
   const [focusedThreadId, setFocusedThreadId] = useState<number | null>(null)
+  const [reorderThreadId, setReorderThreadId] = useState<number | null>(null)
   const [nodeEditor, setNodeEditor] = useState<{
     node?: LoomNodeType
     initialKind?: LoomNodeKind
@@ -343,6 +345,7 @@ export function LoomPage() {
             onOpenThreadManager={() => setThreadManagerOpen(true)}
             onFocusThread={(threadId) => setFocusedThreadId(threadId)}
             onClearThreadFocus={() => setFocusedThreadId(null)}
+            onReorderBeats={(threadId) => setReorderThreadId(threadId)}
           />
         </div>
       </div>
@@ -361,6 +364,19 @@ export function LoomPage() {
       {threadManagerOpen && (
         <LoomThreadManager threads={threads} onClose={() => setThreadManagerOpen(false)} onChanged={reload} />
       )}
+
+      {reorderThreadId != null && tapestry.status === 'success' && (() => {
+        const thread = tapestry.data.threads.find((item) => item.id === reorderThreadId)
+        return thread ? (
+          <LoomBeatReorderDialog
+            thread={thread}
+            nodes={tapestry.data.nodes}
+            onReordered={reload}
+            onError={reportError}
+            onClose={() => setReorderThreadId(null)}
+          />
+        ) : null
+      })()}
 
       {pendingDeleteNode && (
         <ConfirmDialog
