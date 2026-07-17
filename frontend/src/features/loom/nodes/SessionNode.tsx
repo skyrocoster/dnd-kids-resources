@@ -1,6 +1,7 @@
 import { memo } from 'react'
-import { Handle, Position, type Node, type NodeProps } from '@xyflow/react'
+import type { Node, NodeProps } from '@xyflow/react'
 import type { FlowNodeData } from '../loomFlow'
+import { CompassHandles } from './CompassHandles'
 import { ThreadChips } from './ThreadChips'
 import { useLoomThreads } from './loomThreadsContext'
 
@@ -14,8 +15,7 @@ function SessionNodeImpl({ data }: NodeProps<SessionFlowNode>) {
   return (
     <div className="loom-node loom-node--session" data-head={isHead || undefined}>
       {primaryThread && <span className="loom-node-spine" data-color={primaryThread.color} aria-hidden="true" />}
-      <Handle type="target" position={Position.Top} />
-      <Handle type="source" position={Position.Bottom} />
+      <CompassHandles />
       {isHead && <span className="loom-node-badge loom-node-badge--now">Now</span>}
       <div className="loom-node-title">{node.title}</div>
       {node.session_tag && <div className="loom-node-session">{node.session_tag}</div>}
