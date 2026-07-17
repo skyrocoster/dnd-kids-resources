@@ -1,12 +1,11 @@
 import { useId, useState } from 'react'
 import type { FormEvent } from 'react'
 import { createLoomNode, updateLoomNode } from '../../api/client'
-import type { LoomAnchorStatus, LoomNode, LoomNodeInput, LoomNodeKind, LoomThread } from '../../api/types'
+import type { LoomNode, LoomNodeInput, LoomNodeKind, LoomThread } from '../../api/types'
 import { Button } from '../../components/Button'
 import { Dialog } from '../../components/Dialog'
 import { SelectField } from '../../components/form/SelectField'
 import { TextField } from '../../components/form/TextField'
-import { MultiSelectField } from '../../components/form/MultiSelectField'
 import './LoomEditor.css'
 
 interface LoomNodeEditorProps {
@@ -19,53 +18,62 @@ interface LoomNodeEditorProps {
 }
 
 const KIND_OPTIONS = [
-  { value: 'update', label: 'Update' },
-  { value: 'anchor', label: 'Anchor' },
+  { value: 'session', label: 'Session' },
+  { value: 'beat', label: 'Story Beat' },
 ]
 
-const STATUS_OPTIONS = [
-  { value: 'planned', label: 'Planned' },
-  { value: 'reached', label: 'Reached' },
-  { value: 'abandoned', label: 'Abandoned' },
-]
+function kindLabel(kind: LoomNodeKind): string {
+  switch (kind) {
+    case 'start':
+      return 'Start'
+    case 'end':
+      return 'End'
+    case 'beat':
+      return 'Beat'
+    case 'session':
+      return 'Session'
+  }
+}
 
-export function LoomNodeEditor({ node, initialKind, threads, defaultPosition, onClose, onSaved }: LoomNodeEditorProps) {
+export function LoomNodeEditor({ node, initialKind, threads: _threads, defaultPosition, onClose, onSaved }: LoomNodeEditorProps) {
   const formId = useId()
-  const [kind, setKind] = useState<LoomNodeKind>(node?.kind ?? initialKind ?? 'update')
+  const [kind, setKind] = useState<LoomNodeKind>(node?.kind ?? initialKind ?? 'session')
   const [title, setTitle] = useState(node?.title ?? '')
   const [body, setBody] = useState(node?.body ?? '')
-  const [status, setStatus] = useState<LoomAnchorStatus>(node?.status ?? 'planned')
   const [sessionTag, setSessionTag] = useState(node?.session_tag ?? '')
-  const [threadIds, setThreadIds] = useState<string[]>((node?.thread_ids ?? []).map(String))
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const threadOptions = threads.map((thread) => ({ value: String(thread.id), label: thread.name }))
-  const kindLabel = kind === 'anchor' ? 'Anchor' : 'Update'
-  const title_ = node ? `Edit ${kindLabel}: ${node.title}` : `Add New ${kindLabel}`
+  // Only 'beat' and 'session' are creatable via the node editor.
+  // start/end are created automatically with threads; beat/session via this dialog.
+  const creatableKind = (kind === 'beat' || kind === 'session') ? kind : 'session'
+  const title_ = node ? `Edit ${kindLabel(node.kind)}: ${node.title}` : `Add New ${kindLabel(creatableKind)}`
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()
     setSaving(true)
     setError(null)
     const payload: LoomNodeInput = {
-      kind,
+      kind: creatableKind,
       title,
       body: body || null,
-      status: kind === 'anchor' ? status : null,
       session_tag: sessionTag || null,
       x: node ? node.x : defaultPosition.x,
       y: node ? node.y : defaultPosition.y,
-      thread_ids: threadIds.map(Number),
     }
     try {
-      const saved = node ? await updateLoomNode(node.id, payload) : await createLoomNode(payload)
+      const saved = node ? await updateLoomNode(node.id, payload as import('../../api/types').LoomNodeInput) : await createLoomNode(payload)
       onSaved(saved)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save the node.')
       setSaving(false)
     }
   }
+
+  // In the new model, kind is immutable on PUT except for the one
+  // fulfil-undo transition (session→beat). For PB0, we keep kind editable
+  // on create and locked on edit (matching the old UX contract).
+  const isEditing = !!node
 
   return (
     <Dialog
@@ -94,22 +102,13 @@ export function LoomNodeEditor({ node, initialKind, threads, defaultPosition, on
         <SelectField
           label="Kind"
           options={KIND_OPTIONS}
-          value={kind}
-          disabled={!!node}
+          value={creatableKind}
+          disabled={isEditing}
           onChange={(e) => setKind(e.target.value as LoomNodeKind)}
         />
         <TextField label="Title" value={title} onChange={(e) => setTitle(e.target.value)} required />
         <TextField label="Body" multiline value={body} onChange={(e) => setBody(e.target.value)} />
-        {kind === 'anchor' && (
-          <SelectField
-            label="Status"
-            options={STATUS_OPTIONS}
-            value={status}
-            onChange={(e) => setStatus(e.target.value as LoomAnchorStatus)}
-          />
-        )}
         <TextField label="Session tag" value={sessionTag} onChange={(e) => setSessionTag(e.target.value)} />
-        <MultiSelectField label="Threads" options={threadOptions} selected={threadIds} onChange={setThreadIds} />
       </form>
     </Dialog>
   )

@@ -25,14 +25,14 @@ import type {
   DungeonInput,
   MapLayoutBlob,
   LoomThread,
-  LoomThreadInput,
+  LoomThreadCreate,
   LoomNode,
   LoomNodeInput,
-  LoomEdge,
-  LoomEdgeInput,
+  LoomNodeFulfil,
   LoomTapestry,
-  LoomBridgeInput,
-  LoomBridgeResult,
+  LoomTapestryThread,
+  LoomThreadItemCreate,
+  LoomThreadItemPositionUpdate,
   LoomNodePositionInput,
 } from './types'
 
@@ -163,17 +163,33 @@ export const getDungeonLayout = (dungeonId: number) => get<MapLayoutBlob>(`/dung
 export const saveDungeonLayout = (dungeonId: number, blob: MapLayoutBlob) =>
   put<MapLayoutBlob>(`/dungeons/${dungeonId}/layout`, blob)
 
-// Loom
+// Loom — tapestry
 export const getLoomTapestry = () => get<LoomTapestry>('/loom/tapestry')
-export const createLoomThread = (thread: LoomThreadInput) => post<LoomThread>('/loom/threads', thread)
-export const updateLoomThread = (id: number, thread: LoomThreadInput) =>
+
+// Loom — threads
+export const listLoomThreads = () => get<LoomThread[]>('/loom/threads')
+export const createLoomThread = (thread: LoomThreadCreate) =>
+  post<LoomTapestryThread>('/loom/threads', thread)
+export const updateLoomThread = (id: number, thread: LoomThreadCreate) =>
   put<LoomThread>(`/loom/threads/${id}`, thread)
 export const deleteLoomThread = (id: number) => del(`/loom/threads/${id}`)
+
+// Loom — nodes
 export const createLoomNode = (node: LoomNodeInput) => post<LoomNode>('/loom/nodes', node)
-export const updateLoomNode = (id: number, node: LoomNodeInput) => put<LoomNode>(`/loom/nodes/${id}`, node)
+export const updateLoomNode = (id: number, node: LoomNodeInput) =>
+  put<LoomNode>(`/loom/nodes/${id}`, node)
+export const deleteLoomNode = (id: number) => del(`/loom/nodes/${id}`)
 export const patchLoomNodePosition = (id: number, position: LoomNodePositionInput) =>
   patch<LoomNode>(`/loom/nodes/${id}/position`, position)
-export const deleteLoomNode = (id: number) => del(`/loom/nodes/${id}`)
-export const createLoomEdge = (edge: LoomEdgeInput) => post<LoomEdge>('/loom/edges', edge)
-export const deleteLoomEdge = (id: number) => del(`/loom/edges/${id}`)
-export const createLoomBridge = (bridge: LoomBridgeInput) => post<LoomBridgeResult>('/loom/bridge', bridge)
+export const fulfilLoomNode = (id: number, payload: LoomNodeFulfil = {}) =>
+  post<LoomNode>(`/loom/nodes/${id}/fulfil`, payload)
+export const bankLoomNode = (id: number) =>
+  post<LoomNode>(`/loom/nodes/${id}/bank`, {})
+
+// Loom — thread items (ordered membership)
+export const insertLoomThreadItem = (threadId: number, item: LoomThreadItemCreate) =>
+  post<LoomTapestryThread>(`/loom/threads/${threadId}/items`, item)
+export const reorderLoomThreadItem = (threadId: number, nodeId: number, update: LoomThreadItemPositionUpdate) =>
+  patch<LoomTapestryThread>(`/loom/threads/${threadId}/items/${nodeId}`, update)
+export const removeLoomThreadItem = (threadId: number, nodeId: number) =>
+  del(`/loom/threads/${threadId}/items/${nodeId}`)

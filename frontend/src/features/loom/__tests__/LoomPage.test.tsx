@@ -7,13 +7,18 @@ import { LoomPage } from '../LoomPage'
 
 function demoTapestry(): LoomTapestry {
   return {
-    threads: [{ id: 1, name: 'The Lost Puppy', color: 'thread-3' }],
+    threads: [{
+      id: 1, name: 'The Lost Puppy', color: 'thread-3',
+      items: [
+        { node_id: 1, position: 0 },
+        { node_id: 4, position: 10 },
+      ],
+    }],
     nodes: [
-      { id: 1, kind: 'update', title: 'Puppy goes missing in the village', x: 0, y: 0, thread_ids: [1] },
-      { id: 4, kind: 'anchor', title: 'Confront the goblin chief', status: 'planned', x: 400, y: 75, thread_ids: [1] },
-      { id: 7, kind: 'update', title: 'Mysterious hooded stranger', x: 400, y: 300, thread_ids: [] },
+      { id: 1, kind: 'start', title: 'The Lost Puppy', x: 0, y: 0, thread_ids: [1] },
+      { id: 4, kind: 'beat', title: 'Confront the goblin chief', x: 400, y: 75, thread_ids: [1] },
+      { id: 9, kind: 'beat', title: 'Mysterious hooded stranger', x: 400, y: 300, thread_ids: [] },
     ],
-    edges: [{ id: 1, source_id: 1, target_id: 4 }],
   }
 }
 
@@ -22,17 +27,17 @@ describe('LoomPage', () => {
     vi.restoreAllMocks()
   })
 
-  it('renders the tapestry nodes and the vault panel once loaded', async () => {
+  it('renders the tapestry nodes and the beat bank panel once loaded', async () => {
     vi.spyOn(api, 'getLoomTapestry').mockResolvedValue(demoTapestry())
 
     render(<LoomPage />)
 
-    await waitFor(() => expect(screen.getByText('Puppy goes missing in the village')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('The Lost Puppy')).toBeInTheDocument())
     expect(screen.getByRole('heading', { name: 'The Loom' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'New Update' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'New Anchor' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Record Session' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Add Beat' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Manage Threads' })).toBeInTheDocument()
-    expect(screen.getByText('Idea Vault (1)')).toBeInTheDocument()
+    expect(screen.getByText('Beat Bank (1)')).toBeInTheDocument()
   })
 
   it('shows an error state with a retry action on load failure', async () => {
@@ -44,15 +49,15 @@ describe('LoomPage', () => {
     expect(screen.getByRole('button', { name: 'Retry' })).toBeInTheDocument()
   })
 
-  it('opens the node editor with the anchor kind preset from the New Anchor toolbar button', async () => {
+  it('opens the node editor with the beat kind preset from the Add Beat toolbar button', async () => {
     vi.spyOn(api, 'getLoomTapestry').mockResolvedValue(demoTapestry())
     const user = userEvent.setup()
     render(<LoomPage />)
 
-    await waitFor(() => expect(screen.getByText('Puppy goes missing in the village')).toBeInTheDocument())
-    await user.click(screen.getByRole('button', { name: 'New Anchor' }))
+    await waitFor(() => expect(screen.getByText('The Lost Puppy')).toBeInTheDocument())
+    await user.click(screen.getByRole('button', { name: 'Add Beat' }))
 
-    expect(screen.getByRole('dialog', { name: 'Add New Anchor' })).toBeInTheDocument()
+    expect(screen.getByRole('dialog', { name: 'Add New Beat' })).toBeInTheDocument()
   })
 
   it('opens the thread manager from the toolbar', async () => {
@@ -60,7 +65,7 @@ describe('LoomPage', () => {
     const user = userEvent.setup()
     render(<LoomPage />)
 
-    await waitFor(() => expect(screen.getByText('Puppy goes missing in the village')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('The Lost Puppy')).toBeInTheDocument())
     await user.click(screen.getByRole('button', { name: 'Manage Threads' }))
 
     const dialog = screen.getByRole('dialog', { name: 'Manage Threads' })
@@ -69,7 +74,7 @@ describe('LoomPage', () => {
   })
 
   it('shows the empty-tapestry state when there are no threads or nodes', async () => {
-    vi.spyOn(api, 'getLoomTapestry').mockResolvedValue({ threads: [], nodes: [], edges: [] })
+    vi.spyOn(api, 'getLoomTapestry').mockResolvedValue({ threads: [], nodes: [] })
     render(<LoomPage />)
 
     expect(await screen.findByText('Your tapestry is empty')).toBeInTheDocument()
@@ -85,15 +90,15 @@ describe('LoomPage', () => {
   it('renders the Weaver\'s panel rail', async () => {
     vi.spyOn(api, 'getLoomTapestry').mockResolvedValue(demoTapestry())
     render(<LoomPage />)
-    await waitFor(() => expect(screen.getByText('Puppy goes missing in the village')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('The Lost Puppy')).toBeInTheDocument())
     expect(screen.getByRole('complementary', { name: "Weaver's panel" })).toBeInTheDocument()
-    expect(screen.getByText('Idea Vault (1)')).toBeInTheDocument()
+    expect(screen.getByText('Beat Bank (1)')).toBeInTheDocument()
   })
 
   it('does not render the old .loom-inspector strip', async () => {
     vi.spyOn(api, 'getLoomTapestry').mockResolvedValue(demoTapestry())
     render(<LoomPage />)
-    await waitFor(() => expect(screen.getByText('Puppy goes missing in the village')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('The Lost Puppy')).toBeInTheDocument())
     expect(document.querySelector('.loom-inspector')).not.toBeInTheDocument()
   })
 })

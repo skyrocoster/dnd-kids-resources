@@ -5,11 +5,8 @@ import {
   Controls,
   useNodesState,
   type ReactFlowInstance,
-  type Edge,
-  type Connection,
   type Node,
   type NodeMouseHandler,
-  type EdgeMouseHandler,
   type OnNodeDrag,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
@@ -18,32 +15,27 @@ import './LoomEditor.css'
 import { useLoomTapestry } from './useLoomTapestry'
 import { useLoomCanvasMutations } from './useLoomCanvasMutations'
 import { buildFlowEdges, buildFlowNodes, type FlowNodeData } from './loomFlow'
-import { buildNodeStatusUpdate, isFuture, isPast, vaultNodes } from './loomGraph'
+import { bankedBeats } from './loomGraph'
 import { LoomThreadsContext } from './nodes/loomThreadsContext'
-import { AnchorNode } from './nodes/AnchorNode'
-import { UpdateNode } from './nodes/UpdateNode'
+import { StartNode } from './nodes/StartNode'
+import { EndNode } from './nodes/EndNode'
+import { BeatNode } from './nodes/BeatNode'
+import { SessionNode } from './nodes/SessionNode'
 import { LoomWeaverPanel } from './LoomWeaverPanel'
 import { LoomNodeEditor } from './LoomNodeEditor'
 import { LoomThreadManager } from './LoomThreadManager'
-import { LoomBridgeDialog } from './LoomBridgeDialog'
 import { LoomErrorBanner } from './LoomErrorBanner'
 import { StatePanel } from '../../components/StatePanel'
 import { Button } from '../../components/Button'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
 import { PageHeader } from '../../components/PageHeader'
 import { MapPinIcon, PlusIcon, WaypointsIcon } from '../../components/icons'
-import { deleteLoomNode, updateLoomNode } from '../../api/client'
-import type { LoomAnchorStatus, LoomNode as LoomNodeType, LoomNodeKind, LoomThread } from '../../api/types'
+import { deleteLoomNode, insertLoomThreadItem } from '../../api/client'
+import type { LoomNode as LoomNodeType, LoomNodeKind } from '../../api/types'
 
-const nodeTypes = { anchor: AnchorNode, update: UpdateNode }
+const nodeTypes = { start: StartNode, end: EndNode, beat: BeatNode, session: SessionNode }
 const LOOM_EYEBROW = 'TAPESTRY · CONTINUITY'
 const LOOM_SUBTITLE = 'Track where every story thread stands between sessions.'
-
-function edgeColor(threadIds: number[], threads: LoomThread[]): string {
-  if (threadIds.length === 0) return 'var(--md-outline)'
-  const thread = threads.find((t) => t.id === threadIds[0])
-  return thread ? `var(--md-loom-${thread.color})` : 'var(--md-outline)'
-}
 
 function errorMessage(err: unknown, fallback: string): string {
   return err instanceof Error ? err.message : fallback
@@ -51,11 +43,10 @@ function errorMessage(err: unknown, fallback: string): string {
 
 export function LoomPage() {
   const { tapestry, reload } = useLoomTapestry()
-  const [rfInstance, setRfInstance] = useState<ReactFlowInstance<Node<FlowNodeData>, Edge> | null>(null)
+  const [rfInstance, setRfInstance] = useState<ReactFlowInstance<Node<FlowNodeData>> | null>(null)
   const canvasRef = useRef<HTMLDivElement>(null)
 
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
-  const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null)
   const [focusedThreadId, setFocusedThreadId] = useState<number | null>(null)
   const [nodeEditor, setNodeEditor] = useState<{
     node?: LoomNodeType
@@ -65,27 +56,16 @@ export function LoomPage() {
   const [threadManagerOpen, setThreadManagerOpen] = useState(false)
   const [pendingDeleteNode, setPendingDeleteNode] = useState<LoomNodeType | null>(null)
   const [deletingNode, setDeletingNode] = useState(false)
-  const [deletingEdge, setDeletingEdge] = useState(false)
-  const [bridgeSource, setBridgeSource] = useState<LoomNodeType | null>(null)
-  const [bridgeTarget, setBridgeTarget] = useState<LoomNodeType | null>(null)
-  const [pendingStatusChange, setPendingStatusChange] = useState<{
-    node: LoomNodeType
-    status: LoomAnchorStatus
-  } | null>(null)
-  const [savingStatus, setSavingStatus] = useState(false)
   const {
     error: bannerError,
     dismissError,
     reportError,
-    isValidConnection: canConnect,
-    connect,
     moveNode,
-    removeEdge,
   } = useLoomCanvasMutations(tapestry, reload)
 
   const flowNodes = useMemo(() => (tapestry.status === 'success' ? buildFlowNodes(tapestry.data) : []), [tapestry])
-  const flowEdges = useMemo(() => (tapestry.status === 'success' ? buildFlowEdges(tapestry.data) : []), [tapestry])
-  const vault = useMemo(() => (tapestry.status === 'success' ? vaultNodes(tapestry.data) : []), [tapestry])
+  const flowEdges = useMemo(() => (tapestry.status === 'success' ? tapestry.data.threads.flatMap((thread) => buildFlowEdges(flowNodes, thread)) : []), [tapestry, flowNodes])
+  const banked = useMemo(() => (tapestry.status === 'success' ? bankedBeats(tapestry.data) : []), [tapestry])
   const threads = useMemo(() => (tapestry.status === 'success' ? tapestry.data.threads : []), [tapestry])
   const threadCounts = useMemo<Record<number, number>>(() => {
     if (tapestry.status !== 'success') return {}
@@ -96,15 +76,8 @@ export function LoomPage() {
     }, {})
   }, [tapestry])
 
-  // React Flow owns node state so it can attach its own internals (measured
-  // dimensions, `dragging`) via `onNodesChange`. Rebuilding the array from
-  // `buildFlowNodes` on every render (the previous approach) stripped those
-  // fields mid-drag and forced a re-measure, which flashed/reflowed the canvas.
   const [nodes, setNodes, onNodesChange] = useNodesState<Node<FlowNodeData>>([])
 
-  // Reconcile server-derived data into the React-Flow-owned nodes whenever the
-  // tapestry or selection changes, preserving each existing node's live
-  // position and RF internals (new nodes take their fresh server position).
   useEffect(() => {
     setNodes((prev) => {
       const prevById = new Map(prev.map((n) => [n.id, n]))
@@ -127,34 +100,10 @@ export function LoomPage() {
     })
   }, [flowNodes, focusedThreadId, selectedNodeId, setNodes])
 
-  const edges: Edge[] = useMemo(
-    () =>
-      flowEdges.map((edge) => ({
-        id: edge.id,
-        source: edge.source,
-        target: edge.target,
-        selected: edge.id === selectedEdgeId,
-        className: [
-          edge.data.isLiveWarp ? 'loom-edge--live-warp' : null,
-          focusedThreadId != null && !edge.data.threadIds.includes(focusedThreadId) ? 'loom-edge--dimmed' : null,
-        ]
-          .filter(Boolean)
-          .join(' '),
-        style: { stroke: edgeColor(edge.data.threadIds, threads) },
-      })),
-    [flowEdges, focusedThreadId, threads, selectedEdgeId],
-  )
-
   const selectedNode =
     selectedNodeId != null && tapestry.status === 'success'
       ? tapestry.data.nodes.find((n) => String(n.id) === selectedNodeId) ?? null
       : null
-  const selectedEdge =
-    selectedEdgeId != null && tapestry.status === 'success'
-      ? tapestry.data.edges.find((e) => String(e.id) === selectedEdgeId) ?? null
-      : null
-  const selectedFlowNode = selectedNodeId != null ? flowNodes.find((n) => n.id === selectedNodeId) : undefined
-  const canBridgeFromSelected = !!selectedNode && isPast(selectedNode) && !!selectedFlowNode?.data.isHead
 
   const defaultNewPosition = useCallback((): { x: number; y: number } => {
     if (rfInstance && canvasRef.current) {
@@ -166,42 +115,19 @@ export function LoomPage() {
 
   const handleSelectVaultNode = (node: LoomNodeType) => {
     setSelectedNodeId(String(node.id))
-    setSelectedEdgeId(null)
-    setBridgeSource(null)
     if (!rfInstance) return
     rfInstance.setCenter(node.x, node.y, { zoom: 1, duration: 400 })
   }
 
   const handleNodeClick: NodeMouseHandler = useCallback(
     (_event, node) => {
-      if (bridgeSource) {
-        const target = tapestry.status === 'success' ? tapestry.data.nodes.find((n) => String(n.id) === node.id) : undefined
-        if (target && isFuture(target)) {
-          setBridgeTarget(target)
-        } else {
-          reportError('Select a planned anchor node to complete the bridge.')
-        }
-        return
-      }
       setSelectedNodeId(node.id)
-      setSelectedEdgeId(null)
     },
-    [bridgeSource, tapestry, reportError],
-  )
-
-  const handleEdgeClick: EdgeMouseHandler = useCallback(
-    (_event, edge) => {
-      if (bridgeSource) return
-      setSelectedEdgeId(edge.id)
-      setSelectedNodeId(null)
-    },
-    [bridgeSource],
+    [],
   )
 
   const handlePaneClick = useCallback(() => {
     setSelectedNodeId(null)
-    setSelectedEdgeId(null)
-    setBridgeSource(null)
   }, [])
 
   const handleNodeDragStop: OnNodeDrag = useCallback(
@@ -209,51 +135,16 @@ export function LoomPage() {
     [moveNode],
   )
 
-  const isValidConnection = useCallback(
-    (connection: Connection | Edge) => {
-      const source = 'source' in connection ? connection.source : undefined
-      const target = 'target' in connection ? connection.target : undefined
-      return canConnect(source, target)
-    },
-    [canConnect],
-  )
-
-  const handleConnect = useCallback(
-    (connection: Connection) => {
-      if (!connection.source || !connection.target) return
-      connect(connection.source, connection.target)
-    },
-    [connect],
-  )
-
-  const handleDeleteEdge = () => {
-    if (!selectedEdge) return
-    setDeletingEdge(true)
-    removeEdge(String(selectedEdge.id))
-      .then(() => setSelectedEdgeId(null))
-      .catch(() => {})
-      .finally(() => setDeletingEdge(false))
-  }
-
-  const handleNodeSaved = () => {
+  const handleNodeSaved = async (saved: LoomNodeType) => {
     setNodeEditor(null)
-    reload()
-  }
-
-  const handleConfirmStatusChange = async () => {
-    if (!pendingStatusChange) return
-    const { node, status } = pendingStatusChange
-    setSavingStatus(true)
-    try {
-      await updateLoomNode(node.id, buildNodeStatusUpdate(node, status))
-      setPendingStatusChange(null)
-      setSelectedNodeId(null)
-      reload()
-    } catch (err) {
-      reportError(errorMessage(err, 'Failed to update the anchor status.'))
-    } finally {
-      setSavingStatus(false)
+    if (!nodeEditor?.node && focusedThreadId != null) {
+      try {
+        await insertLoomThreadItem(focusedThreadId, { node_id: saved.id, position: 10 })
+      } catch (err) {
+        reportError(errorMessage(err, 'Node created, but could not place it in the thread.'))
+      }
     }
+    reload()
   }
 
   const handleConfirmDeleteNode = async () => {
@@ -273,16 +164,16 @@ export function LoomPage() {
 
   const commandBar = (
     <div className="loom-command-bar">
-      <Button variant="primary" onClick={() => setNodeEditor({ initialKind: 'update', position: defaultNewPosition() })}>
+      <Button variant="primary" onClick={() => setNodeEditor({ initialKind: 'session', position: defaultNewPosition() })}>
         <PlusIcon aria-hidden="true" size={16} />
-        <span>New Update</span>
+        <span>Record Session</span>
       </Button>
       <Button
         variant="secondary"
-        onClick={() => setNodeEditor({ initialKind: 'anchor', position: defaultNewPosition() })}
+        onClick={() => setNodeEditor({ initialKind: 'beat', position: defaultNewPosition() })}
       >
         <MapPinIcon aria-hidden="true" size={16} />
-        <span>New Anchor</span>
+        <span>Add Beat</span>
       </Button>
       <Button variant="secondary" onClick={() => setThreadManagerOpen(true)}>
         <WaypointsIcon aria-hidden="true" size={16} />
@@ -349,18 +240,15 @@ export function LoomPage() {
           <div className="loom-canvas-column">
             {bannerError && <LoomErrorBanner message={bannerError} onDismiss={dismissError} />}
             <div className="loom-canvas-area" ref={canvasRef}>
-              <ReactFlow<Node<FlowNodeData>, Edge>
+              <ReactFlow<Node<FlowNodeData>>
                 nodes={nodes}
-                edges={edges}
+                edges={flowEdges}
                 nodeTypes={nodeTypes}
                 onInit={setRfInstance}
                 onNodeClick={handleNodeClick}
-                onEdgeClick={handleEdgeClick}
                 onPaneClick={handlePaneClick}
                 onNodesChange={onNodesChange}
                 onNodeDragStop={handleNodeDragStop}
-                onConnect={handleConnect}
-                isValidConnection={isValidConnection}
                 fitView
                 proOptions={{ hideAttribution: false }}
               >
@@ -371,27 +259,10 @@ export function LoomPage() {
           </div>
           <LoomWeaverPanel
             selectedNode={selectedNode}
-            selectedEdge={selectedEdge}
             threads={threads}
             threadCounts={threadCounts}
-            vaultNodes={vault}
+            bankedNodes={banked}
             focusedThreadId={focusedThreadId}
-            canBridgeFromSelected={canBridgeFromSelected}
-            bridgeSource={bridgeSource}
-            deletingEdge={deletingEdge}
-            onBridge={() => {
-              if (!selectedNode) return
-              setBridgeSource(selectedNode)
-              setSelectedNodeId(null)
-            }}
-            onMarkReached={() => {
-              if (!selectedNode) return
-              setPendingStatusChange({ node: selectedNode, status: 'reached' })
-            }}
-            onMarkAbandoned={() => {
-              if (!selectedNode) return
-              setPendingStatusChange({ node: selectedNode, status: 'abandoned' })
-            }}
             onEdit={() => {
               if (!selectedNode) return
               setNodeEditor({ node: selectedNode, position: { x: selectedNode.x, y: selectedNode.y } })
@@ -400,12 +271,10 @@ export function LoomPage() {
               if (!selectedNode) return
               setPendingDeleteNode(selectedNode)
             }}
-            onDeleteEdge={handleDeleteEdge}
-            onSelectVaultNode={handleSelectVaultNode}
+            onSelectBankedNode={handleSelectVaultNode}
             onOpenThreadManager={() => setThreadManagerOpen(true)}
             onFocusThread={(threadId) => setFocusedThreadId(threadId)}
             onClearThreadFocus={() => setFocusedThreadId(null)}
-            onCancelBridge={() => setBridgeSource(null)}
           />
         </div>
       </div>
@@ -431,29 +300,6 @@ export function LoomPage() {
           onConfirm={handleConfirmDeleteNode}
           onCancel={() => setPendingDeleteNode(null)}
           pending={deletingNode}
-        />
-      )}
-
-      {bridgeSource && bridgeTarget && (
-        <LoomBridgeDialog
-          source={bridgeSource}
-          anchor={bridgeTarget}
-          onClose={() => setBridgeTarget(null)}
-          onBridged={() => {
-            setBridgeSource(null)
-            setBridgeTarget(null)
-            reload()
-          }}
-        />
-      )}
-
-      {pendingStatusChange && (
-        <ConfirmDialog
-          message={`Mark "${pendingStatusChange.node.title}" as ${pendingStatusChange.status}?`}
-          confirmLabel={pendingStatusChange.status === 'reached' ? 'Mark Reached' : 'Mark Abandoned'}
-          onConfirm={handleConfirmStatusChange}
-          onCancel={() => setPendingStatusChange(null)}
-          pending={savingStatus}
         />
       )}
     </LoomThreadsContext.Provider>

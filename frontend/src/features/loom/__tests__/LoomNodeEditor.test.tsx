@@ -15,8 +15,8 @@ describe('LoomNodeEditor', () => {
     vi.restoreAllMocks()
   })
 
-  it('creates an update node with the default position and no status', async () => {
-    const created: LoomNode = { id: 8, kind: 'update', title: 'New note', x: 10, y: 20, thread_ids: [] }
+  it('creates a session node with the default position', async () => {
+    const created: LoomNode = { id: 8, kind: 'session', title: 'New note', x: 10, y: 20, thread_ids: [] }
     const createLoomNode = vi.spyOn(api, 'createLoomNode').mockResolvedValue(created)
     const onSaved = vi.fn()
     const user = userEvent.setup()
@@ -29,32 +29,31 @@ describe('LoomNodeEditor', () => {
       />,
     )
 
-    expect(screen.getByRole('dialog', { name: 'Add New Update' })).toBeInTheDocument()
+    expect(screen.getByRole('dialog', { name: 'Add New Session' })).toBeInTheDocument()
     await user.type(screen.getByLabelText('Title'), 'New note')
     await user.click(screen.getByRole('button', { name: 'Create Node' }))
 
     await waitFor(() => expect(createLoomNode).toHaveBeenCalledOnce())
     expect(createLoomNode).toHaveBeenCalledWith(
-      expect.objectContaining({ kind: 'update', title: 'New note', status: null, x: 10, y: 20, thread_ids: [] }),
+      expect.objectContaining({ kind: 'session', title: 'New note', x: 10, y: 20 }),
     )
     expect(onSaved).toHaveBeenCalledWith(created)
   })
 
-  it('creates an anchor node with the selected status and threads', async () => {
+  it('creates a beat node with the beat kind selected', async () => {
     const created: LoomNode = {
       id: 9,
-      kind: 'anchor',
+      kind: 'beat',
       title: 'Confront the chief',
-      status: 'planned',
       x: 0,
       y: 0,
-      thread_ids: [2],
+      thread_ids: [],
     }
     const createLoomNode = vi.spyOn(api, 'createLoomNode').mockResolvedValue(created)
     const user = userEvent.setup()
     render(
       <LoomNodeEditor
-        initialKind="anchor"
+        initialKind="beat"
         threads={threads}
         defaultPosition={{ x: 0, y: 0 }}
         onClose={() => {}}
@@ -62,22 +61,20 @@ describe('LoomNodeEditor', () => {
       />,
     )
 
-    expect(screen.getByRole('dialog', { name: 'Add New Anchor' })).toBeInTheDocument()
+    expect(screen.getByRole('dialog', { name: 'Add New Beat' })).toBeInTheDocument()
     await user.type(screen.getByLabelText('Title'), 'Confront the chief')
-    await user.selectOptions(screen.getByLabelText('Status'), 'planned')
-    await user.click(screen.getByRole('checkbox', { name: 'Goblin Trouble' }))
     await user.click(screen.getByRole('button', { name: 'Create Node' }))
 
     await waitFor(() => expect(createLoomNode).toHaveBeenCalledOnce())
     expect(createLoomNode).toHaveBeenCalledWith(
-      expect.objectContaining({ kind: 'anchor', status: 'planned', thread_ids: [2] }),
+      expect.objectContaining({ kind: 'beat', title: 'Confront the chief' }),
     )
   })
 
   it('edits an existing node, preserving its stored position and locking kind', async () => {
     const node: LoomNode = {
       id: 3,
-      kind: 'update',
+      kind: 'session',
       title: 'Tracks lead to the cave',
       x: 250,
       y: 60,
@@ -95,12 +92,12 @@ describe('LoomNodeEditor', () => {
       />,
     )
 
-    expect(screen.getByRole('dialog', { name: 'Edit Update: Tracks lead to the cave' })).toBeInTheDocument()
+    expect(screen.getByRole('dialog', { name: 'Edit Session: Tracks lead to the cave' })).toBeInTheDocument()
     expect(screen.getByLabelText('Kind')).toBeDisabled()
     await user.click(screen.getByRole('button', { name: 'Save Changes' }))
 
     await waitFor(() =>
-      expect(updateLoomNode).toHaveBeenCalledWith(3, expect.objectContaining({ x: 250, y: 60, kind: 'update' })),
+      expect(updateLoomNode).toHaveBeenCalledWith(3, expect.objectContaining({ x: 250, y: 60, kind: 'session' })),
     )
   })
 

@@ -1,20 +1,21 @@
 import { useId, useState } from 'react'
 import type { FormEvent } from 'react'
-import { createLoomBridge } from '../../api/client'
-import type { LoomBridgeResult, LoomNode } from '../../api/types'
+import type { LoomNode } from '../../api/types'
 import { Button } from '../../components/Button'
 import { Dialog } from '../../components/Dialog'
 import { TextField } from '../../components/form/TextField'
 import './LoomEditor.css'
 
+/** @deprecated Removed in PB2. Kept as dead code until then. */
 interface LoomBridgeDialogProps {
   source: LoomNode
   anchor: LoomNode
   onClose: () => void
-  onBridged: (result: LoomBridgeResult) => void
+  onBridged: () => void
 }
 
-export function LoomBridgeDialog({ source, anchor, onClose, onBridged }: LoomBridgeDialogProps) {
+/** @deprecated Removed in PB2. */
+export function LoomBridgeDialog({ source, anchor, onClose }: LoomBridgeDialogProps) {
   const formId = useId()
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
@@ -27,14 +28,9 @@ export function LoomBridgeDialog({ source, anchor, onClose, onBridged }: LoomBri
     setSaving(true)
     setError(null)
     try {
-      const result = await createLoomBridge({
-        source_id: source.id,
-        anchor_id: anchor.id,
-        title,
-        body: body || null,
-        session_tag: sessionTag || null,
-      })
-      onBridged(result)
+      // Bridge endpoint retired in PA1 — stub until PB2 removes this component
+      void title; void body; void sessionTag
+      onClose()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create the bridge.')
       setSaving(false)
@@ -45,7 +41,7 @@ export function LoomBridgeDialog({ source, anchor, onClose, onBridged }: LoomBri
     <Dialog
       open
       title={`Bridge "${source.title}" → "${anchor.title}"`}
-      description="Splice a new Update between this head and the planned anchor."
+      description="Splice a new Session between this head and the planned beat."
       onClose={onClose}
       pending={saving}
       className="loom-node-editor-dialog"

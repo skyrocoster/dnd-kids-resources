@@ -24,7 +24,7 @@ describe('LoomThreadManager', () => {
   it('creates a new thread with the selected color', async () => {
     const createLoomThread = vi
       .spyOn(api, 'createLoomThread')
-      .mockResolvedValue({ id: 3, name: 'New Thread', color: 'thread-2' })
+      .mockResolvedValue({ id: 3, name: 'New Thread', color: 'thread-2', items: [] })
     const onChanged = vi.fn()
     const user = userEvent.setup()
     render(<LoomThreadManager threads={threads} onClose={() => {}} onChanged={onChanged} />)

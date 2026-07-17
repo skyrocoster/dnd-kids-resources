@@ -1,8 +1,8 @@
 const legendRows = [
-  { key: 'update', label: 'Woven update', tone: 'update', glyph: '■' },
-  { key: 'planned', label: 'Beacon anchor', tone: 'anchor', glyph: '◇' },
-  { key: 'reached', label: 'Reached anchor', tone: 'anchor-filled', glyph: '◆' },
-  { key: 'abandoned', label: 'Abandoned anchor', tone: 'abandoned', glyph: '△' },
+  { key: 'start', label: 'Start node', tone: 'start', glyph: '▶' },
+  { key: 'end', label: 'End node', tone: 'end', glyph: '■' },
+  { key: 'beat', label: 'Story beat', tone: 'beat', glyph: '◆' },
+  { key: 'session', label: 'Recorded session', tone: 'session', glyph: '●' },
   { key: 'now', label: 'Now', tone: 'now', glyph: 'N' },
   { key: 'next', label: 'Next', tone: 'next', glyph: '→' },
 ] as const
@@ -12,7 +12,7 @@ const legendRows = [
 export function LoomLegend() {
   return (
     <div className="loom-legend" aria-label="Loom legend">
-      <p className="loom-weaver-copy">Select a thread update, anchor, or edge to inspect it here.</p>
+      <p className="loom-weaver-copy">Select a node on the tapestry to inspect it here.</p>
       <ul className="loom-legend-list">
         {legendRows.map((row) => (
           <li key={row.key} className="loom-legend-row">
