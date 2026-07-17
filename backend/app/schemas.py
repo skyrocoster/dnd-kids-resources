@@ -489,6 +489,10 @@ class LoomNodePosition(BaseModel):
     y: float
 
 
+class LoomNodeFulfil(BaseModel):
+    title: Optional[str] = None
+
+
 class LoomThreadItemCreate(BaseModel):
     node_id: int
     position: int

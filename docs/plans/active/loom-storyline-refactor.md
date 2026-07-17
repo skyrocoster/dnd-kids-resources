@@ -1,11 +1,12 @@
 # Loom Storyline Refactor — From Flat DAG to Ordered Threads
 
-> **Status:** PA0–PA1 shipped. PA2 next.
+> **Status:** Phase PA complete; PB0 next.
 
 | Stage | What shipped (≤2 sentences) |
 |-------|------------------------------|
 | **PA0** | Schema rewrite (new kind CHECK, position, provenance, origin_node_id; dropped loom_edges), promoted v2 seed fixture (3 threads, 15 nodes, 15 memberships), idempotent migration script with backup+report, updated export/seed/conftest wiring. Suite compiles, migrator 13 tests pass. Gate ✅. |
 | **PA1** | Rewrote `loom.py`/`schemas.py` for Thread CRUD with auto Start/End, beat/session node CRUD, and ordered-membership endpoints (`POST`/`PATCH`/`DELETE /loom/threads/{id}/items[/…]`); deleted edge/bridge endpoints and acyclicity code. Rewrote `test_loom.py` (35 tests) and the stale fixture-shape integration test; API_REFERENCE reconciled (descriptive + generated). Full backend suite green, 91% coverage. Gate ✅. |
+| **PA2** | Added `POST /loom/nodes/{id}/fulfil` (beat→session in place, stamps provenance) and `POST /loom/nodes/{id}/bank` (unplace + `banked_from_thread_id`); restore reuses `POST /loom/threads/{id}/items` (clears banked provenance on insert). Added the `origin_node_id` `kind=='session'` spawn check PA1 deferred. Extended `PUT /loom/nodes/{id}` to allow the one documented fulfil-undo transition (`session`→`beat` when `fulfilled_planned_title` is set), clearing provenance. 13 new tests in `test_loom.py` (48 total); API_REFERENCE reconciled (descriptive + generated). Full backend suite green, 91% coverage. Gate ✅. |
 
 - **Area guide:** [The Loom](../../areas/loom.md).
 
@@ -366,6 +367,42 @@ thread_row)` (thread dict + its ordered `items`, used by the tapestry read and e
 
 ---
 
+## Backend API — final shape (Phase PA complete)
+
+`backend/app/routers/loom.py` and `backend/app/schemas.py` are the frozen backend contract for all of Phase PB;
+full request/response shapes live in `docs/API_REFERENCE.md`'s Loom Router section.
+
+- **Endpoints:** `GET /loom/tapestry`; `GET/POST /loom/threads`; `PUT/DELETE /loom/threads/{id}`;
+  `POST /loom/nodes`; `PUT/DELETE /loom/nodes/{id}`; `PATCH /loom/nodes/{id}/position`;
+  `POST /loom/nodes/{id}/fulfil`; `POST /loom/nodes/{id}/bank`; `POST /loom/threads/{id}/items`;
+  `PATCH/DELETE /loom/threads/{id}/items/{node_id}`. No edges, no bridge, no acyclicity code anywhere.
+- **Fulfil** (`POST /loom/nodes/{id}/fulfil`, body `LoomNodeFulfil{title?}`): 404 unknown node; 422 if
+  `kind != 'beat'`; 422 if the beat has no membership row (must be placed first). Sets `kind='session'`,
+  `fulfilled_planned_title` = the pre-fulfil title, `fulfilled_at = now`; `title` becomes `payload.title` when
+  given, else stays unchanged. Membership/position rows are never touched.
+- **Bank** (`POST /loom/nodes/{id}/bank`, no body): 404 unknown node; 422 if `kind != 'beat'`; 422 if the beat
+  has no membership row. Deletes the membership row, sets `banked_from_thread_id` to the vacated thread, and
+  renumbers that thread's remaining items.
+- **Restore/place** is not a separate route — it is the existing `POST /loom/threads/{id}/items` insert. When
+  the node being placed still carries `banked_from_thread_id`, that column is cleared as part of the same insert.
+- **Spawn** (`POST /loom/threads` with `origin_node_id` set): 422 if the node doesn't exist; 422 if
+  `kind != 'session'` (added in PA2 — PA1 only checked existence).
+- **Fulfil-undo** is the one exception to "kind is immutable" on `PUT /loom/nodes/{id}`: a `session` → `beat`
+  transition is accepted when the stored row still has `fulfilled_planned_title` set (i.e. it really was a
+  fulfilled beat); the update clears `fulfilled_planned_title`/`fulfilled_at` and applies the submitted
+  title/body/session_tag/x/y. Any other kind change is still 422 "Node kind is immutable". There is no separate
+  "unfulfil" endpoint — the client re-issues `PUT` with `kind='beat'` and the beat's prior title.
+- **Schemas:** `LoomNodeFulfil{title: Optional[str] = None}` is new in PA2. `LoomNode.fulfilled_planned_title`,
+  `fulfilled_at`, `banked_from_thread_id` are now written by fulfil/bank/restore (previously always `None`
+  through PA1).
+- **Reusable helpers** in `loom.py` (call, don't reimplement): `_load_node`, `_thread_ordered`,
+  `_renumber_thread`, `_clamped_index`, `_load_tapestry_thread`, `_fetch_thread_row`, `_node_thread_ids`.
+- **Tests:** `backend/tests/routers/test_loom.py` has 48 tests (13 added in PA2, covering fulfil/bank/restore/
+  spawn success + every 404/422 edge, plus the fulfil-undo path and the non-undo kind-immutability guard). Full
+  backend suite green, 91% coverage.
+
+---
+
 ## Design system in force
 
 No new visual language. Reuse `docs/DESIGN_SYSTEM.md` tokens and the Loom's existing thread-color token sets in
@@ -375,20 +412,9 @@ No new visual language. Reuse `docs/DESIGN_SYSTEM.md` tokens and the Loom's exis
 
 ## Delivery phases
 
-Sequencing: **~~PA0~~ → PA1 → PA2** (backend + data) → **PB0 → PB1 → PB2** (frontend) → **PC0** (cleanup + full
-sweep) → **PD0** (closeout). PB0 may start once PA1's endpoint shapes are frozen. Each stage is a single-context
-task.
-
-### Phase PA — Backend & data foundation
-
-Delivers the new schema, the rewritten seed fixture, the migrator, and the full backend API for ordered Threads
-with Start/End, beats, sessions, sharing, and spawning. **Depended on by:** all of Phase PB.
-
-| Stage | Required strength | Summary | Deliverables |
-|---|---|---|---|
-| ~~**PA0 — Schema, seeds, migration**~~ | ~~High~~ | ~~New DDL, provenance, drop edges; rewrite seed fixture; migrator; DATA_MODEL~~ | ~~Shipped~~ |
-| ~~**PA1 — Thread/order/node API**~~ | ~~High~~ | ~~Threads with auto Start/End, ordered membership, node CRUD, insert/reorder/remove; remove edge + bridge endpoints~~ | ~~Shipped~~ |
-| **PA2 — Beat lifecycle + sharing + spawn** | High | Fulfil, bank, restore, add-to-thread, spawn-from-session | Endpoints + tests; API_REFERENCE |
+Sequencing: **~~Phase PA~~** (backend + data, complete) → **PB0 → PB1 → PB2** (frontend) → **PC0** (cleanup + full
+sweep) → **PD0** (closeout). PB0 is unblocked: PA1/PA2 endpoint shapes are frozen (see **Backend API — final
+shape** above). Each stage is a single-context task.
 
 ### Phase PB — Frontend reframe
 
@@ -415,70 +441,17 @@ bridge. **Depends on:** PA1 (types/endpoints frozen).
 
 <!-- ===== VERBOSE BLOCKS — one per un-shipped stage ===== -->
 
-#### PA2 — Beat lifecycle, sharing, and spawning (next up)
+#### PB0 — Frontend types, client, and scaffolding (next up)
 
-> **PA1 handoff facts** — already consolidated; do not re-derive:
-> - Router `backend/app/routers/loom.py` is fully rewritten: no edges/bridge code remains. Endpoints:
->   `GET /loom/tapestry`, `GET/POST /loom/threads`, `PUT/DELETE /loom/threads/{id}`, `POST /loom/nodes`,
->   `PUT/DELETE /loom/nodes/{id}`, `PATCH /loom/nodes/{id}/position`, `POST /loom/threads/{id}/items`,
->   `PATCH/DELETE /loom/threads/{id}/items/{node_id}`. Full request/response shapes are frozen in
->   `docs/API_REFERENCE.md`'s Loom Router section and in this plan's Interaction/command-model section above.
-> - Schemas (`schemas.py`): `LoomNodeKind = Literal['start','end','beat','session']`;
->   `LoomCreatableNodeKind = Literal['beat','session']` (used by `LoomNodeCreate.kind` — `start`/`end` cannot be
->   created directly). `LoomNode` has `fulfilled_planned_title`, `fulfilled_at` (both `Optional[str]`), and
->   `banked_from_thread_id` (`Optional[int]`) — all still unset by every PA1 endpoint; PA2 is the first stage to
->   write them. `LoomThread`/`LoomThreadCreate` have `origin_node_id`; `LoomThreadCreate` also has optional
->   `start_title`/`end_title`. `LoomTapestryThread(LoomThread)` adds `items: List[LoomTapestryItem]`
->   (`{node_id, position}`) — this is what `GET /loom/tapestry` and every items-endpoint response return per
->   thread. `LoomEdge*`/`LoomBridge*` models are gone entirely (not stubbed — fully removed).
-> - Reusable helpers already in `loom.py` (call these, don't reimplement): `_load_node(cursor, node_id)`,
->   `_thread_ordered(cursor, thread_id)` → `(ordered_node_ids, positions_by_node)`, `_renumber_thread(cursor,
->   thread_id, ordered_node_ids)` (rewrites positions to `0,10,20,…`), `_clamped_index(existing_ids,
->   positions_by_node, requested_position)` (never before Start / after End), `_load_tapestry_thread(cursor,
->   thread_row)`, `_fetch_thread_row(cursor, thread_id)`.
-> - Invariants enforced structurally, not by a runtime "one start/one end" check: `start`/`end` nodes can only be
->   created by `POST /loom/threads` and can only be removed by deleting the whole thread (`POST /loom/nodes` with
->   `kind` start/end is 422; the items endpoints reject `start`/`end` with 422; `DELETE /loom/nodes/{id}` on a
->   start/end is 422). A `beat` is thread-exclusive: `POST /loom/threads/{id}/items` 422s if the beat already has
->   any membership row anywhere. `DELETE /loom/threads/{id}` deletes its own exclusive `start`/`end`/`beat` nodes
->   (join on `kind IN (...)` for that thread's memberships) but leaves shared `session` nodes and other threads'
->   memberships untouched; any `origin_node_id` pointing at a node it deletes is nulled by the FK automatically.
-> - Tests: `backend/tests/routers/test_loom.py` (35 tests, fully rewritten) and
->   `backend/tests/test_integration_real_data.py::test_loom_tapestry_serializes_demo_fixture` (asserts 3
->   threads / 15 nodes / no `edges` key against the real seeded fixture) — both green. Full backend suite: 91%
->   coverage.
-> - Migration script `scripts/migrate_loom_v2.py` is unaffected by PA1 (it operates on live-DB rows, not the API).
-
-- **Read first:** `backend/app/routers/loom.py` and `backend/app/schemas.py` as left by PA1 (see handoff facts
-  above — read the file, don't re-derive from scratch), `backend/tests/routers/test_loom.py`, the State
-  transitions table above, and the Interaction/command-model section's PA2-tagged rows.
-- **Build:** `POST /loom/nodes/{id}/fulfil` (beat→session in place: set `kind='session'`,
-  `fulfilled_planned_title` = current title unless a new title is supplied, `fulfilled_at = now`; memberships
-  untouched); `POST /loom/nodes/{id}/bank` (delete membership(s), set `banked_from_thread_id`);
-  `POST /loom/nodes/{id}/place` (restore/add a banked or existing session to a thread at a gap — may be the same
-  endpoint as `POST /loom/threads/{id}/items`); spawn is `POST /loom/threads` with `origin_node_id` (already
-  accepted by PA1, existence-checked only) — add the `kind == 'session'` check PA1 deferred. Enforce transition
-  preconditions (fulfil requires `kind='beat'` placed on the thread; add-to-thread requires `kind='session'`).
-  Reuse `_thread_ordered`/`_renumber_thread`/`_clamped_index`/`_load_tapestry_thread` for any position-touching op.
-- **Inherits:** PA1's ordering/insert helpers and invariants (see handoff facts); PA0's provenance columns.
-- **Expected touch set:** `backend/app/routers/loom.py`, `backend/app/schemas.py`, `test_loom.py`,
-  `docs/API_REFERENCE.md`.
-- **Documentation impact:** `docs/API_REFERENCE.md` — add the fulfil/bank/place rows and the `origin_node_id`
-  spawn note.
-- **Tests:** fulfil preserves order + stamps provenance; fulfil→revert (client-style PUT) restores wording; bank
-  then restore onto another thread; add shared session to a second thread with independent order; spawn sets
-  origin and auto Start/End. Run the loom router tests then the full gate.
-- **Gate:** the Example Target Scenario (Ice Queen: plan → session → spawn hat thread → fulfil or bypass) runs
-  end-to-end via the API on a live DB; full backend suite green at ≥90%. Suite-sufficient.
-- **Discovery consolidation:** record the final lifecycle endpoint shapes into PB2's **Build**; update
-  `docs/API_REFERENCE.md`; move any deferred lifecycle nicety to Known debt.
-- **Completion edit:** collapse to a Shipped row; Status → "Phase PA complete; PB0 next"; delete the Phase PA
-  section per the phase-completion rule, promoting durable facts to top matter; advance anchors.
-
-#### PB0 — Frontend types, client, and scaffolding (planned)
+> **PA2 handoff facts** — already consolidated into **Backend API — final shape (Phase PA complete)** above; do
+> not re-derive. That section has the full endpoint list, the fulfil/bank/restore/spawn semantics and their
+> 404/422 preconditions, the fulfil-undo exception to kind-immutability, the `LoomNodeFulfil` schema, and the
+> reusable backend helper names. Phase PA (PA0–PA2) is entirely shipped; there is no remaining backend work this
+> phase depends on.
 
 - **Read first:** `frontend/src/api/types.ts` (loom types ~484–558), `frontend/src/api/client.ts` (loom methods),
-  the frozen PA1/PA2 endpoint list, `frontend/src/features/loom/` (all modules), and its `__tests__/`.
+  the **Backend API — final shape** section above (frozen PA0–PA2 endpoint list), `frontend/src/features/loom/`
+  (all modules), and its `__tests__/`.
 - **Build:** Replace loom TS types (`LoomNodeKind = 'start'|'end'|'beat'|'session'`; add `position`,
   `origin_node_id`, provenance; drop `LoomEdge*`, `LoomBridge*`, `LoomAnchorStatus`). Add client methods for the
   PA1/PA2 endpoints; remove edge/bridge client methods. Add `it.skip` seams (with real assertion bodies) for the
@@ -523,10 +496,19 @@ bridge. **Depends on:** PA1 (types/endpoints frozen).
 #### PB2 — Beat lifecycle UI (planned)
 
 - **Read first:** `LoomVaultPanel.tsx`, `LoomBridgeDialog.tsx`, `LoomWeaverPanel.tsx`, `LoomPage.tsx` as left by
-  PB1, PA2 lifecycle endpoints, and PB1's handoff notes.
+  PB1, the **Backend API — final shape** section above for the exact lifecycle endpoints, and PB1's handoff notes.
 - **Build:** Convert the vault panel into the **Beat Bank** (beats with zero membership; Restore action). Add
-  Fulfil Beat, Bank Beat, Replace Beat, Spawn Thread from Session, and Change Ending as domain commands wired to
-  PA2 endpoints. **Remove** `LoomBridgeDialog.tsx` and the bridge mode in `LoomPage.tsx`, and the
+  domain commands wired to the frozen lifecycle endpoints: **Fulfil Beat** → `POST /loom/nodes/{id}/fulfil`
+  (optional new title; 422 if not a placed beat) — refresh the node in place, do not reflow order. **Bank Beat**
+  → `POST /loom/nodes/{id}/bank` (422 if not a placed beat) — remove it from its lane, add to the Beat Bank.
+  **Restore Beat** → the same `POST /loom/threads/{id}/items` insert PB1 already uses for placing a beat/session
+  (banked provenance is cleared server-side automatically). **Replace Beat** → client-composed: bank-or-delete the
+  old beat, then insert the new one at the same position via the items endpoint. **Spawn Thread from Session** →
+  `POST /loom/threads` with `origin_node_id`; 422 if the source node isn't `kind='session'`. **Change Ending** →
+  `PUT /loom/nodes/{id}` on the thread's `end` node (title/body only, `kind` unchanged). Also wire the one
+  documented **fulfil-undo**: re-`PUT /loom/nodes/{id}` with `kind='beat'` and the title from
+  `fulfilled_planned_title` — the backend accepts this single kind transition when that field is set and clears
+  it server-side. **Remove** `LoomBridgeDialog.tsx` and the bridge mode in `LoomPage.tsx`, and the
   head/next-anchor/live-warp visuals.
 - **Inherits:** PB1 view + commands; PA2 endpoints; existing dialogs (`ConfirmDialog`) and tokens.
 - **Expected touch set:** `LoomVaultPanel.tsx`, `LoomWeaverPanel.tsx`, `LoomPage.tsx`, delete

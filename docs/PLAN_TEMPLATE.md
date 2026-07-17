@@ -40,9 +40,9 @@ fresh executor, not a record of every command or implementation detail.
   constraints, gotchas, and decisions that prevent rediscovery.
 - Add confirmed extension points to **Reusable pieces (do not rebuild)** and deliberate non-work to **Known debt /
   deferred**.
-- Revise every affected future stage's **Read first**, **Build**, **Inherits**, **Expected touch set**,
-  **Documentation impact**, **Tests**, or **Gate**. Do this even when the new fact comes from an implementation,
-  integration, design, or documentation stage.
+- Revise every affected future stage's **Handoff facts** blockquote, **Read first**, **Build**, **Inherits**,
+  **Expected touch set**, **Documentation impact**, **Tests**, or **Gate**. Do this even when the new fact comes
+  from an implementation, integration, design, or documentation stage.
 - Update the relevant canonical reference when the discovery establishes a durable API, data, architecture,
   design, testing, setup, or user-visible contract. Do not defer that required update to the final stage.
 - Keep transient exploration, command output, and detailed implementation narrative in the commit rather than
@@ -166,6 +166,13 @@ execution plan. Note any parallelism.
 
 #### X<n> — <name> (next up)
 
+> **Handoff facts** — written by the *previous* stage into this block before it ships. Gives the next
+> executor the verified, current state of the codebase (schema shapes, endpoint signatures, reusable
+> helpers and their signatures, enforced invariants, test counts, file layouts) so they do not re-derive
+> what the prior stage already confirmed. Format as a blockquote at the top of the verbose block. If the
+> previous stage's Completion edit did not write one, the next executor must re-derive from source — which
+> is the failure mode this rule exists to prevent.
+
 - **Read first:** the smallest exact set of plans, references, source files, and tests required before exploring.
 - **Build:** concrete algorithms, reducer actions, component shapes, exact file paths.
 - **Inherits:** what earlier stages already provide that this one builds on (don't re-derive).
@@ -177,10 +184,12 @@ execution plan. Note any parallelism.
 - **Tests:** unit (reducer/selector/render) + integration (full flow) to write, including exact commands.
 - **Gate:** the live end-to-end confirmation that proves it works — not just test-green. State whether a browser
   pass is required (per `CLAUDE.md`'s browser-automation policy) or the suite suffices.
-- **Discovery consolidation:** exact plan top-matter sections, future-stage blocks, and canonical references to
-  revise from expected findings; update the list with actual discoveries before this stage is collapsed.
-- **Completion edit:** the Shipped-table row, status line, next-stage target, and any archival edit required when
-  this stage ships.
+- **Discovery consolidation:** exact plan top-matter sections, future-stage blocks (including the next stage's
+  **Handoff facts** blockquote), and canonical references to revise from expected findings; update the list with
+  actual discoveries before this stage is collapsed.
+- **Completion edit:** the Shipped-table row, status line, next-stage target, write **Handoff facts** into the
+  next stage's verbose block (the blockquote described above), and any archival edit required when this stage
+  ships.
 
 #### X<n+1> — <name> (planned)
 
@@ -243,7 +252,12 @@ On completion, do all of this in the stage's own commit:
    plan's own **Reusable pieces** section or a specific future-stage block; each named target needs its own edit.
    A stage whose Discovery consolidation line names three places and whose diff touches one is not consolidated,
    even if gates are green and the stage otherwise looks finished.
-5. **Commit code + plan-doc edit together**, referencing the stage ID and test counts.
+5. **Write handoff facts into the next stage's verbose block.** Add or update the `> **Handoff facts**`
+   blockquote at the top of the next stage's verbose block with the verified current state: exact schema shapes,
+   endpoint signatures, reusable helpers and their signatures, enforced invariants, test counts, and file layouts.
+   This is the primary mechanism for passing confirmed context forward — the next executor reads these instead of
+   re-exploring the codebase.
+6. **Commit code + plan-doc edit together**, referencing the stage ID and test counts.
 
 ### Shipped stages table (the collapsed record)
 
@@ -305,6 +319,9 @@ When there are no more planned delivery phases:
 - [ ] 🚦 gate met live (or suite-sufficient per policy); tests green; `npm run typecheck`/`npm run build` clean (`tsc -b`, not `--noEmit` — [it checks nothing here](DESIGN_SYSTEM.md)); Python-backed checks run from the repo root via the repo-local virtualenv (`.venv\Scripts\python.exe -m pytest` on Windows, `.venv/bin/python -m pytest` on POSIX), ≥85% coverage.
 - [ ] Important discoveries consolidated into plan top matter, every affected future-stage block, and canonical
       references where they establish a durable contract. No later executor must rediscover a confirmed fact.
+- [ ] **Handoff facts** written into the next stage's verbose block as a blockquote — schema shapes, endpoint
+      signatures, reusable helpers, invariants, test counts, and file layouts confirmed by this stage are
+      captured so the next executor does not re-derive them.
 - [ ] Re-read this stage's own Discovery consolidation line after making the edits above and checked off each
       named target individually (`git diff` against that exact file/section) — not inferred from having done
       "something in that category."

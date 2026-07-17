@@ -201,7 +201,9 @@ CRUD, ordered membership (insert/reorder/remove), and the tapestry read. No edge
 | PUT | `/api/loom/nodes/{node_id}` | Update node title/body/session_tag/x/y (kind immutable) | `LoomNodeUpdate` | `LoomNode` |
 | DELETE | `/api/loom/nodes/{node_id}` | Delete a `beat`/`session` node (cascades memberships); 422 on `start`/`end` | (path param) | (204 No Content) |
 | PATCH | `/api/loom/nodes/{node_id}/position` | Persist canvas drag position (presentation only, never read for order) | `LoomNodePosition` | `LoomNode` |
-| POST | `/api/loom/threads/{thread_id}/items` | Place an existing `beat`/`session` node on the thread at a gap (renumbers) | `LoomThreadItemCreate` | `LoomTapestryThread` (201) |
+| POST | `/api/loom/nodes/{node_id}/fulfil` | Convert a placed `beat` into a `session` in place; stamps `fulfilled_planned_title`/`fulfilled_at`; memberships/positions untouched | `LoomNodeFulfil` | `LoomNode` |
+| POST | `/api/loom/nodes/{node_id}/bank` | Unplace a `beat` (delete its membership) and record `banked_from_thread_id` for later reuse | (none) | `LoomNode` |
+| POST | `/api/loom/threads/{thread_id}/items` | Place an existing `beat`/`session` node on the thread at a gap (renumbers); also the **restore** path for a banked beat, which clears `banked_from_thread_id` | `LoomThreadItemCreate` | `LoomTapestryThread` (201) |
 | PATCH | `/api/loom/threads/{thread_id}/items/{node_id}` | Reorder a member within the thread, clamped between Start and End | `LoomThreadItemPositionUpdate` | `LoomTapestryThread` |
 | DELETE | `/api/loom/threads/{thread_id}/items/{node_id}` | Remove a member's membership row (node identity survives) | (path params) | (204 No Content) |
 
@@ -211,6 +213,16 @@ after End) and renumbers every membership row to `0, 10, 20, …`. A `beat` may 
 time (422 if already placed elsewhere); a `session` may be placed on multiple threads independently. `start`/`end`
 nodes can never be placed, reordered, or removed via the items endpoints or deleted directly — only whole-thread
 deletion removes them.
+
+**Beat lifecycle:** Fulfil requires the node to be `kind='beat'` and currently placed on a thread (422 otherwise);
+`LoomNodeFulfil.title` is optional — when omitted the title is unchanged and only `fulfilled_planned_title`
+records the prior (planned) wording. Bank requires `kind='beat'` and a current membership (422 otherwise); it
+deletes the membership and renumbers the vacated thread. Restoring a banked beat is the same
+`POST /loom/threads/{thread_id}/items` insert used for any placement. **Undo of a fulfil** is a client-issued
+`PUT /api/loom/nodes/{node_id}` with `kind='beat'` — normally kind is immutable, but this one transition (a
+`session` reverting to `beat`) is allowed when the node still carries a `fulfilled_planned_title`, and it clears
+that provenance and `fulfilled_at`. **Spawn** is `POST /api/loom/threads` with `origin_node_id` set to an existing
+node id; the origin node must be `kind='session'` (422 otherwise).
 
 ---
 
@@ -259,6 +271,8 @@ All optional fields are `Optional[...]` in the schema; required fields have no `
 | POST | `/api/loom/nodes` | - | LoomNodeCreate | 201: LoomNode, 422: HTTPValidationError |
 | DELETE | `/api/loom/nodes/{node_id}` | `node_id` (path, required) | - | 204: -, 422: HTTPValidationError |
 | PUT | `/api/loom/nodes/{node_id}` | `node_id` (path, required) | LoomNodeUpdate | 200: LoomNode, 422: HTTPValidationError |
+| POST | `/api/loom/nodes/{node_id}/bank` | `node_id` (path, required) | - | 200: LoomNode, 422: HTTPValidationError |
+| POST | `/api/loom/nodes/{node_id}/fulfil` | `node_id` (path, required) | - | 200: LoomNode, 422: HTTPValidationError |
 | PATCH | `/api/loom/nodes/{node_id}/position` | `node_id` (path, required) | LoomNodePosition | 200: LoomNode, 422: HTTPValidationError |
 | GET | `/api/loom/tapestry` | - | - | 200: LoomTapestry |
 | GET | `/api/loom/threads` | `limit` (query), `offset` (query) | - | 200: List[LoomThread], 422: HTTPValidationError |
