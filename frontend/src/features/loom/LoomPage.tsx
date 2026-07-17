@@ -30,10 +30,14 @@ import { LoomErrorBanner } from './LoomErrorBanner'
 import { StatePanel } from '../../components/StatePanel'
 import { Button } from '../../components/Button'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
+import { PageHeader } from '../../components/PageHeader'
+import { MapPinIcon, PlusIcon, WaypointsIcon } from '../../components/icons'
 import { deleteLoomNode, updateLoomNode } from '../../api/client'
 import type { LoomAnchorStatus, LoomNode as LoomNodeType, LoomNodeKind, LoomThread } from '../../api/types'
 
 const nodeTypes = { anchor: AnchorNode, update: UpdateNode }
+const LOOM_EYEBROW = 'TAPESTRY · CONTINUITY'
+const LOOM_SUBTITLE = 'Track where every story thread stands between sessions.'
 
 function edgeColor(threadIds: number[], threads: LoomThread[]): string {
   if (threadIds.length === 0) return 'var(--md-outline)'
@@ -239,27 +243,63 @@ export function LoomPage() {
     }
   }
 
+  const commandBar = (
+    <div className="loom-command-bar">
+      <Button variant="primary" onClick={() => setNodeEditor({ initialKind: 'update', position: defaultNewPosition() })}>
+        <PlusIcon aria-hidden="true" size={16} />
+        <span>New Update</span>
+      </Button>
+      <Button
+        variant="secondary"
+        onClick={() => setNodeEditor({ initialKind: 'anchor', position: defaultNewPosition() })}
+      >
+        <MapPinIcon aria-hidden="true" size={16} />
+        <span>New Anchor</span>
+      </Button>
+      <Button variant="secondary" onClick={() => setThreadManagerOpen(true)}>
+        <WaypointsIcon aria-hidden="true" size={16} />
+        <span>Manage Threads</span>
+      </Button>
+    </div>
+  )
+
+  const pageHeader = (
+    <div className="loom-page-header">
+      <p className="loom-eyebrow">{LOOM_EYEBROW}</p>
+      <PageHeader title="The Loom" subtitle={LOOM_SUBTITLE} actions={commandBar} />
+    </div>
+  )
+
   if (tapestry.status === 'loading' || tapestry.status === 'idle') {
-    return <StatePanel status="loading" title="Loading the tapestry" message="Fetching threads and nodes…" />
+    return (
+      <div className="loom-route">
+        {pageHeader}
+        <StatePanel status="loading" title="Loading the tapestry" message="Fetching threads and nodes…" />
+      </div>
+    )
   }
 
   if (tapestry.status === 'error') {
     return (
-      <StatePanel
-        status="error"
-        message={tapestry.error}
-        action={
-          <button type="button" className="btn" onClick={reload}>
-            Retry
-          </button>
-        }
-      />
+      <div className="loom-route">
+        {pageHeader}
+        <StatePanel
+          status="error"
+          message={tapestry.error}
+          action={
+            <button type="button" className="btn" onClick={reload}>
+              Retry
+            </button>
+          }
+        />
+      </div>
     )
   }
 
   if (tapestry.data.nodes.length === 0 && tapestry.data.threads.length === 0) {
     return (
-      <>
+      <div className="loom-route">
+        {pageHeader}
         <StatePanel
           status="empty"
           title="Your tapestry is empty"
@@ -269,31 +309,16 @@ export function LoomPage() {
         {threadManagerOpen && (
           <LoomThreadManager threads={[]} onClose={() => setThreadManagerOpen(false)} onChanged={reload} />
         )}
-      </>
+      </div>
     )
   }
 
   return (
     <LoomThreadsContext.Provider value={threads}>
-      <div className="loom-page">
-        <div className="loom-canvas-column">
-          <div className="loom-toolbar">
-            <Button
-              variant="secondary"
-              onClick={() => setNodeEditor({ initialKind: 'update', position: defaultNewPosition() })}
-            >
-              New Update
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={() => setNodeEditor({ initialKind: 'anchor', position: defaultNewPosition() })}
-            >
-              New Anchor
-            </Button>
-            <Button variant="secondary" onClick={() => setThreadManagerOpen(true)}>
-              Manage Threads
-            </Button>
-          </div>
+      <div className="loom-route">
+        {pageHeader}
+        <div className="loom-page">
+          <div className="loom-canvas-column">
           {bannerError && <LoomErrorBanner message={bannerError} onDismiss={dismissError} />}
           {bridgeSource && (
             <div className="loom-inspector">
@@ -360,28 +385,29 @@ export function LoomPage() {
               </div>
             </div>
           )}
-          <div className="loom-canvas-area" ref={canvasRef}>
-            <ReactFlow<Node<FlowNodeData>, Edge>
-              nodes={nodes}
-              edges={edges}
-              nodeTypes={nodeTypes}
-              onInit={setRfInstance}
-              onNodeClick={handleNodeClick}
-              onEdgeClick={handleEdgeClick}
-              onPaneClick={handlePaneClick}
-              onNodesChange={onNodesChange}
-              onNodeDragStop={handleNodeDragStop}
-              onConnect={handleConnect}
-              isValidConnection={isValidConnection}
-              fitView
-              proOptions={{ hideAttribution: false }}
-            >
-              <Background />
-              <Controls />
-            </ReactFlow>
+            <div className="loom-canvas-area" ref={canvasRef}>
+              <ReactFlow<Node<FlowNodeData>, Edge>
+                nodes={nodes}
+                edges={edges}
+                nodeTypes={nodeTypes}
+                onInit={setRfInstance}
+                onNodeClick={handleNodeClick}
+                onEdgeClick={handleEdgeClick}
+                onPaneClick={handlePaneClick}
+                onNodesChange={onNodesChange}
+                onNodeDragStop={handleNodeDragStop}
+                onConnect={handleConnect}
+                isValidConnection={isValidConnection}
+                fitView
+                proOptions={{ hideAttribution: false }}
+              >
+                <Background />
+                <Controls />
+              </ReactFlow>
+            </div>
           </div>
+          <LoomVaultPanel nodes={vault} onSelectNode={handleSelectVaultNode} />
         </div>
-        <LoomVaultPanel nodes={vault} onSelectNode={handleSelectVaultNode} />
       </div>
 
       {nodeEditor && (

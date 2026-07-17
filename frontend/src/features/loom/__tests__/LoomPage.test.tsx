@@ -28,6 +28,10 @@ describe('LoomPage', () => {
     render(<LoomPage />)
 
     await waitFor(() => expect(screen.getByText('Puppy goes missing in the village')).toBeInTheDocument())
+    expect(screen.getByRole('heading', { name: 'The Loom' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'New Update' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'New Anchor' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Manage Threads' })).toBeInTheDocument()
     expect(screen.getByText('Idea Vault (1)')).toBeInTheDocument()
   })
 
@@ -71,8 +75,7 @@ describe('LoomPage', () => {
     expect(screen.getByRole('button', { name: 'Create your first thread' })).toBeInTheDocument()
   })
 
-  it.skip('renders the PageHeader with title "The Loom"', async () => {
-    // LU1 — Identity & command bar: un-skip when PageHeader is rendered at the top of LoomPage
+  it('renders the PageHeader with title "The Loom"', async () => {
     vi.spyOn(api, 'getLoomTapestry').mockResolvedValue(demoTapestry())
     render(<LoomPage />)
     await waitFor(() => expect(screen.getByRole('heading', { name: 'The Loom' })).toBeInTheDocument())

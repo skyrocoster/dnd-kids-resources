@@ -1,6 +1,6 @@
 # The Loom — Weaver's Workspace (UI/UX Pass)
 
-> **Status:** LU0 shipped. LU1 (Identity & command bar) next up.
+> **Status:** LU0–LU1 shipped. LU2 (Weaver's panel) next up.
 
 - **Area guide:** [The Loom](../../areas/loom.md).
 
@@ -55,6 +55,11 @@ strengthened shuttle glow on heads. Everything else stays quiet.
   dashed + dim); update = slate container. Both show a `Now` badge when `isHead`; anchors show a `Next` badge
   when `isNextAnchor`. `ThreadChips` renders 8×8px dots (`aria-hidden`), and each is the *only* thread cue on
   the card body today.
+- **LU1 identity decisions (implemented 2026-07-17):** eyebrow copy = `TAPESTRY · CONTINUITY`; subtitle copy =
+  "Track where every story thread stands between sessions."; command-bar icons = `PlusIcon` (New Update),
+  `MapPinIcon` (New Anchor), `WaypointsIcon` (Manage Threads). `PageHeader` actions wrap normally once the
+  viewport narrows, so LU4's responsive pass only needs to preserve that wrap behavior while keeping the canvas
+  flex height owned by `.loom-route`/`.loom-page`.
 - **`LoomVaultPanel.tsx`** is a self-contained collapsible list of degree-0 nodes; clicking one calls
   `rfInstance.setCenter(node.x, node.y, …)` via `onSelectNode`.
 - **Derived presentation data already available** (no new computation needed): `FlowNodeData` carries
@@ -196,39 +201,9 @@ seam of the command bar vs. the rail; keep them sequential to avoid churn in `Lo
 | Stage | What shipped |
 |-------|-------------|
 | **LU0** | Scaffolding: component/CSS stubs, `it.skip` seams in `LoomPage.test.tsx` and `LoomWeaverPanel.test.tsx`, `LoomWeaverPanelProps` interface finalized. App renders unchanged. Gate ✅. |
+| **LU1** | Added the Loom route shell, eyebrow, `PageHeader`, and primary/secondary command-bar hierarchy using `PlusIcon`, `MapPinIcon`, and `WaypointsIcon`; un-skipped the header seam in `LoomPage.test.tsx`. Frontend `npm run test`, `npm run lint`, `npm run typecheck`, `npm run build`, and the docs check via `.venv\Scripts\python.exe scripts/check_docs.py --check` all passed. Gate ✅. |
 
-#### LU1 — Identity & command bar (next up)
-
-- **Read first:** this plan (LU0 handoff), `components/PageHeader.tsx`, `components/Button.tsx`,
-  `components/icons/index.ts` (pick glyphs), `LoomPage.tsx:276–296`, `LoomEditor.css:1–8`,
-  `__tests__/LoomPage.test.tsx`.
-- **Build:** give the page an identity and a clear command hierarchy.
-  - Render `PageHeader` at the top of the returned tree (inside `.loom-page` or wrapping it) with
-    `title="The Loom"`, `subtitle` = one plain sentence naming the job (e.g. "Track where every story thread
-    stands between sessions."), and `actions` = the command bar. Add a Loom-local **eyebrow** element
-    (`.loom-eyebrow`, e.g. "TAPESTRY · CONTINUITY") styled with Roboto Flex variable axes (wide + tracked) —
-    this is a Loom element, not a `PageHeader` feature.
-  - Convert the toolbar into `.loom-command-bar`: **New Update** becomes the single `variant="primary"` button
-    with a leading plus icon; **New Anchor** and **Manage Threads** stay `variant="secondary"` with fitting
-    glyphs from the barrel. Keep the exact existing `onClick` handlers and accessible names ("New Update",
-    "New Anchor", "Manage Threads") so current tests and the bridge flow keep working.
-  - Ensure the header/command bar do not eat canvas height on small viewports (LU4 finishes responsive).
-- **Inherits:** LU0 stubs and CSS classes; existing toolbar handlers/state.
-- **Expected touch set:** `LoomPage.tsx`, `LoomEditor.css` (command-bar + eyebrow rules), `LoomCanvas.css`
-  (eyebrow type treatment if placed there), `__tests__/LoomPage.test.tsx` (un-skip the header seam; keep
-  button-name assertions). No shared-component contract changes, so no other consumer files.
-- **Documentation impact:** `None: reuses PageHeader/Button contracts unchanged and adds no shared token; the
-  Loom-local eyebrow type treatment is documented by LU3's DESIGN_SYSTEM Loom-section edit alongside the other
-  visual contract changes.`
-- **Tests:** un-skip and pass the header seam in `LoomPage.test.tsx` (asserts `getByRole('heading', { name:
-  'The Loom' })` and the three command buttons by name). `npm run test/lint/typecheck/build` green.
-- **Gate:** suite-sufficient for structure; defer the visual browser check to LU4's gate.
-- **Discovery consolidation:** record the exact icon names chosen and the final eyebrow/subtitle copy into this
-  plan's top matter so LU3/LU4 don't re-decide; note any `PageHeader` layout quirk (e.g. actions wrapping)
-  affecting LU4's responsive work.
-- **Completion edit:** collapse to a Shipped row; Status → "LU2 next up".
-
-#### LU2 — Weaver's panel (planned)
+#### LU2 — Weaver's panel (next up)
 
 - **Read first:** this plan, `LoomPage.tsx:276–435` (full return + all inspector/vault rendering and their
   handlers), `LoomVaultPanel.tsx`, `LoomCanvas.css:148–208` (vault styles), `LoomEditor.css:40–58`
@@ -249,8 +224,10 @@ seam of the command bar vs. the rail; keep them sequential to avoid churn in `Lo
     update that test in the same change set if the label changes — decide in LU0 handoff and record it).
   - Update `.loom-page` layout: the rail is a persistent flex child; remove the `.loom-inspector` strip and its
     layout-shift entirely.
-- **Inherits:** all `LoomPage.tsx` selection/mutation state and dialog wiring (unchanged); LU1 header/command
-  bar; LU0 stubs.
+- **Inherits:** all `LoomPage.tsx` selection/mutation state and dialog wiring (unchanged); the LU1 `loom-route`
+  shell, eyebrow copy (`TAPESTRY · CONTINUITY`), subtitle copy ("Track where every story thread stands between
+  sessions."), `PageHeader`, wrapped command bar, and icon choices (`PlusIcon`, `MapPinIcon`, `WaypointsIcon`);
+  LU0 stubs.
 - **Expected touch set:** `LoomPage.tsx` (render rail, remove strip, pass props), `LoomWeaverPanel.tsx`,
   `LoomLegend.tsx`, `LoomVaultPanel.tsx` (folded in or reduced to the rail's vault section — decide + record),
   `LoomCanvas.css` + `LoomEditor.css` (rail sections; delete `.loom-inspector` rules; re-home vault styles),
@@ -377,7 +354,7 @@ Sole final stage; runs after Phase LU has shipped and been removed.
   outstanding), and `docs/complete/loom-weavers-workspace.md` (archive destination).
 - **Documentation impact:** reconciles `docs/DESIGN_SYSTEM.md`, `docs/areas/loom.md`, and `docs/README.md`.
   `None` is invalid for this final stage.
-- **Tests:** `python scripts/check_docs.py --check`; `python scripts/check_docs.py --check --base <base-ref>`
+- **Tests:** `.venv\Scripts\python.exe scripts/check_docs.py --check`; `.venv\Scripts\python.exe scripts/check_docs.py --check --base <base-ref>`
   when a valid base ref is available.
 - **Gate:** a fresh reader routes `CLAUDE.md` → `docs/README.md` → `docs/areas/loom.md` without rediscovering
   essential facts; documentation checks pass.
@@ -404,4 +381,4 @@ Sole final stage; runs after Phase LU has shipped and been removed.
 
 ## Next:
 
-**LU1 — Identity & command bar** (unblocked): PageHeader, command bar, eyebrow. Un-skip the header seam in `LoomPage.test.tsx`.
+**LU2 — Weaver's panel** (unblocked): persistent Selection/Legend/Vault rail, remove `.loom-inspector`, retarget vault/selection tests.

@@ -1,10 +1,34 @@
-/* Canvas mutation UI: toolbar, inspector, error banner, thread manager. */
+/* Canvas mutation UI: command bar, inspector, error banner, thread manager. */
 
-.loom-toolbar {
+.loom-page-header {
   display: flex;
+  flex-direction: column;
   gap: var(--space-2);
-  padding: var(--space-2);
-  border-bottom: 1px solid var(--md-outline-variant);
+}
+
+.loom-command-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.loom-command-bar .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.loom-eyebrow {
+  margin: 0;
+  color: var(--md-on-surface-variant);
+  font-family: var(--type-face);
+  font-size: var(--type-caption-size);
+  font-weight: var(--type-caption-weight);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-variation-settings: 'wght' 560, 'wdth' 118, 'opsz' 14;
 }
 
 .loom-error-banner {
@@ -132,8 +156,3 @@
   height: 16px;
   cursor: default;
 }
-
-/* ─── Scaffolding stubs — LU1: Identity & command bar ───────────────────── */
-
-/* LU1: .loom-command-bar — restyled toolbar with primary/secondary button hierarchy */
-/* LU1: .loom-eyebrow — wide, tracked eyebrow above the page header */

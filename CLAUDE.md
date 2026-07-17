@@ -8,7 +8,7 @@ This is the single authoritative instruction file for AI work in this repository
 2. Select the row for the task you are performing and read its declared minimum context.
 3. For area work, open the area guide it names, then open that guide's active execution plan at its linked current-stage anchor.
 4. Read only that stage's **Read first** files before exploring source.
-5. Make the plan and exact documentation-impact updates declared by the stage, then run `python scripts/check_docs.py --check`.
+5. Make the plan and exact documentation-impact updates declared by the stage, then run the documentation checker through the repo-local virtualenv (`.venv\Scripts\python.exe scripts/check_docs.py --check` on Windows, `.venv/bin/python scripts/check_docs.py --check` on POSIX).
 
 `scratch/` is a user-owned workspace for temporary notes and artifacts. Do not explore, read, index, or update anything under it unless the user explicitly names a path there.
 
@@ -22,7 +22,7 @@ No documentation-maintenance plan is currently active; create a focused plan bef
 - Before calling a stage done, re-read that stage's own **Discovery consolidation** line as a literal checklist and confirm each location it names was actually edited — do not rely on memory of intent, or on a different edit (e.g. a reference-doc update) standing in for a named target you skipped. A stage is not consolidated until every named target shows a diff.
 - Update the relevant reference document when an API contract, data model, architecture, design system, testing contract, setup instruction, or user-visible capability changes.
 - Collapse shipped stages and update their plan status as specified by [PLAN_TEMPLATE.md](docs/PLAN_TEMPLATE.md). Archive every completed execution plan; leave a redirect stub only when a known link must survive. Update its area guide and the manifest in the same change set. `MEMORY.md` is not a parallel plan-status registry.
-- Run `python scripts/check_docs.py --check`; before completion also run `python scripts/check_docs.py --check --base <base-ref>` when a valid base ref is available.
+- Run the documentation checker through the repo-local virtualenv (`.venv\Scripts\python.exe scripts/check_docs.py --check` on Windows, `.venv/bin/python scripts/check_docs.py --check` on POSIX); before completion also run the corresponding `--base <base-ref>` command when a valid base ref is available.
 - The checker validates active-document links and anchors, plan lifecycle and manifest entries, AI-entry precedence, configured test commands, legacy guidance, generated reference inventories, and base-diff documentation impact.
 - GitHub Actions runs the `documentation-contract` check on every pull request and push to `main`; enable it as a required branch-protection check in GitHub settings. The PR template records the required fresh-reader routing validation.
 
