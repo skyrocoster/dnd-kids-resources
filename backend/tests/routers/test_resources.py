@@ -1,4 +1,4 @@
-"""Tests for CRUD endpoints (weapons, NPCs, quests, encounters, dungeons)."""
+"""Tests for CRUD endpoints (weapons, NPCs, encounters, dungeons)."""
 
 
 # Weapons
@@ -119,60 +119,6 @@ def test_npc_full_columns_round_trip(test_client):
     assert data["stats"] == {"strength": 8, "dexterity": 16}
     assert data["senses"] == [{"type": "darkvision", "range": 60}]
     assert data["appearance"] == {"hair_colour": "silver"}
-
-
-# Quests
-def test_list_quests(test_client):
-    """Test GET /api/quests."""
-    response = test_client.get("/api/quests")
-    assert response.status_code == 200
-    data = response.json()
-    assert isinstance(data, list)
-
-
-def test_create_quest(test_client):
-    """Test POST /api/quests."""
-    quest = {"title": "Test Quest", "summary": "A test quest", "reward": ["100 gp"]}
-
-    response = test_client.post("/api/quests", json=quest)
-    assert response.status_code == 201
-    data = response.json()
-    assert data["title"] == "Test Quest"
-    assert data["reward"] == ["100 gp"]
-
-
-def test_quest_crud(test_client):
-    """Test full quest CRUD."""
-    quest = {"title": "CRUD Test", "summary": "Test", "reward": ["50 gp"]}
-    response = test_client.post("/api/quests", json=quest)
-    assert response.status_code == 201
-    quest_id = response.json()["id"]
-
-    response = test_client.get(f"/api/quests/{quest_id}")
-    assert response.status_code == 200
-
-    response = test_client.delete(f"/api/quests/{quest_id}")
-    assert response.status_code == 204
-
-
-def test_quest_full_columns_round_trip(test_client):
-    """Quest objectives/details/quest_giver/dungeon_id/location must persist."""
-    quest = {
-        "title": "Full Quest",
-        "summary": "A quest with everything",
-        "reward": ["10 gp", "a medal"],
-        "objectives": ["Find the cave", "Defeat the goblin"],
-        "details": ["The cave is north of town."],
-        "quest_giver": None,
-        "dungeon_id": None,
-        "location": "Northwood",
-    }
-    response = test_client.post("/api/quests", json=quest)
-    assert response.status_code == 201
-    data = response.json()
-    assert data["objectives"] == ["Find the cave", "Defeat the goblin"]
-    assert data["details"] == ["The cave is north of town."]
-    assert data["location"] == "Northwood"
 
 
 # Encounters

@@ -7,7 +7,6 @@ import type {
   Spell,
   Weapon,
   Player,
-  Quest,
   Monster,
   NPC,
   Item,
@@ -102,24 +101,6 @@ const playerB: Player = {
   name: 'Brom',
   class_: 'Fighter',
   level: 3,
-}
-
-const questA: Quest = {
-  id: 1,
-  title: 'Lost Mine',
-  summary: 'Find the mine.',
-  reward: [],
-  objectives: [],
-  details: [],
-}
-
-const questB: Quest = {
-  id: 2,
-  title: 'Dragon Attack',
-  summary: 'Defend the village.',
-  reward: [],
-  objectives: [],
-  details: [],
 }
 
 const monsterA: Monster = {
@@ -296,7 +277,7 @@ const dungeonB: Dungeon = {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Standard browsers — Spells, Weapons, Players, Quests              */
+/*  Standard browsers — Spells, Weapons, Players                      */
 /* ------------------------------------------------------------------ */
 
 describe('VW0 standard browsers', () => {
@@ -409,35 +390,6 @@ describe('VW0 standard browsers', () => {
 
     await waitFor(() => expect(screen.getByRole('heading', { name: /Aelindra/ })).toBeInTheDocument())
     await user.click(screen.getByRole('button', { name: 'New Player' }))
-    expect(screen.getByRole('dialog')).toBeInTheDocument()
-  })
-
-  it('QuestBrowser: lists quests sorted, first selected, detail updates on click', async () => {
-    vi.spyOn(api, 'listQuests').mockResolvedValue([questB, questA])
-    vi.spyOn(api, 'listNPCs').mockResolvedValue([])
-    vi.spyOn(api, 'listDungeons').mockResolvedValue([])
-    const user = userEvent.setup()
-
-    const { QuestBrowserPage } = await import('../../features/quests/QuestBrowserPage')
-    render(<QuestBrowserPage />)
-
-    await waitFor(() => expect(screen.getByRole('heading', { name: /Dragon Attack/ })).toBeInTheDocument())
-
-    await user.click(screen.getByText('Lost Mine'))
-    expect(screen.getByRole('heading', { name: /Lost Mine/ })).toBeInTheDocument()
-  })
-
-  it('QuestBrowser: opens editor on New Quest click', async () => {
-    vi.spyOn(api, 'listQuests').mockResolvedValue([questA])
-    vi.spyOn(api, 'listNPCs').mockResolvedValue([])
-    vi.spyOn(api, 'listDungeons').mockResolvedValue([])
-    const user = userEvent.setup()
-
-    const { QuestBrowserPage } = await import('../../features/quests/QuestBrowserPage')
-    render(<QuestBrowserPage />)
-
-    await waitFor(() => expect(screen.getByRole('heading', { name: /Lost Mine/ })).toBeInTheDocument())
-    await user.click(screen.getByRole('button', { name: 'New Quest' }))
     expect(screen.getByRole('dialog')).toBeInTheDocument()
   })
 })

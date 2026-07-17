@@ -55,7 +55,6 @@ describe('AppShell', () => {
       'Weapons',
       'Players',
       'NPCs',
-      'Quests',
       'The Loom',
       'Encounters',
       'Dungeons',

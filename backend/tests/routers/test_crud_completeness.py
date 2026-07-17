@@ -132,33 +132,6 @@ def test_npc_404s(test_client):
 
 
 # ---------------------------------------------------------------------------
-# Quests: update + 404s
-# ---------------------------------------------------------------------------
-
-
-def test_quest_update_round_trip(test_client):
-    qid = test_client.post(
-        "/api/quests", json={"title": "Mutable Quest", "reward": ["1 gp"]}
-    ).json()["id"]
-    resp = test_client.put(
-        f"/api/quests/{qid}",
-        json={"title": "Mutable Quest", "reward": ["100 gp"],
-              "objectives": ["Do the thing"], "location": "Elsewhere"},
-    )
-    assert resp.status_code == 200
-    data = resp.json()
-    assert data["reward"] == ["100 gp"]
-    assert data["objectives"] == ["Do the thing"]
-    assert data["location"] == "Elsewhere"
-
-
-def test_quest_404s(test_client):
-    assert test_client.get("/api/quests/99999").status_code == 404
-    assert test_client.put("/api/quests/99999", json={"title": "X"}).status_code == 404
-    assert test_client.delete("/api/quests/99999").status_code == 404
-
-
-# ---------------------------------------------------------------------------
 # Encounters: update + 404s
 # ---------------------------------------------------------------------------
 

@@ -19,8 +19,6 @@ import type {
   PlayerInput,
   NPC,
   NPCInput,
-  Quest,
-  QuestInput,
   Encounter,
   EncounterInput,
   Dungeon,
@@ -136,13 +134,6 @@ export const getNPC = (id: number) => get<NPC>(`/npcs/${id}`)
 export const createNPC = (npc: NPCInput) => post<NPC>('/npcs', npc)
 export const updateNPC = (id: number, npc: NPCInput) => put<NPC>(`/npcs/${id}`, npc)
 export const deleteNPC = (id: number) => del(`/npcs/${id}`)
-
-// Quests
-export const listQuests = () => get<Quest[]>('/quests')
-export const getQuest = (id: number) => get<Quest>(`/quests/${id}`)
-export const createQuest = (quest: QuestInput) => post<Quest>('/quests', quest)
-export const updateQuest = (id: number, quest: QuestInput) => put<Quest>(`/quests/${id}`, quest)
-export const deleteQuest = (id: number) => del(`/quests/${id}`)
 
 // Encounters
 export const listEncounters = () => get<Encounter[]>('/encounters')

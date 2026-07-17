@@ -229,9 +229,9 @@ contracts.
   `className?` prop (merged onto `.dialog`, not replacing it) so each editor keeps one small width-override
   class instead of Dialog imposing a single fixed width: `spell-editor-dialog`/`encounter-editor-dialog`
   `min(760px, 96vw)`, `npc-editor-dialog` `min(720px, 96vw)`, `weapon-editor-dialog` `min(680px, 96vw)`,
-  `quest-editor-dialog` `min(640px, 96vw)`, `item-editor-dialog` `min(580px, 96vw)`, `player-editor-dialog`
+  `item-editor-dialog` `min(580px, 96vw)`, `player-editor-dialog`
   `min(520px, 96vw)`. Each editor's save-status paragraph gained `role="status"`. No editor needed a bespoke
-  dirty-close policy — `Dialog`'s existing pending-suppressed Escape/backdrop dismissal covered all seven.
+  dirty-close policy — `Dialog`'s existing pending-suppressed Escape/backdrop dismissal covered all six.
   Full contract recorded in `docs/DESIGN_SYSTEM.md`'s "Standard editor contract (VW4)" section.
 - `ToolbarTray`, `InspectorPanel`, `RoomDetailsPanel`, and Map Lab's fixture/form model — retain their existing
   behavior and domain-specific information density.

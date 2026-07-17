@@ -1,8 +1,8 @@
 # The Loom — Tapestry Story-Thread Tracker
 
-> **Status:** LM0–LM6 shipped. LM7 — Remove the quests domain is next.
+> **Status:** LM0–LM8 complete.
 
-- **Area guide:** [The Loom](../../areas/loom.md).
+- **Area guide:** [The Loom](../areas/loom.md).
 
 ---
 
@@ -50,7 +50,7 @@ SELECT 1 FROM reachable WHERE id = ? LIMIT 1;   -- source_id; any row means reje
 - Schema is canonical in `scripts/init_database.py`; backend tests build the real schema by importing it (`backend/tests/conftest.py::_create_real_schema`) — never hand-copy DDL into fixtures. Changing `scripts/init_database.py` requires `docs/DATA_MODEL.md` in the same change set (checker-enforced).
 - `pytest` from the repo root; coverage gate `--cov=backend/app --cov-fail-under=90` — every loom error branch needs a direct test or the whole suite fails. Integration tests (`@pytest.mark.integration`) seed from frozen `data/seeds/*.json` via `scripts/seed_database.py`.
 - **Bridge and position-PATCH contract (confirmed, LM2):** `POST /api/loom/bridge` → 201 `{node: LoomNode, created_edges: LoomEdge[2] (source→N, N→anchor), deleted_edge_id: int | null}`; 404 if `source_id`/`anchor_id` don't reference existing nodes, 422 for the three semantic guards (source not past, anchor not a planned anchor, would-cycle). `PATCH /api/loom/nodes/{id}/position` body `{x, y}` → 200 returns the **full** `LoomNode` (not a partial), 404 if missing. Verified live against the seeded demo tapestry: bridging node 3 → anchor 4 produced midpoint `(300, 75)`, thread union `[1, 2]`, and deleted the direct 3→4 edge.
-- **Bridge and anchor-lifecycle interaction contract (confirmed, LM6):** `LoomPage.tsx` selection state gained a source/target picker layered on top of LM5's `selectedNodeId`/`selectedEdgeId`: selecting a past node that is also a head (`isPast(node) && flowNode.data.isHead`) shows a "Bridge to Anchor…" action in the node inspector; clicking it sets `bridgeSource` and enters a picking mode where the *next* canvas node click is intercepted — a click on an `isFuture` node opens `LoomBridgeDialog` (title/body/session_tag form calling `createLoomBridge` then `reload()`), a click on anything else surfaces "Select a planned anchor node to complete the bridge." in the existing error banner; a "Cancel" affordance and pane-click both clear `bridgeSource`. Selecting a planned anchor (`kind === 'anchor' && status === 'planned'`) shows "Mark Reached"/"Mark Abandoned" inspector actions gated only on that predicate (head status is irrelevant here); each opens a `ConfirmDialog` and, on confirm, calls `PUT /loom/nodes/{id}` — since that endpoint is a full replace, the payload is built by `loomGraph.ts`'s `buildNodeStatusUpdate(node, status)` (resubmits every existing field unchanged except `status`) rather than assembled inline, so it has direct unit coverage without exercising React Flow. The blank-tapestry empty state triggers on `nodes.length === 0 && threads.length === 0` and renders `StatePanel` with a "Create your first thread" action opening `LoomThreadManager`. **jsdom testing constraint (confirmed the hard way):** clicking a React Flow node under jsdom throws inside `d3-drag`'s `nodrag.js` (`Cannot read properties of null (reading 'document')`) even for a plain click, not just a drag gesture — so canvas-node-click-driven flows (bridge target selection, status-action gating) are covered by extracting their payload logic into pure functions (`loomGraph.ts`) and testing the dialogs (`LoomBridgeDialog`) in isolation instead of through `LoomPage` + simulated node clicks; `docs/TESTING.md`'s existing "never attempt drag/connect interaction tests in jsdom" boundary extends to node *clicks*, not just drags.
+- **Bridge and anchor-lifecycle interaction contract (confirmed, LM6):** `LoomPage.tsx` selection state gained a source/target picker layered on top of LM5's `selectedNodeId`/`selectedEdgeId`: selecting a past node that is also a head (`isPast(node) && flowNode.data.isHead`) shows a "Bridge to Anchor…" action in the node inspector; clicking it sets `bridgeSource` and enters a picking mode where the *next* canvas node click is intercepted — a click on an `isFuture` node opens `LoomBridgeDialog` (title/body/session_tag form calling `createLoomBridge` then `reload()`), a click on anything else surfaces "Select a planned anchor node to complete the bridge." in the existing error banner; a "Cancel" affordance and pane-click both clear `bridgeSource`. Selecting a planned anchor (`kind === 'anchor' && status === 'planned'`) shows "Mark Reached"/"Mark Abandoned" inspector actions gated only on that predicate (head status is irrelevant here); each opens a `ConfirmDialog` and, on confirm, calls `PUT /loom/nodes/{id}` — since that endpoint is a full replace, the payload is built by `loomGraph.ts`'s `buildNodeStatusUpdate(node, status)` (resubmits every existing field unchanged except `status`) rather than assembled inline, so it has direct unit coverage without exercising React Flow. The blank-tapestry empty state triggers on `nodes.length === 0 && threads.length === 0` and renders `StatePanel` with a "Create your first thread" action opening `LoomThreadManager`. **jsdom testing constraint (confirmed the hard way):** clicking a React Flow node under jsdom throws inside `d3-drag`'s `nodrag.js` (`Cannot read properties of null (reading 'document')`) even for a plain click, not just a drag gesture — so canvas-node-click-driven flows (bridge target selection, status-action gating) are covered by extracting their payload logic into pure functions (`loomGraph.ts`) and testing the dialogs (`LoomBridgeDialog`) in isolation instead of through `LoomPage` + simulated node clicks; `docs/TESTING.md`'s jsdom boundary note already covered drag/connect but not clicks, so this is a plan-level (not doc-canonical) discovery.
 - **Loom seed loading is opt-in, not part of "load all":** `scripts/seed_database.py --loom [--force]` is required to load the four demo-tapestry seed files; a bare `scripts/seed_database.py` (no flags) never loads or clears loom data as a side effect of "load all" (though `--force` alone still clears loom tables along with everything else, matching the dungeons precedent). `backend/tests/conftest.py::_seed_real_data` always loads the loom fixture. `scripts/export_db_seeds.py` (no `--tables` filter) now includes the four loom tables by default.
 
 ### Frontend conventions (surveyed 2026-07-17)
@@ -112,51 +112,6 @@ SELECT 1 FROM reachable WHERE id = ? LIMIT 1;   -- source_id; any row means reje
 
 ---
 
-## Delivery Phase D — Quests removal
-
-With the Loom live, remove the quests domain end-to-end. Nothing outside `features/quests/` consumes quest data, so the blast radius is exactly the surveyed list below.
-**Depends on:** LM6 shipped and the Loom verified live. **Depended on by:** Plan Closeout.
-
-| Stage | Required strength | Summary | Deliverables |
-|-------|-------|---------|--------------|
-| **LM7 — Remove the quests domain** (next up) | Standard | Delete the quests table, router, schemas, seed, UI, tests, and docs rows. | All suites green with quests gone. |
-
-**Sequencing:** LM7 alone.
-
-#### LM7 — Remove the quests domain (next up)
-
-- **Read first:** This stage's touch list (surveyed 2026-07-17 — line numbers are drift-prone; verify with a quick grep before editing); `docs/areas/reference-catalogs.md`; `backend/tests/conftest.py`.
-- **Build:** Delete `backend/app/routers/quests.py`, `frontend/src/features/quests/` (whole directory), and `data/seeds/seed_quests.json`. Edit out every quests reference: `backend/app/main.py` (import + `app.include_router(quests.router)`); `backend/app/schemas.py` `Quest`/`QuestCreate`/`QuestUpdate` (~lines 426–450); `scripts/init_database.py` quests CREATE TABLE (~lines 242–257), drop-list entry (line 40), and summary print; `scripts/seed_database.py` `populate_quests` (~368–415), `--quests` flag (~955), dispatch (~1010–1011), clear list (~914); `scripts/export_db_seeds.py` quests entries (~36–38, 132); `frontend/src/router.tsx` (import ~line 12, route ~line 37); `frontend/src/layout/navSections.ts` (~line 43, plus the now-unused `ScrollIcon` import); `frontend/src/api/client.ts` (quest methods ~128–133); `frontend/src/api/types.ts` (Quest types ~449–461). Tests: remove quest cases from `backend/tests/routers/test_resources.py` (~124–176) and `test_crud_completeness.py` (~134–158); remove `/api/quests` from `backend/tests/test_integration_real_data.py` collection lists (~40, 57); remove `populate_quests` from `backend/tests/conftest.py` (~line 79); remove quest fixtures/cases from `frontend/src/components/__tests__/BrowserLayout.vw0.test.tsx` (~107–124, 415–441); update the nav assertion in `frontend/src/layout/__tests__/AppShell.test.tsx` (~line 58). Update `docs/areas/reference-catalogs.md` scope and source map to drop quests.
-- **Inherits:** The Loom as the live replacement (LM0–LM6); the "Lost Puppy" flavor already migrated into the demo tapestry.
-- **Expected touch set:** Exactly the files above plus `docs/API_REFERENCE.md`, `docs/DATA_MODEL.md`, `docs/ARCHITECTURE.md`, `docs/areas/reference-catalogs.md`, and this plan.
-- **Documentation impact:** Regenerate `docs/API_REFERENCE.md`, `docs/DATA_MODEL.md`, and `docs/ARCHITECTURE.md` (`python scripts/check_docs.py --write-generated`) and remove any hand-written quests narrative from them; update `docs/areas/reference-catalogs.md` (scope, source map, read-trigger phrasing no longer names quests).
-- **Tests:** Full `pytest` (coverage gate re-passes with the quests code gone) and full `npm run test && npm run lint && npm run typecheck && npm run build`; `python scripts/check_docs.py --check` and `--check --base main`.
-- **Gate:** Live browser pass — no Quests nav entry, `/quests` no longer routes, The Loom present and functional; `grep -ri quest backend frontend scripts data docs/areas` returns nothing unexpected (update the historical "Quest log" comment in `frontend/src/components/icons/index.ts` if `BookMarkedIcon`/`ScrollIcon` remain used elsewhere, or remove the unused exports).
-- **Discovery consolidation:** `docs/areas/reference-catalogs.md` reflects the reduced scope; add a `Known debt` note here if any quest concept intentionally survives (none expected).
-- **Completion edit:** Collapse LM7; rewrite the Status line; delete Phase D; retitle LM8's heading from "(final stage of the plan)" to "(next up)" so the checker's current-stage detection targets it; re-point the manifest and area-guide anchors to LM8.
-
----
-
-## Plan Closeout — Documentation Update
-
-| Stage | Required strength | Summary | Deliverables |
-|-------|-------------------|---------|--------------|
-| **LM8 — Documentation update** | Standard | Reconcile accumulated plan context and complete the documentation workflow. | Canonical references, routing, validation, and archival complete. |
-
-#### LM8 — Documentation update (final stage of the plan)
-
-- **Read first:** `CLAUDE.md`, `docs/README.md`, `docs/areas/loom.md`, this plan, `docs/PLAN_TEMPLATE.md`, `docs/TESTING.md`, `scripts/check_docs.py`, every reference named by prior stages, and relevant workflow/PR files.
-- **Build:** Reconcile the plan's accumulated Key facts, reusable pieces, debt, shipped rows, and future-stage handoffs with the code that shipped. Complete every outstanding named canonical-reference update; refresh generated inventories (`python scripts/check_docs.py --write-generated`) for `docs/API_REFERENCE.md`, `docs/DATA_MODEL.md`, `docs/ARCHITECTURE.md`, and `docs/DESIGN_SYSTEM.md`; finalize `docs/TESTING.md`'s React Flow note; update `docs/README.md` routing (Task Router + inventory rows) and `docs/areas/loom.md`; prepare the plan archive.
-- **Inherits:** All prior-stage documentation-impact edits and discovery consolidations; this stage verifies and closes them rather than deferring implementation-stage documentation.
-- **Expected touch set:** This plan; `docs/areas/loom.md`; `docs/README.md`; `docs/API_REFERENCE.md`; `docs/DATA_MODEL.md`; `docs/ARCHITECTURE.md`; `docs/DESIGN_SYSTEM.md`; `docs/TESTING.md`; the archive location `docs/complete/loom-tapestry-tracker.md`.
-- **Documentation impact:** `docs/README.md`, `docs/areas/loom.md`, `docs/API_REFERENCE.md`, `docs/DATA_MODEL.md`, `docs/ARCHITECTURE.md`, `docs/DESIGN_SYSTEM.md`, `docs/TESTING.md`, and this plan.
-- **Tests:** `python scripts/check_docs.py --check`; `python scripts/check_docs.py --check --base <base-ref>` when a valid base ref is available; any documentation-validator tests changed by this outcome.
-- **Gate:** A fresh reader can route from `CLAUDE.md` through `docs/README.md`, the area guide, and the retained plan context without rediscovering essential facts. Documentation checks and applicable tests pass.
-- **Discovery consolidation:** Promote remaining durable facts to the appropriate canonical reference or retained plan top matter before archival; no unprocessed discovery remains only in a shipped-stage block or commit.
-- **Completion edit:** Collapse this stage, mark the outcome complete, reduce the doc to top matter + Shipped table + Verification, archive it to `docs/complete/loom-tapestry-tracker.md`, set `docs/areas/loom.md` to `> **Active plan:** None.`, update `docs/README.md`, and create a redirect only for a known inbound link.
-
----
-
 ## Shipped stages
 
 | Stage | What shipped (≤2 sentences) |
@@ -168,6 +123,8 @@ With the Loom live, remove the quests domain end-to-end. Nothing outside `featur
 | LM4 | `@xyflow/react` ^12.11.2 installed; eight loom token sets (`loom-anchor`, `loom-update`, `loom-thread-1`…`loom-thread-6`) minted and wired in `theme.css`; themed read-only canvas at `/loom` with `LoomPage`, `LoomCanvas.css` (20 `--xy-*` vars re-themed), `useLoomTapestry`, `AnchorNode`/`UpdateNode`/`ThreadChips`/`LoomVaultPanel` components, and jsdom stubs. `docs/DESIGN_SYSTEM.md` token inventory regenerated + narrative section added; `docs/TESTING.md` React Flow jsdom boundary documented; `docs/ARCHITECTURE.md` dependency noted. 966 frontend tests + 91% backend coverage, lint/typecheck clean. |
 | LM5 | `LoomNodeEditor.tsx` (create/edit dialog), `LoomThreadManager.tsx` (thread CRUD with the six-swatch color picker), `LoomErrorBanner.tsx`, and `useLoomCanvasMutations.ts` (edge connect/cycle-reject, drag-position persist, edge delete) added to `frontend/src/features/loom/`; `LoomPage.tsx` wired with a toolbar, string-id `selectedNodeId`/`selectedEdgeId` selection state, and a `.loom-inspector` bar for Edit/Delete. Fixed a pre-existing LM4 bug in `ThreadChips.tsx`/`LoomPage.tsx`'s edge-color resolver (`var(--md-${color})` was missing the `loom-` token-name segment, so chips/edges silently fell back to the unstyled default). No deviation from the planned mutation contract; 17 new Vitest tests (`useLoomCanvasMutations`, `LoomNodeEditor`, `LoomThreadManager` unit coverage, plus two `LoomPage` toolbar-integration tests) — full suite 983 passed/6 skipped; lint and `tsc -b` clean; `npm run build` clean. |
 | LM6 | `LoomBridgeDialog.tsx` (bridge form) plus `LoomPage.tsx` additions: `bridgeSource`/`bridgeTarget` picker state (node-click interception during picking, banner + Cancel), `pendingStatusChange` confirm flow for Mark Reached/Mark Abandoned (full-replace PUT via new `loomGraph.ts` helper `buildNodeStatusUpdate`), and a blank-tapestry `StatePanel` empty state. Discovered mid-stage that clicking a React Flow node under jsdom throws inside `d3-drag` even for a plain click (not just drag/connect); resolved by testing the bridge/status payload logic through pure functions and the isolated `LoomBridgeDialog` component rather than simulated `LoomPage` node clicks — `docs/TESTING.md`'s jsdom boundary note already covered drag/connect but not clicks, so this is a plan-level (not doc-canonical) discovery captured in `Key facts`. 6 new Vitest tests (`LoomBridgeDialog` payload/error cases, `loomGraph` post-bridge/status-update regressions, empty-state render) — full suite 989 passed/6 skipped; lint and `tsc -b` clean; `npm run build` clean. **Live browser gate not run this session** (no explicit browser-automation request) — the full DM loop (bridge splice, mark-reached head advance, empty-state on a fresh DB) still needs manual verification before this stage is considered fully closed. |
+| LM7 | Removed the quests domain end-to-end: deleted `backend/app/routers/quests.py`, `frontend/src/features/quests/` (8 files), `data/seeds/seed_quests.json`, and all references in schemas, scripts, tests, nav, routing, API client/types, and docs. `docs/areas/reference-catalogs.md` scope reduced to weapons/items/players/NPCs; `docs/areas/loom.md` active-plan anchor cleared. Full pytest green (≥90% coverage); full frontend `npm run test && npm run lint && npm run typecheck && npm run build` green; `python scripts/check_docs.py --check` clean. |
+| LM8 | Documentation update: reconciled plan context with shipped code, added hand-written Loom Router section to `docs/API_REFERENCE.md`, refreshed generated inventories, updated `docs/README.md` routing and `docs/areas/loom.md` (active plan set to None, work queue updated, cross-references updated to archive). `python scripts/check_docs.py --check` clean. |
 
 ---
 
@@ -179,15 +136,8 @@ Seed the demo tapestry (`python scripts/seed_database.py --loom --force`), open 
 
 ## Cross-references
 
-- [../../areas/loom.md](../../areas/loom.md) — durable routing and invariants for this domain.
-- [../../DATA_MODEL.md](../../DATA_MODEL.md), [../../API_REFERENCE.md](../../API_REFERENCE.md), [../../ARCHITECTURE.md](../../ARCHITECTURE.md) — canonical contracts this plan writes into.
-- [../../DESIGN_SYSTEM.md](../../DESIGN_SYSTEM.md) — tokens, editor contract, accessibility floor.
-- [../../TESTING.md](../../TESTING.md) — commands, coverage gate, and (from LM4) the React Flow jsdom boundary.
-- [../../areas/reference-catalogs.md](../../areas/reference-catalogs.md) — owns quests until LM7 removes them.
-- [visual-consistency.md](visual-consistency.md) — sibling active plan; its VT4 final design pass may land while this plan runs, so rebase loom UI stages onto any shared-component contract changes it records.
-
----
-
-## Next:
-
-**LM7 — Remove the quests domain** is next once the Loom is verified live (LM6's live browser gate — see its Shipped-stages row — is still outstanding).
+- [../areas/loom.md](../areas/loom.md) — durable routing and invariants for this domain.
+- [../DATA_MODEL.md](../DATA_MODEL.md), [../API_REFERENCE.md](../API_REFERENCE.md), [../ARCHITECTURE.md](../ARCHITECTURE.md) — canonical contracts this plan writes into.
+- [../DESIGN_SYSTEM.md](../DESIGN_SYSTEM.md) — tokens, editor contract, accessibility floor.
+- [../TESTING.md](../TESTING.md) — commands, coverage gate, and (from LM4) the React Flow jsdom boundary.
+- [../areas/reference-catalogs.md](../areas/reference-catalogs.md) — owns weapons, items outside loot bundles, players, and NPCs.

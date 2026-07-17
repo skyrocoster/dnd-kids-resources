@@ -3,7 +3,6 @@ import {
   GemIcon,
   CoinsIcon,
   MasksIcon,
-  ScrollIcon,
   ShieldIcon,
   SkullIcon,
   SwordsIcon,
@@ -41,7 +40,6 @@ export const navSections: NavSection[] = [
     links: [
       { to: '/players', label: 'Players', linkIcon: UsersIcon },
       { to: '/npcs', label: 'NPCs', linkIcon: MasksIcon },
-      { to: '/quests', label: 'Quests', linkIcon: ScrollIcon },
       { to: '/loom', label: 'The Loom', linkIcon: WaypointsIcon },
       { to: '/encounters', label: 'Encounters', linkIcon: ShieldIcon },
       { to: '/dungeons', label: 'Dungeons', linkIcon: DoorIcon },

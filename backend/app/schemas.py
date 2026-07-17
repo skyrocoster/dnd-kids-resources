@@ -423,33 +423,6 @@ class NPCUpdate(NPCCreate):
     pass
 
 
-class Quest(BaseModel):
-    id: int
-    title: str
-    summary: Optional[str] = None
-    reward: Optional[List[str]] = None
-    objectives: Optional[List[str]] = None
-    details: Optional[List[str]] = None
-    quest_giver: Optional[int] = None
-    dungeon_id: Optional[int] = None
-    location: Optional[str] = None
-
-
-class QuestCreate(BaseModel):
-    title: str
-    summary: Optional[str] = None
-    reward: Optional[List[str]] = None
-    objectives: Optional[List[str]] = None
-    details: Optional[List[str]] = None
-    quest_giver: Optional[int] = None
-    dungeon_id: Optional[int] = None
-    location: Optional[str] = None
-
-
-class QuestUpdate(QuestCreate):
-    pass
-
-
 ThreadColor = Annotated[str, StringConstraints(pattern=r"^thread-[1-6]$")]
 
 
