@@ -386,8 +386,8 @@ def populate_loom_threads(cursor, conn, force=False):
     for thread in seeds:
         try:
             cursor.execute(
-                "INSERT INTO loom_threads (id, name, color, description) VALUES (?, ?, ?, ?)",
-                (thread.get('id'), thread.get('name'), thread.get('color'), thread.get('description')),
+                "INSERT INTO loom_threads (id, name, color, description, origin_node_id) VALUES (?, ?, ?, ?, ?)",
+                (thread.get('id'), thread.get('name'), thread.get('color'), thread.get('description'), thread.get('origin_node_id')),
             )
             print(f"  [CHECK] {thread.get('name')}")
         except sqlite3.IntegrityError as e:
@@ -418,17 +418,20 @@ def populate_loom_nodes(cursor, conn, force=False):
     for node in seeds:
         try:
             cursor.execute(
-                """INSERT INTO loom_nodes (id, kind, title, body, status, session_tag, x, y)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                """INSERT INTO loom_nodes (id, kind, title, body, session_tag, x, y,
+                   fulfilled_planned_title, fulfilled_at, banked_from_thread_id)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     node.get('id'),
                     node.get('kind'),
                     node.get('title'),
                     node.get('body'),
-                    node.get('status'),
                     node.get('session_tag'),
                     node.get('x', 0),
                     node.get('y', 0),
+                    node.get('fulfilled_planned_title'),
+                    node.get('fulfilled_at'),
+                    node.get('banked_from_thread_id'),
                 ),
             )
             print(f"  [CHECK] {node.get('title')}")
@@ -460,45 +463,14 @@ def populate_loom_node_threads(cursor, conn, force=False):
     for membership in seeds:
         try:
             cursor.execute(
-                "INSERT INTO loom_node_threads (id, node_id, thread_id) VALUES (?, ?, ?)",
-                (membership.get('id'), membership.get('node_id'), membership.get('thread_id')),
+                "INSERT INTO loom_node_threads (id, node_id, thread_id, position) VALUES (?, ?, ?, ?)",
+                (membership.get('id'), membership.get('node_id'), membership.get('thread_id'), membership.get('position')),
             )
         except sqlite3.IntegrityError as e:
             print(f"  [WARNING]  Duplicate or error: {membership} - {e}")
 
     conn.commit()
     print(f"  [OK] Loaded {len(seeds)} loom node-thread memberships")
-
-
-def populate_loom_edges(cursor, conn, force=False):
-    """Populate loom_edges table from seed_loom_edges.json (frozen demo tapestry)."""
-    print("\n[LOOM] Loading loom edges...")
-    try:
-        cursor.execute("SELECT COUNT(*) FROM loom_edges")
-        count = cursor.fetchone()[0]
-    except sqlite3.OperationalError:
-        count = 0
-
-    if count > 0 and not force:
-        print(f"  [INFO] Loom edges table already has {count} records. Skip (use --force to override)")
-        return
-
-    seeds = load_json_file(SEEDS_DIR / "seed_loom_edges.json")
-    if not seeds:
-        print("  [WARNING]  No loom edge seeds found")
-        return
-
-    for edge in seeds:
-        try:
-            cursor.execute(
-                "INSERT INTO loom_edges (id, source_id, target_id) VALUES (?, ?, ?)",
-                (edge.get('id'), edge.get('source_id'), edge.get('target_id')),
-            )
-        except sqlite3.IntegrityError as e:
-            print(f"  [WARNING]  Duplicate or error: {edge} - {e}")
-
-    conn.commit()
-    print(f"  [OK] Loaded {len(seeds)} loom edges")
 
 
 def populate_damage_types(cursor, conn, force=False):
@@ -1007,7 +979,6 @@ def clear_all_tables(cursor, conn):
         "encounter",
         "loot_bundle",
         "items",
-        "loom_edges",
         "loom_node_threads",
         "loom_nodes",
         "loom_threads",
@@ -1113,10 +1084,11 @@ def main():
         if load_all or args.player_weapons:
             populate_player_weapons(cursor, conn, args.force)
         if args.loom:
+            cursor.execute("PRAGMA foreign_keys = OFF")
             populate_loom_threads(cursor, conn, args.force)
             populate_loom_nodes(cursor, conn, args.force)
             populate_loom_node_threads(cursor, conn, args.force)
-            populate_loom_edges(cursor, conn, args.force)
+            cursor.execute("PRAGMA foreign_keys = ON")
 
         conn.close()
         

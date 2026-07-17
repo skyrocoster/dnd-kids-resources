@@ -10,31 +10,18 @@ from ..schemas import (
     LoomNode,
     LoomNodeCreate,
     LoomNodeUpdate,
-    LoomEdge,
-    LoomEdgeCreate,
-    LoomTapestry,
-    LoomBridgeCreate,
-    LoomBridgeResult,
     LoomNodePosition,
+    LoomThreadItemCreate,
+    LoomThreadItemPositionUpdate,
+    LoomTapestry,
+    LoomTapestryThread,
 )
 
 router = APIRouter(prefix="/api", tags=["loom"])
 
-# Any row returned means target can already reach source: inserting source->target
-# would close a cycle.
-_CYCLE_CHECK_SQL = """
-    WITH RECURSIVE reachable(id) AS (
-        SELECT ?
-        UNION
-        SELECT e.target_id FROM loom_edges e JOIN reachable r ON e.source_id = r.id
-    )
-    SELECT 1 FROM reachable WHERE id = ? LIMIT 1
-"""
-
-
-def _would_cycle(cursor, source_id: int, target_id: int) -> bool:
-    cursor.execute(_CYCLE_CHECK_SQL, (target_id, source_id))
-    return cursor.fetchone() is not None
+_NODE_COLUMNS = """id, kind, title, body, session_tag, x, y, fulfilled_planned_title,
+                   fulfilled_at, banked_from_thread_id"""
+_THREAD_COLUMNS = "id, name, color, description, origin_node_id"
 
 
 def _node_thread_ids(cursor, node_ids: List[int]) -> dict:
@@ -53,16 +40,57 @@ def _node_thread_ids(cursor, node_ids: List[int]) -> dict:
 
 
 def _load_node(cursor, node_id: int) -> dict:
-    cursor.execute(
-        "SELECT id, kind, title, body, status, session_tag, x, y FROM loom_nodes WHERE id = ?",
-        (node_id,),
-    )
+    cursor.execute(f"SELECT {_NODE_COLUMNS} FROM loom_nodes WHERE id = ?", (node_id,))
     row = cursor.fetchone()
     if not row:
         return None
     node = dict_from_row(row)
     node["thread_ids"] = _node_thread_ids(cursor, [node_id]).get(node_id, [])
     return node
+
+
+def _thread_ordered(cursor, thread_id: int):
+    """Ordered (node_id list, node_id -> position map) for one thread."""
+    cursor.execute(
+        "SELECT node_id, position FROM loom_node_threads WHERE thread_id = ? ORDER BY position ASC",
+        (thread_id,),
+    )
+    rows = cursor.fetchall()
+    return [row["node_id"] for row in rows], {row["node_id"]: row["position"] for row in rows}
+
+
+def _renumber_thread(cursor, thread_id: int, ordered_node_ids: List[int]) -> None:
+    for index, node_id in enumerate(ordered_node_ids):
+        cursor.execute(
+            "UPDATE loom_node_threads SET position = ? WHERE thread_id = ? AND node_id = ?",
+            (index * 10, thread_id, node_id),
+        )
+
+
+def _clamped_index(existing_ids: List[int], positions_by_node: dict, requested_position: int) -> int:
+    """Index to insert at among *existing_ids* (Start first, End last), never before Start or after End."""
+    index = 0
+    for node_id in existing_ids:
+        if positions_by_node[node_id] < requested_position:
+            index += 1
+        else:
+            break
+    return max(1, min(index, len(existing_ids) - 1))
+
+
+def _load_tapestry_thread(cursor, thread_row) -> dict:
+    thread = dict_from_row(thread_row)
+    cursor.execute(
+        "SELECT node_id, position FROM loom_node_threads WHERE thread_id = ? ORDER BY position ASC",
+        (thread["id"],),
+    )
+    thread["items"] = [dict_from_row(row) for row in cursor.fetchall()]
+    return thread
+
+
+def _fetch_thread_row(cursor, thread_id: int):
+    cursor.execute(f"SELECT {_THREAD_COLUMNS} FROM loom_threads WHERE id = ?", (thread_id,))
+    return cursor.fetchone()
 
 
 # ---------------------------------------------------------------------------
@@ -72,25 +100,20 @@ def _load_node(cursor, node_id: int) -> dict:
 
 @router.get("/loom/tapestry", response_model=LoomTapestry)
 def get_tapestry():
-    """One-shot read of the whole flat DAG: threads, nodes (with thread_ids), edges."""
+    """One-shot read: threads with ordered membership, and node identities."""
     with get_db() as conn:
         cursor = conn.cursor()
 
-        cursor.execute("SELECT id, name, color, description FROM loom_threads ORDER BY id")
-        threads = [dict_from_row(row) for row in cursor.fetchall()]
+        cursor.execute(f"SELECT {_THREAD_COLUMNS} FROM loom_threads ORDER BY id")
+        threads = [_load_tapestry_thread(cursor, row) for row in cursor.fetchall()]
 
-        cursor.execute(
-            "SELECT id, kind, title, body, status, session_tag, x, y FROM loom_nodes ORDER BY id"
-        )
+        cursor.execute(f"SELECT {_NODE_COLUMNS} FROM loom_nodes ORDER BY id")
         nodes = [dict_from_row(row) for row in cursor.fetchall()]
         memberships = _node_thread_ids(cursor, [node["id"] for node in nodes])
         for node in nodes:
             node["thread_ids"] = memberships.get(node["id"], [])
 
-        cursor.execute("SELECT id, source_id, target_id FROM loom_edges ORDER BY id")
-        edges = [dict_from_row(row) for row in cursor.fetchall()]
-
-        return {"threads": threads, "nodes": nodes, "edges": edges}
+        return {"threads": threads, "nodes": nodes}
 
 
 # ---------------------------------------------------------------------------
@@ -106,7 +129,7 @@ def list_threads(
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT id, name, color, description FROM loom_threads ORDER BY name LIMIT ? OFFSET ?",
+            f"SELECT {_THREAD_COLUMNS} FROM loom_threads ORDER BY name LIMIT ? OFFSET ?",
             (limit, offset),
         )
         return [dict_from_row(row) for row in cursor.fetchall()]
@@ -116,13 +139,36 @@ def list_threads(
 def create_thread(thread: LoomThreadCreate):
     with get_db() as conn:
         cursor = conn.cursor()
+
+        if thread.origin_node_id is not None:
+            cursor.execute("SELECT id FROM loom_nodes WHERE id = ?", (thread.origin_node_id,))
+            if not cursor.fetchone():
+                raise HTTPException(status_code=422, detail="Unknown origin_node_id")
+
         try:
             cursor.execute(
-                "INSERT INTO loom_threads (name, color, description) VALUES (?, ?, ?)",
-                (thread.name, thread.color, thread.description),
+                "INSERT INTO loom_threads (name, color, description, origin_node_id) VALUES (?, ?, ?, ?)",
+                (thread.name, thread.color, thread.description, thread.origin_node_id),
+            )
+            thread_id = cursor.lastrowid
+
+            start_title = thread.start_title or thread.name
+            end_title = thread.end_title or f"Resolve: {thread.name}"
+
+            cursor.execute("INSERT INTO loom_nodes (kind, title) VALUES ('start', ?)", (start_title,))
+            start_id = cursor.lastrowid
+            cursor.execute("INSERT INTO loom_nodes (kind, title) VALUES ('end', ?)", (end_title,))
+            end_id = cursor.lastrowid
+
+            cursor.execute(
+                "INSERT INTO loom_node_threads (node_id, thread_id, position) VALUES (?, ?, 0)",
+                (start_id, thread_id),
+            )
+            cursor.execute(
+                "INSERT INTO loom_node_threads (node_id, thread_id, position) VALUES (?, ?, 10)",
+                (end_id, thread_id),
             )
             conn.commit()
-            thread_id = cursor.lastrowid
         except sqlite3.IntegrityError:
             conn.rollback()
             raise HTTPException(status_code=400, detail="A thread with this name already exists")
@@ -130,8 +176,7 @@ def create_thread(thread: LoomThreadCreate):
             conn.rollback()
             raise HTTPException(status_code=400, detail=f"Failed to create thread: {str(e)}")
 
-        cursor.execute("SELECT id, name, color, description FROM loom_threads WHERE id = ?", (thread_id,))
-        return dict_from_row(cursor.fetchone())
+        return dict_from_row(_fetch_thread_row(cursor, thread_id))
 
 
 @router.put("/loom/threads/{thread_id}", response_model=LoomThread)
@@ -144,7 +189,7 @@ def update_thread(thread_id: int, thread: LoomThreadUpdate):
 
         try:
             cursor.execute(
-                "UPDATE loom_threads SET name = ?, color = ?, description = ? WHERE id = ?",
+                "UPDATE loom_threads SET name = ?, color = ?, description = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
                 (thread.name, thread.color, thread.description, thread_id),
             )
             conn.commit()
@@ -155,8 +200,7 @@ def update_thread(thread_id: int, thread: LoomThreadUpdate):
             conn.rollback()
             raise HTTPException(status_code=400, detail=f"Failed to update thread: {str(e)}")
 
-        cursor.execute("SELECT id, name, color, description FROM loom_threads WHERE id = ?", (thread_id,))
-        return dict_from_row(cursor.fetchone())
+        return dict_from_row(_fetch_thread_row(cursor, thread_id))
 
 
 @router.delete("/loom/threads/{thread_id}", status_code=204)
@@ -167,8 +211,22 @@ def delete_thread(thread_id: int):
         if not cursor.fetchone():
             raise HTTPException(status_code=404, detail="Thread not found")
 
+        # start/end/beat members are thread-exclusive; sessions may be shared and survive.
+        cursor.execute(
+            """SELECT lnt.node_id FROM loom_node_threads lnt
+               JOIN loom_nodes ln ON ln.id = lnt.node_id
+               WHERE lnt.thread_id = ? AND ln.kind IN ('start', 'end', 'beat')""",
+            (thread_id,),
+        )
+        exclusive_node_ids = [row["node_id"] for row in cursor.fetchall()]
+
         try:
             cursor.execute("DELETE FROM loom_threads WHERE id = ?", (thread_id,))
+            if exclusive_node_ids:
+                placeholders = ",".join("?" for _ in exclusive_node_ids)
+                cursor.execute(
+                    f"DELETE FROM loom_nodes WHERE id IN ({placeholders})", exclusive_node_ids
+                )
             conn.commit()
         except Exception as e:
             conn.rollback()
@@ -184,29 +242,12 @@ def delete_thread(thread_id: int):
 def create_node(node: LoomNodeCreate):
     with get_db() as conn:
         cursor = conn.cursor()
-
-        if node.thread_ids:
-            placeholders = ",".join("?" for _ in node.thread_ids)
-            cursor.execute(
-                f"SELECT id FROM loom_threads WHERE id IN ({placeholders})", node.thread_ids
-            )
-            found = {row["id"] for row in cursor.fetchall()}
-            missing = set(node.thread_ids) - found
-            if missing:
-                raise HTTPException(status_code=422, detail=f"Unknown thread_id(s): {sorted(missing)}")
-
         try:
             cursor.execute(
-                """INSERT INTO loom_nodes (kind, title, body, status, session_tag, x, y)
-                   VALUES (?, ?, ?, ?, ?, ?, ?)""",
-                (node.kind, node.title, node.body, node.status, node.session_tag, node.x, node.y),
+                "INSERT INTO loom_nodes (kind, title, body, session_tag, x, y) VALUES (?, ?, ?, ?, ?, ?)",
+                (node.kind, node.title, node.body, node.session_tag, node.x, node.y),
             )
             node_id = cursor.lastrowid
-            for thread_id in node.thread_ids:
-                cursor.execute(
-                    "INSERT INTO loom_node_threads (node_id, thread_id) VALUES (?, ?)",
-                    (node_id, thread_id),
-                )
             conn.commit()
         except Exception as e:
             conn.rollback()
@@ -226,28 +267,12 @@ def update_node(node_id: int, node: LoomNodeUpdate):
         if row["kind"] != node.kind:
             raise HTTPException(status_code=422, detail="Node kind is immutable")
 
-        if node.thread_ids:
-            placeholders = ",".join("?" for _ in node.thread_ids)
-            cursor.execute(
-                f"SELECT id FROM loom_threads WHERE id IN ({placeholders})", node.thread_ids
-            )
-            found = {row["id"] for row in cursor.fetchall()}
-            missing = set(node.thread_ids) - found
-            if missing:
-                raise HTTPException(status_code=422, detail=f"Unknown thread_id(s): {sorted(missing)}")
-
         try:
             cursor.execute(
-                """UPDATE loom_nodes SET title = ?, body = ?, status = ?, session_tag = ?, x = ?, y = ?,
+                """UPDATE loom_nodes SET title = ?, body = ?, session_tag = ?, x = ?, y = ?,
                    updated_at = CURRENT_TIMESTAMP WHERE id = ?""",
-                (node.title, node.body, node.status, node.session_tag, node.x, node.y, node_id),
+                (node.title, node.body, node.session_tag, node.x, node.y, node_id),
             )
-            cursor.execute("DELETE FROM loom_node_threads WHERE node_id = ?", (node_id,))
-            for thread_id in node.thread_ids:
-                cursor.execute(
-                    "INSERT INTO loom_node_threads (node_id, thread_id) VALUES (?, ?)",
-                    (node_id, thread_id),
-                )
             conn.commit()
         except Exception as e:
             conn.rollback()
@@ -277,9 +302,14 @@ def patch_node_position(node_id: int, position: LoomNodePosition):
 def delete_node(node_id: int):
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT id FROM loom_nodes WHERE id = ?", (node_id,))
-        if not cursor.fetchone():
+        cursor.execute("SELECT kind FROM loom_nodes WHERE id = ?", (node_id,))
+        row = cursor.fetchone()
+        if not row:
             raise HTTPException(status_code=404, detail="Node not found")
+        if row["kind"] in ("start", "end"):
+            raise HTTPException(
+                status_code=422, detail="Delete the thread to remove its Start/End nodes"
+            )
 
         try:
             cursor.execute("DELETE FROM loom_nodes WHERE id = ?", (node_id,))
@@ -290,141 +320,119 @@ def delete_node(node_id: int):
 
 
 # ---------------------------------------------------------------------------
-# Edges
+# Thread items (ordered membership)
 # ---------------------------------------------------------------------------
 
 
-@router.post("/loom/edges", response_model=LoomEdge, status_code=201)
-def create_edge(edge: LoomEdgeCreate):
-    if edge.source_id == edge.target_id:
-        raise HTTPException(status_code=422, detail="An edge cannot connect a node to itself")
-
+@router.post("/loom/threads/{thread_id}/items", response_model=LoomTapestryThread, status_code=201)
+def add_thread_item(thread_id: int, item: LoomThreadItemCreate):
     with get_db() as conn:
         cursor = conn.cursor()
+        if not _fetch_thread_row(cursor, thread_id):
+            raise HTTPException(status_code=404, detail="Thread not found")
 
-        cursor.execute("SELECT id FROM loom_nodes WHERE id IN (?, ?)", (edge.source_id, edge.target_id))
-        found = {row["id"] for row in cursor.fetchall()}
-        if edge.source_id not in found or edge.target_id not in found:
-            raise HTTPException(status_code=422, detail="Unknown source_id or target_id")
-
-        if _would_cycle(cursor, edge.source_id, edge.target_id):
-            raise HTTPException(status_code=422, detail="This edge would create a cycle")
-
-        try:
-            cursor.execute(
-                "INSERT INTO loom_edges (source_id, target_id) VALUES (?, ?)",
-                (edge.source_id, edge.target_id),
+        cursor.execute("SELECT kind FROM loom_nodes WHERE id = ?", (item.node_id,))
+        node_row = cursor.fetchone()
+        if not node_row:
+            raise HTTPException(status_code=404, detail="Node not found")
+        if node_row["kind"] not in ("beat", "session"):
+            raise HTTPException(
+                status_code=422, detail="Only beat or session nodes can be placed on a thread"
             )
-            conn.commit()
-            edge_id = cursor.lastrowid
-        except sqlite3.IntegrityError:
-            conn.rollback()
-            raise HTTPException(status_code=409, detail="These nodes are already connected")
-        except Exception as e:
-            conn.rollback()
-            raise HTTPException(status_code=400, detail=f"Failed to create edge: {str(e)}")
 
-        cursor.execute("SELECT id, source_id, target_id FROM loom_edges WHERE id = ?", (edge_id,))
-        return dict_from_row(cursor.fetchone())
+        cursor.execute(
+            "SELECT 1 FROM loom_node_threads WHERE node_id = ? AND thread_id = ?",
+            (item.node_id, thread_id),
+        )
+        if cursor.fetchone():
+            raise HTTPException(status_code=422, detail="Node is already a member of this thread")
 
-
-@router.delete("/loom/edges/{edge_id}", status_code=204)
-def delete_edge(edge_id: int):
-    with get_db() as conn:
-        cursor = conn.cursor()
-        cursor.execute("SELECT id FROM loom_edges WHERE id = ?", (edge_id,))
-        if not cursor.fetchone():
-            raise HTTPException(status_code=404, detail="Edge not found")
-
-        try:
-            cursor.execute("DELETE FROM loom_edges WHERE id = ?", (edge_id,))
-            conn.commit()
-        except Exception as e:
-            conn.rollback()
-            raise HTTPException(status_code=400, detail=f"Failed to delete edge: {str(e)}")
-
-
-# ---------------------------------------------------------------------------
-# Bridge
-# ---------------------------------------------------------------------------
-
-
-def _is_past(node: dict) -> bool:
-    return node["kind"] == "update" or (node["kind"] == "anchor" and node["status"] == "reached")
-
-
-@router.post("/loom/bridge", response_model=LoomBridgeResult, status_code=201)
-def create_bridge(bridge: LoomBridgeCreate):
-    with get_db() as conn:
-        cursor = conn.cursor()
-
-        source = _load_node(cursor, bridge.source_id)
-        if not source:
-            raise HTTPException(status_code=404, detail="Source node not found")
-        if not _is_past(source):
-            raise HTTPException(status_code=422, detail="bridge source must be a past node")
-
-        anchor = _load_node(cursor, bridge.anchor_id)
-        if not anchor:
-            raise HTTPException(status_code=404, detail="Anchor node not found")
-        if anchor["kind"] != "anchor" or anchor["status"] != "planned":
-            raise HTTPException(status_code=422, detail="bridge target must be a planned anchor")
-
-        if _would_cycle(cursor, bridge.source_id, bridge.anchor_id):
-            raise HTTPException(status_code=422, detail="bridge would create a cycle")
-
-        x = bridge.x if bridge.x is not None else (source["x"] + anchor["x"]) / 2
-        y = bridge.y if bridge.y is not None else (source["y"] + anchor["y"]) / 2
-
-        if bridge.thread_ids is not None:
-            thread_ids = bridge.thread_ids
-        else:
-            thread_ids = sorted(set(source["thread_ids"]) | set(anchor["thread_ids"]))
-
-        try:
-            cursor.execute(
-                """INSERT INTO loom_nodes (kind, title, body, status, session_tag, x, y)
-                   VALUES ('update', ?, ?, NULL, ?, ?, ?)""",
-                (bridge.title, bridge.body, bridge.session_tag, x, y),
-            )
-            node_id = cursor.lastrowid
-            for thread_id in thread_ids:
-                cursor.execute(
-                    "INSERT INTO loom_node_threads (node_id, thread_id) VALUES (?, ?)",
-                    (node_id, thread_id),
+        if node_row["kind"] == "beat":
+            cursor.execute("SELECT 1 FROM loom_node_threads WHERE node_id = ?", (item.node_id,))
+            if cursor.fetchone():
+                raise HTTPException(
+                    status_code=422, detail="Beat is already placed on another thread; bank it first"
                 )
 
-            cursor.execute(
-                "SELECT id FROM loom_edges WHERE source_id = ? AND target_id = ?",
-                (bridge.source_id, bridge.anchor_id),
-            )
-            direct_edge = cursor.fetchone()
-            deleted_edge_id = direct_edge["id"] if direct_edge else None
+        existing_ids, positions_by_node = _thread_ordered(cursor, thread_id)
+        index = _clamped_index(existing_ids, positions_by_node, item.position)
+        new_order = existing_ids[:index] + [item.node_id] + existing_ids[index:]
 
+        try:
             cursor.execute(
-                "INSERT INTO loom_edges (source_id, target_id) VALUES (?, ?)",
-                (bridge.source_id, node_id),
+                "INSERT INTO loom_node_threads (node_id, thread_id, position) VALUES (?, ?, -1)",
+                (item.node_id, thread_id),
             )
-            first_edge_id = cursor.lastrowid
-            cursor.execute(
-                "INSERT INTO loom_edges (source_id, target_id) VALUES (?, ?)",
-                (node_id, bridge.anchor_id),
-            )
-            second_edge_id = cursor.lastrowid
-
-            if deleted_edge_id is not None:
-                cursor.execute("DELETE FROM loom_edges WHERE id = ?", (deleted_edge_id,))
-
+            _renumber_thread(cursor, thread_id, new_order)
             conn.commit()
         except Exception as e:
             conn.rollback()
-            raise HTTPException(status_code=400, detail=f"Failed to create bridge: {str(e)}")
+            raise HTTPException(status_code=400, detail=f"Failed to place node: {str(e)}")
 
-        node = _load_node(cursor, node_id)
+        return _load_tapestry_thread(cursor, _fetch_thread_row(cursor, thread_id))
+
+
+@router.patch("/loom/threads/{thread_id}/items/{node_id}", response_model=LoomTapestryThread)
+def reorder_thread_item(thread_id: int, node_id: int, body: LoomThreadItemPositionUpdate):
+    with get_db() as conn:
+        cursor = conn.cursor()
+        if not _fetch_thread_row(cursor, thread_id):
+            raise HTTPException(status_code=404, detail="Thread not found")
+
         cursor.execute(
-            "SELECT id, source_id, target_id FROM loom_edges WHERE id IN (?, ?)",
-            (first_edge_id, second_edge_id),
+            "SELECT 1 FROM loom_node_threads WHERE node_id = ? AND thread_id = ?",
+            (node_id, thread_id),
         )
-        created_edges = [dict_from_row(row) for row in cursor.fetchall()]
+        if not cursor.fetchone():
+            raise HTTPException(status_code=404, detail="Node is not a member of this thread")
 
-        return {"node": node, "created_edges": created_edges, "deleted_edge_id": deleted_edge_id}
+        cursor.execute("SELECT kind FROM loom_nodes WHERE id = ?", (node_id,))
+        if cursor.fetchone()["kind"] in ("start", "end"):
+            raise HTTPException(status_code=422, detail="Start/End position is fixed")
+
+        existing_ids, positions_by_node = _thread_ordered(cursor, thread_id)
+        remaining = [n for n in existing_ids if n != node_id]
+        index = _clamped_index(remaining, positions_by_node, body.position)
+        new_order = remaining[:index] + [node_id] + remaining[index:]
+
+        try:
+            _renumber_thread(cursor, thread_id, new_order)
+            conn.commit()
+        except Exception as e:
+            conn.rollback()
+            raise HTTPException(status_code=400, detail=f"Failed to reorder node: {str(e)}")
+
+        return _load_tapestry_thread(cursor, _fetch_thread_row(cursor, thread_id))
+
+
+@router.delete("/loom/threads/{thread_id}/items/{node_id}", status_code=204)
+def remove_thread_item(thread_id: int, node_id: int):
+    with get_db() as conn:
+        cursor = conn.cursor()
+        if not _fetch_thread_row(cursor, thread_id):
+            raise HTTPException(status_code=404, detail="Thread not found")
+
+        cursor.execute(
+            "SELECT 1 FROM loom_node_threads WHERE node_id = ? AND thread_id = ?",
+            (node_id, thread_id),
+        )
+        if not cursor.fetchone():
+            raise HTTPException(status_code=404, detail="Node is not a member of this thread")
+
+        cursor.execute("SELECT kind FROM loom_nodes WHERE id = ?", (node_id,))
+        if cursor.fetchone()["kind"] in ("start", "end"):
+            raise HTTPException(
+                status_code=422, detail="Cannot remove Start/End; delete the thread instead"
+            )
+
+        try:
+            cursor.execute(
+                "DELETE FROM loom_node_threads WHERE node_id = ? AND thread_id = ?",
+                (node_id, thread_id),
+            )
+            remaining_ids, _ = _thread_ordered(cursor, thread_id)
+            _renumber_thread(cursor, thread_id, remaining_ids)
+            conn.commit()
+        except Exception as e:
+            conn.rollback()
+            raise HTTPException(status_code=400, detail=f"Failed to remove node from thread: {str(e)}")
