@@ -22,7 +22,7 @@ import { buildNodeStatusUpdate, isFuture, isPast, vaultNodes } from './loomGraph
 import { LoomThreadsContext } from './nodes/loomThreadsContext'
 import { AnchorNode } from './nodes/AnchorNode'
 import { UpdateNode } from './nodes/UpdateNode'
-import { LoomVaultPanel } from './LoomVaultPanel'
+import { LoomWeaverPanel } from './LoomWeaverPanel'
 import { LoomNodeEditor } from './LoomNodeEditor'
 import { LoomThreadManager } from './LoomThreadManager'
 import { LoomBridgeDialog } from './LoomBridgeDialog'
@@ -140,6 +140,9 @@ export function LoomPage() {
   }, [rfInstance])
 
   const handleSelectVaultNode = (node: LoomNodeType) => {
+    setSelectedNodeId(String(node.id))
+    setSelectedEdgeId(null)
+    setBridgeSource(null)
     if (!rfInstance) return
     rfInstance.setCenter(node.x, node.y, { zoom: 1, duration: 400 })
   }
@@ -319,72 +322,7 @@ export function LoomPage() {
         {pageHeader}
         <div className="loom-page">
           <div className="loom-canvas-column">
-          {bannerError && <LoomErrorBanner message={bannerError} onDismiss={dismissError} />}
-          {bridgeSource && (
-            <div className="loom-inspector">
-              <span className="loom-inspector-title">
-                Bridging from "{bridgeSource.title}" — click a planned anchor to connect to
-              </span>
-              <div className="loom-inspector-actions">
-                <Button variant="secondary" size="compact" onClick={() => setBridgeSource(null)}>
-                  Cancel
-                </Button>
-              </div>
-            </div>
-          )}
-          {selectedNode && (
-            <div className="loom-inspector">
-              <span className="loom-inspector-title">{selectedNode.title}</span>
-              <div className="loom-inspector-actions">
-                {canBridgeFromSelected && (
-                  <Button
-                    variant="secondary"
-                    size="compact"
-                    onClick={() => {
-                      setBridgeSource(selectedNode)
-                      setSelectedNodeId(null)
-                    }}
-                  >
-                    Bridge to Anchor…
-                  </Button>
-                )}
-                {selectedNode.kind === 'anchor' && selectedNode.status === 'planned' && (
-                  <>
-                    <Button
-                      variant="secondary"
-                      size="compact"
-                      onClick={() => setPendingStatusChange({ node: selectedNode, status: 'reached' })}
-                    >
-                      Mark Reached
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      size="compact"
-                      onClick={() => setPendingStatusChange({ node: selectedNode, status: 'abandoned' })}
-                    >
-                      Mark Abandoned
-                    </Button>
-                  </>
-                )}
-                <Button variant="secondary" size="compact" onClick={() => setNodeEditor({ node: selectedNode, position: { x: selectedNode.x, y: selectedNode.y } })}>
-                  Edit
-                </Button>
-                <Button variant="danger" size="compact" onClick={() => setPendingDeleteNode(selectedNode)}>
-                  Delete
-                </Button>
-              </div>
-            </div>
-          )}
-          {selectedEdge && (
-            <div className="loom-inspector">
-              <span className="loom-inspector-title">Edge selected</span>
-              <div className="loom-inspector-actions">
-                <Button variant="danger" size="compact" onClick={handleDeleteEdge} loading={deletingEdge}>
-                  Delete Edge
-                </Button>
-              </div>
-            </div>
-          )}
+            {bannerError && <LoomErrorBanner message={bannerError} onDismiss={dismissError} />}
             <div className="loom-canvas-area" ref={canvasRef}>
               <ReactFlow<Node<FlowNodeData>, Edge>
                 nodes={nodes}
@@ -406,7 +344,40 @@ export function LoomPage() {
               </ReactFlow>
             </div>
           </div>
-          <LoomVaultPanel nodes={vault} onSelectNode={handleSelectVaultNode} />
+          <LoomWeaverPanel
+            selectedNode={selectedNode}
+            selectedEdge={selectedEdge}
+            threads={threads}
+            vaultNodes={vault}
+            canBridgeFromSelected={canBridgeFromSelected}
+            bridgeSource={bridgeSource}
+            deletingEdge={deletingEdge}
+            onBridge={() => {
+              if (!selectedNode) return
+              setBridgeSource(selectedNode)
+              setSelectedNodeId(null)
+            }}
+            onMarkReached={() => {
+              if (!selectedNode) return
+              setPendingStatusChange({ node: selectedNode, status: 'reached' })
+            }}
+            onMarkAbandoned={() => {
+              if (!selectedNode) return
+              setPendingStatusChange({ node: selectedNode, status: 'abandoned' })
+            }}
+            onEdit={() => {
+              if (!selectedNode) return
+              setNodeEditor({ node: selectedNode, position: { x: selectedNode.x, y: selectedNode.y } })
+            }}
+            onDeleteNode={() => {
+              if (!selectedNode) return
+              setPendingDeleteNode(selectedNode)
+            }}
+            onDeleteEdge={handleDeleteEdge}
+            onSelectVaultNode={handleSelectVaultNode}
+            onOpenThreadManager={() => setThreadManagerOpen(true)}
+            onCancelBridge={() => setBridgeSource(null)}
+          />
         </div>
       </div>
 

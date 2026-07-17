@@ -378,6 +378,26 @@ Thread-chip strips (8×8px colored dots, `aria-hidden="true"`) appear on nodes; 
 single thread accent from `threads(source) ∩ threads(target)`, falling back to `--md-outline`.
 The React Flow attribution is restyled but never removed (license requirement).
 
+The Loom route shell (`LoomPage.tsx`) now keeps a persistent right-hand **Weaver's panel** rail instead of the
+transient `.loom-inspector` strip. Its section order is fixed for the remaining LU stages:
+- **Selection** — the default top section. When nothing is selected it renders `LoomLegend`; when a node is
+  selected it renders title, kind, status, session tag, thread names, body excerpt, and the existing compact
+  action row; when an edge is selected it renders the edge state and delete action; and when bridge mode is
+  active it renders the bridge hint and cancel action.
+- **Threads** — a quiet list plus Manage button in LU2. LU3 hangs thread-focus controls on the stable
+  `.loom-weaver-threads`, `.loom-weaver-thread-list`, `.loom-weaver-thread-row`, and `.loom-weaver-thread-swatch`
+  class hooks rather than inventing another rail subsection.
+- **Idea Vault** — still powered by `LoomVaultPanel`, now embedded as the rail's final section instead of a
+  standalone sibling of the canvas. The accessible text `Idea Vault (N)` remains the contract for tests and
+  screen-reader users.
+
+`LoomWeaverPanel` owns the rail contract with props:
+`selectedNode`, `selectedEdge`, `threads`, `vaultNodes`, `canBridgeFromSelected`, `bridgeSource`, `onBridge`,
+`deletingEdge`, `onMarkReached`, `onMarkAbandoned`, `onEdit`, `onDeleteNode`, `onDeleteEdge`,
+`onSelectVaultNode`, `onOpenThreadManager`, and `onCancelBridge`. `LoomPage.tsx` continues to own the
+underlying selection/mutation state and passes those handlers through unchanged. `LoomVaultPanel` survives as a
+focused subsection component; it was not folded away in LU2.
+
 ---
 
 ## Accessibility floor
