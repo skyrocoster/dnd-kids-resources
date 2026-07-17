@@ -446,20 +446,6 @@ export interface NPC {
 
 export type NPCInput = Omit<NPC, 'id'>
 
-export interface Quest {
-  id: number
-  title: string
-  summary?: string | null
-  reward?: string[] | null
-  objectives?: string[] | null
-  details?: string[] | null
-  quest_giver?: number | null
-  dungeon_id?: number | null
-  location?: string | null
-}
-
-export type QuestInput = Omit<Quest, 'id'>
-
 export interface EncounterCreature {
   monster_id?: number | null
   original_name?: string | null

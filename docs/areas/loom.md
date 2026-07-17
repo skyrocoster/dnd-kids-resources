@@ -1,10 +1,10 @@
 # The Loom Area Guide
 
-> **Active plan:** [Loom Tapestry Tracker: LM7](../plans/active/loom-tapestry-tracker.md#lm7-remove-the-quests-domain-next-up).
+> **Active plan:** [Weaver's Workspace (UI/UX pass)](../plans/active/loom-weavers-workspace.md#lu0-scaffolding-next-up) — LU0 next.
 
 ## Scope
 
-Owns campaign story-thread tracking: loom threads, nodes (anchors and updates), edges, the tapestry canvas, and the Anchor-and-Bridge workflow. The Loom replaces the quests catalog; quests removal is a staged outcome of the active plan and quests remain owned by [reference-catalogs.md](reference-catalogs.md) until that stage ships. This guide does not own NPCs, dungeons, encounters, or any reference catalog.
+Owns campaign story-thread tracking: loom threads, nodes (anchors and updates), edges, the tapestry canvas, and the Anchor-and-Bridge workflow. This guide does not own NPCs, dungeons, encounters, or any reference catalog.
 
 ## Read first
 
@@ -27,10 +27,10 @@ Owns campaign story-thread tracking: loom threads, nodes (anchors and updates), 
 
 ## Work queue
 
-- LM6 (bridge workflow, anchor-lifecycle transitions, blank-tapestry empty state) shipped; its live browser gate (full DM loop on the demo tapestry) is still outstanding — see the active plan's Shipped-stages row.
-- Execute the active plan's next-up stage.
-- Deferred until after playtesting (recorded as the active plan's known debt): node links to NPCs/dungeons/encounters, a server-side heads endpoint, canvas auto-layout, and canvas undo.
+- The Loom Tapestry Tracker plan (LM0–LM8) is complete. The full DM loop (bridge, mark-reached, node CRUD, thread management) is shipped. The live browser gate (full DM loop on the demo tapestry) is still outstanding — manual verification needed.
+- Deferred until after playtesting: node links to NPCs/dungeons/encounters, a server-side heads endpoint, canvas auto-layout, and canvas undo.
+- Create a focused plan before changing any loom contract or cross-domain workflow.
 
 ## Cross-references
 
-[../plans/active/loom-tapestry-tracker.md](../plans/active/loom-tapestry-tracker.md), `../API_REFERENCE.md`, `../DATA_MODEL.md`, `../DESIGN_SYSTEM.md`, and [reference-catalogs.md](reference-catalogs.md) (quests ownership until removal ships).
+[../complete/loom-tapestry-tracker.md](../complete/loom-tapestry-tracker.md), `../API_REFERENCE.md`, `../DATA_MODEL.md`, `../DESIGN_SYSTEM.md`, and [reference-catalogs.md](reference-catalogs.md).

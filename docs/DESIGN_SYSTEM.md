@@ -241,7 +241,7 @@ values cluster around 0.5rem–1.5rem in practice. VW/VT stages adopt the spacin
 
 ## Standard editor contract (VW4)
 
-- All seven modal editors (`SpellEditor`, `WeaponEditor`, `PlayerEditor`, `NPCEditor`, `QuestEditor`,
+- All six modal editors (`SpellEditor`, `WeaponEditor`, `PlayerEditor`, `NPCEditor`,
   `ItemEditor`, `EncounterEditor`) render the shared `Dialog` (VF3) instead of a duplicated fixed backdrop/modal
   implementation. Each keeps its own `<form>` (with a `useId()`-generated `id`) as the Dialog's `children`; the
   Dialog `footer` holds a `variant="secondary"` Cancel `Button` and a `variant="primary"` (default) Save `Button`
@@ -257,8 +257,7 @@ values cluster around 0.5rem–1.5rem in practice. VW/VT stages adopt the spacin
 - **Width** — Dialog's own `.dialog` rule (`width: min(480px, 90vw)`) is a default, not a ceiling. Each editor
   keeps a single feature-owned width override class passed via Dialog's additive `className?` prop (merged onto
   `.dialog`, not replacing it): `spell-editor-dialog`/`encounter-editor-dialog` `min(760px, 96vw)`,
-  `npc-editor-dialog` `min(720px, 96vw)`, `weapon-editor-dialog` `min(680px, 96vw)`, `quest-editor-dialog`
-  `min(640px, 96vw)`, `item-editor-dialog` `min(580px, 96vw)`, `player-editor-dialog` `min(520px, 96vw)`. No new
+  `npc-editor-dialog` `min(720px, 96vw)`, `weapon-editor-dialog` `min(680px, 96vw)`,   `item-editor-dialog` `min(580px, 96vw)`, `player-editor-dialog` `min(520px, 96vw)`. No new
   breakpoints were added — `Dialog.css`'s existing `dialog-body` scroll/`max-height: 85vh` already supplies
   narrow/overflow behavior for every width.
 - **Save status** — each editor's existing status paragraph (`{editor}-status`, success/error `kind` modifier)

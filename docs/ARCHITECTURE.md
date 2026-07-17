@@ -16,9 +16,9 @@ This doc describes the folder structure, backend/frontend conventions, and reque
 |---|---|
 | `main.py` | FastAPI app instance, CORS setup, router imports + registration, healthcheck endpoint |
 | `db.py` | SQLite connection helper, resolves database path, enables foreign keys, and opens/closes a connection per `get_db()` use |
-| `schemas.py` | Pydantic request/response models (Ability, Condition, Spell, Monster, Weapon, Item, LootBundle, Player, NPC, Quest, Encounter, Dungeon, MapLayoutBlob + their Create/Update variants) |
+| `schemas.py` | Pydantic request/response models (Ability, Condition, Spell, Monster, Weapon, Item, LootBundle, Player, NPC, Encounter, Dungeon, MapLayoutBlob + their Create/Update variants) |
 
-**`backend/app/routers/`** — 12 domain-specific routers, each mounted under `/api`:
+**`backend/app/routers/`** — 11 domain-specific routers, each mounted under `/api`:
 
 | Router | Endpoint prefix | Purpose |
 |---|---|---|
@@ -29,7 +29,6 @@ This doc describes the folder structure, backend/frontend conventions, and reque
 | `loot.py` | `/api/loot-bundles` | Loot bundle CRUD with snapshotted JSON contents |
 | `players.py` | `/api/players` | Player CRUD, player spell/weapon roster management |
 | `npcs.py` | `/api/npcs` | NPC CRUD and details |
-| `quests.py` | `/api/quests` | Quest CRUD and details |
 | `encounters.py` | `/api/encounters` | Encounter CRUD, creature rosters |
 | `dungeons.py` | `/api/dungeons` | Runtime-created dungeon CRUD (room-reading data stored in `data` JSON column) |
 | `layouts.py` | `/api/dungeons/{dungeon_id}/layout` | Dungeon map layout save/load (MapLayoutBlob) |
@@ -47,7 +46,7 @@ This doc describes the folder structure, backend/frontend conventions, and reque
 |---|---|
 | `api/` | Single API client (`client.ts`) that speaks to the backend + centralized TypeScript type definitions (`types.ts`) |
 | `components/` | Shared UI primitives (Card, ConfirmDialog, DiceText, FloatingWindow, SearchList, SplitPane) + subdirs for form inputs and icon components |
-| `features/` | Domain modules — `dungeons/`, `encounters/`, `items/`, `loot/`, `monsters/`, `npcs/`, `players/`, `quests/`, `spells/`, `weapons/`. Each feature dir contains pages, editor forms, and local state management. |
+| `features/` | Domain modules — `dungeons/`, `encounters/`, `items/`, `loot/`, `monsters/`, `npcs/`, `players/`, `spells/`, `weapons/`. Each feature dir contains pages, editor forms, and local state management. |
 | `pages/` | Top-level router pages (HomePage, ComponentDemoPage, StubPage) — entry points for each route |
 | `layout/` | AppShell.tsx — header, nav, footer layout that wraps all pages; navSections.ts — shared nav-section → route map consumed by AppShell's rail/drawer and HomePage's chapter tabs |
 | `router.tsx` | React Router configuration; exports a `routes` array (dev-only `demo` route gated by `import.meta.env.DEV`) and the `router` built from it |
@@ -77,7 +76,7 @@ features/dungeons/
     └── ... (markers, badges, CSS, tests)
 ```
 
-This pattern is used across the ten feature domains. If building a new feature domain, follow the local shape that fits its UI.
+This pattern is used across the nine feature domains. If building a new feature domain, follow the local shape that fits its UI.
 
 **Frontend convention: no global state library, no hooks/ or types/ directories.** State is local to components or lifted to a Model layer (`dungeonModel.ts` pattern). TypeScript types live in `api/types.ts` (centralized, auto-synced with backend schemas.py in practice) or co-located with components as needed. This is intentional — the app is small enough that global state would be premature complexity.
 
@@ -126,7 +125,7 @@ data/seeds/*.json (canonical reference and campaign data)
 <!-- GENERATED:ARCHITECTURE:START -->
 ### Generated Registration Inventory
 
-Backend routers registered in `main.py`: `reference.py`, `spells.py`, `monsters.py`, `weapons.py`, `items.py`, `loot.py`, `players.py`, `npcs.py`, `quests.py`, `encounters.py`, `dungeons.py`, `layouts.py`, `loom.py`.
+Backend routers registered in `main.py`: `reference.py`, `spells.py`, `monsters.py`, `weapons.py`, `items.py`, `loot.py`, `players.py`, `npcs.py`, `encounters.py`, `dungeons.py`, `layouts.py`, `loom.py`.
 
-Frontend feature directories: `dungeons/`, `encounters/`, `items/`, `loom/`, `loot/`, `monsters/`, `npcs/`, `players/`, `quests/`, `spells/`, `weapons/`.
+Frontend feature directories: `dungeons/`, `encounters/`, `items/`, `loom/`, `loot/`, `monsters/`, `npcs/`, `players/`, `spells/`, `weapons/`.
 <!-- GENERATED:ARCHITECTURE:END -->

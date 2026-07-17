@@ -4,7 +4,7 @@
 
 ## Scope
 
-Owns weapons, items outside loot bundles, players, NPCs, and quests. It does not own spells, monsters, loot bundles, encounters, or dungeons.
+Owns weapons, items outside loot bundles, players, and NPCs. It does not own spells, monsters, loot bundles, encounters, dungeons, or loom.
 
 ## Read first
 
@@ -12,8 +12,8 @@ Owns weapons, items outside loot bundles, players, NPCs, and quests. It does not
 
 ## Source map
 
-- Backend: `backend/app/routers/weapons.py`, `items.py`, `players.py`, `npcs.py`, and `quests.py`.
-- Frontend: `frontend/src/features/weapons/`, `items/`, `players/`, `npcs/`, and `quests/`.
+- Backend: `backend/app/routers/weapons.py`, `items.py`, `players.py`, and `npcs.py`.
+- Frontend: `frontend/src/features/weapons/`, `items/`, `players/`, and `npcs/`.
 - Tests: matching router and colocated frontend tests.
 
 ## Invariants

@@ -76,7 +76,6 @@ def _seed_real_data(db_path: str) -> None:
             seed_mod.populate_items(cursor, conn)
             seed_mod.populate_monsters(cursor, conn)
             seed_mod.populate_npcs(cursor, conn)
-            seed_mod.populate_quests(cursor, conn)
             seed_mod.populate_spells(cursor, conn)
             seed_mod.populate_conditions(cursor, conn)
             seed_mod.populate_encounters(cursor, conn)

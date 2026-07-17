@@ -34,7 +34,6 @@ This ensures schema and seed-backed data stay synced with the codebase. Dungeons
 | `seed_players.json` | `players` | Player characters | `/api/players` |
 | `seed_player_spells.json` | `player_spells` (junction) | Player spell assignments | `/api/players/{id}/spells` |
 | `seed_player_weapons.json` | `player_weapons` (junction) | Player weapon assignments | `/api/players/{id}/weapons` |
-| `seed_quests.json` | `quests` | Quests/missions | `/api/quests` |
 | `seed_loom_threads.json` | `loom_threads` | Tapestry story-thread lanes | `/api/loom/threads` |
 | `seed_loom_nodes.json` | `loom_nodes` | Tapestry anchor and update nodes | `/api/loom/nodes` |
 | `seed_loom_node_threads.json` | `loom_node_threads` (junction) | Node-to-thread membership | `/api/loom/tapestry` |
@@ -49,8 +48,6 @@ Non-obvious foreign-key-like relationships (skip any self-evident from naming):
 - **`encounter`** — Stores `name`, JSON `units`, and `active_index`. The API aliases the first two as `title` and `creatures`; units may be monsters or `kind: "player"` session entries. No explicit foreign key is enforced.
 - **`loot_bundle`** — Contains `contents`, a JSON array of item/weapon snapshots. Entries keep a soft `ref_id` to the catalog source, but retain their name, item category, per-unit `value_gp`, and quantity after source edits or deletion.
 - **`dungeons`** — Contains `data` (room-reading content) while `map_layout.data` independently stores geometry. Both use the same room IDs; room titles/content belong to `dungeons.data`, while layout room titles are render caches. Missing layout data is treated as a transient empty layout; a missing dungeon is an error.
-- **`quests` → `quest_giver`** — Optional foreign key to `npcs.id`. A quest is given by an NPC (or none if quest_giver is NULL).
-- **`quests` → `dungeon_id`** — Optional foreign key to `dungeons.id`. A quest can be tied to a specific dungeon.
 - **`loom_threads` → `loom_node_threads` ↔ `loom_nodes`** — Many-to-many via junction table. A thread contains many nodes; a node can belong to many threads. Deleting a thread cascades **only junction rows** — nodes survive, because retiring a thread must never destroy narrative history. Deleting a node cascades its edges and memberships (the wires go with the node).
 - **`loom_edges`** — Directed edges between nodes. `source_id` → `target_id` represents forward-only narrative time. Acyclicity is enforced server-side; the `UNIQUE(source_id, target_id)` constraint prevents duplicate edges.
 
@@ -88,9 +85,6 @@ Some tables store complex structured data as JSON strings. Router and database h
 | `npcs` | `saving_throws` | Saving throw bonuses dict (`{"str": 2, "cha": -1}`) | `{"str": 1, "dex": 0}` |
 | `npcs` | `skills` | Skill bonuses dict (`{"acrobatics": 3, "animal_handling": 2}`) | `{"acrobatics": 2, "stealth": 1}` |
 | `npcs` | `senses` | List of special senses (same as monsters) | `[{"type": "darkvision", "range": 60}]` |
-| `quests` | `objectives` | List of quest objectives (strings) | `["Retrieve the amulet", "Return to the tavern"]` |
-| `quests` | `details` | List of quest details/lore (strings) | `["The amulet was stolen by goblins"]` |
-| `quests` | `reward` | List of rewards (strings or formatted descriptions) | `["500 gold", "Amulet of Protection"]` |
 | `encounter` | `units` | List of monster or player session roster entries | `[{"name": "Goblin", "hp": 7}, ...]` |
 | `dungeons` | `data` | DungeonData shape: general_info and rooms (with entries, NPCs); map geometry and navigation fixtures are not stored here | (large JSON blob per dungeon) |
 | `map_layout` | `data` | MapLayout blob: rooms, doors, stairs, floors, props, portals, fixtures. Props may soft-reference a loot bundle by `bundle_id` with cached `bundle_name`; bundle contents resolve live. | (JSON blob per dungeon) |
@@ -379,26 +373,6 @@ Indexes: `sqlite_autoindex_player_weapons_1`.
 | `current_spell_slots` | `TEXT` | no | `'{}'` |
 | `created_at` | `DATETIME` | no | `CURRENT_TIMESTAMP` |
 | `updated_at` | `DATETIME` | no | `CURRENT_TIMESTAMP` |
-
-#### `quests`
-
-| Column | Type | Required | Default |
-|---|---|---|---|
-| `id` | `INTEGER` | yes | `-` |
-| `name` | `TEXT` | yes | `-` |
-| `summary` | `TEXT` | no | `-` |
-| `reward` | `TEXT` | yes | `'[]'` |
-| `objectives` | `TEXT` | yes | `'[]'` |
-| `details` | `TEXT` | yes | `'[]'` |
-| `quest_giver` | `INTEGER` | no | `-` |
-| `dungeon_id` | `INTEGER` | no | `-` |
-| `location` | `TEXT` | no | `-` |
-| `created_at` | `DATETIME` | no | `CURRENT_TIMESTAMP` |
-| `updated_at` | `DATETIME` | no | `CURRENT_TIMESTAMP` |
-
-Foreign keys: `quest_giver` -> `npcs.id` (SET NULL).
-
-Indexes: `sqlite_autoindex_quests_1`.
 
 #### `spells`
 

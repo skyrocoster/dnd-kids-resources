@@ -41,7 +41,6 @@ def init_database(db_path: Path | None = None):
         "players",
         "monsters",
         "npcs",
-        "quests",
         "spells",
         "conditions",
         "damage_types",
@@ -244,24 +243,6 @@ def init_database(db_path: Path | None = None):
     """)
 
     cursor.execute("""
-        CREATE TABLE quests (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL UNIQUE,
-            summary TEXT,
-            reward TEXT NOT NULL DEFAULT '[]',
-            objectives TEXT NOT NULL DEFAULT '[]',
-            details TEXT NOT NULL DEFAULT '[]',
-            quest_giver INTEGER,
-            dungeon_id INTEGER,
-            location TEXT,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (quest_giver) REFERENCES npcs(id) ON DELETE SET NULL
-        )
-    """)
-
-    # Create encounter table for combat encounter management
-    cursor.execute("""
         CREATE TABLE encounter (
             id           INTEGER PRIMARY KEY AUTOINCREMENT,
             name         TEXT    NOT NULL,
@@ -428,10 +409,10 @@ def init_database(db_path: Path | None = None):
 
     print(f"\n[SUCCESS] Database initialized: {db_path}")
     print(f"   Size: {db_path.stat().st_size / 1024:.1f} KB")
-    print("\nV2 SCHEMA - 20 tables:")
+    print("\nV2 SCHEMA - 19 tables:")
     print("  [OK] abilities, damage_types, weapon_properties, weapons")
     print("  [OK] spells (18 canonical fields + created_at: name, level, school, description, etc.)")
-    print("  [OK] conditions, monsters, npcs, quests, encounter")
+    print("  [OK] conditions, monsters, npcs, encounter")
     print("  [OK] items, loot_bundle")
     print("  [OK] dungeons (id, title, data JSON for structured hand-authored dungeons)")
     print("  [OK] players, player_spells, player_weapons")

@@ -101,7 +101,7 @@ export { LampWallDown as WallSconceIcon } from 'lucide-react'       // Wall scon
 export { BookOpen as TomeIcon } from 'lucide-react'
 export { BookOpen as BookOpenIcon } from 'lucide-react'             // Open tome
 export { Book as BookIcon } from 'lucide-react'                     // Spellbook
-export { BookMarked as BookMarkedIcon } from 'lucide-react'         // Quest log
+export { BookMarked as BookMarkedIcon } from 'lucide-react'         // Marked book
 export { BookText as BookTextIcon } from 'lucide-react'             // Filled book
 export { ScrollText as ScrollIcon } from 'lucide-react'
 export { Scroll as ScrollBlankIcon } from 'lucide-react'            // Blank scroll

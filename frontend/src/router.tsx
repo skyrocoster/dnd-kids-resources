@@ -9,7 +9,6 @@ import { MonsterBrowserPage } from './features/monsters/MonsterBrowserPage'
 import { MonsterEditor } from './features/monsters/MonsterEditor'
 import { NPCBrowserPage } from './features/npcs/NPCBrowserPage'
 import { PlayerBrowserPage } from './features/players/PlayerBrowserPage'
-import { QuestBrowserPage } from './features/quests/QuestBrowserPage'
 import { SpellBrowserPage } from './features/spells/SpellBrowserPage'
 import { WeaponBrowserPage } from './features/weapons/WeaponBrowserPage'
 import { ItemBrowserPage } from './features/items/ItemBrowserPage'
@@ -35,7 +34,6 @@ export const routes = [
       { path: 'loot', element: <LootBundleBrowserPage /> },
       { path: 'players', element: <PlayerBrowserPage /> },
       { path: 'npcs', element: <NPCBrowserPage /> },
-      { path: 'quests', element: <QuestBrowserPage /> },
       { path: 'loom', element: <LoomPage /> },
       { path: 'encounters', element: <EncounterBrowserPage /> },
       { path: 'encounters/:id/run', element: <EncounterRunnerPage /> },

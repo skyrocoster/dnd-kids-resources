@@ -3,7 +3,7 @@
 
 Usage:
   python scripts/export_db_seeds.py
-  python scripts/export_db_seeds.py --tables abilities,conditions,quests
+  python scripts/export_db_seeds.py --tables abilities,conditions,monsters
   python scripts/export_db_seeds.py --dry-run
 """
 
@@ -32,10 +32,6 @@ EXPORT_DEFINITIONS = {
     "npcs": {
         "file": "seed_npcs.json",
         "query": "SELECT id, name, race, gender, background, size, stats, armor_class, hit_points, speed, saving_throws, skills, senses, languages, appearance, notes FROM npcs ORDER BY id",
-    },
-    "quests": {
-        "file": "seed_quests.json",
-        "query": "SELECT id, name, summary, reward, objectives, details, quest_giver, dungeon_id, location FROM quests ORDER BY id",
     },
     "damage_types": {
         "file": "seed_damage_types.json",
@@ -143,10 +139,6 @@ def transform_record(record, table_name):
             "damage_resistances", "damage_immunities", "damage_vulnerabilities", "condition_immunities", "senses",
             "languages", "features"
         ]:
-            record[field] = parse_json_value(record.get(field))
-        return record
-    if table_name == "quests":
-        for field in ["reward", "objectives", "details"]:
             record[field] = parse_json_value(record.get(field))
         return record
     if table_name == "spells":

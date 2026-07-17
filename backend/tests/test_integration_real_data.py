@@ -37,7 +37,6 @@ LIST_ENDPOINTS = [
     "/api/loot-bundles",
     "/api/players",
     "/api/npcs",
-    "/api/quests",
     "/api/encounters",
     "/api/dungeons",
     "/api/loom/threads",
@@ -55,7 +54,6 @@ DETAIL_COLLECTIONS = [
     "/api/loot-bundles",
     "/api/players",
     "/api/npcs",
-    "/api/quests",
     "/api/encounters",
     "/api/dungeons",
 ]

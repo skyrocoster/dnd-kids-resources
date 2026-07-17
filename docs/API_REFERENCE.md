@@ -128,20 +128,6 @@ When adding a new endpoint:
 
 ---
 
-## Quests Router
-
-`backend/app/routers/quests.py` — quest/mission CRUD.
-
-| Method | Path | Purpose | Request schema | Response schema |
-|---|---|---|---|---|
-| GET | `/api/quests` | List all quests | `limit` (1-500; default 100), `offset` (default 0) | `List[Quest]` |
-| GET | `/api/quests/{quest_id}` | Fetch quest by ID | (path param) | `Quest` |
-| POST | `/api/quests` | Create quest | `QuestCreate` | `Quest` (201) |
-| PUT | `/api/quests/{quest_id}` | Update quest | `QuestUpdate` | `Quest` |
-| DELETE | `/api/quests/{quest_id}` | Delete quest | (path param) | (204 No Content) |
-
----
-
 ## Encounters Router
 
 `backend/app/routers/encounters.py` — encounter (combat) CRUD.
@@ -198,6 +184,29 @@ Layout data (`map_layout`) and dungeon content data (`dungeons.data`) are saved 
 
 ---
 
+## Loom Router
+
+`backend/app/routers/loom.py` — story-thread tapestry CRUD, bridge workflow, and canvas position persistence.
+
+| Method | Path | Purpose | Request schema | Response schema |
+|---|---|---|---|---|
+| GET | `/api/loom/tapestry` | Fetch full tapestry (threads, nodes, edges) | (none) | `LoomTapestry` |
+| GET | `/api/loom/threads` | List threads | `limit`, `offset` | `List[LoomThread]` |
+| POST | `/api/loom/threads` | Create thread | `LoomThreadCreate` | `LoomThread` (201) |
+| PUT | `/api/loom/threads/{thread_id}` | Update thread | `LoomThreadUpdate` | `LoomThread` |
+| DELETE | `/api/loom/threads/{thread_id}` | Delete thread (junction rows cascade; nodes survive) | (path param) | (204 No Content) |
+| POST | `/api/loom/nodes` | Create node (anchor or update) | `LoomNodeCreate` | `LoomNode` (201) |
+| PUT | `/api/loom/nodes/{node_id}` | Update node (full replace) | `LoomNodeUpdate` | `LoomNode` |
+| DELETE | `/api/loom/nodes/{node_id}` | Delete node (cascades edges + memberships) | (path param) | (204 No Content) |
+| PATCH | `/api/loom/nodes/{node_id}/position` | Persist drag position | `LoomNodePosition` | `LoomNode` |
+| POST | `/api/loom/edges` | Create directed edge (acyclicity enforced, 422 on cycle) | `LoomEdgeCreate` | `LoomEdge` (201) |
+| DELETE | `/api/loom/edges/{edge_id}` | Delete edge | (path param) | (204 No Content) |
+| POST | `/api/loom/bridge` | Bridge: splice node between head and anchor | `LoomBridgeCreate` | `LoomBridgeResult` (201) |
+
+Bridge response includes the new node, two new edges (source→N, N→anchor), and the deleted direct edge ID (if any). 422 on cycle, source-not-past, or anchor-not-planned.
+
+---
+
 ## Request/Response Shapes
 
 All request and response body shapes are defined in `backend/app/schemas.py` as Pydantic models. Refer there for field names, types, and optionality. Examples:
@@ -209,7 +218,6 @@ All request and response body shapes are defined in `backend/app/schemas.py` as 
 - **LootBundle:** id, name, gold, contents (JSON loot-entry array)
 - **Player:** id, name, class_, level
 - **NPC:** id, name, race, gender, background, size, stats (JSON), armor_class, hit_points, speed, saving_throws (JSON), skills (JSON), senses (JSON), languages, appearance (JSON), notes
-- **Quest:** id, title, summary, objectives (JSON), details (JSON), reward (JSON), quest_giver (foreign key to NPC), dungeon_id (foreign key to Dungeon), location
 - **Encounter:** id, title, creatures (JSON)
 - **Dungeon:** id, title, data (JSON)
 - **MapLayoutBlob:** data (JSON)
@@ -280,11 +288,6 @@ All optional fields are `Optional[...]` in the schema; required fields have no `
 | GET | `/api/players/{player_id}/weapons` | `player_id` (path, required) | - | 200: List[Weapon], 422: HTTPValidationError |
 | DELETE | `/api/players/{player_id}/weapons/{weapon_id}` | `player_id` (path, required), `weapon_id` (path, required) | - | 204: -, 422: HTTPValidationError |
 | POST | `/api/players/{player_id}/weapons/{weapon_id}` | `player_id` (path, required), `weapon_id` (path, required) | - | 201: -, 422: HTTPValidationError |
-| GET | `/api/quests` | `limit` (query), `offset` (query) | - | 200: List[Quest], 422: HTTPValidationError |
-| POST | `/api/quests` | - | QuestCreate | 201: Quest, 422: HTTPValidationError |
-| DELETE | `/api/quests/{quest_id}` | `quest_id` (path, required) | - | 204: -, 422: HTTPValidationError |
-| GET | `/api/quests/{quest_id}` | `quest_id` (path, required) | - | 200: Quest, 422: HTTPValidationError |
-| PUT | `/api/quests/{quest_id}` | `quest_id` (path, required) | QuestUpdate | 200: Quest, 422: HTTPValidationError |
 | GET | `/api/skills` | - | - | 200: List[Skill] |
 | GET | `/api/spell-components` | - | - | 200: List[SpellComponent] |
 | GET | `/api/spells` | `level` (query), `school` (query), `limit` (query), `offset` (query) | - | 200: List[Spell], 422: HTTPValidationError |

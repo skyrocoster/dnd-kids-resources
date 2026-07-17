@@ -15,7 +15,6 @@ from .routers import (
     monsters,
     npcs,
     players,
-    quests,
     reference,
     spells,
     weapons,
@@ -49,7 +48,6 @@ app.include_router(items.router)
 app.include_router(loot.router)
 app.include_router(players.router)
 app.include_router(npcs.router)
-app.include_router(quests.router)
 app.include_router(encounters.router)
 app.include_router(dungeons.router)
 app.include_router(layouts.router)
