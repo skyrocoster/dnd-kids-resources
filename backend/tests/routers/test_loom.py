@@ -1,4 +1,5 @@
-"""Tests for the Loom router: thread/node/edge CRUD, tapestry read, cycle guard."""
+"""Tests for the Loom router: threads (auto Start/End), node CRUD, ordered
+membership (insert/reorder/remove), and the tapestry read."""
 
 
 # ---------------------------------------------------------------------------
@@ -6,7 +7,7 @@
 # ---------------------------------------------------------------------------
 
 
-def test_thread_crud(test_client):
+def test_create_thread_makes_start_and_end(test_client):
     response = test_client.post(
         "/api/loom/threads", json={"name": "The Lost Puppy", "color": "thread-3"}
     )
@@ -14,24 +15,61 @@ def test_thread_crud(test_client):
     thread = response.json()
     assert thread["name"] == "The Lost Puppy"
     assert thread["color"] == "thread-3"
+    assert thread["origin_node_id"] is None
     thread_id = thread["id"]
 
-    response = test_client.get("/api/loom/threads")
-    assert response.status_code == 200
-    assert any(t["id"] == thread_id for t in response.json())
+    tapestry = test_client.get("/api/loom/tapestry").json()
+    tapestry_thread = next(t for t in tapestry["threads"] if t["id"] == thread_id)
+    assert len(tapestry_thread["items"]) == 2
+    positions = [item["position"] for item in tapestry_thread["items"]]
+    assert positions == sorted(positions)
 
-    response = test_client.put(
-        f"/api/loom/threads/{thread_id}",
-        json={"name": "The Lost Puppy", "color": "thread-1", "description": "renamed"},
+    node_ids = [item["node_id"] for item in tapestry_thread["items"]]
+    kinds = {n["id"]: n["kind"] for n in tapestry["nodes"] if n["id"] in node_ids}
+    assert sorted(kinds.values()) == ["end", "start"]
+    start_id = next(nid for nid, kind in kinds.items() if kind == "start")
+    start_node = next(n for n in tapestry["nodes"] if n["id"] == start_id)
+    assert start_node["title"] == "The Lost Puppy"
+
+
+def test_create_thread_custom_start_end_titles(test_client):
+    response = test_client.post(
+        "/api/loom/threads",
+        json={
+            "name": "Custom Titles",
+            "color": "thread-1",
+            "start_title": "A promise made",
+            "end_title": "A promise kept",
+        },
     )
-    assert response.status_code == 200
-    assert response.json()["color"] == "thread-1"
+    thread_id = response.json()["id"]
 
-    response = test_client.delete(f"/api/loom/threads/{thread_id}")
-    assert response.status_code == 204
+    tapestry = test_client.get("/api/loom/tapestry").json()
+    nodes_by_id = {n["id"]: n for n in tapestry["nodes"]}
+    tapestry_thread = next(t for t in tapestry["threads"] if t["id"] == thread_id)
+    titles = {nodes_by_id[item["node_id"]]["kind"]: nodes_by_id[item["node_id"]]["title"] for item in tapestry_thread["items"]}
+    assert titles == {"start": "A promise made", "end": "A promise kept"}
 
-    response = test_client.get("/api/loom/threads")
-    assert not any(t["id"] == thread_id for t in response.json())
+
+def test_create_thread_with_origin_node_id(test_client):
+    session = test_client.post(
+        "/api/loom/nodes", json={"kind": "session", "title": "Met the wizard"}
+    ).json()
+
+    response = test_client.post(
+        "/api/loom/threads",
+        json={"name": "Wizard's Hat", "color": "thread-2", "origin_node_id": session["id"]},
+    )
+    assert response.status_code == 201
+    assert response.json()["origin_node_id"] == session["id"]
+
+
+def test_create_thread_unknown_origin_node_id_422(test_client):
+    response = test_client.post(
+        "/api/loom/threads",
+        json={"name": "Bad Origin", "color": "thread-1", "origin_node_id": 9999},
+    )
+    assert response.status_code == 422
 
 
 def test_create_thread_duplicate_name_400(test_client):
@@ -66,111 +104,141 @@ def test_invalid_thread_color_422(test_client):
     assert response.status_code == 422
 
 
+def test_delete_thread_removes_exclusive_nodes_keeps_shared_sessions(test_client):
+    shared_session = test_client.post(
+        "/api/loom/nodes", json={"kind": "session", "title": "Shared event"}
+    ).json()
+
+    thread_a = test_client.post("/api/loom/threads", json={"name": "Cascade A", "color": "thread-1"}).json()
+    thread_b = test_client.post("/api/loom/threads", json={"name": "Cascade B", "color": "thread-2"}).json()
+
+    test_client.post(
+        "/api/loom/threads/{}/items".format(thread_a["id"]),
+        json={"node_id": shared_session["id"], "position": 5},
+    )
+    test_client.post(
+        "/api/loom/threads/{}/items".format(thread_b["id"]),
+        json={"node_id": shared_session["id"], "position": 5},
+    )
+
+    beat = test_client.post(
+        "/api/loom/nodes", json={"kind": "beat", "title": "Exclusive beat"}
+    ).json()
+    test_client.post(
+        "/api/loom/threads/{}/items".format(thread_a["id"]),
+        json={"node_id": beat["id"], "position": 5},
+    )
+
+    tapestry_before = test_client.get("/api/loom/tapestry").json()
+    thread_a_nodes = {
+        item["node_id"] for item in next(t for t in tapestry_before["threads"] if t["id"] == thread_a["id"])["items"]
+    }
+    start_id = next(
+        n["id"] for n in tapestry_before["nodes"] if n["id"] in thread_a_nodes and n["kind"] == "start"
+    )
+    end_id = next(
+        n["id"] for n in tapestry_before["nodes"] if n["id"] in thread_a_nodes and n["kind"] == "end"
+    )
+
+    response = test_client.delete(f"/api/loom/threads/{thread_a['id']}")
+    assert response.status_code == 204
+
+    tapestry_after = test_client.get("/api/loom/tapestry").json()
+    remaining_node_ids = {n["id"] for n in tapestry_after["nodes"]}
+    assert start_id not in remaining_node_ids
+    assert end_id not in remaining_node_ids
+    assert beat["id"] not in remaining_node_ids
+    assert shared_session["id"] in remaining_node_ids
+
+    thread_b_after = next(t for t in tapestry_after["threads"] if t["id"] == thread_b["id"])
+    assert shared_session["id"] in {item["node_id"] for item in thread_b_after["items"]}
+
+
+def test_delete_thread_nulls_origin_back_reference_on_other_threads(test_client):
+    origin_session = test_client.post(
+        "/api/loom/nodes", json={"kind": "session", "title": "Origin event"}
+    ).json()
+    parent = test_client.post("/api/loom/threads", json={"name": "Parent Thread", "color": "thread-1"}).json()
+    test_client.post(
+        "/api/loom/threads/{}/items".format(parent["id"]),
+        json={"node_id": origin_session["id"], "position": 5},
+    )
+    spawned = test_client.post(
+        "/api/loom/threads",
+        json={"name": "Spawned Thread", "color": "thread-2", "origin_node_id": origin_session["id"]},
+    ).json()
+
+    response = test_client.delete(f"/api/loom/nodes/{origin_session['id']}")
+    assert response.status_code == 204
+
+    updated_spawned = next(
+        t for t in test_client.get("/api/loom/threads").json() if t["id"] == spawned["id"]
+    )
+    assert updated_spawned["origin_node_id"] is None
+
+
 # ---------------------------------------------------------------------------
 # Nodes
 # ---------------------------------------------------------------------------
 
 
-def test_create_node_with_memberships(test_client):
-    thread = test_client.post("/api/loom/threads", json={"name": "Membership Thread", "color": "thread-1"})
-    thread_id = thread.json()["id"]
-
+def test_create_beat_node(test_client):
     response = test_client.post(
-        "/api/loom/nodes",
-        json={
-            "kind": "update",
-            "title": "Puppy goes missing",
-            "x": 10,
-            "y": 20,
-            "thread_ids": [thread_id],
-        },
+        "/api/loom/nodes", json={"kind": "beat", "title": "Rescue the puppy"}
     )
     assert response.status_code == 201
     node = response.json()
-    assert node["thread_ids"] == [thread_id]
-    assert node["status"] is None
+    assert node["kind"] == "beat"
+    assert node["thread_ids"] == []
+    assert node["fulfilled_planned_title"] is None
+    assert node["banked_from_thread_id"] is None
 
 
-def test_create_node_unknown_thread_id_422(test_client):
+def test_create_session_node(test_client):
     response = test_client.post(
         "/api/loom/nodes",
-        json={"kind": "update", "title": "Orphan", "x": 0, "y": 0, "thread_ids": [9999]},
+        json={"kind": "session", "title": "Puppy goes missing", "session_tag": "Session 1"},
+    )
+    assert response.status_code == 201
+    assert response.json()["session_tag"] == "Session 1"
+
+
+def test_create_start_or_end_node_directly_rejected_422(test_client):
+    response = test_client.post("/api/loom/nodes", json={"kind": "start", "title": "Nope"})
+    assert response.status_code == 422
+
+    response = test_client.post("/api/loom/nodes", json={"kind": "end", "title": "Nope"})
+    assert response.status_code == 422
+
+
+def test_update_node_kind_immutable_422(test_client):
+    node = test_client.post("/api/loom/nodes", json={"kind": "beat", "title": "Original"}).json()
+
+    response = test_client.put(
+        f"/api/loom/nodes/{node['id']}",
+        json={"kind": "session", "title": "Original"},
     )
     assert response.status_code == 422
 
 
-def test_create_anchor_without_status_422(test_client):
-    response = test_client.post(
-        "/api/loom/nodes",
-        json={"kind": "anchor", "title": "Confront the goblin chief", "x": 0, "y": 0},
-    )
-    assert response.status_code == 422
-
-
-def test_create_update_with_status_422(test_client):
-    response = test_client.post(
-        "/api/loom/nodes",
-        json={"kind": "update", "title": "Bad update", "status": "planned", "x": 0, "y": 0},
-    )
-    assert response.status_code == 422
-
-
-def test_update_node_junction_replace(test_client):
-    thread_one = test_client.post("/api/loom/threads", json={"name": "Thread One", "color": "thread-1"}).json()
-    thread_two = test_client.post("/api/loom/threads", json={"name": "Thread Two", "color": "thread-2"}).json()
-
+def test_update_node_edits_title_in_place(test_client):
     node = test_client.post(
-        "/api/loom/nodes",
-        json={"kind": "update", "title": "Original", "x": 0, "y": 0, "thread_ids": [thread_one["id"]]},
+        "/api/loom/nodes", json={"kind": "session", "title": "Original"}
     ).json()
 
     response = test_client.put(
         f"/api/loom/nodes/{node['id']}",
-        json={
-            "kind": "update",
-            "title": "Revised",
-            "x": 5,
-            "y": 5,
-            "thread_ids": [thread_two["id"]],
-        },
+        json={"kind": "session", "title": "Revised", "session_tag": "Session 2"},
     )
     assert response.status_code == 200
     updated = response.json()
     assert updated["title"] == "Revised"
-    assert updated["thread_ids"] == [thread_two["id"]]
-
-
-def test_update_node_kind_immutable_422(test_client):
-    node = test_client.post(
-        "/api/loom/nodes", json={"kind": "update", "title": "Original", "x": 0, "y": 0}
-    ).json()
-
-    response = test_client.put(
-        f"/api/loom/nodes/{node['id']}",
-        json={"kind": "anchor", "title": "Original", "status": "planned", "x": 0, "y": 0},
-    )
-    assert response.status_code == 422
+    assert updated["session_tag"] == "Session 2"
 
 
 def test_update_node_404(test_client):
-    response = test_client.put(
-        "/api/loom/nodes/9999", json={"kind": "update", "title": "Nope", "x": 0, "y": 0}
-    )
+    response = test_client.put("/api/loom/nodes/9999", json={"kind": "beat", "title": "Nope"})
     assert response.status_code == 404
-
-
-def test_anchor_status_transition(test_client):
-    node = test_client.post(
-        "/api/loom/nodes",
-        json={"kind": "anchor", "title": "Secret tunnel discovered", "status": "planned", "x": 0, "y": 0},
-    ).json()
-
-    response = test_client.put(
-        f"/api/loom/nodes/{node['id']}",
-        json={"kind": "anchor", "title": "Secret tunnel discovered", "status": "reached", "x": 0, "y": 0},
-    )
-    assert response.status_code == 200
-    assert response.json()["status"] == "reached"
 
 
 def test_delete_node_404(test_client):
@@ -178,116 +246,18 @@ def test_delete_node_404(test_client):
     assert response.status_code == 404
 
 
-def test_delete_node_cascades_edges_and_memberships(test_client):
-    thread = test_client.post("/api/loom/threads", json={"name": "Cascade Thread", "color": "thread-1"}).json()
-    a = test_client.post(
-        "/api/loom/nodes", json={"kind": "update", "title": "A", "x": 0, "y": 0, "thread_ids": [thread["id"]]}
-    ).json()
-    b = test_client.post("/api/loom/nodes", json={"kind": "update", "title": "B", "x": 0, "y": 0}).json()
-    edge = test_client.post("/api/loom/edges", json={"source_id": a["id"], "target_id": b["id"]}).json()
-
-    response = test_client.delete(f"/api/loom/nodes/{a['id']}")
-    assert response.status_code == 204
-
+def test_delete_start_or_end_node_directly_rejected_422(test_client):
+    thread = test_client.post("/api/loom/threads", json={"name": "Guarded Thread", "color": "thread-1"}).json()
     tapestry = test_client.get("/api/loom/tapestry").json()
-    assert not any(e["id"] == edge["id"] for e in tapestry["edges"])
-    assert not any(n["id"] == a["id"] for n in tapestry["nodes"])
+    tapestry_thread = next(t for t in tapestry["threads"] if t["id"] == thread["id"])
+    start_id = tapestry_thread["items"][0]["node_id"]
 
-
-# ---------------------------------------------------------------------------
-# Edges
-# ---------------------------------------------------------------------------
-
-
-def _make_node(test_client, title, kind="update", status=None):
-    payload = {"kind": kind, "title": title, "x": 0, "y": 0}
-    if status is not None:
-        payload["status"] = status
-    return test_client.post("/api/loom/nodes", json=payload).json()
-
-
-def test_create_edge_201(test_client):
-    a = _make_node(test_client, "A")
-    b = _make_node(test_client, "B")
-    response = test_client.post("/api/loom/edges", json={"source_id": a["id"], "target_id": b["id"]})
-    assert response.status_code == 201
-    assert response.json()["source_id"] == a["id"]
-    assert response.json()["target_id"] == b["id"]
-
-
-def test_create_edge_duplicate_409(test_client):
-    a = _make_node(test_client, "A")
-    b = _make_node(test_client, "B")
-    test_client.post("/api/loom/edges", json={"source_id": a["id"], "target_id": b["id"]})
-    response = test_client.post("/api/loom/edges", json={"source_id": a["id"], "target_id": b["id"]})
-    assert response.status_code == 409
-
-
-def test_create_edge_self_loop_422(test_client):
-    a = _make_node(test_client, "A")
-    response = test_client.post("/api/loom/edges", json={"source_id": a["id"], "target_id": a["id"]})
+    response = test_client.delete(f"/api/loom/nodes/{start_id}")
     assert response.status_code == 422
-
-
-def test_create_edge_unknown_node_422(test_client):
-    a = _make_node(test_client, "A")
-    response = test_client.post("/api/loom/edges", json={"source_id": a["id"], "target_id": 9999})
-    assert response.status_code == 422
-
-
-def test_create_edge_cycle_rejected_422(test_client):
-    a = _make_node(test_client, "A")
-    b = _make_node(test_client, "B")
-    c = _make_node(test_client, "C")
-    test_client.post("/api/loom/edges", json={"source_id": a["id"], "target_id": b["id"]})
-    test_client.post("/api/loom/edges", json={"source_id": b["id"], "target_id": c["id"]})
-
-    response = test_client.post("/api/loom/edges", json={"source_id": c["id"], "target_id": a["id"]})
-    assert response.status_code == 422
-
-
-def test_delete_edge_204(test_client):
-    a = _make_node(test_client, "A")
-    b = _make_node(test_client, "B")
-    edge = test_client.post("/api/loom/edges", json={"source_id": a["id"], "target_id": b["id"]}).json()
-
-    response = test_client.delete(f"/api/loom/edges/{edge['id']}")
-    assert response.status_code == 204
-
-
-def test_delete_edge_404(test_client):
-    response = test_client.delete("/api/loom/edges/9999")
-    assert response.status_code == 404
-
-
-# ---------------------------------------------------------------------------
-# Tapestry
-# ---------------------------------------------------------------------------
-
-
-def test_tapestry_shape(test_client):
-    thread = test_client.post("/api/loom/threads", json={"name": "Tapestry Thread", "color": "thread-1"}).json()
-    a = test_client.post(
-        "/api/loom/nodes", json={"kind": "update", "title": "A", "x": 0, "y": 0, "thread_ids": [thread["id"]]}
-    ).json()
-    b = _make_node(test_client, "B")
-    test_client.post("/api/loom/edges", json={"source_id": a["id"], "target_id": b["id"]})
-
-    response = test_client.get("/api/loom/tapestry")
-    assert response.status_code == 200
-    data = response.json()
-    assert "threads" in data and "nodes" in data and "edges" in data
-    node_a = next(n for n in data["nodes"] if n["id"] == a["id"])
-    assert node_a["thread_ids"] == [thread["id"]]
-
-
-# ---------------------------------------------------------------------------
-# Node position PATCH
-# ---------------------------------------------------------------------------
 
 
 def test_patch_node_position_200(test_client):
-    node = _make_node(test_client, "Positioned")
+    node = test_client.post("/api/loom/nodes", json={"kind": "beat", "title": "Positioned"}).json()
     response = test_client.patch(f"/api/loom/nodes/{node['id']}/position", json={"x": 42, "y": 99})
     assert response.status_code == 200
     body = response.json()
@@ -301,152 +271,194 @@ def test_patch_node_position_404(test_client):
 
 
 # ---------------------------------------------------------------------------
-# Bridge
+# Tapestry
 # ---------------------------------------------------------------------------
 
 
-def test_bridge_happy_path_midpoint_and_union_memberships(test_client):
-    thread_a = test_client.post("/api/loom/threads", json={"name": "Bridge Thread A", "color": "thread-1"}).json()
-    thread_b = test_client.post("/api/loom/threads", json={"name": "Bridge Thread B", "color": "thread-2"}).json()
+def test_tapestry_shape_has_no_edges(test_client):
+    thread = test_client.post("/api/loom/threads", json={"name": "Tapestry Thread", "color": "thread-1"}).json()
+    response = test_client.get("/api/loom/tapestry")
+    assert response.status_code == 200
+    data = response.json()
+    assert "threads" in data and "nodes" in data
+    assert "edges" not in data
+    tapestry_thread = next(t for t in data["threads"] if t["id"] == thread["id"])
+    assert "items" in tapestry_thread
 
-    source = test_client.post(
-        "/api/loom/nodes",
-        json={"kind": "update", "title": "Source", "x": 0, "y": 0, "thread_ids": [thread_a["id"]]},
-    ).json()
-    anchor = test_client.post(
-        "/api/loom/nodes",
-        json={
-            "kind": "anchor",
-            "title": "Anchor",
-            "status": "planned",
-            "x": 100,
-            "y": 200,
-            "thread_ids": [thread_b["id"]],
-        },
-    ).json()
-    direct_edge = test_client.post(
-        "/api/loom/edges", json={"source_id": source["id"], "target_id": anchor["id"]}
-    ).json()
 
-    response = test_client.post(
-        "/api/loom/bridge",
-        json={"source_id": source["id"], "anchor_id": anchor["id"], "title": "Bridge update"},
-    )
-    assert response.status_code == 201
-    result = response.json()
+# ---------------------------------------------------------------------------
+# Thread items: insert, reorder, remove
+# ---------------------------------------------------------------------------
 
-    node = result["node"]
-    assert node["title"] == "Bridge update"
-    assert node["kind"] == "update"
-    assert node["status"] is None
-    assert node["x"] == 50
-    assert node["y"] == 100
-    assert sorted(node["thread_ids"]) == sorted([thread_a["id"], thread_b["id"]])
 
-    edges = result["created_edges"]
-    assert len(edges) == 2
-    assert {(e["source_id"], e["target_id"]) for e in edges} == {
-        (source["id"], node["id"]),
-        (node["id"], anchor["id"]),
-    }
-    assert result["deleted_edge_id"] == direct_edge["id"]
-
+def _thread_item_node_ids(test_client, thread_id):
     tapestry = test_client.get("/api/loom/tapestry").json()
-    assert not any(e["id"] == direct_edge["id"] for e in tapestry["edges"])
+    tapestry_thread = next(t for t in tapestry["threads"] if t["id"] == thread_id)
+    return [item["node_id"] for item in tapestry_thread["items"]]
 
 
-def test_bridge_explicit_thread_ids_override(test_client):
-    thread_a = test_client.post("/api/loom/threads", json={"name": "Explicit A", "color": "thread-1"}).json()
-    thread_c = test_client.post("/api/loom/threads", json={"name": "Explicit C", "color": "thread-3"}).json()
-
-    source = test_client.post(
-        "/api/loom/nodes",
-        json={"kind": "update", "title": "Source", "x": 0, "y": 0, "thread_ids": [thread_a["id"]]},
-    ).json()
-    anchor = test_client.post(
-        "/api/loom/nodes",
-        json={"kind": "anchor", "title": "Anchor", "status": "planned", "x": 0, "y": 0},
-    ).json()
+def test_insert_beat_between_start_and_end_renumbers(test_client):
+    thread = test_client.post("/api/loom/threads", json={"name": "Insert Thread", "color": "thread-1"}).json()
+    beat = test_client.post("/api/loom/nodes", json={"kind": "beat", "title": "Middle beat"}).json()
 
     response = test_client.post(
-        "/api/loom/bridge",
-        json={
-            "source_id": source["id"],
-            "anchor_id": anchor["id"],
-            "title": "Bridge update",
-            "thread_ids": [thread_c["id"]],
-        },
+        f"/api/loom/threads/{thread['id']}/items", json={"node_id": beat["id"], "position": 5}
     )
     assert response.status_code == 201
-    assert response.json()["node"]["thread_ids"] == [thread_c["id"]]
+    body = response.json()
+    node_ids_in_order = [item["node_id"] for item in body["items"]]
+    assert node_ids_in_order[0] != beat["id"]
+    assert node_ids_in_order[-1] != beat["id"]
+    assert beat["id"] in node_ids_in_order
+    positions = [item["position"] for item in body["items"]]
+    assert positions == sorted(positions)
+    assert len(set(positions)) == len(positions)
 
 
-def test_bridge_source_not_past_422(test_client):
-    source = test_client.post(
-        "/api/loom/nodes",
-        json={"kind": "anchor", "title": "Planned source", "status": "planned", "x": 0, "y": 0},
-    ).json()
-    anchor = test_client.post(
-        "/api/loom/nodes",
-        json={"kind": "anchor", "title": "Anchor", "status": "planned", "x": 0, "y": 0},
-    ).json()
+def test_insert_same_node_twice_rejected_422(test_client):
+    thread = test_client.post("/api/loom/threads", json={"name": "Dup Thread", "color": "thread-1"}).json()
+    session = test_client.post("/api/loom/nodes", json={"kind": "session", "title": "Event"}).json()
 
+    test_client.post(
+        f"/api/loom/threads/{thread['id']}/items", json={"node_id": session["id"], "position": 5}
+    )
     response = test_client.post(
-        "/api/loom/bridge",
-        json={"source_id": source["id"], "anchor_id": anchor["id"], "title": "Bridge"},
+        f"/api/loom/threads/{thread['id']}/items", json={"node_id": session["id"], "position": 6}
     )
     assert response.status_code == 422
 
 
-def test_bridge_target_not_planned_anchor_422(test_client):
-    source = _make_node(test_client, "Source")
-    update_target = _make_node(test_client, "Not an anchor")
+def test_insert_beat_exclusivity_enforced_422(test_client):
+    thread_one = test_client.post("/api/loom/threads", json={"name": "Excl One", "color": "thread-1"}).json()
+    thread_two = test_client.post("/api/loom/threads", json={"name": "Excl Two", "color": "thread-2"}).json()
+    beat = test_client.post("/api/loom/nodes", json={"kind": "beat", "title": "Single-thread beat"}).json()
+
+    first = test_client.post(
+        f"/api/loom/threads/{thread_one['id']}/items", json={"node_id": beat["id"], "position": 5}
+    )
+    assert first.status_code == 201
+
+    second = test_client.post(
+        f"/api/loom/threads/{thread_two['id']}/items", json={"node_id": beat["id"], "position": 5}
+    )
+    assert second.status_code == 422
+
+
+def test_insert_session_on_multiple_threads_independent_order(test_client):
+    thread_one = test_client.post("/api/loom/threads", json={"name": "Shared One", "color": "thread-1"}).json()
+    thread_two = test_client.post("/api/loom/threads", json={"name": "Shared Two", "color": "thread-2"}).json()
+    session = test_client.post("/api/loom/nodes", json={"kind": "session", "title": "Shared session"}).json()
+
+    r1 = test_client.post(
+        f"/api/loom/threads/{thread_one['id']}/items", json={"node_id": session["id"], "position": 5}
+    )
+    r2 = test_client.post(
+        f"/api/loom/threads/{thread_two['id']}/items", json={"node_id": session["id"], "position": 5}
+    )
+    assert r1.status_code == 201
+    assert r2.status_code == 201
+    assert session["id"] in _thread_item_node_ids(test_client, thread_one["id"])
+    assert session["id"] in _thread_item_node_ids(test_client, thread_two["id"])
+
+
+def test_insert_unknown_thread_404(test_client):
+    beat = test_client.post("/api/loom/nodes", json={"kind": "beat", "title": "Orphan beat"}).json()
+    response = test_client.post(
+        "/api/loom/threads/9999/items", json={"node_id": beat["id"], "position": 5}
+    )
+    assert response.status_code == 404
+
+
+def test_insert_unknown_node_404(test_client):
+    thread = test_client.post("/api/loom/threads", json={"name": "Insert 404 Thread", "color": "thread-1"}).json()
+    response = test_client.post(
+        f"/api/loom/threads/{thread['id']}/items", json={"node_id": 9999, "position": 5}
+    )
+    assert response.status_code == 404
+
+
+def test_insert_start_or_end_kind_rejected_422(test_client):
+    thread = test_client.post("/api/loom/threads", json={"name": "No Pin Insert", "color": "thread-1"}).json()
+    other_thread = test_client.post("/api/loom/threads", json={"name": "Pin Source", "color": "thread-2"}).json()
+    other_start_id = _thread_item_node_ids(test_client, other_thread["id"])[0]
 
     response = test_client.post(
-        "/api/loom/bridge",
-        json={"source_id": source["id"], "anchor_id": update_target["id"], "title": "Bridge"},
+        f"/api/loom/threads/{thread['id']}/items", json={"node_id": other_start_id, "position": 5}
     )
     assert response.status_code == 422
 
 
-def test_bridge_target_reached_anchor_422(test_client):
-    source = _make_node(test_client, "Source")
-    reached_anchor = test_client.post(
-        "/api/loom/nodes",
-        json={"kind": "anchor", "title": "Reached", "status": "reached", "x": 0, "y": 0},
-    ).json()
+def test_reorder_beat_clamps_before_start_and_after_end(test_client):
+    thread = test_client.post("/api/loom/threads", json={"name": "Reorder Thread", "color": "thread-1"}).json()
+    beat_one = test_client.post("/api/loom/nodes", json={"kind": "beat", "title": "Beat one"}).json()
+    beat_two = test_client.post("/api/loom/nodes", json={"kind": "beat", "title": "Beat two"}).json()
+    test_client.post(f"/api/loom/threads/{thread['id']}/items", json={"node_id": beat_one["id"], "position": 5})
+    test_client.post(f"/api/loom/threads/{thread['id']}/items", json={"node_id": beat_two["id"], "position": 6})
 
-    response = test_client.post(
-        "/api/loom/bridge",
-        json={"source_id": source["id"], "anchor_id": reached_anchor["id"], "title": "Bridge"},
+    response = test_client.patch(
+        f"/api/loom/threads/{thread['id']}/items/{beat_two['id']}", json={"position": -1000}
+    )
+    assert response.status_code == 200
+    node_ids_in_order = [item["node_id"] for item in response.json()["items"]]
+    assert node_ids_in_order[0] != beat_two["id"]
+    assert node_ids_in_order.index(beat_two["id"]) == 1
+
+    response = test_client.patch(
+        f"/api/loom/threads/{thread['id']}/items/{beat_two['id']}", json={"position": 1000}
+    )
+    assert response.status_code == 200
+    node_ids_in_order = [item["node_id"] for item in response.json()["items"]]
+    assert node_ids_in_order[-1] != beat_two["id"]
+    assert node_ids_in_order.index(beat_two["id"]) == len(node_ids_in_order) - 2
+
+
+def test_reorder_start_or_end_rejected_422(test_client):
+    thread = test_client.post("/api/loom/threads", json={"name": "Reorder Pin Thread", "color": "thread-1"}).json()
+    start_id = _thread_item_node_ids(test_client, thread["id"])[0]
+
+    response = test_client.patch(
+        f"/api/loom/threads/{thread['id']}/items/{start_id}", json={"position": 5}
     )
     assert response.status_code == 422
 
 
-def test_bridge_target_abandoned_anchor_422(test_client):
-    source = _make_node(test_client, "Source")
-    abandoned_anchor = test_client.post(
-        "/api/loom/nodes",
-        json={"kind": "anchor", "title": "Abandoned", "status": "abandoned", "x": 0, "y": 0},
-    ).json()
+def test_reorder_not_a_member_404(test_client):
+    thread = test_client.post("/api/loom/threads", json={"name": "Reorder 404 Thread", "color": "thread-1"}).json()
+    beat = test_client.post("/api/loom/nodes", json={"kind": "beat", "title": "Unplaced"}).json()
 
-    response = test_client.post(
-        "/api/loom/bridge",
-        json={"source_id": source["id"], "anchor_id": abandoned_anchor["id"], "title": "Bridge"},
+    response = test_client.patch(
+        f"/api/loom/threads/{thread['id']}/items/{beat['id']}", json={"position": 5}
     )
+    assert response.status_code == 404
+
+
+def test_remove_membership_renumbers_and_keeps_node(test_client):
+    thread = test_client.post("/api/loom/threads", json={"name": "Remove Thread", "color": "thread-1"}).json()
+    beat = test_client.post("/api/loom/nodes", json={"kind": "beat", "title": "Removable beat"}).json()
+    test_client.post(f"/api/loom/threads/{thread['id']}/items", json={"node_id": beat["id"], "position": 5})
+
+    response = test_client.delete(f"/api/loom/threads/{thread['id']}/items/{beat['id']}")
+    assert response.status_code == 204
+
+    remaining = _thread_item_node_ids(test_client, thread["id"])
+    assert beat["id"] not in remaining
+    assert len(remaining) == 2
+
+    node_still_exists = test_client.get("/api/loom/tapestry").json()
+    assert any(n["id"] == beat["id"] for n in node_still_exists["nodes"])
+
+
+def test_remove_start_or_end_rejected_422(test_client):
+    thread = test_client.post("/api/loom/threads", json={"name": "Remove Pin Thread", "color": "thread-1"}).json()
+    start_id = _thread_item_node_ids(test_client, thread["id"])[0]
+
+    response = test_client.delete(f"/api/loom/threads/{thread['id']}/items/{start_id}")
     assert response.status_code == 422
 
 
-def test_bridge_cycle_rejected_422(test_client):
-    a = _make_node(test_client, "A")
-    anchor = test_client.post(
-        "/api/loom/nodes",
-        json={"kind": "anchor", "title": "Anchor", "status": "planned", "x": 0, "y": 0},
-    ).json()
-    test_client.post("/api/loom/edges", json={"source_id": anchor["id"], "target_id": a["id"]})
+def test_remove_not_a_member_404(test_client):
+    thread = test_client.post("/api/loom/threads", json={"name": "Remove 404 Thread", "color": "thread-1"}).json()
+    beat = test_client.post("/api/loom/nodes", json={"kind": "beat", "title": "Unplaced"}).json()
 
-    response = test_client.post(
-        "/api/loom/bridge",
-        json={"source_id": a["id"], "anchor_id": anchor["id"], "title": "Bridge"},
-    )
-    assert response.status_code == 422
+    response = test_client.delete(f"/api/loom/threads/{thread['id']}/items/{beat['id']}")
+    assert response.status_code == 404

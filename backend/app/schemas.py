@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator
 from typing import Annotated, Literal, Optional, List, Dict, Any, TypeAlias
 from datetime import datetime
 
@@ -425,112 +425,91 @@ class NPCUpdate(NPCCreate):
 
 ThreadColor = Annotated[str, StringConstraints(pattern=r"^thread-[1-6]$")]
 
+LoomNodeKind = Literal["start", "end", "beat", "session"]
+LoomCreatableNodeKind = Literal["beat", "session"]
+
 
 class LoomThread(BaseModel):
     id: int
     name: str
     color: ThreadColor
     description: Optional[str] = None
+    origin_node_id: Optional[int] = None
 
 
 class LoomThreadCreate(BaseModel):
     name: str
     color: ThreadColor = "thread-1"
     description: Optional[str] = None
+    origin_node_id: Optional[int] = None
+    start_title: Optional[str] = None
+    end_title: Optional[str] = None
 
 
-class LoomThreadUpdate(LoomThreadCreate):
-    pass
-
-
-def _validate_loom_kind_status(kind: str, status: Optional[str]) -> None:
-    if kind == "update" and status is not None:
-        raise ValueError("update nodes must not carry a status")
-    if kind == "anchor" and status not in ("planned", "reached", "abandoned"):
-        raise ValueError("anchor nodes require status planned, reached, or abandoned")
+class LoomThreadUpdate(BaseModel):
+    name: str
+    color: ThreadColor = "thread-1"
+    description: Optional[str] = None
 
 
 class LoomNode(BaseModel):
     id: int
-    kind: Literal["anchor", "update"]
+    kind: LoomNodeKind
     title: str
     body: Optional[str] = None
-    status: Optional[Literal["planned", "reached", "abandoned"]] = None
     session_tag: Optional[str] = None
     x: float
     y: float
+    fulfilled_planned_title: Optional[str] = None
+    fulfilled_at: Optional[str] = None
+    banked_from_thread_id: Optional[int] = None
     thread_ids: List[int] = Field(default_factory=list)
 
 
 class LoomNodeCreate(BaseModel):
-    kind: Literal["anchor", "update"]
+    kind: LoomCreatableNodeKind
     title: str
     body: Optional[str] = None
-    status: Optional[Literal["planned", "reached", "abandoned"]] = None
     session_tag: Optional[str] = None
     x: float = 0
     y: float = 0
-    thread_ids: List[int] = Field(default_factory=list)
-
-    @model_validator(mode="after")
-    def check_kind_status_coherence(self):
-        _validate_loom_kind_status(self.kind, self.status)
-        return self
 
 
 class LoomNodeUpdate(BaseModel):
-    kind: Literal["anchor", "update"]
+    kind: LoomNodeKind
     title: str
     body: Optional[str] = None
-    status: Optional[Literal["planned", "reached", "abandoned"]] = None
     session_tag: Optional[str] = None
     x: float = 0
     y: float = 0
-    thread_ids: List[int] = Field(default_factory=list)
-
-    @model_validator(mode="after")
-    def check_kind_status_coherence(self):
-        _validate_loom_kind_status(self.kind, self.status)
-        return self
-
-
-class LoomEdge(BaseModel):
-    id: int
-    source_id: int
-    target_id: int
-
-
-class LoomEdgeCreate(BaseModel):
-    source_id: int
-    target_id: int
-
-
-class LoomTapestry(BaseModel):
-    threads: List[LoomThread]
-    nodes: List[LoomNode]
-    edges: List[LoomEdge]
-
-
-class LoomBridgeCreate(BaseModel):
-    source_id: int
-    anchor_id: int
-    title: str
-    body: Optional[str] = None
-    session_tag: Optional[str] = None
-    x: Optional[float] = None
-    y: Optional[float] = None
-    thread_ids: Optional[List[int]] = None
-
-
-class LoomBridgeResult(BaseModel):
-    node: LoomNode
-    created_edges: List[LoomEdge]
-    deleted_edge_id: Optional[int] = None
 
 
 class LoomNodePosition(BaseModel):
     x: float
     y: float
+
+
+class LoomThreadItemCreate(BaseModel):
+    node_id: int
+    position: int
+
+
+class LoomThreadItemPositionUpdate(BaseModel):
+    position: int
+
+
+class LoomTapestryItem(BaseModel):
+    node_id: int
+    position: int
+
+
+class LoomTapestryThread(LoomThread):
+    items: List[LoomTapestryItem] = Field(default_factory=list)
+
+
+class LoomTapestry(BaseModel):
+    threads: List[LoomTapestryThread]
+    nodes: List[LoomNode]
 
 
 class Encounter(BaseModel):

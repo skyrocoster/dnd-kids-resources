@@ -186,24 +186,31 @@ Layout data (`map_layout`) and dungeon content data (`dungeons.data`) are saved 
 
 ## Loom Router
 
-`backend/app/routers/loom.py` — story-thread tapestry CRUD, bridge workflow, and canvas position persistence.
+`backend/app/routers/loom.py` — ordered-Thread story tracker: Thread CRUD (auto Start/End), node (beat/session)
+CRUD, ordered membership (insert/reorder/remove), and the tapestry read. No edges; a per-thread total order
+(`position` on `loom_node_threads`) replaces the old flat DAG.
 
 | Method | Path | Purpose | Request schema | Response schema |
 |---|---|---|---|---|
-| GET | `/api/loom/tapestry` | Fetch full tapestry (threads, nodes, edges) | (none) | `LoomTapestry` |
+| GET | `/api/loom/tapestry` | Fetch all threads (with ordered `items`) and all node identities | (none) | `LoomTapestry` |
 | GET | `/api/loom/threads` | List threads | `limit`, `offset` | `List[LoomThread]` |
-| POST | `/api/loom/threads` | Create thread | `LoomThreadCreate` | `LoomThread` (201) |
-| PUT | `/api/loom/threads/{thread_id}` | Update thread | `LoomThreadUpdate` | `LoomThread` |
-| DELETE | `/api/loom/threads/{thread_id}` | Delete thread (junction rows cascade; nodes survive) | (path param) | (204 No Content) |
-| POST | `/api/loom/nodes` | Create node (anchor or update) | `LoomNodeCreate` | `LoomNode` (201) |
-| PUT | `/api/loom/nodes/{node_id}` | Update node (full replace) | `LoomNodeUpdate` | `LoomNode` |
-| DELETE | `/api/loom/nodes/{node_id}` | Delete node (cascades edges + memberships) | (path param) | (204 No Content) |
-| PATCH | `/api/loom/nodes/{node_id}/position` | Persist drag position | `LoomNodePosition` | `LoomNode` |
-| POST | `/api/loom/edges` | Create directed edge (acyclicity enforced, 422 on cycle) | `LoomEdgeCreate` | `LoomEdge` (201) |
-| DELETE | `/api/loom/edges/{edge_id}` | Delete edge | (path param) | (204 No Content) |
-| POST | `/api/loom/bridge` | Bridge: splice node between head and anchor | `LoomBridgeCreate` | `LoomBridgeResult` (201) |
+| POST | `/api/loom/threads` | Create thread; also creates its `start` (position 0) and `end` (position 10) nodes | `LoomThreadCreate` | `LoomThread` (201) |
+| PUT | `/api/loom/threads/{thread_id}` | Update thread name/color/description | `LoomThreadUpdate` | `LoomThread` |
+| DELETE | `/api/loom/threads/{thread_id}` | Delete thread; its exclusive `start`/`end`/`beat` nodes are deleted with it, shared `session` nodes survive, `origin_node_id` back-references on other threads are nulled | (path param) | (204 No Content) |
+| POST | `/api/loom/nodes` | Create a `beat` or `session` node (unplaced) | `LoomNodeCreate` | `LoomNode` (201) |
+| PUT | `/api/loom/nodes/{node_id}` | Update node title/body/session_tag/x/y (kind immutable) | `LoomNodeUpdate` | `LoomNode` |
+| DELETE | `/api/loom/nodes/{node_id}` | Delete a `beat`/`session` node (cascades memberships); 422 on `start`/`end` | (path param) | (204 No Content) |
+| PATCH | `/api/loom/nodes/{node_id}/position` | Persist canvas drag position (presentation only, never read for order) | `LoomNodePosition` | `LoomNode` |
+| POST | `/api/loom/threads/{thread_id}/items` | Place an existing `beat`/`session` node on the thread at a gap (renumbers) | `LoomThreadItemCreate` | `LoomTapestryThread` (201) |
+| PATCH | `/api/loom/threads/{thread_id}/items/{node_id}` | Reorder a member within the thread, clamped between Start and End | `LoomThreadItemPositionUpdate` | `LoomTapestryThread` |
+| DELETE | `/api/loom/threads/{thread_id}/items/{node_id}` | Remove a member's membership row (node identity survives) | (path params) | (204 No Content) |
 
-Bridge response includes the new node, two new edges (source→N, N→anchor), and the deleted direct edge ID (if any). 422 on cycle, source-not-past, or anchor-not-planned.
+`position` in `LoomThreadItemCreate`/`LoomThreadItemPositionUpdate` is a client-supplied ordinal hint, not a
+stored value: the server finds the insertion index among the thread's current order (never before Start, never
+after End) and renumbers every membership row to `0, 10, 20, …`. A `beat` may only be placed on one thread at a
+time (422 if already placed elsewhere); a `session` may be placed on multiple threads independently. `start`/`end`
+nodes can never be placed, reordered, or removed via the items endpoints or deleted directly — only whole-thread
+deletion removes them.
 
 ---
 
@@ -249,9 +256,6 @@ All optional fields are `Optional[...]` in the schema; required fields have no `
 | DELETE | `/api/items/{item_id}` | `item_id` (path, required) | - | 204: -, 422: HTTPValidationError |
 | GET | `/api/items/{item_id}` | `item_id` (path, required) | - | 200: Item, 422: HTTPValidationError |
 | PUT | `/api/items/{item_id}` | `item_id` (path, required) | ItemUpdate | 200: Item, 422: HTTPValidationError |
-| POST | `/api/loom/bridge` | - | LoomBridgeCreate | 201: LoomBridgeResult, 422: HTTPValidationError |
-| POST | `/api/loom/edges` | - | LoomEdgeCreate | 201: LoomEdge, 422: HTTPValidationError |
-| DELETE | `/api/loom/edges/{edge_id}` | `edge_id` (path, required) | - | 204: -, 422: HTTPValidationError |
 | POST | `/api/loom/nodes` | - | LoomNodeCreate | 201: LoomNode, 422: HTTPValidationError |
 | DELETE | `/api/loom/nodes/{node_id}` | `node_id` (path, required) | - | 204: -, 422: HTTPValidationError |
 | PUT | `/api/loom/nodes/{node_id}` | `node_id` (path, required) | LoomNodeUpdate | 200: LoomNode, 422: HTTPValidationError |
@@ -261,6 +265,9 @@ All optional fields are `Optional[...]` in the schema; required fields have no `
 | POST | `/api/loom/threads` | - | LoomThreadCreate | 201: LoomThread, 422: HTTPValidationError |
 | DELETE | `/api/loom/threads/{thread_id}` | `thread_id` (path, required) | - | 204: -, 422: HTTPValidationError |
 | PUT | `/api/loom/threads/{thread_id}` | `thread_id` (path, required) | LoomThreadUpdate | 200: LoomThread, 422: HTTPValidationError |
+| POST | `/api/loom/threads/{thread_id}/items` | `thread_id` (path, required) | LoomThreadItemCreate | 201: LoomTapestryThread, 422: HTTPValidationError |
+| DELETE | `/api/loom/threads/{thread_id}/items/{node_id}` | `thread_id` (path, required), `node_id` (path, required) | - | 204: -, 422: HTTPValidationError |
+| PATCH | `/api/loom/threads/{thread_id}/items/{node_id}` | `thread_id` (path, required), `node_id` (path, required) | LoomThreadItemPositionUpdate | 200: LoomTapestryThread, 422: HTTPValidationError |
 | GET | `/api/loot-bundles` | `limit` (query), `offset` (query) | - | 200: List[LootBundle], 422: HTTPValidationError |
 | POST | `/api/loot-bundles` | - | LootBundleCreate | 201: LootBundle, 422: HTTPValidationError |
 | DELETE | `/api/loot-bundles/{bundle_id}` | `bundle_id` (path, required) | - | 204: -, 422: HTTPValidationError |

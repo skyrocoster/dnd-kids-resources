@@ -75,19 +75,15 @@ EXPORT_DEFINITIONS = {
     },
     "loom_threads": {
         "file": "seed_loom_threads.json",
-        "query": "SELECT id, name, color, description FROM loom_threads ORDER BY id",
+        "query": "SELECT id, name, color, description, origin_node_id FROM loom_threads ORDER BY id",
     },
     "loom_nodes": {
         "file": "seed_loom_nodes.json",
-        "query": "SELECT id, kind, title, body, status, session_tag, x, y FROM loom_nodes ORDER BY id",
+        "query": "SELECT id, kind, title, body, session_tag, x, y, fulfilled_planned_title, fulfilled_at, banked_from_thread_id FROM loom_nodes ORDER BY id",
     },
     "loom_node_threads": {
         "file": "seed_loom_node_threads.json",
-        "query": "SELECT id, node_id, thread_id FROM loom_node_threads ORDER BY id",
-    },
-    "loom_edges": {
-        "file": "seed_loom_edges.json",
-        "query": "SELECT id, source_id, target_id FROM loom_edges ORDER BY id",
+        "query": "SELECT id, node_id, thread_id, position FROM loom_node_threads ORDER BY id",
     },
 }
 
