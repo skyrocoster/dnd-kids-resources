@@ -1,6 +1,6 @@
 # The Loom Area Guide
 
-> **Active plan:** [Weaver's Workspace (UI/UX pass)](../plans/active/loom-weavers-workspace.md#lu4-motion-first-run-a11y-live-gate-next-up) — LU4 next.
+> **Active plan:** None.
 
 ## Scope
 
@@ -27,7 +27,8 @@ Owns campaign story-thread tracking: loom threads, nodes (anchors and updates), 
 
 ## Work queue
 
-- The Loom Tapestry Tracker plan (LM0–LM8) is complete. The full DM loop (bridge, mark-reached, node CRUD, thread management) is shipped. The live browser gate (full DM loop on the demo tapestry) is still outstanding — manual verification needed.
+- The Loom Tapestry Tracker plan (LM0–LM8) is complete. The full DM loop (bridge, mark-reached, node CRUD, thread management) is shipped. The live browser gate has been verified (LU4).
+- The Weaver's Workspace plan (LU0–LU5) is complete. The presentation pass (identity, weaver's panel, woven canvas, thread focus, motion, a11y, responsive) is shipped.
 - Deferred until after playtesting: node links to NPCs/dungeons/encounters, a server-side heads endpoint, canvas auto-layout, and canvas undo.
 - Create a focused plan before changing any loom contract or cross-domain workflow.
 
