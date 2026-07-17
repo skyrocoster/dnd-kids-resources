@@ -614,3 +614,90 @@ def test_spawn_thread_from_session_sets_origin_and_auto_start_end(test_client):
     items = _thread_item_node_ids(test_client, body["id"])
     kinds = {n["id"]: n["kind"] for n in test_client.get("/api/loom/tapestry").json()["nodes"] if n["id"] in items}
     assert sorted(kinds.values()) == ["end", "start"]
+
+
+# ---------------------------------------------------------------------------
+# Invariant tests (PC0)
+# ---------------------------------------------------------------------------
+
+
+def _count_kind(tapestry, thread_id, kind):
+    """Count nodes of a given kind on a specific thread."""
+    thread = next(t for t in tapestry["threads"] if t["id"] == thread_id)
+    node_ids = {item["node_id"] for item in thread["items"]}
+    return sum(1 for n in tapestry["nodes"] if n["id"] in node_ids and n["kind"] == kind)
+
+
+def test_invariant_exactly_one_start_per_thread(test_client):
+    """Every thread must have exactly one start node."""
+    thread = test_client.post("/api/loom/threads", json={"name": "Invariant Thread", "color": "thread-1"}).json()
+    tapestry = test_client.get("/api/loom/tapestry").json()
+    assert _count_kind(tapestry, thread["id"], "start") == 1
+
+
+def test_invariant_exactly_one_end_per_thread(test_client):
+    """Every thread must have exactly one end node."""
+    thread = test_client.post("/api/loom/threads", json={"name": "Invariant Thread", "color": "thread-1"}).json()
+    tapestry = test_client.get("/api/loom/tapestry").json()
+    assert _count_kind(tapestry, thread["id"], "end") == 1
+
+
+def test_invariant_no_branch_inside_thread(test_client):
+    """A beat is thread-exclusive: cannot appear on two threads simultaneously."""
+    thread_one = test_client.post("/api/loom/threads", json={"name": "Branch A", "color": "thread-1"}).json()
+    thread_two = test_client.post("/api/loom/threads", json={"name": "Branch B", "color": "thread-2"}).json()
+    beat = test_client.post("/api/loom/nodes", json={"kind": "beat", "title": "Exclusive beat"}).json()
+
+    test_client.post(
+        f"/api/loom/threads/{thread_one['id']}/items", json={"node_id": beat["id"], "position": 5}
+    )
+    response = test_client.post(
+        f"/api/loom/threads/{thread_two['id']}/items", json={"node_id": beat["id"], "position": 5}
+    )
+    assert response.status_code == 422
+
+
+def test_invariant_shared_session_edit_reflects_everywhere(test_client):
+    """Editing a shared session once reflects the change on all threads."""
+    thread_one = test_client.post("/api/loom/threads", json={"name": "Shared A", "color": "thread-1"}).json()
+    thread_two = test_client.post("/api/loom/threads", json={"name": "Shared B", "color": "thread-2"}).json()
+    session = test_client.post(
+        "/api/loom/nodes", json={"kind": "session", "title": "Original title"}
+    ).json()
+
+    test_client.post(
+        f"/api/loom/threads/{thread_one['id']}/items", json={"node_id": session["id"], "position": 5}
+    )
+    test_client.post(
+        f"/api/loom/threads/{thread_two['id']}/items", json={"node_id": session["id"], "position": 5}
+    )
+
+    test_client.put(
+        f"/api/loom/nodes/{session['id']}",
+        json={"kind": "session", "title": "Updated title"},
+    )
+
+    tapestry = test_client.get("/api/loom/tapestry").json()
+    node = next(n for n in tapestry["nodes"] if n["id"] == session["id"])
+    assert node["title"] == "Updated title"
+    assert session["id"] in _thread_item_node_ids(test_client, thread_one["id"])
+    assert session["id"] in _thread_item_node_ids(test_client, thread_two["id"])
+
+
+def test_invariant_remove_shared_session_from_one_thread(test_client):
+    """Removing a shared session from one thread leaves it on the other."""
+    thread_one = test_client.post("/api/loom/threads", json={"name": "Remove A", "color": "thread-1"}).json()
+    thread_two = test_client.post("/api/loom/threads", json={"name": "Remove B", "color": "thread-2"}).json()
+    session = test_client.post("/api/loom/nodes", json={"kind": "session", "title": "Shared"}).json()
+
+    test_client.post(
+        f"/api/loom/threads/{thread_one['id']}/items", json={"node_id": session["id"], "position": 5}
+    )
+    test_client.post(
+        f"/api/loom/threads/{thread_two['id']}/items", json={"node_id": session["id"], "position": 5}
+    )
+
+    test_client.delete(f"/api/loom/threads/{thread_one['id']}/items/{session['id']}")
+
+    assert session["id"] not in _thread_item_node_ids(test_client, thread_one["id"])
+    assert session["id"] in _thread_item_node_ids(test_client, thread_two["id"])

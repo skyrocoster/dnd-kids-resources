@@ -36,6 +36,13 @@ const baseProps = {
   onEdit: noop,
   onDeleteNode: noop,
   onSelectBankedNode: noop,
+  onRestoreNode: noop,
+  onFulfilNode: noop,
+  onBankNode: noop,
+  onReplaceNode: noop,
+  onSpawnThread: noop,
+  onChangeEnding: noop,
+  onUndoFulfil: noop,
   onOpenThreadManager: noop,
   onFocusThread: noop,
   onClearThreadFocus: noop,
@@ -68,6 +75,29 @@ describe('LoomWeaverPanel', () => {
     render(<LoomWeaverPanel {...baseProps} selectedNode={beatNode} />)
     expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument()
+  })
+
+  it('exposes beat lifecycle commands for a placed beat', async () => {
+    const user = userEvent.setup()
+    const onFulfilNode = vi.fn()
+    const onBankNode = vi.fn()
+    const onReplaceNode = vi.fn()
+    render(
+      <LoomWeaverPanel
+        {...baseProps}
+        selectedNode={beatNode}
+        onFulfilNode={onFulfilNode}
+        onBankNode={onBankNode}
+        onReplaceNode={onReplaceNode}
+      />,
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Fulfil Beat' }))
+    await user.click(screen.getByRole('button', { name: 'Bank Beat' }))
+    await user.click(screen.getByRole('button', { name: 'Replace Beat' }))
+    expect(onFulfilNode).toHaveBeenCalledWith(beatNode)
+    expect(onBankNode).toHaveBeenCalledWith(beatNode)
+    expect(onReplaceNode).toHaveBeenCalledWith(beatNode)
   })
 
   it('hides edit/delete for start/end nodes', () => {

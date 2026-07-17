@@ -1,6 +1,6 @@
 # The Loom Area Guide
 
-> **Active plan:** [Loom Storyline Refactor](../plans/active/loom-storyline-refactor.md#pb2-beat-lifecycle-ui-next-up).
+> **Active plan:** [Loom Storyline Refactor](../plans/active/loom-storyline-refactor.md#pd0--documentation-update-next-up).
 
 ## Scope
 
@@ -20,13 +20,13 @@ Owns campaign story-thread tracking: loom threads, nodes (starts, ends, beats, s
 ## Invariants
 
 - The backend tapestry is fully refactored from a flat DAG into ordered linear Threads (Phase PA — PA0 DDL, PA1 API, PA2 beat lifecycle — complete): no `loom_edges`; a per-thread total order via `position` on `loom_node_threads`; `kind IN ('start','end','beat','session')`; provenance columns (`fulfilled_planned_title`, `fulfilled_at`, `banked_from_thread_id`); `origin_node_id` on threads (spawn requires the origin be `kind='session'`). `start`/`end` nodes are created only by `POST /loom/threads` and removed only by deleting the whole thread; a `beat` is thread-exclusive (one membership anywhere). Acyclicity machinery is gone — a per-thread total order is inherently acyclic, so there is nothing left to check. Beat lifecycle: `POST /loom/nodes/{id}/fulfil` converts a placed beat to a session in place; `POST /loom/nodes/{id}/bank` unplaces a beat into the Beat Bank; restoring a banked beat reuses `POST /loom/threads/{id}/items`; the one documented undo path (`PUT` a fulfilled session back to `kind='beat'`) is the sole exception to kind being otherwise immutable.
-- The frontend still renders the pre-refactor flat-DAG model (`loomGraph.ts`/`loomFlow.ts`, `status`, edges) against the now-incompatible backend; it is inert/unbuilt against ordered-Thread data until PB0–PB2 land. Node past/future semantics are transitioning: the old `status` column is dropped server-side; lifecycle is now `kind` + placement + provenance. Presentation derivation (`headsByThread`, `nearestFutureAnchors`, live-warp) will be replaced by ordered derivation in PB1.
+- The frontend now renders ordered Thread lanes with position-derived edges and lifecycle controls (PB0–PB2). Node lifecycle is `kind` + placement + provenance; Beat Bank rows represent beats with zero membership and restore into the focused thread at an authoritative server-clamped position. PC0 removed all obsolete DAG derivation (anchor/update CSS, live-warp, vaultNodes alias) and added invariant + migration verification tests.
 - Loom data is runtime-authored through the API/UI; the demo seeds are a frozen test/playtest fixture, not the canonical campaign. **Export before rebuild:** `scripts/init_database.py` drops loom tables, so freeze live campaign state via `scripts/export_db_seeds.py` first.
 - Thread colors are token keys (`thread-1`…`thread-6`) resolved by `--md-loom-thread-N` token sets in `frontend/src/theme.css`; never store hex in the database or hand-pick component colors.
 
 ## Work queue
 
-- **Active: the [Loom Storyline Refactor](../plans/active/loom-storyline-refactor.md#pb2-beat-lifecycle-ui-next-up) (PB2–PD0).** Phase PA and PB1 are shipped; PB2 owns beat lifecycle UI.
+- **Active: the [Loom Storyline Refactor](../plans/active/loom-storyline-refactor.md#pd0--documentation-update-next-up) (PD0).** Phases PA, PB, and PC are shipped; PD0 owns documentation reconciliation and archival.
 - The Loom Tapestry Tracker plan (LM0–LM8) and the Weaver's Workspace plan (LU0–LU5) are complete: the flat-DAG DM loop and the presentation pass are shipped and are what the storyline refactor transforms.
 - Deferred until after playtesting: node links to NPCs/dungeons/encounters.
 - Create a focused plan before changing any loom contract or cross-domain workflow beyond the active plan.

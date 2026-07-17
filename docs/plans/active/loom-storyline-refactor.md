@@ -1,6 +1,6 @@
 # Loom Storyline Refactor — From Flat DAG to Ordered Threads
 
-> **Status:** PB1 shipped; PB2 next.
+> **Status:** Phase PC complete; PD0 (closeout) next.
 
 | Stage | What shipped (≤2 sentences) |
 |-------|------------------------------|
@@ -8,6 +8,8 @@
 | **PA1** | Rewrote `loom.py`/`schemas.py` for Thread CRUD with auto Start/End, beat/session node CRUD, and ordered-membership endpoints (`POST`/`PATCH`/`DELETE /loom/threads/{id}/items[/…]`); deleted edge/bridge endpoints and acyclicity code. Rewrote `test_loom.py` (35 tests) and the stale fixture-shape integration test; API_REFERENCE reconciled (descriptive + generated). Full backend suite green, 91% coverage. Gate ✅. |
 | **PA2** | Added `POST /loom/nodes/{id}/fulfil` (beat→session in place, stamps provenance) and `POST /loom/nodes/{id}/bank` (unplace + `banked_from_thread_id`); restore reuses `POST /loom/threads/{id}/items` (clears banked provenance on insert). Added the `origin_node_id` `kind=='session'` spawn check PA1 deferred. Extended `PUT /loom/nodes/{id}` to allow the one documented fulfil-undo transition (`session`→`beat` when `fulfilled_planned_title` is set), clearing provenance. 13 new tests in `test_loom.py` (48 total); API_REFERENCE reconciled (descriptive + generated). Full backend suite green, 91% coverage. Gate ✅. |
 | **PB0** | New loom TS types (`LoomNodeKind`, `LoomTapestryThread`, `LoomThreadItemCreate`, `LoomThreadItemPositionUpdate`, `LoomNodeFulfil`); removed `LoomEdge*`, `LoomBridge*`, `LoomAnchorStatus`. Client methods for PA1/PA2 endpoints added, edge/bridge methods removed. Rewrote `loomGraph.ts` (kind-based `isPast`/`isFuture`, `bankedBeats`, stub `threadOrdered`/`currentPosition`), `loomFlow.ts` (new `FlowNode`/`FlowNodeData` types), `LoomPage.tsx` (new node components, command bar, no edges), `LoomWeaverPanel.tsx`, `LoomNodeEditor.tsx`. Added `it.skip` seams. 85 files, 969 tests (12 skipped). Gate ✅. |
+| **PB2** | Added Beat Bank restore controls and wired fulfil, bank, restore, replace-at-position, spawn-thread, change-ending, and fulfil-undo commands to the frozen API. Removed `LoomBridgeDialog.tsx`; lifecycle and Beat Bank tests pass. Frontend suite: 977 passed, 6 skipped; typecheck/build ✅. Browser gate remains deferred unless requested. |
+| **PC0** | Removed dead DAG CSS (`loom-node--anchor`, `loom-node--update`, `data-status` variants, live-warp animation), deprecated `vaultNodes` alias and `buildNodeStatusUpdate` from `loomGraph.ts`, old `--md-loom-update` theme tokens. Replaced with `loom-node--start/end/beat/session` node styling and kind-keyed selection/legend tones. Added 5 invariant tests (one Start/one End per thread, beat exclusivity, shared-session edit/remove) and 2 malformed-fixture migration tests. Grep gate clean for `loom_edges`/`anchor`/`bridge`/`wouldCycle`. Frontend: 976 passed, 6 skipped; typecheck/build/lint ✅. Backend: 348 passed, 91% coverage ✅. |
 
 - **Area guide:** [The Loom](../../areas/loom.md).
 
@@ -421,27 +423,11 @@ or the final ordered item when none remain. PB2 must preserve independent member
 
 ## Delivery phases
 
-Sequencing: **~~Phase PA~~** (backend + data, complete) → **~~PB0~~** (types/client/scaffolding, complete) → **PB1 → PB2** (frontend) → **PC0** (cleanup + full
-sweep) → **PD0** (closeout). PB1 is unblocked: PA1/PA2 endpoint shapes are frozen (see **Backend API — final
-shape** above), PB0 types/client/derivation stubs are confirmed (see PB1 handoff facts). Each stage is a
-single-context task.
+Sequencing: **~~Phase PA~~** (backend + data, complete) → **~~PB0~~** (types/client/scaffolding, complete) → **~~PB1 → PB2~~** (frontend, complete) → **~~PC0~~** (cleanup + full
+sweep, complete) → **PD0** (closeout). PD0 is unblocked: PC0 removed all dead DAG code, added invariant and
+migration tests, and verified the grep gate. Each stage is a single-context task.
 
-### Phase PB — Frontend reframe
-
-Delivers the ordered-thread UI, the domain command model, the Beat Bank, and removal of edge-drawing and the
-bridge. **Depends on:** PA1 (types/endpoints frozen). 
-
-| Stage | Required strength | Summary | Deliverables |
-|---|---|---|---|
-| **PB0 — Types + client + scaffolding** | Standard | New TS types, client methods, `it.skip` seams | Types/client compile; page unchanged |
-| **PB1** | Ordered lane view, position-derived edges/flags, focused-thread placement for new beats/sessions, and five derivation seams. 975 frontend tests pass; typecheck/build/lint and documentation checks pass. Gate ✅. |
-| **PB2 — Beat lifecycle UI** | High | Beat Bank, Fulfil, Bank, Replace, Spawn, Change Ending; remove bridge dialog | Panels/dialogs + tests |
-
-### Phase PC — Cleanup & full sweep
-
-| Stage | Required strength | Summary | Deliverables |
-|---|---|---|---|
-| **PC0 — Remove obsolete modules + migration/integration tests** | High | Delete DAG modules/edge components; migration + invariant tests; API_REFERENCE reconcile | Dead code gone; green suite; docs current |
+<!-- ===== VERBOSE BLOCKS — one per un-shipped stage ===== -->
 
 ### Plan Closeout — Documentation update
 
@@ -449,84 +435,7 @@ bridge. **Depends on:** PA1 (types/endpoints frozen).
 |---|---|---|---|
 | **PD0 — Documentation update** | Standard | Reconcile + archive | References, routing, validation, archival complete |
 
-<!-- ===== VERBOSE BLOCKS — one per un-shipped stage ===== -->
-
-#### PB2 — Beat lifecycle UI (next up)
-
-> **Handoff facts** — PB1 is shipped. `loomGraph.ts` now provides position-sorted `threadOrdered`, current
-> position as the last item before the first unfulfilled beat (or the final item when none remain), plus
-> `threadHead`, `nextBeat`, and `liveThreads`. `loomFlow.ts` lays out lanes with `x = position * 12` and
-> `y = thread index * 220`, derives head/current/banked flags, and `buildFlowEdges` creates consecutive
-> position-derived edges using the thread color token. `LoomPage.tsx` renders those edges and inserts newly
-> created beats/sessions into the focused thread with position hint `10`; the backend clamps and renumbers.
-> Shared session memberships remain independent. PB2 should preserve these rules while adding lifecycle UI.
-
-- **Read first:** `LoomVaultPanel.tsx` (now showing Beat Bank, label updated in PB0), `LoomBridgeDialog.tsx` (dead
-  code stub, to be deleted), `LoomWeaverPanel.tsx`, `LoomPage.tsx` as left by PB1, the **Backend API — final
-  shape** section above for the exact lifecycle endpoints, and PB1's handoff notes.
-
-- **Build:** Convert the vault panel into the **Beat Bank** (beats with zero membership; Restore action — uses
-  `insertLoomThreadItem` which clears `banked_from_thread_id` server-side). Add domain commands wired to the
-  frozen lifecycle endpoints:
-  - **Fulfil Beat** → `fulfilLoomNode(id, { title? })` — refresh the node in place, do not reflow order
-  - **Bank Beat** → `bankLoomNode(id)` — remove from lane, add to Beat Bank
-  - **Restore Beat** → `insertLoomThreadItem(threadId, { node_id, position })` (PB1 already has this wired)
-  - **Replace Beat** → client-composed: bank-or-delete old beat, then insert new one at same position
-  - **Spawn Thread from Session** → `createLoomThread({ origin_node_id, name, ... })`
-  - **Change Ending** → `updateLoomNode(endNodeId, { kind: 'end', title, body? })`
-  - **Fulfil-undo** → `updateLoomNode(id, { kind: 'beat', title: node.fulfilled_planned_title, body? })`
-    (backend accepts this single kind transition when `fulfilled_planned_title` is set)
-
-  **Remove** `LoomBridgeDialog.tsx` and its dead-code test, bridge mode remnants in `LoomPage.tsx`, and the
-  head/next-anchor/live-warp visuals (PB1 already replaces these with position-derived flags).
-
-- **Inherits:** PB1 view + commands; PA2 endpoints; existing dialogs (`ConfirmDialog`) and tokens. PB1's lane
-  contract is position-derived (`x = position * 12`, `y = thread index * 220`) with consecutive thread edges;
-  current position is the last item before the first unfulfilled beat, or the final item when none remain.
-  Newly created beats/sessions are inserted into the focused thread with a position hint of `10`; the server
-  performs authoritative Start/End clamping and renumbering. Preserve shared-session membership ordering.
-
-- **Expected touch set:** `LoomVaultPanel.tsx`, `LoomWeaverPanel.tsx`, `LoomPage.tsx`, delete
-  `LoomBridgeDialog.tsx` + `LoomBridgeDialog.test.tsx` (if it was re-created or still exists); tests under `__tests__/`.
-
-- **Documentation impact:** `None: covered by the area-guide capability update in PD0; no canonical reference
-  contract changes here.`
-
-- **Tests:** command tests for fulfil/bank/restore/replace/spawn/change-ending/fulfil-undo; Beat Bank render + restore.
-  `npm run test`, `npm run typecheck`, `npm run build`.
-
-- **Gate:** live app — fulfil a beat (becomes a session in place), bank + restore a beat, spawn a thread from a
-  session, change an end; all persist. Browser pass only on request; otherwise suite + manual note.
-
-- **Discovery consolidation:** note every deleted module/symbol for PC0's dead-code sweep; move deferred UI
-  niceties to Known debt.
-
-- **Completion edit:** collapse to a Shipped row; Status → "Phase PB complete; PC0 next"; delete the Phase PB
-  section, promoting durable facts; advance anchors.
-
-#### PC0 — Remove obsolete modules; migration and integration tests (planned)
-
-- **Read first:** `loomGraph.ts`, `loomFlow.ts` and their tests, `docs/API_REFERENCE.md`, the area guide, and the
-  accumulated PA/PB handoff notes.
-- **Build:** Delete the now-dead DAG functions (`headsByThread`, `nearestFutureAnchors`, `buildAdjacency` if
-  unused, `wouldCycle`, live-warp helpers) and any leftover edge components/types; remove `LoomEdge`-shaped
-  fixtures. Add a migration integration test that loads a malformed/old-shape fixture and asserts the migrator's
-  report + lossless conversion. Add invariant tests (no branch inside a thread; one Start/one End; shared-session
-  independence). Reconcile `docs/API_REFERENCE.md` with the shipped endpoints.
-- **Inherits:** everything from PA/PB; this stage only removes and verifies.
-- **Expected touch set:** `frontend/src/features/loom/loomGraph.ts`, `loomFlow.ts`, `__tests__/*`,
-  `backend/tests/` (migration + invariant tests), `docs/API_REFERENCE.md`.
-- **Documentation impact:** `docs/API_REFERENCE.md` — final reconcile of the Loom Router tables.
-- **Tests:** full backend gate `.venv\Scripts\python.exe -m pytest` (≥90%); `cd frontend && npm run test`,
-  `npm run typecheck`, `npm run build`, `npm run lint`.
-- **Gate:** no references to `loom_edges`/`anchor`/`bridge`/`wouldCycle` remain (grep clean); both suites green;
-  migration test passes. Suite-sufficient.
-- **Discovery consolidation:** ensure every durable fact is in DATA_MODEL/API_REFERENCE or top matter before
-  closeout; list nothing left only in commits.
-- **Completion edit:** collapse to a Shipped row; Status → "Phase PC complete; PD0 (closeout) next"; delete the
-  Phase PC section; advance anchors.
-
-#### PD0 — Documentation update (final stage of the plan)
+#### PD0 — Documentation update (final stage of the plan, next up)
 
 - **Read first:** `CLAUDE.md`, `docs/README.md`, `docs/areas/loom.md`, this plan, `docs/PLAN_TEMPLATE.md`,
   `docs/TESTING.md`, `scripts/check_docs.py`, `docs/DATA_MODEL.md`, `docs/API_REFERENCE.md`, and relevant
@@ -569,5 +478,5 @@ bridge. **Depends on:** PA1 (types/endpoints frozen).
 
 ## Next:
 
-**PB2 — Beat lifecycle UI** is next up. PB1 shipped position-based lanes, derived edges and flags, and focused
-thread placement for newly created beats/sessions; browser verification remains deferred unless requested.
+**PD0 — Documentation update** is next up. Phase PC removed all dead DAG code and added invariant/migration
+verification; the frontend and backend suites are green.

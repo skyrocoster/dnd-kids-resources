@@ -4,7 +4,6 @@ import {
   isPast,
   isFuture,
   bankedBeats,
-  vaultNodes,
   threadOrdered,
   currentPosition,
   threadHead,
@@ -87,12 +86,6 @@ describe('bankedBeats', () => {
       nodes: [{ id: 1, kind: 'beat', title: 'b', x: 0, y: 0, thread_ids: [1] }],
     }
     expect(bankedBeats(tapestry)).toEqual([])
-  })
-})
-
-describe('vaultNodes (deprecated alias)', () => {
-  it('returns the same result as bankedBeats', () => {
-    expect(vaultNodes(demoTapestry()).map((n) => n.id)).toEqual([9])
   })
 })
 

@@ -6,7 +6,16 @@
       "Bash(sqlite3 dnd_kids_resources.db \".tables\")",
       "Bash(python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000)",
       "Bash(npm run *)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(python *)",
+      "Bash(python3 -c *)",
+      "Bash(.venv/Scripts/python.exe -c *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:8000/api/loom/tapestry)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost/loom)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:5173/loom)",
+      "Bash(curl *)",
+      "Bash(powershell -NoProfile -Command \"Get-CimInstance Win32_Process -Filter \\\\\"Name='python.exe'\\\\\" | Select-Object ProcessId,CommandLine\")",
+      "Bash(xargs -I{} sh -c 'echo \"{}\" ; stat -c \"%y %s bytes\" \"{}\" 2>/dev/null || stat -f \"%Sm %z bytes\" \"{}\"')"
     ]
   }
 }

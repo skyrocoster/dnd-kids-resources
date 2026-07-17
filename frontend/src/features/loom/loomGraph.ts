@@ -1,4 +1,4 @@
-import type { LoomNode, LoomNodeInput, LoomTapestry, LoomTapestryThread } from '../../api/types'
+import type { LoomNode, LoomTapestry, LoomTapestryThread } from '../../api/types'
 
 // --- Lifecycle queries (kind-based, no edges) ---
 
@@ -61,30 +61,4 @@ export function liveThreads(tapestry: LoomTapestry): LoomTapestryThread[] {
 /** Beats with zero thread membership (banked / unplaced). */
 export function bankedBeats(tapestry: LoomTapestry): LoomNode[] {
   return tapestry.nodes.filter((node) => node.kind === 'beat' && node.thread_ids.length === 0)
-}
-
-// --- Back-compat alias for PB1 consumer (LoomPage) ---
-/** @deprecated Use bankedBeats — vault is the old edge-degree-0 concept. */
-export function vaultNodes(tapestry: LoomTapestry): LoomNode[] {
-  return bankedBeats(tapestry)
-}
-
-// --- Node status update helper (temporary — status field removed in new model) ---
-
-/**
- * PUT /loom/nodes/{id} is a full replace. In the new model, the node kind
- * is immutable except for the one fulfil-undo transition (session→beat).
- * This stub resubmits all fields unchanged. PB2 wires real lifecycle commands.
- */
-export function buildNodeStatusUpdate(node: LoomNode, _status: string): LoomNodeInput {
-  return {
-    kind: node.kind === 'start' || node.kind === 'end' || node.kind === 'beat' || node.kind === 'session'
-      ? (node.kind as 'beat' | 'session')
-      : 'session',
-    title: node.title,
-    body: node.body ?? null,
-    session_tag: node.session_tag ?? null,
-    x: node.x,
-    y: node.y,
-  }
 }
