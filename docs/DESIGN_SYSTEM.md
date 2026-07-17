@@ -374,9 +374,27 @@ Node status treatments are CSS-driven via `data-status` and `data-head` attribut
 - Heads: accent ring via `box-shadow` + "Now" badge on `--md-primary`
 - Nearest future anchors: "Next" badge on `--md-secondary`
 
-Thread-chip strips (8×8px colored dots, `aria-hidden="true"`) appear on nodes; edges take the
-single thread accent from `threads(source) ∩ threads(target)`, falling back to `--md-outline`.
-The React Flow attribution is restyled but never removed (license requirement).
+The Loom page identity keeps LU1's eyebrow local to the route shell rather than extending `PageHeader`:
+`.loom-eyebrow` uses the existing `--type-caption-*` tokens with wider tracking and Roboto Flex axis tuning
+(`font-variation-settings`) to read as a woven label, not body copy.
+
+LU3 extends the Loom canvas contract with four durable presentation cues:
+- **Warp background** — the React Flow surface keeps its attribution/controls but adds low-contrast woven
+  texture via CSS layers under `.loom-canvas-area .react-flow`; it may never rely on hand-picked colors or
+  overpower node/edge legibility.
+- **Thread spine** — every threaded node renders a `.loom-node-spine` strip colored from the node's primary
+  thread token (`thread_ids[0]`); thread chips remain secondary confirmation, not the only thread cue.
+- **Live-warp edges** — `loomFlow.ts` exports `buildLiveWarpEdgeIds(tapestry): Set<string>` and carries the
+  result through `FlowEdgeData.isLiveWarp`; only edges from a head to its nearest future anchor get the animated
+  dashed treatment. Under `prefers-reduced-motion`, that treatment falls back to a static dashed style.
+- **Thread focus** — `LoomPage.tsx` owns presentation-only `focusedThreadId` state, and the canvas dims
+  unrelated nodes/edges via `.loom-node-wrapper--dimmed` / `.loom-edge--dimmed`. `LoomWeaverPanel` exposes the
+  focus control as 48px thread-row buttons with `aria-pressed` plus a clear-focus action; swatches are never the
+  sole cue because rows keep the thread name and node count visible.
+
+Thread-chip strips (8×8px colored dots, `aria-hidden="true"`) still appear on nodes, and ordinary edges still
+take the single accent from `threads(source) ∩ threads(target)`, falling back to `--md-outline`. The React Flow
+attribution is restyled but never removed (license requirement).
 
 The Loom route shell (`LoomPage.tsx`) now keeps a persistent right-hand **Weaver's panel** rail instead of the
 transient `.loom-inspector` strip. Its section order is fixed for the remaining LU stages:

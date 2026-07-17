@@ -32,7 +32,7 @@ describe('UpdateNode', () => {
       y: 0,
       thread_ids: [1],
     }
-    render(
+    const { container } = render(
       <ReactFlowProvider>
         <LoomThreadsContext.Provider value={threads}>
           <UpdateNode {...makeProps(node, true)} />
@@ -43,6 +43,7 @@ describe('UpdateNode', () => {
     expect(screen.getByText('Session 4')).toBeInTheDocument()
     expect(screen.getByText('Now')).toBeInTheDocument()
     expect(document.querySelectorAll('.loom-thread-chip')).toHaveLength(1)
+    expect(container.querySelector('.loom-node-spine')).toHaveAttribute('data-color', 'thread-3')
   })
 
   it('renders a vault node (no thread membership) without chips or badges', () => {

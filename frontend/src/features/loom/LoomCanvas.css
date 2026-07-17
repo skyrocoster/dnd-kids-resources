@@ -31,8 +31,7 @@
 }
 
 .loom-canvas-area .react-flow {
-  --xy-background-color: var(--md-surface);
-  --xy-background-pattern-dots-color: var(--md-outline-variant);
+  --xy-background-color: transparent;
   --xy-edge-stroke: var(--md-outline);
   --xy-edge-stroke-width: 2;
   --xy-edge-stroke-selected: var(--md-primary);
@@ -51,6 +50,61 @@
   --xy-controls-button-color: var(--md-on-surface);
   --xy-controls-button-border-color: var(--md-outline-variant);
   --xy-attribution-background-color: transparent;
+  position: relative;
+  isolation: isolate;
+  background:
+    radial-gradient(circle at top, color-mix(in srgb, var(--md-loom-anchor) 12%, transparent), transparent 38%),
+    linear-gradient(180deg, color-mix(in srgb, var(--md-surface-2) 65%, var(--md-surface)), var(--md-surface));
+}
+
+.loom-canvas-area .react-flow::before,
+.loom-canvas-area .react-flow::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.loom-canvas-area .react-flow::before {
+  z-index: 0;
+  opacity: 0.28;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--md-outline-variant) 58%, transparent) 0,
+      color-mix(in srgb, var(--md-outline-variant) 58%, transparent) 1px,
+      transparent 1px,
+      transparent 22px
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--md-outline-variant) 22%, transparent),
+      transparent 34%,
+      color-mix(in srgb, var(--md-outline-variant) 16%, transparent)
+    );
+}
+
+.loom-canvas-area .react-flow::after {
+  z-index: 0;
+  opacity: 0.18;
+  background: linear-gradient(
+    120deg,
+    transparent 0 18%,
+    color-mix(in srgb, var(--md-loom-thread-3) 18%, transparent) 32%,
+    transparent 50%,
+    color-mix(in srgb, var(--md-loom-anchor) 18%, transparent) 68%,
+    transparent 82%
+  );
+}
+
+.loom-canvas-area .react-flow__background,
+.loom-canvas-area .react-flow__selection,
+.loom-canvas-area .react-flow__edges,
+.loom-canvas-area .react-flow__nodes,
+.loom-canvas-area .react-flow__controls,
+.loom-canvas-area .react-flow__attribution {
+  position: relative;
+  z-index: 1;
 }
 
 .loom-canvas-area .react-flow__attribution {
@@ -69,40 +123,69 @@
   position: relative;
   min-width: 160px;
   max-width: 220px;
-  padding: var(--space-3) var(--space-4);
+  overflow: hidden;
+  padding: var(--space-3) var(--space-4) var(--space-3) calc(var(--space-4) + 10px);
   border-radius: var(--radius-md);
   font: var(--type-body-sm-size) var(--type-face);
+  transition:
+    opacity var(--motion-fast),
+    box-shadow var(--motion-fast),
+    transform var(--motion-fast);
+}
+
+.loom-node-spine {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 6px;
+  border-radius: var(--radius-md) 0 0 var(--radius-md);
+  opacity: 0.98;
 }
 
 .loom-node--anchor {
-  background: var(--md-loom-anchor-container);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--md-loom-anchor-container) 92%, white 8%), var(--md-loom-anchor-container));
   color: var(--md-on-loom-anchor-container);
   border: 2px solid var(--md-loom-anchor);
+  box-shadow: 0 10px 28px rgb(0 0 0 / 0.16);
 }
 
 .loom-node--anchor[data-status='reached'] {
   background: var(--md-loom-anchor);
   color: var(--md-on-loom-anchor);
-  border-style: solid;
+  border-color: color-mix(in srgb, var(--md-loom-anchor) 72%, var(--md-on-loom-anchor));
 }
 
 .loom-node--anchor[data-status='planned'] {
-  box-shadow: 0 0 12px 1px color-mix(in srgb, var(--md-loom-anchor) 55%, transparent);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--md-loom-anchor-container) 80%, transparent), var(--md-loom-anchor-container)),
+    linear-gradient(90deg, color-mix(in srgb, var(--md-loom-anchor) 8%, transparent), transparent 50%);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--md-loom-anchor) 28%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--md-loom-anchor) 18%, transparent),
+    0 0 18px color-mix(in srgb, var(--md-loom-anchor) 30%, transparent);
 }
 
 .loom-node--anchor[data-status='abandoned'] {
   border-style: dashed;
-  opacity: 0.55;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--md-surface-2) 82%, var(--md-loom-anchor-container)), var(--md-surface-2));
+  opacity: 0.72;
 }
 
 .loom-node--update {
-  background: var(--md-loom-update-container);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--md-loom-update-container) 90%, white 10%), var(--md-loom-update-container));
   color: var(--md-on-loom-update-container);
-  border: 2px solid var(--md-loom-update);
+  border: 2px solid color-mix(in srgb, var(--md-loom-update) 82%, var(--md-outline-variant));
+  box-shadow: 0 10px 24px rgb(0 0 0 / 0.14);
 }
 
 .loom-node[data-head] {
-  box-shadow: 0 0 0 3px var(--md-primary);
+  transform: translateY(-2px);
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--md-primary) 76%, transparent),
+    0 0 0 6px color-mix(in srgb, var(--md-primary) 18%, transparent),
+    0 0 24px color-mix(in srgb, var(--md-primary) 26%, transparent);
 }
 
 .loom-node-title {
@@ -153,6 +236,36 @@
   border-radius: var(--radius-full);
 }
 
+.loom-node-spine[data-color='thread-1'],
+.loom-weaver-thread-swatch[data-color='thread-1'] {
+  background: var(--md-loom-thread-1);
+}
+
+.loom-node-spine[data-color='thread-2'],
+.loom-weaver-thread-swatch[data-color='thread-2'] {
+  background: var(--md-loom-thread-2);
+}
+
+.loom-node-spine[data-color='thread-3'],
+.loom-weaver-thread-swatch[data-color='thread-3'] {
+  background: var(--md-loom-thread-3);
+}
+
+.loom-node-spine[data-color='thread-4'],
+.loom-weaver-thread-swatch[data-color='thread-4'] {
+  background: var(--md-loom-thread-4);
+}
+
+.loom-node-spine[data-color='thread-5'],
+.loom-weaver-thread-swatch[data-color='thread-5'] {
+  background: var(--md-loom-thread-5);
+}
+
+.loom-node-spine[data-color='thread-6'],
+.loom-weaver-thread-swatch[data-color='thread-6'] {
+  background: var(--md-loom-thread-6);
+}
+
 /* ─── Weaver's panel rail ─────────────────────────────────────────────── */
 
 .loom-weaver-panel {
@@ -183,6 +296,12 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.loom-weaver-section-actions {
+  display: flex;
+  align-items: center;
   gap: var(--space-2);
 }
 
@@ -321,9 +440,41 @@
 
 .loom-legend-row,
 .loom-weaver-thread-row {
+  list-style: none;
+}
+
+.loom-legend-row {
   display: flex;
   align-items: center;
   gap: var(--space-2);
+}
+
+.loom-weaver-thread-button {
+  width: 100%;
+  min-height: var(--control-height);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 0 var(--space-3);
+  border: 1px solid color-mix(in srgb, var(--md-outline-variant) 72%, transparent);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--md-surface-2) 72%, var(--md-surface-1));
+  color: var(--md-on-surface);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background var(--motion-fast),
+    border-color var(--motion-fast),
+    opacity var(--motion-fast);
+}
+
+.loom-weaver-thread-button:hover {
+  background: color-mix(in srgb, var(--md-surface-3) 86%, var(--md-surface-1));
+}
+
+.loom-weaver-thread-button[aria-pressed='true'] {
+  border-color: color-mix(in srgb, var(--md-primary) 48%, var(--md-outline-variant));
+  background: color-mix(in srgb, var(--md-primary-container) 26%, var(--md-surface-2));
 }
 
 .loom-legend-key {
@@ -346,30 +497,6 @@
   flex-shrink: 0;
 }
 
-.loom-weaver-thread-swatch[data-color='thread-1'] {
-  background: var(--md-loom-thread-1);
-}
-
-.loom-weaver-thread-swatch[data-color='thread-2'] {
-  background: var(--md-loom-thread-2);
-}
-
-.loom-weaver-thread-swatch[data-color='thread-3'] {
-  background: var(--md-loom-thread-3);
-}
-
-.loom-weaver-thread-swatch[data-color='thread-4'] {
-  background: var(--md-loom-thread-4);
-}
-
-.loom-weaver-thread-swatch[data-color='thread-5'] {
-  background: var(--md-loom-thread-5);
-}
-
-.loom-weaver-thread-swatch[data-color='thread-6'] {
-  background: var(--md-loom-thread-6);
-}
-
 .loom-weaver-thread-name {
   flex: 1;
 }
@@ -377,6 +504,42 @@
 .loom-weaver-thread-count {
   color: var(--md-on-surface-variant);
   font: var(--type-caption-size) / var(--type-caption-line) var(--type-face);
+}
+
+.loom-node-wrapper--dimmed,
+.loom-edge--dimmed {
+  opacity: 0.34;
+}
+
+.loom-canvas-area .react-flow__edge-path {
+  transition:
+    opacity var(--motion-fast),
+    stroke-width var(--motion-fast),
+    filter var(--motion-fast);
+}
+
+.loom-canvas-area .react-flow__edge.loom-edge--live-warp .react-flow__edge-path {
+  stroke-width: 3;
+  stroke-dasharray: 10 8;
+  filter: drop-shadow(0 0 8px color-mix(in srgb, var(--md-primary) 24%, transparent));
+  animation: loom-live-warp 1.2s linear infinite;
+}
+
+@keyframes loom-live-warp {
+  from {
+    stroke-dashoffset: 36;
+  }
+
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loom-canvas-area .react-flow__edge.loom-edge--live-warp .react-flow__edge-path {
+    animation: none;
+    stroke-dasharray: 6 6;
+  }
 }
 
 /* ─── Idea Vault panel ────────────────────────────────────────────────── */

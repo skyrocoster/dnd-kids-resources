@@ -11,7 +11,7 @@ This is the complete documentation inventory and task router. Read [../CLAUDE.md
 | Documentation maintenance | [Documentation Governance](areas/documentation.md) | `PLAN_TEMPLATE.md`, `scripts/check_docs.py`, `TESTING.md`, and existing GitHub workflow files |
 | Visual consistency work | [Visual Design: VT4](plans/active/visual-consistency.md#vt4-final-design-pass-next-up) | `areas/visual-design.md`, `DESIGN_SYSTEM.md`, `ARCHITECTURE.md`, `TESTING.md` |
 | Story threads, anchors, or the Loom tapestry | [The Loom](areas/loom.md) | `areas/loom.md`, `DATA_MODEL.md`, `API_REFERENCE.md`, `TESTING.md` |
-| Loom UI/UX (canvas, rail, node visuals) | [Loom Weaver's Workspace: LU3](plans/active/loom-weavers-workspace.md#lu3-woven-canvas-thread-focus-next-up) | `areas/loom.md`, `DESIGN_SYSTEM.md`, `TESTING.md` |
+| Loom UI/UX (canvas, rail, node visuals) | [Loom Weaver's Workspace: LU4](plans/active/loom-weavers-workspace.md#lu4-motion-first-run-a11y-live-gate-next-up) | `areas/loom.md`, `DESIGN_SYSTEM.md`, `TESTING.md` |
 | Existing dungeon, encounter, monster, spell, or loot behavior | Its area guide | `ARCHITECTURE.md`, `API_REFERENCE.md`, `DATA_MODEL.md`, `TESTING.md`, then the guide's active plan |
 | API route or client contract | Relevant area guide; create a focused plan if it has none | `API_REFERENCE.md`, `ARCHITECTURE.md`, `TESTING.md` |
 | Database schema, seed, import, or export | Relevant area guide; create a focused plan if it has none | `DATA_MODEL.md`, `ARCHITECTURE.md`, `TESTING.md` |
@@ -43,7 +43,7 @@ Authority: **Canonical** documents define current contracts. **Working** documen
 | [areas/spells.md](areas/spells.md) | Area guide | Canonical | No active plan | Spell behavior | Spell ownership, source map, or active work changes |
 | [areas/visual-design.md](areas/visual-design.md) | Area guide | Canonical | VT4 active | Shared UI, tokens, shell, or accessibility | Visual routing or active work changes |
 | [plans/active/visual-consistency.md](plans/active/visual-consistency.md#vt4-final-design-pass-next-up) | Execution plan | Working | VT4 next | Current visual consistency work | Its active stage ships or its declared docs change |
-| [plans/active/loom-weavers-workspace.md](plans/active/loom-weavers-workspace.md#lu3-woven-canvas-thread-focus-next-up) | Execution plan | Working | LU3 next | Current Loom UI/UX pass | Its active stage ships or its declared docs change |
+| [plans/active/loom-weavers-workspace.md](plans/active/loom-weavers-workspace.md#lu4-motion-first-run-a11y-live-gate-next-up) | Execution plan | Working | LU4 next | Current Loom UI/UX pass | Its active stage ships or its declared docs change |
 | [complete/documentation-plan-closeout-correction.md](complete/documentation-plan-closeout-correction.md) | Historical plan | Historical | Complete | Plan closeout correction history | Do not update except to repair archival metadata |
 | [complete/documentation-plan-template-workflow.md](complete/documentation-plan-template-workflow.md) | Historical plan | Historical | Complete | Plan-template workflow history | Do not update except to repair archival metadata |
 | [Analysis/README.md](Analysis/README.md) | Archive index | Historical | Active | Tracing analysis or decision provenance | Analysis/archive organization changes |

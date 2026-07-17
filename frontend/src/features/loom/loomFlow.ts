@@ -31,6 +31,7 @@ export interface FlowEdge {
 
 export interface FlowEdgeData {
   threadIds: number[]
+  isLiveWarp: boolean
   [key: string]: unknown
 }
 
@@ -51,6 +52,21 @@ function nextAnchorNodeIds(tapestry: LoomTapestry, heads: Set<number>): Set<numb
   return next
 }
 
+export function buildLiveWarpEdgeIds(tapestry: LoomTapestry): Set<string> {
+  const adjacency = buildAdjacency(tapestry.edges)
+  const liveWarpEdgeIds = new Set<string>()
+
+  for (const threadHeads of headsByThread(tapestry).values()) {
+    for (const headId of threadHeads) {
+      for (const anchorId of nearestFutureAnchors(headId, tapestry, adjacency)) {
+        liveWarpEdgeIds.add(`${headId}->${anchorId}`)
+      }
+    }
+  }
+
+  return liveWarpEdgeIds
+}
+
 export function buildFlowNodes(tapestry: LoomTapestry): FlowNode[] {
   const heads = headNodeIds(tapestry)
   const nextAnchors = nextAnchorNodeIds(tapestry, heads)
@@ -68,10 +84,15 @@ export function buildFlowNodes(tapestry: LoomTapestry): FlowNode[] {
 }
 
 export function buildFlowEdges(tapestry: LoomTapestry): FlowEdge[] {
+  const liveWarpEdgeIds = buildLiveWarpEdgeIds(tapestry)
+
   return tapestry.edges.map((edge) => ({
     id: String(edge.id),
     source: String(edge.source_id),
     target: String(edge.target_id),
-    data: { threadIds: edgeThreads(edge, tapestry) },
+    data: {
+      threadIds: edgeThreads(edge, tapestry),
+      isLiveWarp: liveWarpEdgeIds.has(`${edge.source_id}->${edge.target_id}`),
+    },
   }))
 }

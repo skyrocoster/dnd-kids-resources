@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { LoomEdge, LoomNode, LoomTapestry } from '../../../api/types'
-import { buildFlowEdges, buildFlowNodes } from '../loomFlow'
+import { buildFlowEdges, buildFlowNodes, buildLiveWarpEdgeIds } from '../loomFlow'
 
 // Mirrors data/seeds/seed_loom_{threads,nodes,node_threads,edges}.json.
 function demoTapestry(): LoomTapestry {
@@ -58,16 +58,25 @@ describe('buildFlowNodes', () => {
 })
 
 describe('buildFlowEdges', () => {
+  it('derives the live-warp edge set from thread heads to their nearest future anchors', () => {
+    expect([...buildLiveWarpEdgeIds(demoTapestry())].sort()).toEqual(['3->4', '3->6'])
+  })
+
   it('maps every edge to a structural FlowEdge with resolved thread intersection', () => {
     const flowEdges = buildFlowEdges(demoTapestry())
     expect(flowEdges).toHaveLength(5)
 
-    const merge = flowEdges.find((e) => e.id === '1')!
-    expect(merge.source).toBe('1')
-    expect(merge.target).toBe('3')
-    expect(merge.data.threadIds).toEqual([1])
+    const mergeEdge = flowEdges.find((e) => e.id === '1')!
+    expect(mergeEdge.source).toBe('1')
+    expect(mergeEdge.target).toBe('3')
+    expect(mergeEdge.data.threadIds).toEqual([1])
+    expect(mergeEdge.data.isLiveWarp).toBe(false)
 
     const split = flowEdges.find((e) => e.id === '3')!
     expect(split.data.threadIds.sort()).toEqual([1, 2])
+    expect(split.data.isLiveWarp).toBe(true)
+
+    const branch = flowEdges.find((e) => e.id === '4')!
+    expect(branch.data.isLiveWarp).toBe(true)
   })
 })

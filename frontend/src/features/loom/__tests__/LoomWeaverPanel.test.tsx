@@ -34,7 +34,9 @@ const noop = () => {}
 const baseProps = {
   selectedEdge: null,
   threads,
+  threadCounts: { 1: 2 },
   vaultNodes: [],
+  focusedThreadId: null,
   canBridgeFromSelected: false,
   bridgeSource: null,
   onBridge: noop,
@@ -45,6 +47,8 @@ const baseProps = {
   onDeleteEdge: noop,
   onSelectVaultNode: noop,
   onOpenThreadManager: noop,
+  onFocusThread: noop,
+  onClearThreadFocus: noop,
   onCancelBridge: noop,
 }
 
@@ -63,6 +67,7 @@ describe('LoomWeaverPanel', () => {
     render(<LoomWeaverPanel {...baseProps} selectedNode={null} />)
     expect(screen.getByText('Woven update')).toBeInTheDocument()
     expect(screen.getByText('Beacon anchor')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /The Lost Puppy/i })).toHaveTextContent('2 nodes')
   })
 
   it('shows contextual actions for a planned anchor', () => {
@@ -107,5 +112,26 @@ describe('LoomWeaverPanel', () => {
       y: 2,
       thread_ids: [],
     })
+  })
+
+  it('focuses a thread and exposes a clear-focus action', async () => {
+    const user = userEvent.setup()
+    const onFocusThread = vi.fn()
+    const onClearThreadFocus = vi.fn()
+
+    render(
+      <LoomWeaverPanel
+        {...baseProps}
+        selectedNode={null}
+        focusedThreadId={1}
+        onFocusThread={onFocusThread}
+        onClearThreadFocus={onClearThreadFocus}
+      />,
+    )
+
+    await user.click(screen.getByRole('button', { name: /The Lost Puppy/i }))
+    expect(onFocusThread).toHaveBeenCalledWith(1)
+    await user.click(screen.getByRole('button', { name: 'Clear focus' }))
+    expect(onClearThreadFocus).toHaveBeenCalled()
   })
 })
