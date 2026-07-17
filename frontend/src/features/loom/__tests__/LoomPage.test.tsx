@@ -1,5 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react'
-import { describe, it, expect, vi } from 'vitest'
+import userEvent from '@testing-library/user-event'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { LoomTapestry } from '../../../api/types'
 import * as api from '../../../api/client'
 import { LoomPage } from '../LoomPage'
@@ -17,6 +18,10 @@ function demoTapestry(): LoomTapestry {
 }
 
 describe('LoomPage', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks()
+  })
+
   it('renders the tapestry nodes and the vault panel once loaded', async () => {
     vi.spyOn(api, 'getLoomTapestry').mockResolvedValue(demoTapestry())
 
@@ -33,5 +38,36 @@ describe('LoomPage', () => {
 
     await waitFor(() => expect(screen.getByText('network down')).toBeInTheDocument())
     expect(screen.getByRole('button', { name: 'Retry' })).toBeInTheDocument()
+  })
+
+  it('opens the node editor with the anchor kind preset from the New Anchor toolbar button', async () => {
+    vi.spyOn(api, 'getLoomTapestry').mockResolvedValue(demoTapestry())
+    const user = userEvent.setup()
+    render(<LoomPage />)
+
+    await waitFor(() => expect(screen.getByText('Puppy goes missing in the village')).toBeInTheDocument())
+    await user.click(screen.getByRole('button', { name: 'New Anchor' }))
+
+    expect(screen.getByRole('dialog', { name: 'Add New Anchor' })).toBeInTheDocument()
+  })
+
+  it('opens the thread manager from the toolbar', async () => {
+    vi.spyOn(api, 'getLoomTapestry').mockResolvedValue(demoTapestry())
+    const user = userEvent.setup()
+    render(<LoomPage />)
+
+    await waitFor(() => expect(screen.getByText('Puppy goes missing in the village')).toBeInTheDocument())
+    await user.click(screen.getByRole('button', { name: 'Manage Threads' }))
+
+    expect(screen.getByRole('dialog', { name: 'Manage Threads' })).toBeInTheDocument()
+    expect(screen.getByText('The Lost Puppy')).toBeInTheDocument()
+  })
+
+  it('shows the empty-tapestry state when there are no threads or nodes', async () => {
+    vi.spyOn(api, 'getLoomTapestry').mockResolvedValue({ threads: [], nodes: [], edges: [] })
+    render(<LoomPage />)
+
+    expect(await screen.findByText('Your tapestry is empty')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Create your first thread' })).toBeInTheDocument()
   })
 })

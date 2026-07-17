@@ -1,6 +1,6 @@
 # The Loom Area Guide
 
-> **Active plan:** [Loom Tapestry Tracker: LM5](../plans/active/loom-tapestry-tracker.md#lm5--canvas-mutations-next-up).
+> **Active plan:** [Loom Tapestry Tracker: LM7](../plans/active/loom-tapestry-tracker.md#lm7-remove-the-quests-domain-next-up).
 
 ## Scope
 
@@ -13,7 +13,7 @@ Owns campaign story-thread tracking: loom threads, nodes (anchors and updates), 
 ## Source map
 
 - Backend (shipped): `backend/app/routers/loom.py` (CRUD, tapestry read, bridge, position PATCH), loom Pydantic models in `backend/app/schemas.py`, tables in `scripts/init_database.py`.
-- Frontend: `frontend/src/features/loom/`, route `loom` in `frontend/src/router.tsx`, nav entry in `frontend/src/layout/navSections.ts` (planned by the active plan until its frontend stages ship).
+- Frontend: `frontend/src/features/loom/`, route `loom` in `frontend/src/router.tsx`, nav entry ("The Loom") in `frontend/src/layout/navSections.ts`.
 - Seeds (shipped): `data/seeds/seed_loom_threads.json`, `seed_loom_nodes.json`, `seed_loom_node_threads.json`, `seed_loom_edges.json` — a small frozen demo tapestry; wiring in `scripts/seed_database.py` (opt-in `--loom` flag, never part of "load all") and `scripts/export_db_seeds.py`.
 - Tests: `backend/tests/routers/test_loom.py` and colocated `frontend/src/features/loom/__tests__/`.
 
@@ -27,6 +27,7 @@ Owns campaign story-thread tracking: loom threads, nodes (anchors and updates), 
 
 ## Work queue
 
+- LM6 (bridge workflow, anchor-lifecycle transitions, blank-tapestry empty state) shipped; its live browser gate (full DM loop on the demo tapestry) is still outstanding — see the active plan's Shipped-stages row.
 - Execute the active plan's next-up stage.
 - Deferred until after playtesting (recorded as the active plan's known debt): node links to NPCs/dungeons/encounters, a server-side heads endpoint, canvas auto-layout, and canvas undo.
 
