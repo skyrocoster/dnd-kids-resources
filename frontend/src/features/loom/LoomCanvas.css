@@ -30,6 +30,14 @@
   border: 1px solid var(--md-outline-variant);
 }
 
+/* Compass anchor points (nodes/CompassHandles.tsx): functional handles every edge — in-thread
+   chain and cross-thread spawn alike — routes between via loomFlow.ts's compassHandles, not
+   user-facing connection dots. Canvas is nodesConnectable={false}, so nothing drags off them. */
+.loom-canvas-area .react-flow__handle.loom-handle--anchor {
+  opacity: 0;
+  pointer-events: none;
+}
+
 .loom-canvas-area .react-flow {
   --xy-background-color: transparent;
   --xy-edge-stroke: var(--md-outline);
@@ -123,7 +131,9 @@
   position: relative;
   min-width: 160px;
   max-width: 220px;
-  overflow: hidden;
+  /* No overflow:hidden here — the Now/Next badges are designed to overhang the
+     top edge (negative offsets below) and node-level clipping would cut them off.
+     The spine clips itself via its own border-radius instead. */
   padding: var(--space-3) var(--space-4) var(--space-3) calc(var(--space-4) + 10px);
   border-radius: var(--radius-md);
   font: var(--type-body-sm-size) var(--type-face);

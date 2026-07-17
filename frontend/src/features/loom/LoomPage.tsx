@@ -14,7 +14,7 @@ import './LoomCanvas.css'
 import './LoomEditor.css'
 import { useLoomTapestry } from './useLoomTapestry'
 import { useLoomCanvasMutations } from './useLoomCanvasMutations'
-import { buildFlowEdges, buildFlowNodes, type FlowNodeData } from './loomFlow'
+import { buildFlowEdges, buildFlowNodes, buildSpawnEdges, type FlowNodeData } from './loomFlow'
 import { bankedBeats } from './loomGraph'
 import { LoomThreadsContext } from './nodes/loomThreadsContext'
 import { StartNode } from './nodes/StartNode'
@@ -72,7 +72,14 @@ export function LoomPage() {
   } = useLoomCanvasMutations(tapestry, reload)
 
   const flowNodes = useMemo(() => (tapestry.status === 'success' ? buildFlowNodes(tapestry.data) : []), [tapestry])
-  const flowEdges = useMemo(() => (tapestry.status === 'success' ? tapestry.data.threads.flatMap((thread) => buildFlowEdges(flowNodes, thread)) : []), [tapestry, flowNodes])
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node<FlowNodeData>>([])
+  // Every edge (in-thread chain and cross-thread spawn alike) reads live on-screen positions
+  // (`nodes`, updated continuously while dragging), not the lane-layout `flowNodes` — so the
+  // anchor side re-picks itself against wherever a node currently sits, including mid-drag,
+  // and settles on drop.
+  const flowEdges = useMemo(() => (tapestry.status === 'success'
+    ? [...tapestry.data.threads.flatMap((thread) => buildFlowEdges(nodes, thread)), ...buildSpawnEdges(nodes, tapestry.data)]
+    : []), [tapestry, nodes])
   const banked = useMemo(() => (tapestry.status === 'success' ? bankedBeats(tapestry.data) : []), [tapestry])
   const threads = useMemo(() => (tapestry.status === 'success' ? tapestry.data.threads : []), [tapestry])
   const threadCounts = useMemo<Record<number, number>>(() => {
@@ -83,8 +90,6 @@ export function LoomPage() {
       return counts
     }, {})
   }, [tapestry])
-
-  const [nodes, setNodes, onNodesChange] = useNodesState<Node<FlowNodeData>>([])
 
   useEffect(() => {
     setNodes((prev) => {
@@ -304,6 +309,7 @@ export function LoomPage() {
                 onPaneClick={handlePaneClick}
                 onNodesChange={onNodesChange}
                 onNodeDragStop={handleNodeDragStop}
+                nodesConnectable={false}
                 fitView
                 proOptions={{ hideAttribution: false }}
               >
