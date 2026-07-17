@@ -6,8 +6,8 @@ reviewing a change. The next build stage is expected to keep every rule green.
 ## TL;DR — the two commands
 
 ```bash
-# Backend (run from the REPO ROOT, not backend/)
-pytest
+# Backend (run from the REPO ROOT, not backend/; prefer the repo-local venv)
+.venv\Scripts\python.exe -m pytest
 
 # Frontend (run from frontend/)
 cd frontend && npm run test
@@ -16,11 +16,14 @@ cd frontend && npm run test
 A change **passes** only when both are green. `pytest` also enforces a coverage
 gate (see below), so "green" means tests pass *and* coverage holds.
 
+On POSIX shells, replace `.venv\Scripts\python.exe` with `.venv/bin/python`. Prefer the repo-local virtualenv for Python-backed checks in this repo, including `pytest` and `scripts/check_docs.py`, so the commands run with the backend dependencies the project actually expects.
+
 ## Backend
 
 ### How it's wired
-- Config lives in `pytest.ini` at the repo root. `pytest` with no arguments runs
-  the whole backend suite with coverage.
+- Config lives in `pytest.ini` at the repo root. Running `pytest` via the repo-local
+  virtualenv (`.venv\Scripts\python.exe -m pytest` on Windows, `.venv/bin/python -m pytest`
+  on POSIX) runs the whole backend suite with coverage.
 - **Run from the repo root.** `backend/tests/conftest.py` imports the app as the
   absolute package `backend.app.*`; running from `backend/` breaks the import.
 - Test DBs are built from the **real** `scripts/init_database.py` schema — never a
@@ -63,10 +66,10 @@ every seeded player's nested endpoints, asserting **no configured GET endpoint m
 
 ### Handy invocations
 ```bash
-pytest                                             # full gate (tests + coverage)
-pytest backend/tests/routers/test_spells.py --no-cov  # one file, skip the gate
-pytest -m integration --no-cov                     # only the real-data sweep
-pytest -m "not integration"                        # skip the slower real-data build
+.venv\Scripts\python.exe -m pytest                                             # full gate (tests + coverage)
+.venv\Scripts\python.exe -m pytest backend/tests/routers/test_spells.py --no-cov  # one file, skip the gate
+.venv\Scripts\python.exe -m pytest -m integration --no-cov                     # only the real-data sweep
+.venv\Scripts\python.exe -m pytest -m "not integration"                        # skip the slower real-data build
 ```
 
 ## Frontend
@@ -112,6 +115,7 @@ CREATE TABLE statement inside `conftest.py`, stop** — the schema comes from
 ## Documentation Contract CI
 - GitHub Actions runs `Documentation Contract` for every pull request and every push to `main`.
 - The workflow uses Python 3.12, installs `requirements.txt`, runs `python scripts/check_docs.py --check`, and on pull requests also runs `python scripts/check_docs.py --check --base <base-sha>`.
+- Local runs should prefer the repo-local virtualenv instead: `.venv\Scripts\python.exe scripts/check_docs.py --check` on Windows, `.venv/bin/python scripts/check_docs.py --check` on POSIX.
 - `documentation-contract` must be enabled as a required branch-protection check in GitHub repository settings. The workflow cannot enforce that repository setting itself.
 - Use the PR template to record that a fresh reader can route the change from `CLAUDE.md` through `docs/README.md` to the owning plan's minimum context.
 

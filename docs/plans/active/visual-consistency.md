@@ -336,7 +336,7 @@ changes in the same stage.
 - **Expected touch set:** this plan, its area guide (`docs/areas/visual-design.md`), `docs/README.md`, every outstanding named canonical reference,
   generated references when applicable, and the archive/redirect location.
 - **Documentation impact:** `docs/README.md`, `docs/areas/visual-design.md`, `docs/DESIGN_SYSTEM.md`, `docs/ARCHITECTURE.md`, `docs/TESTING.md`, and this plan.
-- **Tests:** run `python scripts/check_docs.py --check`; run `python scripts/check_docs.py --check --base <base-ref>`
+- **Tests:** run `.venv\Scripts\python.exe scripts/check_docs.py --check`; run `.venv\Scripts\python.exe scripts/check_docs.py --check --base <base-ref>`
   when a valid base ref is available; run any documentation-validator tests changed by this outcome.
 - **Gate:** A fresh reader can route from `CLAUDE.md` through `docs/README.md`, the area guide, and the current plan
   context without rediscovering essential facts. Documentation checks and applicable tests pass.

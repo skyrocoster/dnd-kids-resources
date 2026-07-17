@@ -211,8 +211,9 @@ with each delivery stage, then archives the completed plan.
 - **Expected touch set:** this plan, its area guide, `docs/README.md`, every outstanding named canonical reference,
   generated references when applicable, and the archive/redirect location.
 - **Documentation impact:** list the exact documents being reconciled. `None` is invalid for this final stage.
-- **Tests:** run `python scripts/check_docs.py --check`; run `python scripts/check_docs.py --check --base <base-ref>`
-  when a valid base ref is available; run any documentation-validator tests changed by this outcome.
+- **Tests:** run the documentation checker through the repo-local virtualenv (`.venv\Scripts\python.exe scripts/check_docs.py --check`
+  on Windows, `.venv/bin/python scripts/check_docs.py --check` on POSIX); run the corresponding `--base <base-ref>`
+  command when a valid base ref is available; run any documentation-validator tests changed by this outcome.
 - **Gate:** A fresh reader can route from `CLAUDE.md` through `docs/README.md`, the area guide, and the current plan
   context without rediscovering essential facts. Documentation checks and applicable tests pass.
 - **Discovery consolidation:** promote remaining durable facts to the appropriate canonical reference or retained
@@ -301,7 +302,7 @@ When there are no more planned delivery phases:
 
 ## Quick checklist per stage
 
-- [ ] 🚦 gate met live (or suite-sufficient per policy); tests green; `npm run typecheck`/`npm run build` clean (`tsc -b`, not `--noEmit` — [it checks nothing here](DESIGN_SYSTEM.md)); `pytest` from repo root, ≥85% coverage.
+- [ ] 🚦 gate met live (or suite-sufficient per policy); tests green; `npm run typecheck`/`npm run build` clean (`tsc -b`, not `--noEmit` — [it checks nothing here](DESIGN_SYSTEM.md)); Python-backed checks run from the repo root via the repo-local virtualenv (`.venv\Scripts\python.exe -m pytest` on Windows, `.venv/bin/python -m pytest` on POSIX), ≥85% coverage.
 - [ ] Important discoveries consolidated into plan top matter, every affected future-stage block, and canonical
       references where they establish a durable contract. No later executor must rediscover a confirmed fact.
 - [ ] Re-read this stage's own Discovery consolidation line after making the edits above and checked off each
