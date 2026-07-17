@@ -72,6 +72,15 @@ def test_create_thread_unknown_origin_node_id_422(test_client):
     assert response.status_code == 422
 
 
+def test_create_thread_non_session_origin_node_id_422(test_client):
+    beat = test_client.post("/api/loom/nodes", json={"kind": "beat", "title": "Not a session"}).json()
+    response = test_client.post(
+        "/api/loom/threads",
+        json={"name": "Bad Origin Kind", "color": "thread-1", "origin_node_id": beat["id"]},
+    )
+    assert response.status_code == 422
+
+
 def test_create_thread_duplicate_name_400(test_client):
     test_client.post("/api/loom/threads", json={"name": "Goblin Trouble", "color": "thread-1"})
     response = test_client.post("/api/loom/threads", json={"name": "Goblin Trouble", "color": "thread-2"})
@@ -462,3 +471,146 @@ def test_remove_not_a_member_404(test_client):
 
     response = test_client.delete(f"/api/loom/threads/{thread['id']}/items/{beat['id']}")
     assert response.status_code == 404
+
+
+# ---------------------------------------------------------------------------
+# Beat lifecycle: fulfil, bank, restore, spawn
+# ---------------------------------------------------------------------------
+
+
+def test_fulfil_beat_preserves_order_and_stamps_provenance(test_client):
+    thread = test_client.post("/api/loom/threads", json={"name": "Fulfil Thread", "color": "thread-1"}).json()
+    beat_one = test_client.post("/api/loom/nodes", json={"kind": "beat", "title": "Get the Amulet of Fire"}).json()
+    beat_two = test_client.post("/api/loom/nodes", json={"kind": "beat", "title": "Beat two"}).json()
+    test_client.post(f"/api/loom/threads/{thread['id']}/items", json={"node_id": beat_one["id"], "position": 5})
+    test_client.post(f"/api/loom/threads/{thread['id']}/items", json={"node_id": beat_two["id"], "position": 6})
+
+    order_before = _thread_item_node_ids(test_client, thread["id"])
+
+    response = test_client.post(f"/api/loom/nodes/{beat_one['id']}/fulfil")
+    assert response.status_code == 200
+    node = response.json()
+    assert node["kind"] == "session"
+    assert node["title"] == "Get the Amulet of Fire"
+    assert node["fulfilled_planned_title"] == "Get the Amulet of Fire"
+    assert node["fulfilled_at"] is not None
+
+    assert _thread_item_node_ids(test_client, thread["id"]) == order_before
+
+
+def test_fulfil_beat_with_new_title(test_client):
+    thread = test_client.post("/api/loom/threads", json={"name": "Fulfil Retitle Thread", "color": "thread-1"}).json()
+    beat = test_client.post("/api/loom/nodes", json={"kind": "beat", "title": "Planned wording"}).json()
+    test_client.post(f"/api/loom/threads/{thread['id']}/items", json={"node_id": beat["id"], "position": 5})
+
+    response = test_client.post(f"/api/loom/nodes/{beat['id']}/fulfil", json={"title": "What actually happened"})
+    assert response.status_code == 200
+    node = response.json()
+    assert node["title"] == "What actually happened"
+    assert node["fulfilled_planned_title"] == "Planned wording"
+
+
+def test_fulfil_unplaced_beat_422(test_client):
+    beat = test_client.post("/api/loom/nodes", json={"kind": "beat", "title": "Unplaced beat"}).json()
+    response = test_client.post(f"/api/loom/nodes/{beat['id']}/fulfil")
+    assert response.status_code == 422
+
+
+def test_fulfil_non_beat_422(test_client):
+    session = test_client.post("/api/loom/nodes", json={"kind": "session", "title": "Already a session"}).json()
+    response = test_client.post(f"/api/loom/nodes/{session['id']}/fulfil")
+    assert response.status_code == 422
+
+
+def test_fulfil_404(test_client):
+    response = test_client.post("/api/loom/nodes/9999/fulfil")
+    assert response.status_code == 404
+
+
+def test_fulfil_then_revert_restores_wording(test_client):
+    thread = test_client.post("/api/loom/threads", json={"name": "Revert Thread", "color": "thread-1"}).json()
+    beat = test_client.post("/api/loom/nodes", json={"kind": "beat", "title": "Original planned wording"}).json()
+    test_client.post(f"/api/loom/threads/{thread['id']}/items", json={"node_id": beat["id"], "position": 5})
+
+    fulfilled = test_client.post(
+        f"/api/loom/nodes/{beat['id']}/fulfil", json={"title": "What happened instead"}
+    ).json()
+    assert fulfilled["kind"] == "session"
+
+    revert = test_client.put(
+        f"/api/loom/nodes/{beat['id']}",
+        json={"kind": "beat", "title": fulfilled["fulfilled_planned_title"]},
+    )
+    assert revert.status_code == 200
+    reverted = revert.json()
+    assert reverted["kind"] == "beat"
+    assert reverted["title"] == "Original planned wording"
+    assert reverted["fulfilled_planned_title"] is None
+    assert reverted["fulfilled_at"] is None
+    assert beat["id"] in _thread_item_node_ids(test_client, thread["id"])
+
+
+def test_kind_change_rejected_when_not_a_fulfil_undo(test_client):
+    session = test_client.post("/api/loom/nodes", json={"kind": "session", "title": "Never fulfilled"}).json()
+    response = test_client.put(
+        f"/api/loom/nodes/{session['id']}", json={"kind": "beat", "title": "Never fulfilled"}
+    )
+    assert response.status_code == 422
+
+
+def test_bank_then_restore_onto_another_thread(test_client):
+    thread_one = test_client.post("/api/loom/threads", json={"name": "Bank Source", "color": "thread-1"}).json()
+    thread_two = test_client.post("/api/loom/threads", json={"name": "Bank Target", "color": "thread-2"}).json()
+    beat = test_client.post("/api/loom/nodes", json={"kind": "beat", "title": "Reusable beat"}).json()
+    test_client.post(f"/api/loom/threads/{thread_one['id']}/items", json={"node_id": beat["id"], "position": 5})
+
+    response = test_client.post(f"/api/loom/nodes/{beat['id']}/bank")
+    assert response.status_code == 200
+    banked = response.json()
+    assert banked["banked_from_thread_id"] == thread_one["id"]
+    assert banked["thread_ids"] == []
+    assert beat["id"] not in _thread_item_node_ids(test_client, thread_one["id"])
+
+    restore = test_client.post(
+        f"/api/loom/threads/{thread_two['id']}/items", json={"node_id": beat["id"], "position": 5}
+    )
+    assert restore.status_code == 201
+    assert beat["id"] in _thread_item_node_ids(test_client, thread_two["id"])
+
+    node_after = test_client.get("/api/loom/tapestry").json()
+    restored_node = next(n for n in node_after["nodes"] if n["id"] == beat["id"])
+    assert restored_node["banked_from_thread_id"] is None
+
+
+def test_bank_unplaced_beat_422(test_client):
+    beat = test_client.post("/api/loom/nodes", json={"kind": "beat", "title": "Never placed"}).json()
+    response = test_client.post(f"/api/loom/nodes/{beat['id']}/bank")
+    assert response.status_code == 422
+
+
+def test_bank_non_beat_422(test_client):
+    session = test_client.post("/api/loom/nodes", json={"kind": "session", "title": "A session"}).json()
+    response = test_client.post(f"/api/loom/nodes/{session['id']}/bank")
+    assert response.status_code == 422
+
+
+def test_bank_404(test_client):
+    response = test_client.post("/api/loom/nodes/9999/bank")
+    assert response.status_code == 404
+
+
+def test_spawn_thread_from_session_sets_origin_and_auto_start_end(test_client):
+    session = test_client.post(
+        "/api/loom/nodes", json={"kind": "session", "title": "Met the wizard"}
+    ).json()
+    spawned = test_client.post(
+        "/api/loom/threads",
+        json={"name": "Return the Wizard's Hat", "color": "thread-3", "origin_node_id": session["id"]},
+    )
+    assert spawned.status_code == 201
+    body = spawned.json()
+    assert body["origin_node_id"] == session["id"]
+
+    items = _thread_item_node_ids(test_client, body["id"])
+    kinds = {n["id"]: n["kind"] for n in test_client.get("/api/loom/tapestry").json()["nodes"] if n["id"] in items}
+    assert sorted(kinds.values()) == ["end", "start"]
