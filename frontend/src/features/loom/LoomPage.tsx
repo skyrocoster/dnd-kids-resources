@@ -30,7 +30,14 @@ import { Button } from '../../components/Button'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
 import { PageHeader } from '../../components/PageHeader'
 import { MapPinIcon, PlusIcon, WaypointsIcon } from '../../components/icons'
-import { deleteLoomNode, insertLoomThreadItem } from '../../api/client'
+import {
+  bankLoomNode,
+  createLoomThread,
+  deleteLoomNode,
+  fulfilLoomNode,
+  insertLoomThreadItem,
+  updateLoomNode,
+} from '../../api/client'
 import type { LoomNode as LoomNodeType, LoomNodeKind } from '../../api/types'
 
 const nodeTypes = { start: StartNode, end: EndNode, beat: BeatNode, session: SessionNode }
@@ -52,6 +59,7 @@ export function LoomPage() {
     node?: LoomNodeType
     initialKind?: LoomNodeKind
     position: { x: number; y: number }
+    insertPosition?: number
   } | null>(null)
   const [threadManagerOpen, setThreadManagerOpen] = useState(false)
   const [pendingDeleteNode, setPendingDeleteNode] = useState<LoomNodeType | null>(null)
@@ -136,16 +144,63 @@ export function LoomPage() {
   )
 
   const handleNodeSaved = async (saved: LoomNodeType) => {
+    const insertPosition = nodeEditor?.insertPosition ?? 10
     setNodeEditor(null)
     if (!nodeEditor?.node && focusedThreadId != null) {
       try {
-        await insertLoomThreadItem(focusedThreadId, { node_id: saved.id, position: 10 })
+        await insertLoomThreadItem(focusedThreadId, { node_id: saved.id, position: insertPosition })
       } catch (err) {
         reportError(errorMessage(err, 'Node created, but could not place it in the thread.'))
       }
     }
     reload()
   }
+
+  const runLifecycleCommand = async (command: () => Promise<unknown>, fallback: string) => {
+    try {
+      await command()
+      reload()
+    } catch (err) {
+      reportError(errorMessage(err, fallback))
+    }
+  }
+
+  const handleFulfilNode = (node: LoomNodeType) => void runLifecycleCommand(() => fulfilLoomNode(node.id), 'Failed to fulfil the beat.')
+  const handleBankNode = (node: LoomNodeType) => void runLifecycleCommand(() => bankLoomNode(node.id), 'Failed to bank the beat.')
+
+  const handleRestoreNode = (node: LoomNodeType) => {
+    if (focusedThreadId == null) {
+      reportError('Focus a thread before restoring a beat.')
+      return
+    }
+    void runLifecycleCommand(
+      () => insertLoomThreadItem(focusedThreadId, { node_id: node.id, position: 10 }),
+      'Failed to restore the beat.',
+    )
+  }
+
+  const handleReplaceNode = (node: LoomNodeType) => {
+    if (focusedThreadId == null || node.thread_ids.length === 0) return
+    const thread = tapestry.status === 'success' ? tapestry.data.threads.find((item) => item.id === node.thread_ids[0]) : undefined
+    const position = thread?.items.find((item) => item.node_id === node.id)?.position ?? 10
+    void runLifecycleCommand(async () => {
+      await bankLoomNode(node.id)
+      setSelectedNodeId(null)
+      setNodeEditor({ initialKind: 'beat', position: { x: node.x, y: node.y }, insertPosition: position })
+    }, 'Failed to replace the beat.')
+  }
+
+  const handleSpawnThread = (node: LoomNodeType) =>
+    void runLifecycleCommand(
+      () => createLoomThread({ name: `${node.title} Thread`, origin_node_id: node.id }),
+      'Failed to spawn a thread from the session.',
+    )
+
+  const handleUndoFulfil = (node: LoomNodeType) =>
+    void runLifecycleCommand(
+      () => updateLoomNode(node.id, { kind: 'beat', title: node.fulfilled_planned_title ?? node.title, body: node.body ?? undefined }),
+      'Failed to undo fulfilment.',
+    )
 
   const handleConfirmDeleteNode = async () => {
     if (!pendingDeleteNode) return
@@ -272,6 +327,13 @@ export function LoomPage() {
               setPendingDeleteNode(selectedNode)
             }}
             onSelectBankedNode={handleSelectVaultNode}
+            onRestoreNode={handleRestoreNode}
+            onFulfilNode={handleFulfilNode}
+            onBankNode={handleBankNode}
+            onReplaceNode={handleReplaceNode}
+            onSpawnThread={handleSpawnThread}
+            onChangeEnding={(node) => setNodeEditor({ node, position: { x: node.x, y: node.y } })}
+            onUndoFulfil={handleUndoFulfil}
             onOpenThreadManager={() => setThreadManagerOpen(true)}
             onFocusThread={(threadId) => setFocusedThreadId(threadId)}
             onClearThreadFocus={() => setFocusedThreadId(null)}

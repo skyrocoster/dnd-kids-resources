@@ -141,42 +141,32 @@
   opacity: 0.98;
 }
 
-.loom-node--anchor {
+.loom-node--start,
+.loom-node--end {
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--md-loom-anchor-container) 92%, white 8%), var(--md-loom-anchor-container));
-  color: var(--md-on-loom-anchor-container);
-  border: 2px solid var(--md-loom-anchor);
+    linear-gradient(180deg, color-mix(in srgb, var(--md-primary-container) 92%, white 8%), var(--md-primary-container));
+  color: var(--md-on-primary-container);
+  border: 2px solid var(--md-primary);
   box-shadow: 0 10px 28px rgb(0 0 0 / 0.16);
 }
 
-.loom-node--anchor[data-status='reached'] {
-  background: var(--md-loom-anchor);
-  color: var(--md-on-loom-anchor);
-  border-color: color-mix(in srgb, var(--md-loom-anchor) 72%, var(--md-on-loom-anchor));
-}
-
-.loom-node--anchor[data-status='planned'] {
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--md-loom-anchor-container) 80%, transparent), var(--md-loom-anchor-container)),
-    linear-gradient(90deg, color-mix(in srgb, var(--md-loom-anchor) 8%, transparent), transparent 50%);
-  box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--md-loom-anchor) 28%, transparent),
-    0 0 0 1px color-mix(in srgb, var(--md-loom-anchor) 18%, transparent),
-    0 0 18px color-mix(in srgb, var(--md-loom-anchor) 30%, transparent);
-}
-
-.loom-node--anchor[data-status='abandoned'] {
+.loom-node--end {
   border-style: dashed;
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--md-surface-2) 82%, var(--md-loom-anchor-container)), var(--md-surface-2));
-  opacity: 0.72;
 }
 
-.loom-node--update {
+.loom-node--beat {
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--md-loom-update-container) 90%, white 10%), var(--md-loom-update-container));
-  color: var(--md-on-loom-update-container);
-  border: 2px solid color-mix(in srgb, var(--md-loom-update) 82%, var(--md-outline-variant));
+    linear-gradient(180deg, color-mix(in srgb, var(--md-tertiary-container) 90%, white 10%), var(--md-tertiary-container));
+  color: var(--md-on-tertiary-container);
+  border: 2px solid var(--md-tertiary);
+  box-shadow: 0 10px 24px rgb(0 0 0 / 0.14);
+}
+
+.loom-node--session {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--md-secondary-container) 90%, white 10%), var(--md-secondary-container));
+  color: var(--md-on-secondary-container);
+  border: 2px solid color-mix(in srgb, var(--md-secondary) 82%, var(--md-outline-variant));
   box-shadow: 0 10px 24px rgb(0 0 0 / 0.14);
 }
 
@@ -352,33 +342,28 @@
   color: var(--md-on-surface);
 }
 
-.loom-selection-pill[data-tone='anchor'],
-.loom-legend-key[data-tone='anchor'] {
-  background: color-mix(in srgb, var(--md-loom-anchor) 18%, var(--md-surface-3));
+.loom-selection-pill[data-tone='start'],
+.loom-legend-key[data-tone='start'] {
+  background: color-mix(in srgb, var(--md-primary) 18%, var(--md-surface-3));
   color: var(--md-on-surface);
 }
 
-.loom-selection-pill[data-tone='update'],
-.loom-legend-key[data-tone='update'] {
-  background: color-mix(in srgb, var(--md-loom-update) 18%, var(--md-surface-3));
+.loom-selection-pill[data-tone='end'],
+.loom-legend-key[data-tone='end'] {
+  background: color-mix(in srgb, var(--md-primary) 18%, var(--md-surface-3));
   color: var(--md-on-surface);
 }
 
-.loom-selection-pill[data-tone='planned'] {
-  background: color-mix(in srgb, var(--md-loom-anchor) 18%, var(--md-surface-3));
+.loom-selection-pill[data-tone='beat'],
+.loom-legend-key[data-tone='beat'] {
+  background: color-mix(in srgb, var(--md-tertiary) 18%, var(--md-surface-3));
+  color: var(--md-on-surface);
 }
 
-.loom-selection-pill[data-tone='reached'],
-.loom-legend-key[data-tone='anchor-filled'] {
-  background: var(--md-loom-anchor);
-  color: var(--md-on-loom-anchor);
-}
-
-.loom-selection-pill[data-tone='abandoned'],
-.loom-legend-key[data-tone='abandoned'] {
-  background: transparent;
-  color: var(--md-on-surface-variant);
-  border: 1px dashed var(--md-outline);
+.loom-selection-pill[data-tone='session'],
+.loom-legend-key[data-tone='session'] {
+  background: color-mix(in srgb, var(--md-secondary) 18%, var(--md-surface-3));
+  color: var(--md-on-surface);
 }
 
 .loom-legend-key[data-tone='now'] {
@@ -518,30 +503,6 @@
     filter var(--motion-fast);
 }
 
-.loom-canvas-area .react-flow__edge.loom-edge--live-warp .react-flow__edge-path {
-  stroke-width: 3;
-  stroke-dasharray: 10 8;
-  filter: drop-shadow(0 0 8px color-mix(in srgb, var(--md-primary) 24%, transparent));
-  animation: loom-live-warp 1.2s linear infinite;
-}
-
-@keyframes loom-live-warp {
-  from {
-    stroke-dashoffset: 36;
-  }
-
-  to {
-    stroke-dashoffset: 0;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .loom-canvas-area .react-flow__edge.loom-edge--live-warp .react-flow__edge-path {
-    animation: none;
-    stroke-dasharray: 6 6;
-  }
-}
-
 /* ─── Idea Vault panel ────────────────────────────────────────────────── */
 
 .loom-vault-panel {
@@ -606,4 +567,3 @@
 /* ─── Scaffolding stubs — LU3: Woven canvas ────────────────────────────── */
 
 /* LU3: .loom-node-spine — thread-colored spine on node cards */
-/* LU3: .loom-canvas-area .react-flow__edge[data-live-warp] — animated live-warp edge */

@@ -458,3 +458,66 @@ class TestSynthesizeStartEnd:
         assert start_nodes[0]["title"] == "My Quest"
         assert len(end_nodes) == 1
         assert end_nodes[0]["title"] == "Resolve: My Quest"
+
+
+class TestMalformedFixture:
+    """Edge-case: old-shape DB with missing tables, empty threads, etc."""
+
+    def test_no_edges_table_migrates_gracefully(self, tmp_path):
+        """DB with loom_nodes and loom_node_threads but no loom_edges table."""
+        db_path = tmp_path / "test_loom.db"
+        conn = sqlite3.connect(str(db_path))
+        conn.executescript("""
+            CREATE TABLE loom_threads (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL UNIQUE,
+                color TEXT NOT NULL DEFAULT 'thread-1',
+                description TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+            CREATE TABLE loom_nodes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                kind TEXT NOT NULL CHECK (kind IN ('anchor', 'update')),
+                title TEXT NOT NULL,
+                body TEXT,
+                status TEXT CHECK (status IN ('planned', 'reached', 'abandoned')),
+                session_tag TEXT,
+                x REAL NOT NULL DEFAULT 0,
+                y REAL NOT NULL DEFAULT 0,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+            CREATE TABLE loom_node_threads (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                node_id INTEGER NOT NULL,
+                thread_id INTEGER NOT NULL,
+                UNIQUE (node_id, thread_id),
+                FOREIGN KEY (node_id) REFERENCES loom_nodes(id) ON DELETE CASCADE,
+                FOREIGN KEY (thread_id) REFERENCES loom_threads(id) ON DELETE CASCADE
+            );
+        """)
+        conn.execute("INSERT INTO loom_threads (id, name, color) VALUES (1, 'Solo Thread', 'thread-2')")
+        conn.execute("INSERT INTO loom_nodes (id, kind, title, x, y) VALUES (1, 'update', 'Lone event', 0, 0)")
+        conn.execute("INSERT INTO loom_node_threads (node_id, thread_id) VALUES (1, 1)")
+        conn.commit()
+        conn.close()
+
+        report = migrate_mod.migrate(db_path, tmp_path / "report.json", dry_run=False)
+
+        assert "total_nodes" in report["summary"]
+        assert not _conn_table_exists(db_path, "loom_edges")
+
+        nodes = _conn_rows(db_path, "SELECT kind FROM loom_nodes ORDER BY id")
+        kinds = [n["kind"] for n in nodes]
+        assert "start" in kinds
+        assert "end" in kinds
+
+    def test_empty_database_no_crash(self, tmp_path):
+        """DB with loom tables but zero rows migrates without error."""
+        db_path = _make_old_db(tmp_path)
+
+        report = migrate_mod.migrate(db_path, tmp_path / "report.json", dry_run=False)
+
+        assert report["summary"]["total_nodes"] >= 0
+        assert not _conn_table_exists(db_path, "loom_edges")

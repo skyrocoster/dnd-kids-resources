@@ -86,14 +86,6 @@
   --md-loom-anchor-container: #663E00;
   --md-on-loom-anchor-container: #FFDDB9;
 
-  /* loom-update — generated via material-color-utilities from source #8fb3d9,
-     Blend.harmonize()'d toward primary seed #d0bcff (hue 264, chroma 30.2),
-     tones 80/20/30/90. Recorded past nodes on the Loom canvas. */
-  --md-loom-update: #B1C7F5;
-  --md-on-loom-update: #183056;
-  --md-loom-update-container: #31476E;
-  --md-on-loom-update-container: #D7E2FF;
-
   /* Loom thread accents — hue-spread seeds so the six thread colors stay
      mutually distinguishable at a glance. Generated via
      scripts/generate-md3-tokens.mjs; regenerate if seed hues change. */

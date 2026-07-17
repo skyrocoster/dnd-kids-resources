@@ -12,6 +12,13 @@ export interface LoomWeaverPanelProps {
   onEdit: () => void
   onDeleteNode: () => void
   onSelectBankedNode: (node: LoomNode) => void
+  onRestoreNode: (node: LoomNode) => void
+  onFulfilNode: (node: LoomNode) => void
+  onBankNode: (node: LoomNode) => void
+  onReplaceNode: (node: LoomNode) => void
+  onSpawnThread: (node: LoomNode) => void
+  onChangeEnding: (node: LoomNode) => void
+  onUndoFulfil: (node: LoomNode) => void
   onOpenThreadManager: () => void
   onFocusThread: (threadId: number) => void
   onClearThreadFocus: () => void
@@ -46,6 +53,13 @@ export function LoomWeaverPanel({
   onEdit,
   onDeleteNode,
   onSelectBankedNode,
+  onRestoreNode,
+  onFulfilNode,
+  onBankNode,
+  onReplaceNode,
+  onSpawnThread,
+  onChangeEnding,
+  onUndoFulfil,
   onOpenThreadManager,
   onFocusThread,
   onClearThreadFocus,
@@ -94,6 +108,39 @@ export function LoomWeaverPanel({
               {selectedNode.kind !== 'start' && selectedNode.kind !== 'end' && (
                 <Button variant="secondary" size="compact" onClick={onEdit}>
                   Edit
+                </Button>
+              )}
+              {selectedNode.kind === 'beat' && selectedNode.thread_ids.length > 0 && (
+                <>
+                  <Button variant="primary" size="compact" onClick={() => onFulfilNode(selectedNode)}>
+                    Fulfil Beat
+                  </Button>
+                  <Button variant="secondary" size="compact" onClick={() => onBankNode(selectedNode)}>
+                    Bank Beat
+                  </Button>
+                  <Button variant="secondary" size="compact" onClick={() => onReplaceNode(selectedNode)}>
+                    Replace Beat
+                  </Button>
+                </>
+              )}
+              {selectedNode.kind === 'beat' && selectedNode.thread_ids.length === 0 && (
+                <Button variant="secondary" size="compact" onClick={() => onRestoreNode(selectedNode)} disabled={focusedThreadId == null}>
+                  Restore Beat
+                </Button>
+              )}
+              {selectedNode.kind === 'session' && (
+                <Button variant="secondary" size="compact" onClick={() => onSpawnThread(selectedNode)}>
+                  Spawn Thread
+                </Button>
+              )}
+              {selectedNode.kind === 'end' && (
+                <Button variant="secondary" size="compact" onClick={() => onChangeEnding(selectedNode)}>
+                  Change Ending
+                </Button>
+              )}
+              {selectedNode.kind === 'session' && selectedNode.fulfilled_planned_title && (
+                <Button variant="secondary" size="compact" onClick={() => onUndoFulfil(selectedNode)}>
+                  Undo Fulfil
                 </Button>
               )}
               {selectedNode.kind !== 'start' && selectedNode.kind !== 'end' && (
@@ -155,7 +202,12 @@ export function LoomWeaverPanel({
         <div className="loom-weaver-section-heading">
           <h2 className="loom-weaver-section-title">Beat Bank</h2>
         </div>
-        <LoomVaultPanel nodes={bankedNodes} onSelectNode={onSelectBankedNode} />
+        <LoomVaultPanel
+          nodes={bankedNodes}
+          onSelectNode={onSelectBankedNode}
+          onRestoreNode={onRestoreNode}
+          canRestore={focusedThreadId != null}
+        />
       </section>
     </aside>
   )

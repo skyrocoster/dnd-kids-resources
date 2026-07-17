@@ -13,7 +13,7 @@ function AnchorNodeImpl({ data }: NodeProps<AnchorFlowNode>) {
   const primaryThread = threads.find((thread) => thread.id === node.thread_ids[0]) ?? null
 
   return (
-    <div className="loom-node loom-node--anchor" data-head={isHead || undefined}>
+    <div className={`loom-node ${node.kind === 'end' ? 'loom-node--end' : 'loom-node--start'}`} data-head={isHead || undefined}>
       {primaryThread && <span className="loom-node-spine" data-color={primaryThread.color} aria-hidden="true" />}
       <Handle type="target" position={Position.Top} />
       <Handle type="source" position={Position.Bottom} />
