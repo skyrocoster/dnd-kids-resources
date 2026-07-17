@@ -1,6 +1,6 @@
 # The Loom Area Guide
 
-> **Active plan:** None.
+> **Active plan:** [Loom Storyline Refactor](../plans/active/loom-storyline-refactor.md#pa0-schema-seeds-and-migration-foundation-next-up).
 
 ## Scope
 
@@ -27,10 +27,10 @@ Owns campaign story-thread tracking: loom threads, nodes (anchors and updates), 
 
 ## Work queue
 
-- The Loom Tapestry Tracker plan (LM0–LM8) is complete. The full DM loop (bridge, mark-reached, node CRUD, thread management) is shipped. The live browser gate has been verified (LU4).
-- The Weaver's Workspace plan (LU0–LU5) is complete. The presentation pass (identity, weaver's panel, woven canvas, thread focus, motion, a11y, responsive) is shipped.
-- Deferred until after playtesting: node links to NPCs/dungeons/encounters, a server-side heads endpoint, canvas auto-layout, and canvas undo.
-- Create a focused plan before changing any loom contract or cross-domain workflow.
+- **Active: the [Loom Storyline Refactor](../plans/active/loom-storyline-refactor.md#pa0-schema-seeds-and-migration-foundation-next-up) (PA0–PD0).** It reframes the flat DAG into linear ordered Threads (`Start → … → End`) with soft Story Beats, durable shareable Session Nodes, a Beat Bank, and thread spawning; it drops `loom_edges`, the bridge splice, and the acyclicity machinery. PA0 (schema/seeds/migration) is next up. **Until it ships, the invariants above describe the current shipped code; the plan's target model supersedes them stage by stage.**
+- The Loom Tapestry Tracker plan (LM0–LM8) and the Weaver's Workspace plan (LU0–LU5) are complete: the flat-DAG DM loop and the presentation pass are shipped and are what the storyline refactor transforms.
+- Deferred until after playtesting: node links to NPCs/dungeons/encounters.
+- Create a focused plan before changing any loom contract or cross-domain workflow beyond the active plan.
 
 ## Cross-references
 
