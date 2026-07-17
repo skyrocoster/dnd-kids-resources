@@ -10,11 +10,11 @@ const threads: LoomThread[] = [
   { id: 2, name: 'Goblin Trouble', color: 'thread-1' },
 ]
 
-function makeProps(node: LoomNode, isHead: boolean, isNextAnchor: boolean): NodeProps<AnchorFlowNode> {
+function makeProps(node: LoomNode, isHead: boolean): NodeProps<AnchorFlowNode> {
   return {
     id: String(node.id),
-    type: 'anchor',
-    data: { node, isHead, isNextAnchor },
+    type: node.kind === 'end' ? 'end' : 'start',
+    data: { node, isHead, isCurrent: false, isBanked: false },
     selected: false,
     dragging: false,
     zIndex: 0,
@@ -24,38 +24,29 @@ function makeProps(node: LoomNode, isHead: boolean, isNextAnchor: boolean): Node
   } as unknown as NodeProps<AnchorFlowNode>
 }
 
-function renderAnchor(node: LoomNode, isHead = false, isNextAnchor = false) {
+function renderAnchor(node: LoomNode, isHead = false) {
   return render(
     <ReactFlowProvider>
       <LoomThreadsContext.Provider value={threads}>
-        <AnchorNode {...makeProps(node, isHead, isNextAnchor)} />
+        <AnchorNode {...makeProps(node, isHead)} />
       </LoomThreadsContext.Provider>
     </ReactFlowProvider>,
   )
 }
 
-describe('AnchorNode', () => {
-  it('renders a planned anchor with the Next badge and thread chips', () => {
-    const node: LoomNode = { id: 4, kind: 'anchor', title: 'Confront the goblin chief', status: 'planned', x: 0, y: 0, thread_ids: [1, 2] }
-    const { container } = renderAnchor(node, false, true)
-    expect(screen.getByText('Confront the goblin chief')).toBeInTheDocument()
-    expect(screen.getByText('Next')).toBeInTheDocument()
+describe('AnchorNode (legacy compat)', () => {
+  it('renders a start node with the Now badge and thread chips', () => {
+    const node: LoomNode = { id: 1, kind: 'start', title: 'The Lost Puppy', x: 0, y: 0, thread_ids: [1, 2] }
+    const { container } = renderAnchor(node, true)
+    expect(screen.getByText('The Lost Puppy')).toBeInTheDocument()
+    expect(screen.getByText('Now')).toBeInTheDocument()
     expect(document.querySelectorAll('.loom-thread-chip')).toHaveLength(2)
     expect(container.querySelector('.loom-node-spine')).toHaveAttribute('data-color', 'thread-3')
   })
 
-  it('renders a reached anchor as a head with the Now badge', () => {
-    const node: LoomNode = { id: 5, kind: 'anchor', title: 'Puppy reunion festival', status: 'reached', x: 0, y: 0, thread_ids: [1] }
-    const { container } = renderAnchor(node, true, false)
-    expect(screen.getByText('Now')).toBeInTheDocument()
-    expect(container.querySelector('.loom-node--anchor')).toHaveAttribute('data-status', 'reached')
-  })
-
-  it('renders an abandoned anchor with the abandoned status', () => {
-    const node: LoomNode = { id: 6, kind: 'anchor', title: 'Secret tunnel discovered', status: 'abandoned', x: 0, y: 0, thread_ids: [] }
-    const { container } = renderAnchor(node)
-    expect(container.querySelector('.loom-node--anchor')).toHaveAttribute('data-status', 'abandoned')
+  it('renders a start node without the Now badge when not head', () => {
+    const node: LoomNode = { id: 1, kind: 'start', title: 'The Lost Puppy', x: 0, y: 0, thread_ids: [1] }
+    renderAnchor(node, false)
     expect(screen.queryByText('Now')).not.toBeInTheDocument()
-    expect(screen.queryByText('Next')).not.toBeInTheDocument()
   })
 })

@@ -4,7 +4,8 @@ import type { FlowNodeData } from '../loomFlow'
 import { ThreadChips } from './ThreadChips'
 import { useLoomThreads } from './loomThreadsContext'
 
-export type UpdateFlowNode = Node<FlowNodeData, 'update'>
+/** @deprecated Kept for test compatibility. New code uses SessionNode. */
+export type UpdateFlowNode = Node<FlowNodeData, 'session'>
 
 function UpdateNodeImpl({ data }: NodeProps<UpdateFlowNode>) {
   const { node, isHead } = data
@@ -12,7 +13,7 @@ function UpdateNodeImpl({ data }: NodeProps<UpdateFlowNode>) {
   const primaryThread = threads.find((thread) => thread.id === node.thread_ids[0]) ?? null
 
   return (
-    <div className="loom-node loom-node--update" data-head={isHead || undefined}>
+    <div className="loom-node loom-node--session" data-head={isHead || undefined}>
       {primaryThread && <span className="loom-node-spine" data-color={primaryThread.color} aria-hidden="true" />}
       <Handle type="target" position={Position.Top} />
       <Handle type="source" position={Position.Bottom} />

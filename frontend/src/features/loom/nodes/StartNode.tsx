@@ -4,16 +4,15 @@ import type { FlowNodeData } from '../loomFlow'
 import { ThreadChips } from './ThreadChips'
 import { useLoomThreads } from './loomThreadsContext'
 
-/** @deprecated Kept for test compatibility. New code uses StartNode/EndNode/BeatNode/SessionNode. */
-export type AnchorFlowNode = Node<FlowNodeData, 'start' | 'end'>
+export type StartFlowNode = Node<FlowNodeData, 'start'>
 
-function AnchorNodeImpl({ data }: NodeProps<AnchorFlowNode>) {
+function StartNodeImpl({ data }: NodeProps<StartFlowNode>) {
   const { node, isHead } = data
   const threads = useLoomThreads()
   const primaryThread = threads.find((thread) => thread.id === node.thread_ids[0]) ?? null
 
   return (
-    <div className="loom-node loom-node--anchor" data-head={isHead || undefined}>
+    <div className="loom-node loom-node--start" data-head={isHead || undefined}>
       {primaryThread && <span className="loom-node-spine" data-color={primaryThread.color} aria-hidden="true" />}
       <Handle type="target" position={Position.Top} />
       <Handle type="source" position={Position.Bottom} />
@@ -24,4 +23,4 @@ function AnchorNodeImpl({ data }: NodeProps<AnchorFlowNode>) {
   )
 }
 
-export const AnchorNode = memo(AnchorNodeImpl)
+export const StartNode = memo(StartNodeImpl)

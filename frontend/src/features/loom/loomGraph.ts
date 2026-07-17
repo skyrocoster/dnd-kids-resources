@@ -1,158 +1,90 @@
-import type { LoomAnchorStatus, LoomEdge, LoomNode, LoomNodeInput, LoomTapestry } from '../../api/types'
+import type { LoomNode, LoomNodeInput, LoomTapestry, LoomTapestryThread } from '../../api/types'
+
+// --- Lifecycle queries (kind-based, no edges) ---
 
 export function isPast(node: LoomNode): boolean {
-  return node.kind === 'update' || (node.kind === 'anchor' && node.status === 'reached')
+  return node.kind === 'session'
 }
 
 export function isFuture(node: LoomNode): boolean {
-  return node.kind === 'anchor' && node.status === 'planned'
+  return node.kind === 'beat' && node.thread_ids.length > 0
 }
 
-function isAbandoned(node: LoomNode): boolean {
-  return node.kind === 'anchor' && node.status === 'abandoned'
-}
+// --- Ordered-view derivation (PB1 replaces stubs with position-based layout) ---
 
-/** Outgoing adjacency: source node id -> target node ids. */
-export function buildAdjacency(edges: LoomEdge[]): Map<number, number[]> {
-  const adjacency = new Map<number, number[]>()
-  for (const edge of edges) {
-    const targets = adjacency.get(edge.source_id)
-    if (targets) {
-      targets.push(edge.target_id)
-    } else {
-      adjacency.set(edge.source_id, [edge.target_id])
-    }
-  }
-  return adjacency
-}
-
-function nodesById(tapestry: LoomTapestry): Map<number, LoomNode> {
-  return new Map(tapestry.nodes.map((node) => [node.id, node]))
+/** Ordered node ids for a thread, sorted by position ASC. */
+export function threadOrdered(thread: LoomTapestryThread, nodes: LoomNode[]): LoomNode[] {
+  const byId = new Map(nodes.map((n) => [n.id, n]))
+  return thread.items
+    .slice()
+    .sort((a, b) => a.position - b.position)
+    .map((item) => byId.get(item.node_id))
+    .filter((n): n is LoomNode => n != null)
 }
 
 /**
- * heads(T) = { n in T : past(n) AND no edge (n->m) exists with past(m) AND m in T }.
- * The `m in T` restriction means a merge collapses both threads' heads onto the
- * shared node, while a hand-off edge into another thread's node doesn't steal
- * this thread's head.
+ * Current position in a thread: the last session (or start) before the first
+ * unfulfilled beat. PB1 replaces this stub with the full derivation.
+ * For now, returns the node just before the first beat in the ordered list.
  */
-export function headsByThread(tapestry: LoomTapestry): Map<number, Set<number>> {
-  const byId = nodesById(tapestry)
-  const adjacency = buildAdjacency(tapestry.edges)
-  const result = new Map<number, Set<number>>()
-
-  for (const thread of tapestry.threads) {
-    const heads = new Set<number>()
-    for (const node of tapestry.nodes) {
-      if (!node.thread_ids.includes(thread.id)) continue
-      if (!isPast(node)) continue
-
-      const targets = adjacency.get(node.id) ?? []
-      const hasPastSuccessorInThread = targets.some((targetId) => {
-        const target = byId.get(targetId)
-        return target !== undefined && isPast(target) && target.thread_ids.includes(thread.id)
-      })
-      if (!hasPastSuccessorInThread) heads.add(node.id)
-    }
-    result.set(thread.id, heads)
+export function currentPosition(
+  thread: LoomTapestryThread,
+  nodes: LoomNode[],
+): { nodeId: number; position: number } | null {
+  const ordered = threadOrdered(thread, nodes)
+  const firstBeatIdx = ordered.findIndex((n) => n.kind === 'beat' && !n.fulfilled_at)
+  if (firstBeatIdx <= 0) {
+    const first = ordered[0]
+    return first ? { nodeId: first.id, position: 0 } : null
   }
-
-  return result
+  const current = ordered[firstBeatIdx - 1]
+  return { nodeId: current.id, position: firstBeatIdx - 1 }
 }
 
-/**
- * BFS forward from `headId`: report the first planned anchor on each forward
- * branch and stop expanding that branch there; stop silently (report nothing)
- * at an abandoned anchor; otherwise keep walking.
- */
-export function nearestFutureAnchors(
-  headId: number,
-  tapestry: LoomTapestry,
-  adjacency: Map<number, number[]> = buildAdjacency(tapestry.edges),
-): number[] {
-  const byId = nodesById(tapestry)
-  const result: number[] = []
-  const seen = new Set<number>()
-  const queue: number[] = [...(adjacency.get(headId) ?? [])]
-
-  while (queue.length > 0) {
-    const nodeId = queue.shift()!
-    if (seen.has(nodeId)) continue
-    seen.add(nodeId)
-
-    const node = byId.get(nodeId)
-    if (!node) continue
-
-    if (isFuture(node)) {
-      result.push(nodeId)
-      continue
-    }
-    if (isAbandoned(node)) {
-      continue
-    }
-
-    queue.push(...(adjacency.get(nodeId) ?? []))
-  }
-
-  return result
+export function threadHead(thread: LoomTapestryThread, nodes: LoomNode[]): LoomNode | null {
+  const ordered = threadOrdered(thread, nodes)
+  const firstBeat = ordered.findIndex((node) => node.kind === 'beat' && !node.fulfilled_at)
+  const index = firstBeat < 0 ? ordered.length - 1 : Math.max(0, firstBeat - 1)
+  return ordered[index] ?? null
 }
 
-/** vault(G) = nodes with degree 0 (no edges in either direction). */
+export function nextBeat(thread: LoomTapestryThread, nodes: LoomNode[]): LoomNode | null {
+  return threadOrdered(thread, nodes).find((node) => node.kind === 'beat' && !node.fulfilled_at) ?? null
+}
+
+export function liveThreads(tapestry: LoomTapestry): LoomTapestryThread[] {
+  return tapestry.threads.filter((thread) => nextBeat(thread, tapestry.nodes) != null)
+}
+
+// --- Bank (unplaced beats, replaces vault) ---
+
+/** Beats with zero thread membership (banked / unplaced). */
+export function bankedBeats(tapestry: LoomTapestry): LoomNode[] {
+  return tapestry.nodes.filter((node) => node.kind === 'beat' && node.thread_ids.length === 0)
+}
+
+// --- Back-compat alias for PB1 consumer (LoomPage) ---
+/** @deprecated Use bankedBeats — vault is the old edge-degree-0 concept. */
 export function vaultNodes(tapestry: LoomTapestry): LoomNode[] {
-  const connected = new Set<number>()
-  for (const edge of tapestry.edges) {
-    connected.add(edge.source_id)
-    connected.add(edge.target_id)
-  }
-  return tapestry.nodes.filter((node) => !connected.has(node.id))
+  return bankedBeats(tapestry)
 }
 
-/** threads(source) intersected with threads(target); [] if no shared thread. */
-export function edgeThreads(edge: LoomEdge, tapestry: LoomTapestry): number[] {
-  const byId = nodesById(tapestry)
-  const source = byId.get(edge.source_id)
-  const target = byId.get(edge.target_id)
-  if (!source || !target) return []
-  const targetThreads = new Set(target.thread_ids)
-  return source.thread_ids.filter((threadId) => targetThreads.has(threadId))
-}
+// --- Node status update helper (temporary — status field removed in new model) ---
 
 /**
- * `PUT /loom/nodes/{id}` is a full replace, so an anchor status transition
- * (mark reached/abandoned) must resubmit every field unchanged except `status`.
+ * PUT /loom/nodes/{id} is a full replace. In the new model, the node kind
+ * is immutable except for the one fulfil-undo transition (session→beat).
+ * This stub resubmits all fields unchanged. PB2 wires real lifecycle commands.
  */
-export function buildNodeStatusUpdate(node: LoomNode, status: LoomAnchorStatus): LoomNodeInput {
+export function buildNodeStatusUpdate(node: LoomNode, _status: string): LoomNodeInput {
   return {
-    kind: node.kind,
+    kind: node.kind === 'start' || node.kind === 'end' || node.kind === 'beat' || node.kind === 'session'
+      ? (node.kind as 'beat' | 'session')
+      : 'session',
     title: node.title,
     body: node.body ?? null,
-    status,
     session_tag: node.session_tag ?? null,
     x: node.x,
     y: node.y,
-    thread_ids: node.thread_ids,
   }
-}
-
-/**
- * Mirrors the backend's reachability CTE: inserting source->target is illegal
- * iff target can already reach source.
- */
-export function wouldCycle(edges: LoomEdge[], sourceId: number, targetId: number): boolean {
-  const adjacency = buildAdjacency(edges)
-  const seen = new Set<number>([targetId])
-  const stack: number[] = [targetId]
-
-  while (stack.length > 0) {
-    const nodeId = stack.pop()!
-    if (nodeId === sourceId) return true
-    for (const nextId of adjacency.get(nodeId) ?? []) {
-      if (!seen.has(nextId)) {
-        seen.add(nextId)
-        stack.push(nextId)
-      }
-    }
-  }
-
-  return false
 }

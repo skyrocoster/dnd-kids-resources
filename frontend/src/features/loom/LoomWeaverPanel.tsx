@@ -1,40 +1,33 @@
-import type { LoomNode, LoomEdge, LoomThread } from '../../api/types'
+import type { LoomNode, LoomThread } from '../../api/types'
 import { Button } from '../../components/Button'
 import { LoomLegend } from './LoomLegend'
 import { LoomVaultPanel } from './LoomVaultPanel'
 
 export interface LoomWeaverPanelProps {
   selectedNode: LoomNode | null
-  selectedEdge: LoomEdge | null
   threads: LoomThread[]
   threadCounts: Record<number, number>
-  vaultNodes: LoomNode[]
+  bankedNodes: LoomNode[]
   focusedThreadId: number | null
-  canBridgeFromSelected: boolean
-  bridgeSource: LoomNode | null
-  deletingEdge?: boolean
-  onBridge: () => void
-  onMarkReached: () => void
-  onMarkAbandoned: () => void
   onEdit: () => void
   onDeleteNode: () => void
-  onDeleteEdge: () => void
-  onSelectVaultNode: (node: LoomNode) => void
+  onSelectBankedNode: (node: LoomNode) => void
   onOpenThreadManager: () => void
   onFocusThread: (threadId: number) => void
   onClearThreadFocus: () => void
-  onCancelBridge: () => void
 }
 
 function kindLabel(node: LoomNode): string {
-  return node.kind === 'anchor' ? 'Anchor' : 'Update'
-}
-
-function statusLabel(node: LoomNode): string {
-  if (node.kind === 'update') return 'Recorded'
-  if (node.status === 'reached') return 'Reached'
-  if (node.status === 'abandoned') return 'Abandoned'
-  return 'Planned'
+  switch (node.kind) {
+    case 'start':
+      return 'Start'
+    case 'end':
+      return 'End'
+    case 'beat':
+      return node.thread_ids.length === 0 ? 'Banked Beat' : 'Story Beat'
+    case 'session':
+      return 'Session'
+  }
 }
 
 function excerpt(body: string | null | undefined): string | null {
@@ -46,25 +39,16 @@ function excerpt(body: string | null | undefined): string | null {
 
 export function LoomWeaverPanel({
   selectedNode,
-  selectedEdge,
   threads,
   threadCounts,
-  vaultNodes,
+  bankedNodes,
   focusedThreadId,
-  canBridgeFromSelected,
-  bridgeSource,
-  deletingEdge = false,
-  onBridge,
-  onMarkReached,
-  onMarkAbandoned,
   onEdit,
   onDeleteNode,
-  onDeleteEdge,
-  onSelectVaultNode,
+  onSelectBankedNode,
   onOpenThreadManager,
   onFocusThread,
   onClearThreadFocus,
-  onCancelBridge,
 }: LoomWeaverPanelProps) {
   const threadNamesById = new Map(threads.map((thread) => [thread.id, thread.name]))
   const selectedThreadNames =
@@ -77,39 +61,16 @@ export function LoomWeaverPanel({
           <h2 className="loom-weaver-section-title">Selection</h2>
         </div>
 
-        {bridgeSource ? (
-          <div className="loom-selection-stack">
-            <p className="loom-weaver-copy">
-              Bridging from <strong>{bridgeSource.title}</strong>. Click a planned anchor on the canvas to complete the bridge.
-            </p>
-            <div className="loom-selection-actions">
-              <Button variant="secondary" size="compact" onClick={onCancelBridge}>
-                Cancel
-              </Button>
-            </div>
-          </div>
-        ) : selectedNode ? (
+        {selectedNode ? (
           <div className="loom-selection-stack">
             <div className="loom-selection-header">
               <h3 className="loom-selection-title">{selectedNode.title}</h3>
               <div className="loom-selection-meta" aria-label="Node details">
                 <span className="loom-selection-pill" data-tone={selectedNode.kind}>
                   <span className="loom-selection-pill-glyph" aria-hidden="true">
-                    {selectedNode.kind === 'anchor' ? '◇' : '■'}
+                    {selectedNode.kind === 'start' || selectedNode.kind === 'end' ? '◇' : selectedNode.kind === 'beat' ? '◆' : '●'}
                   </span>
                   {kindLabel(selectedNode)}
-                </span>
-                <span className="loom-selection-pill" data-tone={selectedNode.kind === 'anchor' ? selectedNode.status ?? 'planned' : 'update'}>
-                  <span className="loom-selection-pill-glyph" aria-hidden="true">
-                    {selectedNode.kind === 'anchor'
-                      ? selectedNode.status === 'reached'
-                        ? '◆'
-                        : selectedNode.status === 'abandoned'
-                          ? '△'
-                          : '◇'
-                      : '●'}
-                  </span>
-                  {statusLabel(selectedNode)}
                 </span>
               </div>
             </div>
@@ -130,37 +91,16 @@ export function LoomWeaverPanel({
             </dl>
 
             <div className="loom-selection-actions">
-              {canBridgeFromSelected && (
-                <Button variant="secondary" size="compact" onClick={onBridge}>
-                  Bridge to Anchor...
+              {selectedNode.kind !== 'start' && selectedNode.kind !== 'end' && (
+                <Button variant="secondary" size="compact" onClick={onEdit}>
+                  Edit
                 </Button>
               )}
-              {selectedNode.kind === 'anchor' && selectedNode.status === 'planned' && (
-                <>
-                  <Button variant="secondary" size="compact" onClick={onMarkReached}>
-                    Mark Reached
-                  </Button>
-                  <Button variant="secondary" size="compact" onClick={onMarkAbandoned}>
-                    Mark Abandoned
-                  </Button>
-                </>
+              {selectedNode.kind !== 'start' && selectedNode.kind !== 'end' && (
+                <Button variant="danger" size="compact" onClick={onDeleteNode}>
+                  Delete
+                </Button>
               )}
-              <Button variant="secondary" size="compact" onClick={onEdit}>
-                Edit
-              </Button>
-              <Button variant="danger" size="compact" onClick={onDeleteNode}>
-                Delete
-              </Button>
-            </div>
-          </div>
-        ) : selectedEdge ? (
-          <div className="loom-selection-stack">
-            <p className="loom-selection-title">Edge selected</p>
-            <p className="loom-weaver-copy">This connection links two moments in the tapestry.</p>
-            <div className="loom-selection-actions">
-              <Button variant="danger" size="compact" onClick={onDeleteEdge} loading={deletingEdge}>
-                Delete Edge
-              </Button>
             </div>
           </div>
         ) : (
@@ -206,16 +146,16 @@ export function LoomWeaverPanel({
         )}
         {focusedThreadId != null && (
           <p className="loom-weaver-copy">
-            Focus keeps this thread bright on the tapestry and dims every unrelated node and edge.
+            Focus keeps this thread bright on the tapestry and dims every unrelated node.
           </p>
         )}
       </section>
 
       <section className="loom-weaver-section loom-weaver-vault">
         <div className="loom-weaver-section-heading">
-          <h2 className="loom-weaver-section-title">Idea Vault</h2>
+          <h2 className="loom-weaver-section-title">Beat Bank</h2>
         </div>
-        <LoomVaultPanel nodes={vaultNodes} onSelectNode={onSelectVaultNode} />
+        <LoomVaultPanel nodes={bankedNodes} onSelectNode={onSelectBankedNode} />
       </section>
     </aside>
   )

@@ -10,8 +10,8 @@ const threads: LoomThread[] = [{ id: 1, name: 'The Lost Puppy', color: 'thread-3
 function makeProps(node: LoomNode, isHead: boolean): NodeProps<UpdateFlowNode> {
   return {
     id: String(node.id),
-    type: 'update',
-    data: { node, isHead, isNextAnchor: false },
+    type: 'session',
+    data: { node, isHead, isCurrent: false, isBanked: false },
     selected: false,
     dragging: false,
     zIndex: 0,
@@ -21,11 +21,11 @@ function makeProps(node: LoomNode, isHead: boolean): NodeProps<UpdateFlowNode> {
   } as unknown as NodeProps<UpdateFlowNode>
 }
 
-describe('UpdateNode', () => {
+describe('UpdateNode (legacy compat — renders session nodes)', () => {
   it('renders title, session tag, and thread chips', () => {
     const node: LoomNode = {
       id: 3,
-      kind: 'update',
+      kind: 'session',
       title: 'Tracks lead to the goblin cave',
       session_tag: 'Session 4',
       x: 0,
@@ -47,7 +47,7 @@ describe('UpdateNode', () => {
   })
 
   it('renders a vault node (no thread membership) without chips or badges', () => {
-    const node: LoomNode = { id: 7, kind: 'update', title: 'Mysterious hooded stranger', x: 0, y: 0, thread_ids: [] }
+    const node: LoomNode = { id: 7, kind: 'beat', title: 'Mysterious hooded stranger', x: 0, y: 0, thread_ids: [] }
     render(
       <ReactFlowProvider>
         <LoomThreadsContext.Provider value={threads}>

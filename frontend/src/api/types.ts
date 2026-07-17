@@ -486,6 +486,7 @@ export interface LoomThread {
   name: string
   color: ThreadColor
   description?: string | null
+  origin_node_id?: number | null
 }
 
 export interface LoomThreadInput {
@@ -494,64 +495,63 @@ export interface LoomThreadInput {
   description?: string | null
 }
 
-export type LoomNodeKind = 'anchor' | 'update'
-export type LoomAnchorStatus = 'planned' | 'reached' | 'abandoned'
+export interface LoomThreadCreate extends LoomThreadInput {
+  origin_node_id?: number | null
+  start_title?: string | null
+  end_title?: string | null
+}
+
+export type LoomNodeKind = 'start' | 'end' | 'beat' | 'session'
+export type LoomCreatableNodeKind = 'beat' | 'session'
 
 export interface LoomNode {
   id: number
   kind: LoomNodeKind
   title: string
   body?: string | null
-  status?: LoomAnchorStatus | null
   session_tag?: string | null
   x: number
   y: number
+  fulfilled_planned_title?: string | null
+  fulfilled_at?: string | null
+  banked_from_thread_id?: number | null
   thread_ids: number[]
 }
 
 export interface LoomNodeInput {
-  kind: LoomNodeKind
+  kind: LoomCreatableNodeKind
   title: string
   body?: string | null
-  status?: LoomAnchorStatus | null
   session_tag?: string | null
   x?: number
   y?: number
-  thread_ids?: number[]
 }
 
-export interface LoomEdge {
-  id: number
-  source_id: number
-  target_id: number
+export interface LoomTapestryItem {
+  node_id: number
+  position: number
 }
 
-export interface LoomEdgeInput {
-  source_id: number
-  target_id: number
+export interface LoomTapestryThread extends LoomThread {
+  items: LoomTapestryItem[]
 }
 
 export interface LoomTapestry {
-  threads: LoomThread[]
+  threads: LoomTapestryThread[]
   nodes: LoomNode[]
-  edges: LoomEdge[]
 }
 
-export interface LoomBridgeInput {
-  source_id: number
-  anchor_id: number
-  title: string
-  body?: string | null
-  session_tag?: string | null
-  x?: number | null
-  y?: number | null
-  thread_ids?: number[] | null
+export interface LoomThreadItemCreate {
+  node_id: number
+  position: number
 }
 
-export interface LoomBridgeResult {
-  node: LoomNode
-  created_edges: LoomEdge[]
-  deleted_edge_id?: number | null
+export interface LoomThreadItemPositionUpdate {
+  position: number
+}
+
+export interface LoomNodeFulfil {
+  title?: string | null
 }
 
 export interface LoomNodePositionInput {

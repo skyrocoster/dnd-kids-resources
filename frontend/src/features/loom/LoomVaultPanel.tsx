@@ -7,9 +7,8 @@ interface LoomVaultPanelProps {
   onSelectNode: (node: LoomNode) => void
 }
 
-/** Collapsible side panel listing unwired nodes (degree 0). Vault nodes stay
- * rendered on-canvas at their stored x/y as well — this panel is a navigation
- * shortcut, not their only home. */
+/** Collapsible side panel listing unplaced beats (zero membership).
+ * PB2 adds the Restore action. */
 export function LoomVaultPanel({ nodes, onSelectNode }: LoomVaultPanelProps) {
   const [collapsed, setCollapsed] = useState(false)
 
@@ -21,7 +20,7 @@ export function LoomVaultPanel({ nodes, onSelectNode }: LoomVaultPanelProps) {
         aria-expanded={!collapsed}
         onClick={() => setCollapsed((prev) => !prev)}
       >
-        <span>Idea Vault ({nodes.length})</span>
+        <span>Beat Bank ({nodes.length})</span>
         {collapsed ? (
           <ChevronDownIcon width={16} height={16} aria-hidden="true" />
         ) : (
@@ -30,7 +29,7 @@ export function LoomVaultPanel({ nodes, onSelectNode }: LoomVaultPanelProps) {
       </button>
       {!collapsed && (
         <ul className="loom-vault-panel-list">
-          {nodes.length === 0 && <li className="loom-vault-panel-empty">Nothing unwired.</li>}
+          {nodes.length === 0 && <li className="loom-vault-panel-empty">No banked beats.</li>}
           {nodes.map((node) => (
             <li key={node.id}>
               <button type="button" className="loom-vault-panel-item" onClick={() => onSelectNode(node)}>

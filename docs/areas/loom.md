@@ -1,6 +1,6 @@
 # The Loom Area Guide
 
-> **Active plan:** [Loom Storyline Refactor](../plans/active/loom-storyline-refactor.md#pb0-frontend-types-client-and-scaffolding-next-up).
+> **Active plan:** [Loom Storyline Refactor](../plans/active/loom-storyline-refactor.md#pb2-beat-lifecycle-ui-next-up).
 
 ## Scope
 
@@ -26,7 +26,7 @@ Owns campaign story-thread tracking: loom threads, nodes (starts, ends, beats, s
 
 ## Work queue
 
-- **Active: the [Loom Storyline Refactor](../plans/active/loom-storyline-refactor.md#pb0-frontend-types-client-and-scaffolding-next-up) (PB0–PD0).** Phase PA (PA0 schema/seeds/migration, PA1 thread/order/node API, PA2 beat lifecycle/sharing/spawn) is entirely shipped. PB0 (frontend types/client scaffolding) is next up.
+- **Active: the [Loom Storyline Refactor](../plans/active/loom-storyline-refactor.md#pb2-beat-lifecycle-ui-next-up) (PB2–PD0).** Phase PA and PB1 are shipped; PB2 owns beat lifecycle UI.
 - The Loom Tapestry Tracker plan (LM0–LM8) and the Weaver's Workspace plan (LU0–LU5) are complete: the flat-DAG DM loop and the presentation pass are shipped and are what the storyline refactor transforms.
 - Deferred until after playtesting: node links to NPCs/dungeons/encounters.
 - Create a focused plan before changing any loom contract or cross-domain workflow beyond the active plan.
