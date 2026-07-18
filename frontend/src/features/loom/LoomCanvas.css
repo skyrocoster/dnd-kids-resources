@@ -577,3 +577,13 @@
 /* ─── Scaffolding stubs — LU3: Woven canvas ────────────────────────────── */
 
 /* LU3: .loom-node-spine — thread-colored spine on node cards */
+
+/* ─── Swimlane namespace (LS0 stubs) ─────────────────────────────────── */
+
+/* .loom-swimlanes — horizontal-scroll container for all lanes */
+/* .loom-lane — single horizontal lane (one per thread) */
+/* .loom-lane-cap — sticky Start/End cap at lane edges */
+/* .loom-lane-track — ordered card track within a lane */
+/* .loom-lane-gap — clickable "+" insertion gap between cards */
+/* .loom-stitch-layer — absolutely-positioned SVG overlay for connectors */
+/* .loom-beat-bank-tray — bottom tray for unplaced/banked beats */

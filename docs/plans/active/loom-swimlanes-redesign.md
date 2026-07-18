@@ -1,6 +1,6 @@
 # Loom Swimlanes Redesign
 
-> **Status:** Not started. LS0 (scaffolding) is next up. Delivery phase LS0–LS5, then Plan Closeout LS6.
+> **Status:** LS0 shipped. LS1 (static swimlanes) is next up. Delivery phase LS0–LS5, then Plan Closeout LS6.
 
 - **Area guide:** [The Loom](../../areas/loom.md)
 
@@ -119,7 +119,7 @@ self-contained area outcome.
 
 | Stage | Required strength | Summary | Deliverables |
 |-------|-------------------|---------|--------------|
-| **LS0 — Scaffolding** | Light | New component/CSS/type stubs, `it.skip` seams, survey touch points; app renders unchanged. | Stubs compile; page unchanged; later stages carry confirmed findings. |
+| **LS0 — Scaffolding** ✅ | Light | New component/CSS/type stubs, `it.skip` seams, survey touch points; app renders unchanged. | Stubs compile; page unchanged; later stages carry confirmed findings. |
 | **LS1 — Static swimlanes** | Standard | Render Threads as read-only ordered lanes; swap out React Flow. | `LoomSwimlanes`/`LoomLane`/`LoomNodeCard`; click-to-select; React Flow + deprecated nodes removed. |
 | **LS2 — Connector overlay** | High | SVG overlay: in-lane arrows, shared-session stitches, dotted spawn links from measured rects. | `LoomStitchLayer`; recompute on scroll/resize. |
 | **LS3 — Inspector rail + Beat Bank tray** | Standard | Focus-free selected-node inspector; Beat Bank in a bottom tray; restore via Thread picker. | Refactored `LoomWeaverPanel`; new `LoomBeatBankTray`. |
@@ -131,42 +131,11 @@ on LS2 and could run in parallel once LS1 lands, but keep serial unless parallel
 
 <!-- ===== VERBOSE BLOCKS — one per un-shipped stage, in order. ===== -->
 
-#### LS0 — Scaffolding (next up)
+#### LS0 — Scaffolding ✅ shipped
 
-> **Handoff facts** — none yet; this is the first stage. State confirmed at authoring: current render
-> tree and all Key facts above are verified against `LoomPage.tsx`, `loomFlow.ts`, `loomGraph.ts`,
-> `LoomWeaverPanel.tsx`, `LoomCanvas.css`, `backend/app/routers/loom.py`, and `schemas.py`. Existing
-> loom tests: `frontend/src/features/loom/__tests__/` (11 files incl. `LoomPage.test.tsx`,
-> `loomGraph.test.ts`, `beatReorder.test.ts`, and deprecated `AnchorNode`/`UpdateNode` tests).
+Stub files confirmed: `LoomSwimlanes.tsx`, `LoomLane.tsx`, `LoomNodeCard.tsx`, `LoomStitchLayer.tsx`, `LoomBeatBankTray.tsx` (all render `null`). CSS namespace stubs in `LoomCanvas.css`: `.loom-swimlanes`, `.loom-lane`, `.loom-lane-cap`, `.loom-lane-track`, `.loom-lane-gap`, `.loom-stitch-layer`, `.loom-beat-bank-tray`. Shared types in `swimlaneTypes.ts`: `SwimlaneModel` and `CardRect`. `LoomPage.tsx` unchanged. Tests: 11 passed, 1 skipped (new file with 7 `it.skip` seams), build clean. Handoff facts written into LS1, LS2, LS3.
 
-- **Read first:** this plan; `frontend/src/features/loom/LoomPage.tsx`, `LoomCanvas.css`,
-  `loomGraph.ts`, `nodes/ThreadChips.tsx`, `nodes/loomThreadsContext.ts`; `frontend/src/theme.css`
-  (loom tokens); `docs/DESIGN_SYSTEM.md` Loom section.
-- **Build:** add empty, inert stubs so later stages only fill them: `LoomSwimlanes.tsx`, `LoomLane.tsx`,
-  `LoomNodeCard.tsx`, `LoomStitchLayer.tsx`, `LoomBeatBankTray.tsx` (each renders `null`/placeholder,
-  no wiring). Add the swimlane CSS namespace block to `LoomCanvas.css` (`.loom-swimlanes`,
-  `.loom-lane`, `.loom-lane-cap`, `.loom-lane-track`, `.loom-lane-gap`, `.loom-stitch-layer`,
-  `.loom-beat-bank-tray`) as commented stubs. Add shared TS types for swimlane geometry (lane model:
-  `{ thread, ordered: LoomNode[], currentNodeId, nextBeatId }`; card-rect model for the stitch layer).
-  Add `it.skip` seams to `LoomPage.test.tsx` (or a new `LoomSwimlanes.test.tsx`) with **real assertion
-  bodies** for: lanes render in `position` order, played vs planned styling, a shared session appears
-  in two lanes, a spawn link renders, insert-via-gap, drag-reorder, restore. Do not change `LoomPage`
-  rendering yet.
-- **Inherits:** nothing.
-- **Expected touch set:** `frontend/src/features/loom/` new files + `LoomCanvas.css`; one test file.
-  No `LoomPage.tsx` behavior change.
-- **Documentation impact:** this plan (register in area guide + manifest is done at creation). No
-  canonical-reference change yet — `None: contracts unchanged until LS1 removes React Flow.`
-- **Tests:** `cd frontend && npm run test -- loom` (stubs + skipped seams compile and are collected);
-  `npm run build` clean.
-- **Gate:** app builds and the Loom page renders **unchanged** (React Flow still in place); new stubs
-  imported nowhere load-bearing. Suite sufficient; no browser pass required.
-- **Discovery consolidation:** confirm final stub file names and CSS class names; write them into LS1's
-  Handoff facts and Expected touch set. If the stitch-layer rect model differs from the sketch, update
-  LS2's Build. Record confirmed `LoomWeaverPanel` action-block prop shape into LS3's Handoff facts.
-- **Completion edit:** collapse LS0 to a Shipped row; set Status/Next to LS1; write LS1 Handoff facts.
-
-#### LS1 — Static swimlanes (planned)
+#### LS1 — Static swimlanes (next up)
 
 - **Read first:** LS0 stubs; `LoomPage.tsx`, `loomFlow.ts` (for the lane-derivation logic being
   replaced), `loomGraph.ts`, `LoomCanvas.css`, `nodes/{Start,End,Beat,Session}Node.tsx` (for card
@@ -182,6 +151,12 @@ on LS2 and could run in parallel once LS1 lands, but keep serial unless parallel
   `nodes/{Start,End,Beat,Session,Anchor,Update}Node.tsx` and `nodes/CompassHandles.tsx`; retire
   `loomFlow.ts` edge/compass code (keep any still-needed pure helper, else delete). Drop the
   `@xyflow/react` dependency if nothing else imports it.
+- **Handoff facts (from LS0):** stub files confirmed: `LoomSwimlanes.tsx`, `LoomLane.tsx`,
+  `LoomNodeCard.tsx`, `LoomStitchLayer.tsx`, `LoomBeatBankTray.tsx` (all render `null`).
+  CSS namespace stubs in `LoomCanvas.css`: `.loom-swimlanes`, `.loom-lane`, `.loom-lane-cap`,
+  `.loom-lane-track`, `.loom-lane-gap`, `.loom-stitch-layer`, `.loom-beat-bank-tray`.
+  Shared types in `swimlaneTypes.ts`: `SwimlaneModel` (`{ thread, ordered, currentNodeId, nextBeatId }`)
+  and `CardRect` (`{ nodeId, threadId, left, top, width, height }`). `LoomPage.tsx` is unchanged.
 - **Inherits:** LS0 stubs, CSS namespace, types.
 - **Expected touch set:** `LoomPage.tsx`, `LoomSwimlanes.tsx`, `LoomLane.tsx`, `LoomNodeCard.tsx`,
   `LoomCanvas.css`, `loomFlow.ts` (retire), the six deleted node files + `CompassHandles.tsx`,
@@ -203,6 +178,7 @@ on LS2 and could run in parallel once LS1 lands, but keep serial unless parallel
 
 #### LS2 — Connector overlay (planned)
 
+- **Handoff facts (from LS0):** `CardRect` type in `swimlaneTypes.ts` — `{ nodeId: number, threadId: number, left: number, top: number, width: number, height: number }`. Coordinates are relative to the scroll content (not viewport). `LoomStitchLayer.tsx` stub exists and renders `null`. Stitch-layer CSS stub `.loom-stitch-layer` is in `LoomCanvas.css`.
 - **Read first:** LS1 output (`LoomSwimlanes`/`LoomLane`/`LoomNodeCard` DOM), `loomFlow.ts` history
   (old `buildFlowEdges`/`buildSpawnEdges` color/dash choices), `loomGraph.ts`.
 - **Build:** `LoomStitchLayer` — an absolutely-positioned SVG over the scroll container. Measure card
@@ -228,6 +204,7 @@ on LS2 and could run in parallel once LS1 lands, but keep serial unless parallel
 
 #### LS3 — Inspector rail + Beat Bank tray (planned)
 
+- **Handoff facts (from LS0):** `LoomWeaverPanelProps` confirmed in `LoomWeaverPanel.tsx:6` — action callbacks: `onEdit`, `onDeleteNode`, `onRestoreNode(node)`, `onFulfilNode(node)`, `onBankNode(node)`, `onReplaceNode(node)`, `onSpawnThread(node)`, `onChangeEnding(node)`, `onUndoFulfil(node)`, `onReorderBeats(threadId)`. Focus callbacks: `onFocusThread(threadId)`, `onClearThreadFocus()`. Other props: `selectedNode`, `threads`, `threadCounts`, `bankedNodes`, `focusedThreadId`, `onOpenThreadManager`, `onSelectBankedNode`. The Restore button is currently gated by `focusedThreadId == null` (disabled when unfocused); LS3 removes this gating. `LoomBeatBankTray.tsx` stub exists and renders `null`.
 - **Read first:** `LoomWeaverPanel.tsx` (action block + threads/vault sections), `LoomVaultPanel.tsx`,
   `LoomLegend.tsx`, `LoomPage.tsx` handlers (`handleRestoreNode`, `handleReplaceNode`, etc.).
 - **Build:** refactor `LoomWeaverPanel` into a focus-free selected-node **inspector** (details +
@@ -358,4 +335,4 @@ clean; `.venv\Scripts\python.exe -m pytest backend/tests/routers/test_loom.py` g
 
 ## Next:
 
-LS0 — Scaffolding (unblocked).
+LS1 — Static swimlanes (unblocked, LS0 shipped).
