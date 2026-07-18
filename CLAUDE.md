@@ -40,3 +40,17 @@ No documentation-maintenance plan is currently active; create a focused plan bef
 - Preserve unrelated worktree changes.
 - Prefer the smallest correct change and existing local patterns.
 - Do not use destructive Git operations unless the user explicitly requests them.
+
+## Agent skills
+
+### Issue tracker
+
+Issues live in [GitHub Issues](https://github.com/skyrocoster/dnd-kids-resources/issues). See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Five canonical triage roles: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context layout: one root `CONTEXT.md` + `docs/adr/` for architecture decisions. See `docs/agents/domain.md`.
