@@ -13,7 +13,7 @@ This is a **ground-up rebuild** running on:
 - **Backend:** FastAPI + SQLite
 - **Data:** Frozen seeds in `data/seeds/` (canonical rebuild inputs)
 
-**Status:** v2 rebuild complete. Current maintenance work is tracked in the [documentation manifest](docs/README.md).
+**Status:** v2 rebuild complete.
 
 ---
 
@@ -93,11 +93,6 @@ Review the dry-run output first, then omit `--dry-run` to overwrite seed files. 
 are runtime-created and intentionally are not exported as seeds.
 
 ---
-
-## Documentation
-
-- [Documentation manifest](docs/README.md) — task routing, active-plan status, and the complete documentation inventory
-- [AI instructions](CLAUDE.md) — authoritative workflow and documentation contract for AI contributors
 
 ---
 

@@ -16,7 +16,7 @@ cd frontend && npm run test
 A change **passes** only when both are green. `pytest` also enforces a coverage
 gate (see below), so "green" means tests pass *and* coverage holds.
 
-On POSIX shells, replace `.venv\Scripts\python.exe` with `.venv/bin/python`. Prefer the repo-local virtualenv for Python-backed checks in this repo, including `pytest` and `scripts/check_docs.py`, so the commands run with the backend dependencies the project actually expects.
+On POSIX shells, replace `.venv\Scripts\python.exe` with `.venv/bin/python`. Prefer the repo-local virtualenv for Python-backed checks in this repo so the commands run with the backend dependencies the project actually expects.
 
 ## Backend
 
@@ -47,7 +47,7 @@ every seeded player's nested endpoints, asserting **no configured GET endpoint m
 2. **Coverage ≥ 90%** overall (`--cov-fail-under=90` in `pytest.ini`). Current
    baseline is ~91%. The gate sits just under actual so it ratchets against
    backsliding without failing on a single legitimately-added defensive branch.
-   New feature code should land at **>80% on its own lines** (per `CLAUDE.md`) and
+   New feature code should land at **>80% on its own lines** and
    not drag the total below 90.
 
    The uncovered ~9% is deliberate, not a backlog: `except → rollback → raise 400`
@@ -100,7 +100,7 @@ every seeded player's nested endpoints, asserting **no configured GET endpoint m
   `"files": []` (it only exists to reference the app/node sub-projects), so
   `tsc --noEmit` silently checks *nothing* and reports success even with real type
   errors in the tree — a false green that hid ~40 errors during the Phase E recovery
-   (see `complete/phase-e-recovery-plan.md`). `tsc -b` (`npm run typecheck` /
+   (see `docs/complete/phase-e-recovery-plan.md`). `tsc -b` (`npm run typecheck` /
   `npm run build`) is the only real check — it builds the referenced sub-projects.
 
 ## Why this exists (the failure this prevents)
@@ -112,12 +112,7 @@ from the real schema + real seeds closes that gap. **If you find yourself editin
 CREATE TABLE statement inside `conftest.py`, stop** — the schema comes from
 `scripts/init_database.py`, and the fixtures build from it.
 
-## Documentation Contract CI
-- GitHub Actions runs `Documentation Contract` for every pull request and every push to `main`.
-- The workflow uses Python 3.12, installs `requirements.txt`, runs `python scripts/check_docs.py --check`, and on pull requests also runs `python scripts/check_docs.py --check --base <base-sha>`.
-- Local runs should prefer the repo-local virtualenv instead: `.venv\Scripts\python.exe scripts/check_docs.py --check` on Windows, `.venv/bin/python scripts/check_docs.py --check` on POSIX.
-- `documentation-contract` must be enabled as a required branch-protection check in GitHub repository settings. The workflow cannot enforce that repository setting itself.
-- Use the PR template to record that a fresh reader can route the change from `CLAUDE.md` through `docs/README.md` to the owning plan's minimum context.
+
 
 <!-- GENERATED:TESTING:START -->
 ### Generated Test Configuration
