@@ -38,9 +38,9 @@ function demoTapestry(): LoomTapestry {
 }
 
 describe('buildFlowNodes', () => {
-  it('maps every node to a structural FlowNode keyed by kind', () => {
+  it('maps every placed node to a structural FlowNode keyed by kind', () => {
     const flowNodes = buildFlowNodes(demoTapestry())
-    expect(flowNodes).toHaveLength(6)
+    expect(flowNodes).toHaveLength(5)
 
     const startNode = flowNodes.find((n) => n.id === '1')!
     expect(startNode.type).toBe('start')
@@ -52,13 +52,11 @@ describe('buildFlowNodes', () => {
 
     const beatNode = flowNodes.find((n) => n.id === '4')!
     expect(beatNode.type).toBe('beat')
-    expect(beatNode.data.isBanked).toBe(false)
   })
 
-  it('flags unplaced beats as banked', () => {
+  it('excludes unplaced (banked) beats from the canvas', () => {
     const flowNodes = buildFlowNodes(demoTapestry())
-    const banked = flowNodes.find((n) => n.id === '9')!
-    expect(banked.data.isBanked).toBe(true)
+    expect(flowNodes.find((n) => n.id === '9')).toBeUndefined()
   })
 
   it('carries the full LoomNode through in data.node', () => {
