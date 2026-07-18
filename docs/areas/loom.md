@@ -1,6 +1,6 @@
 # The Loom Area Guide
 
-> **Active plan:** [Beat Reorder](../plans/active/loom-beat-reorder.md#br2-documentation-update-next-up) — BR2 (documentation update and archive) next.
+> **Active plan:** None.
 
 ## Scope
 

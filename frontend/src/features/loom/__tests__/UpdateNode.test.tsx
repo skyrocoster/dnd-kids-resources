@@ -11,7 +11,7 @@ function makeProps(node: LoomNode, isHead: boolean): NodeProps<UpdateFlowNode> {
   return {
     id: String(node.id),
     type: 'session',
-    data: { node, isHead, isCurrent: false, isBanked: false },
+    data: { node, isHead, isCurrent: false },
     selected: false,
     dragging: false,
     zIndex: 0,

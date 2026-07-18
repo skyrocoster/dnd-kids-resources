@@ -17,7 +17,6 @@ export interface FlowNodeData {
   node: LoomNode
   isHead: boolean
   isCurrent: boolean
-  isBanked: boolean
   // Index signature satisfies @xyflow/react's `Record<string, unknown>` node-data
   [key: string]: unknown
 }
@@ -140,18 +139,19 @@ export function buildFlowNodes(tapestry: LoomTapestry): FlowNode[] {
     if (!positions.has(item.node_id)) positions.set(item.node_id, { x: item.position * 12, y: lane * 220 })
   }))
   const current = new Map(tapestry.threads.map((thread) => [thread.id, currentPosition(thread, tapestry.nodes)]))
-  return tapestry.nodes.map((node) => ({
-    id: String(node.id),
-    type: node.kind,
-    position: positions.get(node.id) ?? { x: node.x, y: node.y },
-    data: {
-      node,
-      isHead: node.thread_ids.some((threadId) => {
-        const thread = tapestry.threads.find((candidate) => candidate.id === threadId)
-        return thread?.items.at(-1)?.node_id === node.id
-      }),
-      isCurrent: node.thread_ids.some((threadId) => current.get(threadId)?.nodeId === node.id),
-      isBanked: node.kind === 'beat' && (node.thread_ids.length === 0 || node.banked_from_thread_id != null),
-    },
-  }))
+  return tapestry.nodes
+    .filter((node) => node.kind !== 'beat' || node.thread_ids.length > 0)
+    .map((node) => ({
+      id: String(node.id),
+      type: node.kind,
+      position: positions.get(node.id) ?? { x: node.x, y: node.y },
+      data: {
+        node,
+        isHead: node.thread_ids.some((threadId) => {
+          const thread = tapestry.threads.find((candidate) => candidate.id === threadId)
+          return thread?.items.at(-1)?.node_id === node.id
+        }),
+        isCurrent: node.thread_ids.some((threadId) => current.get(threadId)?.nodeId === node.id),
+      },
+    }))
 }

@@ -14,7 +14,7 @@ function makeProps(node: LoomNode, isHead: boolean): NodeProps<AnchorFlowNode> {
   return {
     id: String(node.id),
     type: node.kind === 'end' ? 'end' : 'start',
-    data: { node, isHead, isCurrent: false, isBanked: false },
+    data: { node, isHead, isCurrent: false },
     selected: false,
     dragging: false,
     zIndex: 0,
