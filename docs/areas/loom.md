@@ -1,6 +1,6 @@
 # The Loom Area Guide
 
-> **Active plan:** None.
+> **Active plan:** [Loom Swimlanes Redesign](../plans/active/loom-swimlanes-redesign.md#ls0-scaffolding-next-up) (LS0 next).
 
 ## Scope
 
