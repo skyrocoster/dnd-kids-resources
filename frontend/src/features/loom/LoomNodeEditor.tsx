@@ -1,7 +1,7 @@
 import { useId, useState } from 'react'
 import type { FormEvent } from 'react'
 import { createLoomNode, updateLoomNode } from '../../api/client'
-import type { LoomNode, LoomNodeInput, LoomNodeKind, LoomThread } from '../../api/types'
+import type { LoomNode, LoomNodeInput, LoomNodeKind } from '../../api/types'
 import { Button } from '../../components/Button'
 import { Dialog } from '../../components/Dialog'
 import { SelectField } from '../../components/form/SelectField'
@@ -11,7 +11,6 @@ import './LoomEditor.css'
 interface LoomNodeEditorProps {
   node?: LoomNode
   initialKind?: LoomNodeKind
-  threads: LoomThread[]
   defaultPosition: { x: number; y: number }
   onClose: () => void
   onSaved: (node: LoomNode) => void
@@ -35,7 +34,7 @@ function kindLabel(kind: LoomNodeKind): string {
   }
 }
 
-export function LoomNodeEditor({ node, initialKind, threads: _threads, defaultPosition, onClose, onSaved }: LoomNodeEditorProps) {
+export function LoomNodeEditor({ node, initialKind, defaultPosition, onClose, onSaved }: LoomNodeEditorProps) {
   const formId = useId()
   const [kind, setKind] = useState<LoomNodeKind>(node?.kind ?? initialKind ?? 'session')
   const [title, setTitle] = useState(node?.title ?? '')

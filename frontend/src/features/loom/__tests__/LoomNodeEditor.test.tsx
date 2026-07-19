@@ -2,13 +2,8 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as api from '../../../api/client'
-import type { LoomNode, LoomThread } from '../../../api/types'
+import type { LoomNode } from '../../../api/types'
 import { LoomNodeEditor } from '../LoomNodeEditor'
-
-const threads: LoomThread[] = [
-  { id: 1, name: 'The Lost Puppy', color: 'thread-3' },
-  { id: 2, name: 'Goblin Trouble', color: 'thread-1' },
-]
 
 describe('LoomNodeEditor', () => {
   beforeEach(() => {
@@ -22,7 +17,6 @@ describe('LoomNodeEditor', () => {
     const user = userEvent.setup()
     render(
       <LoomNodeEditor
-        threads={threads}
         defaultPosition={{ x: 10, y: 20 }}
         onClose={() => {}}
         onSaved={onSaved}
@@ -54,7 +48,6 @@ describe('LoomNodeEditor', () => {
     render(
       <LoomNodeEditor
         initialKind="beat"
-        threads={threads}
         defaultPosition={{ x: 0, y: 0 }}
         onClose={() => {}}
         onSaved={() => {}}
@@ -85,7 +78,6 @@ describe('LoomNodeEditor', () => {
     render(
       <LoomNodeEditor
         node={node}
-        threads={threads}
         defaultPosition={{ x: 999, y: 999 }}
         onClose={() => {}}
         onSaved={() => {}}
@@ -105,7 +97,7 @@ describe('LoomNodeEditor', () => {
     vi.spyOn(api, 'createLoomNode').mockRejectedValue(new Error('Failed to create node'))
     const user = userEvent.setup()
     render(
-      <LoomNodeEditor threads={threads} defaultPosition={{ x: 0, y: 0 }} onClose={() => {}} onSaved={() => {}} />,
+      <LoomNodeEditor defaultPosition={{ x: 0, y: 0 }} onClose={() => {}} onSaved={() => {}} />,
     )
 
     await user.type(screen.getByLabelText('Title'), 'Doomed note')

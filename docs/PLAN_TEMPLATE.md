@@ -102,6 +102,42 @@ implementation code.
 
 ---
 
+## Local ticket extension (optional)
+
+Plan stages can be split into individual ticket files for fresh-context agents. This is entirely optional — the plan doc remains the source of truth.
+
+### Folder layout
+
+```
+docs/plans/active/tickets/<area-outcome>/
+  01-<StageID>-<slug>.md   # one file per un-shipped stage
+  02-<StageID>-<slug>.md
+```
+
+### Ticket file shape
+
+Each ticket file has these fields (derived mechanically from the stage's verbose block — never hand-edit out of sync):
+
+- **Part of:** link back to the plan doc's exact stage anchor.
+- **Blocked by:** the previous stage's ticket filename (stages ship in sequence) plus anything named in the phase's "Depends on / Depended on by" line. `None` if unblocked.
+- **Status:** `ready` if Blocked-by is empty/all-deleted, else `blocked`.
+- **What to build** — the stage's summary + Build.
+- **Read first** — copied verbatim from the stage block.
+- **Handoff facts** — copied from the stage's Handoff facts blockquote if the prior stage shipped; otherwise `Not yet available`.
+- **Acceptance criteria** — one checkbox per concrete condition in Gate, plus one per Handoff fact.
+
+### Tickets line
+
+When tickets are generated, the plan doc's top matter gets a **Tickets:** line (right after the **Area guide:** line):
+
+```md
+- **Tickets:** `docs/plans/active/tickets/<area-outcome>/`
+```
+
+Regenerate tickets with `/to-tickets` any time the plan doc's stage breakdown changes. Never hand-edit a ticket's derived fields.
+
+---
+
 ## What to look at during a phase (the Reference top-matter)
 
 These sections sit at the top and answer "what does an executor need to know before building?" They
@@ -258,6 +294,7 @@ On completion, do all of this in the stage's own commit:
    This is the primary mechanism for passing confirmed context forward — the next executor reads these instead of
    re-exploring the codebase.
 6. **Commit code + plan-doc edit together**, referencing the stage ID and test counts.
+7. **If a ticket file exists for this stage**, delete it. If the next stage's ticket exists, update its Handoff facts section to match what was just written into the plan doc's next-stage block.
 
 ### Shipped stages table (the collapsed record)
 
@@ -301,6 +338,7 @@ When there are no more planned delivery phases:
 3. Move the doc to `docs/complete/<area>-<outcome>.md`. Update the area guide to `None` or its next active
    plan, and update `docs/README.md` in the same change set. Leave a redirect stub only when a known inbound link
    must survive.
+4. Delete the now-empty `docs/plans/active/tickets/<area-outcome>/` directory (all stages shipped → no ticket files remain; anything leftover is a bug in the sync step, not something to archive).
 
 ---
 
@@ -330,6 +368,7 @@ When there are no more planned delivery phases:
 - [ ] Status line rewritten; `## Next:` updated.
 - [ ] Exact documentation-impact requirement completed, or its specific `None:` rationale remains valid.
 - [ ] Code + plan-doc edit committed together, stage ID + test counts in the message.
+- [ ] This stage's ticket file (if any) deleted; the next stage's ticket file (if any) updated with the Handoff facts just written.
 - [ ] If this was a delivery phase's last stage: phase section deleted; durable facts promoted to top matter or
         reference docs; deferred items moved to the Known-debt list. Add the one Plan Closeout phase only after all
         delivery phases are complete; its documentation-update stage archives the entire plan.

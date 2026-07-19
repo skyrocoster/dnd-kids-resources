@@ -2,7 +2,8 @@ import { useCallback, useMemo, useState } from 'react'
 import './LoomCanvas.css'
 import './LoomEditor.css'
 import { useLoomTapestry } from './useLoomTapestry'
-import { bankedBeats } from './loomGraph'
+import { bankedBeats, threadOrdered } from './loomGraph'
+import { beatReorderTarget } from './beatReorder'
 import { LoomSwimlanes } from './LoomSwimlanes'
 import { LoomThreadsContext } from './nodes/loomThreadsContext'
 import { LoomWeaverPanel } from './LoomWeaverPanel'
@@ -22,6 +23,7 @@ import {
   deleteLoomNode,
   fulfilLoomNode,
   insertLoomThreadItem,
+  reorderLoomThreadItem,
   updateLoomNode,
 } from '../../api/client'
 import type { LoomNode as LoomNodeType, LoomNodeKind } from '../../api/types'
@@ -42,6 +44,7 @@ export function LoomPage() {
     node?: LoomNodeType
     initialKind?: LoomNodeKind
     position: { x: number; y: number }
+    insertThreadId?: number
     insertPosition?: number
   } | null>(null)
   const [threadManagerOpen, setThreadManagerOpen] = useState(false)
@@ -69,8 +72,19 @@ export function LoomPage() {
     setSelectedNodeId(node.id)
   }
 
-  const handleNodeSaved = () => {
+  const handleNodeSaved = async (savedNode?: LoomNodeType) => {
+    const editor = nodeEditor
     setNodeEditor(null)
+    if (editor?.insertThreadId != null && editor.insertPosition != null && savedNode) {
+      try {
+        await insertLoomThreadItem(editor.insertThreadId, {
+          node_id: savedNode.id,
+          position: editor.insertPosition,
+        })
+      } catch (err) {
+        setBannerError(errorMessage(err, 'Failed to insert node into thread.'))
+      }
+    }
     reload()
   }
 
@@ -92,6 +106,45 @@ export function LoomPage() {
       'Failed to restore the beat.',
     )
   }
+
+  const handleGapClick = useCallback((threadId: number, position: number) => {
+    setNodeEditor({ initialKind: 'beat', position: { x: 0, y: 0 }, insertThreadId: threadId, insertPosition: position })
+  }, [])
+
+  const handleGapRestore = useCallback(
+    (nodeId: number, threadId: number, position: number) => {
+      void runLifecycleCommand(
+        () => insertLoomThreadItem(threadId, { node_id: nodeId, position }),
+        'Failed to restore the beat.',
+      )
+    },
+    [],
+  )
+
+  const handleReorder = useCallback(
+    (threadId: number, _nodeId: number, fromBodyIndex: number, toBodyIndex: number) => {
+      if (tapestry.status !== 'success') return
+      const thread = tapestry.data.threads.find((item) => item.id === threadId)
+      if (!thread) return
+      const allNodes = tapestry.data.nodes
+      const ordered = threadOrdered(thread, allNodes)
+      const bodyNodes = ordered.filter((n) => n.kind !== 'start' && n.kind !== 'end')
+      const beats = bodyNodes.filter((n) => n.kind === 'beat')
+      const beatItems = beats.map((n) => ({
+        nodeId: n.id,
+        position: thread.items.find((i) => i.node_id === n.id)?.position ?? 0,
+      }))
+      const fromBeatIndex = bodyNodes.slice(0, fromBodyIndex).filter((n) => n.kind === 'beat').length
+      const toBeatIndex = bodyNodes.slice(0, toBodyIndex).filter((n) => n.kind === 'beat').length
+      const target = beatReorderTarget(beatItems, fromBeatIndex, toBeatIndex)
+      if (!target) return
+      void runLifecycleCommand(
+        () => reorderLoomThreadItem(threadId, target.nodeId, { position: target.position }),
+        'Failed to reorder the beat.',
+      )
+    },
+    [tapestry],
+  )
 
   const handleReplaceNode = (node: LoomNodeType) => {
     if (node.thread_ids.length === 0) return
@@ -213,6 +266,9 @@ export function LoomPage() {
               nodes={tapestry.status === 'success' ? tapestry.data.nodes : []}
               selectedNodeId={selectedNodeId}
               onSelectNode={handleNodeClick}
+              onGapClick={handleGapClick}
+              onReorder={handleReorder}
+              onGapRestore={handleGapRestore}
             />
             <LoomBeatBankTray
               nodes={banked}
@@ -246,7 +302,6 @@ export function LoomPage() {
         <LoomNodeEditor
           node={nodeEditor.node}
           initialKind={nodeEditor.initialKind}
-          threads={threads}
           defaultPosition={nodeEditor.position}
           onClose={() => setNodeEditor(null)}
           onSaved={handleNodeSaved}

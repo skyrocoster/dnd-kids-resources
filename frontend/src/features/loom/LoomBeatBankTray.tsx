@@ -47,8 +47,16 @@ export function LoomBeatBankTray({ nodes, threads, onSelectNode, onRestoreNode }
       {!collapsed && (
         <div className="loom-beat-bank-tray-content">
           {nodes.length === 0 && <p className="loom-beat-bank-tray-empty">No banked beats.</p>}
-          {nodes.map((node) => (
-            <div key={node.id} className="loom-beat-bank-tray-entry">
+          {nodes.map((node) => {
+            const handleDragStart = (e: React.DragEvent) => {
+              e.dataTransfer.effectAllowed = 'move'
+              e.dataTransfer.setData(
+                'application/json',
+                JSON.stringify({ action: 'restore', nodeId: node.id }),
+              )
+            }
+            return (
+            <div key={node.id} className="loom-beat-bank-tray-entry" draggable onDragStart={handleDragStart}>
               <button
                 type="button"
                 className="loom-beat-bank-tray-item"
@@ -93,7 +101,7 @@ export function LoomBeatBankTray({ nodes, threads, onSelectNode, onRestoreNode }
                 </Button>
               )}
             </div>
-          ))}
+          ); })}
         </div>
       )}
     </div>

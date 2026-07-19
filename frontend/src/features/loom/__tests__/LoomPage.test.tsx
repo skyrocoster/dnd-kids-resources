@@ -124,4 +124,51 @@ describe('LoomPage', () => {
     await waitFor(() => expect(screen.getAllByText('The Lost Puppy').length).toBeGreaterThan(0))
     expect(document.querySelector('.loom-inspector')).not.toBeInTheDocument()
   })
+
+  it('renders clickable insertion gaps in the lane track', async () => {
+    vi.spyOn(api, 'getLoomTapestry').mockResolvedValue(demoTapestry())
+    render(<LoomPage />)
+    await waitFor(() => expect(screen.getAllByText('The Lost Puppy').length).toBeGreaterThan(0))
+    const gaps = document.querySelectorAll('.loom-lane-gap')
+    expect(gaps.length).toBeGreaterThan(0)
+  })
+
+  it('opens the node editor when a gap is clicked', async () => {
+    vi.spyOn(api, 'getLoomTapestry').mockResolvedValue(demoTapestry())
+    const user = userEvent.setup()
+    render(<LoomPage />)
+    await waitFor(() => expect(screen.getAllByText('The Lost Puppy').length).toBeGreaterThan(0))
+    const gaps = document.querySelectorAll('.loom-lane-gap')
+    expect(gaps.length).toBeGreaterThan(0)
+    await user.click(gaps[0])
+    expect(screen.getByRole('dialog', { name: /Add New Beat/ })).toBeInTheDocument()
+  })
+
+  it('creates a node and inserts it at the gap position on save', async () => {
+    vi.spyOn(api, 'getLoomTapestry').mockResolvedValue(demoTapestry())
+    const createLoomNodeSpy = vi.spyOn(api, 'createLoomNode').mockResolvedValue({ id: 99, kind: 'beat', title: 'New Beat', x: 0, y: 0, thread_ids: [] })
+    const insertSpy = vi.spyOn(api, 'insertLoomThreadItem').mockResolvedValue({} as any)
+    const user = userEvent.setup()
+    render(<LoomPage />)
+    await waitFor(() => expect(screen.getAllByText('The Lost Puppy').length).toBeGreaterThan(0))
+    const gaps = document.querySelectorAll('.loom-lane-gap')
+    await user.click(gaps[0])
+    await user.type(screen.getByLabelText('Title'), 'New Beat')
+    await user.click(screen.getByRole('button', { name: 'Create Node' }))
+    await waitFor(() => {
+      expect(createLoomNodeSpy).toHaveBeenCalled()
+      expect(insertSpy).toHaveBeenCalledWith(1, { node_id: 99, position: expect.any(Number) })
+    })
+  })
+
+  it('renders gap elements after each body card in the track', async () => {
+    vi.spyOn(api, 'getLoomTapestry').mockResolvedValue(demoTapestry())
+    render(<LoomPage />)
+    await waitFor(() => expect(screen.getAllByText('The Lost Puppy').length).toBeGreaterThan(0))
+    const tracks = document.querySelectorAll('.loom-lane-track')
+    expect(tracks.length).toBe(1)
+    const gaps = tracks[0].querySelectorAll('.loom-lane-gap')
+    const cards = tracks[0].querySelectorAll('.loom-node')
+    expect(gaps.length).toBeGreaterThanOrEqual(cards.length)
+  })
 })

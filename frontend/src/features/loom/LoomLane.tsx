@@ -1,3 +1,4 @@
+import { useCallback, useState } from 'react'
 import type { LoomNode, LoomTapestryThread } from '../../api/types'
 import { threadOrdered, currentPosition, threadHead, nextBeat } from './loomGraph'
 import { LoomNodeCard } from './LoomNodeCard'
@@ -8,9 +9,100 @@ interface LoomLaneProps {
   selectedNodeId?: number | null
   onSelectNode?: (nodeId: number) => void
   onRegisterRect?: (nodeId: number, threadId: number, el: HTMLElement | null) => void
+  onGapClick?: (threadId: number, position: number) => void
+  onReorder?: (threadId: number, nodeId: number, fromBodyIndex: number, toBodyIndex: number) => void
+  onGapRestore?: (nodeId: number, threadId: number, position: number) => void
 }
 
-export function LoomLane({ thread, nodes, selectedNodeId, onSelectNode, onRegisterRect }: LoomLaneProps) {
+function Gap({
+  threadId,
+  position,
+  index,
+  onGapClick,
+  onReorder,
+  onGapRestore,
+}: {
+  threadId: number
+  position: number
+  index: number
+  onGapClick?: (threadId: number, position: number) => void
+  onReorder?: (threadId: number, nodeId: number, fromBodyIndex: number, toBodyIndex: number) => void
+  onGapRestore?: (nodeId: number, threadId: number, position: number) => void
+}) {
+  const [dragOver, setDragOver] = useState(false)
+
+  const handleClick = useCallback(() => {
+    onGapClick?.(threadId, position)
+  }, [onGapClick, threadId, position])
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    setDragOver(true)
+  }, [])
+
+  const handleDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    setDragOver(true)
+  }, [])
+
+  const handleDragLeave = useCallback(() => {
+    setDragOver(false)
+  }, [])
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault()
+      setDragOver(false)
+      const raw = e.dataTransfer.getData('application/json')
+      if (!raw) return
+      try {
+        const data = JSON.parse(raw)
+        if (data.action === 'reorder') {
+          onReorder?.(threadId, data.nodeId, data.fromBodyIndex, index)
+        } else if (data.action === 'restore') {
+          onGapRestore?.(data.nodeId, threadId, position)
+        }
+      } catch {
+        // ignore parse errors
+      }
+    },
+    [onReorder, onGapRestore, threadId, position, index],
+  )
+
+  return (
+    <div
+      className={`loom-lane-gap${dragOver ? ' loom-lane-gap--drag-over' : ''}`}
+      onClick={handleClick}
+      onDragOver={handleDragOver}
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+      role="button"
+      tabIndex={0}
+      aria-label={`Insert at position ${position}`}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          handleClick()
+        }
+      }}
+    >
+      <span className="loom-lane-gap-icon" aria-hidden="true">+</span>
+    </div>
+  )
+}
+
+export function LoomLane({
+  thread,
+  nodes,
+  selectedNodeId,
+  onSelectNode,
+  onRegisterRect,
+  onGapClick,
+  onReorder,
+  onGapRestore,
+}: LoomLaneProps) {
   const ordered = threadOrdered(thread, nodes)
   const current = currentPosition(thread, nodes)
   const head = threadHead(thread, nodes)
@@ -48,19 +140,41 @@ export function LoomLane({ thread, nodes, selectedNodeId, onSelectNode, onRegist
         </div>
       )}
       <div className="loom-lane-track">
-        {bodyNodes.map((node) => (
-          <LoomNodeCard
-            key={node.id}
-            node={node}
-            isNow={head?.id === node.id || currentNodeId === node.id}
-            isNext={nextBeatId === node.id}
-            threadColor={thread.color}
-            selected={selectedNodeId === node.id}
-            onClick={onSelectNode}
-            onRegisterRect={onRegisterRect}
-            threadId={thread.id}
-          />
-        ))}
+        {bodyNodes.map((node, idx) => {
+          const item = thread.items.find((i) => i.node_id === node.id)
+          const gapPos = item?.position ?? idx * 10
+          return (
+            <div key={node.id} className="loom-lane-card-group">
+              <Gap
+                threadId={thread.id}
+                position={gapPos}
+                index={idx}
+                onGapClick={onGapClick}
+                onReorder={onReorder}
+                onGapRestore={onGapRestore}
+              />
+              <LoomNodeCard
+                node={node}
+                isNow={head?.id === node.id || currentNodeId === node.id}
+                isNext={nextBeatId === node.id}
+                threadColor={thread.color}
+                selected={selectedNodeId === node.id}
+                onClick={onSelectNode}
+                onRegisterRect={onRegisterRect}
+                threadId={thread.id}
+                bodyIndex={idx}
+              />
+            </div>
+          )
+        })}
+        <Gap
+          threadId={thread.id}
+          position={Number.MAX_SAFE_INTEGER}
+          index={bodyNodes.length}
+          onGapClick={onGapClick}
+          onReorder={onReorder}
+          onGapRestore={onGapRestore}
+        />
       </div>
       {endNode && (
         <div className="loom-lane-cap loom-lane-cap--end">

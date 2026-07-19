@@ -81,4 +81,10 @@ describe('LoomBeatBankTray', () => {
     render(<LoomBeatBankTray nodes={[bankedNode]} threads={[]} onSelectNode={() => {}} onRestoreNode={() => {}} />)
     expect(screen.getByRole('button', { name: 'Restore' })).toBeDisabled()
   })
+
+  it('makes tray entries draggable for drag-to-gap restore', () => {
+    render(<LoomBeatBankTray nodes={[bankedNode]} threads={threads} onSelectNode={() => {}} onRestoreNode={() => {}} />)
+    const entry = document.querySelector('.loom-beat-bank-tray-entry')
+    expect(entry).toHaveAttribute('draggable')
+  })
 })
