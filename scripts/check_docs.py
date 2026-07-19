@@ -253,13 +253,37 @@ def check_plan_metadata(plan_path: Path) -> list[CheckError]:
             "Add '> **Status:** ...' after the first paragraph (see PLAN_TEMPLATE.md)",
         ))
 
-    if meta["current_stage"] is None:
-        errors.append(CheckError(
-            rel,
-            "Missing next-up stage heading",
-            "Add '#### <ID> — <name> (next up)' for the next stage (see PLAN_TEMPLATE.md)",
-        ))
+    # The Plan -> Implement -> Reconcile workflow uses lean Plans whose stages are
+    # plain-English list items, not '(next up)' execution blocks. A current-stage
+    # heading is therefore optional; only the Status line is required.
 
+    return errors
+
+
+WORK_ORDER_FIELDS = ("GOAL:", "START IN:", "STOP WHEN:", "STATUS:")
+
+
+def check_work_orders(docs_dir: Path) -> list[CheckError]:
+    """Lint work-order files for the load-bearing fields a small model needs.
+
+    Work orders live under docs/plans/active/orders/<feature>/ and drive the
+    Plan -> Implement -> Reconcile workflow. Each must name a goal, where to start,
+    a hard stop condition, and a status line, so a fresh cheap-model context can
+    execute it without wandering. This is a light structural check only.
+    """
+    errors: list[CheckError] = []
+    orders_root = docs_dir / "plans" / "active" / "orders"
+    if not orders_root.exists():
+        return errors
+    for order in sorted(orders_root.rglob("*.md")):
+        content = order.read_text(encoding="utf-8")
+        missing = [label for label in WORK_ORDER_FIELDS if label not in content]
+        if missing:
+            errors.append(CheckError(
+                _safe_rel(order),
+                f"Work order is missing required fields: {', '.join(missing)}",
+                "Add the missing work-order fields (see PLAN_TEMPLATE.md)",
+            ))
     return errors
 
 
@@ -477,14 +501,9 @@ def check_area_guide_contract(docs_dir: Path) -> list[CheckError]:
                 "Point it at a file under docs/plans/active/",
             ))
             continue
-        target, anchor = resolved
-        if not anchor:
-            errors.append(CheckError(
-                _safe_rel(guide),
-                "Active-plan link must include the current-stage anchor",
-                "Link directly to the plan's '(next up)' heading",
-            ))
-            continue
+        # A stage anchor is optional: lean Plans have plain-English stages, not
+        # '(next up)' headings to anchor to. Linking to the plan file is enough.
+        target, _anchor = resolved
         guide_targets[target.resolve()] = guide.resolve()
 
     for plan in active_plans:
@@ -595,10 +614,9 @@ def run_all_checks(docs_dir: Path) -> list[CheckError]:
 
     for plan in find_active_plan_files(docs_dir):
         errors.extend(check_plan_metadata(plan))
-        errors.extend(check_plan_execution_contract(plan))
 
+    errors.extend(check_work_orders(docs_dir))
     errors.extend(check_manifest_completeness(docs_dir, readme))
-    errors.extend(check_manifest_current_stage_anchors(docs_dir, readme))
     errors.extend(check_forbidden_references(docs_dir))
     errors.extend(check_plan_lifecycle(docs_dir, readme))
     errors.extend(check_area_guide_contract(docs_dir))
@@ -649,20 +667,10 @@ def run_diff_checks(docs_dir: Path, base: str) -> list[CheckError]:
         for line in output.splitlines()
         if line
     }
-    implementation_changed = any(path.startswith(IMPLEMENTATION_PREFIXES) for path in changed)
-    active_plans = find_active_plan_files(docs_dir)
-    changed_plans = [
-        plan for plan in active_plans
-        if str(plan.relative_to(docs_dir.parent)).replace("\\", "/") in changed
-    ]
-
-    if implementation_changed and not changed_plans:
-        errors.append(CheckError(
-            "changed files",
-            "Implementation changes do not update an owning active plan",
-            "Update the active plan that owns this work in the same change set",
-        ))
-
+    # Note: implementation changes are no longer coupled to an active-plan edit.
+    # Under the Plan -> Implement -> Reconcile workflow, code lands per work order
+    # and the Plan is reconciled in batches, so per-diff plan edits are not required.
+    # Generated-contract references still must move with their source.
     for source, references in GENERATED_CONTRACT_REFERENCES.items():
         if source not in changed:
             continue

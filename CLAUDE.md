@@ -14,17 +14,32 @@ This is the single authoritative instruction file for AI work in this repository
 
 No documentation-maintenance plan is currently active; create a focused plan before new documentation-contract work. The manifest and area guides, rather than this file, are the sources for active-plan status and task routing.
 
+## Execution Workflow: Plan → Implement → Reconcile
+
+Work is split so that expensive planning and cheap implementation stay separate:
+
+- **PLAN (Claude).** Claude thinks, writes the human-readable Plan, and compiles each stage into lean
+  work orders. **Claude never writes implementation code** — only plans and work orders (guidance,
+  not code).
+- **IMPLEMENT (small model).** A smaller/cheaper model executes **one work order per fresh context
+  window**, exploring only the files the order names, and stops at the order's stop condition. It
+  touches only code, tests, and its own order's STATUS line — never the docs.
+- **RECONCILE (Claude).** After a stage's orders finish, Claude collapses them into the Plan, updates
+  any canonical reference whose contract changed, runs the checker, and deletes the spent orders.
+
+Four skills in `.agents/skills/` drive this (read by both Claude Code and opencode): `plan`,
+`to-orders`, `implement-order`, and `reconcile`. The full formats and lifecycle live in
+[docs/PLAN_TEMPLATE.md](docs/PLAN_TEMPLATE.md).
+
 ## Documentation Contract
 
-- Every implementation change belongs to an active execution plan. Area guides route work and record durable ownership, but never authorize implementation. Create a focused plan before editing when an area has no active plan for the outcome.
-- Every executable stage declares **Read first**, **Expected touch set**, **Documentation impact**, **Tests**, **Gate**, and **Completion edit**. Complete its expected touch set and exact documentation-impact requirements in the same change set as the implementation.
-- Every stage consolidates important discoveries before it ships: update the active plan's durable context, every affected future stage, and any canonical reference whose contract changed. Scaffolding normally discovers the most because it prepares the broadest touch set, but this handoff is required for every stage. Answer, don't point: when a future stage's Build would otherwise tell its executor to derive a value from the codebase, survey it now and write the actual value into that stage's block — see [PLAN_TEMPLATE.md](docs/PLAN_TEMPLATE.md)'s Discovery consolidation section.
-- Before calling a stage done, re-read that stage's own **Discovery consolidation** line as a literal checklist and confirm each location it names was actually edited — do not rely on memory of intent, or on a different edit (e.g. a reference-doc update) standing in for a named target you skipped. A stage is not consolidated until every named target shows a diff.
-- Update the relevant reference document when an API contract, data model, architecture, design system, testing contract, setup instruction, or user-visible capability changes.
-- Collapse shipped stages and update their plan status as specified by [PLAN_TEMPLATE.md](docs/PLAN_TEMPLATE.md). Archive every completed execution plan; leave a redirect stub only when a known link must survive. Update its area guide and the manifest in the same change set. `MEMORY.md` is not a parallel plan-status registry.
-- Run the documentation checker through the repo-local virtualenv (`.venv\Scripts\python.exe scripts/check_docs.py --check` on Windows, `.venv/bin/python scripts/check_docs.py --check` on POSIX); before completion also run the corresponding `--base <base-ref>` command when a valid base ref is available.
-- The checker validates active-document links and anchors, plan lifecycle and manifest entries, AI-entry precedence, configured test commands, legacy guidance, generated reference inventories, and base-diff documentation impact.
-- GitHub Actions runs the `documentation-contract` check on every pull request and push to `main`; enable it as a required branch-protection check in GitHub settings. The PR template records the required fresh-reader routing validation.
+- Implementation work flows through the Plan → Implement → Reconcile workflow above. Area guides route work and record durable ownership; they never authorize implementation. Create a focused Plan (via the `plan` skill) before changing code in an area that has no active Plan.
+- Keep canonical references current: update the relevant reference document when an API contract, data model, architecture convention, design token, testing contract, setup instruction, or user-visible capability changes. The `reconcile` skill performs these updates after a stage's work orders ship — do not defer them indefinitely.
+- Regenerate the auto-generated reference inventories whenever their source contracts change: `.venv\Scripts\python.exe scripts/check_docs.py --write-generated`.
+- Archive a completed Plan to `docs/complete/`, updating its area guide and the manifest in the same change set; leave a redirect stub only when a known inbound link must survive. `MEMORY.md` is not a parallel plan-status registry.
+- Run the documentation checker through the repo-local virtualenv (`.venv\Scripts\python.exe scripts/check_docs.py --check` on Windows, `.venv/bin/python scripts/check_docs.py --check` on POSIX).
+- The checker validates local links and anchors, active-Plan status lines and manifest completeness, area-guide↔Plan ownership, work-order structure, plan-redirect lifecycle, AI-entry precedence, configured test commands, banned legacy references, and generated reference inventories. It no longer couples per-diff code changes to a Plan edit, so work orders can land independently.
+- GitHub Actions runs the `documentation-contract` check on every pull request and push to `main`; keep it enabled as a required branch-protection check in GitHub settings.
 
 ## Stable Project Rules
 
@@ -42,6 +57,12 @@ No documentation-maintenance plan is currently active; create a focused plan bef
 - Do not use destructive Git operations unless the user explicitly requests them.
 
 ## Agent skills
+
+### Execution workflow
+
+Four skills in `.agents/skills/` implement the Plan → Implement → Reconcile workflow above: `plan`
+(write the Plan), `to-orders` (compile a stage into work orders), `implement-order` (small model
+executes one order), and `reconcile` (close out finished orders). See [docs/PLAN_TEMPLATE.md](docs/PLAN_TEMPLATE.md).
 
 ### Issue tracker
 

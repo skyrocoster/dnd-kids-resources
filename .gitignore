@@ -50,6 +50,11 @@ data/seeds/archive/
 # Vendored AI tool skill dirs (not project code)
 .claude/skills/
 .cursor/skills/
-.agents/skills/
+# Ignore vendored skills, but track our own workflow skills (Plan -> Implement -> Reconcile)
+.agents/skills/*
+!.agents/skills/plan/
+!.agents/skills/to-orders/
+!.agents/skills/implement-order/
+!.agents/skills/reconcile/
 .opencode/
 opencode.json

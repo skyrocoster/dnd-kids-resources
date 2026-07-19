@@ -4,7 +4,7 @@ This is the complete documentation inventory and task router. Read [../CLAUDE.md
 
 `../scratch/` is deliberately outside this inventory and documentation contract. AI must not explore it unless the user explicitly names a path there.
 
-`docs/plans/active/tickets/` and `docs/plans/mapping/` hold derived, disposable working artifacts for the local ticket workflow. Regenerated from source maps/plans; no manifest row needed.
+`docs/plans/active/orders/` holds the lean, disposable **work orders** compiled from a Plan's stages by the `to-orders` skill and deleted by `reconcile` once shipped; `docs/plans/active/tickets/` and `docs/plans/mapping/` hold other derived working artifacts. These are regenerated from source plans/maps; no manifest row needed. The Plan → Implement → Reconcile workflow and its four `.agents/skills/` skills are defined in [PLAN_TEMPLATE.md](PLAN_TEMPLATE.md) and [../CLAUDE.md](../CLAUDE.md).
 
 ## Task Router
 
@@ -19,7 +19,7 @@ This is the complete documentation inventory and task router. Read [../CLAUDE.md
 | Shared UI, tokens, icons, or accessibility | [Visual Design](areas/visual-design.md) | `DESIGN_SYSTEM.md`, `ARCHITECTURE.md`, `TESTING.md` |
 | Test tooling, fixtures, coverage, or CI | Relevant area guide; create a focused plan if it has none | `TESTING.md`, `ARCHITECTURE.md` |
 
-An implementation must update its owning active execution plan and every exact reference document named by that plan's documentation-impact requirement. Area guides are durable routing documents, not plans. Each executable plan stage declares **Read first**, **Build**, **Inherits**, **Expected touch set**, **Documentation impact**, **Tests**, **Gate**, and **Completion edit**; `None` requires a specific reason. Before a stage ships, consolidate important discoveries into the plan's durable context and every affected future stage so a fresh executor does not rediscover confirmed facts; update canonical references for durable product contracts. Historical documents are context only; they do not define current behavior.
+Implementation flows through the **Plan → Implement → Reconcile** workflow (see [../CLAUDE.md](../CLAUDE.md) and [PLAN_TEMPLATE.md](PLAN_TEMPLATE.md)): Claude writes a lean Plan and compiles each stage into self-contained work orders under `plans/active/orders/<feature>/`; a small model executes one order per context window; then `reconcile` collapses the shipped orders into the Plan and updates any canonical reference whose contract changed. Area guides are durable routing documents, not plans. Historical documents are context only; they do not define current behavior.
 
 ## Document Inventory
 
