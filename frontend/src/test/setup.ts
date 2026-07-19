@@ -6,9 +6,7 @@ afterEach(() => {
   cleanup()
 })
 
-// React Flow (LM4, The Loom) needs these under jsdom; jsdom implements none of them.
-// Concentrate real coverage in the pure loomGraph/loomFlow modules — never attempt
-// drag/connect interaction tests here, only render smoke tests.
+// Shared jsdom geometry shims for components that observe or measure layout.
 class ResizeObserverStub {
   observe() {}
   unobserve() {}

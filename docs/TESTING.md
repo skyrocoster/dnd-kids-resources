@@ -81,20 +81,10 @@ every seeded player's nested endpoints, asserting **no configured GET endpoint m
 - `npm run build` (`tsc -b && vite build`) must also succeed before shipping — it
   type-checks the whole app. Use `npm run typecheck` (`tsc -b`) for a fast type-only
   check without the Vite build step.
-- **React Flow under jsdom** requires three stubs in `frontend/src/test/setup.ts`:
-  `ResizeObserver` (no-op observe/unobserve/disconnect), `DOMMatrixReadOnly` (no-op constructor),
-  and element `offsetWidth`/`offsetHeight` getters (set to 1000/800). These are assigned via `??=`
-  or `Object.defineProperties` so they don't overwrite a real implementation when present.
-  Coverage of React Flow–rendered components is limited to render smoke tests (node badges,
-  vault panel listing); never attempt drag/connect/click interaction tests in jsdom — those
-  belong in live browser gates. This boundary is wider than it first appears: even a plain
-  `user.click()` on a rendered React Flow node throws inside `d3-drag`'s `nodrag.js`
-  (`Cannot read properties of null (reading 'document')`), not just drag/connect gestures
-  (confirmed in the Loom's LM6 bridge-workflow stage). Test canvas-click-driven logic by
-  extracting its payload/gating logic into pure functions and testing those (or an isolated
-  non-React-Flow dialog component) instead of simulating the node click itself. Pure
-  graph-semantic modules (`loomGraph.ts`, `loomFlow.ts`) are fully unit-tested without any
-  React Flow dependency.
+- `frontend/src/test/setup.ts` provides shared jsdom geometry shims (`ResizeObserver`,
+  `DOMMatrixReadOnly`, and element `offsetWidth`/`offsetHeight`) for components that observe or measure layout.
+  Loom swimlane tests cover static lane ordering, card state, and page wiring in jsdom; connector geometry and
+  drag-style interactions belong in focused unit helpers plus the live browser gate for their owning stages.
 
 - **Do not use `tsc --noEmit` as a gate.** The root `frontend/tsconfig.json` has
   `"files": []` (it only exists to reference the app/node sub-projects), so

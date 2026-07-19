@@ -1,28 +1,18 @@
 import type { LoomNode, LoomThread } from '../../api/types'
 import { Button } from '../../components/Button'
 import { LoomLegend } from './LoomLegend'
-import { LoomVaultPanel } from './LoomVaultPanel'
 
 export interface LoomWeaverPanelProps {
   selectedNode: LoomNode | null
   threads: LoomThread[]
-  threadCounts: Record<number, number>
-  bankedNodes: LoomNode[]
-  focusedThreadId: number | null
   onEdit: () => void
   onDeleteNode: () => void
-  onSelectBankedNode: (node: LoomNode) => void
-  onRestoreNode: (node: LoomNode) => void
   onFulfilNode: (node: LoomNode) => void
   onBankNode: (node: LoomNode) => void
   onReplaceNode: (node: LoomNode) => void
   onSpawnThread: (node: LoomNode) => void
   onChangeEnding: (node: LoomNode) => void
   onUndoFulfil: (node: LoomNode) => void
-  onOpenThreadManager: () => void
-  onFocusThread: (threadId: number) => void
-  onClearThreadFocus: () => void
-  onReorderBeats: (threadId: number) => void
 }
 
 function kindLabel(node: LoomNode): string {
@@ -48,23 +38,14 @@ function excerpt(body: string | null | undefined): string | null {
 export function LoomWeaverPanel({
   selectedNode,
   threads,
-  threadCounts,
-  bankedNodes,
-  focusedThreadId,
   onEdit,
   onDeleteNode,
-  onSelectBankedNode,
-  onRestoreNode,
   onFulfilNode,
   onBankNode,
   onReplaceNode,
   onSpawnThread,
   onChangeEnding,
   onUndoFulfil,
-  onOpenThreadManager,
-  onFocusThread,
-  onClearThreadFocus,
-  onReorderBeats,
 }: LoomWeaverPanelProps) {
   const threadNamesById = new Map(threads.map((thread) => [thread.id, thread.name]))
   const selectedThreadNames =
@@ -125,11 +106,6 @@ export function LoomWeaverPanel({
                   </Button>
                 </>
               )}
-              {selectedNode.kind === 'beat' && selectedNode.thread_ids.length === 0 && (
-                <Button variant="secondary" size="compact" onClick={() => onRestoreNode(selectedNode)} disabled={focusedThreadId == null}>
-                  Restore Beat
-                </Button>
-              )}
               {selectedNode.kind === 'session' && (
                 <Button variant="secondary" size="compact" onClick={() => onSpawnThread(selectedNode)}>
                   Spawn Thread
@@ -155,66 +131,6 @@ export function LoomWeaverPanel({
         ) : (
           <LoomLegend />
         )}
-      </section>
-
-      <section className="loom-weaver-section loom-weaver-threads">
-        <div className="loom-weaver-section-heading">
-          <h2 className="loom-weaver-section-title">Threads</h2>
-          <div className="loom-weaver-section-actions">
-            {focusedThreadId != null && (
-              <>
-                <Button variant="secondary" size="compact" onClick={() => onReorderBeats(focusedThreadId)}>
-                  Reorder Beats
-                </Button>
-                <Button variant="secondary" size="compact" onClick={onClearThreadFocus}>
-                  Clear focus
-                </Button>
-              </>
-            )}
-            <Button variant="secondary" size="compact" onClick={onOpenThreadManager}>
-              Manage
-            </Button>
-          </div>
-        </div>
-        {threads.length > 0 ? (
-          <ul className="loom-weaver-thread-list">
-            {threads.map((thread) => (
-              <li key={thread.id} className="loom-weaver-thread-row">
-                <button
-                  type="button"
-                  className="loom-weaver-thread-button"
-                  aria-pressed={focusedThreadId === thread.id}
-                  onClick={() => onFocusThread(thread.id)}
-                >
-                  <span className="loom-weaver-thread-swatch" data-color={thread.color} aria-hidden="true" />
-                  <span className="loom-weaver-thread-name">{thread.name}</span>
-                  <span className="loom-weaver-thread-count">
-                    {threadCounts[thread.id] ?? 0} {(threadCounts[thread.id] ?? 0) === 1 ? 'node' : 'nodes'}
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="loom-weaver-copy">No threads yet.</p>
-        )}
-        {focusedThreadId != null && (
-          <p className="loom-weaver-copy">
-            Focus keeps this thread bright on the tapestry and dims every unrelated node.
-          </p>
-        )}
-      </section>
-
-      <section className="loom-weaver-section loom-weaver-vault">
-        <div className="loom-weaver-section-heading">
-          <h2 className="loom-weaver-section-title">Beat Bank</h2>
-        </div>
-        <LoomVaultPanel
-          nodes={bankedNodes}
-          onSelectNode={onSelectBankedNode}
-          onRestoreNode={onRestoreNode}
-          canRestore={focusedThreadId != null}
-        />
       </section>
     </aside>
   )

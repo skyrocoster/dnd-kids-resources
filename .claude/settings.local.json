@@ -17,6 +17,8 @@
       "Bash(powershell -NoProfile -Command \"Get-CimInstance Win32_Process -Filter \\\\\"Name='python.exe'\\\\\" | Select-Object ProcessId,CommandLine\")",
       "Bash(xargs -I{} sh -c 'echo \"{}\" ; stat -c \"%y %s bytes\" \"{}\" 2>/dev/null || stat -f \"%Sm %z bytes\" \"{}\"')",
       "Bash(gh label *)"
+      "Bash(*)"
+      "powershell*"
     ]
   }
 }

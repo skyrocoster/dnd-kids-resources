@@ -1,27 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import {
-  ReactFlow,
-  Background,
-  Controls,
-  useNodesState,
-  type ReactFlowInstance,
-  type Node,
-  type NodeMouseHandler,
-  type OnNodeDrag,
-} from '@xyflow/react'
-import '@xyflow/react/dist/style.css'
+import { useCallback, useMemo, useState } from 'react'
 import './LoomCanvas.css'
 import './LoomEditor.css'
 import { useLoomTapestry } from './useLoomTapestry'
-import { useLoomCanvasMutations } from './useLoomCanvasMutations'
-import { buildFlowEdges, buildFlowNodes, buildSpawnEdges, type FlowNodeData } from './loomFlow'
 import { bankedBeats } from './loomGraph'
+import { LoomSwimlanes } from './LoomSwimlanes'
 import { LoomThreadsContext } from './nodes/loomThreadsContext'
-import { StartNode } from './nodes/StartNode'
-import { EndNode } from './nodes/EndNode'
-import { BeatNode } from './nodes/BeatNode'
-import { SessionNode } from './nodes/SessionNode'
 import { LoomWeaverPanel } from './LoomWeaverPanel'
+import { LoomBeatBankTray } from './LoomBeatBankTray'
 import { LoomNodeEditor } from './LoomNodeEditor'
 import { LoomThreadManager } from './LoomThreadManager'
 import { LoomBeatReorderDialog } from './LoomBeatReorderDialog'
@@ -41,7 +26,6 @@ import {
 } from '../../api/client'
 import type { LoomNode as LoomNodeType, LoomNodeKind } from '../../api/types'
 
-const nodeTypes = { start: StartNode, end: EndNode, beat: BeatNode, session: SessionNode }
 const LOOM_EYEBROW = 'TAPESTRY · CONTINUITY'
 const LOOM_SUBTITLE = 'Track where every story thread stands between sessions.'
 
@@ -51,11 +35,8 @@ function errorMessage(err: unknown, fallback: string): string {
 
 export function LoomPage() {
   const { tapestry, reload } = useLoomTapestry()
-  const [rfInstance, setRfInstance] = useState<ReactFlowInstance<Node<FlowNodeData>> | null>(null)
-  const canvasRef = useRef<HTMLDivElement>(null)
 
-  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
-  const [focusedThreadId, setFocusedThreadId] = useState<number | null>(null)
+  const [selectedNodeId, setSelectedNodeId] = useState<number | null>(null)
   const [reorderThreadId, setReorderThreadId] = useState<number | null>(null)
   const [nodeEditor, setNodeEditor] = useState<{
     node?: LoomNodeType
@@ -66,100 +47,30 @@ export function LoomPage() {
   const [threadManagerOpen, setThreadManagerOpen] = useState(false)
   const [pendingDeleteNode, setPendingDeleteNode] = useState<LoomNodeType | null>(null)
   const [deletingNode, setDeletingNode] = useState(false)
-  const {
-    error: bannerError,
-    dismissError,
-    reportError,
-    moveNode,
-  } = useLoomCanvasMutations(tapestry, reload)
+  const [bannerError, setBannerError] = useState<string | null>(null)
 
-  const flowNodes = useMemo(() => (tapestry.status === 'success' ? buildFlowNodes(tapestry.data) : []), [tapestry])
-  const [nodes, setNodes, onNodesChange] = useNodesState<Node<FlowNodeData>>([])
-  // Every edge (in-thread chain and cross-thread spawn alike) reads live on-screen positions
-  // (`nodes`, updated continuously while dragging), not the lane-layout `flowNodes` — so the
-  // anchor side re-picks itself against wherever a node currently sits, including mid-drag,
-  // and settles on drop.
-  const flowEdges = useMemo(() => (tapestry.status === 'success'
-    ? [...tapestry.data.threads.flatMap((thread) => buildFlowEdges(nodes, thread)), ...buildSpawnEdges(nodes, tapestry.data)]
-    : []), [tapestry, nodes])
   const banked = useMemo(() => (tapestry.status === 'success' ? bankedBeats(tapestry.data) : []), [tapestry])
   const threads = useMemo(() => (tapestry.status === 'success' ? tapestry.data.threads : []), [tapestry])
-  const threadCounts = useMemo<Record<number, number>>(() => {
-    if (tapestry.status !== 'success') return {}
-
-    return tapestry.data.nodes.reduce<Record<number, number>>((counts, node) => {
-      for (const threadId of node.thread_ids) counts[threadId] = (counts[threadId] ?? 0) + 1
-      return counts
-    }, {})
-  }, [tapestry])
-
-  useEffect(() => {
-    setNodes((prev) => {
-      const prevById = new Map(prev.map((n) => [n.id, n]))
-      return flowNodes.map((fn) => {
-        const existing = prevById.get(fn.id)
-        const isDimmed = focusedThreadId != null && !fn.data.node.thread_ids.includes(focusedThreadId)
-        return existing
-          ? {
-              ...existing,
-              data: fn.data,
-              selected: fn.id === selectedNodeId,
-              className: isDimmed ? 'loom-node-wrapper--dimmed' : undefined,
-            }
-          : {
-              ...fn,
-              selected: fn.id === selectedNodeId,
-              className: isDimmed ? 'loom-node-wrapper--dimmed' : undefined,
-            }
-      })
-    })
-  }, [flowNodes, focusedThreadId, selectedNodeId, setNodes])
 
   const selectedNode =
     selectedNodeId != null && tapestry.status === 'success'
-      ? tapestry.data.nodes.find((n) => String(n.id) === selectedNodeId) ?? null
+      ? tapestry.data.nodes.find((n) => n.id === selectedNodeId) ?? null
       : null
 
-  const defaultNewPosition = useCallback((): { x: number; y: number } => {
-    if (rfInstance && canvasRef.current) {
-      const rect = canvasRef.current.getBoundingClientRect()
-      return rfInstance.screenToFlowPosition({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 })
-    }
-    return { x: 0, y: 0 }
-  }, [rfInstance])
-
-  const handleSelectVaultNode = (node: LoomNodeType) => {
-    setSelectedNodeId(String(node.id))
-    if (!rfInstance) return
-    rfInstance.setCenter(node.x, node.y, { zoom: 1, duration: 400 })
-  }
-
-  const handleNodeClick: NodeMouseHandler = useCallback(
-    (_event, node) => {
-      setSelectedNodeId(node.id)
-    },
-    [],
-  )
+  const handleNodeClick = useCallback((nodeId: number) => {
+    setSelectedNodeId((prev) => prev === nodeId ? prev : nodeId)
+  }, [])
 
   const handlePaneClick = useCallback(() => {
     setSelectedNodeId(null)
   }, [])
 
-  const handleNodeDragStop: OnNodeDrag = useCallback(
-    (_event, node) => moveNode(node.id, node.position.x, node.position.y),
-    [moveNode],
-  )
+  const handleSelectVaultNode = (node: LoomNodeType) => {
+    setSelectedNodeId(node.id)
+  }
 
-  const handleNodeSaved = async (saved: LoomNodeType) => {
-    const insertPosition = nodeEditor?.insertPosition ?? 10
+  const handleNodeSaved = () => {
     setNodeEditor(null)
-    if (!nodeEditor?.node && focusedThreadId != null) {
-      try {
-        await insertLoomThreadItem(focusedThreadId, { node_id: saved.id, position: insertPosition })
-      } catch (err) {
-        reportError(errorMessage(err, 'Node created, but could not place it in the thread.'))
-      }
-    }
     reload()
   }
 
@@ -168,26 +79,22 @@ export function LoomPage() {
       await command()
       reload()
     } catch (err) {
-      reportError(errorMessage(err, fallback))
+      setBannerError(errorMessage(err, fallback))
     }
   }
 
   const handleFulfilNode = (node: LoomNodeType) => void runLifecycleCommand(() => fulfilLoomNode(node.id), 'Failed to fulfil the beat.')
   const handleBankNode = (node: LoomNodeType) => void runLifecycleCommand(() => bankLoomNode(node.id), 'Failed to bank the beat.')
 
-  const handleRestoreNode = (node: LoomNodeType) => {
-    if (focusedThreadId == null) {
-      reportError('Focus a thread before restoring a beat.')
-      return
-    }
+  const handleRestoreNode = (node: LoomNodeType, threadId: number) => {
     void runLifecycleCommand(
-      () => insertLoomThreadItem(focusedThreadId, { node_id: node.id, position: 10 }),
+      () => insertLoomThreadItem(threadId, { node_id: node.id, position: 10 }),
       'Failed to restore the beat.',
     )
   }
 
   const handleReplaceNode = (node: LoomNodeType) => {
-    if (focusedThreadId == null || node.thread_ids.length === 0) return
+    if (node.thread_ids.length === 0) return
     const thread = tapestry.status === 'success' ? tapestry.data.threads.find((item) => item.id === node.thread_ids[0]) : undefined
     const position = thread?.items.find((item) => item.node_id === node.id)?.position ?? 10
     void runLifecycleCommand(async () => {
@@ -218,7 +125,7 @@ export function LoomPage() {
       setSelectedNodeId(null)
       reload()
     } catch (err) {
-      reportError(errorMessage(err, 'Failed to delete the node.'))
+      setBannerError(errorMessage(err, 'Failed to delete the node.'))
     } finally {
       setDeletingNode(false)
     }
@@ -226,13 +133,13 @@ export function LoomPage() {
 
   const commandBar = (
     <div className="loom-command-bar">
-      <Button variant="primary" onClick={() => setNodeEditor({ initialKind: 'session', position: defaultNewPosition() })}>
+      <Button variant="primary" onClick={() => setNodeEditor({ initialKind: 'session', position: { x: 0, y: 0 } })}>
         <PlusIcon aria-hidden="true" size={16} />
         <span>Record Session</span>
       </Button>
       <Button
         variant="secondary"
-        onClick={() => setNodeEditor({ initialKind: 'beat', position: defaultNewPosition() })}
+        onClick={() => setNodeEditor({ initialKind: 'beat', position: { x: 0, y: 0 } })}
       >
         <MapPinIcon aria-hidden="true" size={16} />
         <span>Add Beat</span>
@@ -298,34 +205,25 @@ export function LoomPage() {
     <LoomThreadsContext.Provider value={threads}>
       <div className="loom-route">
         {pageHeader}
-        <div className="loom-page">
+        <div className="loom-page" onClick={handlePaneClick}>
           <div className="loom-canvas-column">
-            {bannerError && <LoomErrorBanner message={bannerError} onDismiss={dismissError} />}
-            <div className="loom-canvas-area" ref={canvasRef}>
-              <ReactFlow<Node<FlowNodeData>>
-                nodes={nodes}
-                edges={flowEdges}
-                nodeTypes={nodeTypes}
-                onInit={setRfInstance}
-                onNodeClick={handleNodeClick}
-                onPaneClick={handlePaneClick}
-                onNodesChange={onNodesChange}
-                onNodeDragStop={handleNodeDragStop}
-                nodesConnectable={false}
-                fitView
-                proOptions={{ hideAttribution: false }}
-              >
-                <Background gap={24} size={1} color="color-mix(in srgb, var(--md-outline-variant) 68%, transparent)" />
-                <Controls />
-              </ReactFlow>
-            </div>
+            {bannerError && <LoomErrorBanner message={bannerError} onDismiss={() => setBannerError(null)} />}
+            <LoomSwimlanes
+              threads={threads}
+              nodes={tapestry.status === 'success' ? tapestry.data.nodes : []}
+              selectedNodeId={selectedNodeId}
+              onSelectNode={handleNodeClick}
+            />
+            <LoomBeatBankTray
+              nodes={banked}
+              threads={threads}
+              onSelectNode={handleSelectVaultNode}
+              onRestoreNode={handleRestoreNode}
+            />
           </div>
           <LoomWeaverPanel
             selectedNode={selectedNode}
             threads={threads}
-            threadCounts={threadCounts}
-            bankedNodes={banked}
-            focusedThreadId={focusedThreadId}
             onEdit={() => {
               if (!selectedNode) return
               setNodeEditor({ node: selectedNode, position: { x: selectedNode.x, y: selectedNode.y } })
@@ -334,18 +232,12 @@ export function LoomPage() {
               if (!selectedNode) return
               setPendingDeleteNode(selectedNode)
             }}
-            onSelectBankedNode={handleSelectVaultNode}
-            onRestoreNode={handleRestoreNode}
             onFulfilNode={handleFulfilNode}
             onBankNode={handleBankNode}
             onReplaceNode={handleReplaceNode}
             onSpawnThread={handleSpawnThread}
             onChangeEnding={(node) => setNodeEditor({ node, position: { x: node.x, y: node.y } })}
             onUndoFulfil={handleUndoFulfil}
-            onOpenThreadManager={() => setThreadManagerOpen(true)}
-            onFocusThread={(threadId) => setFocusedThreadId(threadId)}
-            onClearThreadFocus={() => setFocusedThreadId(null)}
-            onReorderBeats={(threadId) => setReorderThreadId(threadId)}
           />
         </div>
       </div>
@@ -372,7 +264,7 @@ export function LoomPage() {
             thread={thread}
             nodes={tapestry.data.nodes}
             onReordered={reload}
-            onError={reportError}
+            onError={(msg) => setBannerError(msg)}
             onClose={() => setReorderThreadId(null)}
           />
         ) : null

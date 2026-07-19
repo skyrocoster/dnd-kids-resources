@@ -5,7 +5,6 @@
   min-height: calc(100vh - var(--control-height) * 2);
 }
 
-/* React Flow re-themed onto MD3 tokens — see docs/DESIGN_SYSTEM.md's loom section. */
 .loom-page {
   display: flex;
   flex: 1;
@@ -24,56 +23,34 @@
 .loom-canvas-area {
   flex: 1;
   min-width: 0;
-  min-height: 0;
+  min-height: 560px;
   border-radius: var(--radius-lg);
   overflow: hidden;
   border: 1px solid var(--md-outline-variant);
 }
 
-/* Compass anchor points (nodes/CompassHandles.tsx): functional handles every edge — in-thread
-   chain and cross-thread spawn alike — routes between via loomFlow.ts's compassHandles, not
-   user-facing connection dots. Canvas is nodesConnectable={false}, so nothing drags off them. */
-.loom-canvas-area .react-flow__handle.loom-handle--anchor {
-  opacity: 0;
-  pointer-events: none;
-}
-
-.loom-canvas-area .react-flow {
-  --xy-background-color: transparent;
-  --xy-edge-stroke: var(--md-outline);
-  --xy-edge-stroke-width: 2;
-  --xy-edge-stroke-selected: var(--md-primary);
-  --xy-connectionline-stroke: var(--md-primary);
-  --xy-node-color: var(--md-on-surface);
-  --xy-node-border: none;
-  --xy-node-background-color: transparent;
-  --xy-node-boxshadow-hover: 0 0 0 2px var(--md-outline-variant);
-  --xy-node-boxshadow-selected: 0 0 0 2px var(--md-primary);
-  --xy-handle-background-color: var(--md-outline);
-  --xy-handle-border-color: var(--md-surface);
-  --xy-selection-background-color: rgb(208 188 255 / 0.12);
-  --xy-selection-border: 1px dotted var(--md-primary);
-  --xy-controls-button-background-color: var(--md-surface-2);
-  --xy-controls-button-background-color-hover: var(--md-surface-3);
-  --xy-controls-button-color: var(--md-on-surface);
-  --xy-controls-button-border-color: var(--md-outline-variant);
-  --xy-attribution-background-color: transparent;
+.loom-swimlanes {
   position: relative;
   isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  overflow: auto;
   background:
     radial-gradient(circle at top, color-mix(in srgb, var(--md-loom-anchor) 12%, transparent), transparent 38%),
     linear-gradient(180deg, color-mix(in srgb, var(--md-surface-2) 65%, var(--md-surface)), var(--md-surface));
 }
 
-.loom-canvas-area .react-flow::before,
-.loom-canvas-area .react-flow::after {
+.loom-swimlanes::before,
+.loom-swimlanes::after {
   content: '';
   position: absolute;
   inset: 0;
   pointer-events: none;
 }
 
-.loom-canvas-area .react-flow::before {
+.loom-swimlanes::before {
   z-index: 0;
   opacity: 0.28;
   background:
@@ -92,7 +69,7 @@
     );
 }
 
-.loom-canvas-area .react-flow::after {
+.loom-swimlanes::after {
   z-index: 0;
   opacity: 0.18;
   background: linear-gradient(
@@ -105,24 +82,81 @@
   );
 }
 
-.loom-canvas-area .react-flow__background,
-.loom-canvas-area .react-flow__selection,
-.loom-canvas-area .react-flow__edges,
-.loom-canvas-area .react-flow__nodes,
-.loom-canvas-area .react-flow__controls,
-.loom-canvas-area .react-flow__attribution {
+.loom-lane,
+.loom-stitch-layer,
+.loom-beat-bank-tray {
   position: relative;
   z-index: 1;
 }
 
-.loom-canvas-area .react-flow__attribution {
-  color: var(--md-on-surface-variant);
-  font: var(--type-caption-size) var(--type-face);
-  padding: 2px var(--space-2);
+/* ─── Static swimlanes ─────────────────────────────────────────────────── */
+
+.loom-lane {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: max-content;
+  padding: var(--space-3);
+  border: 1px solid color-mix(in srgb, var(--md-outline-variant) 74%, transparent);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--md-surface-1) 78%, transparent);
 }
 
-.loom-canvas-area .react-flow__attribution a {
+.loom-lane-header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  position: sticky;
+  left: var(--space-3);
+  width: fit-content;
+  max-width: 28rem;
+  z-index: 2;
+}
+
+.loom-lane-title {
+  margin: 0;
+  color: var(--md-on-surface);
+  font: var(--type-title-size) / var(--type-title-line) var(--type-face);
+  font-weight: var(--type-title-weight);
+}
+
+.loom-lane-description {
+  margin: var(--space-1) 0 0;
   color: var(--md-on-surface-variant);
+  font: var(--type-body-sm-size) / var(--type-body-sm-line) var(--type-face);
+}
+
+.loom-lane-row {
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-3);
+}
+
+.loom-lane-track {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-1) 0;
+}
+
+.loom-lane-cap {
+  position: sticky;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  padding: var(--space-1) 0;
+}
+
+.loom-lane-cap--start {
+  left: 0;
+}
+
+.loom-lane-cap--end {
+  right: 0;
+}
+
+.loom-lane-gap {
+  min-width: var(--control-height);
 }
 
 /* ─── Node cards ──────────────────────────────────────────────────────── */
@@ -186,6 +220,16 @@
     0 0 0 2px color-mix(in srgb, var(--md-primary) 76%, transparent),
     0 0 0 6px color-mix(in srgb, var(--md-primary) 18%, transparent),
     0 0 24px color-mix(in srgb, var(--md-primary) 26%, transparent);
+}
+
+.loom-node--selected {
+  outline: 2px solid var(--md-primary);
+  outline-offset: 3px;
+}
+
+.loom-node--ghosted {
+  opacity: 0.58;
+  border-style: dashed;
 }
 
 .loom-node-title {
@@ -501,27 +545,23 @@
   font: var(--type-caption-size) / var(--type-caption-line) var(--type-face);
 }
 
-.loom-node-wrapper--dimmed,
-.loom-edge--dimmed {
-  opacity: 0.34;
-}
+/* ─── Swimlane namespace (future LS stages) ───────────────────────────── */
 
-.loom-canvas-area .react-flow__edge-path {
-  transition:
-    opacity var(--motion-fast),
-    stroke-width var(--motion-fast),
-    filter var(--motion-fast);
-}
+/* .loom-lane-gap — clickable "+" insertion gap between cards */
 
-/* ─── Idea Vault panel ────────────────────────────────────────────────── */
+/* ─── Beat Bank tray (LS3) ────────────────────────────────────────────── */
 
-.loom-vault-panel {
+.loom-beat-bank-tray {
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--radius-lg);
+  background: var(--md-surface-1);
+  overflow: hidden;
 }
 
-.loom-vault-panel-toggle {
+.loom-beat-bank-tray-toggle {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -533,57 +573,94 @@
   font: var(--type-label-size) / var(--type-label-line) var(--type-face);
   font-weight: var(--type-title-weight);
   cursor: pointer;
-  padding: 0;
-}
-
-.loom-vault-panel-list {
-  list-style: none;
-  margin: var(--space-2) 0 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-
-.loom-vault-panel-empty {
-  color: var(--md-on-surface-variant);
-  font-size: var(--type-body-sm-size);
-  padding: var(--space-2) 0;
-}
-
-.loom-vault-panel-item {
-  width: 100%;
-  min-height: var(--control-height-compact);
-  text-align: left;
   padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-sm);
+}
+
+.loom-beat-bank-tray-content {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: 0 var(--space-3) var(--space-3);
+}
+
+.loom-beat-bank-tray-empty {
+  margin: 0;
+  color: var(--md-on-surface-variant);
+  font: var(--type-body-sm-size) / var(--type-body-sm-line) var(--type-face);
+}
+
+.loom-beat-bank-tray-entry {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--md-surface-2) 72%, var(--md-surface-1));
+  border: 1px solid color-mix(in srgb, var(--md-outline-variant) 72%, transparent);
+}
+
+.loom-beat-bank-tray-item {
+  background: transparent;
   border: none;
-  background: var(--md-surface-2);
   color: var(--md-on-surface);
   cursor: pointer;
-  transition: background var(--motion-fast);
+  font: var(--type-body-sm-size) / var(--type-body-sm-line) var(--type-face);
+  padding: 0;
+  text-align: left;
 }
 
-.loom-vault-panel-item:hover,
-.loom-vault-panel-item:focus-visible {
-  background: var(--md-surface-3);
+.loom-beat-bank-tray-item:hover,
+.loom-beat-bank-tray-item:focus-visible {
+  text-decoration: underline;
 }
 
-/* ─── Scaffolding stubs — LU2: Weaver's panel ──────────────────────────── */
+.loom-beat-bank-tray-restore-picker {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
 
-/* LU3: .loom-weaver-threads — thread focus hooks live here */
-/* LU3: .loom-weaver-vault — responsive rail changes keep the vault in this section */
+.loom-beat-bank-tray-restore-label {
+  color: var(--md-on-surface-variant);
+  font: var(--type-caption-size) / var(--type-caption-line) var(--type-face);
+  font-weight: var(--type-caption-weight);
+  letter-spacing: var(--type-caption-tracking);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
 
-/* ─── Scaffolding stubs — LU3: Woven canvas ────────────────────────────── */
+.loom-beat-bank-tray-thread-select {
+  min-height: var(--control-height-compact);
+  padding: 0 var(--space-2);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--radius-sm);
+  background: var(--md-surface-2);
+  color: var(--md-on-surface);
+  font: var(--type-body-sm-size) / var(--type-body-sm-line) var(--type-face);
+}
 
-/* LU3: .loom-node-spine — thread-colored spine on node cards */
+/* ─── Stitch overlay (LS2) ──────────────────────────────────────────── */
 
-/* ─── Swimlane namespace (LS0 stubs) ─────────────────────────────────── */
+.loom-stitch-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 2;
+}
 
-/* .loom-swimlanes — horizontal-scroll container for all lanes */
-/* .loom-lane — single horizontal lane (one per thread) */
-/* .loom-lane-cap — sticky Start/End cap at lane edges */
-/* .loom-lane-track — ordered card track within a lane */
-/* .loom-lane-gap — clickable "+" insertion gap between cards */
-/* .loom-stitch-layer — absolutely-positioned SVG overlay for connectors */
-/* .loom-beat-bank-tray — bottom tray for unplaced/banked beats */
+.loom-stitch {
+  stroke-linecap: round;
+}
+
+.loom-stitch[data-color='thread-1'] { stroke: var(--md-loom-thread-1); }
+.loom-stitch[data-color='thread-2'] { stroke: var(--md-loom-thread-2); }
+.loom-stitch[data-color='thread-3'] { stroke: var(--md-loom-thread-3); }
+.loom-stitch[data-color='thread-4'] { stroke: var(--md-loom-thread-4); }
+.loom-stitch[data-color='thread-5'] { stroke: var(--md-loom-thread-5); }
+.loom-stitch[data-color='thread-6'] { stroke: var(--md-loom-thread-6); }
+
+.loom-spawn-link {
+  stroke-linecap: round;
+}
