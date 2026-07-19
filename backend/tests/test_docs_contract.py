@@ -181,13 +181,14 @@ def test_temp_repo_plan_missing_status(tmp_path: Path):
     assert any("Missing status" in e.message for e in errs)
 
 
-def test_temp_repo_plan_missing_stage(tmp_path: Path):
+def test_temp_repo_plan_status_only_is_valid(tmp_path: Path):
+    """Lean Plans need only a Status line; a current-stage heading is optional."""
     docs = _write_docs_tree(
         tmp_path,
         plans={"bar_plan.md": "# Bar\n\n> **Status:** Complete.\n"},
     )
     errs = cd.check_plan_metadata(docs / "bar_plan.md")
-    assert any("Missing next-up stage" in e.message for e in errs)
+    assert errs == []
 
 
 def test_temp_repo_plan_valid(tmp_path: Path):
@@ -315,6 +316,64 @@ def test_configured_test_commands_follow_configuration(tmp_path: Path):
     errs = cd.check_configured_test_commands(tmp_path)
     assert any("npm run build" in error.message for error in errs)
     assert any("91%" in error.message for error in errs)
+
+
+# ── Work-order lint (Plan -> Implement -> Reconcile) ────────────────
+
+
+def test_work_orders_flag_missing_fields(tmp_path: Path):
+    docs = _write_docs_tree(tmp_path, manifest="# Docs\n")
+    orders = docs / "plans" / "active" / "orders" / "feat"
+    orders.mkdir(parents=True)
+    (orders / "01-good.md").write_text(
+        "WORK ORDER 01 — x\nGOAL: do a thing\nSTART IN: file.py\nSTOP WHEN: tests pass\nSTATUS: DONE\n",
+        encoding="utf-8",
+    )
+    (orders / "02-bad.md").write_text("WORK ORDER 02 — y\nGOAL: do a thing\n", encoding="utf-8")
+    errs = cd.check_work_orders(docs)
+    assert any("02-bad.md" in e.source for e in errs)
+    assert not any("01-good.md" in e.source for e in errs)
+
+
+def test_work_orders_absent_directory_is_ok(tmp_path: Path):
+    docs = _write_docs_tree(tmp_path, manifest="# Docs\n")
+    assert cd.check_work_orders(docs) == []
+
+
+def test_area_guide_active_plan_link_without_anchor_is_accepted(tmp_path: Path, monkeypatch):
+    """Lean Plans have no stage anchors; a plain plan-file link must be accepted."""
+    monkeypatch.setattr(cd, "REPO_ROOT", tmp_path)
+    docs = _write_docs_tree(tmp_path, manifest="# Docs\n")
+    areas = docs / "areas"
+    areas.mkdir()
+    active = docs / "plans" / "active"
+    active.mkdir(parents=True)
+    (areas / "loom.md").write_text(
+        "# Loom\n\n"
+        "> **Active plan:** [Loom feature](../plans/active/loom.md)\n\n"
+        "## Scope\n## Read first\n## Source map\n## Invariants\n## Work queue\n## Cross-references\n",
+        encoding="utf-8",
+    )
+    (active / "loom.md").write_text(
+        "# Loom feature\n\n> **Status:** Active.\n\n- **Area guide:** [Loom](../../areas/loom.md)\n",
+        encoding="utf-8",
+    )
+    assert cd.check_area_guide_contract(docs) == []
+
+
+def test_diff_checks_allow_implementation_without_plan_edit(tmp_path: Path, monkeypatch):
+    """Code may land per work order without editing a top-level active plan."""
+    docs = _write_docs_tree(tmp_path, manifest="# Docs\n")
+
+    def fake_run(command, **_kwargs):
+        if command[1:4] == ["rev-parse", "--verify", "HEAD"]:
+            return subprocess.CompletedProcess(command, 0)
+        return subprocess.CompletedProcess(command, 0, stdout="frontend/src/App.tsx\n")
+
+    monkeypatch.setattr(cd.subprocess, "run", fake_run)
+    monkeypatch.setattr(cd, "REPO_ROOT", tmp_path)
+    errs = cd.run_diff_checks(docs, "HEAD")
+    assert not any("owning active plan" in e.message for e in errs)
 
 
 # ── Generated-section contracts ─────────────────────────────────────
