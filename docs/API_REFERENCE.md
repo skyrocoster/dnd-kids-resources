@@ -206,6 +206,7 @@ CRUD, ordered membership (insert/reorder/remove), and the tapestry read. No edge
 | POST | `/api/loom/threads/{thread_id}/items` | Place an existing `beat`/`session` node on the thread at a gap (renumbers); also the **restore** path for a banked beat, which clears `banked_from_thread_id` | `LoomThreadItemCreate` | `LoomTapestryThread` (201) |
 | PATCH | `/api/loom/threads/{thread_id}/items/{node_id}` | Reorder a member within the thread, clamped between Start and End | `LoomThreadItemPositionUpdate` | `LoomTapestryThread` |
 | DELETE | `/api/loom/threads/{thread_id}/items/{node_id}` | Remove a member's membership row (node identity survives) | (path params) | (204 No Content) |
+| POST | `/api/loom/threads/{thread_id}/items/{node_id}/move` | Atomically move a placed `beat`/`session` from `thread_id` to another thread at a position | `LoomNodeMove` | `LoomThreadMoveResult` |
 
 `position` in `LoomThreadItemCreate`/`LoomThreadItemPositionUpdate` is a client-supplied ordinal hint, not a
 stored value: the server finds the insertion index among the thread's current order (never before Start, never
@@ -213,6 +214,14 @@ after End) and renumbers every membership row to `0, 10, 20, …`. A `beat` may 
 time (422 if already placed elsewhere); a `session` may be placed on multiple threads independently. `start`/`end`
 nodes can never be placed, reordered, or removed via the items endpoints or deleted directly — only whole-thread
 deletion removes them.
+
+**Move:** `target_thread_id` must differ from the path's `thread_id` (422 otherwise — use the reorder endpoint for
+same-thread moves), and `start`/`end` nodes can never move (422). A `beat`, or a `session` placed on only one
+thread, moves unconditionally and `mode` is ignored. A `session` shared across multiple threads requires
+`mode: "move"` (relocates out of `thread_id` into the target, leaving its other memberships untouched) or
+`mode: "also_add"` (adds the target membership alongside all existing ones; 422 if already a member of the
+target) — omitting `mode` on a shared session is a 422. The response returns both threads' post-move ordered
+state (`source`, `target`) in one transaction.
 
 **Beat lifecycle:** Fulfil requires the node to be `kind='beat'` and currently placed on a thread (422 otherwise);
 `LoomNodeFulfil.title` is optional — when omitted the title is unchanged and only `fulfilled_planned_title`
@@ -282,6 +291,7 @@ All optional fields are `Optional[...]` in the schema; required fields have no `
 | POST | `/api/loom/threads/{thread_id}/items` | `thread_id` (path, required) | LoomThreadItemCreate | 201: LoomTapestryThread, 422: HTTPValidationError |
 | DELETE | `/api/loom/threads/{thread_id}/items/{node_id}` | `thread_id` (path, required), `node_id` (path, required) | - | 204: -, 422: HTTPValidationError |
 | PATCH | `/api/loom/threads/{thread_id}/items/{node_id}` | `thread_id` (path, required), `node_id` (path, required) | LoomThreadItemPositionUpdate | 200: LoomTapestryThread, 422: HTTPValidationError |
+| POST | `/api/loom/threads/{thread_id}/items/{node_id}/move` | `thread_id` (path, required), `node_id` (path, required) | LoomNodeMove | 200: LoomThreadMoveResult, 422: HTTPValidationError |
 | GET | `/api/loot-bundles` | `limit` (query), `offset` (query) | - | 200: List[LootBundle], 422: HTTPValidationError |
 | POST | `/api/loot-bundles` | - | LootBundleCreate | 201: LootBundle, 422: HTTPValidationError |
 | DELETE | `/api/loot-bundles/{bundle_id}` | `bundle_id` (path, required) | - | 204: -, 422: HTTPValidationError |

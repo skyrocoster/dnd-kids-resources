@@ -511,6 +511,17 @@ class LoomTapestryThread(LoomThread):
     items: List[LoomTapestryItem] = Field(default_factory=list)
 
 
+class LoomNodeMove(BaseModel):
+    target_thread_id: int
+    position: int
+    mode: Optional[Literal["move", "also_add"]] = None
+
+
+class LoomThreadMoveResult(BaseModel):
+    source: LoomTapestryThread
+    target: LoomTapestryThread
+
+
 class LoomTapestry(BaseModel):
     threads: List[LoomTapestryThread]
     nodes: List[LoomNode]

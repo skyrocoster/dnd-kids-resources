@@ -701,3 +701,156 @@ def test_invariant_remove_shared_session_from_one_thread(test_client):
 
     assert session["id"] not in _thread_item_node_ids(test_client, thread_one["id"])
     assert session["id"] in _thread_item_node_ids(test_client, thread_two["id"])
+
+
+# ---------------------------------------------------------------------------
+# Move
+# ---------------------------------------------------------------------------
+
+
+def test_move_beat_between_threads_relocates(test_client):
+    thread_a = test_client.post("/api/loom/threads", json={"name": "Move Beat A", "color": "thread-1"}).json()
+    thread_b = test_client.post("/api/loom/threads", json={"name": "Move Beat B", "color": "thread-2"}).json()
+    beat = test_client.post("/api/loom/nodes", json={"kind": "beat", "title": "Moving beat"}).json()
+    test_client.post(f"/api/loom/threads/{thread_a['id']}/items", json={"node_id": beat["id"], "position": 5})
+
+    response = test_client.post(
+        f"/api/loom/threads/{thread_a['id']}/items/{beat['id']}/move",
+        json={"target_thread_id": thread_b["id"], "position": 5},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert "source" in body and "target" in body
+
+    assert beat["id"] not in _thread_item_node_ids(test_client, thread_a["id"])
+    assert beat["id"] in _thread_item_node_ids(test_client, thread_b["id"])
+
+
+def test_move_sole_session_relocates_without_mode(test_client):
+    thread_a = test_client.post("/api/loom/threads", json={"name": "Move Sole A", "color": "thread-1"}).json()
+    thread_b = test_client.post("/api/loom/threads", json={"name": "Move Sole B", "color": "thread-2"}).json()
+    session = test_client.post("/api/loom/nodes", json={"kind": "session", "title": "Sole session"}).json()
+    test_client.post(f"/api/loom/threads/{thread_a['id']}/items", json={"node_id": session["id"], "position": 5})
+
+    response = test_client.post(
+        f"/api/loom/threads/{thread_a['id']}/items/{session['id']}/move",
+        json={"target_thread_id": thread_b["id"], "position": 5},
+    )
+    assert response.status_code == 200
+
+    assert session["id"] not in _thread_item_node_ids(test_client, thread_a["id"])
+    assert session["id"] in _thread_item_node_ids(test_client, thread_b["id"])
+
+
+def test_move_shared_session_no_mode_422(test_client):
+    thread_a = test_client.post("/api/loom/threads", json={"name": "Shared NoMode A", "color": "thread-1"}).json()
+    thread_b = test_client.post("/api/loom/threads", json={"name": "Shared NoMode B", "color": "thread-2"}).json()
+    session = test_client.post("/api/loom/nodes", json={"kind": "session", "title": "Shared session"}).json()
+    test_client.post(f"/api/loom/threads/{thread_a['id']}/items", json={"node_id": session["id"], "position": 5})
+    test_client.post(f"/api/loom/threads/{thread_b['id']}/items", json={"node_id": session["id"], "position": 5})
+
+    response = test_client.post(
+        f"/api/loom/threads/{thread_a['id']}/items/{session['id']}/move",
+        json={"target_thread_id": thread_b["id"], "position": 5},
+    )
+    assert response.status_code == 422
+
+
+def test_move_shared_session_also_add_three_memberships(test_client):
+    thread_a = test_client.post("/api/loom/threads", json={"name": "AlsoAdd A", "color": "thread-1"}).json()
+    thread_b = test_client.post("/api/loom/threads", json={"name": "AlsoAdd B", "color": "thread-2"}).json()
+    thread_c = test_client.post("/api/loom/threads", json={"name": "AlsoAdd C", "color": "thread-3"}).json()
+    session = test_client.post("/api/loom/nodes", json={"kind": "session", "title": "Shared session"}).json()
+    test_client.post(f"/api/loom/threads/{thread_a['id']}/items", json={"node_id": session["id"], "position": 5})
+    test_client.post(f"/api/loom/threads/{thread_b['id']}/items", json={"node_id": session["id"], "position": 5})
+
+    response = test_client.post(
+        f"/api/loom/threads/{thread_a['id']}/items/{session['id']}/move",
+        json={"target_thread_id": thread_c["id"], "position": 5, "mode": "also_add"},
+    )
+    assert response.status_code == 200
+
+    assert session["id"] in _thread_item_node_ids(test_client, thread_a["id"])
+    assert session["id"] in _thread_item_node_ids(test_client, thread_b["id"])
+    assert session["id"] in _thread_item_node_ids(test_client, thread_c["id"])
+
+
+def test_move_shared_session_also_add_already_on_target_422(test_client):
+    thread_a = test_client.post("/api/loom/threads", json={"name": "AlsoAddDup A", "color": "thread-1"}).json()
+    thread_b = test_client.post("/api/loom/threads", json={"name": "AlsoAddDup B", "color": "thread-2"}).json()
+    session = test_client.post("/api/loom/nodes", json={"kind": "session", "title": "Shared session"}).json()
+    test_client.post(f"/api/loom/threads/{thread_a['id']}/items", json={"node_id": session["id"], "position": 5})
+    test_client.post(f"/api/loom/threads/{thread_b['id']}/items", json={"node_id": session["id"], "position": 5})
+
+    response = test_client.post(
+        f"/api/loom/threads/{thread_a['id']}/items/{session['id']}/move",
+        json={"target_thread_id": thread_b["id"], "position": 5, "mode": "also_add"},
+    )
+    assert response.status_code == 422
+
+
+def test_move_shared_session_mode_move_leaves_other_memberships(test_client):
+    thread_a = test_client.post("/api/loom/threads", json={"name": "MoveMode A", "color": "thread-1"}).json()
+    thread_b = test_client.post("/api/loom/threads", json={"name": "MoveMode B", "color": "thread-2"}).json()
+    thread_c = test_client.post("/api/loom/threads", json={"name": "MoveMode C", "color": "thread-3"}).json()
+    session = test_client.post("/api/loom/nodes", json={"kind": "session", "title": "Shared session"}).json()
+    test_client.post(f"/api/loom/threads/{thread_a['id']}/items", json={"node_id": session["id"], "position": 5})
+    test_client.post(f"/api/loom/threads/{thread_b['id']}/items", json={"node_id": session["id"], "position": 5})
+
+    response = test_client.post(
+        f"/api/loom/threads/{thread_a['id']}/items/{session['id']}/move",
+        json={"target_thread_id": thread_c["id"], "position": 5, "mode": "move"},
+    )
+    assert response.status_code == 200
+
+    assert session["id"] not in _thread_item_node_ids(test_client, thread_a["id"])
+    assert session["id"] in _thread_item_node_ids(test_client, thread_b["id"])
+    assert session["id"] in _thread_item_node_ids(test_client, thread_c["id"])
+
+
+def test_move_same_thread_422(test_client):
+    thread = test_client.post("/api/loom/threads", json={"name": "Same Thread", "color": "thread-1"}).json()
+    beat = test_client.post("/api/loom/nodes", json={"kind": "beat", "title": "Staying beat"}).json()
+    test_client.post(f"/api/loom/threads/{thread['id']}/items", json={"node_id": beat["id"], "position": 5})
+
+    response = test_client.post(
+        f"/api/loom/threads/{thread['id']}/items/{beat['id']}/move",
+        json={"target_thread_id": thread["id"], "position": 5},
+    )
+    assert response.status_code == 422
+
+
+def test_move_not_a_member_404(test_client):
+    thread_a = test_client.post("/api/loom/threads", json={"name": "NotMember A", "color": "thread-1"}).json()
+    thread_b = test_client.post("/api/loom/threads", json={"name": "NotMember B", "color": "thread-2"}).json()
+    beat = test_client.post("/api/loom/nodes", json={"kind": "beat", "title": "Unplaced beat"}).json()
+
+    response = test_client.post(
+        f"/api/loom/threads/{thread_a['id']}/items/{beat['id']}/move",
+        json={"target_thread_id": thread_b["id"], "position": 5},
+    )
+    assert response.status_code == 404
+
+
+def test_move_nonexistent_target_thread_404(test_client):
+    thread = test_client.post("/api/loom/threads", json={"name": "Bad Target", "color": "thread-1"}).json()
+    beat = test_client.post("/api/loom/nodes", json={"kind": "beat", "title": "Placed beat"}).json()
+    test_client.post(f"/api/loom/threads/{thread['id']}/items", json={"node_id": beat["id"], "position": 5})
+
+    response = test_client.post(
+        f"/api/loom/threads/{thread['id']}/items/{beat['id']}/move",
+        json={"target_thread_id": 9999, "position": 5},
+    )
+    assert response.status_code == 404
+
+
+def test_move_start_or_end_422(test_client):
+    thread = test_client.post("/api/loom/threads", json={"name": "No Move Pin", "color": "thread-1"}).json()
+    other = test_client.post("/api/loom/threads", json={"name": "No Move Target", "color": "thread-2"}).json()
+    start_id = _thread_item_node_ids(test_client, thread["id"])[0]
+
+    response = test_client.post(
+        f"/api/loom/threads/{thread['id']}/items/{start_id}/move",
+        json={"target_thread_id": other["id"], "position": 5},
+    )
+    assert response.status_code == 422

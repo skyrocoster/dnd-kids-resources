@@ -7,6 +7,7 @@ interface LoomStitchLayerProps {
   cardRects: Map<number, CardRect>
   threads: LoomTapestryThread[]
   nodes: LoomNode[]
+  contentSize: { width: number; height: number }
 }
 
 /**
@@ -14,7 +15,7 @@ interface LoomStitchLayerProps {
  * (a) cross-lane stitches for shared sessions
  * (b) dotted spawn links from origin sessions to spawned thread start caps
  */
-export function LoomStitchLayer({ cardRects, threads, nodes }: LoomStitchLayerProps) {
+export function LoomStitchLayer({ cardRects, threads, nodes, contentSize }: LoomStitchLayerProps) {
   const stitches = useMemo(() => {
     const byNode = new Map<number, CardRect[]>()
     for (const rect of cardRects.values()) {
@@ -72,7 +73,7 @@ export function LoomStitchLayer({ cardRects, threads, nodes }: LoomStitchLayerPr
   if (!hasContent) return null
 
   return (
-    <svg className="loom-stitch-layer" aria-hidden="true">
+    <svg className="loom-stitch-layer" aria-hidden="true" width={contentSize.width} height={contentSize.height}>
       {stitches.map((s, i) => (
         <path
           key={`stitch-${i}`}

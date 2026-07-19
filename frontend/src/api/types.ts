@@ -550,6 +550,17 @@ export interface LoomThreadItemPositionUpdate {
   position: number
 }
 
+export interface LoomNodeMove {
+  target_thread_id: number
+  position: number
+  mode?: 'move' | 'also_add'
+}
+
+export interface LoomThreadMoveResult {
+  source: LoomTapestryThread
+  target: LoomTapestryThread
+}
+
 export interface LoomNodeFulfil {
   title?: string | null
 }

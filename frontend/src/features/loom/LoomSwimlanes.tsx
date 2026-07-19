@@ -11,6 +11,7 @@ interface LoomSwimlanesProps {
   onSelectNode?: (nodeId: number) => void
   onGapClick?: (threadId: number, position: number) => void
   onReorder?: (threadId: number, nodeId: number, fromBodyIndex: number, toBodyIndex: number) => void
+  onCrossLaneDrop?: (nodeId: number, sourceThreadId: number, targetThreadId: number, position: number, nodeKind: 'beat' | 'session') => void
   onGapRestore?: (nodeId: number, threadId: number, position: number) => void
 }
 
@@ -21,9 +22,10 @@ export function LoomSwimlanes({
   onSelectNode,
   onGapClick,
   onReorder,
+  onCrossLaneDrop,
   onGapRestore,
 }: LoomSwimlanesProps) {
-  const { scrollRef, registerCard, cardRects } = useCardRects()
+  const { scrollRef, registerCard, cardRects, contentSize } = useCardRects()
 
   const scrollRefCallback = useCallback(
     (el: HTMLDivElement | null) => {
@@ -38,7 +40,7 @@ export function LoomSwimlanes({
       aria-label="Thread swimlanes"
       ref={scrollRefCallback}
     >
-      <LoomStitchLayer cardRects={cardRects} threads={threads} nodes={nodes} />
+      <LoomStitchLayer cardRects={cardRects} threads={threads} nodes={nodes} contentSize={contentSize} />
       {threads.map((thread) => (
         <LoomLane
           key={thread.id}
@@ -49,6 +51,7 @@ export function LoomSwimlanes({
           onRegisterRect={registerCard}
           onGapClick={onGapClick}
           onReorder={onReorder}
+          onCrossLaneDrop={onCrossLaneDrop}
           onGapRestore={onGapRestore}
         />
       ))}

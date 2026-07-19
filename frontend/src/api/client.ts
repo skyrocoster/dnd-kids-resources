@@ -33,6 +33,8 @@ import type {
   LoomTapestryThread,
   LoomThreadItemCreate,
   LoomThreadItemPositionUpdate,
+  LoomNodeMove,
+  LoomThreadMoveResult,
   LoomNodePositionInput,
 } from './types'
 
@@ -193,3 +195,5 @@ export const reorderLoomThreadItem = (threadId: number, nodeId: number, update: 
   patch<LoomTapestryThread>(`/loom/threads/${threadId}/items/${nodeId}`, update)
 export const removeLoomThreadItem = (threadId: number, nodeId: number) =>
   del(`/loom/threads/${threadId}/items/${nodeId}`)
+export const moveLoomThreadItem = (threadId: number, nodeId: number, body: LoomNodeMove) =>
+  post<LoomThreadMoveResult>(`/loom/threads/${threadId}/items/${nodeId}/move`, body)

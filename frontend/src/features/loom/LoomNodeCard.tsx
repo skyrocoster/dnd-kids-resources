@@ -19,7 +19,7 @@ function LoomNodeCardImpl(
   ref: React.Ref<HTMLDivElement>,
 ) {
   const isGhosted = node.kind === 'beat' && !node.fulfilled_at
-  const isDraggable = node.kind === 'beat' && node.thread_ids.length > 0 && bodyIndex != null
+  const isDraggable = (node.kind === 'beat' || node.kind === 'session') && node.thread_ids.length > 0 && bodyIndex != null
 
   const classNames = [
     'loom-node',
@@ -41,10 +41,10 @@ function LoomNodeCardImpl(
       e.dataTransfer.effectAllowed = 'move'
       e.dataTransfer.setData(
         'application/json',
-        JSON.stringify({ action: 'reorder', nodeId: node.id, fromBodyIndex: bodyIndex }),
+        JSON.stringify({ action: 'reorder', nodeId: node.id, fromBodyIndex: bodyIndex, sourceThreadId: threadId, nodeKind: node.kind }),
       )
     },
-    [isDraggable, node.id, bodyIndex],
+    [isDraggable, node.id, node.kind, bodyIndex, threadId],
   )
 
   return (

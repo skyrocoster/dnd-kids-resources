@@ -1,6 +1,6 @@
 # The Loom Area Guide
 
-> **Active plan:** None (Loom Swimlanes Redesign LS0–LS6 complete).
+> **Active plan:** [Freeform Tapestry](../plans/active/loom-freeform-tapestry.md) — hand-arrangeable nodes, zoom-safe canvas, unified rail, thread selection, glanceable interlacements.
 
 ## Scope
 
@@ -24,6 +24,7 @@ Owns campaign story-thread tracking: loom threads, nodes (starts, ends, beats, s
 - **Provenance columns (all nullable):** `fulfilled_planned_title`/`fulfilled_at` on `loom_nodes` record a beat-turned-session's original planned wording and when it was fulfilled; `banked_from_thread_id` records which thread a banked beat was removed from.
 - **Beat lifecycle:** `POST /loom/nodes/{id}/fulfil` converts a placed beat to a session in place (stamps provenance, memberships untouched). `POST /loom/nodes/{id}/bank` unplaces a beat and records bank provenance. Restoring a banked beat reuses `POST /loom/threads/{id}/items`. The one documented undo path (`PUT` a fulfilled session back to `kind='beat'`) is the sole exception to kind being otherwise immutable.
 - **Beat authoring (focus-free):** inline drag-reorder and clickable gap-insert replace the old focus-gated modal. Every Thread is always visible; there is no focus state. Drag a planned-beat card to a lane gap (between any two body nodes) to reorder; click a "+" gap to open the node editor and insert at that position; drag a banked beat from the tray into a gap to restore. The `beatReorderTarget` helper computes the reorder payload (follower's position or `MAX_SAFE_INTEGER` sentinel) and its client-side list prevents placing a beat before a session. The `LoomBeatReorderDialog` is retained as an accessible keyboard fallback (reachable from the inspector).
+- **Free drag placement (cross-lane):** both beats and sessions are draggable, not just beats. Dropping on another lane calls the Stage 1 move endpoint: a beat or a sole-membership session moves unconditionally; a session shared across multiple threads prompts Move-vs-Also-add before calling it with the chosen `mode`. Start/End never accept a drop (no gap renders inside their selvage caps). The drop target is the whole card-group (the gap plus the card that follows it, via `CardGroup` in `LoomLane.tsx`), not just the narrow gap sliver — dropping directly on a card works the same as dropping on its adjacent gap.
 - **Thread spawn:** `POST /loom/threads` with `origin_node_id` set to an existing `session` node creates a new thread that references the origin without duplicating the event. `ON DELETE SET NULL` on the FK means deleting the origin session un-links without cascading.
 - **Thread deletion:** deletes the thread's exclusive `start`/`end`/`beat` nodes via an application-level sweep; shared `session` nodes survive on any other thread they belong to.
 - **Token-key colors:** `loom_threads.color` stores a token key (`thread-1`…`thread-6`), validated by Pydantic pattern `^thread-[1-6]$`. Actual colors are generated MD3 token sets in `frontend/src/theme.css`.

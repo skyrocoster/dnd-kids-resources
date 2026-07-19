@@ -1,5 +1,7 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
+import { fireEvent, render } from '@testing-library/react'
 import type { LoomNode, LoomTapestry, LoomTapestryThread } from '../../../api/types'
+import { LoomLane } from '../LoomLane'
 import { threadOrdered, currentPosition, nextBeat } from '../loomGraph'
 import { buildStitches, buildSpawnLinks, stitchPath, spawnLinkPath } from '../stitchGeometry'
 import type { CardRect } from '../swimlaneTypes'
@@ -204,5 +206,46 @@ describe('stitchGeometry', () => {
     expect(links[0].originNodeId).toBe(3)
     expect(links[0].spawnedThreadId).toBe(2)
     expect(links[0].d).toMatch(/^M /)
+  })
+})
+
+describe('LoomLane weft line', () => {
+  it('renders one weft line per lane track', () => {
+    const tapestry = demoTapestry()
+    const thread = tapestry.threads[0]
+    const nodes = tapestry.nodes.filter(
+      (n) => n.thread_ids.includes(thread.id),
+    )
+    render(<LoomLane thread={thread} nodes={nodes} />)
+    const weftLines = document.querySelectorAll('.loom-lane-weft-line')
+    expect(weftLines).toHaveLength(1)
+  })
+})
+
+describe('LoomLane cross-lane drop', () => {
+  it('calls onCrossLaneDrop when sourceThreadId differs from target thread', () => {
+    const tapestry = demoTapestry()
+    const thread = tapestry.threads[0]
+    const nodes = tapestry.nodes.filter(
+      (n) => n.thread_ids.includes(thread.id),
+    )
+    const onCrossLaneDrop = vi.fn()
+    render(<LoomLane thread={thread} nodes={nodes} onCrossLaneDrop={onCrossLaneDrop} />)
+
+    const gaps = document.querySelectorAll('.loom-lane-gap')
+    expect(gaps.length).toBeGreaterThan(0)
+
+    const dt = {
+      getData: () => JSON.stringify({
+        action: 'reorder',
+        nodeId: 1,
+        fromBodyIndex: 0,
+        sourceThreadId: 999,
+        nodeKind: 'beat',
+      }),
+    } as unknown as DataTransfer
+    fireEvent.drop(gaps[0], { dataTransfer: dt })
+
+    expect(onCrossLaneDrop).toHaveBeenCalledWith(1, 999, 1, expect.any(Number), 'beat')
   })
 })
