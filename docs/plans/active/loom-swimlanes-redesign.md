@@ -1,6 +1,6 @@
 # Loom Swimlanes Redesign
 
-> **Status:** LS0 shipped. LS1 (static swimlanes) is next up. Delivery phase LS0–LS5, then Plan Closeout LS6.
+> **Status:** LS0–LS3 shipped. LS4 (inline authoring) is next up. Delivery phase LS0–LS5, then Plan Closeout LS6.
 
 - **Area guide:** [The Loom](../../areas/loom.md)
 
@@ -66,8 +66,10 @@ Facts an executor needs before touching code; assume no other repo knowledge.
   `beatReorderTarget()` computes the reorder payload and already refuses to place a beat before a
   session.
 - **Current layout DOM** (`LoomPage.tsx` render): `.loom-route` → `.loom-page-header` → `.loom-page`
-  (flex row) of `.loom-canvas-column` (React Flow `.loom-canvas-area`) + `.loom-weaver-panel` (320px
-  rail). Command bar = Record Session / Add Beat / Manage Threads.
+  (flex row) of `.loom-canvas-column` with `.loom-canvas-area.loom-swimlanes` + `.loom-weaver-panel`
+  (320px rail). Each lane is an `article.loom-lane` with `.loom-lane-header`, `.loom-lane-row`, sticky
+  `.loom-lane-cap--start` / `.loom-lane-cap--end`, and `.loom-lane-track`. Command bar = Record Session /
+  Add Beat / Manage Threads.
 
 ## Design system in force
 
@@ -93,6 +95,9 @@ Redesign has heavy visual surface. Reuse `docs/DESIGN_SYSTEM.md` tokens only —
   `deleteLoomNode`, `createLoomNode`).
 - `loomGraph.ts` (`threadOrdered`, `currentPosition`, `threadHead`, `nextBeat`, `bankedBeats`) and
   `beatReorder.ts` (`beatReorderTarget`).
+- `LoomSwimlanes.tsx`, `LoomLane.tsx`, `LoomNodeCard.tsx` (static lane renderer; card props are
+  `{ node, isNow, isNext, threadColor, selected?, onClick? }`). `LoomSwimlanes` owns the scroll container
+  and receives `threads`, `nodes`, `selectedNodeId`, and `onSelectNode`.
 - `nodes/ThreadChips.tsx`, `nodes/loomThreadsContext.ts` (thread lookup context for cards).
 - Dialogs: `LoomNodeEditor`, `LoomThreadManager`, `LoomBeatReorderDialog` (kept as accessible reorder
   fallback), shared `Dialog`/`ConfirmDialog`, `PageHeader`, `Button`, `StatePanel`.
@@ -120,115 +125,34 @@ self-contained area outcome.
 | Stage | Required strength | Summary | Deliverables |
 |-------|-------------------|---------|--------------|
 | **LS0 — Scaffolding** ✅ | Light | New component/CSS/type stubs, `it.skip` seams, survey touch points; app renders unchanged. | Stubs compile; page unchanged; later stages carry confirmed findings. |
-| **LS1 — Static swimlanes** | Standard | Render Threads as read-only ordered lanes; swap out React Flow. | `LoomSwimlanes`/`LoomLane`/`LoomNodeCard`; click-to-select; React Flow + deprecated nodes removed. |
-| **LS2 — Connector overlay** | High | SVG overlay: in-lane arrows, shared-session stitches, dotted spawn links from measured rects. | `LoomStitchLayer`; recompute on scroll/resize. |
+| **LS1 — Static swimlanes** ✅ | Standard | Render Threads as read-only ordered lanes; swap out React Flow. | `LoomSwimlanes`/`LoomLane`/`LoomNodeCard`; click-to-select; React Flow + deprecated nodes removed. |
+| **LS2 — Connector overlay** ✅ | High | SVG overlay: in-lane arrows, shared-session stitches, dotted spawn links from measured rects. | `LoomStitchLayer`; recompute on scroll/resize. |
 | **LS3 — Inspector rail + Beat Bank tray** | Standard | Focus-free selected-node inspector; Beat Bank in a bottom tray; restore via Thread picker. | Refactored `LoomWeaverPanel`; new `LoomBeatBankTray`. |
 | **LS4 — Inline authoring** | Standard | "+" insertion gaps → insert-at-position; horizontal drag-reorder of beats; drag-from-tray restore. | Lane gap insert, drag reorder, tray restore; dialog kept as fallback. |
 | **LS5 — Polish & cleanup** | Standard | Remove dead code, reapply woven texture, reduced-motion, responsive stack, a11y pass. | Clean tree; `<520px` stacking; a11y verified. |
 
-**Sequencing:** LS0 → LS1 → LS2 → LS3 → LS4 → LS5, then Plan Closeout LS6. LS3 has no hard dependency
-on LS2 and could run in parallel once LS1 lands, but keep serial unless parallelizing deliberately.
-
-<!-- ===== VERBOSE BLOCKS — one per un-shipped stage, in order. ===== -->
+**Sequencing:** LS0 → LS1 → LS2 → LS3 → LS4 → LS5, then Plan Closeout LS6. LS4 has no hard dependency
+on LS3 and could run in parallel once LS2 lands, but keep serial unless parallelizing deliberately.
 
 #### LS0 — Scaffolding ✅ shipped
 
 Stub files confirmed: `LoomSwimlanes.tsx`, `LoomLane.tsx`, `LoomNodeCard.tsx`, `LoomStitchLayer.tsx`, `LoomBeatBankTray.tsx` (all render `null`). CSS namespace stubs in `LoomCanvas.css`: `.loom-swimlanes`, `.loom-lane`, `.loom-lane-cap`, `.loom-lane-track`, `.loom-lane-gap`, `.loom-stitch-layer`, `.loom-beat-bank-tray`. Shared types in `swimlaneTypes.ts`: `SwimlaneModel` and `CardRect`. `LoomPage.tsx` unchanged. Tests: 11 passed, 1 skipped (new file with 7 `it.skip` seams), build clean. Handoff facts written into LS1, LS2, LS3.
 
-#### LS1 — Static swimlanes (next up)
+#### LS1 — Static swimlanes ✅ shipped
 
-- **Read first:** LS0 stubs; `LoomPage.tsx`, `loomFlow.ts` (for the lane-derivation logic being
-  replaced), `loomGraph.ts`, `LoomCanvas.css`, `nodes/{Start,End,Beat,Session}Node.tsx` (for card
-  markup to port), `nodes/ThreadChips.tsx`.
-- **Build:** implement `LoomSwimlanes` (a single horizontal-scroll container rendering one `LoomLane`
-  per Thread) + `LoomLane` (sticky Start cap, `threadOrdered` row of `LoomNodeCard`s, sticky End cap)
-  + `LoomNodeCard` (reuses `.loom-node*` classes; spine `data-color`, Now/Next via `currentPosition`/
-  `threadHead`, chips, ghosted styling when `kind==='beat' && !fulfilled_at`). Replace the
-  `.loom-canvas-area` React Flow subtree in `LoomPage.tsx` with `<LoomSwimlanes>`; keep click-to-select
-  and `selectedNodeId`. Remove `@xyflow/react` usage: `useNodesState`, `ReactFlow`, `Background`,
-  `Controls`, `rfInstance`, `handleNodeDragStop`, `handleNodeClick`/`handlePaneClick` reshaped,
-  `defaultNewPosition`, `flowEdges`, and the `--xy-*` mapping + `.react-flow*` rules in CSS. Delete
-  `nodes/{Start,End,Beat,Session,Anchor,Update}Node.tsx` and `nodes/CompassHandles.tsx`; retire
-  `loomFlow.ts` edge/compass code (keep any still-needed pure helper, else delete). Drop the
-  `@xyflow/react` dependency if nothing else imports it.
-- **Handoff facts (from LS0):** stub files confirmed: `LoomSwimlanes.tsx`, `LoomLane.tsx`,
-  `LoomNodeCard.tsx`, `LoomStitchLayer.tsx`, `LoomBeatBankTray.tsx` (all render `null`).
-  CSS namespace stubs in `LoomCanvas.css`: `.loom-swimlanes`, `.loom-lane`, `.loom-lane-cap`,
-  `.loom-lane-track`, `.loom-lane-gap`, `.loom-stitch-layer`, `.loom-beat-bank-tray`.
-  Shared types in `swimlaneTypes.ts`: `SwimlaneModel` (`{ thread, ordered, currentNodeId, nextBeatId }`)
-  and `CardRect` (`{ nodeId, threadId, left, top, width, height }`). `LoomPage.tsx` is unchanged.
-- **Inherits:** LS0 stubs, CSS namespace, types.
-- **Expected touch set:** `LoomPage.tsx`, `LoomSwimlanes.tsx`, `LoomLane.tsx`, `LoomNodeCard.tsx`,
-  `LoomCanvas.css`, `loomFlow.ts` (retire), the six deleted node files + `CompassHandles.tsx`,
-  `package.json` (dep removal), and every test asserting the old rendered contract: `LoomPage.test.tsx`,
-  `loomFlow.test.ts` (delete), `AnchorNode.test.tsx`/`UpdateNode.test.tsx` (delete). Grep for
-  `@xyflow`, `react-flow`, `AnchorNode`, `UpdateNode`, `CompassHandles` before starting.
-- **Documentation impact:** `docs/areas/loom.md` source map (frontend file list: React Flow gone,
-  swimlane files added); `docs/DESIGN_SYSTEM.md` Loom section flagged for rewrite (final rewrite in
-  LS6). Enable the LS0 `it.skip` render/order/played-planned seams.
-- **Tests:** unit — lane ordering + played/planned derivation; integration — `LoomPage.test.tsx`
-  renders lanes in order and marks Now/Next. `npm run test -- loom`; `npm run build`.
-- **Gate:** live — start backend + frontend, seed `--loom`, open Loom: lanes render each Thread in
-  `position` order with correct kind styling, ghosted upcoming beats, Now/Next badges; selection still
-  drives the (old) rail. Browser/app pass required (visual surface).
-- **Discovery consolidation:** record final `LoomNodeCard` props and the swimlane scroll/measure DOM
-  structure into LS2 Handoff facts (the stitch layer measures these rects); note any retained
-  `loomFlow` helper. Update LS3 if selection wiring changed.
-- **Completion edit:** collapse LS1; Status/Next → LS2; write LS2 Handoff facts.
+Static swimlanes replaced React Flow: `LoomSwimlanes` renders `.loom-canvas-area.loom-swimlanes`, `LoomLane` renders ordered `article.loom-lane` rows, and `LoomNodeCard` keeps `.loom-node*` visuals with `isNow`/`isNext`/ghosted/selected states. Deprecated React Flow nodes, `loomFlow.ts`, old tests, and the `@xyflow/react` dependency are removed; `npm run test -- loom` passed with 51 tests and 5 skips.
 
-#### LS2 — Connector overlay (planned)
+#### LS2 — Connector overlay ✅ shipped
 
-- **Handoff facts (from LS0):** `CardRect` type in `swimlaneTypes.ts` — `{ nodeId: number, threadId: number, left: number, top: number, width: number, height: number }`. Coordinates are relative to the scroll content (not viewport). `LoomStitchLayer.tsx` stub exists and renders `null`. Stitch-layer CSS stub `.loom-stitch-layer` is in `LoomCanvas.css`.
-- **Read first:** LS1 output (`LoomSwimlanes`/`LoomLane`/`LoomNodeCard` DOM), `loomFlow.ts` history
-  (old `buildFlowEdges`/`buildSpawnEdges` color/dash choices), `loomGraph.ts`.
-- **Build:** `LoomStitchLayer` — an absolutely-positioned SVG over the scroll container. Measure card
-  element rects (refs + `ResizeObserver` + scroll listener, coordinates relative to the scroll
-  content). Draw: (a) in-lane chain arrows between adjacent cards (thread-colored, arrowhead = narrative
-  direction) — or render these as CSS connectors in `LoomLane` if simpler and keep the SVG for
-  cross-lane only; (b) **shared-session stitches** connecting a session's instances across its lanes;
-  (c) dotted **spawn links** from `origin_node_id` session → spawned Thread's Start cap
-  (`--md-outline`, dashed), matching the retired `buildSpawnEdges` styling. Recompute on layout/scroll;
-  throttle with `requestAnimationFrame`.
-- **Inherits:** LS1 lane DOM and card refs.
-- **Expected touch set:** `LoomStitchLayer.tsx`, `LoomSwimlanes.tsx` (mount overlay + expose refs),
-  `LoomLane.tsx`/`LoomNodeCard.tsx` (ref forwarding), `LoomCanvas.css` (stitch styles).
-- **Documentation impact:** `None: renderer-internal; DESIGN_SYSTEM Loom rewrite consolidated in LS6.`
-- **Tests:** enable the LS0 shared-session + spawn-link seams (assert a stitch/link element exists for
-  a shared session and a spawned Thread at the page seam; geometry math via a small helper unit test if
-  a pure path-computation function is extracted). `npm run test -- loom`; `npm run build`.
-- **Gate:** live — a shared session visibly stitches its two lanes; a spawned Thread shows a dotted
-  branch from its origin; connectors track scroll/resize without drift. Browser/app pass required.
-- **Discovery consolidation:** if a pure geometry helper is extracted, record its signature in LS5
-  cleanup notes; note performance choices (rAF throttle) in Key facts.
-- **Completion edit:** collapse LS2; Status/Next → LS3; write LS3 Handoff facts.
+Absolutely-positioned SVG overlay (`LoomStitchLayer`) renders cross-lane shared-session stitches and dotted spawn links. `useCardRects` hook measures card elements via ref callbacks + `ResizeObserver` + scroll listener; `stitchGeometry.ts` pure helper computes cubic-bezier stitch paths and routed spawn-link paths. `LoomNodeCard` forwards refs via `forwardRef` + `onRegisterRect` callback. 60 tests passing, build clean; LS0 skipped seams enabled.
 
-#### LS3 — Inspector rail + Beat Bank tray (planned)
+#### LS3 — Inspector rail + Beat Bank tray ✅ shipped
 
-- **Handoff facts (from LS0):** `LoomWeaverPanelProps` confirmed in `LoomWeaverPanel.tsx:6` — action callbacks: `onEdit`, `onDeleteNode`, `onRestoreNode(node)`, `onFulfilNode(node)`, `onBankNode(node)`, `onReplaceNode(node)`, `onSpawnThread(node)`, `onChangeEnding(node)`, `onUndoFulfil(node)`, `onReorderBeats(threadId)`. Focus callbacks: `onFocusThread(threadId)`, `onClearThreadFocus()`. Other props: `selectedNode`, `threads`, `threadCounts`, `bankedNodes`, `focusedThreadId`, `onOpenThreadManager`, `onSelectBankedNode`. The Restore button is currently gated by `focusedThreadId == null` (disabled when unfocused); LS3 removes this gating. `LoomBeatBankTray.tsx` stub exists and renders `null`.
-- **Read first:** `LoomWeaverPanel.tsx` (action block + threads/vault sections), `LoomVaultPanel.tsx`,
-  `LoomLegend.tsx`, `LoomPage.tsx` handlers (`handleRestoreNode`, `handleReplaceNode`, etc.).
-- **Build:** refactor `LoomWeaverPanel` into a focus-free selected-node **inspector** (details +
-  existing action block, minus the `focusedThreadId` gating on Restore/Reorder). Extract the Beat Bank
-  into `LoomBeatBankTray` mounted along the bottom of the swimlane area. Reimplement **restore** without
-  focus: selecting a banked beat in the tray shows a "Restore to <Thread>" picker calling
-  `insertLoomThreadItem(threadId, {node_id, position:10})`. Remove `focusedThreadId`,
-  `onFocusThread`/`onClearThreadFocus`, and focus-dimming (`.loom-node-wrapper--dimmed`).
-- **Inherits:** LS1 selection wiring; LS2 overlay (tray must not overlap connectors).
-- **Expected touch set:** `LoomWeaverPanel.tsx`, `LoomBeatBankTray.tsx`, `LoomVaultPanel.tsx` (fold in
-  or replace), `LoomPage.tsx` (drop focus state), `LoomCanvas.css` (rail + tray styles; remove dim
-  rule), `LoomWeaverPanel.test.tsx`, `LoomVaultPanel.test.tsx`.
-- **Documentation impact:** `docs/areas/loom.md` — remove focus-gating from the interaction description
-  once it ships (the Reorder/Restore invariants that mention focus). Enable the restore seam.
-- **Tests:** `LoomWeaverPanel.test.tsx` (inspector actions, no focus prop), a tray test (restore
-  picker), `LoomPage.test.tsx` restore flow. `npm run test -- loom`; `npm run build`.
-- **Gate:** live — select a card → inspector actions work; bank a beat → it appears in the tray →
-  restore via picker places it, all without any "focus" step. Browser/app pass required.
-- **Discovery consolidation:** record the final inspector prop shape and tray API into LS4 Handoff facts
-  (LS4's gap-insert and drag-restore reuse them).
-- **Completion edit:** collapse LS3; Status/Next → LS4; write LS4 Handoff facts.
+Refactored `LoomWeaverPanel` into a focus-free selected-node inspector: removed `focusedThreadId`, `onFocusThread`, `onClearThreadFocus`, the Threads list section, and the vault section. Beat Bank extracted into `LoomBeatBankTray` mounted below the swimlanes; tray shows banked beats with inline thread picker for restore (no focus needed). Removed focus-dimming (`.loom-node-wrapper--dimmed`), vault panel styles, and all `focusedThreadId` wiring from `LoomPage`. 68 tests passing, build clean.
 
 #### LS4 — Inline authoring (planned)
 
+- **Handoff facts (from LS3):** `LoomWeaverPanel` props are `{ selectedNode, threads, onEdit, onDeleteNode, onFulfilNode, onBankNode, onReplaceNode, onSpawnThread, onChangeEnding, onUndoFulfil }` — no focus, no banked nodes, no vault. `LoomBeatBankTray` props are `{ nodes: LoomNode[], threads: LoomThread[], onSelectNode, onRestoreNode: (node, threadId) => void }`. The tray manages its own thread-picker state internally. `LoomPage` has no `focusedThreadId` state; `handleRestoreNode(node, threadId)` calls `insertLoomThreadItem(threadId, ...)`. The tray renders inside `.loom-canvas-column` after `LoomSwimlanes`. `LoomVaultPanel` is dead code (no longer imported by any production component). `handleNodeSaved` no longer auto-places new nodes (that logic was removed with focus); LS4 will re-add placement via gap-insert.
 - **Read first:** `LoomLane.tsx`, `beatReorder.ts` (`beatReorderTarget`), `LoomBeatReorderDialog.tsx`,
   `LoomNodeEditor.tsx`, `LoomPage.tsx` (`handleNodeSaved`, insert path), `LoomBeatBankTray` (LS3).
 - **Build:** add clickable "+" **insertion gaps** between slots in each `LoomLane`; clicking opens
@@ -255,16 +179,16 @@ Stub files confirmed: `LoomSwimlanes.tsx`, `LoomLane.tsx`, `LoomNodeCard.tsx`, `
 #### LS5 — Polish & cleanup (planned)
 
 - **Read first:** the whole `frontend/src/features/loom/` tree post-LS4; `useLoomCanvasMutations.ts`,
-  `loomFlow.ts` remnants; `LoomCanvas.css`.
+  `LoomCanvas.css`.
 - **Build:** remove all now-dead code — `useLoomCanvasMutations.moveNode` + `patchLoomNodePosition`
-  usage, any leftover `loomFlow` edge/compass helpers, residual focus state/props, deprecated test
+  usage, residual focus state/props, deprecated test
   scaffolding. Reapply the woven background texture (radial anchor glow + warp stripes + color wash)
   to the swimlane container. Add `prefers-reduced-motion` handling to stitches/transitions, `<520px`
   responsive stacking (lanes scroll; tray/inspector collapse), and a full a11y pass (focus rings,
   ≥48px targets, never color-alone — every kind cue has icon+text).
 - **Inherits:** everything LS1–LS4.
 - **Expected touch set:** `LoomCanvas.css`, `LoomPage.tsx`, `useLoomCanvasMutations.ts`,
-  `loomFlow.ts`/`useLoomCanvasMutations.test.ts` (delete or trim), any remaining loom component.
+  `useLoomCanvasMutations.test.ts` (delete or trim if still present), any remaining loom component.
 - **Documentation impact:** `None: canonical-reference rewrite is the LS6 closeout job` (LS5 only
   removes dead code and polishes).
 - **Tests:** full loom suite green; `npm run build`; coverage ≥85% for the area.
@@ -335,4 +259,4 @@ clean; `.venv\Scripts\python.exe -m pytest backend/tests/routers/test_loom.py` g
 
 ## Next:
 
-LS1 — Static swimlanes (unblocked, LS0 shipped).
+LS4 — Inline authoring (unblocked, LS3 shipped).

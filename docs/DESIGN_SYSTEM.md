@@ -352,7 +352,16 @@ Independently collapsible toolbar group in Map Lab:
 
 ---
 
-### Loom tokens and React Flow re-theming (LM4)
+### Loom tokens and renderer transition (LM4 → LS)
+
+The Loom is transitioning from the React Flow canvas described below to the swimlane renderer in
+`LoomSwimlanes.tsx`, `LoomLane.tsx`, and `LoomNodeCard.tsx`. Current shipped LS1 behavior uses the same
+thread token keys, `.loom-node*` card classes, thread spines, thread chips, and Now/Next badges on static
+horizontal lanes; connector stitches, the inspector rail, the bottom Beat Bank tray, and the final section rewrite
+ship in later LS stages.
+
+The remaining React Flow-specific notes in this section are legacy context for pre-LS behavior and will be removed
+by the LS6 documentation rewrite.
 
 The Loom canvas uses `@xyflow/react` (≥12.4 for React 19 compatibility, pinned `^12.8`). Its internal
 styling is replaced by mapping React Flow's `--xy-*` CSS custom properties to MD3 tokens in

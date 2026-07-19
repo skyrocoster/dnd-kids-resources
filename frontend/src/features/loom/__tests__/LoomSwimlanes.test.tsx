@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import type { LoomNode, LoomTapestry, LoomTapestryThread } from '../../../api/types'
 import { threadOrdered, currentPosition, nextBeat } from '../loomGraph'
+import { buildStitches, buildSpawnLinks, stitchPath, spawnLinkPath } from '../stitchGeometry'
+import type { CardRect } from '../swimlaneTypes'
 import type { SwimlaneModel } from '../swimlaneTypes'
 
 function demoTapestry(): LoomTapestry {
@@ -54,7 +56,7 @@ function buildLanes(tapestry: LoomTapestry): SwimlaneModel[] {
 }
 
 describe('LoomSwimlanes scaffolding', () => {
-  it.skip('renders lanes in position order', () => {
+  it('renders lanes in position order', () => {
     const tapestry = demoTapestry()
     const lanes = buildLanes(tapestry)
 
@@ -65,7 +67,7 @@ describe('LoomSwimlanes scaffolding', () => {
     expect(lanes[1].ordered.map((n) => n.id)).toEqual([6, 3, 7, 8])
   })
 
-  it.skip('marks played vs planned styling per lane', () => {
+  it('marks played vs planned styling per lane', () => {
     const tapestry = demoTapestry()
     const lanes = buildLanes(tapestry)
     const lane1 = lanes[0]
@@ -85,7 +87,7 @@ describe('LoomSwimlanes scaffolding', () => {
     expect(planned.map((n) => n.id)).toContain(4)
   })
 
-  it.skip('shows a shared session in two lanes', () => {
+  it('shows a shared session in two lanes', () => {
     const tapestry = demoTapestry()
     const lanes = buildLanes(tapestry)
 
@@ -98,7 +100,7 @@ describe('LoomSwimlanes scaffolding', () => {
     expect(node3InLane2!.thread_ids).toContain(2)
   })
 
-  it.skip('identifies a spawn link from origin thread', () => {
+  it('identifies a spawn link from origin thread', () => {
     const tapestry = demoTapestry()
     const spawnedThread = tapestry.threads.find(
       (t) => t.origin_node_id != null,
@@ -114,7 +116,7 @@ describe('LoomSwimlanes scaffolding', () => {
     }
   })
 
-  it.skip('supports insert-via-gap at a position', () => {
+  it('supports insert-via-gap at a position', () => {
     const tapestry = demoTapestry()
     const lanes = buildLanes(tapestry)
     const lane = lanes[0]
@@ -131,7 +133,7 @@ describe('LoomSwimlanes scaffolding', () => {
     expect(gapAfterPosition).toBeLessThan(positions[2])
   })
 
-  it.skip('supports drag-reorder within a lane', () => {
+  it('supports drag-reorder within a lane', () => {
     const tapestry = demoTapestry()
     const lanes = buildLanes(tapestry)
     const lane = lanes[0]
@@ -147,7 +149,7 @@ describe('LoomSwimlanes scaffolding', () => {
     expect(beatPositions[0].position).toBe(30)
   })
 
-  it.skip('supports restore via Thread picker', () => {
+  it('supports restore via Thread picker', () => {
     const tapestry = demoTapestry()
     const banked = tapestry.nodes.filter(
       (n) => n.kind === 'beat' && n.thread_ids.length === 0,
@@ -156,5 +158,51 @@ describe('LoomSwimlanes scaffolding', () => {
     expect(banked).toHaveLength(1)
     expect(banked[0].id).toBe(9)
     expect(banked[0].title).toBe('Mysterious stranger')
+  })
+})
+
+function makeCardRect(nodeId: number, threadId: number, left: number, top: number, w = 180, h = 60): CardRect {
+  return { nodeId, threadId, left, top, width: w, height: h }
+}
+
+describe('stitchGeometry', () => {
+  it('builds a stitch path between two card rects', () => {
+    const from = makeCardRect(3, 1, 200, 40)
+    const to = makeCardRect(3, 2, 200, 200)
+    const d = stitchPath(from, to)
+    expect(d).toMatch(/^M /)
+    expect(d).toContain('C ')
+  })
+
+  it('builds a spawn link path from origin to start cap', () => {
+    const origin = makeCardRect(3, 1, 200, 40)
+    const start = makeCardRect(6, 2, 0, 200)
+    const d = spawnLinkPath(origin, start)
+    expect(d).toMatch(/^M /)
+    expect(d).toContain('L ')
+  })
+
+  it('builds stitches for a shared session across lanes', () => {
+    const rects: CardRect[] = [
+      makeCardRect(3, 1, 200, 40),
+      makeCardRect(3, 2, 200, 200),
+    ]
+    const stitches = buildStitches([{ nodeId: 3, rects }])
+    expect(stitches).toHaveLength(1)
+    expect(stitches[0].fromNodeId).toBe(3)
+    expect(stitches[0].d).toMatch(/^M /)
+  })
+
+  it('builds spawn links for a spawned thread', () => {
+    const links = buildSpawnLinks([{
+      originNodeId: 3,
+      originRect: makeCardRect(3, 1, 200, 40),
+      startCapRect: makeCardRect(6, 2, 0, 200),
+      spawnedThreadId: 2,
+    }])
+    expect(links).toHaveLength(1)
+    expect(links[0].originNodeId).toBe(3)
+    expect(links[0].spawnedThreadId).toBe(2)
+    expect(links[0].d).toMatch(/^M /)
   })
 })

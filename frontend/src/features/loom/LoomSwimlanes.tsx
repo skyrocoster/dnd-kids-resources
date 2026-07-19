@@ -1,3 +1,43 @@
-export function LoomSwimlanes() {
-  return null
+import { useCallback } from 'react'
+import type { LoomNode, LoomTapestryThread } from '../../api/types'
+import { LoomLane } from './LoomLane'
+import { LoomStitchLayer } from './LoomStitchLayer'
+import { useCardRects } from './useCardRects'
+
+interface LoomSwimlanesProps {
+  threads: LoomTapestryThread[]
+  nodes: LoomNode[]
+  selectedNodeId?: number | null
+  onSelectNode?: (nodeId: number) => void
+}
+
+export function LoomSwimlanes({ threads, nodes, selectedNodeId, onSelectNode }: LoomSwimlanesProps) {
+  const { scrollRef, registerCard, cardRects } = useCardRects()
+
+  const scrollRefCallback = useCallback(
+    (el: HTMLDivElement | null) => {
+      scrollRef.current = el
+    },
+    [scrollRef],
+  )
+
+  return (
+    <section
+      className="loom-canvas-area loom-swimlanes"
+      aria-label="Thread swimlanes"
+      ref={scrollRefCallback}
+    >
+      <LoomStitchLayer cardRects={cardRects} threads={threads} nodes={nodes} />
+      {threads.map((thread) => (
+        <LoomLane
+          key={thread.id}
+          thread={thread}
+          nodes={nodes}
+          selectedNodeId={selectedNodeId}
+          onSelectNode={onSelectNode}
+          onRegisterRect={registerCard}
+        />
+      ))}
+    </section>
+  )
 }

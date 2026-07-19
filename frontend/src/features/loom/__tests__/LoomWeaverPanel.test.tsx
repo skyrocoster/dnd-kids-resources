@@ -30,23 +30,14 @@ const noop = () => {}
 
 const baseProps = {
   threads,
-  threadCounts: { 1: 2 },
-  bankedNodes: [],
-  focusedThreadId: null,
   onEdit: noop,
   onDeleteNode: noop,
-  onSelectBankedNode: noop,
-  onRestoreNode: noop,
   onFulfilNode: noop,
   onBankNode: noop,
   onReplaceNode: noop,
   onSpawnThread: noop,
   onChangeEnding: noop,
   onUndoFulfil: noop,
-  onOpenThreadManager: noop,
-  onFocusThread: noop,
-  onClearThreadFocus: noop,
-  onReorderBeats: noop,
 }
 
 describe('LoomWeaverPanel', () => {
@@ -56,7 +47,6 @@ describe('LoomWeaverPanel', () => {
     expect(screen.getByText('Story Beat')).toBeInTheDocument()
     expect(screen.getByText('Session 12')).toBeInTheDocument()
     expect(screen.getByText('The goblin chief knows where the puppy ended up.')).toBeInTheDocument()
-    expect(screen.getAllByText('The Lost Puppy')).toHaveLength(2)
   })
 
   it('renders a selected session node\'s kind', () => {
@@ -69,7 +59,6 @@ describe('LoomWeaverPanel', () => {
     render(<LoomWeaverPanel {...baseProps} selectedNode={null} />)
     expect(screen.getByText('Story beat')).toBeInTheDocument()
     expect(screen.getByText('Recorded session')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /The Lost Puppy/i })).toHaveTextContent('2 nodes')
   })
 
   it('shows edit/delete actions for a beat node', () => {
@@ -108,48 +97,17 @@ describe('LoomWeaverPanel', () => {
     expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument()
   })
 
-  it('calls the vault callback when a banked node is clicked', async () => {
+  it('shows spawn thread action for session nodes', async () => {
     const user = userEvent.setup()
-    const onSelectBankedNode = vi.fn()
-
+    const onSpawnThread = vi.fn()
     render(
       <LoomWeaverPanel
         {...baseProps}
-        selectedNode={null}
-        bankedNodes={[{ id: 9, kind: 'beat', title: 'Mysterious hooded stranger', x: 1, y: 2, thread_ids: [] }]}
-        onSelectBankedNode={onSelectBankedNode}
+        selectedNode={sessionNode}
+        onSpawnThread={onSpawnThread}
       />,
     )
-
-    await user.click(screen.getByRole('button', { name: 'Mysterious hooded stranger' }))
-    expect(onSelectBankedNode).toHaveBeenCalledWith({
-      id: 9,
-      kind: 'beat',
-      title: 'Mysterious hooded stranger',
-      x: 1,
-      y: 2,
-      thread_ids: [],
-    })
-  })
-
-  it('focuses a thread and exposes a clear-focus action', async () => {
-    const user = userEvent.setup()
-    const onFocusThread = vi.fn()
-    const onClearThreadFocus = vi.fn()
-
-    render(
-      <LoomWeaverPanel
-        {...baseProps}
-        selectedNode={null}
-        focusedThreadId={1}
-        onFocusThread={onFocusThread}
-        onClearThreadFocus={onClearThreadFocus}
-      />,
-    )
-
-    await user.click(screen.getByRole('button', { name: /The Lost Puppy/i }))
-    expect(onFocusThread).toHaveBeenCalledWith(1)
-    await user.click(screen.getByRole('button', { name: 'Clear focus' }))
-    expect(onClearThreadFocus).toHaveBeenCalled()
+    await user.click(screen.getByRole('button', { name: 'Spawn Thread' }))
+    expect(onSpawnThread).toHaveBeenCalledWith(sessionNode)
   })
 })

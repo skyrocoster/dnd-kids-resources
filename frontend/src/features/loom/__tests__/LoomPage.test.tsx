@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { LoomTapestry } from '../../../api/types'
@@ -11,12 +11,16 @@ function demoTapestry(): LoomTapestry {
       id: 1, name: 'The Lost Puppy', color: 'thread-3',
       items: [
         { node_id: 1, position: 0 },
-        { node_id: 4, position: 10 },
+        { node_id: 2, position: 10 },
+        { node_id: 4, position: 20 },
+        { node_id: 5, position: 30 },
       ],
     }],
     nodes: [
       { id: 1, kind: 'start', title: 'The Lost Puppy', x: 0, y: 0, thread_ids: [1] },
+      { id: 2, kind: 'session', title: 'Puppy goes missing', x: 200, y: 75, thread_ids: [1] },
       { id: 4, kind: 'beat', title: 'Confront the goblin chief', x: 400, y: 75, thread_ids: [1] },
+      { id: 5, kind: 'end', title: 'Resolve: The Lost Puppy', x: 600, y: 75, thread_ids: [1] },
       { id: 9, kind: 'beat', title: 'Mysterious hooded stranger', x: 400, y: 300, thread_ids: [] },
     ],
   }
@@ -27,17 +31,29 @@ describe('LoomPage', () => {
     vi.restoreAllMocks()
   })
 
-  it('renders the tapestry nodes and the beat bank panel once loaded', async () => {
+  it('renders the tapestry nodes and the beat bank tray once loaded', async () => {
     vi.spyOn(api, 'getLoomTapestry').mockResolvedValue(demoTapestry())
 
     render(<LoomPage />)
 
-    await waitFor(() => expect(screen.getByText('The Lost Puppy')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getAllByText('The Lost Puppy').length).toBeGreaterThan(0))
     expect(screen.getByRole('heading', { name: 'The Loom' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Record Session' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Add Beat' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Manage Threads' })).toBeInTheDocument()
     expect(screen.getByText('Beat Bank (1)')).toBeInTheDocument()
+  })
+
+  it('renders a thread swimlane in narrative order with Now and Next badges', async () => {
+    vi.spyOn(api, 'getLoomTapestry').mockResolvedValue(demoTapestry())
+
+    render(<LoomPage />)
+
+    const lane = await screen.findByRole('article', { name: 'The Lost Puppy' })
+    expect(lane).toHaveTextContent(/The Lost Puppy.*Puppy goes missing.*Confront the goblin chief.*Resolve: The Lost Puppy/s)
+    expect(within(lane).getByText('Now')).toBeInTheDocument()
+    expect(within(lane).getByText('Next')).toBeInTheDocument()
+    expect(within(lane).getByRole('button', { name: 'beat: Confront the goblin chief' })).toHaveClass('loom-node--ghosted')
   })
 
   it('shows an error state with a retry action on load failure', async () => {
@@ -54,7 +70,7 @@ describe('LoomPage', () => {
     const user = userEvent.setup()
     render(<LoomPage />)
 
-    await waitFor(() => expect(screen.getByText('The Lost Puppy')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getAllByText('The Lost Puppy').length).toBeGreaterThan(0))
     await user.click(screen.getByRole('button', { name: 'Add Beat' }))
 
     expect(screen.getByRole('dialog', { name: 'Add New Beat' })).toBeInTheDocument()
@@ -65,7 +81,7 @@ describe('LoomPage', () => {
     const user = userEvent.setup()
     render(<LoomPage />)
 
-    await waitFor(() => expect(screen.getByText('The Lost Puppy')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getAllByText('The Lost Puppy').length).toBeGreaterThan(0))
     await user.click(screen.getByRole('button', { name: 'Manage Threads' }))
 
     const dialog = screen.getByRole('dialog', { name: 'Manage Threads' })
@@ -90,15 +106,22 @@ describe('LoomPage', () => {
   it('renders the Weaver\'s panel rail', async () => {
     vi.spyOn(api, 'getLoomTapestry').mockResolvedValue(demoTapestry())
     render(<LoomPage />)
-    await waitFor(() => expect(screen.getByText('The Lost Puppy')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getAllByText('The Lost Puppy').length).toBeGreaterThan(0))
     expect(screen.getByRole('complementary', { name: "Weaver's panel" })).toBeInTheDocument()
-    expect(screen.getByText('Beat Bank (1)')).toBeInTheDocument()
+  })
+
+  it('shows the beat bank tray below the swimlanes', async () => {
+    vi.spyOn(api, 'getLoomTapestry').mockResolvedValue(demoTapestry())
+    render(<LoomPage />)
+    await waitFor(() => expect(screen.getAllByText('The Lost Puppy').length).toBeGreaterThan(0))
+    expect(screen.getByRole('region', { name: 'Beat Bank' })).toBeInTheDocument()
+    expect(screen.getByText('Mysterious hooded stranger')).toBeInTheDocument()
   })
 
   it('does not render the old .loom-inspector strip', async () => {
     vi.spyOn(api, 'getLoomTapestry').mockResolvedValue(demoTapestry())
     render(<LoomPage />)
-    await waitFor(() => expect(screen.getByText('The Lost Puppy')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getAllByText('The Lost Puppy').length).toBeGreaterThan(0))
     expect(document.querySelector('.loom-inspector')).not.toBeInTheDocument()
   })
 })
