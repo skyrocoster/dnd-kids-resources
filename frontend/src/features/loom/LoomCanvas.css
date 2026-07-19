@@ -133,10 +133,21 @@
 }
 
 .loom-lane-track {
+  position: relative;
   display: flex;
   align-items: center;
   gap: var(--space-3);
   padding: var(--space-1) 0;
+}
+
+.loom-lane-weft-line {
+  position: absolute;
+  inset: 0;
+  margin-block: auto;
+  height: 2px;
+  width: 100%;
+  background: color-mix(in srgb, var(--md-outline-variant) 60%, transparent);
+  z-index: 0;
 }
 
 .loom-lane-cap {
@@ -145,6 +156,7 @@
   display: flex;
   align-items: center;
   padding: var(--space-1) 0;
+  background: color-mix(in srgb, var(--md-surface-1) 78%, transparent);
 }
 
 .loom-lane-cap--start {
@@ -163,8 +175,8 @@
 
 .loom-node {
   position: relative;
-  min-width: 160px;
-  max-width: 220px;
+  min-width: 10rem;
+  max-width: 13.75rem;
   /* No overflow:hidden here — the Now/Next badges are designed to overhang the
      top edge (negative offsets below) and node-level clipping would cut them off.
      The spine clips itself via its own border-radius instead. */
@@ -180,7 +192,7 @@
 .loom-node-spine {
   position: absolute;
   inset: 0 auto 0 0;
-  width: 6px;
+  width: 0.375rem;
   border-radius: var(--radius-md) 0 0 var(--radius-md);
   opacity: 0.98;
 }
@@ -244,8 +256,8 @@
 
 .loom-node-badge {
   position: absolute;
-  top: -10px;
-  right: -6px;
+  top: -0.625rem;
+  right: -0.375rem;
   padding: 1px var(--space-2);
   border-radius: var(--radius-full);
   font-size: var(--type-caption-size);
@@ -261,7 +273,7 @@
 
 .loom-node-badge--next {
   right: auto;
-  left: -6px;
+  left: -0.375rem;
   background: var(--md-secondary);
   color: var(--md-on-secondary);
 }
@@ -275,8 +287,8 @@
 }
 
 .loom-thread-chip {
-  width: 8px;
-  height: 8px;
+  width: 0.5rem;
+  height: 0.5rem;
   border-radius: var(--radius-full);
 }
 
@@ -313,7 +325,7 @@
 /* ─── Weaver's panel rail ─────────────────────────────────────────────── */
 
 .loom-weaver-panel {
-  width: 320px;
+  width: 20rem;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -530,8 +542,8 @@
 }
 
 .loom-weaver-thread-swatch {
-  width: 12px;
-  height: 12px;
+  width: 0.75rem;
+  height: 0.75rem;
   border-radius: var(--radius-full);
   flex-shrink: 0;
 }
@@ -548,6 +560,8 @@
 /* ─── Swimlane namespace (LS4) ───────────────────────────────────────── */
 
 .loom-lane-card-group {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   gap: 0;
@@ -557,9 +571,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 24px;
-  width: 24px;
-  min-height: 48px;
+  min-width: 1.5rem;
+  width: 1.5rem;
+  min-height: 3rem;
   cursor: pointer;
   border: none;
   background: transparent;
@@ -605,7 +619,7 @@
 
 .loom-lane-gap:hover,
 .loom-lane-gap:focus-visible {
-  width: 32px;
+  width: 2rem;
 }
 
 .loom-lane-gap:hover::before,
@@ -615,7 +629,7 @@
 
 .loom-lane-gap--drag-over {
   background: color-mix(in srgb, var(--md-primary-container) 40%, transparent);
-  width: 48px;
+  width: 3rem;
   border-radius: var(--radius-md);
 }
 
@@ -733,9 +747,8 @@
 
 .loom-stitch-layer {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
+  top: 0;
+  left: 0;
   pointer-events: none;
   z-index: 2;
 }

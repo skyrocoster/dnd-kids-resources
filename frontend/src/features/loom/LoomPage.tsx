@@ -15,6 +15,7 @@ import { LoomErrorBanner } from './LoomErrorBanner'
 import { StatePanel } from '../../components/StatePanel'
 import { Button } from '../../components/Button'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
+import { Dialog } from '../../components/Dialog'
 import { PageHeader } from '../../components/PageHeader'
 import { MapPinIcon, PlusIcon, WaypointsIcon } from '../../components/icons'
 import {
@@ -23,6 +24,7 @@ import {
   deleteLoomNode,
   fulfilLoomNode,
   insertLoomThreadItem,
+  moveLoomThreadItem,
   reorderLoomThreadItem,
   updateLoomNode,
 } from '../../api/client'
@@ -51,6 +53,12 @@ export function LoomPage() {
   const [pendingDeleteNode, setPendingDeleteNode] = useState<LoomNodeType | null>(null)
   const [deletingNode, setDeletingNode] = useState(false)
   const [bannerError, setBannerError] = useState<string | null>(null)
+  const [pendingMove, setPendingMove] = useState<{
+    nodeId: number
+    sourceThreadId: number
+    targetThreadId: number
+    position: number
+  } | null>(null)
 
   const banked = useMemo(() => (tapestry.status === 'success' ? bankedBeats(tapestry.data) : []), [tapestry])
   const threads = useMemo(() => (tapestry.status === 'success' ? tapestry.data.threads : []), [tapestry])
@@ -142,6 +150,23 @@ export function LoomPage() {
         () => reorderLoomThreadItem(threadId, target.nodeId, { position: target.position }),
         'Failed to reorder the beat.',
       )
+    },
+    [tapestry],
+  )
+
+  const handleCrossLaneDrop = useCallback(
+    (nodeId: number, sourceThreadId: number, targetThreadId: number, position: number, nodeKind: 'beat' | 'session') => {
+      if (tapestry.status !== 'success') return
+      const node = tapestry.data.nodes.find((n) => n.id === nodeId)
+      if (!node) return
+      if (nodeKind === 'beat' || node.thread_ids.length <= 1) {
+        void runLifecycleCommand(
+          () => moveLoomThreadItem(sourceThreadId, nodeId, { target_thread_id: targetThreadId, position }),
+          'Failed to move the node.',
+        )
+      } else {
+        setPendingMove({ nodeId, sourceThreadId, targetThreadId, position })
+      }
     },
     [tapestry],
   )
@@ -268,6 +293,7 @@ export function LoomPage() {
               onSelectNode={handleNodeClick}
               onGapClick={handleGapClick}
               onReorder={handleReorder}
+              onCrossLaneDrop={handleCrossLaneDrop}
               onGapRestore={handleGapRestore}
             />
             <LoomBeatBankTray
@@ -324,6 +350,49 @@ export function LoomPage() {
           />
         ) : null
       })()}
+
+      {pendingMove && (
+        <Dialog
+          open
+          title="This session is shared across threads"
+          onClose={() => setPendingMove(null)}
+          footer={
+            <>
+              <Button type="button" variant="secondary" onClick={() => setPendingMove(null)}>
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => {
+                  const p = pendingMove
+                  setPendingMove(null)
+                  void runLifecycleCommand(
+                    () => moveLoomThreadItem(p.sourceThreadId, p.nodeId, { target_thread_id: p.targetThreadId, position: p.position, mode: 'move' }),
+                    'Failed to move the node.',
+                  )
+                }}
+              >
+                Move here
+              </Button>
+              <Button
+                type="button"
+                variant="primary"
+                onClick={() => {
+                  const p = pendingMove
+                  setPendingMove(null)
+                  void runLifecycleCommand(
+                    () => moveLoomThreadItem(p.sourceThreadId, p.nodeId, { target_thread_id: p.targetThreadId, position: p.position, mode: 'also_add' }),
+                    'Failed to move the node.',
+                  )
+                }}
+              >
+                Also add here
+              </Button>
+            </>
+          }
+        />
+      )}
 
       {pendingDeleteNode && (
         <ConfirmDialog

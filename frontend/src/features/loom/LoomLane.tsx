@@ -11,29 +11,20 @@ interface LoomLaneProps {
   onRegisterRect?: (nodeId: number, threadId: number, el: HTMLElement | null) => void
   onGapClick?: (threadId: number, position: number) => void
   onReorder?: (threadId: number, nodeId: number, fromBodyIndex: number, toBodyIndex: number) => void
+  onCrossLaneDrop?: (nodeId: number, sourceThreadId: number, targetThreadId: number, position: number, nodeKind: 'beat' | 'session') => void
   onGapRestore?: (nodeId: number, threadId: number, position: number) => void
 }
 
-function Gap({
-  threadId,
-  position,
-  index,
-  onGapClick,
-  onReorder,
-  onGapRestore,
-}: {
-  threadId: number
-  position: number
-  index: number
-  onGapClick?: (threadId: number, position: number) => void
+interface DropZoneCallbacks {
   onReorder?: (threadId: number, nodeId: number, fromBodyIndex: number, toBodyIndex: number) => void
+  onCrossLaneDrop?: (nodeId: number, sourceThreadId: number, targetThreadId: number, position: number, nodeKind: 'beat' | 'session') => void
   onGapRestore?: (nodeId: number, threadId: number, position: number) => void
-}) {
-  const [dragOver, setDragOver] = useState(false)
+}
 
-  const handleClick = useCallback(() => {
-    onGapClick?.(threadId, position)
-  }, [onGapClick, threadId, position])
+/** Shared drag-over/drop handling for a lane slot (the gap plus whatever card sits next to it). */
+function useDropZone(threadId: number, position: number, index: number, callbacks: DropZoneCallbacks) {
+  const { onReorder, onCrossLaneDrop, onGapRestore } = callbacks
+  const [dragOver, setDragOver] = useState(false)
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault()
@@ -59,7 +50,11 @@ function Gap({
       try {
         const data = JSON.parse(raw)
         if (data.action === 'reorder') {
-          onReorder?.(threadId, data.nodeId, data.fromBodyIndex, index)
+          if (data.sourceThreadId === threadId) {
+            onReorder?.(threadId, data.nodeId, data.fromBodyIndex, index)
+          } else {
+            onCrossLaneDrop?.(data.nodeId, data.sourceThreadId, threadId, position, data.nodeKind)
+          }
         } else if (data.action === 'restore') {
           onGapRestore?.(data.nodeId, threadId, position)
         }
@@ -67,17 +62,31 @@ function Gap({
         // ignore parse errors
       }
     },
-    [onReorder, onGapRestore, threadId, position, index],
+    [onReorder, onCrossLaneDrop, onGapRestore, threadId, position, index],
   )
+
+  return { dragOver, handleDragOver, handleDragEnter, handleDragLeave, handleDrop }
+}
+
+function Gap({
+  threadId,
+  position,
+  dragOver,
+  onGapClick,
+}: {
+  threadId: number
+  position: number
+  dragOver: boolean
+  onGapClick?: (threadId: number, position: number) => void
+}) {
+  const handleClick = useCallback(() => {
+    onGapClick?.(threadId, position)
+  }, [onGapClick, threadId, position])
 
   return (
     <div
       className={`loom-lane-gap${dragOver ? ' loom-lane-gap--drag-over' : ''}`}
       onClick={handleClick}
-      onDragOver={handleDragOver}
-      onDragEnter={handleDragEnter}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
       role="button"
       tabIndex={0}
       aria-label={`Insert at position ${position}`}
@@ -93,6 +102,44 @@ function Gap({
   )
 }
 
+/** A gap paired with the card that follows it — the whole group is one drop target, not just the gap sliver. */
+function CardGroup({
+  threadId,
+  position,
+  index,
+  onGapClick,
+  onReorder,
+  onCrossLaneDrop,
+  onGapRestore,
+  children,
+}: DropZoneCallbacks & {
+  threadId: number
+  position: number
+  index: number
+  onGapClick?: (threadId: number, position: number) => void
+  children: React.ReactNode
+}) {
+  const { dragOver, handleDragOver, handleDragEnter, handleDragLeave, handleDrop } = useDropZone(
+    threadId,
+    position,
+    index,
+    { onReorder, onCrossLaneDrop, onGapRestore },
+  )
+
+  return (
+    <div
+      className="loom-lane-card-group"
+      onDragOver={handleDragOver}
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
+      <Gap threadId={threadId} position={position} dragOver={dragOver} onGapClick={onGapClick} />
+      {children}
+    </div>
+  )
+}
+
 export function LoomLane({
   thread,
   nodes,
@@ -101,6 +148,7 @@ export function LoomLane({
   onRegisterRect,
   onGapClick,
   onReorder,
+  onCrossLaneDrop,
   onGapRestore,
 }: LoomLaneProps) {
   const ordered = threadOrdered(thread, nodes)
@@ -140,19 +188,21 @@ export function LoomLane({
         </div>
       )}
       <div className="loom-lane-track">
+        <div className="loom-lane-weft-line" aria-hidden="true" />
         {bodyNodes.map((node, idx) => {
           const item = thread.items.find((i) => i.node_id === node.id)
           const gapPos = item?.position ?? idx * 10
           return (
-            <div key={node.id} className="loom-lane-card-group">
-              <Gap
-                threadId={thread.id}
-                position={gapPos}
-                index={idx}
-                onGapClick={onGapClick}
-                onReorder={onReorder}
-                onGapRestore={onGapRestore}
-              />
+            <CardGroup
+              key={node.id}
+              threadId={thread.id}
+              position={gapPos}
+              index={idx}
+              onGapClick={onGapClick}
+              onReorder={onReorder}
+              onCrossLaneDrop={onCrossLaneDrop}
+              onGapRestore={onGapRestore}
+            >
               <LoomNodeCard
                 node={node}
                 isNow={head?.id === node.id || currentNodeId === node.id}
@@ -164,17 +214,20 @@ export function LoomLane({
                 threadId={thread.id}
                 bodyIndex={idx}
               />
-            </div>
+            </CardGroup>
           )
         })}
-        <Gap
+        <CardGroup
           threadId={thread.id}
           position={Number.MAX_SAFE_INTEGER}
           index={bodyNodes.length}
           onGapClick={onGapClick}
           onReorder={onReorder}
+          onCrossLaneDrop={onCrossLaneDrop}
           onGapRestore={onGapRestore}
-        />
+        >
+          {null}
+        </CardGroup>
       </div>
       {endNode && (
         <div className="loom-lane-cap loom-lane-cap--end">

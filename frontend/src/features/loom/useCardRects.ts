@@ -14,6 +14,10 @@ export function useCardRects() {
   const scrollRef = useRef<HTMLElement | null>(null)
   const elsRef = useRef<Map<number, { el: HTMLElement; threadId: number }>>(new Map())
   const [cardRects, setCardRects] = useState<Map<number, CardRect>>(new Map())
+  const [contentSize, setContentSize] = useState<{ width: number; height: number }>({
+    width: 0,
+    height: 0,
+  })
 
   const measure = useCallback(() => {
     const scrollEl = scrollRef.current
@@ -21,6 +25,8 @@ export function useCardRects() {
     const scrollRect = scrollEl.getBoundingClientRect()
     const scrollLeft = scrollEl.scrollLeft
     const scrollTop = scrollEl.scrollTop
+
+    setContentSize({ width: scrollEl.scrollWidth, height: scrollEl.scrollHeight })
 
     const next = new Map<number, CardRect>()
     for (const [nodeId, { el, threadId }] of elsRef.current) {
@@ -66,5 +72,5 @@ export function useCardRects() {
     }
   }, [measure])
 
-  return { scrollRef, registerCard, cardRects, measure }
+  return { scrollRef, registerCard, cardRects, contentSize, measure }
 }
