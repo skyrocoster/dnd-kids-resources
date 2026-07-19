@@ -352,80 +352,64 @@ Independently collapsible toolbar group in Map Lab:
 
 ---
 
-### Loom tokens and renderer transition (LM4 → LS)
+### Loom — Swimlane renderer (LS)
 
-The Loom is transitioning from the React Flow canvas described below to the swimlane renderer in
-`LoomSwimlanes.tsx`, `LoomLane.tsx`, and `LoomNodeCard.tsx`. Current shipped LS1 behavior uses the same
-thread token keys, `.loom-node*` card classes, thread spines, thread chips, and Now/Next badges on static
-horizontal lanes; connector stitches, the inspector rail, the bottom Beat Bank tray, and the final section rewrite
-ship in later LS stages.
+The Loom uses a purpose-built static swimlane renderer in `LoomSwimlanes.tsx`, `LoomLane.tsx`,
+and `LoomNodeCard.tsx`. No graph library; no edges; no focus-gating. Every Thread is always visible.
 
-The remaining React Flow-specific notes in this section are legacy context for pre-LS behavior and will be removed
-by the LS6 documentation rewrite.
+**Layout structure:** Each Thread renders as `article.loom-lane` within the scrollable `.loom-swimlanes`
+container. A lane has a sticky header (thread swatch + name), then a horizontal row of node cards
+running left (Start cap) → body nodes → right (End cap). Body nodes are separated by clickable "+"
+gaps (`.loom-lane-gap`). A `LoomStitchLayer` SVG overlay draws cross-lane stitches and spawn links
+from measured card rects.
 
-The Loom canvas uses `@xyflow/react` (≥12.4 for React 19 compatibility, pinned `^12.8`). Its internal
-styling is replaced by mapping React Flow's `--xy-*` CSS custom properties to MD3 tokens in
-`LoomCanvas.css` (scoped under `.loom-canvas-area .react-flow`). Twenty `--xy-*` variables are
-re-themed: background, edges, handles, selection, controls, and attribution all resolve to
-`--md-surface`, `--md-outline`, `--md-primary`, etc.
+**Node cards (`.loom-node`):** Base fill by kind — Start/End on `--md-primary-container`, beat on
+`--md-tertiary-container`, session on `--md-secondary-container`. Every threaded node carries a
+`.loom-node-spine` left strip colored by `data-color="thread-N"` → `--md-loom-thread-N`. Status cues:
+played nodes (sessions and fulfilled beats) render solid; upcoming beats render ghosted
+(`.loom-node--ghosted`, 0.58 opacity, dashed border). The head node (closest played→planned
+boundary) gets `[data-head]` with a primary glow ring + "Now" badge; the next unplayed beat gets
+"Next" badge on `--md-secondary`. Selected cards get `.loom-node--selected` outline.
 
-Eight loom-specific token sets were generated via `scripts/generate-md3-tokens.mjs`:
-- **`loom-anchor`** (warm beacon gold, seed `#e8b33d`) — planned/future milestones
-- **`loom-update`** (cool slate blue, seed `#8fb3d9`) — recorded past nodes
-- **`loom-thread-1`…`loom-thread-6`** — thread accent colors with hue-spread seeds for mutual
-  distinguishability; stored as token keys (`thread-1`…`thread-6`) in the database, never as hex
+**Thread palette:** `--md-loom-thread-1`…`--md-loom-thread-6` (+ `-container`/`-on-*`), stored in DB
+as token keys (`thread-1`…`thread-6`). `--md-loom-anchor` (+ `-container`/`-on-*`) is the warm beacon
+gold accent for planned milestones. **There is no `--md-loom-update` token set** and no `anchor`/`update`
+node kinds — only start/end/beat/session.
 
-Node status treatments are CSS-driven via `data-status` and `data-head` attributes:
-- Planned anchors: outlined with `--md-loom-anchor` + subtle glow
-- Reached anchors: filled `--md-loom-anchor` background
-- Abandoned anchors: dashed border + reduced opacity
-- Update nodes: card on `--md-loom-update-container`
-- Heads: accent ring via `box-shadow` + "Now" badge on `--md-primary`
-- Nearest future anchors: "Next" badge on `--md-secondary`
+**Stitches:** A shared session (belongs to >1 thread) appears in each of its lanes and is joined by a
+cubic-bezier SVG path (`.loom-stitch`). Stitch color matches the primary thread of the shared node.
+Paths computed by `stitchGeometry.ts` purely from `CardRect` measurements; redrawn on scroll/resize
+via `useCardRects` (`ResizeObserver` + scroll listener). Under `prefers-reduced-motion`, all CSS
+transitions are disabled and pseudo-element opacity is reduced.
 
-The Loom page identity keeps LU1's eyebrow local to the route shell rather than extending `PageHeader`:
-`.loom-eyebrow` uses the existing `--type-caption-*` tokens with wider tracking and Roboto Flex axis tuning
-(`font-variation-settings`) to read as a woven label, not body copy.
+**Spawn links:** A thread created from a session (`origin_node_id` set) is joined to its origin by a
+dotted SVG path (`.loom-spawn-link`, `stroke-dasharray="6 4"`). Drops from origin bottom-center to
+spawned-thread start-cap top-center.
 
-LU3 extends the Loom canvas contract with four durable presentation cues:
-- **Warp background** — the React Flow surface keeps its attribution/controls but adds low-contrast woven
-  texture via CSS layers under `.loom-canvas-area .react-flow`; it may never rely on hand-picked colors or
-  overpower node/edge legibility.
-- **Thread spine** — every threaded node renders a `.loom-node-spine` strip colored from the node's primary
-  thread token (`thread_ids[0]`); thread chips remain secondary confirmation, not the only thread cue.
-- **Live-warp edges** — `loomFlow.ts` exports `buildLiveWarpEdgeIds(tapestry): Set<string>` and carries the
-  result through `FlowEdgeData.isLiveWarp`; only edges from a head to its nearest future anchor get the animated
-  dashed treatment. Under `prefers-reduced-motion`, that treatment falls back to a static dashed style.
-- **Thread focus** — `LoomPage.tsx` owns presentation-only `focusedThreadId` state, and the canvas dims
-  unrelated nodes/edges via `.loom-node-wrapper--dimmed` / `.loom-edge--dimmed`. `LoomWeaverPanel` exposes the
-  focus control as 48px thread-row buttons with `aria-pressed` plus a clear-focus action; swatches are never the
-  sole cue because rows keep the thread name and node count visible.
+**Inspector rail (`.loom-weaver-panel`):** Fixed 320px right rail, no focus-gating. Shows selection
+details (title, kind pill with icon+text glyph, session tag, thread names, body excerpt) and lifecycle
+actions (Edit, Fulfil Beat, Bank Beat, Replace Beat, Spawn Thread, Change Ending, Undo Fulfil, Delete).
+When nothing is selected it renders `LoomLegend` (glyph+label legend so kind cues never rely on hue
+alone). The rail contract is `{ selectedNode, threads, onEdit, onDeleteNode, onFulfilNode, onBankNode,
+onReplaceNode, onSpawnThread, onChangeEnding, onUndoFulfil }` — no focus state.
 
-Thread-chip strips (8×8px colored dots, `aria-hidden="true"`) still appear on nodes, and ordinary edges still
-take the single accent from `threads(source) ∩ threads(target)`, falling back to `--md-outline`. The React Flow
-attribution is restyled but never removed (license requirement).
+**Beat Bank tray (`.loom-beat-bank-tray`):** Collapsible bottom tray below the swimlanes listing
+banked beats (nodes with zero membership). Each entry shows the beat title (clickable to select) and
+a Restore button that opens an inline thread picker + Confirm/Cancel. Entries are draggable into lane
+gaps. Accessible label pattern: `Beat Bank (N)`.
 
-The Loom route shell (`LoomPage.tsx`) now keeps a persistent right-hand **Weaver's panel** rail instead of the
-transient `.loom-inspector` strip. Its section order is fixed for the remaining LU stages:
-- **Selection** — the default top section. When nothing is selected it renders `LoomLegend`; when a node is
-  selected it renders title, kind, status, session tag, thread names, body excerpt, and the existing compact
-  action row; when an edge is selected it renders the edge state and delete action; and when bridge mode is
-  active it renders the bridge hint and cancel action.
-- **Threads** — a quiet list plus Manage button in LU2. LU3 hangs thread-focus controls on the stable
-  `.loom-weaver-threads`, `.loom-weaver-thread-list`, `.loom-weaver-thread-row`, and `.loom-weaver-thread-swatch`
-  class hooks rather than inventing another rail subsection.
-- **Beat Bank** — powered by `LoomVaultPanel`, embedded as the rail's final section instead of a
-  standalone sibling of the canvas. Shows banked beats (nodes with zero membership) and supports
-  restore/replace actions. The accessible text pattern `Beat Bank (N)` is the contract for tests and
-  screen-reader users.
+**Woven background:** `.loom-swimlanes` has a layered CSS background: radial anchor glow at top
+(`--md-loom-anchor` at 12%), a `--md-surface-2`/`--md-surface` gradient base, plus `::before` warp
+stripes (repeating vertical lines at `--md-outline-variant`) and `::after` color wash (diagonal
+thread-3 and anchor accents at low opacity). Both pseudo-elements are `pointer-events: none; z-index: 0`.
 
-`LoomWeaverPanel` owns the rail contract with props:
-`selectedNode`, `threads`, `threadCounts`, `bankedNodes`, `focusedThreadId`, `onEdit`, `onDeleteNode`,
-`onSelectBankedNode`, `onRestoreNode`, `onFulfilNode`, `onBankNode`, `onReplaceNode`, `onSpawnThread`,
-`onChangeEnding`, `onUndoFulfil`, `onOpenThreadManager`, `onFocusThread`, and `onClearThreadFocus`.
-`LoomPage.tsx` continues to own the underlying selection/mutation state and passes those handlers through
-unchanged. `LoomVaultPanel` survives as a focused subsection component (now the Beat Bank panel); it was not
-folded away in LU2.
+**Accessibility:** `.loom-node` cards have `role="button"`, `tabIndex={0}`, `aria-pressed`, and
+`aria-label="{kind}: {title}"`. `.loom-lane-gap` has `role="button"`, `tabIndex={0}`, and
+`aria-label="Insert at position {N}"`. Every kind pill in the rail and legend carries a glyph
+(◇ Start, ◆ Beat, ● Session, ■ End, N Now, → Next) so no semantic information relies on color alone.
+`:focus-visible` rings (`2px solid var(--md-primary)`, 2–3px offset) on all interactive elements.
+Touch targets ≥48px where feasible (lane gaps have `min-height: 48px`). The `.loom-eyebrow` uses
+`--type-caption-*` tokens with wider tracking and Roboto Flex axis tuning.
 
 ---
 

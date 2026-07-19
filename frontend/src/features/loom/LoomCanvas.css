@@ -545,9 +545,99 @@
   font: var(--type-caption-size) / var(--type-caption-line) var(--type-face);
 }
 
-/* ─── Swimlane namespace (future LS stages) ───────────────────────────── */
+/* ─── Swimlane namespace (LS4) ───────────────────────────────────────── */
 
-/* .loom-lane-gap — clickable "+" insertion gap between cards */
+.loom-lane-card-group {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.loom-lane-gap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  width: 24px;
+  min-height: 48px;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-full);
+  transition:
+    background var(--motion-fast),
+    width var(--motion-fast),
+    opacity var(--motion-fast);
+  flex-shrink: 0;
+  position: relative;
+}
+
+.loom-lane-gap::before {
+  content: '';
+  position: absolute;
+  inset: 4px calc(50% - 1px);
+  width: 2px;
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--md-outline-variant) 32%, transparent);
+  transition:
+    background var(--motion-fast),
+    inset var(--motion-fast);
+}
+
+.loom-lane-gap:hover::before,
+.loom-lane-gap:focus-visible::before {
+  background: color-mix(in srgb, var(--md-primary) 48%, var(--md-outline-variant));
+}
+
+.loom-lane-gap-icon {
+  display: none;
+  font-size: var(--type-body-size);
+  line-height: 1;
+  color: var(--md-primary);
+  font-weight: var(--type-title-weight);
+}
+
+.loom-lane-gap:hover .loom-lane-gap-icon,
+.loom-lane-gap:focus-visible .loom-lane-gap-icon,
+.loom-lane-gap--drag-over .loom-lane-gap-icon {
+  display: inline;
+}
+
+.loom-lane-gap:hover,
+.loom-lane-gap:focus-visible {
+  width: 32px;
+}
+
+.loom-lane-gap:hover::before,
+.loom-lane-gap:focus-visible::before {
+  inset: 0 calc(50% - 1px);
+}
+
+.loom-lane-gap--drag-over {
+  background: color-mix(in srgb, var(--md-primary-container) 40%, transparent);
+  width: 48px;
+  border-radius: var(--radius-md);
+}
+
+.loom-lane-gap--drag-over::before {
+  background: var(--md-primary);
+  inset: 0 calc(50% - 2px);
+  width: 4px;
+}
+
+.loom-lane-gap:focus-visible {
+  outline: 2px solid var(--md-primary);
+  outline-offset: 2px;
+}
+
+.loom-node--draggable {
+  cursor: grab;
+}
+
+.loom-node--draggable:active {
+  cursor: grabbing;
+  opacity: 0.6;
+}
 
 /* ─── Beat Bank tray (LS3) ────────────────────────────────────────────── */
 
@@ -663,4 +753,68 @@
 
 .loom-spawn-link {
   stroke-linecap: round;
+}
+
+/* ─── Reduced motion ──────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .loom-node,
+  .loom-lane-gap,
+  .loom-lane-gap::before,
+  .loom-weaver-thread-button,
+  .loom-error-banner-dismiss {
+    transition: none;
+  }
+
+  .loom-swimlanes::before,
+  .loom-swimlanes::after {
+    opacity: 0.1;
+  }
+}
+
+/* ─── Responsive (<520px) ─────────────────────────────────────────────── */
+
+@media (max-width: 520px) {
+  .loom-page {
+    flex-direction: column;
+  }
+
+  .loom-weaver-panel {
+    width: 100%;
+  }
+
+  .loom-swimlanes {
+    min-height: 320px;
+  }
+
+  .loom-beat-bank-tray-content {
+    flex-direction: column;
+  }
+
+  .loom-command-bar {
+    justify-content: flex-start;
+  }
+}
+
+/* ─── Accessibility: focus rings ──────────────────────────────────────── */
+
+.loom-node:focus-visible {
+  outline: 2px solid var(--md-primary);
+  outline-offset: 3px;
+}
+
+.loom-beat-bank-tray-toggle:focus-visible {
+  outline: 2px solid var(--md-primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+.loom-beat-bank-tray-entry {
+  position: relative;
+}
+
+.loom-beat-bank-tray-entry:focus-within {
+  outline: 2px solid var(--md-primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-md);
 }

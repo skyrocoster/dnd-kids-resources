@@ -1,6 +1,6 @@
 # Loom Swimlanes Redesign
 
-> **Status:** LS0–LS3 shipped. LS4 (inline authoring) is next up. Delivery phase LS0–LS5, then Plan Closeout LS6.
+> **Status:** LS0–LS5 shipped. LS6 (Plan Closeout — Documentation Update) is next up.
 
 - **Area guide:** [The Loom](../../areas/loom.md)
 
@@ -150,53 +150,13 @@ Absolutely-positioned SVG overlay (`LoomStitchLayer`) renders cross-lane shared-
 
 Refactored `LoomWeaverPanel` into a focus-free selected-node inspector: removed `focusedThreadId`, `onFocusThread`, `onClearThreadFocus`, the Threads list section, and the vault section. Beat Bank extracted into `LoomBeatBankTray` mounted below the swimlanes; tray shows banked beats with inline thread picker for restore (no focus needed). Removed focus-dimming (`.loom-node-wrapper--dimmed`), vault panel styles, and all `focusedThreadId` wiring from `LoomPage`. 68 tests passing, build clean.
 
-#### LS4 — Inline authoring (planned)
+#### LS4 — Inline authoring ✅ shipped
 
-- **Handoff facts (from LS3):** `LoomWeaverPanel` props are `{ selectedNode, threads, onEdit, onDeleteNode, onFulfilNode, onBankNode, onReplaceNode, onSpawnThread, onChangeEnding, onUndoFulfil }` — no focus, no banked nodes, no vault. `LoomBeatBankTray` props are `{ nodes: LoomNode[], threads: LoomThread[], onSelectNode, onRestoreNode: (node, threadId) => void }`. The tray manages its own thread-picker state internally. `LoomPage` has no `focusedThreadId` state; `handleRestoreNode(node, threadId)` calls `insertLoomThreadItem(threadId, ...)`. The tray renders inside `.loom-canvas-column` after `LoomSwimlanes`. `LoomVaultPanel` is dead code (no longer imported by any production component). `handleNodeSaved` no longer auto-places new nodes (that logic was removed with focus); LS4 will re-add placement via gap-insert.
-- **Read first:** `LoomLane.tsx`, `beatReorder.ts` (`beatReorderTarget`), `LoomBeatReorderDialog.tsx`,
-  `LoomNodeEditor.tsx`, `LoomPage.tsx` (`handleNodeSaved`, insert path), `LoomBeatBankTray` (LS3).
-- **Build:** add clickable "+" **insertion gaps** between slots in each `LoomLane`; clicking opens
-  `LoomNodeEditor` and on save inserts at that `{thread_id, position}` (replacing the old focus +
-  viewport-center logic in `handleNodeSaved`). Add horizontal **drag-reorder** of planned-beat cards
-  within a lane, computing the payload with `beatReorderTarget` and calling `reorderLoomThreadItem`;
-  Start/End/sessions are not draggable. Support **drag a banked beat from the tray into a lane gap** to
-  restore. Keep `LoomBeatReorderDialog` as an accessible keyboard fallback (reachable from the
-  inspector).
-- **Inherits:** LS3 inspector/tray; LS1 lane DOM.
-- **Expected touch set:** `LoomLane.tsx`, `LoomNodeCard.tsx`, `LoomPage.tsx`, `LoomBeatBankTray.tsx`,
-  `LoomCanvas.css`, `beatReorder.test.ts` (extend if payload logic touched), `LoomPage.test.tsx`.
-- **Documentation impact:** `docs/areas/loom.md` — update the beat-order/reorder interaction note to
-  describe inline drag + gap insert; confirm the `beatReorderTarget` invariant (no beat before a
-  session) still holds.
-- **Tests:** insert-at-gap flow, drag-reorder flow (assert `reorderLoomThreadItem` payload), tray→gap
-  restore. `npm run test -- loom`; `npm run build`.
-- **Gate:** live — insert a session into a mid-lane gap; drag a beat earlier/later; drag a banked beat
-  into a lane; all persist and survive reload. Browser/app pass required.
-- **Discovery consolidation:** note any dead handlers now removable (e.g. old center-viewport insert)
-  into LS5.
-- **Completion edit:** collapse LS4; Status/Next → LS5; write LS5 Handoff facts.
+Clickable "+" insertion gaps render between body nodes in each lane track; clicking a gap opens the `LoomNodeEditor` and on save inserts the new node at that `{thread_id, position}` via `insertLoomThreadItem`. Planned-beat cards are draggable (sessions/Start/End are not); dropping a beat on a gap calls `beatReorderTarget` then `reorderLoomThreadItem` to compute and persist the reorder. Banked-beat tray entries are draggable; dropping one on a lane gap restores it to that thread at that position. `LoomBeatReorderDialog` kept as keyboard fallback. 73 tests passing, build clean.
 
-#### LS5 — Polish & cleanup (planned)
+#### LS5 — Polish & cleanup ✅ shipped
 
-- **Read first:** the whole `frontend/src/features/loom/` tree post-LS4; `useLoomCanvasMutations.ts`,
-  `LoomCanvas.css`.
-- **Build:** remove all now-dead code — `useLoomCanvasMutations.moveNode` + `patchLoomNodePosition`
-  usage, residual focus state/props, deprecated test
-  scaffolding. Reapply the woven background texture (radial anchor glow + warp stripes + color wash)
-  to the swimlane container. Add `prefers-reduced-motion` handling to stitches/transitions, `<520px`
-  responsive stacking (lanes scroll; tray/inspector collapse), and a full a11y pass (focus rings,
-  ≥48px targets, never color-alone — every kind cue has icon+text).
-- **Inherits:** everything LS1–LS4.
-- **Expected touch set:** `LoomCanvas.css`, `LoomPage.tsx`, `useLoomCanvasMutations.ts`,
-  `useLoomCanvasMutations.test.ts` (delete or trim if still present), any remaining loom component.
-- **Documentation impact:** `None: canonical-reference rewrite is the LS6 closeout job` (LS5 only
-  removes dead code and polishes).
-- **Tests:** full loom suite green; `npm run build`; coverage ≥85% for the area.
-- **Gate:** live — full parity walk-through (see Verification) plus reduced-motion and narrow-viewport
-  checks. Browser/app pass required.
-- **Discovery consolidation:** promote durable swimlane facts (renderer structure, stitch approach,
-  focus-gating removed) into this plan's Key facts / Reusable pieces for LS6 to move into references.
-- **Completion edit:** collapse LS5; delete the LS phase section; Status/Next → LS6 Plan Closeout.
+Dead code removed (`useLoomCanvasMutations.ts`, `LoomVaultPanel.tsx` + test); unused `threads` prop dropped from `LoomNodeEditor`. Woven background texture (anchor glow + warp stripes + color wash) verified present on swimlane container. `prefers-reduced-motion` disables transitions; `<520px` responsive stacking (page stacks vertically, tray collapses, lanes scroll). A11y pass: `:focus-visible` rings on node cards, tray toggle, tray entries; all kind cues carry icon+text (legend). 68 loom tests pass, build clean.
 
 ### Plan Closeout — Documentation Update
 
@@ -259,4 +219,4 @@ clean; `.venv\Scripts\python.exe -m pytest backend/tests/routers/test_loom.py` g
 
 ## Next:
 
-LS4 — Inline authoring (unblocked, LS3 shipped).
+LS6 — Plan Closeout (Documentation Update). All delivery phases LS0–LS5 shipped.

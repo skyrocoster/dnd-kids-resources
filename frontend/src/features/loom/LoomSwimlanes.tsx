@@ -9,9 +9,20 @@ interface LoomSwimlanesProps {
   nodes: LoomNode[]
   selectedNodeId?: number | null
   onSelectNode?: (nodeId: number) => void
+  onGapClick?: (threadId: number, position: number) => void
+  onReorder?: (threadId: number, nodeId: number, fromBodyIndex: number, toBodyIndex: number) => void
+  onGapRestore?: (nodeId: number, threadId: number, position: number) => void
 }
 
-export function LoomSwimlanes({ threads, nodes, selectedNodeId, onSelectNode }: LoomSwimlanesProps) {
+export function LoomSwimlanes({
+  threads,
+  nodes,
+  selectedNodeId,
+  onSelectNode,
+  onGapClick,
+  onReorder,
+  onGapRestore,
+}: LoomSwimlanesProps) {
   const { scrollRef, registerCard, cardRects } = useCardRects()
 
   const scrollRefCallback = useCallback(
@@ -36,6 +47,9 @@ export function LoomSwimlanes({ threads, nodes, selectedNodeId, onSelectNode }: 
           selectedNodeId={selectedNodeId}
           onSelectNode={onSelectNode}
           onRegisterRect={registerCard}
+          onGapClick={onGapClick}
+          onReorder={onReorder}
+          onGapRestore={onGapRestore}
         />
       ))}
     </section>
