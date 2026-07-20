@@ -1,5 +1,14 @@
 """Tests for CRUD endpoints (weapons, NPCs, encounters, dungeons)."""
 
+from unittest.mock import MagicMock
+
+
+def _mock_db_failure():
+    """Return a mock connection whose commit() raises."""
+    conn = MagicMock()
+    conn.commit.side_effect = Exception("Simulated database failure")
+    return conn
+
 
 # Weapons
 def test_list_weapons(test_client):
@@ -58,6 +67,24 @@ def test_create_weapon_with_structured_fields(test_client):
     data = response.json()
     assert data["property"] == ["H", "2H"]
     assert data["attack"][0]["damage"] == "1d12"
+
+
+def test_create_weapon_db_failure(monkeypatch, test_client):
+    """Test POST /api/weapons when DB commit fails."""
+    import backend.app.db as db_module
+    monkeypatch.setattr(db_module, "get_conn", _mock_db_failure)
+    response = test_client.post("/api/weapons", json={"name": "Fail", "rarity": "common"})
+    assert response.status_code == 400
+
+
+def test_delete_weapon_db_failure(monkeypatch, test_client):
+    """Test DELETE /api/weapons when DB commit fails."""
+    response = test_client.post("/api/weapons", json={"name": "FailDelete", "rarity": "common"})
+    weapon_id = response.json()["id"]
+    import backend.app.db as db_module
+    monkeypatch.setattr(db_module, "get_conn", _mock_db_failure)
+    response = test_client.delete(f"/api/weapons/{weapon_id}")
+    assert response.status_code == 400
 
 
 # NPCs
@@ -121,6 +148,24 @@ def test_npc_full_columns_round_trip(test_client):
     assert data["appearance"] == {"hair_colour": "silver"}
 
 
+def test_create_npc_db_failure(monkeypatch, test_client):
+    """Test POST /api/npcs when DB commit fails."""
+    import backend.app.db as db_module
+    monkeypatch.setattr(db_module, "get_conn", _mock_db_failure)
+    response = test_client.post("/api/npcs", json={"name": "Fail"})
+    assert response.status_code == 400
+
+
+def test_delete_npc_db_failure(monkeypatch, test_client):
+    """Test DELETE /api/npcs when DB commit fails."""
+    response = test_client.post("/api/npcs", json={"name": "FailDelete"})
+    npc_id = response.json()["id"]
+    import backend.app.db as db_module
+    monkeypatch.setattr(db_module, "get_conn", _mock_db_failure)
+    response = test_client.delete(f"/api/npcs/{npc_id}")
+    assert response.status_code == 400
+
+
 # Encounters
 def test_list_encounters(test_client):
     """Test GET /api/encounters."""
@@ -182,6 +227,24 @@ def test_encounter_creatures_round_trip_structured_units(test_client):
     assert response.json()["creatures"][0]["name"] == "Goblin"
 
 
+def test_create_encounter_db_failure(monkeypatch, test_client):
+    """Test POST /api/encounters when DB commit fails."""
+    import backend.app.db as db_module
+    monkeypatch.setattr(db_module, "get_conn", _mock_db_failure)
+    response = test_client.post("/api/encounters", json={"title": "Fail", "creatures": []})
+    assert response.status_code == 400
+
+
+def test_delete_encounter_db_failure(monkeypatch, test_client):
+    """Test DELETE /api/encounters when DB commit fails."""
+    response = test_client.post("/api/encounters", json={"title": "FailDelete", "creatures": []})
+    encounter_id = response.json()["id"]
+    import backend.app.db as db_module
+    monkeypatch.setattr(db_module, "get_conn", _mock_db_failure)
+    response = test_client.delete(f"/api/encounters/{encounter_id}")
+    assert response.status_code == 400
+
+
 # Dungeons
 def test_list_dungeons(test_client):
     """Test GET /api/dungeons."""
@@ -213,3 +276,21 @@ def test_delete_dungeon(test_client):
 
     response = test_client.delete(f"/api/dungeons/{dungeon_id}")
     assert response.status_code == 204
+
+
+def test_create_dungeon_db_failure(monkeypatch, test_client):
+    """Test POST /api/dungeons when DB commit fails."""
+    import backend.app.db as db_module
+    monkeypatch.setattr(db_module, "get_conn", _mock_db_failure)
+    response = test_client.post("/api/dungeons", json={"title": "Fail", "data": {}})
+    assert response.status_code == 400
+
+
+def test_delete_dungeon_db_failure(monkeypatch, test_client):
+    """Test DELETE /api/dungeons when DB commit fails."""
+    response = test_client.post("/api/dungeons", json={"title": "FailDelete", "data": {}})
+    dungeon_id = response.json()["id"]
+    import backend.app.db as db_module
+    monkeypatch.setattr(db_module, "get_conn", _mock_db_failure)
+    response = test_client.delete(f"/api/dungeons/{dungeon_id}")
+    assert response.status_code == 400

@@ -1,6 +1,6 @@
 # Backend Test Coverage — close the gap toward 100%
 
-> **Status:** Stage 1 complete (5 orders shipped). 404/validation gaps covered across all 9 routers. Stage 2 next — DB-failure branches.
+> **Status:** Stages 1–3 complete (13 orders shipped). All router gaps, DB-failure branches, shared-infra fallbacks, and schema edge cases covered — overall 97.12%. Stage 4 next — verify and record the gate.
 
 - **Area guide:** [Repo Infra](../../areas/repo-infra.md).
 
@@ -42,3 +42,11 @@ to be truly unreachable or environment-exclusive, we record that instead of chas
 | **S1 — WO 03** | Covered `_cr_sort` edge cases (None, "Unknown", garbage string, division-by-zero) and the `_select_monster` 404 branch by calling it directly with a non-existent ID. |
 | **S1 — WO 04** | Covered `_parse_loot_bundle_row` None-guard branch via direct import unit test, matching the pattern already in place for the other six parsers. |
 | **S1 — WO 05** | Covered `update_spell` IntegrityError branch by creating two spells then updating one to collide with the other's name, asserting a 400 response. |
+| **S2 — WO 06** | Covered DB-failure branches for create/delete in dungeons, encounters, npcs, and weapons — 8 monkeypatch tests in `test_resources.py`. |
+| **S2 — WO 07** | Covered DB-failure branches for update in dungeons, encounters, npcs, and weapons — 4 monkeypatch tests in `test_crud_completeness.py`. |
+| **S2 — WO 08** | Covered DB-failure branches for loot create/update/delete, layouts save, and spells delete — 5 monkeypatch tests across `test_loot.py`, `test_layouts.py`, and `test_spells.py`. |
+| **S2 — WO 09** | Covered monsters DB-failure branches (2 generic Exception + 2 IntegrityError non-UNIQUE + 1 delete) — 5 monkeypatch tests in `test_monsters.py`. |
+| **S2 — WO 10** | Covered players DB-failure CRUD branches (3 in `test_players.py`) and assignment fallthrough gaps (4 in `test_crud_completeness.py`) — 7 monkeypatch tests total. |
+| **S3 — WO 11** | Covered `db.py` path-fallback branches (lines 17–22) via monkeypatch on `Path.exists` in `test_db_helpers.py` — two tests exercising cwd-fallback and neither-exists paths; `db.py` now at 100%. |
+| **S3 — WO 12** | Covered `schemas.py` audio-path Windows-device-name validator (line 284) via `MonsterCreate` validation tests — `schemas.py` now at 100%. |
+| **S3 — WO 13** | Covered `main.py` root endpoint else-branch (lines 73–76) via `test_main.py` — the if-branch (lines 67–70, SPA fallback) is documented as environment-dependent and excluded from unit coverage. |

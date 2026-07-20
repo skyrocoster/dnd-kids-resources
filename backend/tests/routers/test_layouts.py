@@ -1,3 +1,13 @@
+from unittest.mock import MagicMock
+import backend.app.db as db_module
+
+
+def _mock_db_failure():
+    conn = MagicMock()
+    conn.commit.side_effect = Exception("Simulated database failure")
+    return conn
+
+
 def test_get_dungeon_layout_not_found(test_client):
     """GET with no saved layout row for that dungeon returns 404"""
     response = test_client.get("/api/dungeons/999/layout")
@@ -56,3 +66,12 @@ def test_deleting_dungeon_removes_its_layout(test_client):
 
     assert test_client.delete(f"/api/dungeons/{dungeon_id}").status_code == 204
     assert test_client.get(f"/api/dungeons/{dungeon_id}/layout").status_code == 404
+
+
+def test_save_layout_db_failure(monkeypatch, test_client):
+    dungeon_id = test_client.post(
+        "/api/dungeons", json={"title": "Layout DB Fail", "data": {}}
+    ).json()["id"]
+    monkeypatch.setattr(db_module, "get_conn", _mock_db_failure)
+    response = test_client.put(f"/api/dungeons/{dungeon_id}/layout", json={"data": {}})
+    assert response.status_code == 400

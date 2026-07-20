@@ -1,4 +1,13 @@
 """Tests for spell CRUD endpoints."""
+from unittest.mock import MagicMock
+import backend.app.db as db_module
+
+
+def _mock_db_failure():
+    conn = MagicMock()
+    conn.commit.side_effect = Exception("Simulated database failure")
+    return conn
+
 
 def test_list_spells(test_client):
     """Test GET /api/spells returns a list of spells."""
@@ -263,3 +272,23 @@ def test_delete_nonexistent_spell(test_client):
     """Test deleting a nonexistent spell returns 404."""
     response = test_client.delete("/api/spells/99999")
     assert response.status_code == 404
+
+
+def test_delete_spell_db_failure(monkeypatch, test_client):
+    new_spell = {
+        "name": "Delete DB Fail",
+        "level": 1,
+        "school": "evocation",
+        "casting_times": ["1 action"],
+        "range": "30 feet",
+        "components": ["V", "S"],
+        "duration": "Instantaneous",
+        "description": "DB failure test",
+        "concentration": False,
+        "ritual": False,
+    }
+    response = test_client.post("/api/spells", json=new_spell)
+    spell_id = response.json()["id"]
+    monkeypatch.setattr(db_module, "get_conn", _mock_db_failure)
+    response = test_client.delete(f"/api/spells/{spell_id}")
+    assert response.status_code == 400
