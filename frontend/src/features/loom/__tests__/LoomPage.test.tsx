@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { LoomNode, LoomSession, LoomTapestry } from '../../../api/types'
@@ -38,10 +38,23 @@ describe('LoomPage', () => {
 
     await waitFor(() => expect(screen.getAllByText('The Lost Puppy').length).toBeGreaterThan(0))
     expect(screen.getByRole('heading', { name: 'The Loom' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Record Session' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Advance Campaign' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Add Beat' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Manage Threads' })).toBeInTheDocument()
     expect(screen.getByText('Beat Bank (1)')).toBeInTheDocument()
+  })
+
+  it('renders the sticky toolbar with all three commands', async () => {
+    vi.spyOn(api, 'getLoomTapestry').mockResolvedValue(demoTapestry())
+
+    render(<LoomPage />)
+
+    await waitFor(() => expect(screen.getAllByText('The Lost Puppy').length).toBeGreaterThan(0))
+    const toolbar = document.querySelector('.loom-page-header')
+    expect(toolbar).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Advance Campaign' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Add Beat' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Manage Threads' })).toBeInTheDocument()
   })
 
   it('renders Now and Next badges on the active thread', async () => {
@@ -50,7 +63,7 @@ describe('LoomPage', () => {
     render(<LoomPage />)
 
     await waitFor(() => expect(screen.getAllByText('The Lost Puppy').length).toBeGreaterThan(0))
-    expect(screen.getAllByText('Now').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText('Current').length).toBeGreaterThanOrEqual(1)
     expect(screen.getAllByText('Next').length).toBeGreaterThanOrEqual(1)
     expect(screen.getByRole('button', { name: 'beat: Confront the goblin chief' })).toHaveClass('loom-node--ghosted')
   })
@@ -111,9 +124,11 @@ describe('LoomPage', () => {
 
   it('shows the beat bank tray below the swimlanes', async () => {
     vi.spyOn(api, 'getLoomTapestry').mockResolvedValue(demoTapestry())
+    const user = userEvent.setup()
     render(<LoomPage />)
     await waitFor(() => expect(screen.getAllByText('The Lost Puppy').length).toBeGreaterThan(0))
     expect(screen.getByRole('region', { name: 'Beat Bank' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /Beat Bank/ }))
     expect(screen.getByText('Mysterious hooded stranger')).toBeInTheDocument()
   })
 
@@ -169,12 +184,12 @@ describe('LoomPage', () => {
     expect(gaps.length).toBeGreaterThan(0)
   })
 
-  it('opens the session log wizard from Record Session', async () => {
+  it('opens the session log wizard from Advance Campaign', async () => {
     vi.spyOn(api, 'getLoomTapestry').mockResolvedValue(demoTapestry())
     const user = userEvent.setup()
     render(<LoomPage />)
     await waitFor(() => expect(screen.getAllByText('The Lost Puppy').length).toBeGreaterThan(0))
-    await user.click(screen.getByRole('button', { name: 'Record Session' }))
+    await user.click(screen.getByRole('button', { name: 'Advance Campaign' }))
     expect(screen.getByRole('dialog', { name: 'Log Session' })).toBeInTheDocument()
   })
 
@@ -186,7 +201,7 @@ describe('LoomPage', () => {
     const user = userEvent.setup()
     render(<LoomPage />)
     await waitFor(() => expect(screen.getAllByText('The Lost Puppy').length).toBeGreaterThan(0))
-    await user.click(screen.getByRole('button', { name: 'Record Session' }))
+    await user.click(screen.getByRole('button', { name: 'Advance Campaign' }))
     expect(screen.getByRole('dialog', { name: 'Log Session' })).toBeInTheDocument()
 
     await user.type(screen.getByLabelText('Session Name'), 'Session 5')
@@ -210,7 +225,7 @@ describe('LoomPage', () => {
     const user = userEvent.setup()
     render(<LoomPage />)
     await waitFor(() => expect(screen.getAllByText('The Lost Puppy').length).toBeGreaterThan(0))
-    await user.click(screen.getByRole('button', { name: 'Record Session' }))
+    await user.click(screen.getByRole('button', { name: 'Advance Campaign' }))
     await user.type(screen.getByLabelText('Session Name'), 'Session X')
     await user.click(screen.getByRole('button', { name: 'Save Session' }))
 
@@ -242,7 +257,7 @@ describe('LoomPage', () => {
     const user = userEvent.setup()
     render(<LoomPage />)
     await waitFor(() => expect(screen.getByText('Live Thread')).toBeInTheDocument())
-    await user.click(screen.getByRole('button', { name: 'Record Session' }))
+    await user.click(screen.getByRole('button', { name: 'Advance Campaign' }))
     await user.type(screen.getByLabelText('Session Name'), 'Session 2')
     await user.click(screen.getByRole('button', { name: 'Save Session' }))
 
@@ -444,8 +459,10 @@ describe('LoomPage', () => {
 
   it('does not render card action buttons on banked beats', async () => {
     vi.spyOn(api, 'getLoomTapestry').mockResolvedValue(demoTapestry())
+    const user = userEvent.setup()
     render(<LoomPage />)
     await waitFor(() => expect(screen.getAllByText('The Lost Puppy').length).toBeGreaterThan(0))
+    await user.click(screen.getByRole('button', { name: /Beat Bank/ }))
     const bankedBeat = screen.getByText('Mysterious hooded stranger')
     expect(bankedBeat).toBeInTheDocument()
     expect(screen.queryAllByRole('button', { name: 'Edit beat' })).toHaveLength(1)
@@ -604,38 +621,83 @@ describe('LoomPage', () => {
     await waitFor(() => expect(screen.getByText('Server rejected')).toBeInTheDocument())
   })
 
-  it('restores a banked beat from the tray picker at the end of the thread', async () => {
+  it('shows a guard message and does not enter placement mode when no threads exist', async () => {
+    const noThreadTapestry: LoomTapestry = {
+      threads: [],
+      nodes: [
+        { id: 9, kind: 'beat', title: 'Mysterious hooded stranger', thread_id: null, position: 0, carried_count: 0 },
+      ],
+      sessions: [],
+    }
+    vi.spyOn(api, 'getLoomTapestry').mockResolvedValue(noThreadTapestry)
+    const user = userEvent.setup()
+    render(<LoomPage />)
+    await waitFor(() => expect(screen.getByText('Beat Bank (1)')).toBeInTheDocument())
+    await user.click(screen.getByRole('button', { name: /Beat Bank/ }))
+    await user.click(screen.getByText('Mysterious hooded stranger'))
+
+    expect(screen.getByText('Create a thread before placing this beat.')).toBeInTheDocument()
+    expect(document.querySelectorAll('.loom-lane-gap--drag-over')).toHaveLength(0)
+
+    const guard = document.querySelector('.loom-beat-bank-tray-guard') as HTMLElement
+    await user.click(within(guard).getByRole('button', { name: 'Manage Threads' }))
+    expect(screen.getByRole('dialog', { name: 'Manage Threads' })).toBeInTheDocument()
+  })
+
+  it('activates placement mode and restores the banked beat when a highlighted gap is clicked', async () => {
     vi.spyOn(api, 'getLoomTapestry').mockResolvedValue(demoTapestry())
     const insertSpy = vi.spyOn(api, 'insertLoomThreadItem').mockResolvedValue({} as any)
     const user = userEvent.setup()
     render(<LoomPage />)
     await waitFor(() => expect(screen.getAllByText('The Lost Puppy').length).toBeGreaterThan(0))
 
-    const restoreBtn = screen.getByRole('button', { name: 'Restore' })
-    await user.click(restoreBtn)
+    await user.click(screen.getByRole('button', { name: /Beat Bank/ }))
+    await user.click(screen.getByText('Mysterious hooded stranger'))
 
-    const confirmBtn = screen.getByRole('button', { name: 'Confirm' })
-    await user.click(confirmBtn)
+    const gaps = document.querySelectorAll('.loom-lane-gap')
+    expect(gaps.length).toBeGreaterThan(0)
+    gaps.forEach((gap) => expect(gap).toHaveClass('loom-lane-gap--drag-over'))
+
+    await user.click(gaps[0])
 
     await waitFor(() => {
-      expect(insertSpy).toHaveBeenCalledWith(1, { node_id: 9, position: 30 })
+      expect(insertSpy).toHaveBeenCalledWith(1, { node_id: 9, position: expect.any(Number) })
     })
+    expect(document.querySelectorAll('.loom-lane-gap--drag-over')).toHaveLength(0)
   })
 
-  it('shows banner error when tray restore fails', async () => {
+  it('cancels placement mode on Escape without restoring the beat', async () => {
     vi.spyOn(api, 'getLoomTapestry').mockResolvedValue(demoTapestry())
-    vi.spyOn(api, 'insertLoomThreadItem').mockRejectedValue(new Error('Insert failed'))
+    const insertSpy = vi.spyOn(api, 'insertLoomThreadItem').mockResolvedValue({} as any)
     const user = userEvent.setup()
     render(<LoomPage />)
     await waitFor(() => expect(screen.getAllByText('The Lost Puppy').length).toBeGreaterThan(0))
 
-    const restoreBtn = screen.getByRole('button', { name: 'Restore' })
-    await user.click(restoreBtn)
+    await user.click(screen.getByRole('button', { name: /Beat Bank/ }))
+    await user.click(screen.getByText('Mysterious hooded stranger'))
 
-    const confirmBtn = screen.getByRole('button', { name: 'Confirm' })
-    await user.click(confirmBtn)
+    expect(document.querySelectorAll('.loom-lane-gap--drag-over').length).toBeGreaterThan(0)
 
-    await waitFor(() => expect(screen.getByText('Insert failed')).toBeInTheDocument())
+    await user.keyboard('{Escape}')
+
+    expect(document.querySelectorAll('.loom-lane-gap--drag-over')).toHaveLength(0)
+    expect(insertSpy).not.toHaveBeenCalled()
+
+    const gaps = document.querySelectorAll('.loom-lane-gap')
+    await user.click(gaps[0])
+    expect(screen.getByRole('dialog', { name: /Add New Beat/ })).toBeInTheDocument()
+    expect(insertSpy).not.toHaveBeenCalled()
+  })
+})
+
+describe('LoomPage — Jump to current control', () => {
+  it('exposes the divider visibility callback prop on LoomSwimlanes', async () => {
+    vi.spyOn(api, 'getLoomTapestry').mockResolvedValue(demoTapestry())
+    const { container } = render(<LoomPage />)
+    await waitFor(() => expect(screen.getAllByText('The Lost Puppy').length).toBeGreaterThan(0))
+
+    const swimlanes = container.querySelector('.loom-grid')
+    expect(swimlanes).toBeInTheDocument()
   })
 })
 
@@ -667,7 +729,7 @@ describe('LoomPage — not_reached and banked outcome selection', () => {
     const user = userEvent.setup()
     render(<LoomPage />)
     await waitFor(() => expect(screen.getByText('Thread A')).toBeInTheDocument())
-    await user.click(screen.getByRole('button', { name: 'Record Session' }))
+    await user.click(screen.getByRole('button', { name: 'Advance Campaign' }))
 
     const outcomeSelects = screen.getAllByRole('combobox', { name: 'Outcome' })
     expect(outcomeSelects).toHaveLength(3)

@@ -1,6 +1,6 @@
 # The Loom Area Guide
 
-> **Active plan:** none
+> **Active plan:** [Loom Campaign Progress UI](../plans/active/loom-campaign-progress-ui.md) — Stages 1-2 shipped; Stage 3 is next.
 
 ## Scope
 
@@ -111,7 +111,7 @@ The board is the clearest case of a surface whose mode changes with the moment. 
 - **Beat lifecycle:** `POST /loom/nodes/{id}/fulfil` converts a placed beat to a session in place (stamps provenance, assigns `session_id`). `POST /loom/nodes/{id}/bank` unplaces a beat (clears `thread_id`, records `banked_from_thread_id`). Restoring a banked beat is `POST /loom/threads/{thread_id}/items` with the node's body, which clears `banked_from_thread_id`. The one documented undo path (`PUT` a fulfilled session back to `kind='beat'`) is the sole exception to kind being otherwise immutable.
 - **Session logging:** `POST /loom/sessions/log` creates one ordered session column and applies explicit per-thread outcomes in one transaction. Happened/fulfilled turns the next beat into a session node in that column, not-reached/carried increments `carried_count`, banked unplaces the next beat, and quiet records no node change.
 - **Move:** `POST /loom/threads/{thread_id}/items/{node_id}/move` atomically relocates a placed node to another thread at a position. A node can only belong to one thread at a time, so shared sessions and the `mode: "also_add"` branch are retired. `start`/`end` nodes can never move (422).
-- **Beat authoring (focus-free):** inline drag-reorder and clickable gap-insert replace the old focus-gated modal. Every Thread is always visible; there is no focus state. Drag a planned-beat card to a lane gap (between any two body nodes) to reorder; click a "+" gap to open the node editor and insert at that position; drag a banked beat from the tray into a gap to restore. The `beatReorderTarget` helper computes the reorder payload (follower's position or `MAX_SAFE_INTEGER` sentinel) and its client-side list prevents placing a beat before a session. The `LoomBeatReorderDialog` is retained as an accessible keyboard fallback (reachable from the inspector).
+- **Beat authoring (focus-free):** inline drag-reorder and clickable gap-insert replace the old focus-gated modal. Every Thread is always visible; there is no focus state. Drag a planned-beat card to a lane gap (between any two body nodes) to reorder; click a "+" gap to open the node editor and insert at that position; drag a banked beat from the tray into a gap to restore, or activate its card by click, tap, or Enter/Space to enter a placement mode that highlights every valid gap for a non-drag restore (Escape cancels without moving it; with no Threads, activation shows a `Manage Threads` guard instead). The `beatReorderTarget` helper computes the reorder payload (follower's position or `MAX_SAFE_INTEGER` sentinel) and its client-side list prevents placing a beat before a session. The `LoomBeatReorderDialog` is retained as an accessible keyboard fallback (reachable from the inspector).
 - **Free drag placement (cross-lane):** both beats and sessions are draggable, not just beats. Dropping on another lane calls the move endpoint. Start/End never accept a drop (no gap renders inside their selvage caps). The drop target is the whole card-group (the gap plus the card that follows it, via `CardGroup` in `LoomLane.tsx`), not just the narrow gap sliver — dropping directly on a card works the same as dropping on its adjacent gap.
 - **Thread spawn:** `POST /loom/threads` with `origin_node_id` set to an existing `session` node creates a new thread that references the origin without duplicating the event. `ON DELETE SET NULL` on the FK means deleting the origin session un-links without cascading.
 - **Thread deletion:** deletes the thread's exclusive `start`/`end`/`beat` nodes via an application-level sweep. Nodes with a matching `thread_id` are deleted; `banked_from_thread_id` references are set NULL by the FK.
@@ -121,7 +121,7 @@ The board is the clearest case of a surface whose mode changes with the moment. 
 ## Work queue
 
 - Deferred until after playtesting: node links to NPCs/dungeons/encounters.
-- Create a focused plan before changing any loom contract or cross-domain workflow.
+- [Loom Campaign Progress UI](../plans/active/loom-campaign-progress-ui.md) owns the current board and inspector presentation patch; it does not change Loom behaviour or contracts.
 
 ## Cross-references
 

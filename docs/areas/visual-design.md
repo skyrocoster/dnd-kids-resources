@@ -1,6 +1,6 @@
 # Visual Design Area Guide
 
-> **Active plan:** [Visual Consistency](../plans/active/visual-consistency.md#vt4-final-design-pass-next-up).
+> **Active plan:** none
 
 ## Scope
 

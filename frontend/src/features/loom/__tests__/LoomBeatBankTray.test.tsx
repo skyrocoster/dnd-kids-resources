@@ -12,78 +12,96 @@ const threads: LoomThread[] = [
 const bankedNode: LoomNode = { id: 9, kind: 'beat', title: 'Mysterious hooded stranger', thread_id: null, position: 0, carried_count: 0 }
 
 describe('LoomBeatBankTray', () => {
-  it('lists banked beats and reports the count', () => {
+  it('lists banked beats and reports the count', async () => {
+    const user = userEvent.setup()
     render(<LoomBeatBankTray nodes={[bankedNode]} threads={threads} onSelectNode={() => {}} onRestoreNode={() => {}} />)
     expect(screen.getByText('Beat Bank (1)')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /Beat Bank/ }))
     expect(screen.getByText('Mysterious hooded stranger')).toBeInTheDocument()
   })
 
-  it('shows an empty message when nothing is banked', () => {
+  it('shows an empty message when nothing is banked', async () => {
+    const user = userEvent.setup()
     render(<LoomBeatBankTray nodes={[]} threads={threads} onSelectNode={() => {}} onRestoreNode={() => {}} />)
     expect(screen.getByText('Beat Bank (0)')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /Beat Bank/ }))
     expect(screen.getByText('No banked beats.')).toBeInTheDocument()
   })
 
-  it('calls onSelectNode when a beat name is clicked', async () => {
+  it('calls onActivateNode when a beat card is activated and threads exist', async () => {
     const user = userEvent.setup()
-    const onSelectNode = vi.fn()
-    render(<LoomBeatBankTray nodes={[bankedNode]} threads={threads} onSelectNode={onSelectNode} onRestoreNode={() => {}} />)
+    const onActivateNode = vi.fn()
+    render(
+      <LoomBeatBankTray
+        nodes={[bankedNode]}
+        threads={threads}
+        onSelectNode={() => {}}
+        onRestoreNode={() => {}}
+        onActivateNode={onActivateNode}
+        onManageThreads={() => {}}
+      />,
+    )
+    await user.click(screen.getByRole('button', { name: /Beat Bank/ }))
     await user.click(screen.getByText('Mysterious hooded stranger'))
-    expect(onSelectNode).toHaveBeenCalledWith(bankedNode)
+    expect(onActivateNode).toHaveBeenCalledWith(bankedNode)
   })
 
-  it('shows a thread picker when Restore is clicked, then confirms restore', async () => {
+  it('activates a beat card via Enter key', async () => {
     const user = userEvent.setup()
-    const onRestoreNode = vi.fn()
-    render(<LoomBeatBankTray nodes={[bankedNode]} threads={threads} onSelectNode={() => {}} onRestoreNode={onRestoreNode} />)
-
-    await user.click(screen.getByRole('button', { name: 'Restore' }))
-    expect(screen.getByText('Restore to:')).toBeInTheDocument()
-    expect(screen.getByRole('combobox')).toHaveValue('1')
-
-    await user.click(screen.getByRole('button', { name: 'Confirm' }))
-    expect(onRestoreNode).toHaveBeenCalledWith(bankedNode, 1)
+    const onActivateNode = vi.fn()
+    render(
+      <LoomBeatBankTray
+        nodes={[bankedNode]}
+        threads={threads}
+        onSelectNode={() => {}}
+        onRestoreNode={() => {}}
+        onActivateNode={onActivateNode}
+        onManageThreads={() => {}}
+      />,
+    )
+    await user.click(screen.getByRole('button', { name: /Beat Bank/ }))
+    screen.getByRole('button', { name: 'Mysterious hooded stranger' }).focus()
+    await user.keyboard('{Enter}')
+    expect(onActivateNode).toHaveBeenCalledWith(bankedNode)
   })
 
-  it('allows selecting a different thread in the restore picker', async () => {
+  it('shows a guard message instead of activating when there are no threads', async () => {
     const user = userEvent.setup()
-    const onRestoreNode = vi.fn()
-    render(<LoomBeatBankTray nodes={[bankedNode]} threads={threads} onSelectNode={() => {}} onRestoreNode={onRestoreNode} />)
-
-    await user.click(screen.getByRole('button', { name: 'Restore' }))
-    await user.selectOptions(screen.getByRole('combobox'), '2')
-    await user.click(screen.getByRole('button', { name: 'Confirm' }))
-    expect(onRestoreNode).toHaveBeenCalledWith(bankedNode, 2)
-  })
-
-  it('cancels restore without calling onRestoreNode', async () => {
-    const user = userEvent.setup()
-    const onRestoreNode = vi.fn()
-    render(<LoomBeatBankTray nodes={[bankedNode]} threads={threads} onSelectNode={() => {}} onRestoreNode={onRestoreNode} />)
-
-    await user.click(screen.getByRole('button', { name: 'Restore' }))
-    await user.click(screen.getByRole('button', { name: 'Cancel' }))
-    expect(onRestoreNode).not.toHaveBeenCalled()
-    expect(screen.queryByText('Restore to:')).not.toBeInTheDocument()
+    const onActivateNode = vi.fn()
+    const onManageThreads = vi.fn()
+    render(
+      <LoomBeatBankTray
+        nodes={[bankedNode]}
+        threads={[]}
+        onSelectNode={() => {}}
+        onRestoreNode={() => {}}
+        onActivateNode={onActivateNode}
+        onManageThreads={onManageThreads}
+      />,
+    )
+    await user.click(screen.getByRole('button', { name: /Beat Bank/ }))
+    await user.click(screen.getByText('Mysterious hooded stranger'))
+    expect(onActivateNode).not.toHaveBeenCalled()
+    expect(screen.getByText('Create a thread before placing this beat.')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Manage Threads' }))
+    expect(onManageThreads).toHaveBeenCalled()
   })
 
   it('collapses and expands on toggle', async () => {
     const user = userEvent.setup()
     render(<LoomBeatBankTray nodes={[bankedNode]} threads={threads} onSelectNode={() => {}} onRestoreNode={() => {}} />)
     const toggle = screen.getByRole('button', { name: /Beat Bank/ })
-    await user.click(toggle)
     expect(screen.queryByText('Mysterious hooded stranger')).not.toBeInTheDocument()
     await user.click(toggle)
     expect(screen.getByText('Mysterious hooded stranger')).toBeInTheDocument()
+    await user.click(toggle)
+    expect(screen.queryByText('Mysterious hooded stranger')).not.toBeInTheDocument()
   })
 
-  it('disables restore when there are no threads', () => {
-    render(<LoomBeatBankTray nodes={[bankedNode]} threads={[]} onSelectNode={() => {}} onRestoreNode={() => {}} />)
-    expect(screen.getByRole('button', { name: 'Restore' })).toBeDisabled()
-  })
-
-  it('makes tray entries draggable for drag-to-gap restore', () => {
+  it('makes tray entries draggable for drag-to-gap restore', async () => {
+    const user = userEvent.setup()
     render(<LoomBeatBankTray nodes={[bankedNode]} threads={threads} onSelectNode={() => {}} onRestoreNode={() => {}} />)
+    await user.click(screen.getByRole('button', { name: /Beat Bank/ }))
     const entry = document.querySelector('.loom-beat-bank-tray-entry')
     expect(entry).toHaveAttribute('draggable')
   })

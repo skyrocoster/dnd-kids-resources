@@ -1,8 +1,37 @@
 .loom-route {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
-  min-height: calc(100vh - var(--control-height) * 2);
+  gap: 0;
+  height: calc(100vh - var(--control-height) * 2);
+  overflow: hidden;
+}
+
+.loom-page-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--md-surface);
+  border-bottom: 1px solid var(--md-outline-variant);
+  padding: var(--space-3) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.loom-eyebrow {
+  margin: 0;
+  font: var(--type-label-size) / var(--type-label-line) var(--type-face);
+  font-weight: var(--type-caption-weight);
+  letter-spacing: var(--type-caption-tracking);
+  text-transform: uppercase;
+  color: var(--md-on-surface-variant);
+}
+
+.loom-command-bar {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  align-items: center;
 }
 
 .loom-page {
@@ -23,7 +52,6 @@
 .loom-canvas-area {
   flex: 1;
   min-width: 0;
-  min-height: 560px;
   border-radius: var(--radius-lg);
   overflow: hidden;
   border: 1px solid var(--md-outline-variant);
@@ -33,7 +61,7 @@
   position: relative;
   isolation: isolate;
   display: grid;
-  grid-template-columns: auto repeat(var(--loom-session-count), 1fr) auto auto;
+  grid-template-columns: auto repeat(var(--loom-session-count), 10rem) auto auto;
   gap: 0;
   padding: var(--space-3);
   overflow: auto;
@@ -55,13 +83,18 @@
 
 .loom-grid-corner {
   position: sticky;
+  top: 0;
   left: 0;
   z-index: 4;
   background: var(--md-surface);
-  min-width: 10rem;
+  min-width: clamp(10rem, 18vw, 13rem);
+  height: 3.5rem;
 }
 
 .loom-grid-col-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -72,7 +105,8 @@
   color: var(--md-on-surface-variant);
   text-align: center;
   border-bottom: 2px solid var(--md-outline-variant);
-  min-height: var(--control-height);
+  height: 3.5rem;
+  background: var(--md-surface);
 }
 
 .loom-grid-col-header--warp {
@@ -132,8 +166,8 @@
   border: 1px solid transparent;
   border-radius: var(--radius-md);
   cursor: pointer;
-  min-width: 10rem;
-  min-height: var(--control-height);
+  width: clamp(10rem, 18vw, 13rem);
+  min-height: 7rem;
   transition:
     border-color var(--motion-fast),
     box-shadow var(--motion-fast),
@@ -162,7 +196,7 @@
 /* ─── Cells ────────────────────────────────────────────────────────────── */
 
 .loom-grid-cell {
-  min-height: 4rem;
+  min-height: 7rem;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -199,12 +233,12 @@
 
 .loom-grid-warp {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow-x: visible;
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-1) var(--space-3);
   min-height: var(--control-height);
-  overflow-x: auto;
   background:
     repeating-linear-gradient(
       90deg,
@@ -231,12 +265,12 @@
 
 .loom-node {
   position: relative;
-  min-width: 10rem;
-  max-width: 13.75rem;
+  width: 10rem;
+  height: 6rem;
   /* No overflow:hidden here — the Now/Next badges are designed to overhang the
      top edge (negative offsets below) and node-level clipping would cut them off.
      The spine clips itself via its own border-radius instead. */
-  padding: var(--space-3) var(--space-4) var(--space-3) calc(var(--space-4) + 10px);
+  padding: var(--space-2) var(--space-4) var(--space-2) calc(var(--space-4) + 10px);
   border-radius: var(--radius-md);
   font: var(--type-body-sm-size) var(--type-face);
   transition:
@@ -370,27 +404,6 @@
 .loom-node-marker-carry {
   background: color-mix(in srgb, var(--md-loom-anchor) 16%, transparent);
   color: var(--md-loom-anchor);
-}
-
-.loom-node-marker-note {
-  background: color-mix(in srgb, var(--md-outline-variant) 24%, transparent);
-  color: var(--md-on-surface-variant);
-}
-
-.loom-node-marker-spawn {
-  background: color-mix(in srgb, var(--md-loom-anchor) 16%, transparent);
-  color: var(--md-loom-anchor);
-}
-
-.loom-node-provenance {
-  margin-top: var(--space-1);
-  font-size: var(--type-caption-size);
-  color: var(--md-on-surface-variant);
-  opacity: 0.7;
-  text-decoration: line-through;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .loom-node-badge {
@@ -717,8 +730,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 1.5rem;
-  width: 1.5rem;
+  min-width: 3rem;
+  width: 3rem;
   min-height: 3rem;
   cursor: pointer;
   border: none;
@@ -726,7 +739,6 @@
   border-radius: var(--radius-full);
   transition:
     background var(--motion-fast),
-    width var(--motion-fast),
     opacity var(--motion-fast);
   flex-shrink: 0;
   position: relative;
@@ -761,11 +773,6 @@
 .loom-lane-gap:focus-visible .loom-lane-gap-icon,
 .loom-lane-gap--drag-over .loom-lane-gap-icon {
   display: inline;
-}
-
-.loom-lane-gap:hover,
-.loom-lane-gap:focus-visible {
-  width: 2rem;
 }
 
 .loom-lane-gap:hover::before,
@@ -839,6 +846,23 @@
   font: var(--type-body-sm-size) / var(--type-body-sm-line) var(--type-face);
 }
 
+.loom-beat-bank-tray-guard {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--md-surface-2);
+  color: var(--md-on-surface-variant);
+}
+
+.loom-beat-bank-tray-guard p {
+  margin: 0;
+  font: var(--type-body-sm-size) / var(--type-body-sm-line) var(--type-face);
+}
+
 .loom-beat-bank-tray-entry {
   display: flex;
   align-items: center;
@@ -863,33 +887,6 @@
 .loom-beat-bank-tray-item:focus-visible {
   text-decoration: underline;
 }
-
-.loom-beat-bank-tray-restore-picker {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.loom-beat-bank-tray-restore-label {
-  color: var(--md-on-surface-variant);
-  font: var(--type-caption-size) / var(--type-caption-line) var(--type-face);
-  font-weight: var(--type-caption-weight);
-  letter-spacing: var(--type-caption-tracking);
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
-.loom-beat-bank-tray-thread-select {
-  min-height: var(--control-height-compact);
-  padding: 0 var(--space-2);
-  border: 1px solid var(--md-outline-variant);
-  border-radius: var(--radius-sm);
-  background: var(--md-surface-2);
-  color: var(--md-on-surface);
-  font: var(--type-body-sm-size) / var(--type-body-sm-line) var(--type-face);
-}
-
-
 
 /* ─── Reduced motion ──────────────────────────────────────────────────── */
 
@@ -924,7 +921,11 @@
   }
 
   .loom-command-bar {
-    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .loom-command-bar > button {
+    min-height: 48px;
   }
 }
 

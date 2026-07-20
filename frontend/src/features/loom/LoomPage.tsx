@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import './LoomCanvas.css'
 import './LoomEditor.css'
 import { useLoomTapestry } from './useLoomTapestry'
@@ -15,7 +15,9 @@ import { StatePanel } from '../../components/StatePanel'
 import { Button } from '../../components/Button'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
 import { PageHeader } from '../../components/PageHeader'
-import { MapPinIcon, PlusIcon, WaypointsIcon } from '../../components/icons'
+import { IconButton } from '../../components/IconButton'
+import { MapPinIcon, PlusIcon, WaypointsIcon, FocusIcon } from '../../components/icons'
+import { scrollToFellDivider, getFellDividerElement, getLoomGridElement } from './currentPositionScroll'
 import {
   bankLoomNode,
   createLoomThread,
@@ -52,6 +54,19 @@ export function LoomPage() {
   const [deletingNode, setDeletingNode] = useState(false)
   const [bannerError, setBannerError] = useState<string | null>(null)
   const [sessionLogOpen, setSessionLogOpen] = useState(false)
+  const [dividerVisible, setDividerVisible] = useState(true)
+  const [placingNodeId, setPlacingNodeId] = useState<number | null>(null)
+
+  useEffect(() => {
+    if (placingNodeId == null) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setPlacingNodeId(null)
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [placingNodeId])
 
   const banked = useMemo(() => (tapestry.status === 'success' ? bankedBeats(tapestry.data) : []), [tapestry])
   const threads = useMemo(() => (tapestry.status === 'success' ? tapestry.data.threads : []), [tapestry])
@@ -141,6 +156,7 @@ export function LoomPage() {
 
   const handleGapRestore = useCallback(
     (nodeId: number, threadId: number, position: number) => {
+      setPlacingNodeId(null)
       void runLifecycleCommand(
         () => insertLoomThreadItem(threadId, { node_id: nodeId, position }),
         'Failed to restore the beat.',
@@ -148,6 +164,12 @@ export function LoomPage() {
     },
     [],
   )
+
+  const handleActivateBankedNode = useCallback((node: LoomNodeType) => {
+    setPlacingNodeId(node.id)
+    setSelectedNodeId(node.id)
+    setSelectedThreadId(null)
+  }, [])
 
   const handleReorder = useCallback(
     (threadId: number, _nodeId: number, fromBodyIndex: number, toBodyIndex: number) => {
@@ -163,7 +185,8 @@ export function LoomPage() {
         position: n.position,
       }))
       const fromBeatIndex = bodyNodes.slice(0, fromBodyIndex).filter((n) => n.kind === 'beat').length
-      const toBeatIndex = bodyNodes.slice(0, toBodyIndex).filter((n) => n.kind === 'beat').length
+      const rawToBeatIndex = bodyNodes.slice(0, toBodyIndex).filter((n) => n.kind === 'beat').length
+      const toBeatIndex = rawToBeatIndex > fromBeatIndex ? rawToBeatIndex - 1 : rawToBeatIndex
       const target = beatReorderTarget(beatItems, fromBeatIndex, toBeatIndex)
       if (!target) return
       void runLifecycleCommand(
@@ -208,6 +231,14 @@ export function LoomPage() {
       'Failed to undo fulfilment.',
     )
 
+  const handleJumpToCurrent = () => {
+    const grid = getLoomGridElement()
+    const divider = getFellDividerElement()
+    if (grid && divider) {
+      scrollToFellDivider(grid, divider)
+    }
+  }
+
   const handleConfirmDeleteNode = async () => {
     if (!pendingDeleteNode) return
     setDeletingNode(true)
@@ -227,7 +258,7 @@ export function LoomPage() {
     <div className="loom-command-bar">
       <Button variant="primary" onClick={() => setSessionLogOpen(true)}>
         <PlusIcon aria-hidden="true" size={16} />
-        <span>Record Session</span>
+        <span>Advance Campaign</span>
       </Button>
       <Button
         variant="secondary"
@@ -240,6 +271,14 @@ export function LoomPage() {
         <WaypointsIcon aria-hidden="true" size={16} />
         <span>Manage Threads</span>
       </Button>
+      {!dividerVisible && (
+        <IconButton
+          label="Jump to current"
+          onClick={handleJumpToCurrent}
+        >
+          <FocusIcon size={24} aria-hidden="true" />
+        </IconButton>
+      )}
     </div>
   )
 
@@ -314,6 +353,8 @@ export function LoomPage() {
             onCardEdit={handleCardEditNode}
             onCardBank={handleBankNode}
             onCardDelete={handleCardDeleteNode}
+            onDividerVisibilityChange={setDividerVisible}
+            placingNodeId={placingNodeId}
           />
         </div>
         <LoomRail
@@ -340,6 +381,8 @@ export function LoomPage() {
           nodes={banked}
           onSelectNode={handleSelectVaultNode}
           onRestoreNode={handleRestoreNode}
+          onActivateNode={handleActivateBankedNode}
+          onManageThreads={() => setThreadManagerOpen(true)}
         />
       </div>
 
