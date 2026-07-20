@@ -1,6 +1,6 @@
 # The Loom Area Guide
 
-> **Active plan:** [Loom Campaign Progress UI](../plans/active/loom-campaign-progress-ui.md) — Stages 1-2 shipped; Stage 3 is next.
+> **Active plan:** none.
 
 ## Scope
 
@@ -121,7 +121,8 @@ The board is the clearest case of a surface whose mode changes with the moment. 
 ## Work queue
 
 - Deferred until after playtesting: node links to NPCs/dungeons/encounters.
-- [Loom Campaign Progress UI](../plans/active/loom-campaign-progress-ui.md) owns the current board and inspector presentation patch; it does not change Loom behaviour or contracts.
+- Deferred, needs its own Plan: an `End Thread`/`Reach Ending` action pulling an End node into the
+  active session — the current model cannot do this today.
 
 ## Cross-references
 

@@ -1,6 +1,5 @@
 import type { LoomNode, LoomThread } from '../../api/types'
 import { Button } from '../../components/Button'
-import { LoomLegend } from './LoomLegend'
 
 export interface LoomWeaverPanelProps {
   selectedNode: LoomNode | null
@@ -125,7 +124,7 @@ export function LoomWeaverPanel({
             </div>
           </div>
         ) : (
-          <LoomLegend />
+          <p>Select a thread or node to inspect and edit it.</p>
         )}
       </section>
     </aside>

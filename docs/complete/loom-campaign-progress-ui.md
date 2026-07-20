@@ -1,9 +1,8 @@
 # Loom Campaign Progress UI — keep campaign advancement visible and the tapestry readable
 
-> **Status:** Stages 1-2 shipped (sticky toolbar, scroll containment, pinned headers, current-position
-> focus, stable board geometry, trimmed card content, Beat Bank cards, and click/touch/keyboard
-> placement mode). Stage 3 (inspector action matrix, constrained-width drawer, and remaining
-> interaction/copy coverage) is not yet compiled into work orders.
+> **Status:** All three stages shipped. The Loom board is a viewport-contained campaign workspace with
+> a sticky toolbar, stable geometry, a hierarchical inspector action matrix, exact copy contract, and a
+> 768px overlay drawer. This Plan is complete.
 
 - **Area guide:** [The Loom](../../areas/loom.md)
 
@@ -205,3 +204,4 @@ retains the existing confirmation.
 |-------|--------------|
 | 1 | Sticky Loom toolbar renames `Record Session` to `Advance Campaign`; `.loom-route` is viewport-contained with `.loom-grid` as the single board scroll owner; session headers pin vertically and the divider/future-region labels read `Current position`/`Planned beats`; the board opens focused on the current position with a conditional 48px `Jump to current` control. |
 | 2 | Board rows, cards, session columns, and gap slots hold the Plan's fixed geometry (112px rows, 160x96px cards, 160px session columns, 48px gap slots) instead of growing with content; board cards show only the spelled-out `Beat`/`Session` kind, an optional session tag, and explicit `Current`/`Next` labels, with planned beats laid out in one non-wrapping row; the Beat Bank tray defaults collapsed and its entries are plain draggable cards with the destination dropdown removed; activating a banked-beat card by click, tap, or Enter/Space now enters a placement mode that highlights every valid gap for direct restore (Escape cancels), and a `Create a thread before placing this beat.` guard with a `Manage Threads` action covers the no-Threads case. |
+| 3 | The inspector shows at most one primary action plus `Edit` per node/session kind, with less-frequent actions in a keyboard/outside-click-dismissible `More actions` overflow menu, and a selected Banked Beat gets a working `Place Beat` primary action wired to the existing placement-mode entry point; `LoomLegend.tsx` is deleted and the no-selection inspector shows only `Select a thread or node to inspect and edit it.`, with the empty-workspace and load-failure `StatePanel` copy corrected to the Plan's exact strings; at 768px and below the inspector (with its Beat Bank) becomes a 48px-triggered overlay drawer that closes via its own control or Escape without shrinking the board's layout width, replacing the old 520px column-stacking breakpoint. |

@@ -94,4 +94,84 @@ describe('LoomRail', () => {
     fireEvent.drop(section, { dataTransfer: { getData: () => dragData } })
     expect(onBankNodeById).not.toHaveBeenCalled()
   })
+
+  it('shows action matrix for a placed beat: Fulfil Beat + Edit + overflow with four items', () => {
+    const onReorderThread = vi.fn()
+    render(
+      <LoomRail
+        {...baseProps}
+        selectedNode={{ id: 1, kind: 'beat', title: 'Placed Beat', thread_id: 1, session_id: null, position: 0, carried_count: 0 }}
+        onReorderThread={onReorderThread}
+      />,
+    )
+    expect(screen.getByRole('button', { name: 'Fulfil Beat' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument()
+
+    const moreBtn = screen.getByRole('button', { name: 'More actions' })
+    fireEvent.click(moreBtn)
+
+    const items = screen.getAllByRole('menuitem')
+    expect(items).toHaveLength(4)
+    expect(items[0]).toHaveTextContent('Reorder planned beats…')
+    expect(items[1]).toHaveTextContent('Bank Beat')
+    expect(items[2]).toHaveTextContent('Replace Beat…')
+    expect(items[3]).toHaveTextContent('Delete Beat…')
+  })
+
+  it('shows action matrix for a banked beat: Place Beat + Edit + overflow with Delete Beat… only', () => {
+    const onPlaceNode = vi.fn()
+    render(
+      <LoomRail
+        {...baseProps}
+        selectedNode={{ id: 2, kind: 'beat', title: 'Banked Beat', thread_id: null, session_id: null, position: 0, carried_count: 0 }}
+        onPlaceNode={onPlaceNode}
+      />,
+    )
+    expect(screen.getByRole('button', { name: 'Place Beat' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument()
+
+    const moreBtn = screen.getByRole('button', { name: 'More actions' })
+    fireEvent.click(moreBtn)
+
+    const items = screen.getAllByRole('menuitem')
+    expect(items).toHaveLength(1)
+    expect(items[0]).toHaveTextContent('Delete Beat…')
+  })
+
+  it('calls onPlaceNode when Place Beat is clicked', () => {
+    const onPlaceNode = vi.fn()
+    render(
+      <LoomRail
+        {...baseProps}
+        selectedNode={{ id: 3, kind: 'beat', title: 'Clickable', thread_id: null, session_id: null, position: 0, carried_count: 0 }}
+        onPlaceNode={onPlaceNode}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Place Beat' }))
+    expect(onPlaceNode).toHaveBeenCalledTimes(1)
+    expect(onPlaceNode).toHaveBeenCalledWith(expect.objectContaining({ id: 3 }))
+  })
+
+  it('shows only Change Ending for an end node with no overflow menu', () => {
+    render(
+      <LoomRail
+        {...baseProps}
+        selectedNode={{ id: 4, kind: 'end', title: 'The End', thread_id: 1, session_id: null, position: 0, carried_count: 0 }}
+      />,
+    )
+    expect(screen.getByRole('button', { name: 'Change Ending' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'More actions' })).not.toBeInTheDocument()
+  })
+
+  it('shows no actions for a start node', () => {
+    render(
+      <LoomRail
+        {...baseProps}
+        selectedNode={{ id: 5, kind: 'start', title: 'The Start', thread_id: 1, session_id: null, position: 0, carried_count: 0 }}
+      />,
+    )
+    const actions = document.querySelector('.loom-selection-actions')
+    expect(actions?.children.length ?? 0).toBe(0)
+  })
 })
