@@ -49,7 +49,6 @@ export function LoomRail({
   selectedNode,
   threads,
   selectedThreadId,
-  onSelectThread,
   onEdit,
   onDeleteNode,
   onFulfilNode,
@@ -96,6 +95,12 @@ export function LoomRail({
                 <dt>Weft</dt>
                 <dd>{selectedThreadName ?? 'Unthreaded'}</dd>
               </div>
+              {selectedNode.banked_from_thread_id != null && (
+                <div>
+                  <dt>Banked from</dt>
+                  <dd>{threadNamesById.get(selectedNode.banked_from_thread_id) ?? 'a retired thread'}</dd>
+                </div>
+              )}
               <div>
                 <dt>Notes</dt>
                 <dd>{excerpt(selectedNode.body) || 'No notes yet.'}</dd>
@@ -160,27 +165,6 @@ export function LoomRail({
         ) : (
           <LoomLegend />
         )}
-      </section>
-
-      <section className="loom-weaver-section">
-        <div className="loom-weaver-section-heading">
-          <h2 className="loom-weaver-section-title">Threads</h2>
-        </div>
-        <ul className="loom-weaver-thread-list">
-          {threads.map((thread) => (
-            <li key={thread.id} className="loom-weaver-thread-row">
-              <button
-                className="loom-weaver-thread-button"
-                aria-pressed={selectedThreadId === thread.id}
-                onClick={(e) => { e.stopPropagation(); onSelectThread?.(thread.id) }}
-              >
-                <span className="loom-weaver-thread-swatch" data-color={thread.color} />
-                <span className="loom-weaver-thread-name">{thread.name}</span>
-                <span className="loom-weaver-thread-count">{threadOrdered(thread, nodes).length}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
       </section>
 
       <section
