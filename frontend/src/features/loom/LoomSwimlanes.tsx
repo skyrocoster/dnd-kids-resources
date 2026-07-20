@@ -1,6 +1,8 @@
 import type { CSSProperties } from 'react'
+import { useEffect, useRef } from 'react'
 import type { LoomNode, LoomSession, LoomTapestryThread } from '../../api/types'
 import { LoomLane } from './LoomLane'
+import { getFellDividerElement, isFellDividerFullyVisible, scrollToFellDivider } from './currentPositionScroll'
 
 type LoomGridStyle = CSSProperties & { '--loom-session-count': number }
 
@@ -19,6 +21,8 @@ interface LoomSwimlanesProps {
   onCardEdit?: (node: LoomNode) => void
   onCardBank?: (node: LoomNode) => void
   onCardDelete?: (node: LoomNode) => void
+  onDividerVisibilityChange?: (isVisible: boolean) => void
+  placingNodeId?: number | null
 }
 
 export function LoomSwimlanes({
@@ -36,9 +40,38 @@ export function LoomSwimlanes({
   onCardEdit,
   onCardBank,
   onCardDelete,
+  onDividerVisibilityChange,
+  placingNodeId,
 }: LoomSwimlanesProps) {
+  const gridRef = useRef<HTMLElement>(null)
+
+  useEffect(() => {
+    const grid = gridRef.current
+    if (!grid) return
+
+    const divider = getFellDividerElement()
+    if (!divider) return
+
+    scrollToFellDivider(grid, divider)
+    const isVisible = isFellDividerFullyVisible(grid, divider)
+    onDividerVisibilityChange?.(isVisible)
+
+    const handleScroll = () => {
+      const divider = getFellDividerElement()
+      if (!divider) return
+      const isVisible = isFellDividerFullyVisible(grid, divider)
+      onDividerVisibilityChange?.(isVisible)
+    }
+
+    grid.addEventListener('scroll', handleScroll)
+    return () => {
+      grid.removeEventListener('scroll', handleScroll)
+    }
+  }, [onDividerVisibilityChange])
+
   return (
     <section
+      ref={gridRef}
       className="loom-canvas-area loom-grid"
       aria-label="Session grid"
       style={{ '--loom-session-count': sessions.length } as LoomGridStyle}
@@ -51,8 +84,8 @@ export function LoomSwimlanes({
             <span className="loom-grid-col-name">{s.name}</span>
           </div>
         ))}
-        <div className="loom-grid-col-header loom-grid-col-header--fell" aria-label="Fell edge" />
-        <div className="loom-grid-col-header loom-grid-col-header--warp" aria-label="Warp lane">Warp</div>
+        <div className="loom-grid-col-header loom-grid-col-header--fell" aria-label="Current position" />
+        <div className="loom-grid-col-header loom-grid-col-header--warp" aria-label="Planned beats">Planned beats</div>
       </div>
       {threads.map((thread) => (
         <LoomLane
@@ -71,6 +104,7 @@ export function LoomSwimlanes({
           onCardEdit={onCardEdit}
           onCardBank={onCardBank}
           onCardDelete={onCardDelete}
+          placingNodeId={placingNodeId}
         />
       ))}
     </section>

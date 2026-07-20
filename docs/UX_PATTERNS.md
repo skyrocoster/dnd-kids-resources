@@ -46,6 +46,17 @@ that assumes the operator is always the DM.
 
 Status: IN FORCE (as a structural reservation).
 
+### Persistent play actions
+
+An action required to advance the live workflow stays visible in persistent surface chrome. It does
+not live only in a page header or command region that can scroll out of view while the DM is using the
+play surface. Secondary authoring controls may yield space, but the action that moves play forward
+remains directly reachable without first recovering a lost scroll position.
+
+The Loom's `Advance Campaign` toolbar action is the first shipped application of this rule.
+
+Status: IN FORCE.
+
 ---
 
 ## Route shape
@@ -61,6 +72,21 @@ A new catalog-shaped feature adopts this triad rather than inventing a layout. A
 record-shaped — the Loom board, the Map Lab canvas, the encounter runner — is not forced into it.
 
 Status: IN FORCE.
+
+### Viewport-contained workspace scrolling
+
+A viewport-contained workspace assigns scroll ownership explicitly. The document, the main board,
+and nested board regions do not compete to scroll the same axis. The primary workspace owns the
+navigation needed to traverse its content; an adjacent inspector may own independent vertical
+overflow when its content length is unrelated to the board.
+
+Responsive drawers overlay the constrained workspace rather than silently introducing another page
+scroll or reducing the board below its usable width. A surface that needs multiple scroll owners names
+each region and axis in its Plan before implementation.
+
+The Loom board/inspector redesign is the first planned application of this rule.
+
+Status: TARGET.
 
 ### Inline versus modal editing
 

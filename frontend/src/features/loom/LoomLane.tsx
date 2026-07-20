@@ -18,6 +18,7 @@ interface LoomLaneProps {
   onCardEdit?: (node: LoomNode) => void
   onCardBank?: (node: LoomNode) => void
   onCardDelete?: (node: LoomNode) => void
+  placingNodeId?: number | null
 }
 
 interface DropZoneCallbacks {
@@ -77,19 +78,28 @@ function Gap({
   position,
   dragOver,
   onGapClick,
+  onGapRestore,
+  placingNodeId,
 }: {
   threadId: number
   position: number
   dragOver: boolean
   onGapClick?: (threadId: number, position: number) => void
+  onGapRestore?: (nodeId: number, threadId: number, position: number) => void
+  placingNodeId?: number | null
 }) {
+  const placing = placingNodeId != null
   const handleClick = useCallback(() => {
-    onGapClick?.(threadId, position)
-  }, [onGapClick, threadId, position])
+    if (placing) {
+      onGapRestore?.(placingNodeId, threadId, position)
+    } else {
+      onGapClick?.(threadId, position)
+    }
+  }, [placing, placingNodeId, onGapRestore, onGapClick, threadId, position])
 
   return (
     <div
-      className={`loom-lane-gap${dragOver ? ' loom-lane-gap--drag-over' : ''}`}
+      className={`loom-lane-gap${dragOver || placing ? ' loom-lane-gap--drag-over' : ''}`}
       onClick={handleClick}
       role="button"
       tabIndex={0}
@@ -114,12 +124,14 @@ function CardGroup({
   onReorder,
   onCrossLaneDrop,
   onGapRestore,
+  placingNodeId,
   children,
 }: DropZoneCallbacks & {
   threadId: number
   position: number
   index: number
   onGapClick?: (threadId: number, position: number) => void
+  placingNodeId?: number | null
   children: React.ReactNode
 }) {
   const { dragOver, handleDragOver, handleDragEnter, handleDragLeave, handleDrop } = useDropZone(
@@ -137,7 +149,14 @@ function CardGroup({
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      <Gap threadId={threadId} position={position} dragOver={dragOver} onGapClick={onGapClick} />
+      <Gap
+        threadId={threadId}
+        position={position}
+        dragOver={dragOver}
+        onGapClick={onGapClick}
+        onGapRestore={onGapRestore}
+        placingNodeId={placingNodeId}
+      />
       {children}
     </div>
   )
@@ -158,6 +177,7 @@ export function LoomLane({
   onCardEdit,
   onCardBank,
   onCardDelete,
+  placingNodeId,
 }: LoomLaneProps) {
   const ordered = threadOrdered(thread, nodes)
   const current = currentPosition(thread, nodes)
@@ -168,10 +188,6 @@ export function LoomLane({
   const nextBeatId = next?.id ?? null
 
   const warpNodes = ordered.filter((n) => n.kind !== 'start' && n.kind !== 'end' && n.session_id == null)
-
-  const originNode = thread.origin_node_id != null
-    ? nodes.find((n) => n.id === thread.origin_node_id)
-    : null
 
   return (
     <div
@@ -208,7 +224,7 @@ export function LoomLane({
                 selected={selectedNodeId === node.id}
                 onClick={onSelectNode}
                 threadId={thread.id}
-                originNodeTitle={originNode?.title}
+                sessionTag={session.played_on}
                 onEdit={onCardEdit}
                 onBank={onCardBank}
                 onDelete={onCardDelete}
@@ -223,8 +239,8 @@ export function LoomLane({
 
         return <div key={session.id} className="loom-grid-cell loom-grid-cell--outside-life" />
       })}
-      <div className="loom-grid-fell-edge" role="separator" aria-label="Fell edge" />
-      <div className="loom-grid-warp" aria-label="Warp lane">
+      <div className="loom-grid-fell-edge" role="separator" aria-label="Current position" />
+      <div className="loom-grid-warp" aria-label="Planned beats">
         <div className="loom-grid-warp-divider" aria-hidden="true" />
         {warpNodes.map((node, idx) => (
           <CardGroup
@@ -236,6 +252,7 @@ export function LoomLane({
             onReorder={onReorder}
             onCrossLaneDrop={onCrossLaneDrop}
             onGapRestore={onGapRestore}
+            placingNodeId={placingNodeId}
           >
             <LoomNodeCard
               node={node}
@@ -260,6 +277,7 @@ export function LoomLane({
           onReorder={onReorder}
           onCrossLaneDrop={onCrossLaneDrop}
           onGapRestore={onGapRestore}
+          placingNodeId={placingNodeId}
         >
           {null}
         </CardGroup>

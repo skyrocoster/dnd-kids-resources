@@ -42,14 +42,13 @@ export function LoomBeatReorderDialog({ thread, nodes, onReordered, onError, onC
   }, [beats])
 
   const findDropIndex = (clientY: number): number => {
-    let dropIndex = order.length - 1
     for (let index = 0; index < order.length; index += 1) {
       const row = rowRefs.current.get(order[index].nodeId)
       if (!row) continue
       const rect = row.getBoundingClientRect()
       if (clientY < rect.top + rect.height / 2) return index
     }
-    return dropIndex
+    return order.length
   }
 
   const handlePointerMove = (event: PointerEvent) => {
@@ -59,7 +58,8 @@ export function LoomBeatReorderDialog({ thread, nodes, onReordered, onError, onC
   const handlePointerUp = async (event: PointerEvent) => {
     const drag = dragState.current
     if (!drag) return
-    const toIndex = findDropIndex(event.clientY)
+    const rawToIndex = findDropIndex(event.clientY)
+    const toIndex = rawToIndex > drag.fromIndex ? rawToIndex - 1 : rawToIndex
     dragState.current = null
     setDraggingNodeId(null)
     window.removeEventListener('pointermove', handlePointerMove)

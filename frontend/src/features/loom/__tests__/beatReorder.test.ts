@@ -11,7 +11,14 @@ describe('beatReorderTarget', () => {
   it('returns null for a no-op or out-of-range move', () => {
     expect(beatReorderTarget(beats, 1, 1)).toBeNull()
     expect(beatReorderTarget(beats, -1, 0)).toBeNull()
-    expect(beatReorderTarget(beats, 0, 3)).toBeNull()
+    expect(beatReorderTarget(beats, 3, 0)).toBeNull()
+    expect(beatReorderTarget(beats, 0, 4)).toBeNull()
+  })
+
+  // `toIndex` is an insertion index into the post-removal list, so it legitimately
+  // ranges 0..beats.length. LoomLane's final sentinel gap passes beats.length.
+  it('treats toIndex === beats.length as insert-at-end', () => {
+    expect(beatReorderTarget(beats, 0, 3)).toEqual({ nodeId: 1, position: Number.MAX_SAFE_INTEGER })
   })
 
   it('uses the correct follower when moving down', () => {

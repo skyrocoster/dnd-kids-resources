@@ -23,6 +23,8 @@ export interface LoomRailProps {
   onSelectNode: (node: LoomNode) => void
   onRestoreNode: (node: LoomNode, threadId: number) => void
   onEditThread?: (threadId: number) => void
+  onActivateNode?: (node: LoomNode) => void
+  onManageThreads?: () => void
 }
 
 function kindLabel(node: LoomNode): string {
@@ -62,6 +64,8 @@ export function LoomRail({
   onSelectNode,
   onRestoreNode,
   onEditThread,
+  onActivateNode,
+  onManageThreads,
 }: LoomRailProps) {
   const [bankDragOver, setBankDragOver] = useState(false)
   const threadNamesById = new Map(threads.map((thread) => [thread.id, thread.name]))
@@ -202,6 +206,8 @@ export function LoomRail({
           threads={threads}
           onSelectNode={onSelectNode}
           onRestoreNode={onRestoreNode}
+          onActivateNode={onActivateNode}
+          onManageThreads={onManageThreads}
         />
       </section>
     </aside>

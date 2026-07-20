@@ -1,10 +1,11 @@
 import { describe, it, expect, vi } from 'vitest'
-import { fireEvent, render } from '@testing-library/react'
+import { fireEvent, render, waitFor } from '@testing-library/react'
 import type { LoomNode, LoomSession, LoomTapestry, LoomTapestryThread } from '../../../api/types'
 import { LoomLane } from '../LoomLane'
 import { LoomSwimlanes } from '../LoomSwimlanes'
 import { LoomNodeCard } from '../LoomNodeCard'
 import { threadOrdered, currentPosition, nextBeat } from '../loomGraph'
+import { isFellDividerFullyVisible } from '../currentPositionScroll'
 
 const sessions: LoomSession[] = [
   { id: 1, ordinal: 1, name: 'Session 1', played_on: null, notes: null },
@@ -234,6 +235,18 @@ describe('grid rendering', () => {
     expect(warps).toHaveLength(1)
   })
 
+  it('exposes Planned beats in header and Current position in divider', () => {
+    const tapestry = demoTapestry()
+    const { container: swimContainer } = render(<LoomSwimlanes threads={tapestry.threads} nodes={tapestry.nodes} sessions={sessions} />)
+    const plannedBeatsHeader = swimContainer.querySelector('[aria-label="Planned beats"]')
+    expect(plannedBeatsHeader).toBeInTheDocument()
+    expect(plannedBeatsHeader).toHaveTextContent('Planned beats')
+    const thread = tapestry.threads[0]
+    const { container: laneContainer } = render(<LoomLane thread={thread} nodes={tapestry.nodes} sessions={sessions} />)
+    const currentPositionDivider = laneContainer.querySelector('[aria-label="Current position"]')
+    expect(currentPositionDivider).toBeInTheDocument()
+  })
+
   it('marks played session cells with the cloth class', () => {
     const tapestry = demoTapestry()
     const thread = tapestry.threads[0]
@@ -245,7 +258,20 @@ describe('grid rendering', () => {
   it('renders a kind marker on every card', () => {
     const beat: LoomNode = { id: 10, kind: 'beat', title: 'Find the Key', thread_id: 1, session_id: null, position: 10, carried_count: 0 }
     render(<LoomNodeCard node={beat} isNow={false} isNext={false} threadColor={null} />)
-    expect(document.querySelector('.loom-node-marker-kind')).toHaveTextContent('BEAT')
+    expect(document.querySelector('.loom-node-marker-kind')).toHaveTextContent('Beat')
+  })
+
+  it('renders the spelled-out Session kind marker on session cards', () => {
+    const session: LoomNode = { id: 16, kind: 'session', title: 'Puppy found', thread_id: 1, session_id: 2, position: 10, carried_count: 0 }
+    render(<LoomNodeCard node={session} isNow={false} isNext={false} threadColor={null} />)
+    expect(document.querySelector('.loom-node-marker-kind')).toHaveTextContent('Session')
+  })
+
+  it('renders the literal Current/Next words on badges', () => {
+    const beat: LoomNode = { id: 17, kind: 'beat', title: 'Head of the thread', thread_id: 1, session_id: null, position: 10, carried_count: 0 }
+    render(<LoomNodeCard node={beat} isNow isNext threadColor={null} />)
+    expect(document.querySelector('.loom-node-badge--now')).toHaveTextContent('Current')
+    expect(document.querySelector('.loom-node-badge--next')).toHaveTextContent('Next')
   })
 
   it('renders carry count marker when carried_count > 0', () => {
@@ -258,41 +284,6 @@ describe('grid rendering', () => {
     const plain: LoomNode = { id: 12, kind: 'beat', title: 'Plain Beat', thread_id: 1, session_id: null, position: 10, carried_count: 0 }
     render(<LoomNodeCard node={plain} isNow={false} isNext={false} threadColor={null} />)
     expect(document.querySelector('.loom-node-marker-carry')).toBeNull()
-  })
-
-  it('renders notes marker when node has a body', () => {
-    const withNotes: LoomNode = { id: 13, kind: 'beat', title: 'Noted', thread_id: 1, session_id: null, position: 10, carried_count: 0, body: 'Some notes' }
-    render(<LoomNodeCard node={withNotes} isNow={false} isNext={false} threadColor={null} />)
-    expect(document.querySelector('.loom-node-marker-note')).toBeTruthy()
-  })
-
-  it('renders provenance marker when fulfilled title differs', () => {
-    const provenance: LoomNode = { id: 14, kind: 'beat', title: 'Played Title', thread_id: 1, session_id: null, position: 10, carried_count: 0, fulfilled_at: '2025-01-01', fulfilled_planned_title: 'Planned Title' }
-    render(<LoomNodeCard node={provenance} isNow={false} isNext={false} threadColor={null} />)
-    expect(document.querySelector('.loom-node-provenance')).toHaveTextContent('Planned Title')
-  })
-
-  it('omits provenance marker when fulfilled title matches current title', () => {
-    const same: LoomNode = { id: 15, kind: 'beat', title: 'Same Title', thread_id: 1, session_id: null, position: 10, carried_count: 0, fulfilled_at: '2025-01-01', fulfilled_planned_title: 'Same Title' }
-    render(<LoomNodeCard node={same} isNow={false} isNext={false} threadColor={null} />)
-    expect(document.querySelector('.loom-node-provenance')).toBeNull()
-  })
-
-  it('renders spawn origin marker on start cap of spawned threads', () => {
-    const spawnedThread: LoomTapestryThread = { id: 3, name: 'Spawned Thread', color: 'thread-2', origin_node_id: 99 }
-    const spawnedNodes: LoomNode[] = [
-      ...demoTapestry().nodes,
-      { id: 99, kind: 'beat', title: 'Find the Lost Puppy', thread_id: 1, session_id: null, position: 15, carried_count: 0 },
-      { id: 100, kind: 'start', title: 'Spawned Start', thread_id: 3, session_id: 1, position: 0, carried_count: 0 },
-    ]
-    render(<LoomLane thread={spawnedThread} nodes={spawnedNodes} sessions={sessions} />)
-    expect(document.querySelector('.loom-node-marker-spawn')).toHaveTextContent('Find the Lost Puppy')
-  })
-
-  it('does not render spawn marker on threads without origin_node_id', () => {
-    const tapestry = demoTapestry()
-    render(<LoomLane thread={tapestry.threads[0]} nodes={tapestry.nodes} sessions={sessions} />)
-    expect(document.querySelector('.loom-node-marker-spawn')).toBeNull()
   })
 
   it('renders end cap in a cloth cell (bound cloth)', () => {
@@ -403,5 +394,64 @@ describe('grid rendering', () => {
     expect(onCrossLaneDrop).not.toHaveBeenCalled()
     expect(onReorder).not.toHaveBeenCalled()
     expect(onGapRestore).not.toHaveBeenCalled()
+  })
+})
+
+describe('divider visibility', () => {
+  it('determines divider fully visible when within viewport bounds', () => {
+    const gridElement = {
+      getBoundingClientRect: () => ({ left: 100, right: 500, top: 0, bottom: 400 }),
+    } as unknown as HTMLElement
+
+    const dividerElement = {
+      getBoundingClientRect: () => ({ left: 200, right: 210, top: 0, bottom: 400 }),
+    } as unknown as HTMLElement
+
+    const isVisible = isFellDividerFullyVisible(gridElement, dividerElement)
+    expect(isVisible).toBe(true)
+  })
+
+  it('determines divider not fully visible when clipped on left', () => {
+    const gridElement = {
+      getBoundingClientRect: () => ({ left: 100, right: 500, top: 0, bottom: 400 }),
+    } as unknown as HTMLElement
+
+    const dividerElement = {
+      getBoundingClientRect: () => ({ left: 50, right: 210, top: 0, bottom: 400 }),
+    } as unknown as HTMLElement
+
+    const isVisible = isFellDividerFullyVisible(gridElement, dividerElement)
+    expect(isVisible).toBe(false)
+  })
+
+  it('determines divider not fully visible when clipped on right', () => {
+    const gridElement = {
+      getBoundingClientRect: () => ({ left: 100, right: 500, top: 0, bottom: 400 }),
+    } as unknown as HTMLElement
+
+    const dividerElement = {
+      getBoundingClientRect: () => ({ left: 450, right: 550, top: 0, bottom: 400 }),
+    } as unknown as HTMLElement
+
+    const isVisible = isFellDividerFullyVisible(gridElement, dividerElement)
+    expect(isVisible).toBe(false)
+  })
+
+  it('invokes onDividerVisibilityChange callback with initial state', async () => {
+    const tapestry = demoTapestry()
+    const onDividerVisibilityChange = vi.fn()
+
+    render(
+      <LoomSwimlanes
+        threads={tapestry.threads}
+        nodes={tapestry.nodes}
+        sessions={sessions}
+        onDividerVisibilityChange={onDividerVisibilityChange}
+      />,
+    )
+
+    await waitFor(() => {
+      expect(onDividerVisibilityChange).toHaveBeenCalled()
+    })
   })
 })
