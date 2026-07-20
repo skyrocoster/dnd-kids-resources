@@ -9,7 +9,7 @@ const threads: LoomThread[] = [
   { id: 2, name: 'Dragon Quest', color: 'thread-1' },
 ]
 
-const bankedNode: LoomNode = { id: 9, kind: 'beat', title: 'Mysterious hooded stranger', x: 1, y: 2, thread_ids: [] }
+const bankedNode: LoomNode = { id: 9, kind: 'beat', title: 'Mysterious hooded stranger', thread_id: null, position: 0, carried_count: 0 }
 
 describe('LoomBeatBankTray', () => {
   it('lists banked beats and reports the count', () => {

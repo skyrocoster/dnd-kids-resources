@@ -5,7 +5,7 @@ This doc describes the folder structure, backend/frontend conventions, and reque
 ## Stack
 
 - **Backend:** FastAPI + SQLite (no ORM, raw SQL via `db.py`)
-- **Frontend:** React + Vite + TypeScript, no global state library (local/component state only); the Loom uses a purpose-built static swimlane renderer
+- **Frontend:** React + Vite + TypeScript, no global state library (local/component state only); the Loom uses a purpose-built static grid renderer
 - **Database:** SQLite, gitignored and rebuilt from seed files; dungeons and Map Lab layouts are runtime-authored records
 
 ## Backend Layout

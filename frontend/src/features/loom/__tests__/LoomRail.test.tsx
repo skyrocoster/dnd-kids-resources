@@ -5,8 +5,20 @@ import type { LoomNode, LoomTapestryThread } from '../../../api/types'
 import { LoomRail } from '../LoomRail'
 
 const threads: LoomTapestryThread[] = [
-  { id: 1, name: 'The Lost Puppy', color: 'thread-3', items: [{ node_id: 10, position: 0 }] },
-  { id: 2, name: 'Dragon Quest', color: 'thread-1', items: [] },
+  { id: 1, name: 'The Lost Puppy', color: 'thread-3' },
+  { id: 2, name: 'Dragon Quest', color: 'thread-1' },
+]
+
+const threadNodes: LoomNode[] = [
+  {
+    id: 10,
+    kind: 'beat',
+    title: 'A beat',
+    thread_id: 1,
+    session_id: null,
+    position: 0,
+    carried_count: 0,
+  },
 ]
 
 const noop = () => {}
@@ -22,7 +34,7 @@ const baseProps = {
   onSpawnThread: noop,
   onChangeEnding: noop,
   onUndoFulfil: noop,
-  nodes: [] as LoomNode[],
+  nodes: threadNodes,
   onSelectNode: noop,
   onRestoreNode: noop,
 }

@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -52,6 +52,19 @@ app.include_router(encounters.router)
 app.include_router(dungeons.router)
 app.include_router(layouts.router)
 app.include_router(loom.router)
+
+
+# Any /api/* path not matched by a router above is a genuine 404, not an SPA
+# route. Registered before the SPA catch-all so it takes priority for /api/*
+# and isn't swallowed into a 405 (wrong-method match on the GET-only SPA route).
+@app.api_route(
+    "/api/{full_path:path}",
+    methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
+    include_in_schema=False,
+)
+def api_not_found(full_path: str):
+    raise HTTPException(status_code=404, detail="Not Found")
+
 
 # Serve the built frontend (frontend/dist), if present, with an SPA fallback
 # for client-side routes. All API routes are under /api, so anything else

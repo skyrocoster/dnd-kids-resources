@@ -509,36 +509,42 @@ export interface LoomNode {
   kind: LoomNodeKind
   title: string
   body?: string | null
-  session_tag?: string | null
-  x: number
-  y: number
+  thread_id?: number | null
+  session_id?: number | null
+  position: number
+  carried_count: number
   fulfilled_planned_title?: string | null
   fulfilled_at?: string | null
   banked_from_thread_id?: number | null
-  thread_ids: number[]
 }
 
 export interface LoomNodeInput {
   kind: LoomCreatableNodeKind
   title: string
   body?: string | null
-  session_tag?: string | null
-  x?: number
-  y?: number
 }
 
-export interface LoomTapestryItem {
-  node_id: number
-  position: number
+export interface LoomSession {
+  id: number
+  ordinal: number
+  name: string
+  played_on: string | null
+  notes: string | null
 }
 
-export interface LoomTapestryThread extends LoomThread {
-  items: LoomTapestryItem[]
+export interface LoomSessionInput {
+  ordinal: number
+  name: string
+  played_on?: string | null
+  notes?: string | null
 }
+
+export type LoomTapestryThread = LoomThread
 
 export interface LoomTapestry {
   threads: LoomTapestryThread[]
   nodes: LoomNode[]
+  sessions: LoomSession[]
 }
 
 export interface LoomThreadItemCreate {
@@ -553,7 +559,6 @@ export interface LoomThreadItemPositionUpdate {
 export interface LoomNodeMove {
   target_thread_id: number
   position: number
-  mode?: 'move' | 'also_add'
 }
 
 export interface LoomThreadMoveResult {
@@ -565,7 +570,4 @@ export interface LoomNodeFulfil {
   title?: string | null
 }
 
-export interface LoomNodePositionInput {
-  x: number
-  y: number
-}
+

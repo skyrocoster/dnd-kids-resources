@@ -74,4 +74,4 @@ Five canonical triage roles: `needs-triage`, `needs-info`, `ready-for-agent`, `r
 
 ### Domain docs
 
-Single-context layout: one root `CONTEXT.md` + `docs/adr/` for architecture decisions. See `docs/agents/domain.md`.
+Scoped-context layout: root `CONTEXT.md` holds only shared repo vocabulary, area guides hold area-specific vocabulary and ownership facts, and `docs/adr/` records architecture decisions. See `docs/agents/domain.md`.

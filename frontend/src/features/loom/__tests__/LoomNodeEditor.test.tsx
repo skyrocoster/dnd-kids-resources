@@ -10,14 +10,13 @@ describe('LoomNodeEditor', () => {
     vi.restoreAllMocks()
   })
 
-  it('creates a session node with the default position', async () => {
-    const created: LoomNode = { id: 8, kind: 'session', title: 'New note', x: 10, y: 20, thread_ids: [] }
+  it('creates a session node', async () => {
+    const created: LoomNode = { id: 8, kind: 'session', title: 'New note', thread_id: null, position: 0, carried_count: 0 }
     const createLoomNode = vi.spyOn(api, 'createLoomNode').mockResolvedValue(created)
     const onSaved = vi.fn()
     const user = userEvent.setup()
     render(
       <LoomNodeEditor
-        defaultPosition={{ x: 10, y: 20 }}
         onClose={() => {}}
         onSaved={onSaved}
       />,
@@ -29,7 +28,7 @@ describe('LoomNodeEditor', () => {
 
     await waitFor(() => expect(createLoomNode).toHaveBeenCalledOnce())
     expect(createLoomNode).toHaveBeenCalledWith(
-      expect.objectContaining({ kind: 'session', title: 'New note', x: 10, y: 20 }),
+      expect.objectContaining({ kind: 'session', title: 'New note' }),
     )
     expect(onSaved).toHaveBeenCalledWith(created)
   })
@@ -39,16 +38,15 @@ describe('LoomNodeEditor', () => {
       id: 9,
       kind: 'beat',
       title: 'Confront the chief',
-      x: 0,
-      y: 0,
-      thread_ids: [],
+      thread_id: null,
+      position: 0,
+      carried_count: 0,
     }
     const createLoomNode = vi.spyOn(api, 'createLoomNode').mockResolvedValue(created)
     const user = userEvent.setup()
     render(
       <LoomNodeEditor
         initialKind="beat"
-        defaultPosition={{ x: 0, y: 0 }}
         onClose={() => {}}
         onSaved={() => {}}
       />,
@@ -64,21 +62,21 @@ describe('LoomNodeEditor', () => {
     )
   })
 
-  it('edits an existing node, preserving its stored position and locking kind', async () => {
+  it('edits an existing node, locking kind', async () => {
     const node: LoomNode = {
       id: 3,
       kind: 'session',
       title: 'Tracks lead to the cave',
-      x: 250,
-      y: 60,
-      thread_ids: [1, 2],
+      thread_id: 1,
+      session_id: 2,
+      position: 10,
+      carried_count: 0,
     }
     const updateLoomNode = vi.spyOn(api, 'updateLoomNode').mockResolvedValue(node)
     const user = userEvent.setup()
     render(
       <LoomNodeEditor
         node={node}
-        defaultPosition={{ x: 999, y: 999 }}
         onClose={() => {}}
         onSaved={() => {}}
       />,
@@ -89,7 +87,7 @@ describe('LoomNodeEditor', () => {
     await user.click(screen.getByRole('button', { name: 'Save Changes' }))
 
     await waitFor(() =>
-      expect(updateLoomNode).toHaveBeenCalledWith(3, expect.objectContaining({ x: 250, y: 60, kind: 'session' })),
+      expect(updateLoomNode).toHaveBeenCalledWith(3, expect.objectContaining({ kind: 'session' })),
     )
   })
 
@@ -97,7 +95,7 @@ describe('LoomNodeEditor', () => {
     vi.spyOn(api, 'createLoomNode').mockRejectedValue(new Error('Failed to create node'))
     const user = userEvent.setup()
     render(
-      <LoomNodeEditor defaultPosition={{ x: 0, y: 0 }} onClose={() => {}} onSaved={() => {}} />,
+      <LoomNodeEditor onClose={() => {}} onSaved={() => {}} />,
     )
 
     await user.type(screen.getByLabelText('Title'), 'Doomed note')

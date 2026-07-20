@@ -35,7 +35,8 @@ import type {
   LoomThreadItemPositionUpdate,
   LoomNodeMove,
   LoomThreadMoveResult,
-  LoomNodePositionInput,
+  LoomSession,
+  LoomSessionInput,
 } from './types'
 
 export class ApiError extends Error {
@@ -181,12 +182,18 @@ export const createLoomNode = (node: LoomNodeInput) => post<LoomNode>('/loom/nod
 export const updateLoomNode = (id: number, node: LoomNodeInput) =>
   put<LoomNode>(`/loom/nodes/${id}`, node)
 export const deleteLoomNode = (id: number) => del(`/loom/nodes/${id}`)
-export const patchLoomNodePosition = (id: number, position: LoomNodePositionInput) =>
-  patch<LoomNode>(`/loom/nodes/${id}/position`, position)
 export const fulfilLoomNode = (id: number, payload: LoomNodeFulfil = {}) =>
   post<LoomNode>(`/loom/nodes/${id}/fulfil`, payload)
 export const bankLoomNode = (id: number) =>
   post<LoomNode>(`/loom/nodes/${id}/bank`, {})
+
+// Loom — sessions
+export const getLoomSessions = () => get<LoomSession[]>('/loom/sessions')
+export const createLoomSession = (session: LoomSessionInput) =>
+  post<LoomSession>('/loom/sessions', session)
+export const updateLoomSession = (id: number, session: LoomSessionInput) =>
+  put<LoomSession>(`/loom/sessions/${id}`, session)
+export const deleteLoomSession = (id: number) => del(`/loom/sessions/${id}`)
 
 // Loom — thread items (ordered membership)
 export const insertLoomThreadItem = (threadId: number, item: LoomThreadItemCreate) =>

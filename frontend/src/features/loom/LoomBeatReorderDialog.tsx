@@ -30,10 +30,9 @@ export function LoomBeatReorderDialog({ thread, nodes, onReordered, onError, onC
   const [pending, setPending] = useState(false)
 
   const beats = useMemo(() => {
-    const positions = new Map(thread.items.map((item) => [item.node_id, item.position]))
     return threadOrdered(thread, nodes)
       .filter((node) => node.kind === 'beat')
-      .map((node) => ({ nodeId: node.id, position: positions.get(node.id) ?? 0 }))
+      .map((node) => ({ nodeId: node.id, position: node.position }))
   }, [thread, nodes])
   const nodesById = useMemo(() => new Map(nodes.map((node) => [node.id, node])), [nodes])
   const [order, setOrder] = useState<OrderedBeat[]>(beats)

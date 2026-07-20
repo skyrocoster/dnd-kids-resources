@@ -29,158 +29,163 @@
   border: 1px solid var(--md-outline-variant);
 }
 
-.loom-swimlanes {
+.loom-grid {
   position: relative;
   isolation: isolate;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-  padding: var(--space-4);
+  display: grid;
+  grid-template-columns: auto repeat(var(--loom-session-count), 1fr) auto;
+  gap: 0;
+  padding: var(--space-3);
   overflow: auto;
   background:
     radial-gradient(circle at top, color-mix(in srgb, var(--md-loom-anchor) 12%, transparent), transparent 38%),
     linear-gradient(180deg, color-mix(in srgb, var(--md-surface-2) 65%, var(--md-surface)), var(--md-surface));
 }
 
-.loom-swimlanes::before,
-.loom-swimlanes::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-
-.loom-swimlanes::before {
-  z-index: 0;
-  opacity: 0.28;
-  background:
-    repeating-linear-gradient(
-      90deg,
-      color-mix(in srgb, var(--md-outline-variant) 58%, transparent) 0,
-      color-mix(in srgb, var(--md-outline-variant) 58%, transparent) 1px,
-      transparent 1px,
-      transparent 22px
-    ),
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--md-outline-variant) 22%, transparent),
-      transparent 34%,
-      color-mix(in srgb, var(--md-outline-variant) 16%, transparent)
-    );
-}
-
-.loom-swimlanes::after {
-  z-index: 0;
-  opacity: 0.18;
-  background: linear-gradient(
-    120deg,
-    transparent 0 18%,
-    color-mix(in srgb, var(--md-loom-thread-3) 18%, transparent) 32%,
-    transparent 50%,
-    color-mix(in srgb, var(--md-loom-anchor) 18%, transparent) 68%,
-    transparent 82%
-  );
-}
-
-.loom-lane,
-.loom-stitch-layer,
 .loom-beat-bank-tray {
   position: relative;
   z-index: 1;
 }
 
-/* ─── Static swimlanes ─────────────────────────────────────────────────── */
+/* ─── Grid layout ──────────────────────────────────────────────────────── */
 
-.loom-lane {
+.loom-grid-headers {
+  display: contents;
+}
+
+.loom-grid-corner {
+  position: sticky;
+  left: 0;
+  z-index: 4;
+  background: var(--md-surface);
+  min-width: 10rem;
+}
+
+.loom-grid-col-header {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
-  min-width: max-content;
-  padding: var(--space-3);
-  border: 1px solid color-mix(in srgb, var(--md-outline-variant) 74%, transparent);
-  border-radius: var(--radius-lg);
-  background: color-mix(in srgb, var(--md-surface-1) 78%, transparent);
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2) var(--space-3);
+  font: var(--type-caption-size) / var(--type-caption-line) var(--type-face);
+  font-weight: var(--type-title-weight);
+  color: var(--md-on-surface-variant);
+  text-align: center;
+  border-bottom: 2px solid var(--md-outline-variant);
+  min-height: var(--control-height);
 }
 
-.loom-lane-header {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-2);
-  position: sticky;
-  left: var(--space-3);
-  width: fit-content;
-  max-width: 28rem;
-  z-index: 2;
-  cursor: pointer;
+.loom-grid-col-header--warp {
+  color: var(--md-on-surface);
+  border-left: 2px solid var(--md-outline-variant);
 }
 
-.loom-lane--selected {
-  opacity: 1;
+.loom-grid-col-ordinal {
+  opacity: 0.6;
+}
+
+.loom-grid-col-name {
+  font-weight: var(--type-title-weight);
+}
+
+/* ─── Grid rows ────────────────────────────────────────────────────────── */
+
+.loom-grid-row {
+  display: contents;
+}
+
+.loom-grid-row--selected .loom-grid-thread-label {
   border-color: var(--md-primary);
   box-shadow: 0 0 0 1px var(--md-primary), 0 4px 16px color-mix(in srgb, var(--md-primary) 18%, transparent);
 }
 
-.loom-lane--dimmed {
+.loom-grid-row--dimmed .loom-grid-thread-label,
+.loom-grid-row--dimmed .loom-grid-cell {
   opacity: 0.42;
   transition: opacity var(--motion-fast);
 }
 
-.loom-lane-title {
-  margin: 0;
-  color: var(--md-on-surface);
-  font: var(--type-title-size) / var(--type-title-line) var(--type-face);
-  font-weight: var(--type-title-weight);
-}
-
-.loom-lane-description {
-  margin: var(--space-1) 0 0;
-  color: var(--md-on-surface-variant);
-  font: var(--type-body-sm-size) / var(--type-body-sm-line) var(--type-face);
-}
-
-.loom-lane-row {
-  display: flex;
-  align-items: stretch;
-  gap: var(--space-3);
-}
-
-.loom-lane-track {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-1) 0;
-}
-
-.loom-lane-weft-line {
-  position: absolute;
-  inset: 0;
-  margin-block: auto;
-  height: 2px;
-  width: 100%;
-  background: color-mix(in srgb, var(--md-outline-variant) 74%, transparent);
-  z-index: 0;
-}
-
-.loom-lane-cap {
+.loom-grid-thread-label {
   position: sticky;
+  left: 0;
   z-index: 3;
   display: flex;
   align-items: center;
-  padding: var(--space-1) 0;
-  background: color-mix(in srgb, var(--md-surface-1) 94%, var(--md-outline-variant));
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: color-mix(in srgb, var(--md-surface-1) 78%, transparent);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  min-width: 10rem;
+  min-height: var(--control-height);
+  transition:
+    border-color var(--motion-fast),
+    box-shadow var(--motion-fast),
+    opacity var(--motion-fast);
 }
 
-.loom-lane-cap--start {
-  left: 0;
+.loom-grid-thread-name {
+  font: var(--type-title-size) / var(--type-title-line) var(--type-face);
+  font-weight: var(--type-title-weight);
+  color: var(--md-on-surface);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.loom-lane-cap--end {
-  right: 0;
+.loom-grid-thread-label:hover {
+  background: color-mix(in srgb, var(--md-surface-2) 86%, var(--md-surface-1));
 }
 
-.loom-lane-gap {
-  min-width: var(--control-height);
+.loom-grid-thread-label:focus-visible {
+  outline: 2px solid var(--md-primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* ─── Cells ────────────────────────────────────────────────────────────── */
+
+.loom-grid-cell {
+  min-height: 4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-1);
+}
+
+.loom-grid-cell--real {
+  background: color-mix(in srgb, var(--md-surface-1) 78%, transparent);
+  border-radius: var(--radius-sm);
+}
+
+.loom-grid-cell--quiet {
+  background: color-mix(in srgb, var(--md-outline-variant) 8%, transparent);
+  border-radius: var(--radius-sm);
+  min-width: 3rem;
+}
+
+.loom-grid-cell--outside-life {
+  background: transparent;
+}
+
+/* ─── Warp area ────────────────────────────────────────────────────────── */
+
+.loom-grid-warp {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  border-left: 2px solid var(--md-outline-variant);
+  min-height: var(--control-height);
+}
+
+.loom-grid-warp-divider {
+  width: 2px;
+  height: 2rem;
+  background: var(--md-outline-variant);
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
 }
 
 /* ─── Node cards ──────────────────────────────────────────────────────── */
@@ -762,86 +767,7 @@
   font: var(--type-body-sm-size) / var(--type-body-sm-line) var(--type-face);
 }
 
-/* ─── Stitch overlay (LS2) ──────────────────────────────────────────── */
 
-.loom-stitch-layer {
-  position: absolute;
-  top: 0;
-  left: 0;
-  pointer-events: none;
-  z-index: 2;
-}
-
-.loom-stitch {
-  stroke-linecap: round;
-  pointer-events: stroke;
-  transition: opacity var(--motion-fast);
-}
-
-.loom-stitch--dimmed {
-  opacity: 0.16;
-}
-
-.loom-stitch[data-color='thread-1'] { stroke: var(--md-loom-thread-1); }
-.loom-stitch[data-color='thread-2'] { stroke: var(--md-loom-thread-2); }
-.loom-stitch[data-color='thread-3'] { stroke: var(--md-loom-thread-3); }
-.loom-stitch[data-color='thread-4'] { stroke: var(--md-loom-thread-4); }
-.loom-stitch[data-color='thread-5'] { stroke: var(--md-loom-thread-5); }
-.loom-stitch[data-color='thread-6'] { stroke: var(--md-loom-thread-6); }
-
-.loom-stitch:hover,
-.loom-stitch:focus-visible {
-  opacity: 1;
-  stroke-width: 5;
-}
-
-.loom-stitch--emphasized {
-  opacity: 1;
-  stroke-width: 5;
-}
-
-.loom-spawn-link[data-color='thread-1'] { stroke: var(--md-loom-thread-1); }
-.loom-spawn-link[data-color='thread-2'] { stroke: var(--md-loom-thread-2); }
-.loom-spawn-link[data-color='thread-3'] { stroke: var(--md-loom-thread-3); }
-.loom-spawn-link[data-color='thread-4'] { stroke: var(--md-loom-thread-4); }
-.loom-spawn-link[data-color='thread-5'] { stroke: var(--md-loom-thread-5); }
-.loom-spawn-link[data-color='thread-6'] { stroke: var(--md-loom-thread-6); }
-
-.loom-spawn-link {
-  stroke-linecap: round;
-  pointer-events: stroke;
-  transition: opacity var(--motion-fast);
-}
-
-.loom-spawn-link--dimmed {
-  opacity: 0.16;
-}
-
-.loom-spawn-link:hover,
-.loom-spawn-link:focus-visible {
-  opacity: 1;
-  stroke-width: 4;
-}
-
-.loom-spawn-link--emphasized {
-  opacity: 1;
-  stroke-width: 4;
-}
-
-.loom-stitch-label {
-  font: var(--type-caption-size) / 1 var(--type-face);
-  fill: var(--md-on-surface-variant);
-  pointer-events: none;
-  user-select: none;
-}
-
-.loom-stitch-label-bg {
-  fill: color-mix(in srgb, var(--md-surface-1) 88%, transparent);
-}
-
-.loom-stitch-label--dimmed {
-  opacity: 0.16;
-}
 
 /* ─── Reduced motion ──────────────────────────────────────────────────── */
 
@@ -851,15 +777,8 @@
   .loom-lane-gap::before,
   .loom-weaver-thread-button,
   .loom-error-banner-dismiss,
-  .loom-stitch,
-  .loom-spawn-link,
-  .loom-lane--dimmed {
+  .loom-grid-row--dimmed {
     transition: none;
-  }
-
-  .loom-swimlanes::before,
-  .loom-swimlanes::after {
-    opacity: 0.1;
   }
 }
 
@@ -874,7 +793,7 @@
     width: 100%;
   }
 
-  .loom-swimlanes {
+  .loom-grid {
     min-height: 320px;
   }
 
@@ -908,12 +827,6 @@
   outline: 2px solid var(--md-primary);
   outline-offset: 2px;
   border-radius: var(--radius-md);
-}
-
-.loom-lane-header:focus-visible {
-  outline: 2px solid var(--md-primary);
-  outline-offset: 2px;
-  border-radius: var(--radius-sm);
 }
 
 .loom-weaver-thread-button:focus-visible {

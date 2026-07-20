@@ -397,6 +397,45 @@ def populate_loom_threads(cursor, conn, force=False):
     print(f"  [OK] Loaded {len(seeds)} loom threads")
 
 
+def populate_loom_sessions(cursor, conn, force=False):
+    """Populate loom_sessions table from seed_loom_sessions.json (frozen demo tapestry)."""
+    print("\n[LOOM] Loading loom sessions...")
+    try:
+        cursor.execute("SELECT COUNT(*) FROM loom_sessions")
+        count = cursor.fetchone()[0]
+    except sqlite3.OperationalError:
+        count = 0
+
+    if count > 0 and not force:
+        print(f"  [INFO] Loom sessions table already has {count} records. Skip (use --force to override)")
+        return
+
+    seeds = load_json_file(SEEDS_DIR / "seed_loom_sessions.json")
+    if not seeds:
+        print("  [WARNING]  No loom session seeds found")
+        return
+
+    for session in seeds:
+        try:
+            cursor.execute(
+                """INSERT INTO loom_sessions (id, ordinal, name, played_on, notes)
+                   VALUES (?, ?, ?, ?, ?)""",
+                (
+                    session.get('id'),
+                    session.get('ordinal'),
+                    session.get('name'),
+                    session.get('played_on'),
+                    session.get('notes'),
+                ),
+            )
+            print(f"  [CHECK] {session.get('name')}")
+        except sqlite3.IntegrityError as e:
+            print(f"  [WARNING]  Duplicate or error: {session.get('name')} - {e}")
+
+    conn.commit()
+    print(f"  [OK] Loaded {len(seeds)} loom sessions")
+
+
 def populate_loom_nodes(cursor, conn, force=False):
     """Populate loom_nodes table from seed_loom_nodes.json (frozen demo tapestry)."""
     print("\n[LOOM] Loading loom nodes...")
@@ -418,17 +457,18 @@ def populate_loom_nodes(cursor, conn, force=False):
     for node in seeds:
         try:
             cursor.execute(
-                """INSERT INTO loom_nodes (id, kind, title, body, session_tag, x, y,
-                   fulfilled_planned_title, fulfilled_at, banked_from_thread_id)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                """INSERT INTO loom_nodes (id, thread_id, kind, title, body, session_id, position,
+                   carried_count, fulfilled_planned_title, fulfilled_at, banked_from_thread_id)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     node.get('id'),
+                    node.get('thread_id'),
                     node.get('kind'),
                     node.get('title'),
                     node.get('body'),
-                    node.get('session_tag'),
-                    node.get('x', 0),
-                    node.get('y', 0),
+                    node.get('session_id'),
+                    node.get('position', 0),
+                    node.get('carried_count', 0),
                     node.get('fulfilled_planned_title'),
                     node.get('fulfilled_at'),
                     node.get('banked_from_thread_id'),
@@ -440,37 +480,6 @@ def populate_loom_nodes(cursor, conn, force=False):
 
     conn.commit()
     print(f"  [OK] Loaded {len(seeds)} loom nodes")
-
-
-def populate_loom_node_threads(cursor, conn, force=False):
-    """Populate loom_node_threads table from seed_loom_node_threads.json (frozen demo tapestry)."""
-    print("\n[LOOM] Loading loom node-thread memberships...")
-    try:
-        cursor.execute("SELECT COUNT(*) FROM loom_node_threads")
-        count = cursor.fetchone()[0]
-    except sqlite3.OperationalError:
-        count = 0
-
-    if count > 0 and not force:
-        print(f"  [INFO] Loom node_threads table already has {count} records. Skip (use --force to override)")
-        return
-
-    seeds = load_json_file(SEEDS_DIR / "seed_loom_node_threads.json")
-    if not seeds:
-        print("  [WARNING]  No loom node-thread seeds found")
-        return
-
-    for membership in seeds:
-        try:
-            cursor.execute(
-                "INSERT INTO loom_node_threads (id, node_id, thread_id, position) VALUES (?, ?, ?, ?)",
-                (membership.get('id'), membership.get('node_id'), membership.get('thread_id'), membership.get('position')),
-            )
-        except sqlite3.IntegrityError as e:
-            print(f"  [WARNING]  Duplicate or error: {membership} - {e}")
-
-    conn.commit()
-    print(f"  [OK] Loaded {len(seeds)} loom node-thread memberships")
 
 
 def populate_damage_types(cursor, conn, force=False):
@@ -979,9 +988,9 @@ def clear_all_tables(cursor, conn):
         "encounter",
         "loot_bundle",
         "items",
-        "loom_node_threads",
         "loom_nodes",
         "loom_threads",
+        "loom_sessions",
     ]
     
     for table in tables_to_clear:
@@ -1086,8 +1095,8 @@ def main():
         if args.loom:
             cursor.execute("PRAGMA foreign_keys = OFF")
             populate_loom_threads(cursor, conn, args.force)
+            populate_loom_sessions(cursor, conn, args.force)
             populate_loom_nodes(cursor, conn, args.force)
-            populate_loom_node_threads(cursor, conn, args.force)
             cursor.execute("PRAGMA foreign_keys = ON")
 
         conn.close()

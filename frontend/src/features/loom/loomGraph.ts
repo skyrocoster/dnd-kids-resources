@@ -1,4 +1,4 @@
-import type { LoomNode, LoomTapestry, LoomTapestryThread } from '../../api/types'
+import type { LoomNode, LoomSession, LoomTapestry, LoomTapestryThread } from '../../api/types'
 
 // --- Lifecycle queries (kind-based, no edges) ---
 
@@ -7,26 +7,24 @@ export function isPast(node: LoomNode): boolean {
 }
 
 export function isFuture(node: LoomNode): boolean {
-  return node.kind === 'beat' && node.thread_ids.length > 0
+  return node.kind === 'beat' && node.thread_id != null
 }
 
-// --- Ordered-view derivation (PB1 replaces stubs with position-based layout) ---
+// --- Ordered-view derivation (session-column grid) ---
 
-/** Ordered node ids for a thread, sorted by position ASC. */
+/** Ordered nodes for a thread, sorted by session_id then position ASC. */
 export function threadOrdered(thread: LoomTapestryThread, nodes: LoomNode[]): LoomNode[] {
-  const byId = new Map(nodes.map((n) => [n.id, n]))
-  return thread.items
-    .slice()
-    .sort((a, b) => a.position - b.position)
-    .map((item) => byId.get(item.node_id))
-    .filter((n): n is LoomNode => n != null)
+  return nodes
+    .filter((n) => n.thread_id === thread.id)
+    .sort((a, b) => {
+      const sa = a.session_id ?? 0
+      const sb = b.session_id ?? 0
+      if (sa !== sb) return sa - sb
+      return a.position - b.position
+    })
 }
 
-/**
- * Current position in a thread: the last session (or start) before the first
- * unfulfilled beat. PB1 replaces this stub with the full derivation.
- * For now, returns the node just before the first beat in the ordered list.
- */
+/** Current position in a thread: the last session (or start) before the first unfulfilled beat. */
 export function currentPosition(
   thread: LoomTapestryThread,
   nodes: LoomNode[],
@@ -56,9 +54,35 @@ export function liveThreads(tapestry: LoomTapestry): LoomTapestryThread[] {
   return tapestry.threads.filter((thread) => nextBeat(thread, tapestry.nodes) != null)
 }
 
-// --- Bank (unplaced beats, replaces vault) ---
+/** True if the thread is alive (has started and not ended) at the given session ordinal. */
+export function isThreadAlive(
+  thread: LoomTapestryThread,
+  sessionOrdinal: number,
+  nodes: LoomNode[],
+  sessions: LoomSession[],
+): boolean {
+  const threadNodes = nodes.filter((n) => n.thread_id === thread.id)
+  const startNode = threadNodes.find((n) => n.kind === 'start')
+  const endNode = threadNodes.find((n) => n.kind === 'end')
 
-/** Beats with zero thread membership (banked / unplaced). */
+  let startOrdinal = 1
+  if (startNode?.session_id != null) {
+    const s = sessions.find((s) => s.id === startNode.session_id)
+    if (s) startOrdinal = s.ordinal
+  }
+
+  let endOrdinal = Infinity
+  if (endNode?.session_id != null) {
+    const s = sessions.find((s) => s.id === endNode.session_id)
+    if (s) endOrdinal = s.ordinal
+  }
+
+  return sessionOrdinal >= startOrdinal && sessionOrdinal <= endOrdinal
+}
+
+// --- Bank (unplaced beats) ---
+
+/** Beats with no thread membership (banked / unplaced). */
 export function bankedBeats(tapestry: LoomTapestry): LoomNode[] {
-  return tapestry.nodes.filter((node) => node.kind === 'beat' && node.thread_ids.length === 0)
+  return tapestry.nodes.filter((node) => node.kind === 'beat' && node.thread_id === null)
 }

@@ -84,8 +84,8 @@ def _seed_real_data(db_path: str) -> None:
             seed_mod.populate_player_spells(cursor, conn)
             seed_mod.populate_player_weapons(cursor, conn)
             seed_mod.populate_loom_threads(cursor, conn)
+            seed_mod.populate_loom_sessions(cursor, conn)
             seed_mod.populate_loom_nodes(cursor, conn)
-            seed_mod.populate_loom_node_threads(cursor, conn)
         conn.commit()
         conn.close()
     finally:

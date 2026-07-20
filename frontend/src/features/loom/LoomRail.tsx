@@ -3,6 +3,7 @@ import type { LoomNode, LoomTapestryThread } from '../../api/types'
 import { Button } from '../../components/Button'
 import { LoomBeatBankTray } from './LoomBeatBankTray'
 import { LoomLegend } from './LoomLegend'
+import { threadOrdered } from './loomGraph'
 
 export interface LoomRailProps {
   selectedNode: LoomNode | null
@@ -31,7 +32,7 @@ function kindLabel(node: LoomNode): string {
     case 'end':
       return 'End'
     case 'beat':
-      return node.thread_ids.length === 0 ? 'Banked Beat' : 'Story Beat'
+      return node.thread_id == null ? 'Banked Beat' : 'Story Beat'
     case 'session':
       return 'Session'
   }
@@ -65,8 +66,8 @@ export function LoomRail({
 }: LoomRailProps) {
   const [bankDragOver, setBankDragOver] = useState(false)
   const threadNamesById = new Map(threads.map((thread) => [thread.id, thread.name]))
-  const selectedThreadNames =
-    selectedNode?.thread_ids.map((threadId) => threadNamesById.get(threadId)).filter((name): name is string => !!name) ?? []
+  const selectedThreadName =
+    selectedNode?.thread_id != null ? threadNamesById.get(selectedNode.thread_id) ?? null : null
   const selectedThread = selectedThreadId != null ? threads.find((t) => t.id === selectedThreadId) : null
 
   return (
@@ -92,12 +93,8 @@ export function LoomRail({
 
             <dl className="loom-selection-details">
               <div>
-                <dt>Session Tag</dt>
-                <dd>{selectedNode.session_tag || 'No session tag yet'}</dd>
-              </div>
-              <div>
                 <dt>Weft</dt>
-                <dd>{selectedThreadNames.length > 0 ? selectedThreadNames.join(', ') : 'Unthreaded'}</dd>
+                <dd>{selectedThreadName ?? 'Unthreaded'}</dd>
               </div>
               <div>
                 <dt>Notes</dt>
@@ -111,7 +108,7 @@ export function LoomRail({
                   Edit
                 </Button>
               )}
-              {selectedNode.kind === 'beat' && selectedNode.thread_ids.length > 0 && (
+              {selectedNode.kind === 'beat' && selectedNode.thread_id != null && (
                 <>
                   <Button variant="primary" size="compact" onClick={() => onFulfilNode(selectedNode)}>
                     Fulfil Beat
@@ -153,7 +150,7 @@ export function LoomRail({
             </div>
             <span className="loom-weaver-thread-swatch" data-color={selectedThread.color} />
             {selectedThread.description && <p>{selectedThread.description}</p>}
-            <p>{selectedThread.items.length} nodes</p>
+            <p>{threadOrdered(selectedThread, nodes).length} nodes</p>
             <div className="loom-selection-actions">
               <Button variant="secondary" size="compact" onClick={() => onEditThread?.(selectedThread.id)}>
                 Edit Thread
@@ -179,7 +176,7 @@ export function LoomRail({
               >
                 <span className="loom-weaver-thread-swatch" data-color={thread.color} />
                 <span className="loom-weaver-thread-name">{thread.name}</span>
-                <span className="loom-weaver-thread-count">{thread.items.length}</span>
+                <span className="loom-weaver-thread-count">{threadOrdered(thread, nodes).length}</span>
               </button>
             </li>
           ))}
