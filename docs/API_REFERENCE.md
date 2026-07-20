@@ -194,6 +194,7 @@ CRUD, ordered membership (insert/reorder/remove), and the tapestry read. No edge
 |---|---|---|---|---|
 | GET | `/api/loom/tapestry` | Fetch all sessions, threads (with ordered nodes), and all node identities | (none) | `LoomTapestry` |
 | GET | `/api/loom/threads` | List threads | `limit`, `offset` | `List[LoomThread]` |
+| POST | `/api/loom/sessions/log` | Create one new session row and apply each thread's outcome atomically (`happened`/`fulfilled`, `not_reached`/`carried`, `banked`, or `quiet`) | `LoomSessionLogRequest` | `LoomSession` (201) |
 | POST | `/api/loom/threads` | Create thread; also creates its `start` (position 0) and `end` (position 10) nodes | `LoomThreadCreate` | `LoomThread` (201) |
 | PUT | `/api/loom/threads/{thread_id}` | Update thread name/color/description | `LoomThreadUpdate` | `LoomThread` |
 | DELETE | `/api/loom/threads/{thread_id}` | Delete thread; its exclusive `start`/`end`/`beat` nodes are deleted with it, shared `session` nodes survive, `origin_node_id` back-references on other threads are nulled | (path param) | (204 No Content) |
@@ -222,6 +223,12 @@ clears `thread_id` and records `banked_from_thread_id`. Restoring a banked beat 
 `session` reverting to `beat`) is allowed when the node still carries a `fulfilled_planned_title`, and it clears
 that provenance and `fulfilled_at`. **Spawn** is `POST /api/loom/threads` with `origin_node_id` set to an existing
 node id; the origin node must be `kind='session'` (422 otherwise).
+
+**Session logging:** `POST /api/loom/sessions/log` is the guided session-recording path. It creates the
+`loom_sessions` row first, then applies every supplied thread outcome in one transaction: happened/fulfilled
+turns the thread's next beat into a session in the new column and stamps fulfil provenance, carried/not-reached
+increments the next beat's `carried_count`, banked unplaces the next beat and records `banked_from_thread_id`,
+and quiet leaves the thread unchanged. Any invalid thread/outcome rolls the whole log back.
 
 ---
 
@@ -274,6 +281,7 @@ All optional fields are `Optional[...]` in the schema; required fields have no `
 | POST | `/api/loom/nodes/{node_id}/fulfil` | `node_id` (path, required) | - | 200: LoomNode, 422: HTTPValidationError |
 | GET | `/api/loom/sessions` | `limit` (query), `offset` (query) | - | 200: List[LoomSession], 422: HTTPValidationError |
 | POST | `/api/loom/sessions` | - | LoomSessionCreate | 201: LoomSession, 422: HTTPValidationError |
+| POST | `/api/loom/sessions/log` | - | LoomSessionLogRequest | 201: LoomSession, 422: HTTPValidationError |
 | DELETE | `/api/loom/sessions/{session_id}` | `session_id` (path, required) | - | 204: -, 422: HTTPValidationError |
 | PUT | `/api/loom/sessions/{session_id}` | `session_id` (path, required) | LoomSessionUpdate | 200: LoomSession, 422: HTTPValidationError |
 | GET | `/api/loom/tapestry` | - | - | 200: LoomTapestry |

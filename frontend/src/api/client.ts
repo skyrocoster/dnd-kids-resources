@@ -29,6 +29,7 @@ import type {
   LoomNode,
   LoomNodeInput,
   LoomNodeFulfil,
+  LoomSessionLogRequest,
   LoomTapestry,
   LoomTapestryThread,
   LoomThreadItemCreate,
@@ -194,6 +195,8 @@ export const createLoomSession = (session: LoomSessionInput) =>
 export const updateLoomSession = (id: number, session: LoomSessionInput) =>
   put<LoomSession>(`/loom/sessions/${id}`, session)
 export const deleteLoomSession = (id: number) => del(`/loom/sessions/${id}`)
+export const logLoomSession = (request: LoomSessionLogRequest) =>
+  post<LoomSession>('/loom/sessions/log', request)
 
 // Loom — thread items (ordered membership)
 export const insertLoomThreadItem = (threadId: number, item: LoomThreadItemCreate) =>

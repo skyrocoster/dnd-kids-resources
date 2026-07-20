@@ -42,6 +42,21 @@ _Avoid_: description, look
 - Frontend: `frontend/src/features/weapons/`, `items/`, `players/`, and `npcs/`.
 - Tests: matching router and colocated frontend tests.
 
+## Surfaces
+
+Modes are defined in [../UX_PATTERNS.md](../UX_PATTERNS.md#surface-modes).
+
+| Surface | Route | Mode | Operator |
+|---|---|---|---|
+| Weapon browser | `/weapons` | prep | DM |
+| Item browser | `/items` | prep | DM |
+| Player browser | `/players` | prep | DM |
+| NPC browser | `/npcs` | prep | DM |
+| Catalog editors | modal over each browser | prep | DM |
+| NPC dossier dock | `FloatingWindow`, opened from play surfaces | play | DM |
+
+The browsers are prep surfaces even though they are also consulted at the table, because they carry create and delete. A future read-only kid-operated lookup surface would be a new surface here, not a mode change to these.
+
 ## Invariants
 
 - Seed-backed catalog changes begin in `data/seeds/`.

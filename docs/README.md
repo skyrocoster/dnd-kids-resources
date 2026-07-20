@@ -11,8 +11,9 @@ This is the complete documentation inventory and task router. Read [../CLAUDE.md
 | Task | Area / current stage | Read first |
 |---|---|---|
 | Documentation maintenance | [Documentation Governance](areas/documentation.md) | `PLAN_TEMPLATE.md`, `scripts/check_docs.py`, `TESTING.md`, and existing GitHub workflow files |
+| Designing or changing any UI surface | [Visual Design](areas/visual-design.md) | `UX_PATTERNS.md`, `DESIGN_SYSTEM.md`, the owning area guide's `## Surfaces` table |
 | Visual consistency work | [Visual Design: VT4](plans/active/visual-consistency.md#vt4-final-design-pass-next-up) | `areas/visual-design.md`, `DESIGN_SYSTEM.md`, `ARCHITECTURE.md`, `TESTING.md` |
-| Story threads, Loom tapestry, beats, or session nodes | [The Loom: Fell Line (Stage 3 next)](plans/active/loom-fell-line.md#stages) | `areas/loom.md`, `DESIGN_SYSTEM.md`, `ARCHITECTURE.md`, `API_REFERENCE.md`, `DATA_MODEL.md`, `TESTING.md` |
+| Story threads, Loom tapestry, beats, or session nodes | Its area guide; create a focused plan if it has none | `areas/loom.md`, `DESIGN_SYSTEM.md`, `ARCHITECTURE.md`, `API_REFERENCE.md`, `DATA_MODEL.md`, `TESTING.md` |
 | Existing dungeon, encounter, monster, spell, or loot behavior | Its area guide | `ARCHITECTURE.md`, `API_REFERENCE.md`, `DATA_MODEL.md`, `TESTING.md`, then the guide's active plan |
 | API route or client contract | Relevant area guide; create a focused plan if it has none | `API_REFERENCE.md`, `ARCHITECTURE.md`, `TESTING.md` |
 | Database schema, seed, import, or export | Relevant area guide; create a focused plan if it has none | `DATA_MODEL.md`, `ARCHITECTURE.md`, `TESTING.md` |
@@ -32,6 +33,7 @@ Authority: **Canonical** documents define current contracts. **Working** documen
 | [API_REFERENCE.md](API_REFERENCE.md) | Reference | Canonical | Active | API methods, paths, parameters, schemas, or responses | An API contract changes |
 | [DATA_MODEL.md](DATA_MODEL.md) | Reference | Canonical | Active | Tables, relationships, seeds, JSON storage, or database rebuilds | DDL, seed shape, importer, or exporter changes |
 | [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) | Reference | Canonical | Active | Shared tokens, icons, visual primitives, or accessibility | A shared design contract changes |
+| [UX_PATTERNS.md](UX_PATTERNS.md) | Reference | Canonical | Active | Surface modes, route shape, data/error states, saving, destructive actions, or keyboard | An interaction contract changes, or a rule moves from TARGET to IN FORCE |
 | [TESTING.md](TESTING.md) | Reference | Canonical | Active | Commands, fixtures, coverage, or test locations | A test command, fixture topology, coverage gate, or CI contract changes |
 | [README.md](README.md) | Manifest | Canonical | Active | Routing a task or locating documentation | Documentation inventory, routing, or plan status changes |
 | [PLAN_TEMPLATE.md](PLAN_TEMPLATE.md) | Template | Canonical | Active | Creating, executing, or closing a plan | Plan execution or lifecycle requirements change |
@@ -39,7 +41,7 @@ Authority: **Canonical** documents define current contracts. **Working** documen
 | [areas/dungeons.md](areas/dungeons.md) | Area guide | Canonical | No active plan | Dungeon behavior | Dungeon ownership, source map, or active work changes |
 | [areas/encounters.md](areas/encounters.md) | Area guide | Canonical | No active plan | Encounter behavior | Encounter ownership, source map, or active work changes |
 | [areas/loot.md](areas/loot.md) | Area guide | Canonical | No active plan | Loot or item-bundle behavior | Loot ownership, source map, or active work changes |
-| [areas/loom.md](areas/loom.md) | Area guide | Canonical | Fell Line stage 3 active | Story-thread (Loom) behavior | Loom ownership, source map, or active work changes |
+| [areas/loom.md](areas/loom.md) | Area guide | Canonical | No active plan | Story-thread (Loom) behavior | Loom ownership, source map, or active work changes |
 | [areas/monsters.md](areas/monsters.md) | Area guide | Canonical | No active plan | Monster behavior | Monster ownership, source map, or active work changes |
 | [areas/reference-catalogs.md](areas/reference-catalogs.md) | Area guide | Canonical | No active plan | Weapons, items, players, or NPCs | Catalog ownership, source map, or active work changes |
 | [areas/spells.md](areas/spells.md) | Area guide | Canonical | No active plan | Spell behavior | Spell ownership, source map, or active work changes |
@@ -47,7 +49,8 @@ Authority: **Canonical** documents define current contracts. **Working** documen
 | [areas/repo-infra.md](areas/repo-infra.md) | Area guide | Canonical | No active plan | Shared backend infra or repo-wide test tooling | Repo-infra ownership, source map, or active work changes |
 | [plans/active/visual-consistency.md](plans/active/visual-consistency.md#vt4-final-design-pass-next-up) | Execution plan | Working | VT4 next | Current visual consistency work | Its active stage ships or its declared docs change |
 | [complete/backend-test-coverage.md](complete/backend-test-coverage.md) | Archived plan | Historical | Complete | Backend coverage gap-closing history | Do not update except to repair archival metadata |
-| [plans/active/loom-fell-line.md](plans/active/loom-fell-line.md#stages) | Execution plan | Working | Stage 3 next | Current loom rebuild work | Its active stage ships or its declared docs change |
+| [complete/loom-fell-line.md](complete/loom-fell-line.md) | Archived plan | Historical | Complete | Loom fell-line rebuild history | Do not update except to repair archival metadata |
+| [complete/ux-patterns.md](complete/ux-patterns.md) | Archived plan | Historical | Complete | UX reference and design-skill replacement history | Do not update except to repair archival metadata |
 | [complete/loom-freeform-tapestry.md](complete/loom-freeform-tapestry.md) | Archived plan | Historical | Complete | Freeform tapestry implementation history | Do not update except to repair archival metadata |
 | [complete/loom-swimlanes-redesign.md](complete/loom-swimlanes-redesign.md) | Archived plan | Historical | Complete | Loom swimlanes redesign history | Do not update except to repair archival metadata |
 | [complete/loom-weavers-workspace.md](complete/loom-weavers-workspace.md) | Historical plan | Historical | Complete | Loom UI/UX pass implementation history | Do not update except to repair archival metadata |

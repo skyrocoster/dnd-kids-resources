@@ -570,4 +570,25 @@ export interface LoomNodeFulfil {
   title?: string | null
 }
 
+export type LoomSessionLogOutcome =
+  | 'happened'
+  | 'fulfilled'
+  | 'not_reached'
+  | 'carried'
+  | 'banked'
+  | 'quiet'
+
+export interface LoomThreadOutcome {
+  outcome: LoomSessionLogOutcome
+  title?: string | null
+}
+
+export interface LoomSessionLogRequest {
+  ordinal: number
+  name: string
+  played_on?: string | null
+  notes?: string | null
+  outcomes: Record<number, LoomThreadOutcome>
+}
+
 

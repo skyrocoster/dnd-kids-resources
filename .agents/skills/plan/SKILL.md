@@ -39,6 +39,18 @@ Keep the whole doc to roughly one screen. No code — describe intent, not imple
 |-------|------------------------------|
 ```
 
+## If the feature touches the frontend
+
+Run the **`ux-design`** skill before finalising the stages, and include the **UX decisions** block it
+produces in the Plan (after `## What we're building & why`). It settles mode, focal element, save
+model, empty-state copy, error placement, destructive actions, keyboard, and touch for each surface
+involved. `to-orders` carries those decisions into the work orders, which is the only way they reach
+the small model. Without the block, a cheap model invents its own empty-state wording and error
+placement, and the app drifts.
+
+New or reshaped surfaces also need a row in their area guide's `## Surfaces` table — note that as
+part of the relevant stage.
+
 ## How to write it
 
 1. **Understand the outcome first.** Read the owning area guide and the minimum references it names

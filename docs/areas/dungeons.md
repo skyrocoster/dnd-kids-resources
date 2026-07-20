@@ -102,6 +102,19 @@ _Avoid_: parallel_save, split_save
 - Frontend: `frontend/src/features/dungeons/`.
 - Tests: dungeon router tests and colocated dungeon frontend tests.
 
+## Surfaces
+
+Modes are defined in [../UX_PATTERNS.md](../UX_PATTERNS.md#surface-modes).
+
+| Surface | Route | Mode | Operator |
+|---|---|---|---|
+| Dungeon browser | `/dungeons` | prep | DM |
+| Map Lab session view | `/dungeons/:dungeonId` | play | DM |
+| Map Lab editor | `/dungeons/:dungeonId/edit` | prep | DM |
+| Inspector panel | within both Map Lab surfaces | follows its host | DM |
+
+The session view is the surface that is open while a game is running: it must stay glanceable and must never lose session toggle state. The editor is prep work and may be as dense as it needs to be.
+
 ## Invariants
 
 - Runtime-authored dungeons and layouts are not seed data and are never exported.

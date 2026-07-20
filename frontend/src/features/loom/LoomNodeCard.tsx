@@ -1,5 +1,6 @@
 import { memo, forwardRef, useCallback } from 'react'
 import type { LoomNode } from '../../api/types'
+import { PencilIcon, BanknoteIcon, TrashIcon } from '../../components/icons'
 
 interface LoomNodeCardProps {
   node: LoomNode
@@ -11,10 +12,13 @@ interface LoomNodeCardProps {
   threadId?: number
   bodyIndex?: number
   originNodeTitle?: string | null
+  onEdit?: (node: LoomNode) => void
+  onBank?: (node: LoomNode) => void
+  onDelete?: (node: LoomNode) => void
 }
 
 function LoomNodeCardImpl(
-  { node, isNow, isNext, threadColor, selected, onClick, threadId, bodyIndex, originNodeTitle }: LoomNodeCardProps,
+  { node, isNow, isNext, threadColor, selected, onClick, threadId, bodyIndex, originNodeTitle, onEdit, onBank, onDelete }: LoomNodeCardProps,
   ref: React.Ref<HTMLDivElement>,
 ) {
   const isGhosted = node.kind === 'beat' && !node.fulfilled_at
@@ -73,6 +77,19 @@ function LoomNodeCardImpl(
         {node.body && <span className="loom-node-marker-note" aria-label="Has notes">¶</span>}
         {node.kind === 'start' && originNodeTitle && <span className="loom-node-marker-spawn" aria-label={`Spawned from ${originNodeTitle}`}>← {originNodeTitle}</span>}
       </div>
+      {node.kind === 'beat' && node.thread_id != null && (
+        <div className="loom-node-actions">
+          <button type="button" className="loom-node-action-btn" aria-label="Edit beat" onClick={(e) => { e.stopPropagation(); onEdit?.(node) }}>
+            <PencilIcon size={12} aria-hidden="true" />
+          </button>
+          <button type="button" className="loom-node-action-btn" aria-label="Bank beat" onClick={(e) => { e.stopPropagation(); onBank?.(node) }}>
+            <BanknoteIcon size={12} aria-hidden="true" />
+          </button>
+          <button type="button" className="loom-node-action-btn" aria-label="Delete beat" onClick={(e) => { e.stopPropagation(); onDelete?.(node) }}>
+            <TrashIcon size={12} aria-hidden="true" />
+          </button>
+        </div>
+      )}
       {provenance && <div className="loom-node-provenance">{provenance}</div>}
     </div>
   )

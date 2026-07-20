@@ -49,6 +49,19 @@ _Avoid_: status_effects, debuffs
 - Frontend: `frontend/src/features/encounters/`.
 - Tests: encounter router tests and colocated encounter frontend tests.
 
+## Surfaces
+
+Modes are defined in [../UX_PATTERNS.md](../UX_PATTERNS.md#surface-modes).
+
+| Surface | Route | Mode | Operator |
+|---|---|---|---|
+| Encounter browser | `/encounters` | prep | DM |
+| Encounter editor | modal over the browser | prep | DM |
+| Encounter runner | `/encounters/:id/run` | play | DM |
+| Encounter runner dock | `FloatingWindow`, opened from play surfaces | play | DM |
+
+The runner and its dock are the app's most play-mode surfaces: HP changes are direct controls with no save step, and nothing there may open a blocking modal.
+
 ## Invariants
 
 - Preserve existing encounter wire models and persistence when changing presentation.

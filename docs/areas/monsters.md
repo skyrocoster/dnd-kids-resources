@@ -106,6 +106,15 @@ _Avoid_: spell_list, casting_group
 - Frontend: `frontend/src/features/monsters/`.
 - Tests: monster router tests and colocated monster frontend tests.
 
+## Surfaces
+
+Modes are defined in [../UX_PATTERNS.md](../UX_PATTERNS.md#surface-modes).
+
+| Surface | Route | Mode | Operator |
+|---|---|---|---|
+| Monster browser | `/monsters` | prep | DM |
+| Monster editor | `/monsters/new`, `/monsters/:id/edit` | prep | DM |
+
 ## Invariants
 
 - Preserve the routed full-page Monster Editor and its stat-card presentation unless a focused plan explicitly changes them.

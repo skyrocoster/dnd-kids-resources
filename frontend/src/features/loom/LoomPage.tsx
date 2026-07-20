@@ -10,6 +10,7 @@ import { LoomNodeEditor } from './LoomNodeEditor'
 import { LoomThreadManager } from './LoomThreadManager'
 import { LoomBeatReorderDialog } from './LoomBeatReorderDialog'
 import { LoomErrorBanner } from './LoomErrorBanner'
+import { LoomSessionLogDialog } from './LoomSessionLogDialog'
 import { StatePanel } from '../../components/StatePanel'
 import { Button } from '../../components/Button'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
@@ -50,6 +51,7 @@ export function LoomPage() {
   const [pendingDeleteNode, setPendingDeleteNode] = useState<LoomNodeType | null>(null)
   const [deletingNode, setDeletingNode] = useState(false)
   const [bannerError, setBannerError] = useState<string | null>(null)
+  const [sessionLogOpen, setSessionLogOpen] = useState(false)
 
   const banked = useMemo(() => (tapestry.status === 'success' ? bankedBeats(tapestry.data) : []), [tapestry])
   const threads = useMemo(() => (tapestry.status === 'success' ? tapestry.data.threads : []), [tapestry])
@@ -109,6 +111,8 @@ export function LoomPage() {
 
   const handleFulfilNode = (node: LoomNodeType) => void runLifecycleCommand(() => fulfilLoomNode(node.id), 'Failed to fulfil the beat.')
   const handleBankNode = (node: LoomNodeType) => void runLifecycleCommand(() => bankLoomNode(node.id), 'Failed to bank the beat.')
+  const handleCardEditNode = useCallback((node: LoomNodeType) => setNodeEditor({ node }), [])
+  const handleCardDeleteNode = useCallback((node: LoomNodeType) => setPendingDeleteNode(node), [])
   const handleBankNodeById = (nodeId: number) => {
     if (tapestry.status !== 'success') return
     const node = tapestry.data.nodes.find((n) => n.id === nodeId)
@@ -117,8 +121,16 @@ export function LoomPage() {
   }
 
   const handleRestoreNode = (node: LoomNodeType, threadId: number) => {
+    if (tapestry.status !== 'success') return
+    const thread = tapestry.data.threads.find((t) => t.id === threadId)
+    if (!thread) return
+    const ordered = threadOrdered(thread, tapestry.data.nodes)
+    const bodyNodes = ordered.filter((n) => n.kind !== 'start' && n.kind !== 'end')
+    const position = bodyNodes.length > 0
+      ? Math.max(...bodyNodes.map((n) => n.position)) + 10
+      : 10
     void runLifecycleCommand(
-      () => insertLoomThreadItem(threadId, { node_id: node.id, position: 10 }),
+      () => insertLoomThreadItem(threadId, { node_id: node.id, position }),
       'Failed to restore the beat.',
     )
   }
@@ -213,7 +225,7 @@ export function LoomPage() {
 
   const commandBar = (
     <div className="loom-command-bar">
-      <Button variant="primary" onClick={() => setNodeEditor({ initialKind: 'session' })}>
+      <Button variant="primary" onClick={() => setSessionLogOpen(true)}>
         <PlusIcon aria-hidden="true" size={16} />
         <span>Record Session</span>
       </Button>
@@ -299,6 +311,9 @@ export function LoomPage() {
             onReorder={handleReorder}
             onCrossLaneDrop={handleCrossLaneDrop}
             onGapRestore={handleGapRestore}
+            onCardEdit={handleCardEditNode}
+            onCardBank={handleBankNode}
+            onCardDelete={handleCardDeleteNode}
           />
         </div>
         <LoomRail
@@ -339,6 +354,15 @@ export function LoomPage() {
 
       {threadManagerOpen && (
         <LoomThreadManager threads={threads} onClose={() => setThreadManagerOpen(false)} onChanged={reload} />
+      )}
+
+      {sessionLogOpen && tapestry.status === 'success' && (
+        <LoomSessionLogDialog
+          tapestry={tapestry.data}
+          onClose={() => setSessionLogOpen(false)}
+          onLogged={() => { setSessionLogOpen(false); reload() }}
+          onError={(msg) => setBannerError(msg)}
+        />
       )}
 
       {reorderThreadId != null && tapestry.status === 'success' && (() => {

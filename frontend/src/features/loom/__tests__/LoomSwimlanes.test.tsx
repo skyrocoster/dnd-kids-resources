@@ -129,6 +129,88 @@ describe('grid rendering', () => {
     expect(onCrossLaneDrop).toHaveBeenCalledWith(1, 999, 1, expect.any(Number), 'beat')
   })
 
+  it('supports same-thread reorder via drop on a CardGroup', () => {
+    const tapestry = demoTapestry()
+    const thread = tapestry.threads[0]
+    const onReorder = vi.fn()
+    const nodes = [
+      ...tapestry.nodes,
+      { id: 8, kind: 'beat' as const, title: 'Plan B', thread_id: 1, session_id: null, position: 25, carried_count: 0 },
+    ]
+    render(<LoomLane thread={thread} nodes={nodes} sessions={sessions} onReorder={onReorder} />)
+
+    const cardGroups = document.querySelectorAll('.loom-lane-card-group')
+    expect(cardGroups.length).toBe(2)
+    const firstCardGroup = cardGroups[0]
+
+    const dt = {
+      getData: () => JSON.stringify({
+        action: 'reorder',
+        nodeId: 3,
+        fromBodyIndex: 0,
+        sourceThreadId: 1,
+        nodeKind: 'beat',
+      }),
+    } as unknown as DataTransfer
+    fireEvent.drop(firstCardGroup, { dataTransfer: dt })
+
+    expect(onReorder).toHaveBeenCalledWith(1, 3, 0, 0)
+  })
+
+  it('supports same-thread reorder via drop on the final sentinel gap', () => {
+    const tapestry = demoTapestry()
+    const thread = tapestry.threads[0]
+    const onReorder = vi.fn()
+    const nodes = [
+      ...tapestry.nodes,
+      { id: 8, kind: 'beat' as const, title: 'Plan B', thread_id: 1, session_id: null, position: 25, carried_count: 0 },
+    ]
+    render(<LoomLane thread={thread} nodes={nodes} sessions={sessions} onReorder={onReorder} />)
+
+    const gaps = document.querySelectorAll('.loom-lane-gap')
+    const sentinelGap = gaps[gaps.length - 1]
+
+    const dt = {
+      getData: () => JSON.stringify({
+        action: 'reorder',
+        nodeId: 3,
+        fromBodyIndex: 0,
+        sourceThreadId: 1,
+        nodeKind: 'beat',
+      }),
+    } as unknown as DataTransfer
+    fireEvent.drop(sentinelGap, { dataTransfer: dt })
+
+    expect(onReorder).toHaveBeenCalledWith(1, 3, 0, 1)
+  })
+
+  it('supports cross-lane drop on the final sentinel gap', () => {
+    const tapestry = demoTapestry()
+    const thread = tapestry.threads[0]
+    const onCrossLaneDrop = vi.fn()
+    const nodes = [
+      ...tapestry.nodes,
+      { id: 8, kind: 'beat' as const, title: 'Plan B', thread_id: 1, session_id: null, position: 25, carried_count: 0 },
+    ]
+    render(<LoomLane thread={thread} nodes={nodes} sessions={sessions} onCrossLaneDrop={onCrossLaneDrop} />)
+
+    const cardGroups = document.querySelectorAll('.loom-lane-card-group')
+    const sentinelCardGroup = cardGroups[cardGroups.length - 1]
+
+    const dt = {
+      getData: () => JSON.stringify({
+        action: 'reorder',
+        nodeId: 3,
+        fromBodyIndex: 0,
+        sourceThreadId: 999,
+        nodeKind: 'beat',
+      }),
+    } as unknown as DataTransfer
+    fireEvent.drop(sentinelCardGroup, { dataTransfer: dt })
+
+    expect(onCrossLaneDrop).toHaveBeenCalledWith(3, 999, 1, Number.MAX_SAFE_INTEGER, 'beat')
+  })
+
   it('renders the fell edge column once in the grid headers', () => {
     const tapestry = demoTapestry()
     render(<LoomSwimlanes threads={tapestry.threads} nodes={tapestry.nodes} sessions={sessions} />)
@@ -220,5 +302,106 @@ describe('grid rendering', () => {
     expect(endCard).toBeTruthy()
     const parentCell = endCard?.closest('.loom-grid-cell')
     expect(parentCell?.classList.contains('loom-grid-cell--cloth')).toBe(true)
+  })
+
+  it('renders the ninth session column in a nine-session grid', () => {
+    const nineSessions: LoomSession[] = Array.from({ length: 9 }, (_, i) => ({
+      id: i + 1,
+      ordinal: i + 1,
+      name: `Session ${i + 1}`,
+      played_on: null,
+      notes: null,
+    }))
+    const nodes: LoomNode[] = [
+      { id: 1, kind: 'start', title: 'Lost Puppy', thread_id: 1, session_id: 1, position: 0, carried_count: 0 },
+      { id: 2, kind: 'session', title: 'Found traces', thread_id: 1, session_id: 2, position: 10, carried_count: 0 },
+      { id: 3, kind: 'session', title: 'Followed trail', thread_id: 1, session_id: 3, position: 20, carried_count: 0 },
+      { id: 4, kind: 'session', title: 'Found puppy', thread_id: 1, session_id: 4, position: 30, carried_count: 0 },
+      { id: 5, kind: 'end', title: 'Puppy home', thread_id: 1, session_id: 5, position: 40, carried_count: 0 },
+      { id: 6, kind: 'start', title: 'Goblin Trouble', thread_id: 2, session_id: 3, position: 0, carried_count: 0 },
+      { id: 7, kind: 'session', title: 'Goblins spotted', thread_id: 2, session_id: 4, position: 10, carried_count: 0 },
+      { id: 8, kind: 'beat', title: 'Clear the warren', thread_id: 2, position: 20, carried_count: 3 },
+      { id: 9, kind: 'end', title: 'Resolve goblins', thread_id: 2, session_id: null, position: 30, carried_count: 0 },
+    ]
+    const threads: LoomTapestryThread[] = [
+      { id: 1, name: 'The Lost Puppy', color: 'thread-3' },
+      { id: 2, name: 'Goblin Trouble', color: 'thread-2' },
+    ]
+
+    render(<LoomSwimlanes threads={threads} nodes={nodes} sessions={nineSessions} />)
+
+    const headers = document.querySelectorAll('.loom-grid-col-header')
+    expect(headers).toHaveLength(11)
+    expect(headers[0]).toHaveTextContent('1.Session 1')
+    expect(headers[8]).toHaveTextContent('9.Session 9')
+
+    const rows = document.querySelectorAll('.loom-grid-row')
+    expect(rows).toHaveLength(2)
+
+    const lostPuppyRow = rows[0]
+    const puppyCells = lostPuppyRow.querySelectorAll('.loom-grid-cell')
+    expect(puppyCells).toHaveLength(9)
+    const puppyOutside = lostPuppyRow.querySelectorAll('.loom-grid-cell--outside-life')
+    expect(puppyOutside).toHaveLength(4)
+    expect(puppyCells[0]).toHaveClass('loom-grid-cell--real')
+    expect(puppyCells[8]).toHaveClass('loom-grid-cell--outside-life')
+
+    const goblinRow = rows[1]
+    const goblinCells = goblinRow.querySelectorAll('.loom-grid-cell')
+    expect(goblinCells).toHaveLength(9)
+    const goblinQuiet = goblinRow.querySelectorAll('.loom-grid-cell--quiet')
+    expect(goblinQuiet.length).toBeGreaterThan(0)
+    expect(goblinCells[0]).toHaveClass('loom-grid-cell--outside-life')
+  })
+
+  it('does not invoke callbacks for empty drag data', () => {
+    const tapestry = demoTapestry()
+    const thread = tapestry.threads[0]
+    const onCrossLaneDrop = vi.fn()
+    const onReorder = vi.fn()
+    const onGapRestore = vi.fn()
+    render(<LoomLane thread={thread} nodes={tapestry.nodes} sessions={sessions} onCrossLaneDrop={onCrossLaneDrop} onReorder={onReorder} onGapRestore={onGapRestore} />)
+
+    const gaps = document.querySelectorAll('.loom-lane-gap')
+    const dt = { getData: () => '', setData: vi.fn() } as unknown as DataTransfer
+    fireEvent.drop(gaps[0], { dataTransfer: dt })
+
+    expect(onCrossLaneDrop).not.toHaveBeenCalled()
+    expect(onReorder).not.toHaveBeenCalled()
+    expect(onGapRestore).not.toHaveBeenCalled()
+  })
+
+  it('does not invoke callbacks for malformed JSON drag data', () => {
+    const tapestry = demoTapestry()
+    const thread = tapestry.threads[0]
+    const onCrossLaneDrop = vi.fn()
+    const onReorder = vi.fn()
+    const onGapRestore = vi.fn()
+    render(<LoomLane thread={thread} nodes={tapestry.nodes} sessions={sessions} onCrossLaneDrop={onCrossLaneDrop} onReorder={onReorder} onGapRestore={onGapRestore} />)
+
+    const gaps = document.querySelectorAll('.loom-lane-gap')
+    const dt = { getData: () => 'not valid json', setData: vi.fn() } as unknown as DataTransfer
+    fireEvent.drop(gaps[0], { dataTransfer: dt })
+
+    expect(onCrossLaneDrop).not.toHaveBeenCalled()
+    expect(onReorder).not.toHaveBeenCalled()
+    expect(onGapRestore).not.toHaveBeenCalled()
+  })
+
+  it('does not invoke callbacks for unknown action type', () => {
+    const tapestry = demoTapestry()
+    const thread = tapestry.threads[0]
+    const onCrossLaneDrop = vi.fn()
+    const onReorder = vi.fn()
+    const onGapRestore = vi.fn()
+    render(<LoomLane thread={thread} nodes={tapestry.nodes} sessions={sessions} onCrossLaneDrop={onCrossLaneDrop} onReorder={onReorder} onGapRestore={onGapRestore} />)
+
+    const gaps = document.querySelectorAll('.loom-lane-gap')
+    const dt = { getData: () => JSON.stringify({ action: 'unknown' }), setData: vi.fn() } as unknown as DataTransfer
+    fireEvent.drop(gaps[0], { dataTransfer: dt })
+
+    expect(onCrossLaneDrop).not.toHaveBeenCalled()
+    expect(onReorder).not.toHaveBeenCalled()
+    expect(onGapRestore).not.toHaveBeenCalled()
   })
 })

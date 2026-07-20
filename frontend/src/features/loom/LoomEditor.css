@@ -61,6 +61,35 @@
   background: color-mix(in srgb, var(--md-on-error-container) 12%, transparent);
 }
 
+/* ─── Card-local action buttons ──────────────────────────────────────── */
+
+.loom-node-actions {
+  display: flex;
+  gap: 2px;
+  justify-content: flex-end;
+  padding: 2px 4px 2px 4px;
+}
+
+.loom-node-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 3px;
+  color: var(--md-on-surface-variant, #666);
+  cursor: pointer;
+}
+
+.loom-node-action-btn:hover,
+.loom-node-action-btn:focus-visible {
+  background: color-mix(in srgb, var(--md-on-surface, #000) 10%, transparent);
+  color: var(--md-on-surface, #000);
+}
+
 /* ─── Node editor dialog ──────────────────────────────────────────────── */
 
 .loom-node-editor-dialog {
@@ -196,4 +225,54 @@
 .loom-beat-reorder-empty {
   margin: 0;
   color: var(--md-on-surface-variant);
+}
+
+/* ─── Session log dialog ──────────────────────────────────────────────── */
+
+.loom-session-log-dialog {
+  width: min(560px, 92vw);
+}
+
+.loom-session-log-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.loom-session-log-outcomes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--radius-md);
+}
+
+.loom-session-log-outcomes > legend {
+  font-weight: var(--type-label-weight);
+  font-size: var(--type-label-size);
+  color: var(--md-on-surface-variant);
+}
+
+.loom-session-log-outcome-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  background: var(--md-surface-2);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--radius-md);
+}
+
+.loom-session-log-thread-name {
+  font-weight: var(--type-label-weight);
+  font-size: var(--type-label-size);
+  color: var(--md-on-surface);
+}
+
+.loom-session-log-beat-title {
+  font-size: var(--type-body-sm-size);
+  color: var(--md-on-surface-variant);
+  margin-bottom: var(--space-1);
 }

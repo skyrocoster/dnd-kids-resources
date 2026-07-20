@@ -51,6 +51,17 @@ STATUS: <-- executor writes DONE, or FAILED - <one-line reason>
   (`npm test <name>`, `tsc -b`, a pytest path) so "done" is objective and the model knows to stop.
 - **STATUS** — left blank; the executor fills it. It's the only thing they write outside code/tests.
 
+## Frontend orders carry the UX decisions
+
+If an order touches `frontend/src/`, copy the lines of the Plan's **UX decisions** block that apply to
+the files it names into that order's `KNOWN STATE` — the literal copy strings, the empty-state status,
+the confirmation message, the focal element, the touch floor. The executor never reads the `ux-design`
+skill or `docs/UX_PATTERNS.md`; the order is how those decisions reach it. An order that says "add an
+empty state" without giving the exact string is an order that invents one.
+
+If the Plan has no UX decisions block and the stage touches the frontend, stop and run `ux-design`
+before compiling.
+
 ## How to compile a stage
 
 1. **Read the Plan stage and the files it implies.** Explore now — this is the paid-once step.
