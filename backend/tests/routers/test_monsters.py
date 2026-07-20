@@ -1,6 +1,9 @@
 """Tests for monster endpoints."""
 
+import sqlite3
+
 import pytest
+from pydantic import ValidationError
 
 from backend.app.schemas import MonsterCreate, MonsterUpdate
 
@@ -44,6 +47,21 @@ def _monster_payload(name="Tiny Test Drake"):
         "cr": "1/2",
         "experience_points": 100,
     }
+
+
+def _raise_db_failure(self):
+    raise Exception("Simulated database failure")
+
+
+def _raise_integrity_non_unique(self):
+    raise sqlite3.IntegrityError("NOT NULL constraint failed: monsters.name")
+
+
+def _mock_conn(commit_side_effect):
+    from unittest.mock import MagicMock
+    conn = MagicMock()
+    conn.commit.side_effect = commit_side_effect
+    return conn
 
 
 def test_list_monsters(test_client):
@@ -184,3 +202,61 @@ def test_delete_nonexistent_monster(test_client):
     """DELETE /api/monsters/99999 returns 404."""
     response = test_client.delete("/api/monsters/99999")
     assert response.status_code == 404
+
+
+def test_create_monster_db_failure(monkeypatch, test_client):
+    monkeypatch.setattr(
+        "backend.app.db.get_conn",
+        lambda: _mock_conn(Exception("Simulated database failure")),
+    )
+    response = test_client.post("/api/monsters", json=_monster_payload())
+    assert response.status_code == 400
+
+
+def test_create_monster_integrity_non_unique(monkeypatch, test_client):
+    monkeypatch.setattr(
+        "backend.app.db.get_conn",
+        lambda: _mock_conn(sqlite3.IntegrityError("NOT NULL constraint failed: monsters.name")),
+    )
+    response = test_client.post("/api/monsters", json=_monster_payload())
+    assert response.status_code == 400
+
+
+def test_update_monster_db_failure(monkeypatch, test_client):
+    created = test_client.post("/api/monsters", json=_monster_payload()).json()
+    monkeypatch.setattr(
+        "backend.app.db.get_conn",
+        lambda: _mock_conn(Exception("Simulated database failure")),
+    )
+    response = test_client.put(f"/api/monsters/{created['id']}", json=_monster_payload())
+    assert response.status_code == 400
+
+
+def test_update_monster_integrity_non_unique(monkeypatch, test_client):
+    created = test_client.post("/api/monsters", json=_monster_payload()).json()
+    monkeypatch.setattr(
+        "backend.app.db.get_conn",
+        lambda: _mock_conn(sqlite3.IntegrityError("NOT NULL constraint failed: monsters.name")),
+    )
+    response = test_client.put(f"/api/monsters/{created['id']}", json=_monster_payload())
+    assert response.status_code == 400
+
+
+def test_delete_monster_db_failure(monkeypatch, test_client):
+    created = test_client.post("/api/monsters", json=_monster_payload()).json()
+    monkeypatch.setattr(
+        "backend.app.db.get_conn",
+        lambda: _mock_conn(Exception("Simulated database failure")),
+    )
+    response = test_client.delete(f"/api/monsters/{created['id']}")
+    assert response.status_code == 400
+
+
+def test_monster_create_rejects_windows_device_name():
+    with pytest.raises(ValidationError, match="audio_path uses a reserved Windows device name"):
+        MonsterCreate(audio_path="con.mp3", name="Test")
+
+
+def test_monster_create_accepts_valid_audio_path():
+    monster = MonsterCreate(audio_path="owlbear.mp3", name="Test")
+    assert monster.audio_path == "owlbear.mp3"

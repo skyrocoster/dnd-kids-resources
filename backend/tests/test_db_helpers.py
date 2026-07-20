@@ -5,10 +5,18 @@ These are the functions every router leans on, including the canonical
 pure functions, so they're tested directly rather than through an endpoint.
 """
 
+from pathlib import Path
+
+import sqlite3
+
 import pytest
+import backend.app.db as _db_mod
 
 from backend.app.db import (
+    _get_db_path,
     dict_from_row,
+    get_conn,
+    get_db,
     parse_json_value,
     parse_json_list,
     parse_spell_row,
@@ -79,6 +87,51 @@ def test_parse_spell_row_decodes_every_json_column():
     assert parsed["casting_times"] == ["1 action"]
     assert parsed["components"] == ["V", "S"]
     assert parsed["attacks"] == [{"kind": "ranged", "saving_throws": ["dex"]}]
+
+
+def test_get_conn_returns_connection_with_row_factory():
+    conn = get_conn()
+    assert conn.row_factory is sqlite3.Row
+    conn.close()
+
+
+def test_get_db_context_manager():
+    with get_db() as conn:
+        assert conn.row_factory is sqlite3.Row
+
+
+def test__get_db_path_uses_cwd_when_repo_root_missing(monkeypatch):
+    calls = []
+    original_exists = Path.exists
+
+    def mock_exists(self):
+        calls.append(self)
+        if "dnd_kids_resources.db" in str(self):
+            if len(calls) == 1:
+                return False
+            if len(calls) == 2:
+                return True
+        return original_exists(self)
+
+    monkeypatch.setattr(Path, "exists", mock_exists)
+    result = _get_db_path()
+    assert result == Path.cwd() / "dnd_kids_resources.db"
+
+
+def test__get_db_path_fallback_when_no_candidate_exists(monkeypatch):
+    calls = []
+    original_exists = Path.exists
+
+    def mock_exists(self):
+        calls.append(self)
+        if "dnd_kids_resources.db" in str(self):
+            return False
+        return original_exists(self)
+
+    monkeypatch.setattr(Path, "exists", mock_exists)
+    result = _get_db_path()
+    expected = Path(_db_mod.__file__).parent.parent.parent / "dnd_kids_resources.db"
+    assert result == expected
 
 
 def test_parse_spell_row_empty_collections_survive():

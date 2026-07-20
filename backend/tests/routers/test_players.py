@@ -1,5 +1,16 @@
 """Tests for player CRUD and nested spell/weapon endpoints."""
 
+from unittest.mock import MagicMock
+
+import sqlite3
+import backend.app.db as db_module
+
+
+def _raise_db_failure():
+    conn = MagicMock()
+    conn.commit.side_effect = Exception("Simulated database failure")
+    return conn
+
 
 def test_list_players(test_client):
     """Test GET /api/players returns a list."""
@@ -7,6 +18,28 @@ def test_list_players(test_client):
     assert response.status_code == 200
     data = response.json()
     assert isinstance(data, list)
+
+
+def test_create_player_db_failure(monkeypatch, test_client):
+    monkeypatch.setattr(db_module, "get_conn", _raise_db_failure)
+    response = test_client.post("/api/players", json={"name": "Fail", "class_": "Wizard", "level": 1})
+    assert response.status_code == 400
+
+
+def test_update_player_db_failure(monkeypatch, test_client):
+    response = test_client.post("/api/players", json={"name": "Update Fail", "class_": "Wizard", "level": 2})
+    player_id = response.json()["id"]
+    monkeypatch.setattr(db_module, "get_conn", _raise_db_failure)
+    response = test_client.put(f"/api/players/{player_id}", json={"name": "Update Fail", "class_": "Wizard", "level": 5})
+    assert response.status_code == 400
+
+
+def test_delete_player_db_failure(monkeypatch, test_client):
+    response = test_client.post("/api/players", json={"name": "Delete Fail", "class_": "Paladin"})
+    player_id = response.json()["id"]
+    monkeypatch.setattr(db_module, "get_conn", _raise_db_failure)
+    response = test_client.delete(f"/api/players/{player_id}")
+    assert response.status_code == 400
 
 
 def test_create_player(test_client):

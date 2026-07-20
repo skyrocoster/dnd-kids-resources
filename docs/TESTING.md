@@ -44,17 +44,18 @@ every seeded player's nested endpoints, asserting **no configured GET endpoint m
 
 ### The pass rules (what "passing" means)
 1. **All tests green.** No skips masking failures.
-2. **Coverage ≥ 90%** overall (`--cov-fail-under=90` in `pytest.ini`). Current
-   baseline is ~91%. The gate sits just under actual so it ratchets against
+2. **Coverage ≥ 97%** overall (`--cov-fail-under=97` in `pytest.ini`). Current
+   baseline is ~97%. The gate sits under actual so it ratchets against
    backsliding without failing on a single legitimately-added defensive branch.
    New feature code should land at **>80% on its own lines** (per `CLAUDE.md`) and
    not drag the total below 90.
 
-   The uncovered ~9% is deliberate, not a backlog: `except → rollback → raise 400`
-   DB-error branches (need contrived failure injection), the dead `if row is None`
-   guards in the `_parse_*` helpers, the SPA fallback in `main.py` (needs a built
-   `frontend/dist`, covered by live/e2e checks), and the import-time DB-path
-   resolver in `db.py`. Don't contort tests to hit these — if you ever want the gate
+   The remaining uncovered ~3% is in two places: the `except → rollback → raise 400`
+   DB-error branches in `loom.py` (the largest remaining cluster), and the SPA
+   fallback `if`-branch in `main.py:67-70` (requires a built `frontend/dist` at
+   import time, covered by live/e2e checks). All router CRUD error branches, parser
+   guards, `schemas.py` edge cases, and the `db.py` path-fallback resolver are now
+   covered. Don't contort tests to hit the remaining gaps — if you ever want the gate
    higher, mark them `# pragma: no cover` rather than writing hollow tests.
 3. **Every new endpoint gets both** a unit test (happy path + 404/400 branch) and,
    if it returns seeded data, coverage by the integration sweep (usually automatic —
@@ -113,8 +114,8 @@ CREATE TABLE statement inside `conftest.py`, stop** — the schema comes from
 ### Generated Test Configuration
 
 - Pytest paths: `backend/tests`.
-- Pytest coverage threshold: `90%`.
-- Pytest default options: `-q --strict-markers --strict-config --cov=backend/app --cov-report=term-missing --cov-fail-under=90`.
+- Pytest coverage threshold: `97%`.
+- Pytest default options: `-q --strict-markers --strict-config --cov=backend/app --cov-report=term-missing --cov-fail-under=97`.
 - Frontend scripts:
   - `npm run build`: `tsc -b && vite build`
   - `npm run dev`: `vite`
