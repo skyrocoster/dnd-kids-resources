@@ -41,14 +41,14 @@ Authority: **Canonical** documents define current contracts. **Working** documen
 | [areas/dungeons.md](areas/dungeons.md) | Area guide | Canonical | No active plan | Dungeon behavior | Dungeon ownership, source map, or active work changes |
 | [areas/encounters.md](areas/encounters.md) | Area guide | Canonical | No active plan | Encounter behavior | Encounter ownership, source map, or active work changes |
 | [areas/loot.md](areas/loot.md) | Area guide | Canonical | No active plan | Loot or item-bundle behavior | Loot ownership, source map, or active work changes |
-| [areas/loom.md](areas/loom.md) | Area guide | Canonical | Active plan | Story-thread (Loom) behavior | Loom ownership, source map, or active work changes |
+| [areas/loom.md](areas/loom.md) | Area guide | Canonical | No active plan | Story-thread (Loom) behavior | Loom ownership, source map, or active work changes |
 | [areas/monsters.md](areas/monsters.md) | Area guide | Canonical | No active plan | Monster behavior | Monster ownership, source map, or active work changes |
 | [areas/reference-catalogs.md](areas/reference-catalogs.md) | Area guide | Canonical | No active plan | Weapons, items, players, or NPCs | Catalog ownership, source map, or active work changes |
 | [areas/spells.md](areas/spells.md) | Area guide | Canonical | No active plan | Spell behavior | Spell ownership, source map, or active work changes |
 | [areas/visual-design.md](areas/visual-design.md) | Area guide | Canonical | No active plan | Shared UI, tokens, shell, or accessibility | Visual routing or active work changes |
 | [areas/repo-infra.md](areas/repo-infra.md) | Area guide | Canonical | No active plan | Shared backend infra or repo-wide test tooling | Repo-infra ownership, source map, or active work changes |
-| [plans/active/loom-campaign-progress-ui.md](plans/active/loom-campaign-progress-ui.md) | Plan | Working | Active | Current Loom board and inspector UI patch | Stage status, agreed UX direction, or shipped work changes |
 | [complete/visual-consistency.md](complete/visual-consistency.md) | Archived plan | Historical | Complete | Visual consistency remediation history | Do not update except to repair archival metadata |
+| [complete/loom-campaign-progress-ui.md](complete/loom-campaign-progress-ui.md) | Archived plan | Historical | Complete | Loom board/inspector campaign-progress UI patch history | Do not update except to repair archival metadata |
 | [complete/backend-test-coverage.md](complete/backend-test-coverage.md) | Archived plan | Historical | Complete | Backend coverage gap-closing history | Do not update except to repair archival metadata |
 | [complete/loom-fell-line.md](complete/loom-fell-line.md) | Archived plan | Historical | Complete | Loom fell-line rebuild history | Do not update except to repair archival metadata |
 | [complete/ux-patterns.md](complete/ux-patterns.md) | Archived plan | Historical | Complete | UX reference and design-skill replacement history | Do not update except to repair archival metadata |

@@ -1,8 +1,7 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import type { LoomNode, LoomTapestryThread } from '../../api/types'
 import { Button } from '../../components/Button'
 import { LoomBeatBankTray } from './LoomBeatBankTray'
-import { LoomLegend } from './LoomLegend'
 import { threadOrdered } from './loomGraph'
 
 export interface LoomRailProps {
@@ -25,6 +24,8 @@ export interface LoomRailProps {
   onEditThread?: (threadId: number) => void
   onActivateNode?: (node: LoomNode) => void
   onManageThreads?: () => void
+  onPlaceNode?: (node: LoomNode) => void
+  onReorderThread?: (threadId: number) => void
 }
 
 function kindLabel(node: LoomNode): string {
@@ -47,6 +48,80 @@ function excerpt(body: string | null | undefined): string | null {
   return compact.length > 180 ? `${compact.slice(0, 177)}...` : compact
 }
 
+interface ActionItem {
+  label: string
+  onClick: () => void
+  destructive?: boolean
+}
+
+function getActionConfig(
+  node: LoomNode,
+  props: {
+    onEdit: () => void
+    onDeleteNode: () => void
+    onFulfilNode: (node: LoomNode) => void
+    onBankNode: (node: LoomNode) => void
+    onReplaceNode: (node: LoomNode) => void
+    onSpawnThread: (node: LoomNode) => void
+    onChangeEnding: (node: LoomNode) => void
+    onUndoFulfil: (node: LoomNode) => void
+    onPlaceNode?: (node: LoomNode) => void
+    onReorderThread?: (threadId: number) => void
+  },
+): { primary: ActionItem | null; adjacent: ActionItem | null; moreItems: (ActionItem | 'separator')[] } {
+  if (node.kind === 'start') {
+    return { primary: null, adjacent: null, moreItems: [] }
+  }
+
+  if (node.kind === 'end') {
+    return {
+      primary: { label: 'Change Ending', onClick: () => props.onChangeEnding(node) },
+      adjacent: null,
+      moreItems: [],
+    }
+  }
+
+  if (node.kind === 'beat' && node.thread_id != null) {
+    const more: (ActionItem | 'separator')[] = []
+    if (props.onReorderThread) {
+      more.push({ label: 'Reorder planned beats…', onClick: () => props.onReorderThread!(node.thread_id!) })
+    }
+    more.push({ label: 'Bank Beat', onClick: () => props.onBankNode(node) })
+    more.push({ label: 'Replace Beat…', onClick: () => props.onReplaceNode(node) })
+    more.push('separator')
+    more.push({ label: 'Delete Beat…', onClick: () => props.onDeleteNode(), destructive: true })
+    return {
+      primary: { label: 'Fulfil Beat', onClick: () => props.onFulfilNode(node) },
+      adjacent: { label: 'Edit', onClick: () => props.onEdit() },
+      moreItems: more,
+    }
+  }
+
+  if (node.kind === 'beat' && node.thread_id == null) {
+    return {
+      primary: { label: 'Place Beat', onClick: () => props.onPlaceNode?.(node) },
+      adjacent: { label: 'Edit', onClick: () => props.onEdit() },
+      moreItems: [{ label: 'Delete Beat…', onClick: () => props.onDeleteNode(), destructive: true }],
+    }
+  }
+
+  if (node.kind === 'session') {
+    const more: (ActionItem | 'separator')[] = []
+    if (node.fulfilled_planned_title) {
+      more.push({ label: 'Undo fulfilment', onClick: () => props.onUndoFulfil(node) })
+      more.push('separator')
+    }
+    more.push({ label: 'Delete thread entry…', onClick: () => props.onDeleteNode(), destructive: true })
+    return {
+      primary: { label: 'Spawn Thread', onClick: () => props.onSpawnThread(node) },
+      adjacent: { label: 'Edit', onClick: () => props.onEdit() },
+      moreItems: more,
+    }
+  }
+
+  return { primary: null, adjacent: null, moreItems: [] }
+}
+
 export function LoomRail({
   selectedNode,
   threads,
@@ -66,8 +141,33 @@ export function LoomRail({
   onEditThread,
   onActivateNode,
   onManageThreads,
+  onPlaceNode,
+  onReorderThread,
 }: LoomRailProps) {
   const [bankDragOver, setBankDragOver] = useState(false)
+  const [overflowOpen, setOverflowOpen] = useState(false)
+  const overflowRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!overflowOpen) return
+    const handler = (e: MouseEvent) => {
+      if (overflowRef.current && !overflowRef.current.contains(e.target as Node)) {
+        setOverflowOpen(false)
+      }
+    }
+    const keyHandler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOverflowOpen(false)
+    }
+    const timer = setTimeout(() => {
+      document.addEventListener('mousedown', handler)
+      document.addEventListener('keydown', keyHandler)
+    }, 0)
+    return () => {
+      clearTimeout(timer)
+      document.removeEventListener('mousedown', handler)
+      document.removeEventListener('keydown', keyHandler)
+    }
+  }, [overflowOpen])
   const threadNamesById = new Map(threads.map((thread) => [thread.id, thread.name]))
   const selectedThreadName =
     selectedNode?.thread_id != null ? threadNamesById.get(selectedNode.thread_id) ?? null : null
@@ -112,44 +212,68 @@ export function LoomRail({
             </dl>
 
             <div className="loom-selection-actions">
-              {selectedNode.kind !== 'start' && selectedNode.kind !== 'end' && (
-                <Button variant="secondary" size="compact" onClick={onEdit}>
-                  Edit
-                </Button>
-              )}
-              {selectedNode.kind === 'beat' && selectedNode.thread_id != null && (
-                <>
-                  <Button variant="primary" size="compact" onClick={() => onFulfilNode(selectedNode)}>
-                    Fulfil Beat
-                  </Button>
-                  <Button variant="secondary" size="compact" onClick={() => onBankNode(selectedNode)}>
-                    Bank Beat
-                  </Button>
-                  <Button variant="secondary" size="compact" onClick={() => onReplaceNode(selectedNode)}>
-                    Replace Beat
-                  </Button>
-                </>
-              )}
-              {selectedNode.kind === 'session' && (
-                <Button variant="secondary" size="compact" onClick={() => onSpawnThread(selectedNode)}>
-                  Spawn Thread
-                </Button>
-              )}
-              {selectedNode.kind === 'end' && (
-                <Button variant="secondary" size="compact" onClick={() => onChangeEnding(selectedNode)}>
-                  Change Ending
-                </Button>
-              )}
-              {selectedNode.kind === 'session' && selectedNode.fulfilled_planned_title && (
-                <Button variant="secondary" size="compact" onClick={() => onUndoFulfil(selectedNode)}>
-                  Undo Fulfil
-                </Button>
-              )}
-              {selectedNode.kind !== 'start' && selectedNode.kind !== 'end' && (
-                <Button variant="danger" size="compact" onClick={onDeleteNode}>
-                  Delete
-                </Button>
-              )}
+              {(() => {
+                const config = getActionConfig(selectedNode, {
+                  onEdit,
+                  onDeleteNode,
+                  onFulfilNode,
+                  onBankNode,
+                  onReplaceNode,
+                  onSpawnThread,
+                  onChangeEnding,
+                  onUndoFulfil,
+                  onPlaceNode,
+                  onReorderThread,
+                })
+                return (
+                  <>
+                    {config.primary && (
+                      <Button variant="primary" size="compact" onClick={config.primary.onClick}>
+                        {config.primary.label}
+                      </Button>
+                    )}
+                    {config.adjacent && (
+                      <Button variant="secondary" size="compact" onClick={config.adjacent.onClick}>
+                        {config.adjacent.label}
+                      </Button>
+                    )}
+                    {config.moreItems.length > 0 && (
+                      <div className="loom-overflow-wrap" ref={overflowRef}>
+                        <Button
+                          variant="secondary"
+                          size="compact"
+                          onClick={() => setOverflowOpen(!overflowOpen)}
+                          aria-expanded={overflowOpen}
+                          aria-haspopup="menu"
+                        >
+                          More actions
+                        </Button>
+                        {overflowOpen && (
+                          <div className="loom-overflow-menu" role="menu">
+                            {config.moreItems.map((item, i) =>
+                              item === 'separator' ? (
+                                <div key={`sep-${i}`} className="loom-overflow-separator" role="separator" />
+                              ) : (
+                                <button
+                                  key={item.label}
+                                  className={`loom-overflow-item${item.destructive ? ' loom-overflow-item--danger' : ''}`}
+                                  role="menuitem"
+                                  onClick={() => {
+                                    item.onClick()
+                                    setOverflowOpen(false)
+                                  }}
+                                >
+                                  {item.label}
+                                </button>
+                              ),
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </>
+                )
+              })()}
             </div>
           </div>
         ) : selectedThread ? (
@@ -167,7 +291,7 @@ export function LoomRail({
             </div>
           </div>
         ) : (
-          <LoomLegend />
+          <p>Select a thread or node to inspect and edit it.</p>
         )}
       </section>
 

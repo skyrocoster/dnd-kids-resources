@@ -56,10 +56,9 @@ describe('LoomWeaverPanel', () => {
     expect(screen.getByText('Weft')).toBeInTheDocument()
   })
 
-  it('renders the legend when selection is null', () => {
+  it('renders the no-selection prompt when selection is null', () => {
     render(<LoomWeaverPanel {...baseProps} selectedNode={null} />)
-    expect(screen.getByText('Story beat')).toBeInTheDocument()
-    expect(screen.getByText('Recorded session')).toBeInTheDocument()
+    expect(screen.getByText('Select a thread or node to inspect and edit it.')).toBeInTheDocument()
   })
 
   it('shows edit/delete actions for a beat node', () => {

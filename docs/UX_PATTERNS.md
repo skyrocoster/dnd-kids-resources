@@ -84,9 +84,12 @@ Responsive drawers overlay the constrained workspace rather than silently introd
 scroll or reducing the board below its usable width. A surface that needs multiple scroll owners names
 each region and axis in its Plan before implementation.
 
-The Loom board/inspector redesign is the first planned application of this rule.
+The Loom board/inspector redesign is the first shipped application of this rule: `.loom-grid` is the
+board's sole scroll owner, the desktop inspector owns only its own vertical overflow, and at 768px and
+below the inspector becomes an overlay drawer rather than a second page scroll region or a
+board-shrinking column.
 
-Status: TARGET.
+Status: IN FORCE.
 
 ### Inline versus modal editing
 

@@ -16,7 +16,7 @@ import { Button } from '../../components/Button'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
 import { PageHeader } from '../../components/PageHeader'
 import { IconButton } from '../../components/IconButton'
-import { MapPinIcon, PlusIcon, WaypointsIcon, FocusIcon } from '../../components/icons'
+import { MapPinIcon, PlusIcon, WaypointsIcon, FocusIcon, MenuIcon, CloseIcon } from '../../components/icons'
 import { scrollToFellDivider, getFellDividerElement, getLoomGridElement } from './currentPositionScroll'
 import {
   bankLoomNode,
@@ -56,6 +56,7 @@ export function LoomPage() {
   const [sessionLogOpen, setSessionLogOpen] = useState(false)
   const [dividerVisible, setDividerVisible] = useState(true)
   const [placingNodeId, setPlacingNodeId] = useState<number | null>(null)
+  const [drawerOpen, setDrawerOpen] = useState(false)
 
   useEffect(() => {
     if (placingNodeId == null) return
@@ -67,6 +68,17 @@ export function LoomPage() {
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [placingNodeId])
+
+  useEffect(() => {
+    if (!drawerOpen || placingNodeId != null) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setDrawerOpen(false)
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [drawerOpen, placingNodeId])
 
   const banked = useMemo(() => (tapestry.status === 'success' ? bankedBeats(tapestry.data) : []), [tapestry])
   const threads = useMemo(() => (tapestry.status === 'success' ? tapestry.data.threads : []), [tapestry])
@@ -279,6 +291,11 @@ export function LoomPage() {
           <FocusIcon size={24} aria-hidden="true" />
         </IconButton>
       )}
+      <span className="loom-inspector-toggle">
+        <IconButton label="Inspector" onClick={() => setDrawerOpen((v) => !v)} aria-expanded={drawerOpen}>
+          <MenuIcon size={24} aria-hidden="true" />
+        </IconButton>
+      </span>
     </div>
   )
 
@@ -304,6 +321,7 @@ export function LoomPage() {
         {pageHeader}
         <StatePanel
           status="error"
+          title="The Loom couldn't load"
           message={tapestry.error}
           action={
             <button type="button" className="btn" onClick={reload}>
@@ -321,9 +339,9 @@ export function LoomPage() {
         {pageHeader}
         <StatePanel
           status="empty"
-          title="Your tapestry is empty"
-          message="Create your first thread to start weaving the story."
-          action={<Button onClick={() => setThreadManagerOpen(true)}>Create your first thread</Button>}
+          title="No story threads found"
+          message="Create a thread to start tracking campaign progress."
+          action={<Button onClick={() => setThreadManagerOpen(true)}>Create Thread</Button>}
         />
         {threadManagerOpen && (
           <LoomThreadManager threads={[]} onClose={() => setThreadManagerOpen(false)} onChanged={reload} />
@@ -357,33 +375,49 @@ export function LoomPage() {
             placingNodeId={placingNodeId}
           />
         </div>
-        <LoomRail
-          selectedNode={selectedNode}
-          threads={threads}
-          selectedThreadId={selectedThreadId}
-          onSelectThread={handleSelectThread}
-          onEditThread={handleEditThread}
-          onEdit={() => {
-            if (!selectedNode) return
-            setNodeEditor({ node: selectedNode })
-          }}
-          onDeleteNode={() => {
-            if (!selectedNode) return
-            setPendingDeleteNode(selectedNode)
-          }}
-          onFulfilNode={handleFulfilNode}
-          onBankNode={handleBankNode}
-          onBankNodeById={handleBankNodeById}
-          onReplaceNode={handleReplaceNode}
-          onSpawnThread={handleSpawnThread}
-          onChangeEnding={(node) => setNodeEditor({ node })}
-          onUndoFulfil={handleUndoFulfil}
-          nodes={banked}
-          onSelectNode={handleSelectVaultNode}
-          onRestoreNode={handleRestoreNode}
-          onActivateNode={handleActivateBankedNode}
-          onManageThreads={() => setThreadManagerOpen(true)}
-        />
+        <div
+          className={`loom-inspector-drawer${drawerOpen ? ' loom-inspector-drawer--open' : ''}`}
+          onClick={() => drawerOpen && setDrawerOpen(false)}
+        >
+          <div className="loom-inspector-drawer-panel" onClick={(e) => e.stopPropagation()}>
+            {drawerOpen && (
+              <div className="loom-inspector-drawer-header">
+                <IconButton label="Close inspector" onClick={() => setDrawerOpen(false)}>
+                  <CloseIcon size={24} aria-hidden="true" />
+                </IconButton>
+              </div>
+            )}
+            <LoomRail
+              selectedNode={selectedNode}
+              threads={threads}
+              selectedThreadId={selectedThreadId}
+              onSelectThread={handleSelectThread}
+              onEditThread={handleEditThread}
+              onEdit={() => {
+                if (!selectedNode) return
+                setNodeEditor({ node: selectedNode })
+              }}
+              onDeleteNode={() => {
+                if (!selectedNode) return
+                setPendingDeleteNode(selectedNode)
+              }}
+              onFulfilNode={handleFulfilNode}
+              onBankNode={handleBankNode}
+              onBankNodeById={handleBankNodeById}
+              onReplaceNode={handleReplaceNode}
+              onSpawnThread={handleSpawnThread}
+              onChangeEnding={(node) => setNodeEditor({ node })}
+              onUndoFulfil={handleUndoFulfil}
+              nodes={banked}
+              onSelectNode={handleSelectVaultNode}
+              onRestoreNode={handleRestoreNode}
+              onActivateNode={handleActivateBankedNode}
+              onManageThreads={() => setThreadManagerOpen(true)}
+              onPlaceNode={handleActivateBankedNode}
+              onReorderThread={(threadId) => setReorderThreadId(threadId)}
+            />
+          </div>
+        </div>
       </div>
 
       {nodeEditor && (
