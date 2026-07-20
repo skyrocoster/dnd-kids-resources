@@ -1,6 +1,6 @@
 # The Loom: Fell Line — rebuild the tapestry as a session grid
 
-> **Status:** Stage 2 complete — the tapestry renders as a session-column grid with pinned thread labels, real/quiet/outside-life cells, and the stitch overlay is deleted. Stage 3 (cloth, fell line, warp) next.
+> **Status:** Stage 3 complete — cloth/fell/warp material break, terse card markers, selvage caps, spawn markers, and zoom polish all shipped. Stage 4 (a rail that suits terse cards) next.
 
 - **Area guide:** [The Loom](../../areas/loom.md).
 
@@ -73,3 +73,4 @@ idea and the same metaphor, but it is a second bold element and the plan already
 |-------|------------------------------|
 | 1 — Sessions as records | Added `loom_sessions` table and rebuilt `loom_nodes` with `thread_id`/`session_id`/`position`/`carried_count`, deleted the `loom_node_threads` junction table, and retired shared sessions. Seed loader, exporter, Pydantic models, router endpoints, and 63 backend tests ported to the new contract; 6 threads / 8 sessions / 45 nodes load and round-trip cleanly. |
 | 2 — The grid | Rewrote frontend types to the session-grid contract (`LoomNode` with `thread_id`/`session_id`/`position`/`carried_count`, new `LoomSession` type), deleted the stitch overlay (`LoomStitchLayer`, `stitchGeometry`, `useCardRects`, `swimlaneTypes`, `ThreadChips`, `loomThreadsContext`), and replaced swimlane rendering with a session-column grid (pinned thread labels, real/quiet/outside-life cells, warp beats after last column). All consumer files updated, 992 frontend tests passing.
+| 3 — Cloth, fell line, warp | Restyled the grid with a cloth/fell/warp material break, terse card markers (kind, carry count, notes, fulfilled provenance), selvage caps for thread start/end, spawn-origin markers, and zoom-range polish — all on existing tokens. Fixed a pre-existing bug where the grid's `--loom-session-count` custom property was never set, silently invalidating `grid-template-columns` and collapsing the whole grid into one stacked column; 1005 frontend tests passing, typecheck clean.

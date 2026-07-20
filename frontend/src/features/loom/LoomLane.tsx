@@ -163,6 +163,10 @@ export function LoomLane({
 
   const warpNodes = ordered.filter((n) => n.kind !== 'start' && n.kind !== 'end' && n.session_id == null)
 
+  const originNode = thread.origin_node_id != null
+    ? nodes.find((n) => n.id === thread.origin_node_id)
+    : null
+
   return (
     <div
       className={`loom-grid-row${selectedThreadId === thread.id ? ' loom-grid-row--selected' : ''}${selectedThreadId != null && selectedThreadId !== thread.id ? ' loom-grid-row--dimmed' : ''}`}
@@ -189,7 +193,7 @@ export function LoomLane({
 
         if (node) {
           return (
-            <div key={session.id} className="loom-grid-cell loom-grid-cell--real">
+            <div key={session.id} className="loom-grid-cell loom-grid-cell--real loom-grid-cell--cloth" aria-label={`Session ${session.ordinal} played`}>
               <LoomNodeCard
                 node={node}
                 isNow={head?.id === node.id || currentNodeId === node.id}
@@ -198,6 +202,7 @@ export function LoomLane({
                 selected={selectedNodeId === node.id}
                 onClick={onSelectNode}
                 threadId={thread.id}
+                originNodeTitle={originNode?.title}
               />
             </div>
           )
@@ -209,7 +214,8 @@ export function LoomLane({
 
         return <div key={session.id} className="loom-grid-cell loom-grid-cell--outside-life" />
       })}
-      <div className="loom-grid-warp">
+      <div className="loom-grid-fell-edge" role="separator" aria-label="Fell edge" />
+      <div className="loom-grid-warp" aria-label="Warp lane">
         <div className="loom-grid-warp-divider" aria-hidden="true" />
         {warpNodes.map((node, idx) => (
           <CardGroup

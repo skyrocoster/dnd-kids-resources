@@ -33,7 +33,7 @@
   position: relative;
   isolation: isolate;
   display: grid;
-  grid-template-columns: auto repeat(var(--loom-session-count), 1fr) auto;
+  grid-template-columns: auto repeat(var(--loom-session-count), 1fr) auto auto;
   gap: 0;
   padding: var(--space-3);
   overflow: auto;
@@ -77,7 +77,22 @@
 
 .loom-grid-col-header--warp {
   color: var(--md-on-surface);
-  border-left: 2px solid var(--md-outline-variant);
+}
+
+.loom-grid-col-header--fell {
+  width: 0.5rem;
+  min-width: 0.5rem;
+  padding: 0;
+  background: var(--md-loom-anchor);
+  border-bottom: 2px solid color-mix(in srgb, var(--md-loom-anchor) 70%, transparent);
+}
+
+.loom-grid-fell-edge {
+  width: 0.5rem;
+  min-width: 0.5rem;
+  background:
+    linear-gradient(180deg, var(--md-loom-anchor), color-mix(in srgb, var(--md-loom-anchor) 60%, var(--md-surface-2)));
+  min-height: var(--control-height);
 }
 
 .loom-grid-col-ordinal {
@@ -169,21 +184,45 @@
   background: transparent;
 }
 
+.loom-grid-cell--cloth {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--md-surface-1) 86%, transparent), color-mix(in srgb, var(--md-surface-2) 22%, transparent)),
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 1px,
+      color-mix(in srgb, var(--md-outline-variant) 6%, transparent) 1px 3px
+    );
+  border-radius: 0;
+}
+
 /* ─── Warp area ────────────────────────────────────────────────────────── */
 
 .loom-grid-warp {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-1) var(--space-3);
-  border-left: 2px solid var(--md-outline-variant);
   min-height: var(--control-height);
+  overflow-x: auto;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 1px,
+      color-mix(in srgb, var(--md-outline-variant) 8%, transparent) 1px 2px
+    );
+  border-left: 1px solid color-mix(in srgb, var(--md-outline-variant) 30%, transparent);
 }
 
 .loom-grid-warp-divider {
   width: 2px;
-  height: 2rem;
-  background: var(--md-outline-variant);
+  height: 100%;
+  min-height: 2rem;
+  background: repeating-linear-gradient(
+    180deg,
+    var(--md-outline-variant) 0 1px,
+    transparent 1px 4px
+  );
   border-radius: var(--radius-full);
   flex-shrink: 0;
 }
@@ -217,14 +256,34 @@
 .loom-node--start,
 .loom-node--end {
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--md-primary-container) 92%, white 8%), var(--md-primary-container));
+    linear-gradient(180deg, color-mix(in srgb, var(--md-primary-container) 10%, transparent), transparent);
   color: var(--md-on-primary-container);
-  border: 2px solid var(--md-primary);
-  box-shadow: 0 10px 28px rgb(0 0 0 / 0.16);
+  border: none;
+  box-shadow: none;
 }
 
-.loom-node--end {
-  border-style: dashed;
+.loom-node--start::after,
+.loom-node--end::after {
+  content: '';
+  position: absolute;
+  top: var(--space-2);
+  bottom: var(--space-2);
+  width: 2px;
+  background: repeating-linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--md-primary) 48%, transparent) 0 2px,
+    transparent 2px 6px
+  );
+  border-radius: 1px;
+  pointer-events: none;
+}
+
+.loom-node--start::after {
+  left: 0.5rem;
+}
+
+.loom-node--end::after {
+  right: var(--space-4);
 }
 
 .loom-node--beat {
@@ -263,12 +322,75 @@
 
 .loom-node-title {
   font-weight: var(--type-title-weight);
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .loom-node-session {
   margin-top: var(--space-1);
   font-size: var(--type-caption-size);
   color: var(--md-on-surface-variant);
+}
+
+.loom-node-markers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-top: var(--space-1);
+}
+
+.loom-node-markers > span {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-sm);
+  font-size: var(--type-caption-size);
+  font-weight: var(--type-caption-weight);
+  letter-spacing: var(--type-caption-tracking);
+  text-transform: uppercase;
+  line-height: 1.4;
+}
+
+.loom-node-marker-kind[data-kind='start'],
+.loom-node-marker-kind[data-kind='end'] {
+  background: color-mix(in srgb, var(--md-primary) 16%, transparent);
+  color: var(--md-primary);
+}
+
+.loom-node-marker-kind[data-kind='beat'] {
+  background: color-mix(in srgb, var(--md-tertiary) 16%, transparent);
+  color: var(--md-tertiary);
+}
+
+.loom-node-marker-kind[data-kind='session'] {
+  background: color-mix(in srgb, var(--md-secondary) 16%, transparent);
+  color: var(--md-secondary);
+}
+
+.loom-node-marker-carry {
+  background: color-mix(in srgb, var(--md-loom-anchor) 16%, transparent);
+  color: var(--md-loom-anchor);
+}
+
+.loom-node-marker-note {
+  background: color-mix(in srgb, var(--md-outline-variant) 24%, transparent);
+  color: var(--md-on-surface-variant);
+}
+
+.loom-node-marker-spawn {
+  background: color-mix(in srgb, var(--md-loom-anchor) 16%, transparent);
+  color: var(--md-loom-anchor);
+}
+
+.loom-node-provenance {
+  margin-top: var(--space-1);
+  font-size: var(--type-caption-size);
+  color: var(--md-on-surface-variant);
+  opacity: 0.7;
+  text-decoration: line-through;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .loom-node-badge {
