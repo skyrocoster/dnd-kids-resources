@@ -174,7 +174,7 @@ export function LoomRail({
           if (!raw) return
           try {
             const data = JSON.parse(raw)
-            if (data.action === 'reorder') {
+            if (data.action === 'reorder' && data.nodeKind === 'beat') {
               e.preventDefault()
               setBankDragOver(true)
             }

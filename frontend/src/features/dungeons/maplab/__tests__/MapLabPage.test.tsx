@@ -920,6 +920,20 @@ describe('MapLabPage (R4 viewer room-reading surface)', () => {
     expect(screen.getByTestId('npc-stat-card')).toBeInTheDocument()
   })
 
+  it('NPC dock reports a load failure through StatePanel, not a bare alert', async () => {
+    const user = userEvent.setup()
+    vi.spyOn(api, 'getNPC').mockRejectedValue(new Error('Failed to load NPC.'))
+
+    await renderLoadedMapLabPage()
+    await user.click(await screen.findByRole('button', { name: 'Mira' }))
+
+    const dock = await screen.findByRole('dialog', { name: 'NPC #9' })
+    expect(await within(dock).findByText('Failed to load NPC.')).toBeInTheDocument()
+    expect(within(dock).getByText('Something went wrong')).toBeInTheDocument()
+    expect(within(dock).queryByRole('alert')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('npc-stat-card')).not.toBeInTheDocument()
+  })
+
   it('layout-only rooms show the empty content state', async () => {
     const user = userEvent.setup()
     await renderLoadedMapLabPage()

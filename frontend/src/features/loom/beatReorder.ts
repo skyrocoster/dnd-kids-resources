@@ -14,7 +14,7 @@ export function beatReorderTarget(
     fromIndex < 0 ||
     toIndex < 0 ||
     fromIndex >= beats.length ||
-    toIndex >= beats.length
+    toIndex > beats.length
   ) {
     return null
   }

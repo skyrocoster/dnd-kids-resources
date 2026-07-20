@@ -539,3 +539,119 @@ def test_real_fixture_has_no_shared_session_memberships(real_client):
         if node["thread_id"] is not None and node["session_id"] is not None
     ]
     assert len(thread_session_pairs) == len(set(thread_session_pairs))
+
+
+# ---------------------------------------------------------------------------
+# Log session
+# ---------------------------------------------------------------------------
+
+
+def test_log_session_happy_path(test_client):
+    """Fixture-style: log session 9 across 6 threads with different outcomes."""
+    thread1 = _create_thread(test_client, name="Resolved Thread")
+    thread2 = _create_thread(test_client, name="Thread A", color="thread-2")
+    thread3 = _create_thread(test_client, name="Thread B", color="thread-3")
+    thread4 = _create_thread(test_client, name="Thread C", color="thread-4")
+    thread5 = _create_thread(test_client, name="Thread D", color="thread-5")
+    thread6 = _create_thread(test_client, name="Thread E", color="thread-6")
+
+    _create_node(test_client, thread_id=thread1["id"], kind="session", title="Done", position=20)
+
+    beat2 = _create_node(
+        test_client, thread_id=thread2["id"], kind="beat", title="Clear the warren", position=20, carried_count=3
+    )
+    beat3 = _create_node(
+        test_client, thread_id=thread3["id"], kind="beat", title="Find the hat", position=20, carried_count=1
+    )
+    beat4 = _create_node(test_client, thread_id=thread4["id"], kind="beat", title="Track the thief", position=20)
+    beat5 = _create_node(
+        test_client, thread_id=thread5["id"], kind="beat", title="Lead the hunters", position=20, carried_count=2
+    )
+    beat6 = _create_node(test_client, thread_id=thread6["id"], kind="beat", title="Open the door", position=20)
+
+    response = test_client.post(
+        "/api/loom/sessions/log",
+        json={
+            "ordinal": 9,
+            "name": "Session 9",
+            "played_on": "2026-07-20",
+            "notes": None,
+            "outcomes": {
+                str(thread1["id"]): {"outcome": "quiet"},
+                str(thread2["id"]): {"outcome": "happened"},
+                str(thread3["id"]): {"outcome": "carried"},
+                str(thread4["id"]): {"outcome": "banked"},
+                str(thread5["id"]): {"outcome": "happened", "title": "Led the charge"},
+                str(thread6["id"]): {"outcome": "happened"},
+            },
+        },
+    )
+    assert response.status_code == 201
+    session = response.json()
+    assert session["ordinal"] == 9
+
+    n = _node(test_client, beat2["id"])
+    assert n["kind"] == "session"
+    assert n["session_id"] == session["id"]
+    assert n["fulfilled_planned_title"] == "Clear the warren"
+
+    n = _node(test_client, beat3["id"])
+    assert n["carried_count"] == 2
+
+    n = _node(test_client, beat4["id"])
+    assert n["thread_id"] is None
+    assert n["banked_from_thread_id"] == thread4["id"]
+
+    n = _node(test_client, beat5["id"])
+    assert n["kind"] == "session"
+    assert n["title"] == "Led the charge"
+    assert n["fulfilled_planned_title"] == "Lead the hunters"
+
+    n = _node(test_client, beat6["id"])
+    assert n["kind"] == "session"
+    assert n["session_id"] == session["id"]
+
+
+def test_log_session_duplicate_ordinal_400(test_client):
+    _create_session(test_client, ordinal=1, name="Existing")
+    response = test_client.post(
+        "/api/loom/sessions/log",
+        json={"ordinal": 1, "name": "Duplicate", "outcomes": {}},
+    )
+    assert response.status_code == 400
+
+
+def test_log_session_unknown_thread_422(test_client):
+    response = test_client.post(
+        "/api/loom/sessions/log",
+        json={"ordinal": 99, "name": "Bad", "outcomes": {"999": {"outcome": "quiet"}}},
+    )
+    assert response.status_code == 422
+
+
+def test_log_session_invalid_outcome_422(test_client):
+    thread = _create_thread(test_client, name="For Errors")
+    response = test_client.post(
+        "/api/loom/sessions/log",
+        json={"ordinal": 99, "name": "Bad", "outcomes": {str(thread["id"]): {"outcome": "invalid"}}},
+    )
+    assert response.status_code == 422
+
+
+def test_log_session_rollback_on_invalid_outcome(test_client):
+    thread = _create_thread(test_client, name="Rollback Thread")
+    response = test_client.post(
+        "/api/loom/sessions/log",
+        json={
+            "ordinal": 100,
+            "name": "Rollback",
+            "outcomes": {
+                str(thread["id"]): {"outcome": "quiet"},
+                "999": {"outcome": "happened"},
+            },
+        },
+    )
+    assert response.status_code == 422
+
+    data = _tapestry(test_client)
+    assert not any(s["ordinal"] == 100 for s in data["sessions"])

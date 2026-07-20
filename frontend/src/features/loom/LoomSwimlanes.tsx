@@ -16,6 +16,9 @@ interface LoomSwimlanesProps {
   onReorder?: (threadId: number, nodeId: number, fromBodyIndex: number, toBodyIndex: number) => void
   onCrossLaneDrop?: (nodeId: number, sourceThreadId: number, targetThreadId: number, position: number, nodeKind: 'beat' | 'session') => void
   onGapRestore?: (nodeId: number, threadId: number, position: number) => void
+  onCardEdit?: (node: LoomNode) => void
+  onCardBank?: (node: LoomNode) => void
+  onCardDelete?: (node: LoomNode) => void
 }
 
 export function LoomSwimlanes({
@@ -30,6 +33,9 @@ export function LoomSwimlanes({
   onReorder,
   onCrossLaneDrop,
   onGapRestore,
+  onCardEdit,
+  onCardBank,
+  onCardDelete,
 }: LoomSwimlanesProps) {
   return (
     <section
@@ -62,6 +68,9 @@ export function LoomSwimlanes({
           onReorder={onReorder}
           onCrossLaneDrop={onCrossLaneDrop}
           onGapRestore={onGapRestore}
+          onCardEdit={onCardEdit}
+          onCardBank={onCardBank}
+          onCardDelete={onCardDelete}
         />
       ))}
     </section>

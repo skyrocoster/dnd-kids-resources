@@ -15,6 +15,9 @@ interface LoomLaneProps {
   onReorder?: (threadId: number, nodeId: number, fromBodyIndex: number, toBodyIndex: number) => void
   onCrossLaneDrop?: (nodeId: number, sourceThreadId: number, targetThreadId: number, position: number, nodeKind: 'beat' | 'session') => void
   onGapRestore?: (nodeId: number, threadId: number, position: number) => void
+  onCardEdit?: (node: LoomNode) => void
+  onCardBank?: (node: LoomNode) => void
+  onCardDelete?: (node: LoomNode) => void
 }
 
 interface DropZoneCallbacks {
@@ -152,6 +155,9 @@ export function LoomLane({
   onReorder,
   onCrossLaneDrop,
   onGapRestore,
+  onCardEdit,
+  onCardBank,
+  onCardDelete,
 }: LoomLaneProps) {
   const ordered = threadOrdered(thread, nodes)
   const current = currentPosition(thread, nodes)
@@ -203,6 +209,9 @@ export function LoomLane({
                 onClick={onSelectNode}
                 threadId={thread.id}
                 originNodeTitle={originNode?.title}
+                onEdit={onCardEdit}
+                onBank={onCardBank}
+                onDelete={onCardDelete}
               />
             </div>
           )
@@ -237,6 +246,9 @@ export function LoomLane({
               onClick={onSelectNode}
               threadId={thread.id}
               bodyIndex={idx}
+              onEdit={onCardEdit}
+              onBank={onCardBank}
+              onDelete={onCardDelete}
             />
           </CardGroup>
         ))}

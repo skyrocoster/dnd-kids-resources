@@ -26,6 +26,15 @@ _Avoid_: loot_table, treasure_pack
 - Frontend: `frontend/src/features/items/` and `loot/`.
 - Tests: item and loot router tests plus colocated frontend tests.
 
+## Surfaces
+
+Modes are defined in [../UX_PATTERNS.md](../UX_PATTERNS.md#surface-modes).
+
+| Surface | Route | Mode | Operator |
+|---|---|---|---|
+| Loot bundle browser | `/loot` | prep | DM |
+| Loot bundle editor | modal over the browser | prep | DM |
+
 ## Invariants
 
 - Keep items and loot bundles distinct while preserving their documented map integration.

@@ -16,6 +16,15 @@ Owns shared frontend visual language, tokens, shared components, navigation shel
 - Routed surfaces: `frontend/src/pages/` and `frontend/src/features/`.
 - Tests: colocated Vitest/React Testing Library suites.
 
+## Surfaces
+
+Modes are defined in [../UX_PATTERNS.md](../UX_PATTERNS.md#surface-modes).
+
+| Surface | Route | Mode | Operator |
+|---|---|---|---|
+| App shell and nav rail | all routes | both | DM |
+| Field Guide home | `/` | prep | DM |
+
 ## Invariants
 
 - Use semantic theme tokens; do not introduce arbitrary component colors.

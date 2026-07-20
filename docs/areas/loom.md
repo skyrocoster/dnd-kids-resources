@@ -1,6 +1,6 @@
 # The Loom Area Guide
 
-> **Active plan:** [The Loom: Fell Line](../plans/active/loom-fell-line.md)
+> **Active plan:** none
 
 ## Scope
 
@@ -25,7 +25,7 @@ A planned story beat: a future event that has not yet happened in-game. Thread-e
 _Avoid_: event, planned_session, milestone
 
 **Session**:
-A record of a played game session. Can belong to many threads independently.
+A record of a played game session. Can belong to many threads independently through per-thread session nodes in the same session column.
 _Avoid_: play_session, game_session
 
 **Session Tag**:
@@ -86,9 +86,22 @@ _Avoid_: connection_layer, edge_overlay
 ## Source map
 
 - Backend: `backend/app/routers/loom.py` (thread CRUD with auto Start/End, node CRUD with direct `thread_id`/`session_id`/`position` placement, session CRUD, tapestry read returning sessions+threads+nodes, beat lifecycle — fulfil/bank/restore, move, spawn-from-session — no edges/bridge/join-table), loom Pydantic models in `backend/app/schemas.py`, tables in `scripts/init_database.py`. Migration script: `scripts/migrate_loom_v2.py` (idempotent, backs up + reports).
-- Frontend: `frontend/src/features/loom/` (session-grid renderer: `LoomSwimlanes.tsx`, `LoomLane.tsx`, `LoomNodeCard.tsx`; unified right rail: `LoomRail.tsx` composing inspector, thread list, and beat bank; `LoomBeatBankTray.tsx` for banked beats; `LoomNodeEditor.tsx` for node creation/edit; `LoomPage.tsx` orchestrates page-level state; inline reorder via `beatReorder.ts`), route `loom` in `frontend/src/router.tsx`, nav entry ("The Loom") in `frontend/src/layout/navSections.ts`. Retired files deleted: `LoomStitchLayer.tsx`, `stitchGeometry.ts`, `useCardRects.ts`, `swimlaneTypes.ts`, `ThreadChips.tsx`, `loomThreadsContext.ts`.
+- Frontend: `frontend/src/features/loom/` (session-grid renderer: `LoomSwimlanes.tsx`, `LoomLane.tsx`, `LoomNodeCard.tsx`; unified right rail: `LoomRail.tsx` composing inspector, thread list, and beat bank; `LoomBeatBankTray.tsx` for banked beats; `LoomSessionLogDialog.tsx` for guided per-thread session logging; `LoomNodeEditor.tsx` for node creation/edit; `LoomPage.tsx` orchestrates page-level state; inline reorder via `beatReorder.ts`), route `loom` in `frontend/src/router.tsx`, nav entry ("The Loom") in `frontend/src/layout/navSections.ts`. Retired files deleted: `LoomStitchLayer.tsx`, `stitchGeometry.ts`, `useCardRects.ts`, `swimlaneTypes.ts`, `ThreadChips.tsx`, `loomThreadsContext.ts`.
 - Seeds: `data/seeds/seed_loom_threads.json`, `seed_loom_nodes.json`, `seed_loom_sessions.json` — Stage 1 fixture (6 threads, 45 nodes, 8 sessions, 3 banked beats with NULL `thread_id`); wiring in `scripts/seed_database.py` (opt-in `--loom` flag, never part of "load all") and `scripts/export_db_seeds.py`.
 - Tests: `backend/tests/routers/test_loom.py` (63 tests against current contract) and colocated `frontend/src/features/loom/__tests__/`.
+
+## Surfaces
+
+Modes are defined in [../UX_PATTERNS.md](../UX_PATTERNS.md#surface-modes).
+
+| Surface | Route | Mode | Operator |
+|---|---|---|---|
+| Loom board | `/loom` | both | DM |
+| Session log dialog | modal over the board | play | DM |
+| Node editor | modal over the board | prep | DM |
+| Inspector rail | within the board | both | DM |
+
+The board is the clearest case of a surface whose mode changes with the moment. Logging a session happens at the table (play); reshaping threads and beats happens between games (prep). Where the two conflict, the board itself follows play rules and the editing dialogs follow prep rules.
 
 ## Invariants
 
@@ -96,6 +109,7 @@ _Avoid_: connection_layer, edge_overlay
 - **Node kinds:** `loom_nodes.kind IN ('start', 'end', 'beat', 'session')`. `start`/`end` are thread-exclusive and created/removed only by the thread lifecycle (`POST`/`DELETE /loom/threads`). A `beat` or `session` belongs to exactly one thread at a time (`thread_id`); a `session`-kind node is either attached to a thread or has `session_id` set to the column it appears in. The one-card-per-thread-per-session uniqueness rule is enforced by a database index (`UNIQUE(thread_id, session_id)`).
 - **Provenance columns (all nullable):** `fulfilled_planned_title`/`fulfilled_at` on `loom_nodes` record a beat-turned-session's original planned wording and when it was fulfilled; `banked_from_thread_id` records which thread a banked beat was removed from.
 - **Beat lifecycle:** `POST /loom/nodes/{id}/fulfil` converts a placed beat to a session in place (stamps provenance, assigns `session_id`). `POST /loom/nodes/{id}/bank` unplaces a beat (clears `thread_id`, records `banked_from_thread_id`). Restoring a banked beat is `POST /loom/threads/{thread_id}/items` with the node's body, which clears `banked_from_thread_id`. The one documented undo path (`PUT` a fulfilled session back to `kind='beat'`) is the sole exception to kind being otherwise immutable.
+- **Session logging:** `POST /loom/sessions/log` creates one ordered session column and applies explicit per-thread outcomes in one transaction. Happened/fulfilled turns the next beat into a session node in that column, not-reached/carried increments `carried_count`, banked unplaces the next beat, and quiet records no node change.
 - **Move:** `POST /loom/threads/{thread_id}/items/{node_id}/move` atomically relocates a placed node to another thread at a position. A node can only belong to one thread at a time, so shared sessions and the `mode: "also_add"` branch are retired. `start`/`end` nodes can never move (422).
 - **Beat authoring (focus-free):** inline drag-reorder and clickable gap-insert replace the old focus-gated modal. Every Thread is always visible; there is no focus state. Drag a planned-beat card to a lane gap (between any two body nodes) to reorder; click a "+" gap to open the node editor and insert at that position; drag a banked beat from the tray into a gap to restore. The `beatReorderTarget` helper computes the reorder payload (follower's position or `MAX_SAFE_INTEGER` sentinel) and its client-side list prevents placing a beat before a session. The `LoomBeatReorderDialog` is retained as an accessible keyboard fallback (reachable from the inspector).
 - **Free drag placement (cross-lane):** both beats and sessions are draggable, not just beats. Dropping on another lane calls the move endpoint. Start/End never accept a drop (no gap renders inside their selvage caps). The drop target is the whole card-group (the gap plus the card that follows it, via `CardGroup` in `LoomLane.tsx`), not just the narrow gap sliver — dropping directly on a card works the same as dropping on its adjacent gap.

@@ -47,6 +47,15 @@ _Avoid_: slots, slot_tracker
 - Frontend: `frontend/src/features/spells/`.
 - Tests: spell router tests and colocated spell frontend tests.
 
+## Surfaces
+
+Modes are defined in [../UX_PATTERNS.md](../UX_PATTERNS.md#surface-modes).
+
+| Surface | Route | Mode | Operator |
+|---|---|---|---|
+| Spell browser | `/spells` | prep | DM |
+| Spell editor | modal over the browser | prep | DM |
+
 ## Invariants
 
 - `data/seeds/` remains canonical for spell seed data.

@@ -6,6 +6,7 @@ from ..db import get_db, dict_from_row
 from ..schemas import (
     LoomSession,
     LoomSessionCreate,
+    LoomSessionLogRequest,
     LoomSessionUpdate,
     LoomThread,
     LoomThreadCreate,
@@ -187,9 +188,85 @@ def delete_session(session_id: int):
             raise HTTPException(status_code=400, detail=f"Failed to delete session: {str(e)}")
 
 
+@router.post("/loom/sessions/log", response_model=LoomSession, status_code=201)
+def log_session(payload: LoomSessionLogRequest):
+    """Log a new session with per-thread outcomes in one transaction."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                "INSERT INTO loom_sessions (ordinal, name, played_on, notes) VALUES (?, ?, ?, ?)",
+                (payload.ordinal, payload.name, payload.played_on, payload.notes),
+            )
+            session_id = cursor.lastrowid
+
+            for thread_id, thread_outcome in payload.outcomes.items():
+                cursor.execute("SELECT id FROM loom_threads WHERE id = ?", (thread_id,))
+                if not cursor.fetchone():
+                    raise ValueError(f"Unknown thread {thread_id}")
+
+                outcome = thread_outcome.outcome
+
+                if outcome == "quiet":
+                    continue
+
+                cursor.execute(
+                    """SELECT id, kind, title FROM loom_nodes
+                       WHERE thread_id = ? AND kind = 'beat'
+                       ORDER BY position ASC LIMIT 1""",
+                    (thread_id,),
+                )
+                beat = cursor.fetchone()
+                if not beat:
+                    raise ValueError(f"No pending beat on thread {thread_id}")
+
+                beat_id = beat["id"]
+
+                if outcome in ("happened", "fulfilled"):
+                    new_title = thread_outcome.title or beat["title"]
+                    cursor.execute(
+                        """UPDATE loom_nodes SET kind = 'session', title = ?,
+                           session_id = ?, fulfilled_planned_title = ?,
+                           fulfilled_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+                           WHERE id = ?""",
+                        (new_title, session_id, beat["title"], beat_id),
+                    )
+
+                elif outcome in ("not_reached", "carried"):
+                    cursor.execute(
+                        """UPDATE loom_nodes SET carried_count = carried_count + 1,
+                           updated_at = CURRENT_TIMESTAMP WHERE id = ?""",
+                        (beat_id,),
+                    )
+
+                elif outcome == "banked":
+                    cursor.execute(
+                        """UPDATE loom_nodes SET thread_id = NULL, session_id = NULL,
+                           position = 0, banked_from_thread_id = ?,
+                           updated_at = CURRENT_TIMESTAMP WHERE id = ?""",
+                        (thread_id, beat_id),
+                    )
+                    remaining_ids, _ = _thread_ordered(cursor, thread_id)
+                    _renumber_thread(cursor, thread_id, remaining_ids)
+
+            conn.commit()
+        except ValueError as e:
+            conn.rollback()
+            raise HTTPException(status_code=422, detail=str(e))
+        except sqlite3.IntegrityError:
+            conn.rollback()
+            raise HTTPException(status_code=400, detail="A session with this ordinal already exists")
+        except Exception as e:
+            conn.rollback()
+            raise HTTPException(status_code=400, detail=f"Failed to log session: {str(e)}")
+
+        cursor.execute(f"SELECT {_SESSION_COLUMNS} FROM loom_sessions WHERE id = ?", (session_id,))
+        return dict_from_row(cursor.fetchone())
+
+
 # ---------------------------------------------------------------------------
 # Threads
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 
 
 @router.get("/loom/threads", response_model=List[LoomThread])

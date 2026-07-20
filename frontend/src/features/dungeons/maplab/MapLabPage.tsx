@@ -9,6 +9,7 @@ import { MapCanvas } from './MapCanvas'
 import { ChevronDownIcon, ChevronUpIcon, FitIcon, ZoomInIcon, ZoomOutIcon } from '../../../components/icons'
 import { EncounterDock } from '../../encounters/EncounterDock'
 import { NPCStatCard } from '../../npcs/NPCStatCard'
+import { StatePanel } from '../../../components/StatePanel'
 import { useNpc } from '../../npcs/useNpc'
 import { parseDungeonData } from '../dungeonModel'
 import { PropMarker } from './PropMarker'
@@ -638,8 +639,8 @@ function NpcDock({ npcId, onClose }: { npcId: number; onClose: () => void }) {
       storageKey="dungeon-npc-dock-position"
       onClose={onClose}
     >
-      {loading && <div role="status"><p className="maplab-affordance-placeholder">Loading NPC…</p></div>}
-      {!loading && error && <div role="alert"><p className="maplab-affordance-placeholder">{error}</p></div>}
+      {loading && <StatePanel status="loading" message="Loading NPC…" />}
+      {!loading && error && <StatePanel status="error" message={error} />}
       {!loading && npc && <NPCStatCard npc={npc} compact />}
     </FloatingWindow>
   )

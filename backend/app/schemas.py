@@ -474,6 +474,19 @@ class LoomSessionUpdate(BaseModel):
     notes: Optional[str] = None
 
 
+class LoomThreadOutcome(BaseModel):
+    outcome: Literal["happened", "fulfilled", "not_reached", "carried", "banked", "quiet"]
+    title: Optional[str] = None
+
+
+class LoomSessionLogRequest(BaseModel):
+    ordinal: int
+    name: str
+    played_on: Optional[str] = None
+    notes: Optional[str] = None
+    outcomes: Dict[int, LoomThreadOutcome]
+
+
 class LoomNode(BaseModel):
     id: int
     thread_id: Optional[int] = None
