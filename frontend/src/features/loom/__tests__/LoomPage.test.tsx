@@ -1,28 +1,28 @@
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import type { LoomTapestry } from '../../../api/types'
+import type { LoomNode, LoomSession, LoomTapestry } from '../../../api/types'
 import * as api from '../../../api/client'
 import { LoomPage } from '../LoomPage'
 
+const sessions: LoomSession[] = [
+  { id: 1, ordinal: 1, name: 'Session 1', played_on: null, notes: null },
+  { id: 2, ordinal: 2, name: 'Session 2', played_on: null, notes: null },
+  { id: 3, ordinal: 3, name: 'Session 3', played_on: null, notes: null },
+  { id: 4, ordinal: 4, name: 'Session 4', played_on: null, notes: null },
+]
+
 function demoTapestry(): LoomTapestry {
   return {
-    threads: [{
-      id: 1, name: 'The Lost Puppy', color: 'thread-3',
-      items: [
-        { node_id: 1, position: 0 },
-        { node_id: 2, position: 10 },
-        { node_id: 4, position: 20 },
-        { node_id: 5, position: 30 },
-      ],
-    }],
+    threads: [{ id: 1, name: 'The Lost Puppy', color: 'thread-3' }],
     nodes: [
-      { id: 1, kind: 'start', title: 'The Lost Puppy', x: 0, y: 0, thread_ids: [1] },
-      { id: 2, kind: 'session', title: 'Puppy goes missing', x: 200, y: 75, thread_ids: [1] },
-      { id: 4, kind: 'beat', title: 'Confront the goblin chief', x: 400, y: 75, thread_ids: [1] },
-      { id: 5, kind: 'end', title: 'Resolve: The Lost Puppy', x: 600, y: 75, thread_ids: [1] },
-      { id: 9, kind: 'beat', title: 'Mysterious hooded stranger', x: 400, y: 300, thread_ids: [] },
+      { id: 1, kind: 'start', title: 'The Lost Puppy', thread_id: 1, session_id: 1, position: 0, carried_count: 0 },
+      { id: 2, kind: 'session', title: 'Puppy goes missing', thread_id: 1, session_id: 2, position: 10, carried_count: 0 },
+      { id: 4, kind: 'beat', title: 'Confront the goblin chief', thread_id: 1, session_id: 3, position: 20, carried_count: 0 },
+      { id: 5, kind: 'end', title: 'Resolve: The Lost Puppy', thread_id: 1, session_id: 4, position: 30, carried_count: 0 },
+      { id: 9, kind: 'beat', title: 'Mysterious hooded stranger', thread_id: null, position: 0, carried_count: 0 },
     ],
+    sessions,
   }
 }
 
@@ -44,16 +44,15 @@ describe('LoomPage', () => {
     expect(screen.getByText('Beat Bank (1)')).toBeInTheDocument()
   })
 
-  it('renders a thread swimlane in narrative order with Now and Next badges', async () => {
+  it('renders Now and Next badges on the active thread', async () => {
     vi.spyOn(api, 'getLoomTapestry').mockResolvedValue(demoTapestry())
 
     render(<LoomPage />)
 
-    const lane = await screen.findByRole('article', { name: 'The Lost Puppy' })
-    expect(lane).toHaveTextContent(/The Lost Puppy.*Puppy goes missing.*Confront the goblin chief.*Resolve: The Lost Puppy/s)
-    expect(within(lane).getByText('Now')).toBeInTheDocument()
-    expect(within(lane).getByText('Next')).toBeInTheDocument()
-    expect(within(lane).getByRole('button', { name: 'beat: Confront the goblin chief' })).toHaveClass('loom-node--ghosted')
+    await waitFor(() => expect(screen.getAllByText('The Lost Puppy').length).toBeGreaterThan(0))
+    expect(screen.getAllByText('Now').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText('Next').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getByRole('button', { name: 'beat: Confront the goblin chief' })).toHaveClass('loom-node--ghosted')
   })
 
   it('shows an error state with a retry action on load failure', async () => {
@@ -90,7 +89,7 @@ describe('LoomPage', () => {
   })
 
   it('shows the empty-tapestry state when there are no threads or nodes', async () => {
-    vi.spyOn(api, 'getLoomTapestry').mockResolvedValue({ threads: [], nodes: [] })
+    vi.spyOn(api, 'getLoomTapestry').mockResolvedValue({ threads: [], nodes: [], sessions: [] })
     render(<LoomPage />)
 
     expect(await screen.findByText('Your tapestry is empty')).toBeInTheDocument()
@@ -146,7 +145,8 @@ describe('LoomPage', () => {
 
   it('creates a node and inserts it at the gap position on save', async () => {
     vi.spyOn(api, 'getLoomTapestry').mockResolvedValue(demoTapestry())
-    const createLoomNodeSpy = vi.spyOn(api, 'createLoomNode').mockResolvedValue({ id: 99, kind: 'beat', title: 'New Beat', x: 0, y: 0, thread_ids: [] })
+    const createdNode: LoomNode = { id: 99, kind: 'beat', title: 'New Beat', thread_id: null, position: 0, carried_count: 0 }
+    const createLoomNodeSpy = vi.spyOn(api, 'createLoomNode').mockResolvedValue(createdNode)
     const insertSpy = vi.spyOn(api, 'insertLoomThreadItem').mockResolvedValue({} as any)
     const user = userEvent.setup()
     render(<LoomPage />)
@@ -161,14 +161,11 @@ describe('LoomPage', () => {
     })
   })
 
-  it('renders gap elements after each body card in the track', async () => {
+  it('renders warp gaps in the grid view', async () => {
     vi.spyOn(api, 'getLoomTapestry').mockResolvedValue(demoTapestry())
     render(<LoomPage />)
     await waitFor(() => expect(screen.getAllByText('The Lost Puppy').length).toBeGreaterThan(0))
-    const tracks = document.querySelectorAll('.loom-lane-track')
-    expect(tracks.length).toBe(1)
-    const gaps = tracks[0].querySelectorAll('.loom-lane-gap')
-    const cards = tracks[0].querySelectorAll('.loom-node')
-    expect(gaps.length).toBeGreaterThanOrEqual(cards.length)
+    const gaps = document.querySelectorAll('.loom-lane-gap')
+    expect(gaps.length).toBeGreaterThan(0)
   })
 })

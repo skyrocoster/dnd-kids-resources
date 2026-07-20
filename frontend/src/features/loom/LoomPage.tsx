@@ -5,7 +5,6 @@ import { useLoomTapestry } from './useLoomTapestry'
 import { bankedBeats, threadOrdered } from './loomGraph'
 import { beatReorderTarget } from './beatReorder'
 import { LoomSwimlanes } from './LoomSwimlanes'
-import { LoomThreadsContext } from './nodes/loomThreadsContext'
 import { LoomRail } from './LoomRail'
 import { LoomNodeEditor } from './LoomNodeEditor'
 import { LoomThreadManager } from './LoomThreadManager'
@@ -14,7 +13,6 @@ import { LoomErrorBanner } from './LoomErrorBanner'
 import { StatePanel } from '../../components/StatePanel'
 import { Button } from '../../components/Button'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
-import { Dialog } from '../../components/Dialog'
 import { PageHeader } from '../../components/PageHeader'
 import { MapPinIcon, PlusIcon, WaypointsIcon } from '../../components/icons'
 import {
@@ -45,7 +43,6 @@ export function LoomPage() {
   const [nodeEditor, setNodeEditor] = useState<{
     node?: LoomNodeType
     initialKind?: LoomNodeKind
-    position: { x: number; y: number }
     insertThreadId?: number
     insertPosition?: number
   } | null>(null)
@@ -53,12 +50,6 @@ export function LoomPage() {
   const [pendingDeleteNode, setPendingDeleteNode] = useState<LoomNodeType | null>(null)
   const [deletingNode, setDeletingNode] = useState(false)
   const [bannerError, setBannerError] = useState<string | null>(null)
-  const [pendingMove, setPendingMove] = useState<{
-    nodeId: number
-    sourceThreadId: number
-    targetThreadId: number
-    position: number
-  } | null>(null)
 
   const banked = useMemo(() => (tapestry.status === 'success' ? bankedBeats(tapestry.data) : []), [tapestry])
   const threads = useMemo(() => (tapestry.status === 'success' ? tapestry.data.threads : []), [tapestry])
@@ -133,7 +124,7 @@ export function LoomPage() {
   }
 
   const handleGapClick = useCallback((threadId: number, position: number) => {
-    setNodeEditor({ initialKind: 'beat', position: { x: 0, y: 0 }, insertThreadId: threadId, insertPosition: position })
+    setNodeEditor({ initialKind: 'beat', insertThreadId: threadId, insertPosition: position })
   }, [])
 
   const handleGapRestore = useCallback(
@@ -157,7 +148,7 @@ export function LoomPage() {
       const beats = bodyNodes.filter((n) => n.kind === 'beat')
       const beatItems = beats.map((n) => ({
         nodeId: n.id,
-        position: thread.items.find((i) => i.node_id === n.id)?.position ?? 0,
+        position: n.position,
       }))
       const fromBeatIndex = bodyNodes.slice(0, fromBodyIndex).filter((n) => n.kind === 'beat').length
       const toBeatIndex = bodyNodes.slice(0, toBodyIndex).filter((n) => n.kind === 'beat').length
@@ -172,30 +163,24 @@ export function LoomPage() {
   )
 
   const handleCrossLaneDrop = useCallback(
-    (nodeId: number, sourceThreadId: number, targetThreadId: number, position: number, nodeKind: 'beat' | 'session') => {
+    (nodeId: number, sourceThreadId: number, targetThreadId: number, position: number, _nodeKind: 'beat' | 'session') => {
       if (tapestry.status !== 'success') return
       const node = tapestry.data.nodes.find((n) => n.id === nodeId)
       if (!node) return
-      if (nodeKind === 'beat' || node.thread_ids.length <= 1) {
-        void runLifecycleCommand(
-          () => moveLoomThreadItem(sourceThreadId, nodeId, { target_thread_id: targetThreadId, position }),
-          'Failed to move the node.',
-        )
-      } else {
-        setPendingMove({ nodeId, sourceThreadId, targetThreadId, position })
-      }
+      void runLifecycleCommand(
+        () => moveLoomThreadItem(sourceThreadId, nodeId, { target_thread_id: targetThreadId, position }),
+        'Failed to move the node.',
+      )
     },
     [tapestry],
   )
 
   const handleReplaceNode = (node: LoomNodeType) => {
-    if (node.thread_ids.length === 0) return
-    const thread = tapestry.status === 'success' ? tapestry.data.threads.find((item) => item.id === node.thread_ids[0]) : undefined
-    const position = thread?.items.find((item) => item.node_id === node.id)?.position ?? 10
+    if (node.thread_id == null) return
     void runLifecycleCommand(async () => {
       await bankLoomNode(node.id)
       setSelectedNodeId(null)
-      setNodeEditor({ initialKind: 'beat', position: { x: node.x, y: node.y }, insertPosition: position })
+      setNodeEditor({ initialKind: 'beat', insertPosition: node.position })
     }, 'Failed to replace the beat.')
   }
 
@@ -228,13 +213,13 @@ export function LoomPage() {
 
   const commandBar = (
     <div className="loom-command-bar">
-      <Button variant="primary" onClick={() => setNodeEditor({ initialKind: 'session', position: { x: 0, y: 0 } })}>
+      <Button variant="primary" onClick={() => setNodeEditor({ initialKind: 'session' })}>
         <PlusIcon aria-hidden="true" size={16} />
         <span>Record Session</span>
       </Button>
       <Button
         variant="secondary"
-        onClick={() => setNodeEditor({ initialKind: 'beat', position: { x: 0, y: 0 } })}
+        onClick={() => setNodeEditor({ initialKind: 'beat' })}
       >
         <MapPinIcon aria-hidden="true" size={16} />
         <span>Add Beat</span>
@@ -297,58 +282,56 @@ export function LoomPage() {
   }
 
   return (
-    <LoomThreadsContext.Provider value={threads}>
-      <div className="loom-route">
-        {pageHeader}
-        <div className="loom-page" onClick={handlePaneClick}>
-          <div className="loom-canvas-column">
-            {bannerError && <LoomErrorBanner message={bannerError} onDismiss={() => setBannerError(null)} />}
-            <LoomSwimlanes
-              threads={threads}
-              nodes={tapestry.status === 'success' ? tapestry.data.nodes : []}
-              selectedNodeId={selectedNodeId}
-              onSelectNode={handleNodeClick}
-              selectedThreadId={selectedThreadId}
-              onSelectThread={handleSelectThread}
-              onGapClick={handleGapClick}
-              onReorder={handleReorder}
-              onCrossLaneDrop={handleCrossLaneDrop}
-              onGapRestore={handleGapRestore}
-            />
-          </div>
-          <LoomRail
-            selectedNode={selectedNode}
+    <div className="loom-route">
+      {pageHeader}
+      <div className="loom-page" onClick={handlePaneClick}>
+        <div className="loom-canvas-column">
+          {bannerError && <LoomErrorBanner message={bannerError} onDismiss={() => setBannerError(null)} />}
+          <LoomSwimlanes
             threads={threads}
+            nodes={tapestry.status === 'success' ? tapestry.data.nodes : []}
+            sessions={tapestry.data.sessions}
+            selectedNodeId={selectedNodeId}
+            onSelectNode={handleNodeClick}
             selectedThreadId={selectedThreadId}
             onSelectThread={handleSelectThread}
-            onEditThread={handleEditThread}
-            onEdit={() => {
-              if (!selectedNode) return
-              setNodeEditor({ node: selectedNode, position: { x: selectedNode.x, y: selectedNode.y } })
-            }}
-            onDeleteNode={() => {
-              if (!selectedNode) return
-              setPendingDeleteNode(selectedNode)
-            }}
-            onFulfilNode={handleFulfilNode}
-            onBankNode={handleBankNode}
-            onBankNodeById={handleBankNodeById}
-            onReplaceNode={handleReplaceNode}
-            onSpawnThread={handleSpawnThread}
-            onChangeEnding={(node) => setNodeEditor({ node, position: { x: node.x, y: node.y } })}
-            onUndoFulfil={handleUndoFulfil}
-            nodes={banked}
-            onSelectNode={handleSelectVaultNode}
-            onRestoreNode={handleRestoreNode}
+            onGapClick={handleGapClick}
+            onReorder={handleReorder}
+            onCrossLaneDrop={handleCrossLaneDrop}
+            onGapRestore={handleGapRestore}
           />
         </div>
+        <LoomRail
+          selectedNode={selectedNode}
+          threads={threads}
+          selectedThreadId={selectedThreadId}
+          onSelectThread={handleSelectThread}
+          onEditThread={handleEditThread}
+          onEdit={() => {
+            if (!selectedNode) return
+            setNodeEditor({ node: selectedNode })
+          }}
+          onDeleteNode={() => {
+            if (!selectedNode) return
+            setPendingDeleteNode(selectedNode)
+          }}
+          onFulfilNode={handleFulfilNode}
+          onBankNode={handleBankNode}
+          onBankNodeById={handleBankNodeById}
+          onReplaceNode={handleReplaceNode}
+          onSpawnThread={handleSpawnThread}
+          onChangeEnding={(node) => setNodeEditor({ node })}
+          onUndoFulfil={handleUndoFulfil}
+          nodes={banked}
+          onSelectNode={handleSelectVaultNode}
+          onRestoreNode={handleRestoreNode}
+        />
       </div>
 
       {nodeEditor && (
         <LoomNodeEditor
           node={nodeEditor.node}
           initialKind={nodeEditor.initialKind}
-          defaultPosition={nodeEditor.position}
           onClose={() => setNodeEditor(null)}
           onSaved={handleNodeSaved}
         />
@@ -371,49 +354,6 @@ export function LoomPage() {
         ) : null
       })()}
 
-      {pendingMove && (
-        <Dialog
-          open
-          title="This session is shared across threads"
-          onClose={() => setPendingMove(null)}
-          footer={
-            <>
-              <Button type="button" variant="secondary" onClick={() => setPendingMove(null)}>
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => {
-                  const p = pendingMove
-                  setPendingMove(null)
-                  void runLifecycleCommand(
-                    () => moveLoomThreadItem(p.sourceThreadId, p.nodeId, { target_thread_id: p.targetThreadId, position: p.position, mode: 'move' }),
-                    'Failed to move the node.',
-                  )
-                }}
-              >
-                Move here
-              </Button>
-              <Button
-                type="button"
-                variant="primary"
-                onClick={() => {
-                  const p = pendingMove
-                  setPendingMove(null)
-                  void runLifecycleCommand(
-                    () => moveLoomThreadItem(p.sourceThreadId, p.nodeId, { target_thread_id: p.targetThreadId, position: p.position, mode: 'also_add' }),
-                    'Failed to move the node.',
-                  )
-                }}
-              >
-                Also add here
-              </Button>
-            </>
-          }
-        />
-      )}
-
       {pendingDeleteNode && (
         <ConfirmDialog
           message={`Delete "${pendingDeleteNode.title}"? This cannot be undone.`}
@@ -422,6 +362,6 @@ export function LoomPage() {
           pending={deletingNode}
         />
       )}
-    </LoomThreadsContext.Provider>
+    </div>
   )
 }

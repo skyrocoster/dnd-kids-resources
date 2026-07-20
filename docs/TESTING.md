@@ -84,7 +84,7 @@ every seeded player's nested endpoints, asserting **no configured GET endpoint m
   check without the Vite build step.
 - `frontend/src/test/setup.ts` provides shared jsdom geometry shims (`ResizeObserver`,
   `DOMMatrixReadOnly`, and element `offsetWidth`/`offsetHeight`) for components that observe or measure layout.
-  Loom swimlane tests cover static lane ordering, card state, and page wiring in jsdom; connector geometry and
+  Loom grid tests cover session columns, cell states, and page wiring in jsdom; layout interactions and
   drag-style interactions belong in focused unit helpers plus the live browser gate for their owning stages.
 
 - **Do not use `tsc --noEmit` as a gate.** The root `frontend/tsconfig.json` has

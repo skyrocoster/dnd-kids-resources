@@ -255,7 +255,7 @@ def test_detail_endpoints_serialize(real_client, base):
 
 
 def test_loom_tapestry_serializes_demo_fixture(real_client):
-    """The one-shot tapestry read serializes the frozen demo tapestry (3 threads / 15 nodes, no edges).
+    """The one-shot tapestry read serializes the frozen demo tapestry (6 threads / 8 sessions / 45 nodes, no edges).
 
     /api/loom/tapestry returns a dict, not a list, so it cannot join LIST_ENDPOINTS;
     it also has no GET-by-id detail route, so it cannot join DETAIL_COLLECTIONS.
@@ -263,10 +263,11 @@ def test_loom_tapestry_serializes_demo_fixture(real_client):
     resp = real_client.get("/api/loom/tapestry")
     assert resp.status_code == 200, f"/api/loom/tapestry -> {resp.status_code}: {resp.text[:300]}"
     payload = resp.json()
-    assert len(payload["threads"]) == 3
-    assert len(payload["nodes"]) == 15
+    assert len(payload["threads"]) == 6
+    assert len(payload["sessions"]) == 8
+    assert len(payload["nodes"]) == 45
     assert "edges" not in payload
-    assert all("items" in thread for thread in payload["threads"])
+    assert all("items" not in thread for thread in payload["threads"])
 
 
 def test_every_player_nested_endpoints_serialize(real_client):

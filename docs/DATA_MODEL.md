@@ -35,8 +35,8 @@ This ensures schema and seed-backed data stay synced with the codebase. Dungeons
 | `seed_player_spells.json` | `player_spells` (junction) | Player spell assignments | `/api/players/{id}/spells` |
 | `seed_player_weapons.json` | `player_weapons` (junction) | Player weapon assignments | `/api/players/{id}/weapons` |
 | `seed_loom_threads.json` | `loom_threads` | Ordered story Threads (name/color/description/origin) | `/api/loom/threads` |
-| `seed_loom_nodes.json` | `loom_nodes` | Start/End/Beat/Session nodes | `/api/loom/nodes` |
-| `seed_loom_node_threads.json` | `loom_node_threads` (junction) | Ordered node-to-thread membership (`position`) | `/api/loom/tapestry`, `/api/loom/threads/{id}/items` |
+| `seed_loom_nodes.json` | `loom_nodes` | Start/End/Beat/Session nodes with direct `thread_id`, `session_id`, `position`, `carried_count` | `/api/loom/nodes` |
+| `seed_loom_sessions.json` | `loom_sessions` | Ordered played sessions (ordinal, name, date, notes) | `/api/loom/sessions` |
 
 ## Relationships
 
@@ -47,7 +47,7 @@ Non-obvious foreign-key-like relationships (skip any self-evident from naming):
 - **`encounter`** — Stores `name`, JSON `units`, and `active_index`. The API aliases the first two as `title` and `creatures`; units may be monsters or `kind: "player"` session entries. No explicit foreign key is enforced.
 - **`loot_bundle`** — Contains `contents`, a JSON array of item/weapon snapshots. Entries keep a soft `ref_id` to the catalog source, but retain their name, item category, per-unit `value_gp`, and quantity after source edits or deletion.
 - **`dungeons`** — Contains `data` (room-reading content) while `map_layout.data` independently stores geometry. Both use the same room IDs; room titles/content belong to `dungeons.data`, while layout room titles are render caches. Missing layout data is treated as a transient empty layout; a missing dungeon is an error.
-- **`loom_threads` → `loom_node_threads` ↔ `loom_nodes`** — Many-to-many via junction table, with an ordering `position` per membership row. A thread contains many nodes (its ordered story: Start, beats, sessions, End); a `session` node can belong to many threads independently. Deleting a thread deletes its own exclusive `start`/`end`/`beat` nodes (an application-level sweep in the router, not a DB cascade) but never a shared `session` node, which survives on any other thread it belongs to. Deleting a node cascades its memberships (`ON DELETE CASCADE` on `loom_node_threads`).
+- **`loom_threads` → `loom_nodes`** — A thread contains many nodes via `loom_nodes.thread_id` FK (its ordered story: Start, beats, sessions, End). A node belongs to at most one thread at a time; a NULL `thread_id` means the beat is banked (unplaced). A `session`-kind node may have `session_id` set to the session column it belongs to. Deleting a thread deletes its nodes via `ON DELETE CASCADE` on `loom_nodes.thread_id`. The `loom_node_threads` junction table is retired; an earlier migration script (`scripts/migrate_loom_v2.py`) records the transition.
 - **`loom_threads.origin_node_id` → `loom_nodes`** — Nullable back-reference: the `session` node a spawned Thread grew from. `ON DELETE SET NULL` — deleting that session un-links the spawned thread without deleting it.
 - **`loom_nodes.banked_from_thread_id` → `loom_threads`** — Nullable: which thread a banked (unplaced) `beat` was removed from, `ON DELETE SET NULL`.
 
@@ -99,21 +99,22 @@ When querying or updating any of these columns, use `json.loads()` to deserializ
 ## Loom — Ordered Thread Schema Notes
 
 The loom tables model each Thread as one linear, explicitly-ordered path (Start → beats/sessions → End); there is
-no edge table and no acyclicity concern. Key design facts:
+no edge table, no junction table, and no acyclicity concern. Key design facts:
 
 - **Kind CHECK:** `loom_nodes.kind IN ('start', 'end', 'beat', 'session')`. `start`/`end` are thread-exclusive and
-  created/removed only by the thread lifecycle (`POST`/`DELETE /loom/threads`); a `beat` is thread-exclusive by
-  API-level check (at most one membership row anywhere); a `session` may belong to many threads independently.
-- **Ordering:** `loom_node_threads.position` (integer) is the sole source of narrative order per thread, sorted
-  ascending; `x`/`y` on `loom_nodes` are presentation-only canvas coordinates, never read for order.
+  created/removed only by the thread lifecycle (`POST`/`DELETE /loom/threads`). A `beat` is thread-exclusive by
+  API-level check (at most one `thread_id`); a `session` belongs to exactly one thread at a time via its
+  `thread_id`.
+- **Ordering:** `loom_nodes.position` (integer) is the sole source of narrative order per thread, sorted
+  ascending; `x`/`y` canvas coordinates are retired (grid position is derived from `thread_id` + `session_id`).
 - **Provenance columns (all nullable):** `fulfilled_planned_title`/`fulfilled_at` on `loom_nodes` record a
   beat-turned-session's original planned wording and when it was fulfilled; `banked_from_thread_id` records which
   thread a banked beat was removed from.
-- **Cascade semantics:** Deleting a node cascades its memberships (`ON DELETE CASCADE`). Deleting a thread deletes
-  its own exclusive `start`/`end`/`beat` nodes (an explicit delete-sweep in the router) but a shared `session`
-  survives on any other thread; `origin_node_id` back-references to a deleted node are set NULL by the FK.
+- **Cascade semantics:** Deleting a node is direct. Deleting a thread cascades to its nodes via
+  `ON DELETE CASCADE` on `loom_nodes.thread_id`. `origin_node_id` back-references to a deleted node are set
+  NULL by the FK.
 - **Token-key colors:** `loom_threads.color` stores a token key (`thread-1`…`thread-6`), validated by Pydantic pattern `^thread-[1-6]$`. This is not a DB CHECK, so the palette can grow without a schema change. The actual colors are generated MD3 token sets in `frontend/src/theme.css`.
-- **Seed loading is explicit, not part of "load all":** The three loom seed files (`seed_loom_threads.json`, `seed_loom_nodes.json`, `seed_loom_node_threads.json`) define the frozen demo tapestry (3 threads, 15 nodes, 15 memberships) — a test/playtest fixture, not canonical campaign data. `python scripts/seed_database.py --loom [--force]` loads them; a plain `python scripts/seed_database.py` (no flags) does not, so the demo tapestry never overwrites a live campaign. `backend/tests/conftest.py::_seed_real_data` always loads them for the integration test DB.
+- **Seed loading is explicit, not part of "load all":** The three loom seed files (`seed_loom_threads.json`, `seed_loom_nodes.json`, `seed_loom_sessions.json`) define the frozen demo tapestry (6 threads, 45 nodes, 8 sessions, 3 banked beats with NULL `thread_id`) — a test/playtest fixture, not canonical campaign data. `python scripts/seed_database.py --loom [--force]` loads them; a plain `python scripts/seed_database.py` (no flags) does not, so the demo tapestry never overwrites a live campaign. `backend/tests/conftest.py::_seed_real_data` always loads them for the integration test DB.
 - **Export before rebuild:** Loom data is runtime-authored through the API/UI, like dungeons and Map Lab layouts, but unlike them the loom **does** support `scripts/export_db_seeds.py` — freeze live campaign state to the three seed files above before running `scripts/init_database.py` (which drops and recreates the loom tables). This is a deliberate divergence from the dungeons/layouts domain.
 
 ## Rebuilding the Database
@@ -212,37 +213,41 @@ Indexes: `sqlite_autoindex_damage_types_1`.
 | `created_at` | `DATETIME` | no | `CURRENT_TIMESTAMP` |
 | `updated_at` | `DATETIME` | no | `CURRENT_TIMESTAMP` |
 
-#### `loom_node_threads`
-
-| Column | Type | Required | Default |
-|---|---|---|---|
-| `id` | `INTEGER` | yes | `-` |
-| `node_id` | `INTEGER` | yes | `-` |
-| `thread_id` | `INTEGER` | yes | `-` |
-| `position` | `INTEGER` | yes | `-` |
-
-Foreign keys: `thread_id` -> `loom_threads.id` (CASCADE), `node_id` -> `loom_nodes.id` (CASCADE).
-
-Indexes: `idx_loom_node_threads_position`, `idx_loom_node_threads_thread`, `sqlite_autoindex_loom_node_threads_1`.
-
 #### `loom_nodes`
 
 | Column | Type | Required | Default |
 |---|---|---|---|
 | `id` | `INTEGER` | yes | `-` |
+| `thread_id` | `INTEGER` | no | `-` |
 | `kind` | `TEXT` | yes | `-` |
 | `title` | `TEXT` | yes | `-` |
 | `body` | `TEXT` | no | `-` |
-| `session_tag` | `TEXT` | no | `-` |
-| `x` | `REAL` | yes | `0` |
-| `y` | `REAL` | yes | `0` |
+| `session_id` | `INTEGER` | no | `-` |
+| `position` | `INTEGER` | yes | `0` |
+| `carried_count` | `INTEGER` | yes | `0` |
 | `fulfilled_planned_title` | `TEXT` | no | `-` |
 | `fulfilled_at` | `DATETIME` | no | `-` |
 | `banked_from_thread_id` | `INTEGER` | no | `-` |
 | `created_at` | `DATETIME` | no | `CURRENT_TIMESTAMP` |
 | `updated_at` | `DATETIME` | no | `CURRENT_TIMESTAMP` |
 
-Foreign keys: `banked_from_thread_id` -> `loom_threads.id` (SET NULL).
+Foreign keys: `banked_from_thread_id` -> `loom_threads.id` (SET NULL), `session_id` -> `loom_sessions.id` (SET NULL), `thread_id` -> `loom_threads.id` (CASCADE).
+
+Indexes: `idx_loom_nodes_unique_thread_session`, `idx_loom_nodes_session`, `idx_loom_nodes_thread_position`.
+
+#### `loom_sessions`
+
+| Column | Type | Required | Default |
+|---|---|---|---|
+| `id` | `INTEGER` | yes | `-` |
+| `ordinal` | `INTEGER` | yes | `-` |
+| `name` | `TEXT` | yes | `-` |
+| `played_on` | `DATE` | no | `-` |
+| `notes` | `TEXT` | no | `-` |
+| `created_at` | `DATETIME` | no | `CURRENT_TIMESTAMP` |
+| `updated_at` | `DATETIME` | no | `CURRENT_TIMESTAMP` |
+
+Indexes: `sqlite_autoindex_loom_sessions_1`.
 
 #### `loom_threads`
 

@@ -188,45 +188,35 @@ Layout data (`map_layout`) and dungeon content data (`dungeons.data`) are saved 
 
 `backend/app/routers/loom.py` — ordered-Thread story tracker: Thread CRUD (auto Start/End), node (beat/session)
 CRUD, ordered membership (insert/reorder/remove), and the tapestry read. No edges; a per-thread total order
-(`position` on `loom_node_threads`) replaces the old flat DAG.
+(`position` on `loom_nodes`, sorted ascending within a thread) replaces the old flat DAG.
 
 | Method | Path | Purpose | Request schema | Response schema |
 |---|---|---|---|---|
-| GET | `/api/loom/tapestry` | Fetch all threads (with ordered `items`) and all node identities | (none) | `LoomTapestry` |
+| GET | `/api/loom/tapestry` | Fetch all sessions, threads (with ordered nodes), and all node identities | (none) | `LoomTapestry` |
 | GET | `/api/loom/threads` | List threads | `limit`, `offset` | `List[LoomThread]` |
 | POST | `/api/loom/threads` | Create thread; also creates its `start` (position 0) and `end` (position 10) nodes | `LoomThreadCreate` | `LoomThread` (201) |
 | PUT | `/api/loom/threads/{thread_id}` | Update thread name/color/description | `LoomThreadUpdate` | `LoomThread` |
 | DELETE | `/api/loom/threads/{thread_id}` | Delete thread; its exclusive `start`/`end`/`beat` nodes are deleted with it, shared `session` nodes survive, `origin_node_id` back-references on other threads are nulled | (path param) | (204 No Content) |
 | POST | `/api/loom/nodes` | Create a `beat` or `session` node (unplaced) | `LoomNodeCreate` | `LoomNode` (201) |
-| PUT | `/api/loom/nodes/{node_id}` | Update node title/body/session_tag/x/y (kind immutable) | `LoomNodeUpdate` | `LoomNode` |
-| DELETE | `/api/loom/nodes/{node_id}` | Delete a `beat`/`session` node (cascades memberships); 422 on `start`/`end` | (path param) | (204 No Content) |
-| PATCH | `/api/loom/nodes/{node_id}/position` | Persist canvas drag position (presentation only, never read for order) | `LoomNodePosition` | `LoomNode` |
-| POST | `/api/loom/nodes/{node_id}/fulfil` | Convert a placed `beat` into a `session` in place; stamps `fulfilled_planned_title`/`fulfilled_at`; memberships/positions untouched | `LoomNodeFulfil` | `LoomNode` |
-| POST | `/api/loom/nodes/{node_id}/bank` | Unplace a `beat` (delete its membership) and record `banked_from_thread_id` for later reuse | (none) | `LoomNode` |
-| POST | `/api/loom/threads/{thread_id}/items` | Place an existing `beat`/`session` node on the thread at a gap (renumbers); also the **restore** path for a banked beat, which clears `banked_from_thread_id` | `LoomThreadItemCreate` | `LoomTapestryThread` (201) |
-| PATCH | `/api/loom/threads/{thread_id}/items/{node_id}` | Reorder a member within the thread, clamped between Start and End | `LoomThreadItemPositionUpdate` | `LoomTapestryThread` |
-| DELETE | `/api/loom/threads/{thread_id}/items/{node_id}` | Remove a member's membership row (node identity survives) | (path params) | (204 No Content) |
+| PUT | `/api/loom/nodes/{node_id}` | Update node title/body (kind immutable) | `LoomNodeUpdate` | `LoomNode` |
+| DELETE | `/api/loom/nodes/{node_id}` | Delete a `beat`/`session` node; 422 on `start`/`end` | (path param) | (204 No Content) |
+| POST | `/api/loom/nodes/{node_id}/fulfil` | Convert a placed `beat` into a `session` in place; stamps `fulfilled_planned_title`/`fulfilled_at` | `LoomNodeFulfil` | `LoomNode` |
+| POST | `/api/loom/nodes/{node_id}/bank` | Unplace a `beat` (clears `thread_id`) and record `banked_from_thread_id` for later reuse | (none) | `LoomNode` |
+| POST | `/api/loom/threads/{thread_id}/items` | Place an existing `beat`/`session` node on the thread at a position; also the **restore** path for a banked beat, which clears `banked_from_thread_id` | `LoomThreadItemCreate` | `LoomNode` (201) |
 | POST | `/api/loom/threads/{thread_id}/items/{node_id}/move` | Atomically move a placed `beat`/`session` from `thread_id` to another thread at a position | `LoomNodeMove` | `LoomThreadMoveResult` |
 
-`position` in `LoomThreadItemCreate`/`LoomThreadItemPositionUpdate` is a client-supplied ordinal hint, not a
-stored value: the server finds the insertion index among the thread's current order (never before Start, never
-after End) and renumbers every membership row to `0, 10, 20, …`. A `beat` may only be placed on one thread at a
-time (422 if already placed elsewhere); a `session` may be placed on multiple threads independently. `start`/`end`
-nodes can never be placed, reordered, or removed via the items endpoints or deleted directly — only whole-thread
+`position` on `loom_nodes` is an integer, sorted ascending within a thread, and is the sole source of narrative
+order. `start`/`end` nodes can never be placed, reordered, or deleted directly — only whole-thread
 deletion removes them.
 
-**Move:** `target_thread_id` must differ from the path's `thread_id` (422 otherwise — use the reorder endpoint for
-same-thread moves), and `start`/`end` nodes can never move (422). A `beat`, or a `session` placed on only one
-thread, moves unconditionally and `mode` is ignored. A `session` shared across multiple threads requires
-`mode: "move"` (relocates out of `thread_id` into the target, leaving its other memberships untouched) or
-`mode: "also_add"` (adds the target membership alongside all existing ones; 422 if already a member of the
-target) — omitting `mode` on a shared session is a 422. The response returns both threads' post-move ordered
-state (`source`, `target`) in one transaction.
+**Move:** `target_thread_id` must differ from the path's `thread_id` (422 otherwise), and `start`/`end` nodes
+can never move (422). Moves are unconditional single-thread relocations — a node belongs to exactly one thread
+at a time. The response returns both threads' post-move ordered state (`source`, `target`) in one transaction.
 
 **Beat lifecycle:** Fulfil requires the node to be `kind='beat'` and currently placed on a thread (422 otherwise);
 `LoomNodeFulfil.title` is optional — when omitted the title is unchanged and only `fulfilled_planned_title`
-records the prior (planned) wording. Bank requires `kind='beat'` and a current membership (422 otherwise); it
-deletes the membership and renumbers the vacated thread. Restoring a banked beat is the same
+records the prior (planned) wording. Bank requires `kind='beat'` and `thread_id` not null (422 otherwise); it
+clears `thread_id` and records `banked_from_thread_id`. Restoring a banked beat is the same
 `POST /loom/threads/{thread_id}/items` insert used for any placement. **Undo of a fulfil** is a client-issued
 `PUT /api/loom/nodes/{node_id}` with `kind='beat'` — normally kind is immutable, but this one transition (a
 `session` reverting to `beat`) is allowed when the node still carries a `fulfilled_planned_title`, and it clears
@@ -282,7 +272,10 @@ All optional fields are `Optional[...]` in the schema; required fields have no `
 | PUT | `/api/loom/nodes/{node_id}` | `node_id` (path, required) | LoomNodeUpdate | 200: LoomNode, 422: HTTPValidationError |
 | POST | `/api/loom/nodes/{node_id}/bank` | `node_id` (path, required) | - | 200: LoomNode, 422: HTTPValidationError |
 | POST | `/api/loom/nodes/{node_id}/fulfil` | `node_id` (path, required) | - | 200: LoomNode, 422: HTTPValidationError |
-| PATCH | `/api/loom/nodes/{node_id}/position` | `node_id` (path, required) | LoomNodePosition | 200: LoomNode, 422: HTTPValidationError |
+| GET | `/api/loom/sessions` | `limit` (query), `offset` (query) | - | 200: List[LoomSession], 422: HTTPValidationError |
+| POST | `/api/loom/sessions` | - | LoomSessionCreate | 201: LoomSession, 422: HTTPValidationError |
+| DELETE | `/api/loom/sessions/{session_id}` | `session_id` (path, required) | - | 204: -, 422: HTTPValidationError |
+| PUT | `/api/loom/sessions/{session_id}` | `session_id` (path, required) | LoomSessionUpdate | 200: LoomSession, 422: HTTPValidationError |
 | GET | `/api/loom/tapestry` | - | - | 200: LoomTapestry |
 | GET | `/api/loom/threads` | `limit` (query), `offset` (query) | - | 200: List[LoomThread], 422: HTTPValidationError |
 | POST | `/api/loom/threads` | - | LoomThreadCreate | 201: LoomThread, 422: HTTPValidationError |

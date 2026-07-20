@@ -11,7 +11,6 @@ import './LoomEditor.css'
 interface LoomNodeEditorProps {
   node?: LoomNode
   initialKind?: LoomNodeKind
-  defaultPosition: { x: number; y: number }
   onClose: () => void
   onSaved: (node: LoomNode) => void
 }
@@ -34,17 +33,14 @@ function kindLabel(kind: LoomNodeKind): string {
   }
 }
 
-export function LoomNodeEditor({ node, initialKind, defaultPosition, onClose, onSaved }: LoomNodeEditorProps) {
+export function LoomNodeEditor({ node, initialKind, onClose, onSaved }: LoomNodeEditorProps) {
   const formId = useId()
   const [kind, setKind] = useState<LoomNodeKind>(node?.kind ?? initialKind ?? 'session')
   const [title, setTitle] = useState(node?.title ?? '')
   const [body, setBody] = useState(node?.body ?? '')
-  const [sessionTag, setSessionTag] = useState(node?.session_tag ?? '')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Only 'beat' and 'session' are creatable via the node editor.
-  // start/end are created automatically with threads; beat/session via this dialog.
   const creatableKind = (kind === 'beat' || kind === 'session') ? kind : 'session'
   const title_ = node ? `Edit ${kindLabel(node.kind)}: ${node.title}` : `Add New ${kindLabel(creatableKind)}`
 
@@ -56,12 +52,9 @@ export function LoomNodeEditor({ node, initialKind, defaultPosition, onClose, on
       kind: creatableKind,
       title,
       body: body || null,
-      session_tag: sessionTag || null,
-      x: node ? node.x : defaultPosition.x,
-      y: node ? node.y : defaultPosition.y,
     }
     try {
-      const saved = node ? await updateLoomNode(node.id, payload as import('../../api/types').LoomNodeInput) : await createLoomNode(payload)
+      const saved = node ? await updateLoomNode(node.id, payload) : await createLoomNode(payload)
       onSaved(saved)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save the node.')
@@ -107,7 +100,6 @@ export function LoomNodeEditor({ node, initialKind, defaultPosition, onClose, on
         />
         <TextField label="Title" value={title} onChange={(e) => setTitle(e.target.value)} required />
         <TextField label="Body" multiline value={body} onChange={(e) => setBody(e.target.value)} />
-        <TextField label="Session tag" value={sessionTag} onChange={(e) => setSessionTag(e.target.value)} />
       </form>
     </Dialog>
   )

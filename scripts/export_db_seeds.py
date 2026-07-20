@@ -79,11 +79,11 @@ EXPORT_DEFINITIONS = {
     },
     "loom_nodes": {
         "file": "seed_loom_nodes.json",
-        "query": "SELECT id, kind, title, body, session_tag, x, y, fulfilled_planned_title, fulfilled_at, banked_from_thread_id FROM loom_nodes ORDER BY id",
+        "query": "SELECT id, thread_id, kind, title, body, session_id, position, carried_count, fulfilled_planned_title, fulfilled_at, banked_from_thread_id FROM loom_nodes ORDER BY id",
     },
-    "loom_node_threads": {
-        "file": "seed_loom_node_threads.json",
-        "query": "SELECT id, node_id, thread_id, position FROM loom_node_threads ORDER BY id",
+    "loom_sessions": {
+        "file": "seed_loom_sessions.json",
+        "query": "SELECT id, ordinal, name, played_on, notes FROM loom_sessions ORDER BY id",
     },
 }
 

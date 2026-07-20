@@ -22,7 +22,7 @@ function kindLabel(node: LoomNode): string {
     case 'end':
       return 'End'
     case 'beat':
-      return node.thread_ids.length === 0 ? 'Banked Beat' : 'Story Beat'
+      return node.thread_id == null ? 'Banked Beat' : 'Story Beat'
     case 'session':
       return 'Session'
   }
@@ -48,8 +48,8 @@ export function LoomWeaverPanel({
   onUndoFulfil,
 }: LoomWeaverPanelProps) {
   const threadNamesById = new Map(threads.map((thread) => [thread.id, thread.name]))
-  const selectedThreadNames =
-    selectedNode?.thread_ids.map((threadId) => threadNamesById.get(threadId)).filter((name): name is string => !!name) ?? []
+  const selectedThreadName =
+    selectedNode?.thread_id != null ? threadNamesById.get(selectedNode.thread_id) ?? null : null
 
   return (
     <aside className="loom-weaver-panel" aria-label="Weaver's panel">
@@ -74,12 +74,8 @@ export function LoomWeaverPanel({
 
             <dl className="loom-selection-details">
               <div>
-                <dt>Session Tag</dt>
-                <dd>{selectedNode.session_tag || 'No session tag yet'}</dd>
-              </div>
-              <div>
                 <dt>Weft</dt>
-                <dd>{selectedThreadNames.length > 0 ? selectedThreadNames.join(', ') : 'Unthreaded'}</dd>
+                <dd>{selectedThreadName ?? 'Unthreaded'}</dd>
               </div>
               <div>
                 <dt>Notes</dt>
@@ -93,7 +89,7 @@ export function LoomWeaverPanel({
                   Edit
                 </Button>
               )}
-              {selectedNode.kind === 'beat' && selectedNode.thread_ids.length > 0 && (
+              {selectedNode.kind === 'beat' && selectedNode.thread_id != null && (
                 <>
                   <Button variant="primary" size="compact" onClick={() => onFulfilNode(selectedNode)}>
                     Fulfil Beat

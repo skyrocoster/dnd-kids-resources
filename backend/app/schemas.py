@@ -452,41 +452,60 @@ class LoomThreadUpdate(BaseModel):
     description: Optional[str] = None
 
 
+class LoomSession(BaseModel):
+    id: int
+    ordinal: int
+    name: str
+    played_on: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class LoomSessionCreate(BaseModel):
+    ordinal: int
+    name: str
+    played_on: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class LoomSessionUpdate(BaseModel):
+    ordinal: int
+    name: str
+    played_on: Optional[str] = None
+    notes: Optional[str] = None
+
+
 class LoomNode(BaseModel):
     id: int
+    thread_id: Optional[int] = None
     kind: LoomNodeKind
     title: str
     body: Optional[str] = None
-    session_tag: Optional[str] = None
-    x: float
-    y: float
+    session_id: Optional[int] = None
+    position: int
+    carried_count: int
     fulfilled_planned_title: Optional[str] = None
     fulfilled_at: Optional[str] = None
     banked_from_thread_id: Optional[int] = None
-    thread_ids: List[int] = Field(default_factory=list)
 
 
 class LoomNodeCreate(BaseModel):
+    thread_id: Optional[int] = None
     kind: LoomCreatableNodeKind
     title: str
     body: Optional[str] = None
-    session_tag: Optional[str] = None
-    x: float = 0
-    y: float = 0
+    session_id: Optional[int] = None
+    position: int = 0
+    carried_count: int = 0
 
 
 class LoomNodeUpdate(BaseModel):
+    thread_id: Optional[int] = None
     kind: LoomNodeKind
     title: str
     body: Optional[str] = None
-    session_tag: Optional[str] = None
-    x: float = 0
-    y: float = 0
-
-
-class LoomNodePosition(BaseModel):
-    x: float
-    y: float
+    session_id: Optional[int] = None
+    position: int = 0
+    carried_count: int = 0
 
 
 class LoomNodeFulfil(BaseModel):
@@ -502,19 +521,13 @@ class LoomThreadItemPositionUpdate(BaseModel):
     position: int
 
 
-class LoomTapestryItem(BaseModel):
-    node_id: int
-    position: int
-
-
 class LoomTapestryThread(LoomThread):
-    items: List[LoomTapestryItem] = Field(default_factory=list)
+    pass
 
 
 class LoomNodeMove(BaseModel):
     target_thread_id: int
     position: int
-    mode: Optional[Literal["move", "also_add"]] = None
 
 
 class LoomThreadMoveResult(BaseModel):
@@ -523,6 +536,7 @@ class LoomThreadMoveResult(BaseModel):
 
 
 class LoomTapestry(BaseModel):
+    sessions: List[LoomSession]
     threads: List[LoomTapestryThread]
     nodes: List[LoomNode]
 

@@ -32,8 +32,10 @@ def init_database(db_path: Path | None = None):
     # Drop all existing tables in reverse dependency order
     print("\nCleaning up existing tables...")
     tables_to_drop = [
+        "loom_edges",
         "loom_node_threads",
         "loom_nodes",
+        "loom_sessions",
         "loom_threads",
         "player_spells",
         "player_weapons",
@@ -345,6 +347,18 @@ def init_database(db_path: Path | None = None):
 
     # Create loom tables for the Tapestry Story-Thread Tracker
     cursor.execute("""
+        CREATE TABLE loom_sessions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ordinal INTEGER NOT NULL UNIQUE,
+            name TEXT NOT NULL,
+            played_on DATE,
+            notes TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    cursor.execute("""
         CREATE TABLE loom_threads (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL UNIQUE,
@@ -359,12 +373,13 @@ def init_database(db_path: Path | None = None):
     cursor.execute("""
         CREATE TABLE loom_nodes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            thread_id INTEGER NULL REFERENCES loom_threads(id) ON DELETE CASCADE,
             kind TEXT NOT NULL CHECK (kind IN ('start', 'end', 'beat', 'session')),
             title TEXT NOT NULL,
             body TEXT,
-            session_tag TEXT,
-            x REAL NOT NULL DEFAULT 0,
-            y REAL NOT NULL DEFAULT 0,
+            session_id INTEGER NULL REFERENCES loom_sessions(id) ON DELETE SET NULL,
+            position INTEGER NOT NULL DEFAULT 0,
+            carried_count INTEGER NOT NULL DEFAULT 0,
             fulfilled_planned_title TEXT,
             fulfilled_at DATETIME,
             banked_from_thread_id INTEGER REFERENCES loom_threads(id) ON DELETE SET NULL,
@@ -373,20 +388,13 @@ def init_database(db_path: Path | None = None):
         )
     """)
 
+    cursor.execute("CREATE INDEX idx_loom_nodes_thread_position ON loom_nodes(thread_id, position)")
+    cursor.execute("CREATE INDEX idx_loom_nodes_session ON loom_nodes(session_id)")
     cursor.execute("""
-        CREATE TABLE loom_node_threads (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            node_id INTEGER NOT NULL,
-            thread_id INTEGER NOT NULL,
-            position INTEGER NOT NULL,
-            UNIQUE (node_id, thread_id),
-            FOREIGN KEY (node_id) REFERENCES loom_nodes(id) ON DELETE CASCADE,
-            FOREIGN KEY (thread_id) REFERENCES loom_threads(id) ON DELETE CASCADE
-        )
+        CREATE UNIQUE INDEX idx_loom_nodes_unique_thread_session
+        ON loom_nodes(thread_id, session_id)
+        WHERE kind = 'session' AND thread_id IS NOT NULL AND session_id IS NOT NULL
     """)
-
-    cursor.execute("CREATE INDEX idx_loom_node_threads_thread ON loom_node_threads(thread_id)")
-    cursor.execute("CREATE INDEX idx_loom_node_threads_position ON loom_node_threads(thread_id, position)")
 
     print("[OK] Tables created")
 
@@ -402,7 +410,7 @@ def init_database(db_path: Path | None = None):
     print("  [OK] items, loot_bundle")
     print("  [OK] dungeons (id, title, data JSON for structured hand-authored dungeons)")
     print("  [OK] players, player_spells, player_weapons")
-    print("  [OK] loom_threads (origin_node_id), loom_nodes (beat/session/start/end, provenance), loom_node_threads (position)")
+    print("  [OK] loom_sessions (ordinal), loom_threads (origin_node_id), loom_nodes (thread/session/position, provenance)")
     print("\n" + "="*60)
     print("NEXT STEP: Run seed_database.py to populate data")
     print("="*60)

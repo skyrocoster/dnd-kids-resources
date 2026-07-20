@@ -11,19 +11,20 @@ const beatNode: LoomNode = {
   kind: 'beat',
   title: 'Confront the goblin chief',
   body: 'The goblin chief knows where the puppy ended up.',
-  session_tag: 'Session 12',
-  x: 400,
-  y: 75,
-  thread_ids: [1],
+  thread_id: 1,
+  session_id: 2,
+  position: 10,
+  carried_count: 0,
 }
 
 const sessionNode: LoomNode = {
   id: 1,
   kind: 'session',
   title: 'Puppy goes missing in the village',
-  x: 0,
-  y: 0,
-  thread_ids: [1],
+  thread_id: 1,
+  session_id: 1,
+  position: 0,
+  carried_count: 0,
 }
 
 const noop = () => {}
@@ -45,14 +46,14 @@ describe('LoomWeaverPanel', () => {
     render(<LoomWeaverPanel {...baseProps} selectedNode={beatNode} />)
     expect(screen.getByText('Confront the goblin chief')).toBeInTheDocument()
     expect(screen.getByText('Story Beat')).toBeInTheDocument()
-    expect(screen.getByText('Session 12')).toBeInTheDocument()
+    expect(screen.getByText('The Lost Puppy')).toBeInTheDocument()
     expect(screen.getByText('The goblin chief knows where the puppy ended up.')).toBeInTheDocument()
   })
 
   it('renders a selected session node\'s kind', () => {
     render(<LoomWeaverPanel {...baseProps} selectedNode={sessionNode} />)
     expect(screen.getByText('Puppy goes missing in the village')).toBeInTheDocument()
-    expect(screen.getByText('Session Tag')).toBeInTheDocument()
+    expect(screen.getByText('Weft')).toBeInTheDocument()
   })
 
   it('renders the legend when selection is null', () => {
@@ -91,7 +92,7 @@ describe('LoomWeaverPanel', () => {
   })
 
   it('hides edit/delete for start/end nodes', () => {
-    const startNode: LoomNode = { id: 1, kind: 'start', title: 'The Lost Puppy', x: 0, y: 0, thread_ids: [1] }
+    const startNode: LoomNode = { id: 1, kind: 'start', title: 'The Lost Puppy', thread_id: 1, session_id: 1, position: 0, carried_count: 0 }
     render(<LoomWeaverPanel {...baseProps} selectedNode={startNode} />)
     expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument()

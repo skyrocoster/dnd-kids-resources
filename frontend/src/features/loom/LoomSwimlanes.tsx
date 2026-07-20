@@ -1,12 +1,10 @@
-import { useCallback } from 'react'
-import type { LoomNode, LoomTapestryThread } from '../../api/types'
+import type { LoomNode, LoomSession, LoomTapestryThread } from '../../api/types'
 import { LoomLane } from './LoomLane'
-import { LoomStitchLayer } from './LoomStitchLayer'
-import { useCardRects } from './useCardRects'
 
 interface LoomSwimlanesProps {
   threads: LoomTapestryThread[]
   nodes: LoomNode[]
+  sessions: LoomSession[]
   selectedNodeId?: number | null
   onSelectNode?: (nodeId: number) => void
   selectedThreadId?: number | null
@@ -20,6 +18,7 @@ interface LoomSwimlanesProps {
 export function LoomSwimlanes({
   threads,
   nodes,
+  sessions,
   selectedNodeId,
   onSelectNode,
   selectedThreadId,
@@ -29,32 +28,28 @@ export function LoomSwimlanes({
   onCrossLaneDrop,
   onGapRestore,
 }: LoomSwimlanesProps) {
-  const { scrollRef, registerCard, cardRects, contentSize } = useCardRects()
-
-  const scrollRefCallback = useCallback(
-    (el: HTMLDivElement | null) => {
-      scrollRef.current = el
-    },
-    [scrollRef],
-  )
-
   return (
-    <section
-      className="loom-canvas-area loom-swimlanes"
-      aria-label="Thread swimlanes"
-      ref={scrollRefCallback}
-    >
-      <LoomStitchLayer cardRects={cardRects} threads={threads} nodes={nodes} contentSize={contentSize} selectedNodeId={selectedNodeId} selectedThreadId={selectedThreadId} />
+    <section className="loom-canvas-area loom-grid" aria-label="Session grid">
+      <div className="loom-grid-headers">
+        <div className="loom-grid-corner" />
+        {sessions.map((s) => (
+          <div key={s.id} className="loom-grid-col-header">
+            <span className="loom-grid-col-ordinal">{s.ordinal}.</span>
+            <span className="loom-grid-col-name">{s.name}</span>
+          </div>
+        ))}
+        <div className="loom-grid-col-header loom-grid-col-header--warp">Warp</div>
+      </div>
       {threads.map((thread) => (
         <LoomLane
           key={thread.id}
           thread={thread}
           nodes={nodes}
+          sessions={sessions}
           selectedNodeId={selectedNodeId}
           onSelectNode={onSelectNode}
           selectedThreadId={selectedThreadId}
           onSelectThread={onSelectThread}
-          onRegisterRect={registerCard}
           onGapClick={onGapClick}
           onReorder={onReorder}
           onCrossLaneDrop={onCrossLaneDrop}

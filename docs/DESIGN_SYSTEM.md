@@ -352,64 +352,51 @@ Independently collapsible toolbar group in Map Lab:
 
 ---
 
-### Loom — Swimlane renderer (LS)
+### Loom — Session grid renderer
 
-The Loom uses a purpose-built static swimlane renderer in `LoomSwimlanes.tsx`, `LoomLane.tsx`,
+The Loom uses a purpose-built static grid renderer in `LoomSwimlanes.tsx`, `LoomLane.tsx`,
 and `LoomNodeCard.tsx`. No graph library; no edges; no focus-gating. Every Thread is always visible.
 
-**Layout structure:** Each Thread renders as `article.loom-lane` within the scrollable `.loom-swimlanes`
-container. A lane has a sticky header (thread swatch + name), then a horizontal row of node cards
-running left (Start cap) → body nodes → right (End cap). Body nodes are separated by clickable "+"
-gaps (`.loom-lane-gap`). A `LoomStitchLayer` SVG overlay draws cross-lane stitches and spawn links
-from measured card rects.
+**Layout structure:** The tapestry renders as a session-column grid: pinned thread labels (swatch + name)
+on the left, session column headers (ordinal + name) across the top, and cells at each thread×session
+intersection. Beats with null `session_id` appear in the warp area after the last session column.
+Cells have three states: **real** (a node exists at that intersection, rendering `LoomNodeCard`),
+**quiet** (thread is alive but no card at that session — faint background tint), and
+**outside-life** (thread not yet started or already ended — blank space). The stitch overlay, card-rect
+tracking, and cross-lane stitch geometry are retired.
 
 **Node cards (`.loom-node`):** Base fill by kind — Start/End on `--md-primary-container`, beat on
 `--md-tertiary-container`, session on `--md-secondary-container`. Every threaded node carries a
 `.loom-node-spine` left strip colored by `data-color="thread-N"` → `--md-loom-thread-N`. Status cues:
 played nodes (sessions and fulfilled beats) render solid; upcoming beats render ghosted
-(`.loom-node--ghosted`, 0.58 opacity, dashed border). The head node (closest played→planned
-boundary) gets `[data-head]` with a primary glow ring + "Now" badge; the next unplayed beat gets
-"Next" badge on `--md-secondary`. Selected cards get `.loom-node--selected` outline.
+(`.loom-node--ghosted`, 0.58 opacity, dashed border). Selected cards get `.loom-node--selected` outline.
 
 **Thread palette:** `--md-loom-thread-1`…`--md-loom-thread-6` (+ `-container`/`-on-*`), stored in DB
 as token keys (`thread-1`…`thread-6`). `--md-loom-anchor` (+ `-container`/`-on-*`) is the warm beacon
 gold accent for planned milestones. **There is no `--md-loom-update` token set** and no `anchor`/`update`
 node kinds — only start/end/beat/session.
 
-**Stitches:** A shared session (belongs to >1 thread) appears in each of its lanes and is joined by a
-cubic-bezier SVG path (`.loom-stitch`). Stitch color matches the primary thread of the shared node.
-Paths computed by `stitchGeometry.ts` purely from `CardRect` measurements; redrawn on scroll/resize
-via `useCardRects` (`ResizeObserver` + scroll listener). Under `prefers-reduced-motion`, all CSS
-transitions are disabled and pseudo-element opacity is reduced.
+**Inspector rail (`LoomRail.tsx`):** Fixed right rail composing inspector, thread list, and beat bank.
+Shows selection details (title, kind pill with icon+text glyph, thread name, body excerpt) and lifecycle
+actions (Edit, Fulfil Beat, Bank Beat, Spawn Thread, Change Ending, Undo Fulfil, Delete). When nothing
+is selected it renders the thread list and `LoomLegend` (glyph+label legend so kind cues never rely on
+hue alone). The rail contract is `{ selectedNode, threads, nodes, sessions, … }` — no focus state.
 
-**Spawn links:** A thread created from a session (`origin_node_id` set) is joined to its origin by a
-dotted SVG path (`.loom-spawn-link`, `stroke-dasharray="6 4"`). Drops from origin bottom-center to
-spawned-thread start-cap top-center.
+**Beat Bank tray (`LoomBeatBankTray.tsx`):** Collapsible tray listing banked beats (nodes with null
+`thread_id`). Each entry shows the beat title and a Restore button. Accessible label pattern:
+`Beat Bank (N)`.
 
-**Inspector rail (`.loom-weaver-panel`):** Fixed 320px right rail, no focus-gating. Shows selection
-details (title, kind pill with icon+text glyph, session tag, thread names, body excerpt) and lifecycle
-actions (Edit, Fulfil Beat, Bank Beat, Replace Beat, Spawn Thread, Change Ending, Undo Fulfil, Delete).
-When nothing is selected it renders `LoomLegend` (glyph+label legend so kind cues never rely on hue
-alone). The rail contract is `{ selectedNode, threads, onEdit, onDeleteNode, onFulfilNode, onBankNode,
-onReplaceNode, onSpawnThread, onChangeEnding, onUndoFulfil }` — no focus state.
-
-**Beat Bank tray (`.loom-beat-bank-tray`):** Collapsible bottom tray below the swimlanes listing
-banked beats (nodes with zero membership). Each entry shows the beat title (clickable to select) and
-a Restore button that opens an inline thread picker + Confirm/Cancel. Entries are draggable into lane
-gaps. Accessible label pattern: `Beat Bank (N)`.
-
-**Woven background:** `.loom-swimlanes` has a layered CSS background: radial anchor glow at top
-(`--md-loom-anchor` at 12%), a `--md-surface-2`/`--md-surface` gradient base, plus `::before` warp
-stripes (repeating vertical lines at `--md-outline-variant`) and `::after` color wash (diagonal
-thread-3 and anchor accents at low opacity). Both pseudo-elements are `pointer-events: none; z-index: 0`.
+**Grid styling:** Cells use theme tokens and thread colors. Quiet cells render with a subtle background
+tint; outside-life cells render as blank space. Thread label column is sticky-left with dimmed states
+for non-selected threads. Responsive and reduced-motion adaptations use `@media (prefers-reduced-motion)`
+to suppress transitions.
 
 **Accessibility:** `.loom-node` cards have `role="button"`, `tabIndex={0}`, `aria-pressed`, and
-`aria-label="{kind}: {title}"`. `.loom-lane-gap` has `role="button"`, `tabIndex={0}`, and
-`aria-label="Insert at position {N}"`. Every kind pill in the rail and legend carries a glyph
+`aria-label="{kind}: {title}"`. Every kind pill in the rail and legend carries a glyph
 (◇ Start, ◆ Beat, ● Session, ■ End, N Now, → Next) so no semantic information relies on color alone.
 `:focus-visible` rings (`2px solid var(--md-primary)`, 2–3px offset) on all interactive elements.
-Touch targets ≥48px where feasible (lane gaps have `min-height: 48px`). The `.loom-eyebrow` uses
-`--type-caption-*` tokens with wider tracking and Roboto Flex axis tuning.
+Touch targets ≥48px where feasible. The `.loom-eyebrow` uses `--type-caption-*` tokens with wider
+tracking and Roboto Flex axis tuning.
 
 ---
 

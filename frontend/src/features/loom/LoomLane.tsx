@@ -1,16 +1,16 @@
 import { useCallback, useState } from 'react'
-import type { LoomNode, LoomTapestryThread } from '../../api/types'
-import { threadOrdered, currentPosition, threadHead, nextBeat } from './loomGraph'
+import type { LoomNode, LoomSession, LoomTapestryThread } from '../../api/types'
+import { threadOrdered, currentPosition, threadHead, nextBeat, isThreadAlive } from './loomGraph'
 import { LoomNodeCard } from './LoomNodeCard'
 
 interface LoomLaneProps {
   thread: LoomTapestryThread
   nodes: LoomNode[]
+  sessions: LoomSession[]
   selectedNodeId?: number | null
   onSelectNode?: (nodeId: number) => void
   selectedThreadId?: number | null
   onSelectThread?: (threadId: number) => void
-  onRegisterRect?: (nodeId: number, threadId: number, el: HTMLElement | null) => void
   onGapClick?: (threadId: number, position: number) => void
   onReorder?: (threadId: number, nodeId: number, fromBodyIndex: number, toBodyIndex: number) => void
   onCrossLaneDrop?: (nodeId: number, sourceThreadId: number, targetThreadId: number, position: number, nodeKind: 'beat' | 'session') => void
@@ -23,7 +23,6 @@ interface DropZoneCallbacks {
   onGapRestore?: (nodeId: number, threadId: number, position: number) => void
 }
 
-/** Shared drag-over/drop handling for a lane slot (the gap plus whatever card sits next to it). */
 function useDropZone(threadId: number, position: number, index: number, callbacks: DropZoneCallbacks) {
   const { onReorder, onCrossLaneDrop, onGapRestore } = callbacks
   const [dragOver, setDragOver] = useState(false)
@@ -104,7 +103,6 @@ function Gap({
   )
 }
 
-/** A gap paired with the card that follows it — the whole group is one drop target, not just the gap sliver. */
 function CardGroup({
   threadId,
   position,
@@ -145,11 +143,11 @@ function CardGroup({
 export function LoomLane({
   thread,
   nodes,
+  sessions,
   selectedNodeId,
   onSelectNode,
   selectedThreadId,
   onSelectThread,
-  onRegisterRect,
   onGapClick,
   onReorder,
   onCrossLaneDrop,
@@ -163,17 +161,14 @@ export function LoomLane({
   const currentNodeId = current?.nodeId ?? null
   const nextBeatId = next?.id ?? null
 
-  const startNode = ordered.find((n) => n.kind === 'start')
-  const endNode = ordered.slice().reverse().find((n) => n.kind === 'end')
-  const bodyNodes = ordered.filter((n) => n.kind !== 'start' && n.kind !== 'end')
+  const warpNodes = ordered.filter((n) => n.kind !== 'start' && n.kind !== 'end' && n.session_id == null)
 
   return (
-    <article
-      className={`loom-lane${selectedThreadId === thread.id ? ' loom-lane--selected' : ''}${selectedThreadId != null && selectedThreadId !== thread.id ? ' loom-lane--dimmed' : ''}`}
-      aria-labelledby={`loom-lane-title-${thread.id}`}
+    <div
+      className={`loom-grid-row${selectedThreadId === thread.id ? ' loom-grid-row--selected' : ''}${selectedThreadId != null && selectedThreadId !== thread.id ? ' loom-grid-row--dimmed' : ''}`}
     >
-      <header
-        className="loom-lane-header"
+      <div
+        className="loom-grid-thread-label"
         onClick={(e) => { e.stopPropagation(); onSelectThread?.(thread.id) }}
         role="button"
         tabIndex={0}
@@ -186,42 +181,15 @@ export function LoomLane({
         }}
       >
         <span className="loom-weaver-thread-swatch" data-color={thread.color} aria-hidden="true" />
-        <div>
-          <h2 className="loom-lane-title" id={`loom-lane-title-${thread.id}`}>{thread.name}</h2>
-          {thread.description && <p className="loom-lane-description">{thread.description}</p>}
-        </div>
-      </header>
-      <div className="loom-lane-row">
-      {startNode && (
-        <div className="loom-lane-cap loom-lane-cap--start">
-          <LoomNodeCard
-            node={startNode}
-            isNow={head?.id === startNode.id || currentNodeId === startNode.id}
-            isNext={nextBeatId === startNode.id}
-            threadColor={thread.color}
-            selected={selectedNodeId === startNode.id}
-            onClick={onSelectNode}
-            onRegisterRect={onRegisterRect}
-            threadId={thread.id}
-          />
-        </div>
-      )}
-      <div className="loom-lane-track">
-        <div className="loom-lane-weft-line" aria-hidden="true" />
-        {bodyNodes.map((node, idx) => {
-          const item = thread.items.find((i) => i.node_id === node.id)
-          const gapPos = item?.position ?? idx * 10
+        <span className="loom-grid-thread-name">{thread.name}</span>
+      </div>
+      {sessions.map((session) => {
+        const node = nodes.find((n) => n.thread_id === thread.id && n.session_id === session.id)
+        const alive = isThreadAlive(thread, session.ordinal, nodes, sessions)
+
+        if (node) {
           return (
-            <CardGroup
-              key={node.id}
-              threadId={thread.id}
-              position={gapPos}
-              index={idx}
-              onGapClick={onGapClick}
-              onReorder={onReorder}
-              onCrossLaneDrop={onCrossLaneDrop}
-              onGapRestore={onGapRestore}
-            >
+            <div key={session.id} className="loom-grid-cell loom-grid-cell--real">
               <LoomNodeCard
                 node={node}
                 isNow={head?.id === node.id || currentNodeId === node.id}
@@ -229,17 +197,47 @@ export function LoomLane({
                 threadColor={thread.color}
                 selected={selectedNodeId === node.id}
                 onClick={onSelectNode}
-                onRegisterRect={onRegisterRect}
                 threadId={thread.id}
-                bodyIndex={idx}
               />
-            </CardGroup>
+            </div>
           )
-        })}
+        }
+
+        if (alive) {
+          return <div key={session.id} className="loom-grid-cell loom-grid-cell--quiet" />
+        }
+
+        return <div key={session.id} className="loom-grid-cell loom-grid-cell--outside-life" />
+      })}
+      <div className="loom-grid-warp">
+        <div className="loom-grid-warp-divider" aria-hidden="true" />
+        {warpNodes.map((node, idx) => (
+          <CardGroup
+            key={node.id}
+            threadId={thread.id}
+            position={node.position}
+            index={idx}
+            onGapClick={onGapClick}
+            onReorder={onReorder}
+            onCrossLaneDrop={onCrossLaneDrop}
+            onGapRestore={onGapRestore}
+          >
+            <LoomNodeCard
+              node={node}
+              isNow={head?.id === node.id || currentNodeId === node.id}
+              isNext={nextBeatId === node.id}
+              threadColor={thread.color}
+              selected={selectedNodeId === node.id}
+              onClick={onSelectNode}
+              threadId={thread.id}
+              bodyIndex={idx}
+            />
+          </CardGroup>
+        ))}
         <CardGroup
           threadId={thread.id}
           position={Number.MAX_SAFE_INTEGER}
-          index={bodyNodes.length}
+          index={warpNodes.length}
           onGapClick={onGapClick}
           onReorder={onReorder}
           onCrossLaneDrop={onCrossLaneDrop}
@@ -248,21 +246,6 @@ export function LoomLane({
           {null}
         </CardGroup>
       </div>
-      {endNode && (
-        <div className="loom-lane-cap loom-lane-cap--end">
-          <LoomNodeCard
-            node={endNode}
-            isNow={head?.id === endNode.id || currentNodeId === endNode.id}
-            isNext={nextBeatId === endNode.id}
-            threadColor={thread.color}
-            selected={selectedNodeId === endNode.id}
-            onClick={onSelectNode}
-            onRegisterRect={onRegisterRect}
-            threadId={thread.id}
-          />
-        </div>
-      )}
-      </div>
-    </article>
+    </div>
   )
 }
