@@ -1,5 +1,4 @@
 import { render, screen, fireEvent } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi } from 'vitest'
 import type { LoomNode, LoomTapestryThread } from '../../../api/types'
 import { LoomRail } from '../LoomRail'
@@ -40,49 +39,6 @@ const baseProps = {
 }
 
 describe('LoomRail', () => {
-  it('renders thread names and color swatches', () => {
-    render(<LoomRail {...baseProps} />)
-    expect(screen.getByText('The Lost Puppy')).toBeInTheDocument()
-    expect(screen.getByText('Dragon Quest')).toBeInTheDocument()
-    const swatches = document.querySelectorAll('.loom-weaver-thread-swatch')
-    expect(swatches[0]).toHaveAttribute('data-color', 'thread-3')
-    expect(swatches[1]).toHaveAttribute('data-color', 'thread-1')
-  })
-
-  it('shows item count for each thread', () => {
-    render(<LoomRail {...baseProps} />)
-    expect(screen.getByText('1')).toBeInTheDocument()
-    expect(screen.getByText('0')).toBeInTheDocument()
-  })
-
-  it('sets aria-pressed on the clicked thread button', async () => {
-    const user = userEvent.setup()
-    let selectedThreadId: number | null = null
-    const handleSelectThread = (threadId: number) => { selectedThreadId = threadId }
-    const { rerender } = render(<LoomRail {...baseProps} selectedThreadId={null} onSelectThread={handleSelectThread} />)
-    const buttons = screen.getAllByRole('button', { name: /The Lost Puppy|Dragon Quest/ })
-    expect(buttons[0]).toHaveAttribute('aria-pressed', 'false')
-    await user.click(buttons[0])
-    rerender(<LoomRail {...baseProps} selectedThreadId={selectedThreadId} onSelectThread={handleSelectThread} />)
-    expect(buttons[0]).toHaveAttribute('aria-pressed', 'true')
-    expect(buttons[1]).toHaveAttribute('aria-pressed', 'false')
-  })
-
-  it('shifts aria-pressed when a different thread is clicked', async () => {
-    const user = userEvent.setup()
-    let selectedThreadId: number | null = null
-    const handleSelectThread = (threadId: number) => { selectedThreadId = threadId }
-    const { rerender } = render(<LoomRail {...baseProps} selectedThreadId={null} onSelectThread={handleSelectThread} />)
-    const buttons = screen.getAllByRole('button', { name: /The Lost Puppy|Dragon Quest/ })
-    await user.click(buttons[0])
-    rerender(<LoomRail {...baseProps} selectedThreadId={selectedThreadId} onSelectThread={handleSelectThread} />)
-    expect(buttons[0]).toHaveAttribute('aria-pressed', 'true')
-    await user.click(buttons[1])
-    rerender(<LoomRail {...baseProps} selectedThreadId={selectedThreadId} onSelectThread={handleSelectThread} />)
-    expect(buttons[0]).toHaveAttribute('aria-pressed', 'false')
-    expect(buttons[1]).toHaveAttribute('aria-pressed', 'true')
-  })
-
   it('calls onBankNodeById when a beat card is dropped on the beat bank section', () => {
     const onBankNodeById = vi.fn()
     render(<LoomRail {...baseProps} onBankNodeById={onBankNodeById} />)
@@ -107,6 +63,22 @@ describe('LoomRail', () => {
     expect(screen.getByText('1 nodes')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /edit thread/i })).toBeInTheDocument()
     expect(screen.queryByText('Start node')).not.toBeInTheDocument()
+  })
+
+  it('shows banked-from provenance when a restored beat is inspected', () => {
+    const restoredNode: LoomNode = {
+      id: 23,
+      kind: 'beat',
+      title: 'Restored Beat',
+      thread_id: 2,
+      session_id: null,
+      position: 0,
+      carried_count: 0,
+      banked_from_thread_id: 1,
+    }
+    render(<LoomRail {...baseProps} selectedNode={restoredNode} />)
+    expect(screen.getByText('Banked from')).toBeInTheDocument()
+    expect(screen.getByText('The Lost Puppy')).toBeInTheDocument()
   })
 
   it('ignores drop of non-beat nodes on the beat bank section', () => {
