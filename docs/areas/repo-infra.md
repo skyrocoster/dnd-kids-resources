@@ -1,6 +1,6 @@
 # Repo Infra Area Guide
 
-> **Active plan:** [Backend Test Coverage](../plans/active/backend-test-coverage.md).
+> **Active plan:** None.
 
 ## Scope
 

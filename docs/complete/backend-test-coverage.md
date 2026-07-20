@@ -1,6 +1,6 @@
 # Backend Test Coverage — close the gap toward 100%
 
-> **Status:** Stages 1–3 complete (13 orders shipped). All router gaps, DB-failure branches, shared-infra fallbacks, and schema edge cases covered — overall 97.12%. Stage 4 next — verify and record the gate.
+> **Status:** Complete. All 4 stages shipped (13 orders). Coverage raised from 90.96% to 97.12%; gate locked at 97%.
 
 - **Area guide:** [Repo Infra](../../areas/repo-infra.md).
 
@@ -50,3 +50,4 @@ to be truly unreachable or environment-exclusive, we record that instead of chas
 | **S3 — WO 11** | Covered `db.py` path-fallback branches (lines 17–22) via monkeypatch on `Path.exists` in `test_db_helpers.py` — two tests exercising cwd-fallback and neither-exists paths; `db.py` now at 100%. |
 | **S3 — WO 12** | Covered `schemas.py` audio-path Windows-device-name validator (line 284) via `MonsterCreate` validation tests — `schemas.py` now at 100%. |
 | **S3 — WO 13** | Covered `main.py` root endpoint else-branch (lines 73–76) via `test_main.py` — the if-branch (lines 67–70, SPA fallback) is documented as environment-dependent and excluded from unit coverage. |
+| **S4** | Raised `--cov-fail-under` from 90 to 97 in `pytest.ini` and updated `TESTING.md` to lock in the new floor. 97.12% actual coverage holds the gate. |
