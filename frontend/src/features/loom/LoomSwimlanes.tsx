@@ -1,5 +1,8 @@
+import type { CSSProperties } from 'react'
 import type { LoomNode, LoomSession, LoomTapestryThread } from '../../api/types'
 import { LoomLane } from './LoomLane'
+
+type LoomGridStyle = CSSProperties & { '--loom-session-count': number }
 
 interface LoomSwimlanesProps {
   threads: LoomTapestryThread[]
@@ -29,7 +32,11 @@ export function LoomSwimlanes({
   onGapRestore,
 }: LoomSwimlanesProps) {
   return (
-    <section className="loom-canvas-area loom-grid" aria-label="Session grid">
+    <section
+      className="loom-canvas-area loom-grid"
+      aria-label="Session grid"
+      style={{ '--loom-session-count': sessions.length } as LoomGridStyle}
+    >
       <div className="loom-grid-headers">
         <div className="loom-grid-corner" />
         {sessions.map((s) => (
@@ -38,7 +45,8 @@ export function LoomSwimlanes({
             <span className="loom-grid-col-name">{s.name}</span>
           </div>
         ))}
-        <div className="loom-grid-col-header loom-grid-col-header--warp">Warp</div>
+        <div className="loom-grid-col-header loom-grid-col-header--fell" aria-label="Fell edge" />
+        <div className="loom-grid-col-header loom-grid-col-header--warp" aria-label="Warp lane">Warp</div>
       </div>
       {threads.map((thread) => (
         <LoomLane
