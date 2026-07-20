@@ -12,7 +12,7 @@ const legendRows = [
 export function LoomLegend() {
   return (
     <div className="loom-legend" aria-label="Loom legend">
-      <p className="loom-weaver-copy">Select a node on the tapestry to inspect it here.</p>
+      <p className="loom-weaver-copy">The loom is strung and the weft waits. Pull a thread from the bank or select a node to examine its place in the weave.</p>
       <ul className="loom-legend-list">
         {legendRows.map((row) => (
           <li key={row.key} className="loom-legend-row">

@@ -1,6 +1,6 @@
 # Freeform Tapestry — rearrange the loom by hand, on a canvas that survives zoom
 
-> **Status:** Stages 1-3 shipped. Stage 4 (unified right rail) is next.
+> **Status:** All stages shipped — feature complete.
 
 - **Area guide:** [The Loom](../../areas/loom.md)
 
@@ -53,3 +53,6 @@ tokens; the work is structure, interlacement, and interaction, not new decoratio
 | 1 | Added `POST /api/loom/threads/{thread_id}/items/{node_id}/move` — atomically relocates a placed beat or session to another thread at a position in one transaction. Beats and sole-membership sessions move unconditionally; a shared session requires `mode: "move"` or `"also_add"`; Start/End are immovable. |
 | 2 | Lanes now render a continuous weft line under body nodes with solid selvage caps that fully occlude it, the stitch SVG overlay sizes to the scroll container's full content extent (not just the viewport) so stitches track under scroll/zoom, and lane/card/gap sizing was converted from fixed `px` to `rem` to scale as one system with browser zoom. |
 | 3 | Sessions (not just beats) are draggable across lanes; a cross-lane drop calls the Stage 1 move endpoint directly for beats/sole-membership sessions, or prompts Move-vs-Also-add for a shared session. Whole card-groups (not just the narrow gap sliver) are now the drop target, fixing a real-browser bug where dropping on a card did nothing. |
+| 4 | The weaver panel, beat bank tray, and legend were collapsed into a single `LoomRail` component with three sections — Inspector, Threads (clickable list with color swatches), and Beat Bank. Inspector labels and empty state were rewritten in weaving language; placed beats can be dragged onto the Beat Bank section to bank them via the existing API. |
+| 5 | Clicking a lane header selects the thread (mutually exclusive with node selection) and shows a thread inspector in the rail with name, color swatch, description, node count, and an Edit Thread button. The selected lane stays at full opacity while other lanes and non-connected stitches dim. |
+| 6 | Stitches and spawn links are thicker and thread-colored, shared-session stitches show title labels, and connected interlacements emphasize on hover and selection. Selvage caps, weft lines, focus rings, and reduced-motion coverage received a final visual pass using existing design tokens. |

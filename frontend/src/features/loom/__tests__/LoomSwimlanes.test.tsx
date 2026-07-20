@@ -220,6 +220,21 @@ describe('LoomLane weft line', () => {
     const weftLines = document.querySelectorAll('.loom-lane-weft-line')
     expect(weftLines).toHaveLength(1)
   })
+
+  it('renders weft lines and selvage caps with CSS classes', () => {
+    const tapestry = demoTapestry()
+    const thread = tapestry.threads[0]
+    const nodes = tapestry.nodes.filter(
+      (n) => n.thread_ids.includes(thread.id),
+    )
+    render(<LoomLane thread={thread} nodes={nodes} />)
+    const weftLines = document.querySelectorAll('.loom-lane-weft-line')
+    expect(weftLines).toHaveLength(1)
+    const startCaps = document.querySelectorAll('.loom-lane-cap--start')
+    expect(startCaps).toHaveLength(1)
+    const endCaps = document.querySelectorAll('.loom-lane-cap--end')
+    expect(endCaps).toHaveLength(1)
+  })
 })
 
 describe('LoomLane cross-lane drop', () => {

@@ -8,6 +8,8 @@ interface LoomLaneProps {
   nodes: LoomNode[]
   selectedNodeId?: number | null
   onSelectNode?: (nodeId: number) => void
+  selectedThreadId?: number | null
+  onSelectThread?: (threadId: number) => void
   onRegisterRect?: (nodeId: number, threadId: number, el: HTMLElement | null) => void
   onGapClick?: (threadId: number, position: number) => void
   onReorder?: (threadId: number, nodeId: number, fromBodyIndex: number, toBodyIndex: number) => void
@@ -145,6 +147,8 @@ export function LoomLane({
   nodes,
   selectedNodeId,
   onSelectNode,
+  selectedThreadId,
+  onSelectThread,
   onRegisterRect,
   onGapClick,
   onReorder,
@@ -164,8 +168,23 @@ export function LoomLane({
   const bodyNodes = ordered.filter((n) => n.kind !== 'start' && n.kind !== 'end')
 
   return (
-    <article className="loom-lane" aria-labelledby={`loom-lane-title-${thread.id}`}>
-      <header className="loom-lane-header">
+    <article
+      className={`loom-lane${selectedThreadId === thread.id ? ' loom-lane--selected' : ''}${selectedThreadId != null && selectedThreadId !== thread.id ? ' loom-lane--dimmed' : ''}`}
+      aria-labelledby={`loom-lane-title-${thread.id}`}
+    >
+      <header
+        className="loom-lane-header"
+        onClick={(e) => { e.stopPropagation(); onSelectThread?.(thread.id) }}
+        role="button"
+        tabIndex={0}
+        aria-pressed={selectedThreadId === thread.id}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            onSelectThread?.(thread.id)
+          }
+        }}
+      >
         <span className="loom-weaver-thread-swatch" data-color={thread.color} aria-hidden="true" />
         <div>
           <h2 className="loom-lane-title" id={`loom-lane-title-${thread.id}`}>{thread.name}</h2>

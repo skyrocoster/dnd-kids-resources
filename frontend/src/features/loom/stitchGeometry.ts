@@ -6,6 +6,8 @@ export interface StitchPath {
   fromThreadId: number
   toThreadId: number
   d: string
+  labelMidX: number
+  labelMidY: number
 }
 
 export interface SpawnLinkPath {
@@ -67,12 +69,19 @@ export function buildStitches(
       const from = rects[i]
       const to = rects[i + 1]
       if (!from || !to) continue
+      const fromCX = from.left + from.width / 2
+      const fromCY = from.top + from.height / 2
+      const toCX = to.left + to.width / 2
+      const toCY = to.top + to.height / 2
+
       paths.push({
         fromNodeId: nodeId,
         toNodeId: nodeId,
         fromThreadId: from.threadId,
         toThreadId: to.threadId,
         d: stitchPath(from, to),
+        labelMidX: (fromCX + toCX) / 2,
+        labelMidY: (fromCY + toCY) / 2 - 8,
       })
     }
   }

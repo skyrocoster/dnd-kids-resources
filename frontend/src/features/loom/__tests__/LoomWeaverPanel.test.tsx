@@ -52,7 +52,7 @@ describe('LoomWeaverPanel', () => {
   it('renders a selected session node\'s kind', () => {
     render(<LoomWeaverPanel {...baseProps} selectedNode={sessionNode} />)
     expect(screen.getByText('Puppy goes missing in the village')).toBeInTheDocument()
-    expect(screen.getAllByText('Session').length).toBeGreaterThanOrEqual(2)
+    expect(screen.getByText('Session Tag')).toBeInTheDocument()
   })
 
   it('renders the legend when selection is null', () => {

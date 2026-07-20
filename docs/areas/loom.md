@@ -1,6 +1,6 @@
 # The Loom Area Guide
 
-> **Active plan:** [Freeform Tapestry](../plans/active/loom-freeform-tapestry.md) — hand-arrangeable nodes, zoom-safe canvas, unified rail, thread selection, glanceable interlacements.
+> **Active plan:** none
 
 ## Scope
 
@@ -13,7 +13,7 @@ Owns campaign story-thread tracking: loom threads, nodes (starts, ends, beats, s
 ## Source map
 
 - Backend: `backend/app/routers/loom.py` (thread CRUD with auto Start/End, beat/session node CRUD, ordered-membership insert/reorder/remove, tapestry read, position PATCH, beat lifecycle — fulfil/bank/restore, spawn-from-session — no edges/bridge), loom Pydantic models in `backend/app/schemas.py`, tables in `scripts/init_database.py`. Migration script: `scripts/migrate_loom_v2.py` (idempotent, backs up + reports).
-- Frontend: `frontend/src/features/loom/` (static swimlane renderer: `LoomSwimlanes.tsx`, `LoomLane.tsx`, `LoomNodeCard.tsx`; SVG stitch/spawn-link overlay in `LoomStitchLayer.tsx` + `stitchGeometry.ts` + `useCardRects.ts`; inspector panel in `LoomWeaverPanel.tsx` + `LoomLegend.tsx`; `LoomBeatBankTray.tsx` for banked beats; inline reorder via `beatReorder.ts` with `LoomBeatReorderDialog.tsx` as keyboard fallback), route `loom` in `frontend/src/router.tsx`, nav entry ("The Loom") in `frontend/src/layout/navSections.ts`.
+- Frontend: `frontend/src/features/loom/` (unified right rail: `LoomRail.tsx` composing inspector, thread list, and beat bank; static swimlane renderer: `LoomSwimlanes.tsx`, `LoomLane.tsx`, `LoomNodeCard.tsx`; SVG stitch/spawn-link overlay in `LoomStitchLayer.tsx` + `stitchGeometry.ts` + `useCardRects.ts`; inspector panel in `LoomWeaverPanel.tsx` + `LoomLegend.tsx`; `LoomBeatBankTray.tsx` for banked beats; inline reorder via `beatReorder.ts` with `LoomBeatReorderDialog.tsx` as keyboard fallback), route `loom` in `frontend/src/router.tsx`, nav entry ("The Loom") in `frontend/src/layout/navSections.ts`.
 - Seeds: `data/seeds/seed_loom_threads.json`, `seed_loom_nodes.json`, `seed_loom_node_threads.json` — v2 fixture (3 threads, 15 nodes, 15 memberships, shared session, banked beat, provenance); wiring in `scripts/seed_database.py` (opt-in `--loom` flag, never part of "load all") and `scripts/export_db_seeds.py`.
 - Tests: `backend/tests/routers/test_loom.py` and colocated `frontend/src/features/loom/__tests__/`.
 
