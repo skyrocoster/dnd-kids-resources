@@ -111,6 +111,18 @@
   width: fit-content;
   max-width: 28rem;
   z-index: 2;
+  cursor: pointer;
+}
+
+.loom-lane--selected {
+  opacity: 1;
+  border-color: var(--md-primary);
+  box-shadow: 0 0 0 1px var(--md-primary), 0 4px 16px color-mix(in srgb, var(--md-primary) 18%, transparent);
+}
+
+.loom-lane--dimmed {
+  opacity: 0.42;
+  transition: opacity var(--motion-fast);
 }
 
 .loom-lane-title {
@@ -146,7 +158,7 @@
   margin-block: auto;
   height: 2px;
   width: 100%;
-  background: color-mix(in srgb, var(--md-outline-variant) 60%, transparent);
+  background: color-mix(in srgb, var(--md-outline-variant) 74%, transparent);
   z-index: 0;
 }
 
@@ -156,7 +168,7 @@
   display: flex;
   align-items: center;
   padding: var(--space-1) 0;
-  background: color-mix(in srgb, var(--md-surface-1) 78%, transparent);
+  background: color-mix(in srgb, var(--md-surface-1) 94%, var(--md-outline-variant));
 }
 
 .loom-lane-cap--start {
@@ -346,6 +358,13 @@
 .loom-weaver-section + .loom-weaver-section {
   padding-top: var(--space-3);
   border-top: 1px solid var(--md-outline-variant);
+}
+
+.loom-weaver-section--drag-over {
+  background: color-mix(in srgb, var(--md-tertiary-container) 22%, transparent);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3);
+  margin: calc(-1 * var(--space-3));
 }
 
 .loom-weaver-section-heading {
@@ -755,6 +774,12 @@
 
 .loom-stitch {
   stroke-linecap: round;
+  pointer-events: stroke;
+  transition: opacity var(--motion-fast);
+}
+
+.loom-stitch--dimmed {
+  opacity: 0.16;
 }
 
 .loom-stitch[data-color='thread-1'] { stroke: var(--md-loom-thread-1); }
@@ -764,8 +789,58 @@
 .loom-stitch[data-color='thread-5'] { stroke: var(--md-loom-thread-5); }
 .loom-stitch[data-color='thread-6'] { stroke: var(--md-loom-thread-6); }
 
+.loom-stitch:hover,
+.loom-stitch:focus-visible {
+  opacity: 1;
+  stroke-width: 5;
+}
+
+.loom-stitch--emphasized {
+  opacity: 1;
+  stroke-width: 5;
+}
+
+.loom-spawn-link[data-color='thread-1'] { stroke: var(--md-loom-thread-1); }
+.loom-spawn-link[data-color='thread-2'] { stroke: var(--md-loom-thread-2); }
+.loom-spawn-link[data-color='thread-3'] { stroke: var(--md-loom-thread-3); }
+.loom-spawn-link[data-color='thread-4'] { stroke: var(--md-loom-thread-4); }
+.loom-spawn-link[data-color='thread-5'] { stroke: var(--md-loom-thread-5); }
+.loom-spawn-link[data-color='thread-6'] { stroke: var(--md-loom-thread-6); }
+
 .loom-spawn-link {
   stroke-linecap: round;
+  pointer-events: stroke;
+  transition: opacity var(--motion-fast);
+}
+
+.loom-spawn-link--dimmed {
+  opacity: 0.16;
+}
+
+.loom-spawn-link:hover,
+.loom-spawn-link:focus-visible {
+  opacity: 1;
+  stroke-width: 4;
+}
+
+.loom-spawn-link--emphasized {
+  opacity: 1;
+  stroke-width: 4;
+}
+
+.loom-stitch-label {
+  font: var(--type-caption-size) / 1 var(--type-face);
+  fill: var(--md-on-surface-variant);
+  pointer-events: none;
+  user-select: none;
+}
+
+.loom-stitch-label-bg {
+  fill: color-mix(in srgb, var(--md-surface-1) 88%, transparent);
+}
+
+.loom-stitch-label--dimmed {
+  opacity: 0.16;
 }
 
 /* ─── Reduced motion ──────────────────────────────────────────────────── */
@@ -775,7 +850,10 @@
   .loom-lane-gap,
   .loom-lane-gap::before,
   .loom-weaver-thread-button,
-  .loom-error-banner-dismiss {
+  .loom-error-banner-dismiss,
+  .loom-stitch,
+  .loom-spawn-link,
+  .loom-lane--dimmed {
     transition: none;
   }
 
@@ -830,4 +908,22 @@
   outline: 2px solid var(--md-primary);
   outline-offset: 2px;
   border-radius: var(--radius-md);
+}
+
+.loom-lane-header:focus-visible {
+  outline: 2px solid var(--md-primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+.loom-weaver-thread-button:focus-visible {
+  outline: 2px solid var(--md-primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+.loom-beat-bank-tray-item:focus-visible {
+  outline: 2px solid var(--md-primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
 }

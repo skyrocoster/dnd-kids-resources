@@ -143,6 +143,48 @@ def test_create_spell_duplicate_name_fails(test_client):
     assert response.status_code == 400
 
 
+def test_update_spell_duplicate_name_fails(test_client):
+    """Test that updating a spell to a duplicate name fails."""
+    # Create two spells with unique names
+    spell_a = {
+        "name": "Duplicate Test A",
+        "level": 1,
+        "school": "evocation",
+        "casting_times": ["1 action"],
+        "range": "30 feet",
+        "components": ["V", "S"],
+        "duration": "Instantaneous",
+        "description": "First spell",
+        "concentration": False,
+        "ritual": False,
+    }
+    response = test_client.post("/api/spells", json=spell_a)
+    assert response.status_code == 201
+    spell_a_id = response.json()["id"]
+
+    spell_b = {
+        "name": "Duplicate Test B",
+        "level": 1,
+        "school": "evocation",
+        "casting_times": ["1 action"],
+        "range": "30 feet",
+        "components": ["V", "S"],
+        "duration": "Instantaneous",
+        "description": "Second spell",
+        "concentration": False,
+        "ritual": False,
+    }
+    response = test_client.post("/api/spells", json=spell_b)
+    assert response.status_code == 201
+    spell_b_id = response.json()["id"]
+
+    # Update spell B to have spell A's name
+    spell_b["name"] = "Duplicate Test A"
+    response = test_client.put(f"/api/spells/{spell_b_id}", json=spell_b)
+    assert response.status_code == 400
+    assert response.json()["detail"] == "A spell with this name already exists"
+
+
 def test_update_spell(test_client):
     """Test PUT /api/spells/{id} to update a spell."""
     # Get a spell first

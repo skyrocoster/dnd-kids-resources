@@ -6,8 +6,7 @@ import { bankedBeats, threadOrdered } from './loomGraph'
 import { beatReorderTarget } from './beatReorder'
 import { LoomSwimlanes } from './LoomSwimlanes'
 import { LoomThreadsContext } from './nodes/loomThreadsContext'
-import { LoomWeaverPanel } from './LoomWeaverPanel'
-import { LoomBeatBankTray } from './LoomBeatBankTray'
+import { LoomRail } from './LoomRail'
 import { LoomNodeEditor } from './LoomNodeEditor'
 import { LoomThreadManager } from './LoomThreadManager'
 import { LoomBeatReorderDialog } from './LoomBeatReorderDialog'
@@ -41,6 +40,7 @@ export function LoomPage() {
   const { tapestry, reload } = useLoomTapestry()
 
   const [selectedNodeId, setSelectedNodeId] = useState<number | null>(null)
+  const [selectedThreadId, setSelectedThreadId] = useState<number | null>(null)
   const [reorderThreadId, setReorderThreadId] = useState<number | null>(null)
   const [nodeEditor, setNodeEditor] = useState<{
     node?: LoomNodeType
@@ -70,10 +70,21 @@ export function LoomPage() {
 
   const handleNodeClick = useCallback((nodeId: number) => {
     setSelectedNodeId((prev) => prev === nodeId ? prev : nodeId)
+    setSelectedThreadId(null)
   }, [])
 
   const handlePaneClick = useCallback(() => {
     setSelectedNodeId(null)
+    setSelectedThreadId(null)
+  }, [])
+
+  const handleSelectThread = useCallback((threadId: number) => {
+    setSelectedThreadId(threadId)
+    setSelectedNodeId(null)
+  }, [])
+
+  const handleEditThread = useCallback((_threadId: number) => {
+    setThreadManagerOpen(true)
   }, [])
 
   const handleSelectVaultNode = (node: LoomNodeType) => {
@@ -107,6 +118,12 @@ export function LoomPage() {
 
   const handleFulfilNode = (node: LoomNodeType) => void runLifecycleCommand(() => fulfilLoomNode(node.id), 'Failed to fulfil the beat.')
   const handleBankNode = (node: LoomNodeType) => void runLifecycleCommand(() => bankLoomNode(node.id), 'Failed to bank the beat.')
+  const handleBankNodeById = (nodeId: number) => {
+    if (tapestry.status !== 'success') return
+    const node = tapestry.data.nodes.find((n) => n.id === nodeId)
+    if (!node) return
+    handleBankNode(node)
+  }
 
   const handleRestoreNode = (node: LoomNodeType, threadId: number) => {
     void runLifecycleCommand(
@@ -291,21 +308,20 @@ export function LoomPage() {
               nodes={tapestry.status === 'success' ? tapestry.data.nodes : []}
               selectedNodeId={selectedNodeId}
               onSelectNode={handleNodeClick}
+              selectedThreadId={selectedThreadId}
+              onSelectThread={handleSelectThread}
               onGapClick={handleGapClick}
               onReorder={handleReorder}
               onCrossLaneDrop={handleCrossLaneDrop}
               onGapRestore={handleGapRestore}
             />
-            <LoomBeatBankTray
-              nodes={banked}
-              threads={threads}
-              onSelectNode={handleSelectVaultNode}
-              onRestoreNode={handleRestoreNode}
-            />
           </div>
-          <LoomWeaverPanel
+          <LoomRail
             selectedNode={selectedNode}
             threads={threads}
+            selectedThreadId={selectedThreadId}
+            onSelectThread={handleSelectThread}
+            onEditThread={handleEditThread}
             onEdit={() => {
               if (!selectedNode) return
               setNodeEditor({ node: selectedNode, position: { x: selectedNode.x, y: selectedNode.y } })
@@ -316,10 +332,14 @@ export function LoomPage() {
             }}
             onFulfilNode={handleFulfilNode}
             onBankNode={handleBankNode}
+            onBankNodeById={handleBankNodeById}
             onReplaceNode={handleReplaceNode}
             onSpawnThread={handleSpawnThread}
             onChangeEnding={(node) => setNodeEditor({ node, position: { x: node.x, y: node.y } })}
             onUndoFulfil={handleUndoFulfil}
+            nodes={banked}
+            onSelectNode={handleSelectVaultNode}
+            onRestoreNode={handleRestoreNode}
           />
         </div>
       </div>

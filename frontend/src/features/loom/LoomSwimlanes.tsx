@@ -9,6 +9,8 @@ interface LoomSwimlanesProps {
   nodes: LoomNode[]
   selectedNodeId?: number | null
   onSelectNode?: (nodeId: number) => void
+  selectedThreadId?: number | null
+  onSelectThread?: (threadId: number) => void
   onGapClick?: (threadId: number, position: number) => void
   onReorder?: (threadId: number, nodeId: number, fromBodyIndex: number, toBodyIndex: number) => void
   onCrossLaneDrop?: (nodeId: number, sourceThreadId: number, targetThreadId: number, position: number, nodeKind: 'beat' | 'session') => void
@@ -20,6 +22,8 @@ export function LoomSwimlanes({
   nodes,
   selectedNodeId,
   onSelectNode,
+  selectedThreadId,
+  onSelectThread,
   onGapClick,
   onReorder,
   onCrossLaneDrop,
@@ -40,7 +44,7 @@ export function LoomSwimlanes({
       aria-label="Thread swimlanes"
       ref={scrollRefCallback}
     >
-      <LoomStitchLayer cardRects={cardRects} threads={threads} nodes={nodes} contentSize={contentSize} />
+      <LoomStitchLayer cardRects={cardRects} threads={threads} nodes={nodes} contentSize={contentSize} selectedNodeId={selectedNodeId} selectedThreadId={selectedThreadId} />
       {threads.map((thread) => (
         <LoomLane
           key={thread.id}
@@ -48,6 +52,8 @@ export function LoomSwimlanes({
           nodes={nodes}
           selectedNodeId={selectedNodeId}
           onSelectNode={onSelectNode}
+          selectedThreadId={selectedThreadId}
+          onSelectThread={onSelectThread}
           onRegisterRect={registerCard}
           onGapClick={onGapClick}
           onReorder={onReorder}
