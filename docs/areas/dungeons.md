@@ -1,6 +1,6 @@
 # Dungeons Area Guide
 
-> **Active plan:** [Dungeon Outside](../plans/active/dungeon-outside.md) (next up), then [Dungeon Connections](../plans/active/dungeon-connections.md).
+> **Active plan:** [Dungeon Connections](../plans/active/dungeon-connections.md).
 
 ## Scope
 
@@ -136,8 +136,8 @@ The session view is the surface that is open while a game is running: it must st
 
 ## Work queue
 
-- [Dungeon Outside](../plans/active/dungeon-outside.md) is active: wall kinds, per-side padding and a real extent, outside features, then clarity controls.
-- [Dungeon Connections](../plans/active/dungeon-connections.md) is active but not next: permanent per-dungeon session state, optional portal destinations with a connections resolve list, then cross-dungeon gateways. It inherits the next-up slot when Dungeon Outside completes — the two share `MapPortal` and `MapLayout` and must not run concurrently. It owns passage-session persistence.
+- [Dungeon Outside](../complete/dungeon-outside.md) shipped: wall kinds, per-side padding and a real extent, outside features, and clarity controls.
+- [Dungeon Connections](../plans/active/dungeon-connections.md) is active and next: permanent per-dungeon session state, optional portal destinations with a connections resolve list, then cross-dungeon gateways. It inherits the next-up slot after Dungeon Outside — the two share `MapPortal` and `MapLayout` and must not run concurrently. It owns passage-session persistence.
 - Create a focused plan before other deferred dungeon work, including cross-reference pop-outs.
 - New vocabulary from the active plan — Outside Feature, Wall Kind, Extent, Gateway — is added here by `reconcile` as each stage ships, not in advance.
 

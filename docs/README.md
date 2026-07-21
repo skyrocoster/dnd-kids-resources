@@ -15,7 +15,7 @@ This is the complete documentation inventory and task router. Read [../CLAUDE.md
 | Visual consistency work | [Visual Design](areas/visual-design.md) — plan archived | `areas/visual-design.md`, `DESIGN_SYSTEM.md`, `ARCHITECTURE.md`, `TESTING.md` |
 | Story threads, Loom tapestry, beats, or session nodes | Its area guide; create a focused plan if it has none | `areas/loom.md`, `DESIGN_SYSTEM.md`, `ARCHITECTURE.md`, `API_REFERENCE.md`, `DATA_MODEL.md`, `TESTING.md` |
 | Existing dungeon, encounter, monster, spell, or loot behavior | Its area guide; Spells is at [Validated Reference Text](plans/active/validated-reference-text.md) | `ARCHITECTURE.md`, `API_REFERENCE.md`, `DATA_MODEL.md`, `TESTING.md`, then the guide's active plan |
-| Wall kinds, map extent/padding, outside features, or map layer and density controls | [Dungeons](areas/dungeons.md) — [Dungeon Outside](plans/active/dungeon-outside.md) | `UX_PATTERNS.md`, `DESIGN_SYSTEM.md`, `DATA_MODEL.md`, `TESTING.md`, then the plan |
+| Wall kinds, map extent/padding, outside features, or map layer and density controls | [Dungeons](areas/dungeons.md) — [Dungeon Outside](complete/dungeon-outside.md) shipped | `UX_PATTERNS.md`, `DESIGN_SYSTEM.md`, `DATA_MODEL.md`, `TESTING.md`, then the plan |
 | Weapons, items, or NPCs (incl. NPC statblocks, the pull panel, or adding an NPC to an encounter) | [Reference Catalogs](areas/reference-catalogs.md) — [Weapon Quick Reference](plans/active/weapon-quick-reference.md) next | `DATA_MODEL.md`, `API_REFERENCE.md`, `UX_PATTERNS.md`, `TESTING.md` |
 | Players, recovery profiles, or player spell/weapon rosters | [Players](areas/players.md) — [Player Spellbook Recovery](plans/active/player-spellbook-recovery.md) blocked by its prerequisites | `DATA_MODEL.md`, `API_REFERENCE.md`, `UX_PATTERNS.md`, `TESTING.md`, then the plan |
 | API route or client contract | Relevant area guide; create a focused plan if it has none | `API_REFERENCE.md`, `ARCHITECTURE.md`, `TESTING.md` |
@@ -42,8 +42,7 @@ Authority: **Canonical** documents define current contracts. **Working** documen
 | [PLAN_TEMPLATE.md](PLAN_TEMPLATE.md) | Template | Canonical | Active | Creating, executing, or closing a plan | Plan execution or lifecycle requirements change |
 | [areas/documentation.md](areas/documentation.md) | Area guide | Canonical | No active plan | Documentation contract or validator work | Documentation routing or validation changes |
 | [areas/dungeons.md](areas/dungeons.md) | Area guide | Canonical | Active plan | Dungeon behavior | Dungeon ownership, source map, or active work changes |
-| [plans/active/dungeon-outside.md](plans/active/dungeon-outside.md) | Plan | Working | Active (next up) | Wall kinds, map extent and padding, outside features, or map layer/density controls | A stage ships, or its scope or UX decisions change |
-| [plans/active/dungeon-connections.md](plans/active/dungeon-connections.md) | Plan | Working | Active (not next) | Permanent session state, cross-dungeon gateways, or the connection resolve list | It becomes next up, or its scope or UX decisions change |
+| [plans/active/dungeon-connections.md](plans/active/dungeon-connections.md) | Plan | Working | Active (next up) | Permanent session state, cross-dungeon gateways, or the connection resolve list | It becomes next up, or its scope or UX decisions change |
 | [areas/encounters.md](areas/encounters.md) | Area guide | Canonical | No active plan | Encounter behavior | Encounter ownership, source map, or active work changes |
 | [areas/loot.md](areas/loot.md) | Area guide | Canonical | No active plan | Loot or item-bundle behavior | Loot ownership, source map, or active work changes |
 | [areas/loom.md](areas/loom.md) | Area guide | Canonical | No active plan | Story-thread (Loom) behavior | Loom ownership, source map, or active work changes |
@@ -84,6 +83,7 @@ Authority: **Canonical** documents define current contracts. **Working** documen
 | [complete/v2-rebuild-plan.md](complete/v2-rebuild-plan.md) | Archived plan | Historical | Complete | v2 rebuild history | Do not update except to repair archival metadata |
 | [complete/documentation_rework_plan.md](complete/documentation_rework_plan.md) | Archived plan | Historical | Complete | Documentation-contract implementation history | Do not update except to repair archival metadata |
 | [complete/area-context-refactor.md](complete/area-context-refactor.md) | Archived plan | Historical | Complete | Area-scoped context refactor history | Do not update except to repair archival metadata |
+| [complete/dungeon-outside.md](complete/dungeon-outside.md) | Archived plan | Historical | Complete | Wall kinds, padding, outside features, and map layer/density controls implementation history | Do not update except to repair archival metadata |
 
 ## Entry Points
 
