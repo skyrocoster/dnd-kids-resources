@@ -32,6 +32,7 @@ interface PropMarkerProps {
    * so `gridMarkerOffset`'s spacing actually separates same-cell markers instead of stacking
    * full-size circles a few px apart. */
   grouped?: boolean
+  simplified?: boolean
   onMouseEnter?: () => void
   onMouseLeave?: () => void
   onFocus?: () => void
@@ -50,6 +51,7 @@ export function PropMarker({
   interactive = true,
   offset,
   grouped,
+  simplified,
   onMouseEnter,
   onMouseLeave,
   onFocus,
@@ -118,9 +120,11 @@ export function PropMarker({
         style={{ stroke: `var(${token})` }}
         strokeDasharray={dasharray}
       />
-      <g transform={`translate(${cx - iconSize / 2}, ${cy - iconSize / 2})`}>
-        <Icon width={iconSize} height={iconSize} className="maplab-prop-icon" style={{ color: `var(${token})` }} />
-      </g>
+      {!simplified && (
+        <g transform={`translate(${cx - iconSize / 2}, ${cy - iconSize / 2})`}>
+          <Icon width={iconSize} height={iconSize} className="maplab-prop-icon" style={{ color: `var(${token})` }} />
+        </g>
+      )}
       <BadgeRing
         badges={badges}
         cx={cx}

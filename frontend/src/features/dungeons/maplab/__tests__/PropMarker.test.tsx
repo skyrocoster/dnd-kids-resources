@@ -82,6 +82,17 @@ describe('PropMarker bounded badge (M2)', () => {
     expect(getByRole('button', { name: 'Treasure chest — Multiple statuses: Trapped, Locked, Loot assigned' })).toBeTruthy()
   })
 
+  it('omits the kind icon when simplified is true, keeps the marker circle', () => {
+    const { container } = render(
+      <svg>
+        <PropMarker prop={prop()} cellSize={40} simplified />
+      </svg>,
+    )
+
+    expect(container.querySelector('.maplab-prop-marker')).toBeTruthy()
+    expect(container.querySelector('.maplab-prop-icon')).toBeNull()
+  })
+
   it('does not render legacy corner or loot badges when BadgeRing is active', () => {
     const { container } = renderMarker(prop({ locked: true, loot: { bundle_id: 1 } }))
 

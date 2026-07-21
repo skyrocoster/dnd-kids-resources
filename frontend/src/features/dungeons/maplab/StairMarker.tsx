@@ -31,6 +31,7 @@ interface StairMarkerProps {
    * so `gridMarkerOffset`'s spacing actually separates same-cell markers instead of stacking
    * full-size circles a few px apart. */
   grouped?: boolean
+  simplified?: boolean
   /** Viewer-only destination appended after the complete status narration. */
   destinationLabel?: string
   onMouseEnter?: () => void
@@ -52,6 +53,7 @@ export function StairMarker({
   trapDisarmed,
   offset,
   grouped,
+  simplified,
   destinationLabel,
   onMouseEnter,
   onMouseLeave,
@@ -105,9 +107,11 @@ export function StairMarker({
         style={{ stroke: `var(${STAIR_IDENTITY_TOKEN})` }}
         strokeDasharray={dasharray}
       />
-      <g transform={`translate(${cx - iconSize / 2}, ${cy - iconSize / 2})`}>
-        <Icon width={iconSize} height={iconSize} className="maplab-stair-icon" style={{ color: `var(${STAIR_IDENTITY_TOKEN})` }} />
-      </g>
+      {!simplified && (
+        <g transform={`translate(${cx - iconSize / 2}, ${cy - iconSize / 2})`}>
+          <Icon width={iconSize} height={iconSize} className="maplab-stair-icon" style={{ color: `var(${STAIR_IDENTITY_TOKEN})` }} />
+        </g>
+      )}
       <BadgeRing
         badges={badges}
         cx={cx}

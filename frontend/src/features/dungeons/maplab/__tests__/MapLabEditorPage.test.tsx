@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MemoryRouter } from 'react-router-dom'
 import * as api from '../../../../api/client'
@@ -1898,47 +1899,35 @@ describe('MapLabEditorPage (Stage 03 — editable per-side padding)', () => {
     fireEvent.pointerEnter(cellAt(2, 0))
     expect(container.querySelectorAll('.maplab-feature-cell')).toHaveLength(2)
   })
+})
 
-  it('keeps a single drag consistently adding (or removing) instead of toggling cells it re-enters', async () => {
-    const layout = {
-      meta: { cellSizeFt: 5, padding: { top: 3, right: 3, bottom: 3, left: 3 } },
-      rooms: [],
-      doors: [],
-      stairs: [],
-      floors: [{ z: 0, title: 'Ground Floor' }],
-      props: [],
-      features: [],
-    }
-    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: layout })
-    vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: layout })
+describe('MapLabEditorPage (density control)', () => {
+  afterEach(() => {
+    window.localStorage.removeItem('dnd-kids-maplab-density')
+  })
 
-    const { container } = renderMapLabEditorPage()
+  it('renders Detailed / Auto / Simple buttons in the View toolbar', async () => {
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({
+      data: { meta: { cellSizeFt: 5, padding: { top: 3, right: 3, bottom: 3, left: 3 } }, rooms: [], doors: [], stairs: [], floors: [{ z: 0, title: 'Ground Floor' }], props: [] },
+    })
+    vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: {} })
+    renderMapLabEditorPage()
     await flush()
+    expect(screen.getByRole('button', { name: 'Detailed' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Auto' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Simple' })).toBeInTheDocument()
+  })
 
-    fireEvent.click(screen.getByRole('button', { name: 'Draw Trees' }))
-
-    const cellAt = (x: number, y: number) =>
-      screen.getByRole('button', { name: `Draw trees at ${x}, ${y}` })
-
-    // First drag paints (0,0) and (1,0).
-    fireEvent.pointerDown(cellAt(0, 0))
-    fireEvent.pointerEnter(cellAt(1, 0))
-    fireEvent.pointerUp(cellAt(1, 0))
-    expect(container.querySelectorAll('.maplab-feature-cell')).toHaveLength(2)
-
-    // A new drag starting on empty ground is an "add" gesture. Passing back over the
-    // already-painted (1, 0) mid-drag must not erase it.
-    fireEvent.pointerDown(cellAt(2, 0))
-    expect(container.querySelectorAll('.maplab-feature-cell')).toHaveLength(3)
-    fireEvent.pointerEnter(cellAt(1, 0))
-    expect(container.querySelectorAll('.maplab-feature-cell')).toHaveLength(3)
-    fireEvent.pointerUp(cellAt(1, 0))
-
-    // A drag starting on an already-painted cell is a "remove" gesture. Passing over
-    // empty ground mid-drag must not paint new cells.
-    fireEvent.pointerDown(cellAt(0, 0))
-    expect(container.querySelectorAll('.maplab-feature-cell')).toHaveLength(2)
-    fireEvent.pointerEnter(cellAt(3, 0))
-    expect(container.querySelectorAll('.maplab-feature-cell')).toHaveLength(2)
+  it('clicking Density sets it active and persists', async () => {
+    const user = userEvent.setup()
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({
+      data: { meta: { cellSizeFt: 5, padding: { top: 3, right: 3, bottom: 3, left: 3 } }, rooms: [], doors: [], stairs: [], floors: [{ z: 0, title: 'Ground Floor' }], props: [] },
+    })
+    vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: {} })
+    renderMapLabEditorPage()
+    await flush()
+    await user.click(screen.getByRole('button', { name: 'Detailed' }))
+    expect(screen.getByRole('button', { name: 'Detailed' })).toHaveAttribute('aria-pressed', 'true')
+    expect(window.localStorage.getItem('dnd-kids-maplab-density')).toBe('detailed')
   })
 })

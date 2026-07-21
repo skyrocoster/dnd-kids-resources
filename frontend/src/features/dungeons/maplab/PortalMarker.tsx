@@ -26,6 +26,7 @@ interface PortalMarkerProps {
    * so `gridMarkerOffset`'s spacing actually separates same-cell markers instead of stacking
    * full-size circles a few px apart. */
   grouped?: boolean
+  simplified?: boolean
   onMouseEnter?: () => void
   onMouseLeave?: () => void
   onFocus?: () => void
@@ -42,6 +43,7 @@ export function PortalMarker({
   session,
   offset,
   grouped,
+  simplified,
   onMouseEnter,
   onMouseLeave,
   onFocus,
@@ -93,9 +95,11 @@ export function PortalMarker({
         style={{ stroke: `var(${PORTAL_IDENTITY_TOKEN})` }}
         strokeDasharray={dasharray}
       />
-      <g transform={`translate(${cx - iconSize / 2}, ${cy - iconSize / 2})`}>
-        <PortalIcon width={iconSize} height={iconSize} className="maplab-portal-icon" style={{ color: `var(${PORTAL_IDENTITY_TOKEN})` }} />
-      </g>
+      {!simplified && (
+        <g transform={`translate(${cx - iconSize / 2}, ${cy - iconSize / 2})`}>
+          <PortalIcon width={iconSize} height={iconSize} className="maplab-portal-icon" style={{ color: `var(${PORTAL_IDENTITY_TOKEN})` }} />
+        </g>
+      )}
       <BadgeRing
         badges={badges}
         cx={cx}

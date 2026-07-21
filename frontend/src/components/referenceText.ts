@@ -1,3 +1,6 @@
+import { createElement } from 'react'
+import { DiceText } from './DiceText'
+
 export interface LiteralReferenceTextNode {
   type: 'text'
   text: string
@@ -196,6 +199,31 @@ export function resolveReferenceText<Context>(
     const value = definition.resolve(context)
     return value === null || value === undefined ? definition.fallback : String(value)
   }).join('')
+}
+
+export interface ReferenceTextProps<Context> {
+  text: string
+  registry: ReferenceRegistry<Context>
+  context: Context
+  invalidFallback?: string
+  role?: string
+}
+
+export const INVALID_REFERENCE_TEXT_FALLBACK = 'Reference text unavailable'
+
+export function ReferenceText<Context>({
+  text,
+  registry,
+  context,
+  invalidFallback = INVALID_REFERENCE_TEXT_FALLBACK,
+  role,
+}: ReferenceTextProps<Context>) {
+  const result = validateReferenceText(text, registry)
+  const resolvedText = result.valid
+    ? resolveReferenceText(result.document, registry, context)
+    : invalidFallback
+
+  return createElement(DiceText, { text: resolvedText, role })
 }
 
 export interface SpellValueReferenceContext {

@@ -46,6 +46,39 @@ describe('SpellBrowserPage', () => {
     expect(screen.getByText('V, S')).toBeInTheDocument()
   })
 
+  it('shows quick rules before the full description', async () => {
+    vi.spyOn(api, 'listSpells').mockResolvedValue(spells)
+    const user = userEvent.setup()
+
+    render(<SpellBrowserPage />)
+    await screen.findByText('Plant Growth')
+
+    await user.click(screen.getByText('Plant Growth'))
+    const quickRules = screen.getByText(targetSpell.quick_rules!)
+    const description = screen.getByText(targetSpell.description)
+
+    expect(quickRules.compareDocumentPosition(description) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('renders quick-rule dice and generic spell value fallbacks without token syntax', async () => {
+    const spellWithReferences: Spell = {
+      ...targetSpell,
+      id: 10,
+      name: 'Reference Bolt',
+      level: 0,
+      quick_rules: 'Roll 1d20 + {spell_attack_bonus}; target saves against {spell_save_dc}.',
+      description: 'Full reference description.',
+    }
+    vi.spyOn(api, 'listSpells').mockResolvedValue([spellWithReferences])
+
+    const { container } = render(<SpellBrowserPage />)
+    await screen.findByRole('heading', { name: /Reference Bolt/ })
+
+    expect(container.querySelector('.spell-browser-quick-rules .dice-pill')).toHaveTextContent('1d20')
+    expect(container).toHaveTextContent('Roll 1d20 + your spell attack bonus; target saves against your spell save DC.')
+    expect(container.textContent).not.toContain('{spell_attack_bonus}')
+    expect(container.textContent).not.toContain('{spell_save_dc}')
+  })
   it('opens the editor when New Spell is clicked', async () => {
     vi.spyOn(api, 'listSpells').mockResolvedValue(spells)
     const user = userEvent.setup()

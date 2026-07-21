@@ -1283,6 +1283,47 @@ describe('MapLabPage (Stage 1 — Wall kind rendering)', () => {
   })
 })
 
+describe('MapLabPage (density control)', () => {
+  afterEach(() => {
+    window.localStorage.removeItem('dnd-kids-maplab-density')
+  })
+
+  it('renders Detailed / Auto / Simple buttons in the View toolbar', async () => {
+    renderMapLabPage()
+    await flush()
+    expect(screen.getByRole('button', { name: 'Detailed' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Auto' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Simple' })).toBeInTheDocument()
+  })
+
+  it('defaults to Auto pressed', async () => {
+    renderMapLabPage()
+    await flush()
+    expect(screen.getByRole('button', { name: 'Auto' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: 'Detailed' })).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByRole('button', { name: 'Simple' })).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  it('clicking Detailed sets it active', async () => {
+    const user = userEvent.setup()
+    renderMapLabPage()
+    await flush()
+    await user.click(screen.getByRole('button', { name: 'Detailed' }))
+    expect(screen.getByRole('button', { name: 'Detailed' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: 'Auto' })).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByRole('button', { name: 'Simple' })).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  it('clicking Simple sets it active and persists', async () => {
+    const user = userEvent.setup()
+    renderMapLabPage()
+    await flush()
+    await user.click(screen.getByRole('button', { name: 'Simple' }))
+    expect(screen.getByRole('button', { name: 'Simple' })).toHaveAttribute('aria-pressed', 'true')
+    expect(window.localStorage.getItem('dnd-kids-maplab-density')).toBe('simple')
+  })
+})
+
 describe('MapLabPage (Session view — layer toggles)', () => {
   afterEach(() => {
     for (const key of ['outside', 'props', 'passages', 'labels']) {

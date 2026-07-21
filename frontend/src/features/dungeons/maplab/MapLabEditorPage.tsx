@@ -23,7 +23,7 @@ import {
   ZoomOutIcon,
 } from '../../../components/icons'
 import { InspectorPanel } from './InspectorPanel'
-import { ToolbarTray, useMapLayerVisibility } from './MapLabPage'
+import { resolveMapDensity, ToolbarTray, useMapDensity, useMapLayerVisibility } from './MapLabPage'
 import { FixturePropertiesForm } from './FixturePropertiesForm'
 import { PropMarker } from './PropMarker'
 import { PortalMarker } from './PortalMarker'
@@ -278,11 +278,13 @@ export function MapLabEditorPage() {
   const [placementError, setPlacementError] = useState<string | null>(null)
   const [showGhostFloor, setShowGhostFloor] = useState(false)
   const { visible: layerVisible, toggleLayer } = useMapLayerVisibility()
+  const { density, setDensity } = useMapDensity()
   const suppressNextPaintClickRef = useRef(false)
   const dragProcessedRef = useRef(new Set<string>())
   const isFeatureDrawDraggingRef = useRef(false)
   const featureDrawModeRef = useRef<'add' | 'remove' | null>(null)
   const zoomApi = useMapCanvasZoom({ wheelZoomMode: 'always' })
+  const simplified = resolveMapDensity(density, zoomApi.zoom.scale) === 'simple'
   const [viewportSize, setViewportSize] = useState<ViewportSize>({ width: 0, height: 0 })
   const handleViewportResize = useCallback((size: ViewportSize) => setViewportSize(size), [])
   const clearRoomFootprintSelection = useCallback(() => {
@@ -690,6 +692,33 @@ export function MapLabEditorPage() {
           >
             Ghost lower floor
           </button>
+          <button
+            type="button"
+            className="maplab-pill-button"
+            aria-pressed={density === 'detailed'}
+            data-active={density === 'detailed' || undefined}
+            onClick={() => setDensity('detailed')}
+          >
+            Detailed
+          </button>
+          <button
+            type="button"
+            className="maplab-pill-button"
+            aria-pressed={density === 'auto'}
+            data-active={density === 'auto' || undefined}
+            onClick={() => setDensity('auto')}
+          >
+            Auto
+          </button>
+          <button
+            type="button"
+            className="maplab-pill-button"
+            aria-pressed={density === 'simple'}
+            data-active={density === 'simple' || undefined}
+            onClick={() => setDensity('simple')}
+          >
+            Simple
+          </button>
         </ToolbarTray>
         <ToolbarTray groupKey="editor-map" label="Map">
           <label className="maplab-field-row maplab-room-content-field maplab-editor-padding-input">
@@ -1078,6 +1107,7 @@ export function MapLabEditorPage() {
                 selected={isSelected}
                 offset={{ dx, dy }}
                 grouped={grouped}
+                simplified={simplified}
                 onClick={() => selectStair(isSelected ? null : stair.stair_id)}
               />
             )
@@ -1093,6 +1123,7 @@ export function MapLabEditorPage() {
                 selected={portal.portal_id === state.selectedPortalId}
                 offset={offset}
                 grouped={grouped}
+                simplified={simplified}
                 onClick={() => selectPortal(portal.portal_id === state.selectedPortalId ? null : portal.portal_id)}
               />
             )
@@ -1410,6 +1441,7 @@ export function MapLabEditorPage() {
                 selected={prop.prop_id === state.selectedPropId}
                 offset={propOffset}
                 grouped={propOffset?.grouped}
+                simplified={simplified}
                 onClick={() => selectProp(prop.prop_id === state.selectedPropId ? null : prop.prop_id)}
               />
             )

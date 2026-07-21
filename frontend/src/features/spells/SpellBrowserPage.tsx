@@ -6,6 +6,7 @@ import { BrowserLayout } from '../../components/BrowserLayout'
 import { Button } from '../../components/Button'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
 import { DiceText } from '../../components/DiceText'
+import { ReferenceText, spellValueReferenceRegistry } from '../../components/referenceText'
 import { SearchList } from '../../components/SearchList'
 import { StatePanel } from '../../components/StatePanel'
 import { initialRemoteState, remoteError, remoteLoading, remoteSuccess } from '../../components/remoteState'
@@ -147,6 +148,15 @@ export function SpellBrowserPage() {
                     {selected.concentration && <><dt>Concentration</dt><dd>Yes</dd></>}
                     {selected.ritual && <><dt>Ritual</dt><dd>Yes</dd></>}
                   </dl>
+                  {selected.quick_rules && (
+                    <p className="spell-browser-quick-rules">
+                      <ReferenceText
+                        text={selected.quick_rules}
+                        registry={spellValueReferenceRegistry}
+                        context={{}}
+                      />
+                    </p>
+                  )}
                   {selected.description && (
                     <p>
                       <DiceText text={selected.description} />

@@ -1,6 +1,6 @@
 # Validated Reference Text — concise rules can safely resolve character values
 
-> **Status:** Stage 2 shipped. Stage 3 is next: render Quick Rules in spell detail with resolved registered tokens and readable fallbacks.
+> **Status:** Stage 3 shipped. Stage 4 is next: generate and validate canonical quick-rules text for every seeded spell.
 
 - **Area guide:** [Spells](../../areas/spells.md)
 
@@ -111,4 +111,5 @@ Touch:        48px floor for every checkbox row and footer action.
 |-------|------------------------------|
 | 1 | Added a framework-neutral parsed reference-text model with extensible registry, validation, resolution, the two initial spell value tokens, and readable missing-context fallbacks. Focused tests cover malformed and unknown tokens, literal preservation, and composition with `DiceText`. |
 | 2 | Added required authored `quick_rules` across spell persistence, seed import/export, backend and frontend API contracts, nested player-spell responses, form round-tripping, and Spell editor validation. Legacy seeded rows may still read as `null` until the canonical seed pass, while create/update paths require nonblank text with only registered reference tokens. |
+| 3 | Added a shared React `ReferenceText` renderer that validates registered token text, resolves available spell values through the registry, uses declared missing-context fallbacks, and composes with `DiceText` without leaking raw braces. Spell detail now renders `quick_rules` before the full description as the leading rules summary, with generic spell value wording when no character context is selected. |
 

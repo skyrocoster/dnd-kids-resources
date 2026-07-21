@@ -163,6 +163,50 @@ export function useMapLayerVisibility(): {
   return { visible, toggleLayer }
 }
 
+export type MapDensity = 'detailed' | 'auto' | 'simple'
+
+const DENSITY_STORAGE_KEY = 'dnd-kids-maplab-density'
+export const AUTO_DENSITY_SIMPLE_THRESHOLD = 0.75
+
+function readStoredDensity(): MapDensity {
+  try {
+    const stored = window.localStorage.getItem(DENSITY_STORAGE_KEY)
+    if (stored === 'detailed' || stored === 'auto' || stored === 'simple') return stored
+  } catch {
+    // localStorage unavailable — use default
+  }
+  return 'auto'
+}
+
+/** Persisted density preference for the whole dungeon canvas — `Detailed` / `Auto` / `Simple`.
+ *  Same try/catch-and-ignore pattern as `useMapLayerVisibility`. */
+export function useMapDensity(): {
+  density: MapDensity
+  setDensity: (value: MapDensity) => void
+} {
+  const [density, setDensity] = useState<MapDensity>(() => readStoredDensity())
+
+  const updateDensity = useCallback((value: MapDensity) => {
+    setDensity(value)
+    try {
+      window.localStorage.setItem(DENSITY_STORAGE_KEY, value)
+    } catch {
+      // localStorage unavailable — density state just won't persist
+    }
+  }, [])
+
+  return { density, setDensity: updateDensity }
+}
+
+/** Resolves a density setting and zoom scale into a single `'detailed' | 'simple'` rendering
+ *  hint: `'detailed'` always detailed, `'simple'` always simple, `'auto'` delegates to the
+ *  `AUTO_DENSITY_SIMPLE_THRESHOLD` scale cutoff. */
+export function resolveMapDensity(density: MapDensity, scale: number): 'detailed' | 'simple' {
+  if (density === 'detailed') return 'detailed'
+  if (density === 'simple') return 'simple'
+  return scale < AUTO_DENSITY_SIMPLE_THRESHOLD ? 'simple' : 'detailed'
+}
+
 /** A collapsible toolbar group: label + chevron toggle always visible (so the group structure
  * stays legible collapsed), controls hidden via width/overflow (never `display:none`) when
  * collapsed. Shared by `MapLabPage`'s Session group and `MapLabEditorPage`'s Create/Session/View/
@@ -219,6 +263,8 @@ export function MapLabPage() {
   const [viewportSize, setViewportSize] = useState<ViewportSize>({ width: 0, height: 0 })
   const handleViewportResize = useCallback((size: ViewportSize) => setViewportSize(size), [])
   const { visible: layerVisible, toggleLayer } = useMapLayerVisibility()
+  const { density, setDensity } = useMapDensity()
+  const simplified = resolveMapDensity(density, zoomApi.zoom.scale) === 'simple'
   const allLayersHidden = MAP_LAYER_KEYS.every((key) => !layerVisible[key])
 
   useEffect(() => {
@@ -456,6 +502,33 @@ export function MapLabPage() {
           >
             Labels
           </button>
+          <button
+            type="button"
+            className="maplab-pill-button"
+            aria-pressed={density === 'detailed'}
+            data-active={density === 'detailed' || undefined}
+            onClick={() => setDensity('detailed')}
+          >
+            Detailed
+          </button>
+          <button
+            type="button"
+            className="maplab-pill-button"
+            aria-pressed={density === 'auto'}
+            data-active={density === 'auto' || undefined}
+            onClick={() => setDensity('auto')}
+          >
+            Auto
+          </button>
+          <button
+            type="button"
+            className="maplab-pill-button"
+            aria-pressed={density === 'simple'}
+            data-active={density === 'simple' || undefined}
+            onClick={() => setDensity('simple')}
+          >
+            Simple
+          </button>
         </ToolbarTray>
       </div>
 
@@ -664,6 +737,7 @@ export function MapLabPage() {
                 trapDisarmed={stair.trapped && session.trapDisarmed}
                 offset={{ dx, dy }}
                 grouped={grouped}
+                simplified={simplified}
                 destinationLabel={`go to floor ${targetZ}`}
                 onMouseEnter={() => setHoveredInspectable({ kind: 'stair', id: stair.stair_id })}
                 onMouseLeave={() => setHoveredInspectable(null)}
@@ -684,6 +758,7 @@ export function MapLabPage() {
                 session={portalSession(portal)}
                 offset={{ dx, dy }}
                 grouped={grouped}
+                simplified={simplified}
                 onMouseEnter={() => setHoveredInspectable({ kind: 'portal', id: portal.portal_id })}
                 onMouseLeave={() => setHoveredInspectable(null)}
                 onFocus={() => setFocusedInspectable({ kind: 'portal', id: portal.portal_id })}
@@ -702,6 +777,7 @@ export function MapLabPage() {
                 cellSize={CELL_SIZE}
                 offset={propOffset}
                 grouped={propOffset?.grouped}
+                simplified={simplified}
                 onMouseEnter={() => setHoveredInspectable({ kind: 'prop', id: prop.prop_id })}
                 onMouseLeave={() => setHoveredInspectable(null)}
                 onFocus={() => setFocusedInspectable({ kind: 'prop', id: prop.prop_id })}

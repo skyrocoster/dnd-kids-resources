@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { DiceText } from '../DiceText'
 import {
   parseReferenceText,
+  ReferenceText,
   resolveReferenceText,
   spellValueReferenceRegistry,
   validateReferenceText,
@@ -105,6 +106,56 @@ describe('reference text', () => {
     ])
   })
 
+  it('renders registered reference text with resolved numeric context', () => {
+    const { container } = render(
+      <ReferenceText
+        text="Attack +{spell_attack_bonus}; save DC {spell_save_dc}."
+        registry={spellValueReferenceRegistry}
+        context={{ spell_attack_bonus: 7, spell_save_dc: 15 }}
+      />,
+    )
+
+    expect(container).toHaveTextContent('Attack +7; save DC 15.')
+  })
+
+  it('renders registered reference text with fallback wording when context is missing', () => {
+    const { container } = render(
+      <ReferenceText
+        text="Attack +{spell_attack_bonus}; save DC {spell_save_dc}."
+        registry={spellValueReferenceRegistry}
+        context={{}}
+      />,
+    )
+
+    expect(container).toHaveTextContent('Attack +your spell attack bonus; save DC your spell save DC.')
+  })
+
+  it('renders dice pills after resolving reference text', () => {
+    const { container } = render(
+      <ReferenceText
+        text="Roll 1d20 + {spell_attack_bonus}."
+        registry={spellValueReferenceRegistry}
+        context={{ spell_attack_bonus: 6 }}
+      />,
+    )
+
+    expect(container.querySelector('.dice-pill')).toHaveTextContent('1d20')
+    expect(container).toHaveTextContent('Roll 1d20+6.')
+  })
+
+  it('renders invalid reference text as a readable fallback without raw braces', () => {
+    const { container } = render(
+      <ReferenceText
+        text="Attack with {unknown_bonus}."
+        registry={spellValueReferenceRegistry}
+        context={{ spell_attack_bonus: 6 }}
+      />,
+    )
+
+    expect(container).toHaveTextContent('Reference text unavailable')
+    expect(container.textContent).not.toContain('{')
+    expect(container.textContent).not.toContain('}')
+  })
   it('composes resolved reference text with DiceText', () => {
     const text = resolve(
       'Roll 1d20 + {spell_attack_bonus}.',

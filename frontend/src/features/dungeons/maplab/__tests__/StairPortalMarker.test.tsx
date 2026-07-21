@@ -135,6 +135,17 @@ describe('StairMarker', () => {
 
     expect(container.querySelector('.maplab-badge')).toHaveAttribute('transform', 'translate(68, 56)')
   })
+
+  it('omits the kind icon when simplified is true, keeps the marker circle', () => {
+    const { container } = render(
+      <svg>
+        <StairMarker stair={stair()} cellSize={40} cell={[1, 1]} activeZ={1} simplified />
+      </svg>,
+    )
+
+    expect(container.querySelector('.maplab-stair-marker')).toBeTruthy()
+    expect(container.querySelector('.maplab-stair-icon')).toBeNull()
+  })
 })
 
 describe('PortalMarker', () => {
@@ -159,5 +170,16 @@ describe('PortalMarker', () => {
     )
 
     expect(container.querySelector('.maplab-badge')).toHaveAttribute('transform', 'translate(68, 56)')
+  })
+
+  it('omits the kind icon when simplified is true, keeps the marker circle', () => {
+    const { container } = render(
+      <svg>
+        <PortalMarker portal={portal()} cellSize={40} simplified />
+      </svg>,
+    )
+
+    expect(container.querySelector('.maplab-portal-marker')).toBeTruthy()
+    expect(container.querySelector('.maplab-portal-icon')).toBeNull()
   })
 })
