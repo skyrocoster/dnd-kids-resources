@@ -15,8 +15,8 @@ const baseEncounter: Encounter = {
   title: 'Kennels',
   active_index: 0,
   creatures: [
-    { monster_id: 1, original_name: 'Goblin', name: 'Goblin', hp_current: 7, hp_max: 7, ac: 15, status: 'alive', conditions: [] },
-    { monster_id: 2, original_name: 'Wolf', name: 'Wolf', hp_current: 11, hp_max: 11, ac: 13, status: 'alive', conditions: [] },
+    { creature_id: 1, source_kind: 'monster', original_name: 'Goblin', name: 'Goblin', hp_current: 7, hp_max: 7, ac: 15, status: 'alive', conditions: [] },
+    { creature_id: 2, source_kind: 'monster', original_name: 'Wolf', name: 'Wolf', hp_current: 11, hp_max: 11, ac: 13, status: 'alive', conditions: [] },
   ],
 }
 

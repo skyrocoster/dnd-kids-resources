@@ -15,9 +15,9 @@ const baseEncounter: Encounter = {
   title: 'Kennels',
   active_index: null,
   creatures: [
-    { monster_id: 1, original_name: 'Goblin', name: 'Goblin', hp_current: 7, hp_max: 7, ac: 15, status: 'alive', conditions: [] },
-    { monster_id: 2, original_name: 'Wolf', name: 'Wolf', hp_current: 11, hp_max: 11, ac: 13, status: 'alive', conditions: [] },
-    { monster_id: 3, original_name: 'Bandit', name: 'Bandit', hp_current: 11, hp_max: 11, ac: 12, status: 'alive', conditions: [] },
+    { creature_id: 1, source_kind: 'monster', original_name: 'Goblin', name: 'Goblin', hp_current: 7, hp_max: 7, ac: 15, status: 'alive', conditions: [] },
+    { creature_id: 2, source_kind: 'monster', original_name: 'Wolf', name: 'Wolf', hp_current: 11, hp_max: 11, ac: 13, status: 'alive', conditions: [] },
+    { creature_id: 3, source_kind: 'monster', original_name: 'Bandit', name: 'Bandit', hp_current: 11, hp_max: 11, ac: 12, status: 'alive', conditions: [] },
   ],
 }
 
@@ -181,7 +181,8 @@ describe('addFromMonster', () => {
     const next = encounterRunnerReducer(state, { type: 'addFromMonster', monster: owlbear })
     expect(next.combatants).toHaveLength(4)
     const added = next.combatants[3]
-    expect(added.monster_id).toBe(42)
+    expect(added.creature_id).toBe(42)
+    expect(added.source_kind).toBe('monster')
     expect(added.name).toBe('Owlbear')
     expect(added.hp_current).toBe(59)
     expect(added.hp_max).toBe(59)
@@ -340,7 +341,7 @@ describe('addPlayer', () => {
     expect(player.hp_current).toBeNull()
     expect(player.hp_max).toBeNull()
     expect(player.ac).toBeNull()
-    expect(player.monster_id).toBeNull()
+    expect(player.creature_id).toBeNull()
     expect(player.conditions).toEqual(['prone'])
     expect(player.status).toBe('alive')
   })
@@ -368,7 +369,7 @@ describe('combatantFromPlayer', () => {
     expect(player.hp_current).toBeNull()
     expect(player.hp_max).toBeNull()
     expect(player.ac).toBeNull()
-    expect(player.monster_id).toBeNull()
+    expect(player.creature_id).toBeNull()
     expect(player.original_name).toBe('Gandalf')
     expect(player.name).toBe('Gandalf')
     expect(player.status).toBe('alive')

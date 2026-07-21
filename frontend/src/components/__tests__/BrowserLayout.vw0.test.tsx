@@ -189,11 +189,11 @@ const npcA: NPC = {
   race: 'Elf',
   gender: 'Female',
   background: 'Sage',
-  stats: { str: 10, dex: 14, con: 12, int: 16, wis: 13, cha: 11 },
+  abilities: { str: 10, dex: 14, con: 12, int: 16, wis: 13, cha: 11 },
   appearance: { summary: 'Tall with silver hair.' },
-  armor_class: 12,
-  hit_points: 22,
-  speed: '30 ft.',
+  ac: { value: 12, note: null, alternatives: [] },
+  hp: { average: 22, formula: null },
+  speed: [{ mode: 'walk', feet: 30, note: null, hover: false }],
   notes: 'A helpful wizard.',
 }
 
@@ -203,11 +203,11 @@ const npcB: NPC = {
   race: 'Human',
   gender: 'Male',
   background: 'Soldier',
-  stats: { str: 16, dex: 12, con: 14, int: 10, wis: 11, cha: 12 },
+  abilities: { str: 16, dex: 12, con: 14, int: 10, wis: 11, cha: 12 },
   appearance: { summary: 'Stocky build.' },
-  armor_class: 16,
-  hit_points: 45,
-  speed: '30 ft.',
+  ac: { value: 16, note: null, alternatives: [] },
+  hp: { average: 45, formula: null },
+  speed: [{ mode: 'walk', feet: 30, note: null, hover: false }],
   notes: 'Retired guard.',
 }
 
@@ -246,7 +246,8 @@ const encounterA: Encounter = {
   title: 'Goblin Ambush',
   creatures: [
     {
-      monster_id: 1,
+      creature_id: 1,
+      source_kind: 'monster',
       original_name: 'Goblin',
       name: 'Goblin',
       hp_current: 7,

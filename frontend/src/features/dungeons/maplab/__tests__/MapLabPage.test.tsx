@@ -75,18 +75,29 @@ async function flush() {
     await Promise.resolve()
   })
 }
+const miraNpc: NPC = {
+  id: 9,
+  name: 'Mira',
+  race: 'Human',
+  background: 'Scout',
+  appearance: { hair_colour: 'black', eye_colour: 'brown' },
+  notes: 'A careful scout.',
+  ac: { value: 15, note: null, alternatives: [] },
+  hp: { average: 18, formula: '4d8' },
+  speed: [
+    { mode: 'walk', feet: 30, note: null, hover: false },
+    { mode: 'climb', feet: 20, note: null, hover: false },
+  ],
+  abilities: { str: 10, dex: 16, con: 12, int: 11, wis: 14, cha: 9 },
+}
 
 // These behavior tests were written against the small `mapLabLayout` sample from maplabData.ts
 // (6x4 hall, L-shape Armoury, seeded chest/trap-door), so pin that as the default backend layout
 // here; per-test `vi.spyOn` calls still override it where a test supplies its own `backendLayout`.
 beforeEach(() => {
   vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: mapLabLayout as unknown as Record<string, unknown> })
-  vi.spyOn(api, 'listNPCs').mockResolvedValue([{ id: 9, name: 'Mira' }] as NPC[])
-  vi.spyOn(api, 'getNPC').mockResolvedValue({
-    id: 9,
-    name: 'Mira',
-    notes: 'A careful scout.',
-  } as NPC)
+  vi.spyOn(api, 'listNPCs').mockResolvedValue([{ id: 9, name: 'Mira' }])
+  vi.spyOn(api, 'getNPC').mockResolvedValue(miraNpc)
   Element.prototype.scrollIntoView = vi.fn()
 })
 
@@ -918,6 +929,11 @@ describe('MapLabPage (R4 viewer room-reading surface)', () => {
     await user.click(await screen.findByRole('button', { name: 'Mira' }))
     expect(await screen.findByRole('dialog', { name: 'Mira' })).toBeInTheDocument()
     expect(screen.getByTestId('npc-stat-card')).toBeInTheDocument()
+    expect(screen.getByText('Black hair, brown eyes')).toBeInTheDocument()
+    expect(screen.getByText('15')).toBeInTheDocument()
+    expect(screen.getByText('18')).toBeInTheDocument()
+    expect(screen.getByText('30 ft., climb 20 ft.')).toBeInTheDocument()
+    expect(screen.getByText('+3')).toBeInTheDocument()
   })
 
   it('NPC dock reports a load failure through StatePanel, not a bare alert', async () => {
@@ -1146,8 +1162,8 @@ describe('Design Phase J1 — toolbar trays', () => {
 describe('VT0 — Viewer live-surface scaffolding seams', () => {
   beforeEach(() => {
     vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: mapLabLayout as unknown as Record<string, unknown> })
-    vi.spyOn(api, 'listNPCs').mockResolvedValue([{ id: 9, name: 'Mira' }] as NPC[])
-    vi.spyOn(api, 'getNPC').mockResolvedValue({ id: 9, name: 'Mira', notes: 'A careful scout.' } as NPC)
+    vi.spyOn(api, 'listNPCs').mockResolvedValue([{ id: 9, name: 'Mira' }])
+    vi.spyOn(api, 'getNPC').mockResolvedValue(miraNpc)
     Element.prototype.scrollIntoView = vi.fn()
   })
 

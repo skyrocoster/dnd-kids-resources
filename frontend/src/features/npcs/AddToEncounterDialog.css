@@ -1,0 +1,17 @@
+.add-to-encounter-dialog {
+  max-height: 85vh;
+  max-width: 28rem;
+}
+
+.add-to-encounter-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.add-to-encounter-footer-status {
+  margin: 0 0 0 0.5rem;
+  font-size: var(--type-body-sm-size);
+  color: var(--variant-danger, #ba1a1a);
+  line-height: var(--type-label-line);
+}

@@ -132,6 +132,11 @@ When adding a new endpoint:
 
 `backend/app/routers/encounters.py` — encounter (combat) CRUD.
 
+Each entry in an encounter's `creatures` JSON array may carry a soft typed source reference:
+`creature_id` is the source record ID and `source_kind` is `"monster"` or `"npc"`. Manually added
+player rows may use a null `creature_id`; the existing `kind: "player"` field describes combatant
+behavior and is separate from `source_kind`. No database foreign key is enforced for this JSON field.
+
 | Method | Path | Purpose | Request schema | Response schema |
 |---|---|---|---|---|
 | GET | `/api/encounters` | List all encounters | `limit` (1-500; default 100), `offset` (default 0) | `List[Encounter]` |
@@ -242,8 +247,8 @@ All request and response body shapes are defined in `backend/app/schemas.py` as 
 - **Item:** id, name, value_gp, category, description
 - **LootBundle:** id, name, gold, contents (JSON loot-entry array)
 - **Player:** id, name, class_, level
-- **NPC:** id, name, race, gender, background, size, stats (JSON), armor_class, hit_points, speed, saving_throws (JSON), skills (JSON), senses (JSON), languages, appearance (JSON), notes
-- **Encounter:** id, title, creatures (JSON)
+- **NPC:** id, name, race, gender, background, appearance (JSON), notes, plus the monster statblock projection — sizes (JSON), alignment, creature_type (JSON), ac (JSON), hp (JSON), speed (JSON), abilities (JSON), saving_throws (JSON), skills (JSON), passive_perception, damage_resistances (JSON), damage_immunities (JSON), damage_vulnerabilities (JSON), condition_immunities (JSON), senses (JSON), languages (JSON), features (JSON), cr, cr_note, experience_points
+- **Encounter:** id, title, creatures (JSON entries with optional `creature_id` and `source_kind`), active_index
 - **Dungeon:** id, title, data (JSON)
 - **MapLayoutBlob:** data (JSON)
 

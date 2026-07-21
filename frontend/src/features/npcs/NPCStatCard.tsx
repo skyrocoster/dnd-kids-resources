@@ -1,55 +1,33 @@
 import type { NPC } from '../../api/types'
 import { DiceText } from '../../components/DiceText'
-import { composeAppearance, formatModifier, getAbilityScores, hasCombatStats, identityLine } from './npcModel'
+import { MonsterStatBlock } from '../monsters/MonsterStatBlock'
+import {
+  composeAppearance,
+  formatMovementSpeeds,
+  hasCombatStats,
+  hasStatblock,
+  identityLine,
+  npcToMonsterView,
+} from './npcModel'
 import './NPCStatCard.css'
 
 interface NPCStatCardProps {
   npc: NPC
   compact?: boolean
-}
-
-function humanizeKey(key: string): string {
-  return key
-    .replace(/_/g, ' ')
-    .split(' ')
-    .map((word) => (word ? word.charAt(0).toUpperCase() + word.slice(1) : word))
-    .join(' ')
-}
-
-function formatDictEntries(dict: Record<string, unknown> | null | undefined): { label: string; value: string }[] {
-  if (!dict || typeof dict !== 'object') return []
-  return Object.entries(dict)
-    .filter(([, value]) => value != null && String(value).trim() !== '')
-    .map(([key, value]) => ({
-      label: humanizeKey(key),
-      value: typeof value === 'number' ? formatModifier(value) : String(value),
-    }))
-}
-
-function formatSenses(senses: Record<string, unknown>[] | null | undefined): string[] {
-  if (!senses) return []
-  return senses
-    .map((sense) => {
-      const type = sense.type != null ? String(sense.type) : ''
-      const range = sense.range != null ? String(sense.range) : ''
-      return `${type} ${range}`.trim()
-    })
-    .filter((entry) => entry !== '')
+  onPull?: () => void
 }
 
 /**
  * The character dossier: identity (monogram, name, race/gender/background,
  * composed appearance) is the hero, roleplay notes sit directly under it,
- * then progressively-disclosed stat detail — each section only when present.
+ * then progressively-disclosed stat detail - each section only when present.
  */
-export function NPCStatCard({ npc, compact = false }: NPCStatCardProps) {
+export function NPCStatCard({ npc, compact = false, onPull }: NPCStatCardProps) {
   const identity = identityLine(npc)
   const appearance = composeAppearance(npc.appearance)
-  const abilities = getAbilityScores(npc)
-  const savingThrows = formatDictEntries(npc.saving_throws)
-  const skills = formatDictEntries(npc.skills)
-  const senses = formatSenses(npc.senses)
+  const speed = formatMovementSpeeds(npc.speed)
   const showStatStrip = hasCombatStats(npc)
+  const showMonsterBlock = hasStatblock(npc)
 
   return (
     <article
@@ -76,70 +54,41 @@ export function NPCStatCard({ npc, compact = false }: NPCStatCardProps) {
 
       {showStatStrip && (
         <div className="npc-stat-card-strip">
-          {npc.armor_class != null && (
+          {npc.ac != null && (
             <div className="npc-stat-card-strip-item">
               <span className="npc-stat-card-strip-label">AC</span>
-              <span className="npc-stat-card-strip-value">{npc.armor_class}</span>
+              <span className="npc-stat-card-strip-value">{npc.ac.value}</span>
             </div>
           )}
-          {npc.hit_points != null && (
+          {npc.hp != null && (
             <div className="npc-stat-card-strip-item">
               <span className="npc-stat-card-strip-label">HP</span>
-              <span className="npc-stat-card-strip-value">{npc.hit_points}</span>
+              <span className="npc-stat-card-strip-value">{npc.hp.average}</span>
             </div>
           )}
-          {npc.speed && (
+          {speed && (
             <div className="npc-stat-card-strip-item">
               <span className="npc-stat-card-strip-label">Speed</span>
-              <span className="npc-stat-card-strip-value">{npc.speed}</span>
+              <span className="npc-stat-card-strip-value">{speed}</span>
             </div>
           )}
         </div>
       )}
 
-      {abilities.length > 0 && (
-        <div className="npc-stat-card-abilities" role="group" aria-label="Ability scores">
-          {abilities.map((ability) => (
-            <div className="npc-stat-card-ability" key={ability.key}>
-              <span className="npc-stat-card-ability-key">{ability.key}</span>
-              <span className="npc-stat-card-ability-score">{ability.score}</span>
-              <span className="npc-stat-card-ability-modifier">{formatModifier(ability.modifier)}</span>
-            </div>
-          ))}
+      {showMonsterBlock ? (
+        <MonsterStatBlock monster={npcToMonsterView(npc)} showIdentity={false} showStrip={false} />
+      ) : !compact ? (
+        <div className="npc-stat-card-empty">
+          <p className="npc-stat-card-empty-text">No combat stats yet.</p>
+          <button
+            className="npc-stat-card-empty-button"
+            disabled={!onPull}
+            onClick={onPull}
+          >
+            Pull from a monster…
+          </button>
         </div>
-      )}
-
-      {savingThrows.length > 0 && (
-        <section className="npc-stat-card-section">
-          <h4 className="npc-stat-card-section-title">Saving Throws</h4>
-          <p className="npc-stat-card-section-body">
-            {savingThrows.map((entry) => `${entry.label} ${entry.value}`).join(', ')}
-          </p>
-        </section>
-      )}
-
-      {skills.length > 0 && (
-        <section className="npc-stat-card-section">
-          <h4 className="npc-stat-card-section-title">Skills</h4>
-          <p className="npc-stat-card-section-body">
-            {skills.map((entry) => `${entry.label} ${entry.value}`).join(', ')}
-          </p>
-        </section>
-      )}
-
-      {senses.length > 0 && (
-        <section className="npc-stat-card-section">
-          <h4 className="npc-stat-card-section-title">Senses</h4>
-          <p className="npc-stat-card-section-body">{senses.join(', ')}</p>
-        </section>
-      )}
-
-      {npc.languages && (
-        <section className="npc-stat-card-section">
-          <h4 className="npc-stat-card-section-title">Languages</h4>
-          <p className="npc-stat-card-section-body">{npc.languages}</p>
-        </section>
-      )}
+      ) : null}
     </article>
   )
 }

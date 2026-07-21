@@ -336,24 +336,37 @@ def populate_npcs(cursor, conn, force=False):
         try:
             cursor.execute("""
                 INSERT INTO npcs
-                (id, name, race, gender, background, size, stats, armor_class, hit_points, speed,
-                 saving_throws, skills, senses, languages, appearance, notes)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (id, name, race, gender, background, sizes, alignment, creature_type, ac, hp, speed,
+                 abilities, saving_throws, skills, passive_perception, damage_resistances,
+                 damage_immunities, damage_vulnerabilities, condition_immunities, senses, languages,
+                 features, cr, cr_note, experience_points, appearance, notes)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
-                npc.get('npc_id'),
+                npc.get('id'),
                 npc.get('name'),
                 npc.get('race'),
                 npc.get('gender'),
                 npc.get('background'),
-                npc.get('size'),
-                serialize_for_db(npc.get('stats')),
-                npc.get('armor_class'),
-                npc.get('hit_points'),
-                npc.get('speed'),
+                serialize_for_db(npc.get('sizes')),
+                npc.get('alignment'),
+                serialize_for_db(npc.get('creature_type')),
+                serialize_for_db(npc.get('ac')),
+                serialize_for_db(npc.get('hp')),
+                serialize_for_db(npc.get('speed')),
+                serialize_for_db(npc.get('abilities')),
                 serialize_for_db(npc.get('saving_throws')),
                 serialize_for_db(npc.get('skills')),
+                npc.get('passive_perception'),
+                serialize_for_db(npc.get('damage_resistances')),
+                serialize_for_db(npc.get('damage_immunities')),
+                serialize_for_db(npc.get('damage_vulnerabilities')),
+                serialize_for_db(npc.get('condition_immunities')),
                 serialize_for_db(npc.get('senses')),
-                npc.get('languages'),
+                serialize_for_db(npc.get('languages')),
+                serialize_for_db(npc.get('features')),
+                npc.get('cr'),
+                npc.get('cr_note'),
+                npc.get('experience_points'),
                 serialize_for_db(npc.get('appearance')),
                 npc.get('notes')
             ))

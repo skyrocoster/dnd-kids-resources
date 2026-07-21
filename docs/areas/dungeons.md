@@ -1,6 +1,6 @@
 # Dungeons Area Guide
 
-> **Active plan:** None.
+> **Active plan:** [Dungeon Outside](../plans/active/dungeon-outside.md) (next up), then [Dungeon Connections](../plans/active/dungeon-connections.md).
 
 ## Scope
 
@@ -13,8 +13,8 @@ A runtime-created record with a title and a data blob containing room-reading co
 _Avoid_: adventure, module
 
 **Dungeon Data**:
-The JSON blob containing `general_info`, rooms, doors, floors, stairs, corridors, and map image.
-_Avoid_: content_blob, room_data
+The JSON blob containing `general_info`, rooms, doors, floors, stairs, and map image.
+_Avoid_: content_blob, room_data, corridor — a stale term surviving only in `archive/ingestion/parse_dungeon.py`, not in the live model.
 
 **Map Layout**:
 The geometry and coordinate model stored separately: rooms, doors, stairs, floors, props, and portals with cell coordinates.
@@ -119,10 +119,15 @@ The session view is the surface that is open while a game is running: it must st
 
 - Runtime-authored dungeons and layouts are not seed data and are never exported.
 - Preserve Map Lab geometry, reducer, autosave, zoom/pan, fullscreen, and layout persistence unless a focused plan explicitly owns them.
+- Rooms are the focal element of the map. Anything drawn outside them is reinforcement and must not out-shout them.
+- No authored map content is ever silently clipped by the map's extent.
 
 ## Work queue
 
-- Create a focused plan before deferred dungeon work, including passage-session persistence or cross-reference pop-outs.
+- [Dungeon Outside](../plans/active/dungeon-outside.md) is active: wall kinds, per-side padding and a real extent, outside features, then clarity controls.
+- [Dungeon Connections](../plans/active/dungeon-connections.md) is active but not next: permanent per-dungeon session state, optional portal destinations with a connections resolve list, then cross-dungeon gateways. It inherits the next-up slot when Dungeon Outside completes — the two share `MapPortal` and `MapLayout` and must not run concurrently. It owns passage-session persistence.
+- Create a focused plan before other deferred dungeon work, including cross-reference pop-outs.
+- New vocabulary from the active plan — Outside Feature, Wall Kind, Extent, Gateway — is added here by `reconcile` as each stage ships, not in advance.
 
 ## Cross-references
 

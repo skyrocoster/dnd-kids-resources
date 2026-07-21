@@ -18,6 +18,8 @@ import './MonsterStatBlock.css'
 
 interface MonsterStatBlockProps {
   monster: Monster
+  showIdentity?: boolean
+  showStrip?: boolean
 }
 
 function RegionHeading({ children }: { children: string }) {
@@ -36,7 +38,7 @@ function FeatureBlock({ feature }: { feature: Feature }) {
   )
 }
 
-export function MonsterStatBlock({ monster }: MonsterStatBlockProps) {
+export function MonsterStatBlock({ monster, showIdentity = true, showStrip = true }: MonsterStatBlockProps) {
   const abilityScores = getAbilityScores(monster)
   const saves = formatSavingThrows(monster)
   const skills = formatSkills(monster)
@@ -55,13 +57,15 @@ export function MonsterStatBlock({ monster }: MonsterStatBlockProps) {
 
   return (
     <article className="monster-stat-block" data-variant="monster" data-testid="monster-stat-block">
-      <section className="monster-stat-block-region" data-region="identity">
-        <h3 className="monster-stat-block-name">{monster.name}</h3>
-        {identity && <p className="monster-stat-block-identity-line">{identity}</p>}
-        {cr && <p className="monster-stat-block-cr">{cr}</p>}
-      </section>
+      {showIdentity && (
+        <section className="monster-stat-block-region" data-region="identity">
+          <h3 className="monster-stat-block-name">{monster.name}</h3>
+          {identity && <p className="monster-stat-block-identity-line">{identity}</p>}
+          {cr && <p className="monster-stat-block-cr">{cr}</p>}
+        </section>
+      )}
 
-      {(ac || hp || speed) && (
+      {showStrip && (ac || hp || speed) && (
         <div className="monster-stat-block-strip">
           {ac && (
             <div className="monster-stat-block-strip-item">

@@ -31,7 +31,7 @@ EXPORT_DEFINITIONS = {
     },
     "npcs": {
         "file": "seed_npcs.json",
-        "query": "SELECT id, name, race, gender, background, size, stats, armor_class, hit_points, speed, saving_throws, skills, senses, languages, appearance, notes FROM npcs ORDER BY id",
+        "query": "SELECT id, name, race, gender, background, sizes, alignment, creature_type, ac, hp, speed, abilities, saving_throws, skills, passive_perception, damage_resistances, damage_immunities, damage_vulnerabilities, condition_immunities, senses, languages, features, cr, cr_note, experience_points, appearance, notes FROM npcs ORDER BY id",
     },
     "damage_types": {
         "file": "seed_damage_types.json",
@@ -126,7 +126,11 @@ def transform_record(record, table_name):
         record["details"] = parse_json_value(record.get("details"))
         return record
     if table_name == "npcs":
-        for field in ["stats", "saving_throws", "skills", "senses", "appearance"]:
+        for field in [
+            "sizes", "creature_type", "ac", "hp", "speed", "abilities", "saving_throws", "skills",
+            "damage_resistances", "damage_immunities", "damage_vulnerabilities", "condition_immunities", "senses",
+            "languages", "features", "appearance"
+        ]:
             record[field] = parse_json_value(record.get(field))
         return record
     if table_name == "monsters":

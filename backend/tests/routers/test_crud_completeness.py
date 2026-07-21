@@ -178,14 +178,46 @@ def test_npc_update_round_trip(test_client):
     nid = test_client.post("/api/npcs", json={"name": "Mutable NPC", "race": "Human"}).json()["id"]
     resp = test_client.put(
         f"/api/npcs/{nid}",
-        json={"name": "Mutable NPC", "race": "Dwarf", "hit_points": 20,
-              "stats": {"strength": 15}, "notes": "grumpy"},
+        json={
+            "name": "Mutable NPC",
+            "race": "Dwarf",
+            "gender": "Nonbinary",
+            "background": "Guide",
+            "sizes": ["medium"],
+            "alignment": "lawful neutral",
+            "creature_type": {"category": "humanoid", "tags": ["dwarf"]},
+            "ac": {"value": 16},
+            "hp": {"average": 20, "formula": "4d8+2"},
+            "speed": [{"mode": "walk", "feet": 25}],
+            "abilities": {"str": 15, "dex": 10, "con": 14, "int": 11, "wis": 12, "cha": 9},
+            "saving_throws": {"con": 4},
+            "skills": {"history": 3},
+            "passive_perception": 12,
+            "damage_resistances": [{"damage_type": "poison"}],
+            "damage_immunities": [],
+            "damage_vulnerabilities": [],
+            "condition_immunities": ["poisoned"],
+            "senses": [{"type": "darkvision", "range": 60}],
+            "languages": ["Common", "Dwarvish"],
+            "features": {"actions": [{"name": "Hammer", "description": "Makes one hammer attack."}]},
+            "cr": "1/2",
+            "cr_note": "sturdy ally",
+            "experience_points": 100,
+            "appearance": {"beard": "braided"},
+            "notes": "grumpy",
+        },
     )
     assert resp.status_code == 200
     data = resp.json()
     assert data["race"] == "Dwarf"
-    assert data["hit_points"] == 20
-    assert data["stats"] == {"strength": 15}
+    assert data["gender"] == "Nonbinary"
+    assert data["background"] == "Guide"
+    assert data["hp"] == {"average": 20, "formula": "4d8+2"}
+    assert data["abilities"]["str"] == 15
+    assert data["condition_immunities"] == ["poisoned"]
+    assert data["languages"] == ["Common", "Dwarvish"]
+    assert data["features"]["actions"][0]["name"] == "Hammer"
+    assert data["appearance"] == {"beard": "braided"}
 
 
 def test_npc_update_db_failure(monkeypatch, test_client):
@@ -194,8 +226,13 @@ def test_npc_update_db_failure(monkeypatch, test_client):
     monkeypatch.setattr(db_module, "get_conn", _mock_db_failure)
     resp = test_client.put(
         f"/api/npcs/{nid}",
-        json={"name": "Mutable NPC", "race": "Dwarf", "hit_points": 20,
-              "stats": {"strength": 15}, "notes": "grumpy"},
+        json={
+            "name": "Mutable NPC",
+            "race": "Dwarf",
+            "hp": {"average": 20},
+            "abilities": {"str": 15},
+            "notes": "grumpy",
+        },
     )
     assert resp.status_code == 400
 
@@ -218,7 +255,8 @@ def test_encounter_update_round_trip(test_client):
     resp = test_client.put(
         f"/api/encounters/{eid}",
         json={"title": "Updated Encounter",
-              "creatures": [{"monster_id": 1, "name": "Goblin", "hp_current": 7,
+              "creatures": [{"creature_id": 1, "source_kind": "monster",
+                             "name": "Goblin", "hp_current": 7,
                              "hp_max": 7, "ac": 15, "status": "alive", "conditions": []}]},
     )
     assert resp.status_code == 200
@@ -236,7 +274,8 @@ def test_encounter_update_db_failure(monkeypatch, test_client):
     resp = test_client.put(
         f"/api/encounters/{eid}",
         json={"title": "Updated Encounter",
-              "creatures": [{"monster_id": 1, "name": "Goblin", "hp_current": 7,
+              "creatures": [{"creature_id": 1, "source_kind": "monster",
+                             "name": "Goblin", "hp_current": 7,
                              "hp_max": 7, "ac": 15, "status": "alive", "conditions": []}]},
     )
     assert resp.status_code == 400
@@ -246,6 +285,20 @@ def test_encounter_404s(test_client):
     assert test_client.get("/api/encounters/99999").status_code == 404
     assert test_client.put("/api/encounters/99999", json={"title": "X", "creatures": []}).status_code == 404
     assert test_client.delete("/api/encounters/99999").status_code == 404
+
+
+def test_encounter_creature_ref_round_trip(test_client):
+    resp = test_client.post(
+        "/api/encounters",
+        json={
+            "title": "NPC Encounter",
+            "creatures": [{"creature_id": 1, "source_kind": "npc"}],
+        },
+    )
+    assert resp.status_code == 201
+    creature = resp.json()["creatures"][0]
+    assert creature["creature_id"] == 1
+    assert creature["source_kind"] == "npc"
 
 
 def test_encounter_active_index_round_trip(test_client):

@@ -27,7 +27,7 @@ export function NPCEditor({ npc, onClose, onSaved }: NPCEditorProps) {
     event.preventDefault()
     setSaving(true)
     setStatus({ message: 'Saving NPC…' })
-    const payload = formStateToNPCInput(form)
+    const payload = formStateToNPCInput(form, npc)
     try {
       const saved = npc ? await api.updateNPC(npc.id, payload) : await api.createNPC(payload)
       setStatus({ message: 'NPC saved.', kind: 'success' })

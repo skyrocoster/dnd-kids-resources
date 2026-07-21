@@ -55,7 +55,7 @@ export function encounterToFormState(encounter: Encounter): EncounterFormState {
     title: encounter.title || '',
     creatureRows: creatures.map((c) => ({
       id: nextRowId(),
-      monsterId: c.monster_id != null ? String(c.monster_id) : '',
+      monsterId: c.creature_id != null ? String(c.creature_id) : '',
       originalName: c.original_name || '',
       name: c.name || '',
       hpCurrent: c.hp_current != null ? String(c.hp_current) : '',
@@ -84,7 +84,8 @@ function dedupeConditions(conditions: string[]): string[] {
 export function formStateToEncounterInput(form: EncounterFormState): EncounterInput {
   const creatures = form.creatureRows.length
     ? form.creatureRows.map((row) => ({
-        monster_id: row.monsterId ? Number(row.monsterId) : null,
+        creature_id: row.monsterId ? Number(row.monsterId) : null,
+        source_kind: row.monsterId ? 'monster' as const : null,
         original_name: row.originalName || null,
         name: row.name || null,
         hp_current: row.hpCurrent ? Number(row.hpCurrent) : null,

@@ -69,7 +69,8 @@ export function combatantFromMonster(monster: Monster): RunnerCombatant {
 
   return {
     clientId: nextClientId(),
-    monster_id: monster.id,
+    creature_id: monster.id,
+    source_kind: 'monster',
     original_name: monster.name,
     name: monster.name,
     hp_current: hpAverage,
@@ -84,7 +85,7 @@ export function combatantFromMonster(monster: Monster): RunnerCombatant {
 export function combatantFromPlayer(name: string, conditions: string[] = []): RunnerCombatant {
   return {
     clientId: nextClientId(),
-    monster_id: null,
+    creature_id: null,
     original_name: name,
     name,
     hp_current: null,
