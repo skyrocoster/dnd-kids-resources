@@ -118,18 +118,20 @@ export function PullFromMonsterDialog({ npc, onClose, onPulled }: PullFromMonste
       }
     >
       <div className="pull-from-monster-body">
-        <SearchList
-          items={monsters}
-          getId={(m) => m.id}
-          getLabel={(m) => m.name}
-          getMeta={(m) => (m.cr ? `CR ${m.cr}` : undefined)}
-          selectedId={selectedMonster?.id ?? null}
-          onSelect={handleMonsterSelect}
-          variant="monster"
-          searchPlaceholder="Search monsters…"
-          emptyMessage="No monsters match your search."
-          status={searchListStatus}
-        />
+        <div className="pull-from-monster-list">
+          <SearchList
+            items={monsters}
+            getId={(m) => m.id}
+            getLabel={(m) => m.name}
+            getMeta={(m) => (m.cr ? `CR ${m.cr}` : undefined)}
+            selectedId={selectedMonster?.id ?? null}
+            onSelect={handleMonsterSelect}
+            variant="monster"
+            searchPlaceholder="Search monsters…"
+            emptyMessage="No monsters match your search."
+            status={searchListStatus}
+          />
+        </div>
 
         {loadError && (
           <div className="pull-from-monster-tree">
