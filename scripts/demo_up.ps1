@@ -8,14 +8,15 @@ Requires the one-time cloudflared setup (tunnel created + DNS routed + a
 config.yml under %USERPROFILE%\.cloudflared) to already be done.
 
 Usage:
-  .\scripts\demo_up.ps1                    # build frontend, start backend, start tunnel "dnd-kids"
+  .\scripts\demo_up.ps1                    # build frontend, start backend, start tunnel "dnd-kids-resources"
   .\scripts\demo_up.ps1 -SkipBuild         # reuse the existing frontend/dist
   .\scripts\demo_up.ps1 -TunnelName other-tunnel -Port 8080
 #>
 
 param(
     [int]$Port = 8000,
-    [string]$TunnelName = "dnd-kids",
+    [string]$TunnelName = "dnd-kids-resources",
+    [string]$TunnelConfig = "$env:USERPROFILE\.cloudflared\dnd-kids-resources.yml",
     [switch]$SkipBuild
 )
 
@@ -48,6 +49,13 @@ if (Test-Path $TunnelPidFile) {
 if (-not (Test-Path $Python)) {
     Write-Host "Python venv not found at $Python — falling back to 'python' on PATH." -ForegroundColor Yellow
     $Python = "python"
+}
+
+$DbCheck = Join-Path $RepoRoot "scripts\check_demo_database.py"
+& $Python $DbCheck
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Demo database check failed. Backend was not started." -ForegroundColor Red
+    exit 1
 }
 
 $cloudflared = Get-Command cloudflared -ErrorAction SilentlyContinue
@@ -92,9 +100,10 @@ try {
     }
     Write-Host "Backend started (PID $($backendProc.Id)) at http://127.0.0.1:$Port" -ForegroundColor Green
 
-    # Start cloudflared tunnel
+    # Start cloudflared tunnel (explicit --config: the default config.yml
+    # belongs to a different tunnel/project on this machine)
     $tunnelProc = Start-Process -FilePath $cloudflared.Source `
-        -ArgumentList "tunnel", "run", $TunnelName `
+        -ArgumentList "tunnel", "--config", $TunnelConfig, "run", $TunnelName `
         -WorkingDirectory $RepoRoot `
         -RedirectStandardOutput $TunnelLogFile `
         -RedirectStandardError "$TunnelLogFile.err" `

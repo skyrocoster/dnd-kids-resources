@@ -131,6 +131,27 @@ describe('PullFromMonsterDialog', () => {
     expect(pullButton).toBeDisabled()
   })
 
+  it('keeps monster browsing separate from pullable field selection', async () => {
+    const monsters = Array.from({ length: 30 }, (_, index) => ({
+      ...testMonster,
+      id: index + 1,
+      name: index === 20 ? 'Target Goblin' : `Monster ${index + 1}`,
+    }))
+    vi.mocked(api.listMonsters).mockResolvedValue(monsters)
+    const user = userEvent.setup()
+
+    const { container } = render(<PullFromMonsterDialog npc={testNPC} onClose={() => {}} onPulled={() => {}} />)
+
+    await screen.findByText('Target Goblin')
+    await user.click(screen.getByText('Target Goblin'))
+
+    expect(container.querySelector('.pull-from-monster-list .search-list')).toBeInTheDocument()
+    expect(container.querySelector('.pull-from-monster-tree')).toContainElement(
+      screen.getByRole('checkbox', { name: /Armor Class/ }),
+    )
+    expect(screen.getByRole('button', { name: 'Pull 0 selected' })).toBeDisabled()
+  })
+
   it('api.updateNPC rejecting shows an inline status error and keeps the dialog open', async () => {
     vi.spyOn(api, 'updateNPC').mockRejectedValue(new Error('Server unavailable'))
     const onPulled = vi.fn()
