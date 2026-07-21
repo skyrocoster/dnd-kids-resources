@@ -108,6 +108,7 @@ class Spell(StrictModel):
     level: int
     school: Optional[str] = None
     description: str
+    quick_rules: Optional[str] = None
     alternate_description: Optional[str] = None
     damage: List[SpellDamage] = Field(default_factory=list)
     healing: SpellHealing = Field(default_factory=SpellHealing)
@@ -129,6 +130,7 @@ class SpellCreate(StrictModel):
     level: int
     school: Optional[str] = None
     description: str
+    quick_rules: str
     alternate_description: Optional[str] = None
     damage: List[SpellDamage] = Field(default_factory=list)
     healing: SpellHealing = Field(default_factory=SpellHealing)
@@ -142,6 +144,20 @@ class SpellCreate(StrictModel):
     materials: Optional[str] = None
     attacks: List[SpellAttack] = Field(default_factory=list)
     area_of_effect: SpellAreaOfEffect = Field(default_factory=SpellAreaOfEffect)
+
+
+    @field_validator("quick_rules")
+    @classmethod
+    def validate_quick_rules(cls, value: str) -> str:
+        if value.strip() == "":
+            raise ValueError("quick_rules must not be blank")
+
+        from .reference_text import spell_value_reference_registry, validate_reference_text
+
+        validation = validate_reference_text(value, spell_value_reference_registry)
+        if not validation["valid"]:
+            raise ValueError("quick_rules contains invalid reference text")
+        return value
 
 
 class SpellUpdate(SpellCreate):

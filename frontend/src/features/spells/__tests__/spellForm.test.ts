@@ -27,6 +27,7 @@ describe('spellToFormState', () => {
     expect(form.areaShape).toBe('multiple targets')
     expect(form.higherLevelDamageBySlot).toEqual({ '2': '2d6' })
     expect(form.components).toEqual(['V', 'S'])
+    expect(form.quickRules).toBe(targetSpell.quick_rules)
   })
 
   it('handles a spell with no structured fields', () => {
@@ -42,6 +43,11 @@ describe('spellToFormState', () => {
     expect(form.areaShape).toBe('')
     expect(form.healingAmount).toBe('')
   })
+
+  it('maps a legacy null quick-rules response to an empty edit field', () => {
+    const form = spellToFormState({ ...baseSpell, quick_rules: null })
+    expect(form.quickRules).toBe('')
+  })
 })
 
 describe('formStateToSpellInput', () => {
@@ -54,6 +60,14 @@ describe('formStateToSpellInput', () => {
     expect(input.attacks).toEqual([{ kind: null, saving_throws: ['dex'] }])
     expect(input.area_of_effect).toEqual({ shape: 'multiple targets', size: null })
     expect(input.higher_levels).toEqual({ text: 'The damage increases.', damage_by_slot: { '2': '2d6' } })
+    expect(input.quick_rules).toBe(targetSpell.quick_rules)
+  })
+
+  it('preserves quick-rules whitespace and newlines exactly', () => {
+    const form = emptySpellForm()
+    form.quickRules = '  Action: keep leading space.\nSave: keep trailing space.  '
+    const input = formStateToSpellInput(form)
+    expect(input.quick_rules).toBe('  Action: keep leading space.\nSave: keep trailing space.  ')
   })
 
   it('omits empty structured sections', () => {
@@ -73,3 +87,4 @@ describe('formStateToSpellInput', () => {
     expect(input.healing).toEqual({ amount: '1d8+3', temp_hp: true, max_hp: false })
   })
 })
+

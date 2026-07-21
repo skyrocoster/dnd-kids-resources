@@ -8,11 +8,21 @@ import { CheckboxField } from '../../components/form/CheckboxField'
 import { MultiSelectField } from '../../components/form/MultiSelectField'
 import { SelectField } from '../../components/form/SelectField'
 import { TextField } from '../../components/form/TextField'
+import { spellValueReferenceRegistry, validateReferenceText } from '../../components/referenceText'
 import { LEVEL_OPTIONS, SCHOOL_OPTIONS } from './constants'
 import { DiceRollField } from './DiceRollField'
 import type { AttackRow, DamageRow, SpellFormState } from './spellForm'
 import { emptySpellForm, formStateToSpellInput, nextRowId, spellToFormState } from './spellForm'
 import './SpellEditor.css'
+
+const QUICK_RULES_STATUS_ERROR = 'Fix the Quick Rules errors before saving.'
+
+function validateQuickRules(value: string): string {
+  if (value.trim().length === 0) return 'Quick Rules is required.'
+
+  const validation = validateReferenceText(value, spellValueReferenceRegistry)
+  return validation.valid ? '' : validation.errors[0].message
+}
 
 interface SpellEditorProps {
   spell?: Spell
@@ -27,6 +37,7 @@ export function SpellEditor({ spell, onClose, onSaved }: SpellEditorProps) {
   const [abilityOptions, setAbilityOptions] = useState<{ value: string; label: string }[]>([])
   const [componentOptions, setComponentOptions] = useState<{ value: string; label: string }[]>([])
   const [status, setStatus] = useState<{ message: string; kind?: 'error' | 'success' }>({ message: '' })
+  const [quickRulesError, setQuickRulesError] = useState('')
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
@@ -44,7 +55,13 @@ export function SpellEditor({ spell, onClose, onSaved }: SpellEditorProps) {
       .catch(() => setComponentOptions([]))
   }, [])
 
-  const patch = (fields: Partial<SpellFormState>) => setForm((prev) => ({ ...prev, ...fields }))
+  const patch = (fields: Partial<SpellFormState>) => {
+    if ('quickRules' in fields) {
+      setQuickRulesError('')
+      if (status.message === QUICK_RULES_STATUS_ERROR) setStatus({ message: '' })
+    }
+    setForm((prev) => ({ ...prev, ...fields }))
+  }
 
   const addAttackRow = () => {
     const row: AttackRow = { id: nextRowId(), kind: '', savingThrows: [] }
@@ -73,6 +90,13 @@ export function SpellEditor({ spell, onClose, onSaved }: SpellEditorProps) {
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()
+    const quickRulesValidationError = validateQuickRules(form.quickRules)
+    if (quickRulesValidationError) {
+      setQuickRulesError(quickRulesValidationError)
+      setStatus({ message: QUICK_RULES_STATUS_ERROR, kind: 'error' })
+      return
+    }
+
     setSaving(true)
     setStatus({ message: 'Saving spell…' })
     const payload = formStateToSpellInput(form)
@@ -110,7 +134,7 @@ export function SpellEditor({ spell, onClose, onSaved }: SpellEditorProps) {
         </p>
       )}
 
-      <form id={formId} onSubmit={handleSubmit} className="spell-editor-form">
+      <form id={formId} onSubmit={handleSubmit} className="spell-editor-form" noValidate>
           <div className="spell-editor-grid">
             <TextField
               label="Spell Name"
@@ -130,6 +154,14 @@ export function SpellEditor({ spell, onClose, onSaved }: SpellEditorProps) {
               onChange={(e) => patch({ school: e.target.value })}
               options={SCHOOL_OPTIONS}
               placeholder="— (none)"
+            />
+            <TextField
+              label="Quick Rules"
+              multiline
+              value={form.quickRules}
+              onChange={(e) => patch({ quickRules: e.target.value })}
+              error={quickRulesError}
+              required
             />
             <TextField
               label="Casting Time"
@@ -316,3 +348,5 @@ export function SpellEditor({ spell, onClose, onSaved }: SpellEditorProps) {
     </Dialog>
   )
 }
+
+

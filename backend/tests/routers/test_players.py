@@ -153,7 +153,9 @@ def test_get_player_spells(test_client):
         response = test_client.get(f"/api/players/{player_id}/spells")
         assert response.status_code == 200
         player_spells = response.json()
-        assert any(s["id"] == spell_id for s in player_spells)
+        player_spell = next(s for s in player_spells if s["id"] == spell_id)
+        assert "quick_rules" in player_spell
+        assert player_spell["quick_rules"] == spells[0]["quick_rules"]
         assert all("name" in spell for spell in player_spells)
 
 
@@ -172,3 +174,6 @@ def test_get_player_weapons(test_client):
     assert response.status_code == 200
     data = response.json()
     assert isinstance(data, list)
+
+
+

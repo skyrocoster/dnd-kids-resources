@@ -24,6 +24,7 @@ _SAMPLE_CANONICAL = {
     "level": 1,
     "school": "abjuration",
     "description": "The spell captures some of the incoming energy.",
+    "quick_rules": None,
     "alternate_description": None,
     "damage": [{"name": "primary", "formula": "1d6", "damage_types": []}],
     "healing": {"amount": None, "temp_hp": False, "max_hp": False},
@@ -50,6 +51,7 @@ _SAMPLE_CREATE = {
     "level": 2,
     "school": "transmutation",
     "description": "A test spell description.",
+    "quick_rules": "Deal 1d6 force damage.",
     "alternate_description": None,
     "damage": [],
     "healing": {"amount": None, "temp_hp": False, "max_hp": False},
@@ -133,6 +135,7 @@ class TestSpellConstruction:
         assert spell.school == "abjuration"
         assert spell.concentration is False
         assert spell.ritual is False
+        assert spell.quick_rules is None
         assert len(spell.damage) == 1
         assert spell.damage[0].formula == "1d6"
         assert spell.healing.amount is None
@@ -146,6 +149,7 @@ class TestSpellConstruction:
             "name": "Min",
             "level": 0,
             "description": "A cantrip.",
+            "quick_rules": "A cantrip.",
             "range": "Self",
             "duration": "Instantaneous",
             "concentration": False,
@@ -163,6 +167,31 @@ class TestSpellConstruction:
         as_dict = create.model_dump()
         restored = SpellCreate(**as_dict)
         assert restored == create
+
+
+    def test_create_requires_quick_rules(self):
+        with pytest.raises(Exception):
+            SpellCreate(
+                name="Min",
+                level=0,
+                description="A cantrip.",
+                range="Self",
+                duration="Instantaneous",
+                concentration=False,
+                ritual=False,
+            )
+
+    def test_create_rejects_blank_quick_rules(self):
+        with pytest.raises(Exception):
+            SpellCreate(**{**_SAMPLE_CREATE, "quick_rules": "   "})
+
+    def test_create_rejects_malformed_quick_rules(self):
+        with pytest.raises(Exception):
+            SpellCreate(**{**_SAMPLE_CREATE, "quick_rules": "Use {spell_attack_bonus"})
+
+    def test_create_rejects_unknown_quick_rules(self):
+        with pytest.raises(Exception):
+            SpellCreate(**{**_SAMPLE_CREATE, "quick_rules": "Use {weapon_bonus}."})
 
     def test_update_inherits_create(self):
         update = SpellUpdate(**_SAMPLE_CREATE)
@@ -182,6 +211,7 @@ class TestEdgeCaseShapes:
         spell = Spell(
             id=99, name="Plant Growth", level=3,
             school="transmutation", description="Overgrow.",
+            quick_rules=None,
             range="150 feet", duration="Instantaneous",
             concentration=False, ritual=False,
             casting_times=["1 action", "8 hours"],
@@ -192,7 +222,7 @@ class TestEdgeCaseShapes:
         """A spell with no damage/healing/attacks still has empty lists, not None."""
         spell = Spell(
             id=1, name="Shield", level=1, school="abjuration",
-            description="An invisible barrier.", range="Self",
+            description="An invisible barrier.", quick_rules=None, range="Self",
             duration="1 round", concentration=False, ritual=False,
         )
         assert spell.damage == []

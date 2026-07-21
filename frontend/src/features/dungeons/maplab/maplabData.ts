@@ -171,7 +171,7 @@ const prop1: MapProp = {
 // ============================================================================
 
 export const mapLabLayout: MapLayout = {
-  meta: { cellSizeFt: 5, padding: 3 },
+  meta: { cellSizeFt: 5, padding: { top: 3, right: 3, bottom: 3, left: 3 } },
   rooms: [room17, room23, room32, room33, room99a, room99b],
   doors: [door32, door98],
   stairs: [stair2],
@@ -182,4 +182,5 @@ export const mapLabLayout: MapLayout = {
   ],
   props: [prop1],
   portals: [],
+  features: [],
 }

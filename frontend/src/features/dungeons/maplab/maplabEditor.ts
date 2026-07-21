@@ -3,6 +3,7 @@ import {
   canPaintCell,
   floorsInLayout,
   nextDoorId,
+  nextFeatureId,
   nextPortalId,
   nextPropId,
   nextRoomId,
@@ -12,7 +13,9 @@ import {
   type CardinalSide,
   type MapCell,
   type MapDoor,
+  type MapFeature,
   type MapLayout,
+  type MapLayoutMeta,
   type MapPortal,
   type MapProp,
   type MapRoom,
@@ -27,6 +30,7 @@ export interface EditorState {
   selectedPropId: number | null
   selectedStairId: number | null // Phase H
   selectedPortalId: number | null // Phase H
+  selectedFeatureId: number | null
   activeZ: number
 }
 
@@ -38,7 +42,7 @@ export type EditorAction =
   | { type: 'deleteRoom'; roomId: number }
   | { type: 'toggleCell'; roomId: number; cell: [number, number] }
   | { type: 'setRoomFootprint'; roomId: number; cells: MapCell[] }
-  | { type: 'setRoomMeta'; roomId: number; meta: { title?: string; description?: string; kind?: string } }
+  | { type: 'setRoomMeta'; roomId: number; meta: { title?: string; description?: string; kind?: string; wallKind?: string } }
   | { type: 'addDoor'; cell: [number, number]; side: CardinalSide }
   | { type: 'selectDoor'; doorId: number | null }
   | { type: 'updateFixtureFlags'; fixtureId: number; fixtureType: 'door' | 'stair' | 'prop' | 'portal'; flags: Record<string, unknown> }
@@ -53,9 +57,15 @@ export type EditorAction =
   | { type: 'addPortal'; cell: [number, number] } // Phase H
   | { type: 'selectPortal'; portalId: number | null } // Phase H
   | { type: 'deletePortal'; portalId: number } // Phase H
+  | { type: 'addFeature'; kind: string; cell: MapCell; z: number }
+  | { type: 'toggleFeatureCell'; featureId: number; cell: MapCell }
+  | { type: 'selectFeature'; featureId: number | null }
+  | { type: 'deleteFeature'; featureId: number }
+  | { type: 'setFeatureMeta'; featureId: number; meta: { title?: string; kind?: string } }
   | { type: 'setActiveZ'; z: number }
   | { type: 'loadLayout'; layout: MapLayout }
   | { type: 'resetToFixture'; layout: MapLayout }
+  | { type: 'setPadding'; padding: MapLayoutMeta['padding'] }
 
 export function mapLabEditorReducer(state: EditorState, action: EditorAction): EditorState {
   switch (action.type) {
@@ -70,6 +80,7 @@ export function mapLabEditorReducer(state: EditorState, action: EditorAction): E
         selectedPropId: null,
         selectedStairId: null,
         selectedPortalId: null,
+        selectedFeatureId: null,
       }
     }
 
@@ -98,6 +109,7 @@ export function mapLabEditorReducer(state: EditorState, action: EditorAction): E
         selectedPropId: null,
         selectedStairId: null,
         selectedPortalId: null,
+        selectedFeatureId: null,
       }
     }
 
@@ -116,6 +128,7 @@ export function mapLabEditorReducer(state: EditorState, action: EditorAction): E
         selectedPropId: null,
         selectedStairId: null,
         selectedPortalId: null,
+        selectedFeatureId: null,
       }
     }
 
@@ -127,6 +140,7 @@ export function mapLabEditorReducer(state: EditorState, action: EditorAction): E
         selectedPropId: action.roomId === null ? state.selectedPropId : null,
         selectedStairId: action.roomId === null ? state.selectedStairId : null,
         selectedPortalId: action.roomId === null ? state.selectedPortalId : null,
+        selectedFeatureId: action.roomId === null ? state.selectedFeatureId : null,
       }
 
     case 'deleteRoom': {
@@ -204,6 +218,7 @@ export function mapLabEditorReducer(state: EditorState, action: EditorAction): E
         selectedPropId: null,
         selectedStairId: null,
         selectedPortalId: null,
+        selectedFeatureId: null,
       }
     }
 
@@ -215,6 +230,7 @@ export function mapLabEditorReducer(state: EditorState, action: EditorAction): E
         selectedPropId: action.doorId === null ? state.selectedPropId : null,
         selectedStairId: action.doorId === null ? state.selectedStairId : null,
         selectedPortalId: action.doorId === null ? state.selectedPortalId : null,
+        selectedFeatureId: action.doorId === null ? state.selectedFeatureId : null,
       }
 
     case 'updateFixtureFlags': {
@@ -344,6 +360,7 @@ export function mapLabEditorReducer(state: EditorState, action: EditorAction): E
         selectedDoorId: null,
         selectedStairId: null,
         selectedPortalId: null,
+        selectedFeatureId: null,
       }
     }
 
@@ -355,6 +372,7 @@ export function mapLabEditorReducer(state: EditorState, action: EditorAction): E
         selectedDoorId: action.propId === null ? state.selectedDoorId : null,
         selectedStairId: action.propId === null ? state.selectedStairId : null,
         selectedPortalId: action.propId === null ? state.selectedPortalId : null,
+        selectedFeatureId: action.propId === null ? state.selectedFeatureId : null,
       }
 
     case 'deleteProp': {
@@ -398,6 +416,7 @@ export function mapLabEditorReducer(state: EditorState, action: EditorAction): E
         selectedDoorId: null,
         selectedPropId: null,
         selectedPortalId: null,
+        selectedFeatureId: null,
       }
     }
 
@@ -409,6 +428,7 @@ export function mapLabEditorReducer(state: EditorState, action: EditorAction): E
         selectedDoorId: action.stairId === null ? state.selectedDoorId : null,
         selectedPropId: action.stairId === null ? state.selectedPropId : null,
         selectedPortalId: action.stairId === null ? state.selectedPortalId : null,
+        selectedFeatureId: action.stairId === null ? state.selectedFeatureId : null,
       }
 
     case 'deleteStair': {
@@ -483,6 +503,7 @@ export function mapLabEditorReducer(state: EditorState, action: EditorAction): E
         selectedDoorId: null,
         selectedPropId: null,
         selectedStairId: null,
+        selectedFeatureId: null,
       }
     }
 
@@ -494,6 +515,7 @@ export function mapLabEditorReducer(state: EditorState, action: EditorAction): E
         selectedDoorId: action.portalId === null ? state.selectedDoorId : null,
         selectedPropId: action.portalId === null ? state.selectedPropId : null,
         selectedStairId: action.portalId === null ? state.selectedStairId : null,
+        selectedFeatureId: action.portalId === null ? state.selectedFeatureId : null,
       }
 
     case 'deletePortal': {
@@ -505,8 +527,83 @@ export function mapLabEditorReducer(state: EditorState, action: EditorAction): E
       }
     }
 
+    case 'addFeature': {
+      const feature_id = nextFeatureId(state.layout)
+      const newFeature: MapFeature = {
+        feature_id,
+        z: action.z,
+        kind: action.kind,
+        cells: [action.cell],
+      }
+      return {
+        ...state,
+        layout: { ...state.layout, features: [...state.layout.features, newFeature] },
+        selectedFeatureId: feature_id,
+        selectedRoomId: null,
+        selectedDoorId: null,
+        selectedPropId: null,
+        selectedStairId: null,
+        selectedPortalId: null,
+      }
+    }
+
+    case 'toggleFeatureCell': {
+      const feature = state.layout.features.find((f) => f.feature_id === action.featureId)
+      if (!feature) return state
+      const hasCell = feature.cells.some(([x, y]) => x === action.cell[0] && y === action.cell[1])
+      if (hasCell) {
+        if (feature.cells.length === 1) {
+          const features = state.layout.features.filter((f) => f.feature_id !== action.featureId)
+          return {
+            ...state,
+            layout: { ...state.layout, features },
+            selectedFeatureId: state.selectedFeatureId === action.featureId ? null : state.selectedFeatureId,
+          }
+        }
+        const cells = feature.cells.filter(([x, y]) => !(x === action.cell[0] && y === action.cell[1]))
+        const features = state.layout.features.map((f) =>
+          f.feature_id === action.featureId ? { ...f, cells } : f,
+        )
+        return { ...state, layout: { ...state.layout, features } }
+      }
+      const features = state.layout.features.map((f) =>
+        f.feature_id === action.featureId ? { ...f, cells: [...f.cells, action.cell] } : f,
+      )
+      return { ...state, layout: { ...state.layout, features } }
+    }
+
+    case 'selectFeature':
+      return {
+        ...state,
+        selectedFeatureId: action.featureId,
+        selectedRoomId: action.featureId !== null ? null : state.selectedRoomId,
+        selectedDoorId: action.featureId !== null ? null : state.selectedDoorId,
+        selectedPropId: action.featureId !== null ? null : state.selectedPropId,
+        selectedStairId: action.featureId !== null ? null : state.selectedStairId,
+        selectedPortalId: action.featureId !== null ? null : state.selectedPortalId,
+      }
+
+    case 'deleteFeature':
+      return {
+        ...state,
+        layout: { ...state.layout, features: state.layout.features.filter(f => f.feature_id !== action.featureId) },
+        selectedFeatureId: state.selectedFeatureId === action.featureId ? null : state.selectedFeatureId,
+      }
+
+    case 'setFeatureMeta': {
+      const feature = state.layout.features.find((candidate) => candidate.feature_id === action.featureId)
+      if (!feature) return state
+      const features = state.layout.features.map((candidate) =>
+        candidate.feature_id === action.featureId ? { ...candidate, ...action.meta } : candidate,
+      )
+      return { ...state, layout: { ...state.layout, features } }
+    }
+
     case 'setActiveZ':
       return { ...state, activeZ: action.z }
+
+    case 'setPadding':
+      return { ...state, layout: { ...state.layout, meta: { ...state.layout.meta, padding: action.padding } } }
 
     case 'loadLayout':
       return initialEditorState(action.layout)
@@ -556,9 +653,11 @@ export function initialEditorState(layout: MapLayout): EditorState {
     selectedPropId: null,
     selectedStairId: null,
     selectedPortalId: null,
+    selectedFeatureId: null,
     activeZ,
   }
 }
+
 
 function defaultFloorTitle(z: number): string {
   if (z === 0) return 'Ground Floor'

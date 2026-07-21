@@ -1,6 +1,6 @@
 # Visual Design Area Guide
 
-> **Active plan:** none
+> **Active plan:** [Collapsible Catalog Rail](../plans/active/collapsible-catalog-rail.md) (next up).
 
 ## Scope
 
@@ -32,7 +32,8 @@ Modes are defined in [../UX_PATTERNS.md](../UX_PATTERNS.md#surface-modes).
 
 ## Work queue
 
-- The active visual-consistency plan owns all currently scheduled remediation work.
+- Execute [Collapsible Catalog Rail](../plans/active/collapsible-catalog-rail.md) after the Spell and
+  Weapon quick-reference foundations.
 
 ## Cross-references
 

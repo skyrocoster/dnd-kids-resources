@@ -23,7 +23,7 @@ When adding a new endpoint:
 
 ## Spells Router
 
-`backend/app/routers/spells.py` — spell CRUD and reference.
+`backend/app/routers/spells.py` — spell CRUD and reference. `SpellCreate` and `SpellUpdate` require nonblank `quick_rules` validated as registered reference text; `Spell` responses include nullable `quick_rules` so legacy seed rows remain readable until the canonical seed pass fills them.
 
 | Method | Path | Purpose | Request schema | Response schema |
 |---|---|---|---|---|
@@ -241,7 +241,7 @@ and quiet leaves the thread unchanged. Any invalid thread/outcome rolls the whol
 
 All request and response body shapes are defined in `backend/app/schemas.py` as Pydantic models. Refer there for field names, types, and optionality. Examples:
 
-- **Spell:** id, name, level, school, description, alternate_description, damage (JSON list), healing (JSON object), range, higher_levels (JSON object), casting_times (JSON list), duration, concentration, ritual, components (JSON list), materials, attacks (JSON list), area_of_effect (JSON object)
+- **Spell:** id, name, level, school, description, quick_rules, alternate_description, damage (JSON list), healing (JSON object), range, higher_levels (JSON object), casting_times (JSON list), duration, concentration, ritual, components (JSON list), materials, attacks (JSON list), area_of_effect (JSON object)
 - **Monster:** id, name, aliases (JSON), sizes (JSON), family, alignment, creature_type (JSON), ac (JSON), hp (JSON), speed (JSON), abilities (JSON), saving_throws (JSON), skills (JSON), passive_perception, damage_resistances (JSON), damage_immunities (JSON), damage_vulnerabilities (JSON), condition_immunities (JSON), senses (JSON), languages (JSON), audio_path, features (JSON), cr, cr_sort, cr_note, experience_points
 - **Weapon:** id, name, base_weapon, rarity, weapon_category, weight, req_attune, property (JSON), focus (JSON), attack (JSON), entries (JSON)
 - **Item:** id, name, value_gp, category, description
@@ -341,3 +341,4 @@ All optional fields are `Optional[...]` in the schema; required fields have no `
 | GET | `/api/weapons/{weapon_id}` | `weapon_id` (path, required) | - | 200: Weapon, 422: HTTPValidationError |
 | PUT | `/api/weapons/{weapon_id}` | `weapon_id` (path, required) | WeaponUpdate | 200: Weapon, 422: HTTPValidationError |
 <!-- GENERATED:API:END -->
+

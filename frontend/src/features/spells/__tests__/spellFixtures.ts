@@ -7,6 +7,7 @@ export const targetSpell: Spell = {
   school: 'transmutation',
   description: 'Plants in the area grow vigorously.',
   alternate_description: null,
+  quick_rules: 'Action: choose a point in range; plants in a 100-foot radius grow thick and tangled.',
   damage: [],
   healing: { amount: null, temp_hp: false, max_hp: false },
   range: '150 feet',
@@ -22,3 +23,4 @@ export const targetSpell: Spell = {
 }
 
 export const targetSpells: Spell[] = [targetSpell]
+

@@ -76,6 +76,18 @@ _Avoid_: coordinate, tile, grid_position
 N/S/E/W direction for wall segments and door placement.
 _Avoid_: direction, orientation, face
 
+**Wall Kind**:
+The edge appearance of a room's perimeter: `solid` (default), `natural` (cave/rough), or `open` (unbounded space like a courtyard). Set per room; distinguished by colour plus texture, never stroke weight.
+_Avoid_: wall_type, border_style
+
+**Feature**:
+A polyomino cell set (`river`, `trees`) authored on the outside of rooms, rendered as filled textured cells behind rooms. Features use absolute cell coordinates, may be disconnected, and can overlap rooms non-destructively.
+_Avoid_: terrain, area, outside_region
+
+**Outside Feature**:
+See Feature (the two are interchangeable — "Outside Feature" is the full term, "Feature" is the short form used in code and UI).
+_Avoid_: terrain_patch, area_effect, decoration_layer
+
 **Cell Size**:
 Scale constant: feet per grid cell, default 5.
 _Avoid_: grid_scale, tile_size

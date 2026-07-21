@@ -22,7 +22,7 @@ This ensures schema and seed-backed data stay synced with the codebase. Dungeons
 | `seed_conditions.json` | `conditions` | D&D 5e conditions | `/api/conditions` (`reference.py`) |
 | `seed_damage_types.json` | `damage_types` | Damage types | `/api/damage_types` (`reference.py`) |
 | `seed_weapon_properties.json` | `weapon_properties` | Weapon property tags | `/api/weapon_properties` (`reference.py`) |
-| `seed_spells.json` | `spells` | D&D 5e spells in the canonical 18-field contract | `/api/spells`, `/api/players/{id}/spells` |
+| `seed_spells.json` | `spells` | D&D 5e spells in the canonical 19-field contract | `/api/spells`, `/api/players/{id}/spells` |
 | `seed_monsters.json` | `monsters` | D&D 5e monsters/creatures | `/api/monsters` |
 | `seed_weapons.json` | `weapons` | D&D 5e weapons | `/api/weapons`, `/api/players/{id}/weapons` |
 | `seed_items.json` | `items` | Reusable treasure item catalog | `/api/items` |
@@ -57,6 +57,7 @@ Some tables store complex structured data as JSON strings. Router and database h
 
 | Table | Column | Contents | Example |
 |---|---|---|---|
+| `spells` | `quick_rules` | Validated reference text for concise authored spell rules; nullable only for legacy seed rows until the canonical seed pass | `Action: make a spell attack using {spell_attack_bonus}.` |
 | `spells` | `damage` | List of named damage expressions | `[{"name":"primary","formula":"8d6","damage_types":["fire"]}]` |
 | `spells` | `healing` | Healing expression and flags | `{"amount":"1d4+1","temp_hp":false,"max_hp":false}` |
 | `spells` | `higher_levels` | Higher-level prose and damage-by-slot expressions | `{"text":null,"damage_by_slot":{"3":"8d6"}}` |
@@ -402,6 +403,7 @@ Indexes: `sqlite_autoindex_player_weapons_1`.
 | `level` | `INTEGER` | yes | `-` |
 | `school` | `TEXT` | no | `-` |
 | `description` | `TEXT` | yes | `-` |
+| `quick_rules` | `TEXT` | no | `-` |
 | `alternate_description` | `TEXT` | no | `-` |
 | `damage` | `TEXT` | yes | `'[]'` |
 | `healing` | `TEXT` | yes | `'{"amount": null, "temp_hp": false, "max_hp": false}'` |
@@ -469,3 +471,4 @@ Indexes: `sqlite_autoindex_weapon_properties_1`.
 
 Indexes: `sqlite_autoindex_weapons_1`.
 <!-- GENERATED:DATA_MODEL:END -->
+

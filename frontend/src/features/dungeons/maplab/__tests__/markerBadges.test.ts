@@ -184,7 +184,7 @@ describe('boundedBadgeLayout (M2)', () => {
 
   it('uses deterministic type/id ordering before assigning grouped slots', () => {
     const layout: MapLayout = {
-      meta: { cellSizeFt: 5, padding: 1 },
+      meta: { cellSizeFt: 5, padding: { top: 1, right: 1, bottom: 1, left: 1 } },
       rooms: [{ room_id: 1, z: 1, origin: [1, 1], cells: [[0, 0]] }],
       floors: [{ z: 1 }],
       doors: [],
@@ -194,6 +194,7 @@ describe('boundedBadgeLayout (M2)', () => {
       ],
       portals: [{ portal_id: 4, z: 1, cell: [1, 1], to: { z: 2, cell: [1, 1] }, hidden: false, locked: false, trapped: false }],
       props: [{ prop_id: 3, kind: 'chest', z: 1, cell: [1, 1], hidden: false, locked: false, trapped: false }],
+      features: [],
     }
 
     expect(markersAtCell(layout, 1, [1, 1])).toEqual([

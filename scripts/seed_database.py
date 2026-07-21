@@ -26,6 +26,8 @@ from pathlib import Path
 import argparse
 import sys
 
+from backend.app.reference_text import spell_value_reference_registry, validate_reference_text
+
 DB_PATH = Path(__file__).parent.parent / "dnd_kids_resources.db"
 SEEDS_DIR = Path(__file__).parent.parent / "data" / "seeds"
 def load_json_file(filepath):
@@ -114,13 +116,19 @@ def serialize_for_db(value):
 
 
 def insert_spell(cursor, spell_data):
+    quick_rules = spell_data.get("quick_rules")
+    if quick_rules is not None:
+        validation = validate_reference_text(quick_rules, spell_value_reference_registry)
+        if not validation["valid"]:
+            raise ValueError(f"Invalid quick_rules for {spell_data.get('name')}: {validation['errors']}")
+
     cursor.execute(
         """
         INSERT INTO spells
-        (id, name, level, school, description, alternate_description, damage, healing, range,
+        (id, name, level, school, description, quick_rules, alternate_description, damage, healing, range,
          higher_levels, casting_times, duration, concentration, ritual, components, materials, attacks,
          area_of_effect)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             spell_data["id"],
@@ -128,6 +136,7 @@ def insert_spell(cursor, spell_data):
             spell_data["level"],
             spell_data.get("school"),
             spell_data["description"],
+            quick_rules,
             spell_data.get("alternate_description"),
             serialize_for_db(spell_data.get("damage", [])),
             serialize_for_db(spell_data.get("healing", {"amount": None, "temp_hp": False, "max_hp": False})),
@@ -175,6 +184,9 @@ def populate_spells(cursor, conn, force=False):
             try:
                 insert_spell(cursor, spell)
                 print(f"  [CHECK] {spell.get('name')}")
+            except ValueError as e:
+                print(f"  [ERROR]  Invalid spell quick_rules: {spell.get('name')} - {e}")
+                raise
             except sqlite3.IntegrityError as e:
                 print(f"  [WARNING]  Duplicate or error: {spell.get('name')} - {e}")
 

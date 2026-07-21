@@ -47,7 +47,7 @@ EXPORT_DEFINITIONS = {
     },
     "spells": {
         "file": "seed_spells.json",
-        "query": "SELECT id, name, level, school, description, alternate_description, damage, healing, range, higher_levels, casting_times, duration, concentration, ritual, components, materials, attacks, area_of_effect FROM spells ORDER BY name",
+        "query": "SELECT id, name, level, school, description, quick_rules, alternate_description, damage, healing, range, higher_levels, casting_times, duration, concentration, ritual, components, materials, attacks, area_of_effect FROM spells ORDER BY name",
     },
     "players": {
         "file": "seed_players.json",
@@ -221,3 +221,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

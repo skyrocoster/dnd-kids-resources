@@ -213,11 +213,11 @@ describe('MapLabPage (M2 stairs + second floor)', () => {
 })
 
 describe('MapLabPage (M2.2 grid canvas + scale)', () => {
-  it('renders the padded unknown-space grid behind the rooms', async () => {
+  it('renders the padded unknown-space with a flat fill behind the rooms', async () => {
     const { container } = await renderLoadedMapLabPage()
     const unknownSpace = container.querySelector('.maplab-unknown-space')
     expect(unknownSpace).toBeInTheDocument()
-    expect(unknownSpace).toHaveAttribute('fill', expect.stringContaining('maplab-unknown-space-grid'))
+    expect(unknownSpace).toHaveAttribute('fill', 'var(--maplab-outside-fill)')
   })
 
   it('renders a visible scale reference', async () => {
@@ -1243,5 +1243,126 @@ describe('VT0 — Viewer live-surface scaffolding seams', () => {
     const rect = dock.getBoundingClientRect()
     expect(rect.left).toBeGreaterThanOrEqual(0)
     expect(rect.top).toBeGreaterThanOrEqual(0)
+  })
+})
+
+describe('MapLabPage (Stage 1 — Wall kind rendering)', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('renders wall lines with data-wall-kind="open" when wallKind is set', async () => {
+    const openWallRoom = {
+      ...mapLabLayout.rooms.find((r) => r.room_id === 17)!,
+      wallKind: 'open',
+    }
+    const backendLayout = { ...mapLabLayout, rooms: [openWallRoom, ...mapLabLayout.rooms.filter((r) => r.room_id !== 17)] }
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: backendLayout })
+
+    renderMapLabPage()
+    await flush()
+
+    const hall = screen.getByRole('button', { name: 'Combat Training Hall' })
+    const walls = hall.querySelectorAll('.maplab-wall')
+    expect(walls.length).toBeGreaterThan(0)
+    walls.forEach((wall) => {
+      expect(wall).toHaveAttribute('data-wall-kind', 'open')
+    })
+  })
+
+  it('renders wall lines with data-wall-kind="solid" when no wallKind is set', async () => {
+    renderMapLabPage()
+    await flush()
+
+    const hall = screen.getByRole('button', { name: 'Combat Training Hall' })
+    const walls = hall.querySelectorAll('.maplab-wall')
+    expect(walls.length).toBeGreaterThan(0)
+    walls.forEach((wall) => {
+      expect(wall).toHaveAttribute('data-wall-kind', 'solid')
+    })
+  })
+})
+
+describe('MapLabPage (Session view — layer toggles)', () => {
+  afterEach(() => {
+    for (const key of ['outside', 'props', 'passages', 'labels']) {
+      window.localStorage.removeItem(`dnd-kids-maplab-layer-visible:${key}`)
+    }
+  })
+
+  it('toggling Outside off hides the unknown-space rect and back on restores it', async () => {
+    const user = userEvent.setup()
+    const { container } = await renderLoadedMapLabPage()
+
+    expect(container.querySelector('.maplab-unknown-space')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Outside' }))
+    expect(container.querySelector('.maplab-unknown-space')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Outside' }))
+    expect(container.querySelector('.maplab-unknown-space')).toBeInTheDocument()
+  })
+
+  it('toggling Props off hides prop markers and back on restores them', async () => {
+    const user = userEvent.setup()
+    await renderLoadedMapLabPage()
+
+    expect(screen.getByRole('button', { name: /Treasure Chest/i })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Props' }))
+    expect(screen.queryByRole('button', { name: /Treasure Chest/i })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Props' }))
+    expect(screen.getByRole('button', { name: /Treasure Chest/i })).toBeInTheDocument()
+  })
+
+  it('toggling Passages off hides doors, stairs, and portals together, and back on restores them', async () => {
+    const user = userEvent.setup()
+    await renderLoadedMapLabPage()
+
+    expect(screen.getByRole('button', { name: /Heavy Stone Door/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Stone Stairs.*floor 1/i })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Passages' }))
+    expect(screen.queryByRole('button', { name: /Heavy Stone Door/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Stone Stairs/i })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Passages' }))
+    expect(screen.getByRole('button', { name: /Heavy Stone Door/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Stone Stairs.*floor 1/i })).toBeInTheDocument()
+  })
+
+  it('toggling Labels off hides room title text and back on restores it', async () => {
+    const user = userEvent.setup()
+    await renderLoadedMapLabPage()
+
+    expect(screen.getByText('Combat Training Hall')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Labels' }))
+    expect(screen.queryByText('Combat Training Hall')).not.toBeInTheDocument()
+    // The room itself (as an interactive element) is unaffected — only its title text hides.
+    expect(screen.getAllByRole('button').length).toBeGreaterThan(0)
+
+    await user.click(screen.getByRole('button', { name: 'Labels' }))
+    expect(screen.getByText('Combat Training Hall')).toBeInTheDocument()
+  })
+
+  it('turning off every layer replaces the canvas with the filtered-empty message', async () => {
+    const user = userEvent.setup()
+    await renderLoadedMapLabPage()
+
+    await user.click(screen.getByRole('button', { name: 'Outside' }))
+    await user.click(screen.getByRole('button', { name: 'Props' }))
+    await user.click(screen.getByRole('button', { name: 'Passages' }))
+    await user.click(screen.getByRole('button', { name: 'Labels' }))
+
+    expect(screen.getByText('All layers are hidden. Turn one on to see the map.')).toBeInTheDocument()
+    expect(screen.queryByRole('group', { name: /dungeon floor map/i })).not.toBeInTheDocument()
+    // The toolbar toggles remain visible so the DM can turn a layer back on.
+    expect(screen.getByRole('button', { name: 'Outside' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Outside' }))
+    expect(screen.queryByText('All layers are hidden. Turn one on to see the map.')).not.toBeInTheDocument()
+    expect(screen.getByRole('group', { name: /dungeon floor map/i })).toBeInTheDocument()
   })
 })

@@ -1,6 +1,6 @@
 # Dungeon Outside — the world around the rooms becomes real, authored map space
 
-> **Status:** Not started. Next: Stage 1 — wall kinds, the cheapest playtestable proof of the concept.
+> **Status:** Stage 3 complete. Next: Stage 4 — Clarity controls.
 
 - **Area guide:** [Dungeons](../../areas/dungeons.md)
 
@@ -170,3 +170,6 @@ Touch:        48px floor on every toggle and menu item. Canvas glyphs keep the
 
 | Stage | What shipped (≤2 sentences) |
 |-------|------------------------------|
+| 1 | `WALL_KIND_OPTIONS` registry (`solid`/`natural`/`open`) with CSS tokens and `data-wall-kind` rules distinguishing walls by colour+texture; `MapRoom.wallKind` field rendered on the canvas and editable via a dropdown in the room inspector. |
+| 2 | Per-side padding (`{ top, right, bottom, left }`) with automatic migration of old single-number layouts on load. The unknown-space hatch was deleted; bare outside inside the extent renders as a flat `--maplab-outside-fill` shade, and four number inputs in the editor toolbar let the DM adjust padding live. |
+| 3 | `MapFeature` polyomino entity with `FEATURE_KIND_OPTIONS` registry (`river`/`trees`), CSS texture patterns, and `--feature-river-fill`/`--feature-trees-fill` tokens. Features render below rooms on both viewer and editor, are ghosted on the floor below, and are selectable/editable/deletable via the inspector. Draw mode creates features by clicking cells; a cell action menu on bare outside offers quick-create; drawing off z:0 shows a dismissible warning. |

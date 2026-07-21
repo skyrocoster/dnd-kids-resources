@@ -1,10 +1,11 @@
 # Reference Catalogs Area Guide
 
-> **Active plan:** none
+> **Active plan:** [Weapon Quick Reference](../plans/active/weapon-quick-reference.md) (next up).
 
 ## Scope
 
-Owns weapons, items outside loot bundles, players, and NPCs. It does not own spells, monsters, loot bundles, encounters, dungeons, or loom.
+Owns weapons, items outside loot bundles, and NPCs. It does not own players, spells, monsters, loot
+bundles, encounters, dungeons, or loom.
 
 ## Domain vocabulary
 
@@ -15,14 +16,6 @@ _Avoid_: armament, gear
 **Item**:
 A generic treasure or reference object, such as gems, art, coins, consumables, scrolls, trade goods, or gear. Distinct from weapons and loot bundles.
 _Avoid_: object, loot_item
-
-**Player**:
-A player character record: name, class, level, spell slots, assigned spells, and assigned weapons.
-_Avoid_: character, pc, hero
-
-**Class**:
-A player character's D&D class. One of 13 supported classes.
-_Avoid_: character_class, archetype
 
 **NPC**:
 A non-player character with richer detail than monsters: race, gender, background, appearance, and notes. Runtime-authored, not from seeds.
@@ -38,8 +31,8 @@ _Avoid_: description, look
 
 ## Source map
 
-- Backend: `backend/app/routers/weapons.py`, `items.py`, `players.py`, and `npcs.py`.
-- Frontend: `frontend/src/features/weapons/`, `items/`, `players/`, and `npcs/`.
+- Backend: `backend/app/routers/weapons.py`, `items.py`, and `npcs.py`.
+- Frontend: `frontend/src/features/weapons/`, `items/`, and `npcs/`.
 - Tests: matching router and colocated frontend tests.
 
 ## Surfaces
@@ -50,9 +43,8 @@ Modes are defined in [../UX_PATTERNS.md](../UX_PATTERNS.md#surface-modes).
 |---|---|---|---|
 | Weapon browser | `/weapons` | prep | DM |
 | Item browser | `/items` | prep | DM |
-| Player browser | `/players` | prep | DM |
 | NPC browser | `/npcs` | prep | DM |
-| Catalog editors | modal over each browser | prep | DM |
+| Weapon, Item, and NPC editors | modal over each browser | prep | DM |
 | Pull from monster dialog | modal over NPC browser detail pane | prep | DM |
 | Add to encounter dialog | modal over NPC browser detail pane | prep | DM |
 | NPC dossier dock | `FloatingWindow`, opened from play surfaces | play | DM |
@@ -66,11 +58,12 @@ The browsers are prep surfaces even though they are also consulted at the table,
 
 ## Work queue
 
-- Create a focused plan before changing any catalog contract or cross-domain workflow.
-- No plan is currently active. [NPC Statblocks](../complete/npc-statblocks.md) shipped the monster-shaped
+- Execute [Weapon Quick Reference](../plans/active/weapon-quick-reference.md) after the shared
+  reference-text contract is available.
+- [NPC Statblocks](../complete/npc-statblocks.md) shipped the monster-shaped
   NPC statblock contract, the dossier's combat half, the pull-from-monster panel, and adding an NPC to
   an encounter from their detail pane.
 
 ## Cross-references
 
-`../API_REFERENCE.md`, `../DATA_MODEL.md`, `loot.md`, and `encounters.md`.
+`../API_REFERENCE.md`, `../DATA_MODEL.md`, `loot.md`, `encounters.md`, and `players.md`.

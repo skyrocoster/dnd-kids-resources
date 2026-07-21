@@ -147,7 +147,7 @@ def get_player_spells(player_id: int):
             raise HTTPException(status_code=404, detail="Player not found")
 
         cursor.execute(
-            """SELECT s.id, s.name, s.level, s.school, s.description, s.alternate_description,
+            """SELECT s.id, s.name, s.level, s.school, s.description, s.alternate_description, s.quick_rules,
                        s.damage, s.healing, s.range, s.higher_levels, s.casting_times, s.duration,
                        s.concentration, s.ritual, s.components, s.materials, s.attacks, s.area_of_effect
                FROM spells s
@@ -291,3 +291,6 @@ def remove_weapon_from_player(player_id: int, weapon_id: int):
         except Exception as e:
             conn.rollback()
             raise HTTPException(status_code=400, detail=f"Failed to remove weapon: {str(e)}")
+
+
+

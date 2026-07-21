@@ -1,10 +1,11 @@
 import { PropMarker } from './PropMarker'
-import { absoluteCells, doorWallSegment, doorSwingGeometry, nonDoorWallSegments, type MapDoor, type MapProp, type MapRoom } from './maplabModel'
+import { absoluteCells, doorWallSegment, doorSwingGeometry, nonDoorWallSegments, type MapDoor, type MapFeature, type MapProp, type MapRoom } from './maplabModel'
 
 interface GhostFloorLayerProps {
   rooms: MapRoom[]
   doors: MapDoor[]
   props: MapProp[]
+  features?: MapFeature[]
   cellSize: number
 }
 
@@ -21,7 +22,7 @@ function roomCenter(room: MapRoom, cellSize: number): { x: number; y: number } {
  * the floor below the active one for alignment reference. Read-only glyphs only — no `role`,
  * `tabIndex`, or click handlers anywhere in this tree; the whole group is `aria-hidden` so focus
  * and assistive tech never land on a ghost. */
-export function GhostFloorLayer({ rooms, doors, props, cellSize }: GhostFloorLayerProps) {
+export function GhostFloorLayer({ rooms, doors, props, features, cellSize }: GhostFloorLayerProps) {
   return (
     <g className="maplab-ghost-layer" aria-hidden="true">
       {rooms.map((room) => (
@@ -67,6 +68,22 @@ export function GhostFloorLayer({ rooms, doors, props, cellSize }: GhostFloorLay
           </g>
         )
       })}
+
+      {features?.map((feature) => (
+        <g key={feature.feature_id} className="maplab-ghost-feature" data-feature-kind={feature.kind}>
+          {feature.cells.map(([x, y]) => (
+            <rect
+              key={`${x}-${y}`}
+              className="maplab-ghost-feature-cell"
+              x={x * cellSize}
+              y={y * cellSize}
+              width={cellSize}
+              height={cellSize}
+              fill={feature.kind === 'river' ? 'var(--feature-river-fill)' : 'var(--feature-trees-fill)'}
+            />
+          ))}
+        </g>
+      ))}
 
       {props.map((prop) => (
         <PropMarker key={prop.prop_id} prop={prop} cellSize={cellSize} interactive={false} />

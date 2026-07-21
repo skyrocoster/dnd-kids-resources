@@ -3,7 +3,7 @@ import { initialEditorState, mapLabEditorReducer } from '../maplabEditor'
 import type { MapLayout } from '../maplabModel'
 
 const emptyLayout: MapLayout = {
-  meta: { cellSizeFt: 5, padding: 3 },
+  meta: { cellSizeFt: 5, padding: { top: 3, right: 3, bottom: 3, left: 3 } },
   rooms: [],
   doors: [],
   stairs: [],
@@ -13,6 +13,7 @@ const emptyLayout: MapLayout = {
   ],
   props: [],
   portals: [],
+  features: [],
 }
 
 describe('initialEditorState', () => {

@@ -1,5 +1,6 @@
 """Tests for spell CRUD endpoints."""
 from unittest.mock import MagicMock
+import pytest
 import backend.app.db as db_module
 
 
@@ -74,6 +75,7 @@ def test_get_spell_by_title(test_client):
     spell = response.json()
     assert spell["name"] == "Magic Missile"
     assert spell["level"] == 1
+    assert spell["quick_rules"] is None
 
 
 def test_spell_json_columns_parsed(test_client):
@@ -84,6 +86,7 @@ def test_spell_json_columns_parsed(test_client):
 
     assert spell["components"] == ["V", "S"]
     assert set(spell["healing"]) == {"amount", "temp_hp", "max_hp"}
+    assert spell["quick_rules"] is None
 
 
 def test_create_spell_with_attacks_round_trips_as_list(test_client):
@@ -92,6 +95,7 @@ def test_create_spell_with_attacks_round_trips_as_list(test_client):
         "name": "Scorching Ray",
         "level": 2,
         "description": "Three rays of fire.",
+        "quick_rules": "Deal {spell_attack_bonus} damage.",
         "range": "120 feet",
         "duration": "Instantaneous",
         "concentration": False,
@@ -105,9 +109,35 @@ def test_create_spell_with_attacks_round_trips_as_list(test_client):
     data = response.json()
     assert isinstance(data["attacks"], list)
     assert data["attacks"][0]["kind"] == "ranged"
+    assert data["quick_rules"] == "Deal {spell_attack_bonus} damage."
 
     response = test_client.get(f"/api/spells/{data['id']}")
     assert isinstance(response.json()["attacks"], list)
+    assert response.json()["quick_rules"] == "Deal {spell_attack_bonus} damage."
+
+
+def test_create_spell_preserves_literal_quick_rules_exactly(test_client):
+    new_spell = {
+        "name": "Literal Rules Test",
+        "level": 1,
+        "school": "abjuration",
+        "description": "Literal test",
+        "quick_rules": "  Literal text with spaces.  ",
+        "casting_times": ["1 action"],
+        "range": "Self",
+        "components": ["V"],
+        "duration": "Instantaneous",
+        "concentration": False,
+        "ritual": False,
+    }
+
+    response = test_client.post("/api/spells", json=new_spell)
+    assert response.status_code == 201
+    data = response.json()
+    assert data["quick_rules"] == "  Literal text with spaces.  "
+
+    response = test_client.get(f"/api/spells/{data['id']}")
+    assert response.json()["quick_rules"] == "  Literal text with spaces.  "
 
 
 def test_create_spell(test_client):
@@ -121,6 +151,7 @@ def test_create_spell(test_client):
         "components": ["V", "S", "M"],
         "duration": "Concentration, up to 1 hour",
         "description": "A test spell",
+        "quick_rules": "A test spell.",
         "concentration": False,
         "ritual": False,
     }
@@ -144,6 +175,7 @@ def test_create_spell_duplicate_name_fails(test_client):
         "components": ["V", "S"],
         "duration": "Instantaneous",
         "description": "Duplicate",
+        "quick_rules": "Duplicate.",
         "concentration": False,
         "ritual": False,
     }
@@ -164,6 +196,7 @@ def test_update_spell_duplicate_name_fails(test_client):
         "components": ["V", "S"],
         "duration": "Instantaneous",
         "description": "First spell",
+        "quick_rules": "First spell.",
         "concentration": False,
         "ritual": False,
     }
@@ -180,6 +213,7 @@ def test_update_spell_duplicate_name_fails(test_client):
         "components": ["V", "S"],
         "duration": "Instantaneous",
         "description": "Second spell",
+        "quick_rules": "Second spell.",
         "concentration": False,
         "ritual": False,
     }
@@ -210,6 +244,7 @@ def test_update_spell(test_client):
         "components": spells[0].get("components"),
         "duration": spells[0]["duration"],
         "description": "Updated description",
+        "quick_rules": "Updated description.",
         "concentration": spells[0]["concentration"],
         "ritual": spells[0]["ritual"],
     }
@@ -219,6 +254,7 @@ def test_update_spell(test_client):
     data = response.json()
     assert "Updated" in data["name"]
     assert data["description"] == "Updated description"
+    assert data["quick_rules"] == "Updated description."
 
 
 def test_update_nonexistent_spell(test_client):
@@ -232,12 +268,52 @@ def test_update_nonexistent_spell(test_client):
         "components": ["V", "S"],
         "duration": "Instantaneous",
         "description": "Test",
+        "quick_rules": "Test.",
         "concentration": False,
         "ritual": False,
     }
 
     response = test_client.put("/api/spells/99999", json=update)
     assert response.status_code == 404
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"name": "Missing Quick Rules", "level": 1, "description": "Test", "range": "Self", "duration": "Instantaneous", "concentration": False, "ritual": False},
+        {"name": "Blank Quick Rules", "level": 1, "description": "Test", "quick_rules": "   ", "range": "Self", "duration": "Instantaneous", "concentration": False, "ritual": False},
+        {"name": "Malformed Quick Rules", "level": 1, "description": "Test", "quick_rules": "Use {spell_attack_bonus", "range": "Self", "duration": "Instantaneous", "concentration": False, "ritual": False},
+        {"name": "Unknown Quick Rules", "level": 1, "description": "Test", "quick_rules": "Use {weapon_bonus}.", "range": "Self", "duration": "Instantaneous", "concentration": False, "ritual": False},
+    ],
+)
+def test_create_spell_rejects_invalid_quick_rules(test_client, payload):
+    response = test_client.post("/api/spells", json=payload)
+    assert response.status_code == 422
+
+
+def test_update_spell_rejects_invalid_quick_rules(test_client):
+    base_spell = {
+        "name": "Update Quick Rules Base",
+        "level": 1,
+        "description": "Base spell",
+        "quick_rules": "Base spell.",
+        "range": "Self",
+        "duration": "Instantaneous",
+        "concentration": False,
+        "ritual": False,
+    }
+    response = test_client.post("/api/spells", json=base_spell)
+    assert response.status_code == 201
+    spell_id = response.json()["id"]
+
+    for payload in (
+        {"name": "Missing Quick Rules Update", "level": 1, "description": "Test", "range": "Self", "duration": "Instantaneous", "concentration": False, "ritual": False},
+        {"name": "Blank Quick Rules Update", "level": 1, "description": "Test", "quick_rules": "   ", "range": "Self", "duration": "Instantaneous", "concentration": False, "ritual": False},
+        {"name": "Malformed Quick Rules Update", "level": 1, "description": "Test", "quick_rules": "Use {spell_attack_bonus", "range": "Self", "duration": "Instantaneous", "concentration": False, "ritual": False},
+        {"name": "Unknown Quick Rules Update", "level": 1, "description": "Test", "quick_rules": "Use {weapon_bonus}.", "range": "Self", "duration": "Instantaneous", "concentration": False, "ritual": False},
+    ):
+        response = test_client.put(f"/api/spells/{spell_id}", json=payload)
+        assert response.status_code == 422
 
 
 def test_delete_spell(test_client):
@@ -252,6 +328,7 @@ def test_delete_spell(test_client):
         "components": ["V", "S"],
         "duration": "Instantaneous",
         "description": "To be deleted",
+        "quick_rules": "To be deleted.",
         "concentration": False,
         "ritual": False,
     }
@@ -284,6 +361,7 @@ def test_delete_spell_db_failure(monkeypatch, test_client):
         "components": ["V", "S"],
         "duration": "Instantaneous",
         "description": "DB failure test",
+        "quick_rules": "DB failure test.",
         "concentration": False,
         "ritual": False,
     }

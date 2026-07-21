@@ -39,7 +39,8 @@ describe('api client', () => {
   })
 
   it('POST requests send a JSON body', async () => {
-    const { id, ...spell } = targetSpell
+    const { id, ...spellResponse } = targetSpell
+    const spell = { ...spellResponse, quick_rules: targetSpell.quick_rules ?? '' }
     const fetchMock = mockFetchOnce({ jsonBody: targetSpell })
 
     await createSpell(spell)
@@ -87,3 +88,4 @@ describe('api client', () => {
     await expect(getAbilities()).rejects.toMatchObject(new ApiError(404, 'Spell not found'))
   })
 })
+

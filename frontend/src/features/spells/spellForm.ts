@@ -31,6 +31,7 @@ export interface SpellFormState {
   materials: string
   description: string
   alternateDescription: string
+  quickRules: string
   higherLevelsText: string
   higherLevelDamageBySlot: Record<string, string>
   areaShape: string
@@ -56,6 +57,7 @@ export function emptySpellForm(): SpellFormState {
     materials: '',
     description: '',
     alternateDescription: '',
+    quickRules: '',
     higherLevelsText: '',
     higherLevelDamageBySlot: {},
     areaShape: '',
@@ -82,6 +84,7 @@ export function spellToFormState(spell: Spell): SpellFormState {
     materials: spell.materials || '',
     description: spell.description,
     alternateDescription: spell.alternate_description || '',
+    quickRules: spell.quick_rules || '',
     higherLevelsText: spell.higher_levels.text || '',
     higherLevelDamageBySlot: spell.higher_levels.damage_by_slot,
     areaShape: spell.area_of_effect.shape || '',
@@ -113,6 +116,7 @@ export function formStateToSpellInput(form: SpellFormState): SpellInput {
     school: form.school || null,
     description: form.description,
     alternate_description: form.alternateDescription || null,
+    quick_rules: form.quickRules,
     damage: form.damageRows.map(({ name, formula, damageTypes }) => ({
       name,
       formula,
@@ -141,3 +145,4 @@ export function formStateToSpellInput(form: SpellFormState): SpellInput {
     },
   }
 }
+

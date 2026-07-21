@@ -65,7 +65,7 @@ features/dungeons/
     ├── MapLabPage.tsx           # viewer (read + encounter/NPC use)
     ├── MapLabEditorPage.tsx     # editor (geometry + content authoring)
     ├── maplabModel.ts           # coordinate/geometry model (MapLayout)
-    ├── maplabEditor.ts          # editor reducer (21 actions)
+    ├── maplabEditor.ts          # editor reducer (31 actions)
     ├── useMapLabLayout.ts       # viewer layout fetch
     ├── useMapLabEditor.ts       # editor hook (dual-save)
     ├── RoomDetailsPanel.tsx     # viewer room-reading sidebar
@@ -79,6 +79,11 @@ features/dungeons/
 This pattern is used across the nine feature domains. If building a new feature domain, follow the local shape that fits its UI.
 
 **Frontend convention: no global state library, no hooks/ or types/ directories.** State is local to components or lifted to a Model layer (`dungeonModel.ts` pattern). TypeScript types live in `api/types.ts` (centralized, auto-synced with backend schemas.py in practice) or co-located with components as needed. This is intentional — the app is small enough that global state would be premature complexity.
+
+**Frontend convention: validated reference text.** `components/referenceText.ts` owns the
+framework-neutral parsed-node model, registry, authored-text validation, and context resolution.
+Brace parsing is domain-agnostic; registered definitions own token metadata, value lookup, and readable
+fallbacks, while `DiceText` remains responsible only for dice presentation.
 
 **Frontend convention: standard browser routes.** Standard catalog browsers use `BrowserLayout` for the routed `PageHeader`, action slot, error alert, `SplitPane`, and optional editor/confirmation-dialog slots. They model the collection request with `RemoteState<T>` and pass its loading/error status to `SearchList`; a selected item sets `detailOpen`, which at `520px` presents a detail-only view with an in-flow Back-to-list button. Feature routes keep their own sorting, selection, detail card, editor, and deletion behavior.
 

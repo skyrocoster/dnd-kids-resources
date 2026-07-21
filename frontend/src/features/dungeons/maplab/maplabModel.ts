@@ -38,6 +38,7 @@ export interface MapRoom {
   title?: string
   description?: string // added Stage 0
   kind?: string // added Stage 0
+  wallKind?: string // added Stage 1
 }
 
 /** Independent state flags shared by any passage (door or stair) a DM might need to call out at the
@@ -116,11 +117,22 @@ export interface MapPortal extends PassageFlags {
   to: { z: number; cell: MapCell } // paired: the portal at `to` (if present) points back here
 }
 
+/** Feature = outdoor region drawn on the outside grid (river, trees, etc.).
+ * Cells are absolute coordinates (no origin/relative pattern). Features may be
+ * disconnected; there is no adjacency requirement. */
+export interface MapFeature {
+  feature_id: number
+  z: number
+  kind: string
+  title?: string
+  cells: MapCell[] // absolute coords
+}
+
 /** Layout-wide scale/presentation constants: makes the 5 ft/cell scale and the unknown-space
  * padding margin explicit data, not magic numbers in the renderer. */
 export interface MapLayoutMeta {
   cellSizeFt: number
-  padding: number // cells of unknown-space margin around the authored room union
+  padding: { top: number; right: number; bottom: number; left: number }
 }
 
 /** Layout = complete coordinate model for a map */
@@ -132,17 +144,19 @@ export interface MapLayout {
   floors: MapFloor[]
   props: MapProp[]
   portals: MapPortal[] // added Phase H
+  features: MapFeature[]
 }
 
 export function createEmptyMapLayout(floorTitle: string = 'Starting Floor'): MapLayout {
   return {
-    meta: { cellSizeFt: 5, padding: 3 },
+    meta: { cellSizeFt: 5, padding: { top: 3, right: 3, bottom: 3, left: 3 } },
     rooms: [],
     doors: [],
     stairs: [],
     floors: [{ z: 0, title: floorTitle }],
     props: [],
     portals: [],
+    features: [],
   }
 }
 
@@ -321,17 +335,30 @@ export function roomOfCell(cell: MapCell, rooms: MapRoom[]): MapRoom | null {
   return null
 }
 
-/** Tight room-union bounds expanded by `meta.padding` cells on every side — equal padding on all
- * sides is what centers the union within the resulting viewBox, giving the DM a margin of visible
+/** Tight room-union bounds expanded by `meta.padding` cells on every side — per-side padding
+ * is what centers the union within the resulting viewBox, giving the DM a margin of visible
  * "unknown space" (not-yet-authored content) around every authored room. */
 export function paddedBounds(layout: MapLayout): Bounds {
   const tight = layoutBounds(layout.rooms)
   const { padding } = layout.meta
+
+  let minX = tight.minX
+  let maxX = tight.maxX
+  let minY = tight.minY
+  let maxY = tight.maxY
+
+  for (const [x, y] of layout.features.flatMap((f) => f.cells)) {
+    if (x < minX) minX = x
+    if (x > maxX) maxX = x
+    if (y < minY) minY = y
+    if (y > maxY) maxY = y
+  }
+
   return {
-    minX: tight.minX - padding,
-    maxX: tight.maxX + padding,
-    minY: tight.minY - padding,
-    maxY: tight.maxY + padding,
+    minX: minX - padding.left,
+    maxX: maxX + padding.right,
+    minY: minY - padding.top,
+    maxY: maxY + padding.bottom,
   }
 }
 
@@ -625,6 +652,7 @@ export type Inspectable =
   | { kind: 'stair'; stair: MapStair; session?: PassageSessionState }
   | { kind: 'prop'; prop: MapProp }
   | { kind: 'portal'; portal: MapPortal; session?: PassageSessionState }
+  | { kind: 'feature'; feature: MapFeature }
 
 /** Descriptor for an element: title, type label, icon, and structured detail rows.
  * Consumed by the Stage-3 generic inspector panel and Stage-4 session controls. */
@@ -664,6 +692,7 @@ export function inspectableDescriptor(target: Inspectable): InspectableDescripto
       const { room } = target
       const lines: { label: string; value: string }[] = []
       if (room.kind) lines.push({ label: 'Kind', value: room.kind })
+      if (room.wallKind) lines.push({ label: 'Wall kind', value: room.wallKind })
       lines.push({ label: 'Size', value: `${absoluteCells(room).length} squares` })
       if (room.description) lines.push({ label: 'Description', value: room.description })
       return {
@@ -729,6 +758,21 @@ export function inspectableDescriptor(target: Inspectable): InspectableDescripto
         icon: presentation.icon,
         token: presentation.token,
         chips: passageStateChips(effective),
+        lines,
+      }
+    }
+    case 'feature': {
+      const { feature } = target
+      const lines: { label: string; value: string }[] = []
+      lines.push({ label: 'Kind', value: feature.kind })
+      lines.push({ label: 'Size', value: `${feature.cells.length} squares` })
+      lines.push({ label: 'Z', value: String(feature.z) })
+      return {
+        title: feature.title ?? feature.kind,
+        typeLabel: 'Feature',
+        icon: ItemIcon,
+        token: '--md-on-surface-variant',
+        chips: [],
         lines,
       }
     }
@@ -853,6 +897,14 @@ export function normalizeCells(cells: MapCell[]): { origin: MapCell; cells: MapC
   return { origin: [0, 0], cells }
 }
 
+/** Feature-kind registry — same shape as WALL_KIND_OPTIONS in wallKinds.ts */
+export const FEATURE_KIND_OPTIONS = [
+  { value: 'river', label: 'River' },
+  { value: 'trees', label: 'Trees' },
+] as const
+
+export const DEFAULT_FEATURE_KIND = 'river'
+
 /** Next free room id — one past the current maximum (1 for an empty layout). */
 export function nextRoomId(layout: MapLayout): number {
   return Math.max(0, ...layout.rooms.map((r) => r.room_id)) + 1
@@ -878,20 +930,33 @@ export function nextPortalId(layout: MapLayout): number {
   return Math.max(0, ...layout.portals.map((p) => p.portal_id)) + 1
 }
 
+/** Next free feature id — one past the current maximum (1 for an empty layout). */
+export function nextFeatureId(layout: MapLayout): number {
+  return Math.max(0, ...layout.features.map((f) => f.feature_id)) + 1
+}
+
 /** Defends against an older persisted `map_layout` row saved before `props` existed (it was named
  * `items` and unrendered) — normalizes a loaded layout so `props` is always an array. Also backfills
  * `z` on any door/prop saved before floor-stacking was disambiguated (Stage G1), inferring it from
  * whichever room's cells the door/prop spatially overlaps — a best-effort one-time migration so
  * floor-coincident data (e.g. a stairwell) resolves correctly from here on rather than re-inferring
- * ambiguously on every render. Defaults `portals` to an empty array (Phase H). */
+ * ambiguously on every render. Defaults `portals` to an empty array (Phase H). Migrates the old
+ * single-number `meta.padding` to per-side padding. */
 export function normalizeLayout(layout: MapLayout): MapLayout {
   const props = layout.props ?? []
   const portals = layout.portals ?? []
+  const features = layout.features ?? []
   const inferZ = (cell: MapCell): number | undefined => roomOfCell(cell, layout.rooms)?.z
+  const meta =
+    typeof layout.meta.padding === 'number'
+      ? { ...layout.meta, padding: { top: layout.meta.padding, right: layout.meta.padding, bottom: layout.meta.padding, left: layout.meta.padding } }
+      : layout.meta
   return {
     ...layout,
+    meta,
     props: props.map((prop) => (prop.z !== undefined ? prop : { ...prop, z: inferZ(prop.cell) })),
     doors: layout.doors.map((door) => (door.z !== undefined ? door : { ...door, z: inferZ(door.cell) })),
     portals,
+    features,
   }
 }

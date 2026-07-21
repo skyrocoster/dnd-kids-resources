@@ -37,6 +37,7 @@
   display: flex;
   gap: var(--space-5);
   align-items: flex-start;
+  position: relative;
 }
 
 .maplab-editor-room-list {
@@ -442,6 +443,48 @@
 
 .maplab-prop[data-selected] .maplab-prop-marker {
   stroke-width: 4;
+}
+
+.maplab-editor-padding-input {
+  min-height: var(--control-height);
+}
+
+.maplab-editor-padding-input input {
+  width: 5rem;
+}
+
+.maplab-draw-cell {
+  fill: transparent;
+  stroke: none;
+  cursor: crosshair;
+}
+
+.maplab-draw-cell:hover {
+  fill: var(--md-secondary-container);
+  opacity: 0.35;
+  stroke: var(--md-secondary);
+  stroke-width: 2;
+  stroke-dasharray: 5 4;
+}
+
+.maplab-cell-action-menu {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--radius-lg);
+  background: var(--md-surface-2);
+  box-shadow: var(--shadow-md);
+  z-index: 10;
+  min-width: 10rem;
+}
+
+.maplab-cell-action-menu .maplab-pill-button {
+  justify-content: flex-start;
+  text-align: left;
+  width: 100%;
 }
 
 /* .maplab-canvas-wrapper / .maplab-canvas-viewport / .maplab-zoom-controls / .maplab-zoom-button /

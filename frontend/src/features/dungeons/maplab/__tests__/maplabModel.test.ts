@@ -100,20 +100,21 @@ describe('maplabModel (M0a scaffold)', () => {
   describe('paddedBounds', () => {
     it('expands a single room by meta.padding on every side', () => {
       const layout: MapLayout = {
-        meta: { cellSizeFt: 5, padding: 3 },
+        meta: { cellSizeFt: 5, padding: { top: 3, right: 3, bottom: 3, left: 3 } },
         rooms: [mapLabLayout.rooms.find((r) => r.room_id === 17)!],
         doors: [],
         stairs: [],
         floors: [],
         props: [],
         portals: [],
+        features: [],
       }
       expect(paddedBounds(layout)).toEqual({ minX: -3, maxX: 8, minY: -3, maxY: 6 })
     })
 
     it('expands and centers the union for a rectangle plus an L-shape', () => {
       const layout: MapLayout = {
-        meta: { cellSizeFt: 5, padding: 2 },
+        meta: { cellSizeFt: 5, padding: { top: 2, right: 2, bottom: 2, left: 2 } },
         rooms: [
           mapLabLayout.rooms.find((r) => r.room_id === 17)!,
           mapLabLayout.rooms.find((r) => r.room_id === 23)!,
@@ -123,6 +124,7 @@ describe('maplabModel (M0a scaffold)', () => {
         floors: [],
         props: [],
         portals: [],
+        features: [],
       }
       expect(paddedBounds(layout)).toEqual({ minX: -2, maxX: 11, minY: -2, maxY: 5 })
     })
@@ -130,6 +132,23 @@ describe('maplabModel (M0a scaffold)', () => {
     it('computes bounds over all rooms across both floors (two-floor case), not just the active one', () => {
       // mapLabLayout.meta.padding is 3; rooms include the z:1 landing sharing the ground floor's x/y space.
       expect(paddedBounds(mapLabLayout)).toEqual({ minX: -3, maxX: 14, minY: -3, maxY: 6 })
+    })
+  })
+
+  describe('padding migration', () => {
+    it('converts old single-number padding to per-side padding', () => {
+      const oldLayout = {
+        meta: { cellSizeFt: 5, padding: 3 as unknown as { top: number; right: number; bottom: number; left: number } },
+        rooms: [],
+        doors: [],
+        stairs: [],
+        floors: [],
+        props: [],
+        features: [],
+        portals: [],
+      } as MapLayout
+      const result = normalizeLayout(oldLayout)
+      expect(result.meta.padding).toEqual({ top: 3, right: 3, bottom: 3, left: 3 })
     })
   })
 
@@ -439,7 +458,7 @@ describe('maplabModel (M0a scaffold)', () => {
     // room 32 z:0 and room 33 z:1 both sit at [11,0] in the real fixture). Spatial-only inference
     // can't tell which floor a door/prop belongs to in that case; the authored `z` field must win.
     const stackedLayout: MapLayout = {
-      meta: { cellSizeFt: 5, padding: 0 },
+      meta: { cellSizeFt: 5, padding: { top: 0, right: 0, bottom: 0, left: 0 } },
       rooms: [
         { room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0]] },
         { room_id: 2, z: 1, origin: [0, 0], cells: [[0, 0]] },
@@ -455,6 +474,7 @@ describe('maplabModel (M0a scaffold)', () => {
         { prop_id: 2, kind: 'table', cell: [0, 0], z: 1, ...baseDoorFlags },
       ],
       portals: [],
+      features: [],
     }
 
     it('doorsOnFloor resolves by authored z, not just spatial cell overlap', () => {
@@ -662,6 +682,19 @@ describe('maplabModel (Stage 3 inspector)', () => {
     it('falls back to "Room {id}" when untitled', () => {
       const untitled: MapRoom = { room_id: 42, z: 0, origin: [0, 0], cells: [[0, 0]] }
       expect(inspectableDescriptor({ kind: 'room', room: untitled }).title).toBe('Room 42')
+    })
+
+    it('includes a Wall kind line when wallKind is set', () => {
+      const room17 = mapLabLayout.rooms.find((r) => r.room_id === 17)!
+      const withWallKind: MapRoom = { ...room17, wallKind: 'natural' }
+      const d = inspectableDescriptor({ kind: 'room', room: withWallKind })
+      expect(d.lines).toContainEqual({ label: 'Wall kind', value: 'natural' })
+    })
+
+    it('omits Wall kind line when wallKind is not set', () => {
+      const room17 = mapLabLayout.rooms.find((r) => r.room_id === 17)!
+      const d = inspectableDescriptor({ kind: 'room', room: room17 })
+      expect(d.lines.some((l) => l.label === 'Wall kind')).toBe(false)
     })
   })
 

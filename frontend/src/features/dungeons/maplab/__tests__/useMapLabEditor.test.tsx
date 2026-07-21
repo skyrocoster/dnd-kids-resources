@@ -13,7 +13,7 @@ const initialDungeon: Dungeon = {
 }
 
 const initialLayout = {
-  meta: { cellSizeFt: 5, padding: 3 },
+  meta: { cellSizeFt: 5, padding: { top: 3, right: 3, bottom: 3, left: 3 } },
   rooms: [{ room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0]], title: 'Loaded Room' }],
   doors: [],
   stairs: [],
@@ -165,6 +165,32 @@ describe('useMapLabEditor', () => {
     expect(result.current.layoutSyncStatus.status).toBe('error')
     expect(result.current.dataSyncStatus.status).toBe('saved')
     expect(result.current.saveStatus.status).toBe('error')
+  })
+
+  it('updateRoomWallKind dispatches the room wallKind update and autosaves', async () => {
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: initialLayout })
+    vi.spyOn(api, 'getDungeon').mockResolvedValue(initialDungeon)
+    const saveLayoutSpy = vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: initialLayout })
+
+    const { result } = renderHook(() => useMapLabEditor(4, initialDungeon))
+
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    act(() => {
+      result.current.updateRoomWallKind(1, 'natural')
+    })
+
+    expect(result.current.state.layout.rooms[0]).toMatchObject({ wallKind: 'natural' })
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(600)
+    })
+
+    expect(saveLayoutSpy).toHaveBeenCalledTimes(1)
+    const savedData = saveLayoutSpy.mock.calls[0][1].data as { rooms: Array<{ wallKind: string }> }
+    expect(savedData.rooms[0].wallKind).toBe('natural')
   })
 
   it('resetToLastLoadedLayout restores both blobs', async () => {

@@ -46,6 +46,7 @@ export interface Spell {
   school: string | null
   description: string
   alternate_description: string | null
+  quick_rules: string | null
   damage: SpellDamage[]
   healing: SpellHealing
   range: string
@@ -93,6 +94,7 @@ export interface SpellInput {
   school?: string | null
   description: string
   alternate_description?: string | null
+  quick_rules: string
   damage?: SpellDamage[]
   healing?: SpellHealing
   range: string
@@ -612,5 +614,7 @@ export interface LoomSessionLogRequest {
   notes?: string | null
   outcomes: Record<number, LoomThreadOutcome>
 }
+
+
 
 

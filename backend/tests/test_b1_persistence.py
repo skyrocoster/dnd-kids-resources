@@ -27,6 +27,7 @@ def _load_module(name: str, path: Path):
 
 INIT_DB = _load_module("_b1_init_database", REPO_ROOT / "scripts" / "init_database.py")
 SEED_DB = _load_module("_b1_seed_database", REPO_ROOT / "scripts" / "seed_database.py")
+EXPORT_DB = _load_module("_b1_export_db_seeds", REPO_ROOT / "scripts" / "export_db_seeds.py")
 
 
 def _init_schema(db_path: Path) -> None:
@@ -68,6 +69,7 @@ def test_target_schema_creates_correct_columns(tmp_path: Path):
         "level",
         "school",
         "description",
+        "quick_rules",
         "alternate_description",
         "damage",
         "healing",
@@ -120,6 +122,22 @@ def test_seed_all_525_insert_with_ids_preserved(tmp_path: Path):
 
     assert count == 525
     assert ids == list(range(1, 526))
+
+
+def test_seed_all_525_quick_rules_remain_null(tmp_path: Path):
+    db_path = tmp_path / "seed-null.db"
+    _init_schema(db_path)
+    _seed_spells(db_path, force=True)
+
+    conn = sqlite3.connect(str(db_path))
+    try:
+        non_null_quick_rules = conn.execute(
+            "SELECT COUNT(*) FROM spells WHERE quick_rules IS NOT NULL"
+        ).fetchone()[0]
+    finally:
+        conn.close()
+
+    assert non_null_quick_rules == 0
 
 
 def test_seed_level_is_integer(tmp_path: Path):
@@ -185,6 +203,7 @@ def test_empty_collections_survive_storage(tmp_path: Path):
                 "level": 0,
                 "school": None,
                 "description": "Empty test",
+                "quick_rules": None,
                 "alternate_description": None,
                 "range": "Self",
                 "duration": "Instantaneous",
@@ -234,6 +253,7 @@ def test_insert_spell_with_explicit_id(tmp_path: Path):
                 "level": 1,
                 "school": "abjuration",
                 "description": "Explicit ID",
+                "quick_rules": None,
                 "range": "Self",
                 "duration": "Instantaneous",
                 "casting_times": ["1 action"],
@@ -253,6 +273,95 @@ def test_insert_spell_with_explicit_id(tmp_path: Path):
         conn.close()
 
     assert inserted_id == 123
+
+
+def test_quick_rules_round_trip_exact_string(tmp_path: Path):
+    db_path = tmp_path / "quick-rules.db"
+    export_dir = tmp_path / "seeds"
+    export_dir.mkdir()
+    _init_schema(db_path)
+
+    conn = sqlite3.connect(str(db_path))
+    try:
+        SEED_DB.insert_spell(
+            conn.cursor(),
+            {
+                "id": 321,
+                "name": "Quick Rules Test",
+                "level": 1,
+                "school": "evocation",
+                "description": "Quick rules test",
+                "quick_rules": "Deal {spell_attack_bonus} damage.",
+                "alternate_description": None,
+                "range": "60 feet",
+                "duration": "Instantaneous",
+                "casting_times": ["1 action"],
+                "components": ["V"],
+                "damage": [],
+                "healing": {"amount": None, "temp_hp": False, "max_hp": False},
+                "higher_levels": {"text": None, "damage_by_slot": {}},
+                "attacks": [],
+                "area_of_effect": {"shape": None, "size": None},
+                "concentration": False,
+                "ritual": False,
+            },
+        )
+        conn.commit()
+        row = conn.execute(
+            "SELECT quick_rules FROM spells WHERE id = ?",
+            (321,),
+        ).fetchone()
+    finally:
+        conn.close()
+
+    assert row[0] == "Deal {spell_attack_bonus} damage."
+
+    original_dir = EXPORT_DB.SEEDS_DIR
+    try:
+        EXPORT_DB.SEEDS_DIR = export_dir
+        with sqlite3.connect(str(db_path)) as export_conn:
+            EXPORT_DB.export_table(export_conn.cursor(), "spells")
+    finally:
+        EXPORT_DB.SEEDS_DIR = original_dir
+
+    exported = json.loads((export_dir / "seed_spells.json").read_text(encoding="utf-8"))
+    exported_row = next(item for item in exported if item["id"] == 321)
+    assert exported_row["quick_rules"] == "Deal {spell_attack_bonus} damage."
+
+
+def test_invalid_quick_rules_rejected(tmp_path: Path):
+    db_path = tmp_path / "invalid-quick-rules.db"
+    _init_schema(db_path)
+
+    conn = sqlite3.connect(str(db_path))
+    try:
+        with pytest.raises(ValueError) as exc:
+            SEED_DB.insert_spell(
+                conn.cursor(),
+                {
+                    "id": 322,
+                    "name": "Invalid Quick Rules",
+                    "level": 1,
+                    "school": "evocation",
+                    "description": "Invalid quick rules",
+                    "quick_rules": "Use {weapon_bonus}.",
+                    "range": "60 feet",
+                    "duration": "Instantaneous",
+                    "casting_times": ["1 action"],
+                    "components": ["V"],
+                    "damage": [],
+                    "healing": {"amount": None, "temp_hp": False, "max_hp": False},
+                    "higher_levels": {"text": None, "damage_by_slot": {}},
+                    "attacks": [],
+                    "area_of_effect": {"shape": None, "size": None},
+                    "concentration": False,
+                    "ritual": False,
+                },
+            )
+        assert "Invalid quick_rules" in str(exc.value)
+    finally:
+        conn.close()
+
 
 
 def test_seed_idempotent_without_force(tmp_path: Path):

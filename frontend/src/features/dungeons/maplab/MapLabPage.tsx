@@ -47,7 +47,6 @@ import {
 } from './maplabModel'
 
 const CELL_SIZE = 64
-const GRID_PATTERN_ID = 'maplab-unknown-space-grid'
 
 function roomCenter(room: MapRoom): { x: number; y: number } {
   const cells = absoluteCells(room)
@@ -120,6 +119,50 @@ export function useToolbarTrayCollapse(groupKey: string): { collapsed: boolean; 
   return { collapsed, toggle }
 }
 
+export type MapLayerKey = 'outside' | 'props' | 'passages' | 'labels'
+
+const LAYER_VISIBILITY_STORAGE_PREFIX = 'dnd-kids-maplab-layer-visible:'
+
+const MAP_LAYER_KEYS: MapLayerKey[] = ['outside', 'props', 'passages', 'labels']
+
+function readStoredLayerVisible(key: MapLayerKey): boolean {
+  try {
+    return window.localStorage.getItem(LAYER_VISIBILITY_STORAGE_PREFIX + key) !== 'false'
+  } catch {
+    return true
+  }
+}
+
+/** Tracks visibility of the four map layers — Outside, Props, Passages, Labels — defaulting all
+ * to visible (absence of a stored value ≠ `'false'`), persisted per-key in `localStorage`. Same
+ * try/catch-and-ignore pattern as `useToolbarTrayCollapse`, inverted default. */
+export function useMapLayerVisibility(): {
+  visible: Record<MapLayerKey, boolean>
+  toggleLayer: (key: MapLayerKey) => void
+} {
+  const [visible, setVisible] = useState<Record<MapLayerKey, boolean>>(() => {
+    const initial = {} as Record<MapLayerKey, boolean>
+    for (const key of MAP_LAYER_KEYS) {
+      initial[key] = readStoredLayerVisible(key)
+    }
+    return initial
+  })
+
+  const toggleLayer = useCallback((key: MapLayerKey) => {
+    setVisible((prev) => {
+      const next = { ...prev, [key]: !prev[key] }
+      try {
+        window.localStorage.setItem(LAYER_VISIBILITY_STORAGE_PREFIX + key, String(next[key]))
+      } catch {
+        // localStorage unavailable (e.g. private mode) — visibility state just won't persist
+      }
+      return next
+    })
+  }, [])
+
+  return { visible, toggleLayer }
+}
+
 /** A collapsible toolbar group: label + chevron toggle always visible (so the group structure
  * stays legible collapsed), controls hidden via width/overflow (never `display:none`) when
  * collapsed. Shared by `MapLabPage`'s Session group and `MapLabEditorPage`'s Create/Session/View/
@@ -175,6 +218,8 @@ export function MapLabPage() {
   const zoomApi = useMapCanvasZoom()
   const [viewportSize, setViewportSize] = useState<ViewportSize>({ width: 0, height: 0 })
   const handleViewportResize = useCallback((size: ViewportSize) => setViewportSize(size), [])
+  const { visible: layerVisible, toggleLayer } = useMapLayerVisibility()
+  const allLayersHidden = MAP_LAYER_KEYS.every((key) => !layerVisible[key])
 
   useEffect(() => {
     setParsed(parseDungeonData(route.dungeon?.data ?? {}))
@@ -192,6 +237,7 @@ export function MapLabPage() {
   const doors = useMemo(() => doorsOnFloor(layout, activeZ), [layout, activeZ])
   const props = useMemo(() => propsOnFloor(layout, activeZ), [layout, activeZ])
   const portals = useMemo(() => portalsOnFloor(layout, activeZ), [layout, activeZ])
+  const features = useMemo(() => layout.features.filter((f) => f.z === activeZ), [layout, activeZ])
 
   // Bounds computed over every room, not just the active floor, so the viewBox stays
   // aligned across floor switches — proving shared coordinate space across z. Padded by
@@ -373,6 +419,44 @@ export function MapLabPage() {
             Reset session state
           </button>
         </ToolbarTray>
+        <ToolbarTray groupKey="viewer-view" label="View">
+          <button
+            type="button"
+            className="maplab-pill-button maplab-layer-toggle-button"
+            aria-pressed={layerVisible.outside}
+            data-active={layerVisible.outside || undefined}
+            onClick={() => toggleLayer('outside')}
+          >
+            Outside
+          </button>
+          <button
+            type="button"
+            className="maplab-pill-button maplab-layer-toggle-button"
+            aria-pressed={layerVisible.props}
+            data-active={layerVisible.props || undefined}
+            onClick={() => toggleLayer('props')}
+          >
+            Props
+          </button>
+          <button
+            type="button"
+            className="maplab-pill-button maplab-layer-toggle-button"
+            aria-pressed={layerVisible.passages}
+            data-active={layerVisible.passages || undefined}
+            onClick={() => toggleLayer('passages')}
+          >
+            Passages
+          </button>
+          <button
+            type="button"
+            className="maplab-pill-button maplab-layer-toggle-button"
+            aria-pressed={layerVisible.labels}
+            data-active={layerVisible.labels || undefined}
+            onClick={() => toggleLayer('labels')}
+          >
+            Labels
+          </button>
+        </ToolbarTray>
       </div>
 
       <div className="maplab-canvas">
@@ -386,6 +470,9 @@ export function MapLabPage() {
         </div>
 
         <div className="maplab-canvas-area">
+          {allLayersHidden ? (
+            <p className="maplab-canvas-filtered-empty">All layers are hidden. Turn one on to see the map.</p>
+          ) : (
           <MapCanvas
             viewBox={viewBox}
             bounds={bounds}
@@ -427,24 +514,46 @@ export function MapLabPage() {
             }
           >
           <defs>
-            <pattern
-              id={GRID_PATTERN_ID}
-              width={CELL_SIZE}
-              height={CELL_SIZE}
-              patternUnits="userSpaceOnUse"
-            >
-              <rect className="maplab-grid-cell" width={CELL_SIZE} height={CELL_SIZE} />
+            <pattern id="feature-river-pattern" patternUnits="userSpaceOnUse" width={CELL_SIZE} height={CELL_SIZE}>
+              <rect width={CELL_SIZE} height={CELL_SIZE} fill="var(--feature-river-fill)" />
+              <line x1={0} y1={CELL_SIZE * 0.35} x2={CELL_SIZE} y2={CELL_SIZE * 0.35} stroke="var(--md-arcane)" strokeWidth={1.5} strokeDasharray="4 3" />
+              <line x1={0} y1={CELL_SIZE * 0.65} x2={CELL_SIZE} y2={CELL_SIZE * 0.65} stroke="var(--md-arcane)" strokeWidth={1.5} strokeDasharray="4 3" />
+            </pattern>
+            <pattern id="feature-trees-pattern" patternUnits="userSpaceOnUse" width={CELL_SIZE} height={CELL_SIZE}>
+              <rect width={CELL_SIZE} height={CELL_SIZE} fill="var(--feature-trees-fill)" />
+              <circle cx={CELL_SIZE * 0.25} cy={CELL_SIZE * 0.3} r={3} fill="var(--md-nature)" opacity={0.55} />
+              <circle cx={CELL_SIZE * 0.7} cy={CELL_SIZE * 0.45} r={2.5} fill="var(--md-nature)" opacity={0.45} />
+              <circle cx={CELL_SIZE * 0.4} cy={CELL_SIZE * 0.7} r={3.5} fill="var(--md-nature)" opacity={0.4} />
+              <circle cx={CELL_SIZE * 0.75} cy={CELL_SIZE * 0.75} r={2} fill="var(--md-nature)" opacity={0.55} />
             </pattern>
           </defs>
 
-          <rect
-            className="maplab-unknown-space"
-            x={bounds.minX * CELL_SIZE}
-            y={bounds.minY * CELL_SIZE}
-            width={(bounds.maxX - bounds.minX + 1) * CELL_SIZE}
-            height={(bounds.maxY - bounds.minY + 1) * CELL_SIZE}
-            fill={`url(#${GRID_PATTERN_ID})`}
-          />
+          {layerVisible.outside && (
+            <rect
+              className="maplab-unknown-space"
+              x={bounds.minX * CELL_SIZE}
+              y={bounds.minY * CELL_SIZE}
+              width={(bounds.maxX - bounds.minX + 1) * CELL_SIZE}
+              height={(bounds.maxY - bounds.minY + 1) * CELL_SIZE}
+              fill="var(--maplab-outside-fill)"
+            />
+          )}
+
+          {layerVisible.outside && features.map((feature) => (
+            <g key={feature.feature_id} className="maplab-feature" data-feature-kind={feature.kind}>
+              {feature.cells.map(([x, y]) => (
+                <rect
+                  key={`${x}-${y}`}
+                  className="maplab-feature-cell"
+                  x={x * CELL_SIZE}
+                  y={y * CELL_SIZE}
+                  width={CELL_SIZE}
+                  height={CELL_SIZE}
+                  fill={`url(#feature-${feature.kind}-pattern)`}
+                />
+              ))}
+            </g>
+          ))}
 
           <g className="maplab-scale-ruler">
             <line x1={rulerX1} y1={rulerY} x2={rulerX2} y2={rulerY} />
@@ -498,6 +607,7 @@ export function MapLabPage() {
                     <line
                       key={`${edge.cell[0]}-${edge.cell[1]}-${edge.side}`}
                       className="maplab-wall"
+                      data-wall-kind={room.wallKind ?? 'solid'}
                       x1={segment.x1}
                       y1={segment.y1}
                       x2={segment.x2}
@@ -505,14 +615,16 @@ export function MapLabPage() {
                     />
                   )
                 })}
-                <text className="maplab-room-title" x={center.x} y={center.y}>
-                  {room.title ?? `Room ${room.room_id}`}
-                </text>
+                {layerVisible.labels && (
+                  <text className="maplab-room-title" x={center.x} y={center.y}>
+                    {room.title ?? `Room ${room.room_id}`}
+                  </text>
+                )}
               </g>
             )
           })}
 
-          {doors.map((door) => {
+          {layerVisible.passages && doors.map((door) => {
             const isPinned = pinnedDoorId === door.door_id
             return (
               <DoorMarker
@@ -529,11 +641,13 @@ export function MapLabPage() {
               />
             )
           })}
-          <g className="maplab-door-badge-layer" aria-hidden="true">
-            {doors.map((door) => <DoorBadgeLayer key={door.door_id} door={door} cellSize={CELL_SIZE} session={doorSession(door)} />)}
-          </g>
+          {layerVisible.passages && (
+            <g className="maplab-door-badge-layer" aria-hidden="true">
+              {doors.map((door) => <DoorBadgeLayer key={door.door_id} door={door} cellSize={CELL_SIZE} session={doorSession(door)} />)}
+            </g>
+          )}
 
-          {stairs.map((stair) => {
+          {layerVisible.passages && stairs.map((stair) => {
             const cell = stairCellForZ(stair, activeZ)
             if (!cell) return null
             const session = stairSession(stair)
@@ -560,7 +674,7 @@ export function MapLabPage() {
             )
           })}
 
-          {portals.map((portal) => {
+          {layerVisible.passages && portals.map((portal) => {
             const { dx, dy, grouped } = markerOffset(layout, activeZ, portal.cell, 'portal', portal.portal_id)
             return (
               <PortalMarker
@@ -579,7 +693,7 @@ export function MapLabPage() {
             )
           })}
 
-          {props.map((prop) => {
+          {layerVisible.props && props.map((prop) => {
             const propOffset = prop.side === undefined ? markerOffset(layout, activeZ, prop.cell, 'prop', prop.prop_id) : undefined
             return (
               <PropMarker
@@ -601,6 +715,7 @@ export function MapLabPage() {
             )
           })}
           </MapCanvas>
+          )}
         </div>
 
         <div className="maplab-sidebar">

@@ -6,11 +6,13 @@ import { NpcChip } from '../../npcs/NpcChip'
 import { groupEntriesByType, type DungeonEntry, type DungeonRoom } from '../dungeonModel'
 import { InspectorPanel } from './InspectorPanel'
 import type { MapRoom } from './maplabModel'
+import { WALL_KIND_OPTIONS } from './wallKinds'
 
 interface RoomContentEditorProps {
   room: MapRoom
   dungeonRoom: DungeonRoom | null
   onUpdateRoomTitle: (roomId: number, title: string) => void
+  onUpdateRoomWallKind: (roomId: number, wallKind: string) => void
   onUpdateRoomEntries: (roomId: number, entries: DungeonEntry[] | null | undefined) => void
   onUpdateRoomNpcs: (roomId: number, npcs: number[]) => void
   onCreateRoomData: (roomId: number) => void
@@ -56,6 +58,7 @@ export function RoomContentEditor({
   room,
   dungeonRoom,
   onUpdateRoomTitle,
+  onUpdateRoomWallKind,
   onUpdateRoomEntries,
   onUpdateRoomNpcs,
   onCreateRoomData,
@@ -102,6 +105,20 @@ export function RoomContentEditor({
         <label className="maplab-field-row maplab-room-content-field">
           <span>Title</span>
           <input type="text" value={title} onChange={(event) => onUpdateRoomTitle(room.room_id, event.target.value)} />
+        </label>
+
+        <label className="maplab-field-row maplab-room-content-field">
+          <span>Wall kind</span>
+          <select
+            value={room.wallKind ?? 'solid'}
+            onChange={(event) => onUpdateRoomWallKind(room.room_id, event.target.value)}
+          >
+            {WALL_KIND_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
         </label>
 
         <div className="maplab-room-content-readonly">

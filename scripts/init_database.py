@@ -152,6 +152,7 @@ def init_database(db_path: Path | None = None):
             level INTEGER NOT NULL,
             school TEXT,
             description TEXT NOT NULL,
+            quick_rules TEXT,
             alternate_description TEXT,
             damage TEXT NOT NULL DEFAULT '[]',
             healing TEXT NOT NULL DEFAULT '{"amount": null, "temp_hp": false, "max_hp": false}',
@@ -433,3 +434,4 @@ def init_database(db_path: Path | None = None):
 
 if __name__ == '__main__':
     init_database()
+

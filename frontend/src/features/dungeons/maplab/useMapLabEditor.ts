@@ -6,7 +6,7 @@ import { ApiError, getDungeon, getDungeonLayout, saveDungeonLayout, updateDungeo
 import type { Dungeon } from '../../../api/types'
 import { parseDungeonData, type DungeonData, type DungeonRoom } from '../dungeonModel'
 import { initialEditorState, mapLabEditorReducer, type EditorAction, type EditorState } from './maplabEditor'
-import { createEmptyMapLayout, normalizeLayout, nextRoomId, type CardinalSide, type MapCell, type MapLayout } from './maplabModel'
+import { createEmptyMapLayout, normalizeLayout, nextRoomId, type CardinalSide, type MapCell, type MapLayout, type MapLayoutMeta } from './maplabModel'
 
 const SAVE_DEBOUNCE_MS = 600
 
@@ -277,6 +277,22 @@ export function useMapLabEditor(dungeonId: number | null, initialDungeon: Dungeo
     [scheduleLayoutSave],
   )
 
+  const updateRoomWallKind = useCallback(
+    (roomId: number, wallKind: string) => {
+      dispatch({ type: 'setRoomMeta', roomId, meta: { wallKind } })
+      scheduleLayoutSave()
+    },
+    [scheduleLayoutSave],
+  )
+
+  const updatePadding = useCallback(
+    (padding: MapLayoutMeta['padding']) => {
+      dispatch({ type: 'setPadding', padding })
+      scheduleLayoutSave()
+    },
+    [scheduleLayoutSave],
+  )
+
   const updateRoomEntries = useCallback(
     (roomId: number, entries: DungeonRoom['entries']) => {
       setDungeonData((current) => {
@@ -357,6 +373,21 @@ export function useMapLabEditor(dungeonId: number | null, initialDungeon: Dungeo
   const selectPortal = useCallback((portalId: number | null) => dispatch({ type: 'selectPortal', portalId }), [])
   const deletePortal = useCallback((portalId: number) => apply({ type: 'deletePortal', portalId }), [apply])
 
+  const addFeature = useCallback(
+    (kind: string, cell: MapCell, z: number) => apply({ type: 'addFeature', kind, cell, z }),
+    [apply],
+  )
+  const toggleFeatureCell = useCallback(
+    (featureId: number, cell: MapCell) => apply({ type: 'toggleFeatureCell', featureId, cell }),
+    [apply],
+  )
+  const selectFeature = useCallback((featureId: number | null) => dispatch({ type: 'selectFeature', featureId }), [])
+  const deleteFeature = useCallback((featureId: number) => apply({ type: 'deleteFeature', featureId }), [apply])
+  const updateFeatureMeta = useCallback(
+    (featureId: number, meta: { title?: string; kind?: string }) => apply({ type: 'setFeatureMeta', featureId, meta }),
+    [apply],
+  )
+
   const saveStatus = useMemo<SyncStatus>(() => {
     if (layoutSyncStatus.status === 'error' || dataSyncStatus.status === 'error') {
       return { status: 'error', error: layoutSyncStatus.error ?? dataSyncStatus.error }
@@ -404,9 +435,16 @@ export function useMapLabEditor(dungeonId: number | null, initialDungeon: Dungeo
     addPortal,
     selectPortal,
     deletePortal,
+    addFeature,
+    toggleFeatureCell,
+    selectFeature,
+    deleteFeature,
+    updateFeatureMeta,
     updateRoomTitle,
     updateRoomDescription,
     updateRoomKind,
+    updateRoomWallKind,
+    updatePadding,
     updateRoomEntries,
     updateRoomNpcs,
   }

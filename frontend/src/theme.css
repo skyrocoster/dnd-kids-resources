@@ -285,6 +285,17 @@
 
   /* Z-index — named after the dominant stacking tiers already in use:
      editor modal backdrops (100), floating docks (150), Dialog (200). */
+  /* Map Lab outside fill — flat shade for bare space inside the padded extent */
+  --maplab-outside-fill: var(--md-surface-1);
+
+  /* Wall-kind stroke colours — consumed by `data-wall-kind` on .maplab-wall */
+  --wall-natural-stroke: var(--md-nature);
+  --wall-open-stroke: var(--md-outline);
+
+  /* Feature-kind fills — consumed by `data-feature-kind` on outside-area elements */
+  --feature-river-fill: var(--md-arcane-container);
+  --feature-trees-fill: var(--md-nature-container);
+
   --z-editor: 100;
   --z-floating: 150;
   --z-dialog: 200;

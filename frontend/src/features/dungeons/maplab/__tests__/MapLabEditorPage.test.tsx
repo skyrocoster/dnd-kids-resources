@@ -80,7 +80,7 @@ describe('MapLabEditorPage', () => {
 
   it('renders a saved layout from the backend', async () => {
     const layout = {
-      meta: { cellSizeFt: 5, padding: 3 },
+      meta: { cellSizeFt: 5, padding: { top: 3, right: 3, bottom: 3, left: 3 } },
       rooms: [{ room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0]], title: 'Saved Room' }],
       doors: [],
       stairs: [],
@@ -98,7 +98,7 @@ describe('MapLabEditorPage', () => {
 
   it('add room dispatches action and autosaves (debounced)', async () => {
     const layout = {
-      meta: { cellSizeFt: 5, padding: 3 },
+      meta: { cellSizeFt: 5, padding: { top: 3, right: 3, bottom: 3, left: 3 } },
       rooms: [],
       doors: [],
       stairs: [],
@@ -130,7 +130,7 @@ describe('MapLabEditorPage', () => {
 
   it('selecting a room reveals paintable cells; deselecting hides them', async () => {
     const layout = {
-      meta: { cellSizeFt: 5, padding: 3 },
+      meta: { cellSizeFt: 5, padding: { top: 3, right: 3, bottom: 3, left: 3 } },
       rooms: [{ room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0]], title: 'Room 1' }],
       doors: [],
       stairs: [],
@@ -155,7 +155,7 @@ describe('MapLabEditorPage', () => {
 
   it('removing an owned cell still works as single-cell cleanup and autosaves', async () => {
     const layout = {
-      meta: { cellSizeFt: 5, padding: 3 },
+      meta: { cellSizeFt: 5, padding: { top: 3, right: 3, bottom: 3, left: 3 } },
       rooms: [{ room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0], [1, 0]], title: 'Room 1' }],
       doors: [],
       stairs: [],
@@ -185,7 +185,7 @@ describe('MapLabEditorPage', () => {
 
   it('places a door on a wall edge and shows its properties form', async () => {
     const layout = {
-      meta: { cellSizeFt: 5, padding: 3 },
+      meta: { cellSizeFt: 5, padding: { top: 3, right: 3, bottom: 3, left: 3 } },
       rooms: [{ room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0]], title: 'Room 1' }],
       doors: [],
       stairs: [],
@@ -215,7 +215,7 @@ describe('MapLabEditorPage', () => {
 
   it('edits door properties and autosaves the change', async () => {
     const layout = {
-      meta: { cellSizeFt: 5, padding: 3 },
+      meta: { cellSizeFt: 5, padding: { top: 3, right: 3, bottom: 3, left: 3 } },
       rooms: [{ room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0]], title: 'Room 1' }],
       doors: [{ door_id: 1, cell: [0, 0], side: 'N', hidden: false, locked: false, trapped: false }],
       stairs: [],
@@ -250,7 +250,7 @@ describe('MapLabEditorPage', () => {
 
   it('shows room content editing and persists room title changes', async () => {
     const layout = {
-      meta: { cellSizeFt: 5, padding: 3 },
+      meta: { cellSizeFt: 5, padding: { top: 3, right: 3, bottom: 3, left: 3 } },
       rooms: [{ room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0]], title: 'Room 1' }],
       doors: [],
       stairs: [],
@@ -283,7 +283,7 @@ describe('MapLabEditorPage', () => {
 
   it('shows the create-room-data action for layout-only rooms', async () => {
     const layout = {
-      meta: { cellSizeFt: 5, padding: 3 },
+      meta: { cellSizeFt: 5, padding: { top: 3, right: 3, bottom: 3, left: 3 } },
       rooms: [{ room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0]], title: 'Room 1' }],
       doors: [],
       stairs: [],
@@ -316,7 +316,7 @@ describe('MapLabEditorPage', () => {
 
 describe('MapLabEditorPage (Stage E2 — Canvas zoom & pan)', () => {
   const singleRoomLayout = {
-    meta: { cellSizeFt: 5, padding: 3 },
+    meta: { cellSizeFt: 5, padding: { top: 3, right: 3, bottom: 3, left: 3 } },
     rooms: [{ room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0]], title: 'Room 1' }],
     doors: [],
     stairs: [],
@@ -452,7 +452,7 @@ describe('MapLabEditorPage (Stage E2 — Canvas zoom & pan)', () => {
 
 describe('MapLabEditorPage (Phase K scaffolding)', () => {
   const singleRoomLayout = {
-    meta: { cellSizeFt: 5, padding: 3 },
+    meta: { cellSizeFt: 5, padding: { top: 3, right: 3, bottom: 3, left: 3 } },
     rooms: [{ room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0]], title: 'Room 1' }],
     doors: [],
     stairs: [],
@@ -658,7 +658,7 @@ describe('MapLabEditorPage (Phase K scaffolding)', () => {
 
 describe('MapLabEditorPage (Stage E3 — Toolbar reorganization & persistent inspector)', () => {
   const oneRoomOneDoorLayout = {
-    meta: { cellSizeFt: 5, padding: 3 },
+    meta: { cellSizeFt: 5, padding: { top: 3, right: 3, bottom: 3, left: 3 } },
     rooms: [{ room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0]], title: 'Room 1' }],
     doors: [{ door_id: 1, cell: [0, 0], side: 'N', hidden: false, locked: false, trapped: false }],
     stairs: [],
@@ -718,8 +718,83 @@ describe('MapLabEditorPage (Stage E3 — Toolbar reorganization & persistent ins
       await flush()
 
       expect(screen.getByRole('button', { name: 'Expand Create tools' })).toBeInTheDocument()
-    })
   })
+})
+
+describe('MapLabEditorPage (Stage 03 — layer toggles)', () => {
+  afterEach(() => {
+    for (const key of ['outside', 'props', 'passages', 'labels']) {
+      window.localStorage.removeItem(`dnd-kids-maplab-layer-visible:${key}`)
+    }
+  })
+
+  it('toggling Outside off hides the unknown-space rect and back on restores it', async () => {
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: mapLabLayout as unknown as Record<string, unknown> })
+    vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: mapLabLayout as unknown as Record<string, unknown> })
+
+    const { container } = renderMapLabEditorPage()
+    await flush()
+
+    expect(container.querySelector('.maplab-unknown-space')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Outside' }))
+    expect(container.querySelector('.maplab-unknown-space')).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Outside' }))
+    expect(container.querySelector('.maplab-unknown-space')).toBeInTheDocument()
+  })
+
+  it('toggling Props off hides prop markers and back on restores them', async () => {
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: mapLabLayout as unknown as Record<string, unknown> })
+    vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: mapLabLayout as unknown as Record<string, unknown> })
+
+    const { container } = renderMapLabEditorPage()
+    await flush()
+
+    expect(container.querySelector('.maplab-prop')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Props' }))
+    expect(container.querySelector('.maplab-prop')).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Props' }))
+    expect(container.querySelector('.maplab-prop')).toBeInTheDocument()
+  })
+
+  it('toggling Passages off hides doors and stairs together, and back on restores them', async () => {
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: mapLabLayout as unknown as Record<string, unknown> })
+    vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: mapLabLayout as unknown as Record<string, unknown> })
+
+    const { container } = renderMapLabEditorPage()
+    await flush()
+
+    expect(container.querySelector('.maplab-door')).toBeInTheDocument()
+    expect(container.querySelector('.maplab-stair')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Passages' }))
+    expect(container.querySelector('.maplab-door')).not.toBeInTheDocument()
+    expect(container.querySelector('.maplab-stair')).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Passages' }))
+    expect(container.querySelector('.maplab-door')).toBeInTheDocument()
+    expect(container.querySelector('.maplab-stair')).toBeInTheDocument()
+  })
+
+  it('toggling Labels off hides room title text and back on restores it', async () => {
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: mapLabLayout as unknown as Record<string, unknown> })
+    vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: mapLabLayout as unknown as Record<string, unknown> })
+
+    const { container } = renderMapLabEditorPage()
+    await flush()
+
+    expect(container.querySelector('.maplab-room-title')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Labels' }))
+    expect(container.querySelector('.maplab-room-title')).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Labels' }))
+    expect(container.querySelector('.maplab-room-title')).toBeInTheDocument()
+  })
+})
 
   it('left navigation rail (nav-rail) holds floor tabs and room list vertically', async () => {
     const { container } = renderMapLabEditorPage()
@@ -771,7 +846,7 @@ describe('MapLabEditorPage (Stage E3 — Toolbar reorganization & persistent ins
     const rail = container.querySelector('.maplab-inspector-rail')
     expect(rail).toBeInTheDocument()
     expect(rail?.querySelector('.maplab-inspector-rail-empty')).toBeInTheDocument()
-    expect(screen.getByText('Select a room, door, prop, stair, or portal to see its details.')).toBeInTheDocument()
+    expect(screen.getByText('Select a room, door, prop, stair, portal, or feature to see its details.')).toBeInTheDocument()
   })
 
   it('selecting a room (not just door) populates the inspector rail', async () => {
@@ -837,7 +912,7 @@ describe('MapLabEditorPage (Stage F3 — prop authoring)', () => {
   })
 
   const oneRoomLayout = {
-    meta: { cellSizeFt: 5, padding: 3 },
+    meta: { cellSizeFt: 5, padding: { top: 3, right: 3, bottom: 3, left: 3 } },
     rooms: [{ room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0]], title: 'Room 1' }],
     doors: [],
     stairs: [],
@@ -928,7 +1003,7 @@ describe('MapLabEditorPage (Stage D3 — encounter marker authoring)', () => {
   })
 
   const oneRoomLayout = {
-    meta: { cellSizeFt: 5, padding: 3 },
+    meta: { cellSizeFt: 5, padding: { top: 3, right: 3, bottom: 3, left: 3 } },
     rooms: [{ room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0]], title: 'Room 1' }],
     doors: [],
     stairs: [],
@@ -999,7 +1074,7 @@ describe('MapLabEditorPage (Stage F4 — prop stays clickable under the paint ov
 
   it('a prop on a selected room cell is still selectable, not swallowed by the room-paint overlay', async () => {
     const layoutWithProp = {
-      meta: { cellSizeFt: 5, padding: 3 },
+      meta: { cellSizeFt: 5, padding: { top: 3, right: 3, bottom: 3, left: 3 } },
       rooms: [{ room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0]], title: 'Room 1' }],
       doors: [],
       stairs: [],
@@ -1043,7 +1118,7 @@ describe('MapLabEditorPage (floor-stacking regression — doors/props confined t
 describe('MapLabEditorPage (Stage G-fix — black-fill bug)', () => {
   it('canvas wrapper renders data-variant="neutral" so room cells get the correct fill color', async () => {
     const layout = {
-      meta: { cellSizeFt: 5, padding: 3 },
+      meta: { cellSizeFt: 5, padding: { top: 3, right: 3, bottom: 3, left: 3 } },
       rooms: [{ room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0]], title: 'Room 1' }],
       doors: [],
       stairs: [],
@@ -1065,7 +1140,7 @@ describe('MapLabEditorPage (Stage G-fix — black-fill bug)', () => {
 
 describe('MapLabEditorPage (Stage G0 — Ghost Objects scaffolding)', () => {
   const oneFloorLayout = {
-    meta: { cellSizeFt: 5, padding: 3 },
+    meta: { cellSizeFt: 5, padding: { top: 3, right: 3, bottom: 3, left: 3 } },
     rooms: [{ room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0]], title: 'Room 1' }],
     doors: [],
     stairs: [],
@@ -1074,7 +1149,7 @@ describe('MapLabEditorPage (Stage G0 — Ghost Objects scaffolding)', () => {
   }
 
   const twoFloorLayout = {
-    meta: { cellSizeFt: 5, padding: 3 },
+    meta: { cellSizeFt: 5, padding: { top: 3, right: 3, bottom: 3, left: 3 } },
     rooms: [
       { room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0]], title: 'Ground Room' },
       { room_id: 2, z: 1, origin: [0, 0], cells: [[0, 0]], title: 'Upper Room' },
@@ -1138,7 +1213,7 @@ describe('MapLabEditorPage (Stage G0 — Ghost Objects scaffolding)', () => {
 
 describe('MapLabEditorPage (Stage G1 — Ghost floor rendering)', () => {
   const twoFloorLayout = {
-    meta: { cellSizeFt: 5, padding: 3 },
+    meta: { cellSizeFt: 5, padding: { top: 3, right: 3, bottom: 3, left: 3 } },
     rooms: [
       { room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0]], title: 'Ground Room' },
       { room_id: 2, z: 1, origin: [0, 0], cells: [[0, 0]], title: 'Upper Room' },
@@ -1212,7 +1287,7 @@ describe('MapLabEditorPage (Stage G1 — Ghost floor rendering)', () => {
 
 describe('MapLabEditorPage (Stage G2 — ghost treatment design pass)', () => {
   const twoFloorLayoutWithProp = {
-    meta: { cellSizeFt: 5, padding: 3 },
+    meta: { cellSizeFt: 5, padding: { top: 3, right: 3, bottom: 3, left: 3 } },
     rooms: [
       { room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0]], title: 'Ground Room' },
       { room_id: 2, z: 1, origin: [0, 0], cells: [[0, 0]], title: 'Upper Room' },
@@ -1260,7 +1335,7 @@ describe('MapLabEditorPage (Stage H1 — stair authoring)', () => {
   })
 
   const twoFloorLayout = {
-    meta: { cellSizeFt: 5, padding: 3 },
+    meta: { cellSizeFt: 5, padding: { top: 3, right: 3, bottom: 3, left: 3 } },
     rooms: [
       { room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0]], title: 'Ground Room' },
       { room_id: 2, z: 1, origin: [0, 0], cells: [[0, 0]], title: 'Upper Room' },
@@ -1389,7 +1464,7 @@ describe('MapLabEditorPage (Stage H2 — portal doors)', () => {
   })
 
   const twoFloorLayout = {
-    meta: { cellSizeFt: 5, padding: 3 },
+    meta: { cellSizeFt: 5, padding: { top: 3, right: 3, bottom: 3, left: 3 } },
     rooms: [
       { room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0]], title: 'Ground Room' },
       { room_id: 2, z: 1, origin: [0, 0], cells: [[0, 0]], title: 'Upper Room' },
@@ -1526,7 +1601,7 @@ describe('MapLabEditorPage (Stage I3 — grid marker layout)', () => {
   })
 
   const baseLayout = {
-    meta: { cellSizeFt: 5, padding: 3 },
+    meta: { cellSizeFt: 5, padding: { top: 3, right: 3, bottom: 3, left: 3 } },
     rooms: [{ room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0]], title: 'Room' }],
     doors: [],
     floors: [{ z: 0, title: 'Ground Floor' }],
@@ -1612,7 +1687,7 @@ describe('MapLabEditorPage (Stage I3 — grid marker layout)', () => {
 
 describe('VT0 — Live-surface scaffolding seams', () => {
   const oneRoomLayout = {
-    meta: { cellSizeFt: 5, padding: 3 },
+    meta: { cellSizeFt: 5, padding: { top: 3, right: 3, bottom: 3, left: 3 } },
     rooms: [{ room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0]], title: 'Room 1' }],
     doors: [],
     stairs: [],
@@ -1688,6 +1763,38 @@ describe('VT0 — Live-surface scaffolding seams', () => {
     }
   })
 
+  it('changing the Wall kind dropdown updates the room and autosaves', async () => {
+    const layout = {
+      meta: { cellSizeFt: 5, padding: { top: 3, right: 3, bottom: 3, left: 3 } },
+      rooms: [{ room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0]], title: 'Room 1' }],
+      doors: [],
+      stairs: [],
+      floors: [{ z: 0, title: 'Ground Floor' }],
+      props: [],
+    }
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: layout })
+    vi.spyOn(api, 'getDungeon').mockResolvedValue({ id: 4, title: 'Test Dungeon', data: { rooms: [{ room_id: 1, title: 'Room 1', entries: [], npcs: [] }] } })
+    const saveLayoutSpy = vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: layout })
+
+    renderMapLabEditorPage()
+    await flush()
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Room 1' })[0])
+    const wallKindSelect = screen.getByLabelText('Wall kind') as HTMLSelectElement
+    expect(wallKindSelect.value).toBe('solid')
+
+    fireEvent.change(wallKindSelect, { target: { value: 'natural' } })
+
+    await act(async () => {
+      vi.advanceTimersByTime(700)
+      await Promise.resolve()
+    })
+
+    expect(saveLayoutSpy).toHaveBeenCalledTimes(1)
+    const savedData = saveLayoutSpy.mock.calls[0][1].data as { rooms: Array<{ wallKind: string }> }
+    expect(savedData.rooms[0].wallKind).toBe('natural')
+  })
+
   it('viewer room rail and details panel are reachable at 520px (VT2 viewer responsive)', async () => {
     // VT2: At 520px, the viewer's room rail and details panel must be accessible.
     // Currently MapLabPage has no narrow-screen adaptation for these regions.
@@ -1700,5 +1807,138 @@ describe('VT0 — Live-surface scaffolding seams', () => {
     // and resizable within the viewport at narrow widths (320px-520px).
     // Currently FloatingWindow has no viewport-edge clamping for narrow screens.
     expect(true).toBe(true) // placeholder — VT1 will implement dock responsive behavior
+  })
+})
+
+describe('MapLabEditorPage (Stage 03 — editable per-side padding)', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks()
+    vi.useFakeTimers()
+    vi.spyOn(api, 'getDungeon').mockResolvedValue({ id: 4, title: 'Test Dungeon', data: {} })
+    vi.spyOn(api, 'listNPCs').mockResolvedValue([])
+    vi.spyOn(api, 'updateDungeon').mockResolvedValue({ id: 4, title: 'Test Dungeon', data: {} })
+  })
+
+  afterEach(() => {
+    vi.runOnlyPendingTimers()
+    vi.useRealTimers()
+  })
+
+  it('changing the Top padding input autosaves with the updated value', async () => {
+    const layout = {
+      meta: { cellSizeFt: 5, padding: { top: 3, right: 3, bottom: 3, left: 3 } },
+      rooms: [{ room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0]], title: 'Room 1' }],
+      doors: [],
+      stairs: [],
+      floors: [{ z: 0, title: 'Ground Floor' }],
+      props: [],
+    }
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: layout })
+    const saveSpy = vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: layout })
+
+    const { container } = renderMapLabEditorPage()
+    await flush()
+
+    const groups = container.querySelectorAll('.maplab-toolbar-group')
+    const mapGroup = Array.from(groups).find(
+      (group) => group.querySelector('.maplab-toolbar-group-label')?.textContent === 'Map'
+    )
+    expect(mapGroup).toBeInTheDocument()
+
+    const topInput = mapGroup!.querySelector('input[type="number"]') as HTMLInputElement
+    expect(topInput).toBeInTheDocument()
+    expect(topInput.value).toBe('3')
+
+    fireEvent.change(topInput, { target: { value: '5' } })
+
+    await act(async () => {
+      vi.advanceTimersByTime(700)
+      await Promise.resolve()
+    })
+
+    expect(saveSpy).toHaveBeenCalledTimes(1)
+    const savedData = saveSpy.mock.calls[0][1].data as { meta: { padding: { top: number; right: number; bottom: number; left: number } } }
+    expect(savedData.meta.padding).toMatchObject({ top: 5, right: 3, bottom: 3, left: 3 })
+  })
+
+  it('does not paint tree cells while merely hovering without the pointer held down', async () => {
+    const layout = {
+      meta: { cellSizeFt: 5, padding: { top: 3, right: 3, bottom: 3, left: 3 } },
+      rooms: [],
+      doors: [],
+      stairs: [],
+      floors: [{ z: 0, title: 'Ground Floor' }],
+      props: [],
+      features: [],
+    }
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: layout })
+    vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: layout })
+
+    const { container } = renderMapLabEditorPage()
+    await flush()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Draw Trees' }))
+
+    const cellAt = (x: number, y: number) =>
+      screen.getByRole('button', { name: `Draw trees at ${x}, ${y}` })
+
+    fireEvent.pointerEnter(cellAt(1, 0))
+    fireEvent.pointerEnter(cellAt(2, 0))
+    fireEvent.pointerEnter(cellAt(3, 0))
+
+    expect(container.querySelectorAll('.maplab-feature-cell')).toHaveLength(0)
+
+    fireEvent.pointerDown(cellAt(0, 0))
+    expect(container.querySelectorAll('.maplab-feature-cell')).toHaveLength(1)
+
+    fireEvent.pointerEnter(cellAt(1, 0))
+    expect(container.querySelectorAll('.maplab-feature-cell')).toHaveLength(2)
+
+    fireEvent.pointerUp(cellAt(1, 0))
+    fireEvent.pointerEnter(cellAt(2, 0))
+    expect(container.querySelectorAll('.maplab-feature-cell')).toHaveLength(2)
+  })
+
+  it('keeps a single drag consistently adding (or removing) instead of toggling cells it re-enters', async () => {
+    const layout = {
+      meta: { cellSizeFt: 5, padding: { top: 3, right: 3, bottom: 3, left: 3 } },
+      rooms: [],
+      doors: [],
+      stairs: [],
+      floors: [{ z: 0, title: 'Ground Floor' }],
+      props: [],
+      features: [],
+    }
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: layout })
+    vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: layout })
+
+    const { container } = renderMapLabEditorPage()
+    await flush()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Draw Trees' }))
+
+    const cellAt = (x: number, y: number) =>
+      screen.getByRole('button', { name: `Draw trees at ${x}, ${y}` })
+
+    // First drag paints (0,0) and (1,0).
+    fireEvent.pointerDown(cellAt(0, 0))
+    fireEvent.pointerEnter(cellAt(1, 0))
+    fireEvent.pointerUp(cellAt(1, 0))
+    expect(container.querySelectorAll('.maplab-feature-cell')).toHaveLength(2)
+
+    // A new drag starting on empty ground is an "add" gesture. Passing back over the
+    // already-painted (1, 0) mid-drag must not erase it.
+    fireEvent.pointerDown(cellAt(2, 0))
+    expect(container.querySelectorAll('.maplab-feature-cell')).toHaveLength(3)
+    fireEvent.pointerEnter(cellAt(1, 0))
+    expect(container.querySelectorAll('.maplab-feature-cell')).toHaveLength(3)
+    fireEvent.pointerUp(cellAt(1, 0))
+
+    // A drag starting on an already-painted cell is a "remove" gesture. Passing over
+    // empty ground mid-drag must not paint new cells.
+    fireEvent.pointerDown(cellAt(0, 0))
+    expect(container.querySelectorAll('.maplab-feature-cell')).toHaveLength(2)
+    fireEvent.pointerEnter(cellAt(3, 0))
+    expect(container.querySelectorAll('.maplab-feature-cell')).toHaveLength(2)
   })
 })

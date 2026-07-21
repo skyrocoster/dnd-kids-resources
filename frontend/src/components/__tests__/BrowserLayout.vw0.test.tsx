@@ -26,6 +26,7 @@ const spellA: Spell = {
   school: 'Evocation',
   description: 'A creature regains 1d8+3 hit points.',
   alternate_description: null,
+  quick_rules: null,
   casting_times: ['1 action'],
   range: 'Touch',
   duration: 'Instantaneous',
@@ -47,6 +48,7 @@ const spellB: Spell = {
   school: 'Evocation',
   description: 'A bright streak flashes.',
   alternate_description: null,
+  quick_rules: 'Action: creatures in the area make a Dexterity save or take fire damage.',
   casting_times: ['1 action'],
   range: '150 feet',
   duration: 'Instantaneous',
@@ -672,3 +674,6 @@ describe('BrowserLayout', () => {
     expect(screen.getByTestId('dialog')).toBeInTheDocument()
   })
 })
+
+
+

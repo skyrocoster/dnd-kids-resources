@@ -14,7 +14,8 @@ Area-specific vocabulary belongs in the owning area guide under `docs/areas/`:
 - Spell terms: `docs/areas/spells.md`
 - Monster stat-block terms: `docs/areas/monsters.md`
 - Loot bundle terms: `docs/areas/loot.md`
-- Weapons, items, players, and NPC terms: `docs/areas/reference-catalogs.md`
+- Weapons, items, and NPC terms: `docs/areas/reference-catalogs.md`
+- Player records, recovery profiles, and roster terms: `docs/areas/players.md`
 
 For architecture, data, API, design, and testing contracts, use the canonical references listed in `docs/README.md`.
 

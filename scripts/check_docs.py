@@ -484,8 +484,8 @@ def check_area_guide_contract(docs_dir: Path) -> list[CheckError]:
                 "Add '> **Active plan:** None.' or a link to one active execution plan",
             ))
             continue
-        link = MARKDOWN_LINK_RE.search(status.group(1))
-        if not link:
+        links = list(MARKDOWN_LINK_RE.finditer(status.group(1)))
+        if not links:
             if not status.group(1).strip().lower().startswith("none"):
                 errors.append(CheckError(
                     _safe_rel(guide),
@@ -493,18 +493,19 @@ def check_area_guide_contract(docs_dir: Path) -> list[CheckError]:
                     "Link directly to the active plan's current-stage anchor",
                 ))
             continue
-        resolved = _local_link_target(guide, link.group(1), REPO_ROOT)
-        if resolved is None or resolved[0].resolve() not in active_paths:
-            errors.append(CheckError(
-                _safe_rel(guide),
-                "Active-plan link does not target an active execution plan",
-                "Point it at a file under docs/plans/active/",
-            ))
-            continue
-        # A stage anchor is optional: lean Plans have plain-English stages, not
-        # '(next up)' headings to anchor to. Linking to the plan file is enough.
-        target, _anchor = resolved
-        guide_targets[target.resolve()] = guide.resolve()
+        for link in links:
+            resolved = _local_link_target(guide, link.group(1), REPO_ROOT)
+            if resolved is None or resolved[0].resolve() not in active_paths:
+                errors.append(CheckError(
+                    _safe_rel(guide),
+                    f"Active-plan link '{link.group(0)}' does not target an active execution plan",
+                    "Point it at a file under docs/plans/active/",
+                ))
+                continue
+            # A stage anchor is optional: lean Plans have plain-English stages, not
+            # '(next up)' headings to anchor to. Linking to the plan file is enough.
+            target, _anchor = resolved
+            guide_targets[target.resolve()] = guide.resolve()
 
     for plan in active_plans:
         content = plan.read_text(encoding="utf-8")

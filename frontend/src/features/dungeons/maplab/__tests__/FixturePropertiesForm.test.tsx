@@ -78,7 +78,7 @@ describe('FixturePropertiesForm', () => {
 
   describe('DestinationPickerField (stair/portal)', () => {
     const layout: MapLayout = {
-      meta: { cellSizeFt: 5, padding: 0 },
+      meta: { cellSizeFt: 5, padding: { top: 0, right: 0, bottom: 0, left: 0 } },
       rooms: [
         { room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0], [1, 0]] },
         { room_id: 2, z: 1, origin: [0, 0], cells: [[3, 3]] },
@@ -91,6 +91,7 @@ describe('FixturePropertiesForm', () => {
       ],
       props: [],
       portals: [],
+      features: [],
     }
 
     it('renders a floor select and a room select populated from the layout', () => {

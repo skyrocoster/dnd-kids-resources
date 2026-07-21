@@ -9,7 +9,7 @@ from ..schemas import Spell, SpellCreate, SpellUpdate
 router = APIRouter(prefix="/api", tags=["spells"])
 
 _SPELL_COLUMNS = """
-    id, name, level, school, description, alternate_description,
+    id, name, level, school, description, quick_rules, alternate_description,
     damage, healing, range, higher_levels, casting_times, duration,
     concentration, ritual, components, materials, attacks, area_of_effect
 """
@@ -19,7 +19,7 @@ def _spell_values(spell: SpellCreate) -> tuple:
     data = spell.model_dump()
     return (
         data["name"], data["level"], data["school"], data["description"],
-        data["alternate_description"], json.dumps(data["damage"]),
+        data["quick_rules"], data["alternate_description"], json.dumps(data["damage"]),
         json.dumps(data["healing"]), data["range"], json.dumps(data["higher_levels"]),
         json.dumps(data["casting_times"]), data["duration"], data["concentration"],
         data["ritual"], json.dumps(data["components"]), data["materials"],
@@ -104,10 +104,10 @@ def create_spell(spell: SpellCreate):
         try:
             cursor.execute(
                 """INSERT INTO spells
-                   (name, level, school, description, alternate_description, damage, healing,
+                   (name, level, school, description, quick_rules, alternate_description, damage, healing,
                     range, higher_levels, casting_times, duration, concentration, ritual,
                     components, materials, attacks, area_of_effect)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 _spell_values(spell),
             )
             conn.commit()
@@ -139,7 +139,7 @@ def update_spell(spell_id: int, spell: SpellUpdate):
         try:
             cursor.execute(
                 """UPDATE spells
-                   SET name = ?, level = ?, school = ?, description = ?, alternate_description = ?,
+                   SET name = ?, level = ?, school = ?, description = ?, quick_rules = ?, alternate_description = ?,
                        damage = ?, healing = ?, range = ?, higher_levels = ?, casting_times = ?,
                        duration = ?, concentration = ?, ritual = ?, components = ?, materials = ?,
                        attacks = ?, area_of_effect = ?
