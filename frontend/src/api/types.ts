@@ -425,29 +425,51 @@ export interface Player {
 
 export type PlayerInput = Omit<Player, 'id'>
 
-export interface NPC {
+export interface NPCStatblockFields {
+  sizes?: CreatureSize[]
+  alignment?: string | null
+  creature_type?: CreatureType | null
+  ac?: ArmorClass | null
+  hp?: HitPoints | null
+  speed?: MovementSpeed[]
+  abilities?: AbilityScores | null
+  saving_throws?: Partial<Record<AbilityName, number>>
+  skills?: Record<string, number>
+  passive_perception?: number | null
+  damage_resistances?: DamageModifier[]
+  damage_immunities?: DamageModifier[]
+  damage_vulnerabilities?: DamageModifier[]
+  condition_immunities?: string[]
+  senses?: Sense[]
+  languages?: string[]
+  features?: MonsterFeatures
+  cr?: string | null
+  cr_note?: string | null
+  experience_points?: number | null
+}
+
+export interface NPC extends NPCStatblockFields {
   id: number
   name: string
   race?: string | null
   gender?: string | null
   background?: string | null
-  size?: string | null
-  stats?: Record<string, unknown> | null
-  armor_class?: number | null
-  hit_points?: number | null
-  speed?: string | null
-  saving_throws?: Record<string, unknown> | null
-  skills?: Record<string, unknown> | null
-  senses?: Record<string, unknown>[] | null
-  languages?: string | null
   appearance?: Record<string, unknown> | null
   notes?: string | null
 }
 
-export type NPCInput = Omit<NPC, 'id'>
+export interface NPCInput extends NPCStatblockFields {
+  name: string
+  race?: string | null
+  gender?: string | null
+  background?: string | null
+  appearance?: Record<string, unknown> | null
+  notes?: string | null
+}
 
 export interface EncounterCreature {
-  monster_id?: number | null
+  creature_id?: number | null
+  source_kind?: 'monster' | 'npc' | null
   original_name?: string | null
   name?: string | null
   hp_current?: number | null

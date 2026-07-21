@@ -238,6 +238,86 @@ def test_real_monster_sqlite_projection_preserves_ids_indexes_and_json(real_db_p
         conn.close()
 
 
+def test_real_npcs_serialize_with_statblock_projection(real_client):
+    """All seeded NPCs expose the migrated statblock projection and no legacy stat columns."""
+    resp = real_client.get("/api/npcs?limit=500&offset=0")
+    assert resp.status_code == 200, resp.text[:300]
+    npcs = resp.json()
+    assert len(npcs) == 26
+
+    expected_fields = {
+        "id",
+        "name",
+        "race",
+        "gender",
+        "background",
+        "sizes",
+        "alignment",
+        "creature_type",
+        "ac",
+        "hp",
+        "speed",
+        "abilities",
+        "saving_throws",
+        "skills",
+        "passive_perception",
+        "damage_resistances",
+        "damage_immunities",
+        "damage_vulnerabilities",
+        "condition_immunities",
+        "senses",
+        "languages",
+        "features",
+        "cr",
+        "cr_note",
+        "experience_points",
+        "appearance",
+        "notes",
+    }
+    legacy_fields = {"size", "stats", "armor_class", "hit_points"}
+
+    for npc in npcs:
+        assert set(npc) == expected_fields
+        assert not (set(npc) & legacy_fields)
+
+    emery = next(npc for npc in npcs if npc["name"] == "Emery Hart")
+    assert emery["id"] == 1
+    assert emery["race"] == "Human"
+    assert emery["gender"] == "Male"
+    assert emery["background"] == "Village Guard"
+    assert emery["sizes"] == ["medium"]
+    assert emery["ac"] == {"value": 16, "note": None, "alternatives": []}
+    assert emery["hp"] == {"average": 22, "formula": None}
+    assert emery["speed"] == [{"mode": "walk", "feet": 30, "note": None, "hover": False}]
+    assert emery["abilities"] == {"str": 14, "dex": 12, "con": 13, "int": 10, "wis": 11, "cha": 9}
+    assert emery["saving_throws"] == {"str": 2, "con": 1}
+    assert emery["skills"] == {"perception": 3, "athletics": 4}
+    assert emery["passive_perception"] == 13
+    assert emery["senses"] == []
+    assert emery["languages"] == ["Common"]
+    assert emery["features"]["actions"] == []
+    assert emery["appearance"]["clothing"] == "chain shirt, village crest badge"
+    assert emery["notes"] == "Duty-bound and suspicious of strangers."
+
+    statless = next(npc for npc in npcs if npc["name"] == "Wilfred Wizzingbottom")
+    assert statless["sizes"] == []
+    assert statless["alignment"] is None
+    assert statless["creature_type"] is None
+    assert statless["ac"] is None
+    assert statless["hp"] is None
+    assert statless["speed"] == []
+    assert statless["abilities"] is None
+    assert statless["saving_throws"] == {}
+    assert statless["skills"] == {}
+    assert statless["passive_perception"] is None
+    assert statless["damage_resistances"] == []
+    assert statless["condition_immunities"] == []
+    assert statless["senses"] == []
+    assert statless["languages"] == []
+    assert statless["features"]["traits"] == []
+    assert statless["appearance"]["clothing"] == "Grand purple robes"
+
+
 @pytest.mark.parametrize("base", DETAIL_COLLECTIONS)
 def test_detail_endpoints_serialize(real_client, base):
     """The first few detail rows of each collection serialize without a 500."""

@@ -12,7 +12,11 @@ code — a smaller model does that later, one work order at a time. This skill p
 ## Where it lives
 
 `docs/plans/active/<feature>.md`, named for a concrete outcome (e.g. `loom-session-sharing.md`),
-not a whole domain. Use **at most one active plan per area** (see the area guides in `docs/areas/`).
+not a whole domain. An area may hold **several active plans, exactly one of which is next up** (see
+the area guides in `docs/areas/` and `docs/PLAN_TEMPLATE.md` §Lifecycle). Write a plan whenever its
+design is settled; if the area already has a next-up plan, say plainly in the Status line that this
+one is not next and what unblocks it, and add it to the guide's `Active plan` line after the
+next-up plan.
 If the owning area guide currently says "no active plan", this is the plan that changes that.
 
 ## The Plan format

@@ -36,7 +36,8 @@ const encounters: Encounter[] = [
     title: 'Ants',
     creatures: [
       {
-        monster_id: 1098,
+        creature_id: 1098,
+        source_kind: 'monster',
         original_name: 'Giant Toad',
         name: 'Giant Toad',
         hp_current: 39,

@@ -44,7 +44,7 @@ Non-obvious foreign-key-like relationships (skip any self-evident from naming):
 
 - **`players` → `player_spells` ↔ `spells`** — Many-to-many via junction table. A player can have multiple spells; a spell can be known by multiple players.
 - **`players` → `player_weapons` ↔ `weapons`** — Many-to-many via junction table. A player can have multiple weapons; a weapon can be owned by multiple players.
-- **`encounter`** — Stores `name`, JSON `units`, and `active_index`. The API aliases the first two as `title` and `creatures`; units may be monsters or `kind: "player"` session entries. No explicit foreign key is enforced.
+- **`encounter`** — Stores `name`, JSON `units`, and `active_index`. The API aliases the first two as `title` and `creatures`; source-backed units use the soft typed reference `creature_id` plus `source_kind` (`"monster"` or `"npc"`), while manually added player rows may use `kind: "player"` with a null creature ID. No explicit foreign key is enforced.
 - **`loot_bundle`** — Contains `contents`, a JSON array of item/weapon snapshots. Entries keep a soft `ref_id` to the catalog source, but retain their name, item category, per-unit `value_gp`, and quantity after source edits or deletion.
 - **`dungeons`** — Contains `data` (room-reading content) while `map_layout.data` independently stores geometry. Both use the same room IDs; room titles/content belong to `dungeons.data`, while layout room titles are render caches. Missing layout data is treated as a transient empty layout; a missing dungeon is an error.
 - **`loom_threads` → `loom_nodes`** — A thread contains many nodes via `loom_nodes.thread_id` FK (its ordered story: Start, beats, sessions, End). A node belongs to at most one thread at a time; a NULL `thread_id` means the beat is banked (unplaced). A `session`-kind node may have `session_id` set to the session column it belongs to. Deleting a thread deletes its nodes via `ON DELETE CASCADE` on `loom_nodes.thread_id`. The `loom_node_threads` junction table is retired; an earlier migration script (`scripts/migrate_loom_v2.py`) records the transition.
@@ -80,12 +80,9 @@ Some tables store complex structured data as JSON strings. Router and database h
 | `monsters` | `senses` | List of special senses | `[{"type":"darkvision","range":60,"note":null}]` |
 | `monsters` | `languages` | List of languages spoken | `["Common", "Draconic"]` |
 | `monsters` | `features` | Traits, actions, spellcasting, reactions, legendary/mythic blocks | `{"traits":[],"actions":[{"name":"Bite","description":null,"attack":{...}}]}` |
-| `npcs` | `stats` | Ability scores dict (same as monsters) | `{"str": 14, "dex": 13, "con": 15, ...}` |
 | `npcs` | `appearance` | Appearance dict (hair, eyes, height, distinctive features) | `{"hair": "black", "eyes": "blue", "height": "5'10\""}` |
-| `npcs` | `saving_throws` | Saving throw bonuses dict (`{"str": 2, "cha": -1}`) | `{"str": 1, "dex": 0}` |
-| `npcs` | `skills` | Skill bonuses dict (`{"acrobatics": 3, "animal_handling": 2}`) | `{"acrobatics": 2, "stealth": 1}` |
-| `npcs` | `senses` | List of special senses (same as monsters) | `[{"type": "darkvision", "range": 60}]` |
-| `encounter` | `units` | List of monster or player session roster entries | `[{"name": "Goblin", "hp": 7}, ...]` |
+| `npcs` | `sizes`, `ac`, `hp`, `speed`, `abilities`, `saving_throws`, `skills`, `damage_resistances`, `damage_immunities`, `damage_vulnerabilities`, `senses`, `languages`, `features` | Same monster statblock projection as the `monsters` columns above — an NPC's combat half is copied field-for-field from a monster, never translated | (see matching `monsters` rows) |
+| `encounter` | `units` | List of source-backed creature or manual player roster entries | `[{"creature_id":1,"source_kind":"monster","name":"Goblin","hp_current":7}, ...]` |
 | `dungeons` | `data` | DungeonData shape: general_info and rooms (with entries, NPCs); map geometry and navigation fixtures are not stored here | (large JSON blob per dungeon) |
 | `map_layout` | `data` | MapLayout blob: rooms, doors, stairs, floors, props, portals, fixtures. Props may soft-reference a loot bundle by `bundle_id` with cached `bundle_name`; bundle contents resolve live. | (JSON blob per dungeon) |
 | `player_spells` | (implicit in junction) | (Many-to-many, no direct column; routes expose via `/players/{id}/spells`) | |
@@ -329,16 +326,27 @@ Indexes: `idx_monsters_cr_sort`, `idx_monsters_cr`, `sqlite_autoindex_monsters_1
 | `race` | `TEXT` | no | `-` |
 | `gender` | `TEXT` | no | `-` |
 | `background` | `TEXT` | no | `-` |
-| `size` | `TEXT` | no | `-` |
-| `stats` | `JSON` | yes | `'{}'` |
-| `armor_class` | `INTEGER` | no | `-` |
-| `hit_points` | `INTEGER` | no | `-` |
-| `speed` | `TEXT` | no | `-` |
-| `saving_throws` | `JSON` | no | `'{}'` |
-| `skills` | `JSON` | no | `'{}'` |
-| `senses` | `JSON` | no | `'[{}]'` |
-| `languages` | `TEXT` | no | `-` |
-| `appearance` | `JSON` | no | `'{}'` |
+| `sizes` | `TEXT` | yes | `'[]'` |
+| `alignment` | `TEXT` | no | `-` |
+| `creature_type` | `TEXT` | no | `-` |
+| `ac` | `TEXT` | no | `-` |
+| `hp` | `TEXT` | no | `-` |
+| `speed` | `TEXT` | yes | `'[]'` |
+| `abilities` | `TEXT` | no | `-` |
+| `saving_throws` | `TEXT` | yes | `'{}'` |
+| `skills` | `TEXT` | yes | `'{}'` |
+| `passive_perception` | `INTEGER` | no | `-` |
+| `damage_resistances` | `TEXT` | yes | `'[]'` |
+| `damage_immunities` | `TEXT` | yes | `'[]'` |
+| `damage_vulnerabilities` | `TEXT` | yes | `'[]'` |
+| `condition_immunities` | `TEXT` | yes | `'[]'` |
+| `senses` | `TEXT` | yes | `'[]'` |
+| `languages` | `TEXT` | yes | `'[]'` |
+| `features` | `TEXT` | yes | `'{}'` |
+| `cr` | `TEXT` | no | `-` |
+| `cr_note` | `TEXT` | no | `-` |
+| `experience_points` | `INTEGER` | no | `-` |
+| `appearance` | `TEXT` | no | `-` |
 | `notes` | `TEXT` | no | `-` |
 | `created_at` | `DATETIME` | no | `CURRENT_TIMESTAMP` |
 | `updated_at` | `DATETIME` | no | `CURRENT_TIMESTAMP` |

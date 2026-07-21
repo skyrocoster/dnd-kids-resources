@@ -19,8 +19,9 @@ output — that lives in the small model's cheap, throwaway per-order contexts.
 
 ## Layer 1 — the Plan (human-readable)
 
-Lives at `docs/plans/active/<feature>.md`, named for a concrete outcome. At most one active plan per
-area (see `docs/areas/`). Short, no code — you read it to understand *what* and *why*.
+Lives at `docs/plans/active/<feature>.md`, named for a concrete outcome. An area may hold more than
+one active plan, but exactly one of them is **next up** — see *Lifecycle* below. Short, no code — you
+read it to understand *what* and *why*.
 
 ```md
 # <Feature> — <one-line outcome>
@@ -73,8 +74,15 @@ authoring guidance and a worked example.
 
 ## Lifecycle
 
-1. **Active** — the Plan carries a Status line and a plain-English Stages list. Its work orders live
-   under `orders/<feature>/`.
+1. **Active** — the Plan carries a Status line and a plain-English Stages list, and lives under
+   `plans/active/`. An area may have several: a design can be fully settled and written up long
+   before there is capacity to build it, and writing it down is how the reasoning survives.
+
+   Exactly one active plan per area is **next up** — the one work should start from. The area
+   guide's `Active plan` line lists every active plan it owns, in order, marking the first
+   `(next up)`. Only the next-up plan may have work orders under `orders/<feature>/`; the others
+   carry a Status line stating plainly that they are not next and what unblocks them. When the
+   next-up plan completes, the following one inherits the slot and the guide's line is reordered.
 2. **Shipped** — as each stage's orders finish, `reconcile` collapses them into the Plan's **Shipped**
    table (one ≤2-sentence row per stage) and deletes the spent order files. The commit history is the
    record of *how* each thing was built — never duplicate that prose into the Plan.
@@ -96,7 +104,8 @@ after reading only what it names.
 `scripts/check_docs.py` is aligned with this workflow. For an active Plan it requires only a
 `> **Status:**` line (stages are plain-English list items, not `(next up)` execution blocks). It lints
 work orders under `plans/active/orders/<feature>/` for their load-bearing fields (`GOAL:`, `START IN:`,
-`STOP WHEN:`, `STATUS:`), validates area-guide↔Plan ownership (a stage anchor is optional), and keeps
+`STOP WHEN:`, `STATUS:`), validates area-guide↔Plan ownership — every active plan must be linked
+from its owning guide's `Active plan` line, which may list several (a stage anchor is optional) — and keeps
 the workflow-agnostic safety net: local links/anchors, manifest completeness, plan-redirect lifecycle,
 AI-entry precedence, configured test commands, banned legacy references, and the auto-generated
 reference inventories. It no longer couples a per-diff code change to a Plan edit, so a small model's

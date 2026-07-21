@@ -1,6 +1,6 @@
 # Reference Catalogs Area Guide
 
-> **Active plan:** None.
+> **Active plan:** none
 
 ## Scope
 
@@ -53,6 +53,8 @@ Modes are defined in [../UX_PATTERNS.md](../UX_PATTERNS.md#surface-modes).
 | Player browser | `/players` | prep | DM |
 | NPC browser | `/npcs` | prep | DM |
 | Catalog editors | modal over each browser | prep | DM |
+| Pull from monster dialog | modal over NPC browser detail pane | prep | DM |
+| Add to encounter dialog | modal over NPC browser detail pane | prep | DM |
 | NPC dossier dock | `FloatingWindow`, opened from play surfaces | play | DM |
 
 The browsers are prep surfaces even though they are also consulted at the table, because they carry create and delete. A future read-only kid-operated lookup surface would be a new surface here, not a mode change to these.
@@ -65,6 +67,9 @@ The browsers are prep surfaces even though they are also consulted at the table,
 ## Work queue
 
 - Create a focused plan before changing any catalog contract or cross-domain workflow.
+- No plan is currently active. [NPC Statblocks](../complete/npc-statblocks.md) shipped the monster-shaped
+  NPC statblock contract, the dossier's combat half, the pull-from-monster panel, and adding an NPC to
+  an encounter from their detail pane.
 
 ## Cross-references
 

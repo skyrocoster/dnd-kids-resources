@@ -11,7 +11,12 @@ const npcs: NPC[] = [
     name: 'Emery Hart',
     race: 'Human',
     background: 'Village Guard',
-    stats: { strength: 14 },
+    abilities: { str: 14, dex: null, con: null, int: null, wis: null, cha: null },
+    speed: [
+      { mode: 'walk', feet: 30, note: null, hover: false },
+      { mode: 'climb', feet: 20, note: null, hover: false },
+    ],
+    languages: ['Common', 'Halfling'],
     appearance: { hair_colour: 'black', eye_colour: 'brown' },
   },
   { id: 2, name: 'Kessa Moor', race: 'Halfling', background: 'Merchant' },
@@ -42,7 +47,7 @@ describe('NPCBrowserPage', () => {
     expect(screen.getByRole('heading', { name: 'Kessa Moor' })).toBeInTheDocument()
   })
 
-  it('renders the dossier via NPCStatCard: name, an ability modifier, and the composed appearance sentence', async () => {
+  it('renders the dossier via NPCStatCard: name, an ability modifier, movement, languages, and appearance', async () => {
     vi.spyOn(api, 'listNPCs').mockResolvedValue(npcs)
 
     render(<NPCBrowserPage />)
@@ -50,6 +55,8 @@ describe('NPCBrowserPage', () => {
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Emery Hart' })).toBeInTheDocument())
     expect(screen.getByText('+2')).toBeInTheDocument() // STR modifier for score 14
     expect(screen.getByText('Black hair, brown eyes')).toBeInTheDocument()
+    expect(screen.getByText('30 ft., climb 20 ft.')).toBeInTheDocument()
+    expect(screen.getByText('Common, Halfling')).toBeInTheDocument()
   })
 
   it('opens the editor when New NPC is clicked', async () => {

@@ -97,13 +97,27 @@ def test_list_npcs(test_client):
 
 
 def test_create_npc(test_client):
-    """Test POST /api/npcs."""
+    """Test POST /api/npcs with name-only statblock defaults."""
     npc = {"name": "Test NPC"}
 
     response = test_client.post("/api/npcs", json=npc)
     assert response.status_code == 201
     data = response.json()
     assert data["name"] == "Test NPC"
+    assert data["sizes"] == []
+    assert data["creature_type"] is None
+    assert data["ac"] is None
+    assert data["hp"] is None
+    assert data["speed"] == []
+    assert data["abilities"] is None
+    assert data["saving_throws"] == {}
+    assert data["skills"] == {}
+    assert data["damage_resistances"] == []
+    assert data["condition_immunities"] == []
+    assert data["senses"] == []
+    assert data["languages"] == []
+    assert data["features"]["actions"] == []
+    assert data["appearance"] is None
 
 
 def test_npc_crud(test_client):
@@ -121,21 +135,32 @@ def test_npc_crud(test_client):
 
 
 def test_npc_full_columns_round_trip(test_client):
-    """NPC fields beyond name (race, stats, senses, etc.) must persist and parse."""
+    """NPC statblock fields must persist and parse with identity fields intact."""
     npc = {
         "name": "Full NPC",
         "race": "Elf",
         "gender": "Female",
         "background": "Sage",
-        "size": "Medium",
-        "stats": {"strength": 8, "dexterity": 16},
-        "armor_class": 14,
-        "hit_points": 12,
-        "speed": "30",
-        "saving_throws": {"dexterity": 3},
+        "sizes": ["medium"],
+        "alignment": "neutral good",
+        "creature_type": {"category": "humanoid", "tags": ["elf"]},
+        "ac": {"value": 14, "note": "leather armor"},
+        "hp": {"average": 12, "formula": "3d8"},
+        "speed": [{"mode": "walk", "feet": 30}],
+        "abilities": {"str": 8, "dex": 16, "con": 10, "int": 14, "wis": 12, "cha": 11},
+        "saving_throws": {"dex": 5},
         "skills": {"arcana": 4},
+        "passive_perception": 11,
+        "damage_resistances": [{"damage_type": "necrotic", "note": "while warded"}],
+        "damage_immunities": [{"damage_type": "poison"}],
+        "damage_vulnerabilities": [{"damage_type": "radiant", "conditional": True}],
+        "condition_immunities": ["charmed"],
         "senses": [{"type": "darkvision", "range": 60}],
-        "languages": "Common, Elvish",
+        "languages": ["Common", "Elvish"],
+        "features": {"traits": [{"name": "Old Lore", "description": "Knows forbidden history."}]},
+        "cr": "1/4",
+        "cr_note": "support NPC",
+        "experience_points": 50,
         "appearance": {"hair_colour": "silver"},
         "notes": "Keeper of old secrets.",
     }
@@ -143,8 +168,19 @@ def test_npc_full_columns_round_trip(test_client):
     assert response.status_code == 201
     data = response.json()
     assert data["race"] == "Elf"
-    assert data["stats"] == {"strength": 8, "dexterity": 16}
-    assert data["senses"] == [{"type": "darkvision", "range": 60}]
+    assert data["gender"] == "Female"
+    assert data["background"] == "Sage"
+    assert data["sizes"] == ["medium"]
+    assert data["creature_type"]["tags"] == ["elf"]
+    assert data["ac"]["value"] == 14
+    assert data["hp"]["formula"] == "3d8"
+    assert data["speed"] == [{"mode": "walk", "feet": 30, "note": None, "hover": False}]
+    assert data["abilities"]["dex"] == 16
+    assert data["saving_throws"] == {"dex": 5}
+    assert data["damage_resistances"][0]["damage_type"] == "necrotic"
+    assert data["senses"] == [{"type": "darkvision", "range": 60, "note": None}]
+    assert data["languages"] == ["Common", "Elvish"]
+    assert data["features"]["traits"][0]["name"] == "Old Lore"
     assert data["appearance"] == {"hair_colour": "silver"}
 
 

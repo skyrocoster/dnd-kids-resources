@@ -11,6 +11,8 @@ import type { RemoteState } from '../../components/remoteState'
 import { MasksIcon } from '../../components/icons'
 import { NPCEditor } from './NPCEditor'
 import { NPCStatCard } from './NPCStatCard'
+import { AddToEncounterDialog } from './AddToEncounterDialog'
+import { PullFromMonsterDialog } from './PullFromMonsterDialog'
 import './NPCBrowserPage.css'
 
 export function NPCBrowserPage() {
@@ -20,6 +22,8 @@ export function NPCBrowserPage() {
   const [editingNPC, setEditingNPC] = useState<NPC | undefined>(undefined)
   const [pendingDelete, setPendingDelete] = useState<NPC | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [pullTarget, setPullTarget] = useState<NPC | null>(null)
+  const [addToEncounterTarget, setAddToEncounterTarget] = useState<NPC | null>(null)
 
   const load = () => {
     setNPCsRemote(remoteLoading())
@@ -91,8 +95,10 @@ export function NPCBrowserPage() {
           selected ? (
             <div className="npc-browser-detail">
               <Button className="browser-layout-back" variant="ghost" onClick={() => setSelectedId(null)}>Back to NPCs</Button>
-              <NPCStatCard npc={selected} />
+              <NPCStatCard npc={selected} onPull={() => setPullTarget(selected)} />
               <div className="npc-browser-actions">
+                <Button variant="secondary" onClick={() => setPullTarget(selected)}>Pull from a monster…</Button>
+                <Button variant="secondary" onClick={() => setAddToEncounterTarget(selected)}>Add to encounter…</Button>
                 <Button variant="secondary" onClick={() => openEdit(selected)}>Edit</Button>
                 <Button variant="danger" onClick={() => setPendingDelete(selected)}>Delete</Button>
               </div>
@@ -111,6 +117,20 @@ export function NPCBrowserPage() {
           />
         )}
       />
+      {pullTarget && (
+        <PullFromMonsterDialog
+          npc={pullTarget}
+          onClose={() => setPullTarget(null)}
+          onPulled={() => { setPullTarget(null); load() }}
+        />
+      )}
+      {addToEncounterTarget && (
+        <AddToEncounterDialog
+          npc={addToEncounterTarget}
+          onClose={() => setAddToEncounterTarget(null)}
+          onAdded={() => setAddToEncounterTarget(null)}
+        />
+      )}
     </div>
   )
 }

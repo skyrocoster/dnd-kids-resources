@@ -194,4 +194,25 @@ describe('MonsterStatBlock', () => {
     expect(screen.queryByText('AC')).not.toBeInTheDocument()
     expect(screen.queryByText('HP')).not.toBeInTheDocument()
   })
+
+  it('hides identity region when showIdentity is false but still renders other regions', () => {
+    render(<MonsterStatBlock monster={monster()} showIdentity={false} />)
+    expect(screen.queryByRole('heading', { name: 'Test Monster' })).not.toBeInTheDocument()
+    expect(screen.queryByText('CR 10')).not.toBeInTheDocument()
+    expect(screen.getByText('AC')).toBeInTheDocument()
+    expect(screen.getByText('Actions')).toBeInTheDocument()
+    expect(screen.getByText('Damage Resistances')).toBeInTheDocument()
+    expect(screen.getByText('Keen Senses')).toBeInTheDocument()
+  })
+
+  it('hides the stat strip when showStrip is false but still renders other regions', () => {
+    render(<MonsterStatBlock monster={monster()} showStrip={false} />)
+    expect(screen.queryByText('AC')).not.toBeInTheDocument()
+    expect(screen.queryByText('HP')).not.toBeInTheDocument()
+    expect(screen.queryByText('Speed')).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Test Monster' })).toBeInTheDocument()
+    expect(screen.getByText('Actions')).toBeInTheDocument()
+    expect(screen.getByText('Damage Resistances')).toBeInTheDocument()
+    expect(screen.getByText('Keen Senses')).toBeInTheDocument()
+  })
 })

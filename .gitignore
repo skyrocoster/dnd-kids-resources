@@ -25,6 +25,8 @@ build/
 *.log.err
 .server.pid
 .frontend.pid
+.demo-backend.pid
+.demo-tunnel.pid
 .coverage
 
 # Frontend (v2)

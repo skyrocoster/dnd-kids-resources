@@ -382,41 +382,41 @@ class PlayerUpdate(PlayerCreate):
     pass
 
 
-class NPC(BaseModel):
+class NPCFields(StrictModel):
+    name: NonEmptyString
+    race: Optional[str] = None
+    gender: Optional[str] = None
+    background: Optional[str] = None
+    sizes: List[CreatureSize] = Field(default_factory=list)
+    alignment: Optional[str] = None
+    creature_type: Optional[CreatureType] = None
+    ac: Optional[ArmorClass] = None
+    hp: Optional[HitPoints] = None
+    speed: List[MovementSpeed] = Field(default_factory=list)
+    abilities: Optional[AbilityScores] = None
+    saving_throws: Dict[AbilityName, int] = Field(default_factory=dict)
+    skills: Dict[str, int] = Field(default_factory=dict)
+    passive_perception: Optional[int] = None
+    damage_resistances: List[DamageModifier] = Field(default_factory=list)
+    damage_immunities: List[DamageModifier] = Field(default_factory=list)
+    damage_vulnerabilities: List[DamageModifier] = Field(default_factory=list)
+    condition_immunities: List[str] = Field(default_factory=list)
+    senses: List[Sense] = Field(default_factory=list)
+    languages: List[str] = Field(default_factory=list)
+    features: MonsterFeatures = Field(default_factory=MonsterFeatures)
+    cr: Optional[str] = None
+    cr_note: Optional[str] = None
+    experience_points: Optional[int] = None
+    appearance: Optional[Dict[str, Any]] = None
+    notes: Optional[str] = None
+
+
+class NPC(NPCFields):
     id: int
-    name: str
-    race: Optional[str] = None
-    gender: Optional[str] = None
-    background: Optional[str] = None
-    size: Optional[str] = None
-    stats: Optional[Dict[str, Any]] = None
-    armor_class: Optional[int] = None
-    hit_points: Optional[int] = None
-    speed: Optional[str] = None
-    saving_throws: Optional[Dict[str, Any]] = None
-    skills: Optional[Dict[str, Any]] = None
-    senses: Optional[List[Dict[str, Any]]] = None
-    languages: Optional[str] = None
-    appearance: Optional[Dict[str, Any]] = None
-    notes: Optional[str] = None
 
 
-class NPCCreate(BaseModel):
-    name: str
-    race: Optional[str] = None
-    gender: Optional[str] = None
-    background: Optional[str] = None
-    size: Optional[str] = None
-    stats: Optional[Dict[str, Any]] = None
-    armor_class: Optional[int] = None
-    hit_points: Optional[int] = None
-    speed: Optional[str] = None
-    saving_throws: Optional[Dict[str, Any]] = None
-    skills: Optional[Dict[str, Any]] = None
-    senses: Optional[List[Dict[str, Any]]] = None
-    languages: Optional[str] = None
-    appearance: Optional[Dict[str, Any]] = None
-    notes: Optional[str] = None
+class NPCCreate(NPCFields):
+    pass
 
 
 class NPCUpdate(NPCCreate):

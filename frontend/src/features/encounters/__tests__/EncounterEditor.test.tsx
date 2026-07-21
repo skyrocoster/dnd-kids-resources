@@ -171,7 +171,8 @@ describe('EncounterEditor', () => {
         title: 'Old fight',
         creatures: [
           {
-            monster_id: 1,
+            creature_id: 1,
+            source_kind: 'monster',
             original_name: 'Goblin',
             name: 'Goblin',
             hp_current: 7,
