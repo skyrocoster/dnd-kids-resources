@@ -1,8 +1,7 @@
 # Dungeon Connections — dungeons link to each other, and a session survives the walk between them
 
-> **Status:** Not started, and not next. Starts after [Dungeon Outside](../../complete/dungeon-outside.md) completes
-> — the two share `MapPortal` and `MapLayout` and must not run concurrently. First stage when it
-> starts: Stage 1 — permanent session state.
+> **Status:** Next up. [Dungeon Outside](../../complete/dungeon-outside.md) complete — the two share
+> `MapPortal` and `MapLayout` and must not run concurrently. First stage: Stage 1 — permanent session state.
 
 - **Area guide:** [Dungeons](../../areas/dungeons.md)
 
