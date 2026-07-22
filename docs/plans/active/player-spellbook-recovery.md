@@ -1,6 +1,6 @@
 # Player Spellbook Recovery — fast playtime spell reference backed by recoverable character records
 
-> **Status:** Stage 1-3 shipped; Stage 4 (Spell-first play reference) next.
+> **Status:** Stage 1-4 shipped; Stage 5 (Seamless roster switching) next.
 
 - **Area guide:** [Players](../../areas/players.md)
 
@@ -86,3 +86,4 @@ Touch:        48px floor for roster entries, disclosure controls, and dialog act
 | 1 | Replaced the minimal Player schema (name, class, level) with the full recovery contract: child/subclass/ancestry/background identity fields, shared NPC/monster combat projections (AC, HP, abilities, etc.), max-only spell slots, simple spell/weapon memberships, and notes. Removed `current_spell_slots` from players and `at_will` from player_spells. Migrated seed data and proved complete export/rebuild round-tripping. |
 | 2 | Added `GET /api/players/{player_id}/detail` returning `PlayerDetail` with inline spells and weapons. Added `PUT /api/players/{player_id}/spells` and `PUT /api/players/{player_id}/weapons` for atomic batch replacement. Added delete-cascade tests proving junction cleanup and catalog preservation. |
 | 3 | Built the full Edit Character dialog capturing all identity, combat, ability, spellcasting, and feature fields from the recovery contract with validation. Replaced inline spell/weapon add/remove controls with searchable, staged batch-assignment dialogs that commit atomically via the Stage 2 replace endpoints. Removed per-item assignment API calls. |
+| 4 | Created `playerModel.ts` with statblock formatting helpers mirroring NPC equivalents. Built `PlayerCombatSummary` (compact AC/HP/Speed/Initiative strip + collapsible Full Profile via `MonsterStatBlock`), `PlayerSpellSection` (level-grouped spells with always-visible quick rules), and `PlayerWeaponSection` (alphabetical weapons with expandable detail). Wired all three into `PlayerBrowserPage`'s detail pane replacing plain read-only lists. |

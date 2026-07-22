@@ -28,7 +28,7 @@ function deleteConfirmMessage(weapon: Weapon, assignedNames: string[]): string {
   return `${base} ${formatNameList(assignedNames)} will lose this weapon assignment.`
 }
 
-function describeAttack(attack: WeaponAttackEntry): string {
+export function describeAttack(attack: WeaponAttackEntry): string {
   const type = typeof attack.type === 'string' ? attack.type : ''
   const damage = typeof attack.damage === 'string' ? attack.damage : ''
   const damageType = typeof attack.damage_type === 'string' ? attack.damage_type : ''

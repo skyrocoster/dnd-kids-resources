@@ -1,0 +1,47 @@
+.player-combat-summary-strip {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.player-combat-summary-strip-item {
+  display: flex;
+  align-items: baseline;
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  background-color: var(--md-surface-3);
+  border-radius: 0.5rem;
+}
+
+.player-combat-summary-strip-label {
+  font-size: var(--type-caption-size);
+  font-weight: var(--type-caption-weight);
+  letter-spacing: var(--type-caption-tracking);
+  text-transform: uppercase;
+  color: var(--md-on-surface-variant);
+}
+
+.player-combat-summary-strip-value {
+  font-size: var(--type-title-size);
+  font-weight: var(--type-title-weight);
+}
+
+.player-combat-summary-profile-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: var(--control-height);
+  padding: 0 0.75rem;
+  background: transparent;
+  border: 1px solid var(--md-outline-variant);
+  color: var(--md-on-surface);
+  cursor: pointer;
+  touch-action: manipulation;
+  border-radius: 0.375rem;
+  font-size: var(--type-label-size);
+  font-weight: var(--type-label-weight);
+}
+
+.player-combat-summary-profile-toggle:hover {
+  background-color: var(--md-surface-4);
+}

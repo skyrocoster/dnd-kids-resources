@@ -1,6 +1,6 @@
 # Players Area Guide
 
-> **Active plan:** [Player Spellbook Recovery](../plans/active/player-spellbook-recovery.md) (Stage 1-3 shipped; Stage 4 next).
+> **Active plan:** [Player Spellbook Recovery](../plans/active/player-spellbook-recovery.md) (Stage 1-4 shipped; Stage 5 next).
 
 ## Scope
 
@@ -47,13 +47,12 @@ Modes are defined in [../UX_PATTERNS.md](../UX_PATTERNS.md#surface-modes).
 
 | Surface | Route | Mode | Operator |
 |---|---|---|---|---|
-| Player browser | `/players` | prep | DM |
+| Player browser | `/players` | both | DM |
 | Player editor (Edit Character) | modal over the browser | prep | DM |
 | Manage Spells | modal over the browser | prep | DM |
 | Manage Weapons | modal over the browser | prep | DM |
 
-The active plan changes the persistent browser to both mode when Stage 4 ships. A future kid-operated
-lookup would be a separate surface.
+A future kid-operated lookup would be a separate surface.
 
 ## Invariants
 
@@ -65,7 +64,7 @@ lookup would be a separate surface.
 
 ## Work queue
 
-- [Player Spellbook Recovery](../plans/active/player-spellbook-recovery.md) Stage 4 (Spell-first play reference) is next for this area.
+- [Player Spellbook Recovery](../plans/active/player-spellbook-recovery.md) Stage 5 (Seamless roster switching) is next for this area.
 - Player-item inventory remains deferred and needs its own design before schema or UI work.
 
 ## Cross-references

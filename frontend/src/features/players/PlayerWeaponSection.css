@@ -1,0 +1,87 @@
+.player-weapon-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.player-weapon-section-empty {
+  color: var(--md-on-surface-variant);
+  font-size: var(--type-caption-size);
+}
+
+.weapon-section-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.5rem 0.625rem;
+  background-color: var(--md-surface-2);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: 0.5rem;
+}
+
+.weapon-section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.weapon-section-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: var(--control-height);
+  padding: 0 0.375rem;
+  background: transparent;
+  border: none;
+  color: var(--md-on-surface);
+  cursor: pointer;
+  touch-action: manipulation;
+  border-radius: 0.375rem;
+  font-size: var(--type-title-size);
+  font-weight: var(--type-title-weight);
+}
+
+.weapon-section-toggle:hover {
+  background-color: var(--md-surface-4);
+}
+
+.weapon-section-name {
+  text-align: left;
+}
+
+.weapon-section-quick-rules {
+  font-size: var(--type-body-sm-size);
+  color: var(--md-on-surface-variant);
+  padding-left: calc(18px + 0.75rem);
+}
+
+.weapon-section-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-left: calc(18px + 0.75rem);
+  font-size: var(--type-body-size);
+  line-height: var(--type-body-line-height);
+  color: var(--md-on-surface);
+}
+
+.weapon-section-body p {
+  margin: 0;
+}
+
+.weapon-section-meta {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.25rem 0.75rem;
+  margin: 0;
+}
+
+.weapon-section-meta dt {
+  color: var(--md-on-surface-variant);
+  font-size: var(--type-caption-size);
+}
+
+.weapon-section-meta dd {
+  margin: 0;
+  font-size: var(--type-body-sm-size);
+}

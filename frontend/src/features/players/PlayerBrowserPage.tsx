@@ -12,6 +12,9 @@ import type { RemoteState } from '../../components/remoteState'
 import { UsersIcon } from '../../components/icons'
 import { PlayerEditor } from './PlayerEditor'
 import { ManageAssignmentsDialog } from './PlayerAssignments'
+import { PlayerCombatSummary } from './PlayerCombatSummary'
+import { PlayerSpellSection } from './PlayerSpellSection'
+import { PlayerWeaponSection } from './PlayerWeaponSection'
 import './PlayerBrowserPage.css'
 
 type ManageDialogKind = 'spells' | 'weapons' | null
@@ -134,39 +137,20 @@ export function PlayerBrowserPage() {
                     <StatePanel status="loading" />
                   ) : (
                     <div className="player-assignments-summary">
+                      <PlayerCombatSummary player={selected} />
                       <section className="player-assignment-group">
                         <div className="player-assignment-group-header">
                           <h4>Spells</h4>
                           <Button variant="secondary" onClick={() => setManageDialog('spells')}>Manage Spells</Button>
                         </div>
-                        {detail && detail.spells.length > 0 ? (
-                          <ul className="player-assignment-readonly-list">
-                            {[...detail.spells]
-                              .sort((a, b) => a.name.localeCompare(b.name))
-                              .map((spell) => (
-                                <li key={spell.id}>{spell.name}</li>
-                              ))}
-                          </ul>
-                        ) : (
-                          <p className="player-assignment-empty">No spells assigned.</p>
-                        )}
+                        <PlayerSpellSection player={selected} spells={detail.spells} />
                       </section>
                       <section className="player-assignment-group">
                         <div className="player-assignment-group-header">
                           <h4>Weapons</h4>
                           <Button variant="secondary" onClick={() => setManageDialog('weapons')}>Manage Weapons</Button>
                         </div>
-                        {detail && detail.weapons.length > 0 ? (
-                          <ul className="player-assignment-readonly-list">
-                            {[...detail.weapons]
-                              .sort((a, b) => a.name.localeCompare(b.name))
-                              .map((weapon) => (
-                                <li key={weapon.id}>{weapon.name}</li>
-                              ))}
-                          </ul>
-                        ) : (
-                          <p className="player-assignment-empty">No weapons assigned.</p>
-                        )}
+                        <PlayerWeaponSection weapons={detail.weapons} />
                       </section>
                     </div>
                   )}
