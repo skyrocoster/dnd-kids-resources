@@ -96,6 +96,7 @@ export function DungeonBrowserPage() {
         }
         error={dungeonsRemote.status === 'error' ? dungeonsRemote.error : null}
         listLabel="dungeon list"
+        listCollapsible
         list={
           <SearchList
             items={dungeons}

@@ -77,6 +77,7 @@ export function NPCBrowserPage() {
         actions={<Button type="button" onClick={openCreate}>New NPC</Button>}
         error={npcsRemote.status === 'error' ? npcsRemote.error : null}
         listLabel="npc list"
+        listCollapsible
         list={
           <SearchList
             items={npcs}

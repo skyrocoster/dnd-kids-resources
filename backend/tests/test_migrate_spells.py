@@ -34,6 +34,12 @@ TARGET_FIELDS = [
     "attacks",
     "area_of_effect",
 ]
+
+# Canonical seed rows carry everything migrate_one() emits, plus the quick_rules
+# added by the later quick-rules generation pass. migrate_spells.py itself never
+# produces quick_rules, so the two contracts are deliberately separate.
+CANONICAL_SEED_FIELDS = [*TARGET_FIELDS, "quick_rules"]
+
 DROPPED_LEGACY_KEYS = {
     "spell_name", "icon", "spell_text", "spell_alt_text", "heal",
     "heal_at_spell_slots", "damage_at_higher_levels", "casting_time",
@@ -102,6 +108,7 @@ class CanonicalSpell(BaseModel):
     materials: str | None = None
     attacks: list[Attack] = []
     area_of_effect: AreaOfEffect = Field(default_factory=AreaOfEffect)
+    quick_rules: str = Field(min_length=1)
 
 
 # ---------------------------------------------------------------------------
@@ -520,7 +527,7 @@ def test_canonical_seed_shape_and_identity(canonical_spells):
     assert len({spell["id"] for spell in canonical_spells}) == 525
     assert all(isinstance(spell["id"], int) and spell["id"] > 0 for spell in canonical_spells)
     assert len({spell["name"].casefold() for spell in canonical_spells}) == 525
-    assert all(list(spell.keys()) == TARGET_FIELDS for spell in canonical_spells)
+    assert all(list(spell.keys()) == CANONICAL_SEED_FIELDS for spell in canonical_spells)
     union_keys = set()
     for spell in canonical_spells:
         union_keys.update(spell.keys())

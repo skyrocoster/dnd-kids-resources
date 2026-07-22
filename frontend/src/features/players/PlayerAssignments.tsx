@@ -1,174 +1,125 @@
-import { useEffect, useState } from 'react'
-import * as api from '../../api/client'
-import type { Spell, Weapon } from '../../api/types'
-import { SelectField } from '../../components/form/SelectField'
+import { useId, useMemo, useState } from 'react'
+import { Button } from '../../components/Button'
+import { Dialog } from '../../components/Dialog'
+import './PlayerAssignments.css'
 
-interface SpellAssignmentProps {
-  playerId: number
+export interface ManageAssignmentsDialogProps<T> {
+  title: string
+  items: T[]
+  assignedIds: number[]
+  getId: (item: T) => number
+  getLabel: (item: T) => string
+  onSave: (ids: number[]) => Promise<void>
+  onClose: () => void
+  searchPlaceholder?: string
 }
 
-export function SpellAssignment({ playerId }: SpellAssignmentProps) {
-  const [assigned, setAssigned] = useState<Spell[]>([])
-  const [allSpells, setAllSpells] = useState<Spell[]>([])
-  const [pendingId, setPendingId] = useState('')
+export function ManageAssignmentsDialog<T>({
+  title,
+  items,
+  assignedIds,
+  getId,
+  getLabel,
+  onSave,
+  onClose,
+  searchPlaceholder = 'Search…',
+}: ManageAssignmentsDialogProps<T>) {
+  const searchId = useId()
+  const [staged, setStaged] = useState<Set<number>>(() => new Set(assignedIds))
+  const [query, setQuery] = useState('')
+  const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const loadAssigned = () => {
-    api
-      .getPlayerSpells(playerId)
-      .then((spells) => setAssigned([...spells].sort((a, b) => a.name.localeCompare(b.name))))
-      .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load spells.'))
+  const sorted = useMemo(() => [...items].sort((a, b) => getLabel(a).localeCompare(getLabel(b))), [items, getLabel])
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    if (!q) return sorted
+    return sorted.filter((item) => getLabel(item).toLowerCase().includes(q))
+  }, [sorted, query, getLabel])
+
+  const toggle = (id: number) => {
+    setStaged((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) {
+        next.delete(id)
+      } else {
+        next.add(id)
+      }
+      return next
+    })
   }
 
-  useEffect(loadAssigned, [playerId])
-  useEffect(() => {
-    api
-      .listSpells()
-      .then((spells) => setAllSpells(spells))
-      .catch(() => setAllSpells([]))
-  }, [])
-
-  const available = allSpells
-    .filter((s) => !assigned.some((a) => a.id === s.id))
-    .sort((a, b) => a.name.localeCompare(b.name))
-
-  const handleAdd = async () => {
-    if (!pendingId) return
+  const handleSave = async () => {
+    setSaving(true)
+    setError(null)
     try {
-      await api.assignPlayerSpell(playerId, Number(pendingId))
-      setPendingId('')
-      loadAssigned()
+      await onSave(Array.from(staged))
+      onClose()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to assign spell.')
-    }
-  }
-
-  const handleRemove = async (spellId: number) => {
-    try {
-      await api.unassignPlayerSpell(playerId, spellId)
-      loadAssigned()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to remove spell.')
+      setError(err instanceof Error ? err.message : 'Failed to save.')
+      setSaving(false)
     }
   }
 
   return (
-    <div className="player-assignment">
-      <h4>Spells</h4>
-      {error && <p className="player-assignment-error">{error}</p>}
-      {assigned.length === 0 ? (
-        <p className="player-assignment-empty">No spells assigned.</p>
+    <Dialog
+      open
+      title={title}
+      onClose={onClose}
+      pending={saving}
+      className="manage-assignments-dialog"
+      footer={
+        <>
+          <Button type="button" variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button type="button" onClick={handleSave} loading={saving}>
+            Save
+          </Button>
+        </>
+      }
+    >
+      {error && (
+        <p role="status" className="manage-assignments-error">
+          {error}
+        </p>
+      )}
+      <div className="manage-assignments-search">
+        <label htmlFor={searchId} className="visually-hidden">
+          {searchPlaceholder}
+        </label>
+        <input
+          id={searchId}
+          type="search"
+          className="manage-assignments-search-input"
+          placeholder={searchPlaceholder}
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+        />
+      </div>
+      {filtered.length === 0 ? (
+        <p className="manage-assignments-empty">No matches</p>
       ) : (
-        <ul className="player-assignment-list">
-          {assigned.map((spell) => (
-            <li key={spell.id}>
-              <span>{spell.name}</span>
-              <button type="button" onClick={() => handleRemove(spell.id)}>
-                Remove
-              </button>
-            </li>
-          ))}
+        <ul className="manage-assignments-list">
+          {filtered.map((item) => {
+            const id = getId(item)
+            const checkboxId = `${searchId}-${id}`
+            return (
+              <li key={id}>
+                <label htmlFor={checkboxId} className="manage-assignments-item">
+                  <input
+                    id={checkboxId}
+                    type="checkbox"
+                    checked={staged.has(id)}
+                    onChange={() => toggle(id)}
+                  />
+                  {getLabel(item)}
+                </label>
+              </li>
+            )
+          })}
         </ul>
       )}
-      {available.length > 0 && (
-        <div className="player-assignment-add">
-          <SelectField
-            label="Add Spell"
-            value={pendingId}
-            onChange={(e) => setPendingId(e.target.value)}
-            options={available.map((s) => ({ value: String(s.id), label: s.name }))}
-            placeholder="Choose a spell…"
-          />
-          <button type="button" onClick={handleAdd} disabled={!pendingId}>
-            Add
-          </button>
-        </div>
-      )}
-    </div>
-  )
-}
-
-interface WeaponAssignmentProps {
-  playerId: number
-}
-
-export function WeaponAssignment({ playerId }: WeaponAssignmentProps) {
-  const [assigned, setAssigned] = useState<Weapon[]>([])
-  const [allWeapons, setAllWeapons] = useState<Weapon[]>([])
-  const [pendingId, setPendingId] = useState('')
-  const [error, setError] = useState<string | null>(null)
-
-  const loadAssigned = () => {
-    api
-      .getPlayerWeapons(playerId)
-      .then((weapons) => setAssigned([...weapons].sort((a, b) => a.name.localeCompare(b.name))))
-      .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load weapons.'))
-  }
-
-  useEffect(loadAssigned, [playerId])
-  useEffect(() => {
-    api
-      .listWeapons()
-      .then((weapons) => setAllWeapons(weapons))
-      .catch(() => setAllWeapons([]))
-  }, [])
-
-  const available = allWeapons
-    .filter((w) => !assigned.some((a) => a.id === w.id))
-    .sort((a, b) => a.name.localeCompare(b.name))
-
-  const handleAdd = async () => {
-    if (!pendingId) return
-    try {
-      await api.assignPlayerWeapon(playerId, Number(pendingId))
-      setPendingId('')
-      loadAssigned()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to assign weapon.')
-    }
-  }
-
-  const handleRemove = async (weaponId: number) => {
-    try {
-      await api.unassignPlayerWeapon(playerId, weaponId)
-      loadAssigned()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to remove weapon.')
-    }
-  }
-
-  return (
-    <div className="player-assignment">
-      <h4>Weapons</h4>
-      {error && <p className="player-assignment-error">{error}</p>}
-      {assigned.length === 0 ? (
-        <p className="player-assignment-empty">No weapons assigned.</p>
-      ) : (
-        <ul className="player-assignment-list">
-          {assigned.map((weapon) => (
-            <li key={weapon.id}>
-              <span>{weapon.name}</span>
-              <button type="button" onClick={() => handleRemove(weapon.id)}>
-                Remove
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-      {available.length > 0 && (
-        <div className="player-assignment-add">
-          <SelectField
-            label="Add Weapon"
-            value={pendingId}
-            onChange={(e) => setPendingId(e.target.value)}
-            options={available.map((w) => ({ value: String(w.id), label: w.name }))}
-            placeholder="Choose a weapon…"
-          />
-          <button type="button" onClick={handleAdd} disabled={!pendingId}>
-            Add
-          </button>
-        </div>
-      )}
-    </div>
+    </Dialog>
   )
 }

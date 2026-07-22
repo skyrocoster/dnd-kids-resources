@@ -1,6 +1,6 @@
 # Visual Design Area Guide
 
-> **Active plan:** [Collapsible Catalog Rail](../plans/active/collapsible-catalog-rail.md) (next up).
+> **Active plan:** None.
 
 ## Scope
 
@@ -8,7 +8,7 @@ Owns shared frontend visual language, tokens, shared components, navigation shel
 
 ## Read first
 
-`../DESIGN_SYSTEM.md`, `../ARCHITECTURE.md`, `../TESTING.md`, and the active plan.
+`../DESIGN_SYSTEM.md`, `../ARCHITECTURE.md`, and `../TESTING.md`.
 
 ## Source map
 
@@ -32,8 +32,7 @@ Modes are defined in [../UX_PATTERNS.md](../UX_PATTERNS.md#surface-modes).
 
 ## Work queue
 
-- Execute [Collapsible Catalog Rail](../plans/active/collapsible-catalog-rail.md) after the Spell and
-  Weapon quick-reference foundations.
+No active Visual Design implementation plan.
 
 ## Cross-references
 

@@ -559,6 +559,54 @@ describe('mapLabEditorReducer', () => {
       expect(second.to).toEqual({ z: 0, cell: [1, 1] })
     })
 
+    it('Connections: retargeting a portal to a gateway (dungeon_id) does not touch any other portal', () => {
+      let state = initialEditorState(emptyLayout)
+      state = mapLabEditorReducer(state, { type: 'addPortal', cell: [1, 1] })
+      const sourceId = state.selectedPortalId as number
+      state = mapLabEditorReducer(state, { type: 'addPortal', cell: [8, 8] })
+      const otherId = state.selectedPortalId as number
+      const otherBefore = state.layout.portals.find((p) => p.portal_id === otherId)!
+
+      state = mapLabEditorReducer(state, {
+        type: 'updateFixtureFlags',
+        fixtureId: sourceId,
+        fixtureType: 'portal',
+        flags: { to: { dungeon_id: 42 } },
+      })
+
+      expect(state.layout.portals).toHaveLength(2)
+      const source = state.layout.portals.find((p) => p.portal_id === sourceId)!
+      expect(source.to).toEqual({ dungeon_id: 42 })
+      const otherAfter = state.layout.portals.find((p) => p.portal_id === otherId)!
+      expect(otherAfter).toEqual(otherBefore)
+    })
+
+    it('Connections: retargeting a gateway portal back to an in-dungeon cell resumes normal pairing', () => {
+      let state = initialEditorState(emptyLayout)
+      state = mapLabEditorReducer(state, { type: 'addPortal', cell: [1, 1] })
+      const sourceId = state.selectedPortalId as number
+      state = mapLabEditorReducer(state, {
+        type: 'updateFixtureFlags',
+        fixtureId: sourceId,
+        fixtureType: 'portal',
+        flags: { to: { dungeon_id: 42 } },
+      })
+      expect(state.layout.portals).toHaveLength(1)
+
+      state = mapLabEditorReducer(state, {
+        type: 'updateFixtureFlags',
+        fixtureId: sourceId,
+        fixtureType: 'portal',
+        flags: { to: { z: 1, cell: [5, 5] } },
+      })
+
+      expect(state.layout.portals).toHaveLength(2)
+      const source = state.layout.portals.find((p) => p.portal_id === sourceId)!
+      expect(source.to).toEqual({ z: 1, cell: [5, 5] })
+      const paired = state.layout.portals.find((p) => p.portal_id !== sourceId)!
+      expect(paired).toMatchObject({ z: 1, cell: [5, 5], to: { z: 0, cell: [1, 1] } })
+    })
+
     it('H2: deletePortal removes the portal and clears selection if it was selected', () => {
       let state = initialEditorState(emptyLayout)
       state = mapLabEditorReducer(state, { type: 'addPortal', cell: [1, 1] })

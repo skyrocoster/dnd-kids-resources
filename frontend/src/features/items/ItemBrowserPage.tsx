@@ -79,6 +79,7 @@ export function ItemBrowserPage() {
         actions={<Button type="button" onClick={openCreate}>New Item</Button>}
         error={itemsRemote.status === 'error' ? itemsRemote.error : null}
         listLabel="item list"
+        listCollapsible
         list={
           <SearchList
             items={items}

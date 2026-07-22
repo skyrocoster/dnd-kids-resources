@@ -1,6 +1,6 @@
 # Dungeons Area Guide
 
-> **Active plan:** [Dungeon Connections](../plans/active/dungeon-connections.md).
+> **Active plan:** None.
 
 ## Scope
 
@@ -57,13 +57,25 @@ A vertical passage crossing floor levels on the z-axis.
 _Avoid_: ladder, elevator, stairway
 
 **Portal**:
-A freestanding one-square marker linking to a non-adjacent destination, paired and two-way. The
-destination is optional — a portal can be dropped and saved before its `to` is chosen.
+A freestanding one-square marker linking to a non-adjacent destination. The destination is optional —
+a portal can be dropped and saved before its `to` is chosen — and is either an in-dungeon pair
+(auto-paired, two-way) or a Gateway (one-way in the data, paired only as a UI/workflow concept).
 _Avoid_: teleporter, warp
 
+**Gateway**:
+A portal whose destination is another dungeon (`to.dungeon_id` set) rather than a floor+cell in this
+one. Renders with a distinct icon, names its destination dungeon in the inspector, and navigates to
+that dungeon's route on click. The link is one-way data — the target dungeon's editor only *shows* the
+incoming link with a one-click "Add the return gateway" action; nothing is auto-written into a
+document that might be open elsewhere.
+_Avoid_: teleporter link, cross-link, portal link — use Portal for the in-dungeon case, Gateway only
+for the cross-dungeon case.
+
 **Resolve List**:
-The Map Lab editor's list of connections that do not yet have two ends — currently just portals with
-no destination — each row naming what is broken with a one-click action to fix it.
+The Map Lab editor's list of connections that do not yet have two ends: a portal with no destination,
+a gateway whose target dungeon was deleted (`[repoint]`/`[remove]`), or another dungeon's gateway
+pointing here with no return portal ("Add the return gateway"). Each row names what is broken with a
+one-click action to fix it.
 _Avoid_: todo list, linter, warnings panel
 
 **Prop**:
@@ -143,9 +155,8 @@ The session view is the surface that is open while a game is running: it must st
 ## Work queue
 
 - [Dungeon Outside](../complete/dungeon-outside.md) shipped: wall kinds, per-side padding and a real extent, outside features, and clarity controls.
-- [Dungeon Connections](../plans/active/dungeon-connections.md) is active: Stages 1-2 (permanent per-dungeon session state; optional portal destinations with a connections resolve list) have shipped; next up is cross-dungeon gateways. It inherits the next-up slot after Dungeon Outside — the two share `MapPortal` and `MapLayout` and must not run concurrently. It owns passage-session persistence.
-- Create a focused plan before other deferred dungeon work, including cross-reference pop-outs.
-- New vocabulary from the active plan — Extent, Gateway — is added here by `reconcile` as each stage ships, not in advance.
+- [Dungeon Connections](../complete/dungeon-connections.md) shipped: permanent per-dungeon session state, optional portal destinations with a connections resolve list, and cross-dungeon gateways. It owns passage-session persistence.
+- No active plan. Create a focused plan before new dungeon work, including cross-reference pop-outs.
 
 ## Cross-references
 

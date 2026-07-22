@@ -364,7 +364,7 @@ def test_seeded_weapon_quick_rules_round_trip_exact_strings(tmp_path: Path):
     )
     original_quick_rules = {weapon["id"]: weapon.get("quick_rules") for weapon in original_weapons}
 
-    assert len(original_quick_rules) == 219
+    assert len(original_quick_rules) == 218
     assert all(isinstance(value, str) and value.strip() for value in original_quick_rules.values())
 
     _init_and_seed_weapons(db_path, force=True)

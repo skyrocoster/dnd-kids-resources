@@ -14,6 +14,7 @@ interface BrowserLayoutProps {
   listLabel?: string
   chapterIcon?: ReactNode
   detailOpen?: boolean
+  listCollapsible?: boolean
 }
 
 export function BrowserLayout({
@@ -27,7 +28,10 @@ export function BrowserLayout({
   listLabel,
   chapterIcon,
   detailOpen = false,
+  listCollapsible = false,
 }: BrowserLayoutProps) {
+  const resolvedListLabel = listLabel || `${title} list`
+
   return (
     <div className={`browser-layout ${detailOpen ? 'browser-layout--detail-open' : ''}`}>
       <PageHeader
@@ -41,9 +45,10 @@ export function BrowserLayout({
 
       <div className="browser-layout-split">
         <SplitPane
-          leftLabel={listLabel || `${title} list`}
+          leftLabel={resolvedListLabel}
           left={list}
           right={detail}
+          collapsible={listCollapsible}
         />
       </div>
 

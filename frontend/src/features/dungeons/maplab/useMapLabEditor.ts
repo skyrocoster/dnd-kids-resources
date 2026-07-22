@@ -369,7 +369,10 @@ export function useMapLabEditor(dungeonId: number | null, initialDungeon: Dungeo
     [apply],
   )
 
-  const addPortal = useCallback((cell: MapCell) => apply({ type: 'addPortal', cell }), [apply])
+  const addPortal = useCallback(
+    (cell: MapCell, to?: { dungeon_id: number }) => apply({ type: 'addPortal', cell, to }),
+    [apply],
+  )
   const selectPortal = useCallback((portalId: number | null) => dispatch({ type: 'selectPortal', portalId }), [])
   const deletePortal = useCallback((portalId: number) => apply({ type: 'deletePortal', portalId }), [apply])
 

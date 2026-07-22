@@ -23,8 +23,18 @@ export interface SessionControls {
  * live session controls (Stage 4) —
  * rooms and props don't carry that kind of runtime state, so `controls` is only passed for those two
  * kinds. Props can additionally resolve their soft-referenced loot bundle live. */
-export function InspectorPanel({ target, controls }: { target: Inspectable; controls?: SessionControls }) {
-  const descriptor = inspectableDescriptor(target)
+export function InspectorPanel({
+  target,
+  controls,
+  context,
+}: {
+  target: Inspectable
+  controls?: SessionControls
+  /** Extra data `inspectableDescriptor` can't resolve on its own — currently just the destination
+   * dungeon's title for a gateway portal, looked up by the caller via `listDungeons()`. */
+  context?: { dungeonTitle?: string }
+}) {
+  const descriptor = inspectableDescriptor(target, context)
   const Icon = descriptor.icon
   const isTrapped =
     target.kind === 'door'

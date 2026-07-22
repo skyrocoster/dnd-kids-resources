@@ -168,6 +168,14 @@ class SpellPlayerAssignments(StrictModel):
     player_ids: List[int] = Field(default_factory=list)
 
 
+class PlayerSpellAssignments(StrictModel):
+    spell_ids: List[int] = Field(default_factory=list)
+
+
+class PlayerWeaponAssignments(StrictModel):
+    weapon_ids: List[int] = Field(default_factory=list)
+
+
 class CreatureType(StrictModel):
     category: NonEmptyString
     tags: List[str] = Field(default_factory=list)
@@ -415,20 +423,57 @@ class LootBundleUpdate(LootBundleCreate):
     pass
 
 
-class Player(BaseModel):
+class PlayerFields(StrictModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+
+    name: NonEmptyString
+    child_name: Optional[str] = None
+    class_: Optional[str] = Field(default=None, alias="class")
+    subclass: Optional[str] = None
+    ancestry: Optional[str] = None
+    background: Optional[str] = None
+    level: Optional[int] = None
+    sizes: List[CreatureSize] = Field(default_factory=list)
+    alignment: Optional[str] = None
+    creature_type: Optional[CreatureType] = None
+    ac: Optional[ArmorClass] = None
+    hp: Optional[HitPoints] = None
+    speed: List[MovementSpeed] = Field(default_factory=list)
+    abilities: Optional[AbilityScores] = None
+    saving_throws: Dict[AbilityName, int] = Field(default_factory=dict)
+    skills: Dict[str, int] = Field(default_factory=dict)
+    passive_perception: Optional[int] = None
+    damage_resistances: List[DamageModifier] = Field(default_factory=list)
+    damage_immunities: List[DamageModifier] = Field(default_factory=list)
+    damage_vulnerabilities: List[DamageModifier] = Field(default_factory=list)
+    condition_immunities: List[str] = Field(default_factory=list)
+    senses: List[Sense] = Field(default_factory=list)
+    languages: List[str] = Field(default_factory=list)
+    features: MonsterFeatures = Field(default_factory=MonsterFeatures)
+    initiative: Optional[int] = None
+    proficiency_bonus: Optional[int] = None
+    spell_attack_bonus: Optional[int] = None
+    spell_save_dc: Optional[int] = None
+    max_spell_slots: Dict[int, int] = Field(default_factory=dict)
+    notes: Optional[str] = None
+
+
+class Player(PlayerFields):
     id: int
-    name: str
-    class_: Optional[str] = None
-    level: Optional[int] = None
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
 
 
-class PlayerCreate(BaseModel):
-    name: str
-    class_: Optional[str] = None
-    level: Optional[int] = None
+class PlayerDetail(Player):
+    spells: List[Spell] = Field(default_factory=list)
+    weapons: List[Weapon] = Field(default_factory=list)
 
 
-class PlayerUpdate(PlayerCreate):
+class PlayerCreate(PlayerFields):
+    pass
+
+
+class PlayerUpdate(PlayerFields):
     pass
 
 
@@ -638,6 +683,15 @@ class DungeonUpdate(DungeonCreate):
 
 class MapLayoutBlob(BaseModel):
     data: Dict[str, Any]
+
+
+class IncomingGateway(BaseModel):
+    dungeon_id: int
+    dungeon_title: str
+    portal_id: int
+    title: Optional[str] = None
+    z: int
+    cell: List[int]
 
 
 class MapSessionStateBlob(BaseModel):

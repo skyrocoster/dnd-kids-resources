@@ -1,8 +1,16 @@
+import type { Dungeon, IncomingGateway } from '../../../api/types'
+import { StatePanel } from '../../../components/StatePanel'
 import { floorsInLayout, type MapLayout, type MapPortal } from './maplabModel'
 
 interface ConnectionsResolveListProps {
   layout: MapLayout
+  dungeons: Dungeon[]
+  incomingGateways: IncomingGateway[]
+  connectionsLoaded: boolean
+  connectionsLoadError: boolean
   onResolve: (portal: MapPortal) => void
+  onRemoveGateway: (portal: MapPortal) => void
+  onAddReturnGateway: (gateway: IncomingGateway) => void
 }
 
 function floorLabel(layout: MapLayout, z: number): string {
@@ -10,21 +18,55 @@ function floorLabel(layout: MapLayout, z: number): string {
   return floor?.title ?? `Floor ${z}`
 }
 
-/** Connections resolve list — Stage 2 ships only membership rule 1 (a portal with no destination).
- * The other two row types (incoming link with no return; target dungeon deleted) are cross-dungeon
- * concepts that arrive with Stage 2's gateways. */
-export function ConnectionsResolveList({ layout, onResolve }: ConnectionsResolveListProps) {
+/** Connections resolve list: surfaces every unfinished cross-dungeon connection for this layout —
+ * a portal with no destination, a gateway whose target dungeon no longer exists, and other
+ * dungeons' gateways that point here with no portal here pointing back. */
+export function ConnectionsResolveList({
+  layout,
+  dungeons,
+  incomingGateways,
+  connectionsLoaded,
+  connectionsLoadError,
+  onResolve,
+  onRemoveGateway,
+  onAddReturnGateway,
+}: ConnectionsResolveListProps) {
+  if (connectionsLoadError) {
+    return (
+      <section className="maplab-connections-resolve-list" aria-label="Connections to resolve">
+        <h3 className="maplab-connections-resolve-list-title">To resolve</h3>
+        <StatePanel status="error" title="Couldn't load connections" message="Try again shortly." />
+      </section>
+    )
+  }
+
   const unresolved = layout.portals.filter((portal) => portal.to === undefined)
+
+  // A gateway can only be judged broken against a dungeon list we actually have. Until the fetch
+  // lands, `dungeons` is empty and every valid gateway would read as broken — offering [remove]
+  // on links that are fine.
+  const dungeonIds = new Set(dungeons.map((dungeon) => dungeon.id))
+  const brokenGateways = connectionsLoaded
+    ? layout.portals.filter(
+        (portal) => portal.to?.dungeon_id !== undefined && !dungeonIds.has(portal.to.dungeon_id),
+      )
+    : []
+
+  const gatewaysWithoutReturn = incomingGateways.filter(
+    (gateway) => !layout.portals.some((portal) => portal.to?.dungeon_id === gateway.dungeon_id),
+  )
+
+  const nothingToResolve = unresolved.length === 0 && brokenGateways.length === 0 && gatewaysWithoutReturn.length === 0
 
   return (
     <section className="maplab-connections-resolve-list" aria-label="Connections to resolve">
       <h3 className="maplab-connections-resolve-list-title">To resolve</h3>
-      {unresolved.length === 0 ? (
+      {nothingToResolve ? (
         <p className="maplab-connections-resolve-list-empty">Every connection has both ends. Nothing to resolve.</p>
       ) : (
         <ul className="maplab-connections-resolve-list-items">
           {unresolved.map((portal) => (
-            <li key={portal.portal_id} className="maplab-connections-resolve-list-item">
+            <li key={`unresolved-${portal.portal_id}`} className="maplab-connections-resolve-list-item">
               <span className="maplab-connections-resolve-list-item-label">
                 {portal.title ?? `Portal ${portal.portal_id}`} — {floorLabel(layout, portal.z)}
               </span>
@@ -34,6 +76,42 @@ export function ConnectionsResolveList({ layout, onResolve }: ConnectionsResolve
                 onClick={() => onResolve(portal)}
               >
                 Choose destination
+              </button>
+            </li>
+          ))}
+          {brokenGateways.map((portal) => (
+            <li key={`broken-${portal.portal_id}`} className="maplab-connections-resolve-list-item">
+              <span className="maplab-connections-resolve-list-item-label">
+                {portal.title ?? `Portal ${portal.portal_id}`} — {floorLabel(layout, portal.z)} links to a dungeon
+                that no longer exists
+              </span>
+              <button
+                type="button"
+                className="maplab-pill-button maplab-connections-resolve-list-action"
+                onClick={() => onResolve(portal)}
+              >
+                Repoint
+              </button>
+              <button
+                type="button"
+                className="maplab-pill-button maplab-connections-resolve-list-action"
+                onClick={() => onRemoveGateway(portal)}
+              >
+                Remove
+              </button>
+            </li>
+          ))}
+          {gatewaysWithoutReturn.map((gateway) => (
+            <li key={`incoming-${gateway.dungeon_id}-${gateway.portal_id}`} className="maplab-connections-resolve-list-item">
+              <span className="maplab-connections-resolve-list-item-label">
+                {gateway.dungeon_title} links here, at square {gateway.cell[0]},{gateway.cell[1]}
+              </span>
+              <button
+                type="button"
+                className="maplab-pill-button maplab-connections-resolve-list-action"
+                onClick={() => onAddReturnGateway(gateway)}
+              >
+                Add the return gateway
               </button>
             </li>
           ))}

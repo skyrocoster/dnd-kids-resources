@@ -453,11 +453,53 @@ export type LootBundleInput = Omit<LootBundle, 'id'>
 export interface Player {
   id: number
   name: string
+  child_name?: string | null
   class_?: string | null
+  subclass?: string | null
+  ancestry?: string | null
+  background?: string | null
   level?: number | null
+  sizes?: CreatureSize[]
+  alignment?: string | null
+  creature_type?: CreatureType | null
+  ac?: ArmorClass | null
+  hp?: HitPoints | null
+  speed?: MovementSpeed[]
+  abilities?: AbilityScores | null
+  saving_throws?: Partial<Record<AbilityName, number>>
+  skills?: Record<string, number>
+  passive_perception?: number | null
+  damage_resistances?: DamageModifier[]
+  damage_immunities?: DamageModifier[]
+  damage_vulnerabilities?: DamageModifier[]
+  condition_immunities?: string[]
+  senses?: Sense[]
+  languages?: string[]
+  features?: MonsterFeatures
+  initiative?: number | null
+  proficiency_bonus?: number | null
+  spell_attack_bonus?: number | null
+  spell_save_dc?: number | null
+  max_spell_slots?: Record<string, number>
+  notes?: string | null
+  created_at?: string | null
+  updated_at?: string | null
 }
 
-export type PlayerInput = Omit<Player, 'id'>
+export type PlayerInput = Omit<Player, 'id' | 'created_at' | 'updated_at'>
+
+export interface PlayerDetail extends Player {
+  spells: Spell[]
+  weapons: Weapon[]
+}
+
+export interface PlayerSpellAssignments {
+  spell_ids: number[]
+}
+
+export interface PlayerWeaponAssignments {
+  weapon_ids: number[]
+}
 
 export interface NPCStatblockFields {
   sizes?: CreatureSize[]
@@ -533,6 +575,15 @@ export type DungeonInput = Omit<Dungeon, 'id'>
 
 export interface MapLayoutBlob {
   data: Record<string, unknown>
+}
+
+export interface IncomingGateway {
+  dungeon_id: number
+  dungeon_title: string
+  portal_id: number
+  title?: string | null
+  z: number
+  cell: [number, number]
 }
 
 export interface MapSessionStateBlob {

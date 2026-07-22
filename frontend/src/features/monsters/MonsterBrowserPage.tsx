@@ -48,6 +48,7 @@ export function MonsterBrowserPage() {
         actions={<Button type="button" onClick={() => navigate('/monsters/new')}>Add Monster</Button>}
         error={monstersRemote.status === 'error' ? monstersRemote.error : null}
         listLabel="monster list"
+        listCollapsible
         list={
           <SearchList
             items={monsters}

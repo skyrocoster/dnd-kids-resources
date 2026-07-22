@@ -77,6 +77,7 @@ export function EncounterBrowserPage() {
         actions={<Button type="button" onClick={openCreate}>New Encounter</Button>}
         error={encountersRemote.status === 'error' ? encountersRemote.error : null}
         listLabel="encounter list"
+        listCollapsible
         list={
           <SearchList
             items={encounters}

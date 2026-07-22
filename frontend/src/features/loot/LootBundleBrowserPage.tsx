@@ -69,6 +69,7 @@ export function LootBundleBrowserPage() {
         actions={<Button type="button" onClick={openCreate}>New Loot Bundle</Button>}
         error={bundlesRemote.status === 'error' ? bundlesRemote.error : null}
         listLabel="loot bundle list"
+        listCollapsible
         list={
           <SearchList
             items={bundles}

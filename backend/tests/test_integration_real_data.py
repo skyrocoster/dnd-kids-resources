@@ -221,6 +221,46 @@ def test_seeded_weapon_quick_rules_stay_concise_and_single_line():
     assert failures == []
 
 
+def test_seeded_weapon_quick_rules_match_direct_structured_facts():
+    failures = []
+    for weapon in _seeded_weapons():
+        quick_rules = weapon["quick_rules"]
+        quick_rules_lower = quick_rules.lower()
+        attack_entries = weapon.get("attack", [])
+
+        if not attack_entries:
+            continue
+
+        has_mod = any(
+            e.get("attack_mod") is not None or e.get("damage_mod") is not None
+            for e in attack_entries
+        )
+        if has_mod:
+            if "{weapon_attack_bonus}" not in quick_rules:
+                failures.append(f"{weapon['name']}: missing {{weapon_attack_bonus}} token")
+            if "{weapon_damage_bonus}" not in quick_rules:
+                failures.append(f"{weapon['name']}: missing {{weapon_damage_bonus}} token")
+
+        seen_damage_formulas = set()
+        seen_damage_types = set()
+        for entry in attack_entries:
+            if entry.get("damage") is not None:
+                formula = entry["damage"]
+                damage_type = entry.get("damage_type")
+                seen_damage_formulas.add(formula)
+                if damage_type is not None:
+                    seen_damage_types.add(damage_type)
+
+        for formula in sorted(seen_damage_formulas):
+            if formula not in quick_rules:
+                failures.append(f"{weapon['name']}: missing damage formula {formula}")
+        for dtype in sorted(seen_damage_types):
+            if dtype not in quick_rules_lower:
+                failures.append(f"{weapon['name']}: missing damage type {dtype}")
+
+    assert failures == []
+
+
 def test_every_weapon_list_and_detail_validates_with_canonical_contract(real_client):
     offset = 0
     total = 0
@@ -239,7 +279,7 @@ def test_every_weapon_list_and_detail_validates_with_canonical_contract(real_cli
         if len(batch) < 500:
             break
         offset += 500
-    assert total == 219
+    assert total == 218
 
 
 @pytest.mark.parametrize("path", LIST_ENDPOINTS)
@@ -547,6 +587,28 @@ def test_every_player_nested_endpoints_serialize(real_client):
             f"/api/players/{pid}/weapons -> {weapons.status_code}: {weapons.text[:300]}"
         )
         assert isinstance(weapons.json(), list)
+
+
+def test_every_player_detail_endpoint_serializes(real_client):
+    """Every seeded player's /detail endpoint must serialize with spells and weapons."""
+    players = real_client.get("/api/players")
+    assert players.status_code == 200
+    player_list = players.json()
+    assert player_list, "No seeded players"
+
+    for player in player_list:
+        pid = player["id"]
+        resp = real_client.get(f"/api/players/{pid}/detail")
+        assert resp.status_code == 200, (
+            f"/api/players/{pid}/detail -> {resp.status_code}: {resp.text[:300]}"
+        )
+        data = resp.json()
+        assert "spells" in data
+        assert "weapons" in data
+        assert isinstance(data["spells"], list)
+        assert isinstance(data["weapons"], list)
+        for spell in data["spells"]:
+            _assert_canonical_spell(spell)
 
 
 def test_seeded_spell_reverse_player_list_serializes(real_client):

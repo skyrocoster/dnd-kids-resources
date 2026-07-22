@@ -3,7 +3,7 @@ from typing import List
 import json
 
 from ..db import get_db, dict_from_row, parse_json_value
-from ..schemas import Weapon, WeaponCreate, WeaponUpdate
+from ..schemas import Player, Weapon, WeaponCreate, WeaponUpdate
 
 router = APIRouter(prefix="/api", tags=["weapons"])
 
@@ -153,6 +153,27 @@ def update_weapon(weapon_id: int, weapon: WeaponUpdate):
         cursor.execute(f"SELECT {SELECT_COLUMNS} FROM weapons WHERE id = ?", (weapon_id,))
         row = cursor.fetchone()
         return _parse_weapon_row(row)
+
+
+@router.get("/weapons/{weapon_id}/players", response_model=List[Player])
+def get_weapon_players(weapon_id: int):
+    """List the players a weapon is assigned to."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT id FROM weapons WHERE id = ?", (weapon_id,))
+        if not cursor.fetchone():
+            raise HTTPException(status_code=404, detail="Weapon not found")
+
+        cursor.execute(
+            """SELECT p.id, p.name, p.class AS class_, p.level
+               FROM players p
+               JOIN player_weapons pw ON p.id = pw.player_id
+               WHERE pw.weapon_id = ?
+               ORDER BY p.name""",
+            (weapon_id,)
+        )
+        rows = cursor.fetchall()
+        return [dict_from_row(row) for row in rows]
 
 
 @router.delete("/weapons/{weapon_id}", status_code=204)

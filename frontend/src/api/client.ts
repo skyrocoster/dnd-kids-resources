@@ -18,6 +18,9 @@ import type {
   LootBundleInput,
   Player,
   PlayerInput,
+  PlayerDetail,
+  PlayerSpellAssignments,
+  PlayerWeaponAssignments,
   NPC,
   NPCInput,
   Encounter,
@@ -26,6 +29,7 @@ import type {
   DungeonInput,
   MapLayoutBlob,
   MapSessionStateBlob,
+  IncomingGateway,
   LoomThread,
   LoomThreadCreate,
   LoomNode,
@@ -112,6 +116,7 @@ export const getWeaponByName = (name: string) => get<Weapon>(`/weapons/by-name/$
 export const createWeapon = (weapon: WeaponInput) => post<Weapon>('/weapons', weapon)
 export const updateWeapon = (id: number, weapon: WeaponInput) => put<Weapon>(`/weapons/${id}`, weapon)
 export const deleteWeapon = (id: number) => del(`/weapons/${id}`)
+export const getWeaponPlayers = (id: number) => get<Player[]>(`/weapons/${id}/players`)
 
 // Items
 export const listItems = () => get<Item[]>('/items')
@@ -123,19 +128,16 @@ export const deleteItem = (id: number) => del(`/items/${id}`)
 // Players
 export const listPlayers = () => get<Player[]>('/players')
 export const getPlayer = (id: number) => get<Player>(`/players/${id}`)
+export const getPlayerDetail = (id: number) => get<PlayerDetail>(`/players/${id}/detail`)
 export const createPlayer = (player: PlayerInput) => post<Player>('/players', player)
 export const updatePlayer = (id: number, player: PlayerInput) => put<Player>(`/players/${id}`, player)
 export const deletePlayer = (id: number) => del(`/players/${id}`)
 export const getPlayerSpells = (id: number) => get<Spell[]>(`/players/${id}/spells`)
-export const assignPlayerSpell = (playerId: number, spellId: number) =>
-  post<void>(`/players/${playerId}/spells/${spellId}`, undefined)
-export const unassignPlayerSpell = (playerId: number, spellId: number) =>
-  del(`/players/${playerId}/spells/${spellId}`)
 export const getPlayerWeapons = (id: number) => get<Weapon[]>(`/players/${id}/weapons`)
-export const assignPlayerWeapon = (playerId: number, weaponId: number) =>
-  post<void>(`/players/${playerId}/weapons/${weaponId}`, undefined)
-export const unassignPlayerWeapon = (playerId: number, weaponId: number) =>
-  del(`/players/${playerId}/weapons/${weaponId}`)
+export const replacePlayerSpells = (playerId: number, spellIds: number[]) =>
+  put<Spell[]>(`/players/${playerId}/spells`, { spell_ids: spellIds } satisfies PlayerSpellAssignments)
+export const replacePlayerWeapons = (playerId: number, weaponIds: number[]) =>
+  put<Weapon[]>(`/players/${playerId}/weapons`, { weapon_ids: weaponIds } satisfies PlayerWeaponAssignments)
 
 // NPCs
 export const listNPCs = () => get<NPC[]>('/npcs')
@@ -171,6 +173,8 @@ export const deleteDungeon = (id: number) => del(`/dungeons/${id}`)
 export const getDungeonLayout = (dungeonId: number) => get<MapLayoutBlob>(`/dungeons/${dungeonId}/layout`)
 export const saveDungeonLayout = (dungeonId: number, blob: MapLayoutBlob) =>
   put<MapLayoutBlob>(`/dungeons/${dungeonId}/layout`, blob)
+export const listIncomingGateways = (dungeonId: number) =>
+  get<IncomingGateway[]>(`/dungeons/${dungeonId}/incoming-gateways`)
 
 // Map Lab session state
 export const getDungeonSessionState = (dungeonId: number) =>

@@ -39,6 +39,49 @@ describe('WeaponEditor', () => {
     await waitFor(() => expect(updateWeapon).toHaveBeenCalledWith(4, expect.objectContaining({ name: 'Dagger' })))
   })
 
+  it('creates a new weapon from a prefilled draft', async () => {
+    const source: Weapon = {
+      id: 4,
+      name: 'Dagger',
+      base_weapon: 'Dagger',
+      weapon_category: 'simple',
+      weight: 1,
+      attack: [{ type: 'melee', damage: '1d4', damage_type: 'piercing', hands: 1, attack_mod: 1, damage_mod: 2 }],
+      entries: ['A quick blade.'],
+      quick_rules: 'Attack +{weapon_attack_bonus}',
+      weapon_attack_bonus: 5,
+      weapon_damage_bonus: 3,
+    }
+    const created: Weapon = { ...source, id: 9, name: 'Copied Dagger' }
+    const createWeapon = vi.spyOn(api, 'createWeapon').mockResolvedValue(created)
+    const updateWeapon = vi.spyOn(api, 'updateWeapon').mockResolvedValue(source)
+    const onSaved = vi.fn()
+    const user = userEvent.setup()
+
+    render(<WeaponEditor draftWeapon={source} onClose={() => {}} onSaved={onSaved} />)
+
+    expect(screen.getByRole('dialog', { name: 'Add New Weapon' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Name')).toHaveValue('Dagger')
+    expect(screen.getByLabelText('Quick Rules')).toHaveValue('Attack +{weapon_attack_bonus}')
+    expect(screen.getByLabelText('Attack Bonus (sheet-ready)')).toHaveValue(5)
+    expect(screen.getByLabelText('Damage')).toHaveValue('1d4')
+
+    await user.click(screen.getByRole('button', { name: 'Create Weapon' }))
+
+    await waitFor(() => expect(createWeapon).toHaveBeenCalledOnce())
+    expect(createWeapon).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'Dagger',
+        attack: [{ type: 'melee', damage: '1d4', damage_type: 'piercing', hands: 1, attack_mod: 1, damage_mod: 2 }],
+        quick_rules: 'Attack +{weapon_attack_bonus}',
+        weapon_attack_bonus: 5,
+        weapon_damage_bonus: 3,
+      }),
+    )
+    expect(updateWeapon).not.toHaveBeenCalled()
+    expect(onSaved).toHaveBeenCalledWith(created)
+  })
+
   describe('quick_rules validation', () => {
     it('rejects unknown tokens in quick_rules', async () => {
       const onSaved = vi.fn()

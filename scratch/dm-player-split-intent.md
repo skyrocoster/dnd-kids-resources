@@ -1,11 +1,13 @@
 # DM / Player Split — Statement of Intent
 
-**Status:** Grilling complete at the level of intent. No plan written, no work orders, no stages.
+**Status:** Grilling complete at the level of intent. Broken into a four-plan sequence (see *The plan
+cycle* at the foot of this document). **Plan 0 is written** and lives in the repo at
+`docs/plans/active/player-app-skeleton.md`; Plans 1–3 are scoped here but not yet written.
 **What this is:** the settled direction, the reasoning behind it, and the branches still open. It is
-the document a plan gets written *from* — expect to break it into several plans, and to re-grill the
-open branches before any of them are written.
-**What this is not:** a plan. There are no stages, no ordering, no estimates, and several decisions
-here are explicitly provisional pending playtest.
+the document the plans get written *from* — re-grill the open branches before the plan that needs
+them.
+**What this is not:** a plan. There are no work orders and no estimates here, and several decisions
+are explicitly provisional pending playtest.
 
 ---
 
@@ -549,3 +551,141 @@ Provisional decisions, with the signal that should trigger revisiting them.
   probably is not; if it is, push is a swap behind the same read model.
 - **Stale identity on the shared tablet.** Watch whether kids actually notice the badge. If not, it
   is a visual-design problem, not a logic one.
+
+---
+
+## The plan cycle
+
+Four plans. Two ordering rules produced this shape and are worth restating, because they are what
+distinguish it from the obvious alternatives:
+
+1. **Scaffold the whole shape before filling any of it in.** Every structural claim the later plans
+   rest on gets proven while it is still cheap to be wrong, and a real tablet is on a real table
+   before anything is built on assumptions about it.
+2. **Within each plan, DM side before player side — but never as separate plans.** The DM's "what
+   they can see" preview *is* the player component, so building it DM-first means iterating where
+   there are devtools and fast reload, and the kid app inherits something already proven. Splitting
+   them into separate *plans*, though, would defer every table signal to the end: a DM painting fog
+   into a void is unverifiable, because nothing renders it. So every plan ends at something playable.
+
+The owning area is **Player App** (`docs/areas/player-app.md`), created with Plan 0. It holds the
+durable invariants — read-only forever, the `player/` import rule, curtain-only concealment,
+knowledge-ratchets-vs-value-oscillates, one fog layer, no position tracking ever, the app informs and
+never adjudicates.
+
+---
+
+### Plan 0 — Player App Skeleton ✍️ *written*
+
+`docs/plans/active/player-app-skeleton.md`
+
+**Outcome:** a tablet at the table showing the live dungeon map. Read-only, no way out, nothing
+concealed yet.
+
+Five stages: cut the seam (`/play`, `PlayerShell`, the import rule, the kid operator rules) →
+promote the shared model → build the empty seams (fog store, curtain as documented pass-through) →
+put a map on the tablet → table-readiness pass and a real session.
+
+**Deliberately out:** fog behaviour, per-object knowledge, identity, spells, gear.
+
+**Decisions it settles that everything downstream inherits:**
+
+- **The kid operator gets its own `UX_PATTERNS.md` subsection** — read-only, no exit, two taps to an
+  answer, never text-alone, automatic liveness, curtain-only. `UX_PATTERNS.md` had already reserved
+  this and asked that the first kid surface write the rules rather than retrofit exceptions.
+- **A 64px touch floor on kid surfaces**, above the app's 48px. A raised floor, not an exception.
+- **The pure map model is promoted to a neutral location; the renderer is not.** The kid map gets its
+  own renderer. Shared is the API, the data, and pure model modules — never components.
+- **The fog store is separate from `map_session_state`, and its write is a union rather than a
+  replace**, so the ratchet is enforced by the endpoint instead of trusted to callers.
+- **One dungeon is marked *at the table*, server-side, from the DM's session view.** The kid device
+  never navigates and never chooses. *(This one was not asked in this document and is the most
+  overrulable; the alternative is implicit — whatever dungeon the DM last opened — which is more
+  "falls out of what the DM was already doing" but can surprise.)*
+
+---
+
+### Plan 1 — Fog
+
+**Outcome:** the ratchet works. The map fills in as they explore, and only what they earned is on it.
+**This is the version that is genuinely worth playing.**
+
+Rough shape — DM stages first, player stage last:
+
+- Drag-to-paint cells on the grid, freehand, so outside space works the same as rooms.
+- One-click stamp a room; a tri-state indicator (fully / partly / not shown) derived from the cell
+  set, never stored.
+- Reveal as a *consequence* of what the DM was already doing — opening a door reveals beyond it.
+  This is the stage's highest-risk item, because any design that adds a per-room DM action at the
+  table gets skipped and the player map silently rots.
+- The DM's first-class view of what the players can currently see, through the same transform.
+- Then: the curtain stops being a pass-through. One module changes, and one test flips from
+  "conceals nothing" to the real assertions.
+
+**Depends on:** Plan 0 only. No open branches block it.
+
+**Watch for:** treasure entries appearing before a room has been searched — named in *To watch* as
+the likeliest early leak, and possibly needing exclusion by default immediately.
+
+---
+
+### Plan 2 — Knowledge
+
+**Outcome:** a lock is something they learn, not something they are told.
+
+Rough shape:
+
+- The two-axis model proper: a knowledge record per object, ratcheting, stored in the same family as
+  fog and never confused with session state. **Open branch 4 — how knowledge is stored — must be
+  grilled before this plan is written.** Plan 0 settles the representation for cells only.
+- `PassageFlags` extended to room entries, so every object on the map carries the same flag set.
+  Nonsense combinations (`locked` on a fountain) simply go unused; a uniform shape sometimes left
+  blank is cheaper than four bespoke ones.
+- `searchDc` alongside `hiddenDc` — the DC to find what is concealed *within* a thing, as distinct
+  from the DC to notice the thing exists. A visible drawer can still hide a ruby.
+- DM mark-learnt affordances on any object: exists, lockable, trapped, contents.
+- Entry knowledge as permanent in-place DM edits, not a reversible overlay — honest for a persistent
+  school with no "next group".
+- Then: tapping a revealed room on the tablet shows what they know about it.
+
+**Depends on:** Plan 1, and open branch 4 closed.
+
+**Watch for:** wanting to *un*-know something, or to re-run a location fresh. Adding an overlay later
+is easier than removing one.
+
+---
+
+### Plan 3 — Identity and the personal zone
+
+**Outcome:** "Pip's Spells" as an owned object rather than a filtered list.
+
+Rough shape:
+
+- Profile picker — the pattern kids know from every console and streaming service. No login.
+- Ambient identity as a pure filter storing nothing, so switching is genuinely free.
+- The loud, per-character-coloured badge, via the MD3 custom-colour and harmonisation standard.
+- The kid Spells surface: big cards, one spell at a time, resolved quick-rules line as the headline.
+- Reconciling `player-spellbook-recovery.md`, which currently declares *"Operator: DM"* and *"no
+  global play/edit mode"* — framed around the DM reconstructing a lost paper sheet. The philosophies
+  agree; the framing does not.
+
+**Depends on:** Plan 0. Not Plans 1–2 — it touches a different zone entirely and could in principle
+be pulled forward if the personal surfaces turn out to matter more than the map.
+
+**Grill first — this is the one with real open branches in front of it:**
+
+- **Open branch 1 (gear and weapons)** and **open branch 2 (the shape of the personal surfaces)**
+  should be walked *before* this plan is written, not after. Branch 2 asks whether a kid surface
+  should be a *decision tree* — "what am I trying to do?" → "what do I have that does it?" → "what
+  happens?" — rather than a browsable list. If the answer is yes, it reshapes Spells, not just Gear.
+  Building a catalogue and then discovering you wanted a decision tree is the avoidable mistake here.
+- **Open branch 3** (whether the map shows the identity badge, or the shared surface stays
+  deliberately identity-free) is small and can be settled inside this plan.
+
+---
+
+### Not in the cycle
+
+**Open branch 6 — where these decisions eventually live.** Several of the settled decisions above are
+genuine ADRs, and `docs/adr/` still does not exist despite `CLAUDE.md` referencing it. This is not
+its own plan; fold it into the in-flight `docs-restructure`, which already owns docs folder layout.

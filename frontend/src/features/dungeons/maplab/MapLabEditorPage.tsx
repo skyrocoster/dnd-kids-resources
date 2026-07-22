@@ -4,6 +4,8 @@ import './MapLabEditor.css'
 import { MapLabRouteState } from './MapLabRouteState'
 import { useDungeonShellContext } from './dungeonRouteContext'
 import { useMapLabEditor } from './useMapLabEditor'
+import { listDungeons, listIncomingGateways } from '../../../api/client'
+import type { Dungeon, IncomingGateway } from '../../../api/types'
 import { useMapCanvasZoom, type ViewportSize } from './useMapCanvasZoom'
 import { MapCanvas } from './MapCanvas'
 import {
@@ -57,6 +59,7 @@ import {
   type MapCell,
   type MapFeature,
   type MapLayout,
+  type MapPortal,
   type MapRoom,
   type WallEdge,
   FEATURE_KIND_OPTIONS,
@@ -271,6 +274,11 @@ export function MapLabEditorPage() {
   const [placeDoorMode, setPlaceDoorMode] = useState(false)
   const [placePropMode, setPlacePropMode] = useState(false)
   const [featureToDelete, setFeatureToDelete] = useState<MapFeature | null>(null)
+  const [gatewayToRemove, setGatewayToRemove] = useState<MapPortal | null>(null)
+  const [dungeons, setDungeons] = useState<Dungeon[]>([])
+  const [incomingGateways, setIncomingGateways] = useState<IncomingGateway[]>([])
+  const [connectionsLoaded, setConnectionsLoaded] = useState(false)
+  const [connectionsLoadError, setConnectionsLoadError] = useState(false)
   const [placeStairMode, setPlaceStairMode] = useState(false)
   const [placePortalMode, setPlacePortalMode] = useState(false)
   const [drawFeatureKind, setDrawFeatureKind] = useState<'river' | 'trees' | null>(null)
@@ -495,6 +503,42 @@ export function MapLabEditorPage() {
       window.removeEventListener('mousedown', handleClickOutside)
     }
   }, [cellActionMenu])
+
+  useEffect(() => {
+    if (route.dungeonId === null) return
+    let cancelled = false
+    setConnectionsLoaded(false)
+    setConnectionsLoadError(false)
+    Promise.all([listDungeons(), listIncomingGateways(route.dungeonId)])
+      .then(([dungeonsResult, incomingGatewaysResult]) => {
+        if (cancelled) return
+        setDungeons(dungeonsResult)
+        setIncomingGateways(incomingGatewaysResult)
+        setConnectionsLoaded(true)
+      })
+      .catch(() => {
+        if (cancelled) return
+        setConnectionsLoadError(true)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [route.dungeonId])
+
+  const handleAddReturnGateway = useCallback(
+    (gateway: IncomingGateway) => {
+      const roomsHere = roomsOnZ(state.layout, state.activeZ)
+      const room = roomsHere[0] ?? roomsOnZ(state.layout, 0)[0]
+      const z = room?.z ?? state.activeZ
+      const cell: MapCell = room
+        ? absoluteCells(room).find((candidate) => markersAtCell(state.layout, z, candidate).length === 0) ??
+          absoluteCells(room)[0]
+        : [0, 0]
+      if (z !== state.activeZ) setActiveZ(z)
+      addPortal(cell, { dungeon_id: gateway.dungeon_id })
+    },
+    [addPortal, setActiveZ, state.activeZ, state.layout],
+  )
 
   if (route.status === 'loading' || layoutLoading) {
     return <MapLabRouteState title="Loading map editor" message="Loading dungeon layout…" variant="loading" />
@@ -851,10 +895,16 @@ export function MapLabEditorPage() {
 
           <ConnectionsResolveList
             layout={state.layout}
+            dungeons={dungeons}
+            incomingGateways={incomingGateways}
+            connectionsLoaded={connectionsLoaded}
+            connectionsLoadError={connectionsLoadError}
             onResolve={(portal) => {
               setActiveZ(portal.z)
               selectPortal(portal.portal_id)
             }}
+            onRemoveGateway={(portal) => setGatewayToRemove(portal)}
+            onAddReturnGateway={handleAddReturnGateway}
           />
         </div>
 
@@ -1632,6 +1682,7 @@ export function MapLabEditorPage() {
                 spec={FIXTURE_TYPES.portal}
                 values={selectedPortal as unknown as Record<string, unknown>}
                 layout={state.layout}
+                currentDungeonId={route.dungeonId ?? undefined}
                 onChange={(key, value) => updateFixtureFlags(selectedPortal.portal_id, 'portal', { [key]: value })}
               />
               <SelectionActions
@@ -1654,6 +1705,17 @@ export function MapLabEditorPage() {
             setFeatureToDelete(null)
           }}
           onCancel={() => setFeatureToDelete(null)}
+        />
+      )}
+
+      {gatewayToRemove && (
+        <ConfirmDialog
+          message={`Delete "${gatewayToRemove.title ?? `Portal ${gatewayToRemove.portal_id}`}"? This cannot be undone.`}
+          onConfirm={() => {
+            deletePortal(gatewayToRemove.portal_id)
+            setGatewayToRemove(null)
+          }}
+          onCancel={() => setGatewayToRemove(null)}
         />
       )}
     </div>

@@ -1,6 +1,6 @@
 # Reference Catalogs Area Guide
 
-> **Active plan:** [Weapon Quick Reference](../plans/active/weapon-quick-reference.md) — Stage 1 complete, Stage 2 (Copy as New) next.
+> **Active plan:** none.
 
 ## Scope
 
@@ -58,8 +58,9 @@ The browsers are prep surfaces even though they are also consulted at the table,
 
 ## Work queue
 
-- Execute [Weapon Quick Reference](../plans/active/weapon-quick-reference.md) after the shared
-  reference-text contract is available.
+- [Weapon Quick Reference](../complete/weapon-quick-reference.md) shipped required quick_rules on every
+  weapon, optional sheet-ready totals, Copy as New, cascade-aware delete confirmation, and an authored
+  quick-rules pass across all 218 seeded weapons.
 - [NPC Statblocks](../complete/npc-statblocks.md) shipped the monster-shaped
   NPC statblock contract, the dossier's combat half, the pull-from-monster panel, and adding an NPC to
   an encounter from their detail pane.

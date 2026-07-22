@@ -19,7 +19,8 @@
 
 @media (max-width: 520px) {
   .browser-layout--detail-open .split-pane-left,
-  .browser-layout--detail-open .split-pane-handle {
+  .browser-layout--detail-open .split-pane-handle,
+  .browser-layout--detail-open .split-pane-restore {
     display: none;
   }
 

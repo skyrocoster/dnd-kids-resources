@@ -1,9 +1,8 @@
 # Collapsible Catalog Rail — every browser can give its detail view more room
 
-> **Status:** Not started; next up for Visual Design after the Spell and Weapon quick-reference
-> foundations, preserving the agreed catalog-first sequence.
+> **Status:** Complete.
 
-- **Area guide:** [Visual Design](../../areas/visual-design.md)
+- **Area guide:** [Visual Design](../areas/visual-design.md)
 
 ## What we're building & why
 
@@ -56,3 +55,5 @@ Touch:        48px collapse/restore target. At the existing mobile breakpoint, r
 
 | Stage | What shipped (≤2 sentences) |
 |-------|------------------------------|
+| 1 | Shared SplitPane/BrowserLayout rail contract now supports optional collapse/restore, app-wide persisted expanded width, storage fallback, labelled icon controls, focus continuity, mobile suppression, and mounted child preservation. |
+| 2 | Weapons, Items, Players, NPCs, Spells, Monsters, Encounters, Loot Bundles, and Dungeons now opt into the shared BrowserLayout list rail collapse control. Catalog regression coverage verifies each browser exposes its labelled collapse button while preserving existing route-specific loading, empty, selection, action, and detail behavior coverage. |

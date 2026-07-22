@@ -1,9 +1,6 @@
 # Dungeon Connections — dungeons link to each other, and a session survives the walk between them
 
-> **Status:** Stages 1-2 shipped (permanent session state; optional portal destinations and the
-> connections resolve list). Next: Stage 3 — cross-dungeon gateways. [Dungeon
-> Outside](../../complete/dungeon-outside.md) complete — the two share `MapPortal` and `MapLayout` and
-> must not run concurrently.
+> **Status:** All 3 stages complete.
 
 - **Area guide:** [Dungeons](../../areas/dungeons.md)
 
@@ -137,3 +134,4 @@ Touch:        48px floor on resolve-list actions and the reset control. No new
 |-------|------------------------------|
 | 1 | Door/stair/portal session toggles moved off component-local `useState` into a new `map_session_state` table with GET/PUT/DELETE endpoints (mirroring `map_layout`) and a `useMapLabSessionState` hook that loads on mount, saves through immediately on every change, and exposes a reset. The "Reset dungeon" button now routes through `ConfirmDialog` naming the dungeon and stating finality. |
 | 2 | `MapPortal.to` is now optional and every read site (pairing lookup, click-to-navigate, inspector descriptor) guards against a missing destination instead of assuming one. A new `ConnectionsResolveList` renders in the editor's nav rail, listing every portal with no destination and a "Choose destination" action that jumps to its floor and opens its inspector; shows the exact empty-state copy when nothing is unresolved. |
+| 3 | `MapPortal.to` gains an optional `dungeon_id` (a gateway); in-dungeon auto-pairing is provably skipped for gateways so the editor never writes into another dungeon's layout document. `GET /api/dungeons/{id}/incoming-gateways` scans other dungeons' layouts for portals targeting this one. The destination picker offers "this dungeon" or "another dungeon"; a gateway renders with a distinct `GatewayPortalIcon`, names its destination dungeon in the inspector, and navigates to that dungeon's route on click. `ConnectionsResolveList` now also lists this dungeon's gateways whose target dungeon was deleted (`[repoint]`/`[remove]`, the latter through the standard `ConfirmDialog`) and other dungeons' gateways pointing here with no return portal ("Add the return gateway", which drops a new portal on a free cell in the first room on the active floor, falling back to floor 0 then `[0,0]`). The broken-gateway rule only applies once the dungeon list has loaded, and a connections load failure replaces the region with a `StatePanel` rather than rendering rows built from missing data. |

@@ -21,7 +21,11 @@ def test_list_weapons(test_client):
 
 def test_create_weapon(test_client):
     """Test POST /api/weapons."""
-    weapon = {"name": "Test Sword", "rarity": "uncommon"}
+    weapon = {
+        "name": "Test Sword",
+        "rarity": "uncommon",
+        "quick_rules": "Attack +{weapon_attack_bonus}, deal 1d8 slashing damage +{weapon_damage_bonus}.",
+    }
 
     response = test_client.post("/api/weapons", json=weapon)
     assert response.status_code == 201
@@ -31,7 +35,11 @@ def test_create_weapon(test_client):
 
 def test_weapon_crud(test_client):
     """Test full weapon CRUD."""
-    weapon = {"name": "CRUD Test", "rarity": "rare"}
+    weapon = {
+        "name": "CRUD Test",
+        "rarity": "rare",
+        "quick_rules": "Attack +{weapon_attack_bonus}, deal 1d8 slashing damage +{weapon_damage_bonus}.",
+    }
     response = test_client.post("/api/weapons", json=weapon)
     assert response.status_code == 201
     weapon_id = response.json()["id"]
@@ -61,6 +69,7 @@ def test_create_weapon_with_structured_fields(test_client):
         "property": ["H", "2H"],
         "attack": [{"type": "melee", "damage": "1d12", "damage_type": "slashing"}],
         "entries": ["A brutal two-handed axe."],
+        "quick_rules": "Attack +{weapon_attack_bonus}, deal 1d8 slashing damage +{weapon_damage_bonus}.",
     }
     response = test_client.post("/api/weapons", json=weapon)
     assert response.status_code == 201
@@ -73,13 +82,27 @@ def test_create_weapon_db_failure(monkeypatch, test_client):
     """Test POST /api/weapons when DB commit fails."""
     import backend.app.db as db_module
     monkeypatch.setattr(db_module, "get_conn", _mock_db_failure)
-    response = test_client.post("/api/weapons", json={"name": "Fail", "rarity": "common"})
+    response = test_client.post(
+        "/api/weapons",
+        json={
+            "name": "Fail",
+            "rarity": "common",
+            "quick_rules": "Attack +{weapon_attack_bonus}, deal 1d8 slashing damage +{weapon_damage_bonus}.",
+        },
+    )
     assert response.status_code == 400
 
 
 def test_delete_weapon_db_failure(monkeypatch, test_client):
     """Test DELETE /api/weapons when DB commit fails."""
-    response = test_client.post("/api/weapons", json={"name": "FailDelete", "rarity": "common"})
+    response = test_client.post(
+        "/api/weapons",
+        json={
+            "name": "FailDelete",
+            "rarity": "common",
+            "quick_rules": "Attack +{weapon_attack_bonus}, deal 1d8 slashing damage +{weapon_damage_bonus}.",
+        },
+    )
     weapon_id = response.json()["id"]
     import backend.app.db as db_module
     monkeypatch.setattr(db_module, "get_conn", _mock_db_failure)

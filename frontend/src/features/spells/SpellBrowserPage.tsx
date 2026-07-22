@@ -196,6 +196,7 @@ export function SpellBrowserPage() {
         actions={<Button type="button" onClick={openCreate}>New Spell</Button>}
         error={spellsRemote.status === 'error' ? spellsRemote.error : null}
         listLabel="spell list"
+        listCollapsible
         list={
             <SearchList
               items={spells}

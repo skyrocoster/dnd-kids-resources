@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useNavigate } from 'react-router-dom'
 import './MapLabPage.css'
 import { ConfirmDialog } from '../../../components/ConfirmDialog'
 import { FloatingWindow } from '../../../components/FloatingWindow'
+import { listDungeons } from '../../../api/client'
 import { MapLabRouteState } from './MapLabRouteState'
 import { useDungeonShellContext } from './dungeonRouteContext'
 import { useMapLabLayout } from './useMapLabLayout'
@@ -249,6 +251,8 @@ export function ToolbarTray({
 /** Map Lab prototype page — Stage M2.3: walls, and door/stair affordances with state + details. */
 export function MapLabPage() {
   const route = useDungeonShellContext()
+  const navigate = useNavigate()
+  const [otherDungeonTitles, setOtherDungeonTitles] = useState<Record<number, string>>({})
   const { layout, loading: layoutLoading, status: layoutStatus, error: layoutError } = useMapLabLayout(route.dungeonId)
   const [parsed, setParsed] = useState(() => parseDungeonData(route.dungeon?.data ?? {}))
   const floors = useMemo(() => floorsInLayout(layout), [layout])
@@ -279,6 +283,12 @@ export function MapLabPage() {
   useEffect(() => {
     setParsed(parseDungeonData(route.dungeon?.data ?? {}))
   }, [route.dungeon?.data])
+
+  useEffect(() => {
+    listDungeons()
+      .then((dungeons) => setOtherDungeonTitles(Object.fromEntries(dungeons.map((d) => [d.id, d.title]))))
+      .catch(() => setOtherDungeonTitles({}))
+  }, [])
 
   useEffect(() => {
     if (floors.length === 0) return
@@ -766,7 +776,13 @@ export function MapLabPage() {
                 onMouseLeave={() => setHoveredInspectable(null)}
                 onFocus={() => setFocusedInspectable({ kind: 'portal', id: portal.portal_id })}
                 onBlur={() => setFocusedInspectable(null)}
-                onClick={() => portal.to && setActiveZ(portal.to.z)}
+                onClick={() => {
+                  if (portal.to?.dungeon_id !== undefined) {
+                    navigate(`/dungeons/${portal.to.dungeon_id}`)
+                  } else if (portal.to?.z !== undefined) {
+                    setActiveZ(portal.to.z)
+                  }
+                }}
               />
             )
           })}
@@ -800,7 +816,15 @@ export function MapLabPage() {
         <div className="maplab-sidebar">
           <div className="maplab-inspector-panel-container" aria-live="polite">
             {activeInspectable ? (
-              <InspectorPanel target={activeInspectable} controls={activeControls} />
+              <InspectorPanel
+                target={activeInspectable}
+                controls={activeControls}
+                context={
+                  activeInspectable.kind === 'portal' && activeInspectable.portal.to?.dungeon_id !== undefined
+                    ? { dungeonTitle: otherDungeonTitles[activeInspectable.portal.to.dungeon_id] }
+                    : undefined
+                }
+              />
             ) : (
               <p className="maplab-affordance-placeholder">Hover or focus a room, door, stair, or prop for details.</p>
             )}

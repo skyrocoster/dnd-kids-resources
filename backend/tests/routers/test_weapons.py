@@ -145,3 +145,37 @@ class TestWeaponSheetReadyTotals:
         assert get_resp.status_code == 200
         assert get_resp.json()["weapon_attack_bonus"] == 8
         assert get_resp.json()["weapon_damage_bonus"] == 4
+
+
+class TestWeaponDeletionSafety:
+    def test_get_players_lists_assignees(self, test_client):
+        weapon_id = test_client.post("/api/weapons", json=_VALID_PAYLOAD).json()["id"]
+        player_id = test_client.post("/api/players", json={"name": "Aria", "class_": "Fighter", "level": 3}).json()["id"]
+        test_client.post(f"/api/players/{player_id}/weapons/{weapon_id}")
+
+        resp = test_client.get(f"/api/weapons/{weapon_id}/players")
+        assert resp.status_code == 200
+        names = [p["name"] for p in resp.json()]
+        assert names == ["Aria"]
+
+    def test_get_players_empty_for_unassigned_weapon(self, test_client):
+        weapon_id = test_client.post("/api/weapons", json=_VALID_PAYLOAD).json()["id"]
+
+        resp = test_client.get(f"/api/weapons/{weapon_id}/players")
+        assert resp.status_code == 200
+        assert resp.json() == []
+
+    def test_get_players_404_for_missing_weapon(self, test_client):
+        resp = test_client.get("/api/weapons/999999/players")
+        assert resp.status_code == 404
+
+    def test_delete_cascades_player_assignment(self, test_client):
+        weapon_id = test_client.post("/api/weapons", json=_VALID_PAYLOAD).json()["id"]
+        player_id = test_client.post("/api/players", json={"name": "Bram", "class_": "Rogue", "level": 2}).json()["id"]
+        test_client.post(f"/api/players/{player_id}/weapons/{weapon_id}")
+
+        resp = test_client.delete(f"/api/weapons/{weapon_id}")
+        assert resp.status_code == 204
+
+        remaining = test_client.get(f"/api/players/{player_id}/weapons").json()
+        assert remaining == []

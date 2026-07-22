@@ -174,7 +174,11 @@ values cluster around 0.5rem–1.5rem in practice. VW/VT stages adopt the spacin
 - **`SplitPane`** — the visible divider stays 4px wide (unchanged), but `.split-pane-handle::before` adds an
   absolutely positioned, invisible hit-target region (14px on each side) so pointer users get a much larger
   resize target without any layout shift or visual width change. Keyboard resizing (arrow/Home/End on the
-  focused separator) was already implemented in VF1 and is unchanged.
+  focused separator) remains available when expanded and is absent while collapsed. When enabled by
+  `BrowserLayout`'s `listCollapsible` prop, the list rail has labelled icon buttons to collapse/restore, keeps
+  children mounted so search/selection/scroll state survives, and persists collapse state plus last expanded width in
+  `localStorage` under `dnd-kids-browser-rail` with an in-memory fallback. At the 520px mobile breakpoint the
+  shared collapse controls are suppressed so existing list/detail navigation owns the narrow layout.
 - **Shared form controls** (`form/form.css`'s `.form-control`, consumed by `TextField`/`SelectField`) — meet the
   48px floor via `min-height: var(--control-height)`; `.form-field-checkbox` (consumed by `CheckboxField` and
   `MultiSelectField`) does the same for its checkbox+label row. `.form-textarea`'s explicit `6rem` min-height

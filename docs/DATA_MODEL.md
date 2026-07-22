@@ -87,7 +87,7 @@ Some tables store complex structured data as JSON strings. Router and database h
 | `npcs` | `sizes`, `ac`, `hp`, `speed`, `abilities`, `saving_throws`, `skills`, `damage_resistances`, `damage_immunities`, `damage_vulnerabilities`, `senses`, `languages`, `features` | Same monster statblock projection as the `monsters` columns above — an NPC's combat half is copied field-for-field from a monster, never translated | (see matching `monsters` rows) |
 | `encounter` | `units` | List of source-backed creature or manual player roster entries | `[{"creature_id":1,"source_kind":"monster","name":"Goblin","hp_current":7}, ...]` |
 | `dungeons` | `data` | DungeonData shape: general_info and rooms (with entries, NPCs); map geometry and navigation fixtures are not stored here | (large JSON blob per dungeon) |
-| `map_layout` | `data` | MapLayout blob: rooms, doors, stairs, floors, props, portals, fixtures. Props may soft-reference a loot bundle by `bundle_id` with cached `bundle_name`; bundle contents resolve live. | (JSON blob per dungeon) |
+| `map_layout` | `data` | MapLayout blob: rooms, doors, stairs, floors, props, portals, fixtures. Props may soft-reference a loot bundle by `bundle_id` with cached `bundle_name`; bundle contents resolve live. A portal's `to` is optional (`{"z", "cell"}` for an in-dungeon pair, or `{"dungeon_id"}` for a cross-dungeon gateway) and is a one-way reference — no foreign key, no cascade, no reverse index; `GET /api/dungeons/{id}/incoming-gateways` scans other dungeons' blobs to surface the other side. | (JSON blob per dungeon) |
 | `map_session_state` | `data` | Session overrides for doors/stairs/portals: `{"doors": {...}, "stairs": {...}, "portals": {...}}`, each a map from fixture id to `{"isOpen", "isLocked", "trapDisarmed"}`. Opaque to the backend — same treatment as `map_layout.data`. | (JSON blob per dungeon) |
 | `player_spells` | (implicit in junction) | (Many-to-many, no direct column; routes expose via `/players/{id}/spells`) | |
 | `player_weapons` | (implicit in junction) | (Many-to-many, no direct column; routes expose via `/players/{id}/weapons`) | |
@@ -373,7 +373,6 @@ Indexes: `sqlite_autoindex_npcs_1`.
 | `id` | `INTEGER` | yes | `-` |
 | `player_id` | `INTEGER` | yes | `-` |
 | `spell_id` | `INTEGER` | yes | `-` |
-| `at_will` | `BOOLEAN` | yes | `0` |
 | `added_at` | `DATETIME` | no | `CURRENT_TIMESTAMP` |
 
 Foreign keys: `spell_id` -> `spells.id` (CASCADE), `player_id` -> `players.id` (CASCADE).
@@ -399,10 +398,35 @@ Indexes: `sqlite_autoindex_player_weapons_1`.
 |---|---|---|---|
 | `id` | `INTEGER` | yes | `-` |
 | `name` | `TEXT` | yes | `'Unnamed Player'` |
+| `child_name` | `TEXT` | no | `-` |
 | `class` | `TEXT` | no | `-` |
+| `subclass` | `TEXT` | no | `-` |
 | `level` | `INTEGER` | no | `-` |
-| `total_spell_slots` | `TEXT` | no | `'{}'` |
-| `current_spell_slots` | `TEXT` | no | `'{}'` |
+| `ancestry` | `TEXT` | no | `-` |
+| `background` | `TEXT` | no | `-` |
+| `sizes` | `TEXT` | yes | `'[]'` |
+| `alignment` | `TEXT` | no | `-` |
+| `creature_type` | `TEXT` | no | `-` |
+| `ac` | `TEXT` | no | `-` |
+| `hp` | `TEXT` | no | `-` |
+| `speed` | `TEXT` | yes | `'[]'` |
+| `abilities` | `TEXT` | no | `-` |
+| `saving_throws` | `TEXT` | yes | `'{}'` |
+| `skills` | `TEXT` | yes | `'{}'` |
+| `passive_perception` | `INTEGER` | no | `-` |
+| `damage_resistances` | `TEXT` | yes | `'[]'` |
+| `damage_immunities` | `TEXT` | yes | `'[]'` |
+| `damage_vulnerabilities` | `TEXT` | yes | `'[]'` |
+| `condition_immunities` | `TEXT` | yes | `'[]'` |
+| `senses` | `TEXT` | yes | `'[]'` |
+| `languages` | `TEXT` | yes | `'[]'` |
+| `features` | `TEXT` | yes | `'{}'` |
+| `initiative` | `INTEGER` | no | `-` |
+| `proficiency_bonus` | `INTEGER` | no | `-` |
+| `spell_attack_bonus` | `INTEGER` | no | `-` |
+| `spell_save_dc` | `INTEGER` | no | `-` |
+| `max_spell_slots` | `TEXT` | no | `'{}'` |
+| `notes` | `TEXT` | no | `-` |
 | `created_at` | `DATETIME` | no | `CURRENT_TIMESTAMP` |
 | `updated_at` | `DATETIME` | no | `CURRENT_TIMESTAMP` |
 

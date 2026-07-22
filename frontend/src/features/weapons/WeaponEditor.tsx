@@ -15,6 +15,7 @@ import './WeaponEditor.css'
 
 interface WeaponEditorProps {
   weapon?: Weapon
+  draftWeapon?: Weapon
   onClose: () => void
   onSaved: (weapon: Weapon) => void
 }
@@ -25,9 +26,11 @@ const ATTACK_TYPE_OPTIONS = [
   { value: 'ranged', label: 'Ranged' },
 ]
 
-export function WeaponEditor({ weapon, onClose, onSaved }: WeaponEditorProps) {
+export function WeaponEditor({ weapon, draftWeapon, onClose, onSaved }: WeaponEditorProps) {
   const formId = useId()
-  const [form, setForm] = useState<WeaponFormState>(() => (weapon ? weaponToFormState(weapon) : emptyWeaponForm()))
+  const [form, setForm] = useState<WeaponFormState>(() =>
+    weapon ? weaponToFormState(weapon) : draftWeapon ? weaponToFormState(draftWeapon) : emptyWeaponForm(),
+  )
   const [propertyOptions, setPropertyOptions] = useState<{ value: string; label: string }[]>([])
   const [damageTypeOptions, setDamageTypeOptions] = useState<{ value: string; label: string }[]>([])
   const [status, setStatus] = useState<{ message: string; kind?: 'error' | 'success' }>({ message: '' })

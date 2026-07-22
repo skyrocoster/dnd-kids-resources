@@ -1,5 +1,5 @@
 .player-editor-dialog {
-  width: min(520px, 96vw);
+  width: min(760px, 96vw);
 }
 
 .player-editor-status {
@@ -17,9 +17,52 @@
   color: var(--md-primary);
 }
 
+.player-editor-validation {
+  color: var(--md-error);
+  margin: 0 0 1rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 0.75rem;
+  background: var(--md-surface-2);
+  border: 1px solid color-mix(in srgb, var(--md-error) 28%, var(--md-outline-variant));
+  list-style: disc;
+  padding-left: 2rem;
+}
+
+.player-editor-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.player-editor-fieldset {
+  border: 1px solid var(--md-outline-variant);
+  border-radius: 1rem;
+  padding: 1.1rem 1.25rem 1.25rem;
+  background: var(--md-surface-1);
+}
+
+.player-editor-fieldset legend {
+  font-weight: var(--type-title-weight);
+  padding: 0 0.6rem;
+}
+
 .player-editor-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   gap: 0 1rem;
+}
+
+.player-editor-ability-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 0 0.75rem;
+  margin-bottom: 1rem;
+}
+
+@media (max-width: 520px) {
+  .player-editor-grid,
+  .player-editor-ability-grid {
+    grid-template-columns: 1fr;
+  }
 }
 

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-import { listEncounters, listLootBundles } from '../../../api/client'
-import type { Encounter, LootBundle } from '../../../api/types'
+import { listDungeons, listEncounters, listLootBundles } from '../../../api/client'
+import type { Dungeon, Encounter, LootBundle } from '../../../api/types'
 import type { FieldSpec, FixtureTypeSpec } from './fixtureTypes'
 import { absoluteCells, floorsInLayout, markersAtCell, roomsOnZ, type MapCell, type MapLayout, type MapRoom } from './maplabModel'
 
@@ -11,19 +11,29 @@ interface FixturePropertiesFormProps {
   /** Only required when `spec.fields` includes a `destinationPicker` field (stairs/portals) — the
    * floor list and room geometry it renders come from the live layout, not a static option list. */
   layout?: MapLayout
+  /** Only required for a `destinationPicker` field — excludes the current dungeon from the
+   * "another dungeon" gateway picker's option list. */
+  currentDungeonId?: number
 }
 
 /** Renders any `FieldSpec[]` generically — boolean fields as toggles, number/text as inputs,
  * honoring each field's `showWhen` gate. Doors are the only registered fixture type today; a
  * future `window`/`chest` entry in `FIXTURE_TYPES` renders through this same component with no
  * form rewrite, per the Phase D registry seam. */
-export function FixturePropertiesForm({ spec, values, onChange, layout }: FixturePropertiesFormProps) {
+export function FixturePropertiesForm({ spec, values, onChange, layout, currentDungeonId }: FixturePropertiesFormProps) {
   return (
     <div className="maplab-fixture-form">
       {spec.fields
         .filter((field) => !field.showWhen || field.showWhen(values))
         .map((field) => (
-          <FixtureField key={field.key} field={field} value={values[field.key]} onChange={onChange} layout={layout} />
+          <FixtureField
+            key={field.key}
+            field={field}
+            value={values[field.key]}
+            onChange={onChange}
+            layout={layout}
+            currentDungeonId={currentDungeonId}
+          />
         ))}
     </div>
   )
@@ -34,11 +44,13 @@ function FixtureField({
   value,
   onChange,
   layout,
+  currentDungeonId,
 }: {
   field: FieldSpec
   value: unknown
   onChange: (key: string, value: unknown) => void
   layout?: MapLayout
+  currentDungeonId?: number
 }) {
   const inputId = `maplab-field-${field.key}`
 
@@ -84,7 +96,16 @@ function FixtureField({
   }
 
   if (field.type === 'destinationPicker') {
-    return <DestinationPickerField inputId={inputId} field={field} value={value} onChange={onChange} layout={layout} />
+    return (
+      <DestinationPickerField
+        inputId={inputId}
+        field={field}
+        value={value}
+        onChange={onChange}
+        layout={layout}
+        currentDungeonId={currentDungeonId}
+      />
+    )
   }
 
   if (field.type === 'number') {
@@ -167,6 +188,15 @@ function isDestinationValue(value: unknown): value is { z: number; cell: MapCell
   )
 }
 
+function isGatewayValue(value: unknown): value is { dungeon_id: number } {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'dungeon_id' in value &&
+    typeof (value as { dungeon_id: unknown }).dungeon_id === 'number'
+  )
+}
+
 /** Cells in `room` not already occupied by another marker (stair/portal/on-square prop) on floor
  * `z` — falls back to every cell in the room if all of them are already occupied (the grouped
  * marker layout supports up to `MAX_MARKERS_PER_CELL` sharing one cell anyway). */
@@ -192,19 +222,69 @@ function DestinationPickerField({
   value,
   onChange,
   layout,
+  currentDungeonId,
 }: {
   inputId: string
   field: FieldSpec
   value: unknown
   onChange: (key: string, value: unknown) => void
   layout?: MapLayout
+  currentDungeonId?: number
+}) {
+  const [mode, setMode] = useState<'here' | 'elsewhere'>(isGatewayValue(value) ? 'elsewhere' : 'here')
+
+  if (!layout) return null
+
+  return (
+    <div className="maplab-field-row maplab-destination-picker" role="group" aria-label={field.label}>
+      <div className="maplab-destination-mode" role="radiogroup" aria-label={`${field.label} scope`}>
+        <label>
+          <input
+            type="radio"
+            name={`${inputId}-mode`}
+            checked={mode === 'here'}
+            onChange={() => setMode('here')}
+          />
+          This dungeon
+        </label>
+        <label>
+          <input
+            type="radio"
+            name={`${inputId}-mode`}
+            checked={mode === 'elsewhere'}
+            onChange={() => setMode('elsewhere')}
+          />
+          Another dungeon
+        </label>
+      </div>
+      {mode === 'here' ? (
+        <InDungeonDestinationPicker inputId={inputId} field={field} value={value} onChange={onChange} layout={layout} />
+      ) : (
+        <GatewayDestinationPicker inputId={inputId} field={field} value={value} onChange={onChange} currentDungeonId={currentDungeonId} />
+      )}
+    </div>
+  )
+}
+
+function InDungeonDestinationPicker({
+  inputId,
+  field,
+  value,
+  onChange,
+  layout,
+}: {
+  inputId: string
+  field: FieldSpec
+  value: unknown
+  onChange: (key: string, value: unknown) => void
+  layout: MapLayout
 }) {
   const destination = isDestinationValue(value) ? value : null
-  const floors = useMemo(() => (layout ? floorsInLayout(layout) : []), [layout])
+  const floors = useMemo(() => floorsInLayout(layout), [layout])
   const [pickerZ, setPickerZ] = useState<number>(destination?.z ?? floors[0]?.z ?? 0)
 
   const roomsOnPickerFloor = useMemo(
-    () => (layout ? roomsOnZ(layout, pickerZ) : []),
+    () => roomsOnZ(layout, pickerZ),
     [layout, pickerZ]
   )
 
@@ -216,10 +296,8 @@ function DestinationPickerField({
     return room ? String(room.room_id) : ''
   }, [destination, pickerZ, roomsOnPickerFloor])
 
-  if (!layout) return null
-
   function handleRoomChange(roomIdValue: string) {
-    if (roomIdValue === '' || !layout) return
+    if (roomIdValue === '') return
     const room = roomsOnPickerFloor.find((candidate) => candidate.room_id === Number(roomIdValue))
     if (!room) return
     const cell = pickRandomCell(freeCellsInRoom(layout, pickerZ, room))
@@ -227,7 +305,7 @@ function DestinationPickerField({
   }
 
   return (
-    <div className="maplab-field-row maplab-destination-picker" role="group" aria-label={field.label}>
+    <>
       <label htmlFor={`${inputId}-floor`}>Floor</label>
       <select
         id={`${inputId}-floor`}
@@ -258,7 +336,62 @@ function DestinationPickerField({
           {`Floor ${destination.z}, cell ${destination.cell[0]}, ${destination.cell[1]}`}
         </span>
       )}
-    </div>
+    </>
+  )
+}
+
+/** Picks another dungeon as a portal's gateway target — a plain dropdown of every dungeon except
+ * the one being edited, producing `{ dungeon_id }`. This document has no access to the target
+ * dungeon's layout, so unlike the in-dungeon picker there is no floor/room/cell to choose. */
+function GatewayDestinationPicker({
+  inputId,
+  field,
+  value,
+  onChange,
+  currentDungeonId,
+}: {
+  inputId: string
+  field: FieldSpec
+  value: unknown
+  onChange: (key: string, value: unknown) => void
+  currentDungeonId?: number
+}) {
+  const [dungeons, setDungeons] = useState<Dungeon[]>([])
+
+  useEffect(() => {
+    listDungeons()
+      .then(setDungeons)
+      .catch(() => setDungeons([]))
+  }, [])
+
+  const options = dungeons.filter((dungeon) => dungeon.id !== currentDungeonId)
+  const selected = isGatewayValue(value) ? String(value.dungeon_id) : ''
+  const selectedDungeon = isGatewayValue(value) ? dungeons.find((dungeon) => dungeon.id === value.dungeon_id) : undefined
+
+  return (
+    <>
+      <label htmlFor={inputId}>Dungeon</label>
+      <select
+        id={inputId}
+        value={selected}
+        onChange={(event) => {
+          if (event.target.value === '') return
+          onChange(field.key, { dungeon_id: Number(event.target.value) })
+        }}
+      >
+        <option value="">Select a dungeon…</option>
+        {options.map((dungeon) => (
+          <option key={dungeon.id} value={dungeon.id}>
+            {dungeon.title}
+          </option>
+        ))}
+      </select>
+      {selected && (
+        <span className="maplab-destination-picker-summary">
+          {`Leaves to ${selectedDungeon?.title ?? 'another dungeon'}`}
+        </span>
+      )}
+    </>
   )
 }
 

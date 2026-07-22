@@ -63,6 +63,9 @@ When adding a new endpoint:
 | POST | `/api/weapons` | Create weapon | `WeaponCreate` | `Weapon` (201) |
 | PUT | `/api/weapons/{weapon_id}` | Update weapon | `WeaponUpdate` | `Weapon` |
 | DELETE | `/api/weapons/{weapon_id}` | Delete weapon | (path param) | (204 No Content) |
+| GET | `/api/weapons/{weapon_id}/players` | List players a weapon is assigned to (used for delete-confirmation copy) | (path param) | `List[Player]` |
+
+Deleting a weapon relies on the existing `player_weapons.weapon_id` foreign key with `ON DELETE CASCADE` (see `scripts/init_database.py`) to remove assignment rows; no application code performs the cascade.
 
 ---
 
@@ -105,10 +108,13 @@ When adding a new endpoint:
 | POST | `/api/players` | Create player | `PlayerCreate` | `Player` (201) |
 | PUT | `/api/players/{player_id}` | Update player | `PlayerUpdate` | `Player` |
 | DELETE | `/api/players/{player_id}` | Delete player | (path param) | (204 No Content) |
+| GET | `/api/players/{player_id}/detail` | Fetch complete player detail with spells and weapons | (path param) | `PlayerDetail` |
 | GET | `/api/players/{player_id}/spells` | List player's spells | (path param) | `List[Spell]` |
+| PUT | `/api/players/{player_id}/spells` | Replace all spell assignments atomically | `PlayerSpellAssignments` | `List[Spell]` |
 | POST | `/api/players/{player_id}/spells/{spell_id}` | Add spell to player's roster | (path params) | (201 No Content) |
 | DELETE | `/api/players/{player_id}/spells/{spell_id}` | Remove spell from player's roster | (path params) | (204 No Content) |
 | GET | `/api/players/{player_id}/weapons` | List player's weapons | (path param) | `List[Weapon]` |
+| PUT | `/api/players/{player_id}/weapons` | Replace all weapon assignments atomically | `PlayerWeaponAssignments` | `List[Weapon]` |
 | POST | `/api/players/{player_id}/weapons/{weapon_id}` | Add weapon to player's roster | (path params) | (201 No Content) |
 | DELETE | `/api/players/{player_id}/weapons/{weapon_id}` | Remove weapon from player's roster | (path params) | (204 No Content) |
 
@@ -169,8 +175,9 @@ behavior and is separate from `source_kind`. No database foreign key is enforced
 |---|---|---|---|---|
 | GET | `/api/dungeons/{dungeon_id}/layout` | Fetch dungeon map layout | (path param) | `MapLayoutBlob` |
 | PUT | `/api/dungeons/{dungeon_id}/layout` | Save/update dungeon map layout | `MapLayoutBlob` | `MapLayoutBlob` |
+| GET | `/api/dungeons/{dungeon_id}/incoming-gateways` | List every other dungeon's portal whose `to.dungeon_id` targets this dungeon | (path param) | `List[IncomingGateway]` |
 
-Layout data (`map_layout`) and dungeon content data (`dungeons.data`) are saved independently via separate endpoints and debounced separately in the editor.
+Layout data (`map_layout`) and dungeon content data (`dungeons.data`) are saved independently via separate endpoints and debounced separately in the editor. `incoming-gateways` scans every other dungeon's layout blob on each request (no reverse index) — acceptable at this dungeon count, and the only way to surface a one-way, unpaired cross-dungeon link (see Dungeon Connections' "Links are one-way in the data" decision).
 
 ---
 
@@ -260,12 +267,13 @@ All request and response body shapes are defined in `backend/app/schemas.py` as 
 - **Weapon:** id, name, base_weapon, rarity, weapon_category, weight, req_attune, property (JSON), focus (JSON), attack (JSON), entries (JSON), quick_rules, weapon_attack_bonus, weapon_damage_bonus
 - **Item:** id, name, value_gp, category, description
 - **LootBundle:** id, name, gold, contents (JSON loot-entry array)
-- **Player:** id, name, class_, level
+- **Player:** id, name, child_name, class_, subclass, level, ancestry, background, sizes (JSON), alignment, creature_type (JSON), ac (JSON), hp (JSON), speed (JSON), abilities (JSON), saving_throws (JSON), skills (JSON), passive_perception, damage_resistances (JSON), damage_immunities (JSON), damage_vulnerabilities (JSON), condition_immunities (JSON), senses (JSON), languages (JSON), features (JSON), initiative, proficiency_bonus, spell_attack_bonus, spell_save_dc, max_spell_slots (JSON), notes
 - **NPC:** id, name, race, gender, background, appearance (JSON), notes, plus the monster statblock projection — sizes (JSON), alignment, creature_type (JSON), ac (JSON), hp (JSON), speed (JSON), abilities (JSON), saving_throws (JSON), skills (JSON), passive_perception, damage_resistances (JSON), damage_immunities (JSON), damage_vulnerabilities (JSON), condition_immunities (JSON), senses (JSON), languages (JSON), features (JSON), cr, cr_note, experience_points
 - **Encounter:** id, title, creatures (JSON entries with optional `creature_id` and `source_kind`), active_index
 - **Dungeon:** id, title, data (JSON)
 - **MapLayoutBlob:** data (JSON)
 - **MapSessionStateBlob:** data (JSON)
+- **IncomingGateway:** dungeon_id, dungeon_title, portal_id, title, z, cell (JSON list)
 
 All optional fields are `Optional[...]` in the schema; required fields have no `Optional` wrapper. For full detail, read the schema definitions directly in the source file.
 
@@ -282,6 +290,7 @@ All optional fields are `Optional[...]` in the schema; required fields have no `
 | DELETE | `/api/dungeons/{dungeon_id}` | `dungeon_id` (path, required) | - | 204: -, 422: HTTPValidationError |
 | GET | `/api/dungeons/{dungeon_id}` | `dungeon_id` (path, required) | - | 200: Dungeon, 422: HTTPValidationError |
 | PUT | `/api/dungeons/{dungeon_id}` | `dungeon_id` (path, required) | DungeonUpdate | 200: Dungeon, 422: HTTPValidationError |
+| GET | `/api/dungeons/{dungeon_id}/incoming-gateways` | `dungeon_id` (path, required) | - | 200: List[IncomingGateway], 422: HTTPValidationError |
 | GET | `/api/dungeons/{dungeon_id}/layout` | `dungeon_id` (path, required) | - | 200: MapLayoutBlob, 422: HTTPValidationError |
 | PUT | `/api/dungeons/{dungeon_id}/layout` | `dungeon_id` (path, required) | MapLayoutBlob | 200: MapLayoutBlob, 422: HTTPValidationError |
 | DELETE | `/api/dungeons/{dungeon_id}/session-state` | `dungeon_id` (path, required) | - | 204: -, 422: HTTPValidationError |
@@ -337,10 +346,13 @@ All optional fields are `Optional[...]` in the schema; required fields have no `
 | DELETE | `/api/players/{player_id}` | `player_id` (path, required) | - | 204: -, 422: HTTPValidationError |
 | GET | `/api/players/{player_id}` | `player_id` (path, required) | - | 200: Player, 422: HTTPValidationError |
 | PUT | `/api/players/{player_id}` | `player_id` (path, required) | PlayerUpdate | 200: Player, 422: HTTPValidationError |
+| GET | `/api/players/{player_id}/detail` | `player_id` (path, required) | - | 200: PlayerDetail, 422: HTTPValidationError |
 | GET | `/api/players/{player_id}/spells` | `player_id` (path, required) | - | 200: List[Spell], 422: HTTPValidationError |
+| PUT | `/api/players/{player_id}/spells` | `player_id` (path, required) | PlayerSpellAssignments | 200: List[Spell], 422: HTTPValidationError |
 | DELETE | `/api/players/{player_id}/spells/{spell_id}` | `player_id` (path, required), `spell_id` (path, required) | - | 204: -, 422: HTTPValidationError |
 | POST | `/api/players/{player_id}/spells/{spell_id}` | `player_id` (path, required), `spell_id` (path, required) | - | 201: -, 422: HTTPValidationError |
 | GET | `/api/players/{player_id}/weapons` | `player_id` (path, required) | - | 200: List[Weapon], 422: HTTPValidationError |
+| PUT | `/api/players/{player_id}/weapons` | `player_id` (path, required) | PlayerWeaponAssignments | 200: List[Weapon], 422: HTTPValidationError |
 | DELETE | `/api/players/{player_id}/weapons/{weapon_id}` | `player_id` (path, required), `weapon_id` (path, required) | - | 204: -, 422: HTTPValidationError |
 | POST | `/api/players/{player_id}/weapons/{weapon_id}` | `player_id` (path, required), `weapon_id` (path, required) | - | 201: -, 422: HTTPValidationError |
 | GET | `/api/skills` | - | - | 200: List[Skill] |
@@ -360,5 +372,6 @@ All optional fields are `Optional[...]` in the schema; required fields have no `
 | DELETE | `/api/weapons/{weapon_id}` | `weapon_id` (path, required) | - | 204: -, 422: HTTPValidationError |
 | GET | `/api/weapons/{weapon_id}` | `weapon_id` (path, required) | - | 200: Weapon, 422: HTTPValidationError |
 | PUT | `/api/weapons/{weapon_id}` | `weapon_id` (path, required) | WeaponUpdate | 200: Weapon, 422: HTTPValidationError |
+| GET | `/api/weapons/{weapon_id}/players` | `weapon_id` (path, required) | - | 200: List[Player], 422: HTTPValidationError |
 <!-- GENERATED:API:END -->
 

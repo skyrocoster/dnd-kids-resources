@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import * as api from '../../api/client'
-import type { Weapon } from '../../api/types'
+import type { Weapon, WeaponAttackEntry } from '../../api/types'
 import { Card } from '../../components/Card'
 import { BrowserLayout } from '../../components/BrowserLayout'
 import { Button } from '../../components/Button'
@@ -11,10 +11,24 @@ import { StatePanel } from '../../components/StatePanel'
 import { initialRemoteState, remoteError, remoteLoading, remoteSuccess } from '../../components/remoteState'
 import type { RemoteState } from '../../components/remoteState'
 import { SwordsIcon } from '../../components/icons'
+import { ReferenceText, weaponValueReferenceRegistry } from '../../components/referenceText'
 import { WeaponEditor } from './WeaponEditor'
 import './WeaponBrowserPage.css'
 
-function describeAttack(attack: Record<string, unknown>): string {
+function formatNameList(names: string[]): string {
+  if (names.length === 0) return ''
+  if (names.length === 1) return names[0]
+  if (names.length === 2) return `${names[0]} and ${names[1]}`
+  return `${names.slice(0, -1).join(', ')}, and ${names[names.length - 1]}`
+}
+
+function deleteConfirmMessage(weapon: Weapon, assignedNames: string[]): string {
+  const base = `Delete "${weapon.name}"? This cannot be undone.`
+  if (assignedNames.length === 0) return base
+  return `${base} ${formatNameList(assignedNames)} will lose this weapon assignment.`
+}
+
+function describeAttack(attack: WeaponAttackEntry): string {
   const type = typeof attack.type === 'string' ? attack.type : ''
   const damage = typeof attack.damage === 'string' ? attack.damage : ''
   const damageType = typeof attack.damage_type === 'string' ? attack.damage_type : ''
@@ -37,7 +51,10 @@ export function WeaponBrowserPage() {
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [editorOpen, setEditorOpen] = useState(false)
   const [editingWeapon, setEditingWeapon] = useState<Weapon | undefined>(undefined)
+  const [draftWeapon, setDraftWeapon] = useState<Weapon | undefined>(undefined)
   const [pendingDelete, setPendingDelete] = useState<Weapon | null>(null)
+  const [pendingDeleteNames, setPendingDeleteNames] = useState<string[]>([])
+  const [deleteChecking, setDeleteChecking] = useState(false)
 
   const load = () => {
     setWeaponsRemote(remoteLoading())
@@ -58,10 +75,17 @@ export function WeaponBrowserPage() {
 
   const openCreate = () => {
     setEditingWeapon(undefined)
+    setDraftWeapon(undefined)
     setEditorOpen(true)
   }
   const openEdit = (weapon: Weapon) => {
     setEditingWeapon(weapon)
+    setDraftWeapon(undefined)
+    setEditorOpen(true)
+  }
+  const openCopy = (weapon: Weapon) => {
+    setEditingWeapon(undefined)
+    setDraftWeapon(weapon)
     setEditorOpen(true)
   }
   const handleSaved = (weapon: Weapon) => {
@@ -69,10 +93,23 @@ export function WeaponBrowserPage() {
     setSelectedId(weapon.id)
     load()
   }
+  const requestDelete = async (weapon: Weapon) => {
+    setPendingDelete(weapon)
+    setDeleteChecking(true)
+    try {
+      const players = await api.getWeaponPlayers(weapon.id)
+      setPendingDeleteNames(players.map((p) => p.name))
+    } catch {
+      setPendingDeleteNames([])
+    } finally {
+      setDeleteChecking(false)
+    }
+  }
   const confirmDelete = async () => {
     if (!pendingDelete) return
     await api.deleteWeapon(pendingDelete.id)
     setPendingDelete(null)
+    setPendingDeleteNames([])
     setSelectedId(null)
     load()
   }
@@ -86,6 +123,7 @@ export function WeaponBrowserPage() {
         actions={<Button type="button" onClick={openCreate}>New Weapon</Button>}
         error={weaponsRemote.status === 'error' ? weaponsRemote.error : null}
         listLabel="weapon list"
+        listCollapsible
         list={
             <SearchList
               items={weapons}
@@ -112,7 +150,8 @@ export function WeaponBrowserPage() {
                     footer={
                       <div className="weapon-browser-actions">
                         <Button variant="secondary" onClick={() => openEdit(selected)}>Edit</Button>
-                        <Button variant="danger" onClick={() => setPendingDelete(selected)}>Delete</Button>
+                        <Button variant="secondary" onClick={() => openCopy(selected)}>Copy as New</Button>
+                        <Button variant="danger" onClick={() => requestDelete(selected)}>Delete</Button>
                       </div>
                     }
                 >
@@ -149,6 +188,19 @@ export function WeaponBrowserPage() {
                     )}
                   </dl>
 
+                  {selected.quick_rules && (
+                    <p className="weapon-browser-quick-rules">
+                      <ReferenceText
+                        text={selected.quick_rules}
+                        registry={weaponValueReferenceRegistry}
+                        context={{
+                          weapon_attack_bonus: selected.weapon_attack_bonus,
+                          weapon_damage_bonus: selected.weapon_damage_bonus,
+                        }}
+                      />
+                    </p>
+                  )}
+
                   {selected.attack && selected.attack.length > 0 && (
                     <div className="weapon-browser-attacks">
                       {selected.attack.map((attack, i) => (
@@ -175,14 +227,18 @@ export function WeaponBrowserPage() {
             )
         }
         editor={editorOpen && (
-        <WeaponEditor weapon={editingWeapon} onClose={() => setEditorOpen(false)} onSaved={handleSaved} />
+        <WeaponEditor weapon={editingWeapon} draftWeapon={draftWeapon} onClose={() => setEditorOpen(false)} onSaved={handleSaved} />
       )}
 
         dialog={pendingDelete && (
         <ConfirmDialog
-          message={`Delete ${pendingDelete.name}?`}
+          message={deleteConfirmMessage(pendingDelete, pendingDeleteNames)}
           onConfirm={confirmDelete}
-          onCancel={() => setPendingDelete(null)}
+          onCancel={() => {
+            setPendingDelete(null)
+            setPendingDeleteNames([])
+          }}
+          pending={deleteChecking}
         />
       )}
       />

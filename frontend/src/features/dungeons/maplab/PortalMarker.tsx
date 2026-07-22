@@ -1,4 +1,4 @@
-import { PortalIcon } from '../../../components/icons'
+import { GatewayPortalIcon, PortalIcon } from '../../../components/icons'
 import { BadgeRing } from './BadgeRing'
 import { collapsedStatusLabel, markerBadges } from './markerBadges'
 import {
@@ -57,6 +57,8 @@ export function PortalMarker({
 
   const effective = effectivePassageState(portal, session)
   const presentation = passagePresentation(effective)
+  const isGateway = portal.to?.dungeon_id !== undefined
+  const Icon = isGateway ? GatewayPortalIcon : PortalIcon
   // Keep the authored trap badge after disarming so the confirmation badge can communicate both facts.
   const badges = markerBadges({ ...portal, locked: effective.locked }, effective.trapDisarmed)
   const dasharray = effective.hidden ? '4 3' : undefined
@@ -89,6 +91,7 @@ export function PortalMarker({
       <title>{portal.title ?? `Portal ${portal.portal_id}`}</title>
       <circle
         className="maplab-portal-marker"
+        data-gateway={isGateway || undefined}
         cx={cx}
         cy={cy}
         r={radius}
@@ -97,7 +100,7 @@ export function PortalMarker({
       />
       {!simplified && (
         <g transform={`translate(${cx - iconSize / 2}, ${cy - iconSize / 2})`}>
-          <PortalIcon width={iconSize} height={iconSize} className="maplab-portal-icon" style={{ color: `var(${PORTAL_IDENTITY_TOKEN})` }} />
+          <Icon width={iconSize} height={iconSize} className="maplab-portal-icon" style={{ color: `var(${PORTAL_IDENTITY_TOKEN})` }} />
         </g>
       )}
       <BadgeRing

@@ -106,6 +106,16 @@ Which one you get is decided by what is being edited, not by feature preference:
 
 Status: IN FORCE.
 
+### Staged batch-assignment dialogs
+
+A relationship between a selected record and a catalog (e.g. a Player's spells or weapons) is edited
+via a staged multi-select dialog. The dialog shows a searchable list of all catalog items with
+checkboxes; checked items are staged for assignment. One atomic Save commits via a replace endpoint;
+Cancel discards the draft without calling the API. No inline add/remove controls remain on the
+read-only reference list.
+
+Status: IN FORCE.
+
 ---
 
 ## Data states

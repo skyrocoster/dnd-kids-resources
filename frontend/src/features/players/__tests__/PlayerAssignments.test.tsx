@@ -1,38 +1,126 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import * as api from '../../../api/client'
-import { targetSpell } from '../../spells/__tests__/spellFixtures'
-import { SpellAssignment } from '../PlayerAssignments'
+import { describe, expect, it, vi } from 'vitest'
+import { ManageAssignmentsDialog } from '../PlayerAssignments'
 
-const availableSpell = { ...targetSpell, id: 2, name: 'Acid Splash' }
+interface Item {
+  id: number
+  name: string
+}
 
-describe('SpellAssignment', () => {
-  beforeEach(() => {
-    vi.restoreAllMocks()
-    vi.spyOn(api, 'getPlayerSpells').mockResolvedValue([targetSpell])
-    vi.spyOn(api, 'listSpells').mockResolvedValue([targetSpell, availableSpell])
+const items: Item[] = [
+  { id: 1, name: 'Fireball' },
+  { id: 2, name: 'Acid Splash' },
+  { id: 3, name: 'Mage Hand' },
+]
+
+describe('ManageAssignmentsDialog', () => {
+  it('renders the catalog sorted alphabetically with assigned items pre-checked', () => {
+    render(
+      <ManageAssignmentsDialog
+        title="Manage Spells"
+        items={items}
+        assignedIds={[1]}
+        getId={(i: Item) => i.id}
+        getLabel={(i: Item) => i.name}
+        onSave={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    )
+
+    const labels = screen.getAllByRole('checkbox').map((el) => el.closest('label')?.textContent)
+    expect(labels).toEqual(['Acid Splash', 'Fireball', 'Mage Hand'])
+    expect(screen.getByLabelText('Fireball')).toBeChecked()
+    expect(screen.getByLabelText('Acid Splash')).not.toBeChecked()
   })
 
-  it('renders target spell names and offers unassigned target spells', async () => {
-    render(<SpellAssignment playerId={7} />)
-
-    await waitFor(() => expect(screen.getByText('Plant Growth')).toBeInTheDocument())
-    expect(targetSpell.casting_times).toEqual(['1 action', '8 hours'])
-    expect(targetSpell.area_of_effect).toEqual({ shape: 'cylinder', size: 100 })
-    expect(screen.getByRole('option', { name: 'Acid Splash' })).toBeInTheDocument()
-  })
-
-  it('assigns the selected spell by ID', async () => {
-    const assignPlayerSpell = vi.spyOn(api, 'assignPlayerSpell').mockResolvedValue()
+  it('filters items by the search box', async () => {
     const user = userEvent.setup()
+    render(
+      <ManageAssignmentsDialog
+        title="Manage Spells"
+        items={items}
+        assignedIds={[]}
+        getId={(i: Item) => i.id}
+        getLabel={(i: Item) => i.name}
+        onSave={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    )
 
-    render(<SpellAssignment playerId={7} />)
+    await user.type(screen.getByPlaceholderText('Search…'), 'acid')
+    expect(screen.getByLabelText('Acid Splash')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Fireball')).not.toBeInTheDocument()
+  })
 
-    await screen.findByRole('option', { name: 'Acid Splash' })
-    await user.selectOptions(screen.getByLabelText('Add Spell'), '2')
-    await user.click(screen.getByRole('button', { name: 'Add' }))
+  it('stages checkbox toggles and commits the full id list once on Save', async () => {
+    const onSave = vi.fn().mockResolvedValue(undefined)
+    const onClose = vi.fn()
+    const user = userEvent.setup()
+    render(
+      <ManageAssignmentsDialog
+        title="Manage Spells"
+        items={items}
+        assignedIds={[1]}
+        getId={(i: Item) => i.id}
+        getLabel={(i: Item) => i.name}
+        onSave={onSave}
+        onClose={onClose}
+      />,
+    )
 
-    expect(assignPlayerSpell).toHaveBeenCalledWith(7, 2)
+    await user.click(screen.getByLabelText('Acid Splash'))
+    expect(onSave).not.toHaveBeenCalled()
+
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+
+    await waitFor(() => expect(onSave).toHaveBeenCalledOnce())
+    expect(onSave.mock.calls[0][0].sort()).toEqual([1, 2])
+    await waitFor(() => expect(onClose).toHaveBeenCalledOnce())
+  })
+
+  it('discards staged changes and makes no API call on Cancel', async () => {
+    const onSave = vi.fn()
+    const onClose = vi.fn()
+    const user = userEvent.setup()
+    render(
+      <ManageAssignmentsDialog
+        title="Manage Spells"
+        items={items}
+        assignedIds={[1]}
+        getId={(i: Item) => i.id}
+        getLabel={(i: Item) => i.name}
+        onSave={onSave}
+        onClose={onClose}
+      />,
+    )
+
+    await user.click(screen.getByLabelText('Acid Splash'))
+    await user.click(screen.getByRole('button', { name: 'Cancel' }))
+
+    expect(onSave).not.toHaveBeenCalled()
+    expect(onClose).toHaveBeenCalledOnce()
+  })
+
+  it('shows a save error inline and keeps the dialog open for retry', async () => {
+    const onSave = vi.fn().mockRejectedValue(new Error('Unable to save'))
+    const onClose = vi.fn()
+    const user = userEvent.setup()
+    render(
+      <ManageAssignmentsDialog
+        title="Manage Spells"
+        items={items}
+        assignedIds={[]}
+        getId={(i: Item) => i.id}
+        getLabel={(i: Item) => i.name}
+        onSave={onSave}
+        onClose={onClose}
+      />,
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+
+    expect(await screen.findByRole('status')).toHaveTextContent('Unable to save')
+    expect(onClose).not.toHaveBeenCalled()
   })
 })

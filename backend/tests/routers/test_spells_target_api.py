@@ -5,7 +5,7 @@ _TARGET_FIELDS = {
     "id", "name", "level", "school", "description", "alternate_description",
     "damage", "healing", "range", "higher_levels", "casting_times", "duration",
     "concentration", "ritual", "components", "materials", "attacks",
-    "area_of_effect",
+    "area_of_effect", "quick_rules",
 }
 
 # Legacy fields that must NOT appear in any target response.
@@ -26,6 +26,7 @@ _CREATE_PAYLOAD = {
     "concentration": False,
     "ritual": False,
     "components": ["V", "S"],
+    "quick_rules": "Cast it, deal 2d6 fire damage.",
 }
 
 # Minimal cantrip create payload.
@@ -37,6 +38,7 @@ _CREATE_CANTRIP = {
     "duration": "Instantaneous",
     "concentration": False,
     "ritual": False,
+    "quick_rules": "Cast it, deal 2d6 fire damage.",
 }
 
 

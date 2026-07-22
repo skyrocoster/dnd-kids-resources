@@ -894,15 +894,45 @@ def populate_players(cursor, conn, force=False):
         try:
             cursor.execute("""
                 INSERT INTO players
-                (id, name, class, level, total_spell_slots, current_spell_slots, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                (id, name, child_name, class, subclass, level, ancestry, background,
+                 sizes, alignment, creature_type, ac, hp, speed, abilities, saving_throws, skills,
+                 passive_perception, damage_resistances, damage_immunities, damage_vulnerabilities,
+                 condition_immunities, senses, languages, features,
+                 initiative, proficiency_bonus, spell_attack_bonus, spell_save_dc,
+                 max_spell_slots, notes, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 player.get('id'),
                 player.get('name'),
+                player.get('child_name'),
                 player.get('class'),
+                player.get('subclass'),
                 player.get('level'),
-                serialize_for_db(player.get('total_spell_slots')),
-                serialize_for_db(player.get('current_spell_slots')),
+                player.get('ancestry'),
+                player.get('background'),
+                serialize_for_db(player.get('sizes')),
+                player.get('alignment'),
+                serialize_for_db(player.get('creature_type')),
+                serialize_for_db(player.get('ac')),
+                serialize_for_db(player.get('hp')),
+                serialize_for_db(player.get('speed')),
+                serialize_for_db(player.get('abilities')),
+                serialize_for_db(player.get('saving_throws')),
+                serialize_for_db(player.get('skills')),
+                player.get('passive_perception'),
+                serialize_for_db(player.get('damage_resistances')),
+                serialize_for_db(player.get('damage_immunities')),
+                serialize_for_db(player.get('damage_vulnerabilities')),
+                serialize_for_db(player.get('condition_immunities')),
+                serialize_for_db(player.get('senses')),
+                serialize_for_db(player.get('languages')),
+                serialize_for_db(player.get('features')),
+                player.get('initiative'),
+                player.get('proficiency_bonus'),
+                player.get('spell_attack_bonus'),
+                player.get('spell_save_dc'),
+                serialize_for_db(player.get('max_spell_slots')),
+                player.get('notes'),
                 player.get('created_at'),
                 player.get('updated_at')
             ))
@@ -947,13 +977,12 @@ def populate_player_spells(cursor, conn, force=False):
         try:
             cursor.execute("""
                 INSERT INTO player_spells
-                (id, player_id, spell_id, at_will, added_at)
-                VALUES (?, ?, ?, ?, ?)
+                (id, player_id, spell_id, added_at)
+                VALUES (?, ?, ?, ?)
             """, (
                 entry.get('id'),
                 entry.get('player_id'),
                 entry.get('spell_id'),
-                int(bool(entry.get('at_will', False))),
                 entry.get('added_at')
             ))
             print(f"  [CHECK] Player {entry.get('player_id')} spell {entry.get('spell_id')}")

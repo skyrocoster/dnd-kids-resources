@@ -54,7 +54,7 @@ export type EditorAction =
   | { type: 'selectStair'; stairId: number | null } // Phase H, stub
   | { type: 'deleteStair'; stairId: number } // Phase H, stub
   | { type: 'setStairDirection'; z: number; cell: MapCell; direction: 'up' | 'down'; enabled: boolean } // Phase I
-  | { type: 'addPortal'; cell: [number, number] } // Phase H
+  | { type: 'addPortal'; cell: [number, number]; to?: { dungeon_id: number } } // Phase H
   | { type: 'selectPortal'; portalId: number | null } // Phase H
   | { type: 'deletePortal'; portalId: number } // Phase H
   | { type: 'addFeature'; kind: string; cell: MapCell; z: number }
@@ -259,15 +259,25 @@ export function mapLabEditorReducer(state: EditorState, action: EditorAction): E
         if (!source) return state
         const updatedSource = { ...source, ...action.flags } as MapPortal
 
+        if (updatedSource.to?.dungeon_id !== undefined) {
+          // Gateway to another dungeon: that layout isn't loaded here (and might be open,
+          // unsaved, elsewhere), so no in-dungeon pairing/auto-create can happen — just update
+          // the source portal itself.
+          const portals = state.layout.portals.map((portal) =>
+            portal.portal_id === source.portal_id ? updatedSource : portal,
+          )
+          return { ...state, layout: { ...state.layout, portals } }
+        }
+
         if ('to' in action.flags && updatedSource.to) {
-          const target = updatedSource.to
+          const target = updatedSource.to as { z: number; cell: MapCell }
           // The portal that currently points back at the source — its "pair" before this edit.
           // Portals only ever exist in pairs, so retargeting the source relocates this record to
           // the new destination rather than leaving it behind as an orphan one-way portal.
           const oldPair = state.layout.portals.find(
             (portal) =>
               portal.portal_id !== source.portal_id &&
-              portal.to &&
+              portal.to?.cell &&
               portal.to.z === source.z &&
               portal.to.cell[0] === source.cell[0] &&
               portal.to.cell[1] === source.cell[1],
@@ -490,7 +500,9 @@ export function mapLabEditorReducer(state: EditorState, action: EditorAction): E
         portal_id,
         cell: action.cell,
         z: state.activeZ,
-        // no destination until the DM picks one via the destination picker
+        // no destination until the DM picks one via the destination picker, unless the caller
+        // (e.g. the resolve list's "Add the return gateway" action) already knows the target dungeon
+        to: action.to,
         title: typeof defaults.title === 'string' ? defaults.title : undefined,
         hidden: Boolean(defaults.hidden),
         locked: Boolean(defaults.locked),

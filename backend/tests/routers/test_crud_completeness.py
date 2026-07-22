@@ -130,11 +130,19 @@ def test_get_player_404(test_client):
 
 
 def test_weapon_update_round_trip(test_client):
-    wid = test_client.post("/api/weapons", json={"name": "Upgradeable", "rarity": "common"}).json()["id"]
+    wid = test_client.post(
+        "/api/weapons",
+        json={
+            "name": "Upgradeable",
+            "rarity": "common",
+            "quick_rules": "Attack +{weapon_attack_bonus}, deal 1d8 slashing damage +{weapon_damage_bonus}.",
+        },
+    ).json()["id"]
     resp = test_client.put(
         f"/api/weapons/{wid}",
         json={"name": "Upgraded", "rarity": "rare", "property": ["F"],
-              "attack": [{"type": "ranged", "damage": "1d6", "damage_type": "piercing"}]},
+              "attack": [{"type": "ranged", "damage": "1d6", "damage_type": "piercing"}],
+              "quick_rules": "Attack +{weapon_attack_bonus}, deal 1d6 piercing damage +{weapon_damage_bonus}."},
     )
     assert resp.status_code == 200
     data = resp.json()
@@ -146,12 +154,20 @@ def test_weapon_update_round_trip(test_client):
 
 def test_weapon_update_db_failure(monkeypatch, test_client):
     import backend.app.db as db_module
-    wid = test_client.post("/api/weapons", json={"name": "Upgradeable", "rarity": "common"}).json()["id"]
+    wid = test_client.post(
+        "/api/weapons",
+        json={
+            "name": "Upgradeable",
+            "rarity": "common",
+            "quick_rules": "Attack +{weapon_attack_bonus}, deal 1d8 slashing damage +{weapon_damage_bonus}.",
+        },
+    ).json()["id"]
     monkeypatch.setattr(db_module, "get_conn", _mock_db_failure)
     resp = test_client.put(
         f"/api/weapons/{wid}",
         json={"name": "Upgraded", "rarity": "rare", "property": ["F"],
-              "attack": [{"type": "ranged", "damage": "1d6", "damage_type": "piercing"}]},
+              "attack": [{"type": "ranged", "damage": "1d6", "damage_type": "piercing"}],
+              "quick_rules": "Attack +{weapon_attack_bonus}, deal 1d6 piercing damage +{weapon_damage_bonus}."},
     )
     assert resp.status_code == 400
 
@@ -165,7 +181,13 @@ def test_weapon_get_by_name(test_client):
 def test_weapon_404s(test_client):
     assert test_client.get("/api/weapons/99999").status_code == 404
     assert test_client.get("/api/weapons/by-name/NoSuchWeapon").status_code == 404
-    assert test_client.put("/api/weapons/99999", json={"name": "X"}).status_code == 404
+    assert test_client.put(
+        "/api/weapons/99999",
+        json={
+            "name": "X",
+            "quick_rules": "Attack +{weapon_attack_bonus}, deal 1d8 slashing damage +{weapon_damage_bonus}.",
+        },
+    ).status_code == 404
     assert test_client.delete("/api/weapons/99999").status_code == 404
 
 

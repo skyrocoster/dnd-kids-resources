@@ -1,0 +1,57 @@
+.manage-assignments-dialog {
+  width: min(480px, 96vw);
+}
+
+.manage-assignments-error {
+  color: var(--md-error);
+  margin: 0 0 1rem;
+}
+
+.manage-assignments-search {
+  margin-bottom: 0.75rem;
+}
+
+.manage-assignments-search-input {
+  width: 100%;
+  min-height: var(--control-height, 3rem);
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.375rem;
+  border: 1px solid var(--md-outline-variant);
+  background: var(--md-surface);
+  color: var(--md-on-surface);
+}
+
+.manage-assignments-empty {
+  color: var(--md-on-surface-variant);
+  font-size: var(--type-caption-size);
+}
+
+.manage-assignments-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 50vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.manage-assignments-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 48px;
+  padding: 0.35rem 0.6rem;
+  border-radius: 0.375rem;
+  cursor: pointer;
+}
+
+.manage-assignments-item:hover {
+  background: var(--md-surface-2, var(--md-surface));
+}
+
+.manage-assignments-item input[type='checkbox'] {
+  width: 1.25rem;
+  height: 1.25rem;
+}

@@ -468,6 +468,7 @@ export { SendHorizontal as ReplyIcon } from 'lucide-react'          // Reply
 export { Share as ShareIcon } from 'lucide-react'                   // Distribute
 export { Share2 as ShareNodesIcon } from 'lucide-react'             // Network share
 export { Link as LinkIcon } from 'lucide-react'                     // Connection
+export { ExternalLink as GatewayPortalIcon } from 'lucide-react'    // Portal leading to another dungeon
 export { Link2 as ChainLinkIcon } from 'lucide-react'               // Chain
 export { Unlink as UnlinkIcon } from 'lucide-react'                 // Break link
 export { Mail as MailIcon } from 'lucide-react'                     // Message

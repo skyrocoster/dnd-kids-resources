@@ -114,7 +114,10 @@ export interface MapPortal extends PassageFlags {
   cell: MapCell // absolute [x, y]
   z: number // floor level
   title?: string
-  to?: { z: number; cell: MapCell } // paired: the portal at `to` (if present) points back here
+  /** In-dungeon pair sets z/cell and omits dungeon_id; a gateway to another dungeon sets
+   * dungeon_id and omits z/cell (this document has no access to that dungeon's layout, so it
+   * can't name an exact floor+cell target there). */
+  to?: { z?: number; cell?: MapCell; dungeon_id?: number }
 }
 
 /** Feature = outdoor region drawn on the outside grid (river, trees, etc.).
@@ -686,7 +689,10 @@ function passageDescriptorLines(passage: PassageFlags): { label: string; value: 
  * `passageDescriptorLines`, since a stair is presented identically to a door throughout this
  * feature. Items produce a minimal descriptor only — no content rendering, per the Stage-3 scope
  * (item/chest authoring is deferred). */
-export function inspectableDescriptor(target: Inspectable): InspectableDescriptor {
+export function inspectableDescriptor(
+  target: Inspectable,
+  context?: { dungeonTitle?: string },
+): InspectableDescriptor {
   switch (target.kind) {
     case 'room': {
       const { room } = target
@@ -752,9 +758,11 @@ export function inspectableDescriptor(target: Inspectable): InspectableDescripto
       const presentation = passagePresentation(effective)
       const lines = passageDescriptorLines(effective)
       lines.push(
-        portal.to
-          ? { label: 'Leads to', value: `${portal.to.cell[0]},${portal.to.cell[1]} (z:${portal.to.z})` }
-          : { label: 'Destination', value: 'This portal has no destination yet. Choose where it leads.' },
+        portal.to?.dungeon_id !== undefined
+          ? { label: 'Leaves to', value: context?.dungeonTitle ?? 'another dungeon' }
+          : portal.to?.cell && portal.to.z !== undefined
+            ? { label: 'Leads to', value: `${portal.to.cell[0]},${portal.to.cell[1]} (z:${portal.to.z})` }
+            : { label: 'Destination', value: 'This portal has no destination yet. Choose where it leads.' },
       )
       return {
         title: portal.title ?? `Portal ${portal.portal_id}`,
