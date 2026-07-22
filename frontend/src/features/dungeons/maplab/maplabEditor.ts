@@ -259,7 +259,7 @@ export function mapLabEditorReducer(state: EditorState, action: EditorAction): E
         if (!source) return state
         const updatedSource = { ...source, ...action.flags } as MapPortal
 
-        if ('to' in action.flags) {
+        if ('to' in action.flags && updatedSource.to) {
           const target = updatedSource.to
           // The portal that currently points back at the source — its "pair" before this edit.
           // Portals only ever exist in pairs, so retargeting the source relocates this record to
@@ -267,6 +267,7 @@ export function mapLabEditorReducer(state: EditorState, action: EditorAction): E
           const oldPair = state.layout.portals.find(
             (portal) =>
               portal.portal_id !== source.portal_id &&
+              portal.to &&
               portal.to.z === source.z &&
               portal.to.cell[0] === source.cell[0] &&
               portal.to.cell[1] === source.cell[1],
@@ -489,7 +490,7 @@ export function mapLabEditorReducer(state: EditorState, action: EditorAction): E
         portal_id,
         cell: action.cell,
         z: state.activeZ,
-        to: { z: state.activeZ, cell: action.cell }, // placeholder, set via the destination picker
+        // no destination until the DM picks one via the destination picker
         title: typeof defaults.title === 'string' ? defaults.title : undefined,
         hidden: Boolean(defaults.hidden),
         locked: Boolean(defaults.locked),

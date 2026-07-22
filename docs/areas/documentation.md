@@ -1,6 +1,6 @@
 # Documentation Governance Area Guide
 
-> **Active plan:** None.
+> **Active plan:** [Docs Restructure](../plans/active/docs-restructure.md) — next up.
 
 ## Scope
 
@@ -24,6 +24,9 @@ Owns the documentation contract, task routing, plan lifecycle, and documentation
 
 ## Work queue
 
+- [Docs Restructure](../plans/active/docs-restructure.md) — re-cut the areas around pages, split every
+  document by how often it is read, and replace the vague source maps with checker-enforced file
+  coverage. Its Stage 2 retires this guide.
 - Create a focused plan before changing the contract, manifest format, templates, or validator behavior.
 
 ## Cross-references

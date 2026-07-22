@@ -12,6 +12,8 @@ export interface WeaponAttackRow {
   damage: string
   damage_type: string
   hands: string
+  attack_mod: string
+  damage_mod: string
 }
 
 export interface WeaponFormState {
@@ -25,6 +27,9 @@ export interface WeaponFormState {
   focus: string[]
   attackRows: WeaponAttackRow[]
   entries: string
+  quick_rules: string
+  weapon_attack_bonus: string
+  weapon_damage_bonus: string
 }
 
 function asStringArray(value: unknown): string[] {
@@ -43,14 +48,29 @@ export function emptyWeaponForm(): WeaponFormState {
     focus: [],
     attackRows: [],
     entries: '',
+    quick_rules: '',
+    weapon_attack_bonus: '',
+    weapon_damage_bonus: '',
   }
 }
 
 export function weaponToFormState(weapon: Weapon): WeaponFormState {
-  const attacks: Array<{ type?: string; damage?: string; damage_type?: string; hands?: number }> = Array.isArray(
-    weapon.attack,
-  )
-    ? (weapon.attack as unknown as Array<{ type?: string; damage?: string; damage_type?: string; hands?: number }>)
+  const attacks: Array<{
+    type?: string
+    damage?: string
+    damage_type?: string
+    hands?: number
+    attack_mod?: number
+    damage_mod?: number
+  }> = Array.isArray(weapon.attack)
+    ? (weapon.attack as unknown as Array<{
+        type?: string
+        damage?: string
+        damage_type?: string
+        hands?: number
+        attack_mod?: number
+        damage_mod?: number
+      }>)
     : []
 
   return {
@@ -68,25 +88,34 @@ export function weaponToFormState(weapon: Weapon): WeaponFormState {
       damage: a.damage || '',
       damage_type: a.damage_type || '',
       hands: a.hands != null ? String(a.hands) : '',
+      attack_mod: a.attack_mod != null ? String(a.attack_mod) : '',
+      damage_mod: a.damage_mod != null ? String(a.damage_mod) : '',
     })),
     entries: asStringArray(weapon.entries)
       .map((e) => (typeof e === 'string' ? e : JSON.stringify(e)))
       .join('\n\n'),
+    quick_rules: weapon.quick_rules || '',
+    weapon_attack_bonus: weapon.weapon_attack_bonus != null ? String(weapon.weapon_attack_bonus) : '',
+    weapon_damage_bonus: weapon.weapon_damage_bonus != null ? String(weapon.weapon_damage_bonus) : '',
   }
 }
 
 export function addWeaponAttackRow(rows: WeaponAttackRow[]): WeaponAttackRow[] {
-  return [...rows, { id: nextRowId(), type: '', damage: '', damage_type: '', hands: '' }]
+  return [...rows, { id: nextRowId(), type: '', damage: '', damage_type: '', hands: '', attack_mod: '', damage_mod: '' }]
 }
 
 export function formStateToWeaponInput(form: WeaponFormState): WeaponInput {
   const attack = form.attackRows.length
-    ? form.attackRows.map((row) => ({
-        type: row.type || undefined,
-        damage: row.damage || undefined,
-        damage_type: row.damage_type || undefined,
-        hands: row.hands ? Number(row.hands) : undefined,
-      }))
+    ? form.attackRows.map((row) => {
+        const entry: Record<string, unknown> = {}
+        if (row.type) entry.type = row.type
+        if (row.damage) entry.damage = row.damage
+        if (row.damage_type) entry.damage_type = row.damage_type
+        if (row.hands) entry.hands = Number(row.hands)
+        if (row.attack_mod) entry.attack_mod = Number(row.attack_mod)
+        if (row.damage_mod) entry.damage_mod = Number(row.damage_mod)
+        return entry
+      })
     : null
 
   const entries = form.entries
@@ -105,5 +134,8 @@ export function formStateToWeaponInput(form: WeaponFormState): WeaponInput {
     focus: form.focus.length ? form.focus : null,
     attack,
     entries: entries.length ? entries : null,
+    quick_rules: form.quick_rules,
+    weapon_attack_bonus: form.weapon_attack_bonus ? Number(form.weapon_attack_bonus) : null,
+    weapon_damage_bonus: form.weapon_damage_bonus ? Number(form.weapon_damage_bonus) : null,
   }
 }

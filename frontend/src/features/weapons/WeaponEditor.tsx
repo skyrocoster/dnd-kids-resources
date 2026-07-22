@@ -7,6 +7,7 @@ import { Dialog } from '../../components/Dialog'
 import { MultiSelectField } from '../../components/form/MultiSelectField'
 import { SelectField } from '../../components/form/SelectField'
 import { TextField } from '../../components/form/TextField'
+import { weaponValueReferenceRegistry, validateReferenceText } from '../../components/referenceText'
 import { CLASS_OPTIONS } from '../spells/constants'
 import type { WeaponAttackRow, WeaponFormState } from './weaponForm'
 import { addWeaponAttackRow, emptyWeaponForm, formStateToWeaponInput, weaponToFormState } from './weaponForm'
@@ -54,6 +55,14 @@ export function WeaponEditor({ weapon, onClose, onSaved }: WeaponEditorProps) {
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()
+    const validation = validateReferenceText(form.quick_rules, weaponValueReferenceRegistry)
+    if (!validation.valid) {
+      const details = validation.errors
+        .map((e) => (e.token ? `Unknown token: ${e.token}` : e.message))
+        .join('; ')
+      setStatus({ message: `Invalid quick rules: ${details}`, kind: 'error' })
+      return
+    }
     setSaving(true)
     setStatus({ message: 'Saving weapon…' })
     const payload = formStateToWeaponInput(form)
@@ -119,6 +128,28 @@ export function WeaponEditor({ weapon, onClose, onSaved }: WeaponEditorProps) {
             />
           </div>
 
+          <TextField
+            label="Quick Rules"
+            value={form.quick_rules}
+            onChange={(e) => patch({ quick_rules: e.target.value })}
+            placeholder="Attack +{weapon_attack_bonus}, damage +{weapon_damage_bonus}"
+            required
+          />
+          <div className="weapon-editor-grid">
+            <TextField
+              label="Attack Bonus (sheet-ready)"
+              type="number"
+              value={form.weapon_attack_bonus}
+              onChange={(e) => patch({ weapon_attack_bonus: e.target.value })}
+            />
+            <TextField
+              label="Damage Bonus (sheet-ready)"
+              type="number"
+              value={form.weapon_damage_bonus}
+              onChange={(e) => patch({ weapon_damage_bonus: e.target.value })}
+            />
+          </div>
+
           {propertyOptions.length > 0 && (
             <MultiSelectField
               label="Properties"
@@ -174,6 +205,18 @@ export function WeaponEditor({ weapon, onClose, onSaved }: WeaponEditorProps) {
                     type="number"
                     value={row.hands}
                     onChange={(e) => updateAttackRow(row.id, { hands: e.target.value })}
+                  />
+                  <TextField
+                    label="Attack Mod"
+                    type="number"
+                    value={row.attack_mod}
+                    onChange={(e) => updateAttackRow(row.id, { attack_mod: e.target.value })}
+                  />
+                  <TextField
+                    label="Damage Mod"
+                    type="number"
+                    value={row.damage_mod}
+                    onChange={(e) => updateAttackRow(row.id, { damage_mod: e.target.value })}
                   />
                 </div>
                 <button type="button" className="weapon-editor-row-remove" onClick={() => removeAttackRow(row.id)}>

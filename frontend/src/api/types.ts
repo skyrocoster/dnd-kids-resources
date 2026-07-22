@@ -109,6 +109,10 @@ export interface SpellInput {
   area_of_effect?: SpellAreaOfEffect
 }
 
+export interface SpellPlayerReplacement {
+  player_ids: number[]
+}
+
 export type AbilityName = 'str' | 'dex' | 'con' | 'int' | 'wis' | 'cha'
 export type CreatureSize = 'tiny' | 'small' | 'medium' | 'large' | 'huge' | 'gargantuan'
 export type MovementMode = 'walk' | 'burrow' | 'climb' | 'fly' | 'swim'
@@ -374,6 +378,17 @@ export interface MonsterInput {
   experience_points?: number | null
 }
 
+export interface WeaponAttackEntry {
+  type?: string
+  damage?: string
+  damage_type?: string
+  hands?: number
+  attack_mod?: number
+  damage_mod?: number
+  range?: string
+  special?: string
+}
+
 export interface Weapon {
   id: number
   name: string
@@ -384,11 +399,28 @@ export interface Weapon {
   req_attune?: string | null
   property?: string[] | null
   focus?: string[] | null
-  attack?: Record<string, unknown>[] | null
+  attack?: WeaponAttackEntry[] | null
   entries?: unknown[] | null
+  quick_rules?: string | null
+  weapon_attack_bonus?: number | null
+  weapon_damage_bonus?: number | null
 }
 
-export type WeaponInput = Omit<Weapon, 'id'>
+export interface WeaponInput {
+  name: string
+  base_weapon?: string | null
+  rarity?: string | null
+  weapon_category?: string | null
+  weight?: number | null
+  req_attune?: string | null
+  property?: string[] | null
+  focus?: string[] | null
+  attack?: WeaponAttackEntry[] | null
+  entries?: unknown[] | null
+  quick_rules: string
+  weapon_attack_bonus?: number | null
+  weapon_damage_bonus?: number | null
+}
 
 export interface Item {
   id: number
@@ -503,6 +535,10 @@ export interface MapLayoutBlob {
   data: Record<string, unknown>
 }
 
+export interface MapSessionStateBlob {
+  data: Record<string, unknown>
+}
+
 export type ThreadColor = `thread-${1 | 2 | 3 | 4 | 5 | 6}`
 
 export interface LoomThread {
@@ -614,6 +650,7 @@ export interface LoomSessionLogRequest {
   notes?: string | null
   outcomes: Record<number, LoomThreadOutcome>
 }
+
 
 
 

@@ -1,6 +1,6 @@
 # Repo Infra Area Guide
 
-> **Active plan:** None.
+> **Active plan:** [Production Nightly Deploys](../plans/active/production-nightly-deploys.md) — next up.
 
 ## Scope
 
@@ -26,6 +26,8 @@ not own any product behavior, API contract, or data model — those stay with th
 
 ## Work queue
 
+- [Production Nightly Deploys](../plans/active/production-nightly-deploys.md) — schema-as-data
+  generation, additive migrations, and a deploy that backs up before it migrates.
 - Create a focused plan before changing shared backend infra or repo-wide test tooling.
 
 ## Cross-references

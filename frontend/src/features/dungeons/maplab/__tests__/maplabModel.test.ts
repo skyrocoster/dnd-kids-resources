@@ -732,6 +732,25 @@ describe('maplabModel (Stage 3 inspector)', () => {
     })
   })
 
+  describe('inspectableDescriptor — portal', () => {
+    it('shows the no-destination line when the portal has not been targeted yet', () => {
+      const portal: MapPortal = { portal_id: 1, z: 0, cell: [3, 3], hidden: false, locked: false, trapped: false }
+      const d = inspectableDescriptor({ kind: 'portal', portal })
+
+      expect(d.lines).toContainEqual({
+        label: 'Destination',
+        value: 'This portal has no destination yet. Choose where it leads.',
+      })
+    })
+
+    it('shows a Leads to line once a destination is set', () => {
+      const portal: MapPortal = { portal_id: 1, z: 0, cell: [3, 3], to: { z: 2, cell: [5, 5] }, hidden: false, locked: false, trapped: false }
+      const d = inspectableDescriptor({ kind: 'portal', portal })
+
+      expect(d.lines).toContainEqual({ label: 'Leads to', value: '5,5 (z:2)' })
+    })
+  })
+
   describe('inspectableDescriptor — prop', () => {
     it('produces a descriptor with title, type label, and icon', () => {
       const prop: MapProp = { prop_id: 1, kind: 'chest', cell: [0, 0], title: 'Locked chest', hidden: false, locked: true, trapped: false }

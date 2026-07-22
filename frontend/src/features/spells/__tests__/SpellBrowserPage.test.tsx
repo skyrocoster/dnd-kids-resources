@@ -2,10 +2,16 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as api from '../../../api/client'
-import type { Spell } from '../../../api/types'
+import type { Player, Spell } from '../../../api/types'
 import { SpellBrowserPage } from '../SpellBrowserPage'
 import { targetSpell } from './spellFixtures'
 
+
+const players: Player[] = [
+  { id: 1, name: 'Ari', class_: 'Wizard', level: 3 },
+  { id: 2, name: 'Mira', class_: 'Cleric', level: 4 },
+  { id: 3, name: 'Bryn', class_: 'Druid', level: 2 },
+]
 const spells: Spell[] = [
   {
     ...targetSpell,
@@ -119,4 +125,117 @@ describe('SpellBrowserPage', () => {
     await user.click(screen.getByRole('button', { name: 'Back to spells' }))
     expect(screen.getByText('Select an item')).toBeInTheDocument()
   })
+  it('opens Manage Players with current spell assignments checked', async () => {
+    vi.spyOn(api, 'listSpells').mockResolvedValue(spells)
+    vi.spyOn(api, 'listPlayers').mockResolvedValue(players)
+    vi.spyOn(api, 'getSpellPlayers').mockResolvedValue([players[1]])
+    const user = userEvent.setup()
+
+    render(<SpellBrowserPage />)
+    await screen.findByRole('heading', { name: /Cure Wounds/ })
+
+    await user.click(screen.getByRole('button', { name: 'Manage Players' }))
+
+    expect(await screen.findByRole('dialog', { name: /Manage Players for Cure Wounds/ })).toBeInTheDocument()
+    expect(screen.getByRole('checkbox', { name: 'Mira' })).toBeChecked()
+    expect(screen.getByRole('checkbox', { name: 'Ari' })).not.toBeChecked()
+  })
+
+  it('filters Manage Players to No matches', async () => {
+    vi.spyOn(api, 'listSpells').mockResolvedValue(spells)
+    vi.spyOn(api, 'listPlayers').mockResolvedValue(players)
+    vi.spyOn(api, 'getSpellPlayers').mockResolvedValue([players[1]])
+    const user = userEvent.setup()
+
+    render(<SpellBrowserPage />)
+    await screen.findByRole('heading', { name: /Cure Wounds/ })
+    await user.click(screen.getByRole('button', { name: 'Manage Players' }))
+    await screen.findByRole('checkbox', { name: 'Mira' })
+
+    await user.type(screen.getByRole('searchbox', { name: 'Search players' }), 'zzzz')
+
+    expect(screen.getByText('No matches')).toBeInTheDocument()
+  })
+
+  it('shows no-player state in Manage Players', async () => {
+    vi.spyOn(api, 'listSpells').mockResolvedValue(spells)
+    vi.spyOn(api, 'listPlayers').mockResolvedValue([])
+    vi.spyOn(api, 'getSpellPlayers').mockResolvedValue([])
+    const user = userEvent.setup()
+
+    render(<SpellBrowserPage />)
+    await screen.findByRole('heading', { name: /Cure Wounds/ })
+    await user.click(screen.getByRole('button', { name: 'Manage Players' }))
+
+    expect(await screen.findByText('No players available.')).toBeInTheDocument()
+  })
+
+  it('disables Save when Manage Players fails to load', async () => {
+    vi.spyOn(api, 'listSpells').mockResolvedValue(spells)
+    vi.spyOn(api, 'listPlayers').mockRejectedValue(new Error('players unavailable'))
+    vi.spyOn(api, 'getSpellPlayers').mockResolvedValue([])
+    const user = userEvent.setup()
+
+    render(<SpellBrowserPage />)
+    await screen.findByRole('heading', { name: /Cure Wounds/ })
+    await user.click(screen.getByRole('button', { name: 'Manage Players' }))
+
+    expect(await screen.findByText('players unavailable')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled()
+  })
+
+  it('saves Manage Players with the atomic replacement payload', async () => {
+    vi.spyOn(api, 'listSpells').mockResolvedValue(spells)
+    vi.spyOn(api, 'listPlayers').mockResolvedValue(players)
+    vi.spyOn(api, 'getSpellPlayers').mockResolvedValue([players[1]])
+    const replaceSpellPlayers = vi.spyOn(api, 'replaceSpellPlayers').mockResolvedValue([players[0]])
+    const user = userEvent.setup()
+
+    render(<SpellBrowserPage />)
+    await screen.findByRole('heading', { name: /Cure Wounds/ })
+    await user.click(screen.getByRole('button', { name: 'Manage Players' }))
+    await user.click(await screen.findByRole('checkbox', { name: 'Ari' }))
+    await user.click(screen.getByRole('checkbox', { name: 'Mira' }))
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+
+    await waitFor(() => expect(replaceSpellPlayers).toHaveBeenCalledWith(2, [1]))
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: /Manage Players for Cure Wounds/ })).not.toBeInTheDocument())
+  })
+
+  it('cancels Manage Players without saving the staged draft', async () => {
+    vi.spyOn(api, 'listSpells').mockResolvedValue(spells)
+    vi.spyOn(api, 'listPlayers').mockResolvedValue(players)
+    vi.spyOn(api, 'getSpellPlayers').mockResolvedValue([players[1]])
+    const replaceSpellPlayers = vi.spyOn(api, 'replaceSpellPlayers').mockResolvedValue([])
+    const user = userEvent.setup()
+
+    render(<SpellBrowserPage />)
+    await screen.findByRole('heading', { name: /Cure Wounds/ })
+    await user.click(screen.getByRole('button', { name: 'Manage Players' }))
+    await user.click(await screen.findByRole('checkbox', { name: 'Ari' }))
+    await user.click(screen.getByRole('button', { name: 'Cancel' }))
+
+    expect(replaceSpellPlayers).not.toHaveBeenCalled()
+    expect(screen.queryByRole('dialog', { name: /Manage Players for Cure Wounds/ })).not.toBeInTheDocument()
+  })
+
+  it('keeps the Manage Players draft when save fails', async () => {
+    vi.spyOn(api, 'listSpells').mockResolvedValue(spells)
+    vi.spyOn(api, 'listPlayers').mockResolvedValue(players)
+    vi.spyOn(api, 'getSpellPlayers').mockResolvedValue([players[1]])
+    vi.spyOn(api, 'replaceSpellPlayers').mockRejectedValue(new Error('save failed'))
+    const user = userEvent.setup()
+
+    render(<SpellBrowserPage />)
+    await screen.findByRole('heading', { name: /Cure Wounds/ })
+    await user.click(screen.getByRole('button', { name: 'Manage Players' }))
+    const ari = await screen.findByRole('checkbox', { name: 'Ari' })
+    await user.click(ari)
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+
+    expect(await screen.findByRole('status', { name: '' })).toHaveTextContent('save failed')
+    expect(screen.getByRole('checkbox', { name: 'Ari' })).toBeChecked()
+    expect(screen.getByRole('dialog', { name: /Manage Players for Cure Wounds/ })).toBeInTheDocument()
+  })
 })
+

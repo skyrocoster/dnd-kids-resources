@@ -9,7 +9,8 @@ router = APIRouter(prefix="/api", tags=["weapons"])
 
 SELECT_COLUMNS = (
     "id, name, base_weapon, rarity, weapon_category, weight, req_attune, "
-    "property, focus, attack, entries"
+    "property, focus, attack, entries, quick_rules, "
+    "weapon_attack_bonus, weapon_damage_bonus"
 )
 JSON_FIELDS = ["property", "focus", "attack", "entries"]
 
@@ -76,8 +77,9 @@ def create_weapon(weapon: WeaponCreate):
             cursor.execute(
                 """INSERT INTO weapons
                    (name, base_weapon, rarity, weapon_category, weight, req_attune,
-                    property, focus, attack, entries)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    property, focus, attack, entries, quick_rules,
+                    weapon_attack_bonus, weapon_damage_bonus)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     weapon.name,
                     weapon.base_weapon,
@@ -91,6 +93,9 @@ def create_weapon(weapon: WeaponCreate):
                     json.dumps(weapon.focus) if weapon.focus else "[]",
                     json.dumps(weapon.attack) if weapon.attack else "[]",
                     json.dumps(weapon.entries) if weapon.entries else "[]",
+                    weapon.quick_rules,
+                    weapon.weapon_attack_bonus,
+                    weapon.weapon_damage_bonus,
                 )
             )
             conn.commit()
@@ -118,7 +123,8 @@ def update_weapon(weapon_id: int, weapon: WeaponUpdate):
                 """UPDATE weapons
                    SET name = ?, base_weapon = ?, rarity = ?, weapon_category = ?,
                        weight = ?, req_attune = ?, property = ?, focus = ?, attack = ?,
-                       entries = ?
+                       entries = ?, quick_rules = ?,
+                       weapon_attack_bonus = ?, weapon_damage_bonus = ?
                    WHERE id = ?""",
                 (
                     weapon.name,
@@ -133,6 +139,9 @@ def update_weapon(weapon_id: int, weapon: WeaponUpdate):
                     json.dumps(weapon.focus) if weapon.focus else "[]",
                     json.dumps(weapon.attack) if weapon.attack else "[]",
                     json.dumps(weapon.entries) if weapon.entries else "[]",
+                    weapon.quick_rules,
+                    weapon.weapon_attack_bonus,
+                    weapon.weapon_damage_bonus,
                     weapon_id,
                 )
             )

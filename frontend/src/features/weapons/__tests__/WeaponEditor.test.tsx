@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as api from '../../../api/client'
@@ -20,15 +20,16 @@ describe('WeaponEditor', () => {
     render(<WeaponEditor onClose={() => {}} onSaved={onSaved} />)
 
     await user.type(screen.getByLabelText('Name'), 'Longsword')
+    await user.type(screen.getByLabelText('Quick Rules'), 'a weapon')
     await user.click(screen.getByRole('button', { name: 'Create Weapon' }))
 
     await waitFor(() => expect(createWeapon).toHaveBeenCalledOnce())
-    expect(createWeapon).toHaveBeenCalledWith(expect.objectContaining({ name: 'Longsword' }))
+    expect(createWeapon).toHaveBeenCalledWith(expect.objectContaining({ name: 'Longsword', quick_rules: 'a weapon' }))
     expect(onSaved).toHaveBeenCalledWith(created)
   })
 
   it('updates an existing weapon', async () => {
-    const weapon: Weapon = { id: 4, name: 'Dagger' }
+    const weapon: Weapon = { id: 4, name: 'Dagger', quick_rules: 'a weapon' }
     const updateWeapon = vi.spyOn(api, 'updateWeapon').mockResolvedValue(weapon)
     const user = userEvent.setup()
     render(<WeaponEditor weapon={weapon} onClose={() => {}} onSaved={() => {}} />)
@@ -36,6 +37,34 @@ describe('WeaponEditor', () => {
     await user.click(screen.getByRole('button', { name: 'Save Changes' }))
 
     await waitFor(() => expect(updateWeapon).toHaveBeenCalledWith(4, expect.objectContaining({ name: 'Dagger' })))
+  })
+
+  describe('quick_rules validation', () => {
+    it('rejects unknown tokens in quick_rules', async () => {
+      const onSaved = vi.fn()
+      const user = userEvent.setup()
+      render(<WeaponEditor onClose={() => {}} onSaved={onSaved} />)
+
+      await user.type(screen.getByLabelText('Name'), 'Bad Weapon')
+      fireEvent.change(screen.getByLabelText('Quick Rules'), { target: { value: 'attack {bogus_token}' } })
+      await user.click(screen.getByRole('button', { name: 'Create Weapon' }))
+
+      expect(await screen.findByRole('status')).toHaveTextContent(/unknown token/i)
+      expect(onSaved).not.toHaveBeenCalled()
+    })
+
+    it('rejects malformed quick_rules', async () => {
+      const onSaved = vi.fn()
+      const user = userEvent.setup()
+      render(<WeaponEditor onClose={() => {}} onSaved={onSaved} />)
+
+      await user.type(screen.getByLabelText('Name'), 'Bad Weapon')
+      fireEvent.change(screen.getByLabelText('Quick Rules'), { target: { value: 'attack {weapon_attack_bonus' } })
+      await user.click(screen.getByRole('button', { name: 'Create Weapon' }))
+
+      expect(await screen.findByRole('status')).toHaveTextContent(/quick rules/i)
+      expect(onSaved).not.toHaveBeenCalled()
+    })
   })
 
   describe('Dialog contract', () => {
@@ -46,7 +75,7 @@ describe('WeaponEditor', () => {
     })
 
     it('uses the weapon title when editing', () => {
-      const weapon: Weapon = { id: 4, name: 'Dagger' }
+      const weapon: Weapon = { id: 4, name: 'Dagger', quick_rules: 'a weapon' }
       render(<WeaponEditor weapon={weapon} onClose={() => {}} onSaved={() => {}} />)
       expect(screen.getByRole('dialog', { name: 'Edit Weapon: Dagger' })).toBeInTheDocument()
     })
@@ -69,6 +98,7 @@ describe('WeaponEditor', () => {
       render(<WeaponEditor onClose={() => {}} onSaved={() => {}} />)
 
       await user.type(screen.getByLabelText('Name'), 'Broken Sword')
+      await user.type(screen.getByLabelText('Quick Rules'), 'a weapon')
       await user.click(screen.getByRole('button', { name: 'Create Weapon' }))
 
       expect(await screen.findByRole('status')).toHaveTextContent('Unable to save')
@@ -86,6 +116,7 @@ describe('WeaponEditor', () => {
       render(<WeaponEditor onClose={onClose} onSaved={() => {}} />)
 
       await user.type(screen.getByLabelText('Name'), 'Pending Weapon')
+      await user.type(screen.getByLabelText('Quick Rules'), 'a weapon')
       await user.click(screen.getByRole('button', { name: 'Create Weapon' }))
 
       expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled()

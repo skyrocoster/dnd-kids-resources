@@ -10,16 +10,16 @@ This is the complete documentation inventory and task router. Read [../CLAUDE.md
 
 | Task | Area / current stage | Read first |
 |---|---|---|
-| Documentation maintenance | [Documentation Governance](areas/documentation.md) | `PLAN_TEMPLATE.md`, `scripts/check_docs.py`, `TESTING.md`, and existing GitHub workflow files |
+| Documentation maintenance | [Documentation Governance](areas/documentation.md) — [Docs Restructure](plans/active/docs-restructure.md) next | `PLAN_TEMPLATE.md`, `scripts/check_docs.py`, `TESTING.md`, and existing GitHub workflow files |
 | Designing or changing any UI surface | [Visual Design](areas/visual-design.md) | `UX_PATTERNS.md`, `DESIGN_SYSTEM.md`, the owning area guide's `## Surfaces` table |
 | Visual consistency work | [Visual Design](areas/visual-design.md) — plan archived | `areas/visual-design.md`, `DESIGN_SYSTEM.md`, `ARCHITECTURE.md`, `TESTING.md` |
 | Story threads, Loom tapestry, beats, or session nodes | Its area guide; create a focused plan if it has none | `areas/loom.md`, `DESIGN_SYSTEM.md`, `ARCHITECTURE.md`, `API_REFERENCE.md`, `DATA_MODEL.md`, `TESTING.md` |
-| Existing dungeon, encounter, monster, spell, or loot behavior | Its area guide; Spells is at [Validated Reference Text](plans/active/validated-reference-text.md) | `ARCHITECTURE.md`, `API_REFERENCE.md`, `DATA_MODEL.md`, `TESTING.md`, then the guide's active plan |
+| Existing dungeon, encounter, monster, spell, or loot behavior | Its area guide; create a focused plan if it has none | `ARCHITECTURE.md`, `API_REFERENCE.md`, `DATA_MODEL.md`, `TESTING.md` |
 | Wall kinds, map extent/padding, outside features, or map layer and density controls | [Dungeons](areas/dungeons.md) — [Dungeon Outside](complete/dungeon-outside.md) shipped | `UX_PATTERNS.md`, `DESIGN_SYSTEM.md`, `DATA_MODEL.md`, `TESTING.md`, then the plan |
 | Weapons, items, or NPCs (incl. NPC statblocks, the pull panel, or adding an NPC to an encounter) | [Reference Catalogs](areas/reference-catalogs.md) — [Weapon Quick Reference](plans/active/weapon-quick-reference.md) next | `DATA_MODEL.md`, `API_REFERENCE.md`, `UX_PATTERNS.md`, `TESTING.md` |
 | Players, recovery profiles, or player spell/weapon rosters | [Players](areas/players.md) — [Player Spellbook Recovery](plans/active/player-spellbook-recovery.md) blocked by its prerequisites | `DATA_MODEL.md`, `API_REFERENCE.md`, `UX_PATTERNS.md`, `TESTING.md`, then the plan |
 | API route or client contract | Relevant area guide; create a focused plan if it has none | `API_REFERENCE.md`, `ARCHITECTURE.md`, `TESTING.md` |
-| Database schema, seed, import, or export | Relevant area guide; create a focused plan if it has none | `DATA_MODEL.md`, `ARCHITECTURE.md`, `TESTING.md` |
+| Database schema, seed, import, or export | Relevant area guide; schema generation, migrations, and the deploy path are [Repo Infra](areas/repo-infra.md) — [Production Nightly Deploys](plans/active/production-nightly-deploys.md) next | `DATA_MODEL.md`, `ARCHITECTURE.md`, `TESTING.md` |
 | Shared UI, tokens, icons, or accessibility | [Visual Design](areas/visual-design.md) — [Collapsible Catalog Rail](plans/active/collapsible-catalog-rail.md) | `DESIGN_SYSTEM.md`, `ARCHITECTURE.md`, `TESTING.md` |
 | Test tooling, fixtures, coverage, or CI | Relevant area guide, or [Repo Infra](areas/repo-infra.md) if genuinely cross-cutting | `TESTING.md`, `ARCHITECTURE.md` |
 
@@ -40,9 +40,10 @@ Authority: **Canonical** documents define current contracts. **Working** documen
 | [TESTING.md](TESTING.md) | Reference | Canonical | Active | Commands, fixtures, coverage, or test locations | A test command, fixture topology, coverage gate, or CI contract changes |
 | [README.md](README.md) | Manifest | Canonical | Active | Routing a task or locating documentation | Documentation inventory, routing, or plan status changes |
 | [PLAN_TEMPLATE.md](PLAN_TEMPLATE.md) | Template | Canonical | Active | Creating, executing, or closing a plan | Plan execution or lifecycle requirements change |
-| [areas/documentation.md](areas/documentation.md) | Area guide | Canonical | No active plan | Documentation contract or validator work | Documentation routing or validation changes |
+| [areas/documentation.md](areas/documentation.md) | Area guide | Canonical | Active plan | Documentation contract or validator work | Documentation routing or validation changes |
+| [plans/active/docs-restructure.md](plans/active/docs-restructure.md) | Plan | Working | Active (next up) | Area cuts, plan folder layout, manifest shape, or source-map coverage | A stage ships, or its scope or settled decisions change |
 | [areas/dungeons.md](areas/dungeons.md) | Area guide | Canonical | Active plan | Dungeon behavior | Dungeon ownership, source map, or active work changes |
-| [plans/active/dungeon-connections.md](plans/active/dungeon-connections.md) | Plan | Working | Active (next up) | Permanent session state, cross-dungeon gateways, or the connection resolve list | It becomes next up, or its scope or UX decisions change |
+| [plans/active/dungeon-connections.md](plans/active/dungeon-connections.md) | Plan | Working | Active (Stage 1 shipped) | Permanent session state, cross-dungeon gateways, or the connection resolve list | Stage progress, or its scope or UX decisions change |
 | [areas/encounters.md](areas/encounters.md) | Area guide | Canonical | No active plan | Encounter behavior | Encounter ownership, source map, or active work changes |
 | [areas/loot.md](areas/loot.md) | Area guide | Canonical | No active plan | Loot or item-bundle behavior | Loot ownership, source map, or active work changes |
 | [areas/loom.md](areas/loom.md) | Area guide | Canonical | No active plan | Story-thread (Loom) behavior | Loom ownership, source map, or active work changes |
@@ -51,11 +52,12 @@ Authority: **Canonical** documents define current contracts. **Working** documen
 | [plans/active/weapon-quick-reference.md](plans/active/weapon-quick-reference.md) | Plan | Working | Active (next up) | Weapon quick rules, sheet-ready attacks, or Copy as New | A stage ships, or its scope or UX decisions change |
 | [areas/players.md](areas/players.md) | Area guide | Canonical | Active plan | Player records, recovery profiles, or player rosters | Player ownership, source map, or active work changes |
 | [plans/active/player-spellbook-recovery.md](plans/active/player-spellbook-recovery.md) | Plan | Working | Active (next up, blocked) | Player recovery data, spell-first reference, or character assignments | Its prerequisites complete, a stage ships, or scope changes |
-| [areas/spells.md](areas/spells.md) | Area guide | Canonical | Active plan | Spell behavior | Spell ownership, source map, or active work changes |
-| [plans/active/validated-reference-text.md](plans/active/validated-reference-text.md) | Plan | Working | Active (next up) | Validated placeholders, spell quick rules, or extensible reference text | A stage ships, or its scope or UX decisions change |
+| [areas/spells.md](areas/spells.md) | Area guide | Canonical | No active plan | Spell behavior | Spell ownership, source map, or active work changes |
 | [areas/visual-design.md](areas/visual-design.md) | Area guide | Canonical | Active plan | Shared UI, tokens, shell, or accessibility | Visual routing or active work changes |
 | [plans/active/collapsible-catalog-rail.md](plans/active/collapsible-catalog-rail.md) | Plan | Working | Active (next up) | Shared BrowserLayout list collapse or catalog rail behavior | A stage ships, or its scope or UX decisions change |
-| [areas/repo-infra.md](areas/repo-infra.md) | Area guide | Canonical | No active plan | Shared backend infra or repo-wide test tooling | Repo-infra ownership, source map, or active work changes |
+| [areas/repo-infra.md](areas/repo-infra.md) | Area guide | Canonical | Active plan | Shared backend infra or repo-wide test tooling | Repo-infra ownership, source map, or active work changes |
+| [plans/active/production-nightly-deploys.md](plans/active/production-nightly-deploys.md) | Plan | Working | Active (next up) | Schema generation, database migrations, or the deploy path | A stage ships, or its scope or settled decisions change |
+| [complete/validated-reference-text.md](complete/validated-reference-text.md) | Archived plan | Historical | Complete | Validated placeholders, spell quick rules, extensible reference text, or Spell detail player assignment history | Do not update except to repair archival metadata |
 | [complete/visual-consistency.md](complete/visual-consistency.md) | Archived plan | Historical | Complete | Visual consistency remediation history | Do not update except to repair archival metadata |
 | [complete/loom-campaign-progress-ui.md](complete/loom-campaign-progress-ui.md) | Archived plan | Historical | Complete | Loom board/inspector campaign-progress UI patch history | Do not update except to repair archival metadata |
 | [complete/backend-test-coverage.md](complete/backend-test-coverage.md) | Archived plan | Historical | Complete | Backend coverage gap-closing history | Do not update except to repair archival metadata |
@@ -106,3 +108,4 @@ Run from the repository root:
 On POSIX shells, use `.venv/bin/python` instead of `.venv\Scripts\python.exe`. The repo-local virtualenv is the preferred route for Python-backed validation so the documentation checker imports the project's installed backend dependencies rather than whichever global interpreter happens to be first on `PATH`.
 
 GitHub Actions runs the `documentation-contract` workflow on every pull request and push to `main`; it must be enabled as a required branch-protection check in GitHub settings. The [PR template](../.github/pull_request_template.md) requires each author to confirm that a fresh reader can route the change to its owning plan and minimum context.
+

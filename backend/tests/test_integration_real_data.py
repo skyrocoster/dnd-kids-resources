@@ -15,11 +15,18 @@ seed data, and every row of every browsable collection must serialize.**
 """
 
 import json
+import re
 import sqlite3
+from pathlib import Path
 
 import pytest
 
-from backend.app.schemas import Spell
+from backend.app.reference_text import (
+    spell_value_reference_registry,
+    validate_reference_text,
+    weapon_value_reference_registry,
+)
+from backend.app.schemas import Spell, Weapon
 
 # Whole module runs against the full frozen production seeds (slower, read-only).
 pytestmark = pytest.mark.integration
@@ -65,11 +72,174 @@ _LEGACY_SPELL_FIELDS = {
     "action", "classes", "subclasses",
 }
 
+_ROOT = Path(__file__).resolve().parents[2]
+_SPELL_SEED_PATH = _ROOT / "data" / "seeds" / "seed_spells.json"
+_WEAPON_SEED_PATH = _ROOT / "data" / "seeds" / "seed_weapons.json"
+
+_WEAPON_FIELDS = set(Weapon.model_fields)
+_ABILITY_NAMES = {
+    "str": "Strength",
+    "dex": "Dexterity",
+    "con": "Constitution",
+    "int": "Intelligence",
+    "wis": "Wisdom",
+    "cha": "Charisma",
+}
+
+
+def _seeded_spells() -> list[dict]:
+    return json.loads(_SPELL_SEED_PATH.read_text(encoding="utf-8"))
+
+
+def _seeded_weapons() -> list[dict]:
+    return json.loads(_WEAPON_SEED_PATH.read_text(encoding="utf-8"))
+
 
 def _assert_canonical_spell(spell: dict) -> None:
     assert set(spell) == _SPELL_FIELDS
     assert not _LEGACY_SPELL_FIELDS.intersection(spell)
     Spell.model_validate(spell)
+
+def _assert_canonical_weapon(weapon: dict) -> None:
+    assert set(weapon) == _WEAPON_FIELDS
+    Weapon.model_validate(weapon)
+
+def _saving_throws(spell: dict) -> set[str]:
+    return {
+        save
+        for attack in spell.get("attacks", [])
+        for save in attack.get("saving_throws", [])
+    }
+
+
+def _describes_spell_attack(spell: dict) -> bool:
+    text = f"{spell.get('description') or ''}\n{spell.get('alternate_description') or ''}".lower()
+    return "spell attack" in text
+
+
+def _has_structured_spell_attack(spell: dict) -> bool:
+    return any(attack.get("kind") in {"melee", "ranged"} for attack in spell.get("attacks", []))
+
+
+def _direct_healing_formula(amount: object) -> bool:
+    return isinstance(amount, str) and re.fullmatch(r"[0-9 dD+\-]+", amount) is not None
+
+
+def test_seeded_spell_quick_rules_are_present_and_registered_token_valid():
+    failures = []
+    for spell in _seeded_spells():
+        quick_rules = spell.get("quick_rules")
+        if not isinstance(quick_rules, str) or not quick_rules.strip():
+            failures.append(f"{spell['name']}: missing quick_rules")
+            continue
+
+        result = validate_reference_text(quick_rules, spell_value_reference_registry)
+        if not result["valid"]:
+            failures.append(f"{spell['name']}: {result['errors']}")
+
+    assert failures == []
+
+
+def test_seeded_spell_quick_rules_stay_concise_and_single_line():
+    failures = []
+    for spell in _seeded_spells():
+        quick_rules = spell["quick_rules"]
+        if len(quick_rules) > 320:
+            failures.append(f"{spell['name']}: {len(quick_rules)} chars")
+        if chr(10) in quick_rules or chr(13) in quick_rules:
+            failures.append(f"{spell['name']}: multiline quick_rules")
+        if "  " in quick_rules:
+            failures.append(f"{spell['name']}: repeated spaces")
+        if quick_rules[-1] not in ".!)":
+            failures.append(f"{spell['name']}: missing sentence terminator")
+
+    assert failures == []
+
+
+def test_seeded_spell_quick_rules_match_direct_structured_facts():
+    failures = []
+    for spell in _seeded_spells():
+        quick_rules = spell["quick_rules"]
+        quick_rules_lower = quick_rules.lower()
+        saves = _saving_throws(spell)
+        describes_spell_attack = _describes_spell_attack(spell)
+
+        if len(saves) == 1:
+            save = next(iter(saves))
+            ability = _ABILITY_NAMES[save]
+            if ability not in quick_rules or "{spell_save_dc}" not in quick_rules:
+                failures.append(f"{spell['name']}: missing {ability} save/DC wording")
+
+        if _has_structured_spell_attack(spell) and describes_spell_attack:
+            if "spell attack" not in quick_rules_lower or "{spell_attack_bonus}" not in quick_rules:
+                failures.append(f"{spell['name']}: missing spell attack bonus wording")
+
+        damage = spell.get("damage", [])
+        if len(damage) == 1 and damage[0].get("formula") and (len(saves) == 1 or describes_spell_attack):
+            formula = damage[0]["formula"]
+            if formula not in quick_rules:
+                failures.append(f"{spell['name']}: missing damage formula {formula}")
+            damage_types = damage[0].get("damage_types", [])
+            if len(damage_types) == 1 and damage_types[0] not in quick_rules_lower:
+                failures.append(f"{spell['name']}: missing damage type {damage_types[0]}")
+
+        healing_amount = spell.get("healing", {}).get("amount")
+        if _direct_healing_formula(healing_amount) and healing_amount not in quick_rules:
+            failures.append(f"{spell['name']}: missing healing formula {healing_amount}")
+
+    assert failures == []
+
+
+def test_seeded_weapon_quick_rules_are_present_and_registered_token_valid():
+    failures = []
+    for weapon in _seeded_weapons():
+        quick_rules = weapon.get("quick_rules")
+        if not isinstance(quick_rules, str) or not quick_rules.strip():
+            failures.append(f"{weapon['name']}: missing quick_rules")
+            continue
+
+        result = validate_reference_text(quick_rules, weapon_value_reference_registry)
+        if not result["valid"]:
+            failures.append(f"{weapon['name']}: {result['errors']}")
+
+    assert failures == []
+
+
+def test_seeded_weapon_quick_rules_stay_concise_and_single_line():
+    failures = []
+    for weapon in _seeded_weapons():
+        quick_rules = weapon["quick_rules"]
+        if len(quick_rules) > 320:
+            failures.append(f"{weapon['name']}: {len(quick_rules)} chars")
+        if chr(10) in quick_rules or chr(13) in quick_rules:
+            failures.append(f"{weapon['name']}: multiline quick_rules")
+        if "  " in quick_rules:
+            failures.append(f"{weapon['name']}: repeated spaces")
+        if quick_rules[-1] not in ".!)":
+            failures.append(f"{weapon['name']}: missing sentence terminator")
+
+    assert failures == []
+
+
+def test_every_weapon_list_and_detail_validates_with_canonical_contract(real_client):
+    offset = 0
+    total = 0
+    while True:
+        listing = real_client.get(f"/api/weapons?limit=500&offset={offset}")
+        assert listing.status_code == 200, listing.text[:300]
+        batch = listing.json()
+        for listed_weapon in batch:
+            _assert_canonical_weapon(listed_weapon)
+            detail = real_client.get(f"/api/weapons/{listed_weapon['id']}")
+            assert detail.status_code == 200, (
+                f"/api/weapons/{listed_weapon['id']} -> {detail.status_code}: {detail.text[:300]}"
+            )
+            _assert_canonical_weapon(detail.json())
+        total += len(batch)
+        if len(batch) < 500:
+            break
+        offset += 500
+    assert total == 219
 
 
 @pytest.mark.parametrize("path", LIST_ENDPOINTS)
@@ -379,6 +549,28 @@ def test_every_player_nested_endpoints_serialize(real_client):
         assert isinstance(weapons.json(), list)
 
 
+def test_seeded_spell_reverse_player_list_serializes(real_client):
+    players = real_client.get("/api/players")
+    assert players.status_code == 200
+
+    for player in players.json():
+        spells = real_client.get(f"/api/players/{player['id']}/spells")
+        assert spells.status_code == 200, spells.text[:300]
+        if not spells.json():
+            continue
+
+        spell_id = spells.json()[0]["id"]
+        reverse = real_client.get(f"/api/spells/{spell_id}/players")
+        assert reverse.status_code == 200, (
+            f"/api/spells/{spell_id}/players -> {reverse.status_code}: {reverse.text[:300]}"
+        )
+        reverse_players = reverse.json()
+        assert isinstance(reverse_players, list)
+        assert any(reverse_player["id"] == player["id"] for reverse_player in reverse_players)
+        return
+
+    pytest.fail("No seeded player spell assignments to exercise reverse spell-player endpoint")
+
 def test_players_expose_class(real_client):
     """Real players must surface their class (regression: was silently dropped)."""
     resp = real_client.get("/api/players")
@@ -387,3 +579,11 @@ def test_players_expose_class(real_client):
     assert players
     # At least one seeded player has a class set.
     assert any(p.get("class_") for p in players), "class column dropped for all players"
+
+
+
+
+
+
+
+

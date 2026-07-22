@@ -43,7 +43,7 @@ EXPORT_DEFINITIONS = {
     },
     "weapons": {
         "file": "seed_weapons.json",
-        "query": "SELECT id, name, base_weapon, baseitems, rarity, weapon_category, weight, req_attune, sentient, curse, resist, property, focus, spells, attack, recharge, light, entries, tier, grants_language, bonus_spell_attack, bonus_spell_save_dc, bonus_ac, bonus_saving_throw, crit_threshold, ammo_type, grants_proficiency, modify_speed, ability FROM weapons ORDER BY name",
+        "query": "SELECT id, name, base_weapon, baseitems, rarity, weapon_category, weight, req_attune, sentient, curse, resist, property, focus, spells, attack, recharge, light, entries, tier, grants_language, bonus_spell_attack, bonus_spell_save_dc, bonus_ac, bonus_saving_throw, crit_threshold, ammo_type, grants_proficiency, modify_speed, ability, quick_rules, weapon_attack_bonus, weapon_damage_bonus FROM weapons ORDER BY name",
     },
     "spells": {
         "file": "seed_spells.json",

@@ -29,6 +29,7 @@ This ensures schema and seed-backed data stay synced with the codebase. Dungeons
 | `seed_loot_bundles.json` | `loot_bundle` | Hand-authored loot bundles with snapshotted contents | `/api/loot-bundles` |
 | (runtime-created) | `dungeons` | Dungeon title and room-reading content | `/api/dungeons` |
 | (editor-generated) | `map_layout` | Map geometry; deleted with its dungeon | `/api/dungeons/{id}/layout` |
+| (session-generated) | `map_session_state` | Door/stair/portal toggle overrides; deleted with its dungeon | `/api/dungeons/{id}/session-state` |
 | `seed_encounters.json` | `encounter` | Combat encounters, roster, and active index | `/api/encounters` |
 | `seed_npcs.json` | `npcs` | Non-player characters | `/api/npcs` |
 | `seed_players.json` | `players` | Player characters | `/api/players` |
@@ -47,6 +48,7 @@ Non-obvious foreign-key-like relationships (skip any self-evident from naming):
 - **`encounter`** — Stores `name`, JSON `units`, and `active_index`. The API aliases the first two as `title` and `creatures`; source-backed units use the soft typed reference `creature_id` plus `source_kind` (`"monster"` or `"npc"`), while manually added player rows may use `kind: "player"` with a null creature ID. No explicit foreign key is enforced.
 - **`loot_bundle`** — Contains `contents`, a JSON array of item/weapon snapshots. Entries keep a soft `ref_id` to the catalog source, but retain their name, item category, per-unit `value_gp`, and quantity after source edits or deletion.
 - **`dungeons`** — Contains `data` (room-reading content) while `map_layout.data` independently stores geometry. Both use the same room IDs; room titles/content belong to `dungeons.data`, while layout room titles are render caches. Missing layout data is treated as a transient empty layout; a missing dungeon is an error.
+- **`map_session_state`** — One row per dungeon holding live door/stair/portal toggle overrides, kept separate from `map_layout` so opening a door never dirties the authored map document. Missing session-state data is treated as empty (every fixture at its authored default); "Reset dungeon" deletes the row rather than writing empty maps back.
 - **`loom_threads` → `loom_nodes`** — A thread contains many nodes via `loom_nodes.thread_id` FK (its ordered story: Start, beats, sessions, End). A node belongs to at most one thread at a time; a NULL `thread_id` means the beat is banked (unplaced). A `session`-kind node may have `session_id` set to the session column it belongs to. Deleting a thread deletes its nodes via `ON DELETE CASCADE` on `loom_nodes.thread_id`. The `loom_node_threads` junction table is retired; an earlier migration script (`scripts/migrate_loom_v2.py`) records the transition.
 - **`loom_threads.origin_node_id` → `loom_nodes`** — Nullable back-reference: the `session` node a spawned Thread grew from. `ON DELETE SET NULL` — deleting that session un-links the spawned thread without deleting it.
 - **`loom_nodes.banked_from_thread_id` → `loom_threads`** — Nullable: which thread a banked (unplaced) `beat` was removed from, `ON DELETE SET NULL`.
@@ -57,7 +59,7 @@ Some tables store complex structured data as JSON strings. Router and database h
 
 | Table | Column | Contents | Example |
 |---|---|---|---|
-| `spells` | `quick_rules` | Validated reference text for concise authored spell rules; nullable only for legacy seed rows until the canonical seed pass | `Action: make a spell attack using {spell_attack_bonus}.` |
+| `spells` | `quick_rules` | Validated reference text for concise authored spell rules; committed spell seeds are nonblank, while the runtime column remains nullable for legacy/local rows | `Action: make a spell attack using {spell_attack_bonus}.` |
 | `spells` | `damage` | List of named damage expressions | `[{"name":"primary","formula":"8d6","damage_types":["fire"]}]` |
 | `spells` | `healing` | Healing expression and flags | `{"amount":"1d4+1","temp_hp":false,"max_hp":false}` |
 | `spells` | `higher_levels` | Higher-level prose and damage-by-slot expressions | `{"text":null,"damage_by_slot":{"3":"8d6"}}` |
@@ -86,6 +88,7 @@ Some tables store complex structured data as JSON strings. Router and database h
 | `encounter` | `units` | List of source-backed creature or manual player roster entries | `[{"creature_id":1,"source_kind":"monster","name":"Goblin","hp_current":7}, ...]` |
 | `dungeons` | `data` | DungeonData shape: general_info and rooms (with entries, NPCs); map geometry and navigation fixtures are not stored here | (large JSON blob per dungeon) |
 | `map_layout` | `data` | MapLayout blob: rooms, doors, stairs, floors, props, portals, fixtures. Props may soft-reference a loot bundle by `bundle_id` with cached `bundle_name`; bundle contents resolve live. | (JSON blob per dungeon) |
+| `map_session_state` | `data` | Session overrides for doors/stairs/portals: `{"doors": {...}, "stairs": {...}, "portals": {...}}`, each a map from fixture id to `{"isOpen", "isLocked", "trapDisarmed"}`. Opaque to the backend — same treatment as `map_layout.data`. | (JSON blob per dungeon) |
 | `player_spells` | (implicit in junction) | (Many-to-many, no direct column; routes expose via `/players/{id}/spells`) | |
 | `player_weapons` | (implicit in junction) | (Many-to-many, no direct column; routes expose via `/players/{id}/weapons`) | |
 | `weapons` | `attack` | List of attack definitions (similar to spells) | `[{"type": "melee", "damage": "1d8"}]` |
@@ -283,6 +286,15 @@ Indexes: `sqlite_autoindex_loom_threads_1`.
 
 Foreign keys: `dungeon_id` -> `dungeons.id` (CASCADE).
 
+#### `map_session_state`
+
+| Column | Type | Required | Default |
+|---|---|---|---|
+| `dungeon_id` | `INTEGER` | yes | `-` |
+| `data` | `TEXT` | yes | `-` |
+
+Foreign keys: `dungeon_id` -> `dungeons.id` (CASCADE).
+
 #### `monsters`
 
 | Column | Type | Required | Default |
@@ -466,6 +478,9 @@ Indexes: `sqlite_autoindex_weapon_properties_1`.
 | `grants_proficiency` | `BOOLEAN` | yes | `0` |
 | `modify_speed` | `TEXT` | yes | `'{}'` |
 | `ability` | `TEXT` | yes | `'{}'` |
+| `quick_rules` | `TEXT` | no | `-` |
+| `weapon_attack_bonus` | `INTEGER` | no | `-` |
+| `weapon_damage_bonus` | `INTEGER` | no | `-` |
 | `created_at` | `DATETIME` | no | `CURRENT_TIMESTAMP` |
 | `updated_at` | `DATETIME` | no | `CURRENT_TIMESTAMP` |
 

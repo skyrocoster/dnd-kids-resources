@@ -98,6 +98,9 @@ beforeEach(() => {
   vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: mapLabLayout as unknown as Record<string, unknown> })
   vi.spyOn(api, 'listNPCs').mockResolvedValue([{ id: 9, name: 'Mira' }])
   vi.spyOn(api, 'getNPC').mockResolvedValue(miraNpc)
+  vi.spyOn(api, 'getDungeonSessionState').mockRejectedValue(new api.ApiError(404, 'Session state not found'))
+  vi.spyOn(api, 'saveDungeonSessionState').mockResolvedValue(undefined as unknown as { data: Record<string, unknown> })
+  vi.spyOn(api, 'resetDungeonSessionState').mockResolvedValue(undefined)
   Element.prototype.scrollIntoView = vi.fn()
 })
 
@@ -549,7 +552,8 @@ describe('MapLabPage (Stage 4 — Passage session state)', () => {
     expect(door).toHaveAttribute('data-state', 'locked')
     expect(door.querySelector('.maplab-door-leaf-closed')).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'Reset session state' }))
+    await user.click(screen.getByRole('button', { name: 'Reset dungeon' }))
+    await user.click(screen.getByRole('button', { name: 'Reset' }))
     // Back to the authored default: trapped (armed) takes precedence again, door open.
     expect(door).toHaveAttribute('data-state', 'trapped')
     expect(door.querySelector('.maplab-door-leaf')).toBeInTheDocument()
@@ -1139,7 +1143,7 @@ describe('Design Phase J1 — toolbar trays', () => {
     renderMapLabPage()
     await flush()
 
-    expect(screen.getByRole('button', { name: 'Reset session state' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Reset dungeon' })).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Collapse Session tools' }))
 
@@ -1164,6 +1168,9 @@ describe('VT0 — Viewer live-surface scaffolding seams', () => {
     vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: mapLabLayout as unknown as Record<string, unknown> })
     vi.spyOn(api, 'listNPCs').mockResolvedValue([{ id: 9, name: 'Mira' }])
     vi.spyOn(api, 'getNPC').mockResolvedValue(miraNpc)
+    vi.spyOn(api, 'getDungeonSessionState').mockRejectedValue(new api.ApiError(404, 'Session state not found'))
+    vi.spyOn(api, 'saveDungeonSessionState').mockResolvedValue({ data: {} })
+    vi.spyOn(api, 'resetDungeonSessionState').mockResolvedValue(undefined)
     Element.prototype.scrollIntoView = vi.fn()
   })
 

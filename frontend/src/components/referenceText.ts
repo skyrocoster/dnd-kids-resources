@@ -247,3 +247,25 @@ export const spellValueReferenceRegistry = createReferenceRegistry<SpellValueRef
     resolve: (context) => context.spell_save_dc,
   },
 ])
+
+export interface WeaponValueReferenceContext {
+  weapon_attack_bonus?: number | null
+  weapon_damage_bonus?: number | null
+}
+
+export const weaponValueReferenceRegistry = createReferenceRegistry<WeaponValueReferenceContext>([
+  {
+    token: 'weapon_attack_bonus',
+    kind: 'value',
+    domain: 'weapon',
+    fallback: 'your attack bonus',
+    resolve: (context) => context.weapon_attack_bonus,
+  },
+  {
+    token: 'weapon_damage_bonus',
+    kind: 'value',
+    domain: 'weapon',
+    fallback: 'your damage bonus',
+    resolve: (context) => context.weapon_damage_bonus,
+  },
+])

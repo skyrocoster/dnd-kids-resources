@@ -1,6 +1,6 @@
 # Reference Catalogs Area Guide
 
-> **Active plan:** [Weapon Quick Reference](../plans/active/weapon-quick-reference.md) (next up).
+> **Active plan:** [Weapon Quick Reference](../plans/active/weapon-quick-reference.md) — Stage 1 complete, Stage 2 (Copy as New) next.
 
 ## Scope
 

@@ -28,6 +28,10 @@ def _load_module(name: str, path: Path):
 INIT_DB = _load_module("_b1_init_database", REPO_ROOT / "scripts" / "init_database.py")
 SEED_DB = _load_module("_b1_seed_database", REPO_ROOT / "scripts" / "seed_database.py")
 EXPORT_DB = _load_module("_b1_export_db_seeds", REPO_ROOT / "scripts" / "export_db_seeds.py")
+QUICK_RULES = _load_module(
+    "_b1_generate_spell_quick_rules",
+    REPO_ROOT / "scripts" / "generate_spell_quick_rules.py",
+)
 
 
 def _init_schema(db_path: Path) -> None:
@@ -124,20 +128,23 @@ def test_seed_all_525_insert_with_ids_preserved(tmp_path: Path):
     assert ids == list(range(1, 526))
 
 
-def test_seed_all_525_quick_rules_remain_null(tmp_path: Path):
-    db_path = tmp_path / "seed-null.db"
+def test_seed_all_525_quick_rules_are_nonblank_and_valid(tmp_path: Path):
+    db_path = tmp_path / "seed-quick-rules.db"
     _init_schema(db_path)
     _seed_spells(db_path, force=True)
 
     conn = sqlite3.connect(str(db_path))
     try:
-        non_null_quick_rules = conn.execute(
-            "SELECT COUNT(*) FROM spells WHERE quick_rules IS NOT NULL"
-        ).fetchone()[0]
+        rows = conn.execute("SELECT quick_rules FROM spells ORDER BY id").fetchall()
     finally:
         conn.close()
 
-    assert non_null_quick_rules == 0
+    assert len(rows) == 525
+    assert all(isinstance(row[0], str) and row[0].strip() for row in rows)
+    assert all(
+        SEED_DB.validate_reference_text(row[0], SEED_DB.spell_value_reference_registry)["valid"]
+        for row in rows
+    )
 
 
 def test_seed_level_is_integer(tmp_path: Path):
@@ -275,6 +282,109 @@ def test_insert_spell_with_explicit_id(tmp_path: Path):
     assert inserted_id == 123
 
 
+def _init_and_seed_weapons(db_path: Path, force: bool = False) -> None:
+    _init_schema(db_path)
+    conn = sqlite3.connect(str(db_path))
+    cursor = conn.cursor()
+    try:
+        with redirect_stdout(io.StringIO()):
+            SEED_DB.populate_weapons(cursor, conn, force=force)
+    finally:
+        conn.close()
+
+
+def test_weapon_invalid_quick_rules_rejected(tmp_path: Path):
+    db_path = tmp_path / "weapon-invalid-qr.db"
+    _init_schema(db_path)
+
+    conn = sqlite3.connect(str(db_path))
+    try:
+        with pytest.raises(ValueError) as exc:
+            SEED_DB.insert_weapon(
+                conn.cursor(),
+                {
+                    "name": "Invalid QR Weapon",
+                    "quick_rules": "Use {bogus_token}.",
+                },
+            )
+        assert "Invalid quick_rules" in str(exc.value)
+    finally:
+        conn.close()
+
+
+def test_weapon_quick_rules_round_trip_exact_string(tmp_path: Path):
+    db_path = tmp_path / "weapon-qr-rt.db"
+    export_dir = tmp_path / "seeds"
+    export_dir.mkdir()
+    _init_schema(db_path)
+
+    conn = sqlite3.connect(str(db_path))
+    try:
+        SEED_DB.insert_weapon(
+            conn.cursor(),
+            {
+                "name": "Round Trip Blade",
+                "quick_rules": "Attack +{weapon_attack_bonus}, damage +{weapon_damage_bonus}.",
+                "weapon_attack_bonus": 3,
+                "weapon_damage_bonus": 2,
+            },
+        )
+        conn.commit()
+        row = conn.execute(
+            "SELECT quick_rules FROM weapons WHERE name = ?",
+            ("Round Trip Blade",),
+        ).fetchone()
+    finally:
+        conn.close()
+
+    assert row[0] == "Attack +{weapon_attack_bonus}, damage +{weapon_damage_bonus}."
+
+    original_dir = EXPORT_DB.SEEDS_DIR
+    try:
+        EXPORT_DB.SEEDS_DIR = export_dir
+        with sqlite3.connect(str(db_path)) as export_conn:
+            EXPORT_DB.export_table(export_conn.cursor(), "weapons")
+    finally:
+        EXPORT_DB.SEEDS_DIR = original_dir
+
+    exported = json.loads((export_dir / "seed_weapons.json").read_text(encoding="utf-8"))
+    exported_row = next(item for item in exported if item["name"] == "Round Trip Blade")
+    assert exported_row["quick_rules"] == "Attack +{weapon_attack_bonus}, damage +{weapon_damage_bonus}."
+    assert exported_row["weapon_attack_bonus"] == 3
+    assert exported_row["weapon_damage_bonus"] == 2
+
+
+def test_seeded_weapon_quick_rules_round_trip_exact_strings(tmp_path: Path):
+    db_path = tmp_path / "seeded-weapon-qr-rt.db"
+    export_dir = tmp_path / "seeds"
+    export_dir.mkdir()
+
+    original_weapons = json.loads(
+        (REPO_ROOT / "data" / "seeds" / "seed_weapons.json").read_text(encoding="utf-8")
+    )
+    original_quick_rules = {weapon["id"]: weapon.get("quick_rules") for weapon in original_weapons}
+
+    assert len(original_quick_rules) == 219
+    assert all(isinstance(value, str) and value.strip() for value in original_quick_rules.values())
+
+    _init_and_seed_weapons(db_path, force=True)
+
+    original_dir = EXPORT_DB.SEEDS_DIR
+    try:
+        EXPORT_DB.SEEDS_DIR = export_dir
+        with sqlite3.connect(str(db_path)) as export_conn:
+            EXPORT_DB.export_table(export_conn.cursor(), "weapons")
+    finally:
+        EXPORT_DB.SEEDS_DIR = original_dir
+
+    exported = json.loads((export_dir / "seed_weapons.json").read_text(encoding="utf-8"))
+    exported_quick_rules = {weapon["id"]: weapon.get("quick_rules") for weapon in exported}
+
+    assert set(exported_quick_rules) == set(original_quick_rules)
+    assert all(isinstance(value, str) and value.strip() for value in exported_quick_rules.values())
+    assert exported_quick_rules == original_quick_rules
+
+
 def test_quick_rules_round_trip_exact_string(tmp_path: Path):
     db_path = tmp_path / "quick-rules.db"
     export_dir = tmp_path / "seeds"
@@ -329,6 +439,34 @@ def test_quick_rules_round_trip_exact_string(tmp_path: Path):
     assert exported_row["quick_rules"] == "Deal {spell_attack_bonus} damage."
 
 
+def test_seeded_quick_rules_round_trip_exact_strings(tmp_path: Path):
+    db_path = tmp_path / "seeded-quick-rules.db"
+    export_dir = tmp_path / "seeds"
+    export_dir.mkdir()
+    _init_schema(db_path)
+    _seed_spells(db_path, force=True)
+
+    original_spells = json.loads((REPO_ROOT / "data" / "seeds" / "seed_spells.json").read_text(encoding="utf-8"))
+    original_quick_rules = {spell["id"]: spell.get("quick_rules") for spell in original_spells}
+
+    assert len(original_quick_rules) == 525
+    assert all(isinstance(value, str) and value.strip() for value in original_quick_rules.values())
+
+    original_dir = EXPORT_DB.SEEDS_DIR
+    try:
+        EXPORT_DB.SEEDS_DIR = export_dir
+        with sqlite3.connect(str(db_path)) as export_conn:
+            EXPORT_DB.export_table(export_conn.cursor(), "spells")
+    finally:
+        EXPORT_DB.SEEDS_DIR = original_dir
+
+    exported = json.loads((export_dir / "seed_spells.json").read_text(encoding="utf-8"))
+    exported_quick_rules = {spell["id"]: spell.get("quick_rules") for spell in exported}
+
+    assert set(exported_quick_rules) == set(original_quick_rules)
+    assert all(isinstance(value, str) and value.strip() for value in exported_quick_rules.values())
+    assert exported_quick_rules == original_quick_rules
+
 def test_invalid_quick_rules_rejected(tmp_path: Path):
     db_path = tmp_path / "invalid-quick-rules.db"
     _init_schema(db_path)
@@ -362,6 +500,117 @@ def test_invalid_quick_rules_rejected(tmp_path: Path):
     finally:
         conn.close()
 
+
+
+def _quick_rule_spell(**overrides):
+    spell = {
+        "id": 9000,
+        "name": "Generated",
+        "description": "Creates a simple magical effect. Extra detail stays out.",
+        "damage": [],
+        "healing": {"amount": None, "temp_hp": False, "max_hp": False},
+        "range": "60 feet",
+        "duration": "Instantaneous",
+        "attacks": [],
+    }
+    spell.update(overrides)
+    return spell
+
+
+def test_quick_rules_generator_saving_throw_damage():
+    result = QUICK_RULES.generate_quick_rules(
+        [
+            _quick_rule_spell(
+                id=9001,
+                name="Save Damage",
+                damage=[{"name": "primary", "formula": "3d8", "damage_types": ["fire"]}],
+                attacks=[{"kind": None, "saving_throws": ["dex"]}],
+            ),
+        ],
+    )
+
+    assert result["review"] == []
+    assert result["drafts"][0]["quick_rules"] == (
+        "Target makes a Dexterity save against {spell_save_dc}; "
+        "on a failure, it takes 3d8 fire damage (Range 60 feet; duration Instantaneous)."
+    )
+
+
+def test_quick_rules_generator_spell_attack_damage():
+    result = QUICK_RULES.generate_quick_rules(
+        [
+            _quick_rule_spell(
+                id=9002,
+                name="Attack Damage",
+                damage=[{"name": "primary", "formula": "1d12", "damage_types": ["lightning"]}],
+                attacks=[{"kind": "ranged", "saving_throws": []}],
+            ),
+        ],
+    )
+
+    assert result["review"] == []
+    assert result["drafts"][0]["quick_rules"] == (
+        "Make a ranged spell attack using {spell_attack_bonus}; "
+        "on a hit, the target takes 1d12 lightning damage (Range 60 feet; duration Instantaneous)."
+    )
+
+
+def test_quick_rules_generator_healing():
+    result = QUICK_RULES.generate_quick_rules(
+        [
+            _quick_rule_spell(
+                id=9003,
+                name="Healing",
+                healing={"amount": "2d8 + 3", "temp_hp": False, "max_hp": False},
+            ),
+        ],
+    )
+
+    assert result["review"] == []
+    assert result["drafts"][0]["quick_rules"] == (
+        "Restore 2d8 + 3 hit points (Range 60 feet; duration Instantaneous)."
+    )
+
+
+def test_quick_rules_generator_descriptive_utility():
+    result = QUICK_RULES.generate_quick_rules(
+        [
+            _quick_rule_spell(
+                id=9004,
+                name="Utility",
+                description="You create a spectral globe around a willing creature. It lasts until the spell ends.",
+                range="30 feet",
+                duration="1 hour",
+            ),
+        ],
+    )
+
+    assert result["review"] == []
+    assert result["drafts"][0]["quick_rules"] == (
+        "You create a spectral globe around a willing creature. (Range 30 feet; duration 1 hour)."
+    )
+
+
+def test_quick_rules_generator_ambiguous_record_in_review_list():
+    result = QUICK_RULES.generate_quick_rules(
+        [
+            _quick_rule_spell(
+                id=9005,
+                name="Ambiguous",
+                damage=[{"name": "primary", "formula": "2d6", "damage_types": ["cold"]}],
+                attacks=[{"kind": None, "saving_throws": ["dex", "str"]}],
+            ),
+        ],
+    )
+
+    assert result["drafts"] == []
+    assert result["review"] == [
+        {
+            "id": 9005,
+            "name": "Ambiguous",
+            "reasons": ["multiple saving throw abilities"],
+        },
+    ]
 
 
 def test_seed_idempotent_without_force(tmp_path: Path):
@@ -415,3 +664,4 @@ def test_parse_spell_row_target_columns():
 def test_parse_json_list_no_comma_fallback():
     with pytest.raises(TypeError):
         parse_json_list("V, S")
+

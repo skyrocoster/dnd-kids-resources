@@ -114,7 +114,7 @@ export interface MapPortal extends PassageFlags {
   cell: MapCell // absolute [x, y]
   z: number // floor level
   title?: string
-  to: { z: number; cell: MapCell } // paired: the portal at `to` (if present) points back here
+  to?: { z: number; cell: MapCell } // paired: the portal at `to` (if present) points back here
 }
 
 /** Feature = outdoor region drawn on the outside grid (river, trees, etc.).
@@ -751,7 +751,11 @@ export function inspectableDescriptor(target: Inspectable): InspectableDescripto
       const effective = effectivePassageState(portal, session)
       const presentation = passagePresentation(effective)
       const lines = passageDescriptorLines(effective)
-      lines.push({ label: 'Leads to', value: `${portal.to.cell[0]},${portal.to.cell[1]} (z:${portal.to.z})` })
+      lines.push(
+        portal.to
+          ? { label: 'Leads to', value: `${portal.to.cell[0]},${portal.to.cell[1]} (z:${portal.to.z})` }
+          : { label: 'Destination', value: 'This portal has no destination yet. Choose where it leads.' },
+      )
       return {
         title: portal.title ?? `Portal ${portal.portal_id}`,
         typeLabel: 'Portal',

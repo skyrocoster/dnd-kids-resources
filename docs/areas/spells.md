@@ -1,6 +1,6 @@
 # Spells Area Guide
 
-> **Active plan:** [Validated Reference Text](../plans/active/validated-reference-text.md) (next up).
+> **Active plan:** None.
 
 ## Scope
 
@@ -55,6 +55,7 @@ Modes are defined in [../UX_PATTERNS.md](../UX_PATTERNS.md#surface-modes).
 |---|---|---|---|
 | Spell browser | `/spells` | prep | DM |
 | Spell editor | modal over the browser | prep | DM |
+| Manage Players dialog | modal over the Spell browser | prep | DM |
 
 ## Invariants
 
@@ -63,11 +64,11 @@ Modes are defined in [../UX_PATTERNS.md](../UX_PATTERNS.md#surface-modes).
 
 ## Work queue
 
-- Execute [Validated Reference Text](../plans/active/validated-reference-text.md) before the planned
-  Players spell-reference redesign or weapon quick-rules work consumes the shared token contract.
 - Create a focused plan for spell class/source curation or executable mechanics.
 
 ## Cross-references
 
-`../API_REFERENCE.md`, `../DATA_MODEL.md`, `../complete/spells_plan.md`, `monsters.md`, and
+`../API_REFERENCE.md`, `../DATA_MODEL.md`, `../complete/validated-reference-text.md`, `../complete/spells_plan.md`, `monsters.md`, and
 `players.md`.
+
+

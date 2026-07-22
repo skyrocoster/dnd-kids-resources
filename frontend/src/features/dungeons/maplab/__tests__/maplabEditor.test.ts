@@ -494,13 +494,30 @@ describe('mapLabEditorReducer', () => {
         portal_id: 1,
         cell: [1, 1],
         z: 0,
-        to: { z: 0, cell: [1, 1] },
       })
+      expect(next.layout.portals[0].to).toBeUndefined()
       expect(next.selectedPortalId).toBe(1)
 
       const second = mapLabEditorReducer(next, { type: 'addPortal', cell: [4, 4] })
       expect(second.layout.portals.map((p) => p.portal_id)).toEqual([1, 2])
       expect(second.selectedPortalId).toBe(2)
+    })
+
+    it('H2: a portal with no destination round-trips through updateFixtureFlags without acquiring a pair', () => {
+      let state = initialEditorState(emptyLayout)
+      state = mapLabEditorReducer(state, { type: 'addPortal', cell: [1, 1] })
+      const portalId = state.selectedPortalId as number
+
+      state = mapLabEditorReducer(state, {
+        type: 'updateFixtureFlags',
+        fixtureId: portalId,
+        fixtureType: 'portal',
+        flags: { title: 'Unfinished gateway' },
+      })
+
+      expect(state.layout.portals).toHaveLength(1)
+      expect(state.layout.portals[0]).toMatchObject({ portal_id: portalId, title: 'Unfinished gateway' })
+      expect(state.layout.portals[0].to).toBeUndefined()
     })
 
     it('H2: retargeting a portal with no portal at the target auto-creates a paired return portal', () => {

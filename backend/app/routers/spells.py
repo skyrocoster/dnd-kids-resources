@@ -3,8 +3,8 @@ from typing import List, Optional
 import json
 import sqlite3
 
-from ..db import get_db, parse_spell_row as _parse_spell_row
-from ..schemas import Spell, SpellCreate, SpellUpdate
+from ..db import get_db, dict_from_row, parse_spell_row as _parse_spell_row
+from ..schemas import Player, Spell, SpellCreate, SpellPlayerAssignments, SpellUpdate
 
 router = APIRouter(prefix="/api", tags=["spells"])
 
@@ -64,6 +64,70 @@ def list_spells(
         rows = cursor.fetchall()
         return [_parse_spell_row(row) for row in rows]
 
+
+@router.get("/spells/{spell_id}/players", response_model=List[Player])
+def get_spell_players(spell_id: int):
+    """Get all players assigned to a spell."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT id FROM spells WHERE id = ?", (spell_id,))
+        if not cursor.fetchone():
+            raise HTTPException(status_code=404, detail="Spell not found")
+
+        cursor.execute(
+            """SELECT p.id, p.name, p.class AS class_, p.level
+               FROM players p
+               JOIN player_spells ps ON p.id = ps.player_id
+               WHERE ps.spell_id = ?
+               ORDER BY p.name""",
+            (spell_id,),
+        )
+        return [dict_from_row(row) for row in cursor.fetchall()]
+
+
+@router.put("/spells/{spell_id}/players", response_model=List[Player])
+def replace_spell_players(spell_id: int, assignments: SpellPlayerAssignments):
+    """Replace all player assignments for a spell."""
+    player_ids = assignments.player_ids
+    if len(player_ids) != len(set(player_ids)):
+        raise HTTPException(status_code=400, detail="Duplicate player ids")
+
+    with get_db() as conn:
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT id FROM spells WHERE id = ?", (spell_id,))
+        if not cursor.fetchone():
+            raise HTTPException(status_code=404, detail="Spell not found")
+
+        if player_ids:
+            placeholders = ",".join("?" for _ in player_ids)
+            cursor.execute(f"SELECT id FROM players WHERE id IN ({placeholders})", player_ids)
+            found = {row["id"] for row in cursor.fetchall()}
+            missing = [player_id for player_id in player_ids if player_id not in found]
+            if missing:
+                raise HTTPException(status_code=404, detail="Player not found")
+
+        try:
+            cursor.execute("DELETE FROM player_spells WHERE spell_id = ?", (spell_id,))
+            cursor.executemany(
+                "INSERT INTO player_spells (player_id, spell_id) VALUES (?, ?)",
+                [(player_id, spell_id) for player_id in player_ids],
+            )
+            conn.commit()
+        except Exception as e:
+            conn.rollback()
+            raise HTTPException(status_code=400, detail=f"Failed to replace spell players: {str(e)}")
+
+        cursor.execute(
+            """SELECT p.id, p.name, p.class AS class_, p.level
+               FROM players p
+               JOIN player_spells ps ON p.id = ps.player_id
+               WHERE ps.spell_id = ?
+               ORDER BY p.name""",
+            (spell_id,),
+        )
+        return [dict_from_row(row) for row in cursor.fetchall()]
 
 @router.get("/spells/{spell_id}", response_model=Spell)
 def get_spell(spell_id: int):
@@ -177,3 +241,4 @@ def delete_spell(spell_id: int):
         except Exception as e:
             conn.rollback()
             raise HTTPException(status_code=400, detail=f"Failed to delete spell: {str(e)}")
+

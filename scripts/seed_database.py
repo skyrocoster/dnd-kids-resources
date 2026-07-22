@@ -26,7 +26,11 @@ from pathlib import Path
 import argparse
 import sys
 
-from backend.app.reference_text import spell_value_reference_registry, validate_reference_text
+from backend.app.reference_text import (
+    spell_value_reference_registry,
+    weapon_value_reference_registry,
+    validate_reference_text,
+)
 
 DB_PATH = Path(__file__).parent.parent / "dnd_kids_resources.db"
 SEEDS_DIR = Path(__file__).parent.parent / "data" / "seeds"
@@ -113,6 +117,12 @@ def serialize_for_db(value):
     if isinstance(value, (dict, list)):
         return json.dumps(value, ensure_ascii=False)
     return str(value)
+
+
+def serialize_json_field(value, default):
+    if value is None:
+        return json.dumps(default, ensure_ascii=False)
+    return serialize_for_db(value)
 
 
 def insert_spell(cursor, spell_data):
@@ -626,6 +636,74 @@ def populate_weapon_properties(cursor, conn, force=False):
     print(f"  [OK] Weapon properties table now has {final_count} records")
 
 
+def insert_weapon(cursor, weapon_data):
+    quick_rules = weapon_data.get("quick_rules")
+    if quick_rules is not None:
+        validation = validate_reference_text(quick_rules, weapon_value_reference_registry)
+        if not validation["valid"]:
+            raise ValueError(f"Invalid quick_rules for {weapon_data.get('name')}: {validation['errors']}")
+
+    def parse_bool(value):
+        if isinstance(value, bool):
+            return int(value)
+        if isinstance(value, str):
+            return int(value.strip().lower() in ['true', '1', '+1', 'yes'])
+        return 0
+
+    def get_field(*keys):
+        for key in keys:
+            if key in weapon_data:
+                return weapon_data.get(key)
+        return None
+
+    cursor.execute(
+        """
+        INSERT INTO weapons
+        (name, base_weapon, baseitems, rarity, weapon_category, weight, req_attune,
+         sentient, curse, resist, property, focus, spells, attack, recharge, light,
+         entries, tier, grants_language, bonus_spell_attack, bonus_spell_save_dc,
+         bonus_ac, bonus_saving_throw, crit_threshold, ammo_type,
+         grants_proficiency, modify_speed, ability,
+         quick_rules, weapon_attack_bonus, weapon_damage_bonus)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                ?, ?, ?)
+        """,
+        (
+            serialize_for_db(get_field('name')),
+            serialize_for_db(get_field('baseWeapon', 'base_weapon')),
+            parse_bool(get_field('baseitems', 'base_items')),
+            serialize_for_db(get_field('rarity')),
+            serialize_for_db(get_field('weaponCategory', 'weapon_category')),
+            get_field('weight'),
+            serialize_for_db(get_field('reqAttune', 'req_attune')),
+            int(bool(get_field('sentient', False))),
+            int(bool(get_field('curse', False))),
+            serialize_json_field(get_field('resist'), []),
+            serialize_json_field(get_field('property'), []),
+            serialize_json_field(get_field('focus'), []),
+            serialize_json_field(get_field('spells'), []),
+            serialize_json_field(get_field('attack'), []),
+            serialize_json_field(get_field('recharge'), {}),
+            serialize_json_field(get_field('light'), []),
+            serialize_json_field(get_field('entries'), []),
+            serialize_for_db(get_field('tier')),
+            int(bool(get_field('grantsLanguage', 'grants_language', False))),
+            get_field('bonusSpellAttack', 'bonus_spell_attack'),
+            get_field('bonusSpellSaveDc', 'bonus_spell_save_dc'),
+            get_field('bonusAc', 'bonus_ac'),
+            get_field('bonusSavingThrow', 'bonus_saving_throw'),
+            get_field('critThreshold', 'crit_threshold'),
+            serialize_for_db(get_field('ammoType', 'ammo_type')),
+            int(bool(get_field('grantsProficiency', 'grants_proficiency', False))),
+            serialize_json_field(get_field('modifySpeed', 'modify_speed'), {}),
+            serialize_json_field(get_field('ability'), {}),
+            quick_rules,
+            get_field('weaponAttackBonus', 'weapon_attack_bonus'),
+            get_field('weaponDamageBonus', 'weapon_damage_bonus'),
+        ),
+    )
+
+
 def populate_weapons(cursor, conn, force=False):
     """Populate weapons table from seed_weapons.json."""
     print("[ARMS] Loading weapons...")
@@ -659,65 +737,13 @@ def populate_weapons(cursor, conn, force=False):
     else:
         records = seeds if isinstance(seeds, list) else []
 
-    def parse_bool(value):
-        if isinstance(value, bool):
-            return int(value)
-        if isinstance(value, str):
-            return int(value.strip().lower() in ['true', '1', '+1', 'yes'])
-        return 0
-
-    def serialize_json_field(value, default):
-        if value is None:
-            return json.dumps(default, ensure_ascii=False)
-        return serialize_for_db(value)
-
-    def get_field(*keys):
-        for key in keys:
-            if key in weapon:
-                return weapon.get(key)
-        return None
-
     for weapon in records:
         try:
-            cursor.execute("""
-                INSERT INTO weapons
-                (name, base_weapon, baseitems, rarity, weapon_category, weight, req_attune,
-                 sentient, curse, resist, property, focus, spells, attack, recharge, light,
-                 entries, tier, grants_language, bonus_spell_attack, bonus_spell_save_dc,
-                 bonus_ac, bonus_saving_throw, crit_threshold, ammo_type,
-                 grants_proficiency, modify_speed, ability)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                serialize_for_db(get_field('name')),
-                serialize_for_db(get_field('baseWeapon', 'base_weapon')),
-                parse_bool(get_field('baseitems', 'base_items')),
-                serialize_for_db(get_field('rarity')),
-                serialize_for_db(get_field('weaponCategory', 'weapon_category')),
-                get_field('weight'),
-                serialize_for_db(get_field('reqAttune', 'req_attune')),
-                int(bool(get_field('sentient', False))),
-                int(bool(get_field('curse', False))),
-                serialize_json_field(get_field('resist'), []),
-                serialize_json_field(get_field('property'), []),
-                serialize_json_field(get_field('focus'), []),
-                serialize_json_field(get_field('spells'), []),
-                serialize_json_field(get_field('attack'), []),
-                serialize_json_field(get_field('recharge'), {}),
-                serialize_json_field(get_field('light'), []),
-                serialize_json_field(get_field('entries'), []),
-                serialize_for_db(get_field('tier')),
-                int(bool(get_field('grantsLanguage', 'grants_language', False))),
-                get_field('bonusSpellAttack', 'bonus_spell_attack'),
-                get_field('bonusSpellSaveDc', 'bonus_spell_save_dc'),
-                get_field('bonusAc', 'bonus_ac'),
-                get_field('bonusSavingThrow', 'bonus_saving_throw'),
-                get_field('critThreshold', 'crit_threshold'),
-                serialize_for_db(get_field('ammoType', 'ammo_type')),
-                int(bool(get_field('grantsProficiency', 'grants_proficiency', False))),
-                serialize_json_field(get_field('modifySpeed', 'modify_speed'), {}),
-                serialize_json_field(get_field('ability'), {}),
-            ))
+            insert_weapon(cursor, weapon)
             print(f"  [CHECK] {weapon.get('name')}")
+        except ValueError as e:
+            print(f"  [ERROR]  Invalid weapon quick_rules: {weapon.get('name')} - {e}")
+            raise
         except sqlite3.IntegrityError as e:
             print(f"  [WARNING]  Duplicate or error: {weapon.get('name')} - {e}")
 

@@ -208,11 +208,12 @@ def _seed_curated_data(conn: sqlite3.Connection) -> None:
 
     cursor.execute(
         """INSERT INTO weapons (name, base_weapon, rarity, weapon_category, weight, req_attune,
-                                property, focus, attack, entries)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                                property, focus, attack, entries,
+                                quick_rules, weapon_attack_bonus, weapon_damage_bonus)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         ("Longsword", "Longsword", None, "martial", 3.0, None, json.dumps(["V"]), json.dumps([]),
          json.dumps([{"type": "melee", "damage": "1d8", "damage_type": "slashing", "hands": 1}]),
-         json.dumps([])),
+         json.dumps([]), None, None, None),
     )
 
     conn.commit()

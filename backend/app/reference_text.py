@@ -204,3 +204,29 @@ spell_value_reference_registry = create_reference_registry(
         ),
     ],
 )
+
+
+@dataclass(frozen=True)
+class WeaponValueReferenceContext:
+    weapon_attack_bonus: int | float | None = None
+    weapon_damage_bonus: int | float | None = None
+
+
+weapon_value_reference_registry = create_reference_registry(
+    [
+        ReferenceDefinition[WeaponValueReferenceContext](
+            token="weapon_attack_bonus",
+            kind="value",
+            domain="weapon",
+            fallback="your attack bonus",
+            resolve=lambda context: context.weapon_attack_bonus,
+        ),
+        ReferenceDefinition[WeaponValueReferenceContext](
+            token="weapon_damage_bonus",
+            kind="value",
+            domain="weapon",
+            fallback="your damage bonus",
+            resolve=lambda context: context.weapon_damage_bonus,
+        ),
+    ],
+)

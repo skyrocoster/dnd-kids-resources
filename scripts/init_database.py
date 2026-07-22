@@ -49,6 +49,7 @@ def init_database(db_path: Path | None = None):
         "weapons",
         "abilities",
         "map_layout",
+        "map_session_state",
         "dungeons",
         "encounter",
         "loot_bundle",
@@ -139,6 +140,9 @@ def init_database(db_path: Path | None = None):
             grants_proficiency BOOLEAN NOT NULL DEFAULT 0,
             modify_speed TEXT NOT NULL DEFAULT '{}',
             ability TEXT NOT NULL DEFAULT '{}',
+            quick_rules TEXT,
+            weapon_attack_bonus INTEGER,
+            weapon_damage_bonus INTEGER,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
@@ -310,6 +314,15 @@ def init_database(db_path: Path | None = None):
     # Map Lab geometry belongs to its dungeon and is removed with it.
     cursor.execute("""
         CREATE TABLE map_layout (
+            dungeon_id INTEGER PRIMARY KEY,
+            data TEXT NOT NULL,
+            FOREIGN KEY (dungeon_id) REFERENCES dungeons(id) ON DELETE CASCADE
+        )
+    """)
+
+    # Permanent door/stair/portal toggle state belongs to its dungeon and is removed with it.
+    cursor.execute("""
+        CREATE TABLE map_session_state (
             dungeon_id INTEGER PRIMARY KEY,
             data TEXT NOT NULL,
             FOREIGN KEY (dungeon_id) REFERENCES dungeons(id) ON DELETE CASCADE

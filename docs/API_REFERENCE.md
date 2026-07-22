@@ -23,7 +23,7 @@ When adding a new endpoint:
 
 ## Spells Router
 
-`backend/app/routers/spells.py` — spell CRUD and reference. `SpellCreate` and `SpellUpdate` require nonblank `quick_rules` validated as registered reference text; `Spell` responses include nullable `quick_rules` so legacy seed rows remain readable until the canonical seed pass fills them.
+`backend/app/routers/spells.py` — spell CRUD and reference. `SpellCreate` and `SpellUpdate` require nonblank `quick_rules` validated as registered reference text; committed spell seeds include nonblank quick rules, while `Spell` responses keep nullable `quick_rules` so legacy/local rows remain readable.
 
 | Method | Path | Purpose | Request schema | Response schema |
 |---|---|---|---|---|
@@ -174,6 +174,20 @@ Layout data (`map_layout`) and dungeon content data (`dungeons.data`) are saved 
 
 ---
 
+## Session State Router
+
+`backend/app/routers/session_state.py` — permanent door/stair/portal toggle state (Map Lab session view), mirroring the layout router's save/load shape.
+
+| Method | Path | Purpose | Request schema | Response schema |
+|---|---|---|---|---|
+| GET | `/api/dungeons/{dungeon_id}/session-state` | Fetch dungeon session state (404 if none saved) | (path param) | `MapSessionStateBlob` |
+| PUT | `/api/dungeons/{dungeon_id}/session-state` | Save/update dungeon session state | `MapSessionStateBlob` | `MapSessionStateBlob` |
+| DELETE | `/api/dungeons/{dungeon_id}/session-state` | Reset dungeon session state to authored defaults (deletes the row; 204 whether or not one existed) | (path param) | (204 No Content) |
+
+Session state is written through immediately on every toggle (no debounce) — unlike layout/content saves, a toggle is not a form. It writes to a separate table (`map_session_state`) from `map_layout` so opening a door never dirties the authored map document.
+
+---
+
 ## Reference Router
 
 `backend/app/routers/reference.py` — read-only reference data (abilities, conditions, damage types, etc.).
@@ -243,7 +257,7 @@ All request and response body shapes are defined in `backend/app/schemas.py` as 
 
 - **Spell:** id, name, level, school, description, quick_rules, alternate_description, damage (JSON list), healing (JSON object), range, higher_levels (JSON object), casting_times (JSON list), duration, concentration, ritual, components (JSON list), materials, attacks (JSON list), area_of_effect (JSON object)
 - **Monster:** id, name, aliases (JSON), sizes (JSON), family, alignment, creature_type (JSON), ac (JSON), hp (JSON), speed (JSON), abilities (JSON), saving_throws (JSON), skills (JSON), passive_perception, damage_resistances (JSON), damage_immunities (JSON), damage_vulnerabilities (JSON), condition_immunities (JSON), senses (JSON), languages (JSON), audio_path, features (JSON), cr, cr_sort, cr_note, experience_points
-- **Weapon:** id, name, base_weapon, rarity, weapon_category, weight, req_attune, property (JSON), focus (JSON), attack (JSON), entries (JSON)
+- **Weapon:** id, name, base_weapon, rarity, weapon_category, weight, req_attune, property (JSON), focus (JSON), attack (JSON), entries (JSON), quick_rules, weapon_attack_bonus, weapon_damage_bonus
 - **Item:** id, name, value_gp, category, description
 - **LootBundle:** id, name, gold, contents (JSON loot-entry array)
 - **Player:** id, name, class_, level
@@ -251,6 +265,7 @@ All request and response body shapes are defined in `backend/app/schemas.py` as 
 - **Encounter:** id, title, creatures (JSON entries with optional `creature_id` and `source_kind`), active_index
 - **Dungeon:** id, title, data (JSON)
 - **MapLayoutBlob:** data (JSON)
+- **MapSessionStateBlob:** data (JSON)
 
 All optional fields are `Optional[...]` in the schema; required fields have no `Optional` wrapper. For full detail, read the schema definitions directly in the source file.
 
@@ -269,6 +284,9 @@ All optional fields are `Optional[...]` in the schema; required fields have no `
 | PUT | `/api/dungeons/{dungeon_id}` | `dungeon_id` (path, required) | DungeonUpdate | 200: Dungeon, 422: HTTPValidationError |
 | GET | `/api/dungeons/{dungeon_id}/layout` | `dungeon_id` (path, required) | - | 200: MapLayoutBlob, 422: HTTPValidationError |
 | PUT | `/api/dungeons/{dungeon_id}/layout` | `dungeon_id` (path, required) | MapLayoutBlob | 200: MapLayoutBlob, 422: HTTPValidationError |
+| DELETE | `/api/dungeons/{dungeon_id}/session-state` | `dungeon_id` (path, required) | - | 204: -, 422: HTTPValidationError |
+| GET | `/api/dungeons/{dungeon_id}/session-state` | `dungeon_id` (path, required) | - | 200: MapSessionStateBlob, 422: HTTPValidationError |
+| PUT | `/api/dungeons/{dungeon_id}/session-state` | `dungeon_id` (path, required) | MapSessionStateBlob | 200: MapSessionStateBlob, 422: HTTPValidationError |
 | GET | `/api/encounters` | `limit` (query), `offset` (query) | - | 200: List[Encounter], 422: HTTPValidationError |
 | POST | `/api/encounters` | - | EncounterCreate | 201: Encounter, 422: HTTPValidationError |
 | DELETE | `/api/encounters/{encounter_id}` | `encounter_id` (path, required) | - | 204: -, 422: HTTPValidationError |
@@ -333,6 +351,8 @@ All optional fields are `Optional[...]` in the schema; required fields have no `
 | DELETE | `/api/spells/{spell_id}` | `spell_id` (path, required) | - | 204: -, 422: HTTPValidationError |
 | GET | `/api/spells/{spell_id}` | `spell_id` (path, required) | - | 200: Spell, 422: HTTPValidationError |
 | PUT | `/api/spells/{spell_id}` | `spell_id` (path, required) | SpellUpdate | 200: Spell, 422: HTTPValidationError |
+| GET | `/api/spells/{spell_id}/players` | `spell_id` (path, required) | - | 200: List[Player], 422: HTTPValidationError |
+| PUT | `/api/spells/{spell_id}/players` | `spell_id` (path, required) | SpellPlayerAssignments | 200: List[Player], 422: HTTPValidationError |
 | GET | `/api/weapon_properties` | - | - | 200: List[WeaponProperty] |
 | GET | `/api/weapons` | `limit` (query), `offset` (query) | - | 200: List[Weapon], 422: HTTPValidationError |
 | POST | `/api/weapons` | - | WeaponCreate | 201: Weapon, 422: HTTPValidationError |

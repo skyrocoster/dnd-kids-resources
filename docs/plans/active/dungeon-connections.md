@@ -1,7 +1,9 @@
 # Dungeon Connections — dungeons link to each other, and a session survives the walk between them
 
-> **Status:** Next up. [Dungeon Outside](../../complete/dungeon-outside.md) complete — the two share
-> `MapPortal` and `MapLayout` and must not run concurrently. First stage: Stage 1 — permanent session state.
+> **Status:** Stages 1-2 shipped (permanent session state; optional portal destinations and the
+> connections resolve list). Next: Stage 3 — cross-dungeon gateways. [Dungeon
+> Outside](../../complete/dungeon-outside.md) complete — the two share `MapPortal` and `MapLayout` and
+> must not run concurrently.
 
 - **Area guide:** [Dungeons](../../areas/dungeons.md)
 
@@ -133,3 +135,5 @@ Touch:        48px floor on resolve-list actions and the reset control. No new
 
 | Stage | What shipped (≤2 sentences) |
 |-------|------------------------------|
+| 1 | Door/stair/portal session toggles moved off component-local `useState` into a new `map_session_state` table with GET/PUT/DELETE endpoints (mirroring `map_layout`) and a `useMapLabSessionState` hook that loads on mount, saves through immediately on every change, and exposes a reset. The "Reset dungeon" button now routes through `ConfirmDialog` naming the dungeon and stating finality. |
+| 2 | `MapPortal.to` is now optional and every read site (pairing lookup, click-to-navigate, inspector descriptor) guards against a missing destination instead of assuming one. A new `ConnectionsResolveList` renders in the editor's nav rail, listing every portal with no destination and a "Choose destination" action that jumps to its floor and opens its inspector; shows the exact empty-state copy when nothing is unresolved. |

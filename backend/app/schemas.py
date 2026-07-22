@@ -164,6 +164,10 @@ class SpellUpdate(SpellCreate):
     pass
 
 
+class SpellPlayerAssignments(StrictModel):
+    player_ids: List[int] = Field(default_factory=list)
+
+
 class CreatureType(StrictModel):
     category: NonEmptyString
     tags: List[str] = Field(default_factory=list)
@@ -226,6 +230,17 @@ class Attack(StrictModel):
     long_range_ft: Optional[int] = None
     targets: Optional[int] = None
     damage: List[AttackDamage] = Field(default_factory=list)
+
+
+class WeaponAttackEntry(StrictModel):
+    type: Optional[str] = None
+    damage: Optional[str] = None
+    damage_type: Optional[str] = None
+    hands: Optional[int] = None
+    attack_mod: Optional[int] = None
+    damage_mod: Optional[int] = None
+    range: Optional[str] = None
+    special: Optional[str] = None
 
 
 class Feature(StrictModel):
@@ -326,6 +341,9 @@ class Weapon(BaseModel):
     focus: Optional[List[str]] = None
     attack: Optional[List[Dict[str, Any]]] = None
     entries: Optional[List[Any]] = None
+    quick_rules: Optional[str] = None
+    weapon_attack_bonus: Optional[int] = None
+    weapon_damage_bonus: Optional[int] = None
 
 
 class WeaponCreate(BaseModel):
@@ -339,6 +357,22 @@ class WeaponCreate(BaseModel):
     focus: Optional[List[str]] = None
     attack: Optional[List[Dict[str, Any]]] = None
     entries: Optional[List[Any]] = None
+    quick_rules: str
+    weapon_attack_bonus: Optional[int] = None
+    weapon_damage_bonus: Optional[int] = None
+
+    @field_validator("quick_rules")
+    @classmethod
+    def validate_quick_rules(cls, value: str) -> str:
+        if value.strip() == "":
+            raise ValueError("quick_rules must not be blank")
+
+        from .reference_text import weapon_value_reference_registry, validate_reference_text
+
+        validation = validate_reference_text(value, weapon_value_reference_registry)
+        if not validation["valid"]:
+            raise ValueError("quick_rules contains invalid reference text")
+        return value
 
 
 class WeaponUpdate(WeaponCreate):
@@ -604,3 +638,8 @@ class DungeonUpdate(DungeonCreate):
 
 class MapLayoutBlob(BaseModel):
     data: Dict[str, Any]
+
+
+class MapSessionStateBlob(BaseModel):
+    data: Dict[str, Any]
+

@@ -1,7 +1,6 @@
 # Weapon Quick Reference — every weapon explains the exact roll before the long rules
 
-> **Status:** Not started; next up for Reference Catalogs, blocked until Validated Reference Text
-> ships its shared registry and renderer.
+> **Status:** Stage 1 complete (weapon rules contract shipped). Next: Stage 2 — Copy as New.
 
 - **Area guide:** [Reference Catalogs](../../areas/reference-catalogs.md)
 
@@ -73,3 +72,4 @@ Touch:        48px floor for detail actions and editor controls.
 
 | Stage | What shipped (≤2 sentences) |
 |-------|------------------------------|
+| 1 | Weapon schema, DB columns, API fields, seed import/export, and frontend types carry required quick_rules and optional sheet-ready totals with shared-token validation, preserving intrinsic attack_mod/damage_mod. Real-data contract tests prove all 219 seeded weapons serialize and round-trip through init→seed→export.

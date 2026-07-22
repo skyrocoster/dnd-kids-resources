@@ -32,6 +32,7 @@ import { DoorBadgeLayer, DoorMarker } from './DoorMarker'
 import { GhostFloorLayer } from './GhostFloorLayer'
 import { FIXTURE_TYPES } from './fixtureTypes'
 import { RoomContentEditor } from './RoomContentEditor'
+import { ConnectionsResolveList } from './ConnectionsResolveList'
 import { SelectionActions } from './SelectionActions'
 import { ConfirmDialog } from '../../../components/ConfirmDialog'
 import {
@@ -847,6 +848,14 @@ export function MapLabEditorPage() {
             ))}
             {roomsOnActiveFloor.length === 0 && <li className="maplab-editor-room-list-empty">No rooms on this floor yet.</li>}
           </ul>
+
+          <ConnectionsResolveList
+            layout={state.layout}
+            onResolve={(portal) => {
+              setActiveZ(portal.z)
+              selectPortal(portal.portal_id)
+            }}
+          />
         </div>
 
         <MapCanvas

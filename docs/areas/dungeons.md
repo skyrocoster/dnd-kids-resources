@@ -57,8 +57,14 @@ A vertical passage crossing floor levels on the z-axis.
 _Avoid_: ladder, elevator, stairway
 
 **Portal**:
-A freestanding one-square marker linking to a non-adjacent destination, paired and two-way.
+A freestanding one-square marker linking to a non-adjacent destination, paired and two-way. The
+destination is optional — a portal can be dropped and saved before its `to` is chosen.
 _Avoid_: teleporter, warp
+
+**Resolve List**:
+The Map Lab editor's list of connections that do not yet have two ends — currently just portals with
+no destination — each row naming what is broken with a one-click action to fix it.
+_Avoid_: todo list, linter, warnings panel
 
 **Prop**:
 A static map object: chest, table, mirror, barrel, statue, window, encounter, or other. Carries Passage Flags and optional loot bundle.
@@ -110,7 +116,7 @@ _Avoid_: parallel_save, split_save
 
 ## Source map
 
-- Backend: `backend/app/routers/dungeons.py` and `layouts.py`.
+- Backend: `backend/app/routers/dungeons.py`, `layouts.py`, and `session_state.py`.
 - Frontend: `frontend/src/features/dungeons/`.
 - Tests: dungeon router tests and colocated dungeon frontend tests.
 
@@ -125,7 +131,7 @@ Modes are defined in [../UX_PATTERNS.md](../UX_PATTERNS.md#surface-modes).
 | Map Lab editor | `/dungeons/:dungeonId/edit` | prep | DM |
 | Inspector panel | within both Map Lab surfaces | follows its host | DM |
 
-The session view is the surface that is open while a game is running: it must stay glanceable and must never lose session toggle state. The editor is prep work and may be as dense as it needs to be.
+The session view is the surface that is open while a game is running: it must stay glanceable and must never lose session toggle state. Door/stair/portal toggle state now persists on the backend (`map_session_state`, per dungeon), so a refresh or a return visit restores it; a "Reset dungeon" action clears it back to authored defaults. The editor is prep work and may be as dense as it needs to be.
 
 ## Invariants
 
@@ -137,9 +143,9 @@ The session view is the surface that is open while a game is running: it must st
 ## Work queue
 
 - [Dungeon Outside](../complete/dungeon-outside.md) shipped: wall kinds, per-side padding and a real extent, outside features, and clarity controls.
-- [Dungeon Connections](../plans/active/dungeon-connections.md) is active and next: permanent per-dungeon session state, optional portal destinations with a connections resolve list, then cross-dungeon gateways. It inherits the next-up slot after Dungeon Outside — the two share `MapPortal` and `MapLayout` and must not run concurrently. It owns passage-session persistence.
+- [Dungeon Connections](../plans/active/dungeon-connections.md) is active: Stages 1-2 (permanent per-dungeon session state; optional portal destinations with a connections resolve list) have shipped; next up is cross-dungeon gateways. It inherits the next-up slot after Dungeon Outside — the two share `MapPortal` and `MapLayout` and must not run concurrently. It owns passage-session persistence.
 - Create a focused plan before other deferred dungeon work, including cross-reference pop-outs.
-- New vocabulary from the active plan — Outside Feature, Wall Kind, Extent, Gateway — is added here by `reconcile` as each stage ships, not in advance.
+- New vocabulary from the active plan — Extent, Gateway — is added here by `reconcile` as each stage ships, not in advance.
 
 ## Cross-references
 

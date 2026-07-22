@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import './MapLabPage.css'
+import { ConfirmDialog } from '../../../components/ConfirmDialog'
 import { FloatingWindow } from '../../../components/FloatingWindow'
 import { MapLabRouteState } from './MapLabRouteState'
 import { useDungeonShellContext } from './dungeonRouteContext'
 import { useMapLabLayout } from './useMapLabLayout'
+import { useMapLabSessionState } from './useMapLabSessionState'
 import { useMapCanvasZoom, type ViewportSize } from './useMapCanvasZoom'
 import { MapCanvas } from './MapCanvas'
 import { ChevronDownIcon, ChevronUpIcon, FitIcon, ZoomInIcon, ZoomOutIcon } from '../../../components/icons'
@@ -254,9 +256,16 @@ export function MapLabPage() {
   const [hoveredInspectable, setHoveredInspectable] = useState<InspectableRef | null>(null)
   const [focusedInspectable, setFocusedInspectable] = useState<InspectableRef | null>(null)
   const [pinnedDoorId, setPinnedDoorId] = useState<number | null>(null)
-  const [doorSessions, setDoorSessions] = useState<Record<number, PassageSessionState>>({})
-  const [stairSessions, setStairSessions] = useState<Record<number, PassageSessionState>>({})
-  const [portalSessions, setPortalSessions] = useState<Record<number, PassageSessionState>>({})
+  const {
+    doorSessions,
+    setDoorSessions,
+    stairSessions,
+    setStairSessions,
+    portalSessions,
+    setPortalSessions,
+    resetSessions,
+  } = useMapLabSessionState(route.dungeonId)
+  const [resetDungeonConfirmOpen, setResetDungeonConfirmOpen] = useState(false)
   const [activeEncounterId, setActiveEncounterId] = useState<number | null>(null)
   const [activeNpcId, setActiveNpcId] = useState<number | null>(null)
   const zoomApi = useMapCanvasZoom()
@@ -371,12 +380,6 @@ export function MapLabPage() {
     }))
   }
 
-  function resetSessions() {
-    setDoorSessions({})
-    setStairSessions({})
-    setPortalSessions({})
-  }
-
   const activeFloor = floors.find((floor) => floor.z === activeZ)
 
   if (route.status === 'loading' || layoutLoading) {
@@ -460,9 +463,9 @@ export function MapLabPage() {
           <button
             type="button"
             className="maplab-pill-button maplab-session-reset-button"
-            onClick={resetSessions}
+            onClick={() => setResetDungeonConfirmOpen(true)}
           >
-            Reset session state
+            Reset dungeon
           </button>
         </ToolbarTray>
         <ToolbarTray groupKey="viewer-view" label="View">
@@ -763,7 +766,7 @@ export function MapLabPage() {
                 onMouseLeave={() => setHoveredInspectable(null)}
                 onFocus={() => setFocusedInspectable({ kind: 'portal', id: portal.portal_id })}
                 onBlur={() => setFocusedInspectable(null)}
-                onClick={() => setActiveZ(portal.to.z)}
+                onClick={() => portal.to && setActiveZ(portal.to.z)}
               />
             )
           })}
@@ -817,6 +820,18 @@ export function MapLabPage() {
         <EncounterDock encounterId={activeEncounterId} onClose={() => setActiveEncounterId(null)} />
       )}
       {activeNpcId != null && <NpcDock npcId={activeNpcId} onClose={() => setActiveNpcId(null)} />}
+
+      {resetDungeonConfirmOpen && (
+        <ConfirmDialog
+          message={`Reset "${route.dungeon?.title}"? Every door, trap, and toggle returns to its authored state. This cannot be undone.`}
+          confirmLabel="Reset"
+          onConfirm={() => {
+            resetSessions()
+            setResetDungeonConfirmOpen(false)
+          }}
+          onCancel={() => setResetDungeonConfirmOpen(false)}
+        />
+      )}
     </div>
   )
 }

@@ -16,6 +16,7 @@ from .routers import (
     npcs,
     players,
     reference,
+    session_state,
     spells,
     weapons,
 )
@@ -51,6 +52,7 @@ app.include_router(npcs.router)
 app.include_router(encounters.router)
 app.include_router(dungeons.router)
 app.include_router(layouts.router)
+app.include_router(session_state.router)
 app.include_router(loom.router)
 
 

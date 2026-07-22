@@ -7,6 +7,7 @@ import type {
   SpellComponent,
   Spell,
   SpellInput,
+  SpellPlayerReplacement,
   Monster,
   MonsterInput,
   Weapon,
@@ -24,6 +25,7 @@ import type {
   Dungeon,
   DungeonInput,
   MapLayoutBlob,
+  MapSessionStateBlob,
   LoomThread,
   LoomThreadCreate,
   LoomNode,
@@ -91,6 +93,9 @@ export const getSpellByTitle = (name: string) => get<Spell>(`/spells/by-title/${
 export const createSpell = (spell: SpellInput) => post<Spell>('/spells', spell)
 export const updateSpell = (id: number, spell: SpellInput) => put<Spell>(`/spells/${id}`, spell)
 export const deleteSpell = (id: number) => del(`/spells/${id}`)
+export const getSpellPlayers = (spellId: number) => get<Player[]>(`/spells/${spellId}/players`)
+export const replaceSpellPlayers = (spellId: number, playerIds: number[]) =>
+  put<Player[]>(`/spells/${spellId}/players`, { player_ids: playerIds } satisfies SpellPlayerReplacement)
 
 // Monsters
 export const listMonsters = () => get<Monster[]>('/monsters')
@@ -167,6 +172,14 @@ export const getDungeonLayout = (dungeonId: number) => get<MapLayoutBlob>(`/dung
 export const saveDungeonLayout = (dungeonId: number, blob: MapLayoutBlob) =>
   put<MapLayoutBlob>(`/dungeons/${dungeonId}/layout`, blob)
 
+// Map Lab session state
+export const getDungeonSessionState = (dungeonId: number) =>
+  get<MapSessionStateBlob>(`/dungeons/${dungeonId}/session-state`)
+export const saveDungeonSessionState = (dungeonId: number, blob: MapSessionStateBlob) =>
+  put<MapSessionStateBlob>(`/dungeons/${dungeonId}/session-state`, blob)
+export const resetDungeonSessionState = (dungeonId: number) =>
+  del(`/dungeons/${dungeonId}/session-state`)
+
 // Loom — tapestry
 export const getLoomTapestry = () => get<LoomTapestry>('/loom/tapestry')
 
@@ -207,3 +220,5 @@ export const removeLoomThreadItem = (threadId: number, nodeId: number) =>
   del(`/loom/threads/${threadId}/items/${nodeId}`)
 export const moveLoomThreadItem = (threadId: number, nodeId: number, body: LoomNodeMove) =>
   post<LoomThreadMoveResult>(`/loom/threads/${threadId}/items/${nodeId}/move`, body)
+
+
