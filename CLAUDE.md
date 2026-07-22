@@ -44,7 +44,8 @@ Four skills in `.agents/skills/` drive this (read by both Claude Code and openco
 ## Stable Project Rules
 
 - The backend is FastAPI with SQLite in `backend/`; the frontend is React, Vite, and TypeScript in `frontend/`.
-- `data/seeds/` is canonical for seed-backed domains. The root SQLite database is generated and must not be committed. Runtime-authored dungeons and Map Lab layouts are managed through the API/UI.
+- `data/seeds/` is canonical for seed-backed domains. The root SQLite database is generated and must not be committed. Dungeons and Map Lab layouts are authored through the API/UI but **are** seed-backed: export before any rebuild, because `scripts/init_database.py` drops them.
+- Seed export column lists are generated from `scripts/init_database.py` by `scripts/generate_export_schema.py`; never hand-edit `data/generated/export_schema.json`.
 - Use the shared tokens in `frontend/src/theme.css`; do not introduce arbitrary colors.
 - Backend tests use the real schema from `scripts/init_database.py`, never hand-copied fixture DDL.
 - Do not drive a browser unless the user explicitly asks for browser automation in the current turn. Run applicable automated checks and report manual verification still needed.

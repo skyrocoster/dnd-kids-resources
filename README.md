@@ -81,16 +81,30 @@ Canonical seed files in `data/seeds/`:
 - `seed_monsters.json` — 2700+ monsters
 - `seed_weapons.json` — 200+ weapons
 - `seed_npcs.json`, `seed_players.json` — characters
-- `seed_quests.json`, `seed_encounters.json` — campaign data
+- `seed_encounters.json` — campaign data
+- `seed_dungeons.json`, `seed_map_layouts.json`, `seed_map_session_state.json` — authored dungeons
 - `seed_conditions.json`, `seed_damage_types.json`, `seed_weapon_properties.json`
 
-To export seed-backed database changes back to seeds:
+To back the database up to seed files:
 ```bash
-python scripts/export_db_seeds.py --dry-run
+python scripts/export_db_seeds.py --dry-run   # review first
+python scripts/export_db_seeds.py             # then write
 ```
 
-Review the dry-run output first, then omit `--dry-run` to overwrite seed files. Dungeons and Map Lab layouts
-are runtime-created and intentionally are not exported as seeds.
+`scripts/init_database.py` drops every table, so **anything you authored and did not export is lost on
+the next rebuild.** All 20 tables are exported, including dungeons, Map Lab layouts, and map session
+state. Restore them with `python scripts/seed_database.py --dungeons`.
+
+Two safeguards: an empty table will not overwrite a populated seed file (pass `--allow-empty` when
+that is genuinely what you want), and a column mismatch aborts the run instead of silently skipping
+the table.
+
+Column lists are generated, not hand-written:
+```bash
+python scripts/generate_export_schema.py --write      # after a schema change
+python scripts/generate_export_schema.py --check      # CI runs this
+python scripts/generate_export_schema.py --check-db   # drift vs. your live database
+```
 
 ---
 

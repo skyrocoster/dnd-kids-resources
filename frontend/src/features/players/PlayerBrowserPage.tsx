@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import * as api from '../../api/client'
 import type { Player, PlayerDetail, Spell, Weapon } from '../../api/types'
 import { Card } from '../../components/Card'
@@ -29,6 +29,18 @@ export function PlayerBrowserPage() {
   const [editingPlayer, setEditingPlayer] = useState<Player | undefined>(undefined)
   const [pendingDelete, setPendingDelete] = useState<Player | null>(null)
   const [manageDialog, setManageDialog] = useState<ManageDialogKind>(null)
+  const detailCache = useRef<Map<number, PlayerDetail>>(new Map())
+
+  const prefetchDetails = (roster: Player[], skipId: number | null) => {
+    for (const player of roster) {
+      if (player.id === skipId) continue
+      if (detailCache.current.has(player.id)) continue
+      api
+        .getPlayerDetail(player.id)
+        .then((detail) => detailCache.current.set(player.id, detail))
+        .catch(() => {})
+    }
+  }
 
   const load = () => {
     setPlayersRemote(remoteLoading())
@@ -37,7 +49,9 @@ export function PlayerBrowserPage() {
       .then((data) => {
         const sorted = [...data].sort((a, b) => a.name.localeCompare(b.name))
         setPlayersRemote(remoteSuccess(sorted))
+        const autoSelected = sorted.length > 0 && selectedId == null ? sorted[0].id : selectedId
         if (sorted.length > 0 && selectedId == null) setSelectedId(sorted[0].id)
+        prefetchDetails(sorted, autoSelected)
       })
       .catch((error) => setPlayersRemote(remoteError(error instanceof Error ? error.message : 'Failed to load players.')))
   }
@@ -48,11 +62,21 @@ export function PlayerBrowserPage() {
     api.listWeapons().then(setAllWeapons).catch(() => setAllWeapons([]))
   }, [])
 
-  const loadDetail = (playerId: number) => {
+  const loadDetail = (playerId: number, options?: { force?: boolean }) => {
+    if (!options?.force) {
+      const cached = detailCache.current.get(playerId)
+      if (cached) {
+        setDetailRemote(remoteSuccess(cached))
+        return
+      }
+    }
     setDetailRemote(remoteLoading())
     api
       .getPlayerDetail(playerId)
-      .then((detail) => setDetailRemote(remoteSuccess(detail)))
+      .then((detail) => {
+        detailCache.current.set(playerId, detail)
+        setDetailRemote(remoteSuccess(detail))
+      })
       .catch((error) =>
         setDetailRemote(remoteError(error instanceof Error ? error.message : 'Failed to load player detail.')),
       )
@@ -180,7 +204,7 @@ export function PlayerBrowserPage() {
               getLabel={(s) => s.name}
               onSave={async (ids) => {
                 await api.replacePlayerSpells(selected.id, ids)
-                loadDetail(selected.id)
+                loadDetail(selected.id, { force: true })
               }}
               onClose={() => setManageDialog(null)}
               searchPlaceholder="Search spells…"
@@ -194,7 +218,7 @@ export function PlayerBrowserPage() {
               getLabel={(w) => w.name}
               onSave={async (ids) => {
                 await api.replacePlayerWeapons(selected.id, ids)
-                loadDetail(selected.id)
+                loadDetail(selected.id, { force: true })
               }}
               onClose={() => setManageDialog(null)}
               searchPlaceholder="Search weapons…"

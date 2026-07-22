@@ -112,6 +112,43 @@ describe('PlayerBrowserPage', () => {
     expect(screen.getByText('Select an item')).toBeInTheDocument()
   })
 
+  it('does not re-fetch a player detail already cached from a previous visit', async () => {
+    vi.spyOn(api, 'listPlayers').mockResolvedValue(players)
+    const getPlayerDetail = vi.spyOn(api, 'getPlayerDetail').mockImplementation(async (id: number) => {
+      const player = players.find((p) => p.id === id)!
+      return detailFor(player)
+    })
+    const user = userEvent.setup()
+
+    render(<PlayerBrowserPage />)
+    await screen.findByRole('heading', { name: 'Lark' })
+
+    await user.click(screen.getByText('Pip'))
+    await screen.findByRole('heading', { name: 'Pip' })
+
+    await user.click(screen.getByText('Lark'))
+    await screen.findByRole('heading', { name: 'Lark' })
+
+    expect(getPlayerDetail).toHaveBeenCalledTimes(2)
+  })
+
+  it('prefetches every other player detail in the background after the roster loads', async () => {
+    vi.spyOn(api, 'listPlayers').mockResolvedValue(players)
+    const getPlayerDetail = vi.spyOn(api, 'getPlayerDetail').mockImplementation(async (id: number) => {
+      const player = players.find((p) => p.id === id)!
+      return detailFor(player)
+    })
+
+    render(<PlayerBrowserPage />)
+    await screen.findByRole('heading', { name: 'Lark' })
+
+    await waitFor(() => {
+      for (const player of players) {
+        expect(getPlayerDetail).toHaveBeenCalledWith(player.id)
+      }
+    })
+  })
+
   it('shows the destructive delete confirmation copy', async () => {
     vi.spyOn(api, 'listPlayers').mockResolvedValue(players)
     const user = userEvent.setup()

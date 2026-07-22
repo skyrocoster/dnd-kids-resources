@@ -1045,6 +1045,54 @@ def populate_player_weapons(cursor, conn, force=False):
 
 
 
+def _populate_dungeon_blob_table(cursor, conn, table, seed_file, label, force=False):
+    """Load one of the three dungeon tables, each of which is a key plus a JSON data blob."""
+    print(f"\n[DUNGEON] Loading {label}...")
+    try:
+        cursor.execute(f"SELECT COUNT(*) FROM {table}")
+        count = cursor.fetchone()[0]
+    except sqlite3.OperationalError:
+        print(f"  [ERROR] {table} table does not exist. Run scripts/init_database.py first.")
+        return
+
+    if count > 0 and not force:
+        print(f"  [INFO] {table} already has {count} records. Skip (use --force to override)")
+        return
+
+    if force:
+        cursor.execute(f"DELETE FROM {table}")
+
+    seeds = load_json_file(SEEDS_DIR / seed_file)
+    if not seeds:
+        print(f"  [INFO] No {seed_file}; nothing to load.")
+        return
+
+    for record in seeds:
+        columns = list(record.keys())
+        placeholders = ", ".join("?" for _ in columns)
+        values = [serialize_for_db(record[column]) for column in columns]
+        cursor.execute(
+            f"INSERT INTO {table} ({', '.join(columns)}) VALUES ({placeholders})",
+            values,
+        )
+
+    conn.commit()
+    print(f"  [OK] Loaded {len(seeds)} {label}")
+
+
+def populate_dungeons(cursor, conn, force=False):
+    """Populate dungeons, map_layout and map_session_state from their seed files.
+
+    Dungeons became seed-backed so that authored content survives an init_database.py rebuild;
+    see docs/areas/dungeons.md. The three tables load together and in FK order.
+    """
+    _populate_dungeon_blob_table(cursor, conn, "dungeons", "seed_dungeons.json", "dungeons", force)
+    _populate_dungeon_blob_table(cursor, conn, "map_layout", "seed_map_layouts.json", "map layouts", force)
+    _populate_dungeon_blob_table(
+        cursor, conn, "map_session_state", "seed_map_session_state.json", "map session state", force
+    )
+
+
 def clear_all_tables(cursor, conn):
     """Drop all tables in dependency order to avoid FK constraint violations"""
     print("\n[FORCE] Clearing all existing table data in dependency order...")
@@ -1064,6 +1112,8 @@ def clear_all_tables(cursor, conn):
         "weapon_properties",
         "weapons",
         "abilities",
+        "map_session_state",
+        "map_layout",
         "dungeons",
         "encounter",
         "loot_bundle",
@@ -1111,6 +1161,7 @@ def main():
     parser.add_argument('--players', action='store_true', help='Load only players')
     parser.add_argument('--player-spells', action='store_true', help='Load only player spell assignments')
     parser.add_argument('--player-weapons', action='store_true', help='Load only player weapon assignments')
+    parser.add_argument('--dungeons', action='store_true', help='Load only dungeons, map layouts and map session state')
     parser.add_argument('--loom', action='store_true', help='Load only the loom demo tapestry (test/playtest fixture, not loaded by default)')
     parser.add_argument('--force', action='store_true', help='Force reload (clear existing data first)')
 
@@ -1122,7 +1173,7 @@ def main():
         args.abilities, args.spells, args.conditions, args.monsters,
         args.npcs, args.players, args.player_spells, args.player_weapons,
         args.damage_types, args.weapon_properties, args.weapons,
-        args.encounters, args.items, args.loot_bundles, args.loom
+        args.encounters, args.items, args.loot_bundles, args.dungeons, args.loom
     ])
     
     print("="*60)
@@ -1172,6 +1223,8 @@ def main():
             populate_player_spells(cursor, conn, args.force)
         if load_all or args.player_weapons:
             populate_player_weapons(cursor, conn, args.force)
+        if load_all or args.dungeons:
+            populate_dungeons(cursor, conn, args.force)
         if args.loom:
             cursor.execute("PRAGMA foreign_keys = OFF")
             populate_loom_threads(cursor, conn, args.force)

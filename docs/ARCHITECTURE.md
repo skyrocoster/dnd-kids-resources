@@ -115,7 +115,8 @@ data/seeds/*.json (canonical reference and campaign data)
 |---|---|
 | `scripts/init_database.py` | Creates SQLite schema (`CREATE TABLE` statements) in `dnd_kids_resources.db` |
 | `scripts/seed_database.py` | Loads all `data/seeds/*.json` files into the database |
-| `scripts/export_db_seeds.py` | Exports seed-backed tables back to `data/seeds/*.json`; run with `--dry-run` before overwriting files. Runtime dungeons are never exported. |
+| `scripts/generate_export_schema.py` | Derives `data/generated/export_schema.json` from the `CREATE TABLE` statements in `init_database.py`. `--write` regenerates, `--check` fails when stale (run in CI), `--check-db` reports drift against the live database. |
+| `scripts/export_db_seeds.py` | Exports every table back to `data/seeds/*.json`, taking column lists from the generated export schema rather than a hand-written list; run with `--dry-run` before overwriting files. Refuses to overwrite a populated seed file from an empty table unless `--allow-empty`. Dungeons, map layouts, and map session state are included. |
 | `scripts/start_server.ps1` (Windows) | Starts the FastAPI dev server (localhost:8000) |
 | `scripts/stop_server.ps1` (Windows) | Stops the server process |
 

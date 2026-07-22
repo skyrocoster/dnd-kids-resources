@@ -111,17 +111,17 @@ dungeon they are running.
    documented pass-through, with a test asserting it currently conceals nothing, so Plan 1 changes one
    module and one test. Ends with the storage and concealment seams in place, carrying no load.
 
-4. **Seed a large dungeon to build against.** There is currently no dungeon fixture anywhere in the
-   repo, so Stage 5 has nothing to render and fog has nothing meaningful to hide. Add a seeded
-   dungeon and its map layout, loaded on rebuild.
+4. **Author a large dungeon and export it as the seed.** There is currently no dungeon fixture
+   anywhere in the repo, so Stage 5 has nothing to render and fog has nothing meaningful to hide.
 
-   This **reverses a standing invariant** — `CLAUDE.md`, `areas/dungeons.md`, and a comment at
-   `scripts/init_database.py:303` all currently state that dungeons are runtime-authored and never
-   seed data. All three change together, and the Dungeons area guide's invariant is rewritten rather
-   than deleted: runtime-authored dungeons are still never *exported*, and the seeded dungeon is
-   canonical app data rather than a user's work.
+   The backup path this needs **already shipped ahead of this plan** — `export_db_seeds.py` now
+   covers `dungeons`, `map_layout`, and `map_session_state`, with column lists generated from
+   `init_database.py`. So this stage authors the school **in the Map Lab UI** and exports it, rather
+   than hand-writing seed JSON. That keeps the seed real data instead of invented data, and avoids
+   hand-maintaining a restatement of the schema.
 
-   The seed must be large enough that fog is a real question — a school with grounds, several floors,
+   The inventory below is therefore an **authoring checklist**, not a JSON spec. The dungeon must be
+   large enough that fog is a real question — a school with grounds, several floors,
    and enough secrets to be worth revisiting — and must exercise the awkward corners of the model, so
    that later plans meet them here rather than at the table:
 
@@ -141,7 +141,8 @@ dungeon they are running.
      trick), a room with NPC references, a deliberately empty room, and one entry with long prose.
    - **Text:** apostrophes and non-ASCII in titles, to catch encoding and escaping early.
 
-   Ends with a fresh `init_database.py` run producing a dungeon worth exploring.
+   Ends with `init_database.py` followed by `seed_database.py` producing a dungeon worth exploring
+   on a clean machine.
 
 5. **Put a map on the tablet.** The kid map surface: reads the at-the-table dungeon, renders it
    through the transform, polls for liveness, pans and zooms, and holds its last good frame through a

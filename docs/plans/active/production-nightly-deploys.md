@@ -1,6 +1,25 @@
 # Production Nightly Deploys — ship every night without losing what you authored
 
-> **Status:** Next up for Repo Infra. Nothing shipped. First stage: Stage 1 — the schema as data.
+> **Status:** Next up for Repo Infra. **Part of Stage 1 has already shipped out of band** — see *Landed early* below. First remaining stage: the rest of Stage 1 — the schema as data.
+
+## Landed early (outside this plan)
+
+The export half of Stage 1 shipped ahead of this plan, because authoring dungeon content was blocked
+without it:
+
+- `scripts/generate_export_schema.py` derives `data/generated/export_schema.json` from the
+  `CREATE TABLE` statements in `init_database.py`. `--write` regenerates, `--check` runs in CI,
+  `--check-db` reports drift against the live database.
+- `export_db_seeds.py` takes its column lists from that manifest instead of a hand-written list,
+  now covers `dungeons`, `map_layout` and `map_session_state`, fails loudly on a column mismatch
+  instead of printing `[WARNING] Skipping export`, and refuses to overwrite a populated seed file
+  from an empty table without `--allow-empty`. Every schema table must be classified as exported or
+  excluded.
+- `seed_database.py` gained `--dungeons` to restore the three dungeon tables.
+
+**Still open in this plan:** `check_demo_database.py`'s hand-maintained `REQUIRED_COLUMNS`, additive
+migrations, and the deploy path. `--check-db` currently reports one real drift — the live database
+carries a `quests` table `init_database.py` has never heard of.
 
 - **Area guide:** [Repo Infra](../../areas/repo-infra.md)
 
@@ -82,13 +101,12 @@ nowhere else and is the kind of content the Loom may want to re-express as a thr
 
 ## Stages
 
-1. **The schema as data.** Derive a machine-readable schema from `init_database.py`'s `CREATE TABLE`
-   statements, and regenerate both hand-maintained restatements from it — `export_db_seeds.py`'s
-   table/column definitions and `check_demo_database.py`'s required columns — using the existing
-   generated-section markers so `--check` fails when either goes stale. Make export failures fatal.
-   This stage stands alone and is the urgent one: it closes the silent-data-loss hole today, before
-   any migration machinery exists, and it means the missing `dungeons` and `map_layout` exports get
-   fixed by regeneration rather than by remembering to add them.
+1. **The schema as data.** *Mostly shipped early — see [Landed early](#landed-early-outside-this-plan).*
+   `scripts/generate_export_schema.py` now derives the schema from `init_database.py`'s
+   `CREATE TABLE` statements into `data/generated/export_schema.json`; `export_db_seeds.py` consumes
+   it, export failures are fatal, and `dungeons`, `map_layout` and `map_session_state` are covered.
+   **What remains in this stage:** regenerate `check_demo_database.py`'s `REQUIRED_COLUMNS` from the
+   same manifest, so the last hand-maintained restatement of the schema goes away too.
 
 2. **The migration runner.** A `schema_version` table, an ordered directory of revisions, and an
    upgrade that applies only what is pending and is safe to run twice. `init_database.py` stamps a

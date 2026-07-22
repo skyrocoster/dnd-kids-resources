@@ -1,6 +1,6 @@
 # Players Area Guide
 
-> **Active plan:** [Player Spellbook Recovery](../plans/active/player-spellbook-recovery.md) (Stage 1-4 shipped; Stage 5 next).
+> **Active plan:** None.
 
 ## Scope
 
@@ -64,7 +64,7 @@ A future kid-operated lookup would be a separate surface.
 
 ## Work queue
 
-- [Player Spellbook Recovery](../plans/active/player-spellbook-recovery.md) Stage 5 (Seamless roster switching) is next for this area.
+- [Player Spellbook Recovery](../complete/player-spellbook-recovery.md) shipped Stages 1-5 (archived).
 - Player-item inventory remains deferred and needs its own design before schema or UI work.
 
 ## Cross-references

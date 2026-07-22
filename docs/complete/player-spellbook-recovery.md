@@ -1,6 +1,6 @@
 # Player Spellbook Recovery — fast playtime spell reference backed by recoverable character records
 
-> **Status:** Stage 1-4 shipped; Stage 5 (Seamless roster switching) next.
+> **Status:** Stage 1-5 shipped. Feature complete.
 
 - **Area guide:** [Players](../../areas/players.md)
 
@@ -87,3 +87,4 @@ Touch:        48px floor for roster entries, disclosure controls, and dialog act
 | 2 | Added `GET /api/players/{player_id}/detail` returning `PlayerDetail` with inline spells and weapons. Added `PUT /api/players/{player_id}/spells` and `PUT /api/players/{player_id}/weapons` for atomic batch replacement. Added delete-cascade tests proving junction cleanup and catalog preservation. |
 | 3 | Built the full Edit Character dialog capturing all identity, combat, ability, spellcasting, and feature fields from the recovery contract with validation. Replaced inline spell/weapon add/remove controls with searchable, staged batch-assignment dialogs that commit atomically via the Stage 2 replace endpoints. Removed per-item assignment API calls. |
 | 4 | Created `playerModel.ts` with statblock formatting helpers mirroring NPC equivalents. Built `PlayerCombatSummary` (compact AC/HP/Speed/Initiative strip + collapsible Full Profile via `MonsterStatBlock`), `PlayerSpellSection` (level-grouped spells with always-visible quick rules), and `PlayerWeaponSection` (alphabetical weapons with expandable detail). Wired all three into `PlayerBrowserPage`'s detail pane replacing plain read-only lists. |
+| 5 | Added a per-player detail cache to `PlayerBrowserPage` so a cache hit skips the loading state, keeping the spell/weapon section components mounted and their expand/collapse state intact across switches; assignment saves force-refresh the cache. After the roster loads, every other player's detail is now prefetched into the same cache in the background so later switches are immediate. |

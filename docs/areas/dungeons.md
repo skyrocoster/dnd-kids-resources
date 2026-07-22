@@ -147,7 +147,12 @@ The session view is the surface that is open while a game is running: it must st
 
 ## Invariants
 
-- Runtime-authored dungeons and layouts are not seed data and are never exported.
+- Dungeons, map layouts, and map session state **are** seed-backed and **must** be exported before a
+  rebuild. `scripts/init_database.py` drops all three, so authored dungeon content that has not been
+  written to `data/seeds/` is lost. Freeze it with `scripts/export_db_seeds.py`, which now covers
+  them; restore with `scripts/seed_database.py --dungeons`. This reverses the previous rule that
+  dungeons were never seed data — that rule left the one domain nobody can regenerate as the only
+  domain with no backup path.
 - Preserve Map Lab geometry, reducer, autosave, zoom/pan, fullscreen, and layout persistence unless a focused plan explicitly owns them.
 - Rooms are the focal element of the map. Anything drawn outside them is reinforcement and must not out-shout them.
 - No authored map content is ever silently clipped by the map's extent.

@@ -42,11 +42,20 @@ dnd_kids_resources.db
 # Database backups (old versions)
 *.db.backup.*
 
-# Ignore local data and 5eTools data that should not be added to GitHub
-/data/
+# Ignore local data and 5eTools data that should not be added to GitHub.
+# Written as `/data/*` rather than `/data/` so that individual files can be
+# re-included below; git cannot un-ignore anything inside an excluded directory.
+/data/*
 /data/5eTools/
 
 data/seeds/archive/
+
+# The generated export schema is committed: CI runs
+# `generate_export_schema.py --check` against it on a fresh checkout.
+# It contains table and column names only — no campaign content.
+!/data/generated/
+/data/generated/*
+!/data/generated/export_schema.json
 
 
 # Vendored AI tool skill dirs (not project code)

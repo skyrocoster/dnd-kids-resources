@@ -105,7 +105,8 @@ CREATE TABLE statement inside `conftest.py`, stop** — the schema comes from
 
 ## Documentation Contract CI
 - GitHub Actions runs `Documentation Contract` for every pull request and every push to `main`.
-- The workflow uses Python 3.12, installs `requirements.txt`, runs `python scripts/check_docs.py --check`, and on pull requests also runs `python scripts/check_docs.py --check --base <base-sha>`.
+- The workflow uses Python 3.12, installs `requirements.txt`, runs `python scripts/generate_export_schema.py --check`, then `python scripts/check_docs.py --check`, and on pull requests also runs `python scripts/check_docs.py --check --base <base-sha>`.
+- `generate_export_schema.py --check` fails when `data/generated/export_schema.json` no longer matches the `CREATE TABLE` statements in `scripts/init_database.py`. Fix it by running `--write` and committing the result — never by editing the manifest. Use `--check-db` locally to diagnose drift between the schema and your live database.
 - Local runs should prefer the repo-local virtualenv instead: `.venv\Scripts\python.exe scripts/check_docs.py --check` on Windows, `.venv/bin/python scripts/check_docs.py --check` on POSIX.
 - `documentation-contract` must be enabled as a required branch-protection check in GitHub repository settings. The workflow cannot enforce that repository setting itself.
 - Use the PR template to record that a fresh reader can route the change from `CLAUDE.md` through `docs/README.md` to the owning plan's minimum context.

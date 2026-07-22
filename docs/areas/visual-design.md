@@ -1,6 +1,6 @@
 # Visual Design Area Guide
 
-> **Active plan:** None.
+> **Active plan:** [Glossary Term Tooltips](../plans/active/glossary-term-tooltips.md) — Stage 1 next.
 
 ## Scope
 
@@ -24,6 +24,7 @@ Modes are defined in [../UX_PATTERNS.md](../UX_PATTERNS.md#surface-modes).
 |---|---|---|---|
 | App shell and nav rail | all routes | both | DM |
 | Field Guide home | `/` | prep | DM |
+| Glossary term tooltip | inline in rendered rule text (spells, weapons, quick rules) | both | DM |
 
 ## Invariants
 
@@ -32,7 +33,7 @@ Modes are defined in [../UX_PATTERNS.md](../UX_PATTERNS.md#surface-modes).
 
 ## Work queue
 
-No active Visual Design implementation plan.
+[Glossary Term Tooltips](../plans/active/glossary-term-tooltips.md) — Stage 1 next.
 
 ## Cross-references
 
