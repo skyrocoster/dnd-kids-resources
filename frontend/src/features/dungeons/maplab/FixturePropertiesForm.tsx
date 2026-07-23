@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { listDungeons, listEncounters, listLootBundles } from '../../../api/client'
 import type { Dungeon, Encounter, LootBundle } from '../../../api/types'
 import type { FieldSpec, FixtureTypeSpec } from './fixtureTypes'
-import { absoluteCells, floorsInLayout, markersAtCell, roomsOnZ, type MapCell, type MapLayout, type MapRoom } from './maplabModel'
+import { absoluteCells, floorsInLayout, markersAtCell, roomsOnZ, type MapCell, type MapLayout, type MapRoom } from '../../../model/maplabModel'
 
 interface FixturePropertiesFormProps {
   spec: FixtureTypeSpec

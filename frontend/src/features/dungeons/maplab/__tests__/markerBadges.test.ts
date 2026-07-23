@@ -20,7 +20,7 @@ import {
   markersAtCell,
   type MapLayout,
   type MapProp,
-} from '../maplabModel'
+} from '../../../../model/maplabModel'
 
 const prop = (overrides: Partial<MapProp> = {}): MapProp => ({
   prop_id: 1,

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { getRoomById, getRoomThreatHints, type DungeonData } from '../dungeonModel'
-import { floorsInLayout, roomsOnZ, type MapLayout } from './maplabModel'
+import { floorsInLayout, roomsOnZ, type MapLayout } from '../../../model/maplabModel'
 
 interface ViewerRoomRailProps {
   layout: MapLayout

@@ -18,7 +18,7 @@ This doc describes the folder structure, backend/frontend conventions, and reque
 | `db.py` | SQLite connection helper, resolves database path, enables foreign keys, and opens/closes a connection per `get_db()` use |
 | `schemas.py` | Pydantic request/response models (Ability, Condition, Spell, Monster, Weapon, Item, LootBundle, Player, NPC, Encounter, Dungeon, MapLayoutBlob + their Create/Update variants) |
 
-**`backend/app/routers/`** — 11 domain-specific routers, each mounted under `/api`:
+**`backend/app/routers/`** — 15 domain-specific routers, each mounted under `/api`:
 
 | Router | Endpoint prefix | Purpose |
 |---|---|---|
@@ -32,6 +32,10 @@ This doc describes the folder structure, backend/frontend conventions, and reque
 | `encounters.py` | `/api/encounters` | Encounter CRUD, creature rosters |
 | `dungeons.py` | `/api/dungeons` | Runtime-created dungeon CRUD (room-reading data stored in `data` JSON column) |
 | `layouts.py` | `/api/dungeons/{dungeon_id}/layout` | Dungeon map layout save/load (MapLayoutBlob) |
+| `session_state.py` | `/api/dungeons/{dungeon_id}/session-state` | Door/stair/portal toggle persistence (play-mode) |
+| `fog.py` | `/api/dungeons/{dungeon_id}/revealed-cells` | Fog-of-war revealed-cell ratchet (player app) |
+| `at_the_table.py` | `/api/at-the-table` | Single-row dungeon pointer for the player app |
+| `loom.py` | `/api/loom` | Ordered Thread story tracker |
 | `reference.py` | `/api/abilities`, `/api/conditions`, `/api/damage_types`, `/api/weapon_properties`, `/api/skills`, `/api/spell-components` | Read-only reference data |
 
 **Backend convention: no models/ or services/ directories.** Business logic lives directly in routers + `db.py`/`schemas.py`. This is intentional: routers are small (~100–300 lines each), and queries/mutations are straightforward enough to live inline without a separate models layer. If logic becomes complex later, extract it as router helper functions, not a separate file structure.
@@ -47,6 +51,8 @@ This doc describes the folder structure, backend/frontend conventions, and reque
 | `api/` | Single API client (`client.ts`) that speaks to the backend + centralized TypeScript type definitions (`types.ts`) |
 | `components/` | Shared UI primitives (Card, ConfirmDialog, DiceText, FloatingWindow, SearchList, SplitPane) + subdirs for form inputs and icon components |
 | `features/` | Domain modules — `dungeons/`, `encounters/`, `items/`, `loot/`, `monsters/`, `npcs/`, `players/`, `spells/`, `weapons/`. Each feature dir contains pages, editor forms, and local state management. |
+| `model/` | Pure domain models shared by both the DM app and the Player app (`maplabModel.ts`). Modules here must import nothing from `components/`, `features/`, `layout/`, or `pages/`. |
+| `player/` | Player app shell, navigation, curtain (player-view transform), kid-facing components, and the `/play/map` live map renderer/data seam |
 | `pages/` | Top-level router pages (HomePage, ComponentDemoPage, StubPage) — entry points for each route |
 | `layout/` | AppShell.tsx — header, nav, footer layout that wraps all pages; navSections.ts — shared nav-section → route map consumed by AppShell's rail/drawer and HomePage's chapter tabs |
 | `router.tsx` | React Router configuration; exports a `routes` array (dev-only `demo` route gated by `import.meta.env.DEV`) and the `router` built from it |
@@ -64,8 +70,8 @@ features/dungeons/
     ├── DungeonShell.tsx         # layout route with view/edit mode toggle
     ├── MapLabPage.tsx           # viewer (read + encounter/NPC use)
     ├── MapLabEditorPage.tsx     # editor (geometry + content authoring)
-    ├── maplabModel.ts           # coordinate/geometry model (MapLayout)
     ├── maplabEditor.ts          # editor reducer (31 actions)
+    ├── maplabPresentation.ts    # icon-bearing presentation helpers
     ├── useMapLabLayout.ts       # viewer layout fetch
     ├── useMapLabEditor.ts       # editor hook (dual-save)
     ├── RoomDetailsPanel.tsx     # viewer room-reading sidebar
@@ -86,6 +92,8 @@ Brace parsing is domain-agnostic; registered definitions own token metadata, val
 fallbacks, while `DiceText` remains responsible only for dice presentation.
 
 **Frontend convention: standard browser routes.** Standard catalog browsers use `BrowserLayout` for the routed `PageHeader`, action slot, error alert, `SplitPane`, and optional editor/confirmation-dialog slots. They pass `listCollapsible` so the shared list rail exposes the persisted collapse/restore control on desktop. They model the collection request with `RemoteState<T>` and pass its loading/error status to `SearchList`; a selected item sets `detailOpen`, which at `520px` presents a detail-only view with an in-flow Back-to-list button. Feature routes keep their own sorting, selection, detail card, editor, and deletion behavior.
+
+**Frontend convention: player route family.** `/play` is a top-level sibling of `/`, outside `AppShell`, and owns descendants such as `/play/map` inside `PlayerShell`. Player routes use native route targets, offer no route out of `/play`, and keep their data seams/renderers under `frontend/src/player/` rather than importing DM feature components.
 
 ## Data Flow
 
@@ -131,7 +139,7 @@ data/seeds/*.json (canonical reference and campaign data)
 <!-- GENERATED:ARCHITECTURE:START -->
 ### Generated Registration Inventory
 
-Backend routers registered in `main.py`: `reference.py`, `spells.py`, `monsters.py`, `weapons.py`, `items.py`, `loot.py`, `players.py`, `npcs.py`, `encounters.py`, `dungeons.py`, `layouts.py`, `session_state.py`, `loom.py`.
+Backend routers registered in `main.py`: `reference.py`, `spells.py`, `monsters.py`, `weapons.py`, `items.py`, `loot.py`, `players.py`, `npcs.py`, `encounters.py`, `dungeons.py`, `layouts.py`, `session_state.py`, `fog.py`, `at_the_table.py`, `loom.py`.
 
 Frontend feature directories: `dungeons/`, `encounters/`, `items/`, `loom/`, `loot/`, `monsters/`, `npcs/`, `players/`, `spells/`, `weapons/`.
 <!-- GENERATED:ARCHITECTURE:END -->

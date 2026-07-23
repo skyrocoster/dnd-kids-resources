@@ -17,6 +17,7 @@ import { LoomPage } from './features/loom/LoomPage'
 import { AppShell } from './layout/AppShell'
 import { ComponentDemoPage } from './pages/ComponentDemoPage'
 import { HomePage } from './pages/HomePage'
+import { PlayerHome, PlayerMapRoute, PlayerShell } from './player/PlayerShell'
 
 export const routes = [
   {
@@ -46,6 +47,14 @@ export const routes = [
           { path: 'edit', element: <MapLabEditorPage /> },
         ],
       },
+    ],
+  },
+  {
+    path: '/play',
+    element: <PlayerShell />,
+    children: [
+      { index: true, element: <PlayerHome /> },
+      { path: 'map', element: <PlayerMapRoute /> },
     ],
   },
 ]

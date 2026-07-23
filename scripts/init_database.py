@@ -329,6 +329,26 @@ def init_database(db_path: Path | None = None):
         )
     """)
 
+    # Fog-of-war: cells the player has revealed. Only ever grows (INSERT OR IGNORE).
+    cursor.execute("""
+        CREATE TABLE revealed_cells (
+            dungeon_id INTEGER NOT NULL,
+            x INTEGER NOT NULL,
+            y INTEGER NOT NULL,
+            PRIMARY KEY (dungeon_id, x, y),
+            FOREIGN KEY (dungeon_id) REFERENCES dungeons(id) ON DELETE CASCADE
+        )
+    """)
+
+    # Single-row table that the DM sets to point the player app at which dungeon is "at the table".
+    cursor.execute("""
+        CREATE TABLE at_the_table (
+            lock INTEGER PRIMARY KEY DEFAULT 1 CHECK (lock = 1),
+            dungeon_id INTEGER,
+            FOREIGN KEY (dungeon_id) REFERENCES dungeons(id) ON DELETE SET NULL
+        )
+    """)
+
     # Create players table for persistent character records
     cursor.execute("""
         CREATE TABLE players (

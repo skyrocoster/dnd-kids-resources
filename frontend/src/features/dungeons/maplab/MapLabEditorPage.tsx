@@ -63,7 +63,7 @@ import {
   type MapRoom,
   type WallEdge,
   FEATURE_KIND_OPTIONS,
-} from './maplabModel'
+} from '../../../model/maplabModel'
 
 const CELL_SIZE = 64
 const MARKER_SIZE = 20

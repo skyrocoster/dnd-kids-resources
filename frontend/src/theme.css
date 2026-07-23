@@ -273,6 +273,10 @@
   --control-height: 48px;
   --control-height-compact: 32px;
 
+  /* Kid touch-target floor — 64px raised floor for kid surfaces (player app).
+     Matches the UX decision for larger touch targets suitable for children. */
+  --kid-control-height: 64px;
+
   /* Elevation/backdrop — matches the dialog/floating-window shadow and
      backdrop values already used consistently across modal surfaces. */
   --elevation-shadow: 0 8px 32px rgb(0 0 0 / 0.4);

@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { parseDungeonData } from '../../dungeonModel'
 import { mapLabLayout } from '../maplabData'
-import { createEmptyMapLayout } from '../maplabModel'
+import { createEmptyMapLayout } from '../../../../model/maplabModel'
 import { ViewerRoomRail } from '../ViewerRoomRail'
 
 const parsed = parseDungeonData({

@@ -1,5 +1,5 @@
 import { PropMarker } from './PropMarker'
-import { absoluteCells, doorWallSegment, doorSwingGeometry, nonDoorWallSegments, type MapDoor, type MapFeature, type MapProp, type MapRoom } from './maplabModel'
+import { absoluteCells, doorWallSegment, doorSwingGeometry, nonDoorWallSegments, type MapDoor, type MapFeature, type MapProp, type MapRoom } from '../../../model/maplabModel'
 
 interface GhostFloorLayerProps {
   rooms: MapRoom[]

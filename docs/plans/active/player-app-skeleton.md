@@ -1,6 +1,6 @@
 # Player App Skeleton — a tablet at the table showing the live dungeon map
 
-> **Status:** Not started. Stage 1 next. This is Plan 0 of four (skeleton → fog → knowledge → identity); it is the next-up plan for the Player App area.
+> **Status:** Stages 1–5 shipped; Stage 6 (table-readiness pass) next. This is Plan 0 of four (skeleton → fog → knowledge → identity); it remains the next-up plan for the Player App area.
 
 - **Area guide:** [Player App](../../areas/player-app.md)
 
@@ -73,10 +73,10 @@ Route shape:  bespoke canvas surface, in the same family as the Map Lab canvas a
               not forced into the record triad.
 Edit style:   none. Pan and zoom only; no selection in this plan.
 Save:         none.
-Empty:        StatePanel `empty` — `No map yet.`
+Empty:        Player-local centered state — `No map yet.`
 Filtered empty: n/a.
 No selection: n/a — the map shows the whole dungeon; tapping a room arrives in Plan 2.
-Load failure: StatePanel `error` fills the map region — `The map didn't load. Ask your DM.`
+Load failure: Player-local centered state fills the map region — `The map didn't load. Ask your DM.`
               Routing the child to the human is correct: the app informs, the DM adjudicates.
 Action failure: n/a — no actions. A failed poll leaves the last good map on screen and retries
               silently; it never blanks a map mid-session.
@@ -111,8 +111,7 @@ dungeon they are running.
    documented pass-through, with a test asserting it currently conceals nothing, so Plan 1 changes one
    module and one test. Ends with the storage and concealment seams in place, carrying no load.
 
-4. **Author a large dungeon and export it as the seed.** There is currently no dungeon fixture
-   anywhere in the repo, so Stage 5 has nothing to render and fog has nothing meaningful to hide.
+4. **Author a large dungeon and export it as the seed.** The school fixture now gives Stage 5 a substantial map to render and fog meaningful content to hide.
 
    The backup path this needs **already shipped ahead of this plan** — `export_db_seeds.py` now
    covers `dungeons`, `map_layout`, and `map_session_state`, with column lists generated from
@@ -157,3 +156,10 @@ dungeon they are running.
 
 | Stage | What shipped (≤2 sentences) |
 |-------|------------------------------|
+| 1 | The `/play` route now mounts a full-bleed `PlayerShell` (`frontend/src/player/`) as a sibling of `/`, rendering one 64px icon+word destination with no exit. The `player/` import rule (no `features/`, `components/`, `layout/`, `pages/`) is enforced by a filesystem architecture test, and the *Operators → Kid* rules are written into `UX_PATTERNS.md`. |
+| 2 | `maplabModel.ts` was split: icon-bearing presentation helpers moved to `maplabPresentation.ts` and the now-pure model relocated to `frontend/src/model/maplabModel.ts`. All 22 importers repointed; `player/` can now import the model without violating the import rule. |
+| 3 | Backend: `revealed_cells` table (union-write fog ratchet via `INSERT OR IGNORE`) and `at_the_table` single-row pointer, both with GET/PUT endpoints and export policy entries. Frontend: TypeScript types and `fetch`-wrapper client functions for both; `playerViewTransform` curtain module (pass-through) with a test asserting it currently conceals nothing. |
+| 4 | Authored and exported `Widdershins Academy` plus `The Underlake Annex`, preserving a large three-floor Map Lab layout, Stage 4 geometry, fixtures, portals, room content, and seed rebuildability. A clean schema initialization followed by `seed_database.py --dungeons` restored the school and its layout successfully. |
+| 5.1 | The player map data seam now polls `at-the-table` every five seconds, loads the selected dungeon layout, normalizes it through the curtain transform, and reports loading/empty/error/ready states. A failed poll after a good frame keeps that last visible map on screen and retries silently. |
+| 5.2 | The player app owns an independent full-bleed map renderer for transformed layouts, including rooms, walls, floors, authored outside features, touch pan/pinch zoom, keyboard focus, and arrow-key panning. It imports no DM feature components and keeps the player import boundary under test. |
+| 5.3 | `/play` now remains a player-shell route family outside `AppShell`, with its native Map destination linking to `/play/map`. `/play/map` composes the live data seam and player renderer, shows exact loading/empty/error copy, and offers no back/home/DM link or manual refresh control. |

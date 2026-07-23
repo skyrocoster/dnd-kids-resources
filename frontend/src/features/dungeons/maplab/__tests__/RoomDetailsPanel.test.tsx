@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as api from '../../../../api/client'
 import type { NPC } from '../../../../api/types'
 import { parseDungeonData } from '../../dungeonModel'
-import type { MapRoom } from '../maplabModel'
+import type { MapRoom } from '../../../../model/maplabModel'
 import { RoomDetailsPanel } from '../RoomDetailsPanel'
 
 const room: MapRoom = {

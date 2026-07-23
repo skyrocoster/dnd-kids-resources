@@ -195,6 +195,28 @@ Session state is written through immediately on every toggle (no debounce) — u
 
 ---
 
+## Fog Router
+
+`backend/app/routers/fog.py` — revealed-cell store for the player-app fog of war (union-write only, so cells can only be revealed, never hidden).
+
+| Method | Path | Purpose | Request schema | Response schema |
+|---|---|---|---|---|
+| GET | `/api/dungeons/{dungeon_id}/revealed-cells` | Get all revealed fog cells for a dungeon | (path param) | `RevealedCellsBlob` |
+| PUT | `/api/dungeons/{dungeon_id}/revealed-cells` | Reveal fog cells (union write — `INSERT OR IGNORE`, so cells only added, never removed) | `RevealedCellsBlob` | `RevealedCellsBlob` |
+
+---
+
+## At-The-Table Router
+
+`backend/app/routers/at_the_table.py` — single-row pointer from the DM app to the player app: which dungeon is currently "at the table".
+
+| Method | Path | Purpose | Request schema | Response schema |
+|---|---|---|---|---|
+| GET | `/api/at-the-table` | Get the dungeon currently set as 'at the table' (returns `dungeon_id: null` if no row exists) | (none) | `AtTheTableResponse` |
+| PUT | `/api/at-the-table` | Set which dungeon is at the table; validates dungeon exists (404 if not) | `AtTheTableSet` | `AtTheTableResponse` |
+
+---
+
 ## Reference Router
 
 `backend/app/routers/reference.py` — read-only reference data (abilities, conditions, damage types, etc.).
@@ -274,6 +296,10 @@ All request and response body shapes are defined in `backend/app/schemas.py` as 
 - **MapLayoutBlob:** data (JSON)
 - **MapSessionStateBlob:** data (JSON)
 - **IncomingGateway:** dungeon_id, dungeon_title, portal_id, title, z, cell (JSON list)
+- **RevealedCell:** x, y
+- **RevealedCellsBlob:** cells (list of RevealedCell)
+- **AtTheTableResponse:** dungeon_id (nullable int)
+- **AtTheTableSet:** dungeon_id (int)
 
 All optional fields are `Optional[...]` in the schema; required fields have no `Optional` wrapper. For full detail, read the schema definitions directly in the source file.
 
@@ -283,6 +309,8 @@ All optional fields are `Optional[...]` in the schema; required fields have no `
 | Method | Path | Parameters | Request | Responses |
 |---|---|---|---|---|
 | GET | `/api/abilities` | - | - | 200: List[Ability] |
+| GET | `/api/at-the-table` | - | - | 200: AtTheTableResponse |
+| PUT | `/api/at-the-table` | - | AtTheTableSet | 200: AtTheTableResponse, 422: HTTPValidationError |
 | GET | `/api/conditions` | - | - | 200: List[Condition] |
 | GET | `/api/damage_types` | - | - | 200: List[DamageType] |
 | GET | `/api/dungeons` | `limit` (query), `offset` (query) | - | 200: List[Dungeon], 422: HTTPValidationError |
@@ -293,6 +321,8 @@ All optional fields are `Optional[...]` in the schema; required fields have no `
 | GET | `/api/dungeons/{dungeon_id}/incoming-gateways` | `dungeon_id` (path, required) | - | 200: List[IncomingGateway], 422: HTTPValidationError |
 | GET | `/api/dungeons/{dungeon_id}/layout` | `dungeon_id` (path, required) | - | 200: MapLayoutBlob, 422: HTTPValidationError |
 | PUT | `/api/dungeons/{dungeon_id}/layout` | `dungeon_id` (path, required) | MapLayoutBlob | 200: MapLayoutBlob, 422: HTTPValidationError |
+| GET | `/api/dungeons/{dungeon_id}/revealed-cells` | `dungeon_id` (path, required) | - | 200: RevealedCellsBlob, 422: HTTPValidationError |
+| PUT | `/api/dungeons/{dungeon_id}/revealed-cells` | `dungeon_id` (path, required) | RevealedCellsBlob | 200: RevealedCellsBlob, 422: HTTPValidationError |
 | DELETE | `/api/dungeons/{dungeon_id}/session-state` | `dungeon_id` (path, required) | - | 204: -, 422: HTTPValidationError |
 | GET | `/api/dungeons/{dungeon_id}/session-state` | `dungeon_id` (path, required) | - | 200: MapSessionStateBlob, 422: HTTPValidationError |
 | PUT | `/api/dungeons/{dungeon_id}/session-state` | `dungeon_id` (path, required) | MapSessionStateBlob | 200: MapSessionStateBlob, 422: HTTPValidationError |

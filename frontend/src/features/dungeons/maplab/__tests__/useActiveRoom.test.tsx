@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import { parseDungeonData, type DungeonData } from '../../dungeonModel'
 import { mapLabLayout } from '../maplabData'
-import { createEmptyMapLayout, type MapLayout } from '../maplabModel'
+import { createEmptyMapLayout, type MapLayout } from '../../../../model/maplabModel'
 import { useActiveRoom } from '../useActiveRoom'
 
 function buildData(roomIds: number[]): DungeonData {

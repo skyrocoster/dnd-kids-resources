@@ -4,11 +4,11 @@ import { ApiError, getLootBundle } from '../../../api/client'
 import type { LootBundle } from '../../../api/types'
 import { categoryIcon } from '../../loot/itemCategories'
 import { computeBundleTotal, formatGp } from '../../loot/lootTotals'
+import { inspectableDescriptor } from './maplabPresentation'
 import {
-  inspectableDescriptor,
   PASSAGE_STATE_TOKENS,
   type Inspectable,
-} from './maplabModel'
+} from '../../../model/maplabModel'
 
 export interface SessionControls {
   onToggleOpen?: () => void

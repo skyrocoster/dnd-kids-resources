@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import * as api from '../../../../api/client'
 import { FixturePropertiesForm } from '../FixturePropertiesForm'
 import { FIXTURE_TYPES } from '../fixtureTypes'
-import type { MapLayout } from '../maplabModel'
+import type { MapLayout } from '../../../../model/maplabModel'
 
 describe('FixturePropertiesForm', () => {
   it('renders a select field with the kind options and dispatches on change', () => {

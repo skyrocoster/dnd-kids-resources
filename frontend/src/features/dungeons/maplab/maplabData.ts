@@ -4,7 +4,7 @@
  * Case 2 (M2): Stairs connecting two floors.
  */
 
-import type { MapLayout, MapRoom, MapDoor, MapStair, MapProp } from './maplabModel'
+import type { MapLayout, MapRoom, MapDoor, MapStair, MapProp } from '../../../model/maplabModel'
 
 // ============================================================================
 // Case 1: Combat Training Hall (room 17) ↔ Armoury (room 23)

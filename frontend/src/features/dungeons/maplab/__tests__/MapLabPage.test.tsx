@@ -6,7 +6,7 @@ import * as api from '../../../../api/client'
 import type { NPC } from '../../../../api/types'
 import { mapLabLayout } from '../maplabData'
 import { MapLabPage } from '../MapLabPage'
-import type { MapPortal as MapPortalFixture } from '../maplabModel'
+import type { MapPortal as MapPortalFixture } from '../../../../model/maplabModel'
 import { DungeonRouteContextProvider, type DungeonRouteContext } from '../dungeonRouteContext'
 
 const dungeonDataFixture = {

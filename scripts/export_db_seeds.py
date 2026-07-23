@@ -46,6 +46,8 @@ EXPORT_POLICY = {
     "loot_bundle": {"file": "seed_loot_bundles.json", "order_by": "name"},
     "map_layout": {"file": "seed_map_layouts.json", "order_by": "dungeon_id"},
     "map_session_state": {"file": "seed_map_session_state.json", "order_by": "dungeon_id"},
+    "revealed_cells": {"file": "seed_revealed_cells.json", "order_by": "dungeon_id, x, y"},
+    "at_the_table": {"file": "seed_at_the_table.json", "order_by": "lock"},
     "monsters": {"file": "seed_monsters.json", "order_by": "name"},
     "npcs": {"file": "seed_npcs.json", "order_by": "id"},
     "player_spells": {"file": "seed_player_spells.json", "order_by": "player_id, added_at"},

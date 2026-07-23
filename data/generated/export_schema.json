@@ -12,6 +12,10 @@
       "type",
       "created_at"
     ],
+    "at_the_table": [
+      "lock",
+      "dungeon_id"
+    ],
     "conditions": [
       "id",
       "title",
@@ -208,6 +212,11 @@
       "notes",
       "created_at",
       "updated_at"
+    ],
+    "revealed_cells": [
+      "dungeon_id",
+      "x",
+      "y"
     ],
     "spells": [
       "id",

@@ -1,5 +1,6 @@
 import { CoinsIcon, MultipleStatusesIcon, TrapDisarmedIcon, type LucideIcon } from '../../../components/icons'
-import { PASSAGE_STATE_TOKENS, passageStateChips, type MapDoor, type MapPortal, type MapProp, type MapStair } from './maplabModel'
+import { PASSAGE_STATE_TOKENS, type MapDoor, type MapPortal, type MapProp, type MapStair } from '../../../model/maplabModel'
+import { passageStateChips } from './maplabPresentation'
 
 /** A single badge descriptor — one flag → one badge, fed into either a radial ring (on-square
  * markers) or a linear layout (door leaf). The `key` is stable across renders so badges keep

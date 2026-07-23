@@ -38,13 +38,37 @@ Status: IN FORCE.
 
 ### Operators
 
-Today every surface is operated by the **DM**. A third operator is anticipated — **kid**, on
-read-only surfaces stripped of DM-facing detail — but no such surface exists yet and **no rules are
-written for it**. When the first one is built, it gets its own subsection here rather than
-retrofitting exceptions into the prep/play rules. Nothing in this document should be written in a way
-that assumes the operator is always the DM.
+Most surfaces are operated by the **DM**. A second operator now exists — **kid**, on the read-only
+`/play` surfaces — and has its own rules in *Kid* below rather than exceptions retrofitted into the
+prep/play rules. Nothing in this document should be written in a way that assumes the operator is
+always the DM.
 
-Status: IN FORCE (as a structural reservation).
+Status: IN FORCE.
+
+#### Kid
+
+The kid operator runs the read-only `/play` app (Player App area). Its surfaces serve players aged
+four and six: the app is their memory, not their rulebook.
+
+- **Read-only.** No kid surface mutates shared truth. Every mutation happens on the DM's device.
+- **No exit.** No link, button, gesture, or error state leads out of `/play`. Reaching the DM app
+  means typing a URL. This is temptation design, not security.
+- **Two taps to an answer.** A kid picks the device up with a question and puts it down once it is
+  answered. More than two taps from the shell is a failed surface.
+- **Never text-alone.** Any control or state a kid must act on carries an icon or picture as well as
+  words, for the same reason `Never hue-alone` exists.
+- **Liveness is automatic.** Kid surfaces poll. No manual refresh gesture — pull-to-refresh is
+  explicitly rejected.
+- **Concealment via the curtain only.** Kid components consume the player-view transform's output and
+  never raw dungeon data.
+- **64px touch floor.** Kid surfaces raise the touch target floor to 64px, above the app's 48px
+  `--control-height`. A raised floor, not a DESIGN_SYSTEM exception.
+- **Player-owned states.** Kid surfaces do not import shared DM-app state components when that would
+  violate the `player/` boundary; they may render player-local loading, empty, and error states with
+  the exact copy named by their plan.
+
+Status: IN FORCE. First applied by the `/play` shell (Player App Skeleton, Stage 1) and the `/play/map`
+surface (Stage 5).
 
 ### Persistent play actions
 
@@ -316,4 +340,3 @@ Recorded so they are not mistaken for settled ground:
 - **No optimistic updates.** Every mutation waits for the server. Acceptable on a LAN; worth
   revisiting if any surface starts feeling slow at the table.
 - **No offline story.** A dropped connection surfaces as an action failure and nothing more.
-- **No kid-operated surface**, and therefore no rules for one. See *Operators* above.

@@ -3,22 +3,6 @@
  * Zero logic; pure type definitions to anchor later stages.
  */
 
-import {
-  TrapIcon,
-  LockIcon,
-  UnlockIcon,
-  HiddenIcon,
-  StairsUpIcon,
-  StairsDownIcon,
-  StairsIcon,
-  RoomIcon,
-  ItemIcon,
-  DoorOpenIcon,
-  DoorClosedIcon,
-  type LucideIcon,
-} from '../../../components/icons'
-import { PROP_KIND_ICONS } from './fixtureTypes'
-
 // ============================================================================
 // Type definitions
 // ============================================================================
@@ -500,46 +484,11 @@ export function portalsOnFloor(layout: MapLayout, z: number): MapPortal[] {
 /** A passage's (door or stair) single dominant presentation state, in display precedence order. */
 export type PassageState = 'trapped' | 'locked' | 'hidden' | 'unlocked'
 
-const PASSAGE_STATE_PRECEDENCE: PassageState[] = ['trapped', 'locked', 'hidden', 'unlocked']
+export const PASSAGE_STATE_PRECEDENCE: PassageState[] = ['trapped', 'locked', 'hidden', 'unlocked']
 
-function isPassageStateActive(state: PassageState, passage: PassageFlags): boolean {
+export function isPassageStateActive(state: PassageState, passage: PassageFlags): boolean {
   if (state === 'unlocked') return !passage.trapped && !passage.locked && !passage.hidden
   return passage[state]
-}
-
-/** Pure state → { icon, token, label } mapping, consumed by M2.3's door/stair rendering. Reuses
- * existing MD3 semantic roles rather than a dedicated passage-state palette (per the design-system
- * "no new hues without the harmonize generator" rule). Precedence when multiple flags are set:
- * trapped > locked > hidden > unlocked — callers surface the rest as secondary chips via
- * `secondaryPassageStates`. Generalized (formerly `doorPresentation`, M2.1) so doors and stairs share
- * one mapping. */
-export interface PassagePresentation {
-  state: PassageState
-  icon: LucideIcon
-  token: string
-  label: string
-}
-
-export function passagePresentation(passage: PassageFlags): PassagePresentation {
-  if (passage.trapped) {
-    return { state: 'trapped', icon: TrapIcon, token: '--md-error', label: 'Trapped' }
-  }
-  if (passage.locked) {
-    return { state: 'locked', icon: LockIcon, token: '--md-passage-locked', label: 'Locked' }
-  }
-  if (passage.hidden) {
-    return { state: 'hidden', icon: HiddenIcon, token: '--md-passage-hidden', label: 'Hidden' }
-  }
-  return { state: 'unlocked', icon: UnlockIcon, token: '--md-on-surface-variant', label: 'Unlocked' }
-}
-
-/** The other active state flags beyond the primary one `passagePresentation` already surfaces —
- * rendered as secondary chips so a passage that's both locked and trapped doesn't hide either fact. */
-export function secondaryPassageStates(passage: PassageFlags): PassageState[] {
-  const primary = passagePresentation(passage).state
-  return PASSAGE_STATE_PRECEDENCE.filter(
-    (state) => state !== primary && state !== 'unlocked' && isPassageStateActive(state, passage),
-  )
 }
 
 // ============================================================================
@@ -556,38 +505,6 @@ export const PASSAGE_STATE_TOKENS: Record<PassageState, string> = {
   locked: '--md-passage-locked',
   hidden: '--md-passage-hidden',
   unlocked: '--md-on-surface-variant',
-}
-
-/** One chip per active passage-state flag, replacing the inspector's "State"/"Also" text rows
- * (J2). Icon + short text label so color is never the only signal; a fully-unlocked passage
- * produces zero chips (absence is the clean/unremarkable state). */
-export interface PassageStateChip {
-  state: PassageState
-  icon: LucideIcon
-  label: string
-}
-
-const PASSAGE_STATE_CHIP_ICONS: Record<Exclude<PassageState, 'unlocked'>, LucideIcon> = {
-  trapped: TrapIcon,
-  locked: LockIcon,
-  hidden: HiddenIcon,
-}
-
-const PASSAGE_STATE_CHIP_LABELS: Record<Exclude<PassageState, 'unlocked'>, string> = {
-  trapped: 'Trapped',
-  locked: 'Locked',
-  hidden: 'Hidden',
-}
-
-/** One chip per active flag (trapped/locked/hidden), in the same trapped > locked > hidden
- * precedence `passagePresentation` uses for its primary state — a passage that's both locked and
- * trapped surfaces both chips rather than picking one. Unlocked never produces a chip: it's the
- * clean/unremarkable baseline, not a flag worth announcing. */
-export function passageStateChips(passage: PassageFlags): PassageStateChip[] {
-  return PASSAGE_STATE_PRECEDENCE.filter(
-    (state): state is Exclude<PassageState, 'unlocked'> =>
-      state !== 'unlocked' && isPassageStateActive(state, passage),
-  ).map((state) => ({ state, icon: PASSAGE_STATE_CHIP_ICONS[state], label: PASSAGE_STATE_CHIP_LABELS[state] }))
 }
 
 // ============================================================================
@@ -657,139 +574,7 @@ export type Inspectable =
   | { kind: 'portal'; portal: MapPortal; session?: PassageSessionState }
   | { kind: 'feature'; feature: MapFeature }
 
-/** Descriptor for an element: title, type label, icon, and structured detail rows.
- * Consumed by the Stage-3 generic inspector panel and Stage-4 session controls. */
-export interface InspectableDescriptor {
-  title: string
-  typeLabel: string
-  icon: LucideIcon
-  token: string // MD3 semantic token for the icon/accent color
-  chips: PassageStateChip[]
-  lines: { label: string; value: string }[]
-}
 
-/** Shared line-builder for the two passage kinds (door/stair) — DCs and a free-text note. State
- * (trapped/locked/hidden) is no longer rendered as text rows here (Design Phase J2) — it surfaces
- * as icon+text chips via `passageStateChips` instead, above the `<dl>` these lines populate.
- * Previously duplicated inline in `MapLabPage.tsx`'s `PassageDetails`; the generic inspector needs
- * the same content as plain `{label, value}` rows instead of bespoke JSX. */
-function passageDescriptorLines(passage: PassageFlags): { label: string; value: string }[] {
-  const lines: { label: string; value: string }[] = []
-  if (passage.breakDc !== undefined) lines.push({ label: 'Break DC', value: String(passage.breakDc) })
-  if (passage.pickDc !== undefined) lines.push({ label: 'Pick DC', value: String(passage.pickDc) })
-  if (passage.hiddenDc !== undefined) lines.push({ label: 'Perception DC', value: String(passage.hiddenDc) })
-  if (passage.note) lines.push({ label: 'Note', value: passage.note })
-
-  return lines
-}
-
-/** Produce a descriptor for any inspectable element — the generic form of the door/stair
- * affordance panel, extended to rooms (and a typed, unrendered hook for items). A room carries no
- * passage state, so its lines are kind/size/description instead; door and stair share
- * `passageDescriptorLines`, since a stair is presented identically to a door throughout this
- * feature. Items produce a minimal descriptor only — no content rendering, per the Stage-3 scope
- * (item/chest authoring is deferred). */
-export function inspectableDescriptor(
-  target: Inspectable,
-  context?: { dungeonTitle?: string },
-): InspectableDescriptor {
-  switch (target.kind) {
-    case 'room': {
-      const { room } = target
-      const lines: { label: string; value: string }[] = []
-      if (room.kind) lines.push({ label: 'Kind', value: room.kind })
-      if (room.wallKind) lines.push({ label: 'Wall kind', value: room.wallKind })
-      lines.push({ label: 'Size', value: `${absoluteCells(room).length} squares` })
-      if (room.description) lines.push({ label: 'Description', value: room.description })
-      return {
-        title: room.title ?? `Room ${room.room_id}`,
-        typeLabel: 'Room',
-        icon: RoomIcon,
-        token: '--md-on-surface-variant',
-        chips: [],
-        lines,
-      }
-    }
-    case 'door': {
-      const { door, session } = target
-      const presentation = doorPresentation(door, session)
-      const effective = effectivePassageState(door, session)
-      const lines = passageDescriptorLines(effective)
-      lines.unshift({ label: 'Position', value: effective.sessionOpen ? 'Open' : 'Closed' })
-      if (door.trapped && effective.trapDisarmed) lines.push({ label: 'Trap', value: 'Disarmed' })
-      return {
-        title: door.title ?? `Door ${door.door_id}`,
-        typeLabel: 'Door',
-        icon: presentation.icon,
-        token: presentation.token,
-        chips: passageStateChips(effective),
-        lines,
-      }
-    }
-    case 'stair': {
-      const { stair, session } = target
-      const effective = effectivePassageState(stair, session)
-      const presentation = passagePresentation(effective)
-      const lines = passageDescriptorLines(effective)
-      if (stair.trapped && effective.trapDisarmed) lines.push({ label: 'Trap', value: 'Disarmed' })
-      return {
-        title: stair.title ?? `Stair ${stair.stair_id}`,
-        typeLabel: 'Stair',
-        icon: presentation.icon,
-        token: presentation.token,
-        chips: passageStateChips(effective),
-        lines,
-      }
-    }
-    case 'prop': {
-      const { prop } = target
-      return {
-        title: prop.title ?? prop.kind,
-        typeLabel: 'Prop',
-        icon: PROP_KIND_ICONS[prop.kind] ?? ItemIcon,
-        token: passagePresentation(prop).token,
-        chips: passageStateChips(prop),
-        lines: passageDescriptorLines(prop),
-      }
-    }
-    case 'portal': {
-      const { portal, session } = target
-      const effective = effectivePassageState(portal, session)
-      const presentation = passagePresentation(effective)
-      const lines = passageDescriptorLines(effective)
-      lines.push(
-        portal.to?.dungeon_id !== undefined
-          ? { label: 'Leaves to', value: context?.dungeonTitle ?? 'another dungeon' }
-          : portal.to?.cell && portal.to.z !== undefined
-            ? { label: 'Leads to', value: `${portal.to.cell[0]},${portal.to.cell[1]} (z:${portal.to.z})` }
-            : { label: 'Destination', value: 'This portal has no destination yet. Choose where it leads.' },
-      )
-      return {
-        title: portal.title ?? `Portal ${portal.portal_id}`,
-        typeLabel: 'Portal',
-        icon: presentation.icon,
-        token: presentation.token,
-        chips: passageStateChips(effective),
-        lines,
-      }
-    }
-    case 'feature': {
-      const { feature } = target
-      const lines: { label: string; value: string }[] = []
-      lines.push({ label: 'Kind', value: feature.kind })
-      lines.push({ label: 'Size', value: `${feature.cells.length} squares` })
-      lines.push({ label: 'Z', value: String(feature.z) })
-      return {
-        title: feature.title ?? feature.kind,
-        typeLabel: 'Feature',
-        icon: ItemIcon,
-        token: '--md-on-surface-variant',
-        chips: [],
-        lines,
-      }
-    }
-  }
-}
 
 // ============================================================================
 // Stage 1 geometry helpers (L-shape interlocking proof)
@@ -806,67 +591,10 @@ export function sharedWallSegments(roomA: MapRoom, roomB: MapRoom, _doors: MapDo
   return roomWallSegments(roomA).filter((edge) => bCells.has(cellKey(neighborCell(edge.cell, edge.side))))
 }
 
-// ============================================================================
-// Stage 2 presentation helpers (stair/door iconography)
-// ============================================================================
-
-/** Direction of a stair, from the perspective of standing on `fromZ` (defaults to the stair's own
- * authored `from.z`, so calling with one argument answers "does this stair rise or fall?"). A DM
- * viewing the *other* endpoint sees the opposite travel direction — pass the active floor's `z` to
- * get the direction as seen from there (e.g. a stair authored z0→z1 reads "up" from z0 but "down"
- * from z1, the same physical stair). */
 export function stairDirection(stair: MapStair, fromZ: number = stair.from.z): 'up' | 'down' | 'level' {
   const toZ = fromZ === stair.to.z ? stair.from.z : stair.to.z
   if (toZ === fromZ) return 'level'
   return toZ > fromZ ? 'up' : 'down'
-}
-
-/** Presentation for a stair including directional glyph information.
- * Extends PassagePresentation with stair-specific iconography (StairsUp vs StairsDown). */
-export interface StairPresentation extends PassagePresentation {
-  direction: 'up' | 'down' | 'level'
-}
-
-/** A stair reuses `passagePresentation`'s state (trapped/locked/hidden/unlocked), computed on the
- * *effective* (session-merged) flags when a session is given — a session-unlocked stair recolors
- * exactly like an authored-unlocked one, and a disarmed trap steps to the next flag the same way
- * `secondaryPassageStates` already handles multiple authored flags. The M2.3 marker mixed the state
- * token with a hardcoded `--md-tertiary-container` fill, two unrelated color families on one glyph;
- * the state token is now the marker's only color family (see `.maplab-stair-marker` in
- * MapLabPage.css, which fills neutral and strokes from the token). The plain/unlocked case — the
- * common one — swaps the generic unlock icon for a real directional glyph; a trapped/locked/hidden
- * stair keeps its state icon, matching how doors already prioritize state over decoration. */
-export function stairPresentation(stair: MapStair, fromZ?: number, session?: PassageSessionState): StairPresentation {
-  const effective = effectivePassageState(stair, session)
-  const base = passagePresentation(effective)
-  const direction = stairDirection(stair, fromZ)
-  const icon =
-    base.state === 'unlocked'
-      ? direction === 'up'
-        ? StairsUpIcon
-        : direction === 'down'
-          ? StairsDownIcon
-          : StairsIcon
-      : base.icon
-  return { ...base, icon, direction }
-}
-
-/** Presentation for a door including its effective open/closed state. */
-export interface DoorPresentation extends PassagePresentation {
-  isOpen: boolean
-}
-
-/** A door reuses `passagePresentation`'s state on the *effective* (session-merged) flags — a
- * session-unlocked door recolors exactly like an authored-unlocked one, and a disarmed trap steps
- * to the next flag the same way `secondaryPassageStates` already handles multiple authored flags.
- * The plain/unlocked case additionally swaps the generic unlock icon for an open/closed door glyph,
- * mirroring how `stairPresentation` swaps in a directional glyph for its own unlocked case. */
-export function doorPresentation(door: MapDoor, session?: PassageSessionState): DoorPresentation {
-  const effective = effectivePassageState(door, session)
-  const base = passagePresentation(effective)
-  const isOpen = effective.sessionOpen ?? false
-  const icon = base.state === 'unlocked' ? (isOpen ? DoorOpenIcon : DoorClosedIcon) : base.icon
-  return { ...base, icon, isOpen }
 }
 
 // ============================================================================

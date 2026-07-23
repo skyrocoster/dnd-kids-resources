@@ -1,6 +1,6 @@
 # Player App Area Guide
 
-> **Active plan:** [Player App Skeleton](../plans/active/player-app-skeleton.md) (next up).
+> **Active plan:** [Player App Skeleton](../plans/active/player-app-skeleton.md) (Stages 1–5 shipped; Stage 6 next).
 
 ## Scope
 
@@ -98,9 +98,8 @@ in a later plan and are the ones that need to know who is holding the tablet.
 
 ## Work queue
 
-- [Player App Skeleton](../plans/active/player-app-skeleton.md) is next up: the `/play` shell, the
-  import rule, the promoted shared model, the empty fog and curtain seams, and a live map on the
-  tablet.
+- [Player App Skeleton](../plans/active/player-app-skeleton.md) is next up for Stage 6: complete the
+  table-readiness pass now that the live school map is on the tablet.
 - Then, in order: fog as a working ratchet; the per-object knowledge model; ambient identity and the
   personal surfaces.
 - Gear and weapons are an open branch and have no plan. Whether there is a third kid destination at

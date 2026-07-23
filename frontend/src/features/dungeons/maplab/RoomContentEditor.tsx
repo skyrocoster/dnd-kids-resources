@@ -5,7 +5,7 @@ import { DiceText } from '../../../components/DiceText'
 import { NpcChip } from '../../npcs/NpcChip'
 import { groupEntriesByType, type DungeonEntry, type DungeonRoom } from '../dungeonModel'
 import { InspectorPanel } from './InspectorPanel'
-import type { MapRoom } from './maplabModel'
+import type { MapRoom } from '../../../model/maplabModel'
 import { WALL_KIND_OPTIONS } from './wallKinds'
 
 interface RoomContentEditorProps {

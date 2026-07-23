@@ -2,15 +2,15 @@ import { ItemIcon } from '../../../components/icons'
 import { BadgeRing } from './BadgeRing'
 import { PROP_KIND_ICONS } from './fixtureTypes'
 import { collapsedStatusLabel, markerBadges } from './markerBadges'
+import { passagePresentation } from './maplabPresentation'
 import {
   GROUPED_MARKER_RADIUS_FRACTION,
   MARKER_RADIUS_FRACTION,
   WALL_PROP_ICON_SCALE,
   WALL_PROP_RADIUS_FRACTION,
   doorWallSegment,
-  passagePresentation,
   type MapProp,
-} from './maplabModel'
+} from '../../../model/maplabModel'
 
 const PROP_IDENTITY_TOKENS: Record<string, string> = {
   chest: '--md-loot',

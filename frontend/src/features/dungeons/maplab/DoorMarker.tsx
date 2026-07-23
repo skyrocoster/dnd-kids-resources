@@ -1,4 +1,5 @@
-import { doorPresentation, doorSwingGeometry, doorWallSegment, effectivePassageState, type MapDoor, type PassageSessionState } from './maplabModel'
+import { doorPresentation } from './maplabPresentation'
+import { doorSwingGeometry, doorWallSegment, effectivePassageState, type MapDoor, type PassageSessionState } from '../../../model/maplabModel'
 import { collapsedStatusDescriptor, collapsedStatusLabel, markerBadges } from './markerBadges'
 
 const DOOR_BADGE_RADIUS = 8

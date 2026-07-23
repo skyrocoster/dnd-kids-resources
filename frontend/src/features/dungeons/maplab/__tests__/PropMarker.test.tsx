@@ -1,7 +1,7 @@
 import { render } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { PropMarker } from '../PropMarker'
-import type { MapProp } from '../maplabModel'
+import type { MapProp } from '../../../../model/maplabModel'
 
 const prop = (overrides: Partial<MapProp> = {}): MapProp => ({
   prop_id: 1,

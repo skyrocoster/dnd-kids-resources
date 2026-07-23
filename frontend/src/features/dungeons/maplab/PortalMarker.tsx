@@ -1,14 +1,14 @@
 import { GatewayPortalIcon, PortalIcon } from '../../../components/icons'
 import { BadgeRing } from './BadgeRing'
 import { collapsedStatusLabel, markerBadges } from './markerBadges'
+import { passagePresentation } from './maplabPresentation'
 import {
   effectivePassageState,
   GROUPED_MARKER_RADIUS_FRACTION,
   MARKER_RADIUS_FRACTION,
-  passagePresentation,
   type MapPortal,
   type PassageSessionState,
-} from './maplabModel'
+} from '../../../model/maplabModel'
 
 const PORTAL_IDENTITY_TOKEN = '--md-primary'
 

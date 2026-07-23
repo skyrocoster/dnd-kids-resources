@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { DungeonData, DungeonRoom } from '../dungeonModel'
-import { roomsOnZ, type MapLayout, type MapRoom } from './maplabModel'
+import { roomsOnZ, type MapLayout, type MapRoom } from '../../../model/maplabModel'
 
 export interface UseActiveRoomResult {
   activeRoomId: number | null

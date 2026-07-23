@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { initialEditorState, mapLabEditorReducer } from '../maplabEditor'
-import type { MapLayout } from '../maplabModel'
+import type { MapLayout } from '../../../../model/maplabModel'
 
 const emptyLayout: MapLayout = {
   meta: { cellSizeFt: 5, padding: { top: 3, right: 3, bottom: 3, left: 3 } },

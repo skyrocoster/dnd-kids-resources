@@ -4,17 +4,17 @@ Reference for seed files, tables, relationships, and JSON-encoded columns.
 
 ## Source of Truth
 
-**Seeds are canonical rebuild inputs for seed-backed domains; dungeons are runtime-authored.** Normal API/UI operations read and write `dnd_kids_resources.db`; never hand-edit that gitignored database. To apply seed changes:
+**Seeds are canonical rebuild inputs for seed-backed domains, including authored dungeons and Map Lab layouts.** Normal API/UI operations read and write `dnd_kids_resources.db`; never hand-edit that gitignored database. To apply seed changes:
 
 1. Edit `data/seeds/*.json` — the source files.
 2. Run `python scripts/init_database.py` — builds the schema.
 3. Run `python scripts/seed_database.py` — loads the seed files into the database.
 
-This ensures schema and seed-backed data stay synced with the codebase. Dungeons and Map Lab layouts are created through the API, persist in the local database during normal use, and are intentionally cleared by a database rebuild.
+This ensures schema and seed-backed data stay synced with the codebase. Dungeons and Map Lab layouts are created through the API/UI during authoring, then frozen with `export_db_seeds.py` before a rebuild.
 
 ## Domains and Tables
 
-19 seed files populate 19 seed-backed tables (plus junction/lookup tables for many-to-many relationships). Dungeon records and their map layouts are created at runtime and are intentionally not seeded.
+19 seed files populate 19 seed-backed tables (plus junction/lookup tables for many-to-many relationships). Authored dungeon records and their map layouts are exported to dedicated seed files so they survive rebuilds.
 
 | Seed file | Table(s) | Description | Routers |
 |---|---|---|---|
@@ -27,9 +27,11 @@ This ensures schema and seed-backed data stay synced with the codebase. Dungeons
 | `seed_weapons.json` | `weapons` | D&D 5e weapons | `/api/weapons`, `/api/players/{id}/weapons` |
 | `seed_items.json` | `items` | Reusable treasure item catalog | `/api/items` |
 | `seed_loot_bundles.json` | `loot_bundle` | Hand-authored loot bundles with snapshotted contents | `/api/loot-bundles` |
-| (runtime-created) | `dungeons` | Dungeon title and room-reading content | `/api/dungeons` |
-| (editor-generated) | `map_layout` | Map geometry; deleted with its dungeon | `/api/dungeons/{id}/layout` |
-| (session-generated) | `map_session_state` | Door/stair/portal toggle overrides; deleted with its dungeon | `/api/dungeons/{id}/session-state` |
+| `seed_dungeons.json` | `dungeons` | Authored dungeon title and room-reading content | `/api/dungeons` |
+| `seed_map_layouts.json` | `map_layout` | Authored Map Lab geometry; deleted with its dungeon | `/api/dungeons/{id}/layout` |
+| `seed_map_session_state.json` | `map_session_state` | Authored session-state overrides; deleted with its dungeon | `/api/dungeons/{id}/session-state` |
+| (runtime-created) | `revealed_cells` | Fog-of-war: which cells the party has revealed per dungeon, union-write ratchet | `/api/dungeons/{id}/revealed-cells` (`fog.py`) |
+| (runtime-created) | `at_the_table` | Single-row pointer: which dungeon is currently "at the table" for the player app | `/api/at-the-table` (`at_the_table.py`) |
 | `seed_encounters.json` | `encounter` | Combat encounters, roster, and active index | `/api/encounters` |
 | `seed_npcs.json` | `npcs` | Non-player characters | `/api/npcs` |
 | `seed_players.json` | `players` | Player characters | `/api/players` |
@@ -49,6 +51,8 @@ Non-obvious foreign-key-like relationships (skip any self-evident from naming):
 - **`loot_bundle`** — Contains `contents`, a JSON array of item/weapon snapshots. Entries keep a soft `ref_id` to the catalog source, but retain their name, item category, per-unit `value_gp`, and quantity after source edits or deletion.
 - **`dungeons`** — Contains `data` (room-reading content) while `map_layout.data` independently stores geometry. Both use the same room IDs; room titles/content belong to `dungeons.data`, while layout room titles are render caches. Missing layout data is treated as a transient empty layout; a missing dungeon is an error.
 - **`map_session_state`** — One row per dungeon holding live door/stair/portal toggle overrides, kept separate from `map_layout` so opening a door never dirties the authored map document. Missing session-state data is treated as empty (every fixture at its authored default); "Reset dungeon" deletes the row rather than writing empty maps back.
+- **`revealed_cells`** — Many rows per dungeon (one per (x, y) cell the party has seen). Written via `INSERT OR IGNORE` — cells can only be added, never removed. `dungeon_id` FK to `dungeons.id` with `ON DELETE CASCADE`.
+- **`at_the_table`** — Singleton row enforced by `CHECK (lock = 1)`. `dungeon_id` FK to `dungeons.id` with `ON DELETE SET NULL`. Set by the DM to point the player app at the active dungeon.
 - **`loom_threads` → `loom_nodes`** — A thread contains many nodes via `loom_nodes.thread_id` FK (its ordered story: Start, beats, sessions, End). A node belongs to at most one thread at a time; a NULL `thread_id` means the beat is banked (unplaced). A `session`-kind node may have `session_id` set to the session column it belongs to. Deleting a thread deletes its nodes via `ON DELETE CASCADE` on `loom_nodes.thread_id`. The `loom_node_threads` junction table is retired; an earlier migration script (`scripts/migrate_loom_v2.py`) records the transition.
 - **`loom_threads.origin_node_id` → `loom_nodes`** — Nullable back-reference: the `session` node a spawned Thread grew from. `ON DELETE SET NULL` — deleting that session un-links the spawned thread without deleting it.
 - **`loom_nodes.banked_from_thread_id` → `loom_threads`** — Nullable: which thread a banked (unplaced) `beat` was removed from, `ON DELETE SET NULL`.
@@ -161,6 +165,15 @@ Column lists are not maintained by hand. `scripts/generate_export_schema.py` der
 | `created_at` | `DATETIME` | no | `CURRENT_TIMESTAMP` |
 
 Indexes: `sqlite_autoindex_abilities_2`, `sqlite_autoindex_abilities_1`.
+
+#### `at_the_table`
+
+| Column | Type | Required | Default |
+|---|---|---|---|
+| `lock` | `INTEGER` | yes | `1` |
+| `dungeon_id` | `INTEGER` | no | `-` |
+
+Foreign keys: `dungeon_id` -> `dungeons.id` (SET NULL).
 
 #### `conditions`
 
@@ -436,6 +449,18 @@ Indexes: `sqlite_autoindex_player_weapons_1`.
 | `notes` | `TEXT` | no | `-` |
 | `created_at` | `DATETIME` | no | `CURRENT_TIMESTAMP` |
 | `updated_at` | `DATETIME` | no | `CURRENT_TIMESTAMP` |
+
+#### `revealed_cells`
+
+| Column | Type | Required | Default |
+|---|---|---|---|
+| `dungeon_id` | `INTEGER` | yes | `-` |
+| `x` | `INTEGER` | yes | `-` |
+| `y` | `INTEGER` | yes | `-` |
+
+Foreign keys: `dungeon_id` -> `dungeons.id` (CASCADE).
+
+Indexes: `sqlite_autoindex_revealed_cells_1`.
 
 #### `spells`
 

@@ -697,3 +697,20 @@ class IncomingGateway(BaseModel):
 class MapSessionStateBlob(BaseModel):
     data: Dict[str, Any]
 
+
+class RevealedCell(BaseModel):
+    x: int
+    y: int
+
+
+class RevealedCellsBlob(BaseModel):
+    cells: list[RevealedCell]
+
+
+class AtTheTableResponse(BaseModel):
+    dungeon_id: Optional[int] = None
+
+
+class AtTheTableSet(BaseModel):
+    dungeon_id: int
+

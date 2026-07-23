@@ -2,6 +2,14 @@ import { describe, it, expect } from 'vitest'
 import { mapLabLayout } from '../maplabData'
 import { UnlockIcon, StairsUpIcon, StairsDownIcon } from '../../../../components/icons'
 import {
+  passagePresentation,
+  secondaryPassageStates,
+  stairPresentation,
+  doorPresentation,
+  inspectableDescriptor,
+  passageStateChips,
+} from '../maplabPresentation'
+import {
   absoluteCells,
   layoutBounds,
   paddedBounds,
@@ -20,13 +28,8 @@ import {
   gridMarkerOffset,
   markersAtCell,
   MAX_MARKERS_PER_CELL,
-  passagePresentation,
-  secondaryPassageStates,
   sharedWallSegments,
   stairDirection,
-  stairPresentation,
-  doorPresentation,
-  inspectableDescriptor,
   effectivePassageState,
   defaultPassageSession,
   ghostFloorZ,
@@ -40,8 +43,7 @@ import {
   type MapProp,
   type MapPortal,
   PASSAGE_STATE_TOKENS,
-  passageStateChips,
-} from '../maplabModel'
+} from '../../../../model/maplabModel'
 
 const baseDoorFlags = { hidden: false, locked: false, trapped: false }
 

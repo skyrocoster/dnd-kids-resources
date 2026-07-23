@@ -6,7 +6,7 @@ import { ApiError, getDungeon, getDungeonLayout, saveDungeonLayout, updateDungeo
 import type { Dungeon } from '../../../api/types'
 import { parseDungeonData, type DungeonData, type DungeonRoom } from '../dungeonModel'
 import { initialEditorState, mapLabEditorReducer, type EditorAction, type EditorState } from './maplabEditor'
-import { createEmptyMapLayout, normalizeLayout, nextRoomId, type CardinalSide, type MapCell, type MapLayout, type MapLayoutMeta } from './maplabModel'
+import { createEmptyMapLayout, normalizeLayout, nextRoomId, type CardinalSide, type MapCell, type MapLayout, type MapLayoutMeta } from '../../../model/maplabModel'
 
 const SAVE_DEBOUNCE_MS = 600
 

@@ -159,7 +159,7 @@ export function PlayerBrowserPage() {
                     <StatePanel status="error" message={detailRemote.error} />
                   ) : detailRemote.status === 'loading' || detailRemote.status === 'idle' ? (
                     <StatePanel status="loading" />
-                  ) : (
+                  ) : detail ? (
                     <div className="player-assignments-summary">
                       <PlayerCombatSummary player={selected} />
                       <section className="player-assignment-group">
@@ -177,7 +177,7 @@ export function PlayerBrowserPage() {
                         <PlayerWeaponSection weapons={detail.weapons} />
                       </section>
                     </div>
-                  )}
+                  ) : null}
                 </Card>
               </div>
             ) : (

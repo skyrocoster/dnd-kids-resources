@@ -79,6 +79,10 @@ every seeded player's nested endpoints, asserting **no configured GET endpoint m
 - Component tests mock `api/client`, so they verify UI wiring, not backend
   serialization — that's the backend integration layer's job. Keep the two honest
   about their boundary: don't rely on frontend tests to catch API-shape drift.
+- Player app tests live under `frontend/src/player/__tests__/` and cover the curtain transform, the
+  `player/` import boundary, the live map data seam, the player-owned renderer, and shell/map route
+  states. Router tests in `frontend/src/__tests__/router.test.tsx` assert `/play` and `/play/map`
+  remain outside `AppShell`.
 - `npm run build` (`tsc -b && vite build`) must also succeed before shipping — it
   type-checks the whole app. Use `npm run typecheck` (`tsc -b`) for a fast type-only
   check without the Vite build step.

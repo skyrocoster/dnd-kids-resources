@@ -44,6 +44,9 @@ import type {
   LoomThreadMoveResult,
   LoomSession,
   LoomSessionInput,
+  RevealedCellsBlob,
+  AtTheTableResponse,
+  AtTheTableSet,
 } from './types'
 
 export class ApiError extends Error {
@@ -73,7 +76,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   return res.json() as Promise<T>
 }
 
-const get = <T>(path: string) => request<T>(path)
+const get = <T>(path: string, options?: RequestInit) => request<T>(path, options)
 const post = <T>(path: string, body: unknown) =>
   request<T>(path, { method: 'POST', body: JSON.stringify(body) })
 const put = <T>(path: string, body: unknown) =>
@@ -170,7 +173,8 @@ export const updateDungeon = (id: number, dungeon: DungeonInput) => put<Dungeon>
 export const deleteDungeon = (id: number) => del(`/dungeons/${id}`)
 
 // Map Lab layout
-export const getDungeonLayout = (dungeonId: number) => get<MapLayoutBlob>(`/dungeons/${dungeonId}/layout`)
+export const getDungeonLayout = (dungeonId: number, signal?: AbortSignal) =>
+  get<MapLayoutBlob>(`/dungeons/${dungeonId}/layout`, { signal })
 export const saveDungeonLayout = (dungeonId: number, blob: MapLayoutBlob) =>
   put<MapLayoutBlob>(`/dungeons/${dungeonId}/layout`, blob)
 export const listIncomingGateways = (dungeonId: number) =>
@@ -224,5 +228,15 @@ export const removeLoomThreadItem = (threadId: number, nodeId: number) =>
   del(`/loom/threads/${threadId}/items/${nodeId}`)
 export const moveLoomThreadItem = (threadId: number, nodeId: number, body: LoomNodeMove) =>
   post<LoomThreadMoveResult>(`/loom/threads/${threadId}/items/${nodeId}/move`, body)
+
+// Fog of war (player app)
+export const getRevealedCells = (dungeonId: number) =>
+  get<RevealedCellsBlob>(`/dungeons/${dungeonId}/revealed-cells`)
+export const revealCells = (dungeonId: number, blob: RevealedCellsBlob) =>
+  put<RevealedCellsBlob>(`/dungeons/${dungeonId}/revealed-cells`, blob)
+
+// At-the-table pointer (DM → player app)
+export const getAtTheTable = (signal?: AbortSignal) => get<AtTheTableResponse>('/at-the-table', { signal })
+export const setAtTheTable = (blob: AtTheTableSet) => put<AtTheTableResponse>('/at-the-table', blob)
 
 

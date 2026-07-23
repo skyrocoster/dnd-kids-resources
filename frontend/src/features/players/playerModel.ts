@@ -1,5 +1,5 @@
 import type { Monster, MonsterFeatures, Player } from '../../api/types'
-import { abilityModifier, formatMovementSpeeds, formatSenses } from '../npcs/npcModel'
+import { abilityModifier, formatMovementSpeeds } from '../npcs/npcModel'
 
 export { formatMovementSpeeds, formatSenses } from '../npcs/npcModel'
 

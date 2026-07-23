@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef } from 'react'
 import type { ReactNode } from 'react'
-import type { Bounds } from './maplabModel'
+import type { Bounds } from '../../../model/maplabModel'
 import { BASE_PX_PER_UNIT, type ViewportSize, type ZoomState } from './useMapCanvasZoom'
 
 interface MapCanvasProps {

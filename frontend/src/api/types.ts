@@ -590,6 +590,23 @@ export interface MapSessionStateBlob {
   data: Record<string, unknown>
 }
 
+export interface RevealedCell {
+  x: number
+  y: number
+}
+
+export interface RevealedCellsBlob {
+  cells: RevealedCell[]
+}
+
+export interface AtTheTableResponse {
+  dungeon_id: number | null
+}
+
+export interface AtTheTableSet {
+  dungeon_id: number
+}
+
 export type ThreadColor = `thread-${1 | 2 | 3 | 4 | 5 | 6}`
 
 export interface LoomThread {

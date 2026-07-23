@@ -1,14 +1,14 @@
 import { BadgeRing } from './BadgeRing'
 import { collapsedStatusLabel, markerBadges } from './markerBadges'
+import { stairPresentation } from './maplabPresentation'
 import {
   effectivePassageState,
   GROUPED_MARKER_RADIUS_FRACTION,
   MARKER_RADIUS_FRACTION,
-  stairPresentation,
   type MapCell,
   type MapStair,
   type PassageSessionState,
-} from './maplabModel'
+} from '../../../model/maplabModel'
 
 const STAIR_IDENTITY_TOKEN = '--md-tertiary'
 

@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import type { Dungeon, IncomingGateway } from '../../../../api/types'
-import { createEmptyMapLayout, type MapLayout, type MapPortal } from '../maplabModel'
+import { createEmptyMapLayout, type MapLayout, type MapPortal } from '../../../../model/maplabModel'
 import { ConnectionsResolveList } from '../ConnectionsResolveList'
 
 const resolvedPortal: MapPortal = {

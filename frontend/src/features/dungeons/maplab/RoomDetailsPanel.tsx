@@ -10,7 +10,7 @@ import {
   type DungeonEntry,
   type DungeonRoom,
 } from '../dungeonModel'
-import type { MapRoom } from './maplabModel'
+import type { MapRoom } from '../../../model/maplabModel'
 import './RoomDetailsPanel.css'
 
 interface RoomDetailsPanelProps {

@@ -8,7 +8,7 @@ import {
   resetDungeonSessionState,
   saveDungeonSessionState,
 } from '../../../api/client'
-import type { PassageSessionState } from './maplabModel'
+import type { PassageSessionState } from '../../../model/maplabModel'
 
 type SessionMap = Record<number, PassageSessionState>
 

@@ -5,7 +5,7 @@
  */
 import { useEffect, useState } from 'react'
 import { ApiError, getDungeonLayout } from '../../../api/client'
-import { createEmptyMapLayout, normalizeLayout, type MapLayout } from './maplabModel'
+import { createEmptyMapLayout, normalizeLayout, type MapLayout } from '../../../model/maplabModel'
 
 interface UseMapLabLayoutResult {
   layout: MapLayout

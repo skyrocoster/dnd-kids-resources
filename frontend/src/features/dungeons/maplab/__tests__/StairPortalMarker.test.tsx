@@ -2,7 +2,7 @@ import { render } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { PortalMarker } from '../PortalMarker'
 import { StairMarker } from '../StairMarker'
-import type { MapPortal, MapStair } from '../maplabModel'
+import type { MapPortal, MapStair } from '../../../../model/maplabModel'
 
 const stair = (overrides: Partial<MapStair> = {}): MapStair => ({
   stair_id: 1,

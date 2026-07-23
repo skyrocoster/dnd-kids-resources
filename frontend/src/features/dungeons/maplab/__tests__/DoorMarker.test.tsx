@@ -1,7 +1,7 @@
 import { render } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { DoorBadgeLayer, DoorMarker } from '../DoorMarker'
-import type { MapDoor } from '../maplabModel'
+import type { MapDoor } from '../../../../model/maplabModel'
 
 const door = (overrides: Partial<MapDoor> = {}): MapDoor => ({
   door_id: 1,

@@ -20,7 +20,7 @@ import {
   type MapProp,
   type MapRoom,
   type MapStair,
-} from './maplabModel'
+} from '../../../model/maplabModel'
 import { FIXTURE_TYPES } from './fixtureTypes'
 
 export interface EditorState {

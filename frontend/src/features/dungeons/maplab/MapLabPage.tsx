@@ -48,7 +48,7 @@ import {
   type MapRoom,
   type MapStair,
   type PassageSessionState,
-} from './maplabModel'
+} from '../../../model/maplabModel'
 
 const CELL_SIZE = 64
 
