@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import * as api from '../../../../api/client'
+import type { NPC } from '../../../../api/types'
 import { FixturePropertiesForm } from '../FixturePropertiesForm'
 import { FIXTURE_TYPES } from '../fixtureTypes'
 import type { MapLayout } from '../../../../model/maplabModel'
@@ -26,6 +27,7 @@ describe('FixturePropertiesForm', () => {
       'statue',
       'window',
       'encounter',
+      'npc',
       'other',
     ])
 
@@ -73,6 +75,36 @@ describe('FixturePropertiesForm', () => {
       )
 
       expect(await screen.findByRole('status')).toHaveTextContent('Unable to load loot bundles.')
+    })
+  })
+
+  describe('NPC picker', () => {
+    it('shows NPC options by name and writes or clears npc_id', async () => {
+      vi.spyOn(api, 'listNPCs').mockResolvedValue([
+        { id: 1, name: 'Arendelle' },
+        { id: 2, name: 'Bjorn' },
+      ] as NPC[])
+      const onChange = vi.fn()
+      render(
+        <FixturePropertiesForm
+          spec={FIXTURE_TYPES.prop}
+          values={{ kind: 'npc', hidden: false, locked: false, trapped: false }}
+          onChange={onChange}
+        />,
+      )
+
+      const select = await screen.findByLabelText('NPC') as HTMLSelectElement
+      expect(Array.from(select.options).map((option) => option.textContent)).toEqual([
+        'No NPC',
+        'Arendelle',
+        'Bjorn',
+      ])
+
+      fireEvent.change(select, { target: { value: '1' } })
+      expect(onChange).toHaveBeenCalledWith('npc_id', 1)
+
+      fireEvent.change(select, { target: { value: '' } })
+      expect(onChange).toHaveBeenCalledWith('npc_id', null)
     })
   })
 

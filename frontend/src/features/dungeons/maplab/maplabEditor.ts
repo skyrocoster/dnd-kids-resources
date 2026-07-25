@@ -32,10 +32,15 @@ export interface EditorState {
   selectedPortalId: number | null // Phase H
   selectedFeatureId: number | null
   activeZ: number
+  past: EditorSnapshot[]
+  future: EditorSnapshot[]
 }
+
+type EditorSnapshot = Omit<EditorState, 'past' | 'future'>
 
 export type EditorAction =
   | { type: 'addRoom' }
+  | { type: 'addRoomWithCells'; cells: MapCell[] }
   | { type: 'addFloorAbove' }
   | { type: 'addFloorBelow' }
   | { type: 'selectRoom'; roomId: number | null }
@@ -47,7 +52,7 @@ export type EditorAction =
   | { type: 'selectDoor'; doorId: number | null }
   | { type: 'updateFixtureFlags'; fixtureId: number; fixtureType: 'door' | 'stair' | 'prop' | 'portal'; flags: Record<string, unknown> }
   | { type: 'deleteDoor'; doorId: number }
-  | { type: 'addProp'; cell: [number, number] }
+  | { type: 'addProp'; cell: [number, number]; kind?: string }
   | { type: 'selectProp'; propId: number | null }
   | { type: 'deleteProp'; propId: number }
   | { type: 'addStair'; from: { z: number; cell: [number, number] } } // Phase H, stub
@@ -66,12 +71,40 @@ export type EditorAction =
   | { type: 'loadLayout'; layout: MapLayout }
   | { type: 'resetToFixture'; layout: MapLayout }
   | { type: 'setPadding'; padding: MapLayoutMeta['padding'] }
+  | { type: 'undo' }
+  | { type: 'redo' }
 
-export function mapLabEditorReducer(state: EditorState, action: EditorAction): EditorState {
+function reduceEditor(state: EditorState, action: EditorAction): EditorState {
   switch (action.type) {
     case 'addRoom': {
       const room_id = nextRoomId(state.layout)
       const newRoom: MapRoom = { room_id, z: state.activeZ, origin: [0, 0], cells: [] }
+      return {
+        ...state,
+        layout: { ...state.layout, rooms: [...state.layout.rooms, newRoom] },
+        selectedRoomId: room_id,
+        selectedDoorId: null,
+        selectedPropId: null,
+        selectedStairId: null,
+        selectedPortalId: null,
+        selectedFeatureId: null,
+      }
+    }
+
+    case 'addRoomWithCells': {
+      // Atomic create-with-footprint for the room brush's first stroke: one room-shaped stroke of
+      // cells becomes one room, in one dispatch — mirrors 'setRoomFootprint's overlap/connectivity
+      // guard so a stroke that lands on invalid cells silently produces no room instead of a
+      // partially-formed one.
+      const uniqueCells = Array.from(new Map(action.cells.map((cell) => [`${cell[0]},${cell[1]}`, cell])).values())
+      if (uniqueCells.length === 0) return state
+      const sameFloorRooms = state.layout.rooms.filter((room) => room.z === state.activeZ)
+      const overlapsOtherRoom = uniqueCells.some((cell) => roomOfCell(cell, sameFloorRooms) !== null)
+      if (overlapsOtherRoom || !isConnectedPolyomino(uniqueCells)) return state
+
+      const room_id = nextRoomId(state.layout)
+      const { origin, cells } = normalizeCells(uniqueCells)
+      const newRoom: MapRoom = { room_id, z: state.activeZ, origin, cells }
       return {
         ...state,
         layout: { ...state.layout, rooms: [...state.layout.rooms, newRoom] },
@@ -355,7 +388,7 @@ export function mapLabEditorReducer(state: EditorState, action: EditorAction): E
       const defaults = FIXTURE_TYPES.prop.defaultFlags
       const newProp: MapProp = {
         prop_id,
-        kind: String(defaults.kind),
+        kind: action.kind ?? String(defaults.kind),
         cell: action.cell,
         z: state.activeZ,
         title: String(defaults.title),
@@ -629,6 +662,33 @@ export function mapLabEditorReducer(state: EditorState, action: EditorAction): E
   }
 }
 
+function snapshot(state: EditorState): EditorSnapshot {
+  const { past: _past, future: _future, ...entry } = state
+  return entry
+}
+
+function isHistoryAction(action: EditorAction): boolean {
+  return !['selectRoom', 'selectDoor', 'selectProp', 'selectStair', 'selectPortal', 'selectFeature', 'setActiveZ', 'deleteRoom', 'loadLayout', 'resetToFixture', 'undo', 'redo'].includes(action.type)
+}
+
+export function mapLabEditorReducer(state: EditorState, action: EditorAction): EditorState {
+  if (action.type === 'undo') {
+    const previous = state.past.at(-1)
+    if (!previous) return state
+    return { ...previous, past: state.past.slice(0, -1), future: [snapshot(state), ...state.future] }
+  }
+  if (action.type === 'redo') {
+    const next = state.future[0]
+    if (!next) return state
+    return { ...next, past: [...state.past, snapshot(state)], future: state.future.slice(1) }
+  }
+
+  const next = reduceEditor(state, action)
+  if (action.type === 'loadLayout' || action.type === 'resetToFixture') return next
+  if (!isHistoryAction(action) || next.layout === state.layout) return next
+  return { ...next, past: [...state.past, snapshot(state)], future: [] }
+}
+
 /** A cell-removal is rejected if it would split a room's remaining cells into more than one
  * orthogonally-connected group — 0 or 1 remaining cells are trivially connected. */
 function isConnectedPolyomino(cells: MapCell[]): boolean {
@@ -668,6 +728,8 @@ export function initialEditorState(layout: MapLayout): EditorState {
     selectedPortalId: null,
     selectedFeatureId: null,
     activeZ,
+    past: [],
+    future: [],
   }
 }
 

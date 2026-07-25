@@ -1,13 +1,13 @@
 ---
 name: reconcile
-description: Close out finished work orders for a feature — collapse completed orders into the Plan's Shipped table, update any canonical references/manifest/area guide whose contract changed, run the documentation checker, and delete the spent order files. Use this after a stage's work orders are all marked DONE (or when some are FAILED and need re-planning), whenever the user says "reconcile", "close out the orders", "the stage is done", or "update the docs for what shipped". Claude writes no implementation code here.
+description: Close out finished work orders for a feature — collapse completed orders into the Plan's Shipped table, update any canonical references/manifest/area guide whose contract changed, run the documentation checker, and delete the spent order files. Use this after a stage's work orders are all marked DONE (or when some are FAILED and need re-planning), whenever the user says "reconcile", "close out the orders", "the stage is done", or "update the docs for what shipped". This is documentation closeout, not an implementation pass.
 ---
 
 # reconcile — close out shipped work orders
 
-After the small model has run a stage's work orders, this skill reconciles what actually shipped back
-into the durable docs and clears the spent orders. Claude does bookkeeping and documentation here —
-**no implementation code**.
+After the executors have run a stage's work orders, this skill reconciles what actually shipped back
+into the durable docs and clears the spent orders. The job here is **bookkeeping and documentation**:
+you record what shipped, you don't extend it.
 
 ## Steps
 
@@ -48,6 +48,30 @@ into the durable docs and clears the spent orders. Claude does bookkeeping and d
    Triage any failure here yourself or reissue an order for it. Whatever still fails on purpose
    becomes the refreshed **KNOWN TEST FAILURES** list for the next batch of orders.
 
+   **Then log the stage-level result to the telemetry log, every stage, pass or fail:**
+
+   ```
+   .venv\Scripts\python.exe scripts/order_telemetry.py --reconcile "<feature> stage <N>" \
+     --checks "<pytest / npm run test / npm run build / check_docs results>" \
+     --missed "<a defect that passed an order's STOP WHEN but failed here>" \
+     --note "<what to change in to-orders so it cannot happen again>"
+   ```
+
+   Anything caught at this step is by definition something the orders' targeted STOP WHEN
+   commands could not catch — a stage-level regression, a typecheck break, an architecture-rule
+   violation, a contract the docs checker rejects. **That escape is the single most valuable
+   signal this workflow produces**, and it is invisible in the per-order entries: each order
+   honestly reports DONE against a check that was the wrong shape. Record it here or it is lost
+   when the order files are deleted in step 7.
+   - Pass `--missed` once per defect. Say what broke, which order it traces to, and **whether it
+     has happened before** — a repeat means the fix belongs in the `to-orders` template or the
+     order template's STOP WHEN rules, not in another one-off note.
+   - Attribute honestly. Most escapes are order-authoring faults (a stop-check that ran only
+     `npm test` when the risk was types; a START IN that never mentioned the contract the change
+     would break), not executor faults.
+   - **Log the clean case too.** Omit `--missed` entirely and the entry records that nothing
+     escaped — that is how the log shows a tightened rule actually working, rather than silence.
+
 5. **Update canonical references only when a real contract changed.** If shipped work changed an API,
    data model, architecture convention, design token, testing contract, or user-visible capability,
    update the matching reference (`API_REFERENCE.md`, `DATA_MODEL.md`, `ARCHITECTURE.md`,
@@ -59,8 +83,22 @@ into the durable docs and clears the spent orders. Claude does bookkeeping and d
    - POSIX: `.venv/bin/python scripts/check_docs.py --check`
    - Also run the `--base <base-ref>` form when a valid base ref is available.
 
-7. **Delete the spent (`DONE`) order files.** When every order in the stage is done, the
-   `orders/<feature>/` directory should be empty of that stage's files. Leftover DONE files are clutter.
+7. **Delete the spent (`DONE`) order files — but only after telemetry is captured.** Deleting an
+   order destroys its STATUS/DEVIATIONS record, so first check `docs/plans/telemetry-log.md` has an
+   entry for each order about to be deleted. For any missing one, run
+   `.venv\Scripts\python.exe scripts/order_telemetry.py --order <order-path>` (POSIX:
+   `.venv/bin/python`) — it auto-finds Claude Code transcripts and opencode sessions; if neither exists
+   (ChatGPT transport, or the record is gone), log it with
+   `--manual "backfilled at reconcile, no usage figures"`. Then delete: when every order in
+   the stage is done, the `orders/<feature>/` directory should be empty of that stage's files.
+   Leftover DONE files are clutter.
+
+   Every ~10-15 logged entries, tell the user the telemetry log has enough data for a review pass —
+   the log exists so an AI can analyse recurring cost drivers (large reads, duplicate reads, reads
+   outside START IN, executor deviations) and tighten the `plan`/`to-orders`/`implement-order`
+   rules. Don't run that analysis unprompted; just flag that it's due. When that pass runs, the
+   `escaped targeted checks` lines from the reconcile entries are the first thing to read: a defect
+   class that shows up in two stages has already proven a one-off note won't hold it.
 
 8. **When the whole feature is complete:** move the Plan to `docs/complete/<feature>.md`, set the area
    guide back to "no active plan" (or its next plan), and update `docs/README.md` in the same change
@@ -68,7 +106,10 @@ into the durable docs and clears the spent orders. Claude does bookkeeping and d
 
 ## What NOT to do
 
-- Do not write feature code or re-run implementation — that already happened via `implement-order`.
+- Do not re-open shipped work or extend the stage's scope — implementation already happened via
+  `implement-order`, and closeout is not a second pass at it. The one place you touch code here is
+  step 4: a full-suite failure you can fix on the spot, from the evidence in front of you and without
+  exploring. Anything larger becomes a reissued order.
 - Do not keep a running diary in the Plan. The commit history is the record of *how* things were
   built; the Plan records *what exists* and *what's next*.
 

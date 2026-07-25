@@ -1,6 +1,6 @@
 # Map Lab UX Pass — a calm, touch-first editor and viewer
 
-> **Status:** Stages 1–2 complete. Stage 3 (tool palette and popovers) queued.
+> **Status:** Complete. All eight stages shipped; no further work remains in this Plan.
 
 - **Area guide:** [Dungeons](../../areas/dungeons.md)
 
@@ -185,3 +185,41 @@ Touch:        48px floor; layer/density controls move into the same View popover
 | 2 | Replaced `NON_PAN_TARGET_SELECTOR` blocklist with tool-aware `PointerMode = 'pan' | 'tool'` gesture routing; updated editor and viewer to supply the mode, with tests verifying pan-from-anywhere (unarmed) and no-pan-during-selection (armed). |
 | 2 | Built `useCanvasStroke` hook — pointer-capture stroke pipeline with stale-closure fix (ref-read pattern), emitting de-duplicated gap-filled cell sequences for brush consumption. |
 | 2 | Center-anchored `zoomIn`/`zoomOut` buttons using viewport-centre math (same as `handleWheel`), with the viewport-size param plumbed from both pages. |
+| 3 | Save status chip now portals into `DungeonShell`'s header via a new `DungeonShellStatusSlotContext`, out of the editor toolbar. |
+| 3 | Replaced five separate placement-mode booleans with one `armedTool` state driving a five-slot sticky palette (Select/Room/Passages/Prop/Terrain) with group-slot last-used memory and flyouts; Prop/Stair/Portal placement no longer auto-disarms after one placement; the empty-ground tap menu (`cellActionMenu`) is removed. |
+| 3 | Added an Erase toggle for brush tools and a Prop-kind chip row (from newly-exported `PROP_KIND_OPTIONS`) in the palette's options slot; `addProp` now threads an optional `kind` through the reducer. |
+| 3 | Replaced the "View" toolbar tray with a View popover (layer toggles, Ghost lower floor, density) using a click-outside/Escape popover pattern. |
+| 3 | Folded the "Session" and "Map" toolbar trays into one Map popover (padding inputs + Reset), with Reset now gated behind `ConfirmDialog` instead of firing instantly. |
+| 4 | Wired `useCanvasStroke` through `MapCanvas` and replaced the room footprint flow with the sticky Room brush: first stroke can create a room, selected rooms can be painted or erased, and the rooms drawer now has a New room affordance. |
+| 4 | River and trees drawing now use the same pointer-capture stroke model with Erase support, removing the pointer-enter locking overlay. |
+| 4 | Door placement keeps tap-to-place behavior but now exposes wide wall hit bands with visible hover/focus highlighting, while placement tools remain sticky for repeated authoring. |
+| 5 | Added session-scoped layout history to the editor reducer and hook, with autosaving Undo/Redo actions, redo invalidation after a new edit, and history clearing at load/reset seams. Room deletion remains outside reversible history. |
+| 5 | Added on-canvas Undo/Redo controls and a bottom-center persistent status chip, moving placement refusal feedback into the map viewport without displacing layout. |
+| 5 | Fixture and feature deletes now complete immediately with `Deleted <thing>. Undo`; room deletion keeps a named `ConfirmDialog` because it spans layout and dungeon data. |
+| 5 | Added editor-scoped desktop tool, erase, undo/redo, and layered Escape hotkeys while preserving DOM tab order and ignoring text-entry focus. |
+| 5 | Repaired Stage 5 test fixtures so the full production TypeScript build accepts the domain-typed door sides and layout history fixtures. |
+| 6 | At tablet widths the editor's Floors/Rooms/Connections rail is an overlay drawer while floor chips remain visible; selections use a peek-to-full bottom sheet, and desktop no longer reserves an empty inspector rail. All editor chrome now meets the 48px touch floor, with layered Escape and existing edit/delete behavior preserved. |
+| 7 | `npc` is now a prop kind alongside `encounter`, carrying an `npc_id` soft reference, its own `UserIcon`/`--md-npc` marker identity, and a palette kind chip — no new first-class marker type, and it round-trips through the layout blob for free. |
+| 7 | The prop inspector gained an NPC picker field (`npcPicker`) listing live NPCs by name, mirroring the encounter picker. |
+| 7 | Added `npcIdsFromMarkersInRoom` and `getNpcUnion` to the model layer; the room details panel now shows the explicit room-NPC list unioned with NPC markers standing in the room, de-duplicated and read-only, and renders even when the room has no content data. |
+| 7 | The viewer room rail shows a `1 NPC` / `<n> NPCs` count hint from the same union, and its hint row is relabelled `Room hints` now that it carries more than threats. |
+| 7 | Restored the `src/model/` import rule (ARCHITECTURE.md §Frontend layout) that the union helper had breached, and replaced an NPC test fixture whose invented statblock fields passed vitest but broke `tsc -b`. |
+| 8 | Replaced the viewer's View tray with an accessible View popover for layer and density controls while keeping live Session actions directly visible. |
+| 8 | At tablet widths the viewer room rail now overlays the map as a dismissible drawer, closes on selection/backdrop/Escape, leaves floor chips visible, and keeps viewer chrome at the 48px touch floor. |
+| 8 | Session save, reset, and at-table failures now share one persistent bottom-center canvas status chip that clears on the next viewer action; optimistic session-state persistence and Reset confirmation remain unchanged. |
+
+## Known test failures
+
+The Stage 7 reconcile full frontend run (`npm run test`, 2026-07-25) passed 1,311 tests and still failed on the same 11 pre-existing or out-of-stage tests as Stage 6 — verified name-for-name, so the stage introduced no regressions. `npm run build` and the backend `pytest` suite (97.25% coverage) both pass. Carry these verbatim into the next Map Lab work orders until they are retired by their owning plan or a focused fix:
+
+- `DungeonBrowserPage.test.tsx` > `Back to dungeons clears the selected detail`
+- `EncounterBrowserPage.test.tsx` > `Back to encounters clears the selected detail`
+- `LootBundleBrowserPage.test.tsx` > `Back to loot bundles clears the selected detail`
+- `ItemBrowserPage.test.tsx` > `Back to items clears the selected detail`
+- `MonsterBrowserPage.test.tsx` > `Back to monsters clears the selected detail`
+- `NPCBrowserPage.test.tsx` > `Back to NPCs clears the selected detail`
+- `PlayerBrowserPage.test.tsx` > `shows filtered-empty state and returns from the detail view`
+- `PlayerBrowserPage.test.tsx` > `discards staged spell changes on Cancel without calling the API`
+- `MapLabPage.test.tsx` > `renders the door as a leaf + swing arc, never a straight line matching a wall segment`
+- `MapLabPage.test.tsx` > `toggles door open/closed via session state controls`
+- `MapLabPage.test.tsx` > `resets all session overrides via a reset button`

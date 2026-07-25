@@ -39,6 +39,7 @@
 
 .maplab-editor-layout {
   display: flex;
+  position: relative;
   gap: var(--space-5);
   align-items: flex-start;
   position: relative;
@@ -73,6 +74,11 @@
 
 .maplab-editor-floor-action {
   justify-content: flex-start;
+}
+
+.maplab-editor-room-list-new {
+  justify-content: flex-start;
+  align-self: stretch;
 }
 
 .maplab-editor-room-item {
@@ -181,90 +187,27 @@
   align-self: flex-start;
 }
 
-.maplab-paint-cell {
-  fill: transparent;
-  stroke: none;
-}
-
-.maplab-paint-cell[data-paint-state='paintable'] {
-  cursor: pointer;
-  fill: var(--md-secondary-container);
-  opacity: 0.18;
-  stroke: var(--md-secondary);
-  stroke-width: 1.5;
-  stroke-dasharray: 5 4;
-  transition: opacity 0.15s ease;
-}
-
-.maplab-paint-cell[data-paint-state='paintable']:hover {
-  opacity: 0.4;
-}
-
-.maplab-paint-cell:focus-visible {
-  fill: var(--md-primary-container);
-  opacity: 0.7;
-  stroke: var(--md-primary);
-  stroke-width: 3;
-  stroke-dasharray: none;
-  outline: none;
-}
-
-.maplab-paint-cell[data-paint-state='ownedSelected'] {
-  cursor: pointer;
-}
-
-.maplab-paint-cell[data-paint-state='ownedSelected']:hover {
-  fill: var(--md-error-container);
-  opacity: 0.45;
-}
-
-.maplab-paint-cell[data-paint-state='ownedOther'] {
-  cursor: not-allowed;
-}
-
-.maplab-paint-cell[data-paint-state='invalid'] {
-  cursor: not-allowed;
-}
-
-.maplab-paint-marker {
-  pointer-events: none;
-  color: var(--md-secondary);
-}
-
-.maplab-paint-marker-remove {
-  color: var(--md-error);
-}
-
-.maplab-paint-marker-invalid {
-  color: var(--md-outline);
-}
-
-.maplab-room-footprint-preview {
+.maplab-room-brush-preview {
   pointer-events: none;
 }
 
-.maplab-room-footprint-cell,
-.maplab-room-footprint-anchor {
-  fill: var(--md-secondary-container);
-  stroke: var(--md-secondary);
+.maplab-room-brush-cell {
   stroke-width: 2;
   opacity: 0.42;
 }
 
-.maplab-room-footprint-anchor {
-  stroke-width: 4;
-  stroke-dasharray: 8 4;
-  opacity: 0.62;
-}
-
-.maplab-room-footprint-cell[data-footprint-state='owned'],
-.maplab-room-footprint-anchor[data-footprint-state='owned'] {
+.maplab-room-brush-cell[data-brush-state='create'],
+.maplab-room-brush-cell[data-brush-state='paint'] {
   fill: var(--md-primary-container);
   stroke: var(--md-primary);
 }
 
-.maplab-room-footprint-cell[data-footprint-state='blocked'],
-.maplab-room-footprint-anchor[data-footprint-state='blocked'] {
+.maplab-room-brush-cell[data-brush-state='erase'] {
+  fill: var(--md-error-container);
+  stroke: var(--md-error);
+}
+
+.maplab-room-brush-cell[data-brush-state='blocked'] {
   fill: var(--md-error-container);
   stroke: var(--md-error);
   stroke-dasharray: 5 4;
@@ -281,6 +224,30 @@
   color: var(--md-on-error-container);
 }
 
+.maplab-map-status {
+  position: absolute;
+  z-index: 5;
+  bottom: var(--space-4);
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: calc(100% - 12rem);
+}
+
+.maplab-map-status .maplab-placement-error {
+  margin: 0;
+}
+
+.maplab-history-cluster {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.maplab-history-button {
+  min-width: 52px;
+  min-height: 52px;
+}
+
 .maplab-editor-toolbar-button[data-active] {
   border-color: var(--md-secondary);
   background: var(--md-secondary-container);
@@ -291,14 +258,26 @@
   stroke: var(--md-secondary);
   stroke-width: 10;
   stroke-linecap: round;
+  opacity: 0.35;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+.maplab-door-placement-hitband {
+  fill: var(--md-secondary);
   opacity: 0;
   cursor: pointer;
   transition: opacity 0.15s ease;
 }
 
-.maplab-door-placement-edge:hover,
-.maplab-door-placement-edge:focus-visible {
-  opacity: 0.55;
+.maplab-door-placement-hitband:hover,
+.maplab-door-placement-hitband:focus-visible {
+  opacity: 0.25;
+}
+
+.maplab-door-placement-hitband:hover + .maplab-door-placement-edge,
+.maplab-door-placement-hitband:focus-visible + .maplab-door-placement-edge {
+  opacity: 0.9;
 }
 
 .maplab-door[data-selected] .maplab-door-leaf,
@@ -441,8 +420,8 @@
 }
 
 .maplab-field-row input[type='checkbox'] {
-  min-width: var(--control-height-compact);
-  min-height: var(--control-height-compact);
+  min-width: var(--control-height);
+  min-height: var(--control-height);
 }
 
 .maplab-field-row input[type='text'],
@@ -530,24 +509,156 @@
   stroke-dasharray: 5 4;
 }
 
-.maplab-cell-action-menu {
+.maplab-tool-palette {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.maplab-tool-palette-button {
+  min-height: var(--control-height);
+}
+
+.maplab-tool-palette-button[data-active] {
+  border-color: var(--md-secondary);
+  background: var(--md-secondary-container);
+  color: var(--md-on-secondary-container);
+}
+
+.maplab-tool-palette-group {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  gap: 1px;
+}
+
+.maplab-tool-palette-group .maplab-tool-palette-button {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.maplab-tool-palette-flyout-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--control-height);
+  min-height: var(--control-height);
+  padding: 0 var(--space-2);
+  border: 1px solid var(--md-outline-variant);
+  border-left: none;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  border-top-right-radius: var(--radius-full);
+  border-bottom-right-radius: var(--radius-full);
+  background: var(--md-surface-1);
+  color: var(--md-on-surface-variant);
+  cursor: pointer;
+}
+
+.maplab-tool-palette-flyout {
   position: absolute;
+  top: 100%;
+  left: 0;
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
+  margin-top: var(--space-1);
   padding: var(--space-2);
   border: 1px solid var(--md-outline-variant);
   border-radius: var(--radius-lg);
   background: var(--md-surface-2);
   box-shadow: var(--shadow-md);
   z-index: 10;
-  min-width: 10rem;
+  min-width: 9rem;
 }
 
-.maplab-cell-action-menu .maplab-pill-button {
+.maplab-tool-palette-flyout .maplab-pill-button {
   justify-content: flex-start;
   text-align: left;
   width: 100%;
+  min-height: var(--control-height);
+}
+
+.maplab-tool-palette-flyout .maplab-pill-button[data-active] {
+  border-color: var(--md-secondary);
+  background: var(--md-secondary-container);
+  color: var(--md-on-secondary-container);
+}
+
+.maplab-map-popover-wrap {
+  position: relative;
+}
+
+.maplab-map-popover {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+  padding: var(--space-3);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--radius-lg);
+  background: var(--md-surface-2);
+  box-shadow: var(--shadow-md);
+  z-index: 10;
+  min-width: 12rem;
+}
+
+.maplab-view-popover-wrap {
+  position: relative;
+}
+
+.maplab-view-popover {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+  padding: var(--space-3);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--radius-lg);
+  background: var(--md-surface-4);
+  box-shadow: var(--shadow-md);
+  z-index: 10;
+  min-width: 14rem;
+}
+
+.maplab-view-popover .maplab-pill-button {
+  min-height: var(--control-height);
+}
+
+/* Options slot: renders next to the tool palette while a brush tool (Room/River/Trees) or Prop is
+ * armed — the Erase toggle and the prop-kind chip row occupy this slot but never both at once. */
+.maplab-tool-options {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.maplab-tool-options-erase {
+  min-height: var(--control-height);
+}
+
+.maplab-tool-options-erase[data-active] {
+  border-color: var(--md-error);
+  background: var(--md-error-container);
+  color: var(--md-on-error-container);
+}
+
+.maplab-prop-kind-chip {
+  min-height: var(--control-height);
+}
+
+.maplab-prop-kind-chip[data-active] {
+  border-color: var(--md-secondary);
+  background: var(--md-secondary-container);
+  color: var(--md-on-secondary-container);
 }
 
 /* .maplab-canvas-wrapper / .maplab-canvas-viewport / .maplab-map-controls* / .maplab-zoom-button /

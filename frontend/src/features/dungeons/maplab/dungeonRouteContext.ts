@@ -82,3 +82,19 @@ export function useDungeonShellContext(): DungeonRouteContext {
   }
   return context
 }
+
+const DungeonShellStatusSlotContext = createContext<HTMLElement | null>(null)
+
+export function DungeonShellStatusSlotProvider({
+  value,
+  children,
+}: {
+  value: HTMLElement | null
+  children: ReactNode
+}) {
+  return createElement(DungeonShellStatusSlotContext.Provider, { value }, children)
+}
+
+export function useDungeonShellStatusSlot(): HTMLElement | null {
+  return useContext(DungeonShellStatusSlotContext)
+}

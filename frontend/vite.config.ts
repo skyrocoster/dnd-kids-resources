@@ -18,5 +18,8 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
     css: true,
+    // Suppress Node's ExperimentalWarning for CJS->ESM require() in
+    // @asamuzakjp/css-color's dependency chain; it's noise, not actionable.
+    execArgv: ['--no-warnings'],
   },
 })

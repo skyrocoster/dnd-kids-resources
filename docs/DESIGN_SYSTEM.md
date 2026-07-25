@@ -353,7 +353,39 @@ Independently collapsible toolbar group in Map Lab:
   legible)
 - **Toggle** — `ChevronUpIcon`/`ChevronDownIcon`, `aria-expanded` reflects state, `aria-label` includes
   group name and expand/collapse action
-- **Reused by** — `MapLabPage` (Session group) and `MapLabEditorPage` (Create/Session/View/Status groups)
+- **Reused by** — `MapLabPage` (Session group) and `MapLabEditorPage` (Create group, now
+  wrapping the tool palette below — Session/View/Status groups were replaced by popovers and a
+  header portal, see below)
+
+### Tool palette + popovers (`maplab/MapLabEditorPage.tsx`, `maplab/MapLabPage.tsx`)
+
+Editor chrome for arming tools and adjusting view/map settings without a five-tray toolbar:
+- **Tool palette** — five sticky slots (Select, Room, Passages, Prop, Terrain) inside the `Create`
+  `ToolbarTray`; one `armedTool` stays armed until another tool or Esc is chosen. Group slots
+  (Passages, Terrain) remember their last-used sub-tool — tap re-arms it, the chevron button opens a
+  `role="menu"` flyout (`maplab-tool-palette-flyout`) to pick a specific sub-tool.
+- **Options slot** — while a brush tool is armed, an Erase toggle (`maplab-tool-options-erase`)
+  appears; while Prop is armed, a row of kind chips from `PROP_KIND_OPTIONS` appears instead — the two
+  never show together.
+- **Brush stroke model** — Room, River, and Trees use `useCanvasStroke` pointer capture plus
+  coordinate hit-testing rather than per-cell hover handlers. Room strokes can create a new room when
+  no room is selected, extend the selected room, or erase selected-room cells; terrain strokes create,
+  extend, or erase the selected/owning feature.
+- **Door placement targets** — while Door is armed, placeable walls render a visual edge plus a
+  separate `.maplab-door-placement-hitband` rect about 40px deep. The hitband owns the button role and
+  click target; the line is visual-only and highlights with the hitband on hover/focus.
+- **View / Map popovers** — trigger buttons (`maplab-pill-button maplab-editor-toolbar-button`,
+  `aria-haspopup="true"`, `aria-expanded`) each open a `role="menu"` panel
+  (`maplab-view-popover`/`maplab-map-popover`) via local open state, closed on click-outside or Escape
+  (`window` `mousedown`/`keydown` listeners, ref-scoped). View holds the four layer toggles, Ghost
+  lower floor, and density; Map holds the four padding inputs and "Reset unsaved changes" (opens
+  `ConfirmDialog` rather than firing instantly).
+- **Viewer View popover** — `MapLabPage` uses the same local trigger/panel and click-outside/Escape
+  dismissal pattern for its four layer toggles and three density choices. Live Session controls stay
+  directly visible in their `ToolbarTray`.
+- **Save status** — portals from `MapLabEditorPage` into `DungeonShell`'s header via
+  `DungeonShellStatusSlotContext`/`useDungeonShellStatusSlot()` (`dungeonRouteContext.ts`), so it
+  renders in the shell chrome instead of the editor toolbar.
 
 ---
 

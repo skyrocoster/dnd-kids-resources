@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { getRoomById, getRoomThreatHints, type DungeonData } from '../dungeonModel'
-import { floorsInLayout, roomsOnZ, type MapLayout } from '../../../model/maplabModel'
+import { floorsInLayout, getNpcUnion, roomsOnZ, type MapLayout } from '../../../model/maplabModel'
 
 interface ViewerRoomRailProps {
   layout: MapLayout
@@ -38,7 +38,10 @@ export function ViewerRoomRail({ layout, parsed, activeRoomId, onSelectRoom }: V
                 const dataRoom = getRoomById(parsed, room.room_id)
                 const title = dataRoom?.title ?? room.title ?? `Room ${room.room_id}`
                 const threatHints = dataRoom ? getRoomThreatHints(dataRoom) : null
+                const npcUnion = getNpcUnion(dataRoom?.npcs, room, layout)
                 const isSelected = room.room_id === activeRoomId
+                const hasHints = threatHints && (threatHints.hasTrap || threatHints.hasMonster || threatHints.hasEncounter)
+                const hasNpcHint = npcUnion.length > 0
 
                 return (
                   <li
@@ -51,11 +54,12 @@ export function ViewerRoomRail({ layout, parsed, activeRoomId, onSelectRoom }: V
                   >
                     <button type="button" aria-pressed={isSelected} onClick={() => onSelectRoom(room.room_id)}>
                       <span className="maplab-viewer-rail-room-name">{title}</span>
-                      {threatHints && (threatHints.hasTrap || threatHints.hasMonster || threatHints.hasEncounter) && (
-                        <span className="maplab-viewer-rail-room-hints" aria-label="Threat hints">
-                          {threatHints.hasTrap && <span className="maplab-viewer-rail-room-hint">Trap</span>}
-                          {threatHints.hasMonster && <span className="maplab-viewer-rail-room-hint">Monster</span>}
-                          {threatHints.hasEncounter && <span className="maplab-viewer-rail-room-hint">Encounter</span>}
+                      {(hasHints || hasNpcHint) && (
+                        <span className="maplab-viewer-rail-room-hints" aria-label="Room hints">
+                          {threatHints?.hasTrap && <span className="maplab-viewer-rail-room-hint">Trap</span>}
+                          {threatHints?.hasMonster && <span className="maplab-viewer-rail-room-hint">Monster</span>}
+                          {threatHints?.hasEncounter && <span className="maplab-viewer-rail-room-hint">Encounter</span>}
+                          {hasNpcHint && <span className="maplab-viewer-rail-room-hint">{npcUnion.length === 1 ? '1 NPC' : `${npcUnion.length} NPCs`}</span>}
                         </span>
                       )}
                     </button>

@@ -218,4 +218,22 @@ describe('useMapLabEditor', () => {
     expect(result.current.dungeonData.rooms).toHaveLength(1)
     expect(result.current.dungeonData.rooms?.[0].title).toBe('Loaded Room')
   })
+
+  it('exposes undo and redo with layout autosaves', async () => {
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: initialLayout })
+    vi.spyOn(api, 'getDungeon').mockResolvedValue(initialDungeon)
+    const saveLayoutSpy = vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: initialLayout })
+    const { result } = renderHook(() => useMapLabEditor(4, initialDungeon))
+
+    await act(async () => { await Promise.resolve() })
+    act(() => { result.current.addDoor([2, 2], 'N') })
+    expect(result.current.canUndo).toBe(true)
+    act(() => { result.current.undo() })
+    expect(result.current.state.layout.doors).toHaveLength(0)
+    expect(result.current.canRedo).toBe(true)
+    act(() => { result.current.redo() })
+    expect(result.current.state.layout.doors).toHaveLength(1)
+    await act(async () => { await vi.advanceTimersByTimeAsync(600) })
+    expect(saveLayoutSpy).toHaveBeenCalledTimes(1)
+  })
 })

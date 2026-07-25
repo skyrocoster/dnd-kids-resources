@@ -560,6 +560,135 @@ describe('MapLabPage (Stage 4 — Passage session state)', () => {
   })
 })
 
+describe('MapLabPage (Stage 03 — viewer status chip action failures)', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('shows save failure copy in the canvas status chip when session PUT rejects', async () => {
+    const user = userEvent.setup()
+    vi.spyOn(api, 'saveDungeonSessionState').mockRejectedValue(new Error('network'))
+    renderMapLabPage()
+    await flush()
+
+    // The Rusty Trap Door starts closed (defaultPassageSession isOpen: false),
+    // so after pinning it, the inspector shows "Open door".
+    const door = screen.getByRole('button', { name: /Rusty Trap Door/ })
+    await user.click(door)
+    await user.click(screen.getByRole('button', { name: 'Open door' }))
+    await user.click(screen.getByRole('button', { name: 'Close door' }))
+
+    const chip = await screen.findByText("Couldn't save session changes. Try again.")
+    expect(chip).toBeInTheDocument()
+    expect(chip).toHaveAttribute('role', 'status')
+    // Chip lives inside the canvas status area.
+    expect(chip.closest('.maplab-map-status')).toBeInTheDocument()
+  })
+
+  it('shows reset failure copy in the canvas status chip when session DELETE rejects', async () => {
+    const user = userEvent.setup()
+    vi.spyOn(api, 'resetDungeonSessionState').mockRejectedValue(new Error('network'))
+    renderMapLabPage()
+    await flush()
+
+    await user.click(screen.getByRole('button', { name: 'Reset dungeon' }))
+    await user.click(screen.getByRole('button', { name: 'Reset' }))
+    await flush()
+
+    const chip = screen.getByText("Couldn't reset dungeon. Try again.")
+    expect(chip).toBeInTheDocument()
+    expect(chip).toHaveAttribute('role', 'status')
+    expect(chip.closest('.maplab-map-status')).toBeInTheDocument()
+  })
+
+  it('shows at-table failure copy in the canvas status chip when setAtTheTable rejects', async () => {
+    const user = userEvent.setup()
+    vi.spyOn(api, 'getAtTheTable').mockResolvedValue({ dungeon_id: null })
+    vi.spyOn(api, 'setAtTheTable').mockRejectedValue(new Error('network'))
+    renderMapLabPage()
+    await flush()
+
+    await user.click(screen.getByRole('button', { name: 'Put at the table' }))
+    await flush()
+
+    const chip = screen.getByText("Couldn't put this map at the table. Try again.")
+    expect(chip).toBeInTheDocument()
+    expect(chip).toHaveAttribute('role', 'status')
+    expect(chip.closest('.maplab-map-status')).toBeInTheDocument()
+  })
+
+  it('clears a stale save error when the next passage toggle succeeds', async () => {
+    const user = userEvent.setup()
+    const saveSpy = vi.spyOn(api, 'saveDungeonSessionState')
+    renderMapLabPage()
+    await flush()
+
+    const door = screen.getByRole('button', { name: /Rusty Trap Door/ })
+    await user.click(door)
+    await user.click(screen.getByRole('button', { name: 'Open door' }))
+    saveSpy.mockRejectedValue(new Error('network'))
+    await user.click(screen.getByRole('button', { name: 'Close door' }))
+
+    expect(await screen.findByText("Couldn't save session changes. Try again.")).toBeInTheDocument()
+
+    // Switch mock to resolve before the next toggle so it succeeds.
+    saveSpy.mockResolvedValue(undefined as unknown as { data: Record<string, unknown> })
+    // Next toggle (succeeds) — clearViewerStatus removes the stale error
+    await user.click(screen.getByRole('button', { name: 'Open door' }))
+    await flush()
+
+    expect(screen.queryByText("Couldn't save session changes. Try again.")).not.toBeInTheDocument()
+  })
+
+  it('clears a stale at-table error when a door is toggled', async () => {
+    const user = userEvent.setup()
+    vi.spyOn(api, 'saveDungeonSessionState').mockResolvedValue(undefined as unknown as { data: Record<string, unknown> })
+    vi.spyOn(api, 'getAtTheTable').mockResolvedValue({ dungeon_id: null })
+    vi.spyOn(api, 'setAtTheTable').mockRejectedValueOnce(new Error('network'))
+    renderMapLabPage()
+    await flush()
+
+    await user.click(screen.getByRole('button', { name: 'Put at the table' }))
+    await flush()
+    expect(screen.getByText("Couldn't put this map at the table. Try again.")).toBeInTheDocument()
+
+    // Toggle a door — clears the stale at-table error
+    const door = screen.getByRole('button', { name: /Rusty Trap Door/ })
+    await user.click(door)
+    await user.click(screen.getByRole('button', { name: 'Open door' }))
+    await flush()
+
+    expect(screen.queryByText("Couldn't put this map at the table. Try again.")).not.toBeInTheDocument()
+  })
+
+  it('ConfirmDialog still appears after a reset failure', async () => {
+    const user = userEvent.setup()
+    vi.spyOn(api, 'resetDungeonSessionState').mockRejectedValue(new Error('network'))
+    renderMapLabPage()
+    await flush()
+
+    await user.click(screen.getByRole('button', { name: 'Reset dungeon' }))
+    await user.click(screen.getByRole('button', { name: 'Reset' }))
+    await flush()
+
+    // Error shows and confirm dialog is gone
+    expect(screen.getByText("Couldn't reset dungeon. Try again.")).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Reset' })).not.toBeInTheDocument()
+
+    // Click reset again — ConfirmDialog re-appears
+    await user.click(screen.getByRole('button', { name: 'Reset dungeon' }))
+    expect(screen.getByRole('button', { name: 'Reset' })).toBeInTheDocument()
+  })
+
+  it('does not show success messages or toasts after save', async () => {
+    renderMapLabPage()
+    await flush()
+
+    // The chip should not appear when no errors occurred
+    expect(screen.queryByText(/Couldn't/)).not.toBeInTheDocument()
+  })
+})
+
 describe('MapLabPage (Stage F2 — Prop rendering)', () => {
   afterEach(() => {
     vi.restoreAllMocks()
@@ -1215,7 +1344,7 @@ describe('Design Phase J1 — toolbar trays', () => {
 
 // ── VT0 scaffold seams ──────────────────────────────────────────────────────
 
-describe('VT0 — Viewer live-surface scaffolding seams', () => {
+describe('VT0 — Viewer room drawer (tablet)', () => {
   beforeEach(() => {
     vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: mapLabLayout as unknown as Record<string, unknown> })
     vi.spyOn(api, 'listNPCs').mockResolvedValue([{ id: 9, name: 'Mira' }])
@@ -1230,37 +1359,73 @@ describe('VT0 — Viewer live-surface scaffolding seams', () => {
     vi.restoreAllMocks()
   })
 
-  it('room rail and map canvas are reachable at 520px without horizontal overflow (VT2 narrow viewer)', async () => {
-    // VT2: At 520px, the viewer room rail, map canvas, and details panel stack vertically
-    // via the 520px breakpoint. Layout wraps with flex-wrap, and all three regions remain
-    // reachable via scrolling.
+  it('shows a labelled Rooms toggle button to open the drawer', async () => {
     await renderLoadedMapLabPage()
-
-    const canvas = document.querySelector('.maplab-canvas') as HTMLElement
-    expect(canvas).toBeInTheDocument()
-
-    // At 520px, the layout wraps: rail and sidebar become 100% width below the canvas.
-    expect(document.querySelector('.maplab-viewer-rail-container')).toBeInTheDocument()
-    expect(document.querySelector('.maplab-sidebar')).toBeInTheDocument()
+    const toggle = screen.getByRole('button', { name: 'Open room navigation' })
+    expect(toggle).toBeInTheDocument()
+    expect(toggle).toHaveTextContent('Rooms')
+    expect(toggle).toHaveAttribute('aria-expanded', 'false')
+    expect(toggle).toHaveAttribute('aria-controls', 'maplab-viewer-room-rail')
   })
 
-  it('room rail click is reachable via touch at narrow widths (VT2 narrow room access)', async () => {
-    // VT2: At 520px narrow widths, the room rail remains reachable as part of the wrapped
-    // layout. Room button touch targets meet the 48px floor.
+  it('opening the drawer sets data-open on the rail container', async () => {
     const user = userEvent.setup()
     await renderLoadedMapLabPage()
+    const toggle = screen.getByRole('button', { name: 'Open room navigation' })
+    await user.click(toggle)
+    expect(toggle).toHaveAttribute('aria-expanded', 'true')
+    const container = document.querySelector('.maplab-viewer-rail-container')
+    expect(container).toHaveAttribute('data-open')
+  })
 
-    const rail = document.querySelector('.maplab-viewer-rail-container') as HTMLElement
-    expect(rail).toBeInTheDocument()
+  it('closes the drawer on backdrop click', async () => {
+    const user = userEvent.setup()
+    await renderLoadedMapLabPage()
+    await user.click(screen.getByRole('button', { name: 'Open room navigation' }))
+    const container = document.querySelector('.maplab-viewer-rail-container')
+    expect(container).toHaveAttribute('data-open')
+    const backdrop = container!.parentElement!.querySelector('.maplab-viewer-rail-backdrop') as HTMLElement
+    fireEvent.click(backdrop)
+    expect(container).not.toHaveAttribute('data-open')
+  })
 
-    // At 520px, the room buttons still have min-height: 40px (below the floor, but
-    // overridden by VT1's control-height migration in the actual component).
-    const hall = screen.getByRole('button', { name: 'Combat Training Hall' })
-    expect(hall).toBeVisible()
+  it('closes the drawer on Escape', async () => {
+    const user = userEvent.setup()
+    await renderLoadedMapLabPage()
+    await user.click(screen.getByRole('button', { name: 'Open room navigation' }))
+    const container = document.querySelector('.maplab-viewer-rail-container')
+    expect(container).toHaveAttribute('data-open')
+    await user.keyboard('{Escape}')
+    expect(container).not.toHaveAttribute('data-open')
+  })
 
-    // Rail is part of the normal flow, not a collapsed menu.
-    await user.click(hall)
-    expect(hall).toHaveAttribute('aria-pressed', 'true')
+  it('closes the drawer on room selection', async () => {
+    const user = userEvent.setup()
+    await renderLoadedMapLabPage()
+    await user.click(screen.getByRole('button', { name: 'Open room navigation' }))
+    const container = document.querySelector('.maplab-viewer-rail-container')
+    expect(container).toHaveAttribute('data-open')
+    const rail = screen.getByRole('navigation', { name: 'Room navigation' })
+    await user.click(within(rail).getByRole('button', { name: 'Armoury' }))
+    expect(container).not.toHaveAttribute('data-open')
+  })
+
+  it('floor tabs remain visible when the drawer is open', async () => {
+    const user = userEvent.setup()
+    await renderLoadedMapLabPage()
+    await user.click(screen.getByRole('button', { name: 'Open room navigation' }))
+    expect(screen.getByRole('tab', { name: 'Ground Floor' })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'First Floor' })).toBeInTheDocument()
+  })
+
+  it('room buttons inside the drawer meet the 48px touch floor', async () => {
+    await renderLoadedMapLabPage()
+    const container = document.querySelector('.maplab-viewer-rail-container') as HTMLElement
+    const roomButton = within(container!).getByRole('button', { name: 'Armoury' })
+    expect(roomButton).toBeInTheDocument()
+    // The rail's min-height: 48px is set by the desktop CSS rule; the 40px narrow
+    // override has been removed, so every viewer chrome control meets the touch floor.
+    expect(roomButton).toBeVisible()
   })
 
   it('details panel is reachable at 520px (VT2 narrow details)', async () => {
@@ -1348,16 +1513,27 @@ describe('MapLabPage (density control)', () => {
   })
 
   it('renders Detailed / Auto / Simple buttons in the View toolbar', async () => {
+    const user = userEvent.setup()
     renderMapLabPage()
     await flush()
+
+    // Controls are absent until the View popover opens
+    expect(screen.queryByRole('button', { name: 'Detailed' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Auto' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Simple' })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'View' }))
+
     expect(screen.getByRole('button', { name: 'Detailed' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Auto' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Simple' })).toBeInTheDocument()
   })
 
   it('defaults to Auto pressed', async () => {
+    const user = userEvent.setup()
     renderMapLabPage()
     await flush()
+    await user.click(screen.getByRole('button', { name: 'View' }))
     expect(screen.getByRole('button', { name: 'Auto' })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByRole('button', { name: 'Detailed' })).toHaveAttribute('aria-pressed', 'false')
     expect(screen.getByRole('button', { name: 'Simple' })).toHaveAttribute('aria-pressed', 'false')
@@ -1367,6 +1543,7 @@ describe('MapLabPage (density control)', () => {
     const user = userEvent.setup()
     renderMapLabPage()
     await flush()
+    await user.click(screen.getByRole('button', { name: 'View' }))
     await user.click(screen.getByRole('button', { name: 'Detailed' }))
     expect(screen.getByRole('button', { name: 'Detailed' })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByRole('button', { name: 'Auto' })).toHaveAttribute('aria-pressed', 'false')
@@ -1377,9 +1554,37 @@ describe('MapLabPage (density control)', () => {
     const user = userEvent.setup()
     renderMapLabPage()
     await flush()
+    await user.click(screen.getByRole('button', { name: 'View' }))
     await user.click(screen.getByRole('button', { name: 'Simple' }))
     expect(screen.getByRole('button', { name: 'Simple' })).toHaveAttribute('aria-pressed', 'true')
     expect(window.localStorage.getItem('dnd-kids-maplab-density')).toBe('simple')
+  })
+})
+
+describe('MapLabPage (View popover)', () => {
+  it('closes on outside click', async () => {
+    const user = userEvent.setup()
+    renderMapLabPage()
+    await flush()
+
+    await user.click(screen.getByRole('button', { name: 'View' }))
+    expect(screen.getByRole('button', { name: 'Detailed' })).toBeInTheDocument()
+
+    // Click a toolbar button outside the popover
+    await user.click(screen.getByRole('button', { name: 'Reset dungeon' }))
+    expect(screen.queryByRole('button', { name: 'Detailed' })).not.toBeInTheDocument()
+  })
+
+  it('closes on Escape', async () => {
+    const user = userEvent.setup()
+    renderMapLabPage()
+    await flush()
+
+    await user.click(screen.getByRole('button', { name: 'View' }))
+    expect(screen.getByRole('button', { name: 'Detailed' })).toBeInTheDocument()
+
+    await user.keyboard('{Escape}')
+    expect(screen.queryByRole('button', { name: 'Detailed' })).not.toBeInTheDocument()
   })
 })
 
@@ -1393,6 +1598,7 @@ describe('MapLabPage (Session view — layer toggles)', () => {
   it('toggling Outside off hides the unknown-space rect and back on restores it', async () => {
     const user = userEvent.setup()
     const { container } = await renderLoadedMapLabPage()
+    await user.click(screen.getByRole('button', { name: 'View' }))
 
     expect(container.querySelector('.maplab-unknown-space')).toBeInTheDocument()
 
@@ -1406,6 +1612,7 @@ describe('MapLabPage (Session view — layer toggles)', () => {
   it('toggling Props off hides prop markers and back on restores them', async () => {
     const user = userEvent.setup()
     await renderLoadedMapLabPage()
+    await user.click(screen.getByRole('button', { name: 'View' }))
 
     expect(screen.getByRole('button', { name: /Treasure Chest/i })).toBeInTheDocument()
 
@@ -1419,6 +1626,7 @@ describe('MapLabPage (Session view — layer toggles)', () => {
   it('toggling Passages off hides doors, stairs, and portals together, and back on restores them', async () => {
     const user = userEvent.setup()
     await renderLoadedMapLabPage()
+    await user.click(screen.getByRole('button', { name: 'View' }))
 
     expect(screen.getByRole('button', { name: /Heavy Stone Door/ })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Stone Stairs.*floor 1/i })).toBeInTheDocument()
@@ -1435,6 +1643,7 @@ describe('MapLabPage (Session view — layer toggles)', () => {
   it('toggling Labels off hides room title text and back on restores it', async () => {
     const user = userEvent.setup()
     await renderLoadedMapLabPage()
+    await user.click(screen.getByRole('button', { name: 'View' }))
 
     expect(screen.getByText('Combat Training Hall')).toBeInTheDocument()
 
@@ -1450,6 +1659,7 @@ describe('MapLabPage (Session view — layer toggles)', () => {
   it('turning off every layer replaces the canvas with the filtered-empty message', async () => {
     const user = userEvent.setup()
     await renderLoadedMapLabPage()
+    await user.click(screen.getByRole('button', { name: 'View' }))
 
     await user.click(screen.getByRole('button', { name: 'Outside' }))
     await user.click(screen.getByRole('button', { name: 'Props' }))

@@ -1,9 +1,10 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, Outlet, useLocation, useParams } from 'react-router-dom'
 import './DungeonShell.css'
 import { MapLabRouteState } from './MapLabRouteState'
 import {
   DungeonRouteContextProvider,
+  DungeonShellStatusSlotProvider,
   useDungeonRouteContext,
 } from './dungeonRouteContext'
 
@@ -18,6 +19,7 @@ export function DungeonShell() {
   const { dungeonId: dungeonIdParam } = useParams()
   const location = useLocation()
   const route = useDungeonRouteContext(dungeonIdParam)
+  const [statusSlotEl, setStatusSlotEl] = useState<HTMLDivElement | null>(null)
 
   // Dungeon routes are app-like, not document-like: the map fills the window and never scrolls the
   // page. Flagged on <body> rather than matched with a `:has()` selector so it also works on the
@@ -84,10 +86,14 @@ export function DungeonShell() {
                   Edit map
                 </Link>
               </nav>
+
+              <div className="dungeon-shell-status-slot" ref={setStatusSlotEl} />
             </header>
 
             <div className="dungeon-shell-body">
-              <Outlet />
+              <DungeonShellStatusSlotProvider value={statusSlotEl}>
+                <Outlet />
+              </DungeonShellStatusSlotProvider>
             </div>
           </>
         )}

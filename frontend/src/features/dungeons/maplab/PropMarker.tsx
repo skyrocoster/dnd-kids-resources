@@ -15,6 +15,7 @@ import {
 const PROP_IDENTITY_TOKENS: Record<string, string> = {
   chest: '--md-loot',
   encounter: '--md-tertiary',
+  npc: '--md-npc',
 }
 
 interface PropMarkerProps {

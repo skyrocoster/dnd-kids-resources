@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-import { listDungeons, listEncounters, listLootBundles } from '../../../api/client'
-import type { Dungeon, Encounter, LootBundle } from '../../../api/types'
+import { listDungeons, listEncounters, listLootBundles, listNPCs } from '../../../api/client'
+import type { Dungeon, Encounter, LootBundle, NPC } from '../../../api/types'
 import type { FieldSpec, FixtureTypeSpec } from './fixtureTypes'
 import { absoluteCells, floorsInLayout, markersAtCell, roomsOnZ, type MapCell, type MapLayout, type MapRoom } from '../../../model/maplabModel'
 
@@ -91,6 +91,10 @@ function FixtureField({
     return <EncounterPickerField inputId={inputId} field={field} value={value} onChange={onChange} />
   }
 
+  if (field.type === 'npcPicker') {
+    return <NpcPickerField inputId={inputId} field={field} value={value} onChange={onChange} />
+  }
+
   if (field.type === 'lootBundlePicker') {
     return <LootBundlePickerField inputId={inputId} field={field} value={value} onChange={onChange} />
   }
@@ -171,6 +175,49 @@ function EncounterPickerField({
         {encounters.map((encounter) => (
           <option key={encounter.id} value={encounter.id}>
             {encounter.title}
+          </option>
+        ))}
+      </select>
+    </label>
+  )
+}
+
+/** Attaches an NPC to a marker by name rather than a raw id — a custom picker (not the
+ * generic `select`) because its options come from the live NPC list, not a static
+ * `SelectOption[]`. */
+function NpcPickerField({
+  inputId,
+  field,
+  value,
+  onChange,
+}: {
+  inputId: string
+  field: FieldSpec
+  value: unknown
+  onChange: (key: string, value: unknown) => void
+}) {
+  const [npcs, setNpcs] = useState<NPC[]>([])
+
+  useEffect(() => {
+    listNPCs()
+      .then(setNpcs)
+      .catch(() => setNpcs([]))
+  }, [])
+
+  const selected = typeof value === 'number' ? String(value) : ''
+
+  return (
+    <label className="maplab-field-row" htmlFor={inputId}>
+      <span>{field.label}</span>
+      <select
+        id={inputId}
+        value={selected}
+        onChange={(event) => onChange(field.key, event.target.value === '' ? null : Number(event.target.value))}
+      >
+        <option value="">No NPC</option>
+        {npcs.map((npc) => (
+          <option key={npc.id} value={npc.id}>
+            {npc.name}
           </option>
         ))}
       </select>

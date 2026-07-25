@@ -18,7 +18,9 @@
       "Bash(xargs -I{} sh -c 'echo \"{}\" ; stat -c \"%y %s bytes\" \"{}\" 2>/dev/null || stat -f \"%Sm %z bytes\" \"{}\"')",
       "Bash(gh label *)",
       "Bash(*)",
-      "PowerShell(*)"
+      "PowerShell(*)",
+      "WebFetch(domain:opencode.ai)",
+      "Skill(update-config)"
     ]
   }
 }

@@ -113,6 +113,12 @@ board's sole scroll owner, the desktop inspector owns only its own vertical over
 below the inspector becomes an overlay drawer rather than a second page scroll region or a
 board-shrinking column.
 
+The Map Lab editor also applies this rule: at tablet widths its Floors/Rooms/Connections navigation
+overlays the canvas as a drawer while floor chips stay visible, and the selected-item inspector
+becomes a peek-to-full bottom sheet. On desktop the navigation remains docked and no inspector width
+is reserved when nothing is selected. The Map Lab session viewer uses the same overlay-drawer rule
+for room navigation at tablet widths, with floor chips remaining outside the drawer.
+
 Status: IN FORCE.
 
 ### Inline versus modal editing
@@ -180,7 +186,9 @@ The failure replaces the content because there is no content.
 
 **Action failure** — the data is fine; a verb failed. A message appears beside the control that
 failed, marked `role="status"`, and persists until the next action. The surrounding screen is
-untouched. Blanking a board mid-session because one button failed loses the user's place.
+untouched. On canvas workspaces, "beside" may be a single bottom-center chip inside the canvas; Map
+Lab uses that placement for viewer session-save, reset, and at-table failures. Blanking a board
+mid-session because one button failed loses the user's place.
 
 Status: IN FORCE.
 
@@ -221,8 +229,9 @@ Once a record exists, editing it persists as you go — debounced, with a visibl
 moving through idle → saving → saved → error. The dismiss control reads **Close**, not Cancel,
 because nothing is being cancelled. Undo is available while the editor is open.
 
-This is how the Map Lab editor already works (`saveStatus`, `Reset unsaved changes`, and the honest
-first-run line *"No saved layout yet. Your first edit will save this blank map."*). The six modal
+This is how the Map Lab editor already works (`saveStatus`, session-scoped layout Undo/Redo,
+`Reset unsaved changes`, and the honest first-run line *"No saved layout yet. Your first edit will
+save this blank map."*). The six modal
 editors — Spell, Weapon, Player, NPC, Item, Encounter — still use an explicit Save button and a
 `{ message, kind }` status paragraph. **That is accepted debt, not a pattern to copy.** Migrating
 them needs an undo affordance that does not exist yet and belongs to its own plan.
@@ -248,9 +257,10 @@ All eleven delete sites comply and there are zero `window.confirm` calls in the 
 Status: IN FORCE.
 
 Because deletion is not reversible, confirmation is the only safety net. Where a destructive action
-*is* reversible — the Loom's Fulfil, which pairs with Undo Fulfil — offer the reverse action instead
-of a confirmation. Do not do both: a confirm dialog on a reversible action is friction without
-benefit.
+*is* reversible — the Loom's Fulfil, which pairs with Undo Fulfil, and Map Lab fixture/feature
+deletes, which show `Deleted <thing>. Undo` in the canvas status chip — offer the reverse action
+instead of a confirmation. Map Lab room deletion remains confirmed because it spans both layout and
+dungeon data. Do not combine confirmation with a reversible action: it is friction without benefit.
 
 Status: IN FORCE.
 
@@ -286,8 +296,9 @@ Status: IN FORCE.
 
 ## Keyboard
 
-The app relies on the platform, not on a bespoke shortcut layer. There are no global hotkeys and none
-should be added without a plan that owns them.
+The app relies on the platform, not on a bespoke global shortcut layer. Map Lab has editor-scoped
+desktop tool, erase, and undo/redo hotkeys owned by its active plan; they are ignored from text-entry
+controls. No global hotkeys should be added without a plan that owns them.
 
 - **Focus order is DOM order.** No `tabIndex` above 0. Native `<button>`, `<a>`, and form controls do
   the work; anything given `role="button"` also gets `tabIndex={0}` and handlers for both **Enter**
@@ -335,8 +346,9 @@ Status: IN FORCE.
 
 Recorded so they are not mistaken for settled ground:
 
-- **No undo system.** The only undo in the app is the Loom's `Undo Fulfil`, which is a domain action
-  rather than a general mechanism. The autosave TARGET depends on filling this gap.
+- **No shared undo system.** Map Lab has session-scoped layout history and the Loom has its domain
+  `Undo Fulfil` action, but other autosaving editors still need an owned undo design before adopting
+  the autosave TARGET.
 - **No optimistic updates.** Every mutation waits for the server. Acceptable on a LAN; worth
   revisiting if any surface starts feeling slow at the table.
 - **No offline story.** A dropped connection surfaces as an action failure and nothing more.

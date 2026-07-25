@@ -165,6 +165,122 @@ describe('ViewerRoomRail', () => {
     const trainingHall = screen.getByRole('button', { name: /Training Hall/i })
     expect(within(trainingHall).getByText('Trap')).toBeInTheDocument()
     expect(within(trainingHall).getByText('Encounter')).toBeInTheDocument()
+    expect(within(trainingHall).getByLabelText('Room hints')).toBeInTheDocument()
+  })
+
+  it('shows an NPC hint when a room has explicit NPCs', () => {
+    const withNpcs = parseDungeonData({
+      rooms: [
+        {
+          room_id: 17,
+          title: 'Training Hall',
+          entries: [
+            { entry_type: 'trap', title: 'Loose Flagstones', content: 'Darts fire from the walls.' },
+            { entry_type: 'encounter', title: 'Goblin Drill', content: '2d4 goblins rush the room.', encounter_id: 7 },
+          ],
+          npcs: [1, 2],
+        },
+        {
+          room_id: 23,
+          title: 'Armoury',
+          entries: [{ entry_type: 'feature', title: 'Weapon Racks', content: 'Dusty weapons line the walls.' }],
+          npcs: [],
+        },
+        {
+          room_id: 33,
+          title: 'First Floor Landing',
+          entries: [{ entry_type: 'feature', title: 'Balcony', content: 'A narrow overlook faces the courtyard.' }],
+          npcs: [],
+        },
+        {
+          room_id: 100,
+          title: 'East Wing',
+          entries: [{ entry_type: 'monster', title: 'Watcher', content: 'A monster hides in the rafters.' }],
+          npcs: [],
+        },
+      ],
+    })
+
+    render(
+      <ViewerRoomRail layout={mapLabLayout} parsed={withNpcs} activeRoomId={17} onSelectRoom={vi.fn()} />,
+    )
+
+    const trainingHall = screen.getByRole('button', { name: /Training Hall/i })
+    expect(within(trainingHall).getByText('2 NPCs')).toBeInTheDocument()
+  })
+
+  it('shows an NPC hint when a room has marker-derived NPCs', () => {
+    const layoutWithMarker = {
+      ...mapLabLayout,
+      props: [
+        ...mapLabLayout.props,
+        { prop_id: 10, kind: 'npc', cell: [6, 0] as [number, number], z: 0, npc_id: 5, hidden: false, locked: false, trapped: false },
+      ],
+    }
+
+    render(
+      <ViewerRoomRail layout={layoutWithMarker} parsed={parsed} activeRoomId={23} onSelectRoom={vi.fn()} />,
+    )
+
+    const armoury = screen.getByRole('button', { name: /Armoury/ })
+    expect(within(armoury).getByText('1 NPC')).toBeInTheDocument()
+  })
+
+  it('de-duplicates NPCs that are both explicit and marker-derived', () => {
+    const layoutWithMarker = {
+      ...mapLabLayout,
+      props: [
+        ...mapLabLayout.props,
+        { prop_id: 10, kind: 'npc', cell: [6, 0] as [number, number], z: 0, npc_id: 1, hidden: false, locked: false, trapped: false },
+      ],
+    }
+    const withExplicitNpc = parseDungeonData({
+      rooms: [
+        {
+          room_id: 17,
+          title: 'Training Hall',
+          entries: [
+            { entry_type: 'trap', title: 'Loose Flagstones', content: 'Darts fire from the walls.' },
+            { entry_type: 'encounter', title: 'Goblin Drill', content: '2d4 goblins rush the room.', encounter_id: 7 },
+          ],
+          npcs: [],
+        },
+        {
+          room_id: 23,
+          title: 'Armoury',
+          entries: [{ entry_type: 'feature', title: 'Weapon Racks', content: 'Dusty weapons line the walls.' }],
+          npcs: [1, 2],
+        },
+        {
+          room_id: 33,
+          title: 'First Floor Landing',
+          entries: [{ entry_type: 'feature', title: 'Balcony', content: 'A narrow overlook faces the courtyard.' }],
+          npcs: [],
+        },
+        {
+          room_id: 100,
+          title: 'East Wing',
+          entries: [{ entry_type: 'monster', title: 'Watcher', content: 'A monster hides in the rafters.' }],
+          npcs: [],
+        },
+      ],
+    })
+
+    render(
+      <ViewerRoomRail layout={layoutWithMarker} parsed={withExplicitNpc} activeRoomId={23} onSelectRoom={vi.fn()} />,
+    )
+
+    const armoury = screen.getByRole('button', { name: /Armoury/ })
+    expect(within(armoury).getByText('2 NPCs')).toBeInTheDocument()
+  })
+
+  it('does not show NPC hint when room has no NPCs', () => {
+    render(
+      <ViewerRoomRail layout={mapLabLayout} parsed={parsed} activeRoomId={23} onSelectRoom={vi.fn()} />,
+    )
+
+    const armoury = screen.getByRole('button', { name: 'Armoury' })
+    expect(within(armoury).queryByText(/NPC/)).not.toBeInTheDocument()
   })
 
   it('auto-scrolls the active room into view without throwing', () => {

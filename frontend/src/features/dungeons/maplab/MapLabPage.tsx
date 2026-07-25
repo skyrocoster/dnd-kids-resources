@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useState, useRef, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import './MapLabPage.css'
 import { ConfirmDialog } from '../../../components/ConfirmDialog'
@@ -10,7 +10,7 @@ import { useMapLabLayout } from './useMapLabLayout'
 import { useMapLabSessionState } from './useMapLabSessionState'
 import { useMapCanvasZoom, type ViewportSize } from './useMapCanvasZoom'
 import { MapCanvas } from './MapCanvas'
-import { ChevronDownIcon, ChevronUpIcon, FitIcon, ZoomInIcon, ZoomOutIcon } from '../../../components/icons'
+import { ChevronDownIcon, ChevronUpIcon, EyeIcon, FitIcon, ZoomInIcon, ZoomOutIcon } from '../../../components/icons'
 import { EncounterDock } from '../../encounters/EncounterDock'
 import { NPCStatCard } from '../../npcs/NPCStatCard'
 import { StatePanel } from '../../../components/StatePanel'
@@ -268,6 +268,8 @@ export function MapLabPage() {
     portalSessions,
     setPortalSessions,
     resetSessions,
+    actionError,
+    clearActionError,
   } = useMapLabSessionState(route.dungeonId)
   const [resetDungeonConfirmOpen, setResetDungeonConfirmOpen] = useState(false)
   const [atTableDungeonId, setAtTableDungeonId] = useState<number | null>(null)
@@ -280,6 +282,9 @@ export function MapLabPage() {
   const handleViewportResize = useCallback((size: ViewportSize) => setViewportSize(size), [])
   const { visible: layerVisible, toggleLayer } = useMapLayerVisibility()
   const { density, setDensity } = useMapDensity()
+  const [viewPopoverOpen, setViewPopoverOpen] = useState(false)
+  const viewPopoverRef = useRef<HTMLDivElement>(null)
+  const [roomsDrawerOpen, setRoomsDrawerOpen] = useState(false)
   const simplified = resolveMapDensity(density, zoomApi.zoom.scale) === 'simple'
   const allLayersHidden = MAP_LAYER_KEYS.every((key) => !layerVisible[key])
 
@@ -299,12 +304,48 @@ export function MapLabPage() {
       .catch(() => setAtTableDungeonId(null))
   }, [])
 
+  useEffect(() => {
+    if (!viewPopoverOpen) return
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node
+      if (viewPopoverRef.current && !viewPopoverRef.current.contains(target)) setViewPopoverOpen(false)
+    }
+    window.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      window.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [viewPopoverOpen])
+
+  useEffect(() => {
+    if (!viewPopoverOpen) return
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setViewPopoverOpen(false)
+    }
+    window.addEventListener('keydown', handleEscape)
+    return () => window.removeEventListener('keydown', handleEscape)
+  }, [viewPopoverOpen])
+
+  useEffect(() => {
+    if (!roomsDrawerOpen) return
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setRoomsDrawerOpen(false)
+    }
+    window.addEventListener('keydown', handleEscape)
+    return () => window.removeEventListener('keydown', handleEscape)
+  }, [roomsDrawerOpen])
+
   const isAtTable = route.dungeonId !== null && atTableDungeonId === route.dungeonId
+  const viewerError = actionError ?? atTableError
+
+  function clearViewerStatus() {
+    clearActionError()
+    setAtTableError(null)
+  }
 
   async function putThisDungeonAtTheTable() {
     if (route.dungeonId === null) return
+    clearViewerStatus()
     setAtTablePending(true)
-    setAtTableError(null)
     try {
       const response = await setAtTheTable({ dungeon_id: route.dungeonId })
       setAtTableDungeonId(response.dungeon_id)
@@ -363,6 +404,7 @@ export function MapLabPage() {
   }
 
   function toggleDoorOpen(door: MapDoor) {
+    clearViewerStatus()
     setDoorSessions((current) => ({
       ...current,
       [door.door_id]: { ...doorSession(door), isOpen: !doorSession(door).isOpen },
@@ -370,6 +412,7 @@ export function MapLabPage() {
   }
 
   function toggleDoorLocked(door: MapDoor) {
+    clearViewerStatus()
     setDoorSessions((current) => ({
       ...current,
       [door.door_id]: { ...doorSession(door), isLocked: !doorSession(door).isLocked },
@@ -377,6 +420,7 @@ export function MapLabPage() {
   }
 
   function disarmDoorTrap(door: MapDoor) {
+    clearViewerStatus()
     setDoorSessions((current) => ({
       ...current,
       [door.door_id]: { ...doorSession(door), trapDisarmed: true },
@@ -384,6 +428,7 @@ export function MapLabPage() {
   }
 
   function toggleStairLocked(stair: MapStair) {
+    clearViewerStatus()
     setStairSessions((current) => ({
       ...current,
       [stair.stair_id]: { ...stairSession(stair), isLocked: !stairSession(stair).isLocked },
@@ -391,6 +436,7 @@ export function MapLabPage() {
   }
 
   function disarmStairTrap(stair: MapStair) {
+    clearViewerStatus()
     setStairSessions((current) => ({
       ...current,
       [stair.stair_id]: { ...stairSession(stair), trapDisarmed: true },
@@ -402,6 +448,7 @@ export function MapLabPage() {
   }
 
   function togglePortalLocked(portal: MapPortal) {
+    clearViewerStatus()
     setPortalSessions((current) => ({
       ...current,
       [portal.portal_id]: { ...portalSession(portal), isLocked: !portalSession(portal).isLocked },
@@ -409,6 +456,7 @@ export function MapLabPage() {
   }
 
   function disarmPortalTrap(portal: MapPortal) {
+    clearViewerStatus()
     setPortalSessions((current) => ({
       ...current,
       [portal.portal_id]: { ...portalSession(portal), trapDisarmed: true },
@@ -512,86 +560,122 @@ export function MapLabPage() {
           >
             {isAtTable ? 'At the table' : 'Put at the table'}
           </button>
-          {atTableError !== null && (
-            <span role="status" className="maplab-error-inline">{atTableError}</span>
+        </ToolbarTray>
+        <div className="maplab-view-popover-wrap" ref={viewPopoverRef}>
+          <button
+            type="button"
+            className="maplab-pill-button"
+            aria-haspopup="true"
+            aria-expanded={viewPopoverOpen}
+            data-active={viewPopoverOpen || undefined}
+            onClick={() => setViewPopoverOpen((open) => !open)}
+          >
+            <EyeIcon width={18} height={18} aria-hidden="true" />
+            View
+          </button>
+          {viewPopoverOpen && (
+            <div className="maplab-view-popover" role="menu">
+              <button
+                type="button"
+                className="maplab-pill-button maplab-layer-toggle-button"
+                aria-pressed={layerVisible.outside}
+                data-active={layerVisible.outside || undefined}
+                onClick={() => toggleLayer('outside')}
+              >
+                Outside
+              </button>
+              <button
+                type="button"
+                className="maplab-pill-button maplab-layer-toggle-button"
+                aria-pressed={layerVisible.props}
+                data-active={layerVisible.props || undefined}
+                onClick={() => toggleLayer('props')}
+              >
+                Props
+              </button>
+              <button
+                type="button"
+                className="maplab-pill-button maplab-layer-toggle-button"
+                aria-pressed={layerVisible.passages}
+                data-active={layerVisible.passages || undefined}
+                onClick={() => toggleLayer('passages')}
+              >
+                Passages
+              </button>
+              <button
+                type="button"
+                className="maplab-pill-button maplab-layer-toggle-button"
+                aria-pressed={layerVisible.labels}
+                data-active={layerVisible.labels || undefined}
+                onClick={() => toggleLayer('labels')}
+              >
+                Labels
+              </button>
+              <button
+                type="button"
+                className="maplab-pill-button"
+                aria-pressed={density === 'detailed'}
+                data-active={density === 'detailed' || undefined}
+                onClick={() => setDensity('detailed')}
+              >
+                Detailed
+              </button>
+              <button
+                type="button"
+                className="maplab-pill-button"
+                aria-pressed={density === 'auto'}
+                data-active={density === 'auto' || undefined}
+                onClick={() => setDensity('auto')}
+              >
+                Auto
+              </button>
+              <button
+                type="button"
+                className="maplab-pill-button"
+                aria-pressed={density === 'simple'}
+                data-active={density === 'simple' || undefined}
+                onClick={() => setDensity('simple')}
+              >
+                Simple
+              </button>
+            </div>
           )}
-        </ToolbarTray>
-        <ToolbarTray groupKey="viewer-view" label="View">
-          <button
-            type="button"
-            className="maplab-pill-button maplab-layer-toggle-button"
-            aria-pressed={layerVisible.outside}
-            data-active={layerVisible.outside || undefined}
-            onClick={() => toggleLayer('outside')}
-          >
-            Outside
-          </button>
-          <button
-            type="button"
-            className="maplab-pill-button maplab-layer-toggle-button"
-            aria-pressed={layerVisible.props}
-            data-active={layerVisible.props || undefined}
-            onClick={() => toggleLayer('props')}
-          >
-            Props
-          </button>
-          <button
-            type="button"
-            className="maplab-pill-button maplab-layer-toggle-button"
-            aria-pressed={layerVisible.passages}
-            data-active={layerVisible.passages || undefined}
-            onClick={() => toggleLayer('passages')}
-          >
-            Passages
-          </button>
-          <button
-            type="button"
-            className="maplab-pill-button maplab-layer-toggle-button"
-            aria-pressed={layerVisible.labels}
-            data-active={layerVisible.labels || undefined}
-            onClick={() => toggleLayer('labels')}
-          >
-            Labels
-          </button>
-          <button
-            type="button"
-            className="maplab-pill-button"
-            aria-pressed={density === 'detailed'}
-            data-active={density === 'detailed' || undefined}
-            onClick={() => setDensity('detailed')}
-          >
-            Detailed
-          </button>
-          <button
-            type="button"
-            className="maplab-pill-button"
-            aria-pressed={density === 'auto'}
-            data-active={density === 'auto' || undefined}
-            onClick={() => setDensity('auto')}
-          >
-            Auto
-          </button>
-          <button
-            type="button"
-            className="maplab-pill-button"
-            aria-pressed={density === 'simple'}
-            data-active={density === 'simple' || undefined}
-            onClick={() => setDensity('simple')}
-          >
-            Simple
-          </button>
-        </ToolbarTray>
+        </div>
       </div>
 
       <div className="maplab-canvas">
-        <div className="maplab-viewer-rail-container">
+        <button
+          type="button"
+          className="maplab-pill-button maplab-viewer-rail-toggle"
+          aria-label="Open room navigation"
+          aria-expanded={roomsDrawerOpen}
+          aria-controls="maplab-viewer-room-rail"
+          onClick={() => setRoomsDrawerOpen((open) => !open)}
+        >
+          Rooms
+        </button>
+        <div
+          id="maplab-viewer-room-rail"
+          className="maplab-viewer-rail-container"
+          data-open={roomsDrawerOpen || undefined}
+        >
           <ViewerRoomRail
             layout={layout}
             parsed={parsed}
             activeRoomId={activeRoomId}
-            onSelectRoom={setActiveRoomId}
+            onSelectRoom={(id) => {
+              setActiveRoomId(id)
+              setRoomsDrawerOpen(false)
+            }}
           />
         </div>
+        <button
+          type="button"
+          className="maplab-viewer-rail-backdrop"
+          aria-label="Close room navigation"
+          tabIndex={roomsDrawerOpen ? 0 : -1}
+          onClick={() => setRoomsDrawerOpen(false)}
+        />
 
         <div className="maplab-canvas-area">
           {allLayersHidden ? (
@@ -609,6 +693,11 @@ export function MapLabPage() {
             onPanEnd={zoomApi.handlePointerUp}
             onViewportResize={handleViewportResize}
             panHint="Drag to pan. Pinch or scroll to zoom."
+            bottomCenterSlot={
+              viewerError ? (
+                <p className="maplab-viewer-status" role="status">{viewerError}</p>
+              ) : null
+            }
             controlsSlot={
               <>
                 <button
@@ -875,6 +964,7 @@ export function MapLabPage() {
             dungeonRoom={activeDungeonRoom}
             parsed={parsed}
             dungeonId={route.dungeonId ?? 0}
+            layout={layout}
             onRunEncounter={setActiveEncounterId}
             onOpenNpc={setActiveNpcId}
           />
@@ -891,6 +981,7 @@ export function MapLabPage() {
           message={`Reset "${route.dungeon?.title}"? Every door, trap, and toggle returns to its authored state. This cannot be undone.`}
           confirmLabel="Reset"
           onConfirm={() => {
+            clearViewerStatus()
             resetSessions()
             setResetDungeonConfirmOpen(false)
           }}

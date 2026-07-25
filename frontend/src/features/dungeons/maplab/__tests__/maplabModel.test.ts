@@ -35,6 +35,7 @@ import {
   ghostFloorZ,
   doorsOnFloor,
   propsOnFloor,
+  npcIdsFromMarkersInRoom,
   normalizeLayout,
   type MapLayout,
   type MapRoom,
@@ -890,6 +891,41 @@ describe('maplabModel (Stage 4 session state)', () => {
     })
   })
 
+  describe('MapProp.npc_id round-trip (D1)', () => {
+    const npcProp: MapProp = {
+      prop_id: 502,
+      kind: 'npc',
+      cell: [1, 1],
+      hidden: false,
+      locked: false,
+      trapped: false,
+      title: 'Wizard NPC',
+      npc_id: 24,
+    }
+
+    it('survives a JSON round-trip through the persisted layout blob', () => {
+      const layout: MapLayout = { ...mapLabLayout, props: [...mapLabLayout.props, npcProp] }
+      const roundTripped: MapLayout = JSON.parse(JSON.stringify(layout))
+      const prop = roundTripped.props.find((p) => p.prop_id === 502)
+      expect(prop?.npc_id).toBe(24)
+    })
+
+    it('is preserved by normalizeLayout', () => {
+      const layout: MapLayout = { ...mapLabLayout, props: [...mapLabLayout.props, npcProp] }
+      const normalized = normalizeLayout(layout)
+      const prop = normalized.props.find((p) => p.prop_id === 502)
+      expect(prop?.npc_id).toBe(24)
+    })
+
+    it('preserves a null npc_id for an unlinked npc marker', () => {
+      const unlinked: MapProp = { ...npcProp, npc_id: null }
+      const layout: MapLayout = { ...mapLabLayout, props: [...mapLabLayout.props, unlinked] }
+      const roundTripped: MapLayout = JSON.parse(JSON.stringify(layout))
+      const prop = roundTripped.props.find((p) => p.prop_id === 502)
+      expect(prop?.npc_id).toBeNull()
+    })
+  })
+
   describe('gridMarkerOffset (Phase I3)', () => {
     it('centers a single marker', () => {
       expect(gridMarkerOffset(1, 0)).toEqual({ dx: 0, dy: 0 })
@@ -956,6 +992,54 @@ describe('maplabModel (Stage 4 session state)', () => {
         { type: 'portal', id: 1 },
         { type: 'prop', id: 1 },
       ])
+    })
+  })
+
+  describe('npcIdsFromMarkersInRoom', () => {
+    const room: MapRoom = { room_id: 17, z: 0, origin: [0, 0], cells: [[0, 0], [1, 0]] }
+
+    it('returns npc ids from markers standing inside the room', () => {
+      const npcMarker: MapProp = { prop_id: 1, kind: 'npc', z: 0, cell: [0, 0], npc_id: 42, hidden: false, locked: false, trapped: false }
+      const layout: MapLayout = { ...mapLabLayout, props: [...mapLabLayout.props, npcMarker] }
+      expect(npcIdsFromMarkersInRoom(layout, room)).toEqual([42])
+    })
+
+    it('excludes markers from a different room', () => {
+      const npcMarker: MapProp = { prop_id: 1, kind: 'npc', z: 0, cell: [9, 9], npc_id: 42, hidden: false, locked: false, trapped: false }
+      const layout: MapLayout = { ...mapLabLayout, props: [...mapLabLayout.props, npcMarker] }
+      expect(npcIdsFromMarkersInRoom(layout, room)).toEqual([])
+    })
+
+    it('excludes markers from a different floor', () => {
+      const npcMarker: MapProp = { prop_id: 1, kind: 'npc', z: 1, cell: [0, 0], npc_id: 42, hidden: false, locked: false, trapped: false }
+      const layout: MapLayout = { ...mapLabLayout, props: [...mapLabLayout.props, npcMarker] }
+      expect(npcIdsFromMarkersInRoom(layout, room)).toEqual([])
+    })
+
+    it('excludes props that are not npc markers', () => {
+      const chestProp: MapProp = { prop_id: 1, kind: 'chest', z: 0, cell: [0, 0], npc_id: 42, hidden: false, locked: false, trapped: false }
+      const layout: MapLayout = { ...mapLabLayout, props: [...mapLabLayout.props, chestProp] }
+      expect(npcIdsFromMarkersInRoom(layout, room)).toEqual([])
+    })
+
+    it('excludes markers with null npc_id', () => {
+      const unlinkedMarker: MapProp = { prop_id: 1, kind: 'npc', z: 0, cell: [0, 0], npc_id: null, hidden: false, locked: false, trapped: false }
+      const layout: MapLayout = { ...mapLabLayout, props: [...mapLabLayout.props, unlinkedMarker] }
+      expect(npcIdsFromMarkersInRoom(layout, room)).toEqual([])
+    })
+
+    it('de-duplicates npc ids and orders by prop_id', () => {
+      const marker1: MapProp = { prop_id: 10, kind: 'npc', z: 0, cell: [0, 0], npc_id: 42, hidden: false, locked: false, trapped: false }
+      const marker2: MapProp = { prop_id: 5, kind: 'npc', z: 0, cell: [1, 0], npc_id: 42, hidden: false, locked: false, trapped: false }
+      const layout: MapLayout = { ...mapLabLayout, props: [...mapLabLayout.props, marker1, marker2] }
+      expect(npcIdsFromMarkersInRoom(layout, room)).toEqual([42])
+    })
+
+    it('handles multiple distinct npc ids ordered by prop_id', () => {
+      const marker1: MapProp = { prop_id: 10, kind: 'npc', z: 0, cell: [0, 0], npc_id: 99, hidden: false, locked: false, trapped: false }
+      const marker2: MapProp = { prop_id: 5, kind: 'npc', z: 0, cell: [1, 0], npc_id: 42, hidden: false, locked: false, trapped: false }
+      const layout: MapLayout = { ...mapLabLayout, props: [...mapLabLayout.props, marker1, marker2] }
+      expect(npcIdsFromMarkersInRoom(layout, room)).toEqual([42, 99])
     })
   })
 })

@@ -91,6 +91,11 @@
   color: var(--md-on-primary);
 }
 
+.dungeon-shell-status-slot {
+  display: flex;
+  align-items: center;
+}
+
 .dungeon-shell-body {
   display: flex;
   flex: 1 1 auto;

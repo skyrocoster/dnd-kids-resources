@@ -37,6 +37,31 @@ describe('initialEditorState', () => {
 })
 
 describe('mapLabEditorReducer', () => {
+  it('undoes and redoes layout edits, clearing redo after a new edit', () => {
+    let state = initialEditorState(emptyLayout)
+    state = mapLabEditorReducer(state, { type: 'addDoor', cell: [1, 1], side: 'N' })
+    expect(state.past).toHaveLength(1)
+
+    state = mapLabEditorReducer(state, { type: 'undo' })
+    expect(state.layout.doors).toHaveLength(0)
+    expect(state.future).toHaveLength(1)
+
+    state = mapLabEditorReducer(state, { type: 'redo' })
+    expect(state.layout.doors).toHaveLength(1)
+
+    state = mapLabEditorReducer(state, { type: 'undo' })
+    state = mapLabEditorReducer(state, { type: 'addProp', cell: [2, 2] })
+    expect(state.future).toHaveLength(0)
+  })
+
+  it('clears history when loading a layout', () => {
+    let state = initialEditorState(emptyLayout)
+    state = mapLabEditorReducer(state, { type: 'addDoor', cell: [1, 1], side: 'N' })
+    state = mapLabEditorReducer(state, { type: 'loadLayout', layout: emptyLayout })
+    expect(state.past).toHaveLength(0)
+    expect(state.future).toHaveLength(0)
+  })
+
   it('addRoom creates an empty room on the active floor and selects it', () => {
     const state = initialEditorState(emptyLayout)
     const next = mapLabEditorReducer(state, { type: 'addRoom' })
@@ -346,6 +371,12 @@ describe('mapLabEditorReducer', () => {
       expect(next.layout.props).toHaveLength(1)
       expect(next.layout.props[0]).toMatchObject({ prop_id: 1, kind: 'chest', cell: [0, 0], hidden: false, locked: false, trapped: false })
       expect(next.selectedPropId).toBe(1)
+    })
+
+    it('addProp uses the given kind instead of the default when provided', () => {
+      const state = initialEditorState(emptyLayout)
+      const next = mapLabEditorReducer(state, { type: 'addProp', cell: [0, 0], kind: 'mirror' })
+      expect(next.layout.props[0]).toMatchObject({ prop_id: 1, kind: 'mirror', cell: [0, 0] })
     })
 
     it('addProp assigns increasing ids', () => {

@@ -3,6 +3,7 @@
  * Zero logic; pure type definitions to anchor later stages.
  */
 
+
 // ============================================================================
 // Type definitions
 // ============================================================================
@@ -79,7 +80,7 @@ export interface PropLoot {
  * Unrendered in Phase F Stages 0-1; Stage F2+ renders and authors these. */
 export interface MapProp extends PassageFlags {
   prop_id: number
-  kind: string // 'chest' | 'table' | 'mirror' | 'barrel' | 'statue' | 'window' | 'other' | 'encounter'
+  kind: string // 'chest' | 'table' | 'mirror' | 'barrel' | 'statue' | 'window' | 'other' | 'encounter' | 'npc'
   cell: MapCell // absolute [x, y]
   side?: CardinalSide // ABSENT = on square; PRESENT = attached to that wall
   /** Authored floor. Optional for back-compat — see `MapDoor.z`. */
@@ -88,6 +89,8 @@ export interface MapProp extends PassageFlags {
   loot?: PropLoot // forward-compat; round-trips via autosave
   /** (D0+) Encounter marker: links to an encounter id for launching the runner. */
   encounter_id?: number | null
+  /** (D1+) NPC marker: links to an npc id. */
+  npc_id?: number | null
 }
 
 /** Portal = a freestanding on-square door linking to a non-adjacent destination with floor + exact-cell
@@ -473,6 +476,53 @@ export function propsOnFloor(layout: MapLayout, z: number): MapProp[] {
   return layout.props.filter((prop) =>
     prop.z !== undefined ? prop.z === z : ownedCells.has(cellKey(prop.cell)),
   )
+}
+
+/** NPC ids derived from markers (props with kind='npc') standing inside a room, de-duplicated and
+ * ordered by prop_id. Returns only props on the room's floor with a non-null npc_id whose cell
+ * matches one of the room's absolute cells. */
+export function npcIdsFromMarkersInRoom(layout: MapLayout, room: MapRoom): number[] {
+  const floorProps = propsOnFloor(layout, room.z)
+  const roomCells = new Set(absoluteCells(room).map(cellKey))
+  const seen = new Set<number>()
+  const result: { npc_id: number; prop_id: number }[] = []
+
+  for (const prop of floorProps) {
+    if (prop.kind === 'npc' && prop.npc_id !== null && prop.npc_id !== undefined && roomCells.has(cellKey(prop.cell))) {
+      if (!seen.has(prop.npc_id)) {
+        seen.add(prop.npc_id)
+        result.push({ npc_id: prop.npc_id, prop_id: prop.prop_id })
+      }
+    }
+  }
+
+  // Sort by prop_id for stable ordering (first occurrence of each unique npc_id)
+  result.sort((a, b) => a.prop_id - b.prop_id)
+  return result.map((item) => item.npc_id)
+}
+
+/** Compute the union of explicit room NPCs and marker-derived NPCs, de-duplicated.
+ * Explicit NPCs come first, followed by marker-derived NPCs not already in the explicit list.
+ * If layout is not provided, falls back to explicit NPCs only. */
+export function getNpcUnion(explicitNpcIds: number[] | null | undefined, room: MapRoom | null | undefined, layout: MapLayout | null | undefined): number[] {
+  if (!room || !layout) {
+    return explicitNpcIds ?? []
+  }
+
+  const explicit = new Set(explicitNpcIds ?? [])
+  const fromMarkers = npcIdsFromMarkersInRoom(layout, room)
+
+  // Explicit-first, then marker-derived, de-duplicated
+  const result: number[] = []
+  for (const id of explicit) {
+    result.push(id)
+  }
+  for (const id of fromMarkers) {
+    if (!explicit.has(id)) {
+      result.push(id)
+    }
+  }
+  return result
 }
 
 /** Portals belonging to floor `z` — unlike doors/props, `z` is a required authored field on

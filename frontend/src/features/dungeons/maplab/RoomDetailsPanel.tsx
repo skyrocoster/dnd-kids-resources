@@ -10,7 +10,8 @@ import {
   type DungeonEntry,
   type DungeonRoom,
 } from '../dungeonModel'
-import type { MapRoom } from '../../../model/maplabModel'
+import type { MapLayout, MapRoom } from '../../../model/maplabModel'
+import { getNpcUnion } from '../../../model/maplabModel'
 import './RoomDetailsPanel.css'
 
 interface RoomDetailsPanelProps {
@@ -18,6 +19,7 @@ interface RoomDetailsPanelProps {
   dungeonRoom: DungeonRoom | null
   parsed: DungeonData
   dungeonId: number
+  layout?: MapLayout
   onRunEncounter: (encounterId: number) => void
   onOpenNpc: (npcId: number) => void
 }
@@ -99,6 +101,7 @@ export function RoomDetailsPanel({
   dungeonRoom,
   parsed: _parsed,
   dungeonId,
+  layout,
   onRunEncounter,
   onOpenNpc,
 }: RoomDetailsPanelProps) {
@@ -122,6 +125,9 @@ export function RoomDetailsPanel({
   const roster = useMemo(() => new Map(npcs.map((npc) => [npc.id, npc.name] as const)), [npcs])
   const entryGroups = dungeonRoom ? groupEntriesByType(dungeonRoom) : []
   const threatHints = dungeonRoom ? getRoomThreatHints(dungeonRoom) : null
+
+  // Compute the union of explicit room NPCs + marker-derived NPCs, de-duplicated
+  const unionNpcIds = useMemo(() => getNpcUnion(dungeonRoom?.npcs, room, layout), [dungeonRoom, room, layout])
 
   if (room === null) {
     return (
@@ -168,18 +174,18 @@ export function RoomDetailsPanel({
           ) : (
             <p className="maplab-room-details-empty">This room is empty.</p>
           )}
-
-          {(dungeonRoom.npcs ?? []).length > 0 && (
-            <section className="maplab-room-details-group">
-              <h4 className="maplab-room-details-group-title">NPCs</h4>
-              <div className="maplab-room-details-npcs">
-                {(dungeonRoom.npcs ?? []).map((npcId) => (
-                  <NpcChip key={npcId} npcId={npcId} roster={roster} onClick={onOpenNpc} />
-                ))}
-              </div>
-            </section>
-          )}
         </>
+      )}
+
+      {unionNpcIds.length > 0 && (
+        <section className="maplab-room-details-group">
+          <h4 className="maplab-room-details-group-title">NPCs</h4>
+          <div className="maplab-room-details-npcs">
+            {unionNpcIds.map((npcId) => (
+              <NpcChip key={npcId} npcId={npcId} roster={roster} onClick={onOpenNpc} />
+            ))}
+          </div>
+        </section>
       )}
     </section>
   )

@@ -1,0 +1,43 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "agent": {
+    "implement-order-deepseek": {
+      "description": "Executes exactly one work order from docs/plans/active/orders/ via the implement-order skill, on DeepSeek V4 Flash. Dispatch target only.",
+      "mode": "subagent",
+      "model": "opencode-go/deepseek-v4-flash",
+      "prompt": "You only ever do one thing: invoke the `implement-order` skill (in .agents/skills/implement-order/SKILL.md) against a single work order file you are given, and follow it exactly. You never plan, review, reconcile, touch a second order, or do any task that isn't running that skill on the order you were handed. If asked to do anything else, refuse and say you are scoped to implement-order only.",
+      "permission": {
+        "edit": "allow",
+        "bash": "allow",
+        "read": "allow",
+        "glob": "allow",
+        "grep": "allow",
+        "list": "allow",
+        "skill": "allow",
+        "webfetch": "deny",
+        "websearch": "deny",
+        "task": "deny",
+        "external_directory": "ask"
+      }
+    },
+    "implement-order-deepseek-pro": {
+      "description": "Executes exactly one work order from docs/plans/active/orders/ via the implement-order skill, on DeepSeek V4 Pro. Dispatch target for Standard-strength orders only.",
+      "mode": "subagent",
+      "model": "opencode-go/deepseek-v4-pro",
+      "prompt": "You only ever do one thing: invoke the `implement-order` skill (in .agents/skills/implement-order/SKILL.md) against a single work order file you are given, and follow it exactly. You never plan, review, reconcile, touch a second order, or do any task that isn't running that skill on the order you were handed. If asked to do anything else, refuse and say you are scoped to implement-order only.",
+      "permission": {
+        "edit": "allow",
+        "bash": "allow",
+        "read": "allow",
+        "glob": "allow",
+        "grep": "allow",
+        "list": "allow",
+        "skill": "allow",
+        "webfetch": "deny",
+        "websearch": "deny",
+        "task": "deny",
+        "external_directory": "ask"
+      }
+    }
+  }
+}

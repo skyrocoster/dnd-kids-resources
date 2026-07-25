@@ -203,6 +203,16 @@ export function useMapLabEditor(dungeonId: number | null, initialDungeon: Dungeo
     [scheduleLayoutSave],
   )
 
+  const undo = useCallback(() => {
+    dispatch({ type: 'undo' })
+    scheduleLayoutSave()
+  }, [scheduleLayoutSave])
+
+  const redo = useCallback(() => {
+    dispatch({ type: 'redo' })
+    scheduleLayoutSave()
+  }, [scheduleLayoutSave])
+
   const createRoomData = useCallback(
     (roomId: number) => {
       setDungeonData((current) => {
@@ -228,6 +238,23 @@ export function useMapLabEditor(dungeonId: number | null, initialDungeon: Dungeo
     scheduleLayoutSave()
     scheduleDataSave()
   }, [scheduleDataSave, scheduleLayoutSave])
+
+  const addRoomWithCells = useCallback(
+    (cells: MapCell[]) => {
+      const roomId = nextRoomId(stateRef.current.layout)
+      dispatch({ type: 'addRoomWithCells', cells })
+      setDungeonData((current) => {
+        if ((current.rooms ?? []).some((room) => room.room_id === roomId)) return current
+        const next = { ...current, rooms: [...(current.rooms ?? []), emptyDungeonRoom(roomId)] }
+        dungeonDataRef.current = next
+        return next
+      })
+      scheduleLayoutSave()
+      scheduleDataSave()
+      return roomId
+    },
+    [scheduleDataSave, scheduleLayoutSave],
+  )
 
   const addFloorAbove = useCallback(() => apply({ type: 'addFloorAbove' }), [apply])
   const addFloorBelow = useCallback(() => apply({ type: 'addFloorBelow' }), [apply])
@@ -353,7 +380,7 @@ export function useMapLabEditor(dungeonId: number | null, initialDungeon: Dungeo
   )
   const deleteDoor = useCallback((doorId: number) => apply({ type: 'deleteDoor', doorId }), [apply])
 
-  const addProp = useCallback((cell: MapCell) => apply({ type: 'addProp', cell }), [apply])
+  const addProp = useCallback((cell: MapCell, kind?: string) => apply({ type: 'addProp', cell, kind }), [apply])
   const selectProp = useCallback((propId: number | null) => dispatch({ type: 'selectProp', propId }), [])
   const deleteProp = useCallback((propId: number) => apply({ type: 'deleteProp', propId }), [apply])
 
@@ -414,7 +441,12 @@ export function useMapLabEditor(dungeonId: number | null, initialDungeon: Dungeo
     layoutSyncStatus,
     dataSyncStatus,
     saveStatus,
+    undo,
+    redo,
+    canUndo: state.past.length > 0,
+    canRedo: state.future.length > 0,
     addRoom,
+    addRoomWithCells,
     createRoomData,
     addFloorAbove,
     addFloorBelow,

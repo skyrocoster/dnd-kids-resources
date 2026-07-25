@@ -16,18 +16,33 @@ No documentation-maintenance plan is currently active; create a focused plan bef
 
 ## Execution Workflow: Plan → Implement → Reconcile
 
-Work is split so that expensive planning and cheap implementation stay separate:
+Work is split across two roles so that expensive planning and cheap implementation stay separate.
+The roles are defined by strength, not by vendor — any sufficiently capable model can hold either,
+and which providers fill them is an open experiment:
 
-- **PLAN (Claude).** Claude thinks, writes the human-readable Plan, and compiles each stage into lean
-  work orders. **Claude never writes implementation code** — only plans and work orders (guidance,
-  not code).
-- **IMPLEMENT (small model).** A smaller/cheaper model executes **one work order per fresh context
-  window**, exploring only the files the order names, and stops at the order's stop condition. It
-  touches only code, tests, and its own order's STATUS line — never the docs.
-- **RECONCILE (Claude).** After a stage's orders finish, Claude collapses them into the Plan, updates
-  any canonical reference whose contract changed, runs the checker, and deletes the spent orders.
+- **The planner** — the more powerful model. It thinks, and it is the only role that reads the Plan
+  and the wider codebase.
+- **The executor** — the cheaper, weaker model. It runs one work order per fresh context window and
+  writes the code.
 
-Five skills in `.agents/skills/` drive this (read by both Claude Code and opencode): `plan`,
+- **PLAN (planner).** Thinks, writes the human-readable Plan, and compiles each stage into lean work
+  orders. **The planner plans rather than implements** — the deliverable at this stage is guidance,
+  not code.
+- **IMPLEMENT (executor).** Executes **one work order per fresh context window**, exploring only the
+  files the order names, and stops at the order's stop condition. It touches only code, tests, and
+  its own order's STATUS line — never the docs.
+- **RECONCILE (planner).** After a stage's orders finish, the planner collapses them into the Plan,
+  updates any canonical reference whose contract changed, runs the checker, and deletes the spent
+  orders.
+
+The split is **cost discipline, not a prohibition**. Implementation and test output belong in the
+executor's cheap, throwaway per-order contexts because that is where they are cheapest — not because
+the planner is forbidden to type code. Where a dispatch round trip would plainly cost more than the
+edit itself — a small, fully-determined fix needing no exploration — the planner makes it directly and
+says so. `dispatch-orders` step 5 sets out that boundary; the rest of the time, the default holds.
+
+Five skills in `.agents/skills/` drive this, read by whichever harness a role runs in (Claude Code
+and opencode both load them today): `plan`,
 `to-orders`, `dispatch-orders`, `implement-order`, and `reconcile`. The full formats and lifecycle live in
 [docs/PLAN_TEMPLATE.md](docs/PLAN_TEMPLATE.md).
 
@@ -63,7 +78,7 @@ Five skills in `.agents/skills/` drive this (read by both Claude Code and openco
 
 Five skills in `.agents/skills/` implement the Plan → Implement → Reconcile workflow above: `plan`
 (write the Plan), `to-orders` (compile a stage into work orders), `dispatch-orders` (send runnable
-orders to the right-sized model), `implement-order` (small model executes one order), and `reconcile`
+orders to the right-sized model), `implement-order` (executor runs one order), and `reconcile`
 (close out finished orders). See [docs/PLAN_TEMPLATE.md](docs/PLAN_TEMPLATE.md).
 
 ### Issue tracker

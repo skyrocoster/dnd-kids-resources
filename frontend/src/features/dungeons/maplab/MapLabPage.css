@@ -45,6 +45,14 @@
   overflow-y: auto;
 }
 
+.maplab-viewer-rail-toggle {
+  display: none;
+}
+
+.maplab-viewer-rail-backdrop {
+  display: none;
+}
+
 .maplab-viewer-rail {
   display: flex;
   flex-direction: column;
@@ -168,6 +176,20 @@
   margin: 0;
   font-size: var(--type-body-sm-size);
   color: var(--md-error);
+}
+
+/* Viewer feedback status chip: rendered inside .maplab-map-status (positioned by MapCanvas),
+ * matching the editor's placement-error treatment for visual consistency. */
+.maplab-viewer-status {
+  display: flex;
+  align-items: center;
+  min-height: var(--control-height);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--md-error);
+  border-radius: var(--radius-lg);
+  background: var(--md-error-container);
+  color: var(--md-on-error-container);
+  font-size: var(--type-body-sm-size);
 }
 
 /* Element-agnostic descriptor panel — one shape for room, door, and stair (and, structurally,
@@ -688,7 +710,8 @@
   align-items: center;
   justify-content: center;
   gap: 0.375rem;
-  min-height: 48px;
+  min-width: var(--control-height);
+  min-height: var(--control-height);
   padding: 0.5rem 1rem;
   border: 1px solid var(--md-outline-variant);
   border-radius: 999px;
@@ -801,6 +824,34 @@
   opacity: 0;
 }
 
+/* View popover: wraps the View trigger and its popup panel, sharing the same pattern as the
+ * editor's View popover (MapLabEditor.css) but without editor-specific border treatments so
+ * it inherits the viewer's flat toolbar background. */
+.maplab-view-popover-wrap {
+  position: relative;
+}
+
+.maplab-view-popover {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+  padding: var(--space-3);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--radius-lg);
+  background: var(--md-surface-4);
+  box-shadow: var(--shadow-md);
+  z-index: 10;
+  min-width: 14rem;
+}
+
+.maplab-view-popover .maplab-pill-button {
+  min-height: var(--control-height);
+}
+
 /* Left nav rail: floor tabs stacked above the room list as one column, instead of two unrelated
  * flex siblings. */
 .maplab-editor-nav-rail {
@@ -810,8 +861,22 @@
   gap: 1rem;
 }
 
-/* Right inspector rail: always mounted (room, door, or empty state) so it never collapses/pops in
- * and out as the selection changes. */
+.maplab-editor-floor-strip {
+  display: block;
+  margin-bottom: var(--space-3);
+}
+
+.maplab-editor-nav-toggle,
+.maplab-editor-nav-backdrop {
+  display: none;
+}
+
+.maplab-editor-nav-floor-tabs {
+  display: none;
+}
+
+/* Right inspector rail: mounted only for a selection, so the canvas keeps all available width
+ * until there is something to edit. */
 .maplab-inspector-rail {
   flex: 0 0 16rem;
   display: flex;
@@ -819,10 +884,29 @@
   gap: 0.75rem;
 }
 
-.maplab-inspector-rail-empty {
-  margin: 0;
-  font-size: var(--type-body-sm-size);
-  color: var(--md-on-surface-variant);
+.maplab-selection-sheet-peek {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.maplab-selection-sheet-peek > strong {
+  flex: 1 1 auto;
+}
+
+.maplab-selection-sheet-toggle {
+  display: none;
+}
+
+.maplab-selection-sheet-peek .maplab-inspector-actions {
+  width: 100%;
+}
+
+.maplab-selection-sheet-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
 /* Ghosted lower-floor objects for alignment reference (Stage G1). Dimmed + non-interactive is the
@@ -928,52 +1012,95 @@
 }
 
 @media (max-width: 768px) {
-  /* Stack rather than wrap: a wrapping row cannot share one viewport-height box (wrapped lines run
-   * off sideways), and this layout must stay inside the window at tablet widths above all. The
-   * canvas takes the leftover height; the rail keeps its natural height and scrolls sideways. */
-  .maplab-canvas {
-    flex-direction: column;
-    flex-wrap: nowrap;
-    align-items: stretch;
-  }
-
   .maplab-canvas-area {
     flex: 1 1 auto;
     min-height: 0;
   }
 
-  .maplab-viewer-rail-container,
   .maplab-sidebar {
     flex: 0 0 auto;
     max-height: 40%;
   }
 
+  .maplab-viewer-rail-toggle {
+    display: inline-flex;
+    position: absolute;
+    z-index: 3;
+    top: var(--space-3);
+    left: var(--space-3);
+    min-height: var(--control-height);
+  }
+
   .maplab-viewer-rail-container {
-    overflow-x: auto;
-    overflow-y: visible;
+    position: absolute;
+    z-index: 5;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: min(20rem, calc(100% - var(--space-6)));
+    max-height: none;
+    padding: var(--space-3);
+    overflow-y: auto;
+    background: var(--md-surface);
+    box-shadow: var(--shadow-lg);
+    transform: translateX(calc(-100% - var(--space-3)));
+    transition: transform 160ms ease;
+    flex: 0 0 auto;
   }
 
-  .maplab-viewer-rail {
-    flex-direction: row;
-    align-items: flex-start;
-    min-width: max-content;
+  .maplab-viewer-rail-container[data-open] {
+    transform: translateX(0);
   }
 
-  .maplab-viewer-rail-floor {
-    min-width: 14rem;
+  .maplab-viewer-rail-container[data-open] ~ .maplab-viewer-rail-backdrop {
+    display: block;
+  }
+
+  .maplab-viewer-rail-backdrop {
+    position: absolute;
+    z-index: 4;
+    inset: 0;
+    border: 0;
+    background: color-mix(in srgb, var(--md-scrim) 32%, transparent);
   }
 
   .maplab-editor-layout {
-    flex-direction: column;
+    flex-direction: row;
     flex-wrap: nowrap;
     align-items: stretch;
   }
 
-  .maplab-editor-nav-rail,
-  .maplab-inspector-rail {
+  .maplab-selection-sheet {
+    position: absolute;
+    z-index: 6;
+    right: var(--space-3);
+    bottom: 0;
+    left: var(--space-3);
     flex: 0 0 auto;
-    max-height: 40%;
+    max-height: calc(100% - var(--space-3));
+    padding: var(--space-3);
+    overflow: hidden;
+    border: 1px solid var(--md-outline-variant);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    background: var(--md-surface);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .maplab-selection-sheet-toggle {
+    display: inline-flex;
+  }
+
+  .maplab-selection-sheet-content {
+    display: none;
     overflow-y: auto;
+  }
+
+  .maplab-selection-sheet[data-expanded] {
+    top: var(--space-3);
+  }
+
+  .maplab-selection-sheet[data-expanded] .maplab-selection-sheet-content {
+    display: flex;
   }
 
   .maplab-editor-layout > .maplab-canvas-wrapper {
@@ -981,9 +1108,54 @@
     min-height: 0;
   }
 
+  .maplab-editor-floor-strip {
+    margin-bottom: var(--space-3);
+  }
+
+  .maplab-editor-floor-strip .maplab-floor-tabs {
+    overflow-x: auto;
+    padding-bottom: var(--space-1);
+  }
+
+  .maplab-editor-nav-toggle {
+    display: inline-flex;
+    position: absolute;
+    z-index: 3;
+    top: var(--space-3);
+    left: var(--space-3);
+    min-height: var(--control-height);
+  }
+
+  .maplab-editor-nav-backdrop {
+    position: absolute;
+    z-index: 4;
+    inset: 0;
+    border: 0;
+    background: color-mix(in srgb, var(--md-scrim) 32%, transparent);
+  }
+
   .maplab-editor-nav-rail {
-    flex-direction: row;
-    align-items: flex-start;
+    position: absolute;
+    z-index: 5;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: min(20rem, calc(100% - var(--space-6)));
+    max-height: none;
+    padding: var(--space-3);
+    overflow-y: auto;
+    background: var(--md-surface);
+    box-shadow: var(--shadow-lg);
+    transform: translateX(calc(-100% - var(--space-3)));
+    transition: transform 160ms ease;
+  }
+
+  .maplab-editor-nav-rail[data-open] {
+    transform: translateX(0);
+  }
+
+  .maplab-editor-nav-rail[data-open] ~ .maplab-editor-nav-backdrop {
+    display: block;
   }
 
   .maplab-editor-room-list {
@@ -1005,16 +1177,6 @@
     gap: var(--space-4);
   }
 
-  .maplab-editor-nav-rail {
-    flex-direction: column;
-    gap: var(--space-3);
-  }
-
-  .maplab-floor-tabs {
-    overflow-x: auto;
-    padding-bottom: var(--space-1);
-  }
-
   .maplab-viewer-rail {
     gap: var(--space-3);
   }
@@ -1030,11 +1192,6 @@
 
   .maplab-viewer-rail-room-item {
     flex: 0 0 auto;
-  }
-
-  .maplab-viewer-rail-room-item button {
-    min-height: 40px;
-    padding: 0.375rem 0.625rem;
   }
 
   .maplab-viewer-rail-room-hints {

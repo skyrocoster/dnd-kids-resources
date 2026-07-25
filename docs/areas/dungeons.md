@@ -1,6 +1,6 @@
 # Dungeons Area Guide
 
-> **Active plan:** [Map Lab UX Pass](../plans/active/maplab-ux-pass.md) (next up).
+> **Active plan:** None.
 
 ## Scope
 
@@ -79,7 +79,7 @@ one-click action to fix it.
 _Avoid_: todo list, linter, warnings panel
 
 **Prop**:
-A static map object: chest, table, mirror, barrel, statue, window, encounter, or other. Carries Passage Flags and optional loot bundle.
+A static map object: chest, table, mirror, barrel, statue, window, encounter, npc, or other. Carries Passage Flags and optional loot bundle. The `encounter` and `npc` kinds additionally soft-reference a record by id (`encounter_id`, `npc_id`) — there is no separate first-class marker type for either.
 _Avoid_: object, which is too generic; decoration.
 
 **Polyomino**:
@@ -156,12 +156,16 @@ The session view is the surface that is open while a game is running: it must st
 - Preserve Map Lab geometry, reducer, autosave, zoom/pan, fullscreen, and layout persistence unless a focused plan explicitly owns them.
 - Rooms are the focal element of the map. Anything drawn outside them is reinforcement and must not out-shout them.
 - No authored map content is ever silently clipped by the map's extent.
+- Map geometry and room content are separate documents and neither writes to the other. Where a room
+  view shows both — the NPC list is the explicit `dungeons.data` room NPCs unioned with the NPC
+  markers standing in that room — the union is **derived at read time only**. Placing or moving a
+  marker never edits room content, and editing a room's NPC list never moves a marker.
 
 ## Work queue
 
 - [Dungeon Outside](../complete/dungeon-outside.md) shipped: wall kinds, per-side padding and a real extent, outside features, and clarity controls.
 - [Dungeon Connections](../complete/dungeon-connections.md) shipped: permanent per-dungeon session state, optional portal destinations with a connections resolve list, and cross-dungeon gateways. It owns passage-session persistence.
-- [Map Lab UX Pass](../plans/active/maplab-ux-pass.md) is next up: tool palette + popovers, one brush interaction model, tablet drawer/bottom sheet, the ghost-floor door-leak fix, undo/redo, and a session-view pass. It explicitly owns Map Lab zoom/pan, gesture routing, fullscreen chrome, and the editor interaction model for its duration.
+- [Map Lab UX Pass](../complete/maplab-ux-pass.md) shipped the ghost-floor door-leak fix, gesture core, tool palette/popovers, brush model, forgiveness layer, responsive editor/viewer shells, NPC markers, and canvas-local viewer failure feedback.
 
 ## Cross-references
 

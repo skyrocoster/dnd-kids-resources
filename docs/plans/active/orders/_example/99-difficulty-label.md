@@ -19,3 +19,7 @@ DO:
 STOP WHEN: `npm test EncounterTile` passes with the new test. Then stop — change nothing else.
 
 STATUS: <-- executor writes DONE, or FAILED - reason
+
+DEVIATIONS: <-- executor appends, always — exactly two lines
+- opened beyond START IN: <files the order didn't name, or "none">
+- KNOWN STATE re-verified or wrong: <one line, or "none">

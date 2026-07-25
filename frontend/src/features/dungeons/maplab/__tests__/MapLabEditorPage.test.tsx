@@ -5,7 +5,13 @@ import { MemoryRouter } from 'react-router-dom'
 import * as api from '../../../../api/client'
 import { MapLabEditorPage } from '../MapLabEditorPage'
 import { mapLabLayout } from '../maplabData'
-import { DungeonRouteContextProvider, type DungeonRouteContext } from '../dungeonRouteContext'
+import {
+  DungeonRouteContextProvider,
+  DungeonShellStatusSlotProvider,
+  type DungeonRouteContext,
+} from '../dungeonRouteContext'
+
+const mapLabLayoutFixture: Record<string, unknown> = { ...mapLabLayout }
 
 function renderMapLabEditorPage(
   initialEntry: string = '/dungeons/4/edit',
@@ -29,6 +35,44 @@ async function flush() {
   await act(async () => {
     await Promise.resolve()
   })
+}
+
+/** Arms a Passages sub-tool (door/stair/portal) via the tool palette's group flyout — opens the
+ * flyout, then clicks the named menu item, mirroring how a person actually reaches this tool. */
+function armPassageTool(tool: 'door' | 'stair' | 'portal') {
+  fireEvent.click(screen.getByRole('button', { name: 'Choose passage tool' }))
+  fireEvent.click(screen.getByRole('menuitem', { name: new RegExp(`^${tool}$`, 'i') }))
+}
+
+/** Arms a Terrain sub-tool (river/trees) via the tool palette's group flyout. */
+function armTerrainTool(tool: 'river' | 'trees') {
+  fireEvent.click(screen.getByRole('button', { name: 'Choose terrain tool' }))
+  fireEvent.click(screen.getByRole('menuitem', { name: new RegExp(`^${tool}$`, 'i') }))
+}
+
+/** Opens the "View" popover so its layer toggles, Ghost lower floor toggle, and density buttons
+ * are present in the DOM to query against. */
+function openViewPopover() {
+  fireEvent.click(screen.getByRole('button', { name: 'View' }))
+}
+
+/** Converts a grid cell to the `clientX`/`clientY` a real pointer event over it would carry —
+ * mirrors `cellFromClientPoint` (jsdom's viewport rect is always {left:0,top:0}, zoom starts at
+ * scale 1 / pan {0,0}, and CELL_SIZE is 64px), so tests can name cells instead of raw pixels. */
+function clientPointForCell(cell: [number, number], bounds: { minX: number; minY: number }) {
+  return { clientX: (cell[0] - bounds.minX) * 64, clientY: (cell[1] - bounds.minY) * 64 }
+}
+
+/** Simulates a Room-tool brush stroke over `cells`: pointerdown on the first cell, pointermove
+ * through the rest, pointerup to commit — mirrors how `useCanvasStroke`'s handlers are actually
+ * wired (down on the viewport element, move/up on `window`). */
+function dragRoomBrush(container: HTMLElement, bounds: { minX: number; minY: number }, cells: Array<[number, number]>) {
+  const viewport = container.querySelector('.maplab-canvas-viewport') as HTMLElement
+  fireEvent.pointerDown(viewport, { pointerId: 1, button: 0, ...clientPointForCell(cells[0], bounds) })
+  for (const cell of cells.slice(1)) {
+    fireEvent.pointerMove(window, { pointerId: 1, ...clientPointForCell(cell, bounds) })
+  }
+  fireEvent.pointerUp(window, { pointerId: 1 })
 }
 
 /** Pan is applied as `transform: translate(...)` on the SVG (see MapCanvas), not scrollLeft/scrollTop. */
@@ -56,7 +100,7 @@ describe('MapLabEditorPage', () => {
     vi.spyOn(api, 'getDungeonLayout').mockRejectedValue(new api.ApiError(404, 'not found'))
     const saveSpy = vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: {} })
 
-    renderMapLabEditorPage()
+    const { container } = renderMapLabEditorPage()
     await flush()
 
     expect(screen.getByText('No saved layout yet. Your first edit will save this blank map.')).toBeInTheDocument()
@@ -64,7 +108,9 @@ describe('MapLabEditorPage', () => {
     expect(screen.queryByText('Combat Training Hall')).not.toBeInTheDocument()
     expect(saveSpy).not.toHaveBeenCalled()
 
-    fireEvent.click(screen.getByRole('button', { name: /add room/i }))
+    // A blank layout's padded bounds are [-3, 3] on both axes (no rooms, 3-unit padding).
+    fireEvent.click(screen.getByRole('button', { name: 'Room' }))
+    dragRoomBrush(container, { minX: -3, minY: -3 }, [[-3, -3]])
 
     await act(async () => {
       vi.advanceTimersByTime(700)
@@ -104,7 +150,7 @@ describe('MapLabEditorPage', () => {
     expect(screen.getAllByText('Saved Room').length).toBeGreaterThan(0)
   })
 
-  it('add room dispatches action and autosaves (debounced)', async () => {
+  it('Room tool creates a room from the first stroke and autosaves (debounced)', async () => {
     const layout = {
       meta: { cellSizeFt: 5, padding: { top: 3, right: 3, bottom: 3, left: 3 } },
       rooms: [],
@@ -116,13 +162,15 @@ describe('MapLabEditorPage', () => {
     vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: layout })
     const saveSpy = vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: layout })
 
-    renderMapLabEditorPage()
+    const { container } = renderMapLabEditorPage()
     await flush()
 
     expect(screen.getByText('No rooms on this floor yet.')).toBeInTheDocument()
     expect(saveSpy).not.toHaveBeenCalled()
 
-    fireEvent.click(screen.getByRole('button', { name: /add room/i }))
+    fireEvent.click(screen.getByRole('button', { name: 'Room' }))
+    // A blank layout's padded bounds are [-3, 3] on both axes.
+    dragRoomBrush(container, { minX: -3, minY: -3 }, [[-3, -3]])
 
     expect(screen.getAllByText('Room 1').length).toBeGreaterThan(0)
     expect(saveSpy).not.toHaveBeenCalled()
@@ -134,61 +182,6 @@ describe('MapLabEditorPage', () => {
 
     expect(saveSpy).toHaveBeenCalledTimes(1)
     expect(saveSpy.mock.calls[0][0]).toBe(4)
-  })
-
-  it('selecting a room reveals paintable cells; deselecting hides them', async () => {
-    const layout = {
-      meta: { cellSizeFt: 5, padding: { top: 3, right: 3, bottom: 3, left: 3 } },
-      rooms: [{ room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0]], title: 'Room 1' }],
-      doors: [],
-      stairs: [],
-      floors: [{ z: 0, title: 'Ground Floor' }],
-      props: [],
-    }
-    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: layout })
-    vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: layout })
-
-    const { container } = renderMapLabEditorPage()
-    await flush()
-
-    expect(container.querySelectorAll('.maplab-paint-cell')).toHaveLength(0)
-
-    fireEvent.click(container.querySelector('.maplab-editor-room-item-select') as Element)
-    expect(container.querySelectorAll('.maplab-paint-cell').length).toBeGreaterThan(0)
-    expect(container.querySelector('.maplab-paint-cell[data-paint-state="paintable"]')).toBeInTheDocument()
-
-    fireEvent.click(container.querySelector('.maplab-editor-room-item-select') as Element)
-    expect(container.querySelectorAll('.maplab-paint-cell')).toHaveLength(0)
-  })
-
-  it('removing an owned cell still works as single-cell cleanup and autosaves', async () => {
-    const layout = {
-      meta: { cellSizeFt: 5, padding: { top: 3, right: 3, bottom: 3, left: 3 } },
-      rooms: [{ room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0], [1, 0]], title: 'Room 1' }],
-      doors: [],
-      stairs: [],
-      floors: [{ z: 0, title: 'Ground Floor' }],
-      props: [],
-    }
-    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: layout })
-    const saveSpy = vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: layout })
-
-    const { container } = renderMapLabEditorPage()
-    await flush()
-
-    fireEvent.click(container.querySelector('.maplab-editor-room-item-select') as Element)
-
-    const ownedCell = container.querySelector('.maplab-paint-cell[x="64"][y="0"]')
-    expect(ownedCell).toBeInTheDocument()
-    fireEvent.click(ownedCell as Element)
-
-    await act(async () => {
-      vi.advanceTimersByTime(700)
-      await Promise.resolve()
-    })
-    expect(saveSpy).toHaveBeenCalledTimes(1)
-    const savedData = saveSpy.mock.calls[0][1].data as { rooms: Array<{ cells: number[][] }> }
-    expect(savedData.rooms[0].cells).toEqual([[0, 0]])
   })
 
   it('places a door on a wall edge and shows its properties form', async () => {
@@ -206,10 +199,10 @@ describe('MapLabEditorPage', () => {
     const { container } = renderMapLabEditorPage()
     await flush()
 
-    fireEvent.click(screen.getByRole('button', { name: /place door/i }))
+    armPassageTool('door')
     expect(container.querySelectorAll('.maplab-door-placement-edge').length).toBeGreaterThan(0)
 
-    fireEvent.click(container.querySelector('.maplab-door-placement-edge') as Element)
+    fireEvent.click(container.querySelector('.maplab-door-placement-hitband') as Element)
 
     expect(container.querySelectorAll('.maplab-door-placement-edge')).toHaveLength(0)
     expect(container.querySelector('.maplab-fixture-form')).toBeInTheDocument()
@@ -254,6 +247,30 @@ describe('MapLabEditorPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /delete door/i }))
     expect(container.querySelector('.maplab-fixture-form')).not.toBeInTheDocument()
+    expect(screen.getByText('Deleted door.')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Undo deletion' }))
+    expect(container.querySelector('.maplab-door')).toBeInTheDocument()
+  })
+
+  it('confirms room deletion before removing the room', async () => {
+    const layout = {
+      meta: { cellSizeFt: 5, padding: { top: 3, right: 3, bottom: 3, left: 3 } },
+      rooms: [{ room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0]], title: 'Room 1' }],
+      doors: [], stairs: [], floors: [{ z: 0, title: 'Ground Floor' }], props: [],
+    }
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: layout })
+    vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: layout })
+
+    const { container } = renderMapLabEditorPage()
+    await flush()
+
+    fireEvent.click(container.querySelector('.maplab-editor-room-item-select') as Element)
+    fireEvent.click(screen.getByRole('button', { name: 'Delete room' }))
+    expect(screen.getByText('Delete "Room 1"? This cannot be undone.')).toBeInTheDocument()
+    expect(container.querySelector('.maplab-room')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }))
+    expect(container.querySelector('.maplab-room')).not.toBeInTheDocument()
   })
 
   it('shows room content editing and persists room title changes', async () => {
@@ -501,17 +518,15 @@ describe('MapLabEditorPage (Phase K scaffolding)', () => {
     expect(wrapper).not.toHaveAttribute('data-fullscreen')
   })
 
-  it('K3: selected-room footprint controls expose keyboard focus and visible instructions', async () => {
+  it('K3: the Room tool surfaces create vs. paint instructions depending on selection', async () => {
     const { container } = renderMapLabEditorPage()
     await flush()
 
-    fireEvent.click(container.querySelector('.maplab-editor-room-item-select') as Element)
-    const paintCell = container.querySelector('.maplab-paint-cell[x="64"][y="0"]') as Element
-    expect(paintCell).toHaveAttribute('tabindex', '0')
-    expect(screen.getByText(/click two free corners to size a room/i)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Room' }))
+    expect(screen.getByText(/drag on empty ground to start a new room/i)).toBeInTheDocument()
 
-    fireEvent.keyDown(paintCell, { key: 'Enter' })
-    expect(screen.getByText(/corner set at 1, 0/i)).toBeInTheDocument()
+    fireEvent.click(container.querySelector('.maplab-editor-room-item-select') as Element)
+    expect(screen.getByText(/drag to add squares to the room/i)).toBeInTheDocument()
   })
 
   it('K1: fullscreen workspace has no native scrollbars and drag-pan works from any element while no tool is armed', async () => {
@@ -556,18 +571,37 @@ describe('MapLabEditorPage (Phase K scaffolding)', () => {
     expect(readTranslate(svg)).toEqual({ x: 0, y: 0 })
   })
 
-  it('K2: drag rectangle commit updates the selected room footprint and autosaves once', async () => {
+  const ROOM_BOUNDS = { minX: -3, minY: -3 }
+
+  it('K2: dragging on empty ground with the Room tool armed and no room selected creates a new room', async () => {
+    const saveSpy = vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: singleRoomLayout })
+    const { container } = renderMapLabEditorPage()
+    await flush()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Room' }))
+    dragRoomBrush(container, ROOM_BOUNDS, [[2, 0], [2, 1]])
+
+    expect(screen.getAllByText('Room 2').length).toBeGreaterThan(0)
+
+    await act(async () => {
+      vi.advanceTimersByTime(700)
+      await Promise.resolve()
+    })
+
+    expect(saveSpy).toHaveBeenCalledTimes(1)
+    const savedData = saveSpy.mock.calls[0][1].data as { rooms: Array<{ room_id: number; cells: number[][] }> }
+    const newRoom = savedData.rooms.find((room) => room.room_id === 2)
+    expect(newRoom?.cells).toEqual(expect.arrayContaining([[2, 0], [2, 1]]))
+    expect(newRoom?.cells).toHaveLength(2)
+  })
+
+  it('K2: dragging with an existing room selected paints and extends its footprint', async () => {
     const saveSpy = vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: singleRoomLayout })
     const { container } = renderMapLabEditorPage()
     await flush()
 
     fireEvent.click(container.querySelector('.maplab-editor-room-item-select') as Element)
-
-    const firstCorner = container.querySelector('.maplab-paint-cell[x="64"][y="0"]') as Element
-    const secondCorner = container.querySelector('.maplab-paint-cell[x="128"][y="64"]') as Element
-    fireEvent.pointerDown(firstCorner, { clientX: 64, clientY: 0 })
-    fireEvent.pointerEnter(secondCorner, { clientX: 128, clientY: 64 })
-    fireEvent.pointerUp(secondCorner, { clientX: 128, clientY: 64 })
+    dragRoomBrush(container, ROOM_BOUNDS, [[1, 0], [2, 0]])
 
     await act(async () => {
       vi.advanceTimersByTime(700)
@@ -576,39 +610,23 @@ describe('MapLabEditorPage (Phase K scaffolding)', () => {
 
     expect(saveSpy).toHaveBeenCalledTimes(1)
     const savedData = saveSpy.mock.calls[0][1].data as { rooms: Array<{ cells: number[][] }> }
-    expect(savedData.rooms[0].cells).toEqual([[1, 0], [2, 0], [1, 1], [2, 1]])
+    expect(savedData.rooms[0].cells).toEqual(expect.arrayContaining([[0, 0], [1, 0], [2, 0]]))
+    expect(savedData.rooms[0].cells).toHaveLength(3)
   })
 
-  it('K2: dragging from an owned cell extends the selected room without removing its existing cells', async () => {
-    const saveSpy = vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: singleRoomLayout })
+  it('K2: Erase armed removes stroked cells from the selected room', async () => {
+    const twoCellLayout = {
+      ...singleRoomLayout,
+      rooms: [{ room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0], [1, 0]], title: 'Room 1' }],
+    }
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: twoCellLayout })
+    const saveSpy = vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: twoCellLayout })
     const { container } = renderMapLabEditorPage()
     await flush()
 
     fireEvent.click(container.querySelector('.maplab-editor-room-item-select') as Element)
-    const ownedCell = container.querySelector('.maplab-paint-cell[x="0"][y="0"]') as Element
-    const outerCorner = container.querySelector('.maplab-paint-cell[x="128"][y="64"]') as Element
-    fireEvent.pointerDown(ownedCell, { clientX: 0, clientY: 0 })
-    fireEvent.pointerEnter(outerCorner, { clientX: 128, clientY: 64 })
-    fireEvent.pointerUp(outerCorner, { clientX: 128, clientY: 64 })
-
-    await act(async () => {
-      vi.advanceTimersByTime(700)
-      await Promise.resolve()
-    })
-
-    const savedData = saveSpy.mock.calls[0][1].data as { rooms: Array<{ cells: number[][] }> }
-    expect(savedData.rooms[0].cells).toEqual([[0, 0], [1, 0], [2, 0], [0, 1], [1, 1], [2, 1]])
-  })
-
-  it('K2: two-click rectangle commit updates the selected room footprint', async () => {
-    const saveSpy = vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: singleRoomLayout })
-    const { container } = renderMapLabEditorPage()
-    await flush()
-
-    fireEvent.click(container.querySelector('.maplab-editor-room-item-select') as Element)
-    fireEvent.click(container.querySelector('.maplab-paint-cell[x="64"][y="0"]') as Element)
-    expect(container.querySelector('.maplab-room-footprint-preview')).toBeInTheDocument()
-    fireEvent.click(container.querySelector('.maplab-paint-cell[x="128"][y="64"]') as Element)
+    fireEvent.click(screen.getByRole('button', { name: 'Erase' }))
+    dragRoomBrush(container, ROOM_BOUNDS, [[1, 0]])
 
     await act(async () => {
       vi.advanceTimersByTime(700)
@@ -617,43 +635,10 @@ describe('MapLabEditorPage (Phase K scaffolding)', () => {
 
     expect(saveSpy).toHaveBeenCalledTimes(1)
     const savedData = saveSpy.mock.calls[0][1].data as { rooms: Array<{ cells: number[][] }> }
-    expect(savedData.rooms[0].cells).toEqual([[1, 0], [2, 0], [1, 1], [2, 1]])
+    expect(savedData.rooms[0].cells).toEqual([[0, 0]])
   })
 
-  it('K2: preview-only footprint state does not autosave', async () => {
-    const saveSpy = vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: singleRoomLayout })
-    const { container } = renderMapLabEditorPage()
-    await flush()
-
-    fireEvent.click(container.querySelector('.maplab-editor-room-item-select') as Element)
-    fireEvent.click(container.querySelector('.maplab-paint-cell[x="64"][y="0"]') as Element)
-
-    expect(container.querySelector('.maplab-room-footprint-preview')).toBeInTheDocument()
-    await act(async () => {
-      vi.advanceTimersByTime(700)
-      await Promise.resolve()
-    })
-    expect(saveSpy).not.toHaveBeenCalled()
-  })
-
-  it('K2: Escape and placement mode changes cancel a pending room footprint preview', async () => {
-    const { container } = renderMapLabEditorPage()
-    await flush()
-
-    fireEvent.click(container.querySelector('.maplab-editor-room-item-select') as Element)
-    fireEvent.click(container.querySelector('.maplab-paint-cell[x="64"][y="0"]') as Element)
-    expect(container.querySelector('.maplab-room-footprint-preview')).toBeInTheDocument()
-
-    fireEvent.keyDown(window, { key: 'Escape' })
-    expect(container.querySelector('.maplab-room-footprint-preview')).not.toBeInTheDocument()
-
-    fireEvent.click(container.querySelector('.maplab-paint-cell[x="64"][y="0"]') as Element)
-    expect(container.querySelector('.maplab-room-footprint-preview')).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: /place door/i }))
-    expect(container.querySelector('.maplab-room-footprint-preview')).not.toBeInTheDocument()
-  })
-
-  it('K2: blocked rectangle shows an alert and does not save', async () => {
+  it('K2: painting cells owned by another room silently skips them and does not save', async () => {
     const blockedLayout = {
       ...singleRoomLayout,
       rooms: [
@@ -667,16 +652,27 @@ describe('MapLabEditorPage (Phase K scaffolding)', () => {
     await flush()
 
     fireEvent.click(container.querySelector('.maplab-editor-room-item-select') as Element)
-    fireEvent.click(container.querySelector('.maplab-paint-cell[x="64"][y="0"]') as Element)
-    fireEvent.click(container.querySelector('.maplab-paint-cell[x="128"][y="0"]') as Element)
+    dragRoomBrush(container, ROOM_BOUNDS, [[2, 0]])
 
-    expect(screen.getByRole('alert')).toHaveTextContent('That footprint overlaps another room or would split this room.')
-    expect(container.querySelector('.maplab-room-footprint-preview')).toBeInTheDocument()
     await act(async () => {
       vi.advanceTimersByTime(700)
       await Promise.resolve()
     })
+
     expect(saveSpy).not.toHaveBeenCalled()
+  })
+
+  it('K2: "New room" deselects the current room and arms the Room tool for the next stroke', async () => {
+    const { container } = renderMapLabEditorPage()
+    await flush()
+
+    fireEvent.click(container.querySelector('.maplab-editor-room-item-select') as Element)
+    expect(container.querySelector('.maplab-editor-room-item[data-selected]')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'New room' }))
+
+    expect(container.querySelector('.maplab-editor-room-item[data-selected]')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Room' })).toHaveAttribute('aria-pressed', 'true')
   })
 })
 
@@ -695,44 +691,64 @@ describe('MapLabEditorPage (Stage E3 — Toolbar reorganization & persistent ins
     vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: oneRoomOneDoorLayout })
   })
 
-  it('toolbar groups buttons into Create / Session / Status clusters', async () => {
+  it('toolbar groups Create buttons into a tray and folds Reset into the Map popover', async () => {
     const { container } = renderMapLabEditorPage()
     await flush()
 
     const groups = container.querySelectorAll('.maplab-toolbar-group')
-    expect(groups.length).toBeGreaterThanOrEqual(3)
+    expect(groups.length).toBeGreaterThanOrEqual(1)
 
     const labels = Array.from(groups).map((group) => group.querySelector('.maplab-toolbar-group-label')?.textContent)
     expect(labels).toContain('Create')
-    expect(labels).toContain('Session')
 
     const createGroup = Array.from(groups).find((group) => group.querySelector('.maplab-toolbar-group-label')?.textContent === 'Create')
-    expect(createGroup?.textContent).toMatch(/Add room/)
-    expect(createGroup?.textContent).toMatch(/Place door/)
+    expect(createGroup?.textContent).toMatch(/Room/)
+    expect(createGroup?.textContent).toMatch(/Passages/)
 
-    const sessionGroup = Array.from(groups).find((group) => group.querySelector('.maplab-toolbar-group-label')?.textContent === 'Session')
-    expect(sessionGroup?.textContent).toMatch(/Reset unsaved changes/)
+    expect(screen.queryByRole('button', { name: 'Reset unsaved changes' })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Map' }))
+    expect(screen.getByRole('button', { name: 'Reset unsaved changes' })).toBeInTheDocument()
+  })
 
-    const statusGroup = container.querySelector('.maplab-toolbar-group-status')
-    expect(statusGroup?.querySelector('.maplab-editor-save-status')).toBeInTheDocument()
+  it('portals the save-status chip into the shell status slot instead of the toolbar', async () => {
+    const slot = document.createElement('div')
+    document.body.appendChild(slot)
+
+    render(
+      <MemoryRouter initialEntries={['/dungeons/4/edit']}>
+        <DungeonRouteContextProvider
+          value={{
+            dungeonId: 4,
+            dungeon: { id: 4, title: 'Test Dungeon', data: {} },
+            status: 'ready',
+            error: null,
+          }}
+        >
+          <DungeonShellStatusSlotProvider value={slot}>
+            <MapLabEditorPage />
+          </DungeonShellStatusSlotProvider>
+        </DungeonRouteContextProvider>
+      </MemoryRouter>,
+    )
+    await flush()
+
+    expect(slot.querySelector('.maplab-editor-save-status')).toBeInTheDocument()
+
+    document.body.removeChild(slot)
   })
 
   describe('Design Phase J1 — toolbar trays', () => {
     afterEach(() => {
       window.localStorage.removeItem('dnd-kids-maplab-tray-collapsed:editor-create')
-      window.localStorage.removeItem('dnd-kids-maplab-tray-collapsed:editor-session')
     })
 
-    it('each toolbar group collapses independently, without affecting siblings', async () => {
+    it('the Create toolbar group collapses', async () => {
       renderMapLabEditorPage()
       await flush()
 
       fireEvent.click(screen.getByRole('button', { name: 'Collapse Create tools' }))
 
       expect(screen.getByRole('button', { name: 'Expand Create tools' })).toBeInTheDocument()
-      // Session's own toggle is unaffected — still says "Collapse", meaning it stayed expanded.
-      expect(screen.getByRole('button', { name: 'Collapse Session tools' })).toBeInTheDocument()
-      expect(screen.getByRole('button', { name: 'Reset unsaved changes' })).toBeInTheDocument()
     })
 
     it('toolbar tray collapse state persists across remount via localStorage', async () => {
@@ -761,6 +777,7 @@ describe('MapLabEditorPage (Stage 03 — layer toggles)', () => {
 
     expect(container.querySelector('.maplab-unknown-space')).toBeInTheDocument()
 
+    openViewPopover()
     fireEvent.click(screen.getByRole('button', { name: 'Outside' }))
     expect(container.querySelector('.maplab-unknown-space')).not.toBeInTheDocument()
 
@@ -777,6 +794,7 @@ describe('MapLabEditorPage (Stage 03 — layer toggles)', () => {
 
     expect(container.querySelector('.maplab-prop')).toBeInTheDocument()
 
+    openViewPopover()
     fireEvent.click(screen.getByRole('button', { name: 'Props' }))
     expect(container.querySelector('.maplab-prop')).not.toBeInTheDocument()
 
@@ -794,6 +812,7 @@ describe('MapLabEditorPage (Stage 03 — layer toggles)', () => {
     expect(container.querySelector('.maplab-door')).toBeInTheDocument()
     expect(container.querySelector('.maplab-stair')).toBeInTheDocument()
 
+    openViewPopover()
     fireEvent.click(screen.getByRole('button', { name: 'Passages' }))
     expect(container.querySelector('.maplab-door')).not.toBeInTheDocument()
     expect(container.querySelector('.maplab-stair')).not.toBeInTheDocument()
@@ -812,6 +831,7 @@ describe('MapLabEditorPage (Stage 03 — layer toggles)', () => {
 
     expect(container.querySelector('.maplab-room-title')).toBeInTheDocument()
 
+    openViewPopover()
     fireEvent.click(screen.getByRole('button', { name: 'Labels' }))
     expect(container.querySelector('.maplab-room-title')).not.toBeInTheDocument()
 
@@ -863,42 +883,45 @@ describe('MapLabEditorPage (Stage 03 — layer toggles)', () => {
     expect(screen.getByRole('button', { name: 'Add floor above' })).toBeDisabled()
   })
 
-  it('right inspector rail is persistent, showing placeholder when no fixture selected', async () => {
+  it('does not mount a desktop inspector rail without a selection', async () => {
     const { container } = renderMapLabEditorPage()
     await flush()
 
-    const rail = container.querySelector('.maplab-inspector-rail')
-    expect(rail).toBeInTheDocument()
-    expect(rail?.querySelector('.maplab-inspector-rail-empty')).toBeInTheDocument()
-    expect(screen.getByText('Select a room, door, prop, stair, portal, or feature to see its details.')).toBeInTheDocument()
+    expect(container.querySelector('.maplab-inspector-rail')).not.toBeInTheDocument()
   })
 
-  it('selecting a room (not just door) populates the inspector rail', async () => {
+  it('selecting a room mounts the desktop inspector rail', async () => {
     const { container } = renderMapLabEditorPage()
     await flush()
 
     fireEvent.click(container.querySelector('.maplab-editor-room-item-select') as Element)
 
     const rail = container.querySelector('.maplab-inspector-rail')
-    expect(rail?.querySelector('.maplab-inspector-rail-empty')).not.toBeInTheDocument()
     expect(rail?.textContent).toMatch(/Room 1/)
     expect(screen.getByRole('button', { name: 'Delete room' })).toBeInTheDocument()
   })
 
-  it('inspector rail does not collapse entirely when a room is selected', async () => {
+  it('opens a tablet selection sheet at peek height and expands its editor on demand', async () => {
     const { container } = renderMapLabEditorPage()
     await flush()
 
-    expect(container.querySelector('.maplab-inspector-rail')).toBeInTheDocument()
+    expect(container.querySelector('.maplab-inspector-rail')).not.toBeInTheDocument()
 
     fireEvent.click(container.querySelector('.maplab-editor-room-item-select') as Element)
-    expect(container.querySelector('.maplab-inspector-rail')).toBeInTheDocument()
+    const sheet = container.querySelector('.maplab-selection-sheet') as HTMLElement
+    expect(sheet).toBeInTheDocument()
+    expect(sheet).not.toHaveAttribute('data-expanded')
+    const sheetToggle = sheet.querySelector('.maplab-selection-sheet-toggle') as HTMLButtonElement
+    expect(sheetToggle).toHaveTextContent('Edit')
+    expect(sheetToggle).toHaveAttribute('aria-expanded', 'false')
 
-    fireEvent.click(screen.getByRole('button', { name: /close/i }))
-    expect(container.querySelector('.maplab-inspector-rail')).toBeInTheDocument()
+    fireEvent.click(sheetToggle)
+    expect(sheet).toHaveAttribute('data-expanded')
+    expect(sheetToggle).toHaveTextContent('Collapse editor')
+    expect(sheetToggle).toHaveAttribute('aria-expanded', 'true')
 
-    fireEvent.click(container.querySelector('.maplab-door') as Element)
-    expect(container.querySelector('.maplab-inspector-rail')).toBeInTheDocument()
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(sheet).not.toHaveAttribute('data-expanded')
   })
 
 })
@@ -951,12 +974,14 @@ describe('MapLabEditorPage (Stage F3 — prop authoring)', () => {
     const { container } = renderMapLabEditorPage()
     await flush()
 
-    fireEvent.click(screen.getByRole('button', { name: /place prop/i }))
+    fireEvent.click(screen.getByRole('button', { name: 'Prop' }))
     expect(container.querySelectorAll('.maplab-prop-placement-cell').length).toBeGreaterThan(0)
 
     fireEvent.click(container.querySelector('.maplab-prop-placement-cell') as Element)
 
-    expect(container.querySelectorAll('.maplab-prop-placement-cell')).toHaveLength(0)
+    // Prop placement is sticky — the tool stays armed for repeated placement instead of
+    // disarming after one prop.
+    expect(container.querySelectorAll('.maplab-prop-placement-cell').length).toBeGreaterThan(0)
     expect(container.querySelector('.maplab-fixture-form')).toBeInTheDocument()
 
     await act(async () => {
@@ -973,10 +998,10 @@ describe('MapLabEditorPage (Stage F3 — prop authoring)', () => {
     const { container } = renderMapLabEditorPage()
     await flush()
 
-    fireEvent.click(screen.getByRole('button', { name: /place door/i }))
+    armPassageTool('door')
     expect(container.querySelectorAll('.maplab-door-placement-edge').length).toBeGreaterThan(0)
 
-    fireEvent.click(screen.getByRole('button', { name: /place prop/i }))
+    fireEvent.click(screen.getByRole('button', { name: 'Prop' }))
     expect(container.querySelectorAll('.maplab-door-placement-edge')).toHaveLength(0)
     expect(container.querySelectorAll('.maplab-prop-placement-cell').length).toBeGreaterThan(0)
   })
@@ -1096,7 +1121,7 @@ describe('MapLabEditorPage (Stage F4 — prop stays clickable under the paint ov
     vi.useRealTimers()
   })
 
-  it('a prop on a selected room cell is still selectable, not swallowed by the room-paint overlay', async () => {
+  it('a prop on a selected room cell is still selectable while the room brush overlay is active', async () => {
     const layoutWithProp = {
       meta: { cellSizeFt: 5, padding: { top: 3, right: 3, bottom: 3, left: 3 } },
       rooms: [{ room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0]], title: 'Room 1' }],
@@ -1111,13 +1136,17 @@ describe('MapLabEditorPage (Stage F4 — prop stays clickable under the paint ov
     const { container } = renderMapLabEditorPage()
     await flush()
 
-    // Select the room — this mounts the paint overlay over every cell the room owns, including
-    // the cell the chest sits on.
+    // Select the room, then start (but don't finish) a stroke over its one cell — this mounts the
+    // brush preview over the cell the chest sits on.
     fireEvent.click(container.querySelector('.maplab-editor-room-item-select') as Element)
-    expect(container.querySelector('.maplab-paint-cell[data-paint-state="ownedSelected"]')).toBeInTheDocument()
+    const viewport = container.querySelector('.maplab-canvas-viewport') as HTMLElement
+    fireEvent.pointerDown(viewport, { pointerId: 1, button: 0, ...clientPointForCell([0, 0], { minX: -3, minY: -3 }) })
+    expect(container.querySelector('.maplab-room-brush-cell[data-brush-state="paint"]')).toBeInTheDocument()
 
     fireEvent.click(container.querySelector('.maplab-prop') as Element)
     expect(container.querySelector('.maplab-fixture-form')).toBeInTheDocument()
+
+    fireEvent.pointerUp(window, { pointerId: 1 })
   })
 })
 
@@ -1195,12 +1224,11 @@ describe('MapLabEditorPage (Stage G0 — Ghost Objects scaffolding)', () => {
     vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: oneFloorLayout })
     vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: oneFloorLayout })
 
-    const { container } = renderMapLabEditorPage()
+    renderMapLabEditorPage()
     await flush()
 
-    const groups = container.querySelectorAll('.maplab-toolbar-group')
-    const labels = Array.from(groups).map((group) => group.querySelector('.maplab-toolbar-group-label')?.textContent)
-    expect(labels).toContain('View')
+    expect(screen.getByRole('button', { name: 'View' })).toBeInTheDocument()
+    openViewPopover()
     expect(screen.getByRole('button', { name: /ghost lower floor/i })).toBeInTheDocument()
   })
 
@@ -1211,6 +1239,7 @@ describe('MapLabEditorPage (Stage G0 — Ghost Objects scaffolding)', () => {
     renderMapLabEditorPage()
     await flush()
 
+    openViewPopover()
     expect(screen.getByRole('button', { name: /ghost lower floor/i })).toBeDisabled()
   })
 
@@ -1223,6 +1252,7 @@ describe('MapLabEditorPage (Stage G0 — Ghost Objects scaffolding)', () => {
 
     fireEvent.click(screen.getByRole('tab', { name: 'First Floor' }))
 
+    openViewPopover()
     const toggle = screen.getByRole('button', { name: /ghost lower floor/i })
     expect(toggle).not.toBeDisabled()
     expect(toggle).toHaveAttribute('aria-pressed', 'false')
@@ -1265,6 +1295,7 @@ describe('MapLabEditorPage (Stage G1 — Ghost floor rendering)', () => {
     fireEvent.click(screen.getByRole('tab', { name: 'First Floor' }))
     expect(container.querySelector('.maplab-ghost-layer')).not.toBeInTheDocument()
 
+    openViewPopover()
     fireEvent.click(screen.getByRole('button', { name: /ghost lower floor/i }))
 
     const ghostLayer = container.querySelector('.maplab-ghost-layer')
@@ -1280,6 +1311,7 @@ describe('MapLabEditorPage (Stage G1 — Ghost floor rendering)', () => {
     await flush()
 
     fireEvent.click(screen.getByRole('tab', { name: 'First Floor' }))
+    openViewPopover()
     fireEvent.click(screen.getByRole('button', { name: /ghost lower floor/i }))
 
     const ghostLayer = container.querySelector('.maplab-ghost-layer')
@@ -1302,6 +1334,7 @@ describe('MapLabEditorPage (Stage G1 — Ghost floor rendering)', () => {
     await flush()
 
     // Floor 0 (the lowest with rooms) has no lower floor to ghost.
+    openViewPopover()
     expect(screen.getByRole('button', { name: /ghost lower floor/i })).toBeDisabled()
 
     fireEvent.click(screen.getByRole('tab', { name: 'First Floor' }))
@@ -1337,6 +1370,7 @@ describe('MapLabEditorPage (Stage G2 — ghost treatment design pass)', () => {
     await flush()
 
     fireEvent.click(screen.getByRole('tab', { name: 'First Floor' }))
+    openViewPopover()
     fireEvent.click(screen.getByRole('button', { name: /ghost lower floor/i }))
 
     const ghostLayer = container.querySelector('.maplab-ghost-layer')
@@ -1380,12 +1414,14 @@ describe('MapLabEditorPage (Stage H1 — stair authoring)', () => {
     const { container } = renderMapLabEditorPage()
     await flush()
 
-    fireEvent.click(screen.getByRole('button', { name: /place stair/i }))
+    armPassageTool('stair')
     expect(container.querySelectorAll('.maplab-stair-placement-cell').length).toBeGreaterThan(0)
 
     fireEvent.click(container.querySelector('.maplab-stair-placement-cell') as Element)
 
-    expect(container.querySelectorAll('.maplab-stair-placement-cell')).toHaveLength(0)
+    // Stair placement is sticky — the tool stays armed for repeated placement instead of
+    // disarming after one stair.
+    expect(container.querySelectorAll('.maplab-stair-placement-cell').length).toBeGreaterThan(0)
     expect(container.querySelector('.maplab-fixture-form')).toBeInTheDocument()
     // z:0 has a floor above (z:1) but none below, so the stair defaults to going up, and the
     // down checkbox is disabled rather than offering an arbitrary cell picker.
@@ -1407,7 +1443,7 @@ describe('MapLabEditorPage (Stage H1 — stair authoring)', () => {
     const { container } = renderMapLabEditorPage()
     await flush()
 
-    fireEvent.click(screen.getByRole('button', { name: /place stair/i }))
+    armPassageTool('stair')
     fireEvent.click(container.querySelector('.maplab-stair-placement-cell') as Element)
 
     await act(async () => {
@@ -1435,14 +1471,14 @@ describe('MapLabEditorPage (Stage H1 — stair authoring)', () => {
     const { container } = renderMapLabEditorPage()
     await flush()
 
-    fireEvent.click(screen.getByRole('button', { name: /place door/i }))
+    armPassageTool('door')
     expect(container.querySelectorAll('.maplab-door-placement-edge').length).toBeGreaterThan(0)
 
-    fireEvent.click(screen.getByRole('button', { name: /place stair/i }))
+    armPassageTool('stair')
     expect(container.querySelectorAll('.maplab-door-placement-edge')).toHaveLength(0)
     expect(container.querySelectorAll('.maplab-stair-placement-cell').length).toBeGreaterThan(0)
 
-    fireEvent.click(screen.getByRole('button', { name: /place prop/i }))
+    fireEvent.click(screen.getByRole('button', { name: 'Prop' }))
     expect(container.querySelectorAll('.maplab-stair-placement-cell')).toHaveLength(0)
     expect(container.querySelectorAll('.maplab-prop-placement-cell').length).toBeGreaterThan(0)
   })
@@ -1510,12 +1546,14 @@ describe('MapLabEditorPage (Stage H2 — portal doors)', () => {
     const { container } = renderMapLabEditorPage()
     await flush()
 
-    fireEvent.click(screen.getByRole('button', { name: /place portal/i }))
+    armPassageTool('portal')
     expect(container.querySelectorAll('.maplab-portal-placement-cell').length).toBeGreaterThan(0)
 
     fireEvent.click(container.querySelector('.maplab-portal-placement-cell') as Element)
 
-    expect(container.querySelectorAll('.maplab-portal-placement-cell')).toHaveLength(0)
+    // Portal placement is sticky — the tool stays armed for repeated placement instead of
+    // disarming after one portal.
+    expect(container.querySelectorAll('.maplab-portal-placement-cell').length).toBeGreaterThan(0)
     expect(container.querySelector('.maplab-fixture-form')).toBeInTheDocument()
     expect(screen.getByLabelText('Floor')).toBeInTheDocument()
     expect(screen.getByLabelText('Room')).toBeInTheDocument()
@@ -1535,7 +1573,7 @@ describe('MapLabEditorPage (Stage H2 — portal doors)', () => {
     const { container } = renderMapLabEditorPage()
     await flush()
 
-    fireEvent.click(screen.getByRole('button', { name: /place portal/i }))
+    armPassageTool('portal')
     fireEvent.click(container.querySelector('.maplab-portal-placement-cell') as Element)
 
     const floorSelect = screen.getByLabelText('Floor') as HTMLSelectElement
@@ -1566,18 +1604,18 @@ describe('MapLabEditorPage (Stage H2 — portal doors)', () => {
     const { container } = renderMapLabEditorPage()
     await flush()
 
-    fireEvent.click(screen.getByRole('button', { name: /place door/i }))
+    armPassageTool('door')
     expect(container.querySelectorAll('.maplab-door-placement-edge').length).toBeGreaterThan(0)
 
-    fireEvent.click(screen.getByRole('button', { name: /place stair/i }))
+    armPassageTool('stair')
     expect(container.querySelectorAll('.maplab-door-placement-edge')).toHaveLength(0)
     expect(container.querySelectorAll('.maplab-stair-placement-cell').length).toBeGreaterThan(0)
 
-    fireEvent.click(screen.getByRole('button', { name: /place portal/i }))
+    armPassageTool('portal')
     expect(container.querySelectorAll('.maplab-stair-placement-cell')).toHaveLength(0)
     expect(container.querySelectorAll('.maplab-portal-placement-cell').length).toBeGreaterThan(0)
 
-    fireEvent.click(screen.getByRole('button', { name: /place prop/i }))
+    fireEvent.click(screen.getByRole('button', { name: 'Prop' }))
     expect(container.querySelectorAll('.maplab-portal-placement-cell')).toHaveLength(0)
     expect(container.querySelectorAll('.maplab-prop-placement-cell').length).toBeGreaterThan(0)
   })
@@ -1593,7 +1631,7 @@ describe('MapLabEditorPage (Stage H2 — portal doors)', () => {
     const { container } = renderMapLabEditorPage()
     await flush()
 
-    fireEvent.click(screen.getByRole('button', { name: /place portal/i }))
+    armPassageTool('portal')
     fireEvent.click(container.querySelector('.maplab-portal-placement-cell') as Element)
 
     const floorSelect = screen.getByLabelText('Floor') as HTMLSelectElement
@@ -1693,10 +1731,12 @@ describe('MapLabEditorPage (Stage I3 — grid marker layout)', () => {
 
     expect(container.querySelectorAll('.maplab-prop')).toHaveLength(4)
 
-    fireEvent.click(screen.getByRole('button', { name: /place prop/i }))
+    fireEvent.click(screen.getByRole('button', { name: 'Prop' }))
     fireEvent.click(container.querySelector('.maplab-prop-placement-cell') as Element)
 
-    expect(screen.getByRole('alert')).toHaveTextContent(/already has 4 markers/i)
+    const placementStatus = screen.getByText(/already has 4 markers/i)
+    expect(placementStatus).toHaveTextContent(/already has 4 markers/i)
+    expect(placementStatus.closest('.maplab-map-status')).toBeInTheDocument()
     expect(container.querySelectorAll('.maplab-prop')).toHaveLength(4)
 
     await act(async () => {
@@ -1704,6 +1744,33 @@ describe('MapLabEditorPage (Stage I3 — grid marker layout)', () => {
       await Promise.resolve()
     })
     expect(saveSpy).not.toHaveBeenCalled()
+  })
+
+  it('shows disabled on-canvas history controls until an edit is made', async () => {
+    const layout = {
+      ...baseLayout,
+      stairs: [],
+      portals: [],
+      props: [],
+    }
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: layout })
+    vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: layout })
+
+    const { container } = renderMapLabEditorPage()
+    await flush()
+
+    const undo = screen.getByRole('button', { name: 'Undo' })
+    const redo = screen.getByRole('button', { name: 'Redo' })
+    expect(undo).toBeDisabled()
+    expect(redo).toBeDisabled()
+    expect(undo.closest('.maplab-map-controls')).toBeInTheDocument()
+
+    fireEvent.click(within(screen.getByRole('group', { name: 'Drawing tools' })).getByRole('button', { name: 'Room' }))
+    dragRoomBrush(container, { minX: -3, minY: -3 }, [[2, 0]])
+
+    expect(undo).toBeEnabled()
+    fireEvent.click(undo)
+    expect(redo).toBeEnabled()
   })
 })
 
@@ -1768,8 +1835,9 @@ describe('VT0 — Live-surface scaffolding seams', () => {
     expect(screen.getByLabelText('Hidden').closest('.maplab-field-row')).toHaveTextContent('Hidden')
     expect(screen.getByLabelText('Locked').closest('.maplab-field-row')).toHaveTextContent('Locked')
 
-    const deleteBtn = screen.getByRole('button', { name: /delete door/i })
-    const closeBtn = screen.getByRole('button', { name: /close/i })
+    const actionRegion = screen.getByRole('group', { name: 'Selection actions' })
+    const deleteBtn = within(actionRegion).getByRole('button', { name: 'Delete door' })
+    const closeBtn = within(actionRegion).getByRole('button', { name: 'Close' })
     expect(deleteBtn).toHaveClass('maplab-pill-button')
     expect(closeBtn).toHaveClass('maplab-pill-button')
   })
@@ -1782,7 +1850,8 @@ describe('VT0 — Live-surface scaffolding seams', () => {
 
     const toolbar = container.querySelector('.maplab-toolbar') as HTMLElement
     if (toolbar) {
-      Object.defineProperty(toolbar, 'offsetWidth', { value: 520 })
+      Object.defineProperty(toolbar, 'clientWidth', { value: 520 })
+      Object.defineProperty(toolbar, 'scrollWidth', { value: 520 })
       expect(toolbar.scrollWidth).toBeLessThanOrEqual(toolbar.clientWidth + 1)
     }
   })
@@ -1860,16 +1929,12 @@ describe('MapLabEditorPage (Stage 03 — editable per-side padding)', () => {
     vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: layout })
     const saveSpy = vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: layout })
 
-    const { container } = renderMapLabEditorPage()
+    renderMapLabEditorPage()
     await flush()
 
-    const groups = container.querySelectorAll('.maplab-toolbar-group')
-    const mapGroup = Array.from(groups).find(
-      (group) => group.querySelector('.maplab-toolbar-group-label')?.textContent === 'Map'
-    )
-    expect(mapGroup).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Map' }))
 
-    const topInput = mapGroup!.querySelector('input[type="number"]') as HTMLInputElement
+    const topInput = screen.getByLabelText('Top') as HTMLInputElement
     expect(topInput).toBeInTheDocument()
     expect(topInput.value).toBe('3')
 
@@ -1885,7 +1950,43 @@ describe('MapLabEditorPage (Stage 03 — editable per-side padding)', () => {
     expect(savedData.meta.padding).toMatchObject({ top: 5, right: 3, bottom: 3, left: 3 })
   })
 
-  it('does not paint tree cells while merely hovering without the pointer held down', async () => {
+  it('Reset unsaved changes requires confirming a dialog before restoring the last saved layout', async () => {
+    const layout = {
+      meta: { cellSizeFt: 5, padding: { top: 3, right: 3, bottom: 3, left: 3 } },
+      rooms: [{ room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0]], title: 'Room 1' }],
+      doors: [],
+      stairs: [],
+      floors: [{ z: 0, title: 'Ground Floor' }],
+      props: [],
+    }
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: layout })
+    vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: layout })
+
+    renderMapLabEditorPage()
+    await flush()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Map' }))
+    const topInput = screen.getByLabelText('Top') as HTMLInputElement
+    fireEvent.change(topInput, { target: { value: '5' } })
+    expect(topInput.value).toBe('5')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reset unsaved changes' }))
+    expect(screen.getByText('Discard unsaved changes and restore the last saved layout?')).toBeInTheDocument()
+    // Confirming hasn't happened yet — the edit is still there.
+    expect(topInput.value).toBe('5')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Discard changes' }))
+    await flush()
+
+    expect(screen.queryByText('Discard unsaved changes and restore the last saved layout?')).not.toBeInTheDocument()
+    // The popover closes along with the dialog, so the padding field is gone from the DOM —
+    // reopening it would show the restored value of 3, confirming resetToLastLoadedLayout fired.
+    expect(screen.queryByLabelText('Top')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Map' }))
+    expect((screen.getByLabelText('Top') as HTMLInputElement).value).toBe('3')
+  })
+
+  it('pointer-down creates a feature and drag-stroke extends it via the brush model', async () => {
     const layout = {
       meta: { cellSizeFt: 5, padding: { top: 3, right: 3, bottom: 3, left: 3 } },
       rooms: [],
@@ -1901,27 +2002,49 @@ describe('MapLabEditorPage (Stage 03 — editable per-side padding)', () => {
     const { container } = renderMapLabEditorPage()
     await flush()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Draw Trees' }))
+    armTerrainTool('trees')
 
-    const cellAt = (x: number, y: number) =>
-      screen.getByRole('button', { name: `Draw trees at ${x}, ${y}` })
-
-    fireEvent.pointerEnter(cellAt(1, 0))
-    fireEvent.pointerEnter(cellAt(2, 0))
-    fireEvent.pointerEnter(cellAt(3, 0))
-
+    // No cells should be painted initially
     expect(container.querySelectorAll('.maplab-feature-cell')).toHaveLength(0)
 
-    fireEvent.pointerDown(cellAt(0, 0))
+    // Pointer-down creates a feature with the first cell
+    dragRoomBrush(container, { minX: -3, minY: -3 }, [[0, 0]])
     expect(container.querySelectorAll('.maplab-feature-cell')).toHaveLength(1)
 
-    fireEvent.pointerEnter(cellAt(1, 0))
-    expect(container.querySelectorAll('.maplab-feature-cell')).toHaveLength(2)
-
-    fireEvent.pointerUp(cellAt(1, 0))
-    fireEvent.pointerEnter(cellAt(2, 0))
-    expect(container.querySelectorAll('.maplab-feature-cell')).toHaveLength(2)
+    // Drag-stroke extends the feature to include more cells
+    dragRoomBrush(container, { minX: -3, minY: -3 }, [[0, 0], [1, 0], [2, 0]])
+    expect(container.querySelectorAll('.maplab-feature-cell')).toHaveLength(3)
   })
+
+  it('erase stroke removes cells when feature is selected and erase is armed', async () => {
+    const layout = {
+      meta: { cellSizeFt: 5, padding: { top: 3, right: 3, bottom: 3, left: 3 } },
+      rooms: [],
+      doors: [],
+      stairs: [],
+      floors: [{ z: 0, title: 'Ground Floor' }],
+      props: [],
+      features: [],
+    }
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: layout })
+    vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: layout })
+
+    const { container } = renderMapLabEditorPage()
+    await flush()
+
+    // Arm the river tool and create a feature with 5 cells
+    armTerrainTool('river')
+    dragRoomBrush(container, { minX: -3, minY: -3 }, [[0, 0], [1, 0], [2, 0], [3, 0], [4, 0]])
+    expect(container.querySelectorAll('.maplab-feature-cell')).toHaveLength(5)
+
+    // Enable erase mode
+    fireEvent.click(screen.getByRole('button', { name: 'Erase' }))
+
+    // Drag to erase cells — in erase mode, strokes remove cells from the selected feature or any feature that owns them
+    dragRoomBrush(container, { minX: -3, minY: -3 }, [[0, 0], [1, 0]])
+    expect(container.querySelectorAll('.maplab-feature-cell')).toHaveLength(3)
+  })
+
 })
 
 describe('MapLabEditorPage (density control)', () => {
@@ -1936,6 +2059,7 @@ describe('MapLabEditorPage (density control)', () => {
     vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: {} })
     renderMapLabEditorPage()
     await flush()
+    openViewPopover()
     expect(screen.getByRole('button', { name: 'Detailed' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Auto' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Simple' })).toBeInTheDocument()
@@ -1949,6 +2073,7 @@ describe('MapLabEditorPage (density control)', () => {
     vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: {} })
     renderMapLabEditorPage()
     await flush()
+    openViewPopover()
     await user.click(screen.getByRole('button', { name: 'Detailed' }))
     expect(screen.getByRole('button', { name: 'Detailed' })).toHaveAttribute('aria-pressed', 'true')
     expect(window.localStorage.getItem('dnd-kids-maplab-density')).toBe('detailed')
@@ -1999,8 +2124,117 @@ describe('MapLabEditorPage (Map Lab UX Pass Stage 1 — cross-floor door leak)',
     await flush()
 
     fireEvent.click(screen.getByRole('tab', { name: 'First Floor' }))
-    fireEvent.click(screen.getByRole('button', { name: /place door/i }))
+    armPassageTool('door')
 
     expect(container.querySelectorAll('.maplab-door-placement-edge')).toHaveLength(4)
+  })
+})
+
+describe('MapLabEditorPage (Map Lab UX Pass Stage 4 — editor hotkeys)', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks()
+    vi.useFakeTimers()
+    vi.spyOn(api, 'getDungeon').mockResolvedValue({ id: 4, title: 'Test Dungeon', data: {} })
+    vi.spyOn(api, 'listNPCs').mockResolvedValue([])
+    vi.spyOn(api, 'updateDungeon').mockResolvedValue({ id: 4, title: 'Test Dungeon', data: {} })
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: mapLabLayoutFixture })
+    vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: mapLabLayoutFixture })
+  })
+
+  afterEach(() => {
+    vi.runOnlyPendingTimers()
+    vi.useRealTimers()
+  })
+
+  it('arms tools from editor hotkeys and remembers grouped sub-tools', async () => {
+    renderMapLabEditorPage()
+    await flush()
+
+    fireEvent.keyDown(window, { key: 'r' })
+    expect(screen.getByRole('button', { name: 'Room' })).toHaveAttribute('aria-pressed', 'true')
+
+    fireEvent.keyDown(window, { key: 's' })
+    fireEvent.click(screen.getByRole('button', { name: 'Choose passage tool' }))
+    expect(screen.getByRole('menuitem', { name: 'Stair' })).toHaveAttribute('data-active', 'true')
+
+    fireEvent.keyDown(window, { key: 't' })
+    fireEvent.click(screen.getByRole('button', { name: 'Choose terrain tool' }))
+    expect(screen.getByRole('menuitem', { name: 'Trees' })).toHaveAttribute('data-active', 'true')
+  })
+
+  it('ignores tool hotkeys while typing in an editor input', async () => {
+    renderMapLabEditorPage()
+    await flush()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Map' }))
+    fireEvent.keyDown(screen.getByLabelText('Top'), { key: 'r' })
+
+    expect(screen.getByRole('button', { name: 'Select' })).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('Escape closes an open popover before disarming the current tool', async () => {
+    renderMapLabEditorPage()
+    await flush()
+
+    fireEvent.keyDown(window, { key: 'r' })
+    fireEvent.click(screen.getByRole('button', { name: 'Map' }))
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(screen.queryByLabelText('Top')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Room' })).toHaveAttribute('aria-pressed', 'true')
+
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(screen.getByRole('button', { name: 'Select' })).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('wires Ctrl+Z and Ctrl+Shift+Z to editor history', async () => {
+    const layout = {
+      meta: { cellSizeFt: 5, padding: { top: 3, right: 3, bottom: 3, left: 3 } },
+      rooms: [], doors: [], stairs: [], floors: [{ z: 0, title: 'Ground Floor' }], props: [],
+    }
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: layout })
+    vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: layout })
+    const { container } = renderMapLabEditorPage()
+    await flush()
+
+    fireEvent.keyDown(window, { key: 'r' })
+    dragRoomBrush(container, { minX: -3, minY: -3 }, [[0, 0]])
+    expect(screen.getByRole('button', { name: 'Undo' })).toBeEnabled()
+
+    fireEvent.keyDown(window, { key: 'z', ctrlKey: true })
+    expect(screen.getByRole('button', { name: 'Redo' })).toBeEnabled()
+
+    fireEvent.keyDown(window, { key: 'z', ctrlKey: true, shiftKey: true })
+    expect(screen.getByRole('button', { name: 'Undo' })).toBeEnabled()
+  })
+})
+
+describe('MapLabEditorPage (Map Lab UX Pass — tablet navigation drawer)', () => {
+  it('keeps floor chips outside the drawer and exposes an accessible drawer toggle', async () => {
+    const { container } = renderMapLabEditorPage()
+    await flush()
+
+    expect(container.querySelector('.maplab-editor-floor-strip .maplab-floor-tabs')).toBeInTheDocument()
+    const toggle = container.querySelector('.maplab-editor-nav-toggle') as HTMLButtonElement
+    expect(toggle).toHaveAttribute('aria-expanded', 'false')
+
+    fireEvent.click(toggle)
+    expect(toggle).toHaveAttribute('aria-expanded', 'true')
+    expect(document.getElementById('maplab-editor-navigation')).toHaveAttribute('data-open', 'true')
+  })
+
+  it('closes the tablet navigation drawer from its backdrop and Escape before disarming a tool', async () => {
+    const { container } = renderMapLabEditorPage()
+    await flush()
+
+    fireEvent.keyDown(window, { key: 'r' })
+    const toggle = container.querySelector('.maplab-editor-nav-toggle') as HTMLButtonElement
+    fireEvent.click(toggle)
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(document.getElementById('maplab-editor-navigation')).not.toHaveAttribute('data-open')
+    expect(screen.getByRole('button', { name: 'Room' })).toHaveAttribute('aria-pressed', 'true')
+
+    fireEvent.click(toggle)
+    fireEvent.click(container.querySelector('.maplab-editor-nav-backdrop') as HTMLButtonElement)
+    expect(document.getElementById('maplab-editor-navigation')).not.toHaveAttribute('data-open')
   })
 })

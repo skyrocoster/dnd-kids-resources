@@ -21,6 +21,8 @@ interface UseMapLabSessionStateResult {
   setPortalSessions: Dispatch<SetStateAction<SessionMap>>
   resetSessions: () => void
   loadStatus: 'loading' | 'ready' | 'empty' | 'error'
+  actionError: string | null
+  clearActionError: () => void
 }
 
 export function useMapLabSessionState(dungeonId: number | null): UseMapLabSessionStateResult {
@@ -28,6 +30,7 @@ export function useMapLabSessionState(dungeonId: number | null): UseMapLabSessio
   const [stairSessions, setStairSessions] = useState<SessionMap>({})
   const [portalSessions, setPortalSessions] = useState<SessionMap>({})
   const [loadStatus, setLoadStatus] = useState<UseMapLabSessionStateResult['loadStatus']>('loading')
+  const [actionError, setActionError] = useState<string | null>(null)
 
   // The initial load's own state-setting counts as a change too, since it's a fresh object
   // reference — skipNextSaveRef swallows exactly that one save so it can't stomp a save that's
@@ -84,7 +87,9 @@ export function useMapLabSessionState(dungeonId: number | null): UseMapLabSessio
     }
     saveDungeonSessionState(dungeonId, {
       data: { doors: doorSessions, stairs: stairSessions, portals: portalSessions },
-    }).catch(() => {})
+    }).catch(() => {
+      setActionError("Couldn't save session changes. Try again.")
+    })
   }, [dungeonId, doorSessions, stairSessions, portalSessions])
 
   function resetSessions() {
@@ -95,7 +100,9 @@ export function useMapLabSessionState(dungeonId: number | null): UseMapLabSessio
     setStairSessions({})
     setPortalSessions({})
     if (dungeonId !== null) {
-      resetDungeonSessionState(dungeonId).catch(() => {})
+      resetDungeonSessionState(dungeonId).catch(() => {
+        setActionError("Couldn't reset dungeon. Try again.")
+      })
     }
   }
 
@@ -108,5 +115,7 @@ export function useMapLabSessionState(dungeonId: number | null): UseMapLabSessio
     setPortalSessions,
     resetSessions,
     loadStatus,
+    actionError,
+    clearActionError: () => setActionError(null),
   }
 }

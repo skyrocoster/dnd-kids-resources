@@ -1,6 +1,6 @@
 ---
 name: implement-order
-description: Execute exactly ONE work order from docs/plans/active/orders/. Use this whenever you are handed a single work-order file and asked to implement it. Explore only the files the order names, make only the change it asks for, run its stop-check, and write the STATUS line. Designed for a small/cheap model doing one order per fresh context window without wandering.
+description: Execute exactly ONE work order from docs/plans/active/orders/. Use this whenever you are handed a single work-order file and asked to implement it. Explore only the files the order names, make only the change it asks for, run its stop-check, and write the STATUS line. Designed for a cheaper, weaker executor model doing one order per fresh context window without wandering.
 ---
 
 # implement-order — do one work order, then stop
@@ -20,7 +20,8 @@ not to improve the wider codebase. Staying inside the fence below is what makes 
    started. They are **not yours to fix and not caused by you** — do not touch them, do not
    investigate them, and do not count them when judging STOP WHEN. If a test fails that is *not* on
    that list, that one is yours. If KNOWN STATE says an approach was "already attempted, did not
-   work", do not try that approach again.
+   work", do not try that approach again. If KNOWN STATE contains a `verified snippet — use as-is`,
+   paste it exactly — it was already tested; do not rewrite or "improve" it.
 
 3. **Explore only the files in START IN.** Open those, and only files they directly lead you to for
    this change. Do **not** grep the whole repo or open unrelated areas — that's the wandering this
@@ -39,7 +40,7 @@ not to improve the wider codebase. Staying inside the fence below is what makes 
 
    If it fails, you may make up to **two distinct fix attempts**. After the second failed attempt,
    stop and write a failure report (below). Do not keep cycling — a clear failure report is a
-   **successful outcome** of this order; a planner with a stronger model picks it up from there.
+   **successful outcome** of this order; the planner picks it up from there.
 
 6. **Write the STATUS line** at the bottom of the work order file:
    - `STATUS: DONE` if STOP WHEN passed.
@@ -49,7 +50,35 @@ not to improve the wider codebase. Staying inside the fence below is what makes 
      STATE turned out to be wrong, a named file doesn't exist, or DO contradicts what's in the
      START IN files. Do not improvise a different change.
 
-7. **If FAILED or BLOCKED, append a FAILURE REPORT** below the STATUS line so the planner never has
+7. **Append a DEVIATIONS block** directly under the STATUS line — always, even on DONE. You cannot
+   see your own token usage (the harness measures that separately); what only you know is where the
+   order's map didn't match the territory. Exactly two lines, no more:
+
+   ```
+   DEVIATIONS:
+   - opened beyond START IN: <repo source/test/doc files you had to open that the order didn't name, or "none">
+   - KNOWN STATE re-verified or wrong: <one line, or "none">
+   ```
+
+   Do **not** list `CLAUDE.md`, this skill file, or the order file itself — every executor opens
+   those by construction, so naming them buries the real signal. Only repo source, test, and doc
+   files the order failed to name count as "beyond START IN".
+
+   "none / none" is the ideal report. Do not pad this with narrative — it feeds a telemetry log
+   used to tighten future orders, and two honest lines are worth more than a paragraph.
+
+   **If your harness does not report your token usage to the dispatcher** (you are running in a
+   chat UI rather than a spawned agent, i.e. nobody can read your usage counters but you or the
+   user), add one more line so the telemetry entry is not hollow:
+
+   ```
+   - RUN SUMMARY: model <name as your UI shows it>; ~<N> turns; <"no retries" or "N fix attempts">
+   ```
+
+   Report only what you can actually see. Never estimate token counts — a missing number is fine,
+   an invented one poisons the log.
+
+8. **If FAILED or BLOCKED, append a FAILURE REPORT** below the STATUS line so the planner never has
    to re-derive what you saw:
 
    ```
@@ -66,8 +95,8 @@ not to improve the wider codebase. Staying inside the fence below is what makes 
 
 ## Stay inside the fence
 
-- Touch only **code and test files** for this change, plus this order's **STATUS** line and (on
-  failure) its **FAILURE REPORT** block.
+- Touch only **code and test files** for this change, plus this order's **STATUS** line, its
+  **DEVIATIONS** block, and (on failure) its **FAILURE REPORT** block.
 - Do **not** edit other work orders, the Plan, the docs manifest, area guides, or any reference doc.
   Those are a planner's job, not yours.
 - Do **not** start the next work order. One order per context window. When STATUS is written, you're

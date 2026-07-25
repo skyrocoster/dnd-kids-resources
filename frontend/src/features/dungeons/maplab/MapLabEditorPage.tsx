@@ -1,26 +1,35 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import './MapLabPage.css'
 import './MapLabEditor.css'
 import { MapLabRouteState } from './MapLabRouteState'
-import { useDungeonShellContext } from './dungeonRouteContext'
+import { useDungeonShellContext, useDungeonShellStatusSlot } from './dungeonRouteContext'
 import { useMapLabEditor } from './useMapLabEditor'
 import { listDungeons, listIncomingGateways } from '../../../api/client'
 import type { Dungeon, IncomingGateway } from '../../../api/types'
 import { useMapCanvasZoom, type ViewportSize } from './useMapCanvasZoom'
+import { useCanvasStroke } from './useCanvasStroke'
 import { MapCanvas } from './MapCanvas'
 import {
-  CloseIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
   DoorClosedIcon,
+  EraserIcon,
+  EyeIcon,
   FitIcon,
   FullscreenEnterIcon,
   FullscreenExitIcon,
-  MinusIcon,
+  MapIcon,
+  MousePointer2,
   PlusIcon,
   PortalIcon,
   PropIcon,
+  RoomIcon,
   SaveIcon,
   StairsIcon,
   TrashIcon,
+  Trees,
+  Waves,
   ZoomInIcon,
   ZoomOutIcon,
 } from '../../../components/icons'
@@ -32,7 +41,7 @@ import { PortalMarker } from './PortalMarker'
 import { StairMarker } from './StairMarker'
 import { DoorBadgeLayer, DoorMarker } from './DoorMarker'
 import { GhostFloorLayer } from './GhostFloorLayer'
-import { FIXTURE_TYPES } from './fixtureTypes'
+import { FIXTURE_TYPES, PROP_KIND_ICONS, PROP_KIND_OPTIONS } from './fixtureTypes'
 import { RoomContentEditor } from './RoomContentEditor'
 import { ConnectionsResolveList } from './ConnectionsResolveList'
 import { SelectionActions } from './SelectionActions'
@@ -57,7 +66,6 @@ import {
   stairEndpointsForZ,
   type CardinalSide,
   type MapCell,
-  type MapFeature,
   type MapLayout,
   type MapPortal,
   type MapRoom,
@@ -66,7 +74,6 @@ import {
 } from '../../../model/maplabModel'
 
 const CELL_SIZE = 64
-const MARKER_SIZE = 20
 
 function edgeKey(edge: WallEdge): string {
   return `${edge.cell[0]},${edge.cell[1]},${edge.side}`
@@ -117,17 +124,25 @@ function doorPlacementEdges(rooms: MapRoom[], doors: MapLayout['doors']): WallEd
   return edges
 }
 
-type PaintState = 'ownedSelected' | 'ownedOther' | 'paintable' | 'invalid'
+type ArmedTool = 'select' | 'room' | 'door' | 'stair' | 'portal' | 'prop' | 'river' | 'trees'
 
-type FootprintState = 'candidate' | 'blocked' | 'owned'
+/** A brush-stroke cell's preview state, computed against the *same floor*'s rooms only — different
+ * z planes may legitimately share [x,y] (e.g. a stair landing directly above a stairwell). */
+type BrushCellState = 'create' | 'paint' | 'erase' | 'blocked'
 
-/** A free cell's paint state considers only rooms on the *same floor* — different z planes may
- * legitimately share [x,y] (e.g. a stair landing directly above a stairwell). */
-function paintStateForCell(layout: MapLayout, selectedRoomId: number, activeZ: number, cell: MapCell): PaintState {
+function brushCellStateForCell(
+  layout: MapLayout,
+  activeZ: number,
+  selectedRoomId: number | null,
+  eraseArmed: boolean,
+  cell: MapCell,
+): BrushCellState {
   const sameFloorRooms = layout.rooms.filter((room) => room.z === activeZ)
   const owner = roomOfCell(cell, sameFloorRooms)
-  if (owner) return owner.room_id === selectedRoomId ? 'ownedSelected' : 'ownedOther'
-  return canPaintCell(layout, selectedRoomId, cell) ? 'paintable' : 'invalid'
+  if (selectedRoomId === null) return owner === null ? 'create' : 'blocked'
+  if (eraseArmed) return owner?.room_id === selectedRoomId ? 'erase' : 'blocked'
+  if (owner === null) return canPaintCell(layout, selectedRoomId, cell) ? 'paint' : 'blocked'
+  return owner.room_id === selectedRoomId ? 'paint' : 'blocked'
 }
 
 function roomCenter(room: MapRoom): { x: number; y: number } {
@@ -157,89 +172,21 @@ function cellKey(cell: MapCell): string {
   return `${cell[0]},${cell[1]}`
 }
 
-export function rectangleCells(a: MapCell, b: MapCell): MapCell[] {
-  const minX = Math.min(a[0], b[0])
-  const maxX = Math.max(a[0], b[0])
-  const minY = Math.min(a[1], b[1])
-  const maxY = Math.max(a[1], b[1])
-  const cells: MapCell[] = []
-  for (let y = minY; y <= maxY; y += 1) {
-    for (let x = minX; x <= maxX; x += 1) {
-      cells.push([x, y])
-    }
-  }
-  return cells
-}
-
-function cellsAreConnected(cells: MapCell[]): boolean {
-  if (cells.length <= 1) return true
-  const pending = new Set(cells.map(cellKey))
-  const stack = [cells[0]]
-  pending.delete(cellKey(cells[0]))
-  const deltas: MapCell[] = [[0, -1], [0, 1], [1, 0], [-1, 0]]
-  while (stack.length > 0) {
-    const [x, y] = stack.pop()!
-    for (const [dx, dy] of deltas) {
-      const next: MapCell = [x + dx, y + dy]
-      const key = cellKey(next)
-      if (pending.delete(key)) stack.push(next)
-    }
-  }
-  return pending.size === 0
-}
-
-function footprintIsCommitCandidate(layout: MapLayout, selectedRoomId: number, activeZ: number, cells: MapCell[]): boolean {
-  const uniqueCells = Array.from(new Map(cells.map((cell) => [cellKey(cell), cell])).values())
-  const sameFloorRooms = layout.rooms.filter((room) => room.z === activeZ)
-  const overlapsOtherRoom = uniqueCells.some((cell) => {
-    const owner = roomOfCell(cell, sameFloorRooms)
-    return owner !== null && owner.room_id !== selectedRoomId
-  })
-  return !overlapsOtherRoom && cellsAreConnected(uniqueCells)
-}
-
-function footprintStateForCell(
-  layout: MapLayout,
-  selectedRoomId: number,
-  activeZ: number,
-  cell: MapCell,
-  rectangleIsValid: boolean,
-): FootprintState {
-  const owner = roomOfCell(cell, layout.rooms.filter((room) => room.z === activeZ))
-  if (owner?.room_id === selectedRoomId) return 'owned'
-  if (owner !== null || !rectangleIsValid) return 'blocked'
-  return 'candidate'
-}
-
-function footprintCellsForSelection(
-  layout: MapLayout,
-  selectedRoomId: number,
-  activeZ: number,
-  anchor: MapCell,
-  rectangle: MapCell[],
-): MapCell[] {
-  const owner = roomOfCell(anchor, layout.rooms.filter((room) => room.z === activeZ))
-  if (owner?.room_id !== selectedRoomId) return rectangle
-  return [...absoluteCells(owner), ...rectangle]
-}
-
-type RoomFootprintSelection = { anchor: MapCell; current: MapCell; mode: 'click' | 'drag' } | null
-
 export function MapLabEditorPage() {
   const route = useDungeonShellContext()
+  const statusSlot = useDungeonShellStatusSlot()
   const {
     state,
     loading: layoutLoading,
     loadStatus,
     saveStatus,
     dungeonData,
-    addRoom,
+    addRoomWithCells,
     createRoomData,
     addFloorAbove,
     addFloorBelow,
     selectRoom,
     deleteRoom,
-    toggleCell,
     setRoomFootprint,
     setActiveZ,
     resetToLastLoadedLayout,
@@ -267,44 +214,56 @@ export function MapLabEditorPage() {
     updatePadding,
     updateRoomEntries,
     updateRoomNpcs,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
   } = useMapLabEditor(route.dungeonId, route.dungeon)
-  const [hoveredCell, setHoveredCell] = useState<MapCell | null>(null)
   const [isCanvasFullscreen, setIsCanvasFullscreen] = useState(false)
-  const [roomFootprintSelection, setRoomFootprintSelection] = useState<RoomFootprintSelection>(null)
-  const [placeDoorMode, setPlaceDoorMode] = useState(false)
-  const [placePropMode, setPlacePropMode] = useState(false)
-  const [featureToDelete, setFeatureToDelete] = useState<MapFeature | null>(null)
+  const [tabletNavOpen, setTabletNavOpen] = useState(false)
+  const [selectionSheetExpanded, setSelectionSheetExpanded] = useState(false)
+  const [armedTool, setArmedTool] = useState<ArmedTool>('select')
+  const [lastPassageTool, setLastPassageTool] = useState<'door' | 'stair' | 'portal'>('door')
+  const [lastTerrainTool, setLastTerrainTool] = useState<'river' | 'trees'>('river')
+  const [openFlyout, setOpenFlyout] = useState<'passages' | 'terrain' | null>(null)
+  const passagesFlyoutRef = useRef<HTMLDivElement>(null)
+  const terrainFlyoutRef = useRef<HTMLDivElement>(null)
+  const [mapPopoverOpen, setMapPopoverOpen] = useState(false)
+  const mapPopoverRef = useRef<HTMLDivElement>(null)
+  const [viewPopoverOpen, setViewPopoverOpen] = useState(false)
+  const viewPopoverRef = useRef<HTMLDivElement>(null)
+  const [confirmingReset, setConfirmingReset] = useState(false)
+  const placeDoorMode = armedTool === 'door'
+  const placePropMode = armedTool === 'prop'
+  const placeStairMode = armedTool === 'stair'
+  const placePortalMode = armedTool === 'portal'
+  const drawFeatureKind: 'river' | 'trees' | null =
+    armedTool === 'river' ? 'river' : armedTool === 'trees' ? 'trees' : null
+  const placeRoomMode = armedTool === 'room'
+  // A brush tool is armed for terrain drawing or the sticky Room tool.
+  const brushArmed = armedTool === 'room' || armedTool === 'river' || armedTool === 'trees'
+  const [eraseArmed, setEraseArmed] = useState(false)
+  const [selectedPropKind, setSelectedPropKind] = useState<string>('chest')
+  const [roomToDelete, setRoomToDelete] = useState<MapRoom | null>(null)
   const [gatewayToRemove, setGatewayToRemove] = useState<MapPortal | null>(null)
   const [dungeons, setDungeons] = useState<Dungeon[]>([])
   const [incomingGateways, setIncomingGateways] = useState<IncomingGateway[]>([])
   const [connectionsLoaded, setConnectionsLoaded] = useState(false)
   const [connectionsLoadError, setConnectionsLoadError] = useState(false)
-  const [placeStairMode, setPlaceStairMode] = useState(false)
-  const [placePortalMode, setPlacePortalMode] = useState(false)
-  const [drawFeatureKind, setDrawFeatureKind] = useState<'river' | 'trees' | null>(null)
   const [dismissZWarning, setDismissZWarning] = useState(false)
-  const [cellActionMenu, setCellActionMenu] = useState<{ x: number; y: number } | null>(null)
   const [placementError, setPlacementError] = useState<string | null>(null)
+  const [deletedFixture, setDeletedFixture] = useState<string | null>(null)
   const [showGhostFloor, setShowGhostFloor] = useState(false)
   const { visible: layerVisible, toggleLayer } = useMapLayerVisibility()
   const { density, setDensity } = useMapDensity()
-  const suppressNextPaintClickRef = useRef(false)
-  const dragProcessedRef = useRef(new Set<string>())
-  const isFeatureDrawDraggingRef = useRef(false)
-  const featureDrawModeRef = useRef<'add' | 'remove' | null>(null)
-  const pointerMode = placeDoorMode || placePropMode || placeStairMode || placePortalMode || drawFeatureKind !== null || state.selectedRoomId !== null ? 'tool' : 'pan'
+  const pointerMode = placeDoorMode || placePropMode || placeStairMode || placePortalMode || drawFeatureKind !== null || placeRoomMode ? 'tool' : 'pan'
   const zoomApi = useMapCanvasZoom({ wheelZoomMode: 'always', pointerMode })
   const simplified = resolveMapDensity(density, zoomApi.zoom.scale) === 'simple'
   const [viewportSize, setViewportSize] = useState<ViewportSize>({ width: 0, height: 0 })
   const handleViewportResize = useCallback((size: ViewportSize) => setViewportSize(size), [])
-  const clearRoomFootprintSelection = useCallback(() => {
-    setRoomFootprintSelection(null)
-    setPlacementError(null)
-  }, [])
   const toggleCanvasFullscreen = useCallback(() => {
-    clearRoomFootprintSelection()
     setIsCanvasFullscreen((active) => !active)
-  }, [clearRoomFootprintSelection])
+  }, [])
 
   const floors = useMemo(
     () => [...state.layout.floors].sort((a, b) => a.z - b.z),
@@ -354,6 +313,135 @@ export function MapLabEditorPage() {
   const viewBox = `${bounds.minX * CELL_SIZE} ${bounds.minY * CELL_SIZE} ${
     (bounds.maxX - bounds.minX + 1) * CELL_SIZE
   } ${(bounds.maxY - bounds.minY + 1) * CELL_SIZE}`
+
+  // Cells touched by the in-flight Room-tool stroke, for the live brush preview — committed to the
+  // layout as one action on pointer-up rather than dispatched cell-by-cell, so a fast drag that
+  // revisits cells or crosses invalid ones behaves predictably (see handleRoomStrokeEnd).
+  const [strokeCells, setStrokeCells] = useState<MapCell[]>([])
+  const strokeModeRef = useRef<'create' | 'paint' | 'erase' | null>(null)
+  const strokeRoomIdRef = useRef<number | null>(null)
+
+  const handleRoomStrokeStart = useCallback(
+    (cell: MapCell) => {
+      strokeModeRef.current = state.selectedRoomId === null ? 'create' : eraseArmed ? 'erase' : 'paint'
+      strokeRoomIdRef.current = state.selectedRoomId
+      setStrokeCells([cell])
+    },
+    [state.selectedRoomId, eraseArmed],
+  )
+
+  const handleRoomStrokeCell = useCallback((cell: MapCell) => {
+    setStrokeCells((cells) => (cells.some(([x, y]) => x === cell[0] && y === cell[1]) ? cells : [...cells, cell]))
+  }, [])
+
+  const handleRoomStrokeEnd = useCallback(() => {
+    const mode = strokeModeRef.current
+    const roomId = strokeRoomIdRef.current
+    strokeModeRef.current = null
+    strokeRoomIdRef.current = null
+
+    if (mode === 'create') {
+      const sameFloorRooms = state.layout.rooms.filter((room) => room.z === state.activeZ)
+      const validCells = strokeCells.filter((cell) => roomOfCell(cell, sameFloorRooms) === null)
+      if (validCells.length > 0) addRoomWithCells(validCells)
+    } else if (roomId !== null) {
+      const room = state.layout.rooms.find((candidate) => candidate.room_id === roomId)
+      if (room) {
+        const existingCells = absoluteCells(room)
+        if (mode === 'erase') {
+          const eraseKeys = new Set(strokeCells.map(cellKey))
+          const remaining = existingCells.filter((cell) => !eraseKeys.has(cellKey(cell)))
+          if (remaining.length > 0 && remaining.length !== existingCells.length) {
+            setRoomFootprint(roomId, remaining)
+          }
+        } else if (mode === 'paint') {
+          const sameFloorRooms = state.layout.rooms.filter((r) => r.z === state.activeZ)
+          const ownedKeys = new Set(existingCells.map(cellKey))
+          const validNewCells = strokeCells.filter((cell) => {
+            if (ownedKeys.has(cellKey(cell))) return false
+            const owner = roomOfCell(cell, sameFloorRooms)
+            return owner === null
+          })
+          if (validNewCells.length > 0) {
+            setRoomFootprint(roomId, [...existingCells, ...validNewCells])
+          }
+        }
+      }
+    }
+    setStrokeCells([])
+  }, [strokeCells, state.layout, state.activeZ, addRoomWithCells, setRoomFootprint])
+
+  // Any pending brush preview is stale once the tool or active floor changes.
+  useEffect(() => {
+    setStrokeCells([])
+  }, [armedTool, state.activeZ])
+
+  const handleFeatureStrokeStart = useCallback(
+    (cell: MapCell) => {
+      if (drawFeatureKind === null) return
+      if (eraseArmed) {
+        // In erase mode, erase the start cell from any feature that owns it
+        const owningFeature = state.layout.features.find((f) =>
+          f.cells.some(([x, y]) => x === cell[0] && y === cell[1])
+        )
+        if (owningFeature) {
+          toggleFeatureCell(owningFeature.feature_id, cell)
+        }
+        return
+      }
+      if (state.selectedFeatureId === null) {
+        addFeature(drawFeatureKind, cell, state.activeZ)
+      }
+    },
+    [drawFeatureKind, state.selectedFeatureId, state.activeZ, addFeature, eraseArmed, state.layout.features, toggleFeatureCell],
+  )
+
+  const handleFeatureStrokeCell = useCallback(
+    (cell: MapCell) => {
+      if (drawFeatureKind === null) return
+      if (eraseArmed) {
+        // Find the feature that owns this cell (if any)
+        const owningFeature = state.layout.features.find((f) =>
+          f.cells.some(([x, y]) => x === cell[0] && y === cell[1])
+        )
+        if (owningFeature) {
+          toggleFeatureCell(owningFeature.feature_id, cell)
+        }
+      } else {
+        if (state.selectedFeatureId === null) return
+        toggleFeatureCell(state.selectedFeatureId, cell)
+      }
+    },
+    [drawFeatureKind, state.selectedFeatureId, state.layout.features, eraseArmed, toggleFeatureCell],
+  )
+
+  const handleFeatureStrokeEnd = useCallback(() => {
+    // Feature cells are applied immediately via toggleFeatureCell, nothing to do on end
+  }, [])
+
+  const strokeApi = useCanvasStroke({
+    enabled: placeRoomMode,
+    zoom: zoomApi.zoom,
+    bounds,
+    onStrokeStart: handleRoomStrokeStart,
+    onStrokeCell: handleRoomStrokeCell,
+    onStrokeEnd: handleRoomStrokeEnd,
+  })
+
+  const featureStrokeApi = useCanvasStroke({
+    enabled: drawFeatureKind !== null,
+    zoom: zoomApi.zoom,
+    bounds,
+    onStrokeStart: handleFeatureStrokeStart,
+    onStrokeCell: handleFeatureStrokeCell,
+    onStrokeEnd: handleFeatureStrokeEnd,
+  })
+
+  const roomBrushGuidance = useMemo(() => {
+    if (!placeRoomMode) return undefined
+    if (state.selectedRoomId === null) return 'Drag on empty ground to start a new room.'
+    return eraseArmed ? 'Drag across squares to remove them from the room.' : 'Drag to add squares to the room.'
+  }, [placeRoomMode, state.selectedRoomId, eraseArmed])
 
   const placementEdges = useMemo(
     () => (placeDoorMode ? doorPlacementEdges(roomsOnActiveFloor, doorsOnActiveFloor) : []),
@@ -424,86 +512,218 @@ export function MapLabEditorPage() {
     [state.layout.features, state.selectedFeatureId]
   )
 
-  const pendingFootprintCells = useMemo(
-    () => (roomFootprintSelection ? rectangleCells(roomFootprintSelection.anchor, roomFootprintSelection.current) : []),
-    [roomFootprintSelection]
-  )
-  const pendingFootprintCommitCells = useMemo(
-    () =>
-      roomFootprintSelection && state.selectedRoomId !== null
-        ? footprintCellsForSelection(
-            state.layout,
-            state.selectedRoomId,
-            state.activeZ,
-            roomFootprintSelection.anchor,
-            pendingFootprintCells,
-          )
-        : [],
-    [pendingFootprintCells, roomFootprintSelection, state.activeZ, state.layout, state.selectedRoomId],
-  )
-  const pendingFootprintIsValid = useMemo(
-    () =>
-      state.selectedRoomId !== null &&
-      pendingFootprintCommitCells.length > 0 &&
-      footprintIsCommitCandidate(state.layout, state.selectedRoomId, state.activeZ, pendingFootprintCommitCells),
-    [pendingFootprintCommitCells, state.activeZ, state.layout, state.selectedRoomId]
-  )
-  const footprintGuidance = useMemo(() => {
-    if (state.selectedRoomId === null) return 'Select a room to edit its footprint.'
-    if (roomFootprintSelection?.mode === 'click') {
-      return `Corner set at ${roomFootprintSelection.anchor[0]}, ${roomFootprintSelection.anchor[1]}. Choose a second corner, or press Escape to cancel.`
-    }
-    if (roomFootprintSelection?.mode === 'drag') return 'Drag to the opposite corner, then release to set the footprint.'
-    return 'Click two free corners to size a room. Drag from an existing room square to extend it; click an existing square to remove it.'
-  }, [roomFootprintSelection, state.selectedRoomId])
-  const commitRoomFootprint = useCallback(
-    (cells: MapCell[]): boolean => {
-      if (state.selectedRoomId === null) return false
-      if (!footprintIsCommitCandidate(state.layout, state.selectedRoomId, state.activeZ, cells)) {
-        setPlacementError('That footprint overlaps another room or would split this room.')
-        return false
-      }
-      setRoomFootprint(state.selectedRoomId, cells)
-      setRoomFootprintSelection(null)
-      setPlacementError(null)
-      return true
-    },
-    [setRoomFootprint, state.activeZ, state.layout, state.selectedRoomId]
-  )
+  const deleteFixtureWithUndo = useCallback((thing: string, remove: () => void) => {
+    remove()
+    setPlacementError(null)
+    setDeletedFixture(thing)
+  }, [])
+
+  const undoDeletedFixture = useCallback(() => {
+    undo()
+    setDeletedFixture(null)
+  }, [undo])
+
+  const selectedItemKey = selectedFeature
+    ? `feature-${selectedFeature.feature_id}`
+    : selectedDoor
+      ? `door-${selectedDoor.door_id}`
+      : selectedRoom
+        ? `room-${selectedRoom.room_id}`
+        : selectedProp
+          ? `prop-${selectedProp.prop_id}`
+          : selectedStair
+            ? `stair-${selectedStair.stair_id}`
+            : selectedPortal
+              ? `portal-${selectedPortal.portal_id}`
+              : null
+  const selectedItemName = selectedFeature
+    ? selectedFeature.title ?? selectedFeature.kind
+    : selectedDoor
+      ? 'Door'
+      : selectedRoom
+        ? selectedRoom.title ?? `Room ${selectedRoom.room_id}`
+        : selectedProp
+          ? selectedProp.kind
+          : selectedStair
+            ? 'Stairs'
+            : selectedPortal?.title ?? 'Portal'
 
   useEffect(() => {
-    if (!roomFootprintSelection) return
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') clearRoomFootprintSelection()
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [clearRoomFootprintSelection, roomFootprintSelection])
+    setSelectionSheetExpanded(false)
+  }, [selectedItemKey])
+
+  const selectionActions = selectedFeature ? (
+    <SelectionActions
+      deleteLabel="Delete feature"
+      onDelete={() => deleteFixtureWithUndo(selectedFeature.title ?? selectedFeature.kind, () => deleteFeature(selectedFeature.feature_id))}
+      onClose={() => selectFeature(null)}
+    />
+  ) : selectedDoor ? (
+    <SelectionActions
+      deleteLabel="Delete door"
+      onDelete={() => deleteFixtureWithUndo('door', () => deleteDoor(selectedDoor.door_id))}
+      onClose={() => selectDoor(null)}
+    />
+  ) : selectedRoom ? (
+    <SelectionActions deleteLabel="Delete room" onDelete={() => setRoomToDelete(selectedRoom)} onClose={() => selectRoom(null)} />
+  ) : selectedProp ? (
+    <SelectionActions
+      deleteLabel="Delete prop"
+      onDelete={() => deleteFixtureWithUndo('prop', () => deleteProp(selectedProp.prop_id))}
+      onClose={() => selectProp(null)}
+    />
+  ) : selectedStair ? (
+    <SelectionActions
+      deleteLabel="Delete stair"
+      onDelete={() => deleteFixtureWithUndo('stair', () => deleteStair(selectedStair.stair_id))}
+      onClose={() => selectStair(null)}
+    />
+  ) : selectedPortal ? (
+    <SelectionActions
+      deleteLabel="Delete portal"
+      onDelete={() => deleteFixtureWithUndo('portal', () => deletePortal(selectedPortal.portal_id))}
+      onClose={() => selectPortal(null)}
+    />
+  ) : null
 
   useEffect(() => {
-    clearRoomFootprintSelection()
     if (drawFeatureKind === null) {
       setDismissZWarning(false)
     }
-  }, [clearRoomFootprintSelection, drawFeatureKind, placeDoorMode, placePortalMode, placePropMode, placeStairMode, state.activeZ, state.selectedRoomId])
+  }, [drawFeatureKind, armedTool, state.activeZ, state.selectedRoomId])
 
   useEffect(() => {
-    if (!cellActionMenu) return
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setCellActionMenu(null)
-    }
+    if (!brushArmed) setEraseArmed(false)
+  }, [brushArmed])
+
+  useEffect(() => {
+    if (!openFlyout) return
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node
-      if (!target?.ownerDocument?.body.contains(target)) return
-      setCellActionMenu(null)
+      const ref = openFlyout === 'passages' ? passagesFlyoutRef : terrainFlyoutRef
+      if (ref.current && !ref.current.contains(target)) setOpenFlyout(null)
     }
-    window.addEventListener('keydown', handleKeyDown)
     window.addEventListener('mousedown', handleClickOutside)
     return () => {
-      window.removeEventListener('keydown', handleKeyDown)
       window.removeEventListener('mousedown', handleClickOutside)
     }
-  }, [cellActionMenu])
+  }, [openFlyout])
+
+  useEffect(() => {
+    if (!mapPopoverOpen) return
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node
+      if (mapPopoverRef.current && !mapPopoverRef.current.contains(target)) setMapPopoverOpen(false)
+    }
+    window.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      window.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [mapPopoverOpen])
+
+  useEffect(() => {
+    if (!viewPopoverOpen) return
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node
+      if (viewPopoverRef.current && !viewPopoverRef.current.contains(target)) setViewPopoverOpen(false)
+    }
+    window.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      window.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [viewPopoverOpen])
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const target = event.target
+      if (
+        target instanceof HTMLElement &&
+        (target.matches('input, textarea, select, [contenteditable]') || target.isContentEditable)
+      ) return
+
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        if (openFlyout !== null) {
+          setOpenFlyout(null)
+        } else if (mapPopoverOpen) {
+          setMapPopoverOpen(false)
+        } else if (viewPopoverOpen) {
+          setViewPopoverOpen(false)
+        } else if (tabletNavOpen) {
+          setTabletNavOpen(false)
+        } else if (selectionSheetExpanded) {
+          setSelectionSheetExpanded(false)
+        } else {
+          setArmedTool('select')
+          setPlacementError(null)
+        }
+        return
+      }
+
+      if (event.ctrlKey && event.key.toLowerCase() === 'z') {
+        event.preventDefault()
+        if (event.shiftKey) redo()
+        else undo()
+        return
+      }
+      if (event.ctrlKey || event.metaKey || event.altKey) return
+
+      switch (event.key.toLowerCase()) {
+        case 'v':
+          setArmedTool('select')
+          setPlacementError(null)
+          break
+        case 'r':
+          setArmedTool('room')
+          setPlacementError(null)
+          break
+        case 'd':
+          setLastPassageTool('door')
+          setArmedTool('door')
+          setPlacementError(null)
+          setOpenFlyout(null)
+          break
+        case 'p':
+          setArmedTool('prop')
+          setPlacementError(null)
+          break
+        case 's':
+          setLastPassageTool('stair')
+          setArmedTool('stair')
+          setPlacementError(null)
+          setOpenFlyout(null)
+          break
+        case 'o':
+          setLastPassageTool('portal')
+          setArmedTool('portal')
+          setPlacementError(null)
+          setOpenFlyout(null)
+          break
+        case 'w':
+          setLastTerrainTool('river')
+          setArmedTool('river')
+          setDismissZWarning(false)
+          setPlacementError(null)
+          setOpenFlyout(null)
+          break
+        case 't':
+          setLastTerrainTool('trees')
+          setArmedTool('trees')
+          setDismissZWarning(false)
+          setPlacementError(null)
+          setOpenFlyout(null)
+          break
+        case 'e':
+          if (brushArmed) setEraseArmed((active) => !active)
+          break
+        default:
+          return
+      }
+      event.preventDefault()
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [brushArmed, mapPopoverOpen, openFlyout, redo, selectionSheetExpanded, tabletNavOpen, undo, viewPopoverOpen])
 
   useEffect(() => {
     if (route.dungeonId === null) return
@@ -556,251 +776,396 @@ export function MapLabEditorPage() {
   }
 
   return (
-    <div className="maplab-editor" data-footprint-selection-mode={roomFootprintSelection?.mode}>
+    <div className="maplab-editor">
       {loadStatus.status === 'empty' && (
         <p className="maplab-subtitle">No saved layout yet. Your first edit will save this blank map.</p>
       )}
 
       <div className="maplab-toolbar">
         <ToolbarTray groupKey="editor-create" label="Create">
-          <button type="button" className="maplab-pill-button maplab-editor-toolbar-button" onClick={addRoom}>
-            <PlusIcon width={18} height={18} aria-hidden="true" />
-            Add room
-          </button>
-          <button
-            type="button"
-            className="maplab-pill-button maplab-editor-toolbar-button"
-            aria-pressed={placeDoorMode}
-            data-active={placeDoorMode || undefined}
-            onClick={() =>
-              setPlaceDoorMode((active) => {
-                if (!active) {
-                  setPlacePropMode(false)
-                  setPlaceStairMode(false)
-                  setPlacePortalMode(false)
-                  setDrawFeatureKind(null)
-                }
+          <div className="maplab-tool-palette" role="group" aria-label="Drawing tools">
+            <button
+              type="button"
+              className="maplab-pill-button maplab-tool-palette-button"
+              aria-pressed={armedTool === 'select'}
+              data-active={armedTool === 'select' || undefined}
+              onClick={() => {
+                setArmedTool('select')
                 setPlacementError(null)
-                return !active
-              })
-            }
-          >
-            <DoorClosedIcon width={18} height={18} aria-hidden="true" />
-            {placeDoorMode ? 'Cancel door placement' : 'Place door'}
-          </button>
-          <button
-            type="button"
-            className="maplab-pill-button maplab-editor-toolbar-button"
-            aria-pressed={placePropMode}
-            data-active={placePropMode || undefined}
-            onClick={() =>
-              setPlacePropMode((active) => {
-                if (!active) {
-                  setPlaceDoorMode(false)
-                  setPlaceStairMode(false)
-                  setPlacePortalMode(false)
-                  setDrawFeatureKind(null)
-                }
+              }}
+            >
+              <MousePointer2 width={18} height={18} aria-hidden="true" />
+              Select
+            </button>
+
+            <button
+              type="button"
+              className="maplab-pill-button maplab-tool-palette-button"
+              aria-pressed={placeRoomMode}
+              data-active={placeRoomMode || undefined}
+              onClick={() => {
+                setArmedTool('room')
                 setPlacementError(null)
-                return !active
-              })
-            }
-          >
-            <PropIcon width={18} height={18} aria-hidden="true" />
-            {placePropMode ? 'Cancel prop placement' : 'Place prop'}
-          </button>
-          <button
-            type="button"
-            className="maplab-pill-button maplab-editor-toolbar-button"
-            aria-pressed={placeStairMode}
-            data-active={placeStairMode || undefined}
-            onClick={() =>
-              setPlaceStairMode((active) => {
-                if (!active) {
-                  setPlaceDoorMode(false)
-                  setPlacePropMode(false)
-                  setPlacePortalMode(false)
-                  setDrawFeatureKind(null)
-                }
+              }}
+            >
+              <RoomIcon width={18} height={18} aria-hidden="true" />
+              Room
+            </button>
+
+            <div className="maplab-tool-palette-group" ref={passagesFlyoutRef}>
+              <button
+                type="button"
+                className="maplab-pill-button maplab-tool-palette-button"
+                aria-label="Passage tools"
+                aria-pressed={placeDoorMode || placeStairMode || placePortalMode}
+                data-active={(placeDoorMode || placeStairMode || placePortalMode) || undefined}
+                onClick={() => {
+                  setArmedTool(lastPassageTool)
+                  setPlacementError(null)
+                  setOpenFlyout(null)
+                }}
+              >
+                {lastPassageTool === 'stair' ? (
+                  <StairsIcon width={18} height={18} aria-hidden="true" />
+                ) : lastPassageTool === 'portal' ? (
+                  <PortalIcon width={18} height={18} aria-hidden="true" />
+                ) : (
+                  <DoorClosedIcon width={18} height={18} aria-hidden="true" />
+                )}
+                Passages
+              </button>
+              <button
+                type="button"
+                className="maplab-pill-button maplab-tool-palette-flyout-toggle"
+                aria-label="Choose passage tool"
+                aria-haspopup="menu"
+                aria-expanded={openFlyout === 'passages'}
+                onClick={() => setOpenFlyout((open) => (open === 'passages' ? null : 'passages'))}
+              >
+                {openFlyout === 'passages' ? (
+                  <ChevronUpIcon width={14} height={14} aria-hidden="true" />
+                ) : (
+                  <ChevronDownIcon width={14} height={14} aria-hidden="true" />
+                )}
+              </button>
+              {openFlyout === 'passages' && (
+                <div className="maplab-tool-palette-flyout" role="menu">
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="maplab-pill-button"
+                    data-active={placeDoorMode || undefined}
+                    onClick={() => {
+                      setLastPassageTool('door')
+                      setArmedTool('door')
+                      setPlacementError(null)
+                      setOpenFlyout(null)
+                    }}
+                  >
+                    <DoorClosedIcon width={16} height={16} aria-hidden="true" />
+                    Door
+                  </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="maplab-pill-button"
+                    data-active={placeStairMode || undefined}
+                    onClick={() => {
+                      setLastPassageTool('stair')
+                      setArmedTool('stair')
+                      setPlacementError(null)
+                      setOpenFlyout(null)
+                    }}
+                  >
+                    <StairsIcon width={16} height={16} aria-hidden="true" />
+                    Stair
+                  </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="maplab-pill-button"
+                    data-active={placePortalMode || undefined}
+                    onClick={() => {
+                      setLastPassageTool('portal')
+                      setArmedTool('portal')
+                      setPlacementError(null)
+                      setOpenFlyout(null)
+                    }}
+                  >
+                    <PortalIcon width={16} height={16} aria-hidden="true" />
+                    Portal
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <button
+              type="button"
+              className="maplab-pill-button maplab-tool-palette-button"
+              aria-pressed={placePropMode}
+              data-active={placePropMode || undefined}
+              onClick={() => {
+                setArmedTool('prop')
                 setPlacementError(null)
-                return !active
-              })
-            }
-          >
-            <StairsIcon width={18} height={18} aria-hidden="true" />
-            {placeStairMode ? 'Cancel stair placement' : 'Place stair'}
-          </button>
+              }}
+            >
+              <PropIcon width={18} height={18} aria-hidden="true" />
+              Prop
+            </button>
+
+            <div className="maplab-tool-palette-group" ref={terrainFlyoutRef}>
+              <button
+                type="button"
+                className="maplab-pill-button maplab-tool-palette-button"
+                aria-pressed={drawFeatureKind !== null}
+                data-active={drawFeatureKind !== null || undefined}
+                onClick={() => {
+                  setArmedTool(lastTerrainTool)
+                  setDismissZWarning(false)
+                  setPlacementError(null)
+                  setOpenFlyout(null)
+                }}
+              >
+                {lastTerrainTool === 'trees' ? (
+                  <Trees width={18} height={18} aria-hidden="true" />
+                ) : (
+                  <Waves width={18} height={18} aria-hidden="true" />
+                )}
+                Terrain
+              </button>
+              <button
+                type="button"
+                className="maplab-pill-button maplab-tool-palette-flyout-toggle"
+                aria-label="Choose terrain tool"
+                aria-haspopup="menu"
+                aria-expanded={openFlyout === 'terrain'}
+                onClick={() => setOpenFlyout((open) => (open === 'terrain' ? null : 'terrain'))}
+              >
+                {openFlyout === 'terrain' ? (
+                  <ChevronUpIcon width={14} height={14} aria-hidden="true" />
+                ) : (
+                  <ChevronDownIcon width={14} height={14} aria-hidden="true" />
+                )}
+              </button>
+              {openFlyout === 'terrain' && (
+                <div className="maplab-tool-palette-flyout" role="menu">
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="maplab-pill-button"
+                    data-active={drawFeatureKind === 'river' || undefined}
+                    onClick={() => {
+                      setLastTerrainTool('river')
+                      setArmedTool('river')
+                      setDismissZWarning(false)
+                      setPlacementError(null)
+                      setOpenFlyout(null)
+                    }}
+                  >
+                    <Waves width={16} height={16} aria-hidden="true" />
+                    River
+                  </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="maplab-pill-button"
+                    data-active={drawFeatureKind === 'trees' || undefined}
+                    onClick={() => {
+                      setLastTerrainTool('trees')
+                      setArmedTool('trees')
+                      setDismissZWarning(false)
+                      setPlacementError(null)
+                      setOpenFlyout(null)
+                    }}
+                  >
+                    <Trees width={16} height={16} aria-hidden="true" />
+                    Trees
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {brushArmed && (
+            <div className="maplab-tool-options" role="group" aria-label="Brush options">
+              <button
+                type="button"
+                className="maplab-pill-button maplab-tool-options-erase"
+                aria-pressed={eraseArmed}
+                data-active={eraseArmed || undefined}
+                onClick={() => setEraseArmed((active) => !active)}
+              >
+                <EraserIcon width={18} height={18} aria-hidden="true" />
+                Erase
+              </button>
+            </div>
+          )}
+
+          {armedTool === 'prop' && (
+            <div className="maplab-tool-options maplab-prop-kind-chip-row" role="group" aria-label="Prop kind">
+              {PROP_KIND_OPTIONS.map((option) => {
+                const KindIcon = PROP_KIND_ICONS[option.value as keyof typeof PROP_KIND_ICONS]
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    className="maplab-pill-button maplab-prop-kind-chip"
+                    aria-pressed={selectedPropKind === option.value}
+                    data-active={selectedPropKind === option.value || undefined}
+                    onClick={() => setSelectedPropKind(option.value)}
+                  >
+                    <KindIcon width={16} height={16} aria-hidden="true" />
+                    {option.label}
+                  </button>
+                )
+              })}
+            </div>
+          )}
+        </ToolbarTray>
+        <div className="maplab-view-popover-wrap" ref={viewPopoverRef}>
           <button
             type="button"
             className="maplab-pill-button maplab-editor-toolbar-button"
-            aria-pressed={placePortalMode}
-            data-active={placePortalMode || undefined}
-            onClick={() =>
-              setPlacePortalMode((active) => {
-                if (!active) {
-                  setPlaceDoorMode(false)
-                  setPlacePropMode(false)
-                  setPlaceStairMode(false)
-                  setDrawFeatureKind(null)
-                }
-                setPlacementError(null)
-                return !active
-              })
-            }
+            aria-haspopup="true"
+            aria-expanded={viewPopoverOpen}
+            data-active={viewPopoverOpen || undefined}
+            onClick={() => setViewPopoverOpen((open) => !open)}
           >
-            <PortalIcon width={18} height={18} aria-hidden="true" />
-            {placePortalMode ? 'Cancel portal placement' : 'Place portal'}
+            <EyeIcon width={18} height={18} aria-hidden="true" />
+            View
           </button>
+          {viewPopoverOpen && (
+            <div className="maplab-view-popover" role="menu">
+              <button
+                type="button"
+                className="maplab-pill-button maplab-layer-toggle-button"
+                aria-pressed={layerVisible.outside}
+                data-active={layerVisible.outside || undefined}
+                onClick={() => toggleLayer('outside')}
+              >
+                Outside
+              </button>
+              <button
+                type="button"
+                className="maplab-pill-button maplab-layer-toggle-button"
+                aria-pressed={layerVisible.props}
+                data-active={layerVisible.props || undefined}
+                onClick={() => toggleLayer('props')}
+              >
+                Props
+              </button>
+              <button
+                type="button"
+                className="maplab-pill-button maplab-layer-toggle-button"
+                aria-pressed={layerVisible.passages}
+                data-active={layerVisible.passages || undefined}
+                onClick={() => toggleLayer('passages')}
+              >
+                Passages
+              </button>
+              <button
+                type="button"
+                className="maplab-pill-button maplab-layer-toggle-button"
+                aria-pressed={layerVisible.labels}
+                data-active={layerVisible.labels || undefined}
+                onClick={() => toggleLayer('labels')}
+              >
+                Labels
+              </button>
+              <button
+                type="button"
+                className="maplab-pill-button maplab-editor-toolbar-button"
+                aria-pressed={showGhostFloor}
+                data-active={showGhostFloor || undefined}
+                disabled={ghostZ === null}
+                onClick={() => setShowGhostFloor((active) => !active)}
+              >
+                Ghost lower floor
+              </button>
+              <button
+                type="button"
+                className="maplab-pill-button"
+                aria-pressed={density === 'detailed'}
+                data-active={density === 'detailed' || undefined}
+                onClick={() => setDensity('detailed')}
+              >
+                Detailed
+              </button>
+              <button
+                type="button"
+                className="maplab-pill-button"
+                aria-pressed={density === 'auto'}
+                data-active={density === 'auto' || undefined}
+                onClick={() => setDensity('auto')}
+              >
+                Auto
+              </button>
+              <button
+                type="button"
+                className="maplab-pill-button"
+                aria-pressed={density === 'simple'}
+                data-active={density === 'simple' || undefined}
+                onClick={() => setDensity('simple')}
+              >
+                Simple
+              </button>
+            </div>
+          )}
+        </div>
+        <div className="maplab-map-popover-wrap" ref={mapPopoverRef}>
           <button
             type="button"
             className="maplab-pill-button maplab-editor-toolbar-button"
-            aria-pressed={drawFeatureKind === 'river'}
-            data-active={drawFeatureKind === 'river' || undefined}
-            onClick={() => {
-              setPlaceDoorMode(false)
-              setPlacePropMode(false)
-              setPlaceStairMode(false)
-              setPlacePortalMode(false)
-              setDrawFeatureKind((kind) => (kind === 'river' ? null : 'river'))
-              setDismissZWarning(false)
-              setPlacementError(null)
-            }}
+            aria-haspopup="true"
+            aria-expanded={mapPopoverOpen}
+            data-active={mapPopoverOpen || undefined}
+            onClick={() => setMapPopoverOpen((open) => !open)}
           >
-            Draw River
+            <MapIcon width={18} height={18} aria-hidden="true" />
+            Map
           </button>
-          <button
-            type="button"
-            className="maplab-pill-button maplab-editor-toolbar-button"
-            aria-pressed={drawFeatureKind === 'trees'}
-            data-active={drawFeatureKind === 'trees' || undefined}
-            onClick={() => {
-              setPlaceDoorMode(false)
-              setPlacePropMode(false)
-              setPlaceStairMode(false)
-              setPlacePortalMode(false)
-              setDrawFeatureKind((kind) => (kind === 'trees' ? null : 'trees'))
-              setDismissZWarning(false)
-              setPlacementError(null)
-            }}
-          >
-            Draw Trees
-          </button>
-        </ToolbarTray>
-        <ToolbarTray groupKey="editor-session" label="Session">
-          <button type="button" className="maplab-pill-button maplab-editor-toolbar-button" onClick={resetToLastLoadedLayout}>
-            Reset unsaved changes
-          </button>
-        </ToolbarTray>
-        <ToolbarTray groupKey="editor-view" label="View">
-          <button
-            type="button"
-            className="maplab-pill-button maplab-layer-toggle-button"
-            aria-pressed={layerVisible.outside}
-            data-active={layerVisible.outside || undefined}
-            onClick={() => toggleLayer('outside')}
-          >
-            Outside
-          </button>
-          <button
-            type="button"
-            className="maplab-pill-button maplab-layer-toggle-button"
-            aria-pressed={layerVisible.props}
-            data-active={layerVisible.props || undefined}
-            onClick={() => toggleLayer('props')}
-          >
-            Props
-          </button>
-          <button
-            type="button"
-            className="maplab-pill-button maplab-layer-toggle-button"
-            aria-pressed={layerVisible.passages}
-            data-active={layerVisible.passages || undefined}
-            onClick={() => toggleLayer('passages')}
-          >
-            Passages
-          </button>
-          <button
-            type="button"
-            className="maplab-pill-button maplab-layer-toggle-button"
-            aria-pressed={layerVisible.labels}
-            data-active={layerVisible.labels || undefined}
-            onClick={() => toggleLayer('labels')}
-          >
-            Labels
-          </button>
-          <button
-            type="button"
-            className="maplab-pill-button maplab-editor-toolbar-button"
-            aria-pressed={showGhostFloor}
-            data-active={showGhostFloor || undefined}
-            disabled={ghostZ === null}
-            onClick={() => setShowGhostFloor((active) => !active)}
-          >
-            Ghost lower floor
-          </button>
-          <button
-            type="button"
-            className="maplab-pill-button"
-            aria-pressed={density === 'detailed'}
-            data-active={density === 'detailed' || undefined}
-            onClick={() => setDensity('detailed')}
-          >
-            Detailed
-          </button>
-          <button
-            type="button"
-            className="maplab-pill-button"
-            aria-pressed={density === 'auto'}
-            data-active={density === 'auto' || undefined}
-            onClick={() => setDensity('auto')}
-          >
-            Auto
-          </button>
-          <button
-            type="button"
-            className="maplab-pill-button"
-            aria-pressed={density === 'simple'}
-            data-active={density === 'simple' || undefined}
-            onClick={() => setDensity('simple')}
-          >
-            Simple
-          </button>
-        </ToolbarTray>
-        <ToolbarTray groupKey="editor-map" label="Map">
-          <label className="maplab-field-row maplab-room-content-field maplab-editor-padding-input">
-            <span>Top</span>
-            <input type="number" min={0} value={state.layout.meta.padding.top}
-              onChange={(event) => updatePadding({ ...state.layout.meta.padding, top: Number(event.target.value) })} />
-          </label>
-          <label className="maplab-field-row maplab-room-content-field maplab-editor-padding-input">
-            <span>Right</span>
-            <input type="number" min={0} value={state.layout.meta.padding.right}
-              onChange={(event) => updatePadding({ ...state.layout.meta.padding, right: Number(event.target.value) })} />
-          </label>
-          <label className="maplab-field-row maplab-room-content-field maplab-editor-padding-input">
-            <span>Bottom</span>
-            <input type="number" min={0} value={state.layout.meta.padding.bottom}
-              onChange={(event) => updatePadding({ ...state.layout.meta.padding, bottom: Number(event.target.value) })} />
-          </label>
-          <label className="maplab-field-row maplab-room-content-field maplab-editor-padding-input">
-            <span>Left</span>
-            <input type="number" min={0} value={state.layout.meta.padding.left}
-              onChange={(event) => updatePadding({ ...state.layout.meta.padding, left: Number(event.target.value) })} />
-          </label>
-        </ToolbarTray>
-        <ToolbarTray groupKey="editor-status" label="Status" extraClassName="maplab-toolbar-group-status">
+          {mapPopoverOpen && (
+            <div className="maplab-map-popover" role="menu">
+              <label className="maplab-field-row maplab-room-content-field maplab-editor-padding-input">
+                <span>Top</span>
+                <input type="number" min={0} value={state.layout.meta.padding.top}
+                  onChange={(event) => updatePadding({ ...state.layout.meta.padding, top: Number(event.target.value) })} />
+              </label>
+              <label className="maplab-field-row maplab-room-content-field maplab-editor-padding-input">
+                <span>Right</span>
+                <input type="number" min={0} value={state.layout.meta.padding.right}
+                  onChange={(event) => updatePadding({ ...state.layout.meta.padding, right: Number(event.target.value) })} />
+              </label>
+              <label className="maplab-field-row maplab-room-content-field maplab-editor-padding-input">
+                <span>Bottom</span>
+                <input type="number" min={0} value={state.layout.meta.padding.bottom}
+                  onChange={(event) => updatePadding({ ...state.layout.meta.padding, bottom: Number(event.target.value) })} />
+              </label>
+              <label className="maplab-field-row maplab-room-content-field maplab-editor-padding-input">
+                <span>Left</span>
+                <input type="number" min={0} value={state.layout.meta.padding.left}
+                  onChange={(event) => updatePadding({ ...state.layout.meta.padding, left: Number(event.target.value) })} />
+              </label>
+              <button
+                type="button"
+                className="maplab-pill-button maplab-editor-toolbar-button"
+                onClick={() => setConfirmingReset(true)}
+              >
+                Reset unsaved changes
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {statusSlot &&
+        createPortal(
           <span className="maplab-editor-save-status" data-status={saveStatus.status} role="status" aria-live="polite">
             <SaveIcon width={16} height={16} aria-hidden="true" />
             {syncStatusLabel(saveStatus.status)}
-          </span>
-        </ToolbarTray>
-      </div>
-
-      {placementError && (
-        <p className="maplab-placement-error" role="alert">
-          {placementError}
-        </p>
-      )}
+          </span>,
+          statusSlot,
+        )}
 
       {drawFeatureKind !== null && state.activeZ !== 0 && !dismissZWarning && (
         <p className="maplab-placement-error" role="status">
@@ -816,9 +1181,8 @@ export function MapLabEditorPage() {
         </p>
       )}
 
-      <div className="maplab-editor-layout">
-        <div className="maplab-editor-nav-rail">
-          <div className="maplab-floor-tabs" role="tablist" aria-label="Dungeon floors">
+      <div className="maplab-editor-floor-strip">
+        <div className="maplab-floor-tabs" role="tablist" aria-label="Dungeon floors">
             {floors.map((floor) => (
               <button
                 key={floor.z}
@@ -827,24 +1191,39 @@ export function MapLabEditorPage() {
                 className="maplab-pill-button maplab-floor-tab"
                 aria-selected={floor.z === state.activeZ}
                 onClick={() => {
-                  clearRoomFootprintSelection()
                   setActiveZ(floor.z)
+                  setTabletNavOpen(false)
                 }}
               >
                 {floor.title ?? `Floor ${floor.z}`}
               </button>
             ))}
-          </div>
+        </div>
+      </div>
 
+      <div className="maplab-editor-layout">
+        <button
+          type="button"
+          className="maplab-pill-button maplab-editor-nav-toggle"
+          aria-label="Open map editor navigation"
+          aria-expanded={tabletNavOpen}
+          aria-controls="maplab-editor-navigation"
+          onClick={() => setTabletNavOpen((open) => !open)}
+        >
+          Floors, rooms, and connections
+        </button>
+        <div
+          id="maplab-editor-navigation"
+          className="maplab-editor-nav-rail"
+          data-open={tabletNavOpen || undefined}
+        >
+          <div className="maplab-floor-tabs maplab-editor-nav-floor-tabs" aria-hidden="true" />
           <div className="maplab-editor-floor-actions" aria-label="Floor actions">
             <button
               type="button"
               className="maplab-pill-button maplab-editor-floor-action"
               disabled={hasFloorAbove}
-              onClick={() => {
-                clearRoomFootprintSelection()
-                addFloorAbove()
-              }}
+              onClick={() => addFloorAbove()}
             >
               <PlusIcon width={16} height={16} aria-hidden="true" />
               Add floor above
@@ -853,15 +1232,25 @@ export function MapLabEditorPage() {
               type="button"
               className="maplab-pill-button maplab-editor-floor-action"
               disabled={hasFloorBelow}
-              onClick={() => {
-                clearRoomFootprintSelection()
-                addFloorBelow()
-              }}
+              onClick={() => addFloorBelow()}
             >
               <PlusIcon width={16} height={16} aria-hidden="true" />
               Add floor below
             </button>
           </div>
+
+          <button
+            type="button"
+            className="maplab-pill-button maplab-editor-room-list-new"
+            onClick={() => {
+              selectRoom(null)
+              setArmedTool('room')
+              setPlacementError(null)
+            }}
+          >
+            <PlusIcon width={16} height={16} aria-hidden="true" />
+            New room
+          </button>
 
           <ul className="maplab-editor-room-list" aria-label="Rooms on this floor">
             {roomsOnActiveFloor.map((room) => (
@@ -875,8 +1264,9 @@ export function MapLabEditorPage() {
                   className="maplab-editor-room-item-select"
                   aria-pressed={room.room_id === state.selectedRoomId}
                   onClick={() => {
-                    clearRoomFootprintSelection()
-                    selectRoom(room.room_id === state.selectedRoomId ? null : room.room_id)
+                    const nextRoomId = room.room_id === state.selectedRoomId ? null : room.room_id
+                    selectRoom(nextRoomId)
+                    if (nextRoomId !== null) setArmedTool('room')
                   }}
                 >
                   {room.title ?? `Room ${room.room_id}`}
@@ -885,7 +1275,7 @@ export function MapLabEditorPage() {
                   type="button"
                   className="maplab-editor-room-item-delete"
                   aria-label={`Delete ${room.title ?? `Room ${room.room_id}`}`}
-                  onClick={() => deleteRoom(room.room_id)}
+                  onClick={() => setRoomToDelete(room)}
                 >
                   <TrashIcon width={16} height={16} aria-hidden="true" />
                 </button>
@@ -908,6 +1298,13 @@ export function MapLabEditorPage() {
             onAddReturnGateway={handleAddReturnGateway}
           />
         </div>
+        <button
+          type="button"
+          className="maplab-editor-nav-backdrop"
+          aria-label="Close map editor navigation"
+          tabIndex={tabletNavOpen ? 0 : -1}
+          onClick={() => setTabletNavOpen(false)}
+        />
 
         <MapCanvas
           viewBox={viewBox}
@@ -917,17 +1314,30 @@ export function MapLabEditorPage() {
           variant="neutral"
           fullscreen={isCanvasFullscreen}
           onToggleFullscreen={toggleCanvasFullscreen}
-          onExitFullscreen={() => {
-            clearRoomFootprintSelection()
-            setIsCanvasFullscreen(false)
-          }}
+          onExitFullscreen={() => setIsCanvasFullscreen(false)}
           onWheelZoom={zoomApi.handleWheel}
           onPanStart={zoomApi.handlePointerDown}
           onPanMove={zoomApi.handlePointerMove}
           onPanEnd={zoomApi.handlePointerUp}
+          onStrokePointerDown={(e) => {
+            strokeApi.onStrokePointerDown(e)
+            featureStrokeApi.onStrokePointerDown(e)
+          }}
+          onStrokePointerMove={(e) => {
+            strokeApi.onStrokePointerMove(e)
+            featureStrokeApi.onStrokePointerMove(e)
+          }}
+          onStrokePointerUp={(e) => {
+            strokeApi.onStrokePointerUp(e)
+            featureStrokeApi.onStrokePointerUp(e)
+          }}
+          strokeViewportRef={(el) => {
+            strokeApi.setStrokeViewportEl(el)
+            featureStrokeApi.setStrokeViewportEl(el)
+          }}
           onViewportResize={handleViewportResize}
           panHint="Drag to pan. Pinch or scroll to zoom. Press Escape to exit fullscreen."
-          viewportDescription={footprintGuidance}
+          viewportDescription={roomBrushGuidance}
           topRightSlot={(() => {
             const FullscreenIcon = isCanvasFullscreen ? FullscreenExitIcon : FullscreenEnterIcon
             return (
@@ -941,8 +1351,37 @@ export function MapLabEditorPage() {
               </button>
             )
           })()}
+          bottomCenterSlot={
+            placementError ? (
+              <p className="maplab-placement-error" role="status">
+                {placementError}
+              </p>
+            ) : deletedFixture ? (
+              <div className="maplab-placement-error" role="status">
+                Deleted {deletedFixture}. <button type="button" aria-label="Undo deletion" onClick={undoDeletedFixture}>Undo</button>
+              </div>
+            ) : null
+          }
           controlsSlot={
             <>
+              <div className="maplab-history-cluster">
+                <button
+                  type="button"
+                  className="maplab-pill-button maplab-history-button"
+                  onClick={undo}
+                  disabled={!canUndo}
+                >
+                  Undo
+                </button>
+                <button
+                  type="button"
+                  className="maplab-pill-button maplab-history-button"
+                  onClick={redo}
+                  disabled={!canRedo}
+                >
+                  Redo
+                </button>
+              </div>
               <button
                 type="button"
                 className="maplab-pill-button maplab-zoom-button"
@@ -995,28 +1434,9 @@ export function MapLabEditorPage() {
             width={(bounds.maxX - bounds.minX + 1) * CELL_SIZE}
             height={(bounds.maxY - bounds.minY + 1) * CELL_SIZE}
             fill="var(--maplab-outside-fill)"
-            onClick={(event) => {
+            onClick={() => {
               if (drawFeatureKind || placeDoorMode || placePropMode || placeStairMode || placePortalMode) return
               if (state.selectedRoomId !== null) return
-              const target = event.currentTarget as SVGRectElement
-              const svg = target.closest('svg')
-              if (!svg) return
-              const ctm = svg.getScreenCTM()
-              if (!ctm) return
-              const pt = svg.createSVGPoint()
-              pt.x = event.clientX
-              pt.y = event.clientY
-              const svgPt = pt.matrixTransform(ctm.inverse())
-              const cell: MapCell = [Math.floor(svgPt.x / CELL_SIZE), Math.floor(svgPt.y / CELL_SIZE)]
-              const sameFloorRooms = state.layout.rooms.filter((r) => r.z === state.activeZ)
-              if (roomOfCell(cell, sameFloorRooms) !== null) return
-              const wrapper = target.closest('.maplab-editor-layout')
-              if (!wrapper) return
-              const wrapperRect = wrapper.getBoundingClientRect()
-              setCellActionMenu({
-                x: event.clientX - wrapperRect.left,
-                y: event.clientY - wrapperRect.top,
-              })
             }}
           />
           )}
@@ -1066,11 +1486,17 @@ export function MapLabEditorPage() {
               tabIndex={0}
               aria-pressed={room.room_id === state.selectedRoomId}
               aria-label={room.title ?? `Room ${room.room_id}`}
-              onClick={() => selectRoom(room.room_id === state.selectedRoomId ? null : room.room_id)}
+              onClick={() => {
+                const nextRoomId = room.room_id === state.selectedRoomId ? null : room.room_id
+                selectRoom(nextRoomId)
+                if (nextRoomId !== null) setArmedTool('room')
+              }}
               onKeyDown={(event) => {
                 if (event.key === 'Enter' || event.key === ' ') {
                   event.preventDefault()
-                  selectRoom(room.room_id === state.selectedRoomId ? null : room.room_id)
+                  const nextRoomId = room.room_id === state.selectedRoomId ? null : room.room_id
+                  selectRoom(nextRoomId)
+                  if (nextRoomId !== null) setArmedTool('room')
                 }
               }}
             >
@@ -1105,23 +1531,16 @@ export function MapLabEditorPage() {
             </g>
           ))}
 
-          {!drawFeatureKind && !placeDoorMode && !placePropMode && !placeStairMode && !placePortalMode && state.selectedRoomId !== null && roomFootprintSelection && (
-            <g className="maplab-room-footprint-preview" aria-hidden="true">
-              {pendingFootprintCells.map((cell) => {
+          {placeRoomMode && strokeCells.length > 0 && (
+            <g className="maplab-room-brush-preview" aria-hidden="true">
+              {strokeCells.map((cell) => {
                 const [x, y] = cell
-                const footprintState = footprintStateForCell(
-                  state.layout,
-                  state.selectedRoomId as number,
-                  state.activeZ,
-                  cell,
-                  pendingFootprintIsValid,
-                )
-                const isAnchor = roomFootprintSelection.anchor[0] === x && roomFootprintSelection.anchor[1] === y
+                const brushState = brushCellStateForCell(state.layout, state.activeZ, state.selectedRoomId, eraseArmed, cell)
                 return (
                   <rect
                     key={`${x}-${y}`}
-                    className={isAnchor ? 'maplab-room-footprint-anchor' : 'maplab-room-footprint-cell'}
-                    data-footprint-state={footprintState}
+                    className="maplab-room-brush-cell"
+                    data-brush-state={brushState}
                     x={x * CELL_SIZE}
                     y={y * CELL_SIZE}
                     width={CELL_SIZE}
@@ -1207,8 +1626,7 @@ export function MapLabEditorPage() {
                         return
                       }
                       setPlacementError(null)
-                      addProp([x, y])
-                      setPlacePropMode(false)
+                      addProp([x, y], selectedPropKind)
                     }}
                   />
                 ))
@@ -1220,22 +1638,46 @@ export function MapLabEditorPage() {
             <g className="maplab-door-placement-overlay">
               {placementEdges.map((edge) => {
                 const segment = doorWallSegment(edge, CELL_SIZE)
+                const isHorizontal = segment.y1 === segment.y2
+                const hitBandDepth = 40
+                const hitRect = isHorizontal
+                  ? {
+                      x: Math.min(segment.x1, segment.x2),
+                      y: segment.y1 - hitBandDepth / 2,
+                      width: Math.abs(segment.x2 - segment.x1),
+                      height: hitBandDepth,
+                    }
+                  : {
+                      x: segment.x1 - hitBandDepth / 2,
+                      y: Math.min(segment.y1, segment.y2),
+                      width: hitBandDepth,
+                      height: Math.abs(segment.y2 - segment.y1),
+                    }
+                const handleDoorPlacement = (event: { stopPropagation: () => void }) => {
+                  event.stopPropagation()
+                  addDoor(edge.cell, edge.side as CardinalSide)
+                  setArmedTool('select')
+                }
                 return (
-                  <line
-                    key={edgeKey(edge)}
-                    className="maplab-door-placement-edge"
-                    x1={segment.x1}
-                    y1={segment.y1}
-                    x2={segment.x2}
-                    y2={segment.y2}
-                    role="button"
-                    aria-label={`Place door at ${edge.cell[0]}, ${edge.cell[1]} ${edge.side}`}
-                    onClick={(event) => {
-                      event.stopPropagation()
-                      addDoor(edge.cell, edge.side as CardinalSide)
-                      setPlaceDoorMode(false)
-                    }}
-                  />
+                  <g key={edgeKey(edge)}>
+                    <rect
+                      className="maplab-door-placement-hitband"
+                      x={hitRect.x}
+                      y={hitRect.y}
+                      width={hitRect.width}
+                      height={hitRect.height}
+                      role="button"
+                      aria-label={`Place door at ${edge.cell[0]}, ${edge.cell[1]} ${edge.side}`}
+                      onClick={handleDoorPlacement}
+                    />
+                    <line
+                      className="maplab-door-placement-edge"
+                      x1={segment.x1}
+                      y1={segment.y1}
+                      x2={segment.x2}
+                      y2={segment.y2}
+                    />
+                  </g>
                 )
               })}
             </g>
@@ -1262,7 +1704,6 @@ export function MapLabEditorPage() {
                       }
                       setPlacementError(null)
                       addStair({ z: state.activeZ, cell: [x, y] })
-                      setPlaceStairMode(false)
                     }}
                   />
                 ))
@@ -1291,7 +1732,6 @@ export function MapLabEditorPage() {
                       }
                       setPlacementError(null)
                       addPortal([x, y])
-                      setPlacePortalMode(false)
                     }}
                   />
                 ))
@@ -1300,193 +1740,19 @@ export function MapLabEditorPage() {
           )}
 
           {drawFeatureKind && (
-            <g
-              className="maplab-draw-overlay"
-              onPointerUp={() => {
-                isFeatureDrawDraggingRef.current = false
-                featureDrawModeRef.current = null
-                dragProcessedRef.current.clear()
-              }}
-              onPointerLeave={() => {
-                isFeatureDrawDraggingRef.current = false
-                featureDrawModeRef.current = null
-                dragProcessedRef.current.clear()
-              }}
-            >
-              {Array.from({ length: bounds.maxY - bounds.minY + 1 }, (_, rowIndex) => bounds.minY + rowIndex).map((y) =>
-                Array.from({ length: bounds.maxX - bounds.minX + 1 }, (_, colIndex) => bounds.minX + colIndex).map(
-                  (x) => {
-                    const cell: MapCell = [x, y]
-                    return (
-                      <rect
-                        key={`${x}-${y}`}
-                        className="maplab-draw-cell"
-                        x={x * CELL_SIZE}
-                        y={y * CELL_SIZE}
-                        width={CELL_SIZE}
-                        height={CELL_SIZE}
-                        role="button"
-                        aria-label={`Draw ${drawFeatureKind} at ${x}, ${y}`}
-                        onPointerEnter={() => {
-                          if (!isFeatureDrawDraggingRef.current) return
-                          if (dragProcessedRef.current.has(cellKey(cell))) return
-                          if (state.selectedFeatureId === null) return
-                          const feature = state.layout.features.find((f) => f.feature_id === state.selectedFeatureId)
-                          const hasCell = feature?.cells.some(([x2, y2]) => x2 === cell[0] && y2 === cell[1]) ?? false
-                          const mode = featureDrawModeRef.current
-                          if (mode === 'add' && hasCell) return
-                          if (mode === 'remove' && !hasCell) return
-                          dragProcessedRef.current.add(cellKey(cell))
-                          toggleFeatureCell(state.selectedFeatureId, cell)
-                        }}
-                        onPointerDown={(event) => {
-                          event.stopPropagation()
-                          isFeatureDrawDraggingRef.current = true
-                          if (state.selectedFeatureId === null) {
-                            featureDrawModeRef.current = 'add'
-                            addFeature(drawFeatureKind, cell, state.activeZ)
-                          } else {
-                            const feature = state.layout.features.find((f) => f.feature_id === state.selectedFeatureId)
-                            const hasCell = feature?.cells.some(([x2, y2]) => x2 === cell[0] && y2 === cell[1]) ?? false
-                            featureDrawModeRef.current = hasCell ? 'remove' : 'add'
-                            toggleFeatureCell(state.selectedFeatureId, cell)
-                            dragProcessedRef.current.add(cellKey(cell))
-                          }
-                        }}
-                      />
-                    )
-                  },
-                )
-              )}
-            </g>
-          )}
-
-          {!drawFeatureKind && !placeDoorMode && !placePropMode && !placeStairMode && !placePortalMode && state.selectedRoomId !== null && (
-            <g className="maplab-paint-overlay" onMouseLeave={() => setHoveredCell(null)}>
-              {Array.from({ length: bounds.maxY - bounds.minY + 1 }, (_, rowIndex) => bounds.minY + rowIndex).map((y) =>
-                Array.from({ length: bounds.maxX - bounds.minX + 1 }, (_, colIndex) => bounds.minX + colIndex).map(
-                  (x) => {
-                    const cell: MapCell = [x, y]
-                    const paintState = paintStateForCell(state.layout, state.selectedRoomId as number, state.activeZ, cell)
-                    const isHovered = hoveredCell?.[0] === x && hoveredCell?.[1] === y
-                    const interactive = paintState === 'paintable' || paintState === 'ownedSelected' || roomFootprintSelection?.mode === 'click'
-                    const markerX = x * CELL_SIZE + CELL_SIZE / 2 - MARKER_SIZE / 2
-                    const markerY = y * CELL_SIZE + CELL_SIZE / 2 - MARKER_SIZE / 2
-                    return (
-                      <g key={`${x}-${y}`}>
-                        <rect
-                          className="maplab-paint-cell"
-                          data-paint-state={paintState}
-                          x={x * CELL_SIZE}
-                          y={y * CELL_SIZE}
-                          width={CELL_SIZE}
-                          height={CELL_SIZE}
-                           role={interactive ? 'button' : undefined}
-                           tabIndex={interactive ? 0 : undefined}
-                          aria-label={
-                            roomFootprintSelection?.mode === 'click'
-                              ? `Set footprint corner ${x}, ${y}`
-                              : paintState === 'paintable'
-                              ? `Add cell ${x}, ${y}`
-                              : paintState === 'ownedSelected'
-                                ? `Remove cell ${x}, ${y}`
-                                : undefined
-                          }
-                          onMouseEnter={() => setHoveredCell(cell)}
-                          onPointerEnter={() => {
-                            if (roomFootprintSelection?.mode === 'drag') {
-                              setRoomFootprintSelection({ ...roomFootprintSelection, current: cell })
-                            }
-                          }}
-                          onPointerDown={(event) => {
-                            if (paintState !== 'paintable' && paintState !== 'ownedSelected') return
-                            event.stopPropagation()
-                            setRoomFootprintSelection({ anchor: cell, current: cell, mode: 'drag' })
-                            setPlacementError(null)
-                          }}
-                          onPointerUp={(event) => {
-                            if (roomFootprintSelection?.mode !== 'drag') return
-                            event.stopPropagation()
-                            const moved = roomFootprintSelection.anchor[0] !== cell[0] || roomFootprintSelection.anchor[1] !== cell[1]
-                            if (moved) {
-                              commitRoomFootprint(
-                                footprintCellsForSelection(
-                                  state.layout,
-                                  state.selectedRoomId as number,
-                                  state.activeZ,
-                                  roomFootprintSelection.anchor,
-                                  rectangleCells(roomFootprintSelection.anchor, cell),
-                                ),
-                              )
-                            } else {
-                              if (paintState === 'ownedSelected') {
-                                toggleCell(state.selectedRoomId as number, cell)
-                                setRoomFootprintSelection(null)
-                              } else {
-                                setRoomFootprintSelection({ anchor: cell, current: cell, mode: 'click' })
-                              }
-                            }
-                            suppressNextPaintClickRef.current = true
-                          }}
-                           onClick={() => {
-                            if (suppressNextPaintClickRef.current) {
-                              suppressNextPaintClickRef.current = false
-                              return
-                            }
-                            if (!interactive) return
-                            if (roomFootprintSelection?.mode === 'click') {
-                              commitRoomFootprint(rectangleCells(roomFootprintSelection.anchor, cell))
-                              return
-                            }
-                            if (paintState === 'ownedSelected' && !roomFootprintSelection) {
-                              toggleCell(state.selectedRoomId as number, cell)
-                              return
-                            }
-                            if (paintState !== 'paintable') return
-                            if (!roomFootprintSelection) {
-                              setRoomFootprintSelection({ anchor: cell, current: cell, mode: 'click' })
-                              setPlacementError(null)
-                             }
-                           }}
-                           onKeyDown={(event) => {
-                             if (event.key !== 'Enter' && event.key !== ' ') return
-                             event.preventDefault()
-                             event.currentTarget.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-                           }}
-                         />
-                        {isHovered && paintState === 'paintable' && (
-                          <g transform={`translate(${markerX}, ${markerY})`} className="maplab-paint-marker" aria-hidden="true">
-                            <PlusIcon width={MARKER_SIZE} height={MARKER_SIZE} />
-                          </g>
-                        )}
-                        {isHovered && paintState === 'ownedSelected' && (
-                          <g
-                            transform={`translate(${markerX}, ${markerY})`}
-                            className="maplab-paint-marker maplab-paint-marker-remove"
-                            aria-hidden="true"
-                          >
-                            <MinusIcon width={MARKER_SIZE} height={MARKER_SIZE} />
-                          </g>
-                        )}
-                        {isHovered && paintState === 'invalid' && (
-                          <g
-                            transform={`translate(${markerX}, ${markerY})`}
-                            className="maplab-paint-marker maplab-paint-marker-invalid"
-                            aria-hidden="true"
-                          >
-                            <CloseIcon width={MARKER_SIZE} height={MARKER_SIZE} />
-                          </g>
-                        )}
-                      </g>
-                    )
-                  }
-                )
-              )}
-            </g>
+            <rect
+              className="maplab-feature-stroke-overlay"
+              x={bounds.minX * CELL_SIZE}
+              y={bounds.minY * CELL_SIZE}
+              width={(bounds.maxX - bounds.minX + 1) * CELL_SIZE}
+              height={(bounds.maxY - bounds.minY + 1) * CELL_SIZE}
+              fill="transparent"
+              aria-hidden="true"
+            />
           )}
 
           {/* Rendered after the paint/placement overlays so a prop marker always stays on top and
-           * clickable — the paint overlay in particular covers every cell of the selected room
+           * clickable — the room brush preview in particular can cover cells of the selected room
            * (including ones a prop sits on), and would otherwise swallow the prop's click/hover. */}
           {layerVisible.props && propsOnActiveFloor.map((prop) => {
             const propOffset =
@@ -1506,52 +1772,26 @@ export function MapLabEditorPage() {
           })}
         </MapCanvas>
 
-        {cellActionMenu && (
-          <div
-            className="maplab-cell-action-menu"
-            style={{ left: cellActionMenu.x, top: cellActionMenu.y }}
-            role="menu"
+        {selectionActions && (
+          <aside
+            className="maplab-inspector-rail maplab-selection-sheet"
+            aria-label={`${selectedItemName} editor`}
+            data-expanded={selectionSheetExpanded || undefined}
           >
-            {FEATURE_KIND_OPTIONS.map((opt) => (
+            <div className="maplab-selection-sheet-peek">
+              <strong>{selectedItemName}</strong>
               <button
-                key={opt.value}
                 type="button"
-                className="maplab-pill-button"
-                role="menuitem"
-                onClick={() => {
-                  setDrawFeatureKind(opt.value)
-                  setCellActionMenu(null)
-                }}
+                className="maplab-pill-button maplab-selection-sheet-toggle"
+                aria-expanded={selectionSheetExpanded}
+                aria-controls="maplab-selection-sheet-content"
+                onClick={() => setSelectionSheetExpanded((expanded) => !expanded)}
               >
-                Draw {opt.label}
+                {selectionSheetExpanded ? 'Collapse editor' : 'Edit'}
               </button>
-            ))}
-            <button
-              type="button"
-              className="maplab-pill-button"
-              role="menuitem"
-              onClick={() => {
-                addRoom()
-                setCellActionMenu(null)
-              }}
-            >
-              Start room
-            </button>
-            <button
-              type="button"
-              className="maplab-pill-button"
-              role="menuitem"
-              onClick={() => {
-                setPlacePropMode(true)
-                setCellActionMenu(null)
-              }}
-            >
-              Place prop
-            </button>
-          </div>
-        )}
-
-        <div className="maplab-inspector-rail">
+              {selectionActions}
+            </div>
+            <div className="maplab-selection-sheet-content" id="maplab-selection-sheet-content">
           {selectedFeature ? (
             <>
               <InspectorPanel target={{ kind: 'feature', feature: selectedFeature }} />
@@ -1574,11 +1814,6 @@ export function MapLabEditorPage() {
                   onChange={(e) => updateFeatureMeta(selectedFeature.feature_id, { title: e.target.value })}
                 />
               </div>
-              <SelectionActions
-                deleteLabel="Delete feature"
-                onDelete={() => setFeatureToDelete(selectedFeature)}
-                onClose={() => selectFeature(null)}
-              />
             </>
           ) : selectedDoor ? (
             <>
@@ -1587,11 +1822,6 @@ export function MapLabEditorPage() {
                 spec={FIXTURE_TYPES.door}
                 values={selectedDoor as unknown as Record<string, unknown>}
                 onChange={(key, value) => updateFixtureFlags(selectedDoor.door_id, 'door', { [key]: value })}
-              />
-              <SelectionActions
-                deleteLabel="Delete door"
-                onDelete={() => deleteDoor(selectedDoor.door_id)}
-                onClose={() => selectDoor(null)}
               />
             </>
           ) : selectedRoom ? (
@@ -1606,11 +1836,6 @@ export function MapLabEditorPage() {
                 onUpdateRoomNpcs={updateRoomNpcs}
                 onCreateRoomData={createRoomData}
               />
-              <SelectionActions
-                deleteLabel="Delete room"
-                onDelete={() => deleteRoom(selectedRoom.room_id)}
-                onClose={() => selectRoom(null)}
-              />
             </>
           ) : selectedProp ? (
             <>
@@ -1623,11 +1848,6 @@ export function MapLabEditorPage() {
                     [key]: key === 'side' && value === 'Off' ? undefined : value,
                   })
                 }
-              />
-              <SelectionActions
-                deleteLabel="Delete prop"
-                onDelete={() => deleteProp(selectedProp.prop_id)}
-                onClose={() => selectProp(null)}
               />
             </>
           ) : selectedStair ? (
@@ -1668,11 +1888,6 @@ export function MapLabEditorPage() {
                 values={selectedStair as unknown as Record<string, unknown>}
                 onChange={(key, value) => updateFixtureFlags(selectedStair.stair_id, 'stair', { [key]: value })}
               />
-              <SelectionActions
-                deleteLabel="Delete stair"
-                onDelete={() => deleteStair(selectedStair.stair_id)}
-                onClose={() => selectStair(null)}
-              />
             </>
           ) : selectedPortal ? (
             <>
@@ -1684,26 +1899,21 @@ export function MapLabEditorPage() {
                 currentDungeonId={route.dungeonId ?? undefined}
                 onChange={(key, value) => updateFixtureFlags(selectedPortal.portal_id, 'portal', { [key]: value })}
               />
-              <SelectionActions
-                deleteLabel="Delete portal"
-                onDelete={() => deletePortal(selectedPortal.portal_id)}
-                onClose={() => selectPortal(null)}
-              />
-            </>
-          ) : (
-            <p className="maplab-inspector-rail-empty">Select a room, door, prop, stair, portal, or feature to see its details.</p>
-          )}
-        </div>
+              </>
+            ) : null}
+            </div>
+          </aside>
+        )}
       </div>
 
-      {featureToDelete && (
+      {roomToDelete && (
         <ConfirmDialog
-          message={`Delete "${featureToDelete.title ?? featureToDelete.kind}"? This cannot be undone.`}
+          message={`Delete "${roomToDelete.title ?? `Room ${roomToDelete.room_id}`}"? This cannot be undone.`}
           onConfirm={() => {
-            deleteFeature(featureToDelete.feature_id)
-            setFeatureToDelete(null)
+            deleteRoom(roomToDelete.room_id)
+            setRoomToDelete(null)
           }}
-          onCancel={() => setFeatureToDelete(null)}
+          onCancel={() => setRoomToDelete(null)}
         />
       )}
 
@@ -1711,10 +1921,23 @@ export function MapLabEditorPage() {
         <ConfirmDialog
           message={`Delete "${gatewayToRemove.title ?? `Portal ${gatewayToRemove.portal_id}`}"? This cannot be undone.`}
           onConfirm={() => {
-            deletePortal(gatewayToRemove.portal_id)
+            deleteFixtureWithUndo('portal', () => deletePortal(gatewayToRemove.portal_id))
             setGatewayToRemove(null)
           }}
           onCancel={() => setGatewayToRemove(null)}
+        />
+      )}
+
+      {confirmingReset && (
+        <ConfirmDialog
+          message="Discard unsaved changes and restore the last saved layout?"
+          confirmLabel="Discard changes"
+          onConfirm={() => {
+            resetToLastLoadedLayout()
+            setConfirmingReset(false)
+            setMapPopoverOpen(false)
+          }}
+          onCancel={() => setConfirmingReset(false)}
         />
       )}
     </div>

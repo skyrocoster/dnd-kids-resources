@@ -5,8 +5,8 @@ description: Write the short, human-readable Plan for a feature or outcome in th
 
 # plan — write the human Plan (Layer 1)
 
-Claude's job in this repo is to **think and plan**. Claude does **not** write implementation
-code — a smaller model does that later, one work order at a time. This skill produces the
+You are the **planner** here — the powerful model, whose job is to think. Implementation comes later
+and cheaper, from an **executor** model taking one work order at a time. This skill produces the
 *human-readable Plan*: the thing you read to understand the feature. Keep it short and free of code.
 
 ## Where it lives
@@ -49,7 +49,7 @@ Run the **`ux-design`** skill before finalising the stages, and include the **UX
 produces in the Plan (after `## What we're building & why`). It settles mode, focal element, save
 model, empty-state copy, error placement, destructive actions, keyboard, and touch for each surface
 involved. `to-orders` carries those decisions into the work orders, which is the only way they reach
-the small model. Without the block, a cheap model invents its own empty-state wording and error
+the executor. Without the block, a weaker model invents its own empty-state wording and error
 placement, and the app drifts.
 
 New or reshaped surfaces also need a row in their area guide's `## Surfaces` table — note that as
@@ -58,7 +58,7 @@ part of the relevant stage.
 ## How to write it
 
 1. **Understand the outcome first.** Read the owning area guide and the minimum references it names
-   (via `docs/README.md`). Do the hard thinking here — this is what Claude's tokens are for.
+   (via `docs/README.md`). Do the hard thinking here — this is what the planner's tokens are for.
 2. **Break the outcome into stages.** Each stage should be a coherent step that becomes one or a few
    work orders. Order them so each builds on the last.
 3. **State each stage as intent, in plain English.** "Show difficulty on the encounter tile", not a
@@ -67,12 +67,22 @@ part of the relevant stage.
 
 ## What NOT to do
 
-- Do not write implementation code, exact diffs, or file-by-file edit lists. That belongs in the
-  work orders (`to-orders`) and, ultimately, the small model's commits.
+- Keep implementation out of the Plan — no exact diffs, no file-by-file edit lists. A Plan is read by
+  a person to understand *what* and *why*; the *how* belongs in the work orders (`to-orders`) and,
+  ultimately, the executor's commits.
+- **Exception — code that planning already produced.** Sometimes settling a design question forces
+  real code into existence: a snippet you ran to verify an approach, a tricky regex or SQL
+  expression, an exact type signature. That code is already paid for — never discard it and never
+  make the executor re-derive it. But it does not go in the Plan body either. Park it verbatim in
+  a **`## Planning byproducts`** appendix at the bottom of the Plan (fenced code, one line each on
+  what it is and how it was verified). `to-orders` moves each snippet into the relevant order's
+  KNOWN STATE and deletes the appendix — it is a hand-off buffer, not documentation. Only relay code
+  that planning genuinely forced; do not use the appendix as a licence to pre-write the
+  implementation.
 - Do not pad the doc with handoff essays or discovery logs. The old template did that to pass state
   between exploring agents; we don't chain agents that way anymore. Lean is the point.
 
 ## Next step
 
-Once the Plan is approved, run **`to-orders`** on stage 1 to compile it into lean work orders a small
-model can execute. Re-run `to-orders` per stage — you don't rewrite the Plan each time.
+Once the Plan is approved, run **`to-orders`** on stage 1 to compile it into lean work orders an
+executor can run. Re-run `to-orders` per stage — you don't rewrite the Plan each time.

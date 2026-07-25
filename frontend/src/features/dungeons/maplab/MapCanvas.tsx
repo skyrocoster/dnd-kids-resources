@@ -13,6 +13,13 @@ interface MapCanvasProps {
   onPanMove: (e: PointerEvent) => void
   onPanEnd: (e: PointerEvent) => void
   onViewportResize: (size: ViewportSize) => void
+  /** Optional stroke (drag-paint) handlers from `useCanvasStroke` — bound alongside the zoom
+   * handlers but in a separate effect so the two concerns stay independent. */
+  onStrokePointerDown?: (e: PointerEvent) => void
+  onStrokePointerMove?: (e: PointerEvent) => void
+  onStrokePointerUp?: (e: PointerEvent) => void
+  /** Reports the viewport element to `useCanvasStroke` so it can read `getBoundingClientRect()`. */
+  strokeViewportRef?: (el: HTMLElement | null) => void
   /** Sets `data-variant` on the wrapper so descendants (`.maplab-room-cell` etc) can inherit the
    * `--variant-*` custom properties from `theme.css` — the viewer wants `"neutral"`; the editor
    * doesn't set one yet (Stage E3 territory). */
@@ -27,6 +34,8 @@ interface MapCanvasProps {
   /** Floating control(s), top-right corner of the map (e.g. fullscreen toggle) — kept separate from
    * `controlsSlot` so the two clusters never compete for the same corner. */
   topRightSlot?: ReactNode
+  /** Floating feedback chip, centered at the bottom of the map viewport. */
+  bottomCenterSlot?: ReactNode
   children: ReactNode
 }
 
@@ -40,6 +49,10 @@ export function MapCanvas({
   onPanMove,
   onPanEnd,
   onViewportResize,
+  onStrokePointerDown,
+  onStrokePointerMove,
+  onStrokePointerUp,
+  strokeViewportRef,
   variant,
   fullscreen,
   onExitFullscreen,
@@ -47,6 +60,7 @@ export function MapCanvas({
   viewportDescription,
   controlsSlot,
   topRightSlot,
+  bottomCenterSlot,
   children,
 }: MapCanvasProps) {
   const viewportRef = useRef<HTMLDivElement>(null)
@@ -89,6 +103,31 @@ export function MapCanvas({
       window.removeEventListener('pointercancel', handlePointerUp)
     }
   }, [onWheelZoom, onPanStart, onPanMove, onPanEnd])
+
+  // Stroke (drag-paint) handlers, kept in their own effect so they can be wired independently of
+  // the zoom/pan handlers above — same element targets (viewport for down, window for move/up/
+  // cancel), `passive: false` for pointermove.
+  useEffect(() => {
+    const viewport = viewportRef.current
+    strokeViewportRef?.(viewport)
+    if (!viewport || !onStrokePointerDown || !onStrokePointerMove || !onStrokePointerUp) return
+
+    const handlePointerDown = (e: PointerEvent) => onStrokePointerDown(e)
+    const handlePointerMove = (e: PointerEvent) => onStrokePointerMove(e)
+    const handlePointerUp = (e: PointerEvent) => onStrokePointerUp(e)
+
+    viewport.addEventListener('pointerdown', handlePointerDown)
+    window.addEventListener('pointermove', handlePointerMove, { passive: false })
+    window.addEventListener('pointerup', handlePointerUp)
+    window.addEventListener('pointercancel', handlePointerUp)
+
+    return () => {
+      viewport.removeEventListener('pointerdown', handlePointerDown)
+      window.removeEventListener('pointermove', handlePointerMove)
+      window.removeEventListener('pointerup', handlePointerUp)
+      window.removeEventListener('pointercancel', handlePointerUp)
+    }
+  }, [onStrokePointerDown, onStrokePointerMove, onStrokePointerUp, strokeViewportRef])
 
   useEffect(() => {
     const viewport = viewportRef.current
@@ -165,6 +204,7 @@ export function MapCanvas({
       </div>
       {topRightSlot && <div className="maplab-map-controls-top-right">{topRightSlot}</div>}
       {controlsSlot && <div className="maplab-map-controls">{controlsSlot}</div>}
+      {bottomCenterSlot && <div className="maplab-map-status">{bottomCenterSlot}</div>}
       {(panHint || viewportDescription) && (
         <p id={hintId} className="maplab-map-hint">
           {panHint}

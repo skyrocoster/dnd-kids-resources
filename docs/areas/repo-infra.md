@@ -1,6 +1,6 @@
 # Repo Infra Area Guide
 
-> **Active plan:** [Field-Test Readiness](../plans/active/field-test-readiness.md) — next up; then [Production Nightly Deploys](../plans/active/production-nightly-deploys.md).
+> **Active plan:** [Production Nightly Deploys](../plans/active/production-nightly-deploys.md).
 
 ## Scope
 
@@ -49,11 +49,8 @@ see [../DATA_MODEL.md](../DATA_MODEL.md#rebuilding-the-database).
 
 ## Work queue
 
-- [Field-Test Readiness](../plans/active/field-test-readiness.md) — restore every automated gate and
-  remove the kid-map liveness blocker before the first physical tablet session.
 - [Production Nightly Deploys](../plans/active/production-nightly-deploys.md) — schema-as-data
-  generation, additive migrations, and a deploy that backs up before it migrates; resumes after the
-  readiness pass.
+  generation, additive migrations, and a deploy that backs up before it migrates.
 - Create a focused plan before changing shared backend infra or repo-wide test tooling.
 
 ## Cross-references

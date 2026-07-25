@@ -1,28 +1,43 @@
 # Plan & Work-Order Template
 
-This repo splits planning from implementation so that **Claude plans and never writes implementation
-code**, and a **smaller/cheaper model implements one work order at a time** in a fresh context window.
-The workflow is driven by five skills in `.agents/skills/` (read by both Claude Code and opencode):
+This repo splits planning from implementation across two roles, defined by model strength rather than
+by vendor:
 
-| Skill | Runs in | Job |
+- **The planner** — the **more powerful model**. Runs `plan`, `to-orders`, `dispatch-orders`, and
+  `reconcile`. It is the only role that reads the Plan and explores the wider codebase.
+- **The executor** — the **cheaper, weaker model**. Runs `implement-order`: one work order at a time,
+  in a fresh context window, seeing only what its order names.
+
+Either role can be filled by any provider or product that is strong enough for it — Claude, opencode,
+ChatGPT, a local model. Which ones fill them is an open experiment, so the docs and skills name the
+**role**, never a vendor. Where a specific product genuinely matters (telemetry parsing, subagent
+transport), that is called out as a transport detail, not as who the planner is.
+
+The workflow is driven by five skills in `.agents/skills/`, read by whichever harness the role runs
+in:
+
+| Skill | Role | Job |
 |---|---|---|
-| `plan` | Claude | Write the short human **Plan** (Layer 1). No code. |
-| `to-orders` | Claude | Turn one Plan stage into lean **work orders** (Layer 2). No code. |
-| `dispatch-orders` | Claude | Send runnable orders to the right-sized model; triage failures the moment they return and reissue, so dependency chains never stall. No code. |
-| `implement-order` | small model | Execute **one** work order, then stop. Writes the code. |
-| `reconcile` | Claude | Close out finished orders: collapse the Plan, update docs, run the checker. No code. |
+| `plan` | planner | Write the short human **Plan** (Layer 1). Intent, not code. |
+| `to-orders` | planner | Turn one Plan stage into lean **work orders** (Layer 2). Guidance, not code. |
+| `dispatch-orders` | planner | Send runnable orders to the right-sized model; triage failures the moment they return, so dependency chains never stall. Repairs code directly only in the narrow case its step 5 defines. |
+| `implement-order` | executor | Execute **one** work order, then stop. Writes the code. |
+| `reconcile` | planner | Close out finished orders: collapse the Plan, update docs, run the checker. Bookkeeping, not code. |
 
-The three jobs: **PLAN** (Claude thinks) → **IMPLEMENT** (small model does one order per context) →
-**RECONCILE** (Claude reconciles docs). Claude's context never fills with implementation code or test
-output — that lives in the small model's cheap, throwaway per-order contexts.
+The three jobs: **PLAN** (the planner thinks) → **IMPLEMENT** (the executor does one order per
+context) → **RECONCILE** (the planner reconciles docs). The point is to keep the planner's expensive
+context clear of implementation sprawl and test output, which are cheapest in the executor's
+throwaway per-order contexts. That is a cost judgement, not a ban: when a dispatch round trip would
+cost more than the edit — a small, fully-determined fix needing no exploration — the planner makes it
+and says so.
 
 ---
 
 ## Layer 1 — the Plan (human-readable)
 
 Lives at `docs/plans/active/<feature>.md`, named for a concrete outcome. An area may hold more than
-one active plan, but exactly one of them is **next up** — see *Lifecycle* below. Short, no code — you
-read it to understand *what* and *why*.
+one active plan, but exactly one of them is **next up** — see *Lifecycle* below. Short, and free of
+code — you read it to understand *what* and *why*.
 
 ```md
 # <Feature> — <one-line outcome>
@@ -43,10 +58,16 @@ read it to understand *what* and *why*.
 |-------|------------------------------|
 ```
 
+A Plan may temporarily carry a **`## Planning byproducts`** appendix: verbatim code snippets that
+fell out of settling the design (verified regexes, exact expressions, type signatures). It is a
+hand-off buffer, not documentation — `to-orders` moves each snippet into the relevant order's KNOWN
+STATE (marked `verified snippet — use as-is:`) and deletes the appendix. Paid-for code is relayed,
+never re-derived by the executor; but the appendix is not a licence to pre-write the implementation.
+
 ## Layer 2 — the Work Order (one focused task)
 
 Lives at `docs/plans/active/orders/<feature>/NN-<slug>.md`. One work order = one logical change,
-roughly one screen. Claude fills KNOWN STATE and START IN with verified facts so the executor never
+roughly one screen. The planner fills KNOWN STATE and START IN with verified facts so the executor never
 re-explores; the executor writes the code and the STATUS line.
 
 ```
@@ -68,6 +89,10 @@ DO:
 STOP WHEN: <a single runnable command that must pass, or "if X = Y, stop">
 
 STATUS: <-- executor writes DONE, FAILED - <one-line reason>, or BLOCKED - <one-line reason>
+
+DEVIATIONS: <-- executor appends, always (even on DONE) — exactly two lines
+- opened beyond START IN: <files the order didn't name, or "none">
+- KNOWN STATE re-verified or wrong: <one line, or "none">
 ```
 
 The focus leash: **KNOWN STATE** (answers, not pointers) + **START IN** (bounded exploration) +
@@ -91,13 +116,27 @@ FAILURE REPORT:
 - WORKTREE: <"changes left in place" plus the list of dirty files>
 ```
 
-The verbatim OUTPUT is the load-bearing field: the stronger model triages from it without re-running
+The verbatim OUTPUT is the load-bearing field: the planner triages from it without re-running
 the work from cold. A failure report is a successful outcome of an order — the executor never keeps
 cycling to avoid writing one.
 
+### Telemetry — every finished order leaves a cost record
+
+When an order reports back, the dispatcher runs `scripts/order_telemetry.py --order <order-path>`,
+which parses the executor's record (token totals, turn count, largest tool results, duplicate
+reads, reads outside START IN), folds in the executor's STATUS and DEVIATIONS lines, and appends an
+entry to `docs/plans/telemetry-log.md`. Two transports parse automatically — Claude Code subagent
+transcripts and opencode's local SQLite DB (which also yields dollar cost). For anything else
+(e.g. ChatGPT) the `--manual "<reported usage>"` form logs whatever that tool's UI reported. The
+executor-written STATUS/DEVIATIONS lines are transport-independent either way. The log survives
+order deletion at reconcile — reconcile checks each order has an entry before deleting it — and is
+reviewed every ~10-15 entries to tighten the `plan`/`to-orders`/`implement-order` rules. Executors
+never self-report token numbers; models can't see their own counters, so numbers come only from
+transcripts or the other tool's UI.
+
 Triage happens **the moment the failure returns**, in `dispatch-orders` — not at reconcile time —
 because downstream orders `DEPENDS ON` the failed one and stall until it's reissued and passes. A
-`DONE` order needs nothing further; only failures pull the stronger model in. `reconcile` triages
+`DONE` order needs nothing further; only failures pull the planner back in. `reconcile` triages
 only what is still unresolved at closeout (typically orders that need a human, or an abandoned
 batch).
 
@@ -162,7 +201,7 @@ or BLOCKED, validates area-guide↔Plan ownership — every active plan must be 
 from its owning guide's `Active plan` line, which may list several (a stage anchor is optional) — and keeps
 the workflow-agnostic safety net: local links/anchors, manifest completeness, plan-redirect lifecycle,
 AI-entry precedence, configured test commands, banned legacy references, and the auto-generated
-reference inventories. It no longer couples a per-diff code change to a Plan edit, so a small model's
+reference inventories. It no longer couples a per-diff code change to a Plan edit, so the executor's
 work-order commits pass without touching the Plan; the Plan is updated in batches by `reconcile`.
 
 An earlier plan format (a `(next up)` heading with eight labeled fields) is no longer enforced. The

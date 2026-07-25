@@ -7,6 +7,7 @@ import {
   PropWindowIcon,
   PropIcon,
   SwordsIcon,
+  UserIcon,
   type LucideIcon,
 } from '../../../components/icons'
 
@@ -18,7 +19,7 @@ export interface SelectOption {
 export interface FieldSpec {
   key: string
   label: string
-  type: 'boolean' | 'number' | 'text' | 'select' | 'encounterPicker' | 'destinationPicker' | 'lootBundlePicker'
+  type: 'boolean' | 'number' | 'text' | 'select' | 'encounterPicker' | 'npcPicker' | 'destinationPicker' | 'lootBundlePicker'
   options?: SelectOption[]
   showWhen?: (values: Record<string, unknown>) => boolean
 }
@@ -40,7 +41,7 @@ export const PASSAGE_FIELDS: FieldSpec[] = [
   { key: 'note', label: 'Note', type: 'text' },
 ]
 
-const PROP_KIND_OPTIONS: SelectOption[] = [
+export const PROP_KIND_OPTIONS: SelectOption[] = [
   { value: 'chest', label: 'Chest' },
   { value: 'table', label: 'Table' },
   { value: 'mirror', label: 'Mirror' },
@@ -48,6 +49,7 @@ const PROP_KIND_OPTIONS: SelectOption[] = [
   { value: 'statue', label: 'Statue' },
   { value: 'window', label: 'Window' },
   { value: 'encounter', label: 'Encounter' },
+  { value: 'npc', label: 'NPC' },
   { value: 'other', label: 'Other' },
 ]
 
@@ -66,7 +68,8 @@ export const PROP_FIELDS: FieldSpec[] = [
   { key: 'kind', label: 'Kind', type: 'select', options: PROP_KIND_OPTIONS },
   { key: 'side', label: 'Attach to wall', type: 'select', options: PROP_WALL_SIDE_OPTIONS },
   { key: 'encounter_id', label: 'Encounter', type: 'encounterPicker', showWhen: (values) => values.kind === 'encounter' },
-  { key: 'loot', label: 'Loot bundle', type: 'lootBundlePicker', showWhen: (values) => values.kind !== 'encounter' },
+  { key: 'npc_id', label: 'NPC', type: 'npcPicker', showWhen: (values) => values.kind === 'npc' },
+  { key: 'loot', label: 'Loot bundle', type: 'lootBundlePicker', showWhen: (values) => values.kind !== 'encounter' && values.kind !== 'npc' },
   { key: 'hidden', label: 'Hidden', type: 'boolean' },
   { key: 'locked', label: 'Locked', type: 'boolean' },
   { key: 'trapped', label: 'Trapped', type: 'boolean' },
@@ -86,6 +89,7 @@ export const PROP_KIND_ICONS: Record<PropKind, LucideIcon> = {
   statue: PropStatueIcon,
   window: PropWindowIcon,
   encounter: SwordsIcon,
+  npc: UserIcon,
   other: PropIcon,
 }
 
@@ -149,6 +153,19 @@ export const FIXTURE_TYPES: Record<string, FixtureTypeSpec> = {
       locked: false,
       trapped: false,
       encounter_id: null,
+    },
+  },
+  npc: {
+    fields: PROP_FIELDS,
+    defaultFlags: {
+      prop_id: 0,
+      kind: 'npc',
+      cell: [0, 0],
+      title: '',
+      hidden: false,
+      locked: false,
+      trapped: false,
+      npc_id: null,
     },
   },
   stair: {

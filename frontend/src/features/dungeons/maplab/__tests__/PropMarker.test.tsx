@@ -74,6 +74,13 @@ describe('PropMarker bounded badge (M2)', () => {
     expect(container.querySelector('.maplab-prop-icon')).toHaveStyle({ color: 'var(--md-tertiary)' })
   })
 
+  it('uses npc identity for npc props regardless of status', () => {
+    const { container } = renderMarker(prop({ kind: 'npc', trapped: true }))
+
+    expect(container.querySelector('.maplab-prop-marker')).toHaveStyle({ stroke: 'var(--md-npc)' })
+    expect(container.querySelector('.maplab-prop-icon')).toHaveStyle({ color: 'var(--md-npc)' })
+  })
+
   it('renders one collapsed disc and narrates every active badge', () => {
     const { container, getByRole } = renderMarker(prop({ locked: true, trapped: true, loot: { bundle_id: 1 } }))
 
