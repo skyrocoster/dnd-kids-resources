@@ -17,6 +17,26 @@ happened; the note says what to do differently when compiling the next stage, wh
 order file still exists to check against. "not recorded" means that judgement was lost.
 Entries before 2026-07-25 19:06 predate the field.
 
+"first pass" and "order shape (compiled)" were added on 2026-07-25 after a review of
+everything above; entries before that date lack both. First-pass rate is the number worth
+optimising — an executor run costs cents, while a re-dispatch costs a cold start, the
+planner's attention and a stalled dependency chain, so read the token columns as a
+diagnosis of *why* an order thrashed rather than as the target. Order shape (how many
+files START IN named, how many lines they hold, how many were unscoped, how many
+behaviours DO asked for) measures the order rather than the executor: nearly every
+compiler note below concludes the order was at fault, and until now there was nothing
+beside the cost to correlate that against.
+
+Most of what those notes concluded is now mechanically enforced by
+`scripts/check_orders.py`, which runs both standalone and on the documentation gate, so
+the same faults cannot be recompiled: unresolvable paths, files named in DO but missing
+from START IN, bare filenames, conditional instructions, unscoped large files in START IN,
+fixtures without the cast idiom and a typecheck, and several behaviours aimed at one large
+integrated suite. Two more escapes were closed outside the linter: the `src/model/`
+layering rule is now an `oxlint` `no-restricted-imports` override, and the eleven carried
+test failures moved from every order's KNOWN TEST FAILURES block into
+`frontend/known-test-failures.json`, judged by `npm run test:check`.
+
 
 ## 2026-07-25 18:27 — _example/99-difficulty-label.md
 - status: not recorded

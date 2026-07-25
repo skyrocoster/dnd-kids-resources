@@ -18,7 +18,9 @@ not to improve the wider codebase. Staying inside the fence below is what makes 
 
    If the order has a **KNOWN TEST FAILURES** section, those tests were already failing before you
    started. They are **not yours to fix and not caused by you** — do not touch them, do not
-   investigate them, and do not count them when judging STOP WHEN. If a test fails that is *not* on
+   investigate them, and do not count them when judging STOP WHEN. A STOP WHEN built on
+   `npm run test:check` does this for you: it knows which tests already fail on main and reports
+   only the ones you caused, so trust its verdict rather than reading past it into the raw output. If a test fails that is *not* on
    that list, that one is yours. If KNOWN STATE says an approach was "already attempted, did not
    work", do not try that approach again. If KNOWN STATE contains a `verified snippet — use as-is`,
    paste it exactly — it was already tested; do not rewrite or "improve" it.

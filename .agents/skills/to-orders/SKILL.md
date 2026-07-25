@@ -17,6 +17,17 @@ STATE, per the `plan` skill's planning-byproducts rule.)
 `docs/plans/active/orders/<feature>/NN-<slug>.md` — one file per work order, numbered in execution
 order. `<feature>` matches the Plan's filename.
 
+## What to optimise
+
+**First-pass success, not executor tokens.** An executor run costs cents; the telemetry log's cheap
+and expensive *successful* orders differ by a few pence. A re-dispatch costs a cold start, the
+planner's attention, and a stalled dependency chain behind it — and the one order that had to be
+abandoned and reissued cost more than every token difference in its batch combined. Read the token
+columns as a diagnosis of *why* an order thrashed; aim at getting it right the first time.
+
+Escalating strength does not buy that. The abandoned order stalled at Light and stalled again at
+Standard, and closed only once someone diagnosed the actual failure. Order shape is the lever.
+
 ## The work order template
 
 Keep each order to **roughly one screen**. One work order = **one logical change** (it may touch
@@ -32,17 +43,24 @@ KNOWN STATE (already true — do NOT redo or re-derive):
 - <another fact — real values, real file locations, current test count, etc.>
 
 KNOWN TEST FAILURES (pre-existing — NOT yours to fix, NOT caused by you):
-- <exact test name/path that already fails, verbatim; omit the section if the suite is green>
+- <backend only: exact pytest node id that already fails; frontend runs use npm run test:check,
+  which reads the checked-in list itself. Omit the section when there is nothing to say.>
 
-START IN: <2–4 exact files/folders to begin exploring from>
+START IN:
+- <exact path> — <the symbol or line range needed, and nothing else in this file>
+- <2–4 entries, each verified by opening it while compiling>
 
 DO:
-- <1–3 terse lines: what to change and where to look — no code>
+- <1–3 terse lines: what to change and where, with the anchor text to match — no code>
 
 STOP WHEN: <a single runnable command that must pass, or "if X = Y, stop">
 
 STATUS: <-- executor writes DONE, FAILED - <one-line reason>, or BLOCKED - <one-line reason>
 ```
+
+`scripts/check_orders.py` enforces most of what follows. Run it on the stage before you dispatch
+anything (`.venv\Scripts\python.exe scripts/check_orders.py`); it is the same lint the documentation
+gate runs, and every rule in it is one fault the telemetry log already paid for.
 
 ## Why each field exists — get these right and a weak model can't wander
 
@@ -55,30 +73,73 @@ STATUS: <-- executor writes DONE, FAILED - <one-line reason>, or BLOCKED - <one-
   decision, which is exactly what it is worst at and exactly what this skill was supposed to have
   settled. If dependent orders share code, decide *while compiling* where it lives and say so flatly,
   including which layers it may import from. (A real case: a conditional like the one above put a
-  `features/` import into `src/model/`, which `ARCHITECTURE.md` forbids and no test enforces.)
+  `features/` import into `src/model/`, which `ARCHITECTURE.md` forbids. `oxlint` now catches that
+  particular breach; the conditional that caused it would find a different one.) The linter rejects
+  a conditional paired with an imperative verb in KNOWN STATE or DO.
 - **START IN** — bounded exploration. The executor explores *these* files, not the whole repo. Name
-  real, verified paths — open them yourself while compiling to be sure they're right.
+  real, verified paths — open them yourself while compiling to be sure they're right. A bare
+  filename is a search instruction: an order that said `maplabModel.test.ts` with no directory sent
+  its executor probing the wrong folder first. The same goes for a symbol with no home — naming
+  `UserIcon` without `frontend/src/components/icons/index.ts` bought a ~4.3k-token barrel read to
+  find one export.
+
+  **Scope every entry, not just name it.** A file in START IN gets read *whole*, so a 1000-line file
+  named for a one-line change costs ~9.7k tokens instead of ~200. Write what the executor actually
+  needs and nothing else:
+
+  ```
+  - frontend/src/features/dungeons/maplab/MapLabPage.tsx — the <RoomDetailsPanel> render at line 873, nothing else in this file
+  ```
+
+  The linter requires a scope on any entry over 400 lines and rejects paths that don't resolve.
 - **DO** — the intent in 1–3 lines. Trust the model to write the code; don't write it for them.
+
+  **If DO says touch a file, START IN must list it** — otherwise the executor edits files it was
+  never told to open, and the telemetry "reads outside START IN" column blames it for your omission.
+  Give each edit site the **anchor text to match**, too: an executor that knows the exact string to
+  edit can change it without reading the file back. The runs that re-read one page component six to
+  eleven times were all orders that said *what* to change without saying *where* to land.
 - **STOP WHEN** — the leash that ends wandering and gold-plating. It must be a **targeted** command
   naming exact test files — the tests for the files the order touches plus any test the order adds —
-  never a bare `pytest`, `npm test`, or `tsc -b`. Full-suite runs and the typecheck are `reconcile`'s
-  job, once per stage, not the executor's. The command shapes:
+  never a bare `pytest`, `npm test`, or `tsc -b`. Full-suite runs are `reconcile`'s job, once per
+  stage, not the executor's. The command shapes:
   - Backend: `pytest backend/tests/<file>.py --no-cov` — the `--no-cov` is required; without it the
     97% coverage gate fails every subset run regardless of the tests.
-  - Frontend: `npm test -- <path/to/File.test.tsx>` (paths after `--` go straight to vitest).
+  - Frontend: `cd frontend && npm run test:check -- <path/to/File.test.tsx>`. This is vitest plus the
+    checked-in known-failure list in `frontend/known-test-failures.json`: it passes when every
+    failure is already known and fails the moment a *new* one appears. Prefer it to `npm test --` —
+    the executor gets a clean pass/fail with no list of pre-existing failures to reason about, and a
+    regression is caught by the tool rather than by a human diff at reconcile.
 
-  **`npm test` does not typecheck.** Vitest strips types, so a test fixture with the wrong shape
-  passes green and breaks `tsc -b` at reconcile — this has now cost two separate stages. Whenever an
-  order writes or edits a fixture for a domain-typed object (an `api/types.ts` interface, a
+  **vitest does not typecheck.** It strips types, so a test fixture with the wrong shape passes
+  green and breaks `tsc -b` at reconcile — this has now cost two separate stages. Whenever an order
+  writes or edits a fixture for a domain-typed object (an `frontend/src/api/types.ts` interface, a
   domain-typed union, anything with branded scalar types), do both of these:
   - put the repo's minimal-plus-cast idiom in KNOWN STATE with a real example from a sibling test
     (`mockResolvedValue([{ id: 9, name: 'Mira' }] as NPC[])`) — an executor told to "mock the NPC
     list" will otherwise invent plausible statblock fields that do not typecheck; and
-  - append `&& npm run build` to that order's STOP WHEN. It is the only real typecheck, and it is
-    the one case where a stage-level command belongs in a single order.
+  - append `&& npm run typecheck` to that order's STOP WHEN. It is `tsc -b` without the bundle step,
+    so it is the cheapest command that is a real typecheck, and it is the one case where a
+    stage-level check belongs in a single order.
+
+  The linter enforces both halves whenever an order names a frontend test file and mentions a mock
+  or fixture.
 - **STATUS** — left blank; the executor fills it (`DONE`, `FAILED`, or `BLOCKED`, plus a two-line
   DEVIATIONS block always, and a FAILURE REPORT block on failure — see `docs/PLAN_TEMPLATE.md`).
   That's the only thing they write outside code/tests.
+
+## Sizing an order against a big test file
+
+One order adds tests to **at most one test file**, and against a large integrated suite (over ~800
+lines) it gets **one behaviour**. This is the sizing rule the log paid most for: an order asking for
+seven integrated async behaviours through a 1,700-line page suite stalled at Light, stalled again at
+Standard after a reissue, and closed only when the failure was finally diagnosed directly. Splitting
+hook behaviour from page placement would have made both halves ordinary orders.
+
+When the behaviour turns on a non-obvious **test seam**, name it in KNOWN STATE. In that same case
+the deciding fact — that a save-error test must establish one settled state transition before
+mocking the next request rejection, because the hook suppresses its initial-load save — was never
+written down, and no amount of model strength recovered it.
 
 ## Frontend orders carry the UX decisions
 
@@ -105,38 +166,40 @@ before compiling.
    split it into smaller orders.
 3. **For each order, fill KNOWN STATE with verified facts** you discovered — so the executor starts
    from truth, not a blank slate.
-4. **Run the order's test command yourself and record pre-existing failures.** Before writing STOP
-   WHEN, run the relevant suite. Any test that already fails goes verbatim into **KNOWN TEST
-   FAILURES**, and STOP WHEN must be satisfiable with those failures still present (scope the command
-   to the touched tests, or say "passes except the KNOWN TEST FAILURES"). An executor that discovers
-   an unexplained red suite will waste its whole context deciding whether it broke something.
-5. **Name exact START IN files** you actually opened, and a **runnable STOP WHEN**.
+4. **Run the order's test command yourself before writing STOP WHEN.** On the frontend,
+   `npm run test:check -- <file>` already judges the run against `frontend/known-test-failures.json`,
+   so a green result means the executor will get one too and the order needs no KNOWN TEST FAILURES
+   block. If it reports a *new* failure, that failure is pre-existing on your branch: fix it, or add
+   it to the list with a reason and a date — never leave it for the executor to trip over. On the
+   backend there is no such list, so any already-failing pytest node id goes verbatim into **KNOWN
+   TEST FAILURES**. An executor that meets an unexplained red suite spends its whole context deciding
+   whether it broke something.
+5. **Name exact START IN files** you actually opened, each **scoped** to what the executor needs, and
+   a **runnable STOP WHEN**.
 6. **Leave STATUS blank.** Number the files in dependency order and set each `DEPENDS ON`.
+7. **Run the linter before you dispatch:** `.venv\Scripts\python.exe scripts/check_orders.py`. It
+   fails on the faults that cost the most in the log — a path that doesn't resolve, a file named in
+   DO but missing from START IN, a bare filename, a conditional instruction, an unscoped large file,
+   a fixture without the cast idiom and a typecheck, several behaviours against a big suite. Fixing
+   them here costs a minute; discovering them costs a dispatch.
 
-## Worked example (note: facts and fences, no implementation)
+## Worked example
 
-```
-WORK ORDER 03 — Show difficulty on the encounter tile
-GOAL: each encounter tile shows its Easy/Medium/Hard label.
-DEPENDS ON: none
+The reference order lives at
+[docs/plans/active/orders/_example/99-creature-row-ac.md](../../../docs/plans/active/orders/_example/99-creature-row-ac.md).
+It names real files and passes `scripts/check_orders.py`, so it is also the fixture that keeps the
+linter honest — read it rather than a paraphrase, and copy its shape:
 
-KNOWN STATE (already true — do NOT redo):
-- The API already returns `difficulty` on each encounter (see API_REFERENCE.md).
-- The tile currently renders name + monster count; no difficulty is shown.
-- The suite is green at 231 tests.
+- every path resolves, and the large one carries a line range with "nothing else in this file";
+- the empty-state string, the divider and the token are given literally, so nothing is invented;
+- the domain type's trap (`ac` is `ArmorClass`, not a number) is pre-answered with the repo's cast
+  idiom, and STOP WHEN carries the typecheck that would catch it anyway;
+- one behaviour, one test file, one runnable stop-check.
 
-START IN:
-- frontend/src/components/EncounterTile.tsx
-- frontend/src/components/EncounterTile.test.tsx
-
-DO:
-- Render the existing `difficulty` value next to the tile title, using theme tokens.
-- Add one test that the label renders.
-
-STOP WHEN: `npm test -- EncounterTile` passes with the new test. Then stop — change nothing else.
-
-STATUS: <-- DONE / FAILED - why / BLOCKED - why
-```
+The cheapest real run in the telemetry log had exactly this shape — 33 turns, 5k output, no
+duplicate reads, nothing opened outside START IN — because it described the precedent component's
+*shape* in prose instead of pointing at it, and pre-answered the two facts most likely to be got
+wrong. One logical change, one precedent, every fact answered.
 
 ## What NOT to do
 

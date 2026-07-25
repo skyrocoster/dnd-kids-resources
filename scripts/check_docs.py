@@ -32,6 +32,9 @@ from configparser import ConfigParser
 from pathlib import Path
 from urllib.parse import unquote
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import check_orders  # noqa: E402  (same directory; owns the work-order lint rules)
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DOCS_DIR = REPO_ROOT / "docs"
 
@@ -260,39 +263,20 @@ def check_plan_metadata(plan_path: Path) -> list[CheckError]:
     return errors
 
 
-WORK_ORDER_FIELDS = ("GOAL:", "START IN:", "STOP WHEN:", "STATUS:")
-WORK_ORDER_FAILURE_STATUS_RE = re.compile(r"^STATUS:\s*(FAILED|BLOCKED)\b", re.MULTILINE)
-
-
 def check_work_orders(docs_dir: Path) -> list[CheckError]:
-    """Lint work-order files for the load-bearing fields a small model needs.
+    """Lint work orders against the compiling rules in scripts/check_orders.py.
 
-    Work orders live under docs/plans/active/orders/<feature>/ and drive the
-    Plan -> Implement -> Reconcile workflow. Each must name a goal, where to start,
-    a hard stop condition, and a status line, so a fresh cheap-model context can
-    execute it without wandering. This is a light structural check only.
+    The rules themselves live next door because a compiler needs to run them while
+    writing a stage's orders, not only in CI: `check_orders.py` is runnable on its own
+    and each rule there is one fault the telemetry log paid to learn (an unresolvable
+    path, a file named in DO but missing from START IN, a conditional instruction, an
+    unscoped large file, a fixture with no typecheck). This wrapper just puts them on
+    the documentation gate too.
     """
-    errors: list[CheckError] = []
-    orders_root = docs_dir / "plans" / "active" / "orders"
-    if not orders_root.exists():
-        return errors
-    for order in sorted(orders_root.rglob("*.md")):
-        content = order.read_text(encoding="utf-8")
-        missing = [label for label in WORK_ORDER_FIELDS if label not in content]
-        if missing:
-            errors.append(CheckError(
-                _safe_rel(order),
-                f"Work order is missing required fields: {', '.join(missing)}",
-                "Add the missing work-order fields (see PLAN_TEMPLATE.md)",
-            ))
-        status_match = WORK_ORDER_FAILURE_STATUS_RE.search(content)
-        if status_match and "FAILURE REPORT:" not in content:
-            errors.append(CheckError(
-                _safe_rel(order),
-                f"STATUS is {status_match.group(1)} but there is no FAILURE REPORT block",
-                "Append the FAILURE REPORT block below the STATUS line (see PLAN_TEMPLATE.md)",
-            ))
-    return errors
+    return [
+        CheckError(error.file, error.message, error.fix)
+        for error in check_orders.lint_orders(docs_dir / "plans" / "active" / "orders")
+    ]
 
 
 def check_plan_execution_contract(plan_path: Path) -> list[CheckError]:

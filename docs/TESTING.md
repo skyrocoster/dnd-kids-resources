@@ -98,6 +98,22 @@ every seeded player's nested endpoints, asserting **no configured GET endpoint m
    (see `complete/phase-e-recovery-plan.md`). `tsc -b` (`npm run typecheck` /
   `npm run build`) is the only real check — it builds the referenced sub-projects.
 
+## Known failures: `npm run test:check`
+Some tests fail on `main` and are carried deliberately. They live in
+`frontend/known-test-failures.json`, one entry per test with a reason and a date, and
+`npm run test:check` judges a run against that list: it exits 0 when every failure is
+already known and 1 the moment a **new** one appears.
+
+- `npm run test:check -- <path>` — the shape a work order's STOP WHEN uses. The executor
+  gets a clean verdict with no list of pre-existing failures to reason about.
+- `npm run test:check -- --strict` — also fails when a listed test now *passes*, so the
+  stage that fixed it prunes the entry. `reconcile` runs this once per stage.
+
+Before this existed, every work order carried the failures verbatim in a KNOWN TEST
+FAILURES block and every reconcile compared them by hand, name for name — a step easy to
+skip, easy to get wrong, and silently stale as tests were fixed. Add an entry only with a
+reason; remove one the moment it passes.
+
 ## Why this exists (the failure this prevents)
 Every 500 this project has shipped was the same shape: a router's response model or
 JSON parsing didn't match the *real* data, but the test DB's hand-written schema and
@@ -127,5 +143,6 @@ CREATE TABLE statement inside `conftest.py`, stop** — the schema comes from
   - `npm run lint`: `oxlint`
   - `npm run preview`: `vite preview`
   - `npm run test`: `vitest run --silent=passed-only`
+  - `npm run test:check`: `node scripts/test-check.mjs`
   - `npm run typecheck`: `tsc -b`
 <!-- GENERATED:TESTING:END -->

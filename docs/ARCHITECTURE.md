@@ -51,7 +51,7 @@ This doc describes the folder structure, backend/frontend conventions, and reque
 | `api/` | Single API client (`client.ts`) that speaks to the backend + centralized TypeScript type definitions (`types.ts`) |
 | `components/` | Shared UI primitives (Card, ConfirmDialog, DiceText, FloatingWindow, SearchList, SplitPane) + subdirs for form inputs and icon components |
 | `features/` | Domain modules — `dungeons/`, `encounters/`, `items/`, `loot/`, `monsters/`, `npcs/`, `players/`, `spells/`, `weapons/`. Each feature dir contains pages, editor forms, and local state management. |
-| `model/` | Pure domain models shared by both the DM app and the Player app (`maplabModel.ts`). Modules here must import nothing from `components/`, `features/`, `layout/`, or `pages/`. |
+| `model/` | Pure domain models shared by both the DM app and the Player app (`maplabModel.ts`). Modules here must import nothing from `components/`, `features/`, `layout/`, or `pages/` — enforced by the `no-restricted-imports` override in `frontend/.oxlintrc.json`, after a work order once lifted a helper here with a `features/` import and nothing caught it until reconcile. |
 | `player/` | Player app shell, navigation, curtain (player-view transform), kid-facing components, and the `/play/map` live map renderer/data seam |
 | `pages/` | Top-level router pages (HomePage, ComponentDemoPage, StubPage) — entry points for each route |
 | `layout/` | AppShell.tsx — header, nav, footer layout that wraps all pages; navSections.ts — shared nav-section → route map consumed by AppShell's rail/drawer and HomePage's chapter tabs |

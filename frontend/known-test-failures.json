@@ -1,0 +1,63 @@
+{
+  "documentation": [
+    "Tests that already fail on main, carried deliberately rather than copied by hand into",
+    "every work order's KNOWN TEST FAILURES block. `npm run test:check` diffs a run against",
+    "this list and fails only on NEW failures, so an executor's targeted stop-check is green",
+    "with these present and red the moment it breaks something.",
+    "",
+    "Identity is '<path from frontend/> :: <full test name>'. Add an entry only with a reason",
+    "and a date; remove one the moment it passes (`npm run test:check -- --strict` fails on",
+    "stale entries, and reconcile runs it that way once per stage).",
+    "",
+    "`\"flaky\": true` marks a test that fails intermittently on the same commit. Those are",
+    "never reported as stale: one green run is not evidence a flaky test is fixed, and",
+    "deleting the entry would make its next red run look like a fresh regression."
+  ],
+  "failures": [
+    {
+      "test": "src/features/dungeons/__tests__/DungeonBrowserPage.test.tsx :: DungeonBrowserPage Back to dungeons clears the selected detail",
+      "reason": "Browser back-navigation detail clearing; carried since Stage 7 (2026-07-25)"
+    },
+    {
+      "test": "src/features/items/__tests__/ItemBrowserPage.test.tsx :: ItemBrowserPage Back to items clears the selected detail",
+      "reason": "Browser back-navigation detail clearing; carried since Stage 7 (2026-07-25)"
+    },
+    {
+      "test": "src/features/encounters/__tests__/EncounterBrowserPage.test.tsx :: EncounterBrowserPage Back to encounters clears the selected detail",
+      "reason": "Browser back-navigation detail clearing; carried since Stage 7 (2026-07-25)"
+    },
+    {
+      "test": "src/features/loot/__tests__/LootBundleBrowserPage.test.tsx :: LootBundleBrowserPage Back to loot bundles clears the selected detail",
+      "reason": "Browser back-navigation detail clearing; carried since Stage 7 (2026-07-25)"
+    },
+    {
+      "test": "src/features/monsters/__tests__/MonsterBrowserPage.test.tsx :: MonsterBrowserPage Back to monsters clears the selected detail",
+      "reason": "Browser back-navigation detail clearing; carried since Stage 7 (2026-07-25)"
+    },
+    {
+      "test": "src/features/npcs/__tests__/NPCBrowserPage.test.tsx :: NPCBrowserPage Back to NPCs clears the selected detail",
+      "reason": "Browser back-navigation detail clearing; carried since Stage 7 (2026-07-25)"
+    },
+    {
+      "test": "src/features/players/__tests__/PlayerBrowserPage.test.tsx :: PlayerBrowserPage shows filtered-empty state and returns from the detail view",
+      "reason": "Browser back-navigation detail clearing; carried since Stage 7 (2026-07-25)"
+    },
+    {
+      "test": "src/features/players/__tests__/PlayerBrowserPage.test.tsx :: PlayerBrowserPage discards staged spell changes on Cancel without calling the API",
+      "reason": "Staged-spell cancel path; carried since Stage 7 (2026-07-25). FLAKY, not consistently failing — it failed one full run and passed the next on the same commit, so a single green run is not evidence it is fixed.",
+      "flaky": true
+    },
+    {
+      "test": "src/features/dungeons/maplab/__tests__/MapLabPage.test.tsx :: MapLabPage (Stage 2 — Passage visuals) renders the door as a leaf + swing arc, never a straight line matching a wall segment",
+      "reason": "Passage visuals assertion predates the canvas rewrite; carried since Stage 7 (2026-07-25)"
+    },
+    {
+      "test": "src/features/dungeons/maplab/__tests__/MapLabPage.test.tsx :: MapLabPage (Stage 4 — Passage session state) toggles door open/closed via session state controls",
+      "reason": "Passage session-state controls; carried since Stage 7 (2026-07-25)"
+    },
+    {
+      "test": "src/features/dungeons/maplab/__tests__/MapLabPage.test.tsx :: MapLabPage (Stage 4 — Passage session state) resets all session overrides via a reset button",
+      "reason": "Passage session-state controls; carried since Stage 7 (2026-07-25)"
+    }
+  ]
+}

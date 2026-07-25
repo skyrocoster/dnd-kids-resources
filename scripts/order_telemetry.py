@@ -11,9 +11,21 @@ uses the newest match. The script computes usage and cost-driver metrics, prints
 TELEMETRY block, and appends a durable entry to docs/plans/telemetry-log.md (the order
 files themselves are deleted at reconcile, so the log is the record).
 
+Every entry also records the *shape of the order itself* — how many files START IN named,
+how many lines those files hold, how many are unscoped, how many behaviours DO asked for.
+The measured columns describe the executor, but nearly every compiler note in the log
+concludes the order was at fault; without the order's shape beside its cost there is
+nothing to correlate, and each expensive run stays an anecdote. Order files are deleted at
+reconcile, so this is the only chance to capture it.
+
 Usage (from repo root):
     .venv\\Scripts\\python.exe scripts/order_telemetry.py --order docs/plans/active/orders/<feature>/<NN>-<slug>.md
 Options:
+    --status <text>       required when the order file has no STATUS line (a run that was
+                          cancelled or stalled): say what actually happened, e.g.
+                          "STALLED - manually stopped after 40 turns, no STATUS written"
+    --first-pass yes|no   override the automatic first-pass detection (default: "no" when
+                          the log already holds an entry for this order)
     --transcript <path>   explicit Claude transcript JSONL (skips auto-discovery)
     --opencode-session <id>  explicit opencode session id (skips auto-discovery)
     --project-dir <path>  Claude Code project dir (default: derived from cwd)
@@ -40,6 +52,9 @@ import sys
 from collections import Counter
 from datetime import datetime
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import check_orders  # noqa: E402  (same directory; shares the order-file parsers)
 
 CHARS_PER_TOKEN = 4  # rough estimate for tool-result sizes only
 
@@ -84,11 +99,20 @@ def first_user_text(path: Path, max_records: int = 5) -> str:
 
 
 def find_transcript(project_dir: Path, order_path: Path) -> Path | None:
-    """Newest transcript whose opening prompt names the order file."""
+    """Newest *subagent* transcript whose opening prompt names the order file.
+
+    The dispatcher's own session transcript also names the order — it wrote the dispatch
+    prompt — and it keeps growing after the executor finishes, so mixing both pools into
+    one newest-wins sort hands back the parent whenever the child left no record. Search
+    the subagent pool alone; a missing entry is recoverable, a confident misattribution is
+    not (see the 2026-07-25 20:20 correction in the telemetry log).
+    """
     needle = order_path.name
-    candidates = list(project_dir.glob("*/subagents/agent-*.jsonl"))
-    candidates += list(project_dir.glob("*.jsonl"))
-    candidates.sort(key=lambda p: p.stat().st_mtime, reverse=True)
+    candidates = sorted(
+        project_dir.glob("*/subagents/agent-*.jsonl"),
+        key=lambda p: p.stat().st_mtime,
+        reverse=True,
+    )
     for path in candidates:
         try:
             if needle in first_user_text(path):
@@ -170,6 +194,41 @@ def extract_order_sections(order_text: str) -> tuple[str, str]:
         lines = [ln for ln in lines if not ln.startswith("RUN SUMMARY:")]
         deviations = " | ".join(lines) or "none stated"
     return status, deviations
+
+
+def order_shape(order_text: str) -> str:
+    """How big a thing the order asked for, measured from the order file itself.
+
+    An expensive run is usually predictable from these four numbers before dispatch: a
+    large unscoped file in START IN gets read whole, and several behaviours at once is
+    what stalls a cheap executor. Logging them beside the cost turns the compiler notes
+    from anecdotes into something that can be correlated.
+    """
+    sections = check_orders.split_sections(order_text)
+    entries = check_orders.start_in_entries(sections)
+    total_lines = 0
+    unscoped = 0
+    for _, path_str, scope in entries:
+        resolved = check_orders._resolve(path_str)
+        if resolved.is_file():
+            lines = check_orders._line_count(resolved)
+            total_lines += lines
+            if lines > check_orders.SCOPE_REQUIRED_LINES and len(scope) < 3:
+                unscoped += 1
+    do_bullets = len(check_orders.bullets(sections.get("DO", [])))
+    return (
+        f"START IN {len(entries)} files / {total_lines:,} lines"
+        + (f" ({unscoped} unscoped over {check_orders.SCOPE_REQUIRED_LINES})" if unscoped else "")
+        + f" | DO {do_bullets} behaviour(s)"
+    )
+
+
+def prior_runs(log_path: Path, order_rel: str) -> int:
+    """How many entries this order already has — a reissue is not a first pass."""
+    if not log_path.exists():
+        return 0
+    text = log_path.read_text(encoding="utf-8")
+    return len(re.findall(rf"^## .+ — {re.escape(order_rel)}\s*$", text, re.MULTILINE))
 
 
 def extract_run_summary(order_text: str) -> str:
@@ -271,13 +330,26 @@ def opencode_connect(db_path: Path) -> sqlite3.Connection:
 
 
 def find_opencode_session(db_path: Path, order_path: Path) -> tuple[str, float] | None:
-    """(session_id, last_update) of the newest session whose text parts name the order."""
+    """(session_id, last_update) of the executor's *child* session for this order.
+
+    The dispatcher's own session also names the order file — it wrote the dispatch prompt —
+    and it keeps updating after the executor finishes, so a plain "newest session naming the
+    order" lookup returns the parent deterministically whenever the child leaves no record.
+    That is not hypothetical: the 2026-07-25 20:20 entry in the telemetry log recorded the
+    gpt-5.6-sol *dispatcher* as if it were the executor, and the real run's numbers were lost.
+
+    Executor runs are spawned as child sessions, so restrict the search to sessions with a
+    parent. If the only match is a parent session, return None and let the caller refuse to
+    guess: a missing entry is recoverable, a confidently wrong one is not.
+    """
     needle = order_path.name
     with opencode_connect(db_path) as con:
         rows = con.execute(
-            "select session_id, max(time_updated) from part "
-            "where data like ? and data like '%\"type\":\"text\"%' "
-            "group by session_id order by max(time_updated) desc limit 1",
+            "select p.session_id, max(p.time_updated) from part p "
+            "join session s on s.id = p.session_id "
+            "where p.data like ? and p.data like '%\"type\":\"text\"%' "
+            "and s.parent_id is not null "
+            "group by p.session_id order by max(p.time_updated) desc limit 1",
             (f"%{needle}%",),
         ).fetchall()
     if not rows or rows[0][0] is None:
@@ -382,7 +454,14 @@ def fmt_note(note: str | None) -> str:
 
 
 def fmt_entry(
-    order_rel: str, status: str, deviations: str, m: dict, source: str, note: str | None
+    order_rel: str,
+    status: str,
+    deviations: str,
+    m: dict,
+    source: str,
+    note: str | None,
+    shape: str,
+    first_pass: str,
 ) -> str:
     u = m["usage"]
     fresh_in = u["input_tokens"] + u["cache_creation_input_tokens"]
@@ -400,6 +479,8 @@ def fmt_entry(
     return (
         f"## {stamp} — {order_rel}\n"
         f"- status: {status}\n"
+        f"- first pass: {first_pass}\n"
+        f"- order shape (compiled): {shape}\n"
         f"- model: {m['model']} | turns: {m['turns']}"
         + (f" | wall: {m['elapsed']}" if m["elapsed"] else "")
         + "\n"
@@ -432,6 +513,17 @@ time via `--note`: why the numbers look as they do, and which cost drivers trace
 how the order was compiled rather than to the executor. The measured lines say what
 happened; the note says what to do differently when compiling the next stage, while the
 order file still exists to check against. "not recorded" means that judgement was lost.
+
+"first pass" is the number actually worth optimising. Executor runs cost cents; a
+re-dispatch costs a cold start, the planner's attention, and often a stalled dependency
+chain — far more than the token spread between a clean run and a verbose one. Read the
+token lines as a diagnosis of *why* an order thrashed, not as the target.
+
+"order shape (compiled)" measures the order rather than the executor: how many files
+START IN named, how many lines they hold, how many were left unscoped, and how many
+behaviours DO asked for. Nearly every compiler note below concludes the order was at
+fault, so this is the column to correlate an expensive run against — and it is only
+capturable now, since order files are deleted at reconcile.
 
 Entries marked "(reconcile)" are stage-level, written once per stage by the `reconcile`
 skill rather than per order. Their "escaped targeted checks" lines are the ones to read
@@ -501,6 +593,23 @@ def main() -> int:
     ap.add_argument("--model")
     ap.add_argument("--turns", type=int)
     ap.add_argument(
+        "--status",
+        help=(
+            "What actually happened, for a run that wrote no STATUS line — cancelled, "
+            "stalled, or manually stopped. Required in that case: 'status: not recorded' "
+            "is how the two most instructive runs in the log lost their outcome."
+        ),
+    )
+    ap.add_argument(
+        "--first-pass",
+        choices=("yes", "no"),
+        help=(
+            "Override first-pass detection. By default this is 'no' when the log already "
+            "holds an entry for this order. First-pass rate is the number worth optimising: "
+            "a re-dispatch costs far more than any token spread between clean runs."
+        ),
+    )
+    ap.add_argument(
         "--note",
         help=(
             "The dispatcher's read of this run: why the cost drivers look as they do, and "
@@ -538,6 +647,28 @@ def main() -> int:
     except ValueError:
         order_rel = order_path.name
 
+    # A run that never wrote STATUS is exactly the run worth recording — it was cancelled,
+    # or it stalled. Refuse to log it as "not recorded" and quietly lose the outcome.
+    if status == "not recorded":
+        if not args.status:
+            print(
+                "ERROR: the order file has no STATUS line, so this run's outcome is unknown.\n"
+                "       Pass --status \"<what happened>\" (e.g. "
+                "\"STALLED - manually stopped after 40 turns\").",
+                file=sys.stderr,
+            )
+            return 1
+        status = args.status.strip()
+    elif args.status:
+        status = args.status.strip()
+
+    shape = order_shape(order_text)
+    if args.first_pass:
+        first_pass = args.first_pass
+    else:
+        earlier = prior_runs(root / args.log, order_rel)
+        first_pass = "yes" if earlier == 0 else f"no - run {earlier + 1} of this order"
+
     if args.manual is not None:
         stamp = datetime.now().strftime("%Y-%m-%d %H:%M")
         run_summary = extract_run_summary(order_text)
@@ -551,6 +682,8 @@ def main() -> int:
         entry = (
             f"## {stamp} — {order_rel}\n"
             f"- status: {status}\n"
+            f"- first pass: {first_pass}\n"
+            f"- order shape (compiled): {shape}\n"
             f"- transport: manual (chat UI — no parseable local record)\n"
             + (f"- model: {args.model}" if args.model else "")
             + (f" | turns: {args.turns}" if args.turns is not None else "")
@@ -591,8 +724,15 @@ def main() -> int:
         oc_time = oc_hit[1] if oc_hit else -1.0
         if claude_hit is None and oc_hit is None:
             print(
-                f"ERROR: no Claude transcript or opencode session naming {order_path.name} "
-                "found. Pass --transcript / --opencode-session, or log with --manual.",
+                f"ERROR: no executor record naming {order_path.name} found.\n"
+                "       Only child records count — a Claude subagent transcript or an "
+                "opencode child session.\n"
+                "       The dispatcher's own session names the order too, and logging it "
+                "would record the dispatcher's\n"
+                "       model and tokens as if they were the executor's (see the "
+                "2026-07-25 20:20 correction).\n"
+                "       Pass --transcript / --opencode-session for the child run, or log "
+                "with --manual.",
                 file=sys.stderr,
             )
             return 1
@@ -607,7 +747,9 @@ def main() -> int:
     else:
         metrics = analyse_opencode(db_path, oc_session, start_in, order_path.name)
         source = f"opencode session {oc_session}"
-    entry = fmt_entry(order_rel, status, deviations, metrics, source, args.note)
+    entry = fmt_entry(
+        order_rel, status, deviations, metrics, source, args.note, shape, first_pass
+    )
     print(entry)
 
     if not args.no_log:

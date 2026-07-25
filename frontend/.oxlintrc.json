@@ -4,5 +4,28 @@
   "rules": {
     "react/rules-of-hooks": "error",
     "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
+  },
+  "overrides": [
+    {
+      "files": ["src/model/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "**/components/**",
+                  "**/features/**",
+                  "**/layout/**",
+                  "**/pages/**"
+                ],
+                "message": "src/model/ holds pure domain models shared by the DM and Player apps and must import nothing from components/, features/, layout/ or pages/ (docs/ARCHITECTURE.md). Move the shared type down into model/, or keep the helper in the feature."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
 }

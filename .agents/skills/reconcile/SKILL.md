@@ -43,16 +43,22 @@ you record what shipped, you don't extend it.
    this is where cross-cutting regressions from the batch get caught, in a context that can afford
    the output:
    - `pytest` from the repo root (full suite + the coverage gate)
-   - `npm run test` and `npm run build` in `frontend/` (`build` includes `tsc -b`, the only real
-     typecheck)
-   Triage any failure here yourself or reissue an order for it. Whatever still fails on purpose
-   becomes the refreshed **KNOWN TEST FAILURES** list for the next batch of orders.
+   - `npm run test:check -- --strict`, `npm run lint` and `npm run build` in `frontend/` (`build`
+     includes `tsc -b`, the only real typecheck; `test:check` is the full vitest run judged against
+     `frontend/known-test-failures.json`; `lint` is where the `src/model/` layering rule is
+     enforced, and CI does not run it)
+   Triage any failure here yourself or reissue an order for it.
+
+   `--strict` is what keeps the known-failure list from rotting: it fails when a listed test now
+   passes, so the stage that fixed it prunes the entry. Refreshing that list is a one-file edit
+   here, not a block copied by hand into every order of the next batch — and it is what lets an
+   executor's targeted stop-check be a single command with a trustworthy verdict.
 
    **Then log the stage-level result to the telemetry log, every stage, pass or fail:**
 
    ```
    .venv\Scripts\python.exe scripts/order_telemetry.py --reconcile "<feature> stage <N>" \
-     --checks "<pytest / npm run test / npm run build / check_docs results>" \
+     --checks "<pytest / npm run test:check --strict / npm run build / check_docs results>" \
      --missed "<a defect that passed an order's STOP WHEN but failed here>" \
      --note "<what to change in to-orders so it cannot happen again>"
    ```

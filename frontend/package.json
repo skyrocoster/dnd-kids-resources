@@ -9,6 +9,7 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "test": "vitest run --silent=passed-only",
+    "test:check": "node scripts/test-check.mjs",
     "typecheck": "tsc -b"
   },
   "dependencies": {

@@ -4,11 +4,12 @@ DEPENDS ON: 01, 02
 
 KNOWN STATE (already true — do NOT redo or re-derive):
 - Orders 01 and 02 are both DONE: polling survives sleep/wake, `--kid-control-height: 64px` is in the theme, destination buttons meet the floor, copy is verified, no-exit audit passes.
-- The seeded school and annex are fully loadable (`seed_database.py --dungeons`).
+- The seeded school and annex are fully loadable (`python scripts/seed_database.py --dungeons`).
 - The tablet at `/play/map` shows the live school map, pans, zooms, and polls the at-the-table pointer every 5 seconds.
 - The shell at `/play` has one destination (Map) linking to `/play/map`. There is no back/home/DM link anywhere.
 - The DM sets the at-the-table dungeon from a "Put at the table" / "At the table" control in the
-  Map Lab session view's Session toolbar tray (`MapLabPage.tsx`). This control did not exist until
+  Map Lab session view's Session toolbar tray
+  (frontend/src/features/dungeons/maplab/MapLabPage.tsx). This control did not exist until
   Stage 5.4 — before that fix, `setAtTheTable` was wired end-to-end (backend, API client, tests) but
   no UI ever called it, so `/play/map` could only ever show "No map yet." Use this control to put
   Widdershins Academy at the table before starting the session.

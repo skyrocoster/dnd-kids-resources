@@ -54,6 +54,7 @@ and opencode both load them today): `plan`,
 - Archive a completed Plan to `docs/complete/`, updating its area guide and the manifest in the same change set; leave a redirect stub only when a known inbound link must survive. `MEMORY.md` is not a parallel plan-status registry.
 - Run the documentation checker through the repo-local virtualenv (`.venv\Scripts\python.exe scripts/check_docs.py --check` on Windows, `.venv/bin/python scripts/check_docs.py --check` on POSIX).
 - The checker validates local links and anchors, active-Plan status lines and manifest completeness, area-guide↔Plan ownership, work-order structure, plan-redirect lifecycle, AI-entry precedence, configured test commands, banned legacy references, and generated reference inventories. It no longer couples per-diff code changes to a Plan edit, so work orders can land independently.
+- Work-order linting lives in `scripts/check_orders.py` (invoked by the checker, and runnable on its own while compiling a stage). Every rule there is one dispatch-costing fault recorded in `docs/plans/telemetry-log.md`; run it before dispatching anything.
 - GitHub Actions runs the `documentation-contract` check on every pull request and push to `main`; keep it enabled as a required branch-protection check in GitHub settings.
 
 ## Stable Project Rules

@@ -29,6 +29,9 @@ def _import_check_docs():
 
 
 cd = _import_check_docs()
+# check_docs imports check_orders by path insertion; reuse the instance it loaded so a
+# monkeypatched REPO_ROOT reaches the code actually running.
+check_orders = cd.check_orders
 
 
 # ── Metadata parsing ────────────────────────────────────────────────
@@ -321,12 +324,17 @@ def test_configured_test_commands_follow_configuration(tmp_path: Path):
 # ── Work-order lint (Plan -> Implement -> Reconcile) ────────────────
 
 
-def test_work_orders_flag_missing_fields(tmp_path: Path):
+def test_work_orders_flag_missing_fields(tmp_path: Path, monkeypatch):
+    """check_docs delegates to check_orders; the rules themselves are tested there."""
+    monkeypatch.setattr(check_orders, "REPO_ROOT", tmp_path)
     docs = _write_docs_tree(tmp_path, manifest="# Docs\n")
     orders = docs / "plans" / "active" / "orders" / "feat"
     orders.mkdir(parents=True)
+    (tmp_path / "file.py").write_text("x = 1\n", encoding="utf-8")
     (orders / "01-good.md").write_text(
-        "WORK ORDER 01 — x\nGOAL: do a thing\nSTART IN: file.py\nSTOP WHEN: tests pass\nSTATUS: DONE\n",
+        "WORK ORDER 01 — x\nGOAL: do a thing\nDEPENDS ON: none\n\n"
+        "START IN:\n- file.py\n\nDO:\n- change the thing\n\n"
+        "STOP WHEN: tests pass\nSTATUS: DONE\n",
         encoding="utf-8",
     )
     (orders / "02-bad.md").write_text("WORK ORDER 02 — y\nGOAL: do a thing\n", encoding="utf-8")

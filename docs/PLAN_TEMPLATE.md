@@ -79,12 +79,15 @@ KNOWN STATE (already true — do NOT redo or re-derive):
 - <verified fact: real value, real file location, current test count>
 
 KNOWN TEST FAILURES (pre-existing — NOT yours to fix, NOT caused by you):
-- <exact test name/path that already fails, verbatim, or omit this section if the suite is green>
+- <backend only: exact pytest node id that already fails; frontend stop-checks use
+  npm run test:check, which reads frontend/known-test-failures.json itself. Omit when empty.>
 
-START IN: <2–4 exact files/folders to begin from>
+START IN:
+- <exact path> — <the symbol or line range needed, and nothing else in this file>
+- <2–4 entries, each verified by opening it while compiling>
 
 DO:
-- <1–3 terse lines: what to change and where to look — no code>
+- <1–3 terse lines: what to change and where, with the anchor text to match — no code>
 
 STOP WHEN: <a single runnable command that must pass, or "if X = Y, stop">
 
@@ -95,9 +98,16 @@ DEVIATIONS: <-- executor appends, always (even on DONE) — exactly two lines
 - KNOWN STATE re-verified or wrong: <one line, or "none">
 ```
 
-The focus leash: **KNOWN STATE** (answers, not pointers) + **START IN** (bounded exploration) +
-**STOP WHEN** (a hard stop that ends wandering). See `.agents/skills/to-orders/SKILL.md` for the full
-authoring guidance and a worked example.
+The focus leash: **KNOWN STATE** (answers, not pointers) + **START IN** (bounded exploration, each
+entry scoped to the symbol or line range needed) + **STOP WHEN** (a hard stop that ends wandering).
+See `.agents/skills/to-orders/SKILL.md` for the full authoring guidance, and
+[the reference order](plans/active/orders/_example/99-creature-row-ac.md) for a worked example.
+
+`scripts/check_orders.py` lints orders against these rules and is runnable on its own while
+compiling a stage. Each rule is one fault the telemetry log paid to learn — a path that does not
+resolve, a file named in DO but absent from START IN, a bare filename, a conditional instruction, an
+unscoped large file, a fixture with no cast idiom or typecheck, several behaviours aimed at one big
+integrated suite.
 
 ### On failure — the escalation channel back to the planner
 
@@ -124,9 +134,17 @@ cycling to avoid writing one.
 
 When an order reports back, the dispatcher runs `scripts/order_telemetry.py --order <order-path>`,
 which parses the executor's record (token totals, turn count, largest tool results, duplicate
-reads, reads outside START IN), folds in the executor's STATUS and DEVIATIONS lines, and appends an
-entry to `docs/plans/telemetry-log.md`. Two transports parse automatically — Claude Code subagent
-transcripts and opencode's local SQLite DB (which also yields dollar cost). For anything else
+reads, reads outside START IN), folds in the executor's STATUS and DEVIATIONS lines, records the
+order's own compiled shape and whether this was a first pass, and appends an entry to
+`docs/plans/telemetry-log.md`. Two transports parse automatically — Claude Code subagent
+transcripts and opencode's local SQLite DB (which also yields dollar cost) — and only *child*
+records count, because the dispatcher's own session names the order too and would otherwise be
+logged as if it were the executor.
+
+**First-pass rate is the metric worth optimising.** An executor run costs cents; a re-dispatch costs
+a cold start, the planner's attention, and a stalled dependency chain. The token columns diagnose
+*why* an order thrashed — they are not the target. Order shape sits beside them because nearly every
+compiler note concludes the order, not the executor, was at fault. For anything else
 (e.g. ChatGPT) the `--manual "<reported usage>"` form logs whatever that tool's UI reported. The
 executor-written STATUS/DEVIATIONS lines are transport-independent either way. The log survives
 order deletion at reconcile — reconcile checks each order has an entry before deleting it — and is
@@ -158,8 +176,8 @@ Each tier runs in the context that can afford its output:
 
 | Tier | Who | What |
 |---|---|---|
-| Targeted | executor (`implement-order`) | Only the STOP WHEN command — exact test files, `--no-cov` for pytest subsets. Never the full suite or `tsc -b`. |
-| Full | `reconcile`, once per stage | `pytest` (full suite + coverage gate), `npm run test`, `npm run build` (includes `tsc -b`). Refreshes KNOWN TEST FAILURES. |
+| Targeted | executor (`implement-order`) | Only the STOP WHEN command — exact test files, `--no-cov` for pytest subsets, `npm run test:check -- <file>` on the frontend. Never the full suite. `npm run typecheck` is the one stage-level check allowed in an order, and only when it writes a fixture for a domain-typed object. |
+| Full | `reconcile`, once per stage | `pytest` (full suite + coverage gate), `npm run test:check -- --strict`, `npm run lint`, `npm run build` (includes `tsc -b`). Prunes `frontend/known-test-failures.json`. |
 | Backstop | CI on push/PR | Everything, always. |
 
 ---
@@ -195,9 +213,10 @@ after reading only what it names.
 
 `scripts/check_docs.py` is aligned with this workflow. For an active Plan it requires only a
 `> **Status:**` line (stages are plain-English list items, not `(next up)` execution blocks). It lints
-work orders under `plans/active/orders/<feature>/` for their load-bearing fields (`GOAL:`, `START IN:`,
-`STOP WHEN:`, `STATUS:`) and requires a `FAILURE REPORT:` block whenever a STATUS line reads FAILED
-or BLOCKED, validates area-guide↔Plan ownership — every active plan must be linked
+work orders under `plans/active/orders/<feature>/` by delegating to `scripts/check_orders.py` — the
+load-bearing fields (`GOAL:`, `DEPENDS ON:`, `START IN:`, `STOP WHEN:`, `STATUS:`), a `FAILURE REPORT:`
+block whenever a STATUS line reads FAILED or BLOCKED, and the compiling rules above — validates
+area-guide↔Plan ownership — every active plan must be linked
 from its owning guide's `Active plan` line, which may list several (a stage anchor is optional) — and keeps
 the workflow-agnostic safety net: local links/anchors, manifest completeness, plan-redirect lifecycle,
 AI-entry precedence, configured test commands, banned legacy references, and the auto-generated
