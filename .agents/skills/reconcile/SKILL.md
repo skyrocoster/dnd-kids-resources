@@ -11,7 +11,7 @@ you record what shipped, you don't extend it.
 
 ## Steps
 
-1. **Read every work order in `docs/plans/active/orders/<feature>/` and check its STATUS.**
+1. **Read every work order in `docs/plans/active/<feature>/` and check its STATUS.**
 
 2. **For each `DONE` order:** confirm it really landed (skim the changed files / run the order's STOP
    WHEN command if in doubt), then **collapse it into the Plan's Shipped table** as one ≤2-sentence
@@ -96,7 +96,7 @@ you record what shipped, you don't extend it.
    `.venv/bin/python`) — it auto-finds Claude Code transcripts and opencode sessions; if neither exists
    (ChatGPT transport, or the record is gone), log it with
    `--manual "backfilled at reconcile, no usage figures"`. Then delete: when every order in
-   the stage is done, the `orders/<feature>/` directory should be empty of that stage's files.
+   the stage is done, the feature directory should be empty of that stage's order files.
    Leftover DONE files are clutter.
 
    Every ~10-15 logged entries, tell the user the telemetry log has enough data for a review pass —
@@ -106,7 +106,7 @@ you record what shipped, you don't extend it.
    `escaped targeted checks` lines from the reconcile entries are the first thing to read: a defect
    class that shows up in two stages has already proven a one-off note won't hold it.
 
-8. **When the whole feature is complete:** move the Plan to `docs/complete/<feature>.md`, set the area
+8. **When the whole feature is complete:** move the Plan to `docs/plans/done/<feature>/`, set the area
    guide back to "no active plan" (or its next plan), and update `docs/README.md` in the same change
    set. Leave a redirect stub only if a known inbound link must survive.
 

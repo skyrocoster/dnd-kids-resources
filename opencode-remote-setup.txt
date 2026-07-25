@@ -1,0 +1,169 @@
+==============================================================================
+RUNNING OPENCODE FROM YOUR PHONE (LAN-ONLY SETUP)
+==============================================================================
+
+Goal: drive opencode against this repo from an Android device, over the local
+network, using nothing but a browser.
+
+Launcher script: scripts\opencode_remote.ps1
+
+
+------------------------------------------------------------------------------
+ONE-TIME SETUP
+------------------------------------------------------------------------------
+
+Open PowerShell AS ADMINISTRATOR and run this once:
+
+    New-NetFirewallRule -DisplayName 'opencode LAN (TCP 4096)' -Direction Inbound `
+      -Action Allow -Protocol TCP -LocalPort 4096 `
+      -Profile Private -RemoteAddress 192.168.1.0/24
+
+This opens port 4096 to your home subnet only, and only while Windows considers
+the network Private. If your subnet is ever something other than 192.168.1.x,
+the launcher script prints the correct command for the current network.
+
+
+------------------------------------------------------------------------------
+EVERY TIME YOU WANT TO USE IT
+------------------------------------------------------------------------------
+
+1. On the PC, from the repo root:
+
+       .\scripts\opencode_remote.ps1 -ShowPassword
+
+   It prints the URL and the login. Leave the window open; Ctrl+C stops it.
+
+2. On the phone (same Wi-Fi), open the printed URL. It ends in a base64 chunk
+   that identifies the repo:
+
+       http://192.168.1.175:4096/RjpcRE5EXEtpZHMgUmVzb3VyY2Vz
+
+   Bookmark that exact link. The bare http://192.168.1.175:4096 lands on a Home
+   screen showing "Projects / Add project" and "Nothing here yet" -- that is
+   expected and cannot be fixed from the UI. See the section at the bottom.
+
+3. Log in when prompted:
+
+       username: opencode
+       password: (whatever the script printed)
+
+   The username MUST be exactly "opencode". Any other username is rejected
+   with a 401 even if the password is right.
+
+The server returns the full opencode web UI as HTML, so any mobile browser
+works. There is no app to install.
+
+
+------------------------------------------------------------------------------
+THE PASSWORD
+------------------------------------------------------------------------------
+
+Stored at:
+
+    %LOCALAPPDATA%\opencode\server-password.txt
+
+It is generated randomly on first run and kept OUTSIDE the repo so it can never
+be committed.
+
+To rotate it: delete that file and run the launcher again.
+
+To use your own instead, set the environment variable before launching:
+
+    $env:OPENCODE_SERVER_PASSWORD = 'your-password-here'
+    .\scripts\opencode_remote.ps1
+
+The env var wins over the stored file.
+
+
+------------------------------------------------------------------------------
+IF THE PHONE CAN'T CONNECT
+------------------------------------------------------------------------------
+
+- Phone on the same Wi-Fi? Mobile data will not reach the PC.
+- Firewall rule created? The launcher warns you if it is missing.
+- IP changed? 192.168.1.175 is DHCP-assigned and can move. The launcher always
+  prints the current address -- read it off each launch, or set a DHCP
+  reservation on the router if you want a bookmark that keeps working.
+- Network gone Public? The launcher refuses to start and says so. Set the
+  network back to Private in Windows settings.
+
+"NO PROJECTS" / "NO FOLDERS FOUND" -- READ THIS
+------------------------------------------------------------------------------
+
+This is a real limitation, not a misconfiguration. Verified in a browser:
+
+- The Home screen's project list is browser-local state, NOT read from the
+  server. A fresh browser shows an empty list even though the server knows
+  about this repo and has hundreds of sessions for it.
+- "Add project" / "New project" opens a folder picker that only searches under
+  C:\Users\skyro. Typing "Kids" returns matches from C: only. Typing the full
+  path F:/DND/Kids Resources returns "No folders found". A repo on F: simply
+  cannot be selected there.
+
+THE WORKAROUND: navigate straight to the project URL. The web UI routes a
+project as /<base64url of its worktree path>. For this repo:
+
+    F:\DND\Kids Resources  ->  RjpcRE5EXEtpZHMgUmVzb3VyY2Vz
+
+    http://192.168.1.175:4096/RjpcRE5EXEtpZHMgUmVzb3VyY2Vz
+
+That opens a working session composer scoped to this repo. Bookmark it.
+
+Do NOT use the URL-encoded path form (F%3A%5CDND%5C...). The app rejects it
+with a "Request failed / Invalid directory in URL" toast and bounces you back
+to the empty Home screen.
+
+To regenerate the segment if the repo ever moves:
+
+    $b = [Text.Encoding]::UTF8.GetBytes('F:\DND\Kids Resources')
+    [Convert]::ToBase64String($b).Replace('+','-').Replace('/','_')
+
+The launcher prints the correct link every time, so you should not need this.
+
+OTHER THINGS TO CHECK
+------------------------------------------------------------------------------
+
+- Only ONE server running? Two servers started from different folders means you
+  connect to one while the repo is open in the other:
+
+      Get-CimInstance Win32_Process -Filter "Name='opencode.exe'" |
+        Select-Object ProcessId, CommandLine
+
+  Kill all of them and start once via the launcher.
+- The server scopes itself to the directory it was launched in. Running
+  `opencode serve` from your home folder registers THAT folder as the project.
+  The launcher always starts in the repo root.
+- A brand-new session you just opened in the TUI will not appear until it has
+  actual messages -- empty sessions are not written to disk.
+- To confirm what the server is serving, with it running:
+
+      curl -u opencode:PASSWORD http://192.168.1.175:4096/project/current
+
+  The "worktree" field should read F:\DND\Kids Resources.
+
+
+------------------------------------------------------------------------------
+SECURITY NOTES -- READ ONCE
+------------------------------------------------------------------------------
+
+- The server binds to the LAN IP specifically, never 0.0.0.0. It is therefore
+  not exposed on other networks you join.
+- Access is gated by HTTP Basic auth. Verified: no credentials returns 401,
+  correct credentials returns 200.
+- Traffic is plain HTTP, not HTTPS. Fine on a home network; do not use this on
+  a shared or public one.
+- Do NOT port-forward 4096 on the router. That would put an agent that runs
+  commands as you on the open internet.
+
+SCOPE: opencode's file tools (read/edit/glob/grep) are confined to the repo
+root, and it asks before touching anything outside it. But the bash tool can
+reach anything your Windows user can -- that is the escape hatch. If you want
+true containment, the options are:
+
+  a) Add a top-level "permission": { "bash": "ask" } block to opencode.jsonc.
+     Effective, but means a lot of approval-tapping on a phone.
+  b) Run opencode in a container with only this repo bind-mounted. Real
+     filesystem isolation, but you must install the Python/Node toolchain
+     inside it so the tests still run.
+
+Neither is set up right now.

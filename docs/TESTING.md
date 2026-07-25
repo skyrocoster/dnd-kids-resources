@@ -95,7 +95,7 @@ every seeded player's nested endpoints, asserting **no configured GET endpoint m
   `"files": []` (it only exists to reference the app/node sub-projects), so
   `tsc --noEmit` silently checks *nothing* and reports success even with real type
   errors in the tree — a false green that hid ~40 errors during the Phase E recovery
-   (see `complete/phase-e-recovery-plan.md`). `tsc -b` (`npm run typecheck` /
+   (see `plans/done/phase-e-recovery-plan/phase-e-recovery-plan.md`). `tsc -b` (`npm run typecheck` /
   `npm run build`) is the only real check — it builds the referenced sub-projects.
 
 ## Known failures: `npm run test:check`

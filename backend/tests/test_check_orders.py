@@ -120,6 +120,29 @@ def test_bare_filename_in_known_state(repo: Path):
     assert any("without its path" in m for m in messages(repo, order))
 
 
+def test_dot_directory_start_in_path_resolves(repo: Path):
+    """`lstrip("./")` strips a character set, so it ate the dot of every dot-directory."""
+    skill = repo / ".agents" / "skills" / "plan"
+    skill.mkdir(parents=True)
+    (skill / "SKILL.md").write_text("# plan\n", encoding="utf-8")
+    order = GOOD_ORDER.replace(
+        "- src/__tests__/Tile.test.tsx\n",
+        "- .agents/skills/plan/SKILL.md — the `Where it lives` path only\n",
+        1,
+    ).replace("- Add one test to src/__tests__/Tile.test.tsx.", "- Fix that one path.")
+    assert not any("does not exist" in m for m in messages(repo, order))
+
+
+def test_repo_root_file_is_not_a_bare_filename(repo: Path):
+    """A root file's full repo-relative path *is* its bare name — nothing to add."""
+    (repo / "CLAUDE.md").write_text("# instructions\n", encoding="utf-8")
+    order = GOOD_ORDER.replace(
+        "- The tile renders the title only.",
+        "- The archive lifecycle in CLAUDE.md still names the old path.",
+    )
+    assert not any("without its path" in m for m in messages(repo, order))
+
+
 def test_bare_filename_allowed_inside_a_command(repo: Path):
     order = GOOD_ORDER.replace(
         "- The tile renders the title only.",
@@ -241,6 +264,6 @@ def test_lint_orders_on_absent_directory(tmp_path: Path):
 def test_lint_orders_walks_the_tree(repo: Path):
     orders = repo / "orders" / "feat"
     orders.mkdir(parents=True)
-    (orders / "01.md").write_text("WORK ORDER 01 — y\nGOAL: x\n", encoding="utf-8")
+    (orders / "01-broken.md").write_text("WORK ORDER 01 — y\nGOAL: x\n", encoding="utf-8")
     found = co.lint_orders(repo / "orders")
-    assert found and all(error.file.endswith("01.md") for error in found)
+    assert found and all(error.file.endswith("01-broken.md") for error in found)

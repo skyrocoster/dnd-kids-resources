@@ -1,119 +1,31 @@
 # Documentation Manifest — D&D Kids Resources
 
-This is the complete documentation inventory and task router. Read [../CLAUDE.md](../CLAUDE.md) first, then use this manifest instead of exploring source to find the smallest relevant context packet. Use [../CONTEXT.md](../CONTEXT.md) for shared vocabulary; use the owning area guide for area-specific vocabulary and invariants.
+This is the documentation task router. The full documentation inventory (canonical docs, area guides, entry points, plan archive, and analysis records) is in [INVENTORY.md](INVENTORY.md). Use the router below to find the right area guide and context for your task.
+
+Read [../CLAUDE.md](../CLAUDE.md) first, then use this manifest instead of exploring source to find the smallest relevant context packet. Use [../CONTEXT.md](../CONTEXT.md) for shared vocabulary; use the owning area guide for area-specific vocabulary and invariants.
 
 `../scratch/` is deliberately outside this inventory and documentation contract. AI must not explore it unless the user explicitly names a path there.
 
-`docs/plans/active/orders/` holds the lean, disposable **work orders** compiled from a Plan's stages by the `to-orders` skill and deleted by `reconcile` once shipped; `docs/plans/active/tickets/` and `docs/plans/mapping/` hold other derived working artifacts. These are regenerated from source plans/maps; no manifest row needed. The Plan → Implement → Reconcile workflow and its five `.agents/skills/` skills are defined in [PLAN_TEMPLATE.md](PLAN_TEMPLATE.md) and [../CLAUDE.md](../CLAUDE.md).
+Each `docs/plans/active/<feature>/` directory holds its Plan and the lean, disposable **work orders** compiled from that Plan's stages and deleted by `reconcile` once shipped. These are regenerated from source plans/maps; no manifest row needed. The Plan → Implement → Reconcile workflow and its five `.agents/skills/` skills are defined in [PLAN_TEMPLATE.md](PLAN_TEMPLATE.md) and [../CLAUDE.md](../CLAUDE.md).
 
 ## Task Router
 
 | Task | Area / current stage | Read first |
 |---|---|---|
-| Documentation maintenance | [Documentation Governance](areas/documentation.md) — [Docs Restructure](plans/active/docs-restructure.md) next | `PLAN_TEMPLATE.md`, `scripts/check_docs.py`, `TESTING.md`, and existing GitHub workflow files |
-| Designing or changing any UI surface | [Visual Design](areas/visual-design.md) | `UX_PATTERNS.md`, `DESIGN_SYSTEM.md`, the owning area guide's `## Surfaces` table |
-| Visual consistency work | [Visual Design](areas/visual-design.md) — plan archived | `areas/visual-design.md`, `DESIGN_SYSTEM.md`, `ARCHITECTURE.md`, `TESTING.md` |
-| Story threads, Loom tapestry, beats, or session nodes | Its area guide; create a focused plan if it has none | `areas/loom.md`, `DESIGN_SYSTEM.md`, `ARCHITECTURE.md`, `API_REFERENCE.md`, `DATA_MODEL.md`, `TESTING.md` |
-| Existing dungeon, encounter, monster, spell, or loot behavior | Its area guide; create a focused plan if it has none | `ARCHITECTURE.md`, `API_REFERENCE.md`, `DATA_MODEL.md`, `TESTING.md` |
-| Wall kinds, map extent/padding, outside features, or map layer and density controls | [Dungeons](areas/dungeons.md) — [Dungeon Outside](complete/dungeon-outside.md) shipped | `UX_PATTERNS.md`, `DESIGN_SYSTEM.md`, `DATA_MODEL.md`, `TESTING.md`, then the plan |
-| Map Lab editor/viewer chrome, canvas gestures, brushes, undo, or tablet layout | [Dungeons](areas/dungeons.md) — [Map Lab UX Pass](complete/maplab-ux-pass.md) shipped | `UX_PATTERNS.md`, `DESIGN_SYSTEM.md`, `TESTING.md`, then the archived plan for history |
-| Weapons, items, or NPCs (incl. NPC statblocks, the pull panel, or adding an NPC to an encounter) | [Reference Catalogs](areas/reference-catalogs.md) — no active plan | `DATA_MODEL.md`, `API_REFERENCE.md`, `UX_PATTERNS.md`, `TESTING.md` |
-| The kid-facing app at `/play`, the curtain, fog, or what the party has earned | [Player App](areas/player-app.md) — [Player App Skeleton](plans/active/player-app-skeleton.md) Stage 6 next | `UX_PATTERNS.md`, `DESIGN_SYSTEM.md`, `ARCHITECTURE.md`, `DATA_MODEL.md`, `TESTING.md`, then the plan |
+| Documentation maintenance | [Infra](areas/infra.md) — [Table Testing Records](plans/active/table-testing-records/table-testing-records.md) next | `PLAN_TEMPLATE.md`, `scripts/check_docs.py`, `TESTING.md`, and existing GitHub workflow files |
+| Designing or changing any UI surface | [Design](areas/design.md) | `UX_PATTERNS.md`, `DESIGN_SYSTEM.md`, the owning area guide's `## Surfaces` table |
+| Visual consistency work | [Design](areas/design.md) — plan archived | `areas/design.md`, `DESIGN_SYSTEM.md`, `ARCHITECTURE.md`, `TESTING.md` |
+| Story threads, Loom tapestry, beats, or session nodes | [Loom](areas/loom.md) | `areas/loom.md`, `DESIGN_SYSTEM.md`, `ARCHITECTURE.md`, `API_REFERENCE.md`, `DATA_MODEL.md`, `TESTING.md` |
+| Existing dungeon, encounter, monster, spell, or loot behavior | Relevant area guide | `ARCHITECTURE.md`, `API_REFERENCE.md`, `DATA_MODEL.md`, `TESTING.md` |
+| Wall kinds, map extent/padding, outside features, or map layer and density controls | [Dungeons](areas/dungeons.md) — [Dungeon Outside](plans/done/dungeon-outside/dungeon-outside.md) shipped | `UX_PATTERNS.md`, `DESIGN_SYSTEM.md`, `DATA_MODEL.md`, `TESTING.md`, then the plan |
+| Map Lab editor/viewer chrome, canvas gestures, brushes, undo, or tablet layout | [Dungeons](areas/dungeons.md) — [Map Lab UX Pass](plans/done/maplab-ux-pass/maplab-ux-pass.md) shipped | `UX_PATTERNS.md`, `DESIGN_SYSTEM.md`, `TESTING.md`, then the archived plan for history |
+| Spells, weapons, items, or loot | [Reference](areas/reference.md) — no active plan | `DATA_MODEL.md`, `API_REFERENCE.md`, `UX_PATTERNS.md`, `TESTING.md` |
+| Encounters, monsters, or NPCs (incl. NPC statblocks, the pull panel, or adding an NPC to an encounter) | [Encounters](areas/encounters.md) — no active plan | `DATA_MODEL.md`, `API_REFERENCE.md`, `UX_PATTERNS.md`, `TESTING.md` |
+| The kid-facing app at `/play`, the curtain, fog, or what the party has earned | [Players](areas/players.md) — [Player App Skeleton](plans/active/player-app-skeleton/player-app-skeleton.md) Stage 6 next | `UX_PATTERNS.md`, `DESIGN_SYSTEM.md`, `ARCHITECTURE.md`, `DATA_MODEL.md`, `TESTING.md`, then the plan |
 | Players, recovery profiles, or player spell/weapon rosters | [Players](areas/players.md) — no active plan | `DATA_MODEL.md`, `API_REFERENCE.md`, `UX_PATTERNS.md`, `TESTING.md` |
-| API route or client contract | Relevant area guide; create a focused plan if it has none | `API_REFERENCE.md`, `ARCHITECTURE.md`, `TESTING.md` |
-| Database schema, seed, import, or export | Relevant area guide; schema generation, migrations, and the deploy path are [Repo Infra](areas/repo-infra.md) — [Production Nightly Deploys](plans/active/production-nightly-deploys.md) | `DATA_MODEL.md`, `ARCHITECTURE.md`, `TESTING.md` |
-| Shared UI, tokens, icons, or accessibility | [Visual Design](areas/visual-design.md) — [Glossary Term Tooltips](plans/active/glossary-term-tooltips.md) next | `DESIGN_SYSTEM.md`, `ARCHITECTURE.md`, `UX_PATTERNS.md`, `TESTING.md` |
-| Test tooling, fixtures, coverage, or CI | Relevant area guide, or [Repo Infra](areas/repo-infra.md) — create a focused plan for cross-cutting failures | `TESTING.md`, `ARCHITECTURE.md`, then the plan |
+| API route or client contract | Relevant area guide | `API_REFERENCE.md`, `ARCHITECTURE.md`, `TESTING.md` |
+| Database schema, seed, import, or export | Relevant area guide; schema generation, migrations, and the deploy path are [Infra](areas/infra.md) — [Production Nightly Deploys](plans/active/production-nightly-deploys/production-nightly-deploys.md) | `DATA_MODEL.md`, `ARCHITECTURE.md`, `TESTING.md` |
+| Shared UI, tokens, icons, or accessibility | [Design](areas/design.md) — [Glossary Term Tooltips](plans/active/glossary-term-tooltips/glossary-term-tooltips.md) next | `DESIGN_SYSTEM.md`, `ARCHITECTURE.md`, `UX_PATTERNS.md`, `TESTING.md` |
+| Test tooling, fixtures, coverage, or CI | Relevant area guide, or [Infra](areas/infra.md) | `TESTING.md`, `ARCHITECTURE.md`, then the plan |
 
-Implementation flows through the **Plan → Implement → Reconcile** workflow (see [../CLAUDE.md](../CLAUDE.md) and [PLAN_TEMPLATE.md](PLAN_TEMPLATE.md)): Claude writes a lean Plan and compiles each stage into self-contained work orders under `plans/active/orders/<feature>/`; a small model executes one order per context window; then `reconcile` collapses the shipped orders into the Plan and updates any canonical reference whose contract changed. Area guides are durable routing documents, not plans. Historical documents are context only; they do not define current behavior.
-
-## Document Inventory
-
-Authority: **Canonical** documents define current contracts. **Working** documents direct planned work. **Historical** documents record prior analysis or decisions and are not active facts. **Redirect** documents preserve links to moved material. **Template** documents define required form.
-
-| Document | Type | Authority | Status | Read trigger | Update trigger |
-|---|---|---|---|---|---|
-| [../CONTEXT.md](../CONTEXT.md) | Context | Canonical | Active | Shared repo vocabulary or area-context routing | A cross-area term or context-routing rule changes |
-| [ARCHITECTURE.md](ARCHITECTURE.md) | Reference | Canonical | Active | Folder layout, request flow, registration, or conventions | A structural convention, route tree, or shared architecture changes |
-| [API_REFERENCE.md](API_REFERENCE.md) | Reference | Canonical | Active | API methods, paths, parameters, schemas, or responses | An API contract changes |
-| [DATA_MODEL.md](DATA_MODEL.md) | Reference | Canonical | Active | Tables, relationships, seeds, JSON storage, or database rebuilds | DDL, seed shape, importer, or exporter changes |
-| [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) | Reference | Canonical | Active | Shared tokens, icons, visual primitives, or accessibility | A shared design contract changes |
-| [UX_PATTERNS.md](UX_PATTERNS.md) | Reference | Canonical | Active | Surface modes, route shape, data/error states, saving, destructive actions, or keyboard | An interaction contract changes, or a rule moves from TARGET to IN FORCE |
-| [TESTING.md](TESTING.md) | Reference | Canonical | Active | Commands, fixtures, coverage, or test locations | A test command, fixture topology, coverage gate, or CI contract changes |
-| [README.md](README.md) | Manifest | Canonical | Active | Routing a task or locating documentation | Documentation inventory, routing, or plan status changes |
-| [PLAN_TEMPLATE.md](PLAN_TEMPLATE.md) | Template | Canonical | Active | Creating, executing, or closing a plan | Plan execution or lifecycle requirements change |
-| [areas/documentation.md](areas/documentation.md) | Area guide | Canonical | Active plan | Documentation contract or validator work | Documentation routing or validation changes |
-| [plans/active/docs-restructure.md](plans/active/docs-restructure.md) | Plan | Working | Active (next up) | Area cuts, plan folder layout, manifest shape, or source-map coverage | A stage ships, or its scope or settled decisions change |
-| [plans/active/table-testing-records.md](plans/active/table-testing-records.md) | Plan | Working | Active (not next) | Recording a real session, the table-test format, or its lifecycle and checks | A stage ships, or its scope or settled decisions change |
-| [table-tests/](table-tests/) | Record set | Historical | Active | Tracing what a real session at the table taught us | Append a new record per session; frozen once folded in |
-| [areas/dungeons.md](areas/dungeons.md) | Area guide | Canonical | No active plan | Dungeon behavior | Dungeon ownership, source map, or active work changes |
-| [complete/maplab-ux-pass.md](complete/maplab-ux-pass.md) | Archived plan | Historical | Complete | Map Lab editor/viewer chrome, gestures, brushes, undo, or tablet-layout history | Never — archived record |
-| [areas/encounters.md](areas/encounters.md) | Area guide | Canonical | No active plan | Encounter behavior | Encounter ownership, source map, or active work changes |
-| [areas/loot.md](areas/loot.md) | Area guide | Canonical | No active plan | Loot or item-bundle behavior | Loot ownership, source map, or active work changes |
-| [areas/loom.md](areas/loom.md) | Area guide | Canonical | No active plan | Story-thread (Loom) behavior | Loom ownership, source map, or active work changes |
-| [areas/monsters.md](areas/monsters.md) | Area guide | Canonical | No active plan | Monster behavior | Monster ownership, source map, or active work changes |
-| [areas/reference-catalogs.md](areas/reference-catalogs.md) | Area guide | Canonical | Active plan | Weapons, items, or NPCs | Catalog ownership, source map, or active work changes |
-| [complete/weapon-quick-reference.md](complete/weapon-quick-reference.md) | Plan | Historical | Complete | Weapon quick rules, sheet-ready attacks, or Copy as New | Never — archived record |
-| [areas/players.md](areas/players.md) | Area guide | Canonical | No active plan | Player records, recovery profiles, or player rosters | Player ownership, source map, or active work changes |
-| [complete/player-spellbook-recovery.md](complete/player-spellbook-recovery.md) | Plan | Historical | Complete | Player recovery data, spell-first reference, or character assignments | Never — archived record |
-| [areas/player-app.md](areas/player-app.md) | Area guide | Canonical | Active plan | The kid app at `/play`, the curtain, fog, or knowledge storage | Player App ownership, source map, or active work changes |
-| [plans/active/player-app-skeleton.md](plans/active/player-app-skeleton.md) | Plan | Working | Active (Stage 6 next) | The `/play` shell, the import rule, the fog and curtain seams, or the kid map | A stage ships, or its scope or settled decisions change |
-| [areas/spells.md](areas/spells.md) | Area guide | Canonical | No active plan | Spell behavior | Spell ownership, source map, or active work changes |
-| [areas/visual-design.md](areas/visual-design.md) | Area guide | Canonical | Active plan | Shared UI, tokens, shell, or accessibility | Visual routing or active work changes |
-| [plans/active/glossary-term-tooltips.md](plans/active/glossary-term-tooltips.md) | Plan | Working | Active (Stage 1 next) | Glossary term tooltips, rule-term explanations in rendered text | A stage ships, or its scope or settled decisions change |
-| [areas/repo-infra.md](areas/repo-infra.md) | Area guide | Canonical | Active plan | Shared backend infra or repo-wide test tooling | Repo-infra ownership, source map, or active work changes |
-| [plans/active/production-nightly-deploys.md](plans/active/production-nightly-deploys.md) | Plan | Working | Active | Schema generation, database migrations, or the deploy path | A stage ships, or its scope or settled decisions change |
-| [complete/validated-reference-text.md](complete/validated-reference-text.md) | Archived plan | Historical | Complete | Validated placeholders, spell quick rules, extensible reference text, or Spell detail player assignment history | Do not update except to repair archival metadata |
-| [complete/visual-consistency.md](complete/visual-consistency.md) | Archived plan | Historical | Complete | Visual consistency remediation history | Do not update except to repair archival metadata |
-| [complete/collapsible-catalog-rail.md](complete/collapsible-catalog-rail.md) | Archived plan | Historical | Complete | Shared BrowserLayout list collapse and catalog rail adoption history | Do not update except to repair archival metadata |
-| [complete/loom-campaign-progress-ui.md](complete/loom-campaign-progress-ui.md) | Archived plan | Historical | Complete | Loom board/inspector campaign-progress UI patch history | Do not update except to repair archival metadata |
-| [complete/backend-test-coverage.md](complete/backend-test-coverage.md) | Archived plan | Historical | Complete | Backend coverage gap-closing history | Do not update except to repair archival metadata |
-| [complete/loom-fell-line.md](complete/loom-fell-line.md) | Archived plan | Historical | Complete | Loom fell-line rebuild history | Do not update except to repair archival metadata |
-| [complete/npc-statblocks.md](complete/npc-statblocks.md) | Archived plan | Historical | Complete | NPC statblock shape, monster pull panel, and add-to-encounter history | Do not update except to repair archival metadata |
-| [complete/ux-patterns.md](complete/ux-patterns.md) | Archived plan | Historical | Complete | UX reference and design-skill replacement history | Do not update except to repair archival metadata |
-| [complete/loom-freeform-tapestry.md](complete/loom-freeform-tapestry.md) | Archived plan | Historical | Complete | Freeform tapestry implementation history | Do not update except to repair archival metadata |
-| [complete/loom-swimlanes-redesign.md](complete/loom-swimlanes-redesign.md) | Archived plan | Historical | Complete | Loom swimlanes redesign history | Do not update except to repair archival metadata |
-| [complete/loom-weavers-workspace.md](complete/loom-weavers-workspace.md) | Historical plan | Historical | Complete | Loom UI/UX pass implementation history | Do not update except to repair archival metadata |
-| [complete/documentation-plan-closeout-correction.md](complete/documentation-plan-closeout-correction.md) | Historical plan | Historical | Complete | Plan closeout correction history | Do not update except to repair archival metadata |
-| [complete/documentation-plan-template-workflow.md](complete/documentation-plan-template-workflow.md) | Historical plan | Historical | Complete | Plan-template workflow history | Do not update except to repair archival metadata |
-| [Analysis/README.md](Analysis/README.md) | Archive index | Historical | Active | Tracing analysis or decision provenance | Analysis/archive organization changes |
-| [Analysis/Decisions/spell_schema_decision.md](Analysis/Decisions/spell_schema_decision.md) | Decision | Historical | Accepted | Spell-contract provenance | Supersede with a new decision; do not edit past rationale |
-| [Analysis/Decisions/monster_schema_decision.md](Analysis/Decisions/monster_schema_decision.md) | Decision | Historical | Accepted | Monster-contract provenance | Supersede with a new decision; do not edit past rationale |
-| [Analysis/seed_spells_analysis.md](Analysis/seed_spells_analysis.md) | Analysis | Historical | Complete | Spell migration provenance | Do not update; add a new analysis if needed |
-| [complete/design-system-dark-mode.md](complete/design-system-dark-mode.md) | Historical plan | Historical | Complete | Design-system migration provenance | Do not update; `DESIGN_SYSTEM.md` owns current facts |
-| [complete/design_plan.md](complete/design_plan.md) | Archived plan | Historical | Complete | Shared-design implementation history | Do not update except to repair archival metadata |
-| [complete/dungeon_plan.md](complete/dungeon_plan.md) | Archived plan | Historical | Complete | Dungeon implementation history | Do not update except to repair archival metadata |
-| [complete/encounters_plan.md](complete/encounters_plan.md) | Archived plan | Historical | Complete | Encounter implementation history | Do not update except to repair archival metadata |
-| [complete/loot_plan.md](complete/loot_plan.md) | Archived plan | Historical | Complete | Loot-system implementation history | Do not update except to repair archival metadata |
-| [complete/monsters_plan.md](complete/monsters_plan.md) | Archived plan | Historical | Complete | Monster implementation history | Do not update except to repair archival metadata |
-| [complete/phase-e-recovery-plan.md](complete/phase-e-recovery-plan.md) | Archived plan | Historical | Complete | Rebuild recovery history | Do not update except to repair archival metadata |
-| [complete/seed_pipeline_fix_plan.md](complete/seed_pipeline_fix_plan.md) | Archived plan | Historical | Complete | Seed-pipeline repair history | Do not update except to repair archival metadata |
-| [complete/spells_plan.md](complete/spells_plan.md) | Archived plan | Historical | Complete | Spell implementation history | Do not update except to repair archival metadata |
-| [complete/v2-rebuild-plan.md](complete/v2-rebuild-plan.md) | Archived plan | Historical | Complete | v2 rebuild history | Do not update except to repair archival metadata |
-| [complete/documentation_rework_plan.md](complete/documentation_rework_plan.md) | Archived plan | Historical | Complete | Documentation-contract implementation history | Do not update except to repair archival metadata |
-| [complete/area-context-refactor.md](complete/area-context-refactor.md) | Archived plan | Historical | Complete | Area-scoped context refactor history | Do not update except to repair archival metadata |
-| [complete/dungeon-outside.md](complete/dungeon-outside.md) | Archived plan | Historical | Complete | Wall kinds, padding, outside features, and map layer/density controls implementation history | Do not update except to repair archival metadata |
-| [complete/dungeon-connections.md](complete/dungeon-connections.md) | Archived plan | Historical | Complete | Permanent session state, optional portal destinations, the connections resolve list, and cross-dungeon gateways implementation history | Do not update except to repair archival metadata |
-
-## Entry Points
-
-| File | Role |
-|---|---|
-| [../CLAUDE.md](../CLAUDE.md) | Single authoritative AI instruction source |
-| [../AGENTS.md](../AGENTS.md) | AI entry pointer to `CLAUDE.md` |
-| [../.github/copilot-instructions.md](../.github/copilot-instructions.md) | Copilot entry pointer to `CLAUDE.md` |
-| [../README.md](../README.md) | Human project overview and link to this manifest |
-
-## Validation
-
-Run from the repository root:
-
-```bash
-.venv\Scripts\python.exe scripts/check_docs.py --check
-.venv\Scripts\python.exe scripts/check_docs.py --check --base <base-ref>
-```
-
-On POSIX shells, use `.venv/bin/python` instead of `.venv\Scripts\python.exe`. The repo-local virtualenv is the preferred route for Python-backed validation so the documentation checker imports the project's installed backend dependencies rather than whichever global interpreter happens to be first on `PATH`.
-
-GitHub Actions runs the `documentation-contract` workflow on every pull request and push to `main`; it must be enabled as a required branch-protection check in GitHub settings. The [PR template](../.github/pull_request_template.md) requires each author to confirm that a fresh reader can route the change to its owning plan and minimum context.
-
+Implementation flows through the **Plan → Implement → Reconcile** workflow (see [../CLAUDE.md](../CLAUDE.md) and [PLAN_TEMPLATE.md](PLAN_TEMPLATE.md)): Claude writes a lean Plan at `plans/active/<feature>/<feature>.md` and compiles each stage into self-contained numbered work orders beside it; a small model executes one order per context window; then `reconcile` collapses the shipped orders into the Plan and updates any canonical reference whose contract changed. Area guides are durable routing documents, not plans. Historical documents are context only; they do not define current behavior.

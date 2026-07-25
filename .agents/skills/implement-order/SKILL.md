@@ -1,6 +1,6 @@
 ---
 name: implement-order
-description: Execute exactly ONE work order from docs/plans/active/orders/. Use this whenever you are handed a single work-order file and asked to implement it. Explore only the files the order names, make only the change it asks for, run its stop-check, and write the STATUS line. Designed for a cheaper, weaker executor model doing one order per fresh context window without wandering.
+description: Execute exactly ONE work order from a feature directory under docs/plans/active/. Use this whenever you are handed a single work-order file and asked to implement it. Explore only the files the order names, make only the change it asks for, run its stop-check, and write the STATUS line. Designed for a cheaper, weaker executor model doing one order per fresh context window without wandering.
 ---
 
 # implement-order — do one work order, then stop
@@ -43,6 +43,11 @@ not to improve the wider codebase. Staying inside the fence below is what makes 
    If it fails, you may make up to **two distinct fix attempts**. After the second failed attempt,
    stop and write a failure report (below). Do not keep cycling — a clear failure report is a
    **successful outcome** of this order; the planner picks it up from there.
+
+   `scripts/check_docs.py`, `scripts/check_orders.py`, and `scripts/order_telemetry.py` are
+   invoke-only tools — call them (e.g. `.venv\Scripts\python.exe scripts/check_docs.py --check`)
+   and read their stdout/exit code. Do **not** open their source to see how they work; that's
+   wasted context for a check that only needs its output.
 
 6. **Write the STATUS line** at the bottom of the work order file:
    - `STATUS: DONE` if STOP WHEN passed.

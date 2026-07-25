@@ -73,10 +73,13 @@ GUIDE_PATHS = [
 ]
 MARKDOWN_LINK_RE = re.compile(r"(?<!!)\[[^\]]*\]\(([^)]+)\)")
 HEADING_RE = re.compile(r"^#{1,6}\s+(.+?)\s*#*\s*$", re.MULTILINE)
-ACTIVE_PLAN_RE = re.compile(r"^>\s*\*\*Active plan:\*\*\s*(.+?)\s*$", re.MULTILINE)
+PLAN_QUEUE_RE = re.compile(r"^>\s*\*\*Plan queue:\*\*$", re.MULTILINE)
+PLAN_QUEUE_NONE_RE = re.compile(r"^>\s*\*\*Plan queue:\*\*\s*None\.?\s*$", re.MULTILINE)
+PLAN_QUEUE_ITEM_RE = re.compile(r"^>\s*(\d+)\.\s+(.+)$")
 AREA_GUIDE_RE = re.compile(r"^\s*-\s+\*\*Area guide:\*\*\s*\[[^\]]+\]\(([^)]+)\)\.?\s*$", re.MULTILINE)
 AREA_GUIDE_HEADINGS = {"scope", "read-first", "source-map", "invariants", "work-queue", "cross-references"}
 IMPLEMENTATION_PREFIXES = ("backend/", "frontend/", "scripts/", "data/", ".github/")
+ROUTER_PATH_RE = re.compile(r"backend/app/routers/(\w+)\.py")
 GENERATED_CONTRACT_REFERENCES = {
     "scripts/init_database.py": {"docs/DATA_MODEL.md"},
     "pytest.ini": {"docs/TESTING.md"},
@@ -89,7 +92,24 @@ GENERATED_MARKERS = {
     "ARCHITECTURE.md": "ARCHITECTURE",
     "DESIGN_SYSTEM.md": "DESIGN_SYSTEM",
     "TESTING.md": "TESTING",
+    "plans/done/INDEX.md": "ARCHIVE_INDEX",
 }
+GLOB_LIKE_RE = re.compile(r"[/\[\]\*\?\{\}]")
+CHANGE_MAP_EXCLUDE_DIRS = frozenset({
+    "__pycache__", "node_modules", "dist", "build", ".venv", "venv",
+    ".pytest_cache", ".mypy_cache", ".tox",
+    "5eTools", "archive",
+})
+CHANGE_MAP_EXCLUDE_SUFFIXES = (".err.log", ".out.log", ".coverage")
+CHANGE_MAP_SECTION_RE = re.compile(r"## Change map\n(.*?)(?=\n## |\Z)", re.DOTALL)
+BACKTICK_RE = re.compile(r"`([^`]+)`")
+
+# ── Plan touch-overlap contract ─────────────────────────────────────
+
+TOUCHES_SECTION_RE = re.compile(r"^## Touches\s*\n(.*?)(?=\n## |\Z)", re.DOTALL | re.MULTILINE)
+TOUCH_GLOB_RE = re.compile(r"^\s*-\s+`([^`]+)`\s*$", re.MULTILINE)
+TOUCH_DEPENDS_RE = re.compile(r"^\s*-\s+\*\*Depends on:\*\*\s+\[([^\]]+)\]\(([^)]+)\)", re.MULTILINE)
+ACTIVE_WORK_ORDER_RE = re.compile(r"^\d{2,}-.*\.md$")
 
 
 class CheckError:
@@ -185,15 +205,63 @@ def find_legacy_plan_files(docs_dir: Path) -> list[Path]:
 
 
 def find_active_plan_files(docs_dir: Path) -> list[Path]:
-    """Return focused execution plans from the active-plan directory."""
+    """Return focused execution plans from feature subdirectories."""
     active_dir = docs_dir / "plans" / "active"
-    return sorted(active_dir.glob("*.md")) if active_dir.exists() else []
+    if not active_dir.exists():
+        return []
+    plans = []
+    for entry in sorted(active_dir.iterdir()):
+        if entry.is_dir():
+            plan_file = entry / f"{entry.name}.md"
+            if plan_file.exists():
+                plans.append(plan_file)
+    return plans
+
+
+def _parse_touches(content: str, plan_path: Path, repo_root: Path) -> tuple[list[str], list[str]]:
+    """Parse ``## Touches`` section from plan content.
+
+    Returns ``(globs, depends_on)`` where *globs* are repo-root-relative
+    patterns and *depends_on* lists feature names of other active Plans
+    resolved from ``- **Depends on:** [text](relative/link.md)`` entries.
+    """
+    m = TOUCHES_SECTION_RE.search(content)
+    if not m:
+        return [], []
+    section = m.group(1)
+    globs = [match.group(1) for match in TOUCH_GLOB_RE.finditer(section)]
+    depends_on: list[str] = []
+    for match in TOUCH_DEPENDS_RE.finditer(section):
+        resolved = _local_link_target(plan_path, match.group(2), repo_root)
+        if not resolved:
+            continue
+        target_path, _ = resolved
+        try:
+            target_path.relative_to(repo_root / "docs" / "plans" / "active")
+        except ValueError:
+            pass
+        feature_name = target_path.parent.name
+        depends_on.append(feature_name)
+    return globs, depends_on
+
+
+def _has_work_orders(plan_dir: Path) -> bool:
+    """Return True when *plan_dir* contains at least one ``NN-*.md`` work order."""
+    try:
+        return any(
+            entry.name.endswith(".md") and ACTIVE_WORK_ORDER_RE.match(entry.name)
+            for entry in plan_dir.iterdir()
+        )
+    except FileNotFoundError:
+        return False
 
 
 def find_area_guides(docs_dir: Path) -> list[Path]:
-    """Return durable area guides from the area-guide directory."""
+    """Return durable area guides from the area-guide directory, excluding glossary companions."""
     area_dir = docs_dir / "areas"
-    return sorted(area_dir.glob("*.md")) if area_dir.exists() else []
+    if not area_dir.exists():
+        return []
+    return sorted(p for p in area_dir.glob("*.md") if not p.name.endswith(".words.md"))
 
 
 def parse_manifest_plan_files(readme_path: Path) -> list[str]:
@@ -206,7 +274,9 @@ def parse_manifest_plan_files(readme_path: Path) -> list[str]:
 
 
 def _is_redirect(content: str) -> bool:
-    return "moved to" in content.lower() and "complete" in content.lower()
+    return "moved to" in content.lower() and (
+        "complete" in content.lower() or "done" in content.lower()
+    )
 
 
 def _markdown_anchors(content: str) -> set[str]:
@@ -263,6 +333,142 @@ def check_plan_metadata(plan_path: Path) -> list[CheckError]:
     return errors
 
 
+def check_plan_touch_overlap(docs_dir: Path) -> list[CheckError]:
+    """Validate ``## Touches`` contract and reject unacknowledged file overlap between in-flight Plans.
+
+    Every active Plan must declare a ``## Touches`` section listing repo-root-relative
+    backtick-quoted globs.  A Plan is *in-flight* when its sibling directory contains at
+    least one ``NN-*.md`` work order; only in-flight Plans participate in overlap checks.
+
+    When two in-flight Plans expand to the same file the overlap is accepted only if
+    either Plan directly depends on the other via ``- **Depends on:** ``feature-name`` ``.
+    """
+    errors: list[CheckError] = []
+
+    active_plans = find_active_plan_files(docs_dir)
+    if not active_plans:
+        return errors
+
+    active_feature_names = {plan.parent.name for plan in active_plans}
+    plan_data: dict[str, dict] = {}
+
+    for plan in active_plans:
+        feature = plan.parent.name
+        rel = _safe_rel(plan)
+        try:
+            content = plan.read_text(encoding="utf-8")
+        except UnicodeDecodeError:
+            continue
+
+        globs, depends_on = _parse_touches(content, plan, REPO_ROOT)
+        in_flight = _has_work_orders(plan.parent)
+
+        plan_data[feature] = {
+            "path": plan,
+            "rel": rel,
+            "globs": globs,
+            "depends_on": depends_on,
+            "in_flight": in_flight,
+        }
+
+        # ── Require ## Touches ────────────────────────────────────────
+        if not TOUCHES_SECTION_RE.search(content):
+            errors.append(CheckError(
+                rel,
+                "Missing ## Touches section",
+                "Add a ## Touches section with repo-root-relative backtick-quoted globs "
+                "(see PLAN_TEMPLATE.md)",
+            ))
+            continue
+
+        # ── Validate globs ────────────────────────────────────────────
+        for g in globs:
+            if g.startswith("/") or g.startswith("\\"):
+                errors.append(CheckError(
+                    rel,
+                    f"Touch glob `{g}` must be repo-root-relative, not absolute",
+                    "Remove the leading separator from the glob",
+                ))
+                continue
+            # Reject globs that escape the repository root
+            resolved: Path | None = None
+            try:
+                resolved = (REPO_ROOT / g).resolve()
+            except (ValueError, OSError):
+                pass
+            if resolved is not None:
+                try:
+                    resolved.relative_to(REPO_ROOT.resolve())
+                except ValueError:
+                    errors.append(CheckError(
+                        rel,
+                        f"Touch glob `{g}` escapes the repository root",
+                        "Use only repo-root-relative paths inside the backtick quotes",
+                    ))
+                    continue
+
+            expanded = _expand_glob(g, REPO_ROOT)
+            if not expanded:
+                errors.append(CheckError(
+                    rel,
+                    f"Touch glob `{g}` does not match any file",
+                    "Correct the glob or add the matching files",
+                ))
+
+        # ── Validate dependencies ─────────────────────────────────────
+        for dep in depends_on:
+            if dep == feature:
+                errors.append(CheckError(
+                    rel,
+                    f"Plan depends on itself (`{dep}`)",
+                    "Remove the self-dependency or target a different active Plan",
+                ))
+            elif dep not in active_feature_names:
+                errors.append(CheckError(
+                    rel,
+                    f"Dependency `{dep}` does not resolve to an active Plan",
+                    "Point the dependency at a feature name under docs/plans/active/",
+                ))
+
+    # ── Overlap check (in-flight Plans only) ──────────────────────────
+    in_flight_features = [
+        f for f, d in plan_data.items()
+        if d["in_flight"] and d["globs"]
+    ]
+
+    for i in range(len(in_flight_features)):
+        fa = in_flight_features[i]
+        da = plan_data[fa]
+        expanded_a: set[Path] = set()
+        for g in da["globs"]:
+            expanded_a.update(_expand_glob(g, REPO_ROOT))
+
+        for j in range(i + 1, len(in_flight_features)):
+            fb = in_flight_features[j]
+            db = plan_data[fb]
+            expanded_b: set[Path] = set()
+            for g in db["globs"]:
+                expanded_b.update(_expand_glob(g, REPO_ROOT))
+
+            overlap = expanded_a & expanded_b
+            if not overlap:
+                continue
+
+            # Accepted when either Plan directly depends on the other
+            if fb in da["depends_on"] or fa in db["depends_on"]:
+                continue
+
+            example_file = _safe_rel(next(iter(overlap)))
+            errors.append(CheckError(
+                f"{da['rel']} and {db['rel']}",
+                f"Undeclared touch overlap between in-flight Plans; shared file: {example_file}",
+                "Add a '**Depends on:**' line in one Plan's ## Touches section, "
+                "or remove the overlapping glob",
+            ))
+
+    return errors
+
+
 def check_work_orders(docs_dir: Path) -> list[CheckError]:
     """Lint work orders against the compiling rules in scripts/check_orders.py.
 
@@ -275,7 +481,7 @@ def check_work_orders(docs_dir: Path) -> list[CheckError]:
     """
     return [
         CheckError(error.file, error.message, error.fix)
-        for error in check_orders.lint_orders(docs_dir / "plans" / "active" / "orders")
+        for error in check_orders.lint_orders(docs_dir / "plans" / "active")
     ]
 
 
@@ -330,7 +536,8 @@ def check_manifest_current_stage_anchors(docs_dir: Path, readme_path: Path) -> l
             continue
         heading_match = STAGE_HEADING_RE.search(content)
         assert heading_match is not None
-        expected = f"(plans/active/{plan_path.name}#{github_anchor(heading_match.group(0).lstrip('#').strip())})"
+        rel_plan = plan_path.relative_to(docs_dir / "plans" / "active").as_posix()
+        expected = f"(plans/active/{rel_plan}#{github_anchor(heading_match.group(0).lstrip('#').strip())})"
         if expected not in manifest:
             errors.append(CheckError(
                 "docs/README.md",
@@ -340,27 +547,38 @@ def check_manifest_current_stage_anchors(docs_dir: Path, readme_path: Path) -> l
     return errors
 
 
-def check_manifest_completeness(docs_dir: Path, readme_path: Path) -> list[CheckError]:
-    """Validate that the manifest lists legacy redirects and every area guide."""
+def check_manifest_completeness(docs_dir: Path, readme_path: Path, inventory_path: Path) -> list[CheckError]:
+    """Validate that the inventory lists legacy plan files and every area guide."""
     errors: list[CheckError] = []
 
-    actual = [p.name for p in find_legacy_plan_files(docs_dir)]
-    listed = parse_manifest_plan_files(readme_path)
+    if not inventory_path.exists():
+        errors.append(CheckError(
+            "docs/README.md",
+            "docs/INVENTORY.md does not exist",
+            "Create docs/INVENTORY.md as the documentation inventory",
+        ))
+        return errors
 
-    missing = [name for name in actual if name not in listed]
+    inventory_content = inventory_path.read_text(encoding="utf-8")
+
+    # Check legacy plan files are listed in the inventory
+    actual = [p.name for p in find_legacy_plan_files(docs_dir)]
+    missing = [name for name in actual if name not in inventory_content]
     if missing:
         errors.append(CheckError(
             "docs/README.md",
             f"Missing plan files in manifest: {', '.join(missing)}",
-            "Add a row to the Feature Plans table in docs/README.md",
+            "Add a row to the Document Inventory table in docs/INVENTORY.md",
         ))
+
+    # Check area guides are listed in the inventory
     for guide in find_area_guides(docs_dir):
         expected = f"areas/{guide.name}"
-        if expected not in readme_path.read_text(encoding="utf-8"):
+        if expected not in inventory_content:
             errors.append(CheckError(
                 "docs/README.md",
                 f"Missing area guide in manifest: {expected}",
-                "Add a canonical area-guide row to docs/README.md",
+                "Add a canonical area-guide row to docs/INVENTORY.md",
             ))
 
     return errors
@@ -375,7 +593,7 @@ def check_forbidden_references(doc_dir: Path) -> list[CheckError]:
             rel = md.relative_to(doc_dir)
         except ValueError:
             rel = md
-        if any(part in ("complete", "archive") for part in rel.parts):
+        if any(part in ("complete", "archive", "done") for part in rel.parts):
             continue
 
         rel = _safe_rel(md)
@@ -400,7 +618,7 @@ def check_local_links(docs_dir: Path, repo_root: Path) -> list[CheckError]:
     errors: list[CheckError] = []
     for markdown in sorted(docs_dir.rglob("*.md")):
         relative = markdown.relative_to(docs_dir)
-        if any(part in ("complete", "archive") for part in relative.parts):
+        if any(part in ("complete", "archive", "done") for part in relative.parts):
             continue
         content = markdown.read_text(encoding="utf-8")
         for match in MARKDOWN_LINK_RE.finditer(content):
@@ -432,12 +650,14 @@ def check_plan_lifecycle(docs_dir: Path, readme_path: Path) -> list[CheckError]:
     for plan_path in find_legacy_plan_files(docs_dir):
         content = plan_path.read_text(encoding="utf-8")
         if _is_redirect(content):
-            target = docs_dir / "complete" / plan_path.name
+            # In the new layout, archives live under docs/plans/done/<feature>/.
+            feature = plan_path.stem.replace("_plan", "")
+            target = docs_dir / "plans" / "done" / feature / plan_path.name
             if not target.exists():
                 errors.append(CheckError(
                     _safe_rel(plan_path),
                     "Redirect plan has no archived target",
-                    f"Move the completed plan to docs/complete/{plan_path.name} or repair the redirect",
+                    f"Move the completed plan to docs/plans/done/{feature}/{plan_path.name} or repair the redirect",
                 ))
             continue
         if plan_path.name not in manifest:
@@ -449,8 +669,148 @@ def check_plan_lifecycle(docs_dir: Path, readme_path: Path) -> list[CheckError]:
     return errors
 
 
+def _parse_plan_queue_items(content: str, header_match_end: int) -> list[tuple[str, str]]:
+    """Parse ordered list items after the Plan queue header.
+
+    Each item is expected on its own blockquote line:
+        > 1. [Link text](path) (next up)
+
+    Returns a list of (full_item_text, link_url) tuples.
+    """
+    remainder = content[header_match_end:]
+    items: list[tuple[str, str]] = []
+    for line in remainder.splitlines():
+        if not line.strip():
+            continue
+        m = PLAN_QUEUE_ITEM_RE.match(line)
+        if not m:
+            break
+        item_text = m.group(2).strip()
+        link_match = MARKDOWN_LINK_RE.search(item_text)
+        link_url = link_match.group(1) if link_match else ""
+        items.append((item_text, link_url))
+    return items
+
+
+def _parse_guide_source_routers(content: str) -> set[str]:
+    """Extract router names from the ## Source map section of an area guide."""
+    section_match = re.search(r"## Source map\n(.*?)(?=\n## |\Z)", content, re.DOTALL)
+    if not section_match:
+        return set()
+    return {m.group(1) for m in ROUTER_PATH_RE.finditer(section_match.group(1))}
+
+
+def _parse_guide_surfaces_routes(content: str) -> set[str]:
+    """Extract route strings from the ## Surfaces table of an area guide."""
+    section_match = re.search(r"## Surfaces\n(.*?)(?=\n## |\Z)", content, re.DOTALL)
+    if not section_match:
+        return set()
+    table_text = section_match.group(1)
+    routes: set[str] = set()
+    for line in table_text.splitlines():
+        stripped = line.strip()
+        if not stripped.startswith("|") or stripped.startswith("|---"):
+            continue
+        if "Surface" in stripped and "Route" in stripped:
+            continue
+        parts = [p.strip() for p in stripped.split("|")]
+        if len(parts) < 3:
+            continue
+        route_cell = parts[2]
+        for candidate in route_cell.split(","):
+            candidate = candidate.strip().strip("`")
+            if candidate.startswith("/") and candidate != "all routes":
+                routes.add(candidate)
+    return routes
+
+
+def _parse_change_map(content: str) -> list[tuple[str, list[str]]]:
+    """Parse the ## Change map table, returning (change_type, [glob_strings]) rows."""
+    section = CHANGE_MAP_SECTION_RE.search(content)
+    if not section:
+        return []
+    table_text = section.group(1)
+    rows: list[tuple[str, list[str]]] = []
+    for line in table_text.splitlines():
+        stripped = line.strip()
+        if not stripped.startswith("|") or stripped.startswith("|---"):
+            continue
+        if "Change type" in stripped and "Source globs" in stripped:
+            continue
+        parts = [p.strip() for p in stripped.split("|")]
+        if len(parts) < 3:
+            continue
+        change_type = parts[1]
+        source_cell = parts[2]
+        globs: list[str] = []
+        for segment in source_cell.split("<br>"):
+            for m in BACKTICK_RE.finditer(segment.strip()):
+                candidate = m.group(1).strip()
+                if GLOB_LIKE_RE.search(candidate):
+                    globs.append(candidate)
+        rows.append((change_type, globs))
+    return rows
+
+
+def _expand_braces(pattern: str) -> list[str]:
+    """Expand brace patterns like {a,b,c} into multiple patterns."""
+    m = re.search(r"\{([^{}]+)\}", pattern)
+    if not m:
+        return [pattern]
+    options = [o.strip() for o in m.group(1).split(",")]
+    prefix = pattern[:m.start()]
+    suffix = pattern[m.end():]
+    results: list[str] = []
+    for option in options:
+        results.extend(_expand_braces(prefix + option + suffix))
+    return results
+
+
+def _expand_glob(glob_str: str, repo_root: Path) -> set[Path]:
+    """Expand a single repo-root-relative glob to matching files."""
+    matches: set[Path] = set()
+    for pattern in _expand_braces(glob_str):
+        # pathlib glob(**/**) matches only directories, not files.
+        # Append /* so the pattern matches all files recursively.
+        if pattern.endswith("/**") or pattern.endswith("**"):
+            pattern = pattern + "/*"
+        for path in repo_root.glob(pattern):
+            if path.is_file():
+                matches.add(path)
+    return matches
+
+
+def _collect_implementation_files(repo_root: Path) -> set[Path]:
+    """Collect every regular file under IMPLEMENTATION_PREFIXES, excluding cache/deps/build dirs."""
+    files: set[Path] = set()
+    for prefix in IMPLEMENTATION_PREFIXES:
+        prefix_path = repo_root / prefix
+        if not prefix_path.exists():
+            continue
+        for path in prefix_path.rglob("*"):
+            if not path.is_file():
+                continue
+            if any(excl in path.parts for excl in CHANGE_MAP_EXCLUDE_DIRS):
+                continue
+            if path.name.endswith(CHANGE_MAP_EXCLUDE_SUFFIXES):
+                continue
+            files.add(path)
+    return files
+
+
 def check_area_guide_contract(docs_dir: Path) -> list[CheckError]:
-    """Ensure guides and active plans form one unambiguous ownership relationship."""
+    """Ensure guides and active plans form one unambiguous ownership relationship.
+
+    Replaced the single Active-plan blockquote with a Plan queue contract:
+      > **Plan queue:** None.
+    or an ordered list whose first item is marked (next up):
+      > **Plan queue:**
+      > 1. [Plan A](path) (next up)
+      > 2. [Plan B](path)
+
+    Also validates that no backend router or frontend route is claimed
+    by two different area guides.
+    """
     errors: list[CheckError] = []
     guides = find_area_guides(docs_dir)
     active_plans = find_active_plan_files(docs_dir)
@@ -458,47 +818,157 @@ def check_area_guide_contract(docs_dir: Path) -> list[CheckError]:
     active_paths = {plan.resolve() for plan in active_plans}
     guide_targets: dict[Path, Path] = {}
 
+    # ── Router / route / file duplicate-ownership tracking ──────────
+    router_owners: dict[str, str] = {}   # router_name -> guide_rel_path
+    route_owners: dict[str, str] = {}    # route_string -> guide_rel_path
+    file_owners: dict[Path, Path] = {}   # absolute_file_path -> absolute_guide_path
+
     for guide in guides:
+        rel = _safe_rel(guide)
         content = guide.read_text(encoding="utf-8")
+
+        # ── Required headings ────────────────────────────────────────
         headings = {github_anchor(match.group(1)) for match in HEADING_RE.finditer(content)}
         missing = sorted(AREA_GUIDE_HEADINGS - headings)
         if missing:
             errors.append(CheckError(
-                _safe_rel(guide),
+                rel,
                 f"Missing required area-guide sections: {', '.join(missing)}",
                 "Add the required sections from PLAN_TEMPLATE.md",
             ))
-        status = ACTIVE_PLAN_RE.search(content)
-        if not status:
+
+        # ── Plan queue ───────────────────────────────────────────────
+        none_match = PLAN_QUEUE_NONE_RE.search(content)
+        header_match = PLAN_QUEUE_RE.search(content)
+        if not none_match and not header_match:
             errors.append(CheckError(
-                _safe_rel(guide),
-                "Missing active-plan status blockquote",
-                "Add '> **Active plan:** None.' or a link to one active execution plan",
+                rel,
+                "Missing Plan queue blockquote",
+                "Add '> **Plan queue:** None.' or an ordered list of queued plans",
             ))
             continue
-        links = list(MARKDOWN_LINK_RE.finditer(status.group(1)))
-        if not links:
-            if not status.group(1).strip().lower().startswith("none"):
+
+        if none_match is not None:
+            # Valid empty queue — skip link validation
+            pass
+        elif header_match is not None:
+            items = _parse_plan_queue_items(content, header_match.end())
+            if not items:
                 errors.append(CheckError(
-                    _safe_rel(guide),
-                    "Active-plan status must be None or a Markdown link",
-                    "Link directly to the active plan's current-stage anchor",
-                ))
-            continue
-        for link in links:
-            resolved = _local_link_target(guide, link.group(1), REPO_ROOT)
-            if resolved is None or resolved[0].resolve() not in active_paths:
-                errors.append(CheckError(
-                    _safe_rel(guide),
-                    f"Active-plan link '{link.group(0)}' does not target an active execution plan",
-                    "Point it at a file under docs/plans/active/",
+                    rel,
+                    "Plan queue must be 'None.' or an ordered list of links",
+                    "Add '1. [Plan Name](path) (next up)' after the queue header",
                 ))
                 continue
-            # A stage anchor is optional: lean Plans have plain-English stages, not
-            # '(next up)' headings to anchor to. Linking to the plan file is enough.
-            target, _anchor = resolved
-            guide_targets[target.resolve()] = guide.resolve()
+            for i, (item_text, link_url) in enumerate(items):
+                has_next_up = "(next up)" in item_text
+                if i == 0 and not has_next_up:
+                    errors.append(CheckError(
+                        rel,
+                        "First queued plan must be marked '(next up)'",
+                        "Add '(next up)' after the first plan link",
+                    ))
+                elif i > 0 and has_next_up:
+                    errors.append(CheckError(
+                        rel,
+                        "Only the first queued plan may be marked '(next up)'",
+                        "Remove '(next up)' from later queued plans",
+                    ))
+                if not link_url:
+                    errors.append(CheckError(
+                        rel,
+                        f"Queued item {i+1} has no Markdown link",
+                        "Add a Markdown link to the active execution plan",
+                    ))
+                    continue
+                resolved = _local_link_target(guide, link_url, REPO_ROOT)
+                if resolved is None or resolved[0].resolve() not in active_paths:
+                    errors.append(CheckError(
+                        rel,
+                        f"Plan queue link '{item_text[:60]}' does not target an active execution plan",
+                        "Point it at a file under docs/plans/active/",
+                    ))
+                    continue
+                target, _anchor = resolved
+                guide_targets[target.resolve()] = guide.resolve()
 
+        # ── Ownership: source-map routers ────────────────────────────
+        for router_name in _parse_guide_source_routers(content):
+            if router_name in router_owners and router_owners[router_name] != rel:
+                errors.append(CheckError(
+                    rel,
+                    f"Router '{router_name}' is already claimed by {router_owners[router_name]}",
+                    "Remove the duplicate router from one guide's Source map",
+                ))
+            else:
+                router_owners[router_name] = rel
+
+        # ── Ownership: surfaces routes ───────────────────────────────
+        for route in _parse_guide_surfaces_routes(content):
+            if route in route_owners and route_owners[route] != rel:
+                errors.append(CheckError(
+                    rel,
+                    f"Route '{route}' is already claimed by {route_owners[route]}",
+                    "Remove the duplicate route from one guide's Surfaces table",
+                ))
+            else:
+                route_owners[route] = rel
+
+        # ── Ownership: change-map file coverage ──────────────────────
+        change_map_rows = _parse_change_map(content)
+        if not change_map_rows:
+            errors.append(CheckError(
+                rel,
+                "Missing ## Change map section",
+                "Add a ## Change map table with Change type and Source globs columns",
+            ))
+        else:
+            for i, (change_type, globs) in enumerate(change_map_rows):
+                row_label = f"(row {i + 1})"
+                if change_type.upper() == "TODO" or change_type.strip() == "":
+                    errors.append(CheckError(
+                        rel,
+                        f"Change map {row_label} change type is TODO or empty",
+                        "Replace TODO with a real change-type description",
+                    ))
+                if not globs and change_type.upper() != "TODO":
+                    errors.append(CheckError(
+                        rel,
+                        f"Change map {row_label} ('{change_type}') has no source globs",
+                        "Add repo-root-relative backtick-quoted globs in the Source globs cell",
+                    ))
+                for glob_str in globs:
+                    expanded = _expand_glob(glob_str, REPO_ROOT)
+                    if not expanded:
+                        errors.append(CheckError(
+                            rel,
+                            f"Change map glob `{glob_str}` {row_label} ('{change_type}') does not match any file",
+                            "Correct the glob or add the matching files",
+                        ))
+                    guide_abs = guide.resolve()
+                    for fpath in expanded:
+                        prev_owner = file_owners.get(fpath)
+                        if prev_owner is not None and prev_owner != guide_abs:
+                            errors.append(CheckError(
+                                rel,
+                                f"File '{_safe_rel(fpath)}' ({row_label}) is already covered by {_safe_rel(prev_owner)}'s change map",
+                                "Remove this file from one guide's change map to resolve the duplicate",
+                            ))
+                        else:
+                            file_owners[fpath] = guide_abs
+
+    # ── Change-map universe coverage ─────────────────────────────────
+    if guides:
+        universe = _collect_implementation_files(REPO_ROOT)
+        for fpath in sorted(universe):
+            if fpath not in file_owners:
+                errors.append(CheckError(
+                    _safe_rel(fpath),
+                    "File is not covered by any area guide's change map",
+                    "Add a glob for this file to the appropriate area guide's ## Change map",
+                ))
+
+    # ── Active-plan → guide backlink validation ──────────────────────
     for plan in active_plans:
         content = plan.read_text(encoding="utf-8")
         match = AREA_GUIDE_RE.search(content)
@@ -521,7 +991,7 @@ def check_area_guide_contract(docs_dir: Path) -> list[CheckError]:
             errors.append(CheckError(
                 _safe_rel(plan),
                 "Owning area guide does not point back to this active plan",
-                "Update the guide's Active plan link to this plan's current-stage anchor",
+                "Update the guide's Plan queue with a link to this plan",
             ))
     return errors
 
@@ -609,10 +1079,11 @@ def run_all_checks(docs_dir: Path) -> list[CheckError]:
         errors.extend(check_plan_metadata(plan))
 
     errors.extend(check_work_orders(docs_dir))
-    errors.extend(check_manifest_completeness(docs_dir, readme))
+    errors.extend(check_manifest_completeness(docs_dir, readme, docs_dir / "INVENTORY.md"))
     errors.extend(check_forbidden_references(docs_dir))
     errors.extend(check_plan_lifecycle(docs_dir, readme))
     errors.extend(check_area_guide_contract(docs_dir))
+    errors.extend(check_plan_touch_overlap(docs_dir))
 
     return errors
 
@@ -776,6 +1247,65 @@ def generate_testing_inventory(repo_root: Path) -> str:
     return "\n".join(lines) + "\n"
 
 
+def generate_archive_index(repo_root: Path) -> str:
+    """Generate a markdown index of all archived plans under docs/plans/done/.
+
+    Uses `docs/plans/done/INDEX.md` GENERATED markers. Each archived-plan
+    directory contributes one bullet with the plan's title, status, and
+    area-guide name.
+    """
+    done_dir = repo_root / "docs" / "plans" / "done"
+    if not done_dir.is_dir():
+        return "_(no archived plans)_\n"
+
+    lines: list[str] = []
+    for entry in sorted(done_dir.iterdir()):
+        if not entry.is_dir():
+            continue
+        md_files = sorted(entry.glob("*.md"))
+        if not md_files:
+            continue
+        plan_file = md_files[0]
+        text = plan_file.read_text(encoding="utf-8")
+
+        # Title from first H1
+        title = plan_file.stem.replace("-", " ").title()
+        for line in text.splitlines():
+            if line.startswith("# "):
+                title = line[2:].strip()
+                break
+
+        # Status from **Status:**
+        status = ""
+        for line in text.splitlines():
+            if "**Status:**" in line:
+                raw = line.split("**Status:**", 1)[1].strip().strip(">").strip()
+                status = raw.split(".")[0] + "." if "." in raw else raw
+                break
+
+        # Area guide name
+        area = ""
+        for line in text.splitlines():
+            if "**Area guide:**" in line:
+                m = re.search(r'\*\*Area guide:\*\*\s+\[([^\]]+)\]', line)
+                if m:
+                    area = m.group(1)
+                break
+
+        link = f"{entry.name}/{plan_file.name}"
+        parts: list[str] = [f"[{title}]({link})"]
+        if status:
+            parts.append(status)
+        if area:
+            parts.append(f"({area})")
+        lines.append("- " + " — ".join(parts))
+
+    if not lines:
+        return "_(no archived plans)_\n"
+
+    return "\n".join(lines) + "\n"
+
+
 def generated_sections(repo_root: Path) -> dict[str, str]:
     return {
         "API_REFERENCE.md": generate_api_inventory(repo_root),
@@ -783,6 +1313,7 @@ def generated_sections(repo_root: Path) -> dict[str, str]:
         "ARCHITECTURE.md": generate_architecture_inventory(repo_root),
         "DESIGN_SYSTEM.md": generate_design_inventory(repo_root),
         "TESTING.md": generate_testing_inventory(repo_root),
+        "plans/done/INDEX.md": generate_archive_index(repo_root),
     }
 
 

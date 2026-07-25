@@ -35,7 +35,7 @@ and says so.
 
 ## Layer 1 — the Plan (human-readable)
 
-Lives at `docs/plans/active/<feature>.md`, named for a concrete outcome. An area may hold more than
+Lives at `docs/plans/active/<feature>/<feature>.md`, named for a concrete outcome. An area may hold more than
 one active plan, but exactly one of them is **next up** — see *Lifecycle* below. Short, and free of
 code — you read it to understand *what* and *why*.
 
@@ -56,6 +56,10 @@ code — you read it to understand *what* and *why*.
 ## Shipped
 | Stage | What shipped (≤2 sentences) |
 |-------|------------------------------|
+
+## Touches
+- `glob/pattern/**`
+- **Depends on:** [Other Plan](#)
 ```
 
 A Plan may temporarily carry a **`## Planning byproducts`** appendix: verbatim code snippets that
@@ -64,9 +68,16 @@ hand-off buffer, not documentation — `to-orders` moves each snippet into the r
 STATE (marked `verified snippet — use as-is:`) and deletes the appendix. Paid-for code is relayed,
 never re-derived by the executor; but the appendix is not a licence to pre-write the implementation.
 
+Every active Plan **must** declare a `## Touches` section. Each line is a repo-root-relative
+backtick-quoted glob matching files the Plan's work orders may modify. When a Plan directory contains
+at least one `NN-*.md` work order it is *in-flight*; only in-flight Plans participate in overlap
+checks. If two in-flight Plans expand to the same file, the overlap is reported as an error unless
+one Plan directly depends on the other via `- **Depends on:** [Label](#)`
+pointing to the depending Plan's Markdown file under `docs/plans/active/`.
+
 ## Layer 2 — the Work Order (one focused task)
 
-Lives at `docs/plans/active/orders/<feature>/NN-<slug>.md`. One work order = one logical change,
+Lives at `docs/plans/active/<feature>/NN-<slug>.md`. One work order = one logical change,
 roughly one screen. The planner fills KNOWN STATE and START IN with verified facts so the executor never
 re-explores; the executor writes the code and the STATUS line.
 
@@ -101,7 +112,7 @@ DEVIATIONS: <-- executor appends, always (even on DONE) — exactly two lines
 The focus leash: **KNOWN STATE** (answers, not pointers) + **START IN** (bounded exploration, each
 entry scoped to the symbol or line range needed) + **STOP WHEN** (a hard stop that ends wandering).
 See `.agents/skills/to-orders/SKILL.md` for the full authoring guidance, and
-[the reference order](plans/active/orders/_example/99-creature-row-ac.md) for a worked example.
+[the reference order](plans/_example/99-creature-row-ac.md) for a worked example.
 
 `scripts/check_orders.py` lints orders against these rules and is runnable on its own while
 compiling a stage. Each rule is one fault the telemetry log paid to learn — a path that does not
@@ -190,13 +201,13 @@ Each tier runs in the context that can afford its output:
 
    Exactly one active plan per area is **next up** — the one work should start from. The area
    guide's `Active plan` line lists every active plan it owns, in order, marking the first
-   `(next up)`. Only the next-up plan may have work orders under `orders/<feature>/`; the others
+   `(next up)`. Only the next-up plan may have work orders in its feature directory; the others
    carry a Status line stating plainly that they are not next and what unblocks them. When the
    next-up plan completes, the following one inherits the slot and the guide's line is reordered.
 2. **Shipped** — as each stage's orders finish, `reconcile` collapses them into the Plan's **Shipped**
    table (one ≤2-sentence row per stage) and deletes the spent order files. The commit history is the
    record of *how* each thing was built — never duplicate that prose into the Plan.
-3. **Complete** — when the whole feature ships, move the Plan to `docs/complete/<feature>.md`, set the
+3. **Complete** — when the whole feature ships, move the Plan to `docs/plans/done/<feature>/`, set the
    area guide back to "no active plan" (or its next plan), and update `docs/README.md` in the same
    change set. Leave a redirect stub only if a known inbound link must survive.
 
@@ -213,11 +224,17 @@ after reading only what it names.
 
 `scripts/check_docs.py` is aligned with this workflow. For an active Plan it requires only a
 `> **Status:**` line (stages are plain-English list items, not `(next up)` execution blocks). It lints
-work orders under `plans/active/orders/<feature>/` by delegating to `scripts/check_orders.py` — the
+work orders under `plans/active/<feature>/` by delegating to `scripts/check_orders.py` — the
 load-bearing fields (`GOAL:`, `DEPENDS ON:`, `START IN:`, `STOP WHEN:`, `STATUS:`), a `FAILURE REPORT:`
 block whenever a STATUS line reads FAILED or BLOCKED, and the compiling rules above — validates
 area-guide↔Plan ownership — every active plan must be linked
-from its owning guide's `Active plan` line, which may list several (a stage anchor is optional) — and keeps
+from its owning guide's `Plan queue`, which may list several — requires every area guide's
+`## Change map` to map recognizable change types to repo-relative source globs, rejecting
+placeholders, unmatched globs, uncovered implementation files, and files claimed across multiple
+areas — enforces the `## Touches` overlap contract: every active Plan must declare a
+`## Touches` section with repo-root-relative globs, undeclared file overlap between in-flight
+Plans is an error, and a `- **Depends on:** [Label](#)` dependency in either
+Plan's `## Touches` section accepts the overlap — and keeps
 the workflow-agnostic safety net: local links/anchors, manifest completeness, plan-redirect lifecycle,
 AI-entry precedence, configured test commands, banned legacy references, and the auto-generated
 reference inventories. It no longer couples a per-diff code change to a Plan edit, so the executor's

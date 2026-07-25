@@ -5,7 +5,7 @@
 schema, and because the exporter swallowed `sqlite3.OperationalError`, a renamed column silently
 dropped a whole table from the seeds. This script makes the schema data: it parses the CREATE
 TABLE statements in `scripts/init_database.py` — the canonical schema per
-`docs/plans/active/production-nightly-deploys.md` — and writes them to a generated manifest that
+`docs/plans/active/production-nightly-deploys/production-nightly-deploys.md` — and writes them to a generated manifest that
 the exporter reads.
 
 Usage:

@@ -134,11 +134,13 @@ def test_manifest_reports_invalid_current_stage_anchor(tmp_path: Path):
     fields = "\n".join(f"- **{field}:** present" for field in cd.EXECUTION_FIELDS)
     docs = _write_docs_tree(
         tmp_path,
-        manifest="| [foo](plans/active/foo.md#wrong-stage) |\n",
+        manifest="| [foo](plans/active/foo/foo.md#wrong-stage) |\n",
     )
     active = docs / "plans" / "active"
     active.mkdir(parents=True)
-    (active / "foo.md").write_text(f"> **Status:** F0 queued.\n\n#### F0 — Work (next up)\n{fields}", encoding="utf-8")
+    feature_dir = active / "foo"
+    feature_dir.mkdir()
+    (feature_dir / "foo.md").write_text(f"> **Status:** F0 queued.\n\n#### F0 — Work (next up)\n{fields}", encoding="utf-8")
     errs = cd.check_manifest_current_stage_anchors(docs, docs / "README.md")
     assert any("current-stage anchor" in error.message for error in errs)
 
@@ -162,14 +164,267 @@ def test_find_legacy_plan_files_accepts_underscored_feature_names(tmp_path: Path
     assert [path.name for path in cd.find_legacy_plan_files(tmp_path)] == ["documentation_rework_plan.md"]
 
 
-# ── Temporary-repository fixture tests ──────────────────────────────
+def test_find_active_plan_files_ignores_sibling_orders(tmp_path: Path):
+    """Active Plan discovery must select only <feature>/<feature>.md, never sibling numbered orders."""
+    docs = tmp_path / "docs"
+    active = docs / "plans" / "active"
+    feature_dir = active / "tooling"
+    feature_dir.mkdir(parents=True)
+    (feature_dir / "tooling.md").write_text("# Tooling\n\n> **Status:** Active.\n", encoding="utf-8")
+    (feature_dir / "01-setup.md").write_text("WORK ORDER 01", encoding="utf-8")
+    (feature_dir / "02-tune.md").write_text("WORK ORDER 02", encoding="utf-8")
+    plans = cd.find_active_plan_files(docs)
+    assert len(plans) == 1
+    assert plans[0].name == "tooling.md"
+    assert plans[0].parent.name == "tooling"
 
 
-def _write_docs_tree(base: Path, manifest: str = "", plans: dict[str, str] | None = None):
+# ── Plan touch overlap contract ─────────────────────────────────────
+
+
+def _setup_active_plan(
+    parent: Path,
+    feature: str,
+    content: str,
+    *,
+    work_orders: int = 0,
+    create_files: list[str] | None = None,
+) -> Path:
+    """Create an active Plan directory under *parent* with optional work orders and touch files.
+
+    *parent* should be ``tmp_path / "docs" / "plans" / "active"``.
+    *create_files* are repo-root-relative paths to create as empty files for glob matching.
+    """
+    active = parent
+    plan_dir = active / feature
+    plan_dir.mkdir(parents=True, exist_ok=True)
+    (plan_dir / f"{feature}.md").write_text(content, encoding="utf-8")
+    for n in range(1, work_orders + 1):
+        (plan_dir / f"{n:02d}-task-{n}.md").write_text(
+            f"WORK ORDER {n:02d}\nGOAL: Task {n}\n", encoding="utf-8",
+        )
+    if create_files:
+        repo_root = parent.parents[2]
+        for rel in create_files:
+            fpath = repo_root / rel
+            fpath.parent.mkdir(parents=True, exist_ok=True)
+            fpath.write_text("", encoding="utf-8")
+    return plan_dir
+
+
+def test_touches_section_valid_globs_accepted(tmp_path: Path, monkeypatch):
+    """A Plan with a valid ## Touches section passes validation."""
+    monkeypatch.setattr(cd, "REPO_ROOT", tmp_path)
+    docs = _write_docs_tree(tmp_path, manifest="# Docs\n")
+    active = docs / "plans" / "active"
+    _setup_active_plan(
+        active, "my-feature",
+        "# My Feature\n\n> **Status:** Active.\n\n"
+        "## Touches\n"
+        "- `backend/app/main.py`\n",
+        create_files=["backend/app/main.py"],
+    )
+    errs = cd.check_plan_touch_overlap(docs)
+    assert errs == []
+
+
+def test_touches_missing_section_is_rejected(tmp_path: Path, monkeypatch):
+    """A Plan without ## Touches is an error."""
+    monkeypatch.setattr(cd, "REPO_ROOT", tmp_path)
+    docs = _write_docs_tree(tmp_path, manifest="# Docs\n")
+    active = docs / "plans" / "active"
+    _setup_active_plan(
+        active, "my-feature",
+        "# My Feature\n\n> **Status:** Active.\n",
+    )
+    errs = cd.check_plan_touch_overlap(docs)
+    assert any("Missing ## Touches" in e.message for e in errs)
+
+
+def test_touches_absolute_glob_is_rejected(tmp_path: Path, monkeypatch):
+    """Touch globs starting with / are rejected as non-relative."""
+    monkeypatch.setattr(cd, "REPO_ROOT", tmp_path)
+    docs = _write_docs_tree(tmp_path, manifest="# Docs\n")
+    active = docs / "plans" / "active"
+    _setup_active_plan(
+        active, "my-feature",
+        "# My Feature\n\n> **Status:** Active.\n\n"
+        "## Touches\n"
+        "- `/absolute/path.py`\n",
+    )
+    errs = cd.check_plan_touch_overlap(docs)
+    assert any("must be repo-root-relative" in e.message for e in errs)
+
+
+def test_touches_glob_escape_repo_is_rejected(tmp_path: Path, monkeypatch):
+    """Touch globs that escape the repository root are rejected."""
+    monkeypatch.setattr(cd, "REPO_ROOT", tmp_path)
+    docs = _write_docs_tree(tmp_path, manifest="# Docs\n")
+    active = docs / "plans" / "active"
+    _setup_active_plan(
+        active, "my-feature",
+        "# My Feature\n\n> **Status:** Active.\n\n"
+        "## Touches\n"
+        "- `../../outside.txt`\n",
+    )
+    errs = cd.check_plan_touch_overlap(docs)
+    assert any("escapes the repository" in e.message for e in errs)
+
+
+def test_touches_unmatched_glob_is_rejected(tmp_path: Path, monkeypatch):
+    """A touch glob matching no existing file is an error."""
+    monkeypatch.setattr(cd, "REPO_ROOT", tmp_path)
+    docs = _write_docs_tree(tmp_path, manifest="# Docs\n")
+    active = docs / "plans" / "active"
+    _setup_active_plan(
+        active, "my-feature",
+        "# My Feature\n\n> **Status:** Active.\n\n"
+        "## Touches\n"
+        "- `nonexistent/ghost.py`\n",
+    )
+    errs = cd.check_plan_touch_overlap(docs)
+    assert any("does not match any file" in e.message for e in errs)
+
+
+def test_touches_self_dependency_is_rejected(tmp_path: Path, monkeypatch):
+    """A Plan depending on itself is an error."""
+    monkeypatch.setattr(cd, "REPO_ROOT", tmp_path)
+    docs = _write_docs_tree(tmp_path, manifest="# Docs\n")
+    active = docs / "plans" / "active"
+    _setup_active_plan(
+        active, "my-feature",
+        "# My Feature\n\n> **Status:** Active.\n\n"
+        "## Touches\n"
+        "- `backend/app/main.py`\n"
+        "- **Depends on:** [My Feature](../my-feature/my-feature.md)\n",
+        create_files=["backend/app/main.py"],
+    )
+    errs = cd.check_plan_touch_overlap(docs)
+    assert any("depends on itself" in e.message for e in errs)
+
+
+def test_touches_unknown_dependency_is_rejected(tmp_path: Path, monkeypatch):
+    """A dependency on a non-existent active Plan is an error."""
+    monkeypatch.setattr(cd, "REPO_ROOT", tmp_path)
+    docs = _write_docs_tree(tmp_path, manifest="# Docs\n")
+    active = docs / "plans" / "active"
+    _setup_active_plan(
+        active, "my-feature",
+        "# My Feature\n\n> **Status:** Active.\n\n"
+        "## Touches\n"
+        "- `backend/app/main.py`\n"
+        "- **Depends on:** [Nonexistent](../nonexistent-plan/nonexistent-plan.md)\n",
+        create_files=["backend/app/main.py"],
+    )
+    errs = cd.check_plan_touch_overlap(docs)
+    assert any("does not resolve to an active Plan" in e.message for e in errs)
+
+
+def test_touches_inactive_plan_dependency_is_rejected(tmp_path: Path, monkeypatch):
+    """A dependency link pointing outside docs/plans/active/ is an error."""
+    monkeypatch.setattr(cd, "REPO_ROOT", tmp_path)
+    docs = _write_docs_tree(tmp_path, manifest="# Docs\n")
+    active = docs / "plans" / "active"
+    _setup_active_plan(
+        active, "my-feature",
+        "# My Feature\n\n> **Status:** Active.\n\n"
+        "## Touches\n"
+        "- `backend/app/main.py`\n"
+        "- **Depends on:** [Done Plan](../done/some-plan/some-plan.md)\n",
+        create_files=["backend/app/main.py"],
+    )
+    errs = cd.check_plan_touch_overlap(docs)
+    assert any("does not resolve to an active Plan" in e.message for e in errs)
+
+
+def test_touches_queued_plan_excluded_from_overlap(tmp_path: Path, monkeypatch):
+    """A queued Plan (no work orders) does not participate in overlap checks."""
+    monkeypatch.setattr(cd, "REPO_ROOT", tmp_path)
+    docs = _write_docs_tree(tmp_path, manifest="# Docs\n")
+    active = docs / "plans" / "active"
+
+    # In-flight plan-A (has work orders)
+    _setup_active_plan(
+        active, "plan-a",
+        "# Plan A\n\n> **Status:** Active.\n\n"
+        "## Touches\n"
+        "- `scripts/shared.py`\n",
+        work_orders=1,
+        create_files=["scripts/shared.py"],
+    )
+    # Queued plan-B (no work orders) — touches same file
+    _setup_active_plan(
+        active, "plan-b",
+        "# Plan B\n\n> **Status:** Queued.\n\n"
+        "## Touches\n"
+        "- `scripts/shared.py`\n",
+    )
+    # No error because plan-b is not in-flight
+    errs = cd.check_plan_touch_overlap(docs)
+    assert not any("Undeclared touch overlap" in e.message for e in errs)
+
+
+def test_touches_overlap_rejected_between_inflight_plans(tmp_path: Path, monkeypatch):
+    """Two in-flight Plans touching the same file without a dependency is an error."""
+    monkeypatch.setattr(cd, "REPO_ROOT", tmp_path)
+    docs = _write_docs_tree(tmp_path, manifest="# Docs\n")
+    active = docs / "plans" / "active"
+
+    _setup_active_plan(
+        active, "plan-a",
+        "# Plan A\n\n> **Status:** Active.\n\n"
+        "## Touches\n"
+        "- `scripts/shared.py`\n",
+        work_orders=1,
+        create_files=["scripts/shared.py"],
+    )
+    _setup_active_plan(
+        active, "plan-b",
+        "# Plan B\n\n> **Status:** Active.\n\n"
+        "## Touches\n"
+        "- `scripts/shared.py`\n",
+        work_orders=1,
+    )
+    errs = cd.check_plan_touch_overlap(docs)
+    assert any("Undeclared touch overlap" in e.message for e in errs)
+    assert any("shared.py" in e.message for e in errs)
+
+
+def test_touches_overlap_accepted_with_dependency(tmp_path: Path, monkeypatch):
+    """Overlap is accepted when one in-flight Plan depends on the other."""
+    monkeypatch.setattr(cd, "REPO_ROOT", tmp_path)
+    docs = _write_docs_tree(tmp_path, manifest="# Docs\n")
+    active = docs / "plans" / "active"
+
+    _setup_active_plan(
+        active, "plan-a",
+        "# Plan A\n\n> **Status:** Active.\n\n"
+        "## Touches\n"
+        "- `scripts/shared.py`\n",
+        work_orders=1,
+        create_files=["scripts/shared.py"],
+    )
+    _setup_active_plan(
+        active, "plan-b",
+        "# Plan B\n\n> **Status:** Active.\n\n"
+        "## Touches\n"
+        "- `scripts/shared.py`\n"
+        "- **Depends on:** [Plan A](../plan-a/plan-a.md)\n",
+        work_orders=1,
+    )
+    errs = cd.check_plan_touch_overlap(docs)
+    assert not any("Undeclared touch overlap" in e.message for e in errs)
+
+
+
+
+def _write_docs_tree(base: Path, manifest: str = "", plans: dict[str, str] | None = None, inventory: str = ""):
     """Populate a minimal docs/ tree under *base* for testing."""
     docs = base / "docs"
     docs.mkdir(parents=True, exist_ok=True)
     (docs / "README.md").write_text(manifest, encoding="utf-8")
+    if inventory:
+        (docs / "INVENTORY.md").write_text(inventory, encoding="utf-8")
     for name, content in (plans or {}).items():
         (docs / name).write_text(content, encoding="utf-8")
     return docs
@@ -210,32 +465,73 @@ def test_temp_repo_plan_valid(tmp_path: Path):
 
 
 def test_temp_repo_manifest_completeness(tmp_path: Path):
-    _write_docs_tree(
+    docs = _write_docs_tree(
         tmp_path,
-        manifest="# Docs\n\n| Doc |\n|---|\n| [dungeon_plan.md](dungeon_plan.md) |\n",
+        manifest="# Docs\n",
+        inventory=(
+            "# Documentation Inventory\n\n"
+            "## Document Inventory\n\n"
+            "| Document | Type |\n"
+            "|---|---|\n"
+            "| [dungeon_plan.md](dungeon_plan.md) | Plan |\n"
+        ),
         plans={
             "dungeon_plan.md": "> **Status:** Complete.\n\n#### X0 (next up)\n",
             "spells_plan.md": "> **Status:** S0 queued.\n\n#### S0 (next up)\n",
         },
     )
     errs = cd.check_manifest_completeness(
-        tmp_path / "docs",
-        tmp_path / "docs" / "README.md",
+        docs,
+        docs / "README.md",
+        docs / "INVENTORY.md",
     )
     assert any("spells_plan.md" in e.message for e in errs)
 
 
 def test_temp_repo_manifest_complete(tmp_path: Path):
-    _write_docs_tree(
+    docs = _write_docs_tree(
         tmp_path,
-        manifest="# Docs\n\n| [alpha_plan.md](alpha_plan.md) |\n",
+        manifest="# Docs\n",
+        inventory=(
+            "# Documentation Inventory\n\n"
+            "## Document Inventory\n\n"
+            "| Document | Type |\n"
+            "|---|---|\n"
+            "| [alpha_plan.md](alpha_plan.md) | Plan |\n"
+        ),
         plans={"alpha_plan.md": "> **Status:** Complete.\n\n#### A0 (next up)\n"},
     )
     errs = cd.check_manifest_completeness(
-        tmp_path / "docs",
-        tmp_path / "docs" / "README.md",
+        docs,
+        docs / "README.md",
+        docs / "INVENTORY.md",
     )
     assert errs == []
+
+
+def test_temp_repo_manifest_missing_area_guide(tmp_path: Path):
+    docs = _write_docs_tree(
+        tmp_path,
+        manifest="# Docs\n",
+        inventory=(
+            "# Documentation Inventory\n\n"
+            "## Document Inventory\n\n"
+            "| Document | Type |\n"
+            "|---|---|\n"
+        ),
+    )
+    # Create an area guide that is NOT listed in the inventory
+    areas = docs / "areas"
+    areas.mkdir(parents=True, exist_ok=True)
+    (areas / "test_guide.md").write_text(
+        "# Test Guide\n\n> **Status:** Active.\n", encoding="utf-8"
+    )
+    errs = cd.check_manifest_completeness(
+        docs,
+        docs / "README.md",
+        docs / "INVENTORY.md",
+    )
+    assert any("areas/test_guide.md" in e.message for e in errs)
 
 
 def test_temp_repo_forbidden_pattern(tmp_path: Path):
@@ -264,6 +560,13 @@ def test_temp_repo_run_all_checks_pass(tmp_path: Path):
     _write_docs_tree(
         tmp_path,
         manifest="# Docs\n\n| [valid_plan.md](valid_plan.md#s1-next-next-up) |\n",
+        inventory=(
+            "# Documentation Inventory\n\n"
+            "## Document Inventory\n\n"
+            "| Document | Type |\n"
+            "|---|---|\n"
+            "| [valid_plan.md](valid_plan.md) | Plan |\n"
+        ),
         plans={
             "valid_plan.md": f"> **Status:** S0 shipped.\n\n#### S1 — Next (next up)\n{fields}\n"
         },
@@ -292,7 +595,7 @@ def test_plan_lifecycle_requires_archive_target_for_redirect(tmp_path: Path):
     docs = _write_docs_tree(
         tmp_path,
         manifest="[old_plan.md](old_plan.md)\n",
-        plans={"old_plan.md": "# Old\n\nMoved to `complete/old_plan.md`.\n"},
+        plans={"old_plan.md": "# Old\n\nMoved to `plans/done/old/old_plan.md`.\n"},
     )
     errs = cd.check_plan_lifecycle(docs, docs / "README.md")
     assert any("no archived target" in error.message for error in errs)
@@ -328,16 +631,16 @@ def test_work_orders_flag_missing_fields(tmp_path: Path, monkeypatch):
     """check_docs delegates to check_orders; the rules themselves are tested there."""
     monkeypatch.setattr(check_orders, "REPO_ROOT", tmp_path)
     docs = _write_docs_tree(tmp_path, manifest="# Docs\n")
-    orders = docs / "plans" / "active" / "orders" / "feat"
-    orders.mkdir(parents=True)
+    feat_dir = docs / "plans" / "active" / "feat"
+    feat_dir.mkdir(parents=True)
     (tmp_path / "file.py").write_text("x = 1\n", encoding="utf-8")
-    (orders / "01-good.md").write_text(
+    (feat_dir / "01-good.md").write_text(
         "WORK ORDER 01 — x\nGOAL: do a thing\nDEPENDS ON: none\n\n"
         "START IN:\n- file.py\n\nDO:\n- change the thing\n\n"
         "STOP WHEN: tests pass\nSTATUS: DONE\n",
         encoding="utf-8",
     )
-    (orders / "02-bad.md").write_text("WORK ORDER 02 — y\nGOAL: do a thing\n", encoding="utf-8")
+    (feat_dir / "02-bad.md").write_text("WORK ORDER 02 — y\nGOAL: do a thing\n", encoding="utf-8")
     errs = cd.check_work_orders(docs)
     assert any("02-bad.md" in e.source for e in errs)
     assert not any("01-good.md" in e.source for e in errs)
@@ -349,21 +652,31 @@ def test_work_orders_absent_directory_is_ok(tmp_path: Path):
 
 
 def test_area_guide_active_plan_link_without_anchor_is_accepted(tmp_path: Path, monkeypatch):
-    """Lean Plans have no stage anchors; a plain plan-file link must be accepted."""
+    """Plan queue with a single (next up) entry is accepted."""
     monkeypatch.setattr(cd, "REPO_ROOT", tmp_path)
     docs = _write_docs_tree(tmp_path, manifest="# Docs\n")
     areas = docs / "areas"
     areas.mkdir()
     active = docs / "plans" / "active"
     active.mkdir(parents=True)
+    loom_dir = active / "loom"
+    loom_dir.mkdir()
+    # Create a minimal implementation file for the change-map glob to match
+    (tmp_path / "frontend" / "src" / "features" / "loom").mkdir(parents=True)
+    (tmp_path / "frontend" / "src" / "features" / "loom" / "LoomPage.tsx").write_text("", encoding="utf-8")
     (areas / "loom.md").write_text(
         "# Loom\n\n"
-        "> **Active plan:** [Loom feature](../plans/active/loom.md)\n\n"
-        "## Scope\n## Read first\n## Source map\n## Invariants\n## Work queue\n## Cross-references\n",
+        "> **Plan queue:**\n"
+        "> 1. [Loom feature](../plans/active/loom/loom.md) (next up)\n\n"
+        "## Scope\n## Read first\n## Source map\n## Change map\n\n"
+        "| Change type | Source globs |\n"
+        "|---|---|\n"
+        "| Loom feature | `frontend/src/features/loom/**` |\n"
+        "## Invariants\n## Work queue\n## Cross-references\n",
         encoding="utf-8",
     )
-    (active / "loom.md").write_text(
-        "# Loom feature\n\n> **Status:** Active.\n\n- **Area guide:** [Loom](../../areas/loom.md)\n",
+    (loom_dir / "loom.md").write_text(
+        "# Loom feature\n\n> **Status:** Active.\n\n- **Area guide:** [Loom](../../../areas/loom.md)\n",
         encoding="utf-8",
     )
     assert cd.check_area_guide_contract(docs) == []
@@ -432,6 +745,42 @@ def test_testing_inventory_is_deterministic_and_detects_config_drift(tmp_path: P
     assert original == cd.generate_testing_inventory(tmp_path)
     package.write_text('{"scripts": {"test": "vitest run", "lint": "oxlint"}}', encoding="utf-8")
     assert cd.generate_testing_inventory(tmp_path) != original
+
+
+def test_archive_index_checker_reports_stale_content(tmp_path: Path, monkeypatch):
+    """Prove that stale or missing archive-index content is rejected."""
+    # Create a fake archived plan under docs/plans/done/
+    done = tmp_path / "docs" / "plans" / "done"
+    (done / "test-plan" / "test-plan.md").parent.mkdir(parents=True, exist_ok=True)
+    (done / "test-plan" / "test-plan.md").write_text(
+        "# Test Plan — a test\n\n"
+        "> **Status:** Complete. All done.\n\n"
+        "- **Area guide:** [Test Area](../../areas/test-area.md)\n",
+        encoding="utf-8",
+    )
+
+    # Create INDEX.md with stale content (wrong title)
+    (done / "INDEX.md").write_text(
+        "<!-- GENERATED:ARCHIVE_INDEX:START -->\n"
+        "- [Wrong Plan](test-plan/test-plan.md)\n"
+        "<!-- GENERATED:ARCHIVE_INDEX:END -->\n",
+        encoding="utf-8",
+    )
+
+    # Monkeypatch generated_sections to include the archive index
+    monkeypatch.setattr(
+        cd,
+        "generated_sections",
+        lambda _root: {"plans/done/INDEX.md": cd.generate_archive_index(tmp_path)},
+    )
+    monkeypatch.setattr(
+        cd,
+        "GENERATED_MARKERS",
+        {"plans/done/INDEX.md": "ARCHIVE_INDEX"},
+    )
+
+    errs = cd.check_generated_sections(tmp_path / "docs", tmp_path)
+    assert any("stale" in error.message for error in errs)
 
 
 # ── Error formatting ────────────────────────────────────────────────
@@ -507,6 +856,13 @@ def test_cli_check_with_base(tmp_path: Path, monkeypatch):
     _write_docs_tree(
         tmp_path,
         manifest="# Docs\n\n| [q_plan.md](q_plan.md) |\n",
+        inventory=(
+            "# Documentation Inventory\n\n"
+            "## Document Inventory\n\n"
+            "| Document | Type |\n"
+            "|---|---|\n"
+            "| [q_plan.md](q_plan.md) | Plan |\n"
+        ),
         plans={"q_plan.md": "> **Status:** Active.\n\n#### Q0 (next up)\n"},
     )
 
@@ -545,3 +901,421 @@ def test_diff_checks_require_owner_plan_and_declared_documentation(tmp_path: Pat
     errs = cd.run_diff_checks(docs, "HEAD")
     assert not any("owning active plan" in error.message for error in errs)
     assert any("docs/DATA_MODEL.md" in error.message for error in errs)
+
+
+# ── Plan queue contract ───────────────────────────────────────────────
+
+
+def test_plan_queue_none_is_valid(tmp_path: Path, monkeypatch):
+    """A guide with '> **Plan queue:** None.' is valid."""
+    monkeypatch.setattr(cd, "REPO_ROOT", tmp_path)
+    docs = _write_docs_tree(tmp_path, manifest="# Docs\n")
+    areas = docs / "areas"
+    areas.mkdir()
+    # Create a minimal implementation file for the change-map glob to match
+    (tmp_path / "backend" / "app" / "routers").mkdir(parents=True)
+    (tmp_path / "backend" / "app" / "routers" / "encounters.py").write_text("", encoding="utf-8")
+    (areas / "encounters.md").write_text(
+        "# Encounters\n\n"
+        "> **Plan queue:** None.\n\n"
+        "## Scope\n## Read first\n## Source map\n## Change map\n\n"
+        "| Change type | Source globs |\n"
+        "|---|---|\n"
+        "| Encounters | `backend/app/routers/encounters.py` |\n"
+        "## Invariants\n## Work queue\n## Cross-references\n",
+        encoding="utf-8",
+    )
+    assert cd.check_area_guide_contract(docs) == []
+
+
+def test_plan_queue_ordered_first_next_up_is_valid(tmp_path: Path, monkeypatch):
+    """An ordered queue where the first item is (next up) is valid."""
+    monkeypatch.setattr(cd, "REPO_ROOT", tmp_path)
+    docs = _write_docs_tree(tmp_path, manifest="# Docs\n")
+    areas = docs / "areas"
+    areas.mkdir()
+    # Create a minimal implementation file for the change-map glob to match
+    (tmp_path / "scripts").mkdir()
+    (tmp_path / "scripts" / "guide_a.py").write_text("", encoding="utf-8")
+    active = docs / "plans" / "active"
+    active.mkdir(parents=True)
+    plan_a = active / "plan-a"
+    plan_a.mkdir()
+    plan_b = active / "plan-b"
+    plan_b.mkdir()
+    (plan_a / "plan-a.md").write_text(
+        "# Plan A\n\n> **Status:** Active.\n\n- **Area guide:** [Guide A](../../../areas/guide-a.md)\n",
+        encoding="utf-8",
+    )
+    (plan_b / "plan-b.md").write_text(
+        "# Plan B\n\n> **Status:** Queued.\n\n- **Area guide:** [Guide A](../../../areas/guide-a.md)\n",
+        encoding="utf-8",
+    )
+    (areas / "guide-a.md").write_text(
+        "# Guide A\n\n"
+        "> **Plan queue:**\n"
+        "> 1. [Plan A](../plans/active/plan-a/plan-a.md) (next up)\n"
+        "> 2. [Plan B](../plans/active/plan-b/plan-b.md)\n\n"
+        "## Scope\n## Read first\n## Source map\n## Change map\n\n"
+        "| Change type | Source globs |\n"
+        "|---|---|\n"
+        "| Guide A features | `scripts/guide_a.py` |\n"
+        "## Invariants\n## Work queue\n## Cross-references\n",
+        encoding="utf-8",
+    )
+    # Plan A backlinks to guide-a; Plan B backlinks to guide-a too (allowed — one guide, many plans)
+    # The guide targets map will pick the last resolved link; backlink validation checks guide_targets
+    errs = cd.check_area_guide_contract(docs)
+    # We expect only one plan to get the backlink error because guide_targets only records one
+    # per target (the last one wins). The other plan's backlink will be flagged.
+    # Actually both plans have the same Area guide, and the guide has both in its queue.
+    # But guide_targets[plan-a.resolve()] = guide.resolve() and guide_targets[plan-b.resolve()] = guide.resolve()
+    # if both are in the queue. So both should pass.
+    assert errs == []
+
+
+def test_plan_queue_next_up_not_first_is_rejected(tmp_path: Path, monkeypatch):
+    """Only the first queued plan may be marked (next up)."""
+    monkeypatch.setattr(cd, "REPO_ROOT", tmp_path)
+    docs = _write_docs_tree(tmp_path, manifest="# Docs\n")
+    areas = docs / "areas"
+    areas.mkdir()
+    active = docs / "plans" / "active"
+    active.mkdir(parents=True)
+    plan_a = active / "plan-a"
+    plan_a.mkdir()
+    plan_b = active / "plan-b"
+    plan_b.mkdir()
+    (plan_a / "plan-a.md").write_text(
+        "# Plan A\n\n> **Status:** Active.\n\n- **Area guide:** [Guide A](../../../areas/guide-a.md)\n",
+        encoding="utf-8",
+    )
+    (plan_b / "plan-b.md").write_text(
+        "# Plan B\n\n> **Status:** Queued.\n\n- **Area guide:** [Guide A](../../../areas/guide-a.md)\n",
+        encoding="utf-8",
+    )
+    (areas / "guide-a.md").write_text(
+        "# Guide A\n\n"
+        "> **Plan queue:**\n"
+        "> 1. [Plan A](../plans/active/plan-a/plan-a.md)\n"
+        "> 2. [Plan B](../plans/active/plan-b/plan-b.md) (next up)\n\n"  # Wrong: next up on item 2
+        "## Scope\n## Read first\n## Source map\n## Invariants\n## Work queue\n## Cross-references\n",
+        encoding="utf-8",
+    )
+    errs = cd.check_area_guide_contract(docs)
+    assert any("must be marked '(next up)'" in e.message for e in errs)
+    assert any("Only the first" in e.message for e in errs)
+
+
+def test_plan_queue_missing_next_up_is_rejected(tmp_path: Path, monkeypatch):
+    """The first queued plan must be marked (next up)."""
+    monkeypatch.setattr(cd, "REPO_ROOT", tmp_path)
+    docs = _write_docs_tree(tmp_path, manifest="# Docs\n")
+    areas = docs / "areas"
+    areas.mkdir()
+    active = docs / "plans" / "active"
+    active.mkdir(parents=True)
+    plan_a = active / "plan-a"
+    plan_a.mkdir()
+    (plan_a / "plan-a.md").write_text(
+        "# Plan A\n\n> **Status:** Active.\n\n- **Area guide:** [Guide A](../../../areas/guide-a.md)\n",
+        encoding="utf-8",
+    )
+    (areas / "guide-a.md").write_text(
+        "# Guide A\n\n"
+        "> **Plan queue:**\n"
+        "> 1. [Plan A](../plans/active/plan-a/plan-a.md)\n\n"  # No (next up)
+        "## Scope\n## Read first\n## Source map\n## Invariants\n## Work queue\n## Cross-references\n",
+        encoding="utf-8",
+    )
+    errs = cd.check_area_guide_contract(docs)
+    assert any("must be marked '(next up)'" in e.message for e in errs)
+
+
+def test_words_md_files_excluded_from_guides(tmp_path: Path, monkeypatch):
+    """Glossary companion files (*.words.md) are not treated as area guides."""
+    monkeypatch.setattr(cd, "REPO_ROOT", tmp_path)
+    docs = _write_docs_tree(tmp_path, manifest="# Docs\n")
+    areas = docs / "areas"
+    areas.mkdir()
+    # Create a minimal implementation file for the change-map glob to match
+    (tmp_path / "backend" / "app" / "routers").mkdir(parents=True)
+    (tmp_path / "backend" / "app" / "routers" / "dungeons.py").write_text("", encoding="utf-8")
+    (areas / "dungeons.md").write_text(
+        "# Dungeons\n\n"
+        "> **Plan queue:** None.\n\n"
+        "## Scope\n## Read first\n## Source map\n## Change map\n\n"
+        "| Change type | Source globs |\n"
+        "|---|---|\n"
+        "| Dungeons | `backend/app/routers/dungeons.py` |\n"
+        "## Invariants\n## Work queue\n## Cross-references\n",
+        encoding="utf-8",
+    )
+    # This file should be excluded — no required headings, no plan queue needed
+    (areas / "dungeons.words.md").write_text(
+        "# Dungeons Glossary\n\n"
+        "Glossary of dungeon terms.\n",
+        encoding="utf-8",
+    )
+    errs = cd.check_area_guide_contract(docs)
+    # Only dungeons.md is checked; the .words.md file is skipped
+    assert errs == []
+
+
+def test_duplicate_router_claim_is_rejected(tmp_path: Path, monkeypatch):
+    """Two guides claiming the same backend router is an error."""
+    monkeypatch.setattr(cd, "REPO_ROOT", tmp_path)
+    docs = _write_docs_tree(tmp_path, manifest="# Docs\n")
+    areas = docs / "areas"
+    areas.mkdir()
+    (areas / "guide-a.md").write_text(
+        "# Guide A\n\n"
+        "> **Plan queue:** None.\n\n"
+        "## Scope\n## Read first\n"
+        "## Source map\n"
+        "- Backend: `backend/app/routers/items.py`.\n"
+        "## Invariants\n## Work queue\n## Cross-references\n",
+        encoding="utf-8",
+    )
+    (areas / "guide-b.md").write_text(
+        "# Guide B\n\n"
+        "> **Plan queue:** None.\n\n"
+        "## Scope\n## Read first\n"
+        "## Source map\n"
+        "- Backend: `backend/app/routers/items.py`.\n"
+        "## Invariants\n## Work queue\n## Cross-references\n",
+        encoding="utf-8",
+    )
+    errs = cd.check_area_guide_contract(docs)
+    assert any("items" in e.message and "already claimed" in e.message for e in errs)
+
+
+def test_duplicate_route_claim_is_rejected(tmp_path: Path, monkeypatch):
+    """Two guides claiming the same frontend route is an error."""
+    monkeypatch.setattr(cd, "REPO_ROOT", tmp_path)
+    docs = _write_docs_tree(tmp_path, manifest="# Docs\n")
+    areas = docs / "areas"
+    areas.mkdir()
+    (areas / "guide-a.md").write_text(
+        "# Guide A\n\n"
+        "> **Plan queue:** None.\n\n"
+        "## Scope\n## Read first\n## Source map\n## Invariants\n"
+        "## Surfaces\n\n"
+        "| Surface | Route | Mode | Operator |\n"
+        "|---|---|---|---|\n"
+        "| Item browser | `/items` | prep | DM |\n"
+        "## Work queue\n## Cross-references\n",
+        encoding="utf-8",
+    )
+    (areas / "guide-b.md").write_text(
+        "# Guide B\n\n"
+        "> **Plan queue:** None.\n\n"
+        "## Scope\n## Read first\n## Source map\n## Invariants\n"
+        "## Surfaces\n\n"
+        "| Surface | Route | Mode | Operator |\n"
+        "|---|---|---|---|\n"
+        "| Other browser | `/items` | prep | DM |\n"
+        "## Work queue\n## Cross-references\n",
+        encoding="utf-8",
+    )
+    errs = cd.check_area_guide_contract(docs)
+    assert any("/items" in e.message and "already claimed" in e.message for e in errs)
+
+
+def test_duplicate_own_router_within_same_guide_is_ok(tmp_path: Path, monkeypatch):
+    """Repeated router ownership within one guide is harmless."""
+    monkeypatch.setattr(cd, "REPO_ROOT", tmp_path)
+    docs = _write_docs_tree(tmp_path, manifest="# Docs\n")
+    areas = docs / "areas"
+    areas.mkdir()
+    (areas / "guide-a.md").write_text(
+        "# Guide A\n\n"
+        "> **Plan queue:** None.\n\n"
+        "## Scope\n## Read first\n"
+        "## Source map\n"
+        "- Backend: `backend/app/routers/items.py` and `backend/app/routers/items.py`.\n"
+        "## Invariants\n## Work queue\n## Cross-references\n",
+        encoding="utf-8",
+    )
+    errs = cd.check_area_guide_contract(docs)
+    assert not any("already claimed" in e.message for e in errs)
+
+
+# ── Change map coverage ─────────────────────────────────────────────
+
+
+def test_change_map_missing_section_is_rejected(tmp_path: Path, monkeypatch):
+    """A guide without a ## Change map section is an error."""
+    monkeypatch.setattr(cd, "REPO_ROOT", tmp_path)
+    docs = _write_docs_tree(tmp_path, manifest="# Docs\n")
+    areas = docs / "areas"
+    areas.mkdir()
+    (areas / "guide.md").write_text(
+        "# Guide\n\n"
+        "> **Plan queue:** None.\n\n"
+        "## Scope\n## Read first\n## Source map\n## Invariants\n## Work queue\n## Cross-references\n",
+        encoding="utf-8",
+    )
+    errs = cd.check_area_guide_contract(docs)
+    assert any("Missing ## Change map" in e.message for e in errs)
+
+
+def test_change_map_valid_coverage_is_accepted(tmp_path: Path, monkeypatch):
+    """All implementation files covered by exactly one guide passes."""
+    monkeypatch.setattr(cd, "REPO_ROOT", tmp_path)
+    docs = _write_docs_tree(tmp_path, manifest="# Docs\n")
+    areas = docs / "areas"
+    areas.mkdir()
+    # Create minimal implementation files
+    (tmp_path / "backend").mkdir()
+    (tmp_path / "backend" / "app").mkdir()
+    (tmp_path / "backend" / "app" / "main.py").write_text("", encoding="utf-8")
+    (tmp_path / "frontend").mkdir()
+    (tmp_path / "frontend" / "src").mkdir()
+    (tmp_path / "frontend" / "src" / "App.tsx").write_text("", encoding="utf-8")
+
+    (areas / "guide-a.md").write_text(
+        "# Guide A\n\n"
+        "> **Plan queue:** None.\n\n"
+        "## Scope\n## Read first\n## Source map\n## Invariants\n"
+        "## Change map\n\n"
+        "| Change type | Source globs |\n"
+        "|---|---|\n"
+        "| Backend | `backend/app/main.py` |\n"
+        "| Frontend | `frontend/src/App.tsx` |\n"
+        "## Work queue\n## Cross-references\n",
+        encoding="utf-8",
+    )
+    errs = cd.check_area_guide_contract(docs)
+    assert not any("change map" in e.message.lower() or "Change map" in e.message for e in errs)
+    assert not any("not covered" in e.message for e in errs)
+
+
+def test_change_map_unmatched_file_is_rejected(tmp_path: Path, monkeypatch):
+    """A file not covered by any guide's change map is an error."""
+    monkeypatch.setattr(cd, "REPO_ROOT", tmp_path)
+    docs = _write_docs_tree(tmp_path, manifest="# Docs\n")
+    areas = docs / "areas"
+    areas.mkdir()
+    (tmp_path / "backend").mkdir()
+    (tmp_path / "backend" / "app").mkdir()
+    (tmp_path / "backend" / "app" / "main.py").write_text("", encoding="utf-8")
+    (tmp_path / "frontend").mkdir()
+    (tmp_path / "frontend" / "src").mkdir()
+    (tmp_path / "frontend" / "src" / "orphan.tsx").write_text("", encoding="utf-8")
+
+    (areas / "guide.md").write_text(
+        "# Guide\n\n"
+        "> **Plan queue:** None.\n\n"
+        "## Scope\n## Read first\n## Source map\n## Invariants\n"
+        "## Change map\n\n"
+        "| Change type | Source globs |\n"
+        "|---|---|\n"
+        "| Backend | `backend/app/main.py` |\n"
+        "## Work queue\n## Cross-references\n",
+        encoding="utf-8",
+    )
+    errs = cd.check_area_guide_contract(docs)
+    assert any("orphan.tsx" in e.source and "not covered" in e.message for e in errs)
+
+
+def test_change_map_cross_area_duplicate_is_rejected(tmp_path: Path, monkeypatch):
+    """A file claimed by two guides is an error."""
+    monkeypatch.setattr(cd, "REPO_ROOT", tmp_path)
+    docs = _write_docs_tree(tmp_path, manifest="# Docs\n")
+    areas = docs / "areas"
+    areas.mkdir()
+    (tmp_path / "scripts").mkdir()
+    (tmp_path / "scripts" / "shared.py").write_text("", encoding="utf-8")
+
+    (areas / "guide-a.md").write_text(
+        "# Guide A\n\n"
+        "> **Plan queue:** None.\n\n"
+        "## Scope\n## Read first\n## Source map\n## Invariants\n"
+        "## Change map\n\n"
+        "| Change type | Source globs |\n"
+        "|---|---|\n"
+        "| Shared script | `scripts/shared.py` |\n"
+        "## Work queue\n## Cross-references\n",
+        encoding="utf-8",
+    )
+    (areas / "guide-b.md").write_text(
+        "# Guide B\n\n"
+        "> **Plan queue:** None.\n\n"
+        "## Scope\n## Read first\n## Source map\n## Invariants\n"
+        "## Change map\n\n"
+        "| Change type | Source globs |\n"
+        "|---|---|\n"
+        "| Also shared | `scripts/shared.py` |\n"
+        "## Work queue\n## Cross-references\n",
+        encoding="utf-8",
+    )
+    errs = cd.check_area_guide_contract(docs)
+    assert any("already covered" in e.message and "shared.py" in e.message for e in errs)
+
+
+def test_change_map_unmatched_glob_is_rejected(tmp_path: Path, monkeypatch):
+    """A glob that matches no file is an error."""
+    monkeypatch.setattr(cd, "REPO_ROOT", tmp_path)
+    docs = _write_docs_tree(tmp_path, manifest="# Docs\n")
+    areas = docs / "areas"
+    areas.mkdir()
+    (tmp_path / "scripts").mkdir()
+
+    (areas / "guide.md").write_text(
+        "# Guide\n\n"
+        "> **Plan queue:** None.\n\n"
+        "## Scope\n## Read first\n## Source map\n## Invariants\n"
+        "## Change map\n\n"
+        "| Change type | Source globs |\n"
+        "|---|---|\n"
+        "| Nonexistent | `scripts/ghost.py` |\n"
+        "## Work queue\n## Cross-references\n",
+        encoding="utf-8",
+    )
+    errs = cd.check_area_guide_contract(docs)
+    assert any("does not match any file" in e.message for e in errs)
+
+
+def test_change_map_todo_type_is_rejected(tmp_path: Path, monkeypatch):
+    """A row with TODO as change type is an error."""
+    monkeypatch.setattr(cd, "REPO_ROOT", tmp_path)
+    docs = _write_docs_tree(tmp_path, manifest="# Docs\n")
+    areas = docs / "areas"
+    areas.mkdir()
+
+    (areas / "guide.md").write_text(
+        "# Guide\n\n"
+        "> **Plan queue:** None.\n\n"
+        "## Scope\n## Read first\n## Source map\n## Invariants\n"
+        "## Change map\n\n"
+        "| Change type | Source globs |\n"
+        "|---|---|\n"
+        "| TODO | `scripts/stub.py` |\n"
+        "## Work queue\n## Cross-references\n",
+        encoding="utf-8",
+    )
+    errs = cd.check_area_guide_contract(docs)
+    assert any("TODO" in e.message and "change type" in e.message.lower() for e in errs)
+
+
+def test_change_map_empty_source_cell_is_rejected(tmp_path: Path, monkeypatch):
+    """A row with only descriptive text and no file globs in the source cell is an error."""
+    monkeypatch.setattr(cd, "REPO_ROOT", tmp_path)
+    docs = _write_docs_tree(tmp_path, manifest="# Docs\n")
+    areas = docs / "areas"
+    areas.mkdir()
+
+    (areas / "guide.md").write_text(
+        "# Guide\n\n"
+        "> **Plan queue:** None.\n\n"
+        "## Scope\n## Read first\n## Source map\n## Invariants\n"
+        "## Change map\n\n"
+        "| Change type | Source globs |\n"
+        "|---|---|\n"
+        "| Placeholder |  |\n"
+        "## Work queue\n## Cross-references\n",
+        encoding="utf-8",
+    )
+    errs = cd.check_area_guide_contract(docs)
+    assert any("no source globs" in e.message for e in errs)

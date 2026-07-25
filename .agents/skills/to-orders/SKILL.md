@@ -14,7 +14,7 @@ STATE, per the `plan` skill's planning-byproducts rule.)
 
 ## Where they live
 
-`docs/plans/active/orders/<feature>/NN-<slug>.md` — one file per work order, numbered in execution
+`docs/plans/active/<feature>/NN-<slug>.md` — one file per work order, numbered in execution
 order. `<feature>` matches the Plan's filename.
 
 ## What to optimise
@@ -186,7 +186,7 @@ before compiling.
 ## Worked example
 
 The reference order lives at
-[docs/plans/active/orders/_example/99-creature-row-ac.md](../../../docs/plans/active/orders/_example/99-creature-row-ac.md).
+[docs/plans/_example/99-creature-row-ac.md](../../../docs/plans/_example/99-creature-row-ac.md).
 It names real files and passes `scripts/check_orders.py`, so it is also the fixture that keeps the
 linter honest — read it rather than a paraphrase, and copy its shape:
 

@@ -19,7 +19,7 @@ nothing to correlate, and each expensive run stays an anecdote. Order files are 
 reconcile, so this is the only chance to capture it.
 
 Usage (from repo root):
-    .venv\\Scripts\\python.exe scripts/order_telemetry.py --order docs/plans/active/orders/<feature>/<NN>-<slug>.md
+    .venv\\Scripts\\python.exe scripts/order_telemetry.py --order docs/plans/active/<feature>/<NN>-<slug>.md
 Options:
     --status <text>       required when the order file has no STATUS line (a run that was
                           cancelled or stalled): say what actually happened, e.g.
@@ -302,7 +302,7 @@ def analyse(transcript: Path, start_in: list[str], order_name: str) -> dict:
             pass
 
     norm_start = [p.lstrip("./") for p in start_in]
-    skip_prefixes = (".agents/skills/", "docs/plans/active/orders/")
+    skip_prefixes = (".agents/skills/", "docs/plans/active/")
 
     def outside(path: str) -> bool:
         if path.startswith(skip_prefixes) or path.endswith(order_name):
@@ -424,7 +424,7 @@ def analyse_opencode(db_path: Path, session_id: str, start_in: list[str], order_
         elapsed = f"{secs // 60}m{secs % 60:02d}s"
 
     norm_start = [p.lstrip("./") for p in start_in]
-    skip_prefixes = (".agents/skills/", "docs/plans/active/orders/")
+    skip_prefixes = (".agents/skills/", "docs/plans/active/")
 
     def outside(path: str) -> bool:
         if path.startswith(skip_prefixes) or path.endswith(order_name):

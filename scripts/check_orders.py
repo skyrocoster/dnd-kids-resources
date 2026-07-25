@@ -37,7 +37,7 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-ORDERS_ROOT = REPO_ROOT / "docs" / "plans" / "active" / "orders"
+ORDERS_ROOT = REPO_ROOT / "docs" / "plans" / "active"
 
 # A START IN entry pointing at a file longer than this must say which part of it the
 # executor needs; without a scope the file is read whole and the order pays for all of it.
@@ -132,8 +132,21 @@ def bullets(lines: list[str]) -> list[str]:
     return out
 
 
+def _strip_prefix(path_str: str) -> str:
+    """Drop a leading `./` only.
+
+    `lstrip("./")` strips a *character set*, so it ate the leading dot of every
+    dot-directory: `.agents/skills/plan/SKILL.md` resolved as `agents/...` and was
+    reported missing even though the order named it correctly.
+    """
+    cleaned = path_str.replace("\\", "/")
+    while cleaned.startswith("./"):
+        cleaned = cleaned[2:]
+    return cleaned
+
+
 def _normalise(path_str: str) -> str:
-    return path_str.replace("\\", "/").lstrip("./").lower()
+    return _strip_prefix(path_str).lower()
 
 
 def start_in_entries(sections: dict[str, list[str]]) -> list[tuple[str, str, str]]:
@@ -156,7 +169,7 @@ def start_in_entries(sections: dict[str, list[str]]) -> list[tuple[str, str, str
 
 
 def _resolve(path_str: str) -> Path:
-    return REPO_ROOT / path_str.replace("\\", "/").lstrip("./")
+    return REPO_ROOT / _strip_prefix(path_str)
 
 
 def _line_count(path: Path) -> int:
@@ -255,7 +268,9 @@ def lint_order(order_path: Path) -> list[OrderError]:
                     for p in REPO_ROOT.rglob(name)
                     if "node_modules" not in p.parts and ".venv" not in p.parts
                 ]
-                if hits:
+                # A repo-root file's full path *is* its bare name, so there is nothing
+                # to add and the executor has nowhere to search.
+                if hits and not any(hit == name for hit in hits):
                     fail(
                         f"{field} names `{name}` without its path",
                         "Write the full repo-relative path so the executor does not search "
@@ -344,6 +359,9 @@ def lint_orders(orders_root: Path | None = None) -> list[OrderError]:
         return []
     errors: list[OrderError] = []
     for order in sorted(root.rglob("*.md")):
+        # Only lint numbered work orders, not Plan files in feature directories.
+        if not re.match(r"\d+-", order.name):
+            continue
         errors.extend(lint_order(order))
     return errors
 
@@ -353,7 +371,7 @@ def main() -> int:
     parser.add_argument(
         "orders",
         nargs="*",
-        help="Order files to lint (default: every order under docs/plans/active/orders/)",
+        help="Order files to lint (default: numbered orders in active feature folders)",
     )
     args = parser.parse_args()
 

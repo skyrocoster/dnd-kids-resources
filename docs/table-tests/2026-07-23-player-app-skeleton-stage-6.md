@@ -2,7 +2,7 @@
 
 > **Status:** planned
 
-- **Plan:** [Player App Skeleton](../plans/active/player-app-skeleton.md) — Stage 6, work order `03-session-run`
+- **Plan:** [Player App Skeleton](../plans/active/player-app-skeleton/player-app-skeleton.md) — Stage 6, work order `03-session-run`
 - **Build:** `<git sha — commit before the session and paste it here>`
 - **Device:** `<tablet, browser, how it was launched>`
 - **Operators:** Pip (6), Lark (4)
