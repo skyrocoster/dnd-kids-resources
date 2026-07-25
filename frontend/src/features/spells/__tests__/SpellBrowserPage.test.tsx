@@ -1,6 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { resetViewport, setViewport } from '../../../test/viewport'
 import * as api from '../../../api/client'
 import type { Player, Spell } from '../../../api/types'
 import { SpellBrowserPage } from '../SpellBrowserPage'
@@ -122,9 +123,30 @@ describe('SpellBrowserPage', () => {
     await screen.findByRole('heading', { name: /Cure Wounds/ })
     await user.type(screen.getByRole('searchbox'), 'missing')
     expect(screen.getByText('No matches')).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Back to spells' }))
+    await user.click(screen.getByText('Back to spells'))
     expect(screen.getByText('Select an item')).toBeInTheDocument()
   })
+
+  describe('responsive narrow breakpoint', () => {
+    afterEach(() => {
+      resetViewport()
+    })
+
+    it('shows Back to spells at 520px narrow breakpoint', async () => {
+      vi.spyOn(api, 'listSpells').mockResolvedValue(spells)
+      setViewport(520, 800)
+      const user = userEvent.setup()
+      render(<SpellBrowserPage />)
+
+      await screen.findByRole('heading', { name: /Cure Wounds/ })
+
+      const backBtn = screen.getByRole('button', { name: 'Back to spells' })
+      expect(backBtn).toBeInTheDocument()
+      await user.click(backBtn)
+      expect(screen.getByText('Select an item')).toBeInTheDocument()
+    })
+  })
+
   it('opens Manage Players with current spell assignments checked', async () => {
     vi.spyOn(api, 'listSpells').mockResolvedValue(spells)
     vi.spyOn(api, 'listPlayers').mockResolvedValue(players)

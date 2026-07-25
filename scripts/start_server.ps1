@@ -47,7 +47,7 @@ Push-Location $RepoRoot
 try {
     # Start backend (FastAPI)
     $backendProc = Start-Process -FilePath $Python `
-        -ArgumentList "-m", "uvicorn", "backend.app.main:app", "--port", $Port `
+        -ArgumentList "-m", "uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", $Port `
         -WorkingDirectory $RepoRoot `
         -RedirectStandardOutput $LogFile `
         -RedirectStandardError "$LogFile.err" `

@@ -1,6 +1,6 @@
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { getAtTheTable, getDungeonLayout } from '../../api/client'
+import { ApiError, getAtTheTable, getDungeonLayout } from '../../api/client'
 import { createEmptyMapLayout } from '../../model/maplabModel'
 import { playerViewTransform } from '../curtain'
 import { PLAYER_MAP_POLL_INTERVAL_MS, usePlayerMapData } from '../usePlayerMapData'
@@ -144,5 +144,87 @@ describe('usePlayerMapData', () => {
 
     expect(mockedGetAtTheTable).toHaveBeenCalledTimes(2)
     expect(result.current.dungeonId).toBe(7)
+  })
+
+  it('reports empty when getAtTheTable returns 404', async () => {
+    mockedGetAtTheTable.mockRejectedValueOnce(new ApiError(404, ''))
+
+    const { result } = renderHook(() => usePlayerMapData())
+
+    await waitFor(() => expect(result.current.status).toBe('empty'))
+    expect(result.current.layout).toBeNull()
+    expect(mockedGetDungeonLayout).not.toHaveBeenCalled()
+  })
+
+  it('reports empty when getDungeonLayout returns 404', async () => {
+    mockedGetAtTheTable.mockResolvedValue({ dungeon_id: 7 })
+    mockedGetDungeonLayout.mockRejectedValueOnce(new ApiError(404, ''))
+
+    const { result } = renderHook(() => usePlayerMapData())
+
+    await waitFor(() => expect(result.current.status).toBe('empty'))
+    expect(result.current.layout).toBeNull()
+  })
+
+  it('reports error when the initial poll fails with no good frame', async () => {
+    mockedGetAtTheTable.mockRejectedValueOnce(new Error('network'))
+
+    const { result } = renderHook(() => usePlayerMapData())
+
+    await waitFor(() => expect(result.current.status).toBe('error'))
+    expect(result.current.layout).toBeNull()
+    expect(result.current.error).not.toBeNull()
+  })
+
+  it('recovers from error on the next polling cycle', async () => {
+    vi.useFakeTimers()
+    mockedGetAtTheTable
+      .mockRejectedValueOnce(new Error('offline'))
+      .mockResolvedValueOnce({ dungeon_id: 7 })
+    mockedGetDungeonLayout.mockResolvedValue(layoutResponse('School'))
+
+    const { result } = renderHook(() => usePlayerMapData())
+    expect(result.current.status).toBe('loading')
+
+    await act(async () => {})
+    expect(result.current.status).toBe('error')
+    expect(result.current.layout).toBeNull()
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(PLAYER_MAP_POLL_INTERVAL_MS)
+    })
+
+    expect(result.current.status).toBe('ready')
+    expect(result.current.dungeonId).toBe(7)
+  })
+
+  it('continues polling after a retained-last-frame recovery', async () => {
+    vi.useFakeTimers()
+    mockedGetAtTheTable
+      .mockResolvedValueOnce({ dungeon_id: 7 })
+      .mockRejectedValueOnce(new Error('transient'))
+      .mockResolvedValueOnce({ dungeon_id: 8 })
+    mockedGetDungeonLayout
+      .mockResolvedValueOnce(layoutResponse('School'))
+      .mockResolvedValueOnce(layoutResponse('Annex'))
+
+    const { result } = renderHook(() => usePlayerMapData())
+    await act(async () => {})
+    expect(result.current.status).toBe('ready')
+    expect(result.current.dungeonId).toBe(7)
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(PLAYER_MAP_POLL_INTERVAL_MS)
+    })
+    expect(result.current.status).toBe('ready')
+    expect(result.current.dungeonId).toBe(7)
+    expect(mockedGetAtTheTable).toHaveBeenCalledTimes(2)
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(PLAYER_MAP_POLL_INTERVAL_MS)
+    })
+    expect(result.current.status).toBe('ready')
+    expect(result.current.dungeonId).toBe(8)
+    expect(result.current.layout?.floors[0].title).toBe('Annex')
   })
 })

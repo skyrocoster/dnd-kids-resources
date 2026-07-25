@@ -1,5 +1,11 @@
+import pytest
+
 from backend.app.reference_text import (
+    ReferenceDefinition,
+    SpellValueReferenceContext,
+    create_reference_registry,
     parse_reference_text,
+    resolve_reference_text,
     spell_value_reference_registry,
     validate_reference_text,
 )
@@ -96,3 +102,30 @@ def test_validate_reports_unknown_errors_in_source_order():
         ("first_unknown", 0),
         ("second_unknown", 21),
     ]
+
+
+def test_resolve_known_token():
+    doc = parse_reference_text("Roll {spell_attack_bonus}")
+    result = resolve_reference_text(doc["document"], spell_value_reference_registry, SpellValueReferenceContext(spell_attack_bonus=5))
+    assert result == "Roll 5"
+
+
+def test_resolve_unknown_token_uses_empty():
+    doc = parse_reference_text("Use {unknown}")
+    result = resolve_reference_text(doc["document"], spell_value_reference_registry, SpellValueReferenceContext())
+    assert result == "Use "
+
+
+def test_resolve_none_value_uses_fallback():
+    doc = parse_reference_text("DC {spell_save_dc}")
+    result = resolve_reference_text(doc["document"], spell_value_reference_registry, SpellValueReferenceContext(spell_save_dc=None))
+    assert result == "DC your spell save DC"
+
+
+def test_create_registry_rejects_duplicate_token():
+    definitions = [
+        ReferenceDefinition[str](token="test", kind="value", domain="spell", fallback="fallback", resolve=lambda _: None),
+        ReferenceDefinition[str](token="test", kind="value", domain="spell", fallback="fallback", resolve=lambda _: None),
+    ]
+    with pytest.raises(ValueError, match="Duplicate"):
+        create_reference_registry(definitions)

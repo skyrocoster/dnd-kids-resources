@@ -120,12 +120,12 @@ CREATE TABLE statement inside `conftest.py`, stop** — the schema comes from
 
 - Pytest paths: `backend/tests`.
 - Pytest coverage threshold: `97%`.
-- Pytest default options: `-q --strict-markers --strict-config --cov=backend/app --cov-report=term-missing --cov-fail-under=97`.
+- Pytest default options: `-q --tb=short --strict-markers --strict-config --cov=backend/app --cov-report=term-missing --cov-fail-under=97`.
 - Frontend scripts:
   - `npm run build`: `tsc -b && vite build`
   - `npm run dev`: `vite`
   - `npm run lint`: `oxlint`
   - `npm run preview`: `vite preview`
-  - `npm run test`: `vitest run`
+  - `npm run test`: `vitest run --silent=passed-only`
   - `npm run typecheck`: `tsc -b`
 <!-- GENERATED:TESTING:END -->

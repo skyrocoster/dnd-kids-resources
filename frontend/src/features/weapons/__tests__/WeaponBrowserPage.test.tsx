@@ -1,6 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { resetViewport, setViewport } from '../../../test/viewport'
 import * as api from '../../../api/client'
 import type { Weapon } from '../../../api/types'
 import { WeaponBrowserPage } from '../WeaponBrowserPage'
@@ -185,7 +186,28 @@ describe('WeaponBrowserPage', () => {
     await screen.findByRole('heading', { name: /Moon Sickle/ })
     await user.type(screen.getByRole('searchbox'), 'missing')
     expect(screen.getByText('No matches')).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Back to weapons' }))
+    await user.click(screen.getByText('Back to weapons'))
     expect(screen.getByText('Select an item')).toBeInTheDocument()
+  })
+
+  describe('responsive narrow breakpoint', () => {
+    afterEach(() => {
+      resetViewport()
+    })
+
+    it('shows Back to weapons at 520px narrow breakpoint', async () => {
+      vi.spyOn(api, 'listWeapons').mockResolvedValue(weapons)
+      setViewport(520, 800)
+      const user = userEvent.setup()
+      render(<WeaponBrowserPage />)
+
+      await screen.findByText('Longsword')
+      await user.click(screen.getByText('Longsword'))
+
+      const backBtn = screen.getByRole('button', { name: 'Back to weapons' })
+      expect(backBtn).toBeInTheDocument()
+      await user.click(backBtn)
+      expect(screen.getByText('Select an item')).toBeInTheDocument()
+    })
   })
 })

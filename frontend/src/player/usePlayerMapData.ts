@@ -28,7 +28,7 @@ export function usePlayerMapData(): PlayerMapData {
   useEffect(() => {
     let cancelled = false
     let activeRequest: AbortController | null = null
-    let pollTimer: ReturnType<typeof setTimeout> | null = null
+    let pollTimer: number | null = null
 
     const scheduleNext = () => {
       if (cancelled) return
@@ -47,6 +47,7 @@ export function usePlayerMapData(): PlayerMapData {
         if (pointer.dungeon_id === null) {
           lastGoodFrame.current = null
           setState({ dungeonId: null, layout: null, status: 'empty', error: null })
+          scheduleNext()
           return
         }
 
@@ -68,11 +69,13 @@ export function usePlayerMapData(): PlayerMapData {
         if (error instanceof ApiError && error.status === 404) {
           lastGoodFrame.current = null
           setState({ dungeonId: null, layout: null, status: 'empty', error: null })
+          scheduleNext()
           return
         }
 
         if (lastGoodFrame.current) {
           setState(lastGoodFrame.current)
+          scheduleNext()
           return
         }
 

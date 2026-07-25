@@ -1,6 +1,6 @@
 # Production Nightly Deploys — ship every night without losing what you authored
 
-> **Status:** Next up for Repo Infra. **Part of Stage 1 has already shipped out of band** — see *Landed early* below. First remaining stage: the rest of Stage 1 — the schema as data.
+> **Status:** Not next for Repo Infra; resumes after Field-Test Readiness. **Part of Stage 1 has already shipped out of band** — see *Landed early* below. First remaining stage: the rest of Stage 1 — the schema as data.
 
 ## Landed early (outside this plan)
 

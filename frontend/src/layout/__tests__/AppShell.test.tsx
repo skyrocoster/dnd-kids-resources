@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { resetViewport, setViewport } from '../../test/viewport'
 import { AppShell } from '../AppShell'
 
 const STORAGE_KEY = 'dnd-kids-nav-collapsed'
@@ -111,41 +112,51 @@ describe('AppShell', () => {
     expect(document.activeElement).not.toBeNull()
   })
 
-  it('opens a mobile navigation drawer with reachable links', async () => {
-    const user = userEvent.setup()
-    renderShell()
+  describe('mobile navigation at narrow viewport', () => {
+    beforeEach(() => {
+      setViewport(768, 1024)
+    })
 
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Open navigation' }))
+    afterEach(() => {
+      resetViewport()
+    })
 
-    const dialog = screen.getByRole('dialog', { name: 'Navigate' })
-    expect(dialog).toBeInTheDocument()
-    expect(screen.getByRole('navigation', { name: 'Site navigation' })).toBeInTheDocument()
-  })
+    it('opens a mobile navigation drawer with reachable links', async () => {
+      const user = userEvent.setup()
+      renderShell()
 
-  it('closes the mobile navigation drawer after selecting a link', async () => {
-    const user = userEvent.setup()
-    renderShell()
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+      await user.click(screen.getByRole('button', { name: 'Open navigation' }))
 
-    await user.click(screen.getByRole('button', { name: 'Open navigation' }))
-    const drawerSpellsLink = screen.getByRole('navigation', { name: 'Site navigation' }).querySelector(
-      'a[href="/spells"]',
-    ) as HTMLElement
-    await user.click(drawerSpellsLink)
+      const dialog = screen.getByRole('dialog', { name: 'Navigate' })
+      expect(dialog).toBeInTheDocument()
+      expect(screen.getByRole('navigation', { name: 'Site navigation' })).toBeInTheDocument()
+    })
 
-    expect(screen.getByText('spells content')).toBeInTheDocument()
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-  })
+    it('closes the mobile navigation drawer after selecting a link', async () => {
+      const user = userEvent.setup()
+      renderShell()
 
-  it('closes the mobile navigation drawer on Escape', async () => {
-    const user = userEvent.setup()
-    renderShell()
+      await user.click(screen.getByRole('button', { name: 'Open navigation' }))
+      const drawerSpellsLink = screen.getByRole('navigation', { name: 'Site navigation' }).querySelector(
+        'a[href="/spells"]',
+      ) as HTMLElement
+      await user.click(drawerSpellsLink)
 
-    await user.click(screen.getByRole('button', { name: 'Open navigation' }))
-    expect(screen.getByRole('dialog')).toBeInTheDocument()
+      expect(screen.getByText('spells content')).toBeInTheDocument()
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    })
 
-    await user.keyboard('{Escape}')
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    it('closes the mobile navigation drawer on Escape', async () => {
+      const user = userEvent.setup()
+      renderShell()
+
+      await user.click(screen.getByRole('button', { name: 'Open navigation' }))
+      expect(screen.getByRole('dialog')).toBeInTheDocument()
+
+      await user.keyboard('{Escape}')
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    })
   })
 
   // VF5: shell CSS uses foundation spacing tokens, not ad-hoc values

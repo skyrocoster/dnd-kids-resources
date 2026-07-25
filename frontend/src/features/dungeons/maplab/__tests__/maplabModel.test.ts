@@ -810,31 +810,31 @@ describe('maplabModel (Stage 4 session state)', () => {
     expect(passagePresentation(effective).state).toBe('locked')
   })
 
-  it('effectivePassageState falls back to the authored defaults with no session (door open — the shipped Stage-2 baseline)', () => {
+  it('effectivePassageState falls back to the authored defaults with no session (door closed by default)', () => {
     const flags = { hidden: false, locked: true, trapped: true }
     const effective = effectivePassageState(flags)
 
     expect(effective.locked).toBe(true)
     expect(effective.trapped).toBe(true)
-    expect(effective.sessionOpen).toBe(true)
+    expect(effective.sessionOpen).toBe(false)
   })
 
-  it('defaultPassageSession seeds the reset baseline from authored flags (open by default)', () => {
+  it('defaultPassageSession seeds the reset baseline from authored flags (closed by default)', () => {
     const flags = { hidden: false, locked: true, trapped: true }
-    expect(defaultPassageSession(flags)).toEqual({ isOpen: true, isLocked: true, trapDisarmed: false })
+    expect(defaultPassageSession(flags)).toEqual({ isOpen: false, isLocked: true, trapDisarmed: false })
   })
 
   it('doorPresentation swaps in a closed/open glyph on the unlocked case', () => {
     const door: MapDoor = { door_id: 1, cell: [0, 0], side: 'N', ...baseDoorFlags }
 
-    const open = doorPresentation(door, defaultPassageSession(door))
-    expect(open.state).toBe('unlocked')
-    expect(open.isOpen).toBe(true)
-    expect(open.icon).not.toBe(UnlockIcon)
-
-    const closed = doorPresentation(door, { isOpen: false, isLocked: false, trapDisarmed: false })
+    const closed = doorPresentation(door, defaultPassageSession(door))
+    expect(closed.state).toBe('unlocked')
     expect(closed.isOpen).toBe(false)
-    expect(closed.icon).not.toBe(open.icon)
+    expect(closed.icon).not.toBe(UnlockIcon)
+
+    const open = doorPresentation(door, { isOpen: true, isLocked: false, trapDisarmed: false })
+    expect(open.isOpen).toBe(true)
+    expect(open.icon).not.toBe(closed.icon)
   })
 
   it('doorPresentation keeps the state icon when trapped/locked/hidden, regardless of open/closed', () => {

@@ -84,7 +84,7 @@ try {
 
     # Start backend (FastAPI, serving frontend/dist)
     $backendProc = Start-Process -FilePath $Python `
-        -ArgumentList "-m", "uvicorn", "backend.app.main:app", "--host", "127.0.0.1", "--port", $Port `
+        -ArgumentList "-m", "uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", $Port `
         -WorkingDirectory $RepoRoot `
         -RedirectStandardOutput $LogFile `
         -RedirectStandardError "$LogFile.err" `

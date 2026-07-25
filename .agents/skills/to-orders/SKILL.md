@@ -29,6 +29,9 @@ KNOWN STATE (already true — do NOT redo or re-derive):
 - <a fact the executor would otherwise waste a context window discovering>
 - <another fact — real values, real file locations, current test count, etc.>
 
+KNOWN TEST FAILURES (pre-existing — NOT yours to fix, NOT caused by you):
+- <exact test name/path that already fails, verbatim; omit the section if the suite is green>
+
 START IN: <2–4 exact files/folders to begin exploring from>
 
 DO:
@@ -36,7 +39,7 @@ DO:
 
 STOP WHEN: <a single runnable command that must pass, or "if X = Y, stop">
 
-STATUS: <-- executor writes DONE, or FAILED - <one-line reason>
+STATUS: <-- executor writes DONE, FAILED - <one-line reason>, or BLOCKED - <one-line reason>
 ```
 
 ## Why each field exists — get these right and a weak model can't wander
@@ -47,9 +50,16 @@ STATUS: <-- executor writes DONE, or FAILED - <one-line reason>
 - **START IN** — bounded exploration. The executor explores *these* files, not the whole repo. Name
   real, verified paths — open them yourself while compiling to be sure they're right.
 - **DO** — the intent in 1–3 lines. Trust the model to write the code; don't write it for them.
-- **STOP WHEN** — the leash that ends wandering and gold-plating. Prefer a real command
-  (`npm test <name>`, `tsc -b`, a pytest path) so "done" is objective and the model knows to stop.
-- **STATUS** — left blank; the executor fills it. It's the only thing they write outside code/tests.
+- **STOP WHEN** — the leash that ends wandering and gold-plating. It must be a **targeted** command
+  naming exact test files — the tests for the files the order touches plus any test the order adds —
+  never a bare `pytest`, `npm test`, or `tsc -b`. Full-suite runs and the typecheck are `reconcile`'s
+  job, once per stage, not the executor's. The command shapes:
+  - Backend: `pytest backend/tests/<file>.py --no-cov` — the `--no-cov` is required; without it the
+    97% coverage gate fails every subset run regardless of the tests.
+  - Frontend: `npm test -- <path/to/File.test.tsx>` (paths after `--` go straight to vitest).
+- **STATUS** — left blank; the executor fills it (`DONE`, `FAILED`, or `BLOCKED`, plus a FAILURE
+  REPORT block on failure — see `docs/PLAN_TEMPLATE.md`). It's the only thing they write outside
+  code/tests.
 
 ## Frontend orders carry the UX decisions
 
@@ -69,8 +79,13 @@ before compiling.
    split it into smaller orders.
 3. **For each order, fill KNOWN STATE with verified facts** you discovered — so the executor starts
    from truth, not a blank slate.
-4. **Name exact START IN files** you actually opened, and a **runnable STOP WHEN**.
-5. **Leave STATUS blank.** Number the files in dependency order and set each `DEPENDS ON`.
+4. **Run the order's test command yourself and record pre-existing failures.** Before writing STOP
+   WHEN, run the relevant suite. Any test that already fails goes verbatim into **KNOWN TEST
+   FAILURES**, and STOP WHEN must be satisfiable with those failures still present (scope the command
+   to the touched tests, or say "passes except the KNOWN TEST FAILURES"). An executor that discovers
+   an unexplained red suite will waste its whole context deciding whether it broke something.
+5. **Name exact START IN files** you actually opened, and a **runnable STOP WHEN**.
+6. **Leave STATUS blank.** Number the files in dependency order and set each `DEPENDS ON`.
 
 ## Worked example (note: zero code written by Claude)
 
@@ -92,9 +107,9 @@ DO:
 - Render the existing `difficulty` value next to the tile title, using theme tokens.
 - Add one test that the label renders.
 
-STOP WHEN: `npm test EncounterTile` passes with the new test. Then stop — change nothing else.
+STOP WHEN: `npm test -- EncounterTile` passes with the new test. Then stop — change nothing else.
 
-STATUS: <-- DONE / FAILED - why
+STATUS: <-- DONE / FAILED - why / BLOCKED - why
 ```
 
 ## What NOT to do
@@ -105,5 +120,6 @@ STATUS: <-- DONE / FAILED - why
 
 ## Next step
 
-Hand each order to the small model via the `implement-order` skill, one fresh context per order.
+Hand each order to the small model via the `dispatch-orders` skill (which wraps `implement-order`),
+one fresh context per order.
 When a stage's orders are all `DONE`, run **`reconcile`**.

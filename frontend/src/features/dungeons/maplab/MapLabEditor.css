@@ -2,6 +2,10 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
 }
 
 /* .maplab-editor-toolbar-button's base pill look comes from the shared `.maplab-pill-button`
@@ -38,6 +42,13 @@
   gap: var(--space-5);
   align-items: flex-start;
   position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+}
+
+.maplab-editor-layout > .maplab-canvas-wrapper {
+  align-self: stretch;
 }
 
 .maplab-editor-room-list {
@@ -48,6 +59,10 @@
   margin: 0;
   padding: 0;
   list-style: none;
+  /* The editor layout is viewport-height bound, so a long room list scrolls itself rather than
+   * stretching the workspace past the bottom of the window. */
+  max-height: 100%;
+  overflow-y: auto;
 }
 
 .maplab-editor-floor-actions {
@@ -535,7 +550,7 @@
   width: 100%;
 }
 
-/* .maplab-canvas-wrapper / .maplab-canvas-viewport / .maplab-zoom-controls / .maplab-zoom-button /
+/* .maplab-canvas-wrapper / .maplab-canvas-viewport / .maplab-map-controls* / .maplab-zoom-button /
  * .maplab-pill-button / .maplab-toolbar / .maplab-toolbar-group* / .maplab-editor-nav-rail /
  * .maplab-inspector-rail* are shared with the viewer — real rules live in MapLabPage.css (imported
  * above this file). */

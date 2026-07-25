@@ -27,8 +27,8 @@ Work is split so that expensive planning and cheap implementation stay separate:
 - **RECONCILE (Claude).** After a stage's orders finish, Claude collapses them into the Plan, updates
   any canonical reference whose contract changed, runs the checker, and deletes the spent orders.
 
-Four skills in `.agents/skills/` drive this (read by both Claude Code and opencode): `plan`,
-`to-orders`, `implement-order`, and `reconcile`. The full formats and lifecycle live in
+Five skills in `.agents/skills/` drive this (read by both Claude Code and opencode): `plan`,
+`to-orders`, `dispatch-orders`, `implement-order`, and `reconcile`. The full formats and lifecycle live in
 [docs/PLAN_TEMPLATE.md](docs/PLAN_TEMPLATE.md).
 
 ## Documentation Contract
@@ -61,9 +61,10 @@ Four skills in `.agents/skills/` drive this (read by both Claude Code and openco
 
 ### Execution workflow
 
-Four skills in `.agents/skills/` implement the Plan → Implement → Reconcile workflow above: `plan`
-(write the Plan), `to-orders` (compile a stage into work orders), `implement-order` (small model
-executes one order), and `reconcile` (close out finished orders). See [docs/PLAN_TEMPLATE.md](docs/PLAN_TEMPLATE.md).
+Five skills in `.agents/skills/` implement the Plan → Implement → Reconcile workflow above: `plan`
+(write the Plan), `to-orders` (compile a stage into work orders), `dispatch-orders` (send runnable
+orders to the right-sized model), `implement-order` (small model executes one order), and `reconcile`
+(close out finished orders). See [docs/PLAN_TEMPLATE.md](docs/PLAN_TEMPLATE.md).
 
 ### Issue tracker
 

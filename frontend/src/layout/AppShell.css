@@ -152,6 +152,32 @@
   padding: var(--space-5);
 }
 
+/* Dungeon map routes are app-like rather than document-like: the map fills the window and the page
+ * itself never scrolls, at every width (a map that runs off the bottom of a tablet is unusable at
+ * the table, and page scroll fights the canvas's own pan/pinch). `DungeonShell` sets the flag on
+ * <body> while such a route is mounted. `.dungeon-shell` supplies its own padding. */
+body[data-app-layout='fill'] {
+  overflow: hidden;
+}
+
+body[data-app-layout='fill'] .app-shell {
+  /* 100vh first for browsers predating dvh — it overshoots by the mobile URL bar rather than
+   * letting the shell grow unbounded; the dvh line wins wherever it is understood. */
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+
+body[data-app-layout='fill'] .app-main {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  /* The canvas and rails scroll internally; nothing here should ever need to. */
+  overflow: hidden;
+  padding: 0;
+}
+
 .app-footer {
   padding: var(--space-2) var(--space-5);
   font-size: var(--type-caption-size);

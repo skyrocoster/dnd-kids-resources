@@ -1,6 +1,6 @@
 # Player App Skeleton — a tablet at the table showing the live dungeon map
 
-> **Status:** Stages 1–5 shipped; Stage 6 (table-readiness pass) next. This is Plan 0 of four (skeleton → fog → knowledge → identity); it remains the next-up plan for the Player App area.
+> **Status:** Stages 1–5 shipped; Stage 6 partially shipped (sleep/wake polling and touch-target token done; live session run blocked — requires a human at the table with a 4- and 6-year-old). This is Plan 0 of four (skeleton → fog → knowledge → identity); it remains the next-up plan for the Player App area.
 
 - **Area guide:** [Player App](../../areas/player-app.md)
 
@@ -163,3 +163,16 @@ dungeon they are running.
 | 5.1 | The player map data seam now polls `at-the-table` every five seconds, loads the selected dungeon layout, normalizes it through the curtain transform, and reports loading/empty/error/ready states. A failed poll after a good frame keeps that last visible map on screen and retries silently. |
 | 5.2 | The player app owns an independent full-bleed map renderer for transformed layouts, including rooms, walls, floors, authored outside features, touch pan/pinch zoom, keyboard focus, and arrow-key panning. It imports no DM feature components and keeps the player import boundary under test. |
 | 5.3 | `/play` now remains a player-shell route family outside `AppShell`, with its native Map destination linking to `/play/map`. `/play/map` composes the live data seam and player renderer, shows exact loading/empty/error copy, and offers no back/home/DM link or manual refresh control. |
+| 5.4 | Fixed a gap found ahead of Order 03: `setAtTheTable` existed in `api/client.ts` and the backend but no component ever called it, so the tablet had no way to ever show a dungeon. The Map Lab session view (`MapLabPage.tsx`) Session toolbar tray now has a "Put at the table" / "At the table" control that reads and sets the pointer. |
+| 6.1 | Map polling now uses recursive `setTimeout` chaining with a `visibilitychange` listener that triggers a fresh poll on device wake, preventing interval pile-up and stale-data windows. |
+| 6.2 | Added `--kid-control-height: 64px` CSS token to `theme.css` (raised touch floor for kid surfaces); `PlayerShell` test verifies `.player-destination` computed `min-height >= 64px`. |
+
+## Stage 6 note (pre-run fix)
+
+Order 03 (session-run) failed because it requires a human running a real session with a 4- and
+6-year-old on a tablet — an AI cannot perform that. Ahead of a real run, reviewing this plan
+surfaced that the run would have failed regardless: nothing in the DM app ever called
+`setAtTheTable`, so `/play/map` could never show anything but "No map yet." That gap is fixed
+(Stage 5.4). Order 03 is otherwise unchanged and still needs a human to run the actual tablet
+session — set the school at the table from the Map Lab session view's new control, then observe and
+write the real `## Stage 6 learnings` section this note is not a substitute for.

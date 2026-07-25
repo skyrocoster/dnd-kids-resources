@@ -16,6 +16,12 @@ not to improve the wider codebase. Staying inside the fence below is what makes 
 2. **Trust KNOWN STATE.** Everything listed there is already confirmed true. Do **not** re-verify it,
    re-explore it, or second-guess it. It was checked for you so you don't spend your context on it.
 
+   If the order has a **KNOWN TEST FAILURES** section, those tests were already failing before you
+   started. They are **not yours to fix and not caused by you** — do not touch them, do not
+   investigate them, and do not count them when judging STOP WHEN. If a test fails that is *not* on
+   that list, that one is yours. If KNOWN STATE says an approach was "already attempted, did not
+   work", do not try that approach again.
+
 3. **Explore only the files in START IN.** Open those, and only files they directly lead you to for
    this change. Do **not** grep the whole repo or open unrelated areas — that's the wandering this
    skill exists to prevent.
@@ -24,21 +30,49 @@ not to improve the wider codebase. Staying inside the fence below is what makes 
    refactor nearby code, rename things, add extra features, or "improve" things you weren't asked to.
    Match the style of the code already in the file.
 
-5. **Run the STOP WHEN command.** When its condition is met (the test passes, the build is clean, the
-   stated `X = Y` holds), you are **done — stop immediately.** Do not keep polishing.
+5. **Run the STOP WHEN command — and only that command, exactly as written.** Never run the full
+   test suite (`pytest` or `npm test` with no file arguments), `tsc -b`, or any "just to be safe"
+   verification the order didn't ask for. Whole-repo verification happens later, once per stage, in
+   `reconcile` — it is not your job, and a full run only fills your context with unrelated output.
+   When STOP WHEN's condition is met (the test passes, the build is clean, the stated `X = Y`
+   holds), you are **done — stop immediately.** Do not keep polishing.
+
+   If it fails, you may make up to **two distinct fix attempts**. After the second failed attempt,
+   stop and write a failure report (below). Do not keep cycling — a clear failure report is a
+   **successful outcome** of this order; a planner with a stronger model picks it up from there.
 
 6. **Write the STATUS line** at the bottom of the work order file:
    - `STATUS: DONE` if STOP WHEN passed.
-   - `STATUS: FAILED - <one short reason>` if you could not make it pass. Do not guess or paper over
-     a failure — report it honestly so a planner can fix the order.
+   - `STATUS: FAILED - <one short reason>` if the order was doable as written but you could not make
+     STOP WHEN pass.
+   - `STATUS: BLOCKED - <one short reason>` if the order could not be executed as written — KNOWN
+     STATE turned out to be wrong, a named file doesn't exist, or DO contradicts what's in the
+     START IN files. Do not improvise a different change.
+
+7. **If FAILED or BLOCKED, append a FAILURE REPORT** below the STATUS line so the planner never has
+   to re-derive what you saw:
+
+   ```
+   FAILURE REPORT:
+   - TRIED: <2-4 lines: what changes you made, in which files>
+   - FAILING COMMAND: <the exact STOP WHEN command you ran>
+   - OUTPUT: <last ~20 lines of the failing output, verbatim, in a code fence>
+   - SUSPECT: <one line: your best guess at why — it is fine to be wrong>
+   - WORKTREE: <"changes left in place" plus the list of dirty files>
+   ```
+
+   **Leave your partial changes in the worktree — do not revert them.** The half-finished diff plus
+   the verbatim output is exactly what the planner needs. Cleaning up destroys the evidence.
 
 ## Stay inside the fence
 
-- Touch only **code and test files** for this change, plus this order's **STATUS** line.
+- Touch only **code and test files** for this change, plus this order's **STATUS** line and (on
+  failure) its **FAILURE REPORT** block.
 - Do **not** edit other work orders, the Plan, the docs manifest, area guides, or any reference doc.
   Those are a planner's job, not yours.
 - Do **not** start the next work order. One order per context window. When STATUS is written, you're
   finished.
 
 If the order is unclear, contradicts what you find in the START IN files, or can't be done as written,
-stop and write `STATUS: FAILED - <what's wrong>` rather than improvising a different change.
+stop and write `STATUS: BLOCKED - <what's wrong>` plus a FAILURE REPORT rather than improvising a
+different change.

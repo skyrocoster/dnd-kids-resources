@@ -31,6 +31,13 @@ async function flush() {
   })
 }
 
+/** Pan is applied as `transform: translate(...)` on the SVG (see MapCanvas), not scrollLeft/scrollTop. */
+function readTranslate(svg: SVGSVGElement): { x: number; y: number } {
+  const style = svg.getAttribute('style') ?? ''
+  const match = style.match(/translate\(\s*(-?[\d.]+)px,\s*(-?[\d.]+)px\s*\)/)
+  return { x: match ? Number(match[1]) : 0, y: match ? Number(match[2]) : 0 }
+}
+
 describe('MapLabEditorPage', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
@@ -410,24 +417,24 @@ describe('MapLabEditorPage (Stage E2 — Canvas zoom & pan)', () => {
     expect(Number(svg.getAttribute('width'))).toBeCloseTo(CONTENT_PX_AT_SCALE_1 * 1.1)
   })
 
-  it('click-drag pans the canvas, starting only outside room/door/paint hits', async () => {
+  it('click-drag pans the canvas from anywhere while no tool is armed', async () => {
     const { container } = await renderEditor()
+    const svg = container.querySelector('.maplab-svg') as SVGSVGElement
     const viewport = container.querySelector('.maplab-canvas-viewport') as HTMLElement
     const room = container.querySelector('.maplab-room') as Element
 
-    // A drag that starts on the room itself must not pan.
+    // A drag that starts on the room pans when no tool is armed.
     fireEvent.pointerDown(room, { clientX: 0, clientY: 0 })
     fireEvent.pointerMove(window, { clientX: 100, clientY: 60 })
     fireEvent.pointerUp(window)
-    expect(viewport.scrollLeft).toBe(0)
-    expect(viewport.scrollTop).toBe(0)
+    expect(readTranslate(svg)).toEqual({ x: 100, y: 60 })
 
-    // A drag starting on empty canvas pans (scroll offset moves opposite the drag direction).
+    // A drag starting on empty canvas also pans — the SVG translates opposite the drag direction, so the
+    // content under the pointer appears to follow the finger/cursor. This pan is applied on top of the first block's pan.
     fireEvent.pointerDown(viewport, { clientX: 0, clientY: 0 })
     fireEvent.pointerMove(window, { clientX: 100, clientY: 60 })
     fireEvent.pointerUp(window)
-    expect(viewport.scrollLeft).toBe(-100)
-    expect(viewport.scrollTop).toBe(-60)
+    expect(readTranslate(svg)).toEqual({ x: 200, y: 120 })
   })
 
   it('pan and zoom work together: zoom + drag + reset all coordinate correctly', async () => {
@@ -441,13 +448,13 @@ describe('MapLabEditorPage (Stage E2 — Canvas zoom & pan)', () => {
     fireEvent.pointerDown(viewport, { clientX: 0, clientY: 0 })
     fireEvent.pointerMove(window, { clientX: 50, clientY: 20 })
     fireEvent.pointerUp(window)
-    expect(viewport.scrollLeft).toBe(-50)
-    expect(viewport.scrollTop).toBe(-20)
+    // Zoom buttons now anchor on the viewport centre, so zooming shifts the pan. Viewport centre is
+    // 320px, zoom scale moves 1 → 1.25 (pan delta 80 on both axes), and the drag subtracts that.
+    expect(readTranslate(svg)).toEqual({ x: -30, y: -60 })
 
     fireEvent.click(screen.getByRole('button', { name: 'Fit map to viewport' }))
     expect(Number(svg.getAttribute('width'))).toBeCloseTo(640)
-    expect(viewport.scrollLeft).toBe(0)
-    expect(viewport.scrollTop).toBe(0)
+    expect(readTranslate(svg)).toEqual({ x: 0, y: 0 })
   })
 })
 
@@ -488,7 +495,7 @@ describe('MapLabEditorPage (Phase K scaffolding)', () => {
     expect(wrapper).toHaveAttribute('data-fullscreen')
     expect(wrapper).toHaveAttribute('role', 'dialog')
     expect(wrapper).toHaveAttribute('aria-modal', 'true')
-    expect(screen.getByText(/wheel to zoom\. drag empty canvas or use scrollbars to pan\./i)).toBeInTheDocument()
+    expect(screen.getByText(/drag to pan\. pinch or scroll to zoom\./i)).toBeInTheDocument()
 
     fireEvent.keyDown(window, { key: 'Escape' })
     expect(wrapper).not.toHaveAttribute('data-fullscreen')
@@ -507,7 +514,7 @@ describe('MapLabEditorPage (Phase K scaffolding)', () => {
     expect(screen.getByText(/corner set at 1, 0/i)).toBeInTheDocument()
   })
 
-  it('K1: fullscreen workspace keeps scrollbars available and drag-pan working on empty canvas but not on marker targets', async () => {
+  it('K1: fullscreen workspace has no native scrollbars and drag-pan works from any element while no tool is armed', async () => {
     const { container } = renderMapLabEditorPage()
     await flush()
 
@@ -515,6 +522,7 @@ describe('MapLabEditorPage (Phase K scaffolding)', () => {
 
     const wrapper = container.querySelector('.maplab-canvas-wrapper') as HTMLElement
     const viewport = container.querySelector('.maplab-canvas-viewport') as HTMLElement
+    const svg = container.querySelector('.maplab-svg') as SVGSVGElement
     const prop = container.querySelector('.maplab-prop') as Element
 
     expect(wrapper).toHaveAttribute('data-fullscreen')
@@ -523,14 +531,29 @@ describe('MapLabEditorPage (Phase K scaffolding)', () => {
     fireEvent.pointerDown(prop, { clientX: 0, clientY: 0 })
     fireEvent.pointerMove(window, { clientX: 80, clientY: 45 })
     fireEvent.pointerUp(window)
-    expect(viewport.scrollLeft).toBe(0)
-    expect(viewport.scrollTop).toBe(0)
+    expect(readTranslate(svg)).toEqual({ x: 80, y: 45 })
 
     fireEvent.pointerDown(viewport, { clientX: 0, clientY: 0 })
     fireEvent.pointerMove(window, { clientX: 80, clientY: 45 })
     fireEvent.pointerUp(window)
-    expect(viewport.scrollLeft).toBe(-80)
-    expect(viewport.scrollTop).toBe(-45)
+    expect(readTranslate(svg)).toEqual({ x: 160, y: 90 })
+  })
+
+  it('tool mode: selecting a room prevents drag-pan on the canvas (paint overlay holds the pointer)', async () => {
+    const { container } = renderMapLabEditorPage()
+    await flush()
+
+    const viewport = container.querySelector('.maplab-canvas-viewport') as HTMLElement
+    const svg = container.querySelector('.maplab-svg') as SVGSVGElement
+
+    // Select a room to enter tool mode
+    fireEvent.click(container.querySelector('.maplab-editor-room-item-select') as Element)
+
+    // Attempt to drag from the canvas — in tool mode, this does not pan
+    fireEvent.pointerDown(viewport, { clientX: 0, clientY: 0 })
+    fireEvent.pointerMove(window, { clientX: 100, clientY: 60 })
+    fireEvent.pointerUp(window)
+    expect(readTranslate(svg)).toEqual({ x: 0, y: 0 })
   })
 
   it('K2: drag rectangle commit updates the selected room footprint and autosaves once', async () => {
@@ -1929,5 +1952,55 @@ describe('MapLabEditorPage (density control)', () => {
     await user.click(screen.getByRole('button', { name: 'Detailed' }))
     expect(screen.getByRole('button', { name: 'Detailed' })).toHaveAttribute('aria-pressed', 'true')
     expect(window.localStorage.getItem('dnd-kids-maplab-density')).toBe('detailed')
+  })
+})
+
+describe('MapLabEditorPage (Map Lab UX Pass Stage 1 — cross-floor door leak)', () => {
+  const stackedLayout = {
+    meta: { cellSizeFt: 5, padding: { top: 3, right: 3, bottom: 3, left: 3 } },
+    rooms: [
+      { room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0]], title: 'Ground Room' },
+      { room_id: 2, z: 1, origin: [0, 0], cells: [[0, 0]], title: 'Upper Room' },
+    ],
+    doors: [{ door_id: 1, cell: [0, 0], side: 'N', z: 0, hidden: false, locked: false, trapped: false }],
+    stairs: [],
+    floors: [
+      { z: 0, title: 'Ground Floor' },
+      { z: 1, title: 'First Floor' },
+    ],
+    props: [],
+  }
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('a door on the floor below does not cut a wall out of the room above it', async () => {
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: stackedLayout })
+    vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: stackedLayout })
+
+    const { container } = renderMapLabEditorPage()
+    await flush()
+
+    // Ground floor: the door consumes one of the single-cell room's four wall segments.
+    expect(container.querySelectorAll('.maplab-room .maplab-wall')).toHaveLength(3)
+
+    fireEvent.click(screen.getByRole('tab', { name: 'First Floor' }))
+
+    // Upper floor: same [x, y] wall, but the door belongs to z=0 — all four walls must render.
+    expect(container.querySelectorAll('.maplab-room .maplab-wall')).toHaveLength(4)
+  })
+
+  it('door placement on the floor above offers the wall over a lower-floor door', async () => {
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: stackedLayout })
+    vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: stackedLayout })
+
+    const { container } = renderMapLabEditorPage()
+    await flush()
+
+    fireEvent.click(screen.getByRole('tab', { name: 'First Floor' }))
+    fireEvent.click(screen.getByRole('button', { name: /place door/i }))
+
+    expect(container.querySelectorAll('.maplab-door-placement-edge')).toHaveLength(4)
   })
 })

@@ -37,6 +37,19 @@ afterEach(() => {
 })
 
 describe('DungeonShell', () => {
+  it('flags <body> for the fill layout while mounted and clears it on unmount', async () => {
+    expect(document.body.dataset.appLayout).toBeUndefined()
+
+    const { unmount } = renderDungeonRoute('/dungeons/4')
+    await flush()
+    // Drives the CSS that keeps the map inside the window instead of running off the bottom of the
+    // page — a body attribute rather than a `:has()` selector, so tablet browsers honour it too.
+    expect(document.body.dataset.appLayout).toBe('fill')
+
+    unmount()
+    expect(document.body.dataset.appLayout).toBeUndefined()
+  })
+
   it('renders the same dungeon title in view and edit modes with sibling mode links', async () => {
     const { rerender } = renderDungeonRoute('/dungeons/4')
     await flush()

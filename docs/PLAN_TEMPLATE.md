@@ -2,12 +2,13 @@
 
 This repo splits planning from implementation so that **Claude plans and never writes implementation
 code**, and a **smaller/cheaper model implements one work order at a time** in a fresh context window.
-The workflow is driven by four skills in `.agents/skills/` (read by both Claude Code and opencode):
+The workflow is driven by five skills in `.agents/skills/` (read by both Claude Code and opencode):
 
 | Skill | Runs in | Job |
 |---|---|---|
 | `plan` | Claude | Write the short human **Plan** (Layer 1). No code. |
 | `to-orders` | Claude | Turn one Plan stage into lean **work orders** (Layer 2). No code. |
+| `dispatch-orders` | Claude | Send runnable orders to the right-sized model; triage failures the moment they return and reissue, so dependency chains never stall. No code. |
 | `implement-order` | small model | Execute **one** work order, then stop. Writes the code. |
 | `reconcile` | Claude | Close out finished orders: collapse the Plan, update docs, run the checker. No code. |
 
@@ -56,6 +57,9 @@ DEPENDS ON: <order NN that must be DONE first, or "none">
 KNOWN STATE (already true — do NOT redo or re-derive):
 - <verified fact: real value, real file location, current test count>
 
+KNOWN TEST FAILURES (pre-existing — NOT yours to fix, NOT caused by you):
+- <exact test name/path that already fails, verbatim, or omit this section if the suite is green>
+
 START IN: <2–4 exact files/folders to begin from>
 
 DO:
@@ -63,12 +67,61 @@ DO:
 
 STOP WHEN: <a single runnable command that must pass, or "if X = Y, stop">
 
-STATUS: <-- executor writes DONE, or FAILED - <one-line reason>
+STATUS: <-- executor writes DONE, FAILED - <one-line reason>, or BLOCKED - <one-line reason>
 ```
 
 The focus leash: **KNOWN STATE** (answers, not pointers) + **START IN** (bounded exploration) +
 **STOP WHEN** (a hard stop that ends wandering). See `.agents/skills/to-orders/SKILL.md` for the full
 authoring guidance and a worked example.
+
+### On failure — the escalation channel back to the planner
+
+The work-order file is also the handoff channel when things go wrong. If the executor cannot make
+STOP WHEN pass (after at most two distinct fix attempts) it writes `STATUS: FAILED - <reason>`; if
+the order cannot be executed as written (KNOWN STATE wrong, named file missing, DO contradicts the
+code) it writes `STATUS: BLOCKED - <reason>`. Either way it appends a **FAILURE REPORT** block below
+the STATUS line and **leaves its partial changes in the worktree**:
+
+```
+FAILURE REPORT:
+- TRIED: <2-4 lines: what changes were made, in which files>
+- FAILING COMMAND: <the exact STOP WHEN command run>
+- OUTPUT: <last ~20 lines of failing output, verbatim, in a code fence>
+- SUSPECT: <one line: executor's best guess at why — allowed to be wrong>
+- WORKTREE: <"changes left in place" plus the list of dirty files>
+```
+
+The verbatim OUTPUT is the load-bearing field: the stronger model triages from it without re-running
+the work from cold. A failure report is a successful outcome of an order — the executor never keeps
+cycling to avoid writing one.
+
+Triage happens **the moment the failure returns**, in `dispatch-orders` — not at reconcile time —
+because downstream orders `DEPENDS ON` the failed one and stall until it's reissued and passes. A
+`DONE` order needs nothing further; only failures pull the stronger model in. `reconcile` triages
+only what is still unresolved at closeout (typically orders that need a human, or an abandoned
+batch).
+
+Two rules keep failure knowledge flowing forward so work is never repeated:
+
+- **The planner always tells the executor what already fails.** Whoever compiles an order (`to-orders`
+  or a `reconcile` reissue) runs the relevant test command first and records any pre-existing failures
+  verbatim under **KNOWN TEST FAILURES**. The executor treats those as background noise: it never
+  tries to fix them, never counts them as its own breakage, and STOP WHEN is judged with those
+  failures still present.
+- **A reissued order carries what was already tried.** Whoever reissues a FAILED order (normally
+  `dispatch-orders` mid-flight, `reconcile` at closeout) folds the previous FAILURE REPORT's TRIED
+  and SUSPECT lines into the new order's KNOWN STATE as "already attempted, did not work:
+  <approach>" so the next executor starts past them, not over.
+
+### Test-run tiers
+
+Each tier runs in the context that can afford its output:
+
+| Tier | Who | What |
+|---|---|---|
+| Targeted | executor (`implement-order`) | Only the STOP WHEN command — exact test files, `--no-cov` for pytest subsets. Never the full suite or `tsc -b`. |
+| Full | `reconcile`, once per stage | `pytest` (full suite + coverage gate), `npm run test`, `npm run build` (includes `tsc -b`). Refreshes KNOWN TEST FAILURES. |
+| Backstop | CI on push/PR | Everything, always. |
 
 ---
 
@@ -104,7 +157,8 @@ after reading only what it names.
 `scripts/check_docs.py` is aligned with this workflow. For an active Plan it requires only a
 `> **Status:**` line (stages are plain-English list items, not `(next up)` execution blocks). It lints
 work orders under `plans/active/orders/<feature>/` for their load-bearing fields (`GOAL:`, `START IN:`,
-`STOP WHEN:`, `STATUS:`), validates area-guide↔Plan ownership — every active plan must be linked
+`STOP WHEN:`, `STATUS:`) and requires a `FAILURE REPORT:` block whenever a STATUS line reads FAILED
+or BLOCKED, validates area-guide↔Plan ownership — every active plan must be linked
 from its owning guide's `Active plan` line, which may list several (a stage anchor is optional) — and keeps
 the workflow-agnostic safety net: local links/anchors, manifest completeness, plan-redirect lifecycle,
 AI-entry precedence, configured test commands, banned legacy references, and the auto-generated

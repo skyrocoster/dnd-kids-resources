@@ -1,6 +1,6 @@
 # Documentation Governance Area Guide
 
-> **Active plan:** [Docs Restructure](../plans/active/docs-restructure.md) — next up.
+> **Active plan:** [Docs Restructure](../plans/active/docs-restructure.md) — next up; then [Table Testing Records](../plans/active/table-testing-records.md).
 
 ## Scope
 
@@ -27,6 +27,8 @@ Owns the documentation contract, task routing, plan lifecycle, and documentation
 - [Docs Restructure](../plans/active/docs-restructure.md) — re-cut the areas around pages, split every
   document by how often it is read, and replace the vague source maps with checker-enforced file
   coverage. Its Stage 2 retires this guide.
+- [Table Testing Records](../plans/active/table-testing-records.md) — make a real session a first-class
+  document type in `../table-tests/`, hook it to the plan workflow, and check it. Not next up.
 - Create a focused plan before changing the contract, manifest format, templates, or validator behavior.
 
 ## Cross-references

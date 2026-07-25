@@ -261,6 +261,7 @@ def check_plan_metadata(plan_path: Path) -> list[CheckError]:
 
 
 WORK_ORDER_FIELDS = ("GOAL:", "START IN:", "STOP WHEN:", "STATUS:")
+WORK_ORDER_FAILURE_STATUS_RE = re.compile(r"^STATUS:\s*(FAILED|BLOCKED)\b", re.MULTILINE)
 
 
 def check_work_orders(docs_dir: Path) -> list[CheckError]:
@@ -283,6 +284,13 @@ def check_work_orders(docs_dir: Path) -> list[CheckError]:
                 _safe_rel(order),
                 f"Work order is missing required fields: {', '.join(missing)}",
                 "Add the missing work-order fields (see PLAN_TEMPLATE.md)",
+            ))
+        status_match = WORK_ORDER_FAILURE_STATUS_RE.search(content)
+        if status_match and "FAILURE REPORT:" not in content:
+            errors.append(CheckError(
+                _safe_rel(order),
+                f"STATUS is {status_match.group(1)} but there is no FAILURE REPORT block",
+                "Append the FAILURE REPORT block below the STATUS line (see PLAN_TEMPLATE.md)",
             ))
     return errors
 

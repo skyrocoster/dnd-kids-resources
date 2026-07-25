@@ -1131,6 +1131,58 @@ describe('MapLabPage (Stage H3 — portal viewer rendering + navigation)', () =>
   })
 })
 
+describe('MapLabPage (Stage 6 — at-the-table control)', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('shows "Put at the table" when this dungeon is not at the table, and sets it on click', async () => {
+    const user = userEvent.setup()
+    vi.spyOn(api, 'getAtTheTable').mockResolvedValue({ dungeon_id: null })
+    vi.spyOn(api, 'setAtTheTable').mockResolvedValue({ dungeon_id: 4 })
+
+    renderMapLabPage()
+    await flush()
+
+    const button = screen.getByRole('button', { name: 'Put at the table' })
+    expect(button).toHaveAttribute('aria-pressed', 'false')
+
+    await user.click(button)
+    await flush()
+
+    expect(api.setAtTheTable).toHaveBeenCalledWith({ dungeon_id: 4 })
+    expect(screen.getByRole('button', { name: 'At the table' })).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('shows "At the table" already pressed and disabled when this dungeon is already at the table', async () => {
+    vi.spyOn(api, 'getAtTheTable').mockResolvedValue({ dungeon_id: 4 })
+
+    renderMapLabPage()
+    await flush()
+
+    const button = screen.getByRole('button', { name: 'At the table' })
+    expect(button).toHaveAttribute('aria-pressed', 'true')
+    expect(button).toBeDisabled()
+  })
+
+  it('shows error message when putting at the table fails', async () => {
+    const user = userEvent.setup()
+    vi.spyOn(api, 'getAtTheTable').mockResolvedValue({ dungeon_id: null })
+    vi.spyOn(api, 'setAtTheTable').mockRejectedValue(new Error('network'))
+
+    renderMapLabPage()
+    await flush()
+
+    const button = screen.getByRole('button', { name: 'Put at the table' })
+    await user.click(button)
+    await flush()
+
+    const error = screen.getByText("Couldn't put this map at the table. Try again.")
+    expect(error).toBeInTheDocument()
+    expect(error).toHaveAttribute('role', 'status')
+  })
+})
+
 describe('Design Phase J1 — toolbar trays', () => {
   const STORAGE_KEY = 'dnd-kids-maplab-tray-collapsed:viewer-session'
 
@@ -1412,5 +1464,37 @@ describe('MapLabPage (Session view — layer toggles)', () => {
     await user.click(screen.getByRole('button', { name: 'Outside' }))
     expect(screen.queryByText('All layers are hidden. Turn one on to see the map.')).not.toBeInTheDocument()
     expect(screen.getByRole('group', { name: /dungeon floor map/i })).toBeInTheDocument()
+  })
+})
+
+describe('MapLabPage (Map Lab UX Pass Stage 1 — cross-floor door leak)', () => {
+  const stackedLayout = {
+    meta: { cellSizeFt: 5, padding: { top: 3, right: 3, bottom: 3, left: 3 } },
+    rooms: [
+      { room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0]], title: 'Ground Room' },
+      { room_id: 2, z: 1, origin: [0, 0], cells: [[0, 0]], title: 'Upper Room' },
+    ],
+    doors: [{ door_id: 1, cell: [0, 0], side: 'N', z: 0, hidden: false, locked: false, trapped: false }],
+    stairs: [],
+    floors: [
+      { z: 0, title: 'Ground Floor' },
+      { z: 1, title: 'First Floor' },
+    ],
+    props: [],
+  }
+
+  it('a door on the floor below does not cut a wall out of the room above it', async () => {
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: stackedLayout })
+    const user = userEvent.setup()
+
+    const { container } = await renderLoadedMapLabPage()
+
+    // Ground floor: the door consumes one of the single-cell room's four wall segments.
+    expect(container.querySelectorAll('.maplab-room .maplab-wall')).toHaveLength(3)
+
+    await user.click(screen.getByRole('tab', { name: 'First Floor' }))
+
+    // Upper floor: same [x, y] wall, but the door belongs to z=0 — all four walls must render.
+    expect(container.querySelectorAll('.maplab-room .maplab-wall')).toHaveLength(4)
   })
 })

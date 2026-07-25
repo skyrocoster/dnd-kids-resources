@@ -292,7 +292,8 @@ export function MapLabEditorPage() {
   const dragProcessedRef = useRef(new Set<string>())
   const isFeatureDrawDraggingRef = useRef(false)
   const featureDrawModeRef = useRef<'add' | 'remove' | null>(null)
-  const zoomApi = useMapCanvasZoom({ wheelZoomMode: 'always' })
+  const pointerMode = placeDoorMode || placePropMode || placeStairMode || placePortalMode || drawFeatureKind !== null || state.selectedRoomId !== null ? 'tool' : 'pan'
+  const zoomApi = useMapCanvasZoom({ wheelZoomMode: 'always', pointerMode })
   const simplified = resolveMapDensity(density, zoomApi.zoom.scale) === 'simple'
   const [viewportSize, setViewportSize] = useState<ViewportSize>({ width: 0, height: 0 })
   const handleViewportResize = useCallback((size: ViewportSize) => setViewportSize(size), [])
@@ -355,8 +356,8 @@ export function MapLabEditorPage() {
   } ${(bounds.maxY - bounds.minY + 1) * CELL_SIZE}`
 
   const placementEdges = useMemo(
-    () => (placeDoorMode ? doorPlacementEdges(roomsOnActiveFloor, state.layout.doors) : []),
-    [placeDoorMode, roomsOnActiveFloor, state.layout.doors]
+    () => (placeDoorMode ? doorPlacementEdges(roomsOnActiveFloor, doorsOnActiveFloor) : []),
+    [placeDoorMode, roomsOnActiveFloor, doorsOnActiveFloor]
   )
   const selectedDoor = useMemo(
     () => state.layout.doors.find((door) => door.door_id === state.selectedDoorId) ?? null,
@@ -925,51 +926,49 @@ export function MapLabEditorPage() {
           onPanMove={zoomApi.handlePointerMove}
           onPanEnd={zoomApi.handlePointerUp}
           onViewportResize={handleViewportResize}
-          panHint="Wheel to zoom. Drag empty canvas or use scrollbars to pan. Press Escape to exit fullscreen."
+          panHint="Drag to pan. Pinch or scroll to zoom. Press Escape to exit fullscreen."
           viewportDescription={footprintGuidance}
-          controlsSlot={
-            <>
-              {(() => {
-                const FullscreenIcon = isCanvasFullscreen ? FullscreenExitIcon : FullscreenEnterIcon
-                return (
+          topRightSlot={(() => {
+            const FullscreenIcon = isCanvasFullscreen ? FullscreenExitIcon : FullscreenEnterIcon
+            return (
               <button
                 type="button"
                 className="maplab-pill-button maplab-zoom-button"
                 aria-label={isCanvasFullscreen ? 'Exit fullscreen map editor' : 'Enter fullscreen map editor'}
                 onClick={toggleCanvasFullscreen}
               >
-                    <FullscreenIcon width={20} height={20} aria-hidden="true" />
-                    <span className="maplab-zoom-button-label">
-                      {isCanvasFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
-                    </span>
+                <FullscreenIcon width={22} height={22} aria-hidden="true" />
               </button>
-                )
-              })()}
-              <button
-                type="button"
-                className="maplab-pill-button maplab-zoom-button"
-                aria-label="Zoom out"
-                onClick={zoomApi.zoomOut}
-              >
-                <ZoomOutIcon width={20} height={20} aria-hidden="true" />
-              </button>
-              <button
-                type="button"
-                className="maplab-pill-button maplab-zoom-button"
-                aria-label="Zoom in"
-                onClick={zoomApi.zoomIn}
-              >
-                <ZoomInIcon width={20} height={20} aria-hidden="true" />
-              </button>
+            )
+          })()}
+          controlsSlot={
+            <>
               <button
                 type="button"
                 className="maplab-pill-button maplab-zoom-button"
                 aria-label="Fit map to viewport"
                 onClick={() => zoomApi.fitToBounds(bounds, viewportSize)}
               >
-                <FitIcon width={20} height={20} aria-hidden="true" />
-                <span className="maplab-zoom-button-label">Fit</span>
+                <FitIcon width={22} height={22} aria-hidden="true" />
               </button>
+              <div className="maplab-zoom-cluster">
+                <button
+                  type="button"
+                  className="maplab-pill-button maplab-zoom-button"
+                  aria-label="Zoom in"
+                  onClick={() => zoomApi.zoomIn(viewportSize)}
+                >
+                  <ZoomInIcon width={22} height={22} aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  className="maplab-pill-button maplab-zoom-button"
+                  aria-label="Zoom out"
+                  onClick={() => zoomApi.zoomOut(viewportSize)}
+                >
+                  <ZoomOutIcon width={22} height={22} aria-hidden="true" />
+                </button>
+              </div>
             </>
           }
         >
@@ -1085,7 +1084,7 @@ export function MapLabEditorPage() {
                   height={CELL_SIZE}
                 />
               ))}
-              {nonDoorWallSegments(room, state.layout.doors).map((edge) => {
+              {nonDoorWallSegments(room, doorsOnActiveFloor).map((edge) => {
                 const segment = doorWallSegment(edge, CELL_SIZE)
                 return (
                   <line

@@ -343,6 +343,8 @@ def test_every_monster_detail_serializes_with_target_contract(real_client):
         "cr_sort",
         "cr_note",
         "experience_points",
+        "created_at",
+        "updated_at",
     }
     legacy_fields = {
         "alias",

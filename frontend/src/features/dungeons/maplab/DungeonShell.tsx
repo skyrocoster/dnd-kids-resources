@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { Link, Outlet, useLocation, useParams } from 'react-router-dom'
 import './DungeonShell.css'
 import { MapLabRouteState } from './MapLabRouteState'
@@ -17,6 +18,16 @@ export function DungeonShell() {
   const { dungeonId: dungeonIdParam } = useParams()
   const location = useLocation()
   const route = useDungeonRouteContext(dungeonIdParam)
+
+  // Dungeon routes are app-like, not document-like: the map fills the window and never scrolls the
+  // page. Flagged on <body> rather than matched with a `:has()` selector so it also works on the
+  // older tablet browsers this gets run on at the table, where `:has()` may not be supported.
+  useEffect(() => {
+    document.body.dataset.appLayout = 'fill'
+    return () => {
+      delete document.body.dataset.appLayout
+    }
+  }, [])
 
   let routeState: { title: string; message: string; variant: 'error' | 'loading' } | null = null
   if (route.status === 'invalid') {

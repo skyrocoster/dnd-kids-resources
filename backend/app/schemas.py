@@ -315,6 +315,8 @@ class MonsterFields(StrictModel):
     cr: Optional[str] = None
     cr_note: Optional[str] = None
     experience_points: Optional[int] = None
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
 
     @field_validator("audio_path")
     @classmethod

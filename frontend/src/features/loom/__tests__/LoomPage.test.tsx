@@ -1,9 +1,10 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeAll, afterAll, beforeEach } from 'vitest'
 import type { LoomNode, LoomSession, LoomTapestry } from '../../../api/types'
 import * as api from '../../../api/client'
 import { LoomPage } from '../LoomPage'
+import { setViewport, resetViewport } from '../../../test/viewport'
 
 const sessions: LoomSession[] = [
   { id: 1, ordinal: 1, name: 'Session 1', played_on: null, notes: null },
@@ -134,51 +135,65 @@ describe('LoomPage', () => {
     expect(screen.getByText('Mysterious hooded stranger')).toBeInTheDocument()
   })
 
-  it('shows the inspector toggle that opens and closes the drawer', async () => {
-    vi.spyOn(api, 'getLoomTapestry').mockResolvedValue(demoTapestry())
-    const user = userEvent.setup()
-    render(<LoomPage />)
-    await waitFor(() => expect(screen.getAllByText('The Lost Puppy').length).toBeGreaterThan(0))
+  describe('inspector drawer at narrow breakpoint', () => {
+    beforeAll(() => {
+      setViewport(520, 768)
+    })
+    afterAll(() => {
+      resetViewport()
+    })
 
-    const toggle = screen.getByRole('button', { name: 'Inspector' })
-    expect(toggle).toHaveAttribute('aria-expanded', 'false')
+    it('shows the inspector toggle that opens and closes the drawer', async () => {
+      vi.spyOn(api, 'getLoomTapestry').mockResolvedValue(demoTapestry())
+      const user = userEvent.setup()
+      render(<LoomPage />)
+      await waitFor(() => expect(screen.getAllByText('The Lost Puppy').length).toBeGreaterThan(0))
 
-    await user.click(toggle)
-    expect(toggle).toHaveAttribute('aria-expanded', 'true')
-    expect(screen.getByRole('button', { name: 'Close inspector' })).toBeInTheDocument()
+      const toggle = screen.getByRole('button', { name: 'Inspector' })
+      expect(toggle).toHaveAttribute('aria-expanded', 'false')
 
-    await user.click(screen.getByRole('button', { name: 'Close inspector' }))
-    expect(toggle).toHaveAttribute('aria-expanded', 'false')
-  })
+      await user.click(toggle)
+      expect(toggle).toHaveAttribute('aria-expanded', 'true')
+      expect(screen.getByRole('button', { name: 'Close inspector' })).toBeInTheDocument()
 
-  it('closes the inspector drawer on Escape', async () => {
-    vi.spyOn(api, 'getLoomTapestry').mockResolvedValue(demoTapestry())
-    const user = userEvent.setup()
-    render(<LoomPage />)
-    await waitFor(() => expect(screen.getAllByText('The Lost Puppy').length).toBeGreaterThan(0))
+      await user.click(screen.getByRole('button', { name: 'Close inspector' }))
+      expect(toggle).toHaveAttribute('aria-expanded', 'false')
+    })
 
-    const toggle = screen.getByRole('button', { name: 'Inspector' })
-    await user.click(toggle)
-    expect(screen.getByRole('button', { name: 'Close inspector' })).toBeInTheDocument()
+    it('closes the inspector drawer on Escape', async () => {
+      vi.spyOn(api, 'getLoomTapestry').mockResolvedValue(demoTapestry())
+      const user = userEvent.setup()
+      render(<LoomPage />)
+      await waitFor(() => expect(screen.getAllByText('The Lost Puppy').length).toBeGreaterThan(0))
 
-    await user.keyboard('{Escape}')
-    expect(screen.queryByRole('button', { name: 'Close inspector' })).not.toBeInTheDocument()
-    expect(toggle).toHaveAttribute('aria-expanded', 'false')
+      const toggle = screen.getByRole('button', { name: 'Inspector' })
+      await user.click(toggle)
+      expect(screen.getByRole('button', { name: 'Close inspector' })).toBeInTheDocument()
+
+      await user.keyboard('{Escape}')
+      expect(screen.queryByRole('button', { name: 'Close inspector' })).not.toBeInTheDocument()
+      expect(toggle).toHaveAttribute('aria-expanded', 'false')
+    })
   })
 
   it('does not change .loom-canvas-column class when the inspector drawer opens', async () => {
-    vi.spyOn(api, 'getLoomTapestry').mockResolvedValue(demoTapestry())
-    const user = userEvent.setup()
-    render(<LoomPage />)
-    await waitFor(() => expect(screen.getAllByText('The Lost Puppy').length).toBeGreaterThan(0))
+    setViewport(520, 768)
+    try {
+      vi.spyOn(api, 'getLoomTapestry').mockResolvedValue(demoTapestry())
+      const user = userEvent.setup()
+      render(<LoomPage />)
+      await waitFor(() => expect(screen.getAllByText('The Lost Puppy').length).toBeGreaterThan(0))
 
-    const canvasColumn = document.querySelector('.loom-canvas-column')!
-    const classNameBefore = canvasColumn.className
+      const canvasColumn = document.querySelector('.loom-canvas-column')!
+      const classNameBefore = canvasColumn.className
 
-    await user.click(screen.getByRole('button', { name: 'Inspector' }))
-    const classNameAfter = canvasColumn.className
+      await user.click(screen.getByRole('button', { name: 'Inspector' }))
+      const classNameAfter = canvasColumn.className
 
-    expect(classNameAfter).toBe(classNameBefore)
+      expect(classNameAfter).toBe(classNameBefore)
+    } finally {
+      resetViewport()
+    }
   })
 
   it('does not render the old .loom-inspector strip', async () => {

@@ -22,7 +22,11 @@ interface MapCanvasProps {
   onExitFullscreen?: () => void
   panHint?: string
   viewportDescription?: string
+  /** Floating control cluster, bottom-right corner of the map (zoom/fit) — Google Maps convention. */
   controlsSlot?: ReactNode
+  /** Floating control(s), top-right corner of the map (e.g. fullscreen toggle) — kept separate from
+   * `controlsSlot` so the two clusters never compete for the same corner. */
+  topRightSlot?: ReactNode
   children: ReactNode
 }
 
@@ -42,6 +46,7 @@ export function MapCanvas({
   panHint,
   viewportDescription,
   controlsSlot,
+  topRightSlot,
   children,
 }: MapCanvasProps) {
   const viewportRef = useRef<HTMLDivElement>(null)
@@ -70,24 +75,20 @@ export function MapCanvas({
 
     viewport.addEventListener('wheel', handleWheel, { passive: false })
     viewport.addEventListener('pointerdown', handlePointerDown)
-    window.addEventListener('pointermove', handlePointerMove)
+    window.addEventListener('pointermove', handlePointerMove, { passive: false })
     window.addEventListener('pointerup', handlePointerUp)
+    // Touch pointers get cancelled (browser gesture take-over, finger leaving the digitizer) without
+    // ever firing pointerup — without this the hook would keep a phantom finger down forever.
+    window.addEventListener('pointercancel', handlePointerUp)
 
     return () => {
       viewport.removeEventListener('wheel', handleWheel)
       viewport.removeEventListener('pointerdown', handlePointerDown)
       window.removeEventListener('pointermove', handlePointerMove)
       window.removeEventListener('pointerup', handlePointerUp)
+      window.removeEventListener('pointercancel', handlePointerUp)
     }
   }, [onWheelZoom, onPanStart, onPanMove, onPanEnd])
-
-  // Pan is expressed as scroll offset — the hook computes it, this is the one place it's applied.
-  useEffect(() => {
-    const viewport = viewportRef.current
-    if (!viewport) return
-    viewport.scrollLeft = zoom.pan.x
-    viewport.scrollTop = zoom.pan.y
-  }, [zoom.pan.x, zoom.pan.y])
 
   useEffect(() => {
     const viewport = viewportRef.current
@@ -148,7 +149,7 @@ export function MapCanvas({
         className="maplab-canvas-viewport"
         tabIndex={0}
         aria-label="Map canvas"
-        aria-describedby={viewportDescription ? hintId : undefined}
+        aria-describedby={viewportDescription || panHint ? hintId : undefined}
       >
         <svg
           className="maplab-svg"
@@ -157,21 +158,19 @@ export function MapCanvas({
           height={heightPx}
           role="group"
           aria-label={ariaLabel}
+          style={{ transform: `translate(${-zoom.pan.x}px, ${-zoom.pan.y}px)` }}
         >
           {children}
         </svg>
       </div>
-      {controlsSlot && (
-        <div className="maplab-zoom-controls">
-          {controlsSlot}
-          {(panHint || viewportDescription) && (
-            <span id={hintId} className="maplab-canvas-fullscreen-hint">
-              {panHint}
-              {panHint && viewportDescription ? ' ' : null}
-              {viewportDescription}
-            </span>
-          )}
-        </div>
+      {topRightSlot && <div className="maplab-map-controls-top-right">{topRightSlot}</div>}
+      {controlsSlot && <div className="maplab-map-controls">{controlsSlot}</div>}
+      {(panHint || viewportDescription) && (
+        <p id={hintId} className="maplab-map-hint">
+          {panHint}
+          {panHint && viewportDescription ? ' ' : null}
+          {viewportDescription}
+        </p>
       )}
     </div>
   )

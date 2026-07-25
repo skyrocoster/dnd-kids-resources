@@ -2,6 +2,10 @@
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .maplab-title {
@@ -21,11 +25,18 @@
   display: flex;
   gap: 1.5rem;
   align-items: flex-start;
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
 }
 
 .maplab-canvas-area {
   flex: 1 1 auto;
   min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-self: stretch;
 }
 
 .maplab-viewer-rail-container {
@@ -538,13 +549,18 @@
   cursor: not-allowed;
 }
 
-/* Shared between viewer and editor: the zoomable/pannable canvas (Stage E2) */
+/* Shared between viewer and editor: the zoomable/pannable canvas (Stage E2). `position: relative` +
+ * `min-height: 0` are load-bearing: relative anchors the floating corner controls below, and
+ * without min-height:0 a flex column defaults to min-height:auto, which refuses to shrink below the
+ * SVG viewport's intrinsic (zoomed) size — the wrapper then overflows its bounded ancestors, and
+ * `overflow: hidden` up the chain clips the controls that come after it clean out of view. */
 .maplab-canvas-wrapper {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
   flex: 1 1 auto;
   min-width: 0;
+  min-height: 0;
 }
 
 .maplab-canvas-wrapper[data-fullscreen] {
@@ -559,16 +575,21 @@
   outline: none;
 }
 
-/* Panning is driven by scrollLeft/scrollTop from useMapCanvasZoom (see MapCanvas), not native
- * touch-scroll gestures — touch-action:none hands pointer events to that JS drag instead of
- * letting the browser's own touch-scroll compete with it. */
+/* Panning (one pointer) and pinch-zoom (two pointers) are both driven by useMapCanvasZoom (see
+ * MapCanvas), which expresses pan as a CSS transform on the SVG — free-floating and never clamped
+ * by the browser, unlike native scroll. `overflow: hidden` (not `auto`): panning never shows a
+ * native scrollbar, the same way a map app never does. touch-action:none hands every touch to those
+ * JS gestures instead of letting the browser's own scroll/pinch compete with them. */
 .maplab-canvas-viewport {
   position: relative;
-  overflow: auto;
+  overflow: hidden;
   touch-action: none;
   user-select: none;
   width: 100%;
-  height: 32rem;
+  flex: 1 1 auto;
+  /* Deliberately small: the canvas is the element that should absorb a short screen, shrinking so
+   * the toolbar and rails stay reachable rather than the page growing past the window. */
+  min-height: 8rem;
   border: 1px solid var(--md-outline-variant);
   border-radius: 12px;
   background: var(--md-surface);
@@ -576,32 +597,85 @@
 
 .maplab-canvas-wrapper[data-fullscreen] .maplab-canvas-viewport {
   flex: 1 1 auto;
-  height: calc(100vh - 8.5rem);
+  height: 100%;
   min-height: 16rem;
 }
 
-.maplab-zoom-controls {
+.maplab-svg {
+  /* Pan offset applied inline (see MapCanvas) as translate — this is the one property that
+   * shouldn't ease with the theme's hover/focus transitions, since it tracks a live drag 1:1. */
+  transition: none;
+}
+
+/* Floating controls overlaid on the map itself, Google Maps style — corner clusters instead of a
+ * flow row below the canvas, so they're always reachable regardless of the map's own content size
+ * or zoom level, and never compete with the map for vertical space on a short screen. */
+.maplab-map-controls,
+.maplab-map-controls-top-right {
+  position: absolute;
+  z-index: 5;
   display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.5rem;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-2);
 }
 
-.maplab-canvas-fullscreen-hint {
-  flex: 1 0 100%;
-  font-size: var(--type-body-sm-size);
+.maplab-map-controls {
+  right: var(--space-4);
+  bottom: var(--space-4);
+}
+
+.maplab-map-controls-top-right {
+  right: var(--space-4);
+  top: var(--space-4);
+}
+
+.maplab-map-hint {
+  position: absolute;
+  left: var(--space-4);
+  bottom: var(--space-4);
+  z-index: 5;
+  max-width: min(26rem, calc(100% - 2rem));
+  margin: 0;
+  padding: 0.375rem 0.75rem;
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--md-surface) 85%, transparent);
+  backdrop-filter: blur(4px);
+  font-size: var(--type-caption-size);
   color: var(--md-on-surface-variant);
+  /* Informational only — never intercepts the drag/pinch happening underneath it. */
+  pointer-events: none;
 }
 
-/* `.maplab-zoom-button`'s base pill look comes from the shared `.maplab-pill-button`; this class
- * only carries the square icon-button sizing override. */
+/* Circular, shadowed touch targets that read clearly against any map content underneath — the
+ * `.maplab-pill-button` base still supplies color/border/hover, this only overrides its shape. */
 .maplab-zoom-button {
-  min-width: 48px;
-  padding: 0.5rem;
+  width: 52px;
+  height: 52px;
+  min-width: 52px;
+  min-height: 52px;
+  padding: 0;
+  border-radius: 50%;
+  box-shadow: var(--elevation-shadow);
 }
 
-.maplab-zoom-button-label {
-  white-space: nowrap;
+/* The zoom in/out pair reads as one connected control (Google Maps convention) rather than two
+ * independent circles floating apart. */
+.maplab-zoom-cluster {
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius-full);
+  box-shadow: var(--elevation-shadow);
+  overflow: hidden;
+}
+
+.maplab-zoom-cluster .maplab-zoom-button {
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.maplab-zoom-cluster .maplab-zoom-button:first-child {
+  border-bottom: 1px solid var(--md-outline-variant);
 }
 
 /* Shared pill look for every clickable control across Map Lab (toolbar buttons, floor tabs,
@@ -643,6 +717,11 @@
   align-items: center;
   flex-wrap: wrap;
   gap: var(--space-2) 0;
+  /* Keeps its natural height while there is room, but yields and scrolls itself before it can push
+   * the canvas — or its own controls — off the bottom of a short screen. */
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .maplab-toolbar-group {
@@ -849,14 +928,24 @@
 }
 
 @media (max-width: 768px) {
+  /* Stack rather than wrap: a wrapping row cannot share one viewport-height box (wrapped lines run
+   * off sideways), and this layout must stay inside the window at tablet widths above all. The
+   * canvas takes the leftover height; the rail keeps its natural height and scrolls sideways. */
   .maplab-canvas {
-    flex-wrap: wrap;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
   }
 
-  .maplab-canvas-area,
+  .maplab-canvas-area {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
   .maplab-viewer-rail-container,
   .maplab-sidebar {
-    flex: 1 1 100%;
+    flex: 0 0 auto;
+    max-height: 40%;
   }
 
   .maplab-viewer-rail-container {
@@ -875,12 +964,21 @@
   }
 
   .maplab-editor-layout {
-    flex-wrap: wrap;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
   }
 
   .maplab-editor-nav-rail,
   .maplab-inspector-rail {
-    flex: 1 1 100%;
+    flex: 0 0 auto;
+    max-height: 40%;
+    overflow-y: auto;
+  }
+
+  .maplab-editor-layout > .maplab-canvas-wrapper {
+    flex: 1 1 auto;
+    min-height: 0;
   }
 
   .maplab-editor-nav-rail {
@@ -947,10 +1045,6 @@
     padding: var(--space-3);
   }
 
-  .maplab-zoom-controls {
-    gap: var(--space-2);
-  }
-
   .maplab-toolbar {
     align-items: stretch;
   }
@@ -977,10 +1071,6 @@
 
   .maplab-toolbar-tray-controls .maplab-pill-button {
     flex: 1 1 12rem;
-  }
-
-  .maplab-zoom-button-label {
-    display: none;
   }
 }
 

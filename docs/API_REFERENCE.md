@@ -285,7 +285,7 @@ and quiet leaves the thread unchanged. Any invalid thread/outcome rolls the whol
 All request and response body shapes are defined in `backend/app/schemas.py` as Pydantic models. Refer there for field names, types, and optionality. Examples:
 
 - **Spell:** id, name, level, school, description, quick_rules, alternate_description, damage (JSON list), healing (JSON object), range, higher_levels (JSON object), casting_times (JSON list), duration, concentration, ritual, components (JSON list), materials, attacks (JSON list), area_of_effect (JSON object)
-- **Monster:** id, name, aliases (JSON), sizes (JSON), family, alignment, creature_type (JSON), ac (JSON), hp (JSON), speed (JSON), abilities (JSON), saving_throws (JSON), skills (JSON), passive_perception, damage_resistances (JSON), damage_immunities (JSON), damage_vulnerabilities (JSON), condition_immunities (JSON), senses (JSON), languages (JSON), audio_path, features (JSON), cr, cr_sort, cr_note, experience_points
+- **Monster:** id, name, aliases (JSON), sizes (JSON), family, alignment, creature_type (JSON), ac (JSON), hp (JSON), speed (JSON), abilities (JSON), saving_throws (JSON), skills (JSON), passive_perception, damage_resistances (JSON), damage_immunities (JSON), damage_vulnerabilities (JSON), condition_immunities (JSON), senses (JSON), languages (JSON), audio_path, features (JSON), cr, cr_sort, cr_note, experience_points, created_at, updated_at
 - **Weapon:** id, name, base_weapon, rarity, weapon_category, weight, req_attune, property (JSON), focus (JSON), attack (JSON), entries (JSON), quick_rules, weapon_attack_bonus, weapon_damage_bonus
 - **Item:** id, name, value_gp, category, description
 - **LootBundle:** id, name, gold, contents (JSON loot-entry array)

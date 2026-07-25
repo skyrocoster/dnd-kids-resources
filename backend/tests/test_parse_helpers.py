@@ -103,18 +103,18 @@ def test_parse_player_row_decodes_stats_and_skills():
     row = _FakeRow(
         id=1,
         name="Test",
-        stats='{"str": 15, "dex": 14}',
+        abilities='{"str": 15, "dex": 14}',
         skills='{"acrobatics": 5, "perception": 3}',
     )
     parsed = _parse_player_row(row)
-    assert parsed["stats"] == {"str": 15, "dex": 14}
+    assert parsed["abilities"] == {"str": 15, "dex": 14}
     assert parsed["skills"] == {"acrobatics": 5, "perception": 3}
 
 
 def test_parse_player_row_decodes_stats_only():
-    row = _FakeRow(id=2, name="Only Stats", stats='{"str": 10}')
+    row = _FakeRow(id=2, name="Only Stats", abilities='{"str": 10}')
     parsed = _parse_player_row(row)
-    assert parsed["stats"] == {"str": 10}
+    assert parsed["abilities"] == {"str": 10}
     assert parsed.get("skills") is None
 
 

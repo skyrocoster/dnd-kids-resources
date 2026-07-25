@@ -4,7 +4,7 @@ This is the complete documentation inventory and task router. Read [../CLAUDE.md
 
 `../scratch/` is deliberately outside this inventory and documentation contract. AI must not explore it unless the user explicitly names a path there.
 
-`docs/plans/active/orders/` holds the lean, disposable **work orders** compiled from a Plan's stages by the `to-orders` skill and deleted by `reconcile` once shipped; `docs/plans/active/tickets/` and `docs/plans/mapping/` hold other derived working artifacts. These are regenerated from source plans/maps; no manifest row needed. The Plan → Implement → Reconcile workflow and its four `.agents/skills/` skills are defined in [PLAN_TEMPLATE.md](PLAN_TEMPLATE.md) and [../CLAUDE.md](../CLAUDE.md).
+`docs/plans/active/orders/` holds the lean, disposable **work orders** compiled from a Plan's stages by the `to-orders` skill and deleted by `reconcile` once shipped; `docs/plans/active/tickets/` and `docs/plans/mapping/` hold other derived working artifacts. These are regenerated from source plans/maps; no manifest row needed. The Plan → Implement → Reconcile workflow and its five `.agents/skills/` skills are defined in [PLAN_TEMPLATE.md](PLAN_TEMPLATE.md) and [../CLAUDE.md](../CLAUDE.md).
 
 ## Task Router
 
@@ -16,13 +16,14 @@ This is the complete documentation inventory and task router. Read [../CLAUDE.md
 | Story threads, Loom tapestry, beats, or session nodes | Its area guide; create a focused plan if it has none | `areas/loom.md`, `DESIGN_SYSTEM.md`, `ARCHITECTURE.md`, `API_REFERENCE.md`, `DATA_MODEL.md`, `TESTING.md` |
 | Existing dungeon, encounter, monster, spell, or loot behavior | Its area guide; create a focused plan if it has none | `ARCHITECTURE.md`, `API_REFERENCE.md`, `DATA_MODEL.md`, `TESTING.md` |
 | Wall kinds, map extent/padding, outside features, or map layer and density controls | [Dungeons](areas/dungeons.md) — [Dungeon Outside](complete/dungeon-outside.md) shipped | `UX_PATTERNS.md`, `DESIGN_SYSTEM.md`, `DATA_MODEL.md`, `TESTING.md`, then the plan |
+| Map Lab editor/viewer chrome, canvas gestures, brushes, undo, or tablet layout | [Dungeons](areas/dungeons.md) — [Map Lab UX Pass](plans/active/maplab-ux-pass.md) Stage 2 next | `UX_PATTERNS.md`, `DESIGN_SYSTEM.md`, `TESTING.md`, then the plan |
 | Weapons, items, or NPCs (incl. NPC statblocks, the pull panel, or adding an NPC to an encounter) | [Reference Catalogs](areas/reference-catalogs.md) — no active plan | `DATA_MODEL.md`, `API_REFERENCE.md`, `UX_PATTERNS.md`, `TESTING.md` |
 | The kid-facing app at `/play`, the curtain, fog, or what the party has earned | [Player App](areas/player-app.md) — [Player App Skeleton](plans/active/player-app-skeleton.md) Stage 6 next | `UX_PATTERNS.md`, `DESIGN_SYSTEM.md`, `ARCHITECTURE.md`, `DATA_MODEL.md`, `TESTING.md`, then the plan |
 | Players, recovery profiles, or player spell/weapon rosters | [Players](areas/players.md) — no active plan | `DATA_MODEL.md`, `API_REFERENCE.md`, `UX_PATTERNS.md`, `TESTING.md` |
 | API route or client contract | Relevant area guide; create a focused plan if it has none | `API_REFERENCE.md`, `ARCHITECTURE.md`, `TESTING.md` |
-| Database schema, seed, import, or export | Relevant area guide; schema generation, migrations, and the deploy path are [Repo Infra](areas/repo-infra.md) — [Production Nightly Deploys](plans/active/production-nightly-deploys.md) next | `DATA_MODEL.md`, `ARCHITECTURE.md`, `TESTING.md` |
+| Database schema, seed, import, or export | Relevant area guide; schema generation, migrations, and the deploy path are [Repo Infra](areas/repo-infra.md) — [Production Nightly Deploys](plans/active/production-nightly-deploys.md) queued after field-test readiness | `DATA_MODEL.md`, `ARCHITECTURE.md`, `TESTING.md` |
 | Shared UI, tokens, icons, or accessibility | [Visual Design](areas/visual-design.md) — [Glossary Term Tooltips](plans/active/glossary-term-tooltips.md) next | `DESIGN_SYSTEM.md`, `ARCHITECTURE.md`, `UX_PATTERNS.md`, `TESTING.md` |
-| Test tooling, fixtures, coverage, or CI | Relevant area guide, or [Repo Infra](areas/repo-infra.md) if genuinely cross-cutting | `TESTING.md`, `ARCHITECTURE.md` |
+| Test tooling, fixtures, coverage, or CI | Relevant area guide, or [Repo Infra](areas/repo-infra.md) — [Field-Test Readiness](plans/active/field-test-readiness.md) next for cross-cutting failures | `TESTING.md`, `ARCHITECTURE.md`, then the plan |
 
 Implementation flows through the **Plan → Implement → Reconcile** workflow (see [../CLAUDE.md](../CLAUDE.md) and [PLAN_TEMPLATE.md](PLAN_TEMPLATE.md)): Claude writes a lean Plan and compiles each stage into self-contained work orders under `plans/active/orders/<feature>/`; a small model executes one order per context window; then `reconcile` collapses the shipped orders into the Plan and updates any canonical reference whose contract changed. Area guides are durable routing documents, not plans. Historical documents are context only; they do not define current behavior.
 
@@ -43,7 +44,10 @@ Authority: **Canonical** documents define current contracts. **Working** documen
 | [PLAN_TEMPLATE.md](PLAN_TEMPLATE.md) | Template | Canonical | Active | Creating, executing, or closing a plan | Plan execution or lifecycle requirements change |
 | [areas/documentation.md](areas/documentation.md) | Area guide | Canonical | Active plan | Documentation contract or validator work | Documentation routing or validation changes |
 | [plans/active/docs-restructure.md](plans/active/docs-restructure.md) | Plan | Working | Active (next up) | Area cuts, plan folder layout, manifest shape, or source-map coverage | A stage ships, or its scope or settled decisions change |
-| [areas/dungeons.md](areas/dungeons.md) | Area guide | Canonical | No active plan | Dungeon behavior | Dungeon ownership, source map, or active work changes |
+| [plans/active/table-testing-records.md](plans/active/table-testing-records.md) | Plan | Working | Active (not next) | Recording a real session, the table-test format, or its lifecycle and checks | A stage ships, or its scope or settled decisions change |
+| [table-tests/](table-tests/) | Record set | Historical | Active | Tracing what a real session at the table taught us | Append a new record per session; frozen once folded in |
+| [areas/dungeons.md](areas/dungeons.md) | Area guide | Canonical | Active plan | Dungeon behavior | Dungeon ownership, source map, or active work changes |
+| [plans/active/maplab-ux-pass.md](plans/active/maplab-ux-pass.md) | Plan | Working | Active (Stage 2 next) | Map Lab editor/viewer chrome, gestures, brushes, undo, or tablet layout | A stage ships, or its scope or settled decisions change |
 | [areas/encounters.md](areas/encounters.md) | Area guide | Canonical | No active plan | Encounter behavior | Encounter ownership, source map, or active work changes |
 | [areas/loot.md](areas/loot.md) | Area guide | Canonical | No active plan | Loot or item-bundle behavior | Loot ownership, source map, or active work changes |
 | [areas/loom.md](areas/loom.md) | Area guide | Canonical | No active plan | Story-thread (Loom) behavior | Loom ownership, source map, or active work changes |
@@ -57,8 +61,9 @@ Authority: **Canonical** documents define current contracts. **Working** documen
 | [areas/spells.md](areas/spells.md) | Area guide | Canonical | No active plan | Spell behavior | Spell ownership, source map, or active work changes |
 | [areas/visual-design.md](areas/visual-design.md) | Area guide | Canonical | Active plan | Shared UI, tokens, shell, or accessibility | Visual routing or active work changes |
 | [plans/active/glossary-term-tooltips.md](plans/active/glossary-term-tooltips.md) | Plan | Working | Active (Stage 1 next) | Glossary term tooltips, rule-term explanations in rendered text | A stage ships, or its scope or settled decisions change |
-| [areas/repo-infra.md](areas/repo-infra.md) | Area guide | Canonical | Active plan | Shared backend infra or repo-wide test tooling | Repo-infra ownership, source map, or active work changes |
-| [plans/active/production-nightly-deploys.md](plans/active/production-nightly-deploys.md) | Plan | Working | Active (next up) | Schema generation, database migrations, or the deploy path | A stage ships, or its scope or settled decisions change |
+| [areas/repo-infra.md](areas/repo-infra.md) | Area guide | Canonical | Active plans | Shared backend infra or repo-wide test tooling | Repo-infra ownership, source map, or active work changes |
+| [plans/active/field-test-readiness.md](plans/active/field-test-readiness.md) | Plan | Working | Active (next up) | Cross-cutting failures blocking the first physical tablet session | A stage ships, or its scope or settled decisions change |
+| [plans/active/production-nightly-deploys.md](plans/active/production-nightly-deploys.md) | Plan | Working | Active (queued) | Schema generation, database migrations, or the deploy path | A stage ships, or its scope or settled decisions change |
 | [complete/validated-reference-text.md](complete/validated-reference-text.md) | Archived plan | Historical | Complete | Validated placeholders, spell quick rules, extensible reference text, or Spell detail player assignment history | Do not update except to repair archival metadata |
 | [complete/visual-consistency.md](complete/visual-consistency.md) | Archived plan | Historical | Complete | Visual consistency remediation history | Do not update except to repair archival metadata |
 | [complete/collapsible-catalog-rail.md](complete/collapsible-catalog-rail.md) | Archived plan | Historical | Complete | Shared BrowserLayout list collapse and catalog rail adoption history | Do not update except to repair archival metadata |

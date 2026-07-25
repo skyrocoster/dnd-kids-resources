@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import './MapLabPage.css'
 import { ConfirmDialog } from '../../../components/ConfirmDialog'
 import { FloatingWindow } from '../../../components/FloatingWindow'
-import { listDungeons } from '../../../api/client'
+import { getAtTheTable, listDungeons, setAtTheTable } from '../../../api/client'
 import { MapLabRouteState } from './MapLabRouteState'
 import { useDungeonShellContext } from './dungeonRouteContext'
 import { useMapLabLayout } from './useMapLabLayout'
@@ -270,6 +270,9 @@ export function MapLabPage() {
     resetSessions,
   } = useMapLabSessionState(route.dungeonId)
   const [resetDungeonConfirmOpen, setResetDungeonConfirmOpen] = useState(false)
+  const [atTableDungeonId, setAtTableDungeonId] = useState<number | null>(null)
+  const [atTablePending, setAtTablePending] = useState(false)
+  const [atTableError, setAtTableError] = useState<string | null>(null)
   const [activeEncounterId, setActiveEncounterId] = useState<number | null>(null)
   const [activeNpcId, setActiveNpcId] = useState<number | null>(null)
   const zoomApi = useMapCanvasZoom()
@@ -289,6 +292,28 @@ export function MapLabPage() {
       .then((dungeons) => setOtherDungeonTitles(Object.fromEntries(dungeons.map((d) => [d.id, d.title]))))
       .catch(() => setOtherDungeonTitles({}))
   }, [])
+
+  useEffect(() => {
+    getAtTheTable()
+      .then((response) => setAtTableDungeonId(response.dungeon_id))
+      .catch(() => setAtTableDungeonId(null))
+  }, [])
+
+  const isAtTable = route.dungeonId !== null && atTableDungeonId === route.dungeonId
+
+  async function putThisDungeonAtTheTable() {
+    if (route.dungeonId === null) return
+    setAtTablePending(true)
+    setAtTableError(null)
+    try {
+      const response = await setAtTheTable({ dungeon_id: route.dungeonId })
+      setAtTableDungeonId(response.dungeon_id)
+    } catch {
+      setAtTableError("Couldn't put this map at the table. Try again.")
+    } finally {
+      setAtTablePending(false)
+    }
+  }
 
   useEffect(() => {
     if (floors.length === 0) return
@@ -477,6 +502,19 @@ export function MapLabPage() {
           >
             Reset dungeon
           </button>
+          <button
+            type="button"
+            className="maplab-pill-button maplab-at-table-button"
+            aria-pressed={isAtTable}
+            data-active={isAtTable || undefined}
+            disabled={atTablePending || isAtTable}
+            onClick={putThisDungeonAtTheTable}
+          >
+            {isAtTable ? 'At the table' : 'Put at the table'}
+          </button>
+          {atTableError !== null && (
+            <span role="status" className="maplab-error-inline">{atTableError}</span>
+          )}
         </ToolbarTray>
         <ToolbarTray groupKey="viewer-view" label="View">
           <button
@@ -570,32 +608,35 @@ export function MapLabPage() {
             onPanMove={zoomApi.handlePointerMove}
             onPanEnd={zoomApi.handlePointerUp}
             onViewportResize={handleViewportResize}
+            panHint="Drag to pan. Pinch or scroll to zoom."
             controlsSlot={
               <>
                 <button
                   type="button"
                   className="maplab-pill-button maplab-zoom-button"
-                  aria-label="Zoom out"
-                  onClick={zoomApi.zoomOut}
-                >
-                  <ZoomOutIcon width={20} height={20} aria-hidden="true" />
-                </button>
-                <button
-                  type="button"
-                  className="maplab-pill-button maplab-zoom-button"
-                  aria-label="Zoom in"
-                  onClick={zoomApi.zoomIn}
-                >
-                  <ZoomInIcon width={20} height={20} aria-hidden="true" />
-                </button>
-                <button
-                  type="button"
-                  className="maplab-pill-button maplab-zoom-button"
-                  aria-label="Reset zoom"
+                  aria-label="Fit map to viewport"
                   onClick={() => zoomApi.fitToBounds(bounds, viewportSize)}
                 >
-                  <FitIcon width={20} height={20} aria-hidden="true" />
+                  <FitIcon width={22} height={22} aria-hidden="true" />
                 </button>
+                <div className="maplab-zoom-cluster">
+                  <button
+                    type="button"
+                    className="maplab-pill-button maplab-zoom-button"
+                    aria-label="Zoom in"
+                    onClick={() => zoomApi.zoomIn(viewportSize)}
+                  >
+                    <ZoomInIcon width={22} height={22} aria-hidden="true" />
+                  </button>
+                  <button
+                    type="button"
+                    className="maplab-pill-button maplab-zoom-button"
+                    aria-label="Zoom out"
+                    onClick={() => zoomApi.zoomOut(viewportSize)}
+                  >
+                    <ZoomOutIcon width={22} height={22} aria-hidden="true" />
+                  </button>
+                </div>
               </>
             }
           >
@@ -687,7 +728,7 @@ export function MapLabPage() {
                     height={CELL_SIZE}
                   />
                 ))}
-                {nonDoorWallSegments(room, layout.doors).map((edge) => {
+                {nonDoorWallSegments(room, doors).map((edge) => {
                   const segment = doorWallSegment(edge, CELL_SIZE)
                   return (
                     <line

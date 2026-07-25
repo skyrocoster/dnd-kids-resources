@@ -1,6 +1,6 @@
 # Dungeons Area Guide
 
-> **Active plan:** None.
+> **Active plan:** [Map Lab UX Pass](../plans/active/maplab-ux-pass.md) (next up).
 
 ## Scope
 
@@ -161,7 +161,7 @@ The session view is the surface that is open while a game is running: it must st
 
 - [Dungeon Outside](../complete/dungeon-outside.md) shipped: wall kinds, per-side padding and a real extent, outside features, and clarity controls.
 - [Dungeon Connections](../complete/dungeon-connections.md) shipped: permanent per-dungeon session state, optional portal destinations with a connections resolve list, and cross-dungeon gateways. It owns passage-session persistence.
-- No active plan. Create a focused plan before new dungeon work, including cross-reference pop-outs.
+- [Map Lab UX Pass](../plans/active/maplab-ux-pass.md) is next up: tool palette + popovers, one brush interaction model, tablet drawer/bottom sheet, the ghost-floor door-leak fix, undo/redo, and a session-view pass. It explicitly owns Map Lab zoom/pan, gesture routing, fullscreen chrome, and the editor interaction model for its duration.
 
 ## Cross-references
 

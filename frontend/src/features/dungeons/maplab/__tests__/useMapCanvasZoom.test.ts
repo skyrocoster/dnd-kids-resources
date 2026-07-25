@@ -65,9 +65,9 @@ describe('useMapCanvasZoom', () => {
 
   it('wheel event handler zooms toward cursor only with Ctrl/Cmd held', () => {
     const { result } = renderHook(() => useMapCanvasZoom())
-    const container = { getBoundingClientRect: () => ({ left: 0, top: 0 }), scrollLeft: 0, scrollTop: 0 } as unknown as HTMLElement
+    const container = { getBoundingClientRect: () => ({ left: 0, top: 0 }) } as unknown as HTMLElement
 
-    // Plain wheel (no modifier): ignored, native scroll of the viewport handles it instead.
+    // Plain wheel (no modifier): ignored — a plain wheel does nothing but scroll the page.
     act(() =>
       result.current.handleWheel(makeWheelEvent({ deltaY: -100, currentTarget: container })),
     )
@@ -87,9 +87,17 @@ describe('useMapCanvasZoom', () => {
 
   it('plain wheel zooms and prevents default when wheelZoomMode is always, while Ctrl/Cmd still works', () => {
     const { result } = renderHook(() => useMapCanvasZoom({ wheelZoomMode: 'always' }))
-    const container = { getBoundingClientRect: () => ({ left: 0, top: 0 }), scrollLeft: 20, scrollTop: 30 } as unknown as HTMLElement
+    const container = { getBoundingClientRect: () => ({ left: 0, top: 0 }) } as unknown as HTMLElement
     const plainPreventDefault = vi.fn()
     const modifierPreventDefault = vi.fn()
+
+    // Pan to (20, 30) first — the wheel math must fold the existing pan into its cursor-anchored
+    // zoom, not just the raw cursor position (this is what the old scrollLeft/scrollTop reads used
+    // to exercise; pan is now the hook's own state instead of a DOM scroll position).
+    act(() => result.current.handlePointerDown(makePointerEvent({ clientX: 100, clientY: 100 })))
+    act(() => result.current.handlePointerMove(makePointerEvent({ clientX: 80, clientY: 70 })))
+    act(() => result.current.handlePointerUp())
+    expect(result.current.zoom.pan).toEqual({ x: 20, y: 30 })
 
     act(() =>
       result.current.handleWheel(
@@ -123,40 +131,72 @@ describe('useMapCanvasZoom', () => {
     expect(result.current.zoom.scale).toBeCloseTo(1)
   })
 
-  it('pointer drag pans the canvas, ignoring drags started on interactive targets', () => {
-    const { result } = renderHook(() => useMapCanvasZoom())
+  it('in pan mode a drag starting on a .maplab-room element pans; in tool mode a single-pointer drag never pans', () => {
+    const { result: panResult } = renderHook(() => useMapCanvasZoom({ pointerMode: 'pan' }))
 
-    const plainTarget = document.createElement('div')
-    act(() => result.current.handlePointerDown(makePointerEvent({ clientX: 100, clientY: 100, target: plainTarget })))
-    act(() => result.current.handlePointerMove(makePointerEvent({ clientX: 130, clientY: 80 })))
-    expect(result.current.zoom.pan).toEqual({ x: -30, y: 20 })
-    act(() => result.current.handlePointerUp())
-
-    // A drag that starts on a room/door/paint-cell/marker hit target must not move the pan at all.
+    // In 'pan' mode, a drag on a room element should pan.
     const roomEl = document.createElement('div')
     roomEl.className = 'maplab-room'
-    const inner = document.createElement('div')
-    roomEl.appendChild(inner)
-    act(() => result.current.handlePointerDown(makePointerEvent({ clientX: 0, clientY: 0, target: inner })))
-    act(() => result.current.handlePointerMove(makePointerEvent({ clientX: 500, clientY: 500 })))
-    expect(result.current.zoom.pan).toEqual({ x: -30, y: 20 })
+    act(() => panResult.current.handlePointerDown(makePointerEvent({ clientX: 100, clientY: 100, target: roomEl })))
+    act(() => panResult.current.handlePointerMove(makePointerEvent({ clientX: 130, clientY: 80 })))
+    expect(panResult.current.zoom.pan).toEqual({ x: -30, y: 20 })
+    act(() => panResult.current.handlePointerUp())
 
-    const propEl = document.createElement('div')
-    propEl.className = 'maplab-prop'
-    act(() => result.current.handlePointerDown(makePointerEvent({ clientX: 0, clientY: 0, target: propEl })))
-    act(() => result.current.handlePointerMove(makePointerEvent({ clientX: 600, clientY: 600 })))
-    expect(result.current.zoom.pan).toEqual({ x: -30, y: 20 })
+    // In 'tool' mode, a single-pointer drag does not pan, even on a plain target.
+    const { result: toolResult } = renderHook(() => useMapCanvasZoom({ pointerMode: 'tool' }))
+    const plainTarget = document.createElement('div')
+    act(() => toolResult.current.handlePointerDown(makePointerEvent({ clientX: 100, clientY: 100, target: plainTarget })))
+    act(() => toolResult.current.handlePointerMove(makePointerEvent({ clientX: 130, clientY: 80 })))
+    expect(toolResult.current.zoom.pan).toEqual({ x: 0, y: 0 })
   })
 
-  it('does not treat a scrollbar drag as canvas pan', () => {
+  it('two-pointer pinch zooms about the pinch centroid and hands back to drag-pan on release', () => {
     const { result } = renderHook(() => useMapCanvasZoom())
     const viewport = document.createElement('div')
-    Object.defineProperty(viewport, 'clientWidth', { value: 90 })
-    Object.defineProperty(viewport, 'clientHeight', { value: 90 })
     vi.spyOn(viewport, 'getBoundingClientRect').mockReturnValue({ left: 0, top: 0 } as DOMRect)
+    const down = (pointerId: number, clientX: number, clientY: number) =>
+      makePointerEvent({ pointerId, clientX, clientY, target: viewport, currentTarget: viewport })
 
-    act(() => result.current.handlePointerDown(makePointerEvent({ clientX: 95, clientY: 40, target: viewport, currentTarget: viewport })))
-    act(() => result.current.handlePointerMove(makePointerEvent({ clientX: 40, clientY: 80 })))
+    act(() => result.current.handlePointerDown(down(1, 100, 100)))
+    act(() => result.current.handlePointerDown(down(2, 200, 100)))
+    expect(result.current.zoom).toEqual({ scale: 1, pan: { x: 0, y: 0 } })
+
+    // Fingers spread 100px -> 200px apart: scale doubles, and the content point that sat under the
+    // original centroid (150,100) stays under the new centroid (200,100).
+    act(() => result.current.handlePointerMove(makePointerEvent({ pointerId: 2, clientX: 300, clientY: 100 })))
+    expect(result.current.zoom.scale).toBeCloseTo(2)
+    expect(result.current.zoom.pan.x).toBeCloseTo(150 * 2 - 200)
+    expect(result.current.zoom.pan.y).toBeCloseTo(100 * 2 - 100)
+
+    // Lifting one finger continues as a drag-pan from where the surviving finger is, with no jump.
+    act(() => result.current.handlePointerUp(makePointerEvent({ pointerId: 2, clientX: 300, clientY: 100 })))
+    act(() => result.current.handlePointerMove(makePointerEvent({ pointerId: 1, clientX: 80, clientY: 130 })))
+    expect(result.current.zoom.scale).toBeCloseTo(2)
+    expect(result.current.zoom.pan.x).toBeCloseTo(100 + 20)
+    expect(result.current.zoom.pan.y).toBeCloseTo(100 - 30)
+  })
+
+  it('pinch clamps to MAX_SCALE and starts even when a finger lands on an interactive target', () => {
+    const { result } = renderHook(() => useMapCanvasZoom())
+    const viewport = document.createElement('div')
+    vi.spyOn(viewport, 'getBoundingClientRect').mockReturnValue({ left: 0, top: 0 } as DOMRect)
+    const room = document.createElement('div')
+    room.className = 'maplab-room'
+
+    act(() => result.current.handlePointerDown(makePointerEvent({ pointerId: 1, clientX: 100, clientY: 100, target: room, currentTarget: viewport })))
+    act(() => result.current.handlePointerDown(makePointerEvent({ pointerId: 2, clientX: 200, clientY: 100, target: room, currentTarget: viewport })))
+    act(() => result.current.handlePointerMove(makePointerEvent({ pointerId: 2, clientX: 1100, clientY: 100 })))
+
+    expect(result.current.zoom.scale).toBe(result.current.MAX_SCALE)
+  })
+
+  it('pointercancel/pointerup clears the gesture so a lifted finger leaves no phantom pan', () => {
+    const { result } = renderHook(() => useMapCanvasZoom())
+    const plainTarget = document.createElement('div')
+
+    act(() => result.current.handlePointerDown(makePointerEvent({ pointerId: 7, clientX: 100, clientY: 100, target: plainTarget })))
+    act(() => result.current.handlePointerUp(makePointerEvent({ pointerId: 7, clientX: 100, clientY: 100 })))
+    act(() => result.current.handlePointerMove(makePointerEvent({ pointerId: 7, clientX: 400, clientY: 400 })))
 
     expect(result.current.zoom.pan).toEqual({ x: 0, y: 0 })
   })
@@ -175,6 +215,48 @@ describe('useMapCanvasZoom', () => {
     act(() => result.current.fitToBounds({ minX: 0, maxX: 3, minY: 0, maxY: 3 }, { width: 128, height: 128 }))
     // No animation frame/timer is involved — the state is already settled synchronously.
     expect(result.current.zoom.scale).toBeCloseTo(0.5)
+  })
+
+  it('zoom buttons with viewport keep the content at viewport center fixed, and without viewport only change scale', () => {
+    const { result } = renderHook(() => useMapCanvasZoom())
+    const viewport = { width: 400, height: 300 }
+
+    // Drag to set up panned state: pan (100, 50)
+    act(() => {
+      result.current.handlePointerDown(makePointerEvent({ clientX: 100, clientY: 100 }))
+      result.current.handlePointerMove(makePointerEvent({ clientX: 0, clientY: 50 }))
+      result.current.handlePointerUp()
+    })
+    expect(result.current.zoom).toEqual({ scale: 1, pan: { x: 100, y: 50 } })
+
+    // The SVG content point at viewport center before zoom (divide by scale to get world coord)
+    const { scale: scaleBefore, pan: panBefore } = result.current.zoom
+    const centerSvgX = (panBefore.x + viewport.width / 2) / scaleBefore
+    const centerSvgY = (panBefore.y + viewport.height / 2) / scaleBefore
+
+    // zoomIn with viewport should keep the center content point fixed
+    act(() => result.current.zoomIn(viewport))
+
+    const { scale: scaleAfter, pan: panAfter } = result.current.zoom
+    const centerSvgXAfter = (panAfter.x + viewport.width / 2) / scaleAfter
+    const centerSvgYAfter = (panAfter.y + viewport.height / 2) / scaleAfter
+
+    // The SVG content point at viewport center should stay fixed
+    expect(centerSvgXAfter).toBeCloseTo(centerSvgX)
+    expect(centerSvgYAfter).toBeCloseTo(centerSvgY)
+    expect(scaleAfter).toBeCloseTo(scaleBefore + 0.25)
+
+    // zoomOut should reverse the change
+    act(() => result.current.zoomOut(viewport))
+    expect(result.current.zoom.scale).toBeCloseTo(scaleBefore)
+    expect(result.current.zoom.pan.x).toBeCloseTo(100)
+    expect(result.current.zoom.pan.y).toBeCloseTo(50)
+
+    // zoomIn with no viewport should only change scale, leave pan as-is
+    const panBeforeNoViewport = { ...result.current.zoom.pan }
+    act(() => result.current.zoomIn())
+    expect(result.current.zoom.pan).toEqual(panBeforeNoViewport)
+    expect(result.current.zoom.scale).toBeCloseTo(scaleBefore + 0.25)
   })
 
 })

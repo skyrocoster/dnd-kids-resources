@@ -38,7 +38,15 @@ TARGET_FIELDS = [
 # Canonical seed rows carry everything migrate_one() emits, plus the quick_rules
 # added by the later quick-rules generation pass. migrate_spells.py itself never
 # produces quick_rules, so the two contracts are deliberately separate.
-CANONICAL_SEED_FIELDS = [*TARGET_FIELDS, "quick_rules"]
+CANONICAL_SEED_FIELDS = [
+    "id", "name", "level", "school", "description",
+    "quick_rules",
+    "alternate_description", "damage", "healing",
+    "range", "higher_levels", "casting_times", "duration",
+    "concentration", "ritual", "components", "materials",
+    "attacks", "area_of_effect",
+    "created_at",
+]
 
 DROPPED_LEGACY_KEYS = {
     "spell_name", "icon", "spell_text", "spell_alt_text", "heal",
@@ -109,6 +117,7 @@ class CanonicalSpell(BaseModel):
     attacks: list[Attack] = []
     area_of_effect: AreaOfEffect = Field(default_factory=AreaOfEffect)
     quick_rules: str = Field(min_length=1)
+    created_at: str | None = None
 
 
 # ---------------------------------------------------------------------------

@@ -532,16 +532,15 @@ export interface EffectivePassageState extends PassageFlags {
 }
 
 /** Merge authored PassageFlags with optional session state, producing the effective state. No
- * session (the reset baseline) falls back to the authored `locked`/`trapped` as-is, door open
- * (the shipped Stage-2 default — there's no authored open/closed concept, so "open" is the
- * baseline a DM starts from and toggles shut), trap armed. A session overrides
- * `locked`/`isOpen`/`trapDisarmed` independently of one another — a locked+trapped door can be
- * unlocked while the trap stays armed, or vice versa. */
+ * session (the reset baseline) falls back to the authored `locked`/`trapped` as-is, door closed
+ * (doors render and start closed in the editor and viewer unless explicitly opened), trap armed.
+ * A session overrides `locked`/`isOpen`/`trapDisarmed` independently of one another — a
+ * locked+trapped door can be unlocked while the trap stays armed, or vice versa. */
 export function effectivePassageState(
   flags: PassageFlags,
   session?: PassageSessionState,
 ): EffectivePassageState {
-  const sessionOpen = session?.isOpen ?? true
+  const sessionOpen = session?.isOpen ?? false
   const locked = session?.isLocked ?? flags.locked
   const trapDisarmed = session?.trapDisarmed ?? false
   return {
@@ -557,7 +556,7 @@ export function effectivePassageState(
 /** The authored-default session state for a passage — the reset baseline every session control
  * starts from and returns to. */
 export function defaultPassageSession(flags: PassageFlags): PassageSessionState {
-  return { isOpen: true, isLocked: flags.locked, trapDisarmed: false }
+  return { isOpen: false, isLocked: flags.locked, trapDisarmed: false }
 }
 
 // ============================================================================
