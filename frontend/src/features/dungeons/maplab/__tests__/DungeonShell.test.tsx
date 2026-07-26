@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import * as api from '../../../../api/client'
@@ -51,28 +51,20 @@ describe('DungeonShell', () => {
   })
 
   it('renders the same dungeon title in view and edit modes with sibling mode links', async () => {
-    const { rerender } = renderDungeonRoute('/dungeons/4')
+    renderDungeonRoute('/dungeons/4')
     await flush()
 
     expect(screen.getByRole('heading', { name: 'Test Dungeon' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'View' })).toHaveAttribute('href', '/dungeons/4')
     expect(screen.getByRole('link', { name: 'Edit map' })).toHaveAttribute('href', '/dungeons/4/edit')
 
-    rerender(
-      <MemoryRouter initialEntries={['/dungeons/4/edit']}>
-        <Routes>
-          <Route path="/dungeons/:dungeonId" element={<DungeonShell />}>
-            <Route index element={<MapLabPage />} />
-            <Route path="edit" element={<MapLabEditorPage />} />
-          </Route>
-        </Routes>
-      </MemoryRouter>,
-    )
+    fireEvent.click(screen.getByRole('link', { name: 'Edit map' }))
     await flush()
 
     expect(screen.getByRole('heading', { name: 'Test Dungeon' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'View' })).toHaveAttribute('href', '/dungeons/4')
     expect(screen.getByRole('link', { name: 'Edit map' })).toHaveAttribute('href', '/dungeons/4/edit')
+    expect(document.querySelector('.dungeon-shell-header')).toHaveAttribute('data-edit-mode')
   })
 
   it('renders a return-to-browser link to /dungeons', async () => {

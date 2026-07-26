@@ -75,6 +75,8 @@ import {
 
 const CELL_SIZE = 64
 
+type ToolFlyout = 'passages' | 'terrain' | 'prop'
+
 function edgeKey(edge: WallEdge): string {
   return `${edge.cell[0]},${edge.cell[1]},${edge.side}`
 }
@@ -225,9 +227,14 @@ export function MapLabEditorPage() {
   const [armedTool, setArmedTool] = useState<ArmedTool>('select')
   const [lastPassageTool, setLastPassageTool] = useState<'door' | 'stair' | 'portal'>('door')
   const [lastTerrainTool, setLastTerrainTool] = useState<'river' | 'trees'>('river')
-  const [openFlyout, setOpenFlyout] = useState<'passages' | 'terrain' | null>(null)
+  const [openFlyout, setOpenFlyout] = useState<ToolFlyout | null>(null)
+  const [flyoutFilter, setFlyoutFilter] = useState('')
   const passagesFlyoutRef = useRef<HTMLDivElement>(null)
   const terrainFlyoutRef = useRef<HTMLDivElement>(null)
+  const propFlyoutRef = useRef<HTMLDivElement>(null)
+  const passagesMenuRef = useRef<HTMLDivElement>(null)
+  const terrainMenuRef = useRef<HTMLDivElement>(null)
+  const propMenuRef = useRef<HTMLDivElement>(null)
   const [mapPopoverOpen, setMapPopoverOpen] = useState(false)
   const mapPopoverRef = useRef<HTMLDivElement>(null)
   const [viewPopoverOpen, setViewPopoverOpen] = useState(false)
@@ -308,6 +315,56 @@ export function MapLabEditorPage() {
     () => (showGhostFloor && ghostZ !== null ? state.layout.features.filter((f) => f.z === ghostZ) : []),
     [showGhostFloor, ghostZ, state.layout]
   )
+
+  const filterMatches = useCallback(
+    (label: string) => label.toLowerCase().includes(flyoutFilter.trim().toLowerCase()),
+    [flyoutFilter],
+  )
+  const passageToolOptions = useMemo(
+    () => [
+      { key: 'door' as const, label: 'Door', icon: DoorClosedIcon, active: placeDoorMode },
+      { key: 'stair' as const, label: 'Stair', icon: StairsIcon, active: placeStairMode },
+      { key: 'portal' as const, label: 'Portal', icon: PortalIcon, active: placePortalMode },
+    ].filter((option) => filterMatches(option.label)),
+    [filterMatches, placeDoorMode, placePortalMode, placeStairMode],
+  )
+  const propKindOptions = useMemo(
+    () => PROP_KIND_OPTIONS.filter((option) => filterMatches(option.label)),
+    [filterMatches],
+  )
+  const terrainToolOptions = useMemo(
+    () => [
+      { key: 'river' as const, label: 'River', icon: Waves, active: drawFeatureKind === 'river' },
+      { key: 'trees' as const, label: 'Trees', icon: Trees, active: drawFeatureKind === 'trees' },
+    ].filter((option) => filterMatches(option.label)),
+    [drawFeatureKind, filterMatches],
+  )
+
+  const activatePassageTool = useCallback((tool: 'door' | 'stair' | 'portal') => {
+    setLastPassageTool(tool)
+    setArmedTool(tool)
+    setPlacementError(null)
+    setOpenFlyout(null)
+  }, [])
+
+  const activatePropKind = useCallback((kind: string) => {
+    setSelectedPropKind(kind)
+    setOpenFlyout(null)
+  }, [])
+
+  const activateTerrainTool = useCallback((tool: 'river' | 'trees') => {
+    setLastTerrainTool(tool)
+    setArmedTool(tool)
+    setDismissZWarning(false)
+    setPlacementError(null)
+    setOpenFlyout(null)
+  }, [])
+
+  const activateTopFilteredTool = useCallback(() => {
+    if (openFlyout === 'passages' && passageToolOptions[0]) activatePassageTool(passageToolOptions[0].key)
+    if (openFlyout === 'prop' && propKindOptions[0]) activatePropKind(propKindOptions[0].value)
+    if (openFlyout === 'terrain' && terrainToolOptions[0]) activateTerrainTool(terrainToolOptions[0].key)
+  }, [activatePassageTool, activatePropKind, activateTerrainTool, openFlyout, passageToolOptions, propKindOptions, terrainToolOptions])
 
   const bounds = useMemo(() => paddedBounds(state.layout), [state.layout])
   const viewBox = `${bounds.minX * CELL_SIZE} ${bounds.minY * CELL_SIZE} ${
@@ -597,11 +654,26 @@ export function MapLabEditorPage() {
   }, [brushArmed])
 
   useEffect(() => {
+    setFlyoutFilter('')
+    if (!openFlyout) return
+    const menuRef = openFlyout === 'passages' ? passagesMenuRef : openFlyout === 'prop' ? propMenuRef : terrainMenuRef
+    window.setTimeout(() => {
+      menuRef.current?.querySelector<HTMLInputElement>('.maplab-tool-palette-filter')?.focus()
+    }, 0)
+  }, [openFlyout])
+
+  useEffect(() => {
     if (!openFlyout) return
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node
-      const ref = openFlyout === 'passages' ? passagesFlyoutRef : terrainFlyoutRef
-      if (ref.current && !ref.current.contains(target)) setOpenFlyout(null)
+      const groupRef = openFlyout === 'passages' ? passagesFlyoutRef : openFlyout === 'prop' ? propFlyoutRef : terrainFlyoutRef
+      const menuRef = openFlyout === 'passages' ? passagesMenuRef : openFlyout === 'prop' ? propMenuRef : terrainMenuRef
+      if (
+        groupRef.current && !groupRef.current.contains(target) &&
+        menuRef.current && !menuRef.current.contains(target)
+      ) {
+        setOpenFlyout(null)
+      }
     }
     window.addEventListener('mousedown', handleClickOutside)
     return () => {
@@ -761,6 +833,22 @@ export function MapLabEditorPage() {
     [addPortal, setActiveZ, state.activeZ, state.layout],
   )
 
+  const renderFlyoutFilter = (label: string) => (
+    <input
+      type="search"
+      className="maplab-tool-palette-filter"
+      aria-label={label}
+      placeholder="Filter tools"
+      value={flyoutFilter}
+      onChange={(event) => setFlyoutFilter(event.currentTarget.value)}
+      onKeyDown={(event) => {
+        if (event.key !== 'Enter') return
+        event.preventDefault()
+        activateTopFilteredTool()
+      }}
+    />
+  )
+
   if (route.status === 'loading' || layoutLoading) {
     return <MapLabRouteState title="Loading map editor" message="Loading dungeon layout…" variant="loading" />
   }
@@ -803,8 +891,13 @@ export function MapLabEditorPage() {
               className="maplab-pill-button maplab-tool-palette-button"
               aria-pressed={placeRoomMode}
               data-active={placeRoomMode || undefined}
+              title={placeRoomMode ? 'Click again or press Escape to return to Select.' : undefined}
               onClick={() => {
-                setArmedTool('room')
+                if (armedTool === 'room') {
+                  setArmedTool('select')
+                } else {
+                  setArmedTool('room')
+                }
                 setPlacementError(null)
               }}
             >
@@ -819,8 +912,13 @@ export function MapLabEditorPage() {
                 aria-label="Passage tools"
                 aria-pressed={placeDoorMode || placeStairMode || placePortalMode}
                 data-active={(placeDoorMode || placeStairMode || placePortalMode) || undefined}
+                title={(placeDoorMode || placeStairMode || placePortalMode) ? 'Click again or press Escape to return to Select.' : undefined}
                 onClick={() => {
-                  setArmedTool(lastPassageTool)
+                  if (placeDoorMode || placeStairMode || placePortalMode) {
+                    setArmedTool('select')
+                  } else {
+                    setArmedTool(lastPassageTool)
+                  }
                   setPlacementError(null)
                   setOpenFlyout(null)
                 }}
@@ -848,70 +946,111 @@ export function MapLabEditorPage() {
                   <ChevronDownIcon width={14} height={14} aria-hidden="true" />
                 )}
               </button>
-              {openFlyout === 'passages' && (
-                <div className="maplab-tool-palette-flyout" role="menu">
-                  <button
-                    type="button"
-                    role="menuitem"
-                    className="maplab-pill-button"
-                    data-active={placeDoorMode || undefined}
-                    onClick={() => {
-                      setLastPassageTool('door')
-                      setArmedTool('door')
-                      setPlacementError(null)
-                      setOpenFlyout(null)
-                    }}
-                  >
-                    <DoorClosedIcon width={16} height={16} aria-hidden="true" />
-                    Door
-                  </button>
-                  <button
-                    type="button"
-                    role="menuitem"
-                    className="maplab-pill-button"
-                    data-active={placeStairMode || undefined}
-                    onClick={() => {
-                      setLastPassageTool('stair')
-                      setArmedTool('stair')
-                      setPlacementError(null)
-                      setOpenFlyout(null)
-                    }}
-                  >
-                    <StairsIcon width={16} height={16} aria-hidden="true" />
-                    Stair
-                  </button>
-                  <button
-                    type="button"
-                    role="menuitem"
-                    className="maplab-pill-button"
-                    data-active={placePortalMode || undefined}
-                    onClick={() => {
-                      setLastPassageTool('portal')
-                      setArmedTool('portal')
-                      setPlacementError(null)
-                      setOpenFlyout(null)
-                    }}
-                  >
-                    <PortalIcon width={16} height={16} aria-hidden="true" />
-                    Portal
-                  </button>
-                </div>
+              {openFlyout === 'passages' && passagesFlyoutRef.current && createPortal(
+                <div
+                  className="maplab-tool-palette-flyout"
+                  role="menu"
+                  ref={passagesMenuRef}
+                  style={{
+                    position: 'fixed',
+                    top: passagesFlyoutRef.current.getBoundingClientRect().bottom,
+                    left: passagesFlyoutRef.current.getBoundingClientRect().left,
+                    zIndex: 'var(--z-floating)',
+                  }}
+                >
+                  {renderFlyoutFilter('Filter passage tools')}
+                  {passageToolOptions.length === 0 ? (
+                    <p className="maplab-tool-palette-empty">No tools match that.</p>
+                  ) : passageToolOptions.map((option) => {
+                    const Icon = option.icon
+                    return (
+                      <button
+                        key={option.key}
+                        type="button"
+                        role="menuitem"
+                        className="maplab-pill-button"
+                        data-active={option.active || undefined}
+                        onClick={() => activatePassageTool(option.key)}
+                      >
+                        <Icon width={16} height={16} aria-hidden="true" />
+                        {option.label}
+                      </button>
+                    )
+                  })}
+                </div>,
+                document.body
               )}
             </div>
 
-            <button
-              type="button"
-              className="maplab-pill-button maplab-tool-palette-button"
-              aria-pressed={placePropMode}
-              data-active={placePropMode || undefined}
-              onClick={() => {
-                setArmedTool('prop')
-                setPlacementError(null)
-              }}
-            >
-              <PropIcon width={18} height={18} aria-hidden="true" />
-              Prop
-            </button>
+            <div className="maplab-tool-palette-group" ref={propFlyoutRef}>
+              <button
+                type="button"
+                className="maplab-pill-button maplab-tool-palette-button"
+                aria-pressed={placePropMode}
+                data-active={placePropMode || undefined}
+                title={placePropMode ? 'Click again or press Escape to return to Select.' : undefined}
+                onClick={() => {
+                  if (armedTool === 'prop') {
+                    setArmedTool('select')
+                  } else {
+                    setArmedTool('prop')
+                  }
+                  setPlacementError(null)
+                  setOpenFlyout(null)
+                }}
+              >
+                <PropIcon width={18} height={18} aria-hidden="true" />
+                Prop
+              </button>
+              <button
+                type="button"
+                className="maplab-pill-button maplab-tool-palette-flyout-toggle"
+                aria-label="Choose prop kind"
+                aria-haspopup="menu"
+                aria-expanded={openFlyout === 'prop'}
+                onClick={() => setOpenFlyout((open) => (open === 'prop' ? null : 'prop'))}
+              >
+                {openFlyout === 'prop' ? (
+                  <ChevronUpIcon width={14} height={14} aria-hidden="true" />
+                ) : (
+                  <ChevronDownIcon width={14} height={14} aria-hidden="true" />
+                )}
+              </button>
+              {openFlyout === 'prop' && propFlyoutRef.current && createPortal(
+                <div
+                  className="maplab-tool-palette-flyout"
+                  role="menu"
+                  ref={propMenuRef}
+                  style={{
+                    position: 'fixed',
+                    top: propFlyoutRef.current.getBoundingClientRect().bottom,
+                    left: propFlyoutRef.current.getBoundingClientRect().left,
+                    zIndex: 'var(--z-floating)',
+                  }}
+                >
+                  {renderFlyoutFilter('Filter prop tools')}
+                  {propKindOptions.length === 0 ? (
+                    <p className="maplab-tool-palette-empty">No tools match that.</p>
+                  ) : propKindOptions.map((option) => {
+                    const KindIcon = PROP_KIND_ICONS[option.value as keyof typeof PROP_KIND_ICONS]
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        role="menuitem"
+                        className="maplab-pill-button"
+                        data-active={selectedPropKind === option.value || undefined}
+                        onClick={() => activatePropKind(option.value)}
+                      >
+                        <KindIcon width={16} height={16} aria-hidden="true" />
+                        {option.label}
+                      </button>
+                    )
+                  })}
+                </div>,
+                document.body
+              )}
+            </div>
 
             <div className="maplab-tool-palette-group" ref={terrainFlyoutRef}>
               <button
@@ -919,8 +1058,13 @@ export function MapLabEditorPage() {
                 className="maplab-pill-button maplab-tool-palette-button"
                 aria-pressed={drawFeatureKind !== null}
                 data-active={drawFeatureKind !== null || undefined}
+                title={drawFeatureKind !== null ? 'Click again or press Escape to return to Select.' : undefined}
                 onClick={() => {
-                  setArmedTool(lastTerrainTool)
+                  if (drawFeatureKind !== null) {
+                    setArmedTool('select')
+                  } else {
+                    setArmedTool(lastTerrainTool)
+                  }
                   setDismissZWarning(false)
                   setPlacementError(null)
                   setOpenFlyout(null)
@@ -947,41 +1091,39 @@ export function MapLabEditorPage() {
                   <ChevronDownIcon width={14} height={14} aria-hidden="true" />
                 )}
               </button>
-              {openFlyout === 'terrain' && (
-                <div className="maplab-tool-palette-flyout" role="menu">
-                  <button
-                    type="button"
-                    role="menuitem"
-                    className="maplab-pill-button"
-                    data-active={drawFeatureKind === 'river' || undefined}
-                    onClick={() => {
-                      setLastTerrainTool('river')
-                      setArmedTool('river')
-                      setDismissZWarning(false)
-                      setPlacementError(null)
-                      setOpenFlyout(null)
-                    }}
-                  >
-                    <Waves width={16} height={16} aria-hidden="true" />
-                    River
-                  </button>
-                  <button
-                    type="button"
-                    role="menuitem"
-                    className="maplab-pill-button"
-                    data-active={drawFeatureKind === 'trees' || undefined}
-                    onClick={() => {
-                      setLastTerrainTool('trees')
-                      setArmedTool('trees')
-                      setDismissZWarning(false)
-                      setPlacementError(null)
-                      setOpenFlyout(null)
-                    }}
-                  >
-                    <Trees width={16} height={16} aria-hidden="true" />
-                    Trees
-                  </button>
-                </div>
+              {openFlyout === 'terrain' && terrainFlyoutRef.current && createPortal(
+                <div
+                  className="maplab-tool-palette-flyout"
+                  role="menu"
+                  ref={terrainMenuRef}
+                  style={{
+                    position: 'fixed',
+                    top: terrainFlyoutRef.current.getBoundingClientRect().bottom,
+                    left: terrainFlyoutRef.current.getBoundingClientRect().left,
+                    zIndex: 'var(--z-floating)',
+                  }}
+                >
+                  {renderFlyoutFilter('Filter terrain tools')}
+                  {terrainToolOptions.length === 0 ? (
+                    <p className="maplab-tool-palette-empty">No tools match that.</p>
+                  ) : terrainToolOptions.map((option) => {
+                    const Icon = option.icon
+                    return (
+                      <button
+                        key={option.key}
+                        type="button"
+                        role="menuitem"
+                        className="maplab-pill-button"
+                        data-active={option.active || undefined}
+                        onClick={() => activateTerrainTool(option.key)}
+                      >
+                        <Icon width={16} height={16} aria-hidden="true" />
+                        {option.label}
+                      </button>
+                    )
+                  })}
+                </div>,
+                document.body
               )}
             </div>
           </div>
@@ -1001,26 +1143,6 @@ export function MapLabEditorPage() {
             </div>
           )}
 
-          {armedTool === 'prop' && (
-            <div className="maplab-tool-options maplab-prop-kind-chip-row" role="group" aria-label="Prop kind">
-              {PROP_KIND_OPTIONS.map((option) => {
-                const KindIcon = PROP_KIND_ICONS[option.value as keyof typeof PROP_KIND_ICONS]
-                return (
-                  <button
-                    key={option.value}
-                    type="button"
-                    className="maplab-pill-button maplab-prop-kind-chip"
-                    aria-pressed={selectedPropKind === option.value}
-                    data-active={selectedPropKind === option.value || undefined}
-                    onClick={() => setSelectedPropKind(option.value)}
-                  >
-                    <KindIcon width={16} height={16} aria-hidden="true" />
-                    {option.label}
-                  </button>
-                )
-              })}
-            </div>
-          )}
         </ToolbarTray>
         <div className="maplab-view-popover-wrap" ref={viewPopoverRef}>
           <button
@@ -1156,6 +1278,23 @@ export function MapLabEditorPage() {
             </div>
           )}
         </div>
+        <div className="maplab-floor-tabs" role="tablist" aria-label="Dungeon floors">
+            {floors.map((floor) => (
+              <button
+                key={floor.z}
+                type="button"
+                role="tab"
+                className="maplab-pill-button maplab-floor-tab"
+                aria-selected={floor.z === state.activeZ}
+                onClick={() => {
+                  setActiveZ(floor.z)
+                  setTabletNavOpen(false)
+                }}
+              >
+                {floor.title ?? `Floor ${floor.z}`}
+              </button>
+            ))}
+        </div>
       </div>
 
       {statusSlot &&
@@ -1180,26 +1319,6 @@ export function MapLabEditorPage() {
           </button>
         </p>
       )}
-
-      <div className="maplab-editor-floor-strip">
-        <div className="maplab-floor-tabs" role="tablist" aria-label="Dungeon floors">
-            {floors.map((floor) => (
-              <button
-                key={floor.z}
-                type="button"
-                role="tab"
-                className="maplab-pill-button maplab-floor-tab"
-                aria-selected={floor.z === state.activeZ}
-                onClick={() => {
-                  setActiveZ(floor.z)
-                  setTabletNavOpen(false)
-                }}
-              >
-                {floor.title ?? `Floor ${floor.z}`}
-              </button>
-            ))}
-        </div>
-      </div>
 
       <div className="maplab-editor-layout">
         <button

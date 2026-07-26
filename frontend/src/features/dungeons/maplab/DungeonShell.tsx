@@ -59,7 +59,7 @@ export function DungeonShell() {
           </>
         ) : (
           <>
-            <header className="dungeon-shell-header">
+            <header className="dungeon-shell-header" data-edit-mode={isEditMode ? '' : undefined}>
               <div className="dungeon-shell-heading">
                 <Link to="/dungeons" className="dungeon-shell-back-link">
                   Back to dungeons

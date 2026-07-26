@@ -858,6 +858,22 @@ describe('MapLabEditorPage (Stage 03 — layer toggles)', () => {
     expect((position as number) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 
+  it('room list is the named scroll owner inside the editor navigation rail', async () => {
+    const { container } = renderMapLabEditorPage()
+    await flush()
+
+    const navRail = container.querySelector('.maplab-editor-nav-rail')
+    expect(navRail).toBeInTheDocument()
+
+    // The room list carries the scroll-owner class and named aria-label.
+    const roomList = navRail?.querySelector('.maplab-editor-room-list')
+    expect(roomList).toBeInTheDocument()
+    expect(roomList?.getAttribute('aria-label')).toBe('Rooms on this floor')
+
+    // Only one element in the rail carries the room-list class (it's the unique scroll owner).
+    expect(navRail?.querySelectorAll('.maplab-editor-room-list').length).toBe(1)
+  })
+
   it('adds a new floor above the current floor and activates it', async () => {
     renderMapLabEditorPage()
     await flush()
@@ -922,6 +938,14 @@ describe('MapLabEditorPage (Stage 03 — layer toggles)', () => {
 
     fireEvent.keyDown(window, { key: 'Escape' })
     expect(sheet).not.toHaveAttribute('data-expanded')
+  })
+
+  it('floor tablist is inside the toolbar', async () => {
+    const { container } = renderMapLabEditorPage()
+    await flush()
+
+    const toolbar = container.querySelector('.maplab-toolbar')
+    expect(toolbar?.querySelector('[role="tablist"][aria-label="Dungeon floors"]')).toBeInTheDocument()
   })
 
 })
@@ -2172,6 +2196,30 @@ describe('MapLabEditorPage (Map Lab UX Pass Stage 4 — editor hotkeys)', () => 
     expect(screen.getByRole('button', { name: 'Select' })).toHaveAttribute('aria-pressed', 'true')
   })
 
+  it('quick-select filters a flyout and Enter arms the top match without firing hotkeys', async () => {
+    renderMapLabEditorPage()
+    await flush()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Choose prop kind' }))
+    await act(async () => {
+      vi.runOnlyPendingTimers()
+    })
+
+    const filter = screen.getByRole('searchbox', { name: 'Filter prop tools' })
+    expect(filter).toHaveFocus()
+
+    fireEvent.change(filter, { target: { value: 'table' } })
+    expect(screen.getByRole('menuitem', { name: 'Table' })).toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: 'Chest' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Select' })).toHaveAttribute('aria-pressed', 'true')
+
+    fireEvent.keyDown(filter, { key: 'Enter' })
+
+    expect(screen.queryByRole('searchbox', { name: 'Filter prop tools' })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Choose prop kind' }))
+    expect(screen.getByRole('menuitem', { name: 'Table' })).toHaveAttribute('data-active', 'true')
+  })
+
   it('Escape closes an open popover before disarming the current tool', async () => {
     renderMapLabEditorPage()
     await flush()
@@ -2184,6 +2232,26 @@ describe('MapLabEditorPage (Map Lab UX Pass Stage 4 — editor hotkeys)', () => 
 
     fireEvent.keyDown(window, { key: 'Escape' })
     expect(screen.getByRole('button', { name: 'Select' })).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('second click on armed tool disarms to Select and shows Escape hint', async () => {
+    renderMapLabEditorPage()
+    await flush()
+
+    // Arm the Room tool
+    fireEvent.click(screen.getByRole('button', { name: 'Room' }))
+    expect(screen.getByRole('button', { name: 'Room' })).toHaveAttribute('aria-pressed', 'true')
+    // The armed tool button should show the Escape hint
+    expect(screen.getByRole('button', { name: 'Room' })).toHaveAttribute(
+      'title',
+      'Click again or press Escape to return to Select.',
+    )
+
+    // Click Room again — should disarm to Select
+    fireEvent.click(screen.getByRole('button', { name: 'Room' }))
+    expect(screen.getByRole('button', { name: 'Select' })).toHaveAttribute('aria-pressed', 'true')
+    // The hint should be gone once disarmed
+    expect(screen.getByRole('button', { name: 'Room' })).not.toHaveAttribute('title')
   })
 
   it('wires Ctrl+Z and Ctrl+Shift+Z to editor history', async () => {
@@ -2213,7 +2281,7 @@ describe('MapLabEditorPage (Map Lab UX Pass — tablet navigation drawer)', () =
     const { container } = renderMapLabEditorPage()
     await flush()
 
-    expect(container.querySelector('.maplab-editor-floor-strip .maplab-floor-tabs')).toBeInTheDocument()
+    expect(container.querySelector('.maplab-toolbar [role="tablist"][aria-label="Dungeon floors"]')).toBeInTheDocument()
     const toggle = container.querySelector('.maplab-editor-nav-toggle') as HTMLButtonElement
     expect(toggle).toHaveAttribute('aria-expanded', 'false')
 

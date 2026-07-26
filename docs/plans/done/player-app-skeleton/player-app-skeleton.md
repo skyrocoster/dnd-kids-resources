@@ -1,6 +1,9 @@
 # Player App Skeleton — a tablet at the table showing the live dungeon map
 
-> **Status:** Stages 1–5 shipped; Stage 6 partially shipped (sleep/wake polling and touch-target token done; live session run blocked — requires a human at the table with a 4- and 6-year-old). This is Plan 0 of four (skeleton → fog → knowledge → identity); it remains the next-up plan for the Players area.
+> **Status:** Complete and archived. All six stages shipped, ending with a real session on a real
+> tablet on 2026-07-23. This was Plan 0 of four (skeleton → fog → knowledge → identity); what the
+> session taught is now [Kid Map Legibility](../../active/kid-map-legibility/kid-map-legibility.md),
+> which is next up for Players ahead of fog.
 
 - **Area guide:** [Players](../../../areas/players.md)
 
@@ -170,13 +173,15 @@ dungeon they are running.
 | 5.4 | Fixed a gap found ahead of Order 03: `setAtTheTable` existed in `api/client.ts` and the backend but no component ever called it, so the tablet had no way to ever show a dungeon. The Map Lab session view (`MapLabPage.tsx`) Session toolbar tray now has a "Put at the table" / "At the table" control that reads and sets the pointer. |
 | 6.1 | Map polling now uses recursive `setTimeout` chaining with a `visibilitychange` listener that triggers a fresh poll on device wake, preventing interval pile-up and stale-data windows. |
 | 6.2 | Added `--kid-control-height: 64px` CSS token to `theme.css` (raised touch floor for kid surfaces); `PlayerShell` test verifies `.player-destination` computed `min-height >= 64px`. |
+| 6.3 | A real session was run on a real tablet with a 4- and 6-year-old, on a self-authored 51-room, four-floor dungeon rather than the Widdershins fixture. The record is filed at [2026-07-23](../../../table-tests/2026-07-23-player-app-skeleton-stage-6.md); every finding routes to [Kid Map Legibility](../../active/kid-map-legibility/kid-map-legibility.md). |
 
-## Stage 6 note (pre-run fix)
+## What the session settled
 
-Order 03 (session-run) failed because it requires a human running a real session with a 4- and
-6-year-old on a tablet — an AI cannot perform that. Ahead of a real run, reviewing this plan
-surfaced that the run would have failed regardless: nothing in the DM app ever called
-`setAtTheTable`, so `/play/map` could never show anything but "No map yet." That gap is fixed
-(Stage 5.4). Order 03 is otherwise unchanged and still needs a human to run the actual tablet
-session — set the school at the table from the Map Lab session view's new control, then observe and
-write the real `## Stage 6 learnings` section this note is not a substitute for.
+The structural claims held. The map reads as a place — the children navigated room to room, followed
+corridors, and moved between floors — and the shared-device assumption held with the six-year-old
+driving and the four-year-old watching. Polling was never noticed as lag. Nobody acted on knowledge
+the fiction had not given them, so Plan 1's premise stands untested rather than contradicted.
+
+What failed was the drawing, not the design: doors and room names were too small to see at any
+available zoom, rooms sat at 1.08:1 contrast against the ground, stairs were not drawn at all, and
+twelve rooms with no squares still drew their names onto bare grid. Those are Plan 0.5's subject.

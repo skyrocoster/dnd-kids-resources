@@ -1,6 +1,6 @@
 # Map Lab Editor Usability — the map fills the screen, and every tool is reachable
 
-> **Status:** Stage 0 shipped (both toolbar-height regressions fixed and verified in-browser). Stages 1–7 not started; this is the Dungeons area's next-up plan.
+> **Status:** Stages 0–3 shipped. Stage 4, Fullscreen actually edits, is next.
 
 - **Area guide:** [Dungeons](../../../areas/dungeons.md)
 
@@ -107,14 +107,18 @@ Touch:        48px floor holds; this plan adds no new exception to the DESIGN_SY
               - Floor dropdown and flyout filter both keep 48px rows and are usable on a
                 tablet at the table; the filter field is optional in every case — the list
                 below it is always fully tappable, so no selection requires typing.
-Labels:       RESOLVED, was open. Room labels hold a constant on-screen size instead of
-              scaling with the map, and fade out below a legibility threshold rather than
-              shrinking to sub-pixel. Fitting a real floor (36×27 cells) into 1560×635
-              gives scale 0.367 — a 5ft square at 23px — which is why the fitted editor map
-              currently reads as near-black rectangles with unreadable names. Constant-size
-              labels are what makes "rooms are the focal element" survive a fitted view;
-              fading them below the threshold is what stops them out-shouting the rooms
-              when a floor is dense.
+Labels:       RESOLVED, and NOT OWNED HERE. Room labels hold a constant on-screen size
+              instead of scaling with the map, fade out below a legibility threshold, and
+              anchor at a point inside the room's own squares rather than at the cells'
+              centroid (which lands outside an L- or U-shaped room). Fitting a real floor
+              (36×27 cells) into 1560×635 gives scale 0.367 — a 5ft square at 23px — which
+              is why the fitted editor map currently reads as near-black rectangles with
+              unreadable names. Constant-size labels are what makes "rooms are the focal
+              element" survive a fitted view.
+              The same defect is worse on the kid map, so
+              [Kid Map Legibility](../kid-map-legibility/kid-map-legibility.md) Stage 2 owns
+              the shared label anchor and the constant-size rule for BOTH apps, including
+              this plan's four call sites. This plan consumes that work; it does not do it.
 ```
 
 ## Stages
@@ -133,7 +137,8 @@ Labels:       RESOLVED, was open. Room labels hold a constant on-screen size ins
    on entry instead of keeping a stale pan.
 5. **Fit means fit.** Fit targets the drawn rooms rather than the padded grid, centres them, and
    reports the minimum-zoom clamp instead of overflowing silently — which also fixes the editor
-   opening on blank canvas. Room labels move to constant on-screen size with a fade threshold. Canvas
+   opening on blank canvas. (Room labels are no longer part of this stage: Kid Map Legibility Stage 2
+   owns constant-size labels and the shared anchor for both apps.) Canvas
    chrome is tidied in the same pass: the pan hint stops claiming Escape exits fullscreen when it
    doesn't and stops sitting permanently on the map's corner, fullscreen and fit stop sharing one
    icon, and the zoom/undo rail docks to the canvas edge.
@@ -150,6 +155,9 @@ Labels:       RESOLVED, was open. Room labels hold a constant on-screen size ins
 | Stage | What shipped (≤2 sentences) |
 |-------|------------------------------|
 | 0 | Toolbar stopped being crushed to 6px: as a shrinkable flex sibling of the canvas layout it lost every pixel to proportional shrink, hiding the whole tool palette and the viewer's **At the table** action. Collapsing a tray stopped destroying the screen: `max-width: 0` on a wrapping row grew it to 0×768px and pushed the tabs, canvas and room list out through `overflow: hidden` with no way back. |
+| 1 | Passage, Terrain, and Prop choices now share anchored portaled flyouts that escape toolbar clipping without introducing a scroll region or changing the main tool buttons' accessible names. Armed Room, Passage, Prop, and Terrain buttons now expose the Escape/second-click exit hint and a second click returns to Select. |
+| 2 | Passage, Prop, and Terrain flyouts now open on a focused filter row that narrows the visible tools, keeps the exact filtered-empty copy `No tools match that.`, and lets Enter arm the top visible match. Typing in the filter uses the existing input hotkey guard, so tool shortcuts do not fire while filtering. |
+| 3 | The editor shell header now collapses to a compact edit-mode row, and the dungeon floor tabs live in the toolbar instead of a separate strip. The editor navigation rail is bounded to the workspace while the room list remains the named internal scroll owner, so the rail no longer stretches the page. |
 
 ## Touches
 

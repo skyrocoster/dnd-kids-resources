@@ -1,7 +1,7 @@
 # Players Area Guide
 
 > **Plan queue:**
-> 1. [Player App Skeleton](../plans/active/player-app-skeleton/player-app-skeleton.md) (next up)
+> 1. [Kid Map Legibility](../plans/active/kid-map-legibility/kid-map-legibility.md) (next up)
 
 ## Scope
 
@@ -100,10 +100,13 @@ the tablet.
 
 ## Work queue
 
-- [Player App Skeleton](../plans/active/player-app-skeleton/player-app-skeleton.md) is next up for
-  Stage 6: complete the table-readiness pass now that the live school map is on the tablet.
+- [Kid Map Legibility](../plans/active/kid-map-legibility/kid-map-legibility.md) is next up: the
+  first table test proved the map cannot be read from a child's seat, so doors, stairs, names,
+  contrast and a party marker come before fog.
 - Then, in order: fog as a working ratchet; the per-object knowledge model; ambient identity and
   the personal surfaces.
+- [Player App Skeleton](../plans/done/player-app-skeleton/player-app-skeleton.md) shipped all six
+  stages (archived), ending with the first real table test on 2026-07-23.
 - Gear and weapons are an open branch and have no plan. Whether there is a third kid destination at
   all is undecided, and the question of whether a kid surface should be shaped as a decision tree
   rather than a browsable list should be settled before the personal surfaces are designed.
