@@ -1,6 +1,9 @@
 WORK ORDER 99 — Show armour class on the collapsed creature row (EXAMPLE — never dispatch)
 GOAL: a collapsed creature row card shows its AC beside the existing HP summary.
 DEPENDS ON: none
+REQUIRED STRENGTH: Light
+CREATES: none
+REMOVES: none
 
 KNOWN STATE (already true — do NOT redo or re-derive):
 - This is the reference example for `.agents/skills/to-orders/SKILL.md`. It names real files and

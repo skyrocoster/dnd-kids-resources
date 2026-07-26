@@ -1,6 +1,7 @@
 # Dungeons Area Guide
 
-> **Plan queue:** None.
+> **Plan queue:**
+> 1. [Map Lab Editor Usability](../plans/active/maplab-editor-usability/maplab-editor-usability.md) (next up)
 
 ## Scope
 

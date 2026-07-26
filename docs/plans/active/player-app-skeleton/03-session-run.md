@@ -1,6 +1,9 @@
 WORK ORDER 03 — Run a real session and record learnings as Plan 1 input
 GOAL: A Widdershins Academy session is run on a real tablet; what the device taught us is written into `docs/plans/active/player-app-skeleton.md` under a `## Stage 6 learnings` heading as the input to Plan 1.
 DEPENDS ON: 01, 02
+REQUIRED STRENGTH: High
+CREATES: none
+REMOVES: none
 
 KNOWN STATE (already true — do NOT redo or re-derive):
 - Orders 01 and 02 are both DONE: polling survives sleep/wake, `--kid-control-height: 64px` is in the theme, destination buttons meet the floor, copy is verified, no-exit audit passes.

@@ -21,6 +21,10 @@ compiler may or may not read:
   this escaped twice);
 - an order that spreads several behaviours across a large integrated test file (the one
   order in the log that had to be abandoned at both Light and Standard strength).
+- a structural documentation order whose targeted test never ran the real documentation
+  checker (missing artifacts and stale links escaped twice);
+- a validator change that omitted the validator's own test module; and
+- independently runnable orders where one edits a file another consumes.
 
 Run standalone while compiling a stage, before dispatching anything:
 
@@ -47,10 +51,25 @@ BIG_TEST_FILE_LINES = 800
 MAX_DO_BULLETS_BIG_TEST = 2
 MAX_START_IN_ENTRIES = 6
 
-REQUIRED_FIELDS = ("GOAL:", "DEPENDS ON:", "START IN:", "STOP WHEN:", "STATUS:")
+REQUIRED_FIELDS = (
+    "GOAL:",
+    "DEPENDS ON:",
+    "REQUIRED STRENGTH:",
+    "CREATES:",
+    "REMOVES:",
+    "START IN:",
+    "STOP WHEN:",
+    "STATUS:",
+)
+VALID_STRENGTHS = {"Light", "Standard", "High"}
+TOOL_TEST_PAIRS = {
+    "scripts/check_docs.py": "backend/tests/test_docs_contract.py",
+    "scripts/check_orders.py": "backend/tests/test_check_orders.py",
+}
 
 SECTION_RE = re.compile(
-    r"^(WORK ORDER|GOAL:|DEPENDS ON:|KNOWN STATE|KNOWN TEST FAILURES|START IN:|DO:|"
+    r"^(WORK ORDER|GOAL:|DEPENDS ON:|REQUIRED STRENGTH:|CREATES:|REMOVES:|"
+    r"KNOWN STATE|KNOWN TEST FAILURES|START IN:|DO:|"
     r"STOP WHEN:|STATUS:|DEVIATIONS:|FAILURE REPORT:|RUN SUMMARY:)",
 )
 FAILURE_STATUS_RE = re.compile(r"^STATUS:\s*(FAILED|BLOCKED)\b", re.MULTILINE)
@@ -168,6 +187,22 @@ def start_in_entries(sections: dict[str, list[str]]) -> list[tuple[str, str, str
     return entries
 
 
+def declared_paths(sections: dict[str, list[str]], field: str) -> list[str]:
+    """Repo-relative paths declared by CREATES or REMOVES."""
+    paths: list[str] = []
+    for entry in bullets(sections.get(field, [])):
+        if entry.lower() == "none":
+            continue
+        match = PATHFUL_RE.search(entry)
+        if match:
+            paths.append(match.group(0))
+    return paths
+
+
+def paths_in_do(sections: dict[str, list[str]]) -> set[str]:
+    return {m.group(0) for m in PATHFUL_RE.finditer("\n".join(sections.get("DO", [])))}
+
+
 def _resolve(path_str: str) -> Path:
     return REPO_ROOT / _strip_prefix(path_str)
 
@@ -197,6 +232,13 @@ def lint_order(order_path: Path) -> list[OrderError]:
             "Add the missing work-order fields (see docs/PLAN_TEMPLATE.md)",
         )
 
+    strength = " ".join(sections.get("REQUIRED STRENGTH", []))
+    if "REQUIRED STRENGTH:" in text and strength not in VALID_STRENGTHS:
+        fail(
+            f"REQUIRED STRENGTH must be one of {', '.join(sorted(VALID_STRENGTHS))}: {strength or 'blank'}",
+            "Choose the lowest capability that can execute the bounded order: Light, Standard, or High",
+        )
+
     failure_status = FAILURE_STATUS_RE.search(text)
     if failure_status and "FAILURE REPORT:" not in text:
         fail(
@@ -205,6 +247,22 @@ def lint_order(order_path: Path) -> list[OrderError]:
         )
 
     entries = start_in_entries(sections)
+    creates = declared_paths(sections, "CREATES")
+    removes = declared_paths(sections, "REMOVES")
+    lifecycle_paths = {_normalise(path) for path in creates + removes}
+    for field, paths in (("CREATES", creates), ("REMOVES", removes)):
+        raw = " ".join(sections.get(field, []))
+        if field + ":" in text and raw.lower() != "none" and not paths:
+            fail(
+                f"{field} must be `none` or list full repo-relative file paths",
+                f"List each {field.lower()} path explicitly so the linter can verify the artifact lifecycle",
+            )
+    overlap = sorted(set(map(_normalise, creates)) & set(map(_normalise, removes)))
+    if overlap:
+        fail(
+            f"The same path appears in CREATES and REMOVES: {', '.join(overlap)}",
+            "Declare the final lifecycle once; use separate source and destination paths for a move",
+        )
     if not entries and "START IN:" in text:
         fail(
             "START IN names no files",
@@ -220,11 +278,12 @@ def lint_order(order_path: Path) -> list[OrderError]:
     for raw, path_str, scope in entries:
         resolved = _resolve(path_str)
         if not resolved.exists():
-            fail(
-                f"START IN path does not exist: {path_str}",
-                "Write the full repo-relative path, verified by opening it while compiling "
-                "— a bare filename is a search instruction, not a location",
-            )
+            if _normalise(path_str) not in {_normalise(path) for path in removes}:
+                fail(
+                    f"START IN path does not exist: {path_str}",
+                    "Write the full repo-relative path, verified by opening it while compiling "
+                    "— a bare filename is a search instruction, not a location",
+                )
             continue
         start_in_paths.append(_normalise(path_str))
         if resolved.is_file():
@@ -240,19 +299,25 @@ def lint_order(order_path: Path) -> list[OrderError]:
     do_lines = sections.get("DO", [])
     do_bullets = bullets(do_lines)
     do_text = "\n".join(do_lines)
-    for path_str in sorted(set(PATHFUL_RE.findall(do_text)) | {
-        m.group(0) for m in PATHFUL_RE.finditer(do_text)
-    }):
+    do_paths = paths_in_do(sections)
+    for path_str in sorted(do_paths):
         normalised = _normalise(path_str)
         if not any(
             normalised.endswith(candidate) or candidate.endswith(normalised)
             for candidate in start_in_paths
-        ):
+        ) and normalised not in lifecycle_paths:
             fail(
-                f"DO names a file that START IN does not list: {path_str}",
-                "If DO says touch a file, START IN must list it — otherwise the executor "
-                "edits a file it was never told to open",
+                f"DO names a file that START IN, CREATES, and REMOVES do not list: {path_str}",
+                "Every edit site must be an existing START IN file or an explicit lifecycle artifact",
             )
+
+    for field, paths in (("CREATES", creates), ("REMOVES", removes)):
+        for path_str in paths:
+            if _normalise(path_str) not in {_normalise(path) for path in do_paths}:
+                fail(
+                    f"{field} declares a path that DO does not name: {path_str}",
+                    "Name the lifecycle operation and full path in DO so the executor is explicitly authorized",
+                )
 
     # Bare filenames and unlocated symbols, in the prose fields only. STOP WHEN is
     # excluded: a vitest name filter is legitimately not a path.
@@ -295,6 +360,56 @@ def lint_order(order_path: Path) -> list[OrderError]:
             "Add --no-cov; without it the 97% coverage gate fails every subset run "
             "regardless of the tests",
         )
+
+    for path_str in creates + removes:
+        if _normalise(path_str) not in _normalise(stop_when):
+            fail(
+                f"STOP WHEN does not assert the lifecycle artifact: {path_str}",
+                "Include the full path in an existence/non-existence assertion before the test command",
+            )
+
+    status_done = bool(re.search(r"^STATUS:\s*DONE\b", text, re.MULTILINE))
+    if status_done:
+        for path_str in creates:
+            if not _resolve(path_str).exists():
+                fail(
+                    f"CREATES path is missing from a DONE order: {path_str}",
+                    "Create the declared artifact or do not mark the order DONE",
+                )
+        for path_str in removes:
+            if _resolve(path_str).exists():
+                fail(
+                    f"REMOVES path still exists in a DONE order: {path_str}",
+                    "Remove the declared artifact or do not mark the order DONE",
+                )
+
+    changed_docs = {
+        _normalise(path)
+        for path in do_paths | set(creates) | set(removes)
+        if _normalise(path).startswith("docs/")
+        and not re.match(r"docs/plans/active/[^/]+/\d+-[^/]+\.md$", _normalise(path))
+    }
+    if changed_docs and "scripts/check_docs.py --check" not in stop_when.replace("\\", "/"):
+        fail(
+            "Structural documentation order does not run scripts/check_docs.py --check",
+            "Append the repo-local documentation checker to STOP WHEN so missing artifacts and stale links cannot escape",
+        )
+
+    normalised_start = set(start_in_paths)
+    normalised_stop = _normalise(stop_when)
+    for tool, test_path in TOOL_TEST_PAIRS.items():
+        if _normalise(tool) not in {_normalise(path) for path in do_paths}:
+            continue
+        if _normalise(test_path) not in normalised_start:
+            fail(
+                f"Validator change omits its direct test module from START IN: {test_path}",
+                "A tool discovery or parsing contract must carry the tool's own tests, not only higher-level checks",
+            )
+        if _normalise(test_path) not in normalised_stop:
+            fail(
+                f"Validator change omits its direct test module from STOP WHEN: {test_path}",
+                "Run the validator's exact test module in STOP WHEN",
+            )
     for match in BARE_FULL_SUITE_RE.finditer(stop_when):
         if "typecheck" in match.group(0) or "build" in match.group(0):
             continue
@@ -358,11 +473,67 @@ def lint_orders(orders_root: Path | None = None) -> list[OrderError]:
     if not root.exists():
         return []
     errors: list[OrderError] = []
-    for order in sorted(root.rglob("*.md")):
+    orders = [order for order in sorted(root.rglob("*.md")) if re.match(r"\d+-", order.name)]
+    for order in orders:
         # Only lint numbered work orders, not Plan files in feature directories.
-        if not re.match(r"\d+-", order.name):
-            continue
         errors.extend(lint_order(order))
+    errors.extend(_lint_order_dependencies(orders))
+    return errors
+
+
+def _lint_order_dependencies(orders: list[Path]) -> list[OrderError]:
+    """Require ordering when one runnable order mutates a path another consumes."""
+    errors: list[OrderError] = []
+    parents = sorted({order.parent for order in orders})
+    for parent in parents:
+        errors.extend(_lint_feature_dependencies([order for order in orders if order.parent == parent]))
+    return errors
+
+
+def _lint_feature_dependencies(orders: list[Path]) -> list[OrderError]:
+    """Check dependency conflicts within one feature's order batch."""
+    records: dict[str, tuple[Path, set[str], set[str], set[str]]] = {}
+    for order in orders:
+        text = order.read_text(encoding="utf-8")
+        sections = split_sections(text)
+        number_match = re.match(r"(\d+)-", order.name)
+        if not number_match:
+            continue
+        number = number_match.group(1)
+        reads = {_normalise(path) for _, path, _ in start_in_entries(sections)}
+        writes = {_normalise(path) for path in paths_in_do(sections)}
+        writes.update(_normalise(path) for path in declared_paths(sections, "CREATES"))
+        writes.update(_normalise(path) for path in declared_paths(sections, "REMOVES"))
+        dep_text = " ".join(sections.get("DEPENDS ON", []))
+        deps = set(re.findall(r"\b\d+\b", dep_text)) if dep_text.lower() != "none" else set()
+        records[number] = (order, reads, writes, deps)
+
+    def depends_on(start: str, target: str, seen: set[str] | None = None) -> bool:
+        seen = seen or set()
+        if start in seen or start not in records:
+            return False
+        seen.add(start)
+        deps = records[start][3]
+        return target in deps or any(depends_on(dep, target, seen) for dep in deps)
+
+    errors: list[OrderError] = []
+    numbers = sorted(records)
+    for index, left in enumerate(numbers):
+        left_path, left_reads, left_writes, _ = records[left]
+        for right in numbers[index + 1 :]:
+            right_path, right_reads, right_writes, _ = records[right]
+            conflict = (left_writes & (right_reads | right_writes)) | (
+                right_writes & (left_reads | left_writes)
+            )
+            if not conflict or depends_on(left, right) or depends_on(right, left):
+                continue
+            errors.append(
+                OrderError(
+                    _rel(right_path),
+                    f"Orders {left} and {right} share mutable paths without a dependency: {', '.join(sorted(conflict))}",
+                    f"Add DEPENDS ON: {left} to order {right}, or split the edit sites so the orders are genuinely independent",
+                )
+            )
     return errors
 
 

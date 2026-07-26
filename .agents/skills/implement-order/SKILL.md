@@ -10,8 +10,8 @@ not to improve the wider codebase. Staying inside the fence below is what makes 
 
 ## Steps
 
-1. **Read the work order file** you were given. It has: GOAL, KNOWN STATE, START IN, DO, STOP WHEN,
-   STATUS.
+1. **Read the work order file** you were given. It has: GOAL, KNOWN STATE, START IN,
+   CREATES/REMOVES, DO, STOP WHEN, STATUS.
 
 2. **Trust KNOWN STATE.** Everything listed there is already confirmed true. Do **not** re-verify it,
    re-explore it, or second-guess it. It was checked for you so you don't spend your context on it.
@@ -27,7 +27,9 @@ not to improve the wider codebase. Staying inside the fence below is what makes 
 
 3. **Explore only the files in START IN.** Open those, and only files they directly lead you to for
    this change. Do **not** grep the whole repo or open unrelated areas — that's the wandering this
-   skill exists to prevent.
+   skill exists to prevent. `CREATES` and `REMOVES` authorize lifecycle changes; they are not extra
+   exploration targets. A file listed in REMOVES may also appear in START IN when you must read it
+   before removing it.
 
 4. **Do exactly what DO says — nothing more.** Make the smallest change that meets the GOAL. Do not
    refactor nearby code, rename things, add extra features, or "improve" things you weren't asked to.
@@ -102,10 +104,10 @@ not to improve the wider codebase. Staying inside the fence below is what makes 
 
 ## Stay inside the fence
 
-- Touch only **code and test files** for this change, plus this order's **STATUS** line, its
-  **DEVIATIONS** block, and (on failure) its **FAILURE REPORT** block.
-- Do **not** edit other work orders, the Plan, the docs manifest, area guides, or any reference doc.
-  Those are a planner's job, not yours.
+- Touch only files explicitly authorized by START IN, CREATES, REMOVES, and DO, plus this order's
+  **STATUS** line, its **DEVIATIONS** block, and (on failure) its **FAILURE REPORT** block.
+- Do **not** edit other work orders or any Plan, manifest, area guide, or reference document that the
+  order did not explicitly authorize. Reconcile bookkeeping remains the planner's job.
 - Do **not** start the next work order. One order per context window. When STATUS is written, you're
   finished.
 

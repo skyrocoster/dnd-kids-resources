@@ -28,7 +28,7 @@ Keep the whole doc to roughly one screen. No code — describe intent, not imple
 
 > **Status:** <what's done, what's next — one line, rewritten each stage>
 
-- **Area guide:** [<Area>](../areas/<area>.md)
+- **Area guide:** [<Area>](../../../areas/<area>.md)
 
 ## What we're building & why
 <1–2 short paragraphs: the user-facing shape and the reason it matters.>

@@ -92,7 +92,7 @@ you record what shipped, you don't extend it.
 7. **Delete the spent (`DONE`) order files — but only after telemetry is captured.** Deleting an
    order destroys its STATUS/DEVIATIONS record, so first check `docs/plans/telemetry-log.md` has an
    entry for each order about to be deleted. For any missing one, run
-   `.venv\Scripts\python.exe scripts/order_telemetry.py --order <order-path>` (POSIX:
+   `.venv\Scripts\python.exe scripts/order_telemetry.py --order <order-path> --note "backfilled at reconcile; compiler judgement unavailable"` (POSIX:
    `.venv/bin/python`) — it auto-finds Claude Code transcripts and opencode sessions; if neither exists
    (ChatGPT transport, or the record is gone), log it with
    `--manual "backfilled at reconcile, no usage figures"`. Then delete: when every order in

@@ -740,11 +740,13 @@
   align-items: center;
   flex-wrap: wrap;
   gap: var(--space-2) 0;
-  /* Keeps its natural height while there is room, but yields and scrolls itself before it can push
-   * the canvas — or its own controls — off the bottom of a short screen. */
-  flex: 0 1 auto;
+  /* Never shrinks. As a `flex: 0 1 auto` sibling of the `flex: 1 1 auto` canvas layout the browser
+   * distributed shrinkage proportionally, crushing this 48px row to ~6px — the whole tool palette
+   * became an unclickable sliver — while the canvas still had hundreds of pixels of slack. The
+   * canvas is the element that absorbs a short screen (see `.maplab-canvas-viewport`'s deliberately
+   * small `min-height`), so the toolbar holds its intrinsic height and the canvas gives way. */
+  flex: 0 0 auto;
   min-height: 0;
-  overflow-y: auto;
 }
 
 .maplab-toolbar-group {
@@ -822,6 +824,13 @@
   max-width: 0;
   gap: 0;
   opacity: 0;
+  /* `max-height: 0` is load-bearing, not cosmetic. The controls wrap when open, so squeezing them
+   * to `max-width: 0` put every button on its own line: the tray collapsed to zero width but grew
+   * to ~768px tall — taller than the viewport — pushing the floor tabs, canvas and room list out
+   * through `.maplab-editor`'s `overflow: hidden`, with no way to scroll back to them. Clamping
+   * height here (rather than `flex-wrap: nowrap`) is nesting-proof: the wrapping happens on the
+   * nested `.maplab-tool-palette`, not on this element. Collapsing must take away both axes. */
+  max-height: 0;
 }
 
 /* View popover: wraps the View trigger and its popup panel, sharing the same pattern as the

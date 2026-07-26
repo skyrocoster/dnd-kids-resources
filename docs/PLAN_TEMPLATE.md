@@ -44,7 +44,7 @@ code — you read it to understand *what* and *why*.
 
 > **Status:** <what's done, what's next — one line, rewritten each stage>
 
-- **Area guide:** [<Area>](../../areas/<area>.md)
+- **Area guide:** [<Area>](../../../areas/<area>.md)
 
 ## What we're building & why
 <1–2 short paragraphs.>
@@ -85,6 +85,9 @@ re-explores; the executor writes the code and the STATUS line.
 WORK ORDER <NN> — <short title>
 GOAL: <one sentence — what "done" looks like>
 DEPENDS ON: <order NN that must be DONE first, or "none">
+REQUIRED STRENGTH: <Light, Standard, or High>
+CREATES: <repo-relative paths this order creates, one bullet each, or "none">
+REMOVES: <repo-relative paths this order removes, one bullet each, or "none">
 
 KNOWN STATE (already true — do NOT redo or re-derive):
 - <verified fact: real value, real file location, current test count>
@@ -110,15 +113,17 @@ DEVIATIONS: <-- executor appends, always (even on DONE) — exactly two lines
 ```
 
 The focus leash: **KNOWN STATE** (answers, not pointers) + **START IN** (bounded exploration, each
-entry scoped to the symbol or line range needed) + **STOP WHEN** (a hard stop that ends wandering).
+entry scoped to the symbol or line range needed) + **CREATES/REMOVES** (explicit artifact lifecycle)
++ **STOP WHEN** (a hard stop that ends wandering).
 See `.agents/skills/to-orders/SKILL.md` for the full authoring guidance, and
 [the reference order](plans/_example/99-creature-row-ac.md) for a worked example.
 
 `scripts/check_orders.py` lints orders against these rules and is runnable on its own while
 compiling a stage. Each rule is one fault the telemetry log paid to learn — a path that does not
-resolve, a file named in DO but absent from START IN, a bare filename, a conditional instruction, an
+resolve, an undeclared edit or lifecycle artifact, a bare filename, a conditional instruction, an
 unscoped large file, a fixture with no cast idiom or typecheck, several behaviours aimed at one big
-integrated suite.
+integrated suite, structural documentation without the real checker, validator tests omitted from
+the order, or unsafe parallel edits.
 
 ### On failure — the escalation channel back to the planner
 
@@ -225,7 +230,8 @@ after reading only what it names.
 `scripts/check_docs.py` is aligned with this workflow. For an active Plan it requires only a
 `> **Status:**` line (stages are plain-English list items, not `(next up)` execution blocks). It lints
 work orders under `plans/active/<feature>/` by delegating to `scripts/check_orders.py` — the
-load-bearing fields (`GOAL:`, `DEPENDS ON:`, `START IN:`, `STOP WHEN:`, `STATUS:`), a `FAILURE REPORT:`
+load-bearing fields (`GOAL:`, `DEPENDS ON:`, `REQUIRED STRENGTH:`, `CREATES:`, `REMOVES:`,
+`START IN:`, `STOP WHEN:`, `STATUS:`), a `FAILURE REPORT:`
 block whenever a STATUS line reads FAILED or BLOCKED, and the compiling rules above — validates
 area-guide↔Plan ownership — every active plan must be linked
 from its owning guide's `Plan queue`, which may list several — requires every area guide's

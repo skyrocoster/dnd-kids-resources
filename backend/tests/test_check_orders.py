@@ -32,6 +32,9 @@ co = _import_check_orders()
 GOOD_ORDER = """WORK ORDER 01 — Show the label
 GOAL: the tile shows its label.
 DEPENDS ON: none
+REQUIRED STRENGTH: Light
+CREATES: none
+REMOVES: none
 
 KNOWN STATE (already true — do NOT redo or re-derive):
 - The API already returns `label` on each tile (src/api.ts line 4).
@@ -108,7 +111,7 @@ def test_do_may_not_name_a_file_start_in_omits(repo: Path):
         "START IN:\n- src/Tile.tsx — the header block at lines 3-6, nothing else in this file\n",
     )
     found = messages(repo, order)
-    assert any("START IN does not list" in m for m in found)
+    assert any("START IN, CREATES, and REMOVES do not list" in m for m in found)
 
 
 def test_bare_filename_in_known_state(repo: Path):
@@ -202,6 +205,104 @@ def test_full_suite_stop_check_is_rejected(repo: Path):
     assert any("full-suite command" in m for m in messages(repo, order))
 
 
+def test_required_strength_must_be_explicit(repo: Path):
+    order = GOOD_ORDER.replace("REQUIRED STRENGTH: Light", "REQUIRED STRENGTH: Huge")
+    assert any("REQUIRED STRENGTH must be one of" in m for m in messages(repo, order))
+
+
+def test_lifecycle_artifact_is_authorized_and_asserted(repo: Path):
+    order = GOOD_ORDER.replace(
+        "CREATES: none",
+        "CREATES:\n- docs/new-guide.md",
+    ).replace(
+        "- Add one test to src/__tests__/Tile.test.tsx.",
+        "- Add one test to src/__tests__/Tile.test.tsx.\n- Create docs/new-guide.md.",
+    )
+    found = messages(repo, order)
+    assert any("does not assert the lifecycle artifact" in m for m in found)
+    assert any("does not run scripts/check_docs.py --check" in m for m in found)
+
+    fixed = order.replace(
+        "src/__tests__/Tile.test.tsx` passes.",
+        "src/__tests__/Tile.test.tsx && python -c \"from pathlib import Path; assert Path('docs/new-guide.md').is_file()\" && .venv/Scripts/python.exe scripts/check_docs.py --check` passes.",
+    ).replace("STATUS: DONE", "STATUS: <-- executor writes DONE")
+    assert not any(
+        "lifecycle artifact" in m or "does not run scripts/check_docs.py" in m
+        for m in messages(repo, fixed)
+    )
+
+
+def test_done_order_validates_artifact_final_state(repo: Path):
+    order = GOOD_ORDER.replace(
+        "CREATES: none",
+        "CREATES:\n- docs/new-guide.md",
+    ).replace(
+        "- Add one test to src/__tests__/Tile.test.tsx.",
+        "- Add one test to src/__tests__/Tile.test.tsx.\n- Create docs/new-guide.md.",
+    ).replace(
+        "src/__tests__/Tile.test.tsx` passes.",
+        "src/__tests__/Tile.test.tsx && python -c \"from pathlib import Path; assert Path('docs/new-guide.md').is_file()\" && .venv/Scripts/python.exe scripts/check_docs.py --check` passes.",
+    )
+    assert any("CREATES path is missing" in m for m in messages(repo, order))
+
+
+def test_removed_start_file_is_validated_by_final_state(repo: Path):
+    docs = repo / "docs"
+    docs.mkdir()
+    old = docs / "old-guide.md"
+    old.write_text("# Old\n", encoding="utf-8")
+    order = GOOD_ORDER.replace(
+        "REMOVES: none",
+        "REMOVES:\n- docs/old-guide.md",
+    ).replace(
+        "- src/Tile.tsx — the header block at lines 3-6, nothing else in this file",
+        "- docs/old-guide.md — the title before removal",
+    ).replace(
+        "- Render `label` after the title in src/Tile.tsx.",
+        "- Remove docs/old-guide.md.",
+    ).replace(
+        "src/__tests__/Tile.test.tsx` passes.",
+        "src/__tests__/Tile.test.tsx && python -c \"from pathlib import Path; assert not Path('docs/old-guide.md').exists()\" && .venv/Scripts/python.exe scripts/check_docs.py --check` passes.",
+    )
+    assert any("REMOVES path still exists" in m for m in messages(repo, order))
+
+    old.unlink()
+    assert not any("old-guide.md" in m for m in messages(repo, order))
+
+
+def test_structural_docs_order_needs_real_checker(repo: Path):
+    docs = repo / "docs"
+    docs.mkdir()
+    (docs / "guide.md").write_text("# Guide\n", encoding="utf-8")
+    order = GOOD_ORDER.replace(
+        "- src/Tile.tsx — the header block at lines 3-6, nothing else in this file",
+        "- docs/guide.md — the title",
+    ).replace(
+        "- Render `label` after the title in src/Tile.tsx.",
+        "- Rename the title in docs/guide.md.",
+    )
+    assert any("does not run scripts/check_docs.py" in m for m in messages(repo, order))
+
+
+def test_validator_change_needs_own_test_in_start_and_stop(repo: Path):
+    scripts = repo / "scripts"
+    backend_tests = repo / "backend" / "tests"
+    scripts.mkdir()
+    backend_tests.mkdir(parents=True)
+    (scripts / "check_orders.py").write_text("# checker\n", encoding="utf-8")
+    (backend_tests / "test_check_orders.py").write_text("def test_it(): pass\n", encoding="utf-8")
+    order = GOOD_ORDER.replace(
+        "- src/Tile.tsx — the header block at lines 3-6, nothing else in this file",
+        "- scripts/check_orders.py — lint_order",
+    ).replace(
+        "- Render `label` after the title in src/Tile.tsx.",
+        "- Add a rule in scripts/check_orders.py.",
+    )
+    found = messages(repo, order)
+    assert any("direct test module from START IN" in m for m in found)
+    assert any("direct test module from STOP WHEN" in m for m in found)
+
+
 def test_fixture_order_needs_cast_idiom_and_typecheck(repo: Path):
     """Vitest is a false green for types — this escaped two separate stages."""
     order = GOOD_ORDER.replace(
@@ -267,3 +368,20 @@ def test_lint_orders_walks_the_tree(repo: Path):
     (orders / "01-broken.md").write_text("WORK ORDER 01 — y\nGOAL: x\n", encoding="utf-8")
     found = co.lint_orders(repo / "orders")
     assert found and all(error.file.endswith("01-broken.md") for error in found)
+
+
+def test_shared_mutable_path_requires_dependency(repo: Path):
+    orders = repo / "orders" / "feat"
+    orders.mkdir(parents=True)
+    (orders / "01-first.md").write_text(GOOD_ORDER, encoding="utf-8")
+    second = GOOD_ORDER.replace("WORK ORDER 01", "WORK ORDER 02")
+    (orders / "02-second.md").write_text(second, encoding="utf-8")
+
+    found = co.lint_orders(repo / "orders")
+    assert any("share mutable paths without a dependency" in error.message for error in found)
+
+    (orders / "02-second.md").write_text(
+        second.replace("DEPENDS ON: none", "DEPENDS ON: 01"), encoding="utf-8"
+    )
+    found = co.lint_orders(repo / "orders")
+    assert not any("share mutable paths without a dependency" in error.message for error in found)

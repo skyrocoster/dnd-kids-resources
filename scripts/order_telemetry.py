@@ -216,10 +216,13 @@ def order_shape(order_text: str) -> str:
             if lines > check_orders.SCOPE_REQUIRED_LINES and len(scope) < 3:
                 unscoped += 1
     do_bullets = len(check_orders.bullets(sections.get("DO", [])))
+    creates = len(check_orders.declared_paths(sections, "CREATES"))
+    removes = len(check_orders.declared_paths(sections, "REMOVES"))
+    strength = " ".join(sections.get("REQUIRED STRENGTH", [])) or "not declared"
     return (
-        f"START IN {len(entries)} files / {total_lines:,} lines"
+        f"{strength} | START IN {len(entries)} files / {total_lines:,} lines"
         + (f" ({unscoped} unscoped over {check_orders.SCOPE_REQUIRED_LINES})" if unscoped else "")
-        + f" | DO {do_bullets} behaviour(s)"
+        + f" | DO {do_bullets} behaviour(s) | creates {creates} / removes {removes}"
     )
 
 
@@ -519,11 +522,12 @@ re-dispatch costs a cold start, the planner's attention, and often a stalled dep
 chain — far more than the token spread between a clean run and a verbose one. Read the
 token lines as a diagnosis of *why* an order thrashed, not as the target.
 
-"order shape (compiled)" measures the order rather than the executor: how many files
-START IN named, how many lines they hold, how many were left unscoped, and how many
-behaviours DO asked for. Nearly every compiler note below concludes the order was at
-fault, so this is the column to correlate an expensive run against — and it is only
-capturable now, since order files are deleted at reconcile.
+"order shape (compiled)" measures the order rather than the executor: required strength,
+how many files START IN named, how many lines they hold, how many were left unscoped,
+how many behaviours DO asked for, and how many artifacts it creates or removes. Nearly
+every compiler note below concludes the order was at fault, so this is the column to
+correlate an expensive run against — and it is only capturable now, since order files are
+deleted at reconcile.
 
 Entries marked "(reconcile)" are stage-level, written once per stage by the `reconcile`
 skill rather than per order. Their "escaped targeted checks" lines are the ones to read

@@ -37,6 +37,9 @@ Keep each order to **roughly one screen**. One work order = **one logical change
 WORK ORDER <NN> — <short title>
 GOAL: <one sentence — what "done" looks like>
 DEPENDS ON: <order NN that must be DONE first, or "none">
+REQUIRED STRENGTH: <Light, Standard, or High>
+CREATES: <repo-relative paths this order creates, one bullet each, or "none">
+REMOVES: <repo-relative paths this order removes, one bullet each, or "none">
 
 KNOWN STATE (already true — do NOT redo or re-derive):
 - <a fact the executor would otherwise waste a context window discovering>
@@ -92,6 +95,11 @@ gate runs, and every rule in it is one fault the telemetry log already paid for.
   ```
 
   The linter requires a scope on any entry over 400 lines and rejects paths that don't resolve.
+- **CREATES / REMOVES** — artifact lifecycle, separate from exploration. A future-created path cannot
+  resolve in START IN, while a deleted source path cannot survive the final documentation check.
+  Declare every created and removed file here, name the same full path in DO, and put an explicit
+  existence or non-existence assertion for each path in STOP WHEN. The linter validates the final
+  state when STATUS is DONE. An existing file that will be removed may still be read from START IN.
 - **DO** — the intent in 1–3 lines. Trust the model to write the code; don't write it for them.
 
   **If DO says touch a file, START IN must list it** — otherwise the executor edits files it was
@@ -124,6 +132,11 @@ gate runs, and every rule in it is one fault the telemetry log already paid for.
 
   The linter enforces both halves whenever an order names a frontend test file and mentions a mock
   or fixture.
+
+  **Structural documentation orders run the real checker.** If an order creates, removes, moves, or
+  edits a contract-managed file under `docs/`, append
+  `.venv\Scripts\python.exe scripts/check_docs.py --check` to STOP WHEN after the direct artifact
+  assertions. Targeted parser tests do not catch stale links, missing files, or real-tree routing.
 - **STATUS** — left blank; the executor fills it (`DONE`, `FAILED`, or `BLOCKED`, plus a two-line
   DEVIATIONS block always, and a FAILURE REPORT block on failure — see `docs/PLAN_TEMPLATE.md`).
   That's the only thing they write outside code/tests.
@@ -164,6 +177,9 @@ before compiling.
 1. **Read the Plan stage and the files it implies.** Explore now — this is the paid-once step.
 2. **Split the stage into logical changes.** If a change needs a paragraph of judgement, it's too big:
    split it into smaller orders.
+   Before allowing independent orders to run in parallel, compare their edit sites: when one order
+   edits or removes a file another consumes, add an explicit dependency. The linter rejects mutable
+   overlap between independently runnable orders.
 3. **For each order, fill KNOWN STATE with verified facts** you discovered — so the executor starts
    from truth, not a blank slate.
 4. **Run the order's test command yourself before writing STOP WHEN.** On the frontend,
@@ -175,13 +191,19 @@ before compiling.
    TEST FAILURES**. An executor that meets an unexplained red suite spends its whole context deciding
    whether it broke something.
 5. **Name exact START IN files** you actually opened, each **scoped** to what the executor needs, and
-   a **runnable STOP WHEN**.
+   declare every created/removed artifact. For validator changes, include the validator's direct test
+   module, representative real documents for every accepted grammar shape, and one fixture for every
+   rejected target class stated in KNOWN STATE. Name a **runnable STOP WHEN** that runs the direct
+   test module and, for structural docs, the real documentation checker.
 6. **Leave STATUS blank.** Number the files in dependency order and set each `DEPENDS ON`.
 7. **Run the linter before you dispatch:** `.venv\Scripts\python.exe scripts/check_orders.py`. It
    fails on the faults that cost the most in the log — a path that doesn't resolve, a file named in
    DO but missing from START IN, a bare filename, a conditional instruction, an unscoped large file,
    a fixture without the cast idiom and a typecheck, several behaviours against a big suite. Fixing
    them here costs a minute; discovering them costs a dispatch.
+8. **Set REQUIRED STRENGTH explicitly.** Light is the default for bounded mechanical work; use
+   Standard for ordinary implementation requiring local reasoning, and High only for broad synthesis
+   that should be surfaced to the user rather than dispatched automatically.
 
 ## Worked example
 
