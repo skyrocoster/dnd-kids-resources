@@ -47,12 +47,12 @@ without which the log cannot say whether dispatching beat implementing the chang
 
 ## Scoreboard — current cycle
 
-- order runs: 7 across 7 unique order(s); DONE on one run 6 of 7 (85%), re-dispatched orders 0 (0 extra run(s))
-- stages reconciled: 2 | escaped targeted checks: 0
-- fault attribution: executor 3, none 4
-- spend: executor $0.43 | planner not recorded
-- orders dispatched with an unbounded large file in START IN: 0 of 7 measured
-- escalated above Light: 0 of 7 measured
+- order runs: 23 across 22 unique order(s); DONE on one run 20 of 22 (90%), re-dispatched orders 1 (1 extra run(s))
+- stages reconciled: 9 | escaped targeted checks: 2
+- fault attribution: executor 5, none 14, order 4
+- spend: executor $0.63 | planner $0.03 over 3 stage(s)
+- orders dispatched with an unbounded large file in START IN: 0 of 23 measured
+- escalated above Light: 0 of 23 measured
 
 ## Closed cycle - 2026-07-25 (12 order runs, Map Lab UX stages 7-8)
 
@@ -278,3 +278,281 @@ Raw entries for this cycle: [2026-07-26-maplab-editor-usability-stages-4-7.md](t
 - escaped targeted checks: none — every defect was caught by an order's own STOP WHEN
 - planner cost: compile not recorded | dispatch + repair not recorded | reissues 0
 - reconcile note: Planner compile/dispatch costs are unavailable from this harness and were not estimated. Nothing escaped targeted checks; the mid-dispatch repair exposed an order-authoring defect: verified SVG/viewBox arithmetic must include every bounds contributor in the named fixture, including outside features, before exact test values are compiled.
+
+## 2026-07-27 10:57 — 01-kid-door-leaf-and-swing.md
+- status: DONE
+- first pass: yes
+- order shape (compiled): Light | START IN 5 files / 1,297 lines / 543 bounded | scoping: 4 whole-small, 1 ranged | DO 3 behaviour(s) | creates 0 / removes 0 [dispatch snapshot 2026-07-27T10:57:22; order file changed after dispatch]
+- model: deepseek-v4-flash | turns: 16 | wall: 3m19s
+- tokens: output 11,959 | fresh input 23,907 | cache read 410,240 | cost $0.0078
+- tool calls: read x12, edit x8, bash x2, skill x1
+- largest tool results: read frontend\src\player\PlayerMapRenderer.tsx (~2,834 tok); read docs\plans\active\kid-map-legibility\01-kid-door-leaf-and-swing.md (~2,399 tok); skill (~2,066 tok)
+- duplicate reads: frontend/src/player/PlayerMapRenderer.tsx x4 (0 locating, 3 post-edit), docs/plans/active/kid-map-legibility/01-kid-door-leaf-and-swing.md x2 (0 locating, 1 post-edit), frontend/src/player/__tests__/PlayerMapRenderer.test.tsx x2 (0 locating, 1 post-edit), frontend/src/player/PlayerShell.css x2 (0 locating, 1 post-edit)
+- reads outside START IN: none
+- deviations (executor): opened beyond START IN: none | KNOWN STATE re-verified or wrong: none
+- compiler note: fault: none — Light sufficed in one fix attempt; the bounded START IN and verified geometry/arithmetic facts produced a passing stop-check with no declared deviations.
+- flag: compiler note says fault: none, but the measured lines show 6 post-edit re-read(s)
+- source: opencode session ses_05cfdf2f0ffeAkJi5ipadGdZ2t
+
+## 2026-07-27 11:01 — 02-kid-stair-badges.md
+- status: DONE
+- first pass: yes
+- order shape (compiled): Light | START IN 5 files / 1,762 lines / 561 bounded | scoping: 3 whole-small, 2 ranged | DO 3 behaviour(s) | creates 0 / removes 0 [dispatch snapshot 2026-07-27T11:01:26; order file changed after dispatch]
+- model: deepseek-v4-flash | turns: 20 | wall: 2m25s
+- tokens: output 11,438 | fresh input 25,744 | cache read 540,032 | cost $0.0083
+- tool calls: read x11, edit x9, grep x4, skill x1, bash x1
+- largest tool results: read frontend\src\player\PlayerMapRenderer.tsx (~3,203 tok); read docs\plans\active\kid-map-legibility\02-kid-stair-badges.md (~2,545 tok); skill (~2,066 tok)
+- duplicate reads: frontend/src/model/maplabModel.ts x3 (2 locating, 0 post-edit), docs/plans/active/kid-map-legibility/02-kid-stair-badges.md x2 (1 locating, 0 post-edit), frontend/src/player/PlayerMapRenderer.tsx x2 (0 locating, 1 post-edit), frontend/src/player/__tests__/PlayerMapRenderer.test.tsx x2 (0 locating, 1 post-edit)
+- reads outside START IN: none
+- deviations (executor): opened beyond START IN: none | KNOWN STATE re-verified or wrong: none
+- compiler note: fault: executor — Light sufficed and stayed inside START IN, but the executor repeated four locating reads despite exact bounded helper contracts and made two post-edit re-reads; retain the order shape and enforce the read guard.
+- source: opencode session ses_05cfa3e56ffeYEDsy6hDd7Yjne
+
+## 2026-07-27 11:08 — kid-map-legibility stage 3 (reconcile)
+- stage checks: pytest: pass (634 passed in 76.12s (0:01:16); Required test coverage of 97% reached. Total coverage: 97.25%) / test:check --strict: pass (test:check — 1392 tests, 10 failing, 10 of them already known.; test:check PASS — no new failures.) / lint: pass / build: pass (✓ built in 591ms) / check_docs --check: pass
+- escaped targeted checks: none — every defect was caught by an order's own STOP WHEN
+- planner cost: compile not recorded | dispatch + repair not recorded | reissues 0
+- reconcile note: No defects escaped the targeted checks; this harness exposes no planner-session cost figures, so compile and dispatch costs could not be recorded without guessing.
+
+## 2026-07-27 13:41 — 01-promote-canvas-layer.md
+- status: DONE
+- first pass: yes
+- order shape (compiled): Light | START IN 5 files / 3,649 lines / 539 bounded | scoping: 3 whole-small, 2 ranged | DO 3 behaviour(s) | creates 5 / removes 5 [dispatch snapshot 2026-07-27T13:41:42; order file changed after dispatch]
+- model: deepseek-v4-flash | turns: 16 | wall: 3m11s
+- tokens: output 8,883 | fresh input 18,343 | cache read 290,176 | cost $0.0059
+- tool calls: edit x12, read x9, bash x5, skill x1
+- largest tool results: read docs\plans\active\kid-map-viewer\01-promote-canvas-layer.md (~2,753 tok); skill (~2,066 tok); bash cd frontend && npm run test:check -- src/map/__tests__/canvasGrid.t... (~1,180 tok)
+- duplicate reads: docs/plans/active/kid-map-viewer/01-promote-canvas-layer.md x2 (0 locating, 1 post-edit)
+- reads outside START IN: frontend/src/map/__tests__/canvasGrid.test.ts, frontend/src/map/__tests__/useMapCanvasZoom.test.ts
+- deviations (executor): KNOWN STATE re-verified or wrong: KNOWN STATE said "three occurrences, exactly one per source file" of `'../../../model/maplabModel'` but `canvasGrid.test.ts` had a fourth occurrence at `../../../../model/maplabModel` that needed updating to `../../model/maplabModel` after relocation.
+- compiler note: fault: order — Light completed the relocation cleanly, but the order omitted a relocated canvasGrid.test.ts model import; executor found and corrected that under-specified path.
+- source: opencode session ses_05c677f0fffe4PuEfi6iCElJAi
+
+## 2026-07-27 13:45 — 02-promote-map-density.md
+- status: DONE
+- first pass: yes
+- order shape (compiled): Light | START IN 1 files / 1,001 lines / 60 bounded | scoping: 1 ranged | DO 2 behaviour(s) | creates 1 / removes 0 [dispatch snapshot 2026-07-27T13:45:23; order file changed after dispatch]
+- model: deepseek-v4-flash | turns: 28 | wall: 4m45s
+- tokens: output 17,891 | fresh input 19,587 | cache read 672,512 | cost $0.0096
+- tool calls: bash x14, read x8, edit x6, grep x4, glob x3, skill x1, write x1
+- largest tool results: skill (~2,066 tok); read docs\plans\active\kid-map-viewer\02-promote-map-density.md (~1,527 tok); read frontend\known-test-failures.json (~1,090 tok)
+- duplicate reads: docs/plans/active/kid-map-viewer/02-promote-map-density.md x2 (0 locating, 1 post-edit), frontend/src/features/dungeons/maplab/MapLabPage.tsx x2 (1 locating, 0 post-edit)
+- reads outside START IN: frontend/known-test-failures.json, frontend/src/features/dungeons/maplab, frontend/src/features/dungeons/maplab/PortalMarker.tsx, frontend/src/features/dungeons/maplab/__tests__/MapLabPage.test.tsx
+- deviations (executor): KNOWN STATE re-verified or wrong: none
+- compiler note: fault: none — Light completed the symbol move cleanly; no declared deviations and the order's bounded density extraction held.
+- flag: compiler note says fault: none, but the measured lines show 4 read(s) outside START IN and 1 post-edit re-read(s)
+- source: opencode session ses_05c641ccafferE1t3Zhvl8RJo5
+
+## 2026-07-27 13:45 — 03-promote-marker-shape.md
+- status: DONE
+- first pass: yes
+- order shape (compiled): Light | START IN 3 files / 1,024 lines / 261 bounded | scoping: 2 whole-small, 1 ranged | DO 4 behaviour(s) | creates 2 / removes 0 [dispatch snapshot 2026-07-27T13:45:23; order file changed after dispatch]
+- model: deepseek-v4-flash | turns: 19 | wall: 4m14s
+- tokens: output 21,005 | fresh input 23,669 | cache read 626,688 | cost $0.0109
+- tool calls: bash x9, edit x9, read x8, write x2, skill x1
+- largest tool results: read docs\plans\active\kid-map-viewer\03-promote-marker-shape.md (~2,997 tok); skill (~2,066 tok); read frontend\src\features\dungeons\maplab\StairMarker.tsx (~1,260 tok)
+- duplicate reads: frontend/src/features/dungeons/maplab/PortalMarker.tsx x3 (0 locating, 2 post-edit), frontend/src/features/dungeons/maplab/StairMarker.tsx x2 (0 locating, 1 post-edit), frontend/src/model/maplabModel.ts x2 (1 locating, 0 post-edit)
+- reads outside START IN: none
+- deviations (executor): KNOWN STATE re-verified or wrong: none
+- compiler note: fault: order — Light completed the extraction, but the order's initial markerShape import path was wrong; executor corrected the path without broader thrashing.
+- source: opencode session ses_05c641c6affe6X3LsA52UQiase
+
+## 2026-07-27 13:50 — 04-prop-marker-shape.md
+- status: DONE
+- first pass: yes
+- order shape (compiled): Light | START IN 3 files / 1,073 lines / 307 bounded | scoping: 2 whole-small, 1 ranged | DO 2 behaviour(s) | creates 0 / removes 0 [dispatch snapshot 2026-07-27T13:50:42; order file changed after dispatch]
+- model: deepseek-v4-flash | turns: 14 | wall: 2m21s
+- tokens: output 10,670 | fresh input 20,734 | cache read 299,776 | cost $0.0067
+- tool calls: read x8, edit x6, bash x3, skill x1, grep x1
+- largest tool results: skill (~2,066 tok); read docs\plans\active\kid-map-viewer\04-prop-marker-shape.md (~2,030 tok); read frontend\src\features\dungeons\maplab\PropMarker.tsx (~1,386 tok)
+- duplicate reads: frontend/src/model/maplabModel.ts x3 (2 locating, 0 post-edit), frontend/src/features/dungeons/maplab/PropMarker.tsx x2 (0 locating, 1 post-edit), frontend/src/map/markerShape.tsx x2 (0 locating, 1 post-edit)
+- reads outside START IN: none
+- deviations (executor): KNOWN STATE re-verified or wrong: none
+- compiler note: fault: none — Light completed the shared prop-marker extraction cleanly in one pass; no declared deviations or repair was needed.
+- flag: compiler note says fault: none, but the measured lines show 2 post-edit re-read(s)
+- source: opencode session ses_05c5f4979ffekPXek7sY6o4Mar
+
+## 2026-07-27 13:58 — kid-map-viewer stage 1 (reconcile)
+- stage checks: pytest: pass (634 passed in 69.29s; coverage 97.25%) / test:check --strict: pass (1396 tests, 11 known failures) / lint: pass / build: pass / check_docs --check: FAIL before reconciliation, fixed by adding frontend/src/map/** to players change map
+- escaped targeted checks: none — every defect was caught by an order's own STOP WHEN
+- planner cost: compile not recorded | dispatch + repair $0.03 | reissues 0
+- reconcile note: Stage checks initially caught missing area-guide coverage for the new shared frontend/src/map/** module; reconciliation added the Players change-map entry. No implementation defect escaped targeted checks.
+
+## 2026-07-27 14:16 — 01-curtain-visibility.md
+- status: DONE
+- first pass: yes
+- order shape (compiled): Light | START IN 3 files / 801 lines / 143 bounded | scoping: 2 whole-small, 1 ranged | DO 2 behaviour(s) | creates 0 / removes 0 [dispatch snapshot 2026-07-27T14:16:38; order file changed after dispatch]
+- model: deepseek-v4-flash | turns: 48 | wall: 8m03s
+- tokens: output 38,492 | fresh input 33,057 | cache read 2,334,080 | cost $0.0219
+- tool calls: edit x25, read x17, grep x9, bash x4, skill x1
+- largest tool results: read frontend\src\player\__tests__\usePlayerMapData.test.ts (~2,413 tok); skill (~2,066 tok); read frontend\src\player\__tests__\PlayerMapRenderer.test.tsx (~2,055 tok)
+- duplicate reads: frontend/src/player/PlayerMapRenderer.tsx x7 (0 locating, 6 post-edit), frontend/src/player/usePlayerMapData.ts x2 (0 locating, 1 post-edit)
+- reads outside START IN: frontend/src/player/PlayerMapRenderer.tsx, frontend/src/player/PlayerShell.tsx, frontend/src/player/__tests__/PlayerMapRenderer.test.tsx, frontend/src/player/__tests__/PlayerShell.test.tsx, frontend/src/player/__tests__/usePlayerMapData.test.ts, frontend/src/player/usePlayerMapData.ts
+- deviations (executor): none
+- compiler note: fault: executor — Light completed the curtain, but the stripped KidMapLayout type required downstream player hook, renderer, and test fixture updates beyond the order's two named edit files; verify whether those deviations are necessary at reconcile.
+- source: opencode session ses_05c4786d0ffeJGqgH2iU0o3e1I
+
+## 2026-07-27 14:33 — 02-correct-renderer-size-assertions.md
+- status: DONE
+- first pass: yes
+- order shape (compiled): Light | START IN 1 files / 147 lines / 147 bounded | scoping: 1 whole-small | DO 1 behaviour(s) | creates 0 / removes 0 [dispatch snapshot 2026-07-27T14:33:48; order file changed after dispatch]
+- reissue diff: fields changed: REMOVES, STOP WHEN (+1 lines, 23 → 24)
+- model: deepseek-v4-flash | turns: 11 | wall: 1m22s
+- tokens: output 5,417 | fresh input 14,249 | cache read 148,992 | cost $0.0039
+- tool calls: edit x5, read x3, bash x2, skill x1
+- largest tool results: skill (~2,066 tok); read frontend\src\player\__tests__\PlayerMapRenderer.test.tsx (~1,987 tok); read docs\plans\active\kid-map-viewer\02-correct-renderer-size-assertion... (~505 tok)
+- duplicate reads: docs/plans/active/kid-map-viewer/02-correct-renderer-size-assertions.md x2 (1 locating, 0 post-edit)
+- reads outside START IN: none
+- deviations (executor): KNOWN STATE re-verified or wrong: wrong — the label-size test had a second assertion (64px viewport, expected 176px → actual 128px) not mentioned in KNOWN STATE, exposed only after fixing the first. Fixed as part of the same "room label font size" item in DO.
+- compiler note: fault: order — The stage-level check exposed stale expected literals in PlayerMapRenderer.test.tsx; the corrective order fixed the three reported values and one additional same-test viewport assertion revealed after the first failure.
+- source: opencode session ses_05c37c91bffeCaVvNM1KTW9Pbc
+
+## 2026-07-27 14:38 — kid-map-viewer stage 2 (reconcile)
+- stage checks: pytest: pass (634 passed in 71.66s (0:01:11); Required test coverage of 97% reached. Total coverage: 97.25%) / test:check --strict: pass (test:check — 1401 tests, 10 failing, 10 of them already known.; test:check PASS — no new failures.) / lint: pass / build: pass (✓ built in 543ms) / check_docs --check: pass
+- escaped targeted checks: 01-curtain-visibility.md's STOP WHEN ran only curtain.test.ts, but the executor also modified PlayerMapRenderer.test.tsx; three stale renderer-size assertions escaped and required corrective order 02. This is a repeatable order-scoping fault.
+- planner cost: compile not recorded | dispatch + repair not recorded | reissues 1
+- reconcile note: The curtain order's declared DO and STOP WHEN did not authorize or test the downstream player renderer files that became necessary after changing the returned layout type. Future orders changing a shared player data type must name and run every directly affected player suite, or keep the public type unchanged.
+
+## 2026-07-27 14:54 — 01-shared-viewer-renderer.md
+- status: DONE
+- first pass: yes
+- order shape (compiled): Light | START IN 6 files / 1,573 lines / 1,135 bounded | scoping: 5 whole-small, 1 ranged | DO 3 behaviour(s) | creates 0 / removes 0 [dispatch snapshot 2026-07-27T14:54:05; order file changed after dispatch]
+- model: deepseek-v4-flash | turns: 35 | wall: 9m00s
+- tokens: output 52,278 | fresh input 34,215 | cache read 1,894,656 | cost $0.0247
+- tool calls: read x19, grep x9, edit x8, write x2, bash x2, skill x1, glob x1
+- largest tool results: read frontend\src\player\PlayerMapRenderer.tsx (~3,551 tok); read frontend\src\map\MapCanvas.tsx (~2,323 tok); skill (~2,066 tok)
+- duplicate reads: frontend/src/map/useMapCanvasZoom.ts x4 (3 locating, 0 post-edit), frontend/src/theme.css x3 (0 locating, 2 post-edit), frontend/src/features/dungeons/maplab/MapLabPage.css x3 (2 locating, 0 post-edit), docs/plans/active/kid-map-viewer/01-shared-viewer-renderer.md x2 (0 locating, 1 post-edit)
+- reads outside START IN: frontend/src/features/dungeons/maplab/MapLabPage.css, frontend/src/map/mapDensity.ts, frontend/src/model/maplabModel.ts, frontend/src/test/setup.ts
+- deviations (executor): KNOWN STATE re-verified or wrong: none
+- compiler note: fault: none — Light sufficed; shared canvas migration completed with no reported deviations. The order's bounded START IN held and the executor added the requested one-floor, density-label, and no-grid coverage.
+- flag: compiler note says fault: none, but the measured lines show 4 read(s) outside START IN and 3 post-edit re-read(s)
+- source: opencode session ses_05c2545f4ffezOFodffrJQqsfl
+
+## 2026-07-27 15:09 — 01-shared-viewer-renderer.md
+- status: DONE
+- first pass: no - run 2 of this order
+- order shape (compiled): Light | START IN 6 files / 1,522 lines / 1,087 bounded | scoping: 5 whole-small, 1 ranged | DO 4 behaviour(s) | creates 0 / removes 0 [dispatch snapshot 2026-07-27T15:09:29; order file changed after dispatch]
+- reissue diff: fields changed: DO, REMOVES, STOP WHEN (+5 lines, 35 → 40)
+- model: deepseek-v4-flash | turns: 24 | wall: 4m09s
+- tokens: output 16,196 | fresh input 47,795 | cache read 1,065,856 | cost $0.0142
+- tool calls: read x13, bash x13, glob x4, grep x4, edit x3, skill x1
+- largest tool results: bash cd "F:\DND\Kids Resources" && git diff -- frontend/src/player/Playe... (~4,826 tok); read frontend\src\map\useMapCanvasZoom.ts (~3,330 tok); read frontend\src\player\PlayerMapRenderer.tsx (~2,539 tok)
+- duplicate reads: frontend/src/player/PlayerMapRenderer.tsx x3 (0 locating, 2 post-edit), docs/plans/active/kid-map-viewer/01-shared-viewer-renderer.md x2 (1 locating, 0 post-edit)
+- reads outside START IN: frontend/scripts/test-check.mjs, frontend/src/player/PlayerShell.tsx, frontend/src/player/__tests__/PlayerShell.test.tsx
+- deviations (executor): KNOWN STATE re-verified or wrong: none
+- compiler note: fault: order — Reissue fixed an order omission: the initial migration removed the existing Dungeon map region landmark, which the PlayerShell suite still requires. Light sufficed; the corrective wrapper restored the landmark without changing MapCanvas.
+- source: opencode session ses_05c17222affeTvIscO34qVd8eL
+
+## 2026-07-27 15:17 — kid-map-viewer stage 3 (reconcile)
+- stage checks: pytest: pass (634 passed in 77.32s (0:01:17); Required test coverage of 97% reached. Total coverage: 97.25%) / test:check --strict: pass (test:check — 1404 tests, 11 failing, 11 of them already known.; test:check PASS — no new failures.) / lint: pass / build: pass (✓ built in 564ms) / check_docs --check: pass
+- escaped targeted checks: PlayerShell ready-map accessibility landmark was dropped by order 01's shared-canvas migration and caught only by the full suite; this is a new occurrence for this feature, not a repeat in the current cycle.
+- planner cost: compile not recorded | dispatch + repair not recorded | reissues 1
+- reconcile note: When replacing a renderer or wrapper, to-orders must explicitly preserve and test existing accessibility landmarks in neighboring route-shell suites, not only the renderer's colocated tests.
+
+## 2026-07-27 17:03 — 01-floor-picker.md
+- status: DONE
+- first pass: yes
+- order shape (compiled): Light | START IN 2 files / 920 lines / 145 bounded | scoping: 1 ranged, 1 whole-small | DO 3 behaviour(s) | creates 2 / removes 0 [dispatch snapshot 2026-07-27T17:03:23; order file changed after dispatch]
+- model: deepseek-v4-flash | turns: 17 | wall: 1m18s
+- tokens: output 5,294 | fresh input 23,502 | cache read 310,272 | cost $0.0056
+- tool calls: read x7, grep x5, glob x3, edit x3, bash x2, write x2, skill x1
+- largest tool results: read frontend\src\player\__tests__\PlayerMapRenderer.test.tsx (~2,463 tok); skill (~2,066 tok); grep frontend\src (~1,587 tok)
+- duplicate reads: docs/plans/active/kid-map-viewer/01-floor-picker.md x3 (0 locating, 2 post-edit), frontend/src/model/maplabModel.ts x2 (1 locating, 0 post-edit)
+- reads outside START IN: frontend/src/player/__tests__/PlayerMapRenderer.test.tsx
+- deviations (executor): KNOWN STATE re-verified or wrong: none
+- compiler note: fault: none — Light completed cleanly; bounded model anchor and whole-small CSS were sufficient, with no reported deviations or test failures.
+- flag: compiler note says fault: none, but the measured lines show 1 read(s) outside START IN and 2 post-edit re-read(s)
+- source: opencode session ses_05baed854ffepq73bzBfW8n3Zo
+
+## 2026-07-27 17:05 — 02-wire-floor-picker.md
+- status: DONE
+- first pass: yes
+- order shape (compiled): Light | START IN 3 files / 593 lines / 593 bounded | scoping: 3 whole-small | DO 3 behaviour(s) | creates 0 / removes 0 [dispatch snapshot 2026-07-27T17:05:05; order file changed after dispatch]
+- model: deepseek-v4-flash | turns: 25 | wall: 2m26s
+- tokens: output 9,935 | fresh input 30,202 | cache read 645,248 | cost $0.0088
+- tool calls: edit x12, read x9, bash x4, skill x1, grep x1
+- largest tool results: read frontend\src\player\PlayerMapRenderer.tsx (~2,618 tok); read frontend\src\player\PlayerMapRenderer.tsx (~2,563 tok); read frontend\src\player\__tests__\PlayerMapRenderer.test.tsx (~2,466 tok)
+- duplicate reads: frontend/src/player/__tests__/PlayerMapRenderer.test.tsx x3 (0 locating, 2 post-edit), frontend/src/player/PlayerMapRenderer.tsx x2 (0 locating, 1 post-edit)
+- reads outside START IN: frontend/src/model/maplabModel.ts, frontend/src/player/FloorPicker.tsx
+- deviations (executor): KNOWN STATE re-verified or wrong: none
+- compiler note: fault: none — Light completed the renderer integration cleanly; the three bounded source/test/style files and inherited picker contract were sufficient, with targeted tests, lint, and typecheck passing.
+- flag: compiler note says fault: none, but the measured lines show 2 read(s) outside START IN and 3 post-edit re-read(s)
+- source: opencode session ses_05bad32b9ffeCWn8s6ScQhqIjm
+
+## 2026-07-27 17:13 — kid-map-viewer stage 4 (reconcile)
+- stage checks: pytest: pass (634 passed in 73.27s (0:01:13); Required test coverage of 97% reached. Total coverage: 97.25%) / test:check --strict: pass (test:check — 1411 tests, 10 failing, 10 of them already known.; test:check PASS — no new failures.) / lint: pass / build: pass (✓ built in 1.40s) / check_docs --check: pass
+- escaped targeted checks: none — every defect was caught by an order's own STOP WHEN
+- planner cost: compile $0.00 | dispatch + repair $0.00 | reissues 0
+- reconcile note: Planner compile and dispatch usage figures were not recorded; both Light orders completed on first pass. The repeated outside-START-IN reads were visible in per-order telemetry and should be reduced by naming the dependent component/test seam explicitly in future orders.
+
+## 2026-07-27 17:20 — 05-derive-kid-palette.md
+- status: DONE
+- first pass: yes
+- order shape (compiled): Light | START IN 4 files / 981 lines / 714 bounded | scoping: 3 whole-small, 1 ranged | DO 2 behaviour(s) | creates 2 / removes 0 [dispatch snapshot 2026-07-27T17:20:16; order file changed after dispatch]
+- model: deepseek-v4-flash | turns: 27 | wall: 4m51s
+- tokens: output 32,640 | fresh input 33,365 | cache read 1,136,640 | cost $0.0170
+- tool calls: read x9, bash x8, edit x7, grep x4, write x2, skill x1
+- largest tool results: read scripts\derive-kid-palette.mjs (~2,853 tok); read frontend\src\theme.css (~2,096 tok); skill (~2,066 tok)
+- duplicate reads: docs/plans/active/kid-map-viewer/05-derive-kid-palette.md x2 (1 locating, 0 post-edit), docs/plans/active/kid-map-viewer/kid-map-viewer.md x2 (1 locating, 0 post-edit)
+- reads outside START IN: scripts/derive-kid-palette.mjs, scripts/derive-kid-palette.test.mjs
+- deviations (executor): KNOWN STATE re-verified or wrong: none
+- compiler note: fault: none — Light executor completed the bounded solver and tests; targeted checks passed with no reported deviations.
+- flag: compiler note says fault: none, but the measured lines show 2 read(s) outside START IN
+- source: opencode session ses_05b9f6b8affeBJ1BkjBIYJwEV6
+
+## 2026-07-27 17:25 — 06-gate-kid-palette.md
+- status: DONE
+- first pass: yes
+- order shape (compiled): Light | START IN 6 files / 4,151 lines / 874 bounded | scoping: 2 whole-small, 4 ranged | DO 2 behaviour(s) | creates 0 / removes 0 [dispatch snapshot 2026-07-27T17:25:42; order file changed after dispatch]
+- model: deepseek-v4-flash | turns: 42 | wall: 13m40s
+- tokens: output 32,406 | fresh input 50,737 | cache read 2,220,032 | cost $0.0224
+- tool calls: read x24, bash x14, edit x8, grep x5, skill x1, write x1, glob x1
+- largest tool results: read scripts\derive-kid-palette.mjs (~2,923 tok); read frontend\src\theme.css (~2,589 tok); read frontend\src\theme.css (~2,097 tok)
+- duplicate reads: scripts/check_docs.py x9 (8 locating, 0 post-edit), backend/tests/test_docs_contract.py x5 (4 locating, 0 post-edit), frontend/src/theme.css x3 (1 locating, 1 post-edit), docs/DESIGN_SYSTEM.md x3 (1 locating, 1 post-edit)
+- reads outside START IN: docs/areas/design.md
+- deviations (executor): KNOWN STATE re-verified or wrong: none
+- compiler note: fault: none — Light executor completed the generated palette gate, theme publication, checker coverage, and design reference update; targeted checks passed.
+- flag: compiler note says fault: none, but the measured lines show 1 read(s) outside START IN and 2 post-edit re-read(s)
+- source: opencode session ses_05b9a71efffeZSf1W7cNr846QM
+
+## 2026-07-27 17:45 — kid-map-viewer stage 5 (reconcile)
+- stage checks: pytest: pass (637 passed in 71.25s (0:01:11); Required test coverage of 97% reached. Total coverage: 97.25%) / test:check --strict: pass (test:check — 1411 tests, 11 failing, 11 of them already known.; test:check PASS — no new failures.) / lint: pass / build: pass (✓ built in 542ms) / check_docs --check: pass
+- escaped targeted checks: none — every defect was caught by an order's own STOP WHEN
+- planner cost: compile not recorded | dispatch + repair not recorded | reissues 0
+- reconcile note: Planner compile and dispatch costs were not available from this harness; no targeted-check escapes. The two executor runs completed at Light on first pass.
+
+## 2026-07-27 17:58 — 01-kid-marker-glyphs.md
+- status: DONE
+- first pass: yes
+- order shape (compiled): Light | START IN 4 files / 1,272 lines / 302 bounded | scoping: 2 whole-small, 2 ranged | DO 2 behaviour(s) | creates 0 / removes 0 [dispatch snapshot 2026-07-27T17:58:05; order file changed after dispatch]
+- model: deepseek-v4-flash | turns: 16 | wall: 2m44s
+- tokens: output 15,653 | fresh input 19,956 | cache read 382,592 | cost $0.0082
+- tool calls: read x7, edit x6, grep x4, bash x2, skill x1
+- largest tool results: skill (~2,066 tok); bash cd frontend && npm run test:check -- src/map/__tests__/markerShape.... (~1,638 tok); bash cd frontend && npm run test:check -- src/map/__tests__/markerShape.... (~1,421 tok)
+- duplicate reads: frontend/src/components/icons/index.ts x2 (1 locating, 0 post-edit)
+- reads outside START IN: frontend/.oxlintrc.json
+- deviations (executor): KNOWN STATE re-verified or wrong: KNOWN STATE said markerShape.tsx "may import model types and icon exports" from the barrel, but `src/map/**` has a `no-restricted-imports` rule blocking `**/components/**`, `**/features/**`, `**/layout/**`, `**/pages/**`. Worked around by importing the same lucide-react components directly instead of via the `components/icons` barrel — same symbols, no bundle change, no lint error.
+- compiler note: fault: none — Light executor completed cleanly; no implementation failures reported and the order's targeted checks passed. The executor correctly avoided the components barrel because the map-layer import rule blocks it, a fact the order's KNOWN STATE should have stated explicitly.
+- flag: compiler note says fault: none, but the measured lines show 1 read(s) outside START IN
+- source: opencode session ses_05b7cbfd9ffewgB9C3nsBl1Phq
+
+## 2026-07-27 18:01 — 02-render-kid-markers.md
+- status: DONE
+- first pass: yes
+- order shape (compiled): Light | START IN 4 files / 910 lines / 910 bounded | scoping: 4 whole-small | DO 3 behaviour(s) | creates 0 / removes 0 [dispatch snapshot 2026-07-27T18:01:26; order file changed after dispatch]
+- model: deepseek-v4-flash | turns: 39 | wall: 7m26s
+- tokens: output 44,618 | fresh input 36,424 | cache read 2,303,744 | cost $0.0240
+- tool calls: edit x19, read x16, bash x5, skill x1, grep x1
+- largest tool results: read frontend\src\player\__tests__\PlayerMapRenderer.test.tsx (~2,948 tok); read frontend\src\player\__tests__\PlayerMapRenderer.test.tsx (~2,948 tok); read frontend\src\player\PlayerMapRenderer.tsx (~2,618 tok)
+- duplicate reads: frontend/src/player/PlayerMapRenderer.tsx x8 (0 locating, 7 post-edit), frontend/src/player/__tests__/PlayerMapRenderer.test.tsx x4 (1 locating, 2 post-edit), docs/plans/active/kid-map-viewer/02-render-kid-markers.md x2 (1 locating, 0 post-edit)
+- reads outside START IN: none
+- deviations (executor): KNOWN STATE re-verified or wrong: none
+- compiler note: fault: none — Light executor completed the dependent renderer order on the first pass; the targeted renderer and shared-marker checks, typecheck, and lint were reported passing. No deviations or scope misses were reported.
+- flag: compiler note says fault: none, but the measured lines show 9 post-edit re-read(s)
+- source: opencode session ses_05b79bed4ffeN8HKCx2C8c4aC0
+
+## 2026-07-27 18:19 — kid-map-viewer stage 6 (reconcile)
+- stage checks: pytest: pass (637 passed in 77.68s (0:01:17); Required test coverage of 97% reached. Total coverage: 97.25%) / test:check --strict: pass (test:check — 1424 tests, 11 failing, 11 of them already known.; test:check PASS — no new failures.) / lint: pass / build: pass (✓ built in 2.07s) / check_docs --check: pass
+- escaped targeted checks: none — every defect was caught by an order's own STOP WHEN
+- planner cost: compile $0.00 | dispatch + repair $0.00 | reissues 0
+- reconcile note: Planner compile and dispatch usage figures were not available from this harness; both Light orders completed on the first pass. No targeted-check defects escaped, although order 01 omitted the map-layer import restriction and the executor had to avoid the icons barrel.

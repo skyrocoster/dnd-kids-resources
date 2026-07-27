@@ -1,9 +1,32 @@
 # Kid Map Legibility — the tablet map reads from a child's seat
 
-> **Status:** Stages 1-2 shipped. Next: Stage 3, doors and stairs children can find. Written from the first table
-> test, [2026-07-23 Stage 6](../../../table-tests/2026-07-23-player-app-skeleton-stage-6.md).
+> **Status:** Closed 2026-07-27, superseded before completion. Stages 1-3 shipped; Stages 4-7 were
+> never built and are **not** carried forward as written. Superseded by
+> [Kid Map Viewer](../../active/kid-map-viewer/kid-map-viewer.md), which re-plans the same outcome
+> from a different diagnosis.
 
 - **Area guide:** [Players](../../../areas/players.md)
+
+## Why this was superseded
+
+Looking at `/play/map` on dungeon 4 after Stage 3 showed the map still unreadable, and measuring it
+showed this plan had the cause wrong. It diagnosed the room fill's 1.08:1 contrast against the floor
+plate as the bug and spent Stage 1 fixing it — but the DM viewer has essentially the same weak fill
+ratio (1.23:1) and reads fine, because its contrast is spent on the **wall** and its wall has a real
+pixel width. The kid map ended up with better numbers on every single measurement and looking like
+graph paper, because the contrast went into a 7.24:1 outline around every individual 5ft square.
+
+The actual cause is that zoom is **absolute** in the DM app (a fixed 64px per map unit) and
+**derived** in the kid app (whatever fits the whole four-floor viewBox), so the kid renderer has no
+sense of real size and everything downstream — sub-pixel walls, faded labels, oversized badges —
+follows from that. That is a different plan, not a further stage of this one.
+
+What happened to each shipped stage: Stage 1's palette is largely reversed (the kid map adopts the
+DM's CSS instead of its own token set). Stage 2's shared `roomLabelAnchor` is good and survives
+unchanged. Stage 3's doors survive in principle but change shape, and its numbered stair badges are
+dropped — they were also actively wrong, drawing the wrong number on 3 of the 5 stair junctions on
+dungeon 4. Stages 4-7 (party marker, follow, fold-out, table test) are re-planned in the successor;
+side-by-side floors and the fold-out are cut entirely and parked.
 
 ## What we're building & why
 
@@ -77,7 +100,7 @@ Touch:        48px floor (DM surface). Destructive: none — moving the marker i
               by moving it again.
 ```
 
-## Stages
+## Stages (historical — 1-3 shipped, 4-7 never built)
 
 1. **A room looks like a room.** Give the kid map its own contrast rules instead of inheriting the
    DM's dark surface stack — rooms clearly raised off the ground, walls solid, doors distinct from
@@ -119,6 +142,7 @@ Touch:        48px floor (DM surface). Destructive: none — moving the marker i
 |-------|------------------------------|
 | 1 | The kid map stopped inheriting the DM dark surface stack: seven `--kid-map-*` aliases in `theme.css` repaint rooms as lit paper on dark ground (room fill 11.57:1 against its floor plate, up from 1.08:1), with walls solid and doors warm and heavier than walls. `PlayerMapRenderer` now draws nothing at all for a room with no squares, removing the twelve orphaned room names the table test found. |
 | 2 | A shared `roomLabelAnchor` now places titles on an owned room cell across the kid map, Map Lab editor, ghost layer, and viewer, including notched and ring-shaped rooms whose centroid falls outside their geometry. Kid-map titles remain 16px on screen through fit and zoom transforms, keep a proportional halo, and fade when their room is too small to contain them. |
+| 3 | Kid-map doors now draw a constant 8px leaf across the wall gap when closed and a hinged leaf with swing arc when open, while exposing only the open/closed distinction. Stair endpoints now carry constant-size, matching numbered badges with up/down arrows, using dedicated high-contrast kid-map stair tokens. |
 
 ## Touches
 

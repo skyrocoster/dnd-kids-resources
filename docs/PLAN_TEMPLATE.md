@@ -18,7 +18,7 @@ in — Claude Code discovers project skills only there, and opencode reads that 
 
 | Skill | Role | Job |
 |---|---|---|
-| `plan` | planner | Write the short human **Plan** (Layer 1). Intent, not code. |
+| `plan` | planner | Write the short human **Plan** (Layer 1) and a temporary handoff of verified specifics. Intent, not code. |
 | `to-orders` | planner | Turn one Plan stage into lean **work orders** (Layer 2). Guidance, not code. |
 | `dispatch-orders` | planner | Send runnable orders to the right-sized model; triage failures the moment they return, so dependency chains never stall. Repairs code directly only in the narrow case its step 5 defines. |
 | `implement-order` | executor | Execute **one** work order, then stop. Writes the code. |
@@ -62,7 +62,23 @@ code — you read it to understand *what* and *why*.
 ## Touches
 - `glob/pattern/**`
 - **Depends on:** [Other Plan](#)
+
+## Compiler handoff
+
+### Stage <N>
+- **Verified edit sites:** `<repo-relative path>` — `<symbol or bounded section>`; <what is already true there>
+- **Verified tests:** `<repo-relative path>` — <relevant suite, fixture, or harness fact>
+- **Settled contracts:** <exact behavior, ownership boundary, data shape, copy, token, or dependency decision>
+- **Constraints:** <invariant or canonical reference the orders must preserve>
+- **Open questions:** <what `to-orders` still must resolve, or `none`>
 ```
+
+`## Compiler handoff` is a temporary, stage-scoped machine-facing appendix. It preserves verified
+answers planning already paid to discover so `to-orders` can target its exploration instead of
+rereading the same source. Exact paths, symbols, tests, contracts, and constraints belong here;
+unverified assumptions belong under Open questions. It is not a discovery log and contains no
+implementation recipe. `to-orders` consumes the compiled stage's subsection after its orders pass
+lint and removes the heading when no handoffs remain. The human-facing Plan above it stays short.
 
 A Plan may temporarily carry a **`## Planning byproducts`** appendix: verbatim code snippets that
 fell out of settling the design (verified regexes, exact expressions, type signatures). It is a

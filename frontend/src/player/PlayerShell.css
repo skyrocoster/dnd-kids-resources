@@ -49,6 +49,45 @@
   font-weight: var(--type-title-weight);
 }
 
+.player-floor-picker {
+  position: absolute;
+  right: var(--space-3);
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  z-index: 10;
+}
+
+.player-floor-slab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 64px;
+  min-width: 48px;
+  padding: var(--space-2) var(--space-3);
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--md-surface-variant);
+  color: var(--md-on-surface-variant);
+  font-size: var(--type-label-size);
+  line-height: var(--type-label-line);
+  font-weight: var(--type-label-weight);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.player-floor-slab--selected {
+  background: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+}
+
+.player-floor-slab:focus-visible {
+  outline: 3px solid var(--md-primary);
+  outline-offset: 2px;
+}
+
 .player-map-viewport {
   position: absolute;
   inset: 0;
@@ -79,21 +118,46 @@
 }
 
 .player-map-room-cell {
-  fill: var(--kid-map-room-fill);
-  stroke: var(--kid-map-room-outline);
-  stroke-width: 1;
+  fill: var(--variant-container, var(--md-surface-variant));
+  stroke: none;
 }
 
 .player-map-wall {
-  stroke: var(--kid-map-wall);
-  stroke-width: 6;
-  stroke-linecap: round;
+  stroke: var(--md-on-surface-variant);
+  stroke-width: 4;
+  stroke-linecap: square;
 }
 
-.player-map-door {
-  stroke: var(--kid-map-door);
-  stroke-width: 12;
+.player-map-door-disc {
+  fill: var(--kid-opening);
+  stroke: var(--kid-on-opening);
+  stroke-width: 2;
+}
+
+.player-map-door-leaf {
+  stroke: var(--kid-opening);
   stroke-linecap: round;
+  fill: none;
+}
+
+.player-map-stair-disc {
+  fill: var(--kid-transition);
+  stroke: var(--kid-on-transition);
+  stroke-width: 2;
+  cursor: pointer;
+}
+
+.player-map-stair:focus-visible .player-map-stair-disc {
+  outline: 3px solid var(--md-primary);
+  outline-offset: 2px;
+}
+
+.kid-marker-disc {
+  stroke-width: 2;
+}
+
+.kid-marker-glyph {
+  pointer-events: none;
 }
 
 .player-map-room-title {
@@ -112,26 +176,6 @@
   fill: var(--md-on-surface-variant);
   font-size: 18px;
   font-weight: var(--type-title-weight);
-}
-
-.player-map-feature path {
-  fill: none;
-  stroke: var(--md-arcane);
-  stroke-width: 2;
-  opacity: 0.72;
-}
-
-.player-map-feature circle {
-  fill: var(--md-nature);
-  opacity: 0.62;
-}
-
-.player-map-feature-river {
-  fill: var(--feature-river-fill);
-}
-
-.player-map-feature-trees {
-  fill: var(--feature-trees-fill);
 }
 
 .player-map-room-title[data-label-fits='false'] {

@@ -224,7 +224,11 @@ before compiling.
    instructions that force the executor to go and decide something, a STOP WHEN that pulls in a
    file the order never touches. This is the only feedback loop this workflow has; skipping it
    means re-learning the same lesson at the executor's expense.
-1. **Read the Plan stage and the files it implies.** Explore now — this is the paid-once step.
+1. **Read the Plan stage and, when present, its `### Stage <N>` compiler handoff.** Treat verified
+   edit sites, tests, contracts, and constraints as paid-for planning results: carry them into KNOWN
+   STATE and START IN rather than rediscovering them. Resolve every listed open question before
+   writing an order. Explore only the gaps needed to make orders self-contained; do not reopen a
+   named file just to reconfirm a stable fact already recorded by `plan`.
 2. **Split the stage into logical changes.** If a change needs a paragraph of judgement, it's too big:
    split it into smaller orders.
    Before allowing independent orders to run in parallel, compare their edit sites: when one order
@@ -259,6 +263,10 @@ before compiling.
    sites, an edited module whose suite STOP WHEN never runs, a hook change with no lint, a new test
    with no insertion anchor, a fixture without the cast idiom and a typecheck, several behaviours
    against a big suite. Fixing them here costs a minute; discovering them costs a dispatch.
+
+   After the orders pass lint, remove the compiled stage's `### Stage <N>` compiler handoff from the
+   Plan. Remove `## Compiler handoff` too when it has no stage subsections left. Do not remove future
+   stages' handoffs. Planning byproducts follow their separate move-to-KNOWN-STATE rule below.
 
    **Re-run `--fix` between dispatches within a stage.** As soon as one order edits a large shared
    file, every downstream order's line numbers are stale. This is the single most repeated

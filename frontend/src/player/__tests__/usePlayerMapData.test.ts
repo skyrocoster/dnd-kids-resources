@@ -62,7 +62,7 @@ describe('usePlayerMapData', () => {
     await waitFor(() => expect(result.current.status).toBe('ready'))
     expect(result.current.dungeonId).toBe(7)
     expect(result.current.layout?.portals).toEqual([])
-    expect(result.current.layout?.features).toEqual([])
+    expect(result.current.layout).not.toHaveProperty('features')
     expect(mockedPlayerViewTransform).toHaveBeenCalledOnce()
   })
 

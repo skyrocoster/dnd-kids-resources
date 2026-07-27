@@ -1358,6 +1358,95 @@ def write_generated_sections(docs_dir: Path, repo_root: Path = REPO_ROOT) -> int
     return 0
 
 
+# ── Kid palette contract ────────────────────────────────────────────
+
+
+KID_PALETTE_START = "/* KID_PALETTE:START */"
+KID_PALETTE_END = "/* KID_PALETTE:END */"
+
+
+def _indent_kid_palette(expected: str, indent: str = "  ") -> str:
+    """Indent each non-empty line of *expected* by *indent*, wrapped in newlines."""
+    return "\n" + "\n".join(
+        indent + line if line else "" for line in expected.rstrip().split("\n")
+    ) + "\n"
+
+
+def check_kid_palette(repo_root: Path) -> list[CheckError]:
+    """Fail when the kid palette block in theme.css is missing, malformed, or stale."""
+    errors: list[CheckError] = []
+    css_path = repo_root / "frontend" / "src" / "theme.css"
+    css = css_path.read_text(encoding="utf-8")
+
+    if KID_PALETTE_START not in css or KID_PALETTE_END not in css:
+        errors.append(CheckError(
+            _safe_rel(css_path, repo_root),
+            "Kid palette markers not found in theme.css",
+            "Add /* KID_PALETTE:START */ and /* KID_PALETTE:END */ around the kid palette block",
+        ))
+        return errors
+
+    start_idx = css.index(KID_PALETTE_START) + len(KID_PALETTE_START)
+    end_idx = css.index(KID_PALETTE_END, start_idx)
+    actual_block = css[start_idx:end_idx]
+
+    try:
+        result = subprocess.run(
+            ["node", "scripts/derive-kid-palette.mjs"],
+            cwd=repo_root,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+    except (subprocess.CalledProcessError, FileNotFoundError) as exc:
+        errors.append(CheckError(
+            _safe_rel(css_path, repo_root),
+            f"Cannot run derive-kid-palette.mjs: {exc}",
+            "Ensure Node.js is installed and the script is present",
+        ))
+        return errors
+
+    expected_block = _indent_kid_palette(result.stdout)
+
+    if actual_block.strip() != expected_block.strip():
+        errors.append(CheckError(
+            _safe_rel(css_path, repo_root),
+            "Kid palette block is stale or hand-edited",
+            "Run node scripts/derive-kid-palette.mjs and update the KID_PALETTE block in theme.css, or run --write-generated",
+        ))
+
+    return errors
+
+
+def write_kid_palette(repo_root: Path) -> bool:
+    """Regenerate the kid palette block in theme.css. Returns True on success."""
+    css_path = repo_root / "frontend" / "src" / "theme.css"
+    css = css_path.read_text(encoding="utf-8")
+
+    if KID_PALETTE_START not in css or KID_PALETTE_END not in css:
+        print("Kid palette markers not found in theme.css — cannot write.", file=sys.stderr)
+        return False
+
+    try:
+        result = subprocess.run(
+            ["node", "scripts/derive-kid-palette.mjs"],
+            cwd=repo_root,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+    except (subprocess.CalledProcessError, FileNotFoundError) as exc:
+        print(f"Cannot run derive-kid-palette.mjs: {exc}", file=sys.stderr)
+        return False
+
+    expected_block = _indent_kid_palette(result.stdout)
+    start_idx = css.index(KID_PALETTE_START) + len(KID_PALETTE_START)
+    end_idx = css.index(KID_PALETTE_END, start_idx)
+    updated = css[:start_idx] + expected_block + css[end_idx:]
+    css_path.write_text(updated, encoding="utf-8")
+    return True
+
+
 # ── CLI ─────────────────────────────────────────────────────────────
 
 
@@ -1410,13 +1499,17 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     if args.write_generated:
-        return write_generated_sections(DOCS_DIR, REPO_ROOT)
+        result = write_generated_sections(DOCS_DIR, REPO_ROOT)
+        if not write_kid_palette(REPO_ROOT):
+            result = 1
+        return result
 
     errors = run_all_checks(DOCS_DIR)
     errors.extend(check_local_links(DOCS_DIR, REPO_ROOT))
     errors.extend(check_instruction_precedence(REPO_ROOT))
     errors.extend(check_configured_test_commands(REPO_ROOT))
     errors.extend(check_generated_sections(DOCS_DIR, REPO_ROOT))
+    errors.extend(check_kid_palette(REPO_ROOT))
 
     if args.base:
         errors.extend(run_diff_checks(DOCS_DIR, args.base))

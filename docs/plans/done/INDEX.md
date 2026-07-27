@@ -16,6 +16,7 @@ Completed plans are archived here for reference. Each directory under `docs/plan
 - [Dungeon Outside — the world around the rooms becomes real, authored map space](dungeon-outside/dungeon-outside.md) — Stage 4 complete. — (Dungeons)
 - [Dungeon Feature - Map Lab Cutover Plan](dungeon_plan/dungeon_plan.md) — All stages shipped.
 - [Encounters Feature — Expansion Plan](encounters_plan/encounters_plan.md) — Phases 1–3 and Phase 4 shipped.
+- [Kid Map Legibility — the tablet map reads from a child's seat](kid-map-legibility/kid-map-legibility.md) — Closed 2026-07-27, superseded before completion. — (Players)
 - [Loom Beat Reorder Plan — Drag-to-Reorder Story Beats](loom-beat-reorder/loom-beat-reorder.md) — BR1–BR2 shipped. — (The Loom)
 - [Loom Campaign Progress UI — keep campaign advancement visible and the tapestry readable](loom-campaign-progress-ui/loom-campaign-progress-ui.md) — All three stages shipped. — (The Loom)
 - [The Loom: Fell Line — rebuild the tapestry as a session grid](loom-fell-line/loom-fell-line.md) — Complete — all six stages shipped. — (The Loom)

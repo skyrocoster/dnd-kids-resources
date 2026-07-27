@@ -1,4 +1,4 @@
-import type { Bounds, MapCell } from '../../../model/maplabModel'
+import type { Bounds, MapCell } from '../model/maplabModel'
 import type { ZoomState } from './useMapCanvasZoom'
 import { BASE_PX_PER_UNIT } from './useMapCanvasZoom'
 

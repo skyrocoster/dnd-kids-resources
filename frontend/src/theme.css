@@ -301,13 +301,39 @@
   --feature-trees-fill: var(--md-nature-container);
 
   /* Kid map contrast palette — readable rooms on dark ground */
-  --kid-map-ground: var(--md-surface);
   --kid-map-floor: var(--md-surface-2);
   --kid-map-room-fill: var(--md-on-surface);
-  --kid-map-room-outline: var(--md-outline-variant);
-  --kid-map-wall: var(--md-surface);
-  --kid-map-door: var(--md-door-container);
   --kid-map-room-title: var(--md-surface);
+  --kid-map-door: var(--md-door-container);
+  --kid-map-stair-badge: var(--md-tertiary-container);
+  --kid-map-stair-badge-edge: var(--md-tertiary);
+  --kid-map-stair-badge-on: var(--md-tertiary);
+
+  /* Kid map family colours — solved via derive-kid-palette.mjs (DP1)
+     Colour says family: green (stairs/portals), yellow (doors/windows),
+     blue (fixtures), pink (people). Do not hand-pick — regenerate via
+     node scripts/derive-kid-palette.mjs. */
+  /* KID_PALETTE:START */
+  /* transition â€” green family, solved via material-color-utilities
+     hue 139.0, chroma 50.3, tone 58.1. */
+  --kid-transition: #609A46;
+  --kid-on-transition: #000000;
+
+  /* opening â€” yellow family, solved via material-color-utilities
+     hue 59.8, chroma 50.2, tone 72.0. */
+  --kid-opening: #F79B43;
+  --kid-on-opening: #000000;
+
+  /* fixture â€” blue family, solved via material-color-utilities
+     hue 237.2, chroma 50.1, tone 74.9. */
+  --kid-fixture: #58C3FD;
+  --kid-on-fixture: #000000;
+
+  /* people â€” pink family, solved via material-color-utilities
+     hue 315.2, chroma 49.9, tone 65.0. */
+  --kid-people: #BE88E1;
+  --kid-on-people: #000000;
+/* KID_PALETTE:END */
 
   --z-editor: 100;
   --z-floating: 150;

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { cellFromClientPoint, cellsBetween } from '../canvasGrid'
 import type { ZoomState } from '../useMapCanvasZoom'
-import type { Bounds, MapCell } from '../../../../model/maplabModel'
+import type { Bounds, MapCell } from '../../model/maplabModel'
 
 describe('canvasGrid', () => {
   describe('cellFromClientPoint', () => {

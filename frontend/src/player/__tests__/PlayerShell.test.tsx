@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createEmptyMapLayout } from '../../model/maplabModel'
 import { PlayerHome, PlayerMapRoute } from '../PlayerShell'
+import type { KidMapLayout } from '../curtain'
 import { usePlayerMapData } from '../usePlayerMapData'
 
 
@@ -54,7 +55,7 @@ describe('PlayerShell', () => {
   it('renders a ready map full-screen', () => {
     mockedUsePlayerMapData.mockReturnValue({
       dungeonId: 7,
-      layout: createEmptyMapLayout('School'),
+      layout: createEmptyMapLayout('School') as unknown as KidMapLayout,
       status: 'ready',
       error: null,
     })

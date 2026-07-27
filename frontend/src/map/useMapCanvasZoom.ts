@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react'
-import type { Bounds } from '../../../model/maplabModel'
+import type { Bounds } from '../model/maplabModel'
 
 export interface ZoomState {
   scale: number

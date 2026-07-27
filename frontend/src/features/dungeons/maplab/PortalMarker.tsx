@@ -4,11 +4,10 @@ import { collapsedStatusLabel, markerBadges } from './markerBadges'
 import { passagePresentation } from './maplabPresentation'
 import {
   effectivePassageState,
-  GROUPED_MARKER_RADIUS_FRACTION,
-  MARKER_RADIUS_FRACTION,
   type MapPortal,
   type PassageSessionState,
 } from '../../../model/maplabModel'
+import { onSquareMarkerGeometry, MarkerHitArea, MarkerGlyph } from '../../../map/markerShape'
 
 const PORTAL_IDENTITY_TOKEN = '--md-primary'
 
@@ -50,10 +49,7 @@ export function PortalMarker({
   onBlur,
   onClick,
 }: PortalMarkerProps) {
-  const cx = (portal.cell[0] + 0.5 + (offset?.dx ?? 0)) * cellSize
-  const cy = (portal.cell[1] + 0.5 + (offset?.dy ?? 0)) * cellSize
-  const radius = grouped ? cellSize * GROUPED_MARKER_RADIUS_FRACTION : cellSize * MARKER_RADIUS_FRACTION
-  const iconSize = grouped ? cellSize * GROUPED_MARKER_RADIUS_FRACTION * 1.1 : cellSize * 0.34
+  const { cx, cy, radius, iconSize } = onSquareMarkerGeometry(portal.cell, cellSize, { offset, grouped })
 
   const effective = effectivePassageState(portal, session)
   const presentation = passagePresentation(effective)
@@ -65,30 +61,20 @@ export function PortalMarker({
   const label = `${portal.title ?? `Portal ${portal.portal_id}`} — ${collapsedStatusLabel(badges, presentation.label)}`
 
   return (
-    <g
+    <MarkerHitArea
       className="maplab-portal"
-      data-state={presentation.state}
-      data-selected={selected || undefined}
-      role="button"
-      tabIndex={0}
-      aria-pressed={selected}
-      aria-label={label}
+      dataState={presentation.state}
+      selected={selected}
+      ariaPressed={selected}
+      label={label}
+      title={portal.title ?? `Portal ${portal.portal_id}`}
+      stopPropagation
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
       onFocus={onFocus}
       onBlur={onBlur}
-      onClick={(event) => {
-        event.stopPropagation()
-        onClick?.()
-      }}
-      onKeyDown={(event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault()
-          onClick?.()
-        }
-      }}
+      onClick={onClick}
     >
-      <title>{portal.title ?? `Portal ${portal.portal_id}`}</title>
       <circle
         className="maplab-portal-marker"
         data-gateway={isGateway || undefined}
@@ -98,11 +84,15 @@ export function PortalMarker({
         style={{ stroke: `var(${PORTAL_IDENTITY_TOKEN})` }}
         strokeDasharray={dasharray}
       />
-      {!simplified && (
-        <g transform={`translate(${cx - iconSize / 2}, ${cy - iconSize / 2})`}>
-          <Icon width={iconSize} height={iconSize} className="maplab-portal-icon" style={{ color: `var(${PORTAL_IDENTITY_TOKEN})` }} />
-        </g>
-      )}
+      <MarkerGlyph
+        icon={Icon}
+        cx={cx}
+        cy={cy}
+        size={iconSize}
+        colorToken={PORTAL_IDENTITY_TOKEN}
+        className="maplab-portal-icon"
+        simplified={simplified}
+      />
       <BadgeRing
         badges={badges}
         cx={cx}
@@ -113,6 +103,6 @@ export function PortalMarker({
         markerRadius={radius}
         badgeRadius={8}
       />
-    </g>
+    </MarkerHitArea>
   )
 }

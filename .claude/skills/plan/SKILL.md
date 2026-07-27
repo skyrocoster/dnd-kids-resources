@@ -1,13 +1,15 @@
 ---
 name: plan
-description: Write the short, human-readable Plan for a feature or outcome in the D&D Kids Resources repo — the Layer 1 planning doc that a person reads to understand what's being built and why, before any code is written. Use this whenever the user wants to plan a new feature, outcome, or cross-cutting change ("let's plan X", "I want to add Y", "how should we approach Z"), or start a fresh execution plan. Produces a plan with no implementation code. Follow up with the `to-orders` skill to turn a stage into work orders.
+description: Write the short, human-readable Plan for a feature or outcome in the D&D Kids Resources repo — the Layer 1 planning doc that explains what's being built and why, plus a temporary compiler handoff of verified specifics for `to-orders`. Use this whenever the user wants to plan a new feature, outcome, or cross-cutting change ("let's plan X", "I want to add Y", "how should we approach Z"), or start a fresh execution plan. Produces no implementation code. Follow up with the `to-orders` skill to turn a stage into work orders.
 ---
 
 # plan — write the human Plan (Layer 1)
 
 You are the **planner** here — the powerful model, whose job is to think. Implementation comes later
 and cheaper, from an **executor** model taking one work order at a time. This skill produces the
-*human-readable Plan*: the thing you read to understand the feature. Keep it short and free of code.
+*human-readable Plan*: the thing you read to understand the feature. Keep its main body short and
+free of code. Preserve useful, verified planning discoveries in a temporary compiler handoff so
+`to-orders` does not pay to discover them again.
 
 ## Where it lives
 
@@ -62,14 +64,41 @@ part of the relevant stage.
 2. **Break the outcome into stages.** Each stage should be a coherent step that becomes one or a few
    work orders. Order them so each builds on the last.
 3. **State each stage as intent, in plain English.** "Show difficulty on the encounter tile", not a
-   code recipe. The exact files and facts get worked out later, in `to-orders`.
+   code recipe. Put exact files and verified facts in the compiler handoff, not in the stage list.
 4. **Leave the Shipped table empty** — `reconcile` fills it in as stages complete.
+
+## Pass specifics to `to-orders`
+
+Planning often resolves implementation-relevant facts while understanding feasibility and stage
+boundaries. Do not discard those facts or make `to-orders` reread the same source to recover them.
+After `## Shipped`, add a temporary handoff for each uncompiled stage where useful:
+
+```md
+## Compiler handoff
+
+### Stage <N>
+- **Verified edit sites:** `<repo-relative path>` — `<symbol or bounded section>`; <what is already true there>
+- **Verified tests:** `<repo-relative path>` — <relevant suite, fixture, or harness fact>
+- **Settled contracts:** <exact behavior, ownership boundary, data shape, copy, token, or dependency decision>
+- **Constraints:** <invariant or canonical reference the orders must preserve>
+- **Open questions:** <what `to-orders` still must resolve before writing an order, or `none`>
+```
+
+Include only headings that carry useful information. Facts are **verified** only when planning opened
+the named source or canonical reference; otherwise put them under **Open questions**, not edit sites
+or contracts. Give exact paths and symbols when known, but do not spend tokens deriving volatile line
+ranges or running prospective STOP WHEN commands here — `to-orders` owns those final checks.
+
+This appendix is machine-facing and may be longer than one screen; the human-facing sections should
+remain lean. It is not a discovery log: record answers that remove later exploration, not searches,
+discarded ideas, or summaries of whole files. `to-orders` consumes and removes the compiled stage's
+subsection; it removes the heading when no stage handoffs remain.
 
 ## What NOT to do
 
-- Keep implementation out of the Plan — no exact diffs, no file-by-file edit lists. A Plan is read by
-  a person to understand *what* and *why*; the *how* belongs in the work orders (`to-orders`) and,
-  ultimately, the executor's commits.
+- Keep implementation out of the human-facing Plan — no exact diffs or prescriptive file-by-file edit
+  lists. The compiler handoff may name verified edit sites and facts, but the *how* belongs in the
+  work orders (`to-orders`) and, ultimately, the executor's commits.
 - **Exception — code that planning already produced.** Sometimes settling a design question forces
   real code into existence: a snippet you ran to verify an approach, a tricky regex or SQL
   expression, an exact type signature. That code is already paid for — never discard it and never
@@ -79,8 +108,8 @@ part of the relevant stage.
   KNOWN STATE and deletes the appendix — it is a hand-off buffer, not documentation. Only relay code
   that planning genuinely forced; do not use the appendix as a licence to pre-write the
   implementation.
-- Do not pad the doc with handoff essays or discovery logs. The old template did that to pass state
-  between exploring agents; we don't chain agents that way anymore. Lean is the point.
+- Do not pad the human-facing sections with handoff essays or discovery logs. The compiler handoff is
+  terse, structured, stage-scoped, and limited to verified answers that save `to-orders` work.
 
 ## Next step
 

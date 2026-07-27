@@ -365,7 +365,7 @@ export function paddedBounds(layout: MapLayout): Bounds {
   let minY = tight.minY
   let maxY = tight.maxY
 
-  for (const [x, y] of layout.features.flatMap((f) => f.cells)) {
+  for (const [x, y] of (layout.features ?? []).flatMap((f) => f.cells)) {
     if (x < minX) minX = x
     if (x > maxX) maxX = x
     if (y < minY) minY = y

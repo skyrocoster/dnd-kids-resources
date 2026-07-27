@@ -8,12 +8,15 @@ import { MapLabRouteState } from './MapLabRouteState'
 import { useDungeonShellContext } from './dungeonRouteContext'
 import { useMapLabLayout } from './useMapLabLayout'
 import { useMapLabSessionState } from './useMapLabSessionState'
-import { useMapCanvasZoom, type ViewportSize } from './useMapCanvasZoom'
-import { MapCanvas } from './MapCanvas'
+import { useMapCanvasZoom, type ViewportSize } from '../../../map/useMapCanvasZoom'
+import { MapCanvas } from '../../../map/MapCanvas'
 import { ChevronDownIcon, ChevronUpIcon, EyeIcon, FitIcon, ZoomInIcon, ZoomOutIcon } from '../../../components/icons'
 import { EncounterDock } from '../../encounters/EncounterDock'
 import { NPCStatCard } from '../../npcs/NPCStatCard'
 import { StatePanel } from '../../../components/StatePanel'
+import { resolveMapDensity, AUTO_DENSITY_SIMPLE_THRESHOLD } from '../../../map/mapDensity'
+import type { MapDensity } from '../../../map/mapDensity'
+export { resolveMapDensity, AUTO_DENSITY_SIMPLE_THRESHOLD }
 import { useNpc } from '../../npcs/useNpc'
 import { parseDungeonData } from '../dungeonModel'
 import { PropMarker } from './PropMarker'
@@ -150,10 +153,7 @@ export function useMapLayerVisibility(): {
   return { visible, toggleLayer }
 }
 
-export type MapDensity = 'detailed' | 'auto' | 'simple'
-
 const DENSITY_STORAGE_KEY = 'dnd-kids-maplab-density'
-export const AUTO_DENSITY_SIMPLE_THRESHOLD = 0.75
 
 function readStoredDensity(): MapDensity {
   try {
@@ -183,15 +183,6 @@ export function useMapDensity(): {
   }, [])
 
   return { density, setDensity: updateDensity }
-}
-
-/** Resolves a density setting and zoom scale into a single `'detailed' | 'simple'` rendering
- *  hint: `'detailed'` always detailed, `'simple'` always simple, `'auto'` delegates to the
- *  `AUTO_DENSITY_SIMPLE_THRESHOLD` scale cutoff. */
-export function resolveMapDensity(density: MapDensity, scale: number): 'detailed' | 'simple' {
-  if (density === 'detailed') return 'detailed'
-  if (density === 'simple') return 'simple'
-  return scale < AUTO_DENSITY_SIMPLE_THRESHOLD ? 'simple' : 'detailed'
 }
 
 /** A collapsible toolbar group: label + chevron toggle always visible (so the group structure

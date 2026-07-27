@@ -1,7 +1,7 @@
 # Players Area Guide
 
 > **Plan queue:**
-> 1. [Kid Map Legibility](../plans/active/kid-map-legibility/kid-map-legibility.md) (next up)
+> 1. [Kid Map Viewer](../plans/active/kid-map-viewer/kid-map-viewer.md) (next up)
 
 ## Scope
 
@@ -54,6 +54,7 @@ explicitly named.
 | Kid fog and at-the-table backend tests | `backend/tests/routers/test_fog.py`<br>`backend/tests/routers/test_at_the_table.py` |
 | DM player browser and editor | `frontend/src/features/players/**` |
 | Kid app (shell, navigation, curtain, and map) | `frontend/src/player/**` |
+| Shared map canvas and marker primitives used by the kid app | `frontend/src/map/**` |
 | Seed data | `data/seeds/seed_players.json`<br>`data/seeds/seed_player_spells.json`<br>`data/seeds/seed_player_weapons.json`<br>`data/seeds/seed_at_the_table.json`<br>`data/seeds/seed_revealed_cells.json` |
 
 ## Surfaces
@@ -100,10 +101,14 @@ the tablet.
 
 ## Work queue
 
-- [Kid Map Legibility](../plans/active/kid-map-legibility/kid-map-legibility.md) is in progress: the
-  first table test proved the map cannot be read from a child's seat, so doors, stairs, names,
-  contrast and a party marker come before fog. Stages 1-2 shipped the kid map's contrast palette,
-  shared inside-room label anchor, and constant-size labels; Stage 3 (doors and stairs) is next.
+- [Kid Map Viewer](../plans/active/kid-map-viewer/kid-map-viewer.md) is next up: the kid map is
+  rebuilt on the same canvas the DM already uses — absolute zoom, one floor at a time, the DM's own
+  drawing rules — and gains a four-family colour language (green goes somewhere, yellow is a way
+  through, blue is a thing, pink is a person) solved by script rather than chosen by eye. It
+  supersedes [Kid Map Legibility](../plans/done/kid-map-legibility/kid-map-legibility.md), which
+  shipped three stages against a wrong diagnosis (contrast, not scale) and was closed on 2026-07-27;
+  that plan's shared `roomLabelAnchor` survives, its kid-map palette is largely reversed, and its
+  numbered stair badges are dropped.
 - Then, in order: fog as a working ratchet; the per-object knowledge model; ambient identity and
   the personal surfaces.
 - [Player App Skeleton](../plans/done/player-app-skeleton/player-app-skeleton.md) shipped all six

@@ -113,7 +113,9 @@ Ask Pip first, then Lark separately. **decided against the 4yo for this level of
 
 ## Actions
 
-Every finding routes to [Kid Map Legibility](../plans/active/kid-map-legibility/kid-map-legibility.md),
+Every finding routes to [Kid Map Viewer](../plans/active/kid-map-viewer/kid-map-viewer.md)
+(originally to [Kid Map Legibility](../plans/done/kid-map-legibility/kid-map-legibility.md),
+closed 2026-07-27 and superseded),
 written from this record. Measurements taken afterwards against the exported layout for
 `dungeon_id` 4 and `frontend/src/theme.css`.
 

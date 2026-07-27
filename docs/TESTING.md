@@ -109,6 +109,14 @@ already known and 1 the moment a **new** one appears.
 - `npm run test:check -- --strict` — also fails when a listed test now *passes*, so the
   stage that fixed it prunes the entry. `reconcile` runs this once per stage.
 
+**A path argument is a filter matched relative to `frontend/`**, so pass
+`src/player/__tests__/x.test.tsx`, never the repo-relative `frontend/src/player/...`. A filter
+that matches nothing now **fails** rather than reporting a pass over an empty run: until
+2026-07-27 the repo-relative form printed `0 tests` and `PASS`, which is a false green of the
+same family as `tsc --noEmit` above, and one a work order's STOP WHEN would have accepted. The
+script also fails a non-zero vitest exit that no failing test explains — a config error or an
+unhandled rejection is not a green run either.
+
 Before this existed, every work order carried the failures verbatim in a KNOWN TEST
 FAILURES block and every reconcile compared them by hand, name for name — a step easy to
 skip, easy to get wrong, and silently stale as tests were fixed. Add an entry only with a

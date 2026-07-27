@@ -3,12 +3,11 @@ import { collapsedStatusLabel, markerBadges } from './markerBadges'
 import { stairPresentation } from './maplabPresentation'
 import {
   effectivePassageState,
-  GROUPED_MARKER_RADIUS_FRACTION,
-  MARKER_RADIUS_FRACTION,
   type MapCell,
   type MapStair,
   type PassageSessionState,
 } from '../../../model/maplabModel'
+import { onSquareMarkerGeometry, MarkerHitArea, MarkerGlyph } from '../../../map/markerShape'
 
 const STAIR_IDENTITY_TOKEN = '--md-tertiary'
 
@@ -61,10 +60,7 @@ export function StairMarker({
   onBlur,
   onClick,
 }: StairMarkerProps) {
-  const cx = (cell[0] + 0.5 + (offset?.dx ?? 0)) * cellSize
-  const cy = (cell[1] + 0.5 + (offset?.dy ?? 0)) * cellSize
-  const radius = grouped ? cellSize * GROUPED_MARKER_RADIUS_FRACTION : cellSize * MARKER_RADIUS_FRACTION
-  const iconSize = grouped ? cellSize * GROUPED_MARKER_RADIUS_FRACTION * 1.1 : cellSize * 0.34
+  const { cx, cy, radius, iconSize } = onSquareMarkerGeometry(cell, cellSize, { offset, grouped })
 
   const effective = effectivePassageState(stair, session)
   const presentation = stairPresentation(stair, activeZ, session)
@@ -75,30 +71,20 @@ export function StairMarker({
   const resolvedLabel = `${stair.title ?? `Stair ${stair.stair_id}`} — ${collapsedStatusLabel(badges, presentation.label)}${destinationLabel ? ` — ${destinationLabel}` : ''}`
 
   return (
-    <g
+    <MarkerHitArea
       className="maplab-stair"
-      data-state={presentation.state}
-      data-selected={selected || undefined}
-      role="button"
-      tabIndex={0}
-      aria-pressed={selected}
-      aria-label={resolvedLabel}
+      dataState={presentation.state}
+      selected={selected}
+      ariaPressed={selected}
+      label={resolvedLabel}
+      title={stair.title ?? `Stair ${stair.stair_id}`}
+      stopPropagation
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
       onFocus={onFocus}
       onBlur={onBlur}
-      onClick={(event) => {
-        event.stopPropagation()
-        onClick?.()
-      }}
-      onKeyDown={(event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault()
-          onClick?.()
-        }
-      }}
+      onClick={onClick}
     >
-      <title>{stair.title ?? `Stair ${stair.stair_id}`}</title>
       <circle
         className="maplab-stair-marker"
         cx={cx}
@@ -107,11 +93,15 @@ export function StairMarker({
         style={{ stroke: `var(${STAIR_IDENTITY_TOKEN})` }}
         strokeDasharray={dasharray}
       />
-      {!simplified && (
-        <g transform={`translate(${cx - iconSize / 2}, ${cy - iconSize / 2})`}>
-          <Icon width={iconSize} height={iconSize} className="maplab-stair-icon" style={{ color: `var(${STAIR_IDENTITY_TOKEN})` }} />
-        </g>
-      )}
+      <MarkerGlyph
+        icon={Icon}
+        cx={cx}
+        cy={cy}
+        size={iconSize}
+        colorToken={STAIR_IDENTITY_TOKEN}
+        className="maplab-stair-icon"
+        simplified={simplified}
+      />
       <BadgeRing
         badges={badges}
         cx={cx}
@@ -122,6 +112,6 @@ export function StairMarker({
         markerRadius={radius}
         badgeRadius={8}
       />
-    </g>
+    </MarkerHitArea>
   )
 }

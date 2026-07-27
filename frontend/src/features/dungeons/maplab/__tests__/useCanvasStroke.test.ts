@@ -1,7 +1,7 @@
 import { act, renderHook } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { useCanvasStroke } from '../useCanvasStroke'
-import type { ZoomState } from '../useMapCanvasZoom'
+import type { ZoomState } from '../../../../map/useMapCanvasZoom'
 
 function makePointerEvent(overrides: Partial<PointerEvent>): PointerEvent {
   return {

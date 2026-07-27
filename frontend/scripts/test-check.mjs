@@ -16,6 +16,10 @@
  *   npm run test:check                       all tests
  *   npm run test:check -- src/x.test.tsx     one file (the shape a work order's STOP WHEN uses)
  *   npm run test:check -- --strict           also fail on stale entries (reconcile, once per stage)
+ *
+ * Filters are matched against paths relative to frontend/. A filter that matches nothing used to
+ * print PASS on an empty run — so `-- frontend/src/x.test.tsx` (the repo-relative path, one
+ * plausible slip) reported green having executed no tests at all. An empty run is now a failure.
  */
 
 import { spawnSync } from 'node:child_process'
@@ -67,6 +71,22 @@ try {
       '\ntest:check could not read a vitest JSON report — the run itself failed to start.',
     )
     process.exit(run.status === 0 ? 1 : (run.status ?? 1))
+  }
+
+  // A run that executed no test file proves nothing, so it can never be a pass. The usual cause is
+  // a filter that matched no path; the message names them because the filter, not the suite, is
+  // what has to change.
+  if ((report.testResults ?? []).length === 0) {
+    const filters = vitestArgs.filter((arg) => !arg.startsWith('-'))
+    console.error('\ntest:check ran no test files, so there is nothing to judge.')
+    if (filters.length > 0) {
+      console.error(`\nNothing matched: ${filters.join(', ')}`)
+      console.error(
+        'Filters are matched against paths relative to frontend/ — pass src/player/x.test.tsx,\n' +
+          'not frontend/src/player/x.test.tsx.',
+      )
+    }
+    process.exit(1)
   }
 
   const actual = new Map()
@@ -123,6 +143,16 @@ try {
       report_('\nRemove them from known-test-failures.json (run once per stage at reconcile).')
       process.exit(1)
     }
+  }
+
+  // vitest's own exit code is deliberately ignored while a known failure explains it — swallowing
+  // that is this script's whole job. An exit code with no failing test behind it is something else
+  // (a config error, an unhandled rejection, an empty filtered run) and must not read as green.
+  if (run.status !== 0 && actual.size === 0) {
+    console.error(
+      `\ntest:check — vitest exited ${run.status} with no failing test to explain it; treating the run as failed.`,
+    )
+    process.exit(run.status ?? 1)
   }
 
   console.log('\ntest:check PASS — no new failures.')

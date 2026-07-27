@@ -1,7 +1,7 @@
 import { useCallback, useRef } from 'react'
 import type { Bounds, MapCell } from '../../../model/maplabModel'
-import { cellFromClientPoint, cellsBetween } from './canvasGrid'
-import type { ZoomState } from './useMapCanvasZoom'
+import { cellFromClientPoint, cellsBetween } from '../../../map/canvasGrid'
+import type { ZoomState } from '../../../map/useMapCanvasZoom'
 
 export interface UseCanvasStrokeOptions {
   enabled: boolean

@@ -7,9 +7,9 @@ import { useDungeonShellContext, useDungeonShellStatusSlot } from './dungeonRout
 import { useMapLabEditor } from './useMapLabEditor'
 import { listDungeons, listIncomingGateways } from '../../../api/client'
 import type { Dungeon, IncomingGateway } from '../../../api/types'
-import { useMapCanvasZoom, type ViewportSize } from './useMapCanvasZoom'
+import { useMapCanvasZoom, type ViewportSize } from '../../../map/useMapCanvasZoom'
 import { useCanvasStroke } from './useCanvasStroke'
-import { MapCanvas } from './MapCanvas'
+import { MapCanvas } from '../../../map/MapCanvas'
 import {
   ChevronDownIcon,
   ChevronUpIcon,

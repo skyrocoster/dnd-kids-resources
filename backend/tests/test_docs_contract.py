@@ -785,6 +785,91 @@ def test_archive_index_checker_reports_stale_content(tmp_path: Path, monkeypatch
     assert any("stale" in error.message for error in errs)
 
 
+# ── Kid palette contract ────────────────────────────────────────────
+
+
+def _write_kid_palette_css(base: Path, block: str = "") -> Path:
+    """Write a minimal theme.css with KID_PALETTE markers under *base*."""
+    css_dir = base / "frontend" / "src"
+    css_dir.mkdir(parents=True, exist_ok=True)
+    css_content = (
+        ":root[data-theme='dark'] {\n"
+        "  /* placeholder */\n"
+        "  /* KID_PALETTE:START */\n"
+        + block +
+        "  /* KID_PALETTE:END */\n"
+        "}"
+    )
+    path = css_dir / "theme.css"
+    path.write_text(css_content, encoding="utf-8")
+    return path
+
+
+FOUR_FAMILY_OUTPUT = (
+    "/* transition \u2014 green family, solved via material-color-utilities\n"
+    "   hue 139.0, chroma 50.3, tone 58.1. */\n"
+    "--kid-transition: #609A46;\n"
+    "--kid-on-transition: #000000;\n"
+    "\n"
+    "/* opening \u2014 yellow family, solved via material-color-utilities\n"
+    "   hue 59.8, chroma 50.2, tone 72.0. */\n"
+    "--kid-opening: #F79B43;\n"
+    "--kid-on-opening: #000000;\n"
+    "\n"
+    "/* fixture \u2014 blue family, solved via material-color-utilities\n"
+    "   hue 237.2, chroma 50.1, tone 74.9. */\n"
+    "--kid-fixture: #58C3FD;\n"
+    "--kid-on-fixture: #000000;\n"
+    "\n"
+    "/* people \u2014 pink family, solved via material-color-utilities\n"
+    "   hue 315.2, chroma 49.9, tone 65.0. */\n"
+    "--kid-people: #BE88E1;\n"
+    "--kid-on-people: #000000;\n"
+)
+
+
+def test_kid_palette_check_reports_missing_markers(tmp_path: Path):
+    css_dir = tmp_path / "frontend" / "src"
+    css_dir.mkdir(parents=True, exist_ok=True)
+    (css_dir / "theme.css").write_text(":root { }\n", encoding="utf-8")
+    errs = cd.check_kid_palette(tmp_path)
+    assert any("markers not found" in e.message for e in errs)
+
+
+def test_kid_palette_check_reports_stale_content(tmp_path: Path, monkeypatch):
+    # Write theme.css with stale block (wrong hex)
+    stale = (
+        "  /* transition \u2014 green family, solved via material-color-utilities\n"
+        "     hue 139.0, chroma 50.3, tone 58.1. */\n"
+        "  --kid-transition: #AAAAAA;\n"
+        "  --kid-on-transition: #000000;\n"
+    )
+    _write_kid_palette_css(tmp_path, block=stale)
+
+    # Monkeypatch subprocess.run to return the authoritative output
+    import subprocess
+    fake_result = subprocess.CompletedProcess([], 0, stdout=FOUR_FAMILY_OUTPUT, stderr="")
+    monkeypatch.setattr(cd.subprocess, "run", lambda *a, **kw: fake_result)
+
+    errs = cd.check_kid_palette(tmp_path)
+    assert any("stale" in e.message for e in errs)
+
+
+def test_kid_palette_check_passes_when_fresh(tmp_path: Path, monkeypatch):
+    # Indent the authoritative output to match CSS style
+    indented = "\n".join(
+        "  " + line if line else "" for line in FOUR_FAMILY_OUTPUT.rstrip().split("\n")
+    ) + "\n"
+    _write_kid_palette_css(tmp_path, block=indented)
+
+    import subprocess
+    fake_result = subprocess.CompletedProcess([], 0, stdout=FOUR_FAMILY_OUTPUT, stderr="")
+    monkeypatch.setattr(cd.subprocess, "run", lambda *a, **kw: fake_result)
+
+    errs = cd.check_kid_palette(tmp_path)
+    assert errs == []
+
+
 # ── Error formatting ────────────────────────────────────────────────
 
 

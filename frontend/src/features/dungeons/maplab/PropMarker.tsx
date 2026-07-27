@@ -3,14 +3,13 @@ import { BadgeRing } from './BadgeRing'
 import { PROP_KIND_ICONS } from './fixtureTypes'
 import { collapsedStatusLabel, markerBadges } from './markerBadges'
 import { passagePresentation } from './maplabPresentation'
+import { type MapProp } from '../../../model/maplabModel'
 import {
-  GROUPED_MARKER_RADIUS_FRACTION,
-  MARKER_RADIUS_FRACTION,
-  WALL_PROP_ICON_SCALE,
-  WALL_PROP_RADIUS_FRACTION,
-  doorWallSegment,
-  type MapProp,
-} from '../../../model/maplabModel'
+  MarkerHitArea,
+  MarkerGlyph,
+  onSquareMarkerGeometry,
+  wallAttachedMarkerGeometry,
+} from '../../../map/markerShape'
 
 const PROP_IDENTITY_TOKENS: Record<string, string> = {
   chest: '--md-loot',
@@ -60,26 +59,9 @@ export function PropMarker({
   onClick,
 }: PropMarkerProps) {
   const onWall = prop.side !== undefined
-  let cx: number
-  let cy: number
-  if (onWall) {
-    const segment = doorWallSegment({ cell: prop.cell, side: prop.side! }, cellSize)
-    cx = (segment.x1 + segment.x2) / 2
-    cy = (segment.y1 + segment.y2) / 2
-  } else {
-    cx = (prop.cell[0] + 0.5 + (offset?.dx ?? 0)) * cellSize
-    cy = (prop.cell[1] + 0.5 + (offset?.dy ?? 0)) * cellSize
-  }
-  const radius = onWall
-    ? cellSize * WALL_PROP_RADIUS_FRACTION
-    : grouped
-      ? cellSize * GROUPED_MARKER_RADIUS_FRACTION
-      : cellSize * MARKER_RADIUS_FRACTION
-  const iconSize = onWall
-    ? cellSize * WALL_PROP_ICON_SCALE
-    : grouped
-      ? cellSize * GROUPED_MARKER_RADIUS_FRACTION * 1.1
-      : cellSize * 0.34
+  const { cx, cy, radius, iconSize } = onWall
+    ? wallAttachedMarkerGeometry(prop.cell, prop.side!, cellSize)
+    : onSquareMarkerGeometry(prop.cell, cellSize, { offset, grouped })
 
   const presentation = passagePresentation(prop)
   const token = onWall ? presentation.token : (PROP_IDENTITY_TOKENS[prop.kind] ?? '--md-on-surface-variant')
@@ -89,30 +71,19 @@ export function PropMarker({
   const label = `${prop.title ?? prop.kind} — ${collapsedStatusLabel(badges, presentation.label)}`
 
   return (
-    <g
+    <MarkerHitArea
       className="maplab-prop"
-      data-state={presentation.state}
-      data-selected={selected || undefined}
-      role={interactive ? 'button' : undefined}
-      tabIndex={interactive ? 0 : undefined}
-      aria-label={interactive ? label : undefined}
-      onMouseEnter={interactive ? onMouseEnter : undefined}
-      onMouseLeave={interactive ? onMouseLeave : undefined}
-      onFocus={interactive ? onFocus : undefined}
-      onBlur={interactive ? onBlur : undefined}
-      onClick={interactive ? onClick : undefined}
-      onKeyDown={
-        interactive
-          ? (event) => {
-              if (event.key === 'Enter' || event.key === ' ') {
-                event.preventDefault()
-                onClick?.()
-              }
-            }
-          : undefined
-      }
+      dataState={presentation.state}
+      selected={selected}
+      label={interactive ? label : undefined}
+      title={prop.title ?? prop.kind}
+      interactive={interactive}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+      onFocus={onFocus}
+      onBlur={onBlur}
+      onClick={onClick}
     >
-      <title>{prop.title ?? prop.kind}</title>
       <circle
         className="maplab-prop-marker"
         cx={cx}
@@ -121,11 +92,15 @@ export function PropMarker({
         style={{ stroke: `var(${token})` }}
         strokeDasharray={dasharray}
       />
-      {!simplified && (
-        <g transform={`translate(${cx - iconSize / 2}, ${cy - iconSize / 2})`}>
-          <Icon width={iconSize} height={iconSize} className="maplab-prop-icon" style={{ color: `var(${token})` }} />
-        </g>
-      )}
+      <MarkerGlyph
+        icon={Icon}
+        cx={cx}
+        cy={cy}
+        size={iconSize}
+        colorToken={token}
+        className="maplab-prop-icon"
+        simplified={simplified}
+      />
       <BadgeRing
         badges={badges}
         cx={cx}
@@ -136,6 +111,6 @@ export function PropMarker({
         markerRadius={radius}
         badgeRadius={8}
       />
-    </g>
+    </MarkerHitArea>
   )
 }

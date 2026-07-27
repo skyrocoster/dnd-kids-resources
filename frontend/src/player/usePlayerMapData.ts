@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { ApiError, getAtTheTable, getDungeonLayout } from '../api/client'
 import { normalizeLayout, type MapLayout } from '../model/maplabModel'
-import { playerViewTransform } from './curtain'
+import { playerViewTransform, type KidMapLayout } from './curtain'
 
 export const PLAYER_MAP_POLL_INTERVAL_MS = 5_000
 
@@ -9,7 +9,7 @@ export type PlayerMapDataStatus = 'loading' | 'ready' | 'empty' | 'error'
 
 export interface PlayerMapData {
   dungeonId: number | null
-  layout: MapLayout | null
+  layout: KidMapLayout | null
   status: PlayerMapDataStatus
   error: Error | null
 }
