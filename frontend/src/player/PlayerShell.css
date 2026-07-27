@@ -100,13 +100,12 @@
   fill: var(--kid-map-room-title);
   paint-order: stroke;
   stroke: var(--kid-map-room-fill);
-  stroke-width: 5;
   stroke-linejoin: round;
-  font-size: 15px;
   font-weight: var(--type-title-weight);
   text-anchor: middle;
   dominant-baseline: middle;
   pointer-events: none;
+  transition: opacity 160ms ease;
 }
 
 .player-map-floor-title {
@@ -135,8 +134,6 @@
   fill: var(--feature-trees-fill);
 }
 
-@media (max-width: 600px) {
-  .player-map-room-title {
-    font-size: 18px;
-  }
+.player-map-room-title[data-label-fits='false'] {
+  opacity: 0;
 }

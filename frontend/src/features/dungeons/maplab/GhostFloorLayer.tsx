@@ -1,5 +1,5 @@
 import { PropMarker } from './PropMarker'
-import { absoluteCells, doorWallSegment, doorSwingGeometry, nonDoorWallSegments, type MapDoor, type MapFeature, type MapProp, type MapRoom } from '../../../model/maplabModel'
+import { absoluteCells, doorWallSegment, doorSwingGeometry, nonDoorWallSegments, roomLabelAnchor, type MapDoor, type MapFeature, type MapProp, type MapRoom } from '../../../model/maplabModel'
 
 interface GhostFloorLayerProps {
   rooms: MapRoom[]
@@ -9,14 +9,6 @@ interface GhostFloorLayerProps {
   cellSize: number
 }
 
-function roomCenter(room: MapRoom, cellSize: number): { x: number; y: number } {
-  const cells = absoluteCells(room)
-  const sum = cells.reduce((acc, [x, y]) => ({ x: acc.x + x, y: acc.y + y }), { x: 0, y: 0 })
-  return {
-    x: ((sum.x / cells.length) + 0.5) * cellSize,
-    y: ((sum.y / cells.length) + 0.5) * cellSize,
-  }
-}
 
 /** Presentational layer for ghosted (non-interactive) lower-floor objects when the editor displays
  * the floor below the active one for alignment reference. Read-only glyphs only — no `role`,
@@ -50,9 +42,14 @@ export function GhostFloorLayer({ rooms, doors, props, features, cellSize }: Gho
               />
             )
           })}
-          <text className="maplab-ghost-room-title" x={roomCenter(room, cellSize).x} y={roomCenter(room, cellSize).y}>
-            {room.title ?? `Room ${room.room_id}`}
-          </text>
+          {(() => {
+            const anchor = roomLabelAnchor(room, cellSize)
+            return (
+              <text className="maplab-ghost-room-title" x={anchor.x} y={anchor.y}>
+                {room.title ?? `Room ${room.room_id}`}
+              </text>
+            )
+          })()}
         </g>
       ))}
 

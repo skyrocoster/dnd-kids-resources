@@ -63,6 +63,7 @@ import {
   oppositeSide,
   paddedBounds,
   propsOnFloor,
+  roomLabelAnchor,
   roomOfCell,
   roomsOnZ,
   stairCellForZ,
@@ -151,15 +152,6 @@ function brushCellStateForCell(
   return owner.room_id === selectedRoomId ? 'paint' : 'blocked'
 }
 
-function roomCenter(room: MapRoom): { x: number; y: number } {
-  const cells = absoluteCells(room)
-  if (cells.length === 0) return { x: (room.origin[0] + 0.5) * CELL_SIZE, y: (room.origin[1] + 0.5) * CELL_SIZE }
-  const sum = cells.reduce((acc, [x, y]) => ({ x: acc.x + x, y: acc.y + y }), { x: 0, y: 0 })
-  return {
-    x: ((sum.x / cells.length) + 0.5) * CELL_SIZE,
-    y: ((sum.y / cells.length) + 0.5) * CELL_SIZE,
-  }
-}
 
 function syncStatusLabel(status: 'idle' | 'saving' | 'saved' | 'error'): string {
   switch (status) {
@@ -1697,11 +1689,14 @@ export function MapLabEditorPage() {
                   />
                 )
               })}
-              {layerVisible.labels && (
-                <text className="maplab-room-title" x={roomCenter(room).x} y={roomCenter(room).y}>
-                  {room.title ?? `Room ${room.room_id}`}
-                </text>
-              )}
+              {layerVisible.labels && (() => {
+                const anchor = roomLabelAnchor(room, CELL_SIZE)
+                return (
+                  <text className="maplab-room-title" x={anchor.x} y={anchor.y}>
+                    {room.title ?? `Room ${room.room_id}`}
+                  </text>
+                )
+              })()}
             </g>
           ))}
 

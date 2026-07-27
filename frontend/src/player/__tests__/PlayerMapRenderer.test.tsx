@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import { createEmptyMapLayout } from '../../model/maplabModel'
 import { PlayerMapRenderer } from '../PlayerMapRenderer'
 
@@ -32,6 +32,11 @@ function roomLayout() {
 }
 
 describe('PlayerMapRenderer', () => {
+  afterEach(() => {
+    delete (HTMLElement.prototype as unknown as Record<string, unknown>).clientWidth
+    delete (HTMLElement.prototype as unknown as Record<string, unknown>).clientHeight
+  })
+
   it('renders every cell in the room geometry', () => {
     const { container } = render(<PlayerMapRenderer layout={roomLayout()} />)
     expect(container.querySelectorAll('[data-room-id="12"] [data-room-cell]')).toHaveLength(3)
@@ -59,5 +64,34 @@ describe('PlayerMapRenderer', () => {
   it('provides a keyboard-focusable canvas surface', () => {
     render(<PlayerMapRenderer layout={roomLayout()} />)
     expect(screen.getByRole('region', { name: 'Dungeon map' })).toHaveAttribute('tabindex', '0')
+  })
+
+  it('renders the label at a constant on-screen font size', () => {
+    Object.defineProperty(HTMLElement.prototype, 'clientWidth', { configurable: true, value: 512 })
+    Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, value: 512 })
+    const { container, unmount } = render(<PlayerMapRenderer layout={roomLayout()} />)
+    expect(container.querySelector<SVGTextElement>('.player-map-room-title')!.style.fontSize).toBe('22px')
+
+    unmount()
+
+    Object.defineProperty(HTMLElement.prototype, 'clientWidth', { configurable: true, value: 64 })
+    Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, value: 64 })
+    const { container: smallContainer } = render(<PlayerMapRenderer layout={roomLayout()} />)
+    expect(smallContainer.querySelector<SVGTextElement>('.player-map-room-title')!.style.fontSize).toBe('176px')
+  })
+
+  it('sets data-label-fits on the room title', () => {
+    Object.defineProperty(HTMLElement.prototype, 'clientWidth', { configurable: true, value: 512 })
+    Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, value: 512 })
+    const { container, unmount } = render(<PlayerMapRenderer layout={roomLayout()} />)
+    expect(container.querySelector('.player-map-room-title')).toHaveAttribute('data-label-fits', 'true')
+
+    unmount()
+
+    Object.defineProperty(HTMLElement.prototype, 'clientWidth', { configurable: true, value: 64 })
+    Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, value: 64 })
+    const { container: container2 } = render(<PlayerMapRenderer layout={roomLayout()} />)
+    expect(container2.querySelector('.player-map-room-title')).toHaveAttribute('data-label-fits', 'false')
+
   })
 })

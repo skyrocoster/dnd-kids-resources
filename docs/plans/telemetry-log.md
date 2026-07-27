@@ -47,12 +47,12 @@ without which the log cannot say whether dispatching beat implementing the chang
 
 ## Scoreboard — current cycle
 
-- order runs: 2 across 2 unique order(s); DONE on one run 2 of 2 (100%), re-dispatched orders 0 (0 extra run(s))
-- stages reconciled: 1 | escaped targeted checks: 0
-- fault attribution: none 2
-- spend: executor $0.38 | planner not recorded
-- orders dispatched with an unbounded large file in START IN: 0 of 2 measured
-- escalated above Light: 0 of 2 measured
+- order runs: 7 across 7 unique order(s); DONE on one run 6 of 7 (85%), re-dispatched orders 0 (0 extra run(s))
+- stages reconciled: 2 | escaped targeted checks: 0
+- fault attribution: executor 3, none 4
+- spend: executor $0.43 | planner not recorded
+- orders dispatched with an unbounded large file in START IN: 0 of 7 measured
+- escalated above Light: 0 of 7 measured
 
 ## Closed cycle - 2026-07-25 (12 order runs, Map Lab UX stages 7-8)
 
@@ -201,3 +201,80 @@ Raw entries for this cycle: [2026-07-26-maplab-editor-usability-stages-4-7.md](t
 - escaped targeted checks: none — every defect was caught by an order's own STOP WHEN
 - planner cost: compile not recorded | dispatch + repair not recorded | reissues 0
 - reconcile note: Planner cost not retrievable: the harness running the compile and dispatch sessions did not expose a cost readout to the model, so compile/dispatch USD are absent rather than estimated. Nothing escaped the targeted checks, so no to-orders change is indicated by this stage. One reconcile-side friction worth encoding: marking the area guide's first queued plan as 'in progress' fails check_docs, which requires the literal '(next up)' marker on the first queue entry — the queue marker tracks position, not progress, and stage progress belongs in the work-queue prose.
+
+## 2026-07-27 10:19 — 01-room-label-anchor.md
+- status: DONE
+- first pass: yes
+- order shape (compiled): Light | START IN 3 files / 2,953 lines / 132 bounded | scoping: 3 ranged | DO 2 behaviour(s) | creates 0 / removes 0 [dispatch snapshot 2026-07-27T10:19:41; order file changed after dispatch]
+- model: deepseek-v4-flash | turns: 14 | wall: 2m56s
+- tokens: output 20,744 | fresh input 17,037 | cache read 370,176 | cost $0.0092
+- tool calls: read x8, grep x4, edit x4, skill x1, bash x1
+- largest tool results: skill (~2,066 tok); read docs\plans\active\kid-map-legibility\01-room-label-anchor.md (~1,223 tok); read frontend\src\features\dungeons\maplab\__tests__\maplabModel.test.ts (~1,053 tok)
+- duplicate reads: frontend/src/features/dungeons/maplab/maplabData.ts x3 (2 locating, 0 post-edit), docs/plans/active/kid-map-legibility/01-room-label-anchor.md x2 (0 locating, 1 post-edit), frontend/src/features/dungeons/maplab/__tests__/maplabModel.test.ts x2 (1 locating, 0 post-edit)
+- reads outside START IN: frontend/src/features/dungeons/maplab/maplabData.ts
+- deviations (executor): KNOWN STATE re-verified or wrong: none
+- compiler note: fault: none — Light sufficed and the verified algorithm, exact expected values, and bounded START IN ranges carried the implementation without any declared deviation.
+- flag: compiler note says fault: none, but the measured lines show 1 read(s) outside START IN and 1 post-edit re-read(s)
+- source: opencode session ses_05d207089ffeQbMZbWAqxYtD8X
+
+## 2026-07-27 10:24 — 02-player-uses-anchor.md
+- status: DONE
+- first pass: yes
+- order shape (compiled): Light | START IN 2 files / 279 lines / 279 bounded | scoping: 2 whole-small | DO 1 behaviour(s) | creates 0 / removes 0 [dispatch snapshot 2026-07-27T10:23:46; order file changed after dispatch]
+- model: deepseek-v4-flash | turns: 22 | wall: 3m04s
+- tokens: output 10,993 | fresh input 26,921 | cache read 522,880 | cost $0.0083
+- tool calls: read x7, edit x6, bash x6, grep x3, skill x1
+- largest tool results: read frontend\src\player\PlayerMapRenderer.tsx (~2,420 tok); read frontend\src\player\PlayerMapRenderer.tsx (~2,310 tok); skill (~2,066 tok)
+- duplicate reads: docs/plans/active/kid-map-legibility/02-player-uses-anchor.md x2 (0 locating, 1 post-edit), frontend/src/player/PlayerMapRenderer.tsx x2 (0 locating, 1 post-edit), frontend/src/features/dungeons/maplab/MapLabPage.tsx x2 (1 locating, 0 post-edit)
+- reads outside START IN: frontend/src/features/dungeons/maplab/MapLabPage.tsx
+- deviations (executor): KNOWN STATE re-verified or wrong: none
+- compiler note: fault: executor — Light sufficed, but the executor ignored the whole-small two-file scope by reading MapLabPage.tsx and then re-read both the order and edited renderer; these were unnecessary executor scope and self-verification costs, not order defects.
+- source: opencode session ses_05d1c4507ffe9XUSPm2RB2gukV
+
+## 2026-07-27 10:24 — 03-maplab-uses-anchor.md
+- status: DONE
+- first pass: yes
+- order shape (compiled): Light | START IN 4 files / 6,450 lines / 133 bounded | scoping: 3 ranged, 1 whole-small | DO 2 behaviour(s) | creates 0 / removes 0 [dispatch snapshot 2026-07-27T10:23:56; order file changed after dispatch]
+- model: deepseek-v4-flash | turns: 8 | wall: 1m53s
+- tokens: output 6,864 | fresh input 14,988 | cache read 113,280 | cost $0.0043
+- tool calls: read x7, edit x7, skill x1, bash x1
+- largest tool results: skill (~2,066 tok); read frontend\src\features\dungeons\maplab\GhostFloorLayer.tsx (~1,016 tok); read docs\plans\active\kid-map-legibility\03-maplab-uses-anchor.md (~1,008 tok)
+- duplicate reads: frontend/src/features/dungeons/maplab/MapLabEditorPage.tsx x5 (4 locating, 0 post-edit)
+- reads outside START IN: none
+- deviations (executor): KNOWN STATE re-verified or wrong: none
+- compiler note: fault: none — Light sufficed with nothing outside START IN and no post-edit reads; MapLabEditorPage.tsx was opened five times because the order intentionally named three separate bounded edit ranges in that large file, while the whole-small GhostFloorLayer stayed direct.
+- source: opencode session ses_05d1c44a5ffepHQk4jsq17qVI9
+
+## 2026-07-27 10:24 — 04-viewer-uses-anchor.md
+- status: DONE
+- first pass: yes
+- order shape (compiled): Light | START IN 3 files / 3,054 lines / 54 bounded | scoping: 3 ranged | DO 1 behaviour(s) | creates 0 / removes 0 [dispatch snapshot 2026-07-27T10:24:11; order file changed after dispatch]
+- model: deepseek-v4-flash | turns: 13 | wall: 3m14s
+- tokens: output 4,073 | fresh input 15,644 | cache read 179,328 | cost $0.0038
+- tool calls: read x6, edit x5, bash x3, skill x1, grep x1
+- largest tool results: skill (~2,066 tok); grep frontend\src\features\dungeons\maplab\MapLabPage.tsx (~1,727 tok); read docs\plans\active\kid-map-legibility\04-viewer-uses-anchor.md (~757 tok)
+- duplicate reads: frontend/src/features/dungeons/maplab/MapLabPage.tsx x4 (2 locating, 1 post-edit), docs/plans/active/kid-map-legibility/04-viewer-uses-anchor.md x2 (1 locating, 0 post-edit)
+- reads outside START IN: none
+- deviations (executor): KNOWN STATE re-verified or wrong: none
+- compiler note: fault: executor — Light sufficed and nothing was read outside START IN; two locating reads reflect the three bounded MapLabPage ranges, but the additional post-edit MapLabPage read was unnecessary executor self-verification.
+- source: opencode session ses_05d1c4442ffe4XAG0FaeiG4IQY
+
+## 2026-07-27 10:29 — 05-kid-label-size-and-fade.md
+- status: STALLED - user cancelled after executor looped on failing tests without writing STATUS
+- first pass: yes
+- order shape (compiled): Light | START IN 3 files / 409 lines / 409 bounded | scoping: 3 whole-small | DO 3 behaviour(s) | creates 0 / removes 0 [dispatch snapshot 2026-07-27T10:29:00]
+- model: deepseek-v4-flash | turns: 37 | wall: 7m44s
+- tokens: output 41,387 | fresh input 27,932 | cache read 1,562,880 | cost $0.0199
+- tool calls: bash x14, edit x13, read x7, write x3, skill x1, glob x1
+- largest tool results: read frontend\src\player\PlayerMapRenderer.tsx (~2,836 tok); read frontend\src\player\PlayerMapRenderer.tsx (~2,305 tok); skill (~2,066 tok)
+- duplicate reads: frontend/src/player/PlayerMapRenderer.tsx x2 (0 locating, 1 post-edit), frontend/src/player/__tests__/PlayerMapRenderer.test.tsx x2 (0 locating, 1 post-edit)
+- reads outside START IN: frontend/src/test/setup.ts
+- deviations (executor): not recorded
+- compiler note: fault: executor — Light implemented the scoped files but looped for 37 turns on its failing test fix, including post-edit source/test reads and an undeclared setup.ts read; the dispatcher will diagnose the dirty worktree rather than cold-redispatching.
+- source: opencode session ses_05d17db0effeB005nrnwJD8ZnC
+
+## 2026-07-27 10:43 — kid-map-legibility stage 2 (reconcile)
+- stage checks: pytest: pass (634 passed in 78.96s (0:01:18); Required test coverage of 97% reached. Total coverage: 97.25%) / test:check --strict: pass (test:check — 1387 tests, 11 failing, 11 of them already known.; test:check PASS — no new failures.) / lint: pass / build: pass (✓ built in 1.56s) / check_docs --check: pass
+- escaped targeted checks: none — every defect was caught by an order's own STOP WHEN
+- planner cost: compile not recorded | dispatch + repair not recorded | reissues 0
+- reconcile note: Planner compile/dispatch costs are unavailable from this harness and were not estimated. Nothing escaped targeted checks; the mid-dispatch repair exposed an order-authoring defect: verified SVG/viewBox arithmetic must include every bounds contributor in the named fixture, including outside features, before exact test values are compiled.

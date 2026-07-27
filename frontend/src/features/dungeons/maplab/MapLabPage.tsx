@@ -26,6 +26,7 @@ import { useActiveRoom } from './useActiveRoom'
 import { ViewerRoomRail } from './ViewerRoomRail'
 import {
   absoluteCells,
+  roomLabelAnchor,
   defaultPassageSession,
   doorsOnFloor,
   doorWallSegment,
@@ -45,30 +46,12 @@ import {
   type MapDoor,
   type MapLayout,
   type MapPortal,
-  type MapRoom,
   type MapStair,
   type PassageSessionState,
 } from '../../../model/maplabModel'
 
 const CELL_SIZE = 64
 
-function roomCenter(room: MapRoom): { x: number; y: number } {
-  const cells = absoluteCells(room)
-  if (cells.length === 0) {
-    return {
-      x: (room.origin[0] + 0.5) * CELL_SIZE,
-      y: (room.origin[1] + 0.5) * CELL_SIZE,
-    }
-  }
-  const sum = cells.reduce(
-    (acc, [x, y]) => ({ x: acc.x + x, y: acc.y + y }),
-    { x: 0, y: 0 },
-  )
-  return {
-    x: ((sum.x / cells.length) + 0.5) * CELL_SIZE,
-    y: ((sum.y / cells.length) + 0.5) * CELL_SIZE,
-  }
-}
 
 /** Grid-layout offset for one marker among any others (stair/portal/on-square-prop) sharing its
  * exact `(z, cell)` — the I3 replacement for the stair-only `stairMarkerOffset`. */
@@ -791,7 +774,7 @@ export function MapLabPage() {
 
           {rooms.map((room) => {
             const isSelected = room.room_id === activeRoomId
-            const center = roomCenter(room)
+            const center = roomLabelAnchor(room, CELL_SIZE)
             return (
               <g
                 key={room.room_id}

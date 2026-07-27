@@ -17,6 +17,7 @@ import {
   oppositeSide,
   doorWallSegment,
   roomOfCell,
+  roomLabelAnchor,
   roomWallSegments,
   findDoorAtEdge,
   nonDoorWallSegments,
@@ -600,6 +601,34 @@ describe('maplabModel (Stage 1 geometry helpers)', () => {
           expect(union.has(`${x},${y}`)).toBe(true)
         }
       }
+    })
+  })
+
+  describe('roomLabelAnchor', () => {
+    it('picks an owned cell in an L-shaped room (room 23 Armoury)', () => {
+      const room23 = mapLabLayout.rooms.find((r) => r.room_id === 23)!
+      expect(roomLabelAnchor(room23, 64)).toEqual({ x: 480, y: 96 })
+    })
+
+    it('picks an owned cell in the interlocking East Wing (room 100)', () => {
+      const room100 = mapLabLayout.rooms.find((r) => r.room_id === 100)!
+      expect(roomLabelAnchor(room100, 64)).toEqual({ x: 160, y: 160 })
+    })
+
+    it('picks an owned cell in a ring-shaped room (would-be hole centroid)', () => {
+      const ring: MapRoom = {
+        room_id: 1,
+        z: 0,
+        origin: [0, 0],
+        cells: [[0,0],[1,0],[2,0],[0,1],[2,1],[0,2],[1,2],[2,2]],
+        title: 'Ring',
+      }
+      expect(roomLabelAnchor(ring, 64)).toEqual({ x: 96, y: 32 })
+    })
+
+    it('falls back to origin centre when the room has no cells', () => {
+      const empty: MapRoom = { room_id: 2, z: 0, origin: [5, 3], cells: [], title: 'Empty' }
+      expect(roomLabelAnchor(empty, 64)).toEqual({ x: 352, y: 224 })
     })
   })
 })

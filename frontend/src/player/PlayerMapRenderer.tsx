@@ -1,6 +1,7 @@
-import { useRef, useState, type KeyboardEvent, type PointerEvent } from 'react'
+import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react'
 import {
   absoluteCells,
+  roomLabelAnchor,
   doorWallSegment,
   doorsOnFloor,
   floorsInLayout,
@@ -8,28 +9,17 @@ import {
   paddedBounds,
   roomsOnZ,
   type MapLayout,
-  type MapRoom,
 } from '../model/maplabModel'
 
 const CELL_SIZE = 64
 const FLOOR_GAP = CELL_SIZE * 2
 const MIN_SCALE = 0.75
 const MAX_SCALE = 4
+const LABEL_PX = 16
+const LABEL_HALO_PX = 4
 
 type Point = { x: number; y: number }
 type ViewTransform = Point & { scale: number }
-
-function roomCenter(room: MapRoom): Point {
-  const cells = absoluteCells(room)
-  if (cells.length === 0) {
-    return { x: (room.origin[0] + 0.5) * CELL_SIZE, y: (room.origin[1] + 0.5) * CELL_SIZE }
-  }
-  const total = cells.reduce((sum, [x, y]) => ({ x: sum.x + x, y: sum.y + y }), { x: 0, y: 0 })
-  return {
-    x: (total.x / cells.length + 0.5) * CELL_SIZE,
-    y: (total.y / cells.length + 0.5) * CELL_SIZE,
-  }
-}
 
 function distance(a: Point, b: Point): number {
   return Math.hypot(a.x - b.x, a.y - b.y)
@@ -43,6 +33,18 @@ export function PlayerMapRenderer({ layout }: { layout: MapLayout }) {
   const pointers = useRef(new Map<number, Point>())
   const lastGesture = useRef<{ center: Point; distance: number | null } | null>(null)
   const [view, setView] = useState<ViewTransform>({ scale: 1, x: 0, y: 0 })
+  const viewportRef = useRef<HTMLDivElement>(null)
+  const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 })
+
+  useEffect(() => {
+    const viewport = viewportRef.current
+    if (!viewport || typeof ResizeObserver === 'undefined') return
+    const report = () => setViewportSize({ width: viewport.clientWidth, height: viewport.clientHeight })
+    report()
+    const observer = new ResizeObserver(report)
+    observer.observe(viewport)
+    return () => observer.disconnect()
+  }, [])
 
   const bounds = paddedBounds(layout)
   const floorWidth = (bounds.maxX - bounds.minX + 1) * CELL_SIZE
@@ -50,6 +52,10 @@ export function PlayerMapRenderer({ layout }: { layout: MapLayout }) {
   const floors = floorsInLayout(layout)
   const displayedFloors = floors.length > 0 ? floors : [{ z: 0, title: undefined }]
   const canvasWidth = floorWidth * displayedFloors.length + FLOOR_GAP * (displayedFloors.length - 1)
+  const fitScale = viewportSize.width && viewportSize.height
+    ? Math.min(viewportSize.width / canvasWidth, viewportSize.height / floorHeight)
+    : 1
+  const effectiveScale = fitScale * view.scale
   const viewBox = `${bounds.minX * CELL_SIZE} ${bounds.minY * CELL_SIZE} ${canvasWidth} ${floorHeight}`
 
   const resetGesture = () => {
@@ -109,6 +115,7 @@ export function PlayerMapRenderer({ layout }: { layout: MapLayout }) {
 
   return (
     <div
+      ref={viewportRef}
       className="player-map-viewport"
       role="region"
       aria-label="Dungeon map"
@@ -170,10 +177,27 @@ export function PlayerMapRenderer({ layout }: { layout: MapLayout }) {
                 </g>
               ))}
               {rooms.filter(room => absoluteCells(room).length > 0).map((room) => {
-                const center = roomCenter(room)
+                const center = roomLabelAnchor(room, CELL_SIZE)
+                const cells = absoluteCells(room)
+                const xs = cells.map(([x]) => x)
+                const ys = cells.map(([, y]) => y)
+                const minX = Math.min(...xs)
+                const maxX = Math.max(...xs)
+                const minY = Math.min(...ys)
+                const maxY = Math.max(...ys)
+                const widthInCells = maxX - minX + 1
+                const heightInCells = maxY - minY + 1
+                const title = room.title ?? `Room ${room.room_id}`
+                const onScreenW = widthInCells * CELL_SIZE * effectiveScale
+                const onScreenH = heightInCells * CELL_SIZE * effectiveScale
+                const neededW = title.length * 0.55 * LABEL_PX
+                const neededH = LABEL_PX * 1.4
+                const fits = onScreenW >= neededW && onScreenH >= neededH
+                const fontSize = LABEL_PX / effectiveScale
+                const strokeWidth = LABEL_HALO_PX / effectiveScale
                 return (
                   <g key={room.room_id} className="player-map-room" data-room-id={room.room_id}>
-                    {absoluteCells(room).map(([x, y]) => (
+                    {cells.map(([x, y]) => (
                       <rect
                         key={`${x}-${y}`}
                         className="player-map-room-cell"
@@ -188,8 +212,14 @@ export function PlayerMapRenderer({ layout }: { layout: MapLayout }) {
                       const segment = doorWallSegment(edge, CELL_SIZE)
                       return <line key={`${edge.cell[0]}-${edge.cell[1]}-${edge.side}`} className="player-map-wall" {...segment} />
                     })}
-                    <text className="player-map-room-title" x={center.x} y={center.y}>
-                      {room.title ?? `Room ${room.room_id}`}
+                    <text
+                      className="player-map-room-title"
+                      x={center.x}
+                      y={center.y}
+                      style={{ fontSize, strokeWidth }}
+                      data-label-fits={fits ? 'true' : 'false'}
+                    >
+                      {title}
                     </text>
                   </g>
                 )

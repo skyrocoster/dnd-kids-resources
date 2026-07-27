@@ -325,6 +325,34 @@ export function roomOfCell(cell: MapCell, rooms: MapRoom[]): MapRoom | null {
   return null
 }
 
+/** Like a centroid, but guaranteed to sit on one of the room's own cells —
+ * the arithmetic-mean centroid alone can land in a hole or notch of an
+ * L-shaped, U-shaped, or ring-shaped room.  This finds the owned cell whose
+ * coordinate is nearest the centroid, then returns its pixel centre. */
+export function roomLabelAnchor(room: MapRoom, cellSize: number): { x: number; y: number } {
+  const cells = absoluteCells(room)
+  if (cells.length === 0) {
+    return { x: (room.origin[0] + 0.5) * cellSize, y: (room.origin[1] + 0.5) * cellSize }
+  }
+  const sumX = cells.reduce((s, [x]) => s + x, 0)
+  const sumY = cells.reduce((s, [, y]) => s + y, 0)
+  const cx = sumX / cells.length
+  const cy = sumY / cells.length
+  let best: MapCell = cells[0]
+  let bestDist = Infinity
+  for (const cell of cells) {
+    const [x, y] = cell
+    const dx = x - cx
+    const dy = y - cy
+    const d = dx * dx + dy * dy
+    if (d < bestDist || (d === bestDist && (y < best[1] || (y === best[1] && x < best[0])))) {
+      best = cell
+      bestDist = d
+    }
+  }
+  return { x: (best[0] + 0.5) * cellSize, y: (best[1] + 0.5) * cellSize }
+}
+
 /** Tight room-union bounds expanded by `meta.padding` cells on every side — per-side padding
  * is what centers the union within the resulting viewBox, giving the DM a margin of visible
  * "unknown space" (not-yet-authored content) around every authored room. */

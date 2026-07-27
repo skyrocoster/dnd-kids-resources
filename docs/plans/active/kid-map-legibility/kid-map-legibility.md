@@ -1,6 +1,6 @@
 # Kid Map Legibility — the tablet map reads from a child's seat
 
-> **Status:** Stage 1 shipped. Next: Stage 2, the shared label anchor. Written from the first table
+> **Status:** Stages 1-2 shipped. Next: Stage 3, doors and stairs children can find. Written from the first table
 > test, [2026-07-23 Stage 6](../../../table-tests/2026-07-23-player-app-skeleton-stage-6.md).
 
 - **Area guide:** [Players](../../../areas/players.md)
@@ -118,6 +118,7 @@ Touch:        48px floor (DM surface). Destructive: none — moving the marker i
 | Stage | What shipped (≤2 sentences) |
 |-------|------------------------------|
 | 1 | The kid map stopped inheriting the DM dark surface stack: seven `--kid-map-*` aliases in `theme.css` repaint rooms as lit paper on dark ground (room fill 11.57:1 against its floor plate, up from 1.08:1), with walls solid and doors warm and heavier than walls. `PlayerMapRenderer` now draws nothing at all for a room with no squares, removing the twelve orphaned room names the table test found. |
+| 2 | A shared `roomLabelAnchor` now places titles on an owned room cell across the kid map, Map Lab editor, ghost layer, and viewer, including notched and ring-shaped rooms whose centroid falls outside their geometry. Kid-map titles remain 16px on screen through fit and zoom transforms, keep a proportional halo, and fade when their room is too small to contain them. |
 
 ## Touches
 
