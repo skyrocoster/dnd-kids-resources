@@ -110,6 +110,28 @@ describe('mapLabEditorReducer', () => {
     expect(next.layout.doors.map((d) => d.door_id)).toEqual([11])
   })
 
+  it('dropEmptyRoom removes the room, drops orphaned doors, clears selection, and can be undone', () => {
+    const layout: MapLayout = {
+      ...emptyLayout,
+      rooms: [
+        { room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0]] },
+        { room_id: 2, z: 0, origin: [1, 0], cells: [[0, 0]] },
+      ],
+      doors: [
+        { door_id: 10, cell: [0, 0], side: 'E', hidden: false, locked: false, trapped: false },
+        { door_id: 11, cell: [1, 0], side: 'W', hidden: false, locked: false, trapped: false },
+      ],
+    }
+    let state = initialEditorState(layout)
+    state = mapLabEditorReducer(state, { type: 'selectRoom', roomId: 1 })
+    const afterDrop = mapLabEditorReducer(state, { type: 'dropEmptyRoom', roomId: 1 })
+    expect(afterDrop.layout.rooms).toHaveLength(1)
+    expect(afterDrop.layout.doors.map((d) => d.door_id)).toEqual([11])
+    expect(afterDrop.selectedRoomId).toBeNull()
+    const afterUndo = mapLabEditorReducer(afterDrop, { type: 'undo' })
+    expect(afterUndo.layout.rooms).toHaveLength(2)
+  })
+
   it('setActiveZ switches the active floor', () => {
     const state = initialEditorState(emptyLayout)
     const next = mapLabEditorReducer(state, { type: 'setActiveZ', z: 1 })

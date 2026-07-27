@@ -169,7 +169,7 @@ export function PlayerMapRenderer({ layout }: { layout: MapLayout }) {
                   ))}
                 </g>
               ))}
-              {rooms.map((room) => {
+              {rooms.filter(room => absoluteCells(room).length > 0).map((room) => {
                 const center = roomCenter(room)
                 return (
                   <g key={room.room_id} className="player-map-room" data-room-id={room.room_id}>

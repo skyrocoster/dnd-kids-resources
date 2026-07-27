@@ -112,6 +112,15 @@
   outline-offset: -2px;
 }
 
+.maplab-editor-room-offmap {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-left: var(--space-2);
+  color: var(--md-on-surface-variant);
+  font-size: var(--type-body-sm-size);
+}
+
 .maplab-editor-room-item-delete {
   display: inline-flex;
   align-items: center;

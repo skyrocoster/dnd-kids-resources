@@ -285,6 +285,7 @@ export function MapLabPage() {
   const [viewPopoverOpen, setViewPopoverOpen] = useState(false)
   const viewPopoverRef = useRef<HTMLDivElement>(null)
   const [roomsDrawerOpen, setRoomsDrawerOpen] = useState(false)
+  const [desktopRailCollapsed, setDesktopRailCollapsed] = useState(false)
   const simplified = resolveMapDensity(density, zoomApi.zoom.scale) === 'simple'
   const allLayersHidden = MAP_LAYER_KEYS.every((key) => !layerVisible[key])
 
@@ -526,21 +527,6 @@ export function MapLabPage() {
         <p className="maplab-subtitle">No saved layout yet. This dungeon is starting from a blank map.</p>
       )}
 
-      <div className="maplab-floor-tabs" role="tablist" aria-label="Dungeon floors">
-        {floors.map((floor) => (
-          <button
-            key={floor.z}
-            type="button"
-            role="tab"
-            className="maplab-pill-button maplab-floor-tab"
-            aria-selected={floor.z === activeZ}
-            onClick={() => setActiveZ(floor.z)}
-          >
-            {floor.title ?? `Floor ${floor.z}`}
-          </button>
-        ))}
-      </div>
-
       <div className="maplab-toolbar">
         <ToolbarTray groupKey="viewer-session" label="Session">
           <button
@@ -641,6 +627,20 @@ export function MapLabPage() {
             </div>
           )}
         </div>
+        <div className="maplab-floor-tabs" role="tablist" aria-label="Dungeon floors">
+          {floors.map((floor) => (
+            <button
+              key={floor.z}
+              type="button"
+              role="tab"
+              className="maplab-pill-button maplab-floor-tab"
+              aria-selected={floor.z === activeZ}
+              onClick={() => setActiveZ(floor.z)}
+            >
+              {floor.title ?? `Floor ${floor.z}`}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="maplab-canvas">
@@ -658,6 +658,7 @@ export function MapLabPage() {
           id="maplab-viewer-room-rail"
           className="maplab-viewer-rail-container"
           data-open={roomsDrawerOpen || undefined}
+          data-collapsed={desktopRailCollapsed || undefined}
         >
           <ViewerRoomRail
             layout={layout}
@@ -669,6 +670,14 @@ export function MapLabPage() {
             }}
           />
         </div>
+        <button
+          type="button"
+          className="maplab-viewer-rail-seam"
+          aria-label={desktopRailCollapsed ? 'Show room rail' : 'Hide room rail'}
+          aria-expanded={!desktopRailCollapsed}
+          aria-controls="maplab-viewer-room-rail"
+          onClick={() => setDesktopRailCollapsed((c) => !c)}
+        />
         <button
           type="button"
           className="maplab-viewer-rail-backdrop"
@@ -704,7 +713,7 @@ export function MapLabPage() {
                   type="button"
                   className="maplab-pill-button maplab-zoom-button"
                   aria-label="Fit map to viewport"
-                  onClick={() => zoomApi.fitToBounds(bounds, viewportSize)}
+                  onClick={() => zoomApi.fitToBounds(bounds, viewportSize, bounds)}
                 >
                   <FitIcon width={22} height={22} aria-hidden="true" />
                 </button>

@@ -39,15 +39,22 @@ you record what shipped, you don't extend it.
    Escalate to the user only if the Plan itself is wrong. A FAILED or BLOCKED order is a planning
    signal, not an executor failure to paper over.
 
-4. **Run the full suites once for the whole stage.** Executors only ran targeted STOP WHEN commands;
-   this is where cross-cutting regressions from the batch get caught, in a context that can afford
-   the output:
-   - `pytest` from the repo root (full suite + the coverage gate)
-   - `npm run test:check -- --strict`, `npm run lint` and `npm run build` in `frontend/` (`build`
-     includes `tsc -b`, the only real typecheck; `test:check` is the full vitest run judged against
-     `frontend/known-test-failures.json`; `lint` is where the `src/model/` layering rule is
-     enforced, and CI does not run it)
-   Triage any failure here yourself or reissue an order for it.
+4. **Run the full suites once for the whole stage** with one command:
+
+   ```
+   .venv\Scripts\python.exe scripts/stage_check.py
+   ```
+
+   It runs all five checks — `pytest` from the repo root (full suite + coverage gate),
+   `npm run test:check -- --strict`, `npm run lint` and `npm run build` in `frontend/`, and
+   `check_docs.py --check` — and prints about ten lines plus the `- stage checks:` line to paste
+   into the telemetry entry. Run separately these are five tool results of roughly a thousand tokens
+   each, read once and then hand-summarised; none of that reading changes a decision. Only a failing
+   check prints its output, and `--full-output` gives you the rest when you need to triage.
+
+   (`build` includes `tsc -b`, the only real typecheck; `test:check` is the full vitest run judged
+   against `frontend/known-test-failures.json`; `lint` is where the `src/model/` layering rule is
+   enforced, and CI does not run it.) Triage any failure here yourself or reissue an order for it.
 
    `--strict` is what keeps the known-failure list from rotting: it fails when a listed test now
    passes, so the stage that fixed it prunes the entry. Refreshing that list is a one-file edit
@@ -58,10 +65,25 @@ you record what shipped, you don't extend it.
 
    ```
    .venv\Scripts\python.exe scripts/order_telemetry.py --reconcile "<feature> stage <N>" \
-     --checks "<pytest / npm run test:check --strict / npm run build / check_docs results>" \
+     --checks "<the `- stage checks:` line stage_check.py printed, minus its prefix>" \
      --missed "<a defect that passed an order's STOP WHEN but failed here>" \
+     --compile-cost <USD the planner spent compiling this stage> \
+     --dispatch-cost <USD the planner spent dispatching, diagnosing and repairing it> \
+     --reissues <how many orders had to be re-dispatched> \
      --note "<what to change in to-orders so it cannot happen again>"
    ```
+
+   **Record the planner cost, every stage.** The executor side of this workflow has always been
+   measured and the planner side never was, so the log could show a stage's orders costing five
+   pence while saying nothing about the compile-and-repair session that produced them — and
+   therefore nothing about whether dispatching the stage beat implementing it directly, which is
+   the workflow's central claim. Read the figures off the sessions that did the work (`/cost`, or
+   the equivalent in whichever harness compiled and dispatched the stage) rather than estimating;
+   if the harness genuinely cannot report them, say so in `--note` instead of guessing. Omitting
+   them logs "planner cost: not recorded" and the script warns you.
+
+   Omit `--note` when nothing escaped and there is nothing to change — a note that only restates
+   "nothing escaped" is noise, and the entry already says it.
 
    Anything caught at this step is by definition something the orders' targeted STOP WHEN
    commands could not catch — a stage-level regression, a typecheck break, an architecture-rule
@@ -92,7 +114,7 @@ you record what shipped, you don't extend it.
 7. **Delete the spent (`DONE`) order files — but only after telemetry is captured.** Deleting an
    order destroys its STATUS/DEVIATIONS record, so first check `docs/plans/telemetry-log.md` has an
    entry for each order about to be deleted. For any missing one, run
-   `.venv\Scripts\python.exe scripts/order_telemetry.py --order <order-path> --note "backfilled at reconcile; compiler judgement unavailable"` (POSIX:
+   `.venv\Scripts\python.exe scripts/order_telemetry.py --order <order-path> --fault none --note "backfilled at reconcile; compiler judgement unavailable"` (POSIX:
    `.venv/bin/python`) — it auto-finds Claude Code transcripts and opencode sessions; if neither exists
    (ChatGPT transport, or the record is gone), log it with
    `--manual "backfilled at reconcile, no usage figures"`. Then delete: when every order in
@@ -100,11 +122,29 @@ you record what shipped, you don't extend it.
    Leftover DONE files are clutter.
 
    Every ~10-15 logged entries, tell the user the telemetry log has enough data for a review pass —
-   the log exists so an AI can analyse recurring cost drivers (large reads, duplicate reads, reads
-   outside START IN, executor deviations) and tighten the `plan`/`to-orders`/`implement-order`
-   rules. Don't run that analysis unprompted; just flag that it's due. When that pass runs, the
-   `escaped targeted checks` lines from the reconcile entries are the first thing to read: a defect
-   class that shows up in two stages has already proven a one-off note won't hold it.
+   the log exists so an AI can analyse recurring cost drivers (large reads, duplicate reads split
+   into locating vs post-edit, reads outside START IN, executor deviations, and bounded-vs-total
+   START IN lines) and tighten the `plan`/`to-orders`/`implement-order` rules. Don't run that
+   analysis unprompted; just flag that it's due. When that pass runs, the `escaped targeted checks`
+   lines from the reconcile entries are the first thing to read: a defect class that shows up in
+   two stages has already proven a one-off note won't hold it.
+
+   That review pass ends by closing the cycle, which is what keeps the log from growing without
+   bound:
+
+   ```
+   .venv\Scripts\python.exe scripts/order_telemetry.py --close-cycle "<what this cycle covered>" \
+     --summary "<the prose read of the cycle>" \
+     --lesson "enforced:<where it now lives> — <the rule>" \
+     --lesson "judgement: <what still needs a compiler to decide>"
+   ```
+
+   It distils the live entries into a summary with generated totals, moves the raw entries to
+   `docs/plans/telemetry-archive/`, and clears the dispatch snapshots. **Every lesson needs a
+   prefix**: `enforced:` with the rule, lint, or skill section it now lives in, or `judgement:` when
+   it still depends on a compiler getting it right. A lesson with nowhere to live is one that gets
+   rediscovered next cycle, and the prefix is what makes that repeat legible — when a defect
+   recurs, the record says whether the rule failed or was never written.
 
 8. **When the whole feature is complete:** move the Plan to `docs/plans/done/<feature>/`, set the area
    guide back to "no active plan" (or its next plan), and update `docs/README.md` in the same change

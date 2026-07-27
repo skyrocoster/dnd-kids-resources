@@ -35,6 +35,7 @@ DEPENDS ON: none
 REQUIRED STRENGTH: Light
 CREATES: none
 REMOVES: none
+CHANGES SIGNATURE: none
 
 KNOWN STATE (already true — do NOT redo or re-derive):
 - The API already returns `label` on each tile (src/api.ts line 4).
@@ -125,12 +126,12 @@ def test_bare_filename_in_known_state(repo: Path):
 
 def test_dot_directory_start_in_path_resolves(repo: Path):
     """`lstrip("./")` strips a character set, so it ate the dot of every dot-directory."""
-    skill = repo / ".agents" / "skills" / "plan"
+    skill = repo / ".claude" / "skills" / "plan"
     skill.mkdir(parents=True)
     (skill / "SKILL.md").write_text("# plan\n", encoding="utf-8")
     order = GOOD_ORDER.replace(
         "- src/__tests__/Tile.test.tsx\n",
-        "- .agents/skills/plan/SKILL.md — the `Where it lives` path only\n",
+        "- .claude/skills/plan/SKILL.md — the `Where it lives` path only\n",
         1,
     ).replace("- Add one test to src/__tests__/Tile.test.tsx.", "- Fix that one path.")
     assert not any("does not exist" in m for m in messages(repo, order))
@@ -171,22 +172,89 @@ def test_factual_sentence_containing_if_is_allowed(repo: Path):
     assert not any("conditional instruction" in m for m in messages(repo, order))
 
 
-def test_large_start_in_entry_needs_a_scope(repo: Path):
-    """An unscoped 1000-line file is read whole: ~9.7k tokens for a one-line change."""
+def _with_big_file(repo: Path, scope: str = "") -> str:
+    """GOOD_ORDER plus a 500-line START IN entry carrying `scope`."""
     big = repo / "src" / "BigPage.tsx"
-    big.write_text("\n".join(f"const line{n} = {n}" for n in range(500)), encoding="utf-8")
-    order = GOOD_ORDER.replace(
+    big.write_text(
+        "\n".join(
+            {120: "export function renderBigPage() {", 121: "}"}.get(n, f"const line{n} = {n}")
+            for n in range(500)
+        ),
+        encoding="utf-8",
+    )
+    suffix = f" — {scope}" if scope else ""
+    return GOOD_ORDER.replace(
         "- src/__tests__/Tile.test.tsx\n",
-        "- src/__tests__/Tile.test.tsx\n- src/BigPage.tsx\n",
+        f"- src/__tests__/Tile.test.tsx\n- src/BigPage.tsx{suffix}\n",
     )
-    found = messages(repo, order)
-    assert any("has no scope" in m for m in found)
 
-    scoped = order.replace(
-        "- src/BigPage.tsx\n",
-        "- src/BigPage.tsx — the render at line 12, nothing else in this file\n",
-    )
-    assert not any("has no scope" in m for m in messages(repo, scoped))
+
+def test_large_start_in_entry_needs_a_range(repo: Path):
+    """An unscoped 500-line file is read whole: ~9.7k tokens for a one-line change."""
+    found = messages(repo, _with_big_file(repo))
+    assert any("bounded by nothing" in m for m in found)
+
+
+def test_bare_line_number_is_rejected(repo: Path):
+    """Point-anchored entries produced every re-read loop in the log."""
+    found = messages(repo, _with_big_file(repo, "the render at line 121, nothing else"))
+    assert any("bare line number" in m for m in found)
+
+
+def test_symbol_only_scope_is_rejected(repo: Path):
+    """Four consecutive orders paid one re-locating read per symbol-bounded file."""
+    found = messages(repo, _with_big_file(repo, "the `renderBigPage` function only"))
+    assert any("a symbol name" in m for m in found)
+
+
+def test_range_without_an_anchor_is_rejected(repo: Path):
+    found = messages(repo, _with_big_file(repo, "lines 121-130, nothing else"))
+    assert any("with no anchor" in m for m in found)
+
+
+def test_anchored_range_passes(repo: Path):
+    order = _with_big_file(repo, 'lines 121-130 @"export function renderBigPage() {"')
+    assert messages(repo, order) == []
+
+
+def test_stale_range_is_reported_against_the_anchor(repo: Path):
+    """The fault an upstream order creates every time it edits a shared file."""
+    order = _with_big_file(repo, 'lines 40-49 @"export function renderBigPage() {"')
+    found = messages(repo, order)
+    assert any("is stale" in m and "line 121" in m for m in found)
+
+
+def test_vanished_anchor_is_reported_separately(repo: Path):
+    order = _with_big_file(repo, 'lines 121-130 @"export function goneForever() {"')
+    found = messages(repo, order)
+    assert any("no longer appears in the file" in m for m in found)
+
+
+def test_fix_heals_a_stale_range(repo: Path):
+    order = _with_big_file(repo, 'lines 40-49 @"export function renderBigPage() {"')
+    path = write(repo, order)
+    applied = co.autofix_start_in(path)
+    assert applied and "anchor moved" in applied[0][1]
+    assert "lines 121-130" in path.read_text(encoding="utf-8")
+    assert co.lint_order(path) == []
+
+
+def test_fix_resolves_a_symbol_to_a_range(repo: Path):
+    order = _with_big_file(repo, "the `renderBigPage` function only")
+    path = write(repo, order)
+    applied = co.autofix_start_in(path)
+    assert applied and "symbol-scoped" in applied[0][0]
+    text = path.read_text(encoding="utf-8")
+    assert "lines 121-" in text and '@"export function renderBigPage() {"' in text
+    assert co.lint_order(path) == []
+
+
+def test_fix_leaves_a_correct_range_alone(repo: Path):
+    order = _with_big_file(repo, 'lines 121-130 @"export function renderBigPage() {"')
+    path = write(repo, order)
+    before = path.read_text(encoding="utf-8")
+    assert co.autofix_start_in(path) == []
+    assert path.read_text(encoding="utf-8") == before
 
 
 def test_pytest_stop_check_needs_no_cov(repo: Path):
@@ -208,6 +276,39 @@ def test_full_suite_stop_check_is_rejected(repo: Path):
 def test_required_strength_must_be_explicit(repo: Path):
     order = GOOD_ORDER.replace("REQUIRED STRENGTH: Light", "REQUIRED STRENGTH: Huge")
     assert any("REQUIRED STRENGTH must be one of" in m for m in messages(repo, order))
+
+
+def test_escalating_above_light_without_a_reason_is_rejected(repo: Path):
+    """Light is the default for every order; asking for more has to say what it buys."""
+    order = GOOD_ORDER.replace("REQUIRED STRENGTH: Light", "REQUIRED STRENGTH: Standard")
+    assert any("Standard with no stated reason" in m for m in messages(repo, order))
+
+
+def test_escalating_above_light_with_a_reason_is_accepted(repo: Path):
+    order = GOOD_ORDER.replace(
+        "REQUIRED STRENGTH: Light",
+        "REQUIRED STRENGTH: Standard — the canonical fixture shape has to be derived "
+        "from three call sites that disagree",
+    )
+    assert not any("REQUIRED STRENGTH" in m for m in messages(repo, order))
+
+
+def test_light_needs_no_reason(repo: Path):
+    assert not any("REQUIRED STRENGTH" in m for m in messages(repo, GOOD_ORDER))
+
+
+@pytest.mark.parametrize(
+    "field, expected",
+    [
+        ("Light", ("Light", "")),
+        ("Standard — because the shape is unknown", ("Standard", "because the shape is unknown")),
+        ("Standard - because the shape is unknown", ("Standard", "because the shape is unknown")),
+        ("High (broad synthesis)", ("High", "broad synthesis")),
+        ("", ("", "")),
+    ],
+)
+def test_split_strength(field, expected):
+    assert co.split_strength(field) == expected
 
 
 def test_lifecycle_artifact_is_authorized_and_asserted(repo: Path):
@@ -358,6 +459,60 @@ def test_too_many_start_in_entries(repo: Path):
     assert any("max" in m for m in messages(repo, order))
 
 
+def test_fix_resolves_bare_start_in_path(repo: Path):
+    """The `--fix` path for order 03's `maplabModel.test.ts` mistake: one honest match."""
+    order_path = write(repo, GOOD_ORDER.replace("- src/__tests__/Tile.test.tsx\n", "- Tile.test.tsx\n", 1))
+    applied = co.autofix_order(order_path)
+    assert applied == [("Tile.test.tsx", "src/__tests__/Tile.test.tsx")]
+    fixed_text = order_path.read_text(encoding="utf-8")
+    assert "- src/__tests__/Tile.test.tsx\n" in fixed_text
+    assert co.lint_order(order_path) == []
+
+
+def test_fix_resolves_bare_filename_in_known_state(repo: Path):
+    """The `--fix` path for the `UserIcon`-shaped fault: name it, don't just flag it."""
+    order_path = write(
+        repo,
+        GOOD_ORDER.replace(
+            "- The tile renders the title only.",
+            "- The tile renders the title only, per Tile.tsx.",
+        ),
+    )
+    applied = co.autofix_order(order_path)
+    assert applied == [("Tile.tsx", "src/Tile.tsx")]
+    assert "per src/Tile.tsx." in order_path.read_text(encoding="utf-8")
+    assert co.lint_order(order_path) == []
+
+
+def test_fix_leaves_ambiguous_bare_names_alone(repo: Path):
+    """Two matches is a judgement call the compiler still has to make, not a guess."""
+    other_tile_dir = repo / "other" / "__tests__"
+    other_tile_dir.mkdir(parents=True)
+    (other_tile_dir / "Tile.test.tsx").write_text("test('y', () => {})\n", encoding="utf-8")
+    order_path = write(repo, GOOD_ORDER.replace("- src/__tests__/Tile.test.tsx\n", "- Tile.test.tsx\n", 1))
+    assert co.autofix_order(order_path) == []
+    assert "- Tile.test.tsx\n" in order_path.read_text(encoding="utf-8")
+    assert any("does not exist" in m for m in messages(repo, order_path.read_text(encoding="utf-8")))
+
+
+def test_fix_does_not_rewrite_bare_names_inside_commands(repo: Path):
+    order_path = write(
+        repo,
+        GOOD_ORDER.replace(
+            "- The tile renders the title only.",
+            "- Seed it first: `python Tile.tsx --check`.",
+        ),
+    )
+    assert co.autofix_order(order_path) == []
+    assert "`python Tile.tsx --check`" in order_path.read_text(encoding="utf-8")
+
+
+def test_fix_is_a_noop_on_a_well_formed_order(repo: Path):
+    order_path = write(repo, GOOD_ORDER)
+    assert co.autofix_order(order_path) == []
+    assert order_path.read_text(encoding="utf-8") == GOOD_ORDER
+
+
 def test_lint_orders_on_absent_directory(tmp_path: Path):
     assert co.lint_orders(tmp_path / "nope") == []
 
@@ -385,3 +540,108 @@ def test_shared_mutable_path_requires_dependency(repo: Path):
     )
     found = co.lint_orders(repo / "orders")
     assert not any("share mutable paths without a dependency" in error.message for error in found)
+
+
+# ---------------------------------------------------------------------------------------
+# Signature changes, co-located suites, hook lint, and test insertion points.
+#
+# All four trace to one stage in the telemetry log: an order changed an exported hook
+# signature, named only the caller's test file in STOP WHEN, and let two defects reach
+# reconcile — a stale assertion and a missing useCallback dependency. Each is a grep or a
+# path lookup, so none of them should ever cost a model a read again.
+# ---------------------------------------------------------------------------------------
+
+
+@pytest.fixture()
+def sweepable(repo: Path, monkeypatch) -> Path:
+    """The fixture repo, with its `src/` tree visible to the call-site sweep."""
+    monkeypatch.setattr(co, "SOURCE_ROOTS", ("src",))
+    return repo
+
+
+def test_signature_change_must_enumerate_call_sites(sweepable: Path):
+    (sweepable / "src" / "Caller.tsx").write_text(
+        "import { fitToBounds } from './zoom'\nfitToBounds(1)\n", encoding="utf-8"
+    )
+    (sweepable / "src" / "zoom.ts").write_text(
+        "export function fitToBounds(a) { return a }\n", encoding="utf-8"
+    )
+    order = GOOD_ORDER.replace(
+        "CHANGES SIGNATURE: none", "CHANGES SIGNATURE: `fitToBounds` in src/zoom.ts"
+    ).replace("- src/Tile.tsx —", "- src/zoom.ts — the whole file\n- src/Tile.tsx —")
+    found = messages(sweepable, order)
+    assert any("call sites outside START IN" in m and "src/Caller.tsx" in m for m in found)
+
+
+def test_signature_change_with_every_call_site_named_passes(sweepable: Path):
+    (sweepable / "src" / "zoom.ts").write_text(
+        "export function fitToBounds(a) { return a }\n", encoding="utf-8"
+    )
+    order = GOOD_ORDER.replace(
+        "CHANGES SIGNATURE: none", "CHANGES SIGNATURE: `fitToBounds` in src/zoom.ts"
+    ).replace("- src/Tile.tsx —", "- src/zoom.ts — the whole file\n- src/Tile.tsx —")
+    assert not any("call sites outside" in m for m in messages(sweepable, order))
+
+
+def test_signature_change_must_run_the_modules_own_suite(sweepable: Path):
+    (sweepable / "src" / "zoom.ts").write_text(
+        "export function fitToBounds(a) { return a }\n", encoding="utf-8"
+    )
+    (sweepable / "src" / "__tests__" / "zoom.test.ts").write_text(
+        "test('z', () => {})\n", encoding="utf-8"
+    )
+    order = GOOD_ORDER.replace(
+        "CHANGES SIGNATURE: none", "CHANGES SIGNATURE: `fitToBounds` in src/zoom.ts"
+    ).replace("- src/Tile.tsx —", "- src/zoom.ts — the whole file\n- src/Tile.tsx —")
+    found = messages(sweepable, order)
+    assert any("STOP WHEN omits the module's own suite" in m for m in found)
+
+
+def test_edited_module_must_run_its_colocated_suite(repo: Path):
+    (repo / "src" / "Other.tsx").write_text("export const Other = 1\n", encoding="utf-8")
+    (repo / "src" / "__tests__" / "Other.test.tsx").write_text(
+        "test('o', () => {})\n", encoding="utf-8"
+    )
+    order = GOOD_ORDER.replace(
+        "- src/Tile.tsx —", "- src/Other.tsx — the whole file\n- src/Tile.tsx —"
+    ).replace("- Render `label` after the title in src/Tile.tsx.", "- Edit src/Other.tsx.")
+    found = messages(repo, order)
+    assert any("STOP WHEN never runs its suite" in m for m in found)
+
+
+def test_hook_change_requires_lint_in_stop_when(repo: Path):
+    """Neither vitest nor tsc sees a missing dependency; only eslint does."""
+    (repo / "src" / "useThing.ts").write_text("export const useThing = () => 1\n", encoding="utf-8")
+    order = GOOD_ORDER.replace(
+        "- src/Tile.tsx —", "- src/useThing.ts — the whole file\n- src/Tile.tsx —"
+    ).replace("- Render `label` after the title in src/Tile.tsx.", "- Edit src/useThing.ts.")
+    assert any("does not run npm run lint" in m for m in messages(repo, order))
+
+    linted = order.replace("Tile.test.tsx` passes.", "Tile.test.tsx && npm run lint` passes.")
+    assert not any("does not run npm run lint" in m for m in messages(repo, linted))
+
+
+def test_new_test_needs_an_insertion_anchor(repo: Path):
+    """Naming the fixture an order reuses is not the same as naming where the test goes."""
+    big = repo / "src" / "__tests__" / "Big.test.tsx"
+    big.write_text(
+        "\n".join(
+            {200: "describe('fullscreen', () => {", 201: "})"}.get(n, f"const f{n} = {n}")
+            for n in range(500)
+        ),
+        encoding="utf-8",
+    )
+    order = (
+        GOOD_ORDER.replace(
+            "- src/__tests__/Tile.test.tsx\n",
+            '- src/__tests__/Big.test.tsx — lines 100-110 @"const f99 = 99"\n',
+        )
+        .replace("- Add one test to src/__tests__/Tile.test.tsx.", "- Add one test to src/__tests__/Big.test.tsx.")
+        .replace("-- src/__tests__/Tile.test.tsx", "-- src/__tests__/Big.test.tsx")
+    )
+    assert any("without naming the block to insert it into" in m for m in messages(repo, order))
+
+    anchored = order.replace(
+        'lines 100-110 @"const f99 = 99"', 'lines 201-210 @"describe(\'fullscreen\', () => {"'
+    )
+    assert not any("without naming the block" in m for m in messages(repo, anchored))

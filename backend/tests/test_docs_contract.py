@@ -636,7 +636,8 @@ def test_work_orders_flag_missing_fields(tmp_path: Path, monkeypatch):
     (tmp_path / "file.py").write_text("x = 1\n", encoding="utf-8")
     (feat_dir / "01-good.md").write_text(
         "WORK ORDER 01 — x\nGOAL: do a thing\nDEPENDS ON: none\n"
-        "REQUIRED STRENGTH: Light\nCREATES: none\nREMOVES: none\n\n"
+        "REQUIRED STRENGTH: Light\nCREATES: none\nREMOVES: none\n"
+        "CHANGES SIGNATURE: none\n\n"
         "START IN:\n- file.py\n\nDO:\n- change the thing\n\n"
         "STOP WHEN: tests pass\nSTATUS: DONE\n",
         encoding="utf-8",

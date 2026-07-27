@@ -46,20 +46,23 @@ describe('useMapCanvasZoom', () => {
 
     // 10x5 grid units at BASE_PX_PER_UNIT=64 -> 640x320 content into a 320x320 viewport:
     // width-constrained, scale = 320/640 = 0.5.
-    act(() => result.current.fitToBounds({ minX: 0, maxX: 9, minY: 0, maxY: 4 }, { width: 320, height: 320 }))
+    act(() => result.current.fitToBounds({ minX: 0, maxX: 9, minY: 0, maxY: 4 }, { width: 320, height: 320 }, { minX: 0, maxX: 9, minY: 0, maxY: 4 }))
 
     expect(result.current.zoom.scale).toBeCloseTo(0.5)
-    expect(result.current.zoom.pan).toEqual({ x: 0, y: 0 })
+    // Fitted content is 320x160, so it fills the viewport's width and is centred vertically:
+    // pan.y = (160 - 320) / 2 = -80. (This assertion used to read { x: 0, y: 0 } back when
+    // fitToBounds always parked the pan at the origin instead of centring.)
+    expect(result.current.zoom.pan).toEqual({ x: 0, y: -80 })
   })
 
   it('fitToBounds clamps to MIN_SCALE/MAX_SCALE and no-ops on an empty viewport', () => {
     const { result } = renderHook(() => useMapCanvasZoom())
 
     // A single cell at a huge viewport would compute scale >> MAX_SCALE without clamping.
-    act(() => result.current.fitToBounds({ minX: 0, maxX: 0, minY: 0, maxY: 0 }, { width: 5000, height: 5000 }))
+    act(() => result.current.fitToBounds({ minX: 0, maxX: 0, minY: 0, maxY: 0 }, { width: 5000, height: 5000 }, { minX: 0, maxX: 0, minY: 0, maxY: 0 }))
     expect(result.current.zoom.scale).toBe(result.current.MAX_SCALE)
 
-    act(() => result.current.fitToBounds({ minX: 0, maxX: 9, minY: 0, maxY: 9 }, { width: 0, height: 0 }))
+    act(() => result.current.fitToBounds({ minX: 0, maxX: 9, minY: 0, maxY: 9 }, { width: 0, height: 0 }, { minX: 0, maxX: 9, minY: 0, maxY: 9 }))
     expect(result.current.zoom.scale).toBe(1)
   })
 
@@ -212,7 +215,7 @@ describe('useMapCanvasZoom', () => {
     window.matchMedia = matchMediaMock
 
     const { result } = renderHook(() => useMapCanvasZoom())
-    act(() => result.current.fitToBounds({ minX: 0, maxX: 3, minY: 0, maxY: 3 }, { width: 128, height: 128 }))
+    act(() => result.current.fitToBounds({ minX: 0, maxX: 3, minY: 0, maxY: 3 }, { width: 128, height: 128 }, { minX: 0, maxX: 3, minY: 0, maxY: 3 }))
     // No animation frame/timer is involved — the state is already settled synchronously.
     expect(result.current.zoom.scale).toBeCloseTo(0.5)
   })

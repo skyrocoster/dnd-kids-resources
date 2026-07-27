@@ -100,9 +100,10 @@ the tablet.
 
 ## Work queue
 
-- [Kid Map Legibility](../plans/active/kid-map-legibility/kid-map-legibility.md) is next up: the
+- [Kid Map Legibility](../plans/active/kid-map-legibility/kid-map-legibility.md) is in progress: the
   first table test proved the map cannot be read from a child's seat, so doors, stairs, names,
-  contrast and a party marker come before fog.
+  contrast and a party marker come before fog. Stage 1 shipped the kid map's own contrast palette;
+  Stage 2 (the shared label anchor) is next.
 - Then, in order: fog as a working ratchet; the per-object knowledge model; ambient identity and
   the personal surfaces.
 - [Player App Skeleton](../plans/done/player-app-skeleton/player-app-skeleton.md) shipped all six

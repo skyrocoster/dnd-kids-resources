@@ -58,14 +58,38 @@ data/seeds/archive/
 !/data/generated/export_schema.json
 
 
-# Vendored AI tool skill dirs (not project code)
-.claude/skills/
+# Dispatch-time work-order snapshots. Transient by design: written by
+# `order_telemetry.py --snapshot`, consumed when the order reports back, and cleared at
+# cycle close. The durable record is docs/plans/telemetry.jsonl.
+.telemetry/
+
+# Our own skills live in `.claude/skills/` because that is the only place Claude
+# Code discovers project skills, and opencode reads it too — so one tracked copy
+# serves both harnesses and every clone gets the slash commands with no setup.
+# Everything else in the directory is a local link to a vendored skill under
+# `.agents/skills/`; those are not project code. Written as `.claude/skills/*`
+# rather than `.claude/skills/` so the exceptions below can re-include ours.
+.claude/skills/*
+!.claude/skills/plan/
+!.claude/skills/to-orders/
+!.claude/skills/dispatch-orders/
+!.claude/skills/implement-order/
+!.claude/skills/reconcile/
+!.claude/skills/ux-design/
+
+# Machine-local Claude Code permissions. `.claude/settings.json` is deliberately
+# tracked: it wires the read guard, and an untracked rule silently stops applying
+# on the next clone.
+.claude/settings.local.json
+
+# Vendored skill dirs for other tools (not project code)
 .cursor/skills/
-# Ignore vendored skills, but track our own workflow skills (Plan -> Implement -> Reconcile)
+# Vendored skills kept on disk for local use. Ones added before this rule stay
+# tracked; the rule keeps new vendored drops out of the repo.
 .agents/skills/*
-!.agents/skills/plan/
-!.agents/skills/to-orders/
-!.agents/skills/implement-order/
-!.agents/skills/reconcile/
-.opencode/
+# Ignore opencode's working dir, but track our own plugins. The read guard is a
+# workflow rule, and an untracked rule silently stops applying on the next clone —
+# the same trap `dispatch-orders` fell into.
+.opencode/*
+!.opencode/plugin/
 opencode.json

@@ -45,6 +45,7 @@ export type EditorAction =
   | { type: 'addFloorBelow' }
   | { type: 'selectRoom'; roomId: number | null }
   | { type: 'deleteRoom'; roomId: number }
+  | { type: 'dropEmptyRoom'; roomId: number }
   | { type: 'toggleCell'; roomId: number; cell: [number, number] }
   | { type: 'setRoomFootprint'; roomId: number; cells: MapCell[] }
   | { type: 'setRoomMeta'; roomId: number; meta: { title?: string; description?: string; kind?: string; wallKind?: string } }
@@ -181,6 +182,17 @@ function reduceEditor(state: EditorState, action: EditorAction): EditorState {
       // A door's `cell` belongs to exactly one room's wall (the side-authored owner); once that
       // room is gone the cell no longer belongs to any remaining room, so the door is orphaned.
       // A shared-wall door whose cell belongs to the *surviving* room stays put.
+      const doors = state.layout.doors.filter((door) => roomOfCell(door.cell, rooms) !== null)
+      const selectedDoorSurvives = doors.some((door) => door.door_id === state.selectedDoorId)
+      return {
+        ...state,
+        layout: { ...state.layout, rooms, doors },
+        selectedRoomId: state.selectedRoomId === action.roomId ? null : state.selectedRoomId,
+        selectedDoorId: selectedDoorSurvives ? state.selectedDoorId : null,
+      }
+    }
+    case 'dropEmptyRoom': {
+      const rooms = state.layout.rooms.filter((room) => room.room_id !== action.roomId)
       const doors = state.layout.doors.filter((door) => roomOfCell(door.cell, rooms) !== null)
       const selectedDoorSurvives = doors.some((door) => door.door_id === state.selectedDoorId)
       return {

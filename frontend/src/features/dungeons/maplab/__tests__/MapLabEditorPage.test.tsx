@@ -419,10 +419,12 @@ describe('MapLabEditorPage (Stage E2 — Canvas zoom & pan)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Zoom in' }))
     expect(Number(svg.getAttribute('width'))).not.toBeCloseTo(640)
 
-    // 448px content into a 640px (stubbed) viewport -> scale = 640/448 -> exactly fills it.
+    // Fit now targets the drawn room bounds (1x1 cell = 64px), not the padded grid -> scale clamps
+    // to MAX_SCALE (3). The SVG itself still renders from the padded 7x7 grid, so its width/height
+    // is CONTENT_PX_AT_SCALE_1 * 3.
     fireEvent.click(screen.getByRole('button', { name: 'Fit map to viewport' }))
-    expect(Number(svg.getAttribute('width'))).toBeCloseTo(640)
-    expect(Number(svg.getAttribute('height'))).toBeCloseTo(640)
+    expect(Number(svg.getAttribute('width'))).toBeCloseTo(CONTENT_PX_AT_SCALE_1 * 3)
+    expect(Number(svg.getAttribute('height'))).toBeCloseTo(CONTENT_PX_AT_SCALE_1 * 3)
   })
 
   it('editor plain wheel zooms toward the cursor position without Ctrl', async () => {
@@ -470,8 +472,27 @@ describe('MapLabEditorPage (Stage E2 — Canvas zoom & pan)', () => {
     expect(readTranslate(svg)).toEqual({ x: -30, y: -60 })
 
     fireEvent.click(screen.getByRole('button', { name: 'Fit map to viewport' }))
-    expect(Number(svg.getAttribute('width'))).toBeCloseTo(640)
-    expect(readTranslate(svg)).toEqual({ x: 0, y: 0 })
+    expect(Number(svg.getAttribute('width'))).toBeCloseTo(CONTENT_PX_AT_SCALE_1 * 3)
+    expect(readTranslate(svg)).toEqual({ x: -352, y: -352 })
+  })
+
+  it('entering fullscreen refits the map to the viewport', async () => {
+    const { container } = await renderEditor()
+    const svg = container.querySelector('.maplab-svg') as SVGSVGElement
+    const viewport = container.querySelector('.maplab-canvas-viewport') as HTMLElement
+
+    fireEvent.click(screen.getByRole('button', { name: 'Zoom in' }))
+    expect(Number(svg.getAttribute('width'))).not.toBeCloseTo(640)
+
+    fireEvent.pointerDown(viewport, { clientX: 0, clientY: 0 })
+    fireEvent.pointerMove(window, { clientX: 50, clientY: 20 })
+    fireEvent.pointerUp(window)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Enter fullscreen map editor' }))
+
+    expect(Number(svg.getAttribute('width'))).toBeCloseTo(CONTENT_PX_AT_SCALE_1 * 3)
+    expect(Number(svg.getAttribute('height'))).toBeCloseTo(CONTENT_PX_AT_SCALE_1 * 3)
+    expect(readTranslate(svg)).toEqual({ x: -352, y: -352 })
   })
 })
 
@@ -505,7 +526,7 @@ describe('MapLabEditorPage (Phase K scaffolding)', () => {
     const { container } = renderMapLabEditorPage()
     await flush()
 
-    const wrapper = container.querySelector('.maplab-canvas-wrapper')
+    const wrapper = container.querySelector('.maplab-editor')
     expect(wrapper).not.toHaveAttribute('data-fullscreen')
 
     fireEvent.click(screen.getByRole('button', { name: 'Enter fullscreen map editor' }))
@@ -535,12 +556,12 @@ describe('MapLabEditorPage (Phase K scaffolding)', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Enter fullscreen map editor' }))
 
-    const wrapper = container.querySelector('.maplab-canvas-wrapper') as HTMLElement
+    const editor = container.querySelector('.maplab-editor') as HTMLElement
     const viewport = container.querySelector('.maplab-canvas-viewport') as HTMLElement
     const svg = container.querySelector('.maplab-svg') as SVGSVGElement
     const prop = container.querySelector('.maplab-prop') as Element
 
-    expect(wrapper).toHaveAttribute('data-fullscreen')
+    expect(editor).toHaveAttribute('data-fullscreen')
     expect(viewport).toBeInTheDocument()
 
     fireEvent.pointerDown(prop, { clientX: 0, clientY: 0 })
@@ -552,6 +573,29 @@ describe('MapLabEditorPage (Phase K scaffolding)', () => {
     fireEvent.pointerMove(window, { clientX: 80, clientY: 45 })
     fireEvent.pointerUp(window)
     expect(readTranslate(svg)).toEqual({ x: 160, y: 90 })
+  })
+
+  it('K1 regression: fullscreen workspace contains the toolbar and room list', async () => {
+    const { container } = renderMapLabEditorPage()
+    await flush()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Enter fullscreen map editor' }))
+
+    const editor = container.querySelector('.maplab-editor') as HTMLElement
+    expect(editor).toHaveAttribute('data-fullscreen')
+
+    // Toolbar controls are inside the fullscreen workspace
+    expect(screen.getByRole('button', { name: 'Room' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Select/ })).toBeInTheDocument()
+
+    // The room list is inside the fullscreen workspace
+    const roomList = editor.querySelector('.maplab-editor-room-list')
+    expect(roomList).toBeInTheDocument()
+    expect(within(roomList as HTMLElement).getByText('Room 1')).toBeInTheDocument()
+
+    // Navigation rail is inside the fullscreen workspace
+    const navRail = editor.querySelector('.maplab-editor-nav-rail')
+    expect(navRail).toBeInTheDocument()
   })
 
   it('tool mode: selecting a room prevents drag-pan on the canvas (paint overlay holds the pointer)', async () => {
@@ -636,6 +680,44 @@ describe('MapLabEditorPage (Phase K scaffolding)', () => {
     expect(saveSpy).toHaveBeenCalledTimes(1)
     const savedData = saveSpy.mock.calls[0][1].data as { rooms: Array<{ cells: number[][] }> }
     expect(savedData.rooms[0].cells).toEqual([[0, 0]])
+  })
+
+  it('K4: Erasing the last square of an empty room removes it and shows Undo chip', async () => {
+    const emptyRoomLayout = {
+      ...singleRoomLayout,
+      rooms: [{ room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0]] }],
+    }
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: emptyRoomLayout })
+    const saveSpy = vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: emptyRoomLayout })
+    const { container } = renderMapLabEditorPage()
+    await flush()
+
+    fireEvent.click(container.querySelector('.maplab-editor-room-item-select') as Element)
+    fireEvent.click(screen.getByRole('button', { name: 'Erase' }))
+    dragRoomBrush(container, ROOM_BOUNDS, [[0, 0]])
+
+    await act(async () => {
+      vi.advanceTimersByTime(700)
+      await Promise.resolve()
+    })
+
+    expect(saveSpy).toHaveBeenCalledTimes(1)
+    const savedData = saveSpy.mock.calls[0][1].data as { rooms: Array<{ room_id: number }> }
+    expect(savedData.rooms).toHaveLength(0)
+
+    expect(screen.getByText('Removed empty room.')).toBeInTheDocument()
+    const undoButton = screen.getByRole('button', { name: 'Undo removal' })
+    fireEvent.click(undoButton)
+
+    await act(async () => {
+      vi.advanceTimersByTime(700)
+      await Promise.resolve()
+    })
+
+    expect(saveSpy).toHaveBeenCalledTimes(2)
+    const restoredData = saveSpy.mock.calls[1][1].data as { rooms: Array<{ room_id: number; cells: number[][] }> }
+    expect(restoredData.rooms).toHaveLength(1)
+    expect(restoredData.rooms[0].cells).toEqual([[0, 0]])
   })
 
   it('K2: painting cells owned by another room silently skips them and does not save', async () => {
@@ -2304,5 +2386,48 @@ describe('MapLabEditorPage (Map Lab UX Pass — tablet navigation drawer)', () =
     fireEvent.click(toggle)
     fireEvent.click(container.querySelector('.maplab-editor-nav-backdrop') as HTMLButtonElement)
     expect(document.getElementById('maplab-editor-navigation')).not.toHaveAttribute('data-open')
+  })
+
+  it('shows "not on the map" text for zero-cell rooms and hides it for normal rooms', async () => {
+    const zeroCellRoom = { room_id: 1, z: 0, origin: [0, 0], cells: [], title: 'Empty Room' }
+    const normalRoom = { room_id: 2, z: 0, origin: [0, 0], cells: [[0, 0]], title: 'Room with cells' }
+    const layout = {
+      meta: { cellSizeFt: 5, padding: { top: 3, right: 3, bottom: 3, left: 3 } },
+      rooms: [zeroCellRoom, normalRoom],
+      doors: [],
+      stairs: [],
+      floors: [{ z: 0, title: 'Ground Floor' }],
+      props: [],
+      portals: [],
+    }
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: layout })
+
+    renderMapLabEditorPage()
+    await flush()
+
+    const rooms = screen.getAllByRole('button', { name: /Empty Room|Room with cells/ })
+    expect(rooms[0]).toHaveTextContent('not on the map')
+    expect(rooms[1]).not.toHaveTextContent('not on the map')
+  })
+
+  it('off-map rooms do not render as canvas room groups', async () => {
+    const onMapRoom = { room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0]], title: 'On Map' }
+    const offMapRoom = { room_id: 2, z: 0, origin: [0, 0], cells: [], title: 'Off Map' }
+    const layout = {
+      meta: { cellSizeFt: 5, padding: { top: 3, right: 3, bottom: 3, left: 3 } },
+      rooms: [onMapRoom, offMapRoom],
+      doors: [],
+      stairs: [],
+      floors: [{ z: 0, title: 'Ground Floor' }],
+      props: [],
+      portals: [],
+    }
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: layout })
+
+    const { container } = renderMapLabEditorPage()
+    await flush()
+
+    const roomGroups = container.querySelectorAll('.maplab-room')
+    expect(roomGroups).toHaveLength(1)
   })
 })

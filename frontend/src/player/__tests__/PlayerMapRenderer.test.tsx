@@ -39,6 +39,14 @@ describe('PlayerMapRenderer', () => {
     expect(screen.getByText('Library')).toBeInTheDocument()
   })
 
+  it('renders nothing for rooms with no cells', () => {
+    const layout = roomLayout()
+    layout.rooms.push({ room_id: 99, z: 0, origin: [5, 5], cells: [], title: 'Empty Room' })
+    const { container } = render(<PlayerMapRenderer layout={layout} />)
+    expect(container.querySelector('[data-room-id="99"]')).not.toBeInTheDocument()
+    expect(screen.queryByText('Empty Room')).not.toBeInTheDocument()
+  })
+
   it('renders the floor, outside feature, and separate wall geometry', () => {
     const { container } = render(<PlayerMapRenderer layout={roomLayout()} />)
 

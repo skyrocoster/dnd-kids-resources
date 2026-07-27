@@ -6,7 +6,7 @@ Read [../CLAUDE.md](../CLAUDE.md) first, then use this manifest instead of explo
 
 `../scratch/` is deliberately outside this inventory and documentation contract. AI must not explore it unless the user explicitly names a path there.
 
-Each `docs/plans/active/<feature>/` directory holds its Plan and the lean, disposable **work orders** compiled from that Plan's stages and deleted by `reconcile` once shipped. These are regenerated from source plans/maps; no manifest row needed. The Plan → Implement → Reconcile workflow and its five `.agents/skills/` skills are defined in [PLAN_TEMPLATE.md](PLAN_TEMPLATE.md) and [../CLAUDE.md](../CLAUDE.md).
+Each `docs/plans/active/<feature>/` directory holds its Plan and the lean, disposable **work orders** compiled from that Plan's stages and deleted by `reconcile` once shipped. These are regenerated from source plans/maps; no manifest row needed. The Plan → Implement → Reconcile workflow and its five `.claude/skills/` skills are defined in [PLAN_TEMPLATE.md](PLAN_TEMPLATE.md) and [../CLAUDE.md](../CLAUDE.md).
 
 ## Task Router
 
@@ -19,11 +19,11 @@ Each `docs/plans/active/<feature>/` directory holds its Plan and the lean, dispo
 | Existing dungeon, encounter, monster, spell, or loot behavior | Relevant area guide | `ARCHITECTURE.md`, `API_REFERENCE.md`, `DATA_MODEL.md`, `TESTING.md` |
 | Wall kinds, map extent/padding, outside features, or map layer and density controls | [Dungeons](areas/dungeons.md) — [Dungeon Outside](plans/done/dungeon-outside/dungeon-outside.md) shipped | `UX_PATTERNS.md`, `DESIGN_SYSTEM.md`, `DATA_MODEL.md`, `TESTING.md`, then the plan |
 | Map Lab editor/viewer chrome, canvas gestures, brushes, undo, or tablet layout | [Dungeons](areas/dungeons.md) — [Map Lab UX Pass](plans/done/maplab-ux-pass/maplab-ux-pass.md) shipped | `UX_PATTERNS.md`, `DESIGN_SYSTEM.md`, `TESTING.md`, then the archived plan for history |
-| Map Lab tool palette and flyouts, editor vertical layout, fit/zoom framing, or rooms with no squares | [Dungeons](areas/dungeons.md) — [Map Lab Editor Usability](plans/active/maplab-editor-usability/maplab-editor-usability.md) Stage 4 next | `UX_PATTERNS.md`, `DESIGN_SYSTEM.md`, `TESTING.md`, then the plan |
+| Map Lab tool palette and flyouts, editor vertical layout, fit/zoom framing, viewer rail, or rooms with no squares | [Dungeons](areas/dungeons.md) — [Map Lab Editor Usability](plans/done/maplab-editor-usability/maplab-editor-usability.md) shipped | `UX_PATTERNS.md`, `DESIGN_SYSTEM.md`, `TESTING.md`, then the archived plan for history |
 | Room label placement or sizing, in either app | [Players](areas/players.md) — [Kid Map Legibility](plans/active/kid-map-legibility/kid-map-legibility.md) Stage 2 owns the shared label anchor and constant-size labels for both the kid map and Map Lab | `UX_PATTERNS.md`, `DESIGN_SYSTEM.md`, `TESTING.md`, then the plan |
 | Spells, weapons, items, or loot | [Reference](areas/reference.md) — no active plan | `DATA_MODEL.md`, `API_REFERENCE.md`, `UX_PATTERNS.md`, `TESTING.md` |
 | Encounters, monsters, or NPCs (incl. NPC statblocks, the pull panel, or adding an NPC to an encounter) | [Encounters](areas/encounters.md) — no active plan | `DATA_MODEL.md`, `API_REFERENCE.md`, `UX_PATTERNS.md`, `TESTING.md` |
-| The kid-facing app at `/play`, the curtain, fog, what the party has earned, or how the kid map draws rooms, doors, stairs and names | [Players](areas/players.md) — [Kid Map Legibility](plans/active/kid-map-legibility/kid-map-legibility.md) next | `UX_PATTERNS.md`, `DESIGN_SYSTEM.md`, `ARCHITECTURE.md`, `DATA_MODEL.md`, `TESTING.md`, then the plan |
+| The kid-facing app at `/play`, the curtain, fog, what the party has earned, or how the kid map draws rooms, doors, stairs and names | [Players](areas/players.md) — [Kid Map Legibility](plans/active/kid-map-legibility/kid-map-legibility.md) in progress | `UX_PATTERNS.md`, `DESIGN_SYSTEM.md`, `ARCHITECTURE.md`, `DATA_MODEL.md`, `TESTING.md`, then the plan |
 | Players, recovery profiles, or player spell/weapon rosters | [Players](areas/players.md) — no active plan | `DATA_MODEL.md`, `API_REFERENCE.md`, `UX_PATTERNS.md`, `TESTING.md` |
 | API route or client contract | Relevant area guide | `API_REFERENCE.md`, `ARCHITECTURE.md`, `TESTING.md` |
 | Database schema, seed, import, or export | Relevant area guide; schema generation, migrations, and the deploy path are [Infra](areas/infra.md) — [Production Nightly Deploys](plans/active/production-nightly-deploys/production-nightly-deploys.md) | `DATA_MODEL.md`, `ARCHITECTURE.md`, `TESTING.md` |

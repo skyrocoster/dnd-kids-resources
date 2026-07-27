@@ -7,6 +7,7 @@ import type { Dungeon } from '../../../api/types'
 import { parseDungeonData, type DungeonData, type DungeonRoom } from '../dungeonModel'
 import { initialEditorState, mapLabEditorReducer, type EditorAction, type EditorState } from './maplabEditor'
 import { createEmptyMapLayout, normalizeLayout, nextRoomId, type CardinalSide, type MapCell, type MapLayout, type MapLayoutMeta } from '../../../model/maplabModel'
+import { ghostRoomIds } from './roomContent'
 
 const SAVE_DEBOUNCE_MS = 600
 
@@ -73,6 +74,7 @@ export function useMapLabEditor(dungeonId: number | null, initialDungeon: Dungeo
   const loadedLayoutRef = useRef<MapLayout>(createEmptyMapLayout())
   const loadedDataRef = useRef<DungeonData>(initialDungeonData)
   const dungeonTitleRef = useRef(initialDungeonRef.current?.title ?? '')
+  const ghostSweptRef = useRef(false)
 
   const markLayoutDirty = useCallback(() => {
     layoutDirtyRef.current = true
@@ -136,6 +138,7 @@ export function useMapLabEditor(dungeonId: number | null, initialDungeon: Dungeo
     }
 
     let cancelled = false
+    ghostSweptRef.current = false
     setLoading(true)
     setLoadStatus({ status: 'loading' })
     setLayoutSyncStatus({ status: 'idle' })
@@ -188,6 +191,40 @@ export function useMapLabEditor(dungeonId: number | null, initialDungeon: Dungeo
       cancelled = true
     }
   }, [dungeonId])
+
+  useEffect(() => {
+    if (loadStatus.status !== 'ready' || dungeonDataStatus.status !== 'ready') {
+      return
+    }
+
+    if (ghostSweptRef.current) {
+      return
+    }
+
+    ghostSweptRef.current = true
+
+    const ghostIds = ghostRoomIds(stateRef.current.layout.rooms, dungeonDataRef.current.rooms)
+
+    if (ghostIds.length === 0) {
+      return
+    }
+
+    const survivors = stateRef.current.layout.rooms.filter((room) => !ghostIds.includes(room.room_id))
+    dispatch({ type: 'loadLayout', layout: { ...stateRef.current.layout, rooms: survivors } })
+    loadedLayoutRef.current = { ...stateRef.current.layout, rooms: survivors }
+
+    setDungeonData((current) => {
+      let next = current
+      for (const roomId of ghostIds) {
+        next = removeDungeonRoom(next, roomId)
+      }
+      dungeonDataRef.current = next
+      return next
+    })
+
+    scheduleLayoutSave()
+    scheduleDataSave()
+  }, [loadStatus.status, dungeonDataStatus.status, scheduleLayoutSave, scheduleDataSave])
 
   useEffect(() => {
     return () => {
@@ -263,6 +300,20 @@ export function useMapLabEditor(dungeonId: number | null, initialDungeon: Dungeo
   const deleteRoom = useCallback(
     (roomId: number) => {
       dispatch({ type: 'deleteRoom', roomId })
+      setDungeonData((current) => {
+        const next = removeDungeonRoom(current, roomId)
+        dungeonDataRef.current = next
+        return next
+      })
+      scheduleLayoutSave()
+      scheduleDataSave()
+    },
+    [scheduleDataSave, scheduleLayoutSave],
+  )
+
+  const dropEmptyRoom = useCallback(
+    (roomId: number) => {
+      dispatch({ type: 'dropEmptyRoom', roomId })
       setDungeonData((current) => {
         const next = removeDungeonRoom(current, roomId)
         dungeonDataRef.current = next
@@ -452,6 +503,7 @@ export function useMapLabEditor(dungeonId: number | null, initialDungeon: Dungeo
     addFloorBelow,
     selectRoom,
     deleteRoom,
+    dropEmptyRoom,
     toggleCell,
     setRoomFootprint,
     setActiveZ,

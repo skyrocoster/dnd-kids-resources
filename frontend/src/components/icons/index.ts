@@ -41,7 +41,7 @@ export { Focus as FocusIcon } from 'lucide-react'                   // Center / 
 // ─── Zoom / View ─────────────────────────────────────────────────────────
 export { ZoomIn as ZoomInIcon } from 'lucide-react'
 export { ZoomOut as ZoomOutIcon } from 'lucide-react'
-export { Maximize2 as FitIcon } from 'lucide-react'
+export { Scan as FitIcon } from 'lucide-react'
 export { Maximize2 as FullscreenEnterIcon } from 'lucide-react'
 export { Minimize2 as FullscreenExitIcon } from 'lucide-react'
 export { Maximize as MaximizeIcon } from 'lucide-react'
@@ -69,6 +69,7 @@ export { Crosshair as MarkerIcon } from 'lucide-react'              // Generic m
 export { Map as MapIcon } from 'lucide-react'                       // Dungeon map
 export { MapPin as MapPinIcon } from 'lucide-react'                 // Pin / location
 export { MapPinned as MapPinnedIcon } from 'lucide-react'           // Pinned location
+export { MapPinOff as OffMapIcon } from 'lucide-react'              // Off-map room
 export { Navigation2 as CompassArrowIcon } from 'lucide-react'      // Direction arrow
 export { Waypoints as WaypointsIcon } from 'lucide-react'           // Travel path
 export { Route as RouteIcon } from 'lucide-react'                   // Route / trail

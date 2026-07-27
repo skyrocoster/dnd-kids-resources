@@ -79,6 +79,6 @@ the six modal editors are accepted debt, and the migration is a separate plan fo
 |-------|------------------------------|
 | 1 | `docs/UX_PATTERNS.md` — surface modes, route shape, inline-vs-modal, data states, empty-state copy, error placement, saving, destructive actions, dialogs, keyboard, touch, and known gaps, each rule stamped IN FORCE or TARGET. Added its manifest inventory and router rows. |
 | 2 | `## Surfaces` tables in all eight area guides that own frontend routes, declaring each surface's mode and operator. |
-| 3 | `.agents/skills/ux-design/` — planning-time skill emitting a UX decisions block, keeping the craft guidance tokens don't settle and dropping all palette/typeface direction. Deleted `frontend-design` and `interface-design`. |
+| 3 | `.claude/skills/ux-design/` — planning-time skill emitting a UX decisions block, keeping the craft guidance tokens don't settle and dropping all palette/typeface direction. Deleted `frontend-design` and `interface-design`. |
 | 4 | `plan` now invokes `ux-design` for frontend features; `to-orders` copies the UX decisions into any order touching `frontend/src/`. `implement-order` unchanged. |
 | 5 | The Map Lab NPC dock's hand-rolled loading and error paragraphs became `StatePanel`, so the load-failure rule ships with no exceptions. One test added; `MapLabPage` suite green at 72. |

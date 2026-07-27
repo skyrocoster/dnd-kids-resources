@@ -29,8 +29,9 @@ and which providers fill them is an open experiment:
   orders. **The planner plans rather than implements** — the deliverable at this stage is guidance,
   not code.
 - **IMPLEMENT (executor).** Executes **one work order per fresh context window**, exploring only the
-  files the order names, and stops at the order's stop condition. It touches only code, tests, and
-  its own order's STATUS line — never the docs.
+  paths and bounded sections the order names, and stops at the order's stop condition. It touches
+  only artifacts explicitly authorized by START IN, CREATES, REMOVES, and DO, plus its own order's
+  STATUS/DEVIATIONS report; documentation is allowed only when the order explicitly authorizes it.
 - **RECONCILE (planner).** After a stage's orders finish, the planner collapses them into the Plan,
   updates any canonical reference whose contract changed, runs the checker, and deletes the spent
   orders.
@@ -38,11 +39,13 @@ and which providers fill them is an open experiment:
 The split is **cost discipline, not a prohibition**. Implementation and test output belong in the
 executor's cheap, throwaway per-order contexts because that is where they are cheapest — not because
 the planner is forbidden to type code. Where a dispatch round trip would plainly cost more than the
-edit itself — a small, fully-determined fix needing no exploration — the planner makes it directly and
-says so. `dispatch-orders` step 5 sets out that boundary; the rest of the time, the default holds.
+edit itself — one compiled, fully-determined change needing no additional exploration — the planner
+may complete it directly, preserve its order and telemetry lifecycle, and say so. `to-orders` defines
+that fresh-order fast path; `dispatch-orders` step 5 defines the equivalent repair boundary. The rest
+of the time, the default holds.
 
-Five skills in `.agents/skills/` drive this, read by whichever harness a role runs in (Claude Code
-and opencode both load them today): `plan`,
+Five skills in `.claude/skills/` drive this, read by whichever harness a role runs in (Claude Code
+and opencode both load that directory today): `plan`,
 `to-orders`, `dispatch-orders`, `implement-order`, and `reconcile`. The full formats and lifecycle live in
 [docs/PLAN_TEMPLATE.md](docs/PLAN_TEMPLATE.md).
 
@@ -54,7 +57,9 @@ and opencode both load them today): `plan`,
 - Archive a completed Plan to `docs/plans/done/`, updating its area guide and the manifest in the same change set; leave a redirect stub only when a known inbound link must survive. `MEMORY.md` is not a parallel plan-status registry.
 - Run the documentation checker through the repo-local virtualenv (`.venv\Scripts\python.exe scripts/check_docs.py --check` on Windows, `.venv/bin/python scripts/check_docs.py --check` on POSIX). Use the `--base <base-ref>` flag to compare against a specific base ref. The repo-local virtualenv is the preferred route for Python-backed validation so the documentation checker imports the project's installed backend dependencies rather than whichever global interpreter happens to be first on `PATH`.
 - The checker validates local links and anchors, active-Plan status lines and manifest completeness, area-guide↔Plan ownership, work-order structure, plan-redirect lifecycle, AI-entry precedence, configured test commands, banned legacy references, and generated reference inventories. It no longer couples per-diff code changes to a Plan edit, so work orders can land independently.
-- Work-order linting lives in `scripts/check_orders.py` (invoked by the checker, and runnable on its own while compiling a stage). Every rule there is one dispatch-costing fault recorded in `docs/plans/telemetry-log.md`; run it before dispatching anything.
+- Work-order linting lives in `scripts/check_orders.py` (invoked by the checker, and runnable on its own while compiling a stage). Every rule there is one dispatch-costing fault recorded in `docs/plans/telemetry-log.md`; run it before dispatching anything. Prefer `--fix`, which repairs the mechanical faults — bare filenames, symbol-scoped large files, and line ranges made stale by an upstream order — rather than reporting them for a model to fix by re-reading the file.
+- Two wrappers keep check output out of a model's context: `scripts/order_check.py` for a work order's STOP WHEN, and `scripts/stage_check.py` for reconcile's five full-suite checks. Both print pass/fail plus what failed, not the whole runner output.
+- `scripts/read_guard.py` enforces one executor rule in the harness rather than in prose: once a session invokes `implement-order`, reading a file it has already edited is denied until a check fails or the read is explicitly unlocked. Claude Code wires it through `.claude/settings.json` and opencode through `.opencode/plugin/read-guard.js`, so both executors are bound by it identically.
 - GitHub Actions runs the `documentation-contract` check on every pull request and push to `main`; keep it enabled as a required branch-protection check in GitHub settings. The [PR template](.github/pull_request_template.md) requires each author to confirm that a fresh reader can route the change to its owning plan and minimum context.
 
 ## Stable Project Rules
@@ -77,7 +82,7 @@ and opencode both load them today): `plan`,
 
 ### Execution workflow
 
-Five skills in `.agents/skills/` implement the Plan → Implement → Reconcile workflow above: `plan`
+Five skills in `.claude/skills/` implement the Plan → Implement → Reconcile workflow above: `plan`
 (write the Plan), `to-orders` (compile a stage into work orders), `dispatch-orders` (send runnable
 orders to the right-sized model), `implement-order` (executor runs one order), and `reconcile`
 (close out finished orders). See [docs/PLAN_TEMPLATE.md](docs/PLAN_TEMPLATE.md).

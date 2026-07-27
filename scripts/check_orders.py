@@ -16,6 +16,9 @@ compiler may or may not read:
   wrong one that breached the `src/model/` layering rule;
 - an unscoped START IN entry pointing at a large file (a 1000-line file named without a
   line range gets read whole: ~9.7k tokens for a one-line prop pass);
+- a REQUIRED STRENGTH above Light with no stated reason (Light is the default for every
+  order; the one order that was escalated after a block stalled again at the higher
+  strength, because the fault was in the order rather than in the executor);
 - a fixture-writing order without the cast idiom and a typecheck in STOP WHEN (vitest
   strips types, so a wrong-shaped fixture is green in the executor and red at reconcile —
   this escaped twice);
@@ -23,12 +26,28 @@ compiler may or may not read:
   order in the log that had to be abandoned at both Light and Standard strength).
 - a structural documentation order whose targeted test never ran the real documentation
   checker (missing artifacts and stale links escaped twice);
-- a validator change that omitted the validator's own test module; and
-- independently runnable orders where one edits a file another consumes.
+- a validator change that omitted the validator's own test module;
+- independently runnable orders where one edits a file another consumes;
+- a large START IN file bounded by a symbol name or a bare line number instead of a line
+  range (four consecutive orders in one stage spent their only measurable waste on
+  re-locating such a target, and the fix cut locating re-reads from 6 to 1);
+- a line range with no anchor text, or an anchor that has drifted out of its range (an
+  upstream order editing a shared file silently invalidates every downstream order's line
+  numbers — `--fix` re-heals these rather than reporting them);
+- an exported signature change that does not enumerate its call sites, which forced an
+  executor out of bounds to satisfy its own stop-check and let a stale assertion escape;
+- a source file whose own co-located test suite is missing from STOP WHEN; and
+- a React hook change with no `npm run lint` in STOP WHEN, the only check that catches a
+  missing dependency.
 
 Run standalone while compiling a stage, before dispatching anything:
 
     .venv\\Scripts\\python.exe scripts/check_orders.py
+
+Pass `--fix` first to rewrite unambiguous bare-filename faults (exactly one repo match) to
+their full path before linting, so the compiler edits fewer of them by hand:
+
+    .venv\\Scripts\\python.exe scripts/check_orders.py --fix
 
 `scripts/check_docs.py` imports `lint_orders` so the same rules gate CI.
 """
@@ -57,19 +76,27 @@ REQUIRED_FIELDS = (
     "REQUIRED STRENGTH:",
     "CREATES:",
     "REMOVES:",
+    "CHANGES SIGNATURE:",
     "START IN:",
     "STOP WHEN:",
     "STATUS:",
 )
 VALID_STRENGTHS = {"Light", "Standard", "High"}
+DEFAULT_STRENGTH = "Light"
+# Escalating above the default costs real money and, on the evidence so far, buys nothing:
+# every Light order in the log finished on its first pass, while the only order ever to need
+# a re-dispatch was Standard — and its own compiler note put the block on a compile defect,
+# not on the model. So a higher strength has to say what a Light executor cannot do here.
+STRENGTH_REASON_MIN = 12
 TOOL_TEST_PAIRS = {
     "scripts/check_docs.py": "backend/tests/test_docs_contract.py",
     "scripts/check_orders.py": "backend/tests/test_check_orders.py",
+    "scripts/order_telemetry.py": "backend/tests/test_order_telemetry.py",
 }
 
 SECTION_RE = re.compile(
     r"^(WORK ORDER|GOAL:|DEPENDS ON:|REQUIRED STRENGTH:|CREATES:|REMOVES:|"
-    r"KNOWN STATE|KNOWN TEST FAILURES|START IN:|DO:|"
+    r"CHANGES SIGNATURE:|KNOWN STATE|KNOWN TEST FAILURES|START IN:|DO:|"
     r"STOP WHEN:|STATUS:|DEVIATIONS:|FAILURE REPORT:|RUN SUMMARY:)",
 )
 FAILURE_STATUS_RE = re.compile(r"^STATUS:\s*(FAILED|BLOCKED)\b", re.MULTILINE)
@@ -98,6 +125,54 @@ FIXTURE_HINT_RE = re.compile(r"\b(mock|fixture|stub)", re.IGNORECASE)
 CAST_IDIOM_RE = re.compile(r"\bas [A-Z]\w*(\[\])?")
 TYPECHECK_RE = re.compile(r"npm run (typecheck|build)")
 BARE_FULL_SUITE_RE = re.compile(r"`?\s*(npm (run )?test|pytest|tsc -b)\s*`?\s*$", re.MULTILINE)
+
+# --- START IN scope grammar -----------------------------------------------------------
+# Canonical here because both this linter and `order_telemetry.py` classify entries by it;
+# two copies of the parser would drift, and the shape numbers in the log would stop
+# matching the rules that produced them.
+RANGE_RE = re.compile(
+    r"\blines?\s*(\d{1,6})\s*(?:-|–|—|to|through|\.\.+)\s*(\d{1,6})", re.IGNORECASE
+)
+BARE_RANGE_RE = re.compile(r"(?<![\w.])(\d{1,6})\s*(?:-|–|—)\s*(\d{1,6})(?![\w.])")
+POINT_RE = re.compile(r"\blines?\s*(\d{1,6})\b", re.IGNORECASE)
+MAX_PLAUSIBLE_SPAN = 5000
+
+# The anchor is what makes a line range survive an upstream edit: `@"<verbatim text>"`.
+# Ranges rot silently, anchors do not — an anchor that has moved is repairable, and a
+# range with no anchor is only checkable by a human reopening the file.
+ANCHOR_RE = re.compile(r'@\s*"([^"\n]{3,160})"')
+MIN_ANCHOR_LEN = 3
+# How far either side of a cited range an anchor may sit and still count as "in place".
+# Non-zero because a one-line insertion above the range is not worth failing an order for.
+ANCHOR_SLACK_LINES = 3
+
+# A symbol worth resolving to a range: backticked in the scope text.
+SCOPE_SYMBOL_RE = re.compile(r"`([A-Za-z_][\w.]{2,60})`")
+DEFINITION_TEMPLATES = (
+    r"^\s*(?:export\s+)?(?:default\s+)?(?:async\s+)?"
+    r"(?:function|const|let|var|class|interface|type|enum)\s+{name}\b",
+    r"^\s*(?:export\s+)?(?:async\s+)?def\s+{name}\b",
+    r"^\s*class\s+{name}\b",
+    r"^\s*case\s+['\"]{name}['\"]",
+    r"^\s*{name}\s*[:(]",
+    r"^\s*\.{name}\b",
+)
+MAX_SYMBOL_SPAN = 400
+
+# Trees a call-site sweep should look at; everything else is generated or vendored.
+SOURCE_ROOTS = ("frontend/src", "backend", "scripts")
+CALL_SITE_EXTS = {".ts", ".tsx", ".js", ".jsx", ".py"}
+
+# A React hook: neither vitest nor tsc detects a missing dependency, only eslint does.
+HOOK_FILE_RE = re.compile(r"(^|/)use[A-Z]\w*\.tsx?$")
+HOOK_DEP_RE = re.compile(r"\b(useCallback|useMemo|useEffect|useLayoutEffect|dependency array|deps array)\b")
+LINT_RE = re.compile(r"npm run lint\b")
+
+# DO asking for a NEW test, as opposed to editing an existing one. Naming the fixture an
+# order reuses is not the same as naming where the new test goes: leaving that out cost
+# one order 6 locating re-reads of a 2,000-line suite.
+NEW_TEST_RE = re.compile(r"\b(add|append|write|introduce)\b[^.]{0,60}\b(test|case|spec|it\()", re.IGNORECASE)
+TEST_BLOCK_RE = re.compile(r"^\s*(describe|it|test)\s*[.(]")
 
 
 class OrderError:
@@ -155,7 +230,7 @@ def _strip_prefix(path_str: str) -> str:
     """Drop a leading `./` only.
 
     `lstrip("./")` strips a *character set*, so it ate the leading dot of every
-    dot-directory: `.agents/skills/plan/SKILL.md` resolved as `agents/...` and was
+    dot-directory: `.claude/skills/plan/SKILL.md` resolved as `claude/...` and was
     reported missing even though the order named it correctly.
     """
     cleaned = path_str.replace("\\", "/")
@@ -168,23 +243,43 @@ def _normalise(path_str: str) -> str:
     return _strip_prefix(path_str).lower()
 
 
+def split_entry(entry: str) -> tuple[str, str]:
+    """(path, scope text) for one START IN bullet body."""
+    cleaned = entry.strip().strip("`")
+    match = PATHFUL_RE.search(cleaned) or BARE_FILE_RE.search(cleaned)
+    if match:
+        path = match.group(0)
+        scope = (cleaned[: match.start()] + cleaned[match.end():]).strip(" `—-–,:")
+    else:
+        # A folder, or something that isn't a file path at all.
+        token = cleaned.split()[0].strip("`,") if cleaned.split() else ""
+        path = token
+        scope = cleaned[len(token):].strip(" `—-–,:")
+    return path, scope
+
+
 def start_in_entries(sections: dict[str, list[str]]) -> list[tuple[str, str, str]]:
     """(raw entry, path, scope text) for every START IN entry."""
     entries: list[tuple[str, str, str]] = []
     for entry in bullets(sections.get("START IN", [])):
-        cleaned = entry.strip().strip("`")
-        match = PATHFUL_RE.search(cleaned) or BARE_FILE_RE.search(cleaned)
-        if match:
-            path = match.group(0)
-            scope = (cleaned[: match.start()] + cleaned[match.end():]).strip(" `—-–,:")
-        else:
-            # A folder, or something that isn't a file path at all.
-            token = cleaned.split()[0].strip("`,") if cleaned.split() else ""
-            path = token
-            scope = cleaned[len(token):].strip(" `—-–,:")
+        path, scope = split_entry(entry)
         if path:
             entries.append((entry, path, scope))
     return entries
+
+
+def split_strength(text: str) -> tuple[str, str]:
+    """(level, reason) from a REQUIRED STRENGTH field.
+
+    `Light` needs no reason; `Standard — the fixture shape has to be derived from three
+    call sites` does. Splitting them keeps the level machine-readable for the dispatcher
+    and the telemetry shape line while leaving room for the justification the escalation
+    now has to carry.
+    """
+    parts = re.split(r"\s*(?:[—–-]|\()\s*", text.strip(), maxsplit=1)
+    level = parts[0].strip()
+    reason = parts[1].strip(" )").strip() if len(parts) > 1 else ""
+    return level, reason
 
 
 def declared_paths(sections: dict[str, list[str]], field: str) -> list[str]:
@@ -207,11 +302,205 @@ def _resolve(path_str: str) -> Path:
     return REPO_ROOT / _strip_prefix(path_str)
 
 
+def _rglob_hits(name: str) -> list[str]:
+    """Repo-relative paths whose basename is `name`, ignoring vendored trees."""
+    return [
+        _rel(p)
+        for p in REPO_ROOT.rglob(name)
+        if "node_modules" not in p.parts and ".venv" not in p.parts
+    ]
+
+
 def _line_count(path: Path) -> int:
     try:
         return len(path.read_text(encoding="utf-8", errors="replace").splitlines())
     except OSError:
         return 0
+
+
+def _file_lines(path: Path) -> list[str]:
+    try:
+        return path.read_text(encoding="utf-8", errors="replace").splitlines()
+    except OSError:
+        return []
+
+
+def _merge_ranges(ranges: list[tuple[int, int]]) -> list[tuple[int, int]]:
+    merged: list[list[int]] = []
+    for start, end in sorted(ranges):
+        if merged and start <= merged[-1][1] + 1:
+            merged[-1][1] = max(merged[-1][1], end)
+        else:
+            merged.append([start, end])
+    return [(a, b) for a, b in merged]
+
+
+def scope_ranges(scope: str) -> tuple[list[tuple[int, int]], bool]:
+    """Line ranges named by a START IN scope, and whether a bare anchor is left over.
+
+    A range ("lines 1111-1290") tells the executor where to stop reading. A bare anchor
+    ("the toggle at line 1469") does not, and the difference is not cosmetic: three
+    separate compiler notes in the log traced a re-read loop to exactly that shape — an
+    exact line number pointing into a file thousands of lines long, which the executor
+    then paid to re-locate on every return trip. They are counted apart because they fail
+    apart.
+    """
+    ranges: list[tuple[int, int]] = []
+    rest = scope
+    for pattern in (RANGE_RE, BARE_RANGE_RE):
+        for match in pattern.finditer(rest):
+            start, end = int(match.group(1)), int(match.group(2))
+            if start <= end and end - start <= MAX_PLAUSIBLE_SPAN:
+                ranges.append((start, end))
+        rest = pattern.sub(" ", rest)
+    return _merge_ranges(ranges), bool(POINT_RE.search(rest))
+
+
+def scope_anchor(scope: str) -> str | None:
+    """The verbatim `@"..."` anchor text on a START IN entry, if it has one."""
+    match = ANCHOR_RE.search(scope)
+    return match.group(1).strip() if match else None
+
+
+def anchor_lines(path: Path, anchor: str) -> list[int]:
+    """1-indexed lines whose text contains the anchor.
+
+    Whitespace-insensitive: an anchor copied out of an order should still match after a
+    reformat that only moved indentation.
+    """
+    needle = " ".join(anchor.split())
+    if len(needle) < MIN_ANCHOR_LEN:
+        return []
+    return [
+        number
+        for number, line in enumerate(_file_lines(path), start=1)
+        if needle in " ".join(line.split())
+    ]
+
+
+def anchor_state(path: Path, ranges: list[tuple[int, int]], anchor: str) -> tuple[str, int | None]:
+    """Where an anchor actually sits relative to the range the order cites.
+
+    Returns ("in-range", None), ("moved", line) or ("absent", None). "moved" is the
+    interesting one: it is precisely the stale-line-number fault, it is repairable without
+    a human reopening the file, and `--fix` repairs it.
+    """
+    hits = anchor_lines(path, anchor)
+    if not hits:
+        return "absent", None
+    for start, end in ranges:
+        for hit in hits:
+            if start - ANCHOR_SLACK_LINES <= hit <= end + ANCHOR_SLACK_LINES:
+                return "in-range", hit
+    return "moved", hits[0]
+
+
+def symbol_span(path: Path, symbol: str) -> tuple[int, int, str] | None:
+    """(start, end, anchor text) for a symbol's definition block, or None if unclear.
+
+    Deliberately conservative. This exists so `--fix` can turn a symbol-scoped entry into
+    a ranged one without the compiler reopening the file; guessing a wrong range would be
+    worse than leaving the lint error standing, so anything ambiguous returns None.
+    """
+    lines = _file_lines(path)
+    if not lines:
+        return None
+    patterns = [
+        re.compile(template.format(name=re.escape(symbol)))
+        for template in DEFINITION_TEMPLATES
+    ]
+    start = None
+    for number, line in enumerate(lines, start=1):
+        if any(pattern.search(line) for pattern in patterns):
+            start = number
+            break
+    if start is None:
+        return None
+
+    opened = closed = 0
+    end = start
+    for number in range(start, min(len(lines), start + MAX_SYMBOL_SPAN) + 1):
+        line = lines[number - 1]
+        opened += line.count("{") + line.count("(") + line.count("[")
+        closed += line.count("}") + line.count(")") + line.count("]")
+        end = number
+        if opened and opened <= closed:
+            break
+        if not opened and line.rstrip().endswith(";"):
+            break
+    else:
+        return None  # Ran past the cap without closing: not a block we understand.
+
+    anchor = " ".join(lines[start - 1].split())[:80]
+    if len(anchor) < MIN_ANCHOR_LEN:
+        return None
+    return start, end, anchor
+
+
+def _source_files() -> list[Path]:
+    """Every file a call-site sweep should consider."""
+    found: list[Path] = []
+    for root in SOURCE_ROOTS:
+        base = REPO_ROOT / root
+        if not base.is_dir():
+            continue
+        for path in base.rglob("*"):
+            if not path.is_file() or path.suffix not in CALL_SITE_EXTS:
+                continue
+            if "node_modules" in path.parts or ".venv" in path.parts:
+                continue
+            found.append(path)
+    return found
+
+
+def call_sites(symbol: str, exclude: set[str] | None = None) -> list[str]:
+    """Repo-relative files referencing `symbol`, so START IN can be checked against them.
+
+    The rule this serves was learned the expensive way: an order made a shared hook
+    parameter required while STOP WHEN ran only the caller's tests, so every other call
+    site had to move and the executor was forced out of bounds to get its own stop-check
+    green. Enumerating them is a grep, not a judgement call.
+    """
+    pattern = re.compile(r"(?<![\w.])" + re.escape(symbol) + r"(?![\w])")
+    excluded = exclude or set()
+    hits: list[str] = []
+    for path in _source_files():
+        rel = _rel(path)
+        if _normalise(rel) in excluded:
+            continue
+        try:
+            if pattern.search(path.read_text(encoding="utf-8", errors="replace")):
+                hits.append(rel)
+        except OSError:
+            continue
+    return sorted(hits)
+
+
+def signature_changes(sections: dict[str, list[str]]) -> list[tuple[str, str]]:
+    """(symbol, path) pairs declared by CHANGES SIGNATURE."""
+    pairs: list[tuple[str, str]] = []
+    for entry in bullets(sections.get("CHANGES SIGNATURE", [])):
+        if entry.strip().lower() in {"none", "none."}:
+            continue
+        symbol_match = re.search(r"`?([A-Za-z_][\w.]*)`?\s+in\s+", entry)
+        path_match = PATHFUL_RE.search(entry)
+        if symbol_match and path_match:
+            pairs.append((symbol_match.group(1), path_match.group(0)))
+    return pairs
+
+
+def colocated_tests(path_str: str) -> list[str]:
+    """Test files that exist for a source file, by this repo's two conventions."""
+    rel = _strip_prefix(path_str)
+    resolved = REPO_ROOT / rel
+    stem = resolved.stem
+    candidates = [
+        resolved.parent / "__tests__" / f"{stem}.test.tsx",
+        resolved.parent / "__tests__" / f"{stem}.test.ts",
+        resolved.parent / f"{stem}.test.tsx",
+        resolved.parent / f"{stem}.test.ts",
+    ]
+    return [_rel(candidate) for candidate in candidates if candidate.is_file()]
 
 
 def lint_order(order_path: Path) -> list[OrderError]:
@@ -232,12 +521,26 @@ def lint_order(order_path: Path) -> list[OrderError]:
             "Add the missing work-order fields (see docs/PLAN_TEMPLATE.md)",
         )
 
-    strength = " ".join(sections.get("REQUIRED STRENGTH", []))
-    if "REQUIRED STRENGTH:" in text and strength not in VALID_STRENGTHS:
-        fail(
-            f"REQUIRED STRENGTH must be one of {', '.join(sorted(VALID_STRENGTHS))}: {strength or 'blank'}",
-            "Choose the lowest capability that can execute the bounded order: Light, Standard, or High",
-        )
+    level, strength_reason = split_strength(
+        " ".join(sections.get("REQUIRED STRENGTH", []))
+    )
+    if "REQUIRED STRENGTH:" in text:
+        if level not in VALID_STRENGTHS:
+            fail(
+                f"REQUIRED STRENGTH must be one of {', '.join(sorted(VALID_STRENGTHS))}: "
+                f"{level or 'blank'}",
+                f"{DEFAULT_STRENGTH} is the default for every order; declare a higher "
+                "strength only with a reason",
+            )
+        elif level != DEFAULT_STRENGTH and len(strength_reason) < STRENGTH_REASON_MIN:
+            fail(
+                f"REQUIRED STRENGTH is {level} with no stated reason",
+                f"{DEFAULT_STRENGTH} is the default for every order. To escalate, write "
+                f"'REQUIRED STRENGTH: {level} — <what a {DEFAULT_STRENGTH} executor cannot "
+                "do here>'. If the answer is that the order is under-specified, fix the "
+                "order instead — that is what the one abandoned order in the log turned "
+                "out to be",
+            )
 
     failure_status = FAILURE_STATUS_RE.search(text)
     if failure_status and "FAILURE REPORT:" not in text:
@@ -275,6 +578,7 @@ def lint_order(order_path: Path) -> list[OrderError]:
         )
 
     start_in_paths: list[str] = []
+    start_in_meta: list[tuple[str, str, Path, int]] = []
     for raw, path_str, scope in entries:
         resolved = _resolve(path_str)
         if not resolved.exists():
@@ -286,15 +590,60 @@ def lint_order(order_path: Path) -> list[OrderError]:
                 )
             continue
         start_in_paths.append(_normalise(path_str))
-        if resolved.is_file():
-            lines = _line_count(resolved)
-            if lines > SCOPE_REQUIRED_LINES and len(scope) < 3:
-                fail(
-                    f"START IN entry for {path_str} ({lines} lines) has no scope",
-                    "Name the symbol or line range the executor needs and nothing else "
-                    f"(e.g. '- {path_str} — the <Foo> render at line 120, nothing else in "
-                    "this file'); an unscoped large file is read whole",
-                )
+        if not resolved.is_file():
+            continue
+
+        lines = _line_count(resolved)
+        start_in_meta.append((path_str, scope, resolved, lines))
+        if lines <= SCOPE_REQUIRED_LINES:
+            # Reading a file this size whole *is* the scope; nothing to bound.
+            continue
+
+        ranges, has_point = scope_ranges(scope)
+        anchor = scope_anchor(scope)
+        if not ranges:
+            if has_point:
+                detail = "a bare line number, which the executor pays to re-locate on every return trip"
+            elif len(scope.strip()) >= 3:
+                detail = "a symbol name, which costs one re-locating read per visit"
+            else:
+                detail = "nothing, so the file is read whole"
+            fail(
+                f"START IN entry for {path_str} ({lines} lines) is bounded by {detail}",
+                "Give an explicit line range with an anchor — "
+                f"'- {path_str} — lines 120-168 @\"export function fitToBounds\"'. "
+                "Run `check_orders.py --fix` and it will resolve a backticked symbol to its "
+                "range for you; four consecutive orders in one stage spent their only "
+                "measurable waste on this exact shape",
+            )
+            continue
+
+        if not anchor:
+            fail(
+                f"START IN entry for {path_str} cites lines "
+                f"{ranges[0][0]}-{ranges[0][1]} with no anchor",
+                'Append the first line of the range verbatim as `@"<text>"`. Line numbers '
+                "rot the moment an upstream order edits the file; an anchor is what lets "
+                "the linter re-check and `--fix` repair the range instead of an executor "
+                "discovering it mid-run",
+            )
+            continue
+
+        state, line = anchor_state(resolved, ranges, anchor)
+        if state == "moved":
+            fail(
+                f"START IN range for {path_str} is stale: anchor \"{anchor[:40]}\" is at "
+                f"line {line}, not in {ranges[0][0]}-{ranges[0][1]}",
+                "Run `check_orders.py --fix` to re-heal the range. An upstream order in this "
+                "stage almost certainly edited the file and shifted every line below its edit",
+            )
+        elif state == "absent":
+            fail(
+                f"START IN anchor for {path_str} no longer appears in the file: \"{anchor[:40]}\"",
+                "Re-derive the anchor from the current file. The code it pointed at has been "
+                "renamed or removed, so the order is compiled against a version that no "
+                "longer exists",
+            )
 
     do_lines = sections.get("DO", [])
     do_bullets = bullets(do_lines)
@@ -328,11 +677,7 @@ def lint_order(order_path: Path) -> list[OrderError]:
             without_paths = PATHFUL_RE.sub(" ", bullet)
             for match in BARE_FILE_RE.finditer(without_paths):
                 name = match.group(1)
-                hits = [
-                    _rel(p)
-                    for p in REPO_ROOT.rglob(name)
-                    if "node_modules" not in p.parts and ".venv" not in p.parts
-                ]
+                hits = _rglob_hits(name)
                 # A repo-root file's full path *is* its bare name, so there is nothing
                 # to add and the executor has nowhere to search.
                 if hits and not any(hit == name for hit in hits):
@@ -464,16 +809,259 @@ def lint_order(order_path: Path) -> list[OrderError]:
                     "log that had to be abandoned at both Light and Standard strength",
                 )
 
+    # An exported signature change drags every caller with it. Enumerating them is a
+    # grep; leaving it to the executor cost a BLOCKED run and a stale assertion that
+    # escaped to reconcile.
+    normalised_start_set = set(start_in_paths)
+    for symbol, path_str in signature_changes(sections):
+        if _normalise(path_str) not in normalised_start_set:
+            fail(
+                f"CHANGES SIGNATURE names {path_str}, which START IN does not list",
+                "The file whose signature changes must be an authorized START IN entry",
+            )
+        missing = [
+            site
+            for site in call_sites(symbol, exclude={_normalise(path_str)})
+            if _normalise(site) not in normalised_start_set
+        ]
+        if missing:
+            shown = ", ".join(missing[:4]) + (f" (+{len(missing) - 4} more)" if len(missing) > 4 else "")
+            fail(
+                f"CHANGES SIGNATURE `{symbol}` has call sites outside START IN: {shown}",
+                "Add every call site to START IN, or the executor is forced out of bounds "
+                "to satisfy its own typecheck — which is exactly what happened to the one "
+                "order in the log that both blocked and leaked a stale assertion",
+            )
+        for test_path in colocated_tests(path_str):
+            if _normalise(test_path) not in _normalise(stop_when):
+                fail(
+                    f"CHANGES SIGNATURE `{symbol}` but STOP WHEN omits the module's own "
+                    f"suite: {test_path}",
+                    "Run the changed module's test suite, not only the caller's; scoping "
+                    "STOP WHEN to the caller is how a stale hook assertion reached reconcile",
+                )
+
+    # The same lesson, one step weaker: any edited source file whose own suite exists
+    # should be run by the order that edits it.
+    for path_str in sorted(do_paths):
+        if TEST_FILE_RE.search(path_str.replace("\\", "/")):
+            continue
+        if not path_str.endswith((".ts", ".tsx", ".js", ".jsx", ".py")):
+            continue
+        tests = colocated_tests(path_str)
+        if tests and not any(_normalise(t) in _normalise(stop_when) for t in tests):
+            fail(
+                f"DO edits {path_str} but STOP WHEN never runs its suite: {tests[0]}",
+                "Name the co-located test file in STOP WHEN. An order that edits a module "
+                "without running that module's own tests is the shape that let a stale "
+                "assertion pass every targeted check and fail at reconcile",
+            )
+
+    # Hook dependencies: vitest and tsc are both blind to this, eslint is not.
+    # Case matters here: `useMapLabEditor.ts` is a hook, `username.ts` is not.
+    hook_paths = [p for p in do_paths if HOOK_FILE_RE.search(p.replace("\\", "/"))]
+    touches_deps = bool(HOOK_DEP_RE.search(do_text + "\n" + known_state))
+    if (hook_paths or touches_deps) and not LINT_RE.search(stop_when):
+        trigger = hook_paths[0] if hook_paths else "a hook dependency array"
+        fail(
+            f"Order changes {trigger} but STOP WHEN does not run npm run lint",
+            "Append `&& npm run lint`. A missing useCallback dependency is invisible to "
+            "vitest and to tsc; lint is the only check that catches it, and one slipped "
+            "through to reconcile as a latent stale-closure bug",
+        )
+
+    # Where does a NEW test go? Naming the fixture it reuses is not the same answer.
+    if NEW_TEST_RE.search(do_text):
+        for path_str, scope, resolved, lines in start_in_meta:
+            if not TEST_FILE_RE.search(path_str.replace("\\", "/")):
+                continue
+            if lines <= SCOPE_REQUIRED_LINES:
+                continue
+            anchor = scope_anchor(scope)
+            hits = anchor_lines(resolved, anchor) if anchor else []
+            file_lines = _file_lines(resolved)
+            if not any(TEST_BLOCK_RE.match(file_lines[hit - 1]) for hit in hits if hit <= len(file_lines)):
+                fail(
+                    f"DO adds a test to {path_str} ({lines} lines) without naming the "
+                    "block to insert it into",
+                    'Anchor the entry on the describe/it line the new test joins '
+                    '(`@"describe(\'fullscreen\', ...)"`). Leaving this out after it had '
+                    "already been diagnosed let one order pay 6 locating reads of a "
+                    "2,000-line suite; naming it on the next order brought that back to 1",
+                )
+
     return errors
+
+
+def autofix_order(order_path: Path) -> list[tuple[str, str]]:
+    """Rewrite unambiguous bare filenames to their full repo-relative path.
+
+    Only fires when `_rglob_hits` finds exactly one candidate: the same compiling mistake
+    every time (a bare name typed while the file's real location was still in the
+    compiler's head, not the order) has exactly one honest fix. Two or more hits, or zero,
+    is a judgement call the linter still has to surface as an error — guessing wrong here
+    would send an executor to the wrong file silently instead of loudly.
+
+    Returns the (bare_name, full_path) pairs applied, and rewrites the file in place when
+    any are found.
+    """
+    text = order_path.read_text(encoding="utf-8")
+    sections = split_sections(text)
+    fixes: dict[str, str] = {}
+
+    removed = {_normalise(path) for path in declared_paths(sections, "REMOVES")}
+    for _, path_str, _ in start_in_entries(sections):
+        if "/" in path_str or "\\" in path_str:
+            continue  # already has a directory; a wrong directory is not ours to guess
+        if _resolve(path_str).exists() or _normalise(path_str) in removed:
+            continue
+        hits = _rglob_hits(path_str)
+        if len(hits) == 1 and hits[0] != path_str:
+            fixes[path_str] = hits[0]
+
+    for field in ("KNOWN STATE", "DO", "KNOWN TEST FAILURES"):
+        for bullet in bullets(sections.get(field, [])):
+            if COMMAND_HINT_RE.search(bullet):
+                continue
+            without_paths = PATHFUL_RE.sub(" ", bullet)
+            for match in BARE_FILE_RE.finditer(without_paths):
+                name = match.group(1)
+                if name in fixes:
+                    continue
+                hits = _rglob_hits(name)
+                if len(hits) == 1 and hits[0] != name:
+                    fixes[name] = hits[0]
+
+    if not fixes:
+        return []
+
+    applied: dict[str, str] = {}
+    new_lines: list[str] = []
+    for line in text.splitlines(keepends=True):
+        if COMMAND_HINT_RE.search(line):
+            new_lines.append(line)
+            continue
+        for bare, full in fixes.items():
+            pattern = re.compile(r"(?<![\w./\\-])" + re.escape(bare) + r"\b")
+            if pattern.search(line):
+                line = pattern.sub(full.replace("\\", "/"), line)
+                applied[bare] = full
+        new_lines.append(line)
+
+    if applied:
+        order_path.write_text("".join(new_lines), encoding="utf-8")
+    return sorted(applied.items())
+
+
+def _sub_first_range(text: str, start: int, end: int) -> str:
+    """Rewrite the first line range in `text`, keeping whatever wording surrounds it."""
+    for pattern in (RANGE_RE, BARE_RANGE_RE):
+        match = pattern.search(text)
+        if match:
+            replaced = re.sub(
+                r"\d{1,6}\s*(?:-|–|—|to|through|\.\.+)\s*\d{1,6}",
+                f"{start}-{end}",
+                match.group(0),
+                count=1,
+            )
+            return text[: match.start()] + replaced + text[match.end():]
+    return text
+
+
+def autofix_start_in(order_path: Path) -> list[tuple[str, str]]:
+    """Re-heal stale line ranges and resolve symbol-scoped entries into ranges.
+
+    This is the automation the telemetry log kept asking for in prose. Two facts drove it:
+
+    * when consecutive orders edit one large file, every downstream order's line numbers
+      go stale the moment the upstream one lands — re-verifying them by hand cost the
+      planner a full read of a 2,300-line file per dispatch; and
+    * bounding a large file by symbol name alone cost one re-locating read per symbol, in
+      four consecutive orders of a single stage.
+
+    Both are mechanical given an anchor, so neither should cost a model anything. Anything
+    ambiguous is left alone for the linter to report — a silently wrong range would send an
+    executor to the wrong code instead of loudly failing.
+    """
+    raw = order_path.read_text(encoding="utf-8")
+    lines = raw.splitlines(keepends=True)
+    applied: list[tuple[str, str]] = []
+    in_section = False
+
+    for index, line in enumerate(lines):
+        if SECTION_RE.match(line):
+            in_section = line.startswith("START IN")
+            continue
+        if not in_section:
+            continue
+        stripped = line.strip()
+        if not stripped.startswith(("-", "*")):
+            continue
+
+        body = stripped.lstrip("-* ").strip()
+        path_str, scope = split_entry(body)
+        if not path_str:
+            continue
+        resolved = _resolve(path_str)
+        if not resolved.is_file() or _line_count(resolved) <= SCOPE_REQUIRED_LINES:
+            continue
+
+        ranges, _ = scope_ranges(scope)
+        anchor = scope_anchor(scope)
+        file_lines = _file_lines(resolved)
+        new_line = line
+
+        if ranges and anchor:
+            state, hit = anchor_state(resolved, ranges, anchor)
+            if state != "moved" or hit is None:
+                continue
+            span = ranges[0][1] - ranges[0][0]
+            new_line = _sub_first_range(line, hit, min(hit + span, len(file_lines)))
+            applied.append(
+                (f"{path_str} lines {ranges[0][0]}-{ranges[0][1]}", f"lines {hit}-{hit + span} (anchor moved)")
+            )
+
+        elif ranges and not anchor:
+            start = ranges[0][0]
+            if not (1 <= start <= len(file_lines)):
+                continue
+            anchor_text = " ".join(file_lines[start - 1].split())[:80]
+            if len(anchor_text) < MIN_ANCHOR_LEN:
+                continue
+            new_line = line.rstrip("\n") + f' @"{anchor_text}"' + ("\n" if line.endswith("\n") else "")
+            applied.append((f"{path_str} lines {start}-{ranges[0][1]}", f'anchored @"{anchor_text[:40]}"'))
+
+        else:
+            symbols = SCOPE_SYMBOL_RE.findall(scope)
+            span = next(
+                (found for found in (symbol_span(resolved, symbol) for symbol in symbols) if found),
+                None,
+            )
+            if not span:
+                continue
+            start, end, anchor_text = span
+            addition = f' — lines {start}-{end} @"{anchor_text}"' if not scope else f', lines {start}-{end} @"{anchor_text}"'
+            new_line = line.rstrip("\n") + addition + ("\n" if line.endswith("\n") else "")
+            applied.append((f"{path_str} (symbol-scoped)", f"lines {start}-{end}"))
+
+        lines[index] = new_line
+
+    if applied:
+        order_path.write_text("".join(lines), encoding="utf-8")
+    return applied
+
+
+def _discover_orders(orders_root: Path | None = None) -> list[Path]:
+    root = orders_root if orders_root is not None else ORDERS_ROOT
+    if not root.exists():
+        return []
+    return [order for order in sorted(root.rglob("*.md")) if re.match(r"\d+-", order.name)]
 
 
 def lint_orders(orders_root: Path | None = None) -> list[OrderError]:
     """Lint every active work order."""
-    root = orders_root if orders_root is not None else ORDERS_ROOT
-    if not root.exists():
-        return []
+    orders = _discover_orders(orders_root)
     errors: list[OrderError] = []
-    orders = [order for order in sorted(root.rglob("*.md")) if re.match(r"\d+-", order.name)]
     for order in orders:
         # Only lint numbered work orders, not Plan files in feature directories.
         errors.extend(lint_order(order))
@@ -544,10 +1132,18 @@ def main() -> int:
         nargs="*",
         help="Order files to lint (default: numbered orders in active feature folders)",
     )
+    parser.add_argument(
+        "--fix",
+        action="store_true",
+        help="Repair mechanically-fixable faults before linting: unambiguous bare "
+        "filenames become full paths, stale line ranges are re-healed from their anchors, "
+        "and symbol-scoped large files are resolved to real ranges. Anything ambiguous is "
+        "left as an error, since guessing there would be worse",
+    )
     args = parser.parse_args()
 
     if args.orders:
-        errors: list[OrderError] = []
+        paths: list[Path] = []
         for name in args.orders:
             path = Path(name)
             if not path.is_absolute():
@@ -555,6 +1151,21 @@ def main() -> int:
             if not path.exists():
                 print(f"ERROR: no such order file: {name}", file=sys.stderr)
                 return 1
+            paths.append(path)
+    else:
+        paths = _discover_orders()
+
+    if args.fix:
+        for path in paths:
+            # Bare names first: a path has to resolve before its ranges can be checked.
+            for bare, full in autofix_order(path):
+                print(f"fixed {_rel(path)}: {bare} -> {full}")
+            for before, after in autofix_start_in(path):
+                print(f"fixed {_rel(path)}: {before} -> {after}")
+
+    if args.orders:
+        errors: list[OrderError] = []
+        for path in paths:
             errors.extend(lint_order(path))
     else:
         errors = lint_orders()

@@ -115,6 +115,45 @@ describe('useMapLabEditor', () => {
     expect(result.current.dungeonData.rooms?.map((room) => room.room_id)).toEqual([1])
   })
 
+  it('dropEmptyRoom removes both records, is undoable, and autosaves', async () => {
+    const layout = { ...initialLayout, rooms: [...initialLayout.rooms, { room_id: 2, z: 0, origin: [1, 0], cells: [[1, 0]], title: 'Second' }] }
+    const loadedRooms = (initialDungeon.data.rooms as Array<{ room_id: number; title: string; entries: []; npcs: [] }> | undefined) ?? []
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: layout })
+    vi.spyOn(api, 'getDungeon').mockResolvedValue({
+      ...initialDungeon,
+      data: { rooms: [...loadedRooms, { room_id: 2, title: 'Second', entries: [], npcs: [] }] },
+    })
+    const saveDungeonLayoutSpy = vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: layout })
+    const updateDungeonSpy = vi.spyOn(api, 'updateDungeon').mockResolvedValue(initialDungeon)
+
+    const { result } = renderHook(() => useMapLabEditor(4, initialDungeon))
+
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    act(() => {
+      result.current.dropEmptyRoom(2)
+    })
+
+    expect(result.current.state.layout.rooms.map((room) => room.room_id)).toEqual([1])
+    expect(result.current.dungeonData.rooms?.map((room) => room.room_id)).toEqual([1])
+    expect(result.current.canUndo).toBe(true)
+
+    act(() => {
+      result.current.undo()
+    })
+
+    expect(result.current.state.layout.rooms.map((room) => room.room_id)).toEqual([1, 2])
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(600)
+    })
+
+    expect(saveDungeonLayoutSpy).toHaveBeenCalled()
+    expect(updateDungeonSpy).toHaveBeenCalled()
+  })
+
   it('updateRoomTitle syncs the layout cache and dungeon data', async () => {
     vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: initialLayout })
     vi.spyOn(api, 'getDungeon').mockResolvedValue(initialDungeon)
@@ -235,5 +274,51 @@ describe('useMapLabEditor', () => {
     expect(result.current.state.layout.doors).toHaveLength(1)
     await act(async () => { await vi.advanceTimersByTimeAsync(600) })
     expect(saveLayoutSpy).toHaveBeenCalledTimes(1)
+  })
+
+  it('collects ghost rooms (content-free, off-map) on load and autosaves', async () => {
+    const layoutWithGhost = {
+      meta: { cellSizeFt: 5, padding: { top: 3, right: 3, bottom: 3, left: 3 } },
+      rooms: [
+        { room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0]], title: 'Loaded Room' },
+        { room_id: 2, z: 0, origin: [0, 0], cells: [] },
+      ],
+      doors: [],
+      stairs: [],
+      floors: [{ z: 0, title: 'Ground Floor' }],
+      props: [],
+      portals: [],
+    }
+    const dungeonWithContent = {
+      id: 4,
+      title: 'Test Dungeon',
+      data: {
+        rooms: [{ room_id: 1, title: 'Loaded Room', entries: [], npcs: [9] }],
+      },
+    }
+
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: layoutWithGhost })
+    vi.spyOn(api, 'getDungeon').mockResolvedValue(dungeonWithContent)
+    const saveLayoutSpy = vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: layoutWithGhost })
+    const updateDungeonSpy = vi.spyOn(api, 'updateDungeon').mockResolvedValue(dungeonWithContent)
+
+    const { result } = renderHook(() => useMapLabEditor(4, dungeonWithContent))
+
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    expect(result.current.state.layout.rooms).toHaveLength(1)
+    expect(result.current.state.layout.rooms[0].room_id).toBe(1)
+    expect(result.current.dungeonData.rooms).toHaveLength(1)
+    expect(result.current.dungeonData.rooms?.[0].room_id).toBe(1)
+    expect(result.current.dungeonData.rooms?.[0].title).toBe('Loaded Room')
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(600)
+    })
+
+    expect(saveLayoutSpy).toHaveBeenCalled()
+    expect(updateDungeonSpy).toHaveBeenCalled()
   })
 })

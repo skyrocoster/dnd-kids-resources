@@ -45,8 +45,48 @@
   overflow-y: auto;
 }
 
-.maplab-viewer-rail-toggle {
+.maplab-viewer-rail-toggle.maplab-pill-button {
+  display: none; /* chained selector beats .maplab-pill-button single-class specificity */
+}
+
+/* Desktop seam handle — collapses the room rail at widths > 768px.
+ * Visual: 12px, pointer hit area: 48px. Hidden on mobile. */
+.maplab-viewer-rail-seam {
   display: none;
+}
+
+@media (min-width: 769px) {
+  .maplab-viewer-rail-seam {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    width: 48px; /* pointer hit area */
+    align-self: stretch;
+    cursor: pointer;
+    background: transparent;
+    border: none;
+    padding: 0;
+  }
+
+  .maplab-viewer-rail-seam::after {
+    content: '';
+    width: 12px; /* visual */
+    height: 2rem;
+    border-radius: 2px;
+    background: var(--md-outline-variant);
+    transition: background 0.15s ease;
+  }
+
+  .maplab-viewer-rail-seam:hover::after {
+    background: var(--md-outline);
+  }
+
+  .maplab-viewer-rail-container[data-collapsed] {
+    flex: 0 0 0;
+    overflow: hidden;
+    min-width: 0;
+  }
 }
 
 .maplab-viewer-rail-backdrop {
@@ -585,7 +625,7 @@
   min-height: 0;
 }
 
-.maplab-canvas-wrapper[data-fullscreen] {
+.maplab-editor[data-fullscreen] {
   position: fixed;
   inset: 0;
   z-index: 60;
@@ -593,7 +633,7 @@
   background: color-mix(in srgb, var(--md-surface) 92%, black 8%);
 }
 
-.maplab-canvas-wrapper[data-fullscreen]:focus {
+.maplab-editor[data-fullscreen]:focus {
   outline: none;
 }
 
@@ -617,7 +657,7 @@
   background: var(--md-surface);
 }
 
-.maplab-canvas-wrapper[data-fullscreen] .maplab-canvas-viewport {
+.maplab-editor[data-fullscreen] .maplab-canvas-viewport {
   flex: 1 1 auto;
   height: 100%;
   min-height: 16rem;
@@ -702,9 +742,11 @@
 
 /* Shared pill look for every clickable control across Map Lab (toolbar buttons, floor tabs,
  * session/zoom buttons) — one base rule instead of five near-identical duplicated blocks. Each
- * control keeps its own class too, for state-specific overrides (`[data-active]`,
- * `[aria-selected]`, `:disabled`); those selectors are higher-specificity than this base, so they
- * always win regardless of CSS source order. */
+ * control keeps its own class too, for layout/visibility overrides. State-specific selectors
+ * (`[data-active]`, `[aria-selected]`, `:disabled`) are higher-specificity and always win
+ * regardless of CSS source order; peer single-class selectors have the same specificity as this
+ * base, so source order matters — chained selectors (.maplab-pill-button.maplab-zoom-control)
+ * establish explicit precedence instead. */
 .maplab-pill-button {
   display: inline-flex;
   align-items: center;
@@ -1029,7 +1071,7 @@
     max-height: 40%;
   }
 
-  .maplab-viewer-rail-toggle {
+  .maplab-viewer-rail-toggle.maplab-pill-button {
     display: inline-flex;
     position: absolute;
     z-index: 3;
@@ -1196,7 +1238,7 @@
     display: none;
   }
 
-  .maplab-canvas-wrapper[data-fullscreen] {
+  .maplab-editor[data-fullscreen] {
     padding: var(--space-3);
   }
 

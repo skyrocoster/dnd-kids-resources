@@ -1,6 +1,6 @@
 # Map Lab Editor Usability — the map fills the screen, and every tool is reachable
 
-> **Status:** Stages 0–3 shipped. Stage 4, Fullscreen actually edits, is next.
+> **Status:** Stages 0–7 shipped. Feature complete.
 
 - **Area guide:** [Dungeons](../../../areas/dungeons.md)
 
@@ -141,7 +141,9 @@ Labels:       RESOLVED, and NOT OWNED HERE. Room labels hold a constant on-scree
    owns constant-size labels and the shared anchor for both apps.) Canvas
    chrome is tidied in the same pass: the pan hint stops claiming Escape exits fullscreen when it
    doesn't and stops sitting permanently on the map's corner, fullscreen and fit stop sharing one
-   icon, and the zoom/undo rail docks to the canvas edge.
+   icon, and the zoom/undo rail docks to the canvas edge — that last item needed no work: commit
+   `b8e5665`, before this plan, had already replaced the flow row below the canvas with the
+   absolutely-positioned corner cluster (`.maplab-map-controls`) that "docked" describes.
 6. **Viewer rail.** Replace the leaked mobile drawer toggle with the desktop seam handle, keep the
    rail open when a room is picked on desktop, and bring the viewer's floor selection into line with
    the editor's. Correct the CSS comment that claims single-class overrides always beat the shared
@@ -158,6 +160,10 @@ Labels:       RESOLVED, and NOT OWNED HERE. Room labels hold a constant on-scree
 | 1 | Passage, Terrain, and Prop choices now share anchored portaled flyouts that escape toolbar clipping without introducing a scroll region or changing the main tool buttons' accessible names. Armed Room, Passage, Prop, and Terrain buttons now expose the Escape/second-click exit hint and a second click returns to Select. |
 | 2 | Passage, Prop, and Terrain flyouts now open on a focused filter row that narrows the visible tools, keeps the exact filtered-empty copy `No tools match that.`, and lets Enter arm the top visible match. Typing in the filter uses the existing input hotkey guard, so tool shortcuts do not fire while filtering. |
 | 3 | The editor shell header now collapses to a compact edit-mode row, and the dungeon floor tabs live in the toolbar instead of a separate strip. The editor navigation rail is bounded to the workspace while the room list remains the named internal scroll owner, so the rail no longer stretches the page. |
+| 4 | Fullscreen now wraps the toolbar, navigation rail, and canvas together instead of covering only the canvas, keeping Escape exit and body-overflow lock. Entering fullscreen immediately re-fits the map to the viewport so authored content is never hidden behind a stale pan. |
+| 5 | Fit now targets the union of drawn rooms rather than the padded grid and centres them in the viewport — `fitToBounds` takes the rendered (padded) bounds as a separate `origin` argument, because pan is measured from the padded content's corner — so the editor no longer opens on blank canvas, and hitting the minimum-zoom clamp reports it through the existing canvas chip instead of overflowing silently. Fit gained its own `Scan` icon instead of sharing `Maximize2` with the fullscreen toggle, and the pan hint now appears only in fullscreen, where its Escape claim is actually true. |
+| 6 | The desktop viewer room rail now has its own labelled seam control and stays open when a room is selected, while the tablet drawer retains its toggle, backdrop, and close-after-selection behavior. Viewer floor tabs now sit inside the toolbar, matching the editor and returning the separate row to the canvas. |
+| 7 | Erasing a room's last square now drops the room with an `Undo` canvas chip when it carries no title, entries or NPCs, and keeps it in the room list flagged `not on the map` when it carries authored content; off-map rooms render nothing on the canvas instead of an invisible focusable group. Rooms that were already empty and content-free are swept from both the layout and dungeon-data blobs once per load, collecting the 12 existing ghosts without a migration script — the shared predicates live in `frontend/src/features/dungeons/maplab/roomContent.ts`. |
 
 ## Touches
 

@@ -21,6 +21,7 @@ import {
   FullscreenExitIcon,
   MapIcon,
   MousePointer2,
+  OffMapIcon,
   PlusIcon,
   PortalIcon,
   PropIcon,
@@ -45,6 +46,7 @@ import { FIXTURE_TYPES, PROP_KIND_ICONS, PROP_KIND_OPTIONS } from './fixtureType
 import { RoomContentEditor } from './RoomContentEditor'
 import { ConnectionsResolveList } from './ConnectionsResolveList'
 import { SelectionActions } from './SelectionActions'
+import { roomIsOffMap } from './roomContent'
 import { ConfirmDialog } from '../../../components/ConfirmDialog'
 import {
   absoluteCells,
@@ -54,6 +56,7 @@ import {
   MAX_MARKERS_PER_CELL,
   ghostFloorZ,
   gridMarkerOffset,
+  layoutBounds,
   markersAtCell,
   neighborCell,
   nonDoorWallSegments,
@@ -72,6 +75,7 @@ import {
   type WallEdge,
   FEATURE_KIND_OPTIONS,
 } from '../../../model/maplabModel'
+import { roomEraseOutcome } from './roomContent'
 
 const CELL_SIZE = 64
 
@@ -220,6 +224,7 @@ export function MapLabEditorPage() {
     redo,
     canUndo,
     canRedo,
+    dropEmptyRoom,
   } = useMapLabEditor(route.dungeonId, route.dungeon)
   const [isCanvasFullscreen, setIsCanvasFullscreen] = useState(false)
   const [tabletNavOpen, setTabletNavOpen] = useState(false)
@@ -260,6 +265,7 @@ export function MapLabEditorPage() {
   const [dismissZWarning, setDismissZWarning] = useState(false)
   const [placementError, setPlacementError] = useState<string | null>(null)
   const [deletedFixture, setDeletedFixture] = useState<string | null>(null)
+  const [removedEmptyRoom, setRemovedEmptyRoom] = useState(false)
   const [showGhostFloor, setShowGhostFloor] = useState(false)
   const { visible: layerVisible, toggleLayer } = useMapLayerVisibility()
   const { density, setDensity } = useMapDensity()
@@ -268,9 +274,20 @@ export function MapLabEditorPage() {
   const simplified = resolveMapDensity(density, zoomApi.zoom.scale) === 'simple'
   const [viewportSize, setViewportSize] = useState<ViewportSize>({ width: 0, height: 0 })
   const handleViewportResize = useCallback((size: ViewportSize) => setViewportSize(size), [])
+  const bounds = useMemo(() => paddedBounds(state.layout), [state.layout])
+  const roomBounds = useMemo(() => layoutBounds(state.layout.rooms), [state.layout])
+  const { fitToBounds } = zoomApi
   const toggleCanvasFullscreen = useCallback(() => {
     setIsCanvasFullscreen((active) => !active)
-  }, [])
+    if (!isCanvasFullscreen) {
+      const result = fitToBounds(roomBounds, viewportSize, bounds)
+      setPlacementError(
+        result.clampedToMin
+          ? 'This floor is too large to fit on screen. Zoom out further isn\'t possible; pan to see the rest.'
+          : null
+      )
+    }
+  }, [isCanvasFullscreen, roomBounds, bounds, viewportSize, fitToBounds])
 
   const floors = useMemo(
     () => [...state.layout.floors].sort((a, b) => a.z - b.z),
@@ -366,7 +383,6 @@ export function MapLabEditorPage() {
     if (openFlyout === 'terrain' && terrainToolOptions[0]) activateTerrainTool(terrainToolOptions[0].key)
   }, [activatePassageTool, activatePropKind, activateTerrainTool, openFlyout, passageToolOptions, propKindOptions, terrainToolOptions])
 
-  const bounds = useMemo(() => paddedBounds(state.layout), [state.layout])
   const viewBox = `${bounds.minX * CELL_SIZE} ${bounds.minY * CELL_SIZE} ${
     (bounds.maxX - bounds.minX + 1) * CELL_SIZE
   } ${(bounds.maxY - bounds.minY + 1) * CELL_SIZE}`
@@ -408,8 +424,17 @@ export function MapLabEditorPage() {
         if (mode === 'erase') {
           const eraseKeys = new Set(strokeCells.map(cellKey))
           const remaining = existingCells.filter((cell) => !eraseKeys.has(cellKey(cell)))
-          if (remaining.length > 0 && remaining.length !== existingCells.length) {
-            setRoomFootprint(roomId, remaining)
+          if (remaining.length !== existingCells.length) {
+            const dataRoom = dungeonData.rooms?.find((r) => r.room_id === roomId)
+            const outcome = roomEraseOutcome(remaining, room, dataRoom)
+            if (outcome === 'shrink') {
+              setRoomFootprint(roomId, remaining)
+            } else if (outcome === 'flag') {
+              setRoomFootprint(roomId, [])
+            } else if (outcome === 'drop') {
+              dropEmptyRoom(roomId)
+              setRemovedEmptyRoom(true)
+            }
           }
         } else if (mode === 'paint') {
           const sameFloorRooms = state.layout.rooms.filter((r) => r.z === state.activeZ)
@@ -426,7 +451,7 @@ export function MapLabEditorPage() {
       }
     }
     setStrokeCells([])
-  }, [strokeCells, state.layout, state.activeZ, addRoomWithCells, setRoomFootprint])
+  }, [strokeCells, state.layout, state.activeZ, addRoomWithCells, setRoomFootprint, dungeonData, dropEmptyRoom])
 
   // Any pending brush preview is stale once the tool or active floor changes.
   useEffect(() => {
@@ -578,6 +603,11 @@ export function MapLabEditorPage() {
   const undoDeletedFixture = useCallback(() => {
     undo()
     setDeletedFixture(null)
+  }, [undo])
+
+  const undoRemovedEmptyRoom = useCallback(() => {
+    undo()
+    setRemovedEmptyRoom(false)
   }, [undo])
 
   const selectedItemKey = selectedFeature
@@ -864,7 +894,14 @@ export function MapLabEditorPage() {
   }
 
   return (
-    <div className="maplab-editor">
+    <div
+      className="maplab-editor"
+      data-fullscreen={isCanvasFullscreen || undefined}
+      role={isCanvasFullscreen ? 'dialog' : undefined}
+      aria-modal={isCanvasFullscreen || undefined}
+      aria-label={isCanvasFullscreen ? 'Fullscreen map editor workspace' : undefined}
+      tabIndex={isCanvasFullscreen ? -1 : undefined}
+    >
       {loadStatus.status === 'empty' && (
         <p className="maplab-subtitle">No saved layout yet. Your first edit will save this blank map.</p>
       )}
@@ -1377,6 +1414,7 @@ export function MapLabEditorPage() {
                 key={room.room_id}
                 className="maplab-editor-room-item"
                 data-selected={room.room_id === state.selectedRoomId || undefined}
+                data-off-map={roomIsOffMap(room) || undefined}
               >
                 <button
                   type="button"
@@ -1389,6 +1427,12 @@ export function MapLabEditorPage() {
                   }}
                 >
                   {room.title ?? `Room ${room.room_id}`}
+                  {roomIsOffMap(room) && (
+                    <span className="maplab-editor-room-offmap">
+                      <OffMapIcon width={14} height={14} aria-hidden="true" />
+                      not on the map
+                    </span>
+                  )}
                 </button>
                 <button
                   type="button"
@@ -1455,7 +1499,7 @@ export function MapLabEditorPage() {
             featureStrokeApi.setStrokeViewportEl(el)
           }}
           onViewportResize={handleViewportResize}
-          panHint="Drag to pan. Pinch or scroll to zoom. Press Escape to exit fullscreen."
+          panHint={isCanvasFullscreen ? "Drag to pan. Pinch or scroll to zoom. Press Escape to exit fullscreen." : undefined}
           viewportDescription={roomBrushGuidance}
           topRightSlot={(() => {
             const FullscreenIcon = isCanvasFullscreen ? FullscreenExitIcon : FullscreenEnterIcon
@@ -1478,6 +1522,10 @@ export function MapLabEditorPage() {
             ) : deletedFixture ? (
               <div className="maplab-placement-error" role="status">
                 Deleted {deletedFixture}. <button type="button" aria-label="Undo deletion" onClick={undoDeletedFixture}>Undo</button>
+              </div>
+            ) : removedEmptyRoom ? (
+              <div className="maplab-placement-error" role="status">
+                Removed empty room. <button type="button" aria-label="Undo removal" onClick={undoRemovedEmptyRoom}>Undo</button>
               </div>
             ) : null
           }
@@ -1505,7 +1553,14 @@ export function MapLabEditorPage() {
                 type="button"
                 className="maplab-pill-button maplab-zoom-button"
                 aria-label="Fit map to viewport"
-                onClick={() => zoomApi.fitToBounds(bounds, viewportSize)}
+                onClick={() => {
+                  const result = zoomApi.fitToBounds(roomBounds, viewportSize, bounds)
+                  setPlacementError(
+                    result.clampedToMin
+                      ? 'This floor is too large to fit on screen. Zoom out further isn\'t possible; pan to see the rest.'
+                      : null
+                  )
+                }}
               >
                 <FitIcon width={22} height={22} aria-hidden="true" />
               </button>
@@ -1596,7 +1651,7 @@ export function MapLabEditorPage() {
             </g>
           ))}
 
-          {roomsOnActiveFloor.map((room) => (
+          {roomsOnActiveFloor.filter((room) => !roomIsOffMap(room)).map((room) => (
             <g
               key={room.room_id}
               className="maplab-room"

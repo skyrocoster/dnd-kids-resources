@@ -4,9 +4,10 @@ DEPENDS ON: none
 REQUIRED STRENGTH: Light
 CREATES: none
 REMOVES: none
+CHANGES SIGNATURE: none
 
 KNOWN STATE (already true — do NOT redo or re-derive):
-- This is the reference example for `.agents/skills/to-orders/SKILL.md`. It names real files and
+- This is the reference example for `.claude/skills/to-orders/SKILL.md`. It names real files and
   passes `scripts/check_orders.py`, so it doubles as the fixture proving the linter accepts a
   well-formed order. It is not queued work; nobody dispatches order 99.
 - `EncounterCreatureRow` already carries `ac: string`
@@ -25,7 +26,7 @@ KNOWN STATE (already true — do NOT redo or re-derive):
 START IN:
 - frontend/src/features/encounters/CreatureRowCard.tsx — the collapsed header block at lines 32-45, nothing else in this file
 - frontend/src/features/encounters/__tests__/CreatureRowCard.test.tsx — the collapsed-row describe block
-- frontend/src/api/types.ts — the `Monster` interface at line 229 only, for the `ArmorClass` shape
+- frontend/src/api/types.ts — the `Monster` interface, for the `ArmorClass` shape: lines 229-256 @"export interface Monster {"
 
 DO:
 - Render `row.ac` after `hpSummary` in the collapsed header, falling back to `No AC set`.
@@ -37,5 +38,5 @@ STOP WHEN: `cd frontend && npm run test:check -- src/features/encounters/__tests
 STATUS: <-- executor writes DONE, or FAILED - reason
 
 DEVIATIONS: <-- executor appends, always — exactly two lines
-- opened beyond START IN: <files the order didn't name, or "none">
+- opened beyond START IN: <files or sections outside the named path/symbol/range, or "none">
 - KNOWN STATE re-verified or wrong: <one line, or "none">

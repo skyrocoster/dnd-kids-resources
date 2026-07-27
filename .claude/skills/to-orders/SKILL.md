@@ -37,9 +37,10 @@ Keep each order to **roughly one screen**. One work order = **one logical change
 WORK ORDER <NN> — <short title>
 GOAL: <one sentence — what "done" looks like>
 DEPENDS ON: <order NN that must be DONE first, or "none">
-REQUIRED STRENGTH: <Light, Standard, or High>
+REQUIRED STRENGTH: Light   <-- the default for every order; Standard/High need "— <reason>"
 CREATES: <repo-relative paths this order creates, one bullet each, or "none">
 REMOVES: <repo-relative paths this order removes, one bullet each, or "none">
+CHANGES SIGNATURE: <`symbol` in <path> for each exported signature this order changes, or "none">
 
 KNOWN STATE (already true — do NOT redo or re-derive):
 - <a fact the executor would otherwise waste a context window discovering>
@@ -50,7 +51,8 @@ KNOWN TEST FAILURES (pre-existing — NOT yours to fix, NOT caused by you):
   which reads the checked-in list itself. Omit the section when there is nothing to say.>
 
 START IN:
-- <exact path> — <the symbol or line range needed, and nothing else in this file>
+- <exact path> — lines <A>-<B> @"<line A, verbatim>"   <-- required for files over 400 lines
+- <exact path> — <what's needed>                        <-- under 400 lines: reading it whole IS the scope
 - <2–4 entries, each verified by opening it while compiling>
 
 DO:
@@ -86,15 +88,44 @@ gate runs, and every rule in it is one fault the telemetry log already paid for.
   `UserIcon` without `frontend/src/components/icons/index.ts` bought a ~4.3k-token barrel read to
   find one export.
 
-  **Scope every entry, not just name it.** A file in START IN gets read *whole*, so a 1000-line file
-  named for a one-line change costs ~9.7k tokens instead of ~200. Write what the executor actually
-  needs and nothing else:
+  **Every entry over 400 lines needs a range and an anchor.** An unbounded START IN file gets read
+  *whole*, so a 1000-line file named for a one-line change costs ~9.7k tokens instead of ~200:
 
   ```
-  - frontend/src/features/dungeons/maplab/MapLabPage.tsx — the <RoomDetailsPanel> render at line 873, nothing else in this file
+  - frontend/src/features/dungeons/maplab/MapLabPage.tsx — the <RoomDetailsPanel> render: lines 860-905 @"function RoomDetailsPanel({"
   ```
 
-  The linter requires a scope on any entry over 400 lines and rejects paths that don't resolve.
+  **A bare line number is not a bound, and a symbol name is not either.** "at line 873" says where
+  to start and nothing about where to stop. A symbol name says what to find but makes the executor
+  pay to find it — four consecutive orders in one stage spent their only measurable waste on exactly
+  that, one re-locating read per symbol per visit. Both are now rejected by the linter for files over
+  400 lines. Under 400 lines, reading the file whole *is* the scope; say what's needed in prose.
+
+  **You do not have to derive ranges by hand.** Write the symbol in backticks and run
+  `.venv\Scripts\python.exe scripts/check_orders.py --fix`: it resolves the symbol to its real line
+  range and writes the anchor for you. Reopening a 2,300-line file to count lines is exactly the cost
+  this workflow exists to avoid, and it applies to the compiler too.
+
+  **The anchor is what keeps the range true.** `@"<verbatim first line of the range>"` lets the
+  linter re-check the range and lets `--fix` repair it. This matters most within a stage: when order
+  04 edits a large file, every line number orders 05 and 06 cite shifts silently. That happened, cost
+  6 locating re-reads, and is now a lint error plus a one-command fix. Re-run `--fix` after each
+  order in a stage lands.
+
+  Scope is a real boundary: if the executor needs a second symbol, helper, setup block, or assertion
+  elsewhere in the same file, name that section too. A path listed once does not silently authorize
+  unrelated ranges.
+
+  **For a new test, anchor the block it joins** — not the fixture it reuses. Naming only the fixture
+  left one executor hunting a 2,000-line suite for the right `describe`, at 6 locating reads;
+  anchoring the insertion point on the next order brought that to 1. The linter checks that a new
+  test's anchor lands on a `describe`/`it`/`test` line.
+- **CHANGES SIGNATURE** — every exported symbol whose signature this order changes, or `none`.
+  Declaring it makes the linter grep the repo for call sites and fail the order if any of them is
+  missing from START IN, and require the changed module's *own* test suite in STOP WHEN. Both rules
+  come from one order that made a shared hook parameter required while STOP WHEN ran only the
+  caller's tests: it blocked once, then leaked a stale assertion and a missing `useCallback`
+  dependency past every targeted check to reconcile.
 - **CREATES / REMOVES** — artifact lifecycle, separate from exploration. A future-created path cannot
   resolve in START IN, while a deleted source path cannot survive the final documentation check.
   Declare every created and removed file here, name the same full path in DO, and put an explicit
@@ -110,7 +141,18 @@ gate runs, and every rule in it is one fault the telemetry log already paid for.
 - **STOP WHEN** — the leash that ends wandering and gold-plating. It must be a **targeted** command
   naming exact test files — the tests for the files the order touches plus any test the order adds —
   never a bare `pytest`, `npm test`, or `tsc -b`. Full-suite runs are `reconcile`'s job, once per
-  stage, not the executor's. The command shapes:
+  stage, not the executor's.
+
+  Two rules the linter now enforces, both learned from the same escape: **every source file DO edits
+  must have its own co-located suite in STOP WHEN** (running only the caller's tests is how a stale
+  hook assertion reached reconcile), and **any order touching a React hook or a dependency array
+  must include `npm run lint`** — neither vitest nor `tsc` can see a missing `useCallback`
+  dependency, and one shipped as a latent stale-closure bug.
+
+  Prefer `python scripts/order_check.py --tests <path> --typecheck --lint` to a raw chain: it runs
+  the same checks but prints pass/fail and the failing test names instead of the full runner output,
+  which is otherwise the largest single result in the executor's context and repeats on every fix
+  attempt. The raw command shapes, when you need them:
   - Backend: `pytest backend/tests/<file>.py --no-cov` — the `--no-cov` is required; without it the
     97% coverage gate fails every subset run regardless of the tests.
   - Frontend: `cd frontend && npm run test:check -- <path/to/File.test.tsx>`. This is vitest plus the
@@ -154,6 +196,14 @@ the deciding fact — that a save-error test must establish one settled state tr
 mocking the next request rejection, because the hook suppresses its initial-load save — was never
 written down, and no amount of model strength recovered it.
 
+The latest clean cycle exposed the same issue in smaller form: a route-mode assertion used a
+`MemoryRouter` rerender even though rerender does not change its history, forcing the executor to
+open route-context files outside the named test scope. Whenever a test depends on routing, provider
+state, timers, async settling, or another harness transition, verify the exact transition idiom while
+compiling and state it as an answer in KNOWN STATE. Include the relevant helper/setup section in
+START IN if the executor must use it; do not make the executor diagnose the harness to implement the
+product behavior.
+
 ## Frontend orders carry the UX decisions
 
 If an order touches `frontend/src/`, copy the lines of the Plan's **UX decisions** block that apply to
@@ -195,15 +245,85 @@ before compiling.
    module, representative real documents for every accepted grammar shape, and one fixture for every
    rejected target class stated in KNOWN STATE. Name a **runnable STOP WHEN** that runs the direct
    test module and, for structural docs, the real documentation checker.
+   For tests driven by routing, providers, timers, or async settling, also verify and record the
+   exact harness transition that makes the requested assertion valid.
 6. **Leave STATUS blank.** Number the files in dependency order and set each `DEPENDS ON`.
-7. **Run the linter before you dispatch:** `.venv\Scripts\python.exe scripts/check_orders.py`. It
-   fails on the faults that cost the most in the log — a path that doesn't resolve, a file named in
-   DO but missing from START IN, a bare filename, a conditional instruction, an unscoped large file,
-   a fixture without the cast idiom and a typecheck, several behaviours against a big suite. Fixing
-   them here costs a minute; discovering them costs a dispatch.
-8. **Set REQUIRED STRENGTH explicitly.** Light is the default for bounded mechanical work; use
-   Standard for ordinary implementation requiring local reasoning, and High only for broad synthesis
+7. **Run the linter before you dispatch:** `.venv\Scripts\python.exe scripts/check_orders.py --fix`.
+   `--fix` repairs everything mechanical and prints what it changed: a bare filename becomes its full
+   repo-relative path (whenever the repo has exactly one file by that name), a backticked symbol
+   becomes a real line range with an anchor, and a range whose anchor has drifted is moved to where
+   the anchor actually is. It leaves anything ambiguous for you to resolve, since a guess there would
+   misdirect an executor silently instead of loudly. The remaining lint still fails on the faults
+   that cost the most in the log — a path that doesn't resolve, a file named in DO but missing from
+   START IN, a conditional instruction, an unscoped large file, a signature change with unlisted call
+   sites, an edited module whose suite STOP WHEN never runs, a hook change with no lint, a new test
+   with no insertion anchor, a fixture without the cast idiom and a typecheck, several behaviours
+   against a big suite. Fixing them here costs a minute; discovering them costs a dispatch.
+
+   **Re-run `--fix` between dispatches within a stage.** As soon as one order edits a large shared
+   file, every downstream order's line numbers are stale. This is the single most repeated
+   order-shape fault in the log, and it is now one command rather than a re-read.
+8. **Set REQUIRED STRENGTH: Light.** Light is the default for **every** order, not just for
+   bounded mechanical ones. Write `REQUIRED STRENGTH: Light` and move on.
+
+   **Escalation is the exception, and it has to justify itself.** To ask for more, name what a
+   Light executor cannot do here, on the same line:
+
+   ```
+   REQUIRED STRENGTH: Standard — the fixture shape must be derived from three call sites that
+   disagree, and KNOWN STATE cannot pre-answer which one is canonical
+   ```
+
+   `check_orders.py` rejects a higher strength with no reason. Reserve High for broad synthesis
    that should be surfaced to the user rather than dispatched automatically.
+
+   **Before you escalate, re-read your own order.** "This needs a stronger model" is nearly always
+   "this order does not say enough". Every Light order in the telemetry log finished on its first
+   pass; the only order that ever needed a re-dispatch was Standard, and its own compiler note put
+   the block on a contradiction in KNOWN STATE, not on the executor. Escalating strength has never
+   rescued an under-specified order in this repo — the abandoned order stalled at Light and stalled
+   again at Standard, and closed only once someone diagnosed the real failure. A Standard run also
+   costs roughly three times a Light one, so the wrong answer is expensive twice.
+
+   If you find yourself reaching for Standard, spend that effort on KNOWN STATE and bounded START
+   IN ranges instead, then set Light.
+
+## Direct-completion fast path
+
+After compiling an order normally, you may implement it directly when dispatching would only make
+an executor reread context you already hold. This is a marginal-cost exception, not a second default.
+Use it only when **all** of these are true:
+
+- the exact edit is fully determined by files already opened while compiling;
+- it needs no additional read, search, diagnosis, design choice, or architecture judgement;
+- the whole change can be described in one sentence and completed in one edit attempt;
+- the targeted STOP WHEN is already verified and runnable; and
+- completing it now will not invalidate an independently runnable order's KNOWN STATE or anchors.
+
+Required strength is not the test. A Standard order can qualify when compilation removed all
+remaining uncertainty, while a Light order that still needs exploration belongs with an executor.
+
+Preserve the normal lifecycle when taking the fast path:
+
+1. Write the complete order first, including its authorization and STOP WHEN.
+2. State that it qualifies for direct completion and why.
+3. Make the one determined edit and run only STOP WHEN. If the edit does not apply cleanly, the check
+   fails, or you discover that another read is needed, stop immediately and dispatch the order
+   normally; do not turn `to-orders` into an implementation/debugging session.
+4. On success, write `STATUS: DONE — implemented directly by planner` and the normal two-line
+   DEVIATIONS block.
+5. Snapshot the order (`--snapshot --order <order-path>`) before you touch anything, then log it with
+   `.venv\Scripts\python.exe scripts/order_telemetry.py --order <order-path> --planner-run --manual
+   "direct planner implementation, no executor usage figures" --fault none --note "<why direct
+   completion was cheaper>"` (or the POSIX virtualenv path). `--planner-run` is what lets the fast
+   path be compared against dispatched runs later; without it the cheapest route in the workflow is
+   also the one the log cannot measure.
+6. Compile dependent or overlapping orders from the resulting state. If they were already written,
+   re-verify and update any KNOWN STATE facts or anchors the direct change affected before linting.
+
+At most one order per `to-orders` invocation should take this path. More than one means implementation
+is becoming the session's job; dispatch the rest so planning context does not fill with edits and test
+output.
 
 ## Worked example
 

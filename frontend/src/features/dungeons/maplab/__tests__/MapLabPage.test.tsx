@@ -1418,6 +1418,15 @@ describe('VT0 — Viewer room drawer (tablet)', () => {
     expect(screen.getByRole('tab', { name: 'First Floor' })).toBeInTheDocument()
   })
 
+  it('floor tabs live inside the toolbar and outside the room drawer', async () => {
+    await renderLoadedMapLabPage()
+    const toolbar = document.querySelector('.maplab-toolbar')
+    const tablist = screen.getByRole('tablist', { name: 'Dungeon floors' })
+    expect(toolbar).toContainElement(tablist)
+    const drawer = document.querySelector('.maplab-viewer-rail-container')
+    expect(drawer).not.toContainElement(tablist)
+  })
+
   it('room buttons inside the drawer meet the 48px touch floor', async () => {
     await renderLoadedMapLabPage()
     const container = document.querySelector('.maplab-viewer-rail-container') as HTMLElement
@@ -1467,6 +1476,37 @@ describe('VT0 — Viewer room drawer (tablet)', () => {
     const rect = dock.getBoundingClientRect()
     expect(rect.left).toBeGreaterThanOrEqual(0)
     expect(rect.top).toBeGreaterThanOrEqual(0)
+  })
+
+  it('desktop seam collapses and restores the rail; desktop room pick does not close it', async () => {
+    const user = userEvent.setup()
+    await renderLoadedMapLabPage()
+    const container = document.querySelector('.maplab-viewer-rail-container') as HTMLElement
+
+    // Seam handle present with correct initial state
+    const seam = document.querySelector('.maplab-viewer-rail-seam') as HTMLButtonElement
+    expect(seam).toBeInTheDocument()
+    expect(seam).toHaveAttribute('aria-label', 'Hide room rail')
+    expect(seam).toHaveAttribute('aria-expanded', 'true')
+    expect(seam).toHaveAttribute('aria-controls', 'maplab-viewer-room-rail')
+    expect(container).not.toHaveAttribute('data-collapsed')
+
+    // Collapse the rail
+    await user.click(seam)
+    expect(container).toHaveAttribute('data-collapsed')
+    expect(seam).toHaveAttribute('aria-label', 'Show room rail')
+    expect(seam).toHaveAttribute('aria-expanded', 'false')
+
+    // Restore the rail
+    await user.click(seam)
+    expect(container).not.toHaveAttribute('data-collapsed')
+    expect(seam).toHaveAttribute('aria-label', 'Hide room rail')
+    expect(seam).toHaveAttribute('aria-expanded', 'true')
+
+    // Desktop room pick does NOT collapse the desktop rail
+    const rail = screen.getByRole('navigation', { name: 'Room navigation' })
+    await user.click(within(rail).getByRole('button', { name: 'Armoury' }))
+    expect(container).not.toHaveAttribute('data-collapsed')
   })
 })
 

@@ -5,7 +5,7 @@
       "description": "Executes exactly one work order from a docs/plans/active/<feature>/ directory via the implement-order skill, on DeepSeek V4 Flash. Dispatch target only.",
       "mode": "subagent",
       "model": "opencode-go/deepseek-v4-flash",
-      "prompt": "You only ever do one thing: invoke the `implement-order` skill (in .agents/skills/implement-order/SKILL.md) against a single work order file you are given, and follow it exactly. You never plan, review, reconcile, touch a second order, or do any task that isn't running that skill on the order you were handed. If asked to do anything else, refuse and say you are scoped to implement-order only.",
+      "prompt": "You only ever do one thing: invoke the `implement-order` skill (in .claude/skills/implement-order/SKILL.md) against a single work order file you are given, and follow it exactly. Read the order once; use grep only to locate its named anchors, read each bounded source range once, and do not reopen successful edits unless STOP WHEN points there. That last rule is enforced by scripts/read_guard.py via .opencode/plugin/read-guard.js: if a read is denied because you already edited that file, the tooling is not broken — trust the edit and run STOP WHEN, which unlocks every file the moment a check goes red. You never plan, review, reconcile, touch a second order, or do any task that isn't running that skill on the order you were handed. If asked to do anything else, refuse and say you are scoped to implement-order only.",
       "permission": {
         "edit": "allow",
         "bash": "allow",
@@ -24,7 +24,7 @@
       "description": "Executes exactly one work order from a docs/plans/active/<feature>/ directory via the implement-order skill, on DeepSeek V4 Pro. Dispatch target for Standard-strength orders only.",
       "mode": "subagent",
       "model": "opencode-go/deepseek-v4-pro",
-      "prompt": "You only ever do one thing: invoke the `implement-order` skill (in .agents/skills/implement-order/SKILL.md) against a single work order file you are given, and follow it exactly. You never plan, review, reconcile, touch a second order, or do any task that isn't running that skill on the order you were handed. If asked to do anything else, refuse and say you are scoped to implement-order only.",
+      "prompt": "You only ever do one thing: invoke the `implement-order` skill (in .claude/skills/implement-order/SKILL.md) against a single work order file you are given, and follow it exactly. Read the order once; use grep only to locate its named anchors, read each bounded source range once, and do not reopen successful edits unless STOP WHEN points there. That last rule is enforced by scripts/read_guard.py via .opencode/plugin/read-guard.js: if a read is denied because you already edited that file, the tooling is not broken — trust the edit and run STOP WHEN, which unlocks every file the moment a check goes red. You never plan, review, reconcile, touch a second order, or do any task that isn't running that skill on the order you were handed. If asked to do anything else, refuse and say you are scoped to implement-order only.",
       "permission": {
         "edit": "allow",
         "bash": "allow",

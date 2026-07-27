@@ -300,6 +300,15 @@
   --feature-river-fill: var(--md-arcane-container);
   --feature-trees-fill: var(--md-nature-container);
 
+  /* Kid map contrast palette — readable rooms on dark ground */
+  --kid-map-ground: var(--md-surface);
+  --kid-map-floor: var(--md-surface-2);
+  --kid-map-room-fill: var(--md-on-surface);
+  --kid-map-room-outline: var(--md-outline-variant);
+  --kid-map-wall: var(--md-surface);
+  --kid-map-door: var(--md-door-container);
+  --kid-map-room-title: var(--md-surface);
+
   --z-editor: 100;
   --z-floating: 150;
   --z-dialog: 200;

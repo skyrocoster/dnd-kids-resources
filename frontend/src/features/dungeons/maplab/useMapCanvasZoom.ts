@@ -132,7 +132,7 @@ export function useMapCanvasZoom({ wheelZoomMode = 'modifier', pointerMode = 'pa
     setZoom({ scale: 1, pan: { x: 0, y: 0 } })
   }, [])
 
-  const fitToBounds = useCallback((bounds: Bounds, viewport: ViewportSize) => {
+  const fitToBounds = useCallback((bounds: Bounds, viewport: ViewportSize, origin: Bounds): { clampedToMin: boolean } => {
     const unitsX = bounds.maxX - bounds.minX + 1
     const unitsY = bounds.maxY - bounds.minY + 1
     const contentWidth = unitsX * BASE_PX_PER_UNIT
@@ -140,11 +140,19 @@ export function useMapCanvasZoom({ wheelZoomMode = 'modifier', pointerMode = 'pa
 
     if (contentWidth <= 0 || contentHeight <= 0 || viewport.width <= 0 || viewport.height <= 0) {
       setZoom({ scale: 1, pan: { x: 0, y: 0 } })
-      return
+      return { clampedToMin: false }
     }
 
-    const scale = clampScale(Math.min(viewport.width / contentWidth, viewport.height / contentHeight))
-    setZoom({ scale, pan: { x: 0, y: 0 } })
+    const rawScale = Math.min(viewport.width / contentWidth, viewport.height / contentHeight)
+    const scale = clampScale(rawScale)
+    const offsetX = (bounds.minX - origin.minX) * BASE_PX_PER_UNIT
+    const offsetY = (bounds.minY - origin.minY) * BASE_PX_PER_UNIT
+    const pan = {
+      x: (offsetX + contentWidth / 2) * scale - viewport.width / 2,
+      y: (offsetY + contentHeight / 2) * scale - viewport.height / 2,
+    }
+    setZoom({ scale, pan })
+    return { clampedToMin: rawScale < MIN_SCALE }
   }, [])
 
   // Modifier-only by default; editor mode can opt into plain-wheel zoom. Zooms toward the cursor:

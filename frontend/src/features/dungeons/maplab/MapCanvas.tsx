@@ -177,10 +177,6 @@ export function MapCanvas({
       ref={wrapperRef}
       className="maplab-canvas-wrapper"
       data-variant={variant}
-      data-fullscreen={fullscreen || undefined}
-      role={fullscreen ? 'dialog' : undefined}
-      aria-modal={fullscreen || undefined}
-      aria-label={fullscreen ? 'Fullscreen map editor workspace' : undefined}
       tabIndex={fullscreen ? -1 : undefined}
     >
       <div

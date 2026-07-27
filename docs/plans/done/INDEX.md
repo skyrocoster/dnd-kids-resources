@@ -25,6 +25,7 @@ Completed plans are archived here for reference. Each directory under `docs/plan
 - [The Loom — Tapestry Story-Thread Tracker](loom-tapestry-tracker/loom-tapestry-tracker.md) — LM0–LM8 complete. — (The Loom)
 - [The Loom — Weaver's Workspace (UI/UX Pass)](loom-weavers-workspace/loom-weavers-workspace.md) — LU0–LU5 complete. — (The Loom)
 - [Loot System — Plan Doc](loot_plan/loot_plan.md) — Loot system complete.
+- [Map Lab Editor Usability — the map fills the screen, and every tool is reachable](maplab-editor-usability/maplab-editor-usability.md) — Stages 0–7 shipped. — (Dungeons)
 - [Map Lab UX Pass — a calm, touch-first editor and viewer](maplab-ux-pass/maplab-ux-pass.md) — Complete. — (Dungeons)
 - [Monsters — Data Restructure & Stat-Block Redesign](monsters_plan/monsters_plan.md) — M3, X0, X1, X2, X3, X4 shipped.
 - [NPC Statblocks — NPCs gain a combat half, built by pulling fields from monsters](npc-statblocks/npc-statblocks.md) — Complete — all five stages shipped. — (Reference Catalogs)

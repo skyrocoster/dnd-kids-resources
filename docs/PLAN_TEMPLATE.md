@@ -13,8 +13,8 @@ ChatGPT, a local model. Which ones fill them is an open experiment, so the docs 
 **role**, never a vendor. Where a specific product genuinely matters (telemetry parsing, subagent
 transport), that is called out as a transport detail, not as who the planner is.
 
-The workflow is driven by five skills in `.agents/skills/`, read by whichever harness the role runs
-in:
+The workflow is driven by five skills in `.claude/skills/`, read by whichever harness the role runs
+in — Claude Code discovers project skills only there, and opencode reads that directory too:
 
 | Skill | Role | Job |
 |---|---|---|
@@ -28,8 +28,10 @@ The three jobs: **PLAN** (the planner thinks) → **IMPLEMENT** (the executor do
 context) → **RECONCILE** (the planner reconciles docs). The point is to keep the planner's expensive
 context clear of implementation sprawl and test output, which are cheapest in the executor's
 throwaway per-order contexts. That is a cost judgement, not a ban: when a dispatch round trip would
-cost more than the edit — a small, fully-determined fix needing no exploration — the planner makes it
-and says so.
+cost more than the edit — a small, fully-determined change needing no additional exploration — the
+planner may compile and complete one order directly, runs its targeted STOP WHEN, preserves its
+STATUS/DEVIATIONS and telemetry lifecycle, and says so. Any failed edit, failed check, or need for
+another read ends this fast path and sends the order to an executor normally.
 
 ---
 
@@ -85,9 +87,10 @@ re-explores; the executor writes the code and the STATUS line.
 WORK ORDER <NN> — <short title>
 GOAL: <one sentence — what "done" looks like>
 DEPENDS ON: <order NN that must be DONE first, or "none">
-REQUIRED STRENGTH: <Light, Standard, or High>
+REQUIRED STRENGTH: Light   <-- the default for every order; Standard/High need "— <why Light can't>"
 CREATES: <repo-relative paths this order creates, one bullet each, or "none">
 REMOVES: <repo-relative paths this order removes, one bullet each, or "none">
+CHANGES SIGNATURE: <`symbol` in <path> for each exported signature this order changes, or "none">
 
 KNOWN STATE (already true — do NOT redo or re-derive):
 - <verified fact: real value, real file location, current test count>
@@ -97,7 +100,8 @@ KNOWN TEST FAILURES (pre-existing — NOT yours to fix, NOT caused by you):
   npm run test:check, which reads frontend/known-test-failures.json itself. Omit when empty.>
 
 START IN:
-- <exact path> — <the symbol or line range needed, and nothing else in this file>
+- <exact path> — lines <A>-<B> @"<line A, verbatim>"   <-- files over 400 lines
+- <exact path> — <what's needed>                        <-- files under 400 lines: reading it whole IS the scope
 - <2–4 entries, each verified by opening it while compiling>
 
 DO:
@@ -107,23 +111,61 @@ STOP WHEN: <a single runnable command that must pass, or "if X = Y, stop">
 
 STATUS: <-- executor writes DONE, FAILED - <one-line reason>, or BLOCKED - <one-line reason>
 
-DEVIATIONS: <-- executor appends, always (even on DONE) — exactly two lines
-- opened beyond START IN: <files the order didn't name, or "none">
+DEVIATIONS: <-- executor appends, always (even on DONE) — one line
 - KNOWN STATE re-verified or wrong: <one line, or "none">
 ```
+
+**Anchors, and why a bare line number is not allowed.** A line range tells the executor
+where to stop reading; the `@"..."` anchor is what keeps that range true. Line numbers rot
+the moment an upstream order edits the same file — in one stage, order 04 shifted every
+line below its edit and silently invalidated the ranges orders 05 and 06 had been compiled
+against. With an anchor that is a repairable condition rather than a discovery the executor
+makes mid-run: `scripts/check_orders.py` re-checks that the anchor still sits in its range,
+and `--fix` moves the range to wherever the anchor went. `--fix` will also resolve a
+backticked symbol into a real range, so the compiler never has to reopen a large file to
+find one. Bounding a large file by symbol name or by a bare line number is rejected: four
+consecutive orders in one stage spent their only measurable waste re-locating exactly that
+shape, and naming the range instead cut locating re-reads from 6 to 1.
+
+**DEVIATIONS is one line, not two.** The executor used to declare what it opened beyond
+START IN as well. That self-report was measurably unreliable — one order declared "none"
+while the transcript recorded a read outside its scope — and `order_telemetry.py` derives
+the same fact from the transcript more accurately and for free. What remains is the one
+thing no transcript can tell you: whether the facts the order asserted were actually true.
 
 The focus leash: **KNOWN STATE** (answers, not pointers) + **START IN** (bounded exploration, each
 entry scoped to the symbol or line range needed) + **CREATES/REMOVES** (explicit artifact lifecycle)
 + **STOP WHEN** (a hard stop that ends wandering).
-See `.agents/skills/to-orders/SKILL.md` for the full authoring guidance, and
+The path alone is not the whole START IN authorization: when an entry names a symbol or line range,
+opening unrelated sections of that same file is a deviation and must be reported as such.
+See `.claude/skills/to-orders/SKILL.md` for the full authoring guidance, and
 [the reference order](plans/_example/99-creature-row-ac.md) for a worked example.
 
 `scripts/check_orders.py` lints orders against these rules and is runnable on its own while
 compiling a stage. Each rule is one fault the telemetry log paid to learn — a path that does not
 resolve, an undeclared edit or lifecycle artifact, a bare filename, a conditional instruction, an
-unscoped large file, a fixture with no cast idiom or typecheck, several behaviours aimed at one big
-integrated suite, structural documentation without the real checker, validator tests omitted from
-the order, or unsafe parallel edits.
+unscoped large file, a stale or unanchored line range, an exported signature change that does not
+enumerate its call sites, a source file whose own suite is missing from STOP WHEN, a hook change
+with no lint, a new test with no insertion anchor, a fixture with no cast idiom or typecheck,
+several behaviours aimed at one big integrated suite, structural documentation without the real
+checker, validator tests omitted from the order, or unsafe parallel edits.
+
+Three scripts keep the workflow's own costs off a model:
+
+- `scripts/check_orders.py --fix` repairs what is mechanical — bare filenames, stale ranges,
+  symbol-scoped entries — so the compiler does not reopen files to re-verify line numbers.
+- `scripts/order_check.py` runs a STOP WHEN and prints pass/fail plus the failing test names
+  instead of the whole runner output, which was routinely the largest single tool result in an
+  executor's context.
+- `scripts/stage_check.py` runs all five reconcile checks and prints ~10 lines plus the
+  `- stage checks:` telemetry line verbatim.
+
+And one rule is enforced by the harness rather than by wording. `scripts/read_guard.py` denies a
+read of a file the session has already edited, once that session has invoked `implement-order`;
+a failing check unlocks everything, and `--unlock <path> --reason "<why>"` is the logged override.
+Claude Code reaches it through `.claude/settings.json` and opencode through
+`.opencode/plugin/read-guard.js`, so the rule binds both executors identically. Post-edit
+re-reading was the only waste class that survived every order-side correction in the log.
 
 ### On failure — the escalation channel back to the planner
 
@@ -148,25 +190,40 @@ cycling to avoid writing one.
 
 ### Telemetry — every finished order leaves a cost record
 
-When an order reports back, the dispatcher runs `scripts/order_telemetry.py --order <order-path>`,
-which parses the executor's record (token totals, turn count, largest tool results, duplicate
-reads, reads outside START IN), folds in the executor's STATUS and DEVIATIONS lines, records the
-order's own compiled shape and whether this was a first pass, and appends an entry to
-`docs/plans/telemetry-log.md`. Two transports parse automatically — Claude Code subagent
-transcripts and opencode's local SQLite DB (which also yields dollar cost) — and only *child*
-records count, because the dispatcher's own session names the order too and would otherwise be
-logged as if it were the executor.
+Telemetry has three moments, and they are all run by `scripts/order_telemetry.py`:
+
+1. **At dispatch** — `--snapshot --order <order-path>` freezes the order's compiled shape. A reissue
+   overwrites the order file, so shape captured afterwards is the shape of whichever version
+   survived; the snapshot also yields the reissue diff.
+2. **When the order reports back** — `--order <order-path> --fault <verdict> --note "<why>"` parses
+   the executor's record (token totals, turn count, largest tool results, duplicate reads, reads
+   outside START IN) and folds in the executor's STATUS and DEVIATIONS lines. Two transports parse
+   automatically — Claude Code subagent transcripts and opencode's local SQLite DB — and only
+   *child* records count, because the dispatcher's own session names the order too and would
+   otherwise be logged as if it were the executor.
+3. **At reconcile** — `--reconcile "<stage>"` records stage-level checks, the defects that escaped
+   the orders' own STOP WHEN commands, and **the planner's own cost for the stage**. Without that
+   last figure the log measures only the cheap half of the workflow and cannot say whether
+   dispatching a stage beat implementing it directly.
+
+Entries are written to `docs/plans/telemetry.jsonl`; `docs/plans/telemetry-log.md` is **generated**
+from it and must never be hand-edited. Prose bullets cannot be summed, and correlating order shape
+against cost is the whole reason the log exists.
 
 **First-pass rate is the metric worth optimising.** An executor run costs cents; a re-dispatch costs
 a cold start, the planner's attention, and a stalled dependency chain. The token columns diagnose
 *why* an order thrashed — they are not the target. Order shape sits beside them because nearly every
-compiler note concludes the order, not the executor, was at fault. For anything else
-(e.g. ChatGPT) the `--manual "<reported usage>"` form logs whatever that tool's UI reported. The
-executor-written STATUS/DEVIATIONS lines are transport-independent either way. The log survives
-order deletion at reconcile — reconcile checks each order has an entry before deleting it — and is
-reviewed every ~10-15 entries to tighten the `plan`/`to-orders`/`implement-order` rules. Executors
-never self-report token numbers; models can't see their own counters, so numbers come only from
-transcripts or the other tool's UI.
+compiler note concludes the order, not the executor, was at fault; the part of shape that actually
+predicts cost is how many START IN lines sat inside a **named range**, not how many lines the files
+held. For anything else (e.g. ChatGPT) the `--manual "<reported usage>"` form logs whatever that
+tool's UI reported. The executor-written STATUS/DEVIATIONS lines are transport-independent either
+way. The record survives order deletion at reconcile — reconcile checks each order has an entry
+before deleting it — and is reviewed every ~10-15 entries to tighten the
+`plan`/`to-orders`/`implement-order` rules. That review ends with `--close-cycle`, which distils the
+cycle into a summary, tags each lesson as `enforced` or `judgement`, and archives the raw entries to
+`docs/plans/telemetry-archive/` so the log stays readable. Executors never self-report token
+numbers; models can't see their own counters, so numbers come only from transcripts or the other
+tool's UI.
 
 Triage happens **the moment the failure returns**, in `dispatch-orders` — not at reconcile time —
 because downstream orders `DEPENDS ON` the failed one and stall until it's reissued and passes. A

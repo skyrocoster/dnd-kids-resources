@@ -10,8 +10,9 @@ not to improve the wider codebase. Staying inside the fence below is what makes 
 
 ## Steps
 
-1. **Read the work order file** you were given. It has: GOAL, KNOWN STATE, START IN,
-   CREATES/REMOVES, DO, STOP WHEN, STATUS.
+1. **Read the work order file once** and keep its fields in context. It has: GOAL, KNOWN STATE,
+   START IN, CREATES/REMOVES, DO, STOP WHEN, STATUS. Do not reopen the order later to remind
+   yourself what it said.
 
 2. **Trust KNOWN STATE.** Everything listed there is already confirmed true. Do **not** re-verify it,
    re-explore it, or second-guess it. It was checked for you so you don't spend your context on it.
@@ -25,11 +26,24 @@ not to improve the wider codebase. Staying inside the fence below is what makes 
    work", do not try that approach again. If KNOWN STATE contains a `verified snippet — use as-is`,
    paste it exactly — it was already tested; do not rewrite or "improve" it.
 
-3. **Explore only the files in START IN.** Open those, and only files they directly lead you to for
-   this change. Do **not** grep the whole repo or open unrelated areas — that's the wandering this
-   skill exists to prevent. `CREATES` and `REMOVES` authorize lifecycle changes; they are not extra
-   exploration targets. A file listed in REMOVES may also appear in START IN when you must read it
-   before removing it.
+3. **Explore only the paths and sections in START IN.** Treat each named symbol or line range as a
+   boundary, not as permission to read the whole file. For a large file, grep once for the order's
+   named anchor when necessary, then read one bounded range around the match. Do **not** grep the
+   whole repo or open unrelated areas — that's the wandering this skill exists to prevent.
+   `CREATES` and `REMOVES` authorize lifecycle changes; they are not extra exploration targets. A
+   file listed in REMOVES may also appear in START IN when you must read it before removing it.
+
+   Read each needed range once and retain it in context. Do not reopen the same range after a
+   successful edit merely to inspect your work; trust the edit result and let STOP WHEN judge it.
+   Re-read only when an edit failed to apply or STOP WHEN points to that section. If the named scope
+   is insufficient, open only the smallest additional section needed.
+
+   **This one is enforced, not advised.** `scripts/read_guard.py` runs in both harnesses and will
+   deny a read of a file you have already edited in this session. It is not a bug in your tools: it
+   is the rule above, applied by the harness because wording alone never removed the behaviour. A
+   failing check unlocks every file automatically, so if STOP WHEN goes red you can read freely. To
+   override deliberately, run `python scripts/read_guard.py --unlock <path> --reason "<why>"`, which
+   is logged.
 
 4. **Do exactly what DO says — nothing more.** Make the smallest change that meets the GOAL. Do not
    refactor nearby code, rename things, add extra features, or "improve" things you weren't asked to.
@@ -46,10 +60,15 @@ not to improve the wider codebase. Staying inside the fence below is what makes 
    stop and write a failure report (below). Do not keep cycling — a clear failure report is a
    **successful outcome** of this order; the planner picks it up from there.
 
-   `scripts/check_docs.py`, `scripts/check_orders.py`, and `scripts/order_telemetry.py` are
-   invoke-only tools — call them (e.g. `.venv\Scripts\python.exe scripts/check_docs.py --check`)
-   and read their stdout/exit code. Do **not** open their source to see how they work; that's
-   wasted context for a check that only needs its output.
+   If the order's STOP WHEN names `scripts/order_check.py`, run it as written. It runs the same
+   checks and prints pass/fail plus the failing test names instead of the whole runner output, which
+   is otherwise the largest single result in your context — and repeats on every fix attempt.
+
+   `scripts/check_docs.py`, `scripts/check_orders.py`, `scripts/order_check.py`, and
+   `scripts/order_telemetry.py` are invoke-only tools — call them (e.g.
+   `.venv\Scripts\python.exe scripts/check_docs.py --check`) and read their stdout/exit code. Do
+   **not** open their source to see how they work; that's wasted context for a check that only needs
+   its output.
 
 6. **Write the STATUS line** at the bottom of the work order file:
    - `STATUS: DONE` if STOP WHEN passed.
@@ -60,21 +79,21 @@ not to improve the wider codebase. Staying inside the fence below is what makes 
      START IN files. Do not improvise a different change.
 
 7. **Append a DEVIATIONS block** directly under the STATUS line — always, even on DONE. You cannot
-   see your own token usage (the harness measures that separately); what only you know is where the
-   order's map didn't match the territory. Exactly two lines, no more:
+   see your own token usage, and you no longer report what you opened either: the harness measures
+   both, and more accurately than a self-report did. What only you know is whether the order's facts
+   were true. **Exactly one line, no more:**
 
    ```
    DEVIATIONS:
-   - opened beyond START IN: <repo source/test/doc files you had to open that the order didn't name, or "none">
    - KNOWN STATE re-verified or wrong: <one line, or "none">
    ```
 
-   Do **not** list `CLAUDE.md`, this skill file, or the order file itself — every executor opens
-   those by construction, so naming them buries the real signal. Only repo source, test, and doc
-   files the order failed to name count as "beyond START IN".
+   Write "wrong" whenever a KNOWN STATE fact did not match what you found, even if you worked around
+   it — a wrong premise that produced a DONE order is the most useful thing in this log, because it
+   is the fault that will repeat.
 
-   "none / none" is the ideal report. Do not pad this with narrative — it feeds a telemetry log
-   used to tighten future orders, and two honest lines are worth more than a paragraph.
+   "none" is the ideal report. Do not pad this with narrative — it feeds a telemetry log used to
+   tighten future orders, and one honest line is worth more than a paragraph.
 
    **If your harness does not report your token usage to the dispatcher** (you are running in a
    chat UI rather than a spawned agent, i.e. nobody can read your usage counters but you or the

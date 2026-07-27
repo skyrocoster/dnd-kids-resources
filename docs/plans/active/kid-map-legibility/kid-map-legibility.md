@@ -1,6 +1,6 @@
 # Kid Map Legibility — the tablet map reads from a child's seat
 
-> **Status:** Not started. Next up for Players, ahead of fog (Plan 1). Written from the first table
+> **Status:** Stage 1 shipped. Next: Stage 2, the shared label anchor. Written from the first table
 > test, [2026-07-23 Stage 6](../../../table-tests/2026-07-23-player-app-skeleton-stage-6.md).
 
 - **Area guide:** [Players](../../../areas/players.md)
@@ -117,6 +117,7 @@ Touch:        48px floor (DM surface). Destructive: none — moving the marker i
 
 | Stage | What shipped (≤2 sentences) |
 |-------|------------------------------|
+| 1 | The kid map stopped inheriting the DM dark surface stack: seven `--kid-map-*` aliases in `theme.css` repaint rooms as lit paper on dark ground (room fill 11.57:1 against its floor plate, up from 1.08:1), with walls solid and doors warm and heavier than walls. `PlayerMapRenderer` now draws nothing at all for a room with no squares, removing the twelve orphaned room names the table test found. |
 
 ## Touches
 
@@ -124,7 +125,7 @@ Touch:        48px floor (DM surface). Destructive: none — moving the marker i
 - `frontend/src/model/maplabModel.ts`
 - `frontend/src/features/dungeons/maplab/` — the room-label anchor call sites and the
   "Party is here" inspector action only; the rest of Map Lab belongs to
-  [Map Lab Editor Usability](../maplab-editor-usability/maplab-editor-usability.md).
+  [Map Lab Editor Usability](../../done/maplab-editor-usability/maplab-editor-usability.md).
 - `backend/app/routers/session_state.py` and its schema
 - `docs/table-tests/**`
 

@@ -75,31 +75,31 @@
 }
 
 .player-map-floor {
-  fill: var(--md-surface-2);
+  fill: var(--kid-map-floor);
 }
 
 .player-map-room-cell {
-  fill: var(--md-surface-3);
-  stroke: var(--md-outline-variant);
+  fill: var(--kid-map-room-fill);
+  stroke: var(--kid-map-room-outline);
   stroke-width: 1;
 }
 
 .player-map-wall {
-  stroke: var(--md-on-surface);
-  stroke-width: 5;
+  stroke: var(--kid-map-wall);
+  stroke-width: 6;
   stroke-linecap: round;
 }
 
 .player-map-door {
-  stroke: var(--md-primary);
-  stroke-width: 7;
+  stroke: var(--kid-map-door);
+  stroke-width: 12;
   stroke-linecap: round;
 }
 
 .player-map-room-title {
-  fill: var(--md-on-surface);
+  fill: var(--kid-map-room-title);
   paint-order: stroke;
-  stroke: var(--md-surface-3);
+  stroke: var(--kid-map-room-fill);
   stroke-width: 5;
   stroke-linejoin: round;
   font-size: 15px;
