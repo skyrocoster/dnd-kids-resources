@@ -73,7 +73,7 @@ see [../DATA_MODEL.md](../DATA_MODEL.md#rebuilding-the-database).
 | Plan | State | Status |
 | --- | --- | --- |
 | [Production Nightly Deploys](../plans/active/production-nightly-deploys/production-nightly-deploys.md) | ready | Not next for Infra; second in the Infra queue, after Table Testing Records. |
-| [Table Testing Records](../plans/active/table-testing-records/table-testing-records.md) | ready | Next up for Infra now that Docs Restructure is complete. |
+| [Table Testing Records](../plans/active/table-testing-records/table-testing-records.md) | ready | Stage 1 shipped — the format is documented in `docs/TABLE_TESTING.md` and routable, and both existing records conform to it. |
 <!-- GENERATED:AREA_PLANS:infra:END -->
 
 What the table cannot derive:

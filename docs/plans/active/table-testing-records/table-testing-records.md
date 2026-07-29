@@ -1,6 +1,6 @@
 # Table Testing Records — real sessions become a comparable, checked record
 
-> **Status:** Next up for Infra now that Docs Restructure is complete. Nothing here blocks running a session: the first record already exists at `../../table-tests/2026-07-23-player-app-skeleton-stage-6.md`, written ahead of its own contract deliberately. No stages shipped.
+> **Status:** Stage 1 shipped — the format is documented in `docs/TABLE_TESTING.md` and routable, and both existing records conform to it. Next is Stage 2, hooking records to plans via `PLAN_TEMPLATE.md` and the `to-orders` skill so sessions produce records by default rather than by remembering to.
 
 - **Area guide:** [Infra](../../../areas/infra.md)
 - **Read trigger:** Recording a real session, the table-test format, or its lifecycle and checks
@@ -89,3 +89,4 @@ because of the app?
 
 | Stage | What shipped (≤2 sentences) |
 |-------|------------------------------|
+| 1 | `docs/TABLE_TESTING.md` defines the table test as a document type — the `planned → run → folded in` lifecycle, the required headings, the fixed standing questions, who fills what and when, and a hand-written record index — with routing rows in the manifest and the Task Router. The second record, `2026-07-27-kid-map-viewer-stage-9.md`, was normalised to that format: status word `planned`, the fixed six standing questions restored, its seven session-specific ones moved to `## Watching for` or dropped as duplicates, and its stray work-order footer removed. |
