@@ -135,6 +135,7 @@ rather than read the source.
 | `scripts/generate_spell_quick_rules.py` | Draft conservative spell quick rules from canonical seed data. |
 | `scripts/generate_weapon_quick_rules.py` | Draft conservative weapon quick rules from canonical seed data. |
 | `scripts/init_database.py` | Create the canonical SQLite schema — the single source of truth every other table list derives from. |
+| `scripts/large_read_guard.py` | Unbounded large-file read guard for the compiler role. |
 | `scripts/migrate_loom_v2.py` | Migrate a Loom database from the flat-DAG schema (v1) to the ordered-threads schema (v2). |
 | `scripts/migrate_monsters.py` | Transform legacy 5etools monster seed rows to the M1 target shape. |
 | `scripts/migrate_spells.py` | Transform legacy spell seed rows to the canonical target shape. |

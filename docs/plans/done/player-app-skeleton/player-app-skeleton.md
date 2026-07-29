@@ -160,6 +160,7 @@ dungeon they are running.
    exact empty and error copy, an audit that nothing leads out of `/play`, and polling that survives
    the tablet sleeping and waking. Then run a real session and record what the device taught us, as
    the input to Plan 1.
+   **Table test:** [2026-07-23](../../../table-tests/2026-07-23-player-app-skeleton-stage-6.md)
 
 ## Shipped
 

@@ -240,6 +240,16 @@ gate runs, and every rule in it is one fault the telemetry log already paid for.
   edits a contract-managed file under `docs/`, append
   `.venv\Scripts\python.exe scripts/check_docs.py --check` to STOP WHEN after the direct artifact
   assertions. Targeted parser tests do not catch stale links, missing files, or real-tree routing.
+
+  **Session-run orders stop at a record, not a command.** A session cannot be closed by a test, so a
+  session-run order's STOP WHEN is the template's "if X = Y, stop" form:
+  `STOP WHEN: the record at docs/table-tests/<YYYY-MM-DD>-<slug>.md exists and its Status line reads
+  run`. The order's own work is pre-writing that record at Status `planned` — a copy of
+  `docs/table-tests/_example/session-template.md` with the header, `## Setup` and `## Watching for`
+  filled from the plan stage. The human who runs the session fills `## Observed`,
+  `## Asked afterwards` and `## Verdict`, and moves the status to `run`; that state change is what
+  closes the order. See
+  [docs/TABLE_TESTING.md](../../../docs/TABLE_TESTING.md) for the format and the division of labour.
 - **STATUS** — left blank; the executor fills it (`DONE`, `FAILED`, or `BLOCKED`, plus a two-line
   DEVIATIONS block always, and a FAILURE REPORT block on failure — see `docs/PLAN_TEMPLATE.md`).
   That's the only thing they write outside code/tests.

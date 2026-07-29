@@ -458,7 +458,7 @@ export function MapLabPage() {
   }
 
   const activeRef: InspectableRef | null =
-    hoveredInspectable ?? focusedInspectable ?? (pinnedDoorId !== null ? { kind: 'door', id: pinnedDoorId } : null)
+    focusedInspectable ?? (pinnedDoorId !== null ? { kind: 'door', id: pinnedDoorId } : null) ?? hoveredInspectable
 
   let activeInspectable: Inspectable | null = null
   let activeControls: SessionControls | undefined

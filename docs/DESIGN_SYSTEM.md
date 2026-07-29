@@ -328,7 +328,9 @@ behavior because its resolved output delegates to `DiceText`.
 Generic hover/focus details panel in Map Lab:
 - Driven by `inspectableDescriptor(target)` which resolves any map fixture (room, door, stair, portal, prop, feature)
   to a uniform `{title, typeLabel, icon, token, lines, chips}` shape
-- **Panels** — icon+text chips for passage state, detail lines, session toggle controls
+- **Panels** — icon+text chips for passage state, detail lines, grouped `World now` session controls, and
+  `Players know` disclosure toggles; disclosure actions save immediately and report local failures with a status
+  message while retaining the last confirmed value
 - **Session layer** — `effectivePassageState` computed from authored flags + runtime toggles
 
 ### Map Lab markers (`maplab/`)

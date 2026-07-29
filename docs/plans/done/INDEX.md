@@ -17,6 +17,7 @@ Completed plans are archived here for reference. Each directory under `docs/plan
 - [Dungeon Feature - Map Lab Cutover Plan](dungeon_plan/dungeon_plan.md) — All stages shipped. — (Dungeons)
 - [Encounters Feature — Expansion Plan](encounters_plan/encounters_plan.md) — Phases 1–3 and Phase 4 shipped. — (Encounters)
 - [Generated Documentation — the docs a script can derive stop being written by hand](generated-documentation/generated-documentation.md) — Complete — all seven stages shipped 2026-07-29. — (Infra)
+- [Glossary term tooltips — hover/tap explanations for rule terms in rendered text](glossary-term-tooltips/glossary-term-tooltips.md) — Complete. — (Design)
 - [Kid Map Legibility — the tablet map reads from a child's seat](kid-map-legibility/kid-map-legibility.md) — Closed 2026-07-27, superseded before completion. — (Players)
 - [Loom Beat Reorder Plan — Drag-to-Reorder Story Beats](loom-beat-reorder/loom-beat-reorder.md) — BR1–BR2 shipped. — (The Loom)
 - [Loom Campaign Progress UI — keep campaign advancement visible and the tapestry readable](loom-campaign-progress-ui/loom-campaign-progress-ui.md) — All three stages shipped. — (The Loom)

@@ -22,9 +22,8 @@ Point a skill at a row and it has what it needs to start.
 <!-- GENERATED:ACTIVE_INDEX:START -->
 | Plan | Depends on | State | Orders | Next | Status |
 | --- | --- | --- | --- | --- | --- |
-| [Glossary term tooltips](glossary-term-tooltips/glossary-term-tooltips.md) | — | ready | none compiled | `to-orders` | Stages 1-4 shipped. |
 | [Kid Map Viewer](kid-map-viewer/kid-map-viewer.md) | — | ready | none compiled | `to-orders` | Stages 1-9 shipped, plus a 6R repair pass. |
-| [Player Map Knowledge](player-map-knowledge/player-map-knowledge.md) | — | ready | none compiled | `to-orders` | Stages 1-3 shipped. |
+| [Player Map Knowledge](player-map-knowledge/player-map-knowledge.md) | — | ready | none compiled | `to-orders` | Stages 1-4 shipped. |
 | [Production Nightly Deploys](production-nightly-deploys/production-nightly-deploys.md) | — | ready | none compiled | `to-orders` | Not next for Infra; second in the Infra queue, after Table Testing Records. |
-| [Table Testing Records](table-testing-records/table-testing-records.md) | — | ready | none compiled | `to-orders` | Stage 1 shipped — the format is documented in `docs/TABLE_TESTING.md` and routable, and both existing records conform to it. |
+| [Table Testing Records](table-testing-records/table-testing-records.md) | — | ready | none compiled | `to-orders` | Stages 1–2 shipped — the format is documented in `docs/TABLE_TESTING.md`, and the workflow now produces records by default: `PLAN_TEMPLATE.md` teaches the `**Table test:**` stage line, `to-orders` stops session-run orders at a record, and Player App Skeleton Stage 6 demonstrates the shape. |
 <!-- GENERATED:ACTIVE_INDEX:END -->

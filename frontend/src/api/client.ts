@@ -176,6 +176,8 @@ export const deleteDungeon = (id: number) => del(`/dungeons/${id}`)
 // Map Lab layout
 export const getDungeonKnowledge = (dungeonId: number, signal?: AbortSignal) =>
   get<MapKnowledgeBlob>(`/dungeons/${dungeonId}/knowledge`, { signal })
+export const saveDungeonKnowledge = (dungeonId: number, blob: MapKnowledgeBlob) =>
+  put<MapKnowledgeBlob>(`/dungeons/${dungeonId}/knowledge`, blob)
 export const getDungeonLayout = (dungeonId: number, signal?: AbortSignal) =>
   get<MapLayoutBlob>(`/dungeons/${dungeonId}/layout`, { signal })
 export const saveDungeonLayout = (dungeonId: number, blob: MapLayoutBlob) =>

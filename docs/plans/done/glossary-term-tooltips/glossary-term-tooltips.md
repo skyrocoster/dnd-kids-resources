@@ -1,6 +1,6 @@
 # Glossary term tooltips — hover/tap explanations for rule terms in rendered text
 
-> **Status:** Stages 1-4 shipped. Stage 5 (catalog-entity reference tooltips) is next — the only Design plan.
+> **Status:** Complete. Stages 1-4 shipped; catalog-entity reference tooltips are deferred until a future plan.
 
 - **Area guide:** [Design](../../../areas/design.md)
 - **Read trigger:** Glossary term tooltips, rule-term explanations in rendered text

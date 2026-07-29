@@ -55,6 +55,7 @@ active at once; what a Plan waits on is a **dependency**, declared in its `## To
 ## Stages
 1. <plain-English intent of stage 1>
 2. <plain-English intent of stage 2>
+3. <plain-English intent of stage 3> **Table test:** [YYYY-MM-DD](../../../table-tests/YYYY-MM-DD-slug.md)
 
 ## Shipped
 | Stage | What shipped (≤2 sentences) |
@@ -80,6 +81,12 @@ not decoration: the plan's row in [INVENTORY.md](INVENTORY.md) and its row in th
 never restate them anywhere else — a manifest row typed by hand is the drift this replaced. The area
 guide link is relative to the plan file, so from `docs/plans/<state>/<feature>/` it is
 `../../../areas/<area>.md`.
+
+A stage that ends at something playable names its table test on the stage line: a `**Table test:**`
+label followed by a link whose text is the session date and whose target is the record under
+`../../../table-tests/`. That stage's row in `## Shipped` links the same record rather than restating
+what the session found. See [TABLE_TESTING.md](TABLE_TESTING.md) for the record format, the
+`planned` → `run` → `folded in` lifecycle, and the standing questions.
 
 `## Compiler handoff` is a temporary, stage-scoped machine-facing appendix. It preserves verified
 answers planning already paid to discover so `to-orders` can target its exploration instead of

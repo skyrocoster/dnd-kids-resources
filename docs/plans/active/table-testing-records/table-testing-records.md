@@ -1,6 +1,6 @@
 # Table Testing Records — real sessions become a comparable, checked record
 
-> **Status:** Stage 1 shipped — the format is documented in `docs/TABLE_TESTING.md` and routable, and both existing records conform to it. Next is Stage 2, hooking records to plans via `PLAN_TEMPLATE.md` and the `to-orders` skill so sessions produce records by default rather than by remembering to.
+> **Status:** Stages 1–2 shipped — the format is documented in `docs/TABLE_TESTING.md`, and the workflow now produces records by default: `PLAN_TEMPLATE.md` teaches the `**Table test:**` stage line, `to-orders` stops session-run orders at a record, and Player App Skeleton Stage 6 demonstrates the shape. Next is Stage 3, extending `scripts/check_docs.py` so record status, required headings, the frozen `folded in` state, and a generated record index are checked rather than trusted.
 
 - **Area guide:** [Infra](../../../areas/infra.md)
 - **Read trigger:** Recording a real session, the table-test format, or its lifecycle and checks
@@ -10,6 +10,11 @@
 
 - `docs/README.md`
 - `docs/table-tests/**`
+- `docs/PLAN_TEMPLATE.md`
+- `.claude/skills/to-orders/SKILL.md`
+- `docs/plans/done/player-app-skeleton/**`
+- `scripts/check_docs.py`
+- `docs/TABLE_TESTING.md`
 
 ## What we're building & why
 
@@ -51,6 +56,15 @@ because of the app?
 - **Exactly three statuses: `planned` → `run` → `folded in`.** No fourth state. The
   `2026-07-27-kid-map-viewer-stage-9.md` record's `pending` is the same thing as `planned` and is
   corrected to it, rather than the vocabulary growing to accommodate one record.
+- **A plan names its table test on the stage line, not in a section of its own.** The stage that ends
+  at something playable carries a `**Table test:**` line pointing at the record; the Shipped row for
+  that stage links the same file. No `## Table tests` section — a second list of records is the
+  hand-maintained restatement this plan exists to avoid, and the forward reference on the stage line
+  is what tells Claude to pre-write the record *before* the session.
+- **`## What the session settled` stays in Player App Skeleton.** It states what the session settled
+  *for the plan* — the structural claims held, Plan 1's premise untested rather than contradicted —
+  which is plan-level judgement, not a copy of the record's Verdict. "Links rather than restates"
+  governs the Shipped row, not a plan's own reasoning about its results.
 - **The standing questions are a fixed block, identical in every record, checked verbatim.** That is
   the whole reason they exist — a reworded question breaks the trend as surely as a dropped one.
   Session-specific questions have a home already: `## Watching for`. The 2026-07-27 record replaced
@@ -90,3 +104,4 @@ because of the app?
 | Stage | What shipped (≤2 sentences) |
 |-------|------------------------------|
 | 1 | `docs/TABLE_TESTING.md` defines the table test as a document type — the `planned → run → folded in` lifecycle, the required headings, the fixed standing questions, who fills what and when, and a hand-written record index — with routing rows in the manifest and the Task Router. The second record, `2026-07-27-kid-map-viewer-stage-9.md`, was normalised to that format: status word `planned`, the fixed six standing questions restored, its seven session-specific ones moved to `## Watching for` or dropped as duplicates, and its stray work-order footer removed. |
+| 2 | `PLAN_TEMPLATE.md` now teaches that a stage ending at something playable names its table test on the stage line and links the record from its Shipped row, and the `to-orders` skill stops a session-run order at "the record exists at Status `run`" rather than at prose in the plan. Player App Skeleton Stage 6 was retrofitted to that shape, so the first plan that produced a record is also the worked example. |

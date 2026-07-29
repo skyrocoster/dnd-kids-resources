@@ -16,20 +16,36 @@ export interface SessionControls {
   onDisarmTrap?: () => void
 }
 
+export interface KnowledgeToggle {
+  active: boolean
+  onToggle: () => Promise<void>
+}
+
+export interface KnowledgeControls {
+  exists?: KnowledgeToggle
+  lock?: KnowledgeToggle
+  trap?: KnowledgeToggle
+}
+
 /** Element-agnostic descriptor panel — a room, door, stair, or prop all resolve through
  * `inspectableDescriptor` to the same {title, typeLabel, icon, token, chips, lines} shape, so one
  * component renders all four. `chips` (Design Phase J2) replaces the old State/Also text rows with
  * icon+text pills — empty for a room or a fully-unlocked passage. Doors and stairs additionally get
  * live session controls (Stage 4) —
  * rooms and props don't carry that kind of runtime state, so `controls` is only passed for those two
- * kinds. Props can additionally resolve their soft-referenced loot bundle live. */
+ * kinds. Props can additionally resolve their soft-referenced loot bundle live.
+ *
+ * Knowledge toggles (Stage 5) render under a "Players know" heading and save immediately — a failed
+ * write leaves the prior confirmed value and shows an inline error with role="status". */
 export function InspectorPanel({
   target,
   controls,
+  knowledge,
   context,
 }: {
   target: Inspectable
   controls?: SessionControls
+  knowledge?: KnowledgeControls
   /** Extra data `inspectableDescriptor` can't resolve on its own — currently just the destination
    * dungeon's title for a gateway portal, looked up by the caller via `listDungeons()`. */
   context?: { dungeonTitle?: string }
@@ -44,6 +60,12 @@ export function InspectorPanel({
         : target.kind === 'portal'
           ? target.portal.trapped
           : false
+
+  // Per-fact pending/error state for knowledge toggles
+  const [pendingFacts, setPendingFacts] = useState<Record<string, boolean>>({})
+  const [errorFacts, setErrorFacts] = useState<Record<string, string | null>>({})
+
+  const isPassage = target.kind === 'door' || target.kind === 'stair' || target.kind === 'portal'
 
   return (
     <div className="maplab-inspector-panel">
@@ -82,30 +104,129 @@ export function InspectorPanel({
       )}
       {target.kind === 'prop' && target.prop.loot && <LootSummaryShell loot={target.prop.loot} />}
       {controls && (
-        <div className="maplab-inspector-controls">
-          {target.kind === 'door' && controls.onToggleOpen && (
-            <button type="button" className="maplab-pill-button maplab-session-control-button" onClick={controls.onToggleOpen}>
-              {target.session?.isOpen ? 'Close door' : 'Open door'}
-            </button>
-          )}
-          {controls.onToggleLocked && (
-            <button type="button" className="maplab-pill-button maplab-session-control-button" onClick={controls.onToggleLocked}>
-              {(target.kind === 'door' || target.kind === 'stair' || target.kind === 'portal') && target.session?.isLocked
-                ? 'Unlock'
-                : 'Lock'}
-            </button>
-          )}
-          {isTrapped && controls.onDisarmTrap && (
-            <button
-              type="button"
-              className="maplab-pill-button maplab-session-control-button"
-              disabled={(target.kind === 'door' || target.kind === 'stair' || target.kind === 'portal') && target.session?.trapDisarmed}
-              onClick={controls.onDisarmTrap}
-            >
-              Disarm trap
-            </button>
-          )}
-        </div>
+        <>
+          <h4 className="maplab-inspector-subheading">World now</h4>
+          <div className="maplab-inspector-controls">
+            {target.kind === 'door' && controls.onToggleOpen && (
+              <button type="button" className="maplab-pill-button maplab-session-control-button" onClick={controls.onToggleOpen}>
+                {target.session?.isOpen ? 'Close door' : 'Open door'}
+              </button>
+            )}
+            {controls.onToggleLocked && (
+              <button type="button" className="maplab-pill-button maplab-session-control-button" onClick={controls.onToggleLocked}>
+                {(target.kind === 'door' || target.kind === 'stair' || target.kind === 'portal') && target.session?.isLocked
+                  ? 'Unlock'
+                  : 'Lock'}
+              </button>
+            )}
+            {isTrapped && controls.onDisarmTrap && (
+              <button
+                type="button"
+                className="maplab-pill-button maplab-session-control-button"
+                disabled={(target.kind === 'door' || target.kind === 'stair' || target.kind === 'portal') && target.session?.trapDisarmed}
+                onClick={controls.onDisarmTrap}
+              >
+                Disarm trap
+              </button>
+            )}
+          </div>
+        </>
+      )}
+
+      {knowledge && isPassage && (
+        <>
+          <h4 className="maplab-inspector-subheading">Players know</h4>
+          <div className="maplab-inspector-controls">
+            {knowledge.exists && (
+              <KnowledgeToggleButton
+                factKey="exists"
+                label="Exists"
+                toggle={knowledge.exists}
+                pending={pendingFacts}
+                error={errorFacts}
+                setPending={setPendingFacts}
+                setError={setErrorFacts}
+              />
+            )}
+            {knowledge.lock && (
+              <KnowledgeToggleButton
+                factKey="lock"
+                label="Lock"
+                toggle={knowledge.lock}
+                pending={pendingFacts}
+                error={errorFacts}
+                setPending={setPendingFacts}
+                setError={setErrorFacts}
+              />
+            )}
+            {knowledge.trap && (
+              <KnowledgeToggleButton
+                factKey="trap"
+                label="Trap"
+                toggle={knowledge.trap}
+                pending={pendingFacts}
+                error={errorFacts}
+                setPending={setPendingFacts}
+                setError={setErrorFacts}
+              />
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
+/** A single knowledge-fact toggle button with local pending/error state.
+ * Saves immediately on click; a failed write leaves the prior confirmed value
+ * and reports the error inline with `role="status"`. */
+function KnowledgeToggleButton({
+  factKey,
+  label,
+  toggle,
+  pending,
+  error,
+  setPending,
+  setError,
+}: {
+  factKey: string
+  label: string
+  toggle: KnowledgeToggle
+  pending: Record<string, boolean>
+  error: Record<string, string | null>
+  setPending: React.Dispatch<React.SetStateAction<Record<string, boolean>>>
+  setError: React.Dispatch<React.SetStateAction<Record<string, string | null>>>
+}) {
+  const isPending = pending[factKey] ?? false
+  const errorMessage = error[factKey]
+
+  const handleClick = async () => {
+    if (isPending) return
+    setPending((prev) => ({ ...prev, [factKey]: true }))
+    setError((prev) => ({ ...prev, [factKey]: null }))
+    try {
+      await toggle.onToggle()
+    } catch {
+      setError((prev) => ({ ...prev, [factKey]: `Could not update "${label}" knowledge.` }))
+    } finally {
+      setPending((prev) => ({ ...prev, [factKey]: false }))
+    }
+  }
+
+  return (
+    <div className="maplab-knowledge-toggle-wrapper">
+      <button
+        type="button"
+        className="maplab-pill-button maplab-session-control-button"
+        disabled={isPending}
+        onClick={handleClick}
+      >
+        {toggle.active ? `Known: ${label}` : `Unknown: ${label}`}
+      </button>
+      {errorMessage && (
+        <span role="status" className="maplab-knowledge-error">
+          {errorMessage}
+        </span>
       )}
     </div>
   )

@@ -6,6 +6,7 @@ import * as api from '../../../../api/client'
 import type { NPC } from '../../../../api/types'
 import { mapLabLayout } from '../maplabData'
 import { MapLabPage } from '../MapLabPage'
+import { InspectorPanel } from '../InspectorPanel'
 import type { MapPortal as MapPortalFixture } from '../../../../model/maplabModel'
 import { DungeonRouteContextProvider, type DungeonRouteContext } from '../dungeonRouteContext'
 
@@ -317,6 +318,26 @@ describe('MapLabPage (M2.3 walls + door/stair affordances)', () => {
     await user.click(stair)
     expect(screen.getByRole('tab', { name: 'First Floor' })).toHaveAttribute('aria-selected', 'true')
   })
+
+  it('hover does not replace a keyboard-focused selection in the inspector', async () => {
+    const user = userEvent.setup()
+    await renderLoadedMapLabPage()
+
+    // Focus a door — establishes it as the inspector target
+    const door = screen.getByRole('button', { name: /Heavy Stone Door/ })
+    fireEvent.focus(door)
+    expect(screen.getByText('Locked')).toBeInTheDocument()
+
+    // Hover over a stair — should NOT replace the focused door in the inspector
+    const stair = screen.getByRole('button', { name: /Stone Stairs.*floor 1/i })
+    await user.hover(stair)
+    expect(screen.getByText('Locked')).toBeInTheDocument()
+
+    // Remove focus — returns to no-selection message (hover preview takes over but stair has no chip)
+    fireEvent.blur(door)
+    await user.unhover(stair)
+    expect(screen.getByText('Hover or focus a room, door, stair, or prop for details.')).toBeInTheDocument()
+  })
 })
 
 describe('MapLabPage (Stage 1 — Faithful L-shape rendering)', () => {
@@ -457,6 +478,22 @@ describe('MapLabPage (Stage 3 — Generic inspector)', () => {
     // Unlocked is the clean/unremarkable state — no chip renders for it (Design Phase J2).
     expect(screen.queryByText('Unlocked')).not.toBeInTheDocument()
   })
+
+  it('rooms do not render World now or Players know subheadings — only passages get live/knowledge controls', async () => {
+    const user = userEvent.setup()
+    const { container } = renderMapLabPage()
+    await flush()
+
+    const hall = screen.getByRole('button', { name: 'Combat Training Hall' })
+    await user.hover(hall)
+
+    const panel = container.querySelector('.maplab-inspector-panel-container')!
+    // Room has descriptor content but no grouped subheadings
+    expect(panel.querySelector('.maplab-inspector-title')).toHaveTextContent('Combat Training Hall')
+    expect(panel.querySelector('.maplab-inspector-subheading')).not.toBeInTheDocument()
+    expect(screen.queryByText('World now')).not.toBeInTheDocument()
+    expect(screen.queryByText('Players know')).not.toBeInTheDocument()
+  })
 })
 
 describe('MapLabPage (Design Phase J2 — Passage-state chips)', () => {
@@ -563,6 +600,154 @@ describe('MapLabPage (Stage 4 — Passage session state)', () => {
     // Back to the authored default: trapped (armed) takes precedence again, door closed.
     expect(door).toHaveAttribute('data-state', 'trapped')
     expect(door.querySelector('.maplab-door-leaf-closed')).toBeInTheDocument()
+  })
+
+  it('renders World now heading above session controls when a passage is pinned', async () => {
+    const user = userEvent.setup()
+    const { container } = renderMapLabPage()
+    await flush()
+
+    const door = screen.getByRole('button', { name: /Rusty Trap Door/ })
+    await user.click(door)
+
+    const panel = container.querySelector('.maplab-inspector-panel-container')!
+    expect(panel.querySelector('.maplab-inspector-subheading')).toHaveTextContent('World now')
+    // Players know heading only renders when knowledge data is provided — MapLabPage doesn't pass it yet.
+    expect(screen.queryByText('Players know')).not.toBeInTheDocument()
+  })
+})
+
+describe('MapLabPage (Stage 5 — Knowledge controls)', () => {
+  it('renders Players know heading with knowledge toggle buttons when knowledge data is provided', () => {
+    const onToggleExists = vi.fn().mockResolvedValue(undefined)
+    const onToggleLock = vi.fn().mockResolvedValue(undefined)
+    const onToggleTrap = vi.fn().mockResolvedValue(undefined)
+    render(
+      <MemoryRouter initialEntries={['/dungeons/4']}>
+        <DungeonRouteContextProvider value={{
+          dungeonId: 4,
+          dungeon: { id: 4, title: 'Test Dungeon', data: dungeonDataFixture },
+          status: 'ready' as const,
+          error: null,
+        }}>
+          <InspectorPanel
+            target={{ kind: 'door', door: { door_id: 1, cell: [0, 0] as [number, number], side: 'N' as const, hidden: false, locked: false, trapped: false } }}
+            knowledge={{
+              exists: { active: true, onToggle: onToggleExists },
+              lock: { active: false, onToggle: onToggleLock },
+              trap: { active: false, onToggle: onToggleTrap },
+            }}
+          />
+        </DungeonRouteContextProvider>
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByText('Players know')).toBeInTheDocument()
+    expect(screen.getByText('Known: Exists')).toBeInTheDocument()
+    expect(screen.getByText('Unknown: Lock')).toBeInTheDocument()
+    expect(screen.getByText('Unknown: Trap')).toBeInTheDocument()
+  })
+
+  it('only passage-like objects (door/stair/portal) render knowledge toggles — props and rooms skip them', () => {
+    const onToggleExists = vi.fn().mockResolvedValue(undefined)
+
+    // Room — no knowledge toggles (even when knowledge prop is passed)
+    const { unmount } = render(
+      <MemoryRouter initialEntries={['/dungeons/4']}>
+        <DungeonRouteContextProvider value={{
+          dungeonId: 4,
+          dungeon: { id: 4, title: 'Test Dungeon', data: dungeonDataFixture },
+          status: 'ready' as const,
+          error: null,
+        }}>
+          <InspectorPanel
+            target={{ kind: 'room', room: { room_id: 1, z: 0, origin: [0, 0] as [number, number], cells: [[0, 0]], title: 'Hall' } }}
+            knowledge={{
+              exists: { active: true, onToggle: onToggleExists },
+            }}
+          />
+        </DungeonRouteContextProvider>
+      </MemoryRouter>,
+    )
+
+    expect(screen.queryByText('Players know')).not.toBeInTheDocument()
+    unmount()
+
+    // Stair — should render knowledge toggles
+    render(
+      <MemoryRouter initialEntries={['/dungeons/4']}>
+        <DungeonRouteContextProvider value={{
+          dungeonId: 4,
+          dungeon: { id: 4, title: 'Test Dungeon', data: dungeonDataFixture },
+          status: 'ready' as const,
+          error: null,
+        }}>
+          <InspectorPanel
+            target={{ kind: 'stair', stair: { stair_id: 1, from: { z: 0, cell: [0, 0] }, to: { z: 1, cell: [0, 0] }, hidden: false, locked: false, trapped: false }, session: undefined }}
+            knowledge={{
+              exists: { active: true, onToggle: onToggleExists },
+            }}
+          />
+        </DungeonRouteContextProvider>
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByText('Players know')).toBeInTheDocument()
+  })
+
+  it('shows error with role="status" when a knowledge toggle fails', async () => {
+    const user = userEvent.setup()
+    const onToggleExists = vi.fn().mockRejectedValue(new Error('network error'))
+    render(
+      <MemoryRouter initialEntries={['/dungeons/4']}>
+        <DungeonRouteContextProvider value={{
+          dungeonId: 4,
+          dungeon: { id: 4, title: 'Test Dungeon', data: dungeonDataFixture },
+          status: 'ready' as const,
+          error: null,
+        }}>
+          <InspectorPanel
+            target={{ kind: 'door', door: { door_id: 1, cell: [0, 0] as [number, number], side: 'N' as const, hidden: false, locked: false, trapped: false } }}
+            knowledge={{
+              exists: { active: true, onToggle: onToggleExists },
+            }}
+          />
+        </DungeonRouteContextProvider>
+      </MemoryRouter>,
+    )
+
+    await user.click(screen.getByText('Known: Exists'))
+    await vi.waitFor(() => {
+      expect(screen.getByRole('status')).toHaveTextContent(/Could not update/)
+    })
+  })
+
+  it('knowledge toggle buttons have pill-button class for 48px touch floor', () => {
+    const onToggleExists = vi.fn().mockResolvedValue(undefined)
+    render(
+      <MemoryRouter initialEntries={['/dungeons/4']}>
+        <DungeonRouteContextProvider value={{
+          dungeonId: 4,
+          dungeon: { id: 4, title: 'Test Dungeon', data: dungeonDataFixture },
+          status: 'ready' as const,
+          error: null,
+        }}>
+          <InspectorPanel
+            target={{ kind: 'door', door: { door_id: 1, cell: [0, 0] as [number, number], side: 'N' as const, hidden: false, locked: false, trapped: false } }}
+            knowledge={{
+              exists: { active: true, onToggle: onToggleExists },
+              lock: { active: false, onToggle: onToggleExists },
+            }}
+          />
+        </DungeonRouteContextProvider>
+      </MemoryRouter>,
+    )
+
+    const buttons = document.querySelectorAll('.maplab-knowledge-toggle-wrapper .maplab-pill-button')
+    expect(buttons.length).toBe(2)
+    buttons.forEach((btn) => {
+      expect((btn as HTMLElement).className).toContain('maplab-pill-button')
+    })
   })
 })
 

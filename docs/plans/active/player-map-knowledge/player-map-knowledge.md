@@ -1,6 +1,6 @@
 # Player Map Knowledge — the DM controls each fact the party has learned
 
-> **Status:** Stages 1-3 shipped. Next: compile Stage 4, the inspector separates world from knowledge.
+> **Status:** Stages 1-4 shipped. Next: compile Stage 5, the DM sees the real player result.
 
 - **Area guide:** [Players](../../../areas/players.md)
 - **Read trigger:** Reversible per-fact disclosure, the map knowledge document, inspector selection, or the DM's player-result preview
@@ -110,6 +110,7 @@ removes that key.
 | 1 | Passage-like map objects now share the `exists`, `lock`, and `trap` knowledge vocabulary, with Perception DC and Search DC authored and presented separately while both remain behind the Curtain. Room entries have deterministic room-qualified identities derived from stable room ID and one-based authored order without changing legacy dungeon data. |
 | 2 | Each dungeon now has an independently persisted, cascade-deleted knowledge document with replacement-style GET, PUT, and DELETE endpoints. Knowledge participates in seed export and rebuild separately from authored layout, live session truth, and Fog. |
 | 3 | The player-view Curtain now consumes sparse knowledge and grouped live passage state, omits authored-hidden objects until existence is disclosed, and reveals lock and trap values independently without leaking DM-only fields. The kid map polls knowledge alongside layout and session state, treating missing knowledge as empty and retaining the last good frame after later knowledge failures. |
+| 4 | Map Lab's inspector now separates live world controls from reversible `Players know` disclosures for passage objects, with immediate local failure handling and 48px controls. Focus and click establish the selected inspector object; hover no longer replaces it. |
 
 ## Touches
 
@@ -131,16 +132,6 @@ removes that key.
 - `frontend/src/player/**`
 - `frontend/src/map/**`
 - `frontend/src/theme.css`
-
-## Compiler handoff
-
-### Stage 4
-- **Verified edit sites:** `frontend/src/features/dungeons/maplab/InspectorPanel.tsx` — existing direct session controls cover open, locked, and trap disarm for doors/stairs/portals; props have no controls.
-- **Verified edit sites:** `frontend/src/features/dungeons/maplab/MapLabPage.tsx` — inspector target currently prioritizes hover, then focus, then pinned door, so moving the pointer changes the inspector; room click selects the room separately.
-- **Verified tests:** `frontend/src/features/dungeons/maplab/__tests__/MapLabPage.test.tsx`, `RoomDetailsPanel.test.tsx`, and marker component tests are the relevant interaction suites.
-- **Settled contracts:** click/focus establishes the selected inspector object; hover may highlight but never replaces selection. Group live controls under `World now` and disclosures under `Players know`; show only applicable toggles and save each immediately.
-- **Constraints:** action failure is local and keeps the last confirmed value; controls meet the 48px play-mode floor.
-- **Open questions:** `to-orders` must identify the existing no-selection copy before preserving it verbatim.
 
 ### Stage 5
 - **Verified edit sites:** `frontend/src/features/dungeons/maplab/MapLabPage.tsx` — the viewer toolbar already owns Session and View groups, floor tabs, and zoom controls; no player-view preview exists.
