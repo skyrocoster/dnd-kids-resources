@@ -2,7 +2,7 @@
 
 > **Status:** Closed 2026-07-27, superseded before completion. Stages 1-3 shipped; Stages 4-7 were
 > never built and are **not** carried forward as written. Superseded by
-> [Kid Map Viewer](../../active/kid-map-viewer/kid-map-viewer.md), which re-plans the same outcome
+> [Kid Map Viewer](../kid-map-viewer/kid-map-viewer.md), which re-plans the same outcome
 > from a different diagnosis.
 
 - **Area guide:** [Players](../../../areas/players.md)

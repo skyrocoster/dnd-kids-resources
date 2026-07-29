@@ -104,7 +104,7 @@ the tablet.
 <!-- GENERATED:AREA_PLANS:players:START -->
 | Plan | State | Status |
 | --- | --- | --- |
-| [Kid Map Viewer](../plans/active/kid-map-viewer/kid-map-viewer.md) | ready | Stages 1-9 shipped, plus a 6R repair pass. |
+| [Kid Map Viewer](../plans/active/kid-map-viewer/kid-map-viewer.md) | ready | Complete and archived. |
 <!-- GENERATED:AREA_PLANS:players:END -->
 
 What the table cannot derive:

@@ -62,7 +62,9 @@ The session view is the surface that is open while a game is running: it must st
 ## Work queue
 
 <!-- GENERATED:AREA_PLANS:dungeons:START -->
-_No plan is in flight for this area._
+| Plan | State | Status |
+| --- | --- | --- |
+| [Map Obstacle State](../plans/active/map-obstacle-state/map-obstacle-state.md) | ready | Ready for Stage 1 compilation; all product decisions are settled in the canonical handoff. |
 <!-- GENERATED:AREA_PLANS:dungeons:END -->
 
 What the table cannot derive:
@@ -70,7 +72,7 @@ What the table cannot derive:
 - [Dungeon Outside](../plans/done/dungeon-outside/dungeon-outside.md) shipped: wall kinds, per-side padding and a real extent, outside features, and clarity controls.
 - [Dungeon Connections](../plans/done/dungeon-connections/dungeon-connections.md) shipped: permanent per-dungeon session state, optional portal destinations with a connections resolve list, and cross-dungeon gateways. It owns passage-session persistence.
 - [Map Lab UX Pass](../plans/done/maplab-ux-pass/maplab-ux-pass.md) shipped the ghost-floor door-leak fix, gesture core, tool palette/popovers, brush model, forgiveness layer, responsive editor/viewer shells, NPC markers, and canvas-local viewer failure feedback.
-- **No plan yet, raised by [Kid Map Viewer](../plans/active/kid-map-viewer/kid-map-viewer.md)
+- **No plan yet, raised by [Kid Map Viewer](../plans/done/kid-map-viewer/kid-map-viewer.md)
   planning:** move `npc` and `encounter` out of the fixture flyout — a person and a fight should not be
   chosen from the same menu as Barrel and Statue. This is an authoring-palette change only: no storage
   split, no migration, and the pin concept stays, because losing it loses the ability to say "the

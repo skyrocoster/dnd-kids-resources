@@ -53,7 +53,7 @@ _No plan is in flight for this area._
 What the table cannot derive:
 
 Three items with no plan yet, raised by
-[Kid Map Viewer](../plans/active/kid-map-viewer/kid-map-viewer.md) planning and deliberately kept out
+[Kid Map Viewer](../plans/done/kid-map-viewer/kid-map-viewer.md) planning and deliberately kept out
 of it:
 
 - **Prune the 26 identity tints.** Every one lands at 10.0-10.1:1 against `--md-surface` because they
