@@ -22,9 +22,9 @@ Point a skill at a row and it has what it needs to start.
 <!-- GENERATED:ACTIVE_INDEX:START -->
 | Plan | Depends on | State | Orders | Next | Status |
 | --- | --- | --- | --- | --- | --- |
-| [Glossary term tooltips](glossary-term-tooltips/glossary-term-tooltips.md) | — | ready | none compiled | `to-orders` | Stages 1-2 shipped. |
+| [Glossary term tooltips](glossary-term-tooltips/glossary-term-tooltips.md) | — | ready | none compiled | `to-orders` | Stages 1-3 shipped. |
 | [Kid Map Viewer](kid-map-viewer/kid-map-viewer.md) | — | ready | none compiled | `to-orders` | Stages 1-9 shipped, plus a 6R repair pass. |
 | [Production Nightly Deploys](production-nightly-deploys/production-nightly-deploys.md) | — | ready | none compiled | `to-orders` | Not next for Infra; second in the Infra queue, after Table Testing Records. |
 | [Table Testing Records](table-testing-records/table-testing-records.md) | — | ready | none compiled | `to-orders` | Next up for Infra now that Docs Restructure is complete. |
-| [Player Map Knowledge](player-map-knowledge/player-map-knowledge.md) | [Glossary term tooltips](glossary-term-tooltips/glossary-term-tooltips.md) | blocked | none compiled | `to-orders` | Stages 1-2 shipped. |
+| [Player Map Knowledge](player-map-knowledge/player-map-knowledge.md) | [Glossary term tooltips](glossary-term-tooltips/glossary-term-tooltips.md) | blocked | 3 · 0 done · 3 unrun | `dispatch-orders` | Stages 1-2 shipped. |
 <!-- GENERATED:ACTIVE_INDEX:END -->

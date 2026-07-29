@@ -89,7 +89,8 @@ This pattern is used across the nine feature domains. If building a new feature 
 **Frontend convention: validated reference text.** `components/referenceText.ts` owns the
 framework-neutral parsed-node model, registry, authored-text validation, and context resolution.
 Brace parsing is domain-agnostic; registered definitions own token metadata, value lookup, and readable
-fallbacks, while `DiceText` remains responsible only for dice presentation.
+fallbacks. `DiceText` owns the shared rendered-rule-text pipeline: it presents dice notation and wraps
+matched entries from the bundled rule glossary with the shared inline disclosure component.
 
 **Frontend convention: standard browser routes.** Standard catalog browsers use `BrowserLayout` for the routed `PageHeader`, action slot, error alert, `SplitPane`, and optional editor/confirmation-dialog slots. They pass `listCollapsible` so the shared list rail exposes the persisted collapse/restore control on desktop. They model the collection request with `RemoteState<T>` and pass its loading/error status to `SearchList`; a selected item sets `detailOpen`, which at `520px` presents a detail-only view with an in-flow Back-to-list button. Feature routes keep their own sorting, selection, detail card, editor, and deletion behavior.
 

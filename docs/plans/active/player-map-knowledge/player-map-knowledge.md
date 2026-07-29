@@ -98,6 +98,11 @@ Touch:        64px floor for existing controls; disclosed cues are presentation,
    the same Curtain output used by `/play`; preview does not become a structural editor. Teach the
    kid renderer to show independently disclosed lock and trap conditions without exposing mechanics.
 
+The sparse knowledge document is kind-qualified: optional `doors`, `stairs`, `props`, `portals`, and
+`roomEntries` maps are keyed by stable object identity. Each object maps to optional `exists`, `lock`,
+and `trap` facts whose only stored value is `true`; an absent fact means unknown, and clearing a fact
+removes that key.
+
 ## Shipped
 
 | Stage | What shipped (≤2 sentences) |
@@ -128,14 +133,6 @@ Touch:        64px floor for existing controls; disclosed cues are presentation,
 - `frontend/src/theme.css`
 
 ## Compiler handoff
-
-### Stage 3
-- **Verified edit sites:** `frontend/src/player/curtain.ts` — exhaustive visibility maps already classify `hidden`, `locked`, and `trapped` as `whenKnown`, classify DCs and notes as `never`, and currently strip all `whenKnown` fields because no knowledge input exists.
-- **Verified edit sites:** `frontend/src/player/usePlayerMapData.ts` — polls the active dungeon, layout, and session state, then calls `playerViewTransform`; it retains the last good frame on poll failures.
-- **Verified tests:** `frontend/src/player/__tests__/curtain.test.ts` covers always/never/whenKnown, encounter removal, feature omission, and input immutability; `usePlayerMapData.test.ts` covers polling and last-good-frame behavior.
-- **Settled contracts:** an authored-hidden object with unknown existence is absent from the result array; known existence does not imply known lock or trap; known lock/trap exposes the current player-facing condition but never `breakDc`, `pickDc`, `hiddenDc`, `searchDc`, or notes. Room titles/descriptions remain always-present until Fog changes their policy.
-- **Constraints:** kid components consume only `KidMapLayout`; the DM preview must later call this same transform rather than duplicate its rules.
-- **Open questions:** none.
 
 ### Stage 4
 - **Verified edit sites:** `frontend/src/features/dungeons/maplab/InspectorPanel.tsx` — existing direct session controls cover open, locked, and trap disarm for doors/stairs/portals; props have no controls.

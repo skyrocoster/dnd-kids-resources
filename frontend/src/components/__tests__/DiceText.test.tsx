@@ -64,4 +64,15 @@ describe('DiceText', () => {
     expect(pill?.querySelector('svg')).not.toBeNull()
     expect(pill).toHaveTextContent('1d12')
   })
+
+  it('renders known glossary terms alongside dice expressions', () => {
+    const { container } = render(<DiceText text="Roll with advantage and add 1d6 damage." />)
+    const trigger = container.querySelector('.glossary-term-trigger')
+    expect(trigger).toHaveTextContent('advantage')
+    const pill = container.querySelector('.dice-pill')
+    expect(pill).toHaveTextContent('1d6')
+    expect(container.querySelector('.dice-text')).toHaveTextContent(
+      'Roll with advantage and add 1d6 damage.',
+    )
+  })
 })

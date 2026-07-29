@@ -319,7 +319,9 @@ Used verbatim by encounter runner dock and NPC dossier dock; multiple can be ope
 ### DiceText (`components/DiceText.tsx`)
 
 Renders dice notation as a rollable-die chip. The optional `role` applies the surrounding content-role variant;
-there is no universal gold pill.
+there is no universal gold pill. Non-dice segments also pass through the bundled rule glossary matcher, so
+known terms render with `GlossaryTerm` while unmatched text remains plain; `ReferenceText` inherits the same
+behavior because its resolved output delegates to `DiceText`.
 
 ### InspectorPanel + Inspectable (`maplab/`)
 
