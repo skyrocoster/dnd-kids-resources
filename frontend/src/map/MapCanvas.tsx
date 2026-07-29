@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef } from 'react'
+import './MapCanvas.css'
 import type { ReactNode } from 'react'
 import type { Bounds } from '../model/maplabModel'
 import { BASE_PX_PER_UNIT, type ViewportSize, type ZoomState } from './useMapCanvasZoom'

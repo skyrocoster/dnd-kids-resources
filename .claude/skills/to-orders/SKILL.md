@@ -28,10 +28,56 @@ columns as a diagnosis of *why* an order thrashed; aim at getting it right the f
 Escalating strength does not buy that. The abandoned order stalled at Light and stalled again at
 Standard, and closed only once someone diagnosed the actual failure. Order shape is the lever.
 
+## Write orders with `new_order.py`, not by hand
+
+`scripts/new_order.py` emits an order in the maximum shape an order is allowed to have. Use it as
+the default way to create one. You supply the facts; it does the three things a compiler kept
+getting wrong and paying a rewrite pass for:
+
+```
+.venv\Scripts\python.exe scripts/new_order.py --feature kid-map-viewer --number 11 \
+  --title "Party room label" \
+  --goal "the party's room shows its name under the marker" \
+  --known "<a fact you verified while compiling>" \
+  --start-in "PlayerMapRenderer.tsx:RoomLabel" \
+  --start-in "PlayerMapRenderer.test.tsx — the describe block the new test joins" \
+  --do "Render the room name under the party marker in frontend/src/player/PlayerMapRenderer.tsx" \
+  --tests src/player/__tests__/PlayerMapRenderer.test.tsx
+```
+
+- **Bare filenames are resolved for you.** `PlayerMapRenderer.tsx` becomes the full repo-relative
+  path when exactly one file has that name, and is *refused with the candidates listed* when more
+  than one does. You never write a directory you had to go and look up, and you never guess one.
+- **`path:Symbol` becomes a real line range and anchor.** For any file over 400 lines the tool
+  derives `lines 47-96 @"export function RoomLabel({"` itself. An unbounded large file is refused
+  rather than emitted.
+- **The stop-check is assembled**, including the co-located suite for every source file DO edits,
+  `--lint` when the order touches a hook, `--typecheck` when it writes a fixture, `--docs` when it
+  changes contract-managed documentation, and an existence assertion for every CREATES/REMOVES path.
+
+It then runs `check_orders.py` on the rendered text and **writes nothing if it fails**, so an order
+that reaches disk is an order that passes lint. `--stdout` prints instead of writing.
+
+The caps below are enforced at the argument boundary, which is the point: exceeding one is an error
+telling you to split the order, before you have written it.
+
+| Cap | Limit |
+| --- | --- |
+| distinct START IN files | 4 (extra *ranges* of an already-named file are free, up to 6 entries) |
+| DO bullets | 3 |
+| test files in STOP WHEN | 2 (and still at most one frontend suite) |
+
+If an order will not fit, that is the tool telling you it is two orders. Split it and set
+`DEPENDS ON` — do not go around the tool by hand-writing a wider order, because
+`check_orders.py` enforces exactly the same ceiling and will reject it after you have written it.
+
+Hand-write an order only when it needs a shape the tool cannot express (an unusual STOP WHEN, a
+KNOWN TEST FAILURES block with an odd node id); the fields and the caps are identical either way.
+
 ## The work order template
 
-Keep each order to **roughly one screen**. One work order = **one logical change** (it may touch
-2–3 related files, e.g. a component and its test).
+This is what the tool emits. Keep each order to **roughly one screen**. One work order = **one
+logical change** (it may touch 2–3 related files, e.g. a component and its test).
 
 ```
 WORK ORDER <NN> — <short title>
@@ -126,6 +172,16 @@ gate runs, and every rule in it is one fault the telemetry log already paid for.
   come from one order that made a shared hook parameter required while STOP WHEN ran only the
   caller's tests: it blocked once, then leaked a stale assertion and a missing `useCallback`
   dependency past every targeted check to reconcile.
+  **A type is a signature.** Reshaping an exported `type`/`interface` breaks its consumers exactly as
+  a changed parameter list does. One order stripped a field from an exported player layout type,
+  declared `CHANGES SIGNATURE: none`, and scoped STOP WHEN to a single suite; three other player
+  suites broke and needed a corrective order. The linter now rejects a DO bullet that reshapes an
+  exported type the order does not declare.
+- **Replacing a renderer or wrapper keeps the landmarks.** When an order swaps one component for
+  another, name the accessibility landmarks — roles, `aria-label`s, region names — the replaced
+  component published, and run the *neighbouring route-shell suite* that asserts them, not only the
+  renderer's own colocated tests. A shared-canvas migration silently dropped a `Dungeon map` region
+  and only the full suite caught it.
 - **CREATES / REMOVES** — artifact lifecycle, separate from exploration. A future-created path cannot
   resolve in START IN, while a deleted source path cannot survive the final documentation check.
   Declare every created and removed file here, name the same full path in DO, and put an explicit
@@ -215,6 +271,49 @@ empty state" without giving the exact string is an order that invents one.
 If the Plan has no UX decisions block and the stage touches the frontend, stop and run `ux-design`
 before compiling.
 
+## Delegate the fact-finding, keep the judgement
+
+Compiling a stage is two different jobs wearing one hat: **finding out what is true** in the repo, and
+**deciding what the order should say**. The first is retrieval and belongs to a cheap explorer; the
+second is why this skill runs on the expensive model. Locating a helper, listing call sites, reading
+off a current test count, or finding the sibling test that shows the repo's mock idiom are all
+retrieval — they fill your context with file dumps you will use one line of, at the planner's rate.
+
+**Prefer the explorer for retrieval.** In opencode that is the `explore-deepseek` subagent; in Claude
+Code it is the `Explore` agent. Both are read-only and report with `path:line` citations.
+
+Delegate when the question is answerable by quoting the repo and you do not already know where the
+answer lives:
+
+- "Which files import `useMapLabSessionState`, and at what lines?"
+- "In `frontend/src/features/**/__tests__/`, find a test that mocks an `api.ts` list endpoint and quote its `mockResolvedValue` line verbatim."
+- "Does anything under `backend/` still reference `party_room_id`? Quote each hit."
+- "How many tests are in `PlayerMapRenderer.test.tsx`, and what are the `describe` block names and their line numbers?"
+
+Go and read it yourself when:
+
+- you need the file anyway to decide the order's shape — a delegated summary plus your own read is
+  strictly more expensive than the read alone;
+- the question is judgement wearing a question mark ("is this the right seam", "should this live in
+  `model/` or `features/`", "is this order too big") — that is the decision this skill exists to make,
+  and the executor pays for a wrong answer, not the explorer;
+- you already know the path and the range, and only need to confirm an anchor line verbatim; or
+- it is two or three small files. A round trip costs a cold start; three `Read` calls do not.
+
+Three rules keep the delegation honest:
+
+- **Batch the questions.** One dispatch with six numbered questions, not six dispatches. The explorer's
+  cold start is the cost you are managing.
+- **Ask for quotes, not conclusions.** Never ask it what is stale, what should change, which option is
+  better, or what an order should say. Its report is evidence; you are the only one who judges it.
+  If a report volunteers a recommendation, treat that as unverified.
+- **A citation is not a verification for anything you will reason about.** A cited `path:line` is
+  enough to resolve a path or a count into KNOWN STATE. It is *not* enough for a file whose contents
+  shape the order — for those, START IN still means a file you opened.
+
+You are not obliged to delegate. If a stage is small enough that you can compile it from files you
+were always going to open, do that and say nothing about it.
+
 ## How to compile a stage
 
 0. **Read the recent `compiler note:` lines in [docs/plans/telemetry-log.md](../../../docs/plans/telemetry-log.md)**
@@ -229,6 +328,10 @@ before compiling.
    STATE and START IN rather than rediscovering them. Resolve every listed open question before
    writing an order. Explore only the gaps needed to make orders self-contained; do not reopen a
    named file just to reconfirm a stable fact already recorded by `plan`.
+
+   Write the remaining gaps down as questions before you open anything, then send the ones that are
+   pure retrieval to the explorer in **one batched dispatch** (see above) while you read the files
+   whose shape you have to judge yourself.
 2. **Split the stage into logical changes.** If a change needs a paragraph of judgement, it's too big:
    split it into smaller orders.
    Before allowing independent orders to run in parallel, compare their edit sites: when one order
@@ -251,7 +354,10 @@ before compiling.
    test module and, for structural docs, the real documentation checker.
    For tests driven by routing, providers, timers, or async settling, also verify and record the
    exact harness transition that makes the requested assertion valid.
-6. **Leave STATUS blank.** Number the files in dependency order and set each `DEPENDS ON`.
+6. **Emit each order with `scripts/new_order.py`** (see above) rather than writing the file by
+   hand. Leave STATUS blank — the tool does. Number the orders in dependency order and set each
+   `DEPENDS ON` with `--depends-on`. A refusal from the tool is a sizing verdict, not an obstacle:
+   split the order and emit two.
 7. **Run the linter before you dispatch:** `.venv\Scripts\python.exe scripts/check_orders.py --fix`.
    `--fix` repairs everything mechanical and prints what it changed: a bare filename becomes its full
    repo-relative path (whenever the repo has exactly one file by that name), a backticked symbol
@@ -325,7 +431,8 @@ Preserve the normal lifecycle when taking the fast path:
    "direct planner implementation, no executor usage figures" --fault none --note "<why direct
    completion was cheaper>"` (or the POSIX virtualenv path). `--planner-run` is what lets the fast
    path be compared against dispatched runs later; without it the cheapest route in the workflow is
-   also the one the log cannot measure.
+   also the one the log cannot measure. While `docs/plans/telemetry-paused.md` exists both commands
+   record nothing and exit 0; run them as written so the step is right when collection resumes.
 6. Compile dependent or overlapping orders from the resulting state. If they were already written,
    re-verify and update any KNOWN STATE facts or anchors the direct change affected before linting.
 

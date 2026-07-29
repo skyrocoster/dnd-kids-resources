@@ -190,10 +190,6 @@
   gap: 1rem;
 }
 
-.maplab-svg {
-  display: block;
-}
-
 .maplab-inspector-panel-container {
   flex: 0 0 15rem;
   min-height: 8rem;
@@ -611,20 +607,10 @@
   cursor: not-allowed;
 }
 
-/* Shared between viewer and editor: the zoomable/pannable canvas (Stage E2). `position: relative` +
- * `min-height: 0` are load-bearing: relative anchors the floating corner controls below, and
- * without min-height:0 a flex column defaults to min-height:auto, which refuses to shrink below the
- * SVG viewport's intrinsic (zoomed) size — the wrapper then overflows its bounded ancestors, and
- * `overflow: hidden` up the chain clips the controls that come after it clean out of view. */
-.maplab-canvas-wrapper {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  flex: 1 1 auto;
-  min-width: 0;
-  min-height: 0;
-}
-
+/* `.maplab-canvas-wrapper`, `.maplab-canvas-viewport` and `.maplab-svg` are owned by the shared
+ * canvas itself — real rules live in `frontend/src/map/MapCanvas.css`, imported by MapCanvas.tsx so
+ * the kid map gets identical layout without loading this DM stylesheet. Only the DM's fullscreen
+ * overrides for them remain here. */
 .maplab-editor[data-fullscreen] {
   position: fixed;
   inset: 0;
@@ -637,36 +623,10 @@
   outline: none;
 }
 
-/* Panning (one pointer) and pinch-zoom (two pointers) are both driven by useMapCanvasZoom (see
- * MapCanvas), which expresses pan as a CSS transform on the SVG — free-floating and never clamped
- * by the browser, unlike native scroll. `overflow: hidden` (not `auto`): panning never shows a
- * native scrollbar, the same way a map app never does. touch-action:none hands every touch to those
- * JS gestures instead of letting the browser's own scroll/pinch compete with them. */
-.maplab-canvas-viewport {
-  position: relative;
-  overflow: hidden;
-  touch-action: none;
-  user-select: none;
-  width: 100%;
-  flex: 1 1 auto;
-  /* Deliberately small: the canvas is the element that should absorb a short screen, shrinking so
-   * the toolbar and rails stay reachable rather than the page growing past the window. */
-  min-height: 8rem;
-  border: 1px solid var(--md-outline-variant);
-  border-radius: 12px;
-  background: var(--md-surface);
-}
-
 .maplab-editor[data-fullscreen] .maplab-canvas-viewport {
   flex: 1 1 auto;
   height: 100%;
   min-height: 16rem;
-}
-
-.maplab-svg {
-  /* Pan offset applied inline (see MapCanvas) as translate — this is the one property that
-   * shouldn't ease with the theme's hover/focus transitions, since it tracks a live drag 1:1. */
-  transition: none;
 }
 
 /* Floating controls overlaid on the map itself, Google Maps style — corner clusters instead of a

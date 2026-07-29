@@ -99,6 +99,15 @@ Lives at `docs/plans/active/<feature>/NN-<slug>.md`. One work order = one logica
 roughly one screen. The planner fills KNOWN STATE and START IN with verified facts so the executor never
 re-explores; the executor writes the code and the STATUS line.
 
+**Emit orders with `scripts/new_order.py`.** It renders this shape from the facts you pass it,
+resolves bare filenames to their one repo path, derives a line range and anchor from `path:Symbol`
+for any file over 400 lines, assembles the STOP WHEN command, and lints the result — writing
+nothing if the lint fails. It also enforces the shape ceiling at the argument boundary, so an
+order that is too big is refused as a sizing verdict before it is written: **4 distinct START IN
+files** (extra ranges of an already-named file are free, to 6 entries), **3 DO bullets**, **2 test
+files in STOP WHEN**. `check_orders.py` enforces the same three caps, so hand-writing a wider
+order only moves the rejection later.
+
 ```
 WORK ORDER <NN> — <short title>
 GOAL: <one sentence — what "done" looks like>
@@ -166,8 +175,10 @@ with no lint, a new test with no insertion anchor, a fixture with no cast idiom 
 several behaviours aimed at one big integrated suite, structural documentation without the real
 checker, validator tests omitted from the order, or unsafe parallel edits.
 
-Three scripts keep the workflow's own costs off a model:
+Four scripts keep the workflow's own costs off a model:
 
+- `scripts/new_order.py` writes the order itself, so the faults above are prevented at the
+  argument boundary rather than reported after a file exists.
 - `scripts/check_orders.py --fix` repairs what is mechanical — bare filenames, stale ranges,
   symbol-scoped entries — so the compiler does not reopen files to re-verify line numbers.
 - `scripts/order_check.py` runs a STOP WHEN and prints pass/fail plus the failing test names
@@ -205,6 +216,13 @@ the work from cold. A failure report is a successful outcome of an order — the
 cycling to avoid writing one.
 
 ### Telemetry — every finished order leaves a cost record
+
+> **Collection is currently paused.** While `docs/plans/telemetry-paused.md` exists, every recording
+> command below prints one line and exits 0, so keep running the steps exactly as written — they are
+> harmless no-ops and nothing has to change when collection comes back. Resume with
+> `.venv\Scripts\python.exe scripts/order_telemetry.py --resume`. What the log paid for is already
+> enforced in `scripts/check_orders.py`, `scripts/read_guard.py` and `scripts/order_check.py`; the
+> pause stops the measuring, not the enforcement.
 
 Telemetry has three moments, and they are all run by `scripts/order_telemetry.py`:
 

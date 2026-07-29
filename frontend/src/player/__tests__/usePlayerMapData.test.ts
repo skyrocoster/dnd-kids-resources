@@ -1,6 +1,6 @@
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ApiError, getAtTheTable, getDungeonLayout } from '../../api/client'
+import { ApiError, getAtTheTable, getDungeonLayout, getDungeonSessionState } from '../../api/client'
 import { createEmptyMapLayout } from '../../model/maplabModel'
 import { playerViewTransform } from '../curtain'
 import { PLAYER_MAP_POLL_INTERVAL_MS, usePlayerMapData } from '../usePlayerMapData'
@@ -15,6 +15,7 @@ vi.mock('../../api/client', async () => {
     ...actual,
     getAtTheTable: vi.fn(),
     getDungeonLayout: vi.fn(),
+    getDungeonSessionState: vi.fn(),
   }
 })
 
@@ -28,12 +29,15 @@ vi.mock('../curtain', async () => {
 
 const mockedGetAtTheTable = vi.mocked(getAtTheTable)
 const mockedGetDungeonLayout = vi.mocked(getDungeonLayout)
+const mockedGetDungeonSessionState = vi.mocked(getDungeonSessionState)
 const mockedPlayerViewTransform = vi.mocked(playerViewTransform)
 
 describe('usePlayerMapData', () => {
   beforeEach(() => {
     mockedGetAtTheTable.mockReset()
     mockedGetDungeonLayout.mockReset()
+    mockedGetDungeonSessionState.mockReset()
+    mockedGetDungeonSessionState.mockRejectedValue(new Error('not used'))
     mockedPlayerViewTransform.mockClear()
   })
 
@@ -196,6 +200,29 @@ describe('usePlayerMapData', () => {
 
     expect(result.current.status).toBe('ready')
     expect(result.current.dungeonId).toBe(7)
+  })
+
+  it('exposes the partyRoomId from the session blob', async () => {
+    mockedGetAtTheTable.mockResolvedValue({ dungeon_id: 7 })
+    mockedGetDungeonLayout.mockResolvedValue(layoutResponse('School'))
+    mockedGetDungeonSessionState.mockResolvedValue(
+      { data: { partyRoomId: 12 } as unknown as Record<string, unknown> },
+    )
+
+    const { result } = renderHook(() => usePlayerMapData())
+
+    await waitFor(() => expect(result.current.status).toBe('ready'))
+    expect(result.current.partyRoomId).toBe(12)
+  })
+
+  it('uses null partyRoomId when the session request fails', async () => {
+    mockedGetAtTheTable.mockResolvedValue({ dungeon_id: 7 })
+    mockedGetDungeonLayout.mockResolvedValue(layoutResponse('School'))
+
+    const { result } = renderHook(() => usePlayerMapData())
+
+    await waitFor(() => expect(result.current.status).toBe('ready'))
+    expect(result.current.partyRoomId).toBeNull()
   })
 
   it('continues polling after a retained-last-frame recovery', async () => {

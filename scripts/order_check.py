@@ -50,6 +50,30 @@ COUNT_RE = re.compile(
 )
 
 
+def frontend_test_paths(paths: list[str]) -> tuple[list[str], list[str]]:
+    """(runnable paths, complaints). Vitest filters are matched from `frontend/`.
+
+    An order that wrote `frontend/src/...` instead of `src/...` cost this repo a cancelled
+    executor run: the filter matched nothing, and the executor spent its context arguing
+    with a check that was never going to see a test. The prefix is unambiguous, so strip it
+    rather than refuse; a path that still does not exist is named here instead of surfacing
+    as a runner-level mystery.
+    """
+    runnable: list[str] = []
+    complaints: list[str] = []
+    for raw in paths:
+        candidate = raw.replace("\\", "/").lstrip("./")
+        if candidate.startswith("frontend/"):
+            candidate = candidate[len("frontend/") :]
+            complaints.append(
+                f"  note: rewrote {raw} to {candidate} — vitest filters are relative to frontend/"
+            )
+        if not (FRONTEND / candidate).exists() and "*" not in candidate:
+            complaints.append(f"  missing: frontend/{candidate} does not exist")
+        runnable.append(candidate)
+    return runnable, complaints
+
+
 def run(label: str, command: str | list[str], cwd: Path, shell: bool) -> tuple[bool, str, str]:
     try:
         completed = subprocess.run(
@@ -95,10 +119,14 @@ def main() -> int:
 
     jobs: list[tuple[str, str | list[str], Path, bool]] = []
     if args.tests:
+        tests, complaints = frontend_test_paths(args.tests)
+        for complaint in complaints:
+            print(complaint)
+        if any(line.startswith("  missing:") for line in complaints):
+            print("STOP WHEN: FAILED")
+            return 1
         flags = "--strict " if args.strict else ""
-        jobs.append(
-            ("tests", f"npm run test:check -- {flags}{' '.join(args.tests)}", FRONTEND, True)
-        )
+        jobs.append(("tests", f"npm run test:check -- {flags}{' '.join(tests)}", FRONTEND, True))
     if args.pytest:
         jobs.append(
             ("pytest", [sys.executable, "-m", "pytest", "--no-cov", *args.pytest], REPO_ROOT, False)

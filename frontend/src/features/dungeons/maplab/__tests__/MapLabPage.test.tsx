@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
-import { act, render, screen, fireEvent, within } from '@testing-library/react'
+import { act, render, screen, fireEvent, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import * as api from '../../../../api/client'
@@ -364,9 +364,15 @@ describe('MapLabPage (Stage 1 — Faithful L-shape rendering)', () => {
 })
 
 describe('MapLabPage (Stage 2 — Passage visuals)', () => {
-  it('renders the door as a leaf + swing arc, never a straight line matching a wall segment', async () => {
+  it('renders an open door as a leaf + swing arc, never a straight line matching a wall segment', async () => {
+    const user = userEvent.setup()
     const { container } = await renderLoadedMapLabPage()
     const door = screen.getByRole('button', { name: /Heavy Stone Door/ })
+
+    // Doors start closed (defaultPassageSession isOpen: false), and a closed leaf is deliberately
+    // wall-like — it reads as "sealed". The open state is the one that must not look like a wall.
+    await user.click(door)
+    await user.click(screen.getByRole('button', { name: 'Open door' }))
 
     // A leaf (hinge -> tip) and a swing arc (tip -> far jamb) — no full-span `<line>` across the
     // gap, which is what previously made a door indistinguishable in shape from a plain wall.
@@ -492,16 +498,16 @@ describe('MapLabPage (Stage 4 — Passage session state)', () => {
 
     // Click pins the door's details panel open (independent of hover/focus).
     await user.click(door)
-    expect(door.querySelector('.maplab-door-leaf')).toBeInTheDocument()
-    expect(door.querySelector('.maplab-door-leaf-closed')).not.toBeInTheDocument()
-
-    await user.click(screen.getByRole('button', { name: 'Close door' }))
     expect(door.querySelector('.maplab-door-leaf-closed')).toBeInTheDocument()
     expect(door.querySelector('.maplab-door-leaf')).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Open door' }))
     expect(door.querySelector('.maplab-door-leaf')).toBeInTheDocument()
     expect(door.querySelector('.maplab-door-leaf-closed')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Close door' }))
+    expect(door.querySelector('.maplab-door-leaf-closed')).toBeInTheDocument()
+    expect(door.querySelector('.maplab-door-leaf')).not.toBeInTheDocument()
   })
 
   it('toggles lock/unlock via session controls, independent of the trapped state', async () => {
@@ -547,16 +553,16 @@ describe('MapLabPage (Stage 4 — Passage session state)', () => {
     const door = screen.getByRole('button', { name: /Rusty Trap Door/ })
     await user.click(door)
 
-    await user.click(screen.getByRole('button', { name: 'Close door' }))
+    await user.click(screen.getByRole('button', { name: 'Open door' }))
     await user.click(screen.getByRole('button', { name: 'Disarm trap' }))
     expect(door).toHaveAttribute('data-state', 'locked')
-    expect(door.querySelector('.maplab-door-leaf-closed')).toBeInTheDocument()
+    expect(door.querySelector('.maplab-door-leaf')).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Reset dungeon' }))
     await user.click(screen.getByRole('button', { name: 'Reset' }))
-    // Back to the authored default: trapped (armed) takes precedence again, door open.
+    // Back to the authored default: trapped (armed) takes precedence again, door closed.
     expect(door).toHaveAttribute('data-state', 'trapped')
-    expect(door.querySelector('.maplab-door-leaf')).toBeInTheDocument()
+    expect(door.querySelector('.maplab-door-leaf-closed')).toBeInTheDocument()
   })
 })
 
@@ -686,6 +692,57 @@ describe('MapLabPage (Stage 03 — viewer status chip action failures)', () => {
 
     // The chip should not appear when no errors occurred
     expect(screen.queryByText(/Couldn't/)).not.toBeInTheDocument()
+  })
+
+  it('selecting a room does not persist partyRoomId', async () => {
+    const user = userEvent.setup()
+    renderMapLabPage()
+    await flush()
+
+    // Selecting a room changes only activeRoomId (local UI state), not session state
+    const hall = screen.getByRole('button', { name: 'Combat Training Hall' })
+    await user.click(hall)
+    await flush()
+    await flush()
+
+    // No save payload should include a partyRoomId after a simple room selection
+    expect(api.saveDungeonSessionState).not.toHaveBeenCalledWith(
+      4,
+      expect.objectContaining({
+        data: expect.objectContaining({ partyRoomId: expect.any(Number) }),
+      }),
+    )
+  })
+
+  it('Party is here persists the selected room as partyRoomId', async () => {
+    const user = userEvent.setup()
+    const saveSpy = vi.spyOn(api, 'saveDungeonSessionState').mockResolvedValue(
+      undefined as unknown as { data: Record<string, unknown> },
+    )
+    renderMapLabPage()
+    // First flush: initial load settles (404 → empty state, skipNextSaveRef = true)
+    await flush()
+    await flush()
+
+    // Select a room first — changes only local UI state, no session side effects
+    const hall = screen.getByRole('button', { name: 'Combat Training Hall' })
+    await user.click(hall)
+    await flush()
+    await flush()
+
+    // Click Party is here — saves the selected room's id as partyRoomId
+    await user.click(screen.getByRole('button', { name: 'Party is here' }))
+    await flush()
+
+    // Verify the save was triggered for this room
+    await waitFor(() => {
+      expect(saveSpy).toHaveBeenCalledWith(
+        4,
+        expect.objectContaining({
+          data: expect.objectContaining({ partyRoomId: 17 }),
+        }),
+      )
+    })
   })
 })
 

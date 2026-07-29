@@ -34,6 +34,10 @@ command instead of a read of a 2,300-line file.
 
 **Then snapshot every order you are about to dispatch**, once it is final:
 
+> Telemetry collection is paused while `docs/plans/telemetry-paused.md` exists. Run the telemetry
+> commands in this skill anyway — they print one line, record nothing and exit 0, so the steps stay
+> correct for whenever collection resumes.
+
 ```
 .venv\Scripts\python.exe scripts/order_telemetry.py --snapshot --order docs/plans/active/<feature>/<NN>-<slug>.md
 ```

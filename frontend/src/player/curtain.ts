@@ -147,6 +147,19 @@ function pickAlways<T, V extends Record<keyof T, Visibility>>(
 
 // ── Transform ──────────────────────────────────────────────────────────────
 
+/** The session blob's own curtain. A passage's session record carries `isOpen`, `isLocked` and
+ * `trapDisarmed`; only open/closed is kid-visible, so this returns the set of open door ids and
+ * nothing else — locked and trapped never leave this function. */
+export function playerOpenDoorIds(
+  doors: Record<string, { isOpen?: boolean }> | undefined,
+): Set<number> {
+  const open = new Set<number>()
+  for (const [id, state] of Object.entries(doors ?? {})) {
+    if (state?.isOpen) open.add(Number(id))
+  }
+  return open
+}
+
 export function playerViewTransform(layout: MapLayout): KidMapLayout {
   return {
     meta: pickAlways(layout.meta, metaVis),

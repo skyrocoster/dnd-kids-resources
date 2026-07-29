@@ -41,7 +41,7 @@ Modes are defined in [../UX_PATTERNS.md](../UX_PATTERNS.md#surface-modes).
 | Map Lab editor | `/dungeons/:dungeonId/edit` | prep | DM |
 | Inspector panel | within both Map Lab surfaces | follows its host | DM |
 
-The session view is the surface that is open while a game is running: it must stay glanceable and must never lose session toggle state. Door/stair/portal toggle state now persists on the backend (`map_session_state`, per dungeon), so a refresh or a return visit restores it; a "Reset dungeon" action clears it back to authored defaults. The editor is prep work and may be as dense as it needs to be.
+The session view is the surface that is open while a game is running: it must stay glanceable and must never lose session toggle state. Door/stair/portal toggle state and the deliberately selected party room persist on the backend (`map_session_state`, per dungeon), so a refresh or a return visit restores them; a "Reset dungeon" action clears them back to authored defaults. The editor is prep work and may be as dense as it needs to be.
 
 ## Invariants
 

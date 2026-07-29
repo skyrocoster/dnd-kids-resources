@@ -38,7 +38,12 @@ compiler may or may not read:
   executor out of bounds to satisfy its own stop-check and let a stale assertion escape;
 - a source file whose own co-located test suite is missing from STOP WHEN; and
 - a React hook change with no `npm run lint` in STOP WHEN, the only check that catches a
-  missing dependency.
+  missing dependency; and
+- an order that is simply too big to be one order — more than four distinct START IN
+  files, more than three DO bullets, or more than two test files in STOP WHEN. These are
+  the caps `scripts/new_order.py` refuses to exceed, so the split happens while the order
+  is being written rather than after a compiler has spent a pass on a shape that cannot
+  pass lint.
 
 Run standalone while compiling a stage, before dispatching anything:
 
@@ -68,7 +73,15 @@ SCOPE_REQUIRED_LINES = 400
 # Above this, a test file is an integrated suite: one order may add one behaviour to it.
 BIG_TEST_FILE_LINES = 800
 MAX_DO_BULLETS_BIG_TEST = 2
+MAX_DO_BULLETS = 3
 MAX_START_IN_ENTRIES = 6
+# Entries and files are capped apart because they cost apart. A second range in a file the
+# executor has already opened is nearly free; a fourth *file* is a fourth thing to hold in
+# one context window, and orders that named more are the ones that came back re-read-heavy.
+MAX_START_IN_FILES = 4
+# One frontend suite is already the rule below; two test files total is what lets an order
+# pair that with a backend module, and no more. Beyond this the order is two orders.
+MAX_STOP_WHEN_TESTS = 2
 
 REQUIRED_FIELDS = (
     "GOAL:",
@@ -123,7 +136,11 @@ CONDITIONAL_RE = re.compile(r"^\s*[-*]?\s*if\b|\bif (the|order|it|that|there|you
 # too readily here only costs the compiler a cast example it should have written anyway.
 FIXTURE_HINT_RE = re.compile(r"\b(mock|fixture|stub)", re.IGNORECASE)
 CAST_IDIOM_RE = re.compile(r"\bas [A-Z]\w*(\[\])?")
-TYPECHECK_RE = re.compile(r"npm run (typecheck|build)")
+# Both spellings count: the raw npm script, and the `order_check.py` flag that runs it.
+# The wrapper is the form this workflow prefers — it prints pass/fail instead of the whole
+# runner output — so a rule that only recognised the raw script was pushing compilers to
+# paste a redundant `&& npm run typecheck` beside a check that already ran.
+TYPECHECK_RE = re.compile(r"npm run (typecheck|build)|order_check\.py[^&|]*--typecheck")
 BARE_FULL_SUITE_RE = re.compile(r"`?\s*(npm (run )?test|pytest|tsc -b)\s*`?\s*$", re.MULTILINE)
 
 # --- START IN scope grammar -----------------------------------------------------------
@@ -166,7 +183,7 @@ CALL_SITE_EXTS = {".ts", ".tsx", ".js", ".jsx", ".py"}
 # A React hook: neither vitest nor tsc detects a missing dependency, only eslint does.
 HOOK_FILE_RE = re.compile(r"(^|/)use[A-Z]\w*\.tsx?$")
 HOOK_DEP_RE = re.compile(r"\b(useCallback|useMemo|useEffect|useLayoutEffect|dependency array|deps array)\b")
-LINT_RE = re.compile(r"npm run lint\b")
+LINT_RE = re.compile(r"npm run lint\b|order_check\.py[^&|]*--lint\b")
 
 # DO asking for a NEW test, as opposed to editing an existing one. Naming the fixture an
 # order reuses is not the same as naming where the new test goes: leaving that out cost
@@ -489,6 +506,76 @@ def signature_changes(sections: dict[str, list[str]]) -> list[tuple[str, str]]:
     return pairs
 
 
+# A type is a signature. Changing the shape of an exported one breaks every consumer just
+# as a changed parameter list does, but it went undeclared because CHANGES SIGNATURE read
+# as being about functions — and a stripped layout type reached reconcile through three
+# player suites the order neither named nor ran.
+TYPE_MUTATION_RE = re.compile(
+    r"\b(remove|removes|removing|drop|drops|dropping|strip|strips|stripping|rename|renames|"
+    r"renaming|replace|replaces|narrow|narrows|widen|widens|add|adds|adding|extend|extends|"
+    r"change|changes|changing)\b",
+    re.IGNORECASE,
+)
+EXPORTED_TYPE_RE = re.compile(
+    r"^\s*export\s+(?:type|interface)\s+([A-Za-z_]\w*)", re.MULTILINE
+)
+
+
+def vitest_filters(stop_when: str) -> str:
+    """Just the arguments to `--tests`, where paths are frontend-relative.
+
+    Everything else in a STOP WHEN — the CREATES existence assertion above all — is
+    repo-relative and correct as written, so the prefix rule must not see it.
+    """
+    chunks: list[str] = []
+    for match in re.finditer(r"--tests\s+(.*?)(?=\s--\w|\s&&|\s\|\||\"|$)", stop_when, re.S):
+        chunks.append(match.group(1))
+    return " ".join(chunks)
+
+
+def stop_when_runs(test_path: str, stop_when: str) -> bool:
+    """Does this STOP WHEN run that test file, in either of the two correct spellings?
+
+    A vitest filter must be frontend-relative and everything else in a STOP WHEN is
+    repo-relative, so the same suite has two legitimate forms. Matching only the
+    repo-relative one made the co-located-suite rule unsatisfiable for a plain frontend
+    order: the compiler either added a redundant path assertion or rewrote the order until
+    the lint went quiet. Accept both spellings and the rule means what it says.
+    """
+    haystack = _normalise(stop_when)
+    candidates = {_normalise(test_path)}
+    for candidate in list(candidates):
+        if candidate.startswith("frontend/"):
+            candidates.add(candidate[len("frontend/") :])
+    return any(candidate in haystack for candidate in candidates)
+
+
+def stop_when_test_files(stop_when: str) -> set[str]:
+    """Distinct test files a STOP WHEN actually runs, keyed by basename.
+
+    Basename rather than path because the same file legitimately appears twice in one
+    command — frontend-relative as a vitest filter, repo-relative in a CREATES existence
+    assertion — and counting those as two tests would fail an order for being correct.
+    """
+    found: set[str] = set()
+    for token in PATHFUL_RE.findall(stop_when) + BARE_FILE_RE.findall(stop_when):
+        normalised = token.replace("\\", "/")
+        if TEST_FILE_RE.search(normalised):
+            found.add(normalised.rsplit("/", 1)[-1])
+    return found
+
+
+def exported_types(path_str: str) -> set[str]:
+    """Type and interface names a TypeScript file exports."""
+    resolved = _resolve(path_str)
+    if resolved.suffix not in {".ts", ".tsx"} or not resolved.is_file():
+        return set()
+    try:
+        return set(EXPORTED_TYPE_RE.findall(resolved.read_text(encoding="utf-8")))
+    except OSError:
+        return set()
+
+
 def colocated_tests(path_str: str) -> list[str]:
     """Test files that exist for a source file, by this repo's two conventions."""
     rel = _strip_prefix(path_str)
@@ -576,6 +663,15 @@ def lint_order(order_path: Path) -> list[OrderError]:
             f"START IN names {len(entries)} entries (max {MAX_START_IN_ENTRIES})",
             "Split the order; an executor that must hold this many files will re-read them",
         )
+    distinct_start_in_files = {_normalise(path_str) for _, path_str, _ in entries}
+    if len(distinct_start_in_files) > MAX_START_IN_FILES:
+        fail(
+            f"START IN names {len(distinct_start_in_files)} distinct files "
+            f"(max {MAX_START_IN_FILES})",
+            "Split the order. Several ranges of one file are fine — a fourth separate file "
+            "is a fourth thing the executor holds at once, and `scripts/new_order.py` "
+            "refuses to emit one so the split happens before the order is written",
+        )
 
     start_in_paths: list[str] = []
     start_in_meta: list[tuple[str, str, Path, int]] = []
@@ -649,6 +745,12 @@ def lint_order(order_path: Path) -> list[OrderError]:
     do_bullets = bullets(do_lines)
     do_text = "\n".join(do_lines)
     do_paths = paths_in_do(sections)
+    if len(do_bullets) > MAX_DO_BULLETS:
+        fail(
+            f"DO asks for {len(do_bullets)} things (max {MAX_DO_BULLETS})",
+            "One work order is one logical change. A fourth DO bullet is the shape the log "
+            "keeps paying for: split it into two orders and set DEPENDS ON",
+        )
     for path_str in sorted(do_paths):
         normalised = _normalise(path_str)
         if not any(
@@ -755,6 +857,28 @@ def lint_order(order_path: Path) -> list[OrderError]:
                 f"Validator change omits its direct test module from STOP WHEN: {test_path}",
                 "Run the validator's exact test module in STOP WHEN",
             )
+    # Vitest filters passed to order_check.py are matched from `frontend/`, so a
+    # repo-relative path matches nothing. One order compiled this way ran zero tests and
+    # its executor run was cancelled arguing with the result.
+    # Only the filter arguments themselves: the same order's CREATES assertion is repo-
+    # relative on purpose, and flagging that would trade one wrong path for another.
+    for bad in re.findall(r"(?<![\w/])frontend/\S+\.(?:test|spec)\.[jt]sx?", vitest_filters(stop_when)):
+        fail(
+            f"STOP WHEN passes a repo-relative vitest filter: {bad}",
+            f"Drop the `frontend/` prefix — write {bad[len('frontend/'):]}. "
+            "order_check.py runs vitest from frontend/, so the prefixed form matches "
+            "no test file and the check reports on an empty run",
+        )
+
+    stop_when_tests = stop_when_test_files(stop_when)
+    if len(stop_when_tests) > MAX_STOP_WHEN_TESTS:
+        fail(
+            f"STOP WHEN runs {len(stop_when_tests)} test files "
+            f"(max {MAX_STOP_WHEN_TESTS}): {', '.join(sorted(stop_when_tests))}",
+            "A stop-check this wide is a stage check wearing an order's clothes. Run the "
+            "suites for the files this order edits and split the rest into their own order",
+        )
+
     for match in BARE_FULL_SUITE_RE.finditer(stop_when):
         if "typecheck" in match.group(0) or "build" in match.group(0):
             continue
@@ -813,6 +937,26 @@ def lint_order(order_path: Path) -> list[OrderError]:
     # grep; leaving it to the executor cost a BLOCKED run and a stale assertion that
     # escaped to reconcile.
     normalised_start_set = set(start_in_paths)
+
+    # The same rule, reached from the other side: an order that reshapes an exported type
+    # without declaring it escapes every caller check above. That is how a stripped layout
+    # type shipped past a STOP WHEN scoped to one suite and broke three others.
+    declared_symbols = {symbol for symbol, _ in signature_changes(sections)}
+    for path_str in sorted(do_paths):
+        for type_name in sorted(exported_types(path_str)):
+            if type_name in declared_symbols:
+                continue
+            for bullet in bullets(sections.get("DO", [])):
+                if type_name in bullet and TYPE_MUTATION_RE.search(bullet):
+                    fail(
+                        f"DO reshapes the exported type `{type_name}` in {path_str} but "
+                        "CHANGES SIGNATURE does not declare it",
+                        f"Declare `CHANGES SIGNATURE: {type_name} in {path_str}`. A type is "
+                        "a signature: declaring it is what pulls every consumer into START "
+                        "IN and the module's own suite into STOP WHEN",
+                    )
+                    break
+
     for symbol, path_str in signature_changes(sections):
         if _normalise(path_str) not in normalised_start_set:
             fail(
@@ -833,7 +977,7 @@ def lint_order(order_path: Path) -> list[OrderError]:
                 "order in the log that both blocked and leaked a stale assertion",
             )
         for test_path in colocated_tests(path_str):
-            if _normalise(test_path) not in _normalise(stop_when):
+            if not stop_when_runs(test_path, stop_when):
                 fail(
                     f"CHANGES SIGNATURE `{symbol}` but STOP WHEN omits the module's own "
                     f"suite: {test_path}",
@@ -849,7 +993,7 @@ def lint_order(order_path: Path) -> list[OrderError]:
         if not path_str.endswith((".ts", ".tsx", ".js", ".jsx", ".py")):
             continue
         tests = colocated_tests(path_str)
-        if tests and not any(_normalise(t) in _normalise(stop_when) for t in tests):
+        if tests and not any(stop_when_runs(t, stop_when) for t in tests):
             fail(
                 f"DO edits {path_str} but STOP WHEN never runs its suite: {tests[0]}",
                 "Name the co-located test file in STOP WHEN. An order that edits a module "
@@ -951,6 +1095,31 @@ def autofix_order(order_path: Path) -> list[tuple[str, str]]:
     if applied:
         order_path.write_text("".join(new_lines), encoding="utf-8")
     return sorted(applied.items())
+
+
+def autofix_stop_when_filters(order_path: Path) -> list[tuple[str, str]]:
+    """Strip the `frontend/` prefix from vitest filters in STOP WHEN.
+
+    `autofix_order` deliberately leaves command lines alone, and STOP WHEN is nothing but a
+    command line — so this fault, which cancelled one executor run, needed its own pass.
+    The rewrite is safe precisely because it is not a guess: order_check.py runs vitest with
+    `frontend/` as its working directory, so the prefixed form can only ever match nothing.
+    """
+    text = order_path.read_text(encoding="utf-8")
+    applied: list[tuple[str, str]] = []
+    new_lines: list[str] = []
+    for line in text.splitlines(keepends=True):
+        if line.startswith("STOP WHEN:"):
+            for bad in re.findall(
+                r"(?<![\w/])frontend/\S+\.(?:test|spec)\.[jt]sx?", vitest_filters(line)
+            ):
+                good = bad[len("frontend/") :]
+                line = line.replace(bad, good)
+                applied.append((bad, good))
+        new_lines.append(line)
+    if applied:
+        order_path.write_text("".join(new_lines), encoding="utf-8")
+    return applied
 
 
 def _sub_first_range(text: str, start: int, end: int) -> str:
@@ -1161,6 +1330,8 @@ def main() -> int:
             for bare, full in autofix_order(path):
                 print(f"fixed {_rel(path)}: {bare} -> {full}")
             for before, after in autofix_start_in(path):
+                print(f"fixed {_rel(path)}: {before} -> {after}")
+            for before, after in autofix_stop_when_filters(path):
                 print(f"fixed {_rel(path)}: {before} -> {after}")
 
     if args.orders:

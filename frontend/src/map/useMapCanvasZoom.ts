@@ -132,7 +132,15 @@ export function useMapCanvasZoom({ wheelZoomMode = 'modifier', pointerMode = 'pa
     setZoom({ scale: 1, pan: { x: 0, y: 0 } })
   }, [])
 
-  const fitToBounds = useCallback((bounds: Bounds, viewport: ViewportSize, origin: Bounds): { clampedToMin: boolean } => {
+  /** `options.floorScale` sets a scale the fit may not go below — for a surface where legibility
+   * matters more than seeing everything at once (the kid map), the content then overflows the
+   * viewport and stays pannable rather than shrinking past readable. */
+  const fitToBounds = useCallback((
+    bounds: Bounds,
+    viewport: ViewportSize,
+    origin: Bounds,
+    options?: { floorScale?: number },
+  ): { clampedToMin: boolean } => {
     const unitsX = bounds.maxX - bounds.minX + 1
     const unitsY = bounds.maxY - bounds.minY + 1
     const contentWidth = unitsX * BASE_PX_PER_UNIT
@@ -143,7 +151,10 @@ export function useMapCanvasZoom({ wheelZoomMode = 'modifier', pointerMode = 'pa
       return { clampedToMin: false }
     }
 
-    const rawScale = Math.min(viewport.width / contentWidth, viewport.height / contentHeight)
+    const fitScale = Math.min(viewport.width / contentWidth, viewport.height / contentHeight)
+    const rawScale = options?.floorScale !== undefined
+      ? Math.max(fitScale, options.floorScale)
+      : fitScale
     const scale = clampScale(rawScale)
     const offsetX = (bounds.minX - origin.minX) * BASE_PX_PER_UNIT
     const offsetY = (bounds.minY - origin.minY) * BASE_PX_PER_UNIT

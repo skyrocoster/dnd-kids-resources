@@ -53,6 +53,27 @@ export function wallAttachedMarkerGeometry(
   return { cx, cy, radius, iconSize }
 }
 
+/** A doorway is exactly one cell wide, so an opening disc is sized against the cell rather than in
+ * constant screen pixels: it has to keep filling its gap in the wall at every zoom. 0.4 leaves the
+ * wall's two jamb stubs visible either side of the disc. */
+export const OPENING_RADIUS_FRACTION = 0.4
+export const OPENING_ICON_SCALE = 0.44
+
+/** Disc straddling the wall segment an opening (door or window) sits on, filling the doorway. */
+export function openingMarkerGeometry(
+  cell: MapCell,
+  side: CardinalSide,
+  cellSize: number,
+): MarkerGeometry {
+  const segment = doorWallSegment({ cell, side }, cellSize)
+  return {
+    cx: (segment.x1 + segment.x2) / 2,
+    cy: (segment.y1 + segment.y2) / 2,
+    radius: cellSize * OPENING_RADIUS_FRACTION,
+    iconSize: cellSize * OPENING_ICON_SCALE,
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Hit area wrapper
 // ---------------------------------------------------------------------------
@@ -175,6 +196,7 @@ export function MarkerGlyph({
 
 import {
   DoorOpen as DoorOpenIcon,
+  DoorClosed as DoorClosedIcon,
   ArrowUpToLine as StairsUpIcon,
   ArrowDownToLine as StairsDownIcon,
   Sparkles as PortalIcon,
@@ -198,7 +220,7 @@ export type StairDirection = 'up' | 'down'
 export type KidMarkerKind =
   | { kind: 'stair'; stairDir: StairDirection }
   | { kind: 'portal' }
-  | { kind: 'door' }
+  | { kind: 'door'; open?: boolean }
   | { kind: 'window' }
   | { kind: 'chest' }
   | { kind: 'table' }
@@ -251,7 +273,7 @@ export function kidMarkerIcon(
     case 'portal':
       return PortalIcon
     case 'door':
-      return DoorOpenIcon
+      return kind.open ? DoorOpenIcon : DoorClosedIcon
     case 'window':
       return PropWindowIcon
     case 'chest':

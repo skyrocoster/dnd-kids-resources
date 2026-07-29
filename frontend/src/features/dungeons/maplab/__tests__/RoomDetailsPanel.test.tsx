@@ -174,6 +174,44 @@ describe('RoomDetailsPanel', () => {
     expect(screen.getByText('This room is empty.')).toBeInTheDocument()
   })
 
+  it('calls onPartyIsHere when the Party is here button is clicked', async () => {
+    const user = userEvent.setup()
+    const onPartyIsHere = vi.fn()
+
+    render(
+      <RoomDetailsPanel
+        room={room}
+        dungeonRoom={parsed.rooms?.[0] ?? null}
+        parsed={parsed}
+        dungeonId={4}
+        onRunEncounter={vi.fn()}
+        onOpenNpc={vi.fn()}
+        onPartyIsHere={onPartyIsHere}
+      />,
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Party is here' }))
+    expect(onPartyIsHere).toHaveBeenCalledOnce()
+  })
+
+  it('shows an inline error with role="status" when actionError is provided', () => {
+    render(
+      <RoomDetailsPanel
+        room={room}
+        dungeonRoom={parsed.rooms?.[0] ?? null}
+        parsed={parsed}
+        dungeonId={4}
+        onRunEncounter={vi.fn()}
+        onOpenNpc={vi.fn()}
+        onPartyIsHere={vi.fn()}
+        actionError="Failed to set party location"
+      />,
+    )
+
+    const status = screen.getByRole('status')
+    expect(status).toHaveTextContent('Failed to set party location')
+  })
+
   describe('Marker-derived NPCs', () => {
     it('shows an NPC marker standing in the room', async () => {
       const layout: MapLayout = {

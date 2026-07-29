@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import {
   onSquareMarkerGeometry,
+  openingMarkerGeometry,
+  wallAttachedMarkerGeometry,
   kidMarkerFamily,
   kidMarkerIcon,
   kidFamilyTokens,
@@ -8,6 +10,7 @@ import {
 } from '../markerShape'
 import {
   DoorOpen as DoorOpenIcon,
+  DoorClosed as DoorClosedIcon,
   ArrowUpToLine as StairsUpIcon,
   ArrowDownToLine as StairsDownIcon,
   Sparkles as PortalIcon,
@@ -121,8 +124,26 @@ describe('onSquareMarkerGeometry', () => {
   })
 
   it('returns correct icons for opening kinds', () => {
-    expect(kidMarkerIcon({ kind: 'door' })).toBe(DoorOpenIcon)
+    expect(kidMarkerIcon({ kind: 'door', open: true })).toBe(DoorOpenIcon)
     expect(kidMarkerIcon({ kind: 'window' })).toBe(PropWindowIcon)
+  })
+
+  it('draws a closed door with a closed-door glyph', () => {
+    expect(kidMarkerIcon({ kind: 'door' })).toBe(DoorClosedIcon)
+    expect(kidMarkerIcon({ kind: 'door', open: false })).toBe(DoorClosedIcon)
+    expect(kidMarkerIcon({ kind: 'door', open: false })).not.toBe(DoorOpenIcon)
+  })
+
+  it('sizes an opening disc to fill its doorway', () => {
+    const cellSize = 64
+    const geo = openingMarkerGeometry([2, 3], 'N', cellSize)
+    // Straddles the wall segment's midpoint …
+    expect(geo.cx).toBe(2.5 * cellSize)
+    expect(geo.cy).toBe(3 * cellSize)
+    // … and its diameter covers most of the one-cell gap, unlike the smaller wall-prop disc.
+    expect(geo.radius * 2).toBeGreaterThan(cellSize * 0.7)
+    expect(geo.radius * 2).toBeLessThan(cellSize)
+    expect(geo.radius).toBeGreaterThan(wallAttachedMarkerGeometry([2, 3], 'N', cellSize).radius)
   })
 
   it('returns correct icons for fixture kinds', () => {

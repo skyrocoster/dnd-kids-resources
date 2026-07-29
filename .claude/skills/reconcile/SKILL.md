@@ -63,6 +63,9 @@ you record what shipped, you don't extend it.
 
    **Then log the stage-level result to the telemetry log, every stage, pass or fail:**
 
+   > Collection is paused while `docs/plans/telemetry-paused.md` exists: this command and the
+   > cycle-close command below print one line, record nothing and exit 0. Run them as written.
+
    ```
    .venv\Scripts\python.exe scripts/order_telemetry.py --reconcile "<feature> stage <N>" \
      --checks "<the `- stage checks:` line stage_check.py printed, minus its prefix>" \

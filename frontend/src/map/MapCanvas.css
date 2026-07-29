@@ -1,0 +1,44 @@
+/* Layout owned by the shared map canvas itself (MapCanvas.tsx), imported by that component so any
+ * app mounting the canvas gets it — the DM Map Lab pages and the kid map alike. These rules used to
+ * live in the Map Lab feature's MapLabPage.css, which meant the kid map only rendered correctly
+ * because a DM page happened to have loaded that stylesheet earlier in the same session.
+ *
+ * `position: relative` and `min-height: 0` on the wrapper are load-bearing: relative anchors the
+ * floating corner controls, and without min-height:0 a flex column defaults to min-height:auto,
+ * which refuses to shrink below the SVG's intrinsic (zoomed) size — the wrapper then overflows its
+ * bounded ancestors and the page grows past the window instead of the canvas clipping. */
+.maplab-canvas-wrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* Panning (one pointer) and pinch-zoom (two pointers) are both driven by useMapCanvasZoom, which
+ * expresses pan as a CSS transform on the SVG — free-floating and never clamped by the browser,
+ * unlike native scroll. `overflow: hidden` (not `auto`): panning never shows a native scrollbar, the
+ * same way a map app never does. touch-action:none hands every touch to those JS gestures instead of
+ * letting the browser's own scroll/pinch compete with them. */
+.maplab-canvas-viewport {
+  position: relative;
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+  width: 100%;
+  flex: 1 1 auto;
+  /* Deliberately small: the canvas is the element that should absorb a short screen, shrinking so
+   * the toolbar and rails stay reachable rather than the page growing past the window. */
+  min-height: 8rem;
+  border: 1px solid var(--md-outline-variant);
+  border-radius: 12px;
+  background: var(--md-surface);
+}
+
+.maplab-svg {
+  display: block;
+  /* Pan offset applied inline (see MapCanvas) as translate — this is the one property that
+   * shouldn't ease with the theme's hover/focus transitions, since it tracks a live drag 1:1. */
+  transition: none;
+}

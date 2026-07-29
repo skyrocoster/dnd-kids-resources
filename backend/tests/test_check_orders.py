@@ -645,3 +645,233 @@ def test_new_test_needs_an_insertion_anchor(repo: Path):
         'lines 100-110 @"const f99 = 99"', 'lines 201-210 @"describe(\'fullscreen\', () => {"'
     )
     assert not any("without naming the block" in m for m in messages(repo, anchored))
+
+
+# --- vitest filters are frontend-relative ------------------------------------------------
+#
+# One order compiled a repo-relative filter, matched no test file, and its executor run was
+# cancelled arguing with a check that had judged an empty run.
+
+
+def test_repo_relative_vitest_filter_is_rejected(repo: Path):
+    order = GOOD_ORDER.replace(
+        "STOP WHEN: `cd frontend && npm run test:check -- src/__tests__/Tile.test.tsx` passes.",
+        "STOP WHEN: `python scripts/order_check.py "
+        "--tests frontend/src/__tests__/Tile.test.tsx --lint`",
+    )
+    assert any("repo-relative vitest filter" in m for m in messages(repo, order))
+
+
+def test_frontend_relative_vitest_filter_passes(repo: Path):
+    order = GOOD_ORDER.replace(
+        "STOP WHEN: `cd frontend && npm run test:check -- src/__tests__/Tile.test.tsx` passes.",
+        "STOP WHEN: `python scripts/order_check.py --tests src/__tests__/Tile.test.tsx --lint`",
+    )
+    assert not any("vitest filter" in m for m in messages(repo, order))
+
+
+def test_repo_relative_creates_assertion_is_not_flagged(repo: Path):
+    """The existence assertion beside the filter is repo-relative on purpose."""
+    order = GOOD_ORDER.replace(
+        "STOP WHEN: `cd frontend && npm run test:check -- src/__tests__/Tile.test.tsx` passes.",
+        "STOP WHEN: `python -c \"from pathlib import Path; "
+        "assert Path('frontend/src/__tests__/Tile.test.tsx').exists()\" && "
+        "python scripts/order_check.py --tests src/__tests__/Tile.test.tsx --lint`",
+    )
+    assert not any("vitest filter" in m for m in messages(repo, order))
+
+
+def test_fix_strips_the_frontend_prefix(repo: Path):
+    order = write(
+        repo,
+        GOOD_ORDER.replace(
+            "STOP WHEN: `cd frontend && npm run test:check -- src/__tests__/Tile.test.tsx` passes.",
+            "STOP WHEN: `python scripts/order_check.py "
+            "--tests frontend/src/__tests__/Tile.test.tsx --lint`",
+        ),
+    )
+    applied = co.autofix_stop_when_filters(order)
+    assert applied == [
+        ("frontend/src/__tests__/Tile.test.tsx", "src/__tests__/Tile.test.tsx")
+    ]
+    assert "--tests src/__tests__/Tile.test.tsx" in order.read_text(encoding="utf-8")
+
+
+# --- a type is a signature ---------------------------------------------------------------
+#
+# A stripped exported layout type passed a STOP WHEN scoped to one suite and broke three
+# others, because CHANGES SIGNATURE read as being about functions only.
+
+
+def _with_exported_type(repo: Path) -> None:
+    (repo / "src" / "layout.ts").write_text(
+        "export type KidMapLayout = { rooms: number[]; doors: number[] }\n", encoding="utf-8"
+    )
+    (repo / "src" / "__tests__" / "layout.test.ts").write_text(
+        "test('x', () => {})\n", encoding="utf-8"
+    )
+
+
+def test_undeclared_exported_type_change_is_rejected(repo: Path):
+    _with_exported_type(repo)
+    order = GOOD_ORDER.replace(
+        "- Render `label` after the title in src/Tile.tsx.",
+        "- Remove `doors` from the `KidMapLayout` type in src/layout.ts.",
+    ).replace(
+        "- src/Tile.tsx — the header block at lines 3-6, nothing else in this file",
+        "- src/layout.ts — whole file",
+    )
+    assert any("CHANGES SIGNATURE does not declare it" in m for m in messages(repo, order))
+
+
+def test_declared_exported_type_change_clears_the_rule(repo: Path):
+    _with_exported_type(repo)
+    order = (
+        GOOD_ORDER.replace(
+            "- Render `label` after the title in src/Tile.tsx.",
+            "- Remove `doors` from the `KidMapLayout` type in src/layout.ts.",
+        )
+        .replace(
+            "- src/Tile.tsx — the header block at lines 3-6, nothing else in this file",
+            "- src/layout.ts — whole file",
+        )
+        .replace("CHANGES SIGNATURE: none", "CHANGES SIGNATURE: KidMapLayout in src/layout.ts")
+    )
+    assert not any("CHANGES SIGNATURE does not declare it" in m for m in messages(repo, order))
+
+
+def test_merely_reading_a_type_is_not_a_change(repo: Path):
+    _with_exported_type(repo)
+    order = GOOD_ORDER.replace(
+        "- Render `label` after the title in src/Tile.tsx.",
+        "- Render the rooms of `KidMapLayout` in src/layout.ts as a list.",
+    ).replace(
+        "- src/Tile.tsx — the header block at lines 3-6, nothing else in this file",
+        "- src/layout.ts — whole file",
+    )
+    assert not any("CHANGES SIGNATURE does not declare it" in m for m in messages(repo, order))
+
+
+# --- shape caps ---------------------------------------------------------------------------
+# The three ways an order is simply too big to be one order. Each was previously discovered
+# by a compiler writing the whole file first; `scripts/new_order.py` now refuses to emit one,
+# and these keep the ceiling it enforces identical to the one the linter enforces.
+
+
+def _extra_files(repo: Path, count: int) -> list[str]:
+    made = []
+    for index in range(count):
+        name = f"src/extra{index}.ts"
+        (repo / name).write_text("export const x = 1\n", encoding="utf-8")
+        made.append(f"- {name} — whole file")
+    return made
+
+
+def test_start_in_caps_distinct_files(repo: Path):
+    order = GOOD_ORDER.replace(
+        "- src/__tests__/Tile.test.tsx\n",
+        "- src/__tests__/Tile.test.tsx\n" + "\n".join(_extra_files(repo, 3)) + "\n",
+    )
+    assert any("distinct files" in m for m in messages(repo, order))
+
+
+def test_repeated_ranges_of_one_file_are_not_extra_files(repo: Path):
+    """A second range of an already-open file is nearly free; only new files cost."""
+    order = GOOD_ORDER.replace(
+        "- src/__tests__/Tile.test.tsx\n",
+        "- src/__tests__/Tile.test.tsx\n"
+        "- src/Tile.tsx — the export at lines 1-2, nothing else\n"
+        "- src/Tile.tsx — the return at lines 2-3, nothing else\n"
+        "- src/Tile.tsx — the close at lines 3-3, nothing else\n",
+    )
+    assert not any("distinct files" in m for m in messages(repo, order))
+
+
+def test_do_caps_bullets(repo: Path):
+    order = GOOD_ORDER.replace(
+        "- Add one test to src/__tests__/Tile.test.tsx.",
+        "- Add one test to src/__tests__/Tile.test.tsx.\n"
+        "- Rename the header wrapper in src/Tile.tsx.\n"
+        "- Sort the props in src/Tile.tsx.",
+    )
+    assert any("DO asks for 4 things" in m for m in messages(repo, order))
+
+
+def test_stop_when_caps_test_files(repo: Path):
+    for name in ("Second", "Third"):
+        (repo / "src" / "__tests__" / f"{name}.test.tsx").write_text(
+            "test('x', () => {})\n", encoding="utf-8"
+        )
+    order = GOOD_ORDER.replace(
+        "npm run test:check -- src/__tests__/Tile.test.tsx",
+        "npm run test:check -- src/__tests__/Tile.test.tsx "
+        "src/__tests__/Second.test.tsx src/__tests__/Third.test.tsx",
+    )
+    assert any("runs 3 test files" in m for m in messages(repo, order))
+
+
+def test_one_suite_named_twice_counts_once(repo: Path):
+    """The vitest filter and a CREATES assertion spell the same file two ways on purpose."""
+    order = GOOD_ORDER.replace(
+        "npm run test:check -- src/__tests__/Tile.test.tsx",
+        "test -f frontend/src/__tests__/Tile.test.tsx && npm run test:check -- "
+        "src/__tests__/Tile.test.tsx",
+    )
+    assert not any("test files" in m for m in messages(repo, order))
+
+
+def test_frontend_relative_filter_satisfies_the_colocated_suite_rule(repo: Path):
+    """order_check.py wants a frontend-relative filter; the rule used to demand the other
+    spelling, so a correct order failed lint until a redundant path was pasted in."""
+    frontend = repo / "frontend" / "src"
+    (frontend / "__tests__").mkdir(parents=True)
+    (frontend / "Panel.tsx").write_text("export function Panel() {}\n", encoding="utf-8")
+    (frontend / "__tests__" / "Panel.test.tsx").write_text(
+        "test('x', () => {})\n", encoding="utf-8"
+    )
+    order = (
+        GOOD_ORDER.replace(
+            "- src/Tile.tsx — the header block at lines 3-6, nothing else in this file",
+            "- frontend/src/Panel.tsx — whole file",
+        )
+        .replace(
+            "- Render `label` after the title in src/Tile.tsx.",
+            "- Render `label` in frontend/src/Panel.tsx.",
+        )
+        .replace(
+            "- Add one test to src/__tests__/Tile.test.tsx.",
+            "- Add one test to frontend/src/__tests__/Panel.test.tsx.",
+        )
+        .replace(
+            "- src/__tests__/Tile.test.tsx\n",
+            "- frontend/src/__tests__/Panel.test.tsx\n",
+        )
+        .replace(
+            "`cd frontend && npm run test:check -- src/__tests__/Tile.test.tsx` passes.",
+            "`python scripts/order_check.py --tests src/__tests__/Panel.test.tsx` passes.",
+        )
+    )
+    assert not any("never runs its suite" in m for m in messages(repo, order))
+
+
+def test_order_check_wrapper_flags_satisfy_the_lint_and_typecheck_rules(repo: Path):
+    """`order_check.py --lint --typecheck` runs both; demanding the raw npm scripts as well
+    made every compiler paste a redundant second command beside a check already running."""
+    (repo / "src" / "useThing.ts").write_text("export function useThing() {}\n", encoding="utf-8")
+    order = (
+        GOOD_ORDER.replace(
+            "- src/Tile.tsx — the header block at lines 3-6, nothing else in this file",
+            "- src/useThing.ts — whole file",
+        )
+        .replace(
+            "- Render `label` after the title in src/Tile.tsx.",
+            "- Memoise the callback in src/useThing.ts.",
+        )
+        .replace(
+            "`cd frontend && npm run test:check -- src/__tests__/Tile.test.tsx` passes.",
+            "`python scripts/order_check.py --tests src/__tests__/Tile.test.tsx --typecheck "
+            "--lint` passes.",
+        )
+    )
+    found = messages(repo, order)
+    assert not any("does not run npm run lint" in m for m in found)

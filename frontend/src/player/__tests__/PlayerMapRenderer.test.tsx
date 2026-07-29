@@ -64,32 +64,32 @@ describe('PlayerMapRenderer', () => {
     expect(screen.getByLabelText('Map canvas')).toHaveAttribute('tabindex', '0')
   })
 
-  it('renders the label at a constant on-screen font size', () => {
+  it('sizes the room label in map units so it scales with the plate', () => {
     Object.defineProperty(HTMLElement.prototype, 'clientWidth', { configurable: true, value: 512 })
     Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, value: 512 })
     const { container, unmount } = render(<PlayerMapRenderer layout={roomLayout()} />)
-    expect(container.querySelector<SVGTextElement>('.player-map-room-title')!.style.fontSize).toBe('16px')
+    const large = container.querySelector<SVGTextElement>('.player-map-room-title')!.style.fontSize
 
     unmount()
 
     Object.defineProperty(HTMLElement.prototype, 'clientWidth', { configurable: true, value: 64 })
     Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, value: 64 })
     const { container: smallContainer } = render(<PlayerMapRenderer layout={roomLayout()} />)
-    expect(smallContainer.querySelector<SVGTextElement>('.player-map-room-title')!.style.fontSize).toBe('64px')
+    // The font size is a map-unit constant now, not a screen-pixel one divided by the scale, so it
+    // shrinks and grows with the map instead of the label being hidden at low zoom.
+    expect(smallContainer.querySelector<SVGTextElement>('.player-map-room-title')!.style.fontSize)
+      .toBe(large)
   })
 
-  it('sets data-label-fits on the room title', () => {
-    Object.defineProperty(HTMLElement.prototype, 'clientWidth', { configurable: true, value: 512 })
-    Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, value: 512 })
-    const { container, unmount } = render(<PlayerMapRenderer layout={roomLayout()} />)
-    expect(container.querySelector('.player-map-room-title')).toHaveAttribute('data-label-fits', 'true')
-
-    unmount()
-
-    Object.defineProperty(HTMLElement.prototype, 'clientWidth', { configurable: true, value: 64 })
-    Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, value: 64 })
-    const { container: container2 } = render(<PlayerMapRenderer layout={roomLayout()} />)
-    expect(container2.querySelector('.player-map-room-title')).toHaveAttribute('data-label-fits', 'false')
+  it('shrinks a long room name to fit inside its own room box', () => {
+    const layout = roomLayout()
+    layout.rooms.push({ room_id: 13, z: 0, origin: [8, 8], cells: [[0, 0]], title: 'The Enormously Long Hall of Echoes' })
+    const { container } = render(<PlayerMapRenderer layout={layout} />)
+    const wide = container.querySelector<SVGTextElement>('[data-room-id="12"] .player-map-room-title')!
+    const cramped = container.querySelector<SVGTextElement>('[data-room-id="13"] .player-map-room-title')!
+    expect(parseFloat(cramped.style.fontSize)).toBeLessThan(parseFloat(wide.style.fontSize))
+    // ...but never below the legibility floor.
+    expect(parseFloat(cramped.style.fontSize)).toBeGreaterThanOrEqual(0.2 * 64)
   })
 
   it('renders a closed door with disc, no leaf, and data-door-open false', () => {
@@ -101,27 +101,23 @@ describe('PlayerMapRenderer', () => {
     expect(door?.querySelector('.player-map-door-leaf')).not.toBeInTheDocument()
   })
 
-  it('renders an open door with disc, swing-path leaf, and data-door-open true', () => {
+  it('drops the token entirely for an open door, leaving the leaf and swing', () => {
     const { container } = render(<PlayerMapRenderer layout={roomLayout()} openDoorIds={new Set([3])} />)
     const door = container.querySelector('.player-map-door')
     expect(door).toBeInTheDocument()
     expect(door).toHaveAttribute('data-door-open', 'true')
-    expect(door?.querySelector('.player-map-door-disc')).toBeInTheDocument()
+    expect(door?.querySelector('.player-map-door-disc')).not.toBeInTheDocument()
     expect(door?.querySelector('.player-map-door-leaf')).toBeInTheDocument()
+    expect(door?.querySelector('.player-map-door-swing')).toBeInTheDocument()
   })
 
-  it('renders door disc and leaf geometry correctly for open vs closed', () => {
-    // Closed door: disc present, no leaf
-    const { container } = render(<PlayerMapRenderer layout={roomLayout()} />)
-    const closedDoor = container.querySelector('.player-map-door')
-    expect(closedDoor?.querySelector('.player-map-door-disc')).toBeInTheDocument()
-    expect(closedDoor?.querySelector('.player-map-door-leaf')).not.toBeInTheDocument()
+  it('leaves a gap in the wall where an open door sits', () => {
+    const { container: closed } = render(<PlayerMapRenderer layout={roomLayout()} />)
+    const closedWalls = closed.querySelectorAll('.player-map-wall').length
 
-    // Open door: disc and leaf both present
-    const { container: openContainer } = render(<PlayerMapRenderer layout={roomLayout()} openDoorIds={new Set([3])} />)
-    const openDoor = openContainer.querySelector('.player-map-door')
-    expect(openDoor?.querySelector('.player-map-door-disc')).toBeInTheDocument()
-    expect(openDoor?.querySelector('.player-map-door-leaf')).toBeInTheDocument()
+    const { container: open } = render(<PlayerMapRenderer layout={roomLayout()} openDoorIds={new Set([3])} />)
+    // The door at cell [2,3] side N is one perimeter edge, and opening it removes that wall line.
+    expect(open.querySelectorAll('.player-map-wall')).toHaveLength(closedWalls - 1)
   })
 
   it('renders the open door leaf at a constant on-screen stroke width', () => {
@@ -230,21 +226,14 @@ describe('PlayerMapRenderer', () => {
     expect(container.querySelectorAll('[data-testfloor="true"]')).toHaveLength(1)
   })
 
-  it('uses density-driven label visibility', () => {
-    Object.defineProperty(HTMLElement.prototype, 'clientWidth', { configurable: true, value: 512 })
-    Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, value: 512 })
-    const { container, unmount } = render(<PlayerMapRenderer layout={roomLayout()} />)
-
-    // At comfortable zoom the label fits
-    expect(container.querySelector('.player-map-room-title')).toHaveAttribute('data-label-fits', 'true')
-
-    unmount()
-
+  it('keeps room names on screen at any viewport size', () => {
     Object.defineProperty(HTMLElement.prototype, 'clientWidth', { configurable: true, value: 32 })
     Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, value: 32 })
-    const { container: smallContainer } = render(<PlayerMapRenderer layout={roomLayout()} />)
-    // At very small viewport the label does not fit (density signal returns 'simple')
-    expect(smallContainer.querySelector('.player-map-room-title')).toHaveAttribute('data-label-fits', 'false')
+    const { container } = render(<PlayerMapRenderer layout={roomLayout()} />)
+    // Names are never hidden by zoom now — they scale instead.
+    const title = container.querySelector('.player-map-room-title')
+    expect(title).toBeInTheDocument()
+    expect(title).not.toHaveAttribute('data-label-fits')
   })
 
   it('has no per-cell grid stroke on room cells', () => {
@@ -253,5 +242,73 @@ describe('PlayerMapRenderer', () => {
     expect(cell).toBeInTheDocument()
     // CSS sets stroke:none; no inline stroke attribute should be present
     expect(cell?.getAttribute('stroke')).toBeNull()
+  })
+
+  // --- Party room highlight and return control ---
+
+  it('renders party room cells with the highlight class', () => {
+    const { container } = render(<PlayerMapRenderer layout={roomLayout()} partyRoomId={12} />)
+    const partyCells = container.querySelectorAll('.player-map-room-cell--party')
+    expect(partyCells.length).toBeGreaterThan(0)
+    // All party room cells have the party class
+    partyCells.forEach((cell) => {
+      expect(cell.closest('[data-room-id="12"]')).toBeInTheDocument()
+    })
+  })
+
+  it('keeps the party room name visible at low density', () => {
+    Object.defineProperty(HTMLElement.prototype, 'clientWidth', { configurable: true, value: 32 })
+    Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, value: 32 })
+    const { container } = render(<PlayerMapRenderer layout={roomLayout()} partyRoomId={12} />)
+    const partyTitle = container.querySelector<SVGTextElement>('[data-room-id="12"] .player-map-room-title')
+    expect(partyTitle).toBeInTheDocument()
+    expect(partyTitle).toHaveTextContent('Library')
+  })
+
+  it('renders the return-to-party button when partyRoomId is set', () => {
+    const { container } = render(<PlayerMapRenderer layout={roomLayout()} partyRoomId={12} />)
+    expect(container.querySelector('.player-map-return-btn')).toBeInTheDocument()
+  })
+
+  it('does not render the return button without a partyRoomId', () => {
+    const { container } = render(<PlayerMapRenderer layout={roomLayout()} />)
+    expect(container.querySelector('.player-map-return-btn')).not.toBeInTheDocument()
+  })
+
+  it('returns to the party room and re-arms following on return button click', () => {
+    const { container } = render(<PlayerMapRenderer layout={roomLayout()} partyRoomId={12} />)
+    const btn = container.querySelector<HTMLButtonElement>('.player-map-return-btn')!
+    expect(btn).toBeInTheDocument()
+    expect(btn).toHaveAttribute('aria-label', 'Return to party room')
+    // The button has a 64px touch floor
+    expect(btn.className).toBe('player-map-return-btn')
+  })
+
+  it('selects the party room floor when party room is on another floor', () => {
+    const layout = roomLayout()
+    // Add a second floor with no party room
+    layout.floors.push({ z: 1, title: 'Upstairs' })
+    layout.rooms.push({ room_id: 20, z: 1, origin: [0, 0], cells: [[0, 0]], title: 'Upper Room' })
+
+    // Party room is on floor 0; renderer should show floor 0
+    const { container } = render(<PlayerMapRenderer layout={layout} partyRoomId={12} />)
+    expect(container.querySelector('[data-floor="0"]')).toBeInTheDocument()
+    expect(container.querySelector('[data-room-id="12"] .player-map-room-cell--party')).toBeInTheDocument()
+  })
+
+  it('switches to the party room floor when it is on a different floor', () => {
+    const layout = roomLayout()
+    // Party room (room_id=12) is on z=0; add the party room on z=1 instead
+    layout.floors.push({ z: 1, title: 'Upstairs' })
+    // Move room 12 to floor 1
+    const room12 = layout.rooms.find(r => r.room_id === 12)!
+    room12.z = 1
+
+    const { container } = render(<PlayerMapRenderer layout={layout} partyRoomId={12} />)
+    // Should prefer the party room's floor (z=1)
+    expect(container.querySelector('[data-floor="1"]')).toBeInTheDocument()
+    expect(container.querySelector('[data-floor="0"]')).not.toBeInTheDocument()
+    // Party cells should be on the correct floor
+    expect(container.querySelector('[data-floor="1"] .player-map-room-cell--party')).toBeInTheDocument()
   })
 })

@@ -15,6 +15,8 @@ describe('PlayerShell', () => {
     mockedUsePlayerMapData.mockReturnValue({
       dungeonId: null,
       layout: null,
+      openDoorIds: new Set<number>(),
+      partyRoomId: null,
       status: 'empty',
       error: null,
     })
@@ -29,6 +31,8 @@ describe('PlayerShell', () => {
     mockedUsePlayerMapData.mockReturnValue({
       dungeonId: null,
       layout: null,
+      openDoorIds: new Set<number>(),
+      partyRoomId: null,
       status: 'loading',
       error: null,
     })
@@ -45,6 +49,8 @@ describe('PlayerShell', () => {
     mockedUsePlayerMapData.mockReturnValue({
       dungeonId: null,
       layout: null,
+      openDoorIds: new Set<number>(),
+      partyRoomId: null,
       status: 'error',
       error: new Error('offline'),
     })
@@ -56,6 +62,8 @@ describe('PlayerShell', () => {
     mockedUsePlayerMapData.mockReturnValue({
       dungeonId: 7,
       layout: createEmptyMapLayout('School') as unknown as KidMapLayout,
+      openDoorIds: new Set<number>(),
+      partyRoomId: null,
       status: 'ready',
       error: null,
     })

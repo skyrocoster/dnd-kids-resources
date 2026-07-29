@@ -22,6 +22,9 @@ interface RoomDetailsPanelProps {
   layout?: MapLayout
   onRunEncounter: (encounterId: number) => void
   onOpenNpc: (npcId: number) => void
+  onPartyIsHere?: () => void
+  actionError?: string | null
+  clearActionError?: () => void
 }
 
 function roomTitle(room: MapRoom | null, dungeonRoom: DungeonRoom | null): string {
@@ -104,6 +107,9 @@ export function RoomDetailsPanel({
   layout,
   onRunEncounter,
   onOpenNpc,
+  onPartyIsHere,
+  actionError,
+  clearActionError: _clearActionError,
 }: RoomDetailsPanelProps) {
   const [npcs, setNpcs] = useState<NPC[]>([])
 
@@ -141,6 +147,19 @@ export function RoomDetailsPanel({
     <section className="maplab-room-details-panel" aria-label="Room details">
       <header className="maplab-room-details-header">
         <h3 className="maplab-room-details-title">{roomTitle(room, dungeonRoom)}</h3>
+        {onPartyIsHere && (
+          <button
+            type="button"
+            className="maplab-pill-button"
+            style={{ minHeight: 48, minWidth: 48 }}
+            onClick={onPartyIsHere}
+          >
+            Party is here
+          </button>
+        )}
+        {actionError && (
+          <p role="status" className="maplab-room-details-error">{actionError}</p>
+        )}
         {threatHints && (threatHints.hasTrap || threatHints.hasMonster || threatHints.hasEncounter) && (
           <div className="maplab-room-details-badges" aria-label="Threat hints">
             {threatHints.hasTrap && <span className="maplab-room-details-badge">Trap</span>}

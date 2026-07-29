@@ -241,6 +241,7 @@ export function MapLabPage() {
     setStairSessions,
     portalSessions,
     setPortalSessions,
+    setPartyRoomId,
     resetSessions,
     actionError,
     clearActionError,
@@ -249,6 +250,7 @@ export function MapLabPage() {
   const [atTableDungeonId, setAtTableDungeonId] = useState<number | null>(null)
   const [atTablePending, setAtTablePending] = useState(false)
   const [atTableError, setAtTableError] = useState<string | null>(null)
+  const [partyRoomActionActive, setPartyRoomActionActive] = useState(false)
   const [activeEncounterId, setActiveEncounterId] = useState<number | null>(null)
   const [activeNpcId, setActiveNpcId] = useState<number | null>(null)
   const zoomApi = useMapCanvasZoom()
@@ -310,11 +312,12 @@ export function MapLabPage() {
   }, [roomsDrawerOpen])
 
   const isAtTable = route.dungeonId !== null && atTableDungeonId === route.dungeonId
-  const viewerError = actionError ?? atTableError
+  const viewerError = (partyRoomActionActive ? null : actionError) ?? atTableError
 
   function clearViewerStatus() {
     clearActionError()
     setAtTableError(null)
+    setPartyRoomActionActive(false)
   }
 
   async function putThisDungeonAtTheTable() {
@@ -950,6 +953,13 @@ export function MapLabPage() {
             layout={layout}
             onRunEncounter={setActiveEncounterId}
             onOpenNpc={setActiveNpcId}
+            onPartyIsHere={() => {
+              clearViewerStatus()
+              setPartyRoomActionActive(true)
+              setPartyRoomId(activeRoomId)
+            }}
+            actionError={partyRoomActionActive ? actionError : null}
+            clearActionError={clearActionError}
           />
         </div>
       </div>

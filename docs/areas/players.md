@@ -101,7 +101,7 @@ the tablet.
 
 ## Work queue
 
-- [Kid Map Viewer](../plans/active/kid-map-viewer/kid-map-viewer.md) is next up: the kid map is
+- [Kid Map Viewer](../plans/active/kid-map-viewer/kid-map-viewer.md) has shipped Stages 1-7; Stage 8 is next: the kid map is
   rebuilt on the same canvas the DM already uses — absolute zoom, one floor at a time, the DM's own
   drawing rules — and gains a four-family colour language (green goes somewhere, yellow is a way
   through, blue is a thing, pink is a person) solved by script rather than chosen by eye. It

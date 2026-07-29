@@ -60,12 +60,45 @@ part of the relevant stage.
 ## How to write it
 
 1. **Understand the outcome first.** Read the owning area guide and the minimum references it names
-   (via `docs/README.md`). Do the hard thinking here — this is what the planner's tokens are for.
+   (via `docs/README.md`) yourself. Do the hard thinking here — this is what the planner's tokens are
+   for. Anything beyond those that is pure survey work can go to the explorer in one batch (see
+   below) while you think.
 2. **Break the outcome into stages.** Each stage should be a coherent step that becomes one or a few
    work orders. Order them so each builds on the last.
 3. **State each stage as intent, in plain English.** "Show difficulty on the encounter tile", not a
    code recipe. Put exact files and verified facts in the compiler handoff, not in the stage list.
 4. **Leave the Shipped table empty** — `reconcile` fills it in as stages complete.
+
+## Delegate the survey, keep the design
+
+Understanding an outcome usually means two separable things: **surveying what the repo currently
+does**, and **deciding what should exist instead**. Only the second needs the planner. Sweeping a
+feature directory to see which surfaces exist, finding out whether an endpoint already returns a
+field, listing what a seed file actually contains — that is retrieval, and paying the planner's rate
+for it fills the context you need for the design with file dumps.
+
+**Prefer the explorer for the survey.** In opencode that is the `explore-deepseek` subagent; in Claude
+Code it is the `Explore` agent. Both are read-only and cite `path:line`. Send it questions that a
+quote can answer, batched into **one dispatch**:
+
+- "List every component under `frontend/src/player/` with its export name and line count."
+- "Does the dungeon API return room notes anywhere? Quote the response model."
+- "Which area guides name Map Lab in their Surfaces table? Quote the rows."
+
+Read it yourself when the answer feeds the design directly: the area guide and the minimum references
+`docs/README.md` names, any canonical reference whose contract you are about to bend, and any file
+whose *shape* is the thing you are reasoning about. Stage boundaries come from understanding how the
+code hangs together, and a summary of a file is not that.
+
+Never delegate the design questions themselves. Do not ask the explorer what the stages should be,
+whether an approach is feasible, what is stale, or which of two options is better — its report is
+evidence for you to judge, and a recommendation in it is unverified. That judgement is what this skill
+is for.
+
+**Delegated facts are "verified" only when quoted.** A cited quote establishes a discrete fact — a
+path exists, a field is absent, a count, an exact string — and may go in the handoff's verified
+sections as such. An explorer's *characterisation* of a file may not; if a fact matters enough to
+shape a stage and you have only a paraphrase, open the file or put it under **Open questions**.
 
 ## Pass specifics to `to-orders`
 

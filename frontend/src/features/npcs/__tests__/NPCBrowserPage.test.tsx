@@ -111,7 +111,9 @@ describe('NPCBrowserPage', () => {
     render(<NPCBrowserPage />)
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Emery Hart' })).toBeInTheDocument())
 
-    await user.click(screen.getByRole('button', { name: 'Back to NPCs' }))
+    // The back affordance is mobile-only (`.browser-layout-back` is display:none above 520px), and
+    // jsdom never matches the media query — so it has no accessible name here. Query by text.
+    await user.click(screen.getByText('Back to NPCs'))
     expect(screen.queryByRole('heading', { name: 'Emery Hart' })).not.toBeInTheDocument()
     expect(screen.getByText(/Choose an NPC/)).toBeInTheDocument()
   })

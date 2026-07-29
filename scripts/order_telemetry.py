@@ -94,6 +94,41 @@ ARCHIVE_DIR = "docs/plans/telemetry-archive"
 SNAPSHOT_DIR = ".telemetry/snapshots"
 PRICES_FILE = "scripts/model_prices.json"
 
+# Collection can be paused without dismantling any of it. While the marker file exists,
+# every recording command is a no-op that exits 0, so a skill can keep its telemetry step
+# in place and unchanged; reading commands (--render, --close-cycle, --import-log) still
+# work, because a paused log must stay readable. Tracked, not gitignored: a pause that
+# vanished on the next clone would silently restart collection.
+PAUSE_MARKER = "docs/plans/telemetry-paused.md"
+PAUSE_TEMPLATE = """# Telemetry collection is paused
+
+Paused {stamp}.
+
+{reason}
+
+While this file exists, `scripts/order_telemetry.py` records nothing: `--snapshot`,
+`--order`, `--reconcile` and `--planner-run` print one line and exit 0, so the telemetry
+steps in `dispatch-orders`, `implement-order`, `reconcile` and `to-orders` stay in place
+and stay harmless. Reading still works — `--render`, `--close-cycle` and `--import-log`
+are unaffected, and `docs/plans/telemetry-log.md` plus `docs/plans/telemetry.jsonl`
+remain the record of everything measured up to the pause.
+
+To resume:
+
+    .venv\\Scripts\\python.exe scripts/order_telemetry.py --resume
+
+That deletes this file and nothing else. Nothing has to be reinstalled, and the next
+entry lands in the same sidecar and renders into the same log.
+"""
+
+
+def pause_marker(root: Path) -> Path:
+    return root / PAUSE_MARKER
+
+
+def telemetry_paused(root: Path) -> bool:
+    return pause_marker(root).is_file()
+
 EDIT_TOOLS = {"edit", "write", "multiedit", "notebookedit", "patch", "apply_patch"}
 READ_TOOLS = {"read", "view"}
 
@@ -1179,7 +1214,17 @@ def render_log(records: list[dict]) -> str:
     live = [r for r in records if not r.get("archived")]
     cycles = [r for r in live if r.get("kind") == "cycle"]
     entries = [r for r in live if r.get("kind") != "cycle"]
-    parts = [LOG_HEADER, "\n", render_stats(compute_stats(entries)), "\n"]
+    parts = [LOG_HEADER, "\n"]
+    # A reader who opens this file has to be able to tell "nothing has happened since the
+    # last cycle" from "nothing is being measured any more".
+    if telemetry_paused(repo_root()):
+        parts.append(
+            "> **Collection is paused.** See [telemetry-paused.md](telemetry-paused.md)."
+            " Everything below is the record up to the pause; recording resumes with"
+            " `scripts/order_telemetry.py --resume`.\n\n"
+        )
+    parts.append(render_stats(compute_stats(entries)))
+    parts.append("\n")
     for cycle in cycles:
         parts.append(render_cycle_entry(cycle).rstrip() + "\n\n")
     for entry in entries:
@@ -1333,6 +1378,19 @@ def build_arg_parser() -> argparse.ArgumentParser:
             "or 'judgement: text'. A lesson with nowhere to live is one that will be "
             "rediscovered next cycle, so the prefix is required."
         ),
+    )
+    ap.add_argument(
+        "--pause",
+        metavar="REASON",
+        help=(
+            "Stop collecting. Writes docs/plans/telemetry-paused.md; every recording "
+            "command becomes a no-op until --resume removes it. Nothing is deleted."
+        ),
+    )
+    ap.add_argument(
+        "--resume",
+        action="store_true",
+        help="Start collecting again by removing the pause marker.",
     )
     ap.add_argument("--render", action="store_true", help="rebuild the markdown and exit")
     ap.add_argument(
@@ -1581,6 +1639,30 @@ def cmd_reconcile(root: Path, args, records: list[dict]) -> int:
     return 0
 
 
+def cmd_pause(root: Path, reason: str) -> int:
+    marker = pause_marker(root)
+    marker.parent.mkdir(parents=True, exist_ok=True)
+    marker.write_text(
+        PAUSE_TEMPLATE.format(
+            stamp=now_stamp(),
+            reason=reason.strip() or "No reason given.",
+        ),
+        encoding="utf-8",
+    )
+    print(f"Telemetry paused. Recording commands are no-ops until --resume. ({PAUSE_MARKER})")
+    return 0
+
+
+def cmd_resume(root: Path) -> int:
+    marker = pause_marker(root)
+    if not marker.is_file():
+        print("Telemetry was not paused; nothing to do.")
+        return 0
+    marker.unlink()
+    print("Telemetry resumed. The next order entry lands in the existing sidecar.")
+    return 0
+
+
 def main() -> int:
     for stream in (sys.stdout, sys.stderr):
         if hasattr(stream, "reconfigure"):
@@ -1588,6 +1670,20 @@ def main() -> int:
 
     args = build_arg_parser().parse_args()
     root = repo_root()
+
+    if args.pause is not None:
+        return cmd_pause(root, args.pause)
+    if args.resume:
+        return cmd_resume(root)
+
+    # Recording is off; reading is not. --render, --close-cycle and --import-log fall
+    # through, so a paused cycle can still be closed and the log still rebuilt.
+    if telemetry_paused(root) and not (args.render or args.close_cycle or args.import_log):
+        print(
+            f"telemetry paused ({PAUSE_MARKER}) — recorded nothing. "
+            "Resume with: python scripts/order_telemetry.py --resume"
+        )
+        return 0
 
     if args.snapshot:
         return cmd_snapshot(root, args)

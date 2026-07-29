@@ -125,3 +125,30 @@ def test_order_check_names_a_failing_pytest_node():
 def test_order_check_reports_a_typescript_error_location():
     names = order_check.named_failures("src/x.tsx:31:5 - error TS2345: nope\n")
     assert names and "src/x.tsx" in names[0]
+
+
+# --- vitest filters are matched from frontend/ -------------------------------------------
+#
+# An order that wrote `frontend/src/...` matched no test file at all. The runner already
+# refuses to call an empty run a pass; the wrapper now refuses to start one.
+
+
+def test_frontend_prefix_is_stripped_from_a_filter():
+    runnable, complaints = order_check.frontend_test_paths(
+        ["frontend/src/player/__tests__/PlayerShell.test.tsx"]
+    )
+    assert runnable == ["src/player/__tests__/PlayerShell.test.tsx"]
+    assert any("relative to frontend/" in line for line in complaints)
+
+
+def test_an_already_relative_filter_is_left_alone():
+    runnable, complaints = order_check.frontend_test_paths(
+        ["src/player/__tests__/PlayerShell.test.tsx"]
+    )
+    assert runnable == ["src/player/__tests__/PlayerShell.test.tsx"]
+    assert complaints == []
+
+
+def test_a_filter_that_matches_no_file_is_named():
+    _, complaints = order_check.frontend_test_paths(["src/player/__tests__/NotThere.test.tsx"])
+    assert any(line.startswith("  missing:") for line in complaints)

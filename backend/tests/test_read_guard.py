@@ -204,3 +204,49 @@ def test_both_harnesses_decide_identically(guard):
         guard._record_post(check("Tests: 2 failed", session))
         allow, _ = guard._record_pre(read("src/Tile.tsx", session))
         assert allow is True, f"{session}: a red check must unlock"
+
+
+# --- transport wiring -------------------------------------------------------------------
+#
+# The rule above was correct for a whole telemetry cycle while the guard did nothing at all
+# under opencode: the plugin read `args` off the wrong object in the post hook, so every
+# post payload arrived empty, the session never armed, and no edited file was ever locked.
+# Payload-level tests could not see it because they build the payload themselves. These
+# assert the plugin's side of the contract instead.
+
+
+PLUGIN = REPO_ROOT / ".opencode" / "plugin" / "read-guard.js"
+
+
+def _hook_body(name: str) -> str:
+    source = PLUGIN.read_text(encoding="utf-8")
+    start = source.index(f'"{name}"')
+    end = source.find('"tool.execute.', start + 1)
+    return source[start : end if end != -1 else len(source)]
+
+
+def test_opencode_plugin_is_tracked():
+    assert PLUGIN.is_file(), "the opencode half of the guard must stay in the repo"
+
+
+def test_post_hook_forwards_the_arguments_object():
+    """`tool.execute.after` carries args on `input`; `output` there holds the result."""
+    body = _hook_body("tool.execute.after")
+    assert "input.args" in body, (
+        "the post hook must forward input.args — forwarding output.args sends an empty "
+        "object, which silently disarms the guard for every opencode executor"
+    )
+
+
+def test_pre_hook_forwards_the_arguments_object():
+    """`tool.execute.before` is the mirror image: args live on `output`."""
+    body = _hook_body("tool.execute.before")
+    assert "output.args" in body
+
+
+def test_empty_arguments_never_arm_or_lock(guard):
+    """What the broken wiring produced, stated as behaviour rather than as source."""
+    guard._record_post({"sessionID": "s1", "tool": "skill", "args": {}})
+    guard._record_post({"sessionID": "s1", "tool": "edit", "args": {}})
+    allow, _ = guard._record_pre(opencode_read("src/Tile.tsx"))
+    assert allow is True

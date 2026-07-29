@@ -308,6 +308,7 @@
   --kid-map-stair-badge: var(--md-tertiary-container);
   --kid-map-stair-badge-edge: var(--md-tertiary);
   --kid-map-stair-badge-on: var(--md-tertiary);
+  --kid-map-party-fill: var(--md-surface-4);
 
   /* Kid map family colours — solved via derive-kid-palette.mjs (DP1)
      Colour says family: green (stairs/portals), yellow (doors/windows),

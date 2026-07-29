@@ -265,7 +265,10 @@ def _record_post(payload: dict[str, Any]) -> None:
     state = _load(session)
     dirty = False
 
-    if tool in SKILL_TOOLS and _mentions_arming_skill(args):
+    # A harness may expose the skill as a `skill` tool taking its name, or as a tool named
+    # after the skill itself. Either spelling arms; a planner session invokes neither.
+    arming = ARMING_SKILL in tool or (tool in SKILL_TOOLS and _mentions_arming_skill(args))
+    if arming:
         if not state.get("armed"):
             state["armed"] = True
             state["armed_at"] = time.time()

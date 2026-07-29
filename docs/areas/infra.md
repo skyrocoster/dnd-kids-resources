@@ -32,10 +32,10 @@ not own any product behavior, API contract, or data model — those stay with th
 | Backend test plumbing | `backend/tests/conftest.py`<br>`backend/tests/routers/__init__.py` |
 | API and test plumbing | `frontend/src/api/**`<br>`frontend/src/test/**` |
 | Database lifecycle | `scripts/init_database.py`<br>`scripts/seed_database.py`<br>`scripts/export_db_seeds.py`<br>`scripts/generate_export_schema.py` |
-| Documentation and work-order tooling | `scripts/check_docs.py`<br>`scripts/check_orders.py`<br>`scripts/order_telemetry.py`<br>`scripts/model_prices.json`<br>`backend/tests/test_order_telemetry.py` |
+| Documentation and work-order tooling | `scripts/check_docs.py`<br>`scripts/check_orders.py`<br>`scripts/new_order.py`<br>`scripts/order_telemetry.py`<br>`scripts/model_prices.json`<br>`backend/tests/test_new_order.py`<br>`backend/tests/test_order_telemetry.py` |
 | Check wrappers (summarise instead of dumping full tool output) | `scripts/stage_check.py`<br>`scripts/order_check.py`<br>`backend/tests/test_check_wrappers.py` |
 | Executor discipline enforced by the harness | `scripts/read_guard.py`<br>`backend/tests/test_read_guard.py`<br>`.claude/settings.json`<br>`.opencode/plugin/**` |
-| Work-order telemetry record | `docs/plans/telemetry.jsonl`<br>`docs/plans/telemetry-archive/**` (`docs/plans/telemetry-log.md` is generated from the sidecar — never hand-edited) |
+| Work-order telemetry record | `docs/plans/telemetry.jsonl`<br>`docs/plans/telemetry-archive/**`<br>`docs/plans/telemetry-paused.md` (`docs/plans/telemetry-log.md` is generated from the sidecar — never hand-edited; **collection is paused** while the paused marker exists, and every recording command is a no-op until `order_telemetry.py --resume` deletes it) |
 | CI | `.github/**` |
 | Generated data | `data/generated/**` |
 | Frontend config | `frontend/package.json`<br>`frontend/package-lock.json`<br>`frontend/tsconfig.json`<br>`frontend/tsconfig.app.json`<br>`frontend/tsconfig.node.json`<br>`frontend/vite.config.ts`<br>`frontend/.gitignore`<br>`frontend/.oxlintrc.json`<br>`frontend/index.html`<br>`frontend/README.md`<br>`frontend/known-test-failures.json`<br>`frontend/public/**` |

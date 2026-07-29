@@ -58,11 +58,17 @@ export const ReadGuard = async ({ directory, worktree }) => {
       }
     },
 
+    // The two hooks carry `args` on opposite objects: `output.args` before the tool runs,
+    // `input.args` after it. Reading `output.args` here sent the guard an empty payload for
+    // every post event, so it never saw the arming skill and never locked an edited path —
+    // the guard was a silent no-op under opencode for a whole telemetry cycle while the
+    // Claude-side hook worked. `output.args` stays as a fallback in case that shape changes
+    // back; an empty object is the one value that must not be forwarded.
     "tool.execute.after": async (input, output) => {
       callGuard(root, "post", {
         tool: input.tool,
         sessionID: input.sessionID,
-        args: output.args ?? {},
+        args: input.args ?? output.args ?? {},
         output: {
           output: output.output,
           title: output.title,

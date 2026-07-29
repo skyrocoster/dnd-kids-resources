@@ -1,6 +1,6 @@
 # Kid Map Viewer — the tablet gets the DM's map, and colour a child can say out loud
 
-> **Status:** Stages 1-6 shipped. Next: Stage 7, let the DM say where the party is. Supersedes [Kid Map Legibility](../../done/kid-map-legibility/kid-map-legibility.md)
+> **Status:** Stages 1-9 shipped, plus a 6R repair pass. Next: use the filed table-test record when planning the fog layer. Supersedes [Kid Map Legibility](../../done/kid-map-legibility/kid-map-legibility.md)
 > (Stages 1-3 shipped, then closed). Written from two grilling
 > sessions on 2026-07-27 against `/play/map` on dungeon 4.
 
@@ -159,7 +159,11 @@ Touch:        48px floor (DM surface).
 | 3 | Rebuilt the kid map on the shared `MapCanvas` with absolute zoom and one-floor rendering, switched labels to the shared density signal, removed terrain and per-cell grid styling, and adopted the DM's quiet-fill/loud-wall treatment while preserving the `Dungeon map` accessibility landmark. |
 | 4 | Added the unbounded stacked-slab floor picker, using raw z labels including negative floors, with a 64px touch floor and selected-state styling. The kid renderer now switches the single visible floor from the picker while preserving the lowest-floor default and existing map landmark. |
 | 5 | Added a deterministic HCT-based solver for the four kid-map family colours and computed glyph colours, with contrast, separation, and reserved-colour tests. Published its generated token block in the theme and gated staleness through `check_docs.py`, with the design-system reference updated. |
+| 6R | Promoted the canvas's layout CSS into `frontend/src/map/MapCanvas.css` and gave the kid map a full-viewport region, so it clips and pans instead of growing the page; the fit is now to the selected floor and never below the plan's ~48px-per-5ft legibility floor. Doors draw the wall through the disc, size against the cell so the disc fills its doorway, take open/closed from the dungeon's session state (open/closed only — locked and trapped are dropped by the curtain), and use a closed-door glyph until they open. |
 | 6 | Added neutral kid marker family/icon helpers and rebuilt the player markers as constant-pixel family-coloured discs: yellow doors/windows, green stairs/portals, blue fixtures, and pink NPCs. Doors now show an open leaf only when open, co-located markers fan out, and stair discs switch floors on activation without numerals. |
+| 7 | Added a per-dungeon `partyRoomId` to Map Lab session state and a deliberate `Party is here` room-inspector action with inline failure feedback. Selecting a room remains read-only, activation saves immediately, and Reset dungeon clears the party room through the existing DELETE path. |
+| 8 | Exposed the persisted party room to the player map, highlighted it with the single neutral hatch and persistent name, and added follow-until-touched navigation with a 64px return-to-party control. The view selects and fits the party's floor without drawing a party marker. |
+| 9 | Filed the second-dungeon table-test record covering the four spoken colour families, open-door leaf, stripy party room, stair and slab-picker affordances, label scanning, and non-reading participation. The record is deliberately pending until the real session supplies its observations and is the input to the future fog plan. |
 
 ## Touches
 
@@ -180,59 +184,12 @@ Touch:        48px floor (DM surface).
 
 Four things this rethink surfaced belong to other areas and are queued in their guides rather than
 here: moving `npc` and `encounter` out of the Map Lab fixture palette, warning in Map Lab when a
-marker sits on a cell no room owns, redesigning terrain and wall kinds, and pruning the 26 DM-side
+marker sits on a cell no room owns, giving the Map Lab inspector a way to delete a placed prop (the
+two stray chests on dungeon 4 had to be removed through the layout API because the inspector offers
+no delete), redesigning terrain and wall kinds, and pruning the 26 DM-side
 identity tints. Side-by-side floors and the fold-out are **cut and parked** — the requirement behind
 them is route continuity across a floor change, which ghosting does not serve, and it should only be
 revisited after children have been watched simply picking floors. Note that nothing else in this plan
 addresses route continuity either; the mitigations in play are the clickable stair disc, its chevron,
 and the slab picker.
 
-## Compiler handoff
-
-### Stage 7
-
-- **Settled contracts:** carried over unchanged from the superseded plan, whose Stage 4 was compiled
-  but never built. Party marker in the per-dungeon session blob beside the door/stair/portal
-  overrides, set from a "Party is here" action in the session view's room inspector, cleared by the
-  existing "Reset dungeon", and covered by the seed export policy. Not on the global at-the-table
-  pointer. Selecting a room to read it never moves the marker.
-- **Constraints:** `map_session_state.data` already carries `{isOpen, isLocked, trapDisarmed}` per
-  fixture, so the blob's shape and its router are established; this adds a key, not a mechanism.
-- **Open questions:** whether the marker stores a room id or a cell. Stage 8 highlights a **room** and
-  re-centres on a room's bounds, so a room id is the natural shape, but the export policy and the
-  reset path have not been read.
-
-### Stage 8
-
-- **Settled contracts:** there is **no party marker drawn** — the room the party is in is highlighted
-  and nothing is drawn at a cell. Consequences that should not be rediscovered: the marker layer loses
-  an object, so badge-crowding pressure drops for this case entirely; "return to current room"
-  re-centres on a room's bounds, not a point; and "here" spends **no nameable hue**, which is why the
-  colour bank still holds two.
-- **Settled contracts:** the highlight is a step brighter in the **same neutral** as every other room,
-  plus a **hatch**. The spoken handle is "we're in the stripy room" — not a colour word, so it can
-  never collide with "the green ones are stairs". **Exactly one pattern exists, and it means here.**
-  Pattern is not a general channel: a pattern marking a *floor* would cover every room on the plate,
-  and the only reason a hatch works is that one room ever has it, so it is the single texture on an
-  otherwise clean plate. This governs **area fills** — a dasharray on a line is a different channel and
-  is not licence to texture the plate.
-- **Settled contracts:** navigation is **follow until touched**. The map follows the party while
-  nobody has touched it; the first pan or pinch stops it following; one "return to current room" button
-  re-centres *and* re-arms following, carrying both jobs. This replaces the superseded plan's "snaps to
-  the party's room whenever the marker moves", which would yank the view — possibly to another
-  floor — out from under a child mid-look. The original intent survives: an untouched tablet on the
-  table does point at the party.
-- **Constraints:** the hatch is **locked to screen pixels**, roughly 8-10px spacing, redrawn as zoom
-  changes. In viewBox units it goes sub-pixel at fit zoom and moirés on the tablet — the same defect as
-  the sub-pixel walls. And the room name **must survive sitting on it**: either the hatch stays faint
-  or the label gets a clear plate behind it.
-- **Open questions:** none.
-
-### Stage 9
-
-- **Verified edit sites:** `docs/table-tests/` holds the first record,
-  `2026-07-23-player-app-skeleton-stage-6.md`, which is the format to match.
-- **Constraints:** the questions are listed in the Stages section above and are deliberately about
-  whether the *spoken language* landed, not whether the code ran. The record is the input to the fog
-  plan.
-- **Open questions:** none.

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { ApiError, getAtTheTable, getDungeonLayout } from '../api/client'
+import { ApiError, getAtTheTable, getDungeonLayout, getDungeonSessionState } from '../api/client'
 import { normalizeLayout, type MapLayout } from '../model/maplabModel'
-import { playerViewTransform, type KidMapLayout } from './curtain'
+import { playerOpenDoorIds, playerViewTransform, type KidMapLayout } from './curtain'
 
 export const PLAYER_MAP_POLL_INTERVAL_MS = 5_000
 
@@ -10,13 +10,22 @@ export type PlayerMapDataStatus = 'loading' | 'ready' | 'empty' | 'error'
 export interface PlayerMapData {
   dungeonId: number | null
   layout: KidMapLayout | null
+  /** Doors the DM has opened in this dungeon's session. Open/closed only — the session blob's
+   * locked and trapped flags are dropped by the curtain and never reach the tablet. */
+  openDoorIds: ReadonlySet<number>
+  /** The party room id from the session blob, null if unset or session unavailable. */
+  partyRoomId: number | null
   status: PlayerMapDataStatus
   error: Error | null
 }
 
+const NO_OPEN_DOORS: ReadonlySet<number> = new Set<number>()
+
 const INITIAL_STATE: PlayerMapData = {
   dungeonId: null,
   layout: null,
+  openDoorIds: NO_OPEN_DOORS,
+  partyRoomId: null,
   status: 'loading',
   error: null,
 }
@@ -46,7 +55,7 @@ export function usePlayerMapData(): PlayerMapData {
 
         if (pointer.dungeon_id === null) {
           lastGoodFrame.current = null
-          setState({ dungeonId: null, layout: null, status: 'empty', error: null })
+          setState({ dungeonId: null, layout: null, openDoorIds: NO_OPEN_DOORS, partyRoomId: null, status: 'empty', error: null })
           scheduleNext()
           return
         }
@@ -54,10 +63,22 @@ export function usePlayerMapData(): PlayerMapData {
         const blob = await getDungeonLayout(pointer.dungeon_id, request.signal)
         if (cancelled || request.signal.aborted) return
 
+        // A dungeon with no session row yet (404) simply has no open doors — that must not fail the
+        // whole frame, so this one call swallows its own error rather than joining the catch below.
+        const session = await getDungeonSessionState(pointer.dungeon_id, request.signal)
+          .then((s) => {
+            const data = s.data as { doors?: Record<string, { isOpen?: boolean }>; partyRoomId?: number | null }
+            return { doors: data.doors, partyRoomId: data.partyRoomId ?? null }
+          })
+          .catch(() => ({ doors: undefined, partyRoomId: null }))
+        if (cancelled || request.signal.aborted) return
+
         const layout = playerViewTransform(normalizeLayout(blob.data as unknown as MapLayout))
         const frame: PlayerMapData = {
           dungeonId: pointer.dungeon_id,
           layout,
+          openDoorIds: playerOpenDoorIds(session.doors),
+          partyRoomId: session.partyRoomId,
           status: 'ready',
           error: null,
         }
@@ -68,7 +89,7 @@ export function usePlayerMapData(): PlayerMapData {
 
         if (error instanceof ApiError && error.status === 404) {
           lastGoodFrame.current = null
-          setState({ dungeonId: null, layout: null, status: 'empty', error: null })
+          setState({ dungeonId: null, layout: null, openDoorIds: NO_OPEN_DOORS, partyRoomId: null, status: 'empty', error: null })
           scheduleNext()
           return
         }
@@ -82,6 +103,8 @@ export function usePlayerMapData(): PlayerMapData {
         setState({
           dungeonId: null,
           layout: null,
+          openDoorIds: NO_OPEN_DOORS,
+          partyRoomId: null,
           status: 'error',
           error: error instanceof Error ? error : new Error(String(error)),
         })

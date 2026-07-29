@@ -482,3 +482,32 @@ def test_reissue_diff_names_the_fields_that_changed():
 def test_reissue_diff_reports_an_unchanged_order():
     same = {"text": "GOAL: a\nDO:\n- x\n"}
     assert ot.reissue_diff(same, same) == "no field changed"
+
+
+# --- pausing collection ------------------------------------------------------------------
+#
+# Collection can be switched off without dismantling it: the skills keep their telemetry
+# steps, the steps become no-ops, and the record stays readable. The load-bearing property
+# is that pausing is reversible by deleting one tracked file.
+
+
+def test_pause_and_resume_round_trip(tmp_path: Path):
+    assert ot.telemetry_paused(tmp_path) is False
+    assert ot.cmd_pause(tmp_path, "trying something else for a while") == 0
+    assert ot.telemetry_paused(tmp_path) is True
+
+    marker = ot.pause_marker(tmp_path).read_text(encoding="utf-8")
+    assert "trying something else for a while" in marker
+    assert "--resume" in marker, "the marker must say how to undo itself"
+
+    assert ot.cmd_resume(tmp_path) == 0
+    assert ot.telemetry_paused(tmp_path) is False
+
+
+def test_resume_without_a_pause_is_not_an_error(tmp_path: Path):
+    assert ot.cmd_resume(tmp_path) == 0
+
+
+def test_pause_marker_lives_in_a_tracked_path():
+    """A gitignored pause would silently restart collection on the next clone."""
+    assert ot.PAUSE_MARKER.startswith("docs/")

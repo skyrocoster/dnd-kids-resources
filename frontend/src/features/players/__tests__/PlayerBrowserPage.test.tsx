@@ -108,7 +108,9 @@ describe('PlayerBrowserPage', () => {
     await screen.findByRole('heading', { name: 'Lark' })
     await user.type(screen.getByRole('searchbox'), 'missing')
     expect(screen.getByText('No matches')).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Back to players' }))
+    // The back affordance is mobile-only (`.browser-layout-back` is display:none above 520px), and
+    // jsdom never matches the media query — so it has no accessible name here. Query by text.
+    await user.click(screen.getByText('Back to players'))
     expect(screen.getByText('Select an item')).toBeInTheDocument()
   })
 
@@ -206,7 +208,7 @@ describe('PlayerBrowserPage', () => {
     render(<PlayerBrowserPage />)
     await screen.findByRole('heading', { name: 'Lark' })
 
-    await user.click(screen.getByRole('button', { name: 'Manage Spells' }))
+    await user.click(await screen.findByRole('button', { name: 'Manage Spells' }))
     await user.click(screen.getByLabelText('Fireball'))
     await user.click(screen.getByRole('button', { name: 'Cancel' }))
 

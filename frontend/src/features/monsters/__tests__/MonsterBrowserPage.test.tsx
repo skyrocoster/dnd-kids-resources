@@ -186,7 +186,9 @@ describe('MonsterBrowserPage', () => {
     renderPage()
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Aarakocra' })).toBeInTheDocument())
 
-    await user.click(screen.getByRole('button', { name: 'Back to monsters' }))
+    // The back affordance is mobile-only (`.browser-layout-back` is display:none above 520px), and
+    // jsdom never matches the media query — so it has no accessible name here. Query by text.
+    await user.click(screen.getByText('Back to monsters'))
     expect(screen.queryByRole('heading', { name: 'Aarakocra' })).not.toBeInTheDocument()
     expect(screen.getByText(/Choose a monster/)).toBeInTheDocument()
   })

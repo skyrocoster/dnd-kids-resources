@@ -68,7 +68,9 @@ describe('LootBundleBrowserPage', () => {
     render(<MemoryRouter><LootBundleBrowserPage /></MemoryRouter>)
     await screen.findByRole('heading', { name: 'Bandit Cache' })
 
-    await user.click(screen.getByRole('button', { name: 'Back to loot bundles' }))
+    // The back affordance is mobile-only (`.browser-layout-back` is display:none above 520px), and
+    // jsdom never matches the media query — so it has no accessible name here. Query by text.
+    await user.click(screen.getByText('Back to loot bundles'))
     expect(screen.queryByRole('heading', { name: 'Bandit Cache' })).not.toBeInTheDocument()
   })
 

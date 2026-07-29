@@ -181,8 +181,8 @@ export const listIncomingGateways = (dungeonId: number) =>
   get<IncomingGateway[]>(`/dungeons/${dungeonId}/incoming-gateways`)
 
 // Map Lab session state
-export const getDungeonSessionState = (dungeonId: number) =>
-  get<MapSessionStateBlob>(`/dungeons/${dungeonId}/session-state`)
+export const getDungeonSessionState = (dungeonId: number, signal?: AbortSignal) =>
+  get<MapSessionStateBlob>(`/dungeons/${dungeonId}/session-state`, { signal })
 export const saveDungeonSessionState = (dungeonId: number, blob: MapSessionStateBlob) =>
   put<MapSessionStateBlob>(`/dungeons/${dungeonId}/session-state`, blob)
 export const resetDungeonSessionState = (dungeonId: number) =>
