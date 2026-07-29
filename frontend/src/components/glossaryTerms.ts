@@ -150,4 +150,92 @@ export const ruleGlossaryRegistry: GlossaryRegistry = createGlossaryRegistry([
     definition:
       'Knocked down on the ground. It costs part of your move to stand back up.',
   },
+  {
+    term: 'blinded',
+    definition: 'You can\'t see anything.',
+  },
+  {
+    term: 'charmed',
+    definition: 'You like someone so much you won\'t hurt them.',
+  },
+  {
+    term: 'deafened',
+    definition: 'You can\'t hear anything.',
+  },
+  {
+    term: 'exhaustion',
+    definition: 'You\'re really tired. Things get harder to do.',
+  },
+  {
+    term: 'frightened',
+    definition: 'You\'re scared. You can\'t move toward what scares you.',
+  },
+  {
+    term: 'grappled',
+    definition: 'Someone is holding you. You can\'t move away.',
+  },
+  {
+    term: 'incapacitated',
+    definition: 'You can\'t move or do anything.',
+  },
+  {
+    term: 'invisible',
+    definition: 'You can\'t be seen. People know where you are if you make noise.',
+  },
+  {
+    term: 'paralyzed',
+    definition: 'Your body is frozen. You can\'t move or speak.',
+  },
+  {
+    term: 'petrified',
+    definition: 'You\'re turned to stone. You can\'t move or speak.',
+  },
+  {
+    term: 'poisoned',
+    definition: 'Poison is in your body. Things get harder to do.',
+  },
+  {
+    term: 'restrained',
+    definition: 'You\'re stuck or tied up. You can\'t move far.',
+  },
+  {
+    term: 'stunned',
+    definition: 'You\'re shocked. You can\'t move or speak.',
+  },
+  {
+    term: 'unconscious',
+    definition: 'You\'re asleep or knocked out. You can\'t do anything.',
+  },
+  {
+    term: 'attack roll',
+    definition: 'A roll to see if you hit something with your weapon.',
+  },
+  {
+    term: 'armor class',
+    definition: 'How hard you are to hit. Better armor means a higher number.',
+  },
+  {
+    term: 'initiative',
+    definition: 'A roll at the start of a fight to see who goes first.',
+  },
+  {
+    term: 'opportunity attack',
+    definition: 'A free attack when someone runs away from you.',
+  },
+  {
+    term: 'bonus action',
+    definition: 'An extra thing you can do on your turn besides your main action.',
+  },
+  {
+    term: 'dash',
+    definition: 'You run extra far. You can\'t attack that turn.',
+  },
+  {
+    term: 'disengage',
+    definition: 'You move without enemies getting free attacks at you.',
+  },
+  {
+    term: 'dodge',
+    definition: 'You focus on not getting hit. Enemies have a harder time.',
+  },
 ])

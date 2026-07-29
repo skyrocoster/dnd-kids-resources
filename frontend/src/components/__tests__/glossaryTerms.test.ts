@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
+import seededConditions from '../../../../data/seeds/seed_conditions.json'
 import {
   createGlossaryRegistry,
   matchGlossaryTerms,
+  ruleGlossaryRegistry,
   type GlossaryDefinition,
 } from '../glossaryTerms'
 
@@ -123,5 +125,28 @@ describe('glossaryTerms', () => {
   it('empty input returns empty array', () => {
     const nodes = matchGlossaryTerms('', registry)
     expect(nodes).toEqual([])
+  })
+
+  it('matches all eight combat action terms in running text', () => {
+    const text =
+      'You roll for initiative, your armor class helps, make an attack roll, and if they disengage you get an opportunity attack. Use your bonus action to dash or dodge.'
+    const nodes = matchGlossaryTerms(text, ruleGlossaryRegistry)
+    const termTexts = nodes
+      .filter((n) => n.type === 'term')
+      .map((n) => n.text.toLowerCase())
+    expect(termTexts).toContain('initiative')
+    expect(termTexts).toContain('armor class')
+    expect(termTexts).toContain('attack roll')
+    expect(termTexts).toContain('disengage')
+    expect(termTexts).toContain('opportunity attack')
+    expect(termTexts).toContain('bonus action')
+    expect(termTexts).toContain('dash')
+    expect(termTexts).toContain('dodge')
+  })
+
+  it('every seeded condition has a glossary entry', () => {
+    for (const condition of seededConditions) {
+      expect(ruleGlossaryRegistry.has(condition.title)).toBe(true)
+    }
   })
 })

@@ -1,6 +1,6 @@
 # Glossary term tooltips — hover/tap explanations for rule terms in rendered text
 
-> **Status:** Stages 1-3 shipped. Stage 4 (expand glossary coverage against real seed data) is next — the only Design plan.
+> **Status:** Stages 1-4 shipped. Stage 5 (catalog-entity reference tooltips) is next — the only Design plan.
 
 - **Area guide:** [Design](../../../areas/design.md)
 - **Read trigger:** Glossary term tooltips, rule-term explanations in rendered text
@@ -10,7 +10,6 @@
 
 - `frontend/src/components/**`
 - `frontend/src/features/{spells,weapons,monsters,npcs}/**`
-- `frontend/src/player/**`
 - `docs/DESIGN_SYSTEM.md`
 
 ## What we're building & why
@@ -99,3 +98,4 @@ Touch:        tap toggles the popover (hover has no touch equivalent); tap outsi
 | 1 | Added the static six-entry rule glossary registry and a case-insensitive, whole-word matcher that preserves source text and offsets. Focused tests cover aliases, longest matches, casing, tiling, unmatched text, and duplicate keys. |
 | 2 | Added the reusable `GlossaryTerm` inline popover with exclusive hover, focus, tap, keyboard, dismissal, and viewport-clamping behavior. Documented inline glossary triggers as a deliberate exception to the 48px touch-target floor. |
 | 3 | Wired glossary matching into `DiceText`, so known terms receive the shared popover across direct rule text and resolved `ReferenceText` output without per-surface opt-in. Dice pills, source order, casing, role variants, and unmatched text remain intact. |
+| 4 | Grew the registry from 6 to 28 entries: every condition in `data/seeds/seed_conditions.json` plus eight combat actions, each defined in kid voice rather than copied from the seed's SRD prose. A coverage test reads that seed file directly, so a condition added there without a glossary entry fails the suite; `reaction` is deliberately excluded because it collides with monster statblock text. |

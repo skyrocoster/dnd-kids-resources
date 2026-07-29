@@ -112,7 +112,6 @@ removes that key.
 
 ## Touches
 
-- **Depends on:** [Glossary Term Tooltips](../glossary-term-tooltips/glossary-term-tooltips.md)
 - `scripts/init_database.py`
 - `scripts/seed_database.py`
 - `scripts/export_db_seeds.py`

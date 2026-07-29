@@ -151,7 +151,7 @@ says only where the files are.
 | `backend/tests/routers/` | 17 | 267 |
 | `frontend/src/__tests__/` | 1 | 4 |
 | `frontend/src/api/__tests__/` | 1 | 5 |
-| `frontend/src/components/__tests__/` | 14 | 150 |
+| `frontend/src/components/__tests__/` | 14 | 152 |
 | `frontend/src/components/form/__tests__/` | 4 | 11 |
 | `frontend/src/features/dungeons/__tests__/` | 2 | 54 |
 | `frontend/src/features/dungeons/maplab/__tests__/` | 19 | 565 |

@@ -49,7 +49,7 @@ Modes are defined in [../UX_PATTERNS.md](../UX_PATTERNS.md#surface-modes).
 <!-- GENERATED:AREA_PLANS:design:START -->
 | Plan | State | Status |
 | --- | --- | --- |
-| [Glossary term tooltips](../plans/active/glossary-term-tooltips/glossary-term-tooltips.md) | ready | Stages 1-3 shipped. |
+| [Glossary term tooltips](../plans/active/glossary-term-tooltips/glossary-term-tooltips.md) | ready | Stages 1-4 shipped. |
 <!-- GENERATED:AREA_PLANS:design:END -->
 
 What the table cannot derive:
