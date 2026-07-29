@@ -9,6 +9,10 @@ and detailed specifications only for the remaining work.
 
 > **Status:** All stages shipped. Map Lab is the production dungeon surface. This plan is complete.
 
+- **Area guide:** [Dungeons](../../../areas/dungeons.md)
+- **Read trigger:** Dungeon implementation history
+
+
 ---
 
 ## What The Feature Is

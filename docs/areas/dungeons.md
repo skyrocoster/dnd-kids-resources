@@ -1,6 +1,6 @@
 # Dungeons Area Guide
 
-> **Plan queue:** None.
+- **Read trigger:** Dungeon behavior
 
 ## Scope
 
@@ -28,7 +28,7 @@ Owns dungeon CRUD, Map Lab viewer/editor composition, room content, layouts, and
 | Session state | `backend/app/routers/session_state.py` |
 | Session state backend tests | `backend/tests/routers/test_session_state.py` |
 | Map assets | `data/maps/*.png` |
-| Dungeon seed data | `data/seeds/seed_dungeons.json`<br>`data/seeds/seed_map_layouts.json`<br>`data/seeds/seed_map_session_state.json` |
+| Dungeon seed data | `data/seeds/seed_dungeons.json`<br>`data/seeds/seed_map_layouts.json`<br>`data/seeds/seed_map_session_state.json`<br>`data/seeds/seed_map_knowledge.json` |
 
 ## Surfaces
 
@@ -60,6 +60,12 @@ The session view is the surface that is open while a game is running: it must st
   marker never edits room content, and editing a room's NPC list never moves a marker.
 
 ## Work queue
+
+<!-- GENERATED:AREA_PLANS:dungeons:START -->
+_No plan is in flight for this area._
+<!-- GENERATED:AREA_PLANS:dungeons:END -->
+
+What the table cannot derive:
 
 - [Dungeon Outside](../plans/done/dungeon-outside/dungeon-outside.md) shipped: wall kinds, per-side padding and a real extent, outside features, and clarity controls.
 - [Dungeon Connections](../plans/done/dungeon-connections/dungeon-connections.md) shipped: permanent per-dungeon session state, optional portal destinations with a connections resolve list, and cross-dungeon gateways. It owns passage-session persistence.

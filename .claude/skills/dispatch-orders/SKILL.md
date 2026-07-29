@@ -13,6 +13,14 @@ needs nothing from you; a failure needs you now, not at reconcile time.
 
 ## 1. Select what is runnable
 
+If you were not given a feature, open
+[docs/plans/active/INDEX.md](../../../docs/plans/active/INDEX.md): it lists every in-flight plan with
+its order counts and the skill each is waiting for. A row whose `Next` is `dispatch-orders` has orders
+this skill can run — `(triage)` on that row means the batch is stalled on a `FAILED`/`BLOCKED` order,
+so start at step 4. Skip rows whose `State` is `blocked`: those wait on another plan, not on you.
+One matching ready row is your answer; several means ask which, since nothing in the repo ranks
+them.
+
 Read every order in `docs/plans/active/<feature>/`:
 
 - **Runnable** = STATUS is blank **and** every order in its `DEPENDS ON` line is `DONE`.

@@ -2,7 +2,9 @@
 
 > **Status:** Complete. Root context now holds only shared vocabulary; area-specific vocabulary lives in the owning area guides.
 
-- **Area guide:** [Documentation Governance](../areas/documentation.md)
+- **Area guide:** [Infra](../../../areas/infra.md)
+- **Read trigger:** Area-scoped context refactor history
+
 
 ## What We Built & Why
 

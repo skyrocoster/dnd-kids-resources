@@ -2,7 +2,9 @@
 
 > **Status:** Complete. All 4 stages shipped (13 orders). Coverage raised from 90.96% to 97.12%; gate locked at 97%.
 
-- **Area guide:** [Repo Infra](../../areas/repo-infra.md).
+- **Area guide:** [Infra](../../../areas/infra.md).
+- **Read trigger:** Backend coverage gap-closing history
+
 
 ## What we're building & why
 

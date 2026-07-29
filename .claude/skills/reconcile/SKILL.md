@@ -1,6 +1,6 @@
 ---
 name: reconcile
-description: Close out finished work orders for a feature — collapse completed orders into the Plan's Shipped table, update any canonical references/manifest/area guide whose contract changed, run the documentation checker, and delete the spent order files. Use this after a stage's work orders are all marked DONE (or when some are FAILED and need re-planning), whenever the user says "reconcile", "close out the orders", "the stage is done", or "update the docs for what shipped". This is documentation closeout, not an implementation pass.
+description: Close out finished work orders for a feature — collapse completed orders into the Plan's Shipped table, update any canonical references/manifest/area guide whose contract changed, run the documentation checker, delete the spent order files, and commit the whole repo once every check is green. Use this after a stage's work orders are all marked DONE (or when some are FAILED and need re-planning), whenever the user says "reconcile", "close out the orders", "the stage is done", or "update the docs for what shipped". This is documentation closeout, not an implementation pass.
 ---
 
 # reconcile — close out shipped work orders
@@ -8,6 +8,13 @@ description: Close out finished work orders for a feature — collapse completed
 After the executors have run a stage's work orders, this skill reconciles what actually shipped back
 into the durable docs and clears the spent orders. The job here is **bookkeeping and documentation**:
 you record what shipped, you don't extend it.
+
+## When you were not told which feature
+
+[docs/plans/active/INDEX.md](../../../docs/plans/active/INDEX.md) lists every in-flight plan with its
+order counts and the skill each is waiting for. A row whose `Next` is `reconcile` has every order
+`DONE` and is ready for this skill. One such row is your answer; several means ask which, since
+nothing in the repo ranks them.
 
 ## Send the evidence-gathering out first
 
@@ -142,6 +149,36 @@ scout comes back partial, re-ask the gap narrowly rather than treating the repor
    reports with no doc mentions is the interesting case, not an empty one: either it needs a first
    entry, or it was never a documented contract.
 
+   **Do not hand-edit what a command derives.** Run
+   `.venv\Scripts\python.exe scripts/check_docs.py --write-generated`. One run refreshes every
+   generated block in the documentation, and the list is now long enough that hand-editing any of it
+   is a mistake rather than a shortcut:
+
+   - **the API reference** — every per-router endpoint table and the schema inventory, from the app's
+     OpenAPI contract. The `Purpose` column is each route's **docstring**, so if this stage added or
+     changed an endpoint, the thing you edit is the docstring in the router, never the table. A route
+     with no docstring, or a router with no section, fails the checker.
+   - **`docs/INVENTORY.md`** — every area-guide and plan row, from each document's own
+     `**Read trigger:**`, `**Area guide:**` and Status line. Adding a plan to the manifest by hand is
+     no longer a step in this skill.
+   - **each area guide's `## Work queue`** — the in-flight plan table, from the plans that name that
+     guide. What stays hand-written below it is only what no script can derive: why a plan supersedes
+     another, what is deferred, what is undecided. Do not restate a plan's status there.
+   - **`docs/plans/active/INDEX.md` and `plans/done/INDEX.md`** — the routing tables, so they reflect
+     the orders you just closed out.
+   - **the script and test inventories** in `ARCHITECTURE.md` and `TESTING.md`, plus the schema,
+     design-token and test-configuration blocks that were already generated.
+
+   Because the manifest and the area queues now derive from the Plan itself, **the Plan's Status line
+   is the single place a stage's progress is recorded.** Get it right and three documents follow.
+
+   Touch an area guide only when this stage changed the code it owns — a new route in its
+   `## Surfaces` table, a new router in its `## Source map`.
+
+   What stays yours: the Plan's Status line and Shipped rows, the hand-written prose around each
+   generated block, the Task Router rows in `docs/README.md`, and every canonical-reference edit in
+   step 5.
+
 6. **Run the documentation checker** from the repo root via the repo-local virtualenv:
    - Windows: `.venv\Scripts\python.exe scripts/check_docs.py --check`
    - POSIX: `.venv/bin/python scripts/check_docs.py --check`
@@ -182,9 +219,42 @@ scout comes back partial, re-ask the gap narrowly rather than treating the repor
    rediscovered next cycle, and the prefix is what makes that repeat legible — when a defect
    recurs, the record says whether the rule failed or was never written.
 
-8. **When the whole feature is complete:** move the Plan to `docs/plans/done/<feature>/`, set the area
-   guide back to "no active plan" (or its next plan), and update `docs/README.md` in the same change
-   set. Leave a redirect stub only if a known inbound link must survive.
+8. **When the whole feature is complete:** move the Plan to `docs/plans/done/<feature>/` and update
+   `docs/README.md` in the same change set. Then regenerate the index
+   (`--write-generated`): archiving is what flips every Plan that declared a `**Depends on:**` this
+   feature from `blocked` to `ready`, so a stale index leaves real work looking unavailable. Leave a
+   redirect stub only if a known inbound link must survive.
+
+9. **Commit everything.** A reconcile that ends green leaves the whole repo consistent — the
+   executors' source changes, the Plan collapse, the regenerated inventories, the deleted order
+   files — and that state is what gets committed, in one commit, across the whole worktree. Leaving
+   it uncommitted is how a later stage inherits a dirty tree it cannot tell apart from its own work.
+
+   **Only on green.** `stage_check.py` (step 4) and `check_docs.py --check` (step 6) must both pass
+   first. A red check means the stage is not reconciled yet; fix it or reissue an order, and commit
+   after. Never commit to make the tree tidy.
+
+   Before staging, read `git status --porcelain` and check two things:
+   - **Everything expected is there** — deleted `NN-*.md` orders, the Plan, the regenerated
+     `docs/plans/active/INDEX.md` and any other `GENERATED:` inventory, plus the source and test
+     files the orders touched. An order you believe shipped but whose files are absent means it did
+     not land; go back to step 2.
+   - **Nothing that must never be committed is** — a database, `*.log`, a `.pid`, `.env`,
+     `node_modules/`, `frontend/dist/`. These are all gitignored, so one appearing as untracked is a
+     `.gitignore` gap: stop, say so, and do not add it. Do not paper over it with a path-by-path
+     `git add`.
+
+   Then commit the worktree in one commit. Name the feature and stage, and summarise what shipped in
+   the body rather than restating each order:
+
+   ```
+   git add -A
+   git commit -m "feat(<feature>): stage <N> — <what now works>"
+   ```
+
+   Follow the repo's existing commit-message conventions, including any trailers the harness
+   requires. **Do not push**, and do not create a branch or tag, unless the user asks — this step
+   closes the stage locally, and where it goes next is theirs to decide.
 
 ## What NOT to do
 

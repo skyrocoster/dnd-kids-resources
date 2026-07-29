@@ -2,7 +2,9 @@
 
 > **Status:** BR1–BR2 shipped. Plan complete.
 
-- **Area guide:** [The Loom](../../areas/loom.md).
+- **Area guide:** [The Loom](../../../areas/loom.md).
+- **Read trigger:** Drag-to-reorder story beats history
+
 
 ---
 

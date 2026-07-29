@@ -1,6 +1,8 @@
 # API Reference — D&D Kids Resources Backend
 
-Hand-written endpoint inventory. For response/request shapes, refer to `backend/app/schemas.py` (the source of truth for all Pydantic models).
+**The endpoint tables and the schema inventory on this page are generated** from the running app's OpenAPI contract by `scripts/check_docs.py`, and `--check` fails when they go stale. Each router's `Purpose` column is its route's docstring, so a route is documented where it is written. The prose around each table is hand-written and carries what the code does not state.
+
+Refresh with `.venv\Scripts\python.exe scripts/check_docs.py --write-generated`. `backend/app/schemas.py` remains the source of truth for every Pydantic model.
 
 ## Conventions
 
@@ -14,10 +16,10 @@ Hand-written endpoint inventory. For response/request shapes, refer to `backend/
 
 When adding a new endpoint:
 
-1. **Add the route** in `backend/app/routers/<domain>.py` — `@router.get(...)`, `@router.post(...)`, etc.
+1. **Add the route** in `backend/app/routers/<domain>.py` — `@router.get(...)`, `@router.post(...)`, etc. **Give it a one-line docstring**: that sentence becomes its `Purpose` here, and a route without one fails the documentation checker.
 2. **Add/extend Pydantic schemas** in `backend/app/schemas.py` if needed (request/response models).
 3. **Add a smoke test** in `backend/tests/routers/test_<domain>.py` — at minimum, test the happy path and one error case.
-4. **Update this table** — add a row with the method, path, one-line purpose, and schema names (not full field lists — point to schemas.py).
+4. **Run `--write-generated`** — do not hand-edit the tables. A brand-new router also needs a `## <Name> Router` section with its `<!-- GENERATED:API:<tag>:START/END -->` markers; the checker tells you when one is missing.
 
 ---
 
@@ -25,14 +27,18 @@ When adding a new endpoint:
 
 `backend/app/routers/spells.py` — spell CRUD and reference. `SpellCreate` and `SpellUpdate` require nonblank `quick_rules` validated as registered reference text; committed spell seeds include nonblank quick rules, while `Spell` responses keep nullable `quick_rules` so legacy/local rows remain readable.
 
-| Method | Path | Purpose | Request schema | Response schema |
+<!-- GENERATED:API:spells:START -->
+| Method | Path | Purpose | Request | Response |
 |---|---|---|---|---|
-| GET | `/api/spells` | List all spells | `level`, `school`, `limit` (1-500; default 100), `offset` (default 0) | `List[Spell]` |
-| GET | `/api/spells/{spell_id}` | Fetch spell by ID | (path param) | `Spell` |
-| GET | `/api/spells/by-title/{spell_name}` | Fetch spell by exact title | (path param) | `Spell` |
-| POST | `/api/spells` | Create spell | `SpellCreate` | `Spell` (201) |
-| PUT | `/api/spells/{spell_id}` | Update spell | `SpellUpdate` | `Spell` |
-| DELETE | `/api/spells/{spell_id}` | Delete spell | (path param) | (204 No Content) |
+| GET | `/api/spells` | List all spells with optional filtering. | `level`, `school`, `limit`, `offset` | `List[Spell]` |
+| POST | `/api/spells` | Create a new spell. | `SpellCreate` | `Spell` (201) |
+| GET | `/api/spells/by-title/{spell_name}` | Get a specific spell by name. | `spell_name` | `Spell` |
+| GET | `/api/spells/{spell_id}` | Get a specific spell by ID. | `spell_id` | `Spell` |
+| PUT | `/api/spells/{spell_id}` | Update an existing spell. | `SpellUpdate` | `Spell` |
+| DELETE | `/api/spells/{spell_id}` | Delete a spell. | `spell_id` | (204 No Content) |
+| GET | `/api/spells/{spell_id}/players` | Get all players assigned to a spell. | `spell_id` | `List[Player]` |
+| PUT | `/api/spells/{spell_id}/players` | Replace all player assignments for a spell. | `SpellPlayerAssignments` | `List[Player]` |
+<!-- GENERATED:API:spells:END -->
 
 ---
 
@@ -40,14 +46,16 @@ When adding a new endpoint:
 
 `backend/app/routers/monsters.py` — monster/creature CRUD.
 
-| Method | Path | Purpose | Request schema | Response schema |
+<!-- GENERATED:API:monsters:START -->
+| Method | Path | Purpose | Request | Response |
 |---|---|---|---|---|
-| GET | `/api/monsters` | List all monsters | `limit` (1-500; default 100), `offset` (default 0) | `List[Monster]` |
-| GET | `/api/monsters/{monster_id}` | Fetch monster by ID | (path param) | `Monster` |
-| GET | `/api/monsters/by-name/{name}` | Fetch monster by exact name | (path param) | `Monster` |
-| POST | `/api/monsters` | Create monster | `MonsterCreate` | `Monster` (201) |
-| PUT | `/api/monsters/{monster_id}` | Update monster | `MonsterUpdate` | `Monster` |
-| DELETE | `/api/monsters/{monster_id}` | Delete monster | (path param) | (204 No Content) |
+| GET | `/api/monsters` | List all monsters. | `limit`, `offset` | `List[Monster]` |
+| POST | `/api/monsters` | Create a new monster. | `MonsterCreate` | `Monster` (201) |
+| GET | `/api/monsters/by-name/{name}` | Get a specific monster by name. | `name` | `Monster` |
+| GET | `/api/monsters/{monster_id}` | Get a specific monster by ID. | `monster_id` | `Monster` |
+| PUT | `/api/monsters/{monster_id}` | Update an existing monster. | `MonsterUpdate` | `Monster` |
+| DELETE | `/api/monsters/{monster_id}` | Delete a monster. | `monster_id` | (204 No Content) |
+<!-- GENERATED:API:monsters:END -->
 
 ---
 
@@ -55,15 +63,17 @@ When adding a new endpoint:
 
 `backend/app/routers/weapons.py` — weapon CRUD.
 
-| Method | Path | Purpose | Request schema | Response schema |
+<!-- GENERATED:API:weapons:START -->
+| Method | Path | Purpose | Request | Response |
 |---|---|---|---|---|
-| GET | `/api/weapons` | List all weapons | `limit` (1-500; default 100), `offset` (default 0) | `List[Weapon]` |
-| GET | `/api/weapons/{weapon_id}` | Fetch weapon by ID | (path param) | `Weapon` |
-| GET | `/api/weapons/by-name/{name}` | Fetch weapon by exact name | (path param) | `Weapon` |
-| POST | `/api/weapons` | Create weapon | `WeaponCreate` | `Weapon` (201) |
-| PUT | `/api/weapons/{weapon_id}` | Update weapon | `WeaponUpdate` | `Weapon` |
-| DELETE | `/api/weapons/{weapon_id}` | Delete weapon | (path param) | (204 No Content) |
-| GET | `/api/weapons/{weapon_id}/players` | List players a weapon is assigned to (used for delete-confirmation copy) | (path param) | `List[Player]` |
+| GET | `/api/weapons` | List all weapons. | `limit`, `offset` | `List[Weapon]` |
+| POST | `/api/weapons` | Create a new weapon. | `WeaponCreate` | `Weapon` (201) |
+| GET | `/api/weapons/by-name/{name}` | Get a specific weapon by name. | `name` | `Weapon` |
+| GET | `/api/weapons/{weapon_id}` | Get a specific weapon by ID. | `weapon_id` | `Weapon` |
+| PUT | `/api/weapons/{weapon_id}` | Update an existing weapon. | `WeaponUpdate` | `Weapon` |
+| DELETE | `/api/weapons/{weapon_id}` | Delete a weapon. | `weapon_id` | (204 No Content) |
+| GET | `/api/weapons/{weapon_id}/players` | List the players a weapon is assigned to. | `weapon_id` | `List[Player]` |
+<!-- GENERATED:API:weapons:END -->
 
 Deleting a weapon relies on the existing `player_weapons.weapon_id` foreign key with `ON DELETE CASCADE` (see `scripts/init_database.py`) to remove assignment rows; no application code performs the cascade.
 
@@ -73,13 +83,15 @@ Deleting a weapon relies on the existing `player_weapons.weapon_id` foreign key 
 
 `backend/app/routers/items.py` — treasure item catalog CRUD.
 
-| Method | Path | Purpose | Request schema | Response schema |
+<!-- GENERATED:API:items:START -->
+| Method | Path | Purpose | Request | Response |
 |---|---|---|---|---|
-| GET | `/api/items` | List catalog items | `limit` (1-500; default 100), `offset` (default 0) | `List[Item]` |
-| GET | `/api/items/{item_id}` | Fetch item by ID | (path param) | `Item` |
-| POST | `/api/items` | Create catalog item | `ItemCreate` | `Item` (201) |
-| PUT | `/api/items/{item_id}` | Update catalog item | `ItemUpdate` | `Item` |
-| DELETE | `/api/items/{item_id}` | Delete catalog item | (path param) | (204 No Content) |
+| GET | `/api/items` | List catalog items. | `limit`, `offset` | `List[Item]` |
+| POST | `/api/items` | Create a catalog item. | `ItemCreate` | `Item` (201) |
+| GET | `/api/items/{item_id}` | Get a catalog item by ID. | `item_id` | `Item` |
+| PUT | `/api/items/{item_id}` | Update a catalog item. | `ItemUpdate` | `Item` |
+| DELETE | `/api/items/{item_id}` | Delete a catalog item. | `item_id` | (204 No Content) |
+<!-- GENERATED:API:items:END -->
 
 ---
 
@@ -87,13 +99,15 @@ Deleting a weapon relies on the existing `player_weapons.weapon_id` foreign key 
 
 `backend/app/routers/loot.py` — loot bundle authoring CRUD.
 
-| Method | Path | Purpose | Request schema | Response schema |
+<!-- GENERATED:API:loot:START -->
+| Method | Path | Purpose | Request | Response |
 |---|---|---|---|---|
-| GET | `/api/loot-bundles` | List loot bundles | `limit` (1-500; default 100), `offset` (default 0) | `List[LootBundle]` |
-| GET | `/api/loot-bundles/{bundle_id}` | Fetch loot bundle by ID | (path param) | `LootBundle` |
-| POST | `/api/loot-bundles` | Create loot bundle | `LootBundleCreate` | `LootBundle` (201) |
-| PUT | `/api/loot-bundles/{bundle_id}` | Update loot bundle | `LootBundleUpdate` | `LootBundle` |
-| DELETE | `/api/loot-bundles/{bundle_id}` | Delete loot bundle | (path param) | (204 No Content) |
+| GET | `/api/loot-bundles` | List loot bundles. | `limit`, `offset` | `List[LootBundle]` |
+| POST | `/api/loot-bundles` | Create a loot bundle. | `LootBundleCreate` | `LootBundle` (201) |
+| GET | `/api/loot-bundles/{bundle_id}` | Get a loot bundle by ID. | `bundle_id` | `LootBundle` |
+| PUT | `/api/loot-bundles/{bundle_id}` | Update a loot bundle. | `LootBundleUpdate` | `LootBundle` |
+| DELETE | `/api/loot-bundles/{bundle_id}` | Delete a loot bundle. | `bundle_id` | (204 No Content) |
+<!-- GENERATED:API:loot:END -->
 
 ---
 
@@ -101,22 +115,24 @@ Deleting a weapon relies on the existing `player_weapons.weapon_id` foreign key 
 
 `backend/app/routers/players.py` — player CRUD and spell/weapon roster management.
 
-| Method | Path | Purpose | Request schema | Response schema |
+<!-- GENERATED:API:players:START -->
+| Method | Path | Purpose | Request | Response |
 |---|---|---|---|---|
-| GET | `/api/players` | List all players | `limit` (1-500; default 100), `offset` (default 0) | `List[Player]` |
-| GET | `/api/players/{player_id}` | Fetch player by ID | (path param) | `Player` |
-| POST | `/api/players` | Create player | `PlayerCreate` | `Player` (201) |
-| PUT | `/api/players/{player_id}` | Update player | `PlayerUpdate` | `Player` |
-| DELETE | `/api/players/{player_id}` | Delete player | (path param) | (204 No Content) |
-| GET | `/api/players/{player_id}/detail` | Fetch complete player detail with spells and weapons | (path param) | `PlayerDetail` |
-| GET | `/api/players/{player_id}/spells` | List player's spells | (path param) | `List[Spell]` |
-| PUT | `/api/players/{player_id}/spells` | Replace all spell assignments atomically | `PlayerSpellAssignments` | `List[Spell]` |
-| POST | `/api/players/{player_id}/spells/{spell_id}` | Add spell to player's roster | (path params) | (201 No Content) |
-| DELETE | `/api/players/{player_id}/spells/{spell_id}` | Remove spell from player's roster | (path params) | (204 No Content) |
-| GET | `/api/players/{player_id}/weapons` | List player's weapons | (path param) | `List[Weapon]` |
-| PUT | `/api/players/{player_id}/weapons` | Replace all weapon assignments atomically | `PlayerWeaponAssignments` | `List[Weapon]` |
-| POST | `/api/players/{player_id}/weapons/{weapon_id}` | Add weapon to player's roster | (path params) | (201 No Content) |
-| DELETE | `/api/players/{player_id}/weapons/{weapon_id}` | Remove weapon from player's roster | (path params) | (204 No Content) |
+| GET | `/api/players` | List all players. | `limit`, `offset` | `List[Player]` |
+| POST | `/api/players` | Create a new player. | `PlayerCreate` | `Player` (201) |
+| GET | `/api/players/{player_id}` | Get a specific player by ID. | `player_id` | `Player` |
+| PUT | `/api/players/{player_id}` | Update an existing player. | `PlayerUpdate` | `Player` |
+| DELETE | `/api/players/{player_id}` | Delete a player. | `player_id` | (204 No Content) |
+| GET | `/api/players/{player_id}/detail` | Fetch complete player detail with spells and weapons. | `player_id` | `PlayerDetail` |
+| GET | `/api/players/{player_id}/spells` | Get all spells assigned to a player. | `player_id` | `List[Spell]` |
+| PUT | `/api/players/{player_id}/spells` | Replace all spell assignments for a player. | `PlayerSpellAssignments` | `List[Spell]` |
+| POST | `/api/players/{player_id}/spells/{spell_id}` | Assign a spell to a player. | `player_id`, `spell_id` | (201) |
+| DELETE | `/api/players/{player_id}/spells/{spell_id}` | Remove a spell from a player. | `player_id`, `spell_id` | (204 No Content) |
+| GET | `/api/players/{player_id}/weapons` | Get all weapons assigned to a player. | `player_id` | `List[Weapon]` |
+| PUT | `/api/players/{player_id}/weapons` | Replace all weapon assignments for a player. | `PlayerWeaponAssignments` | `List[Weapon]` |
+| POST | `/api/players/{player_id}/weapons/{weapon_id}` | Assign a weapon to a player. | `player_id`, `weapon_id` | (201) |
+| DELETE | `/api/players/{player_id}/weapons/{weapon_id}` | Remove a weapon from a player. | `player_id`, `weapon_id` | (204 No Content) |
+<!-- GENERATED:API:players:END -->
 
 ---
 
@@ -124,13 +140,15 @@ Deleting a weapon relies on the existing `player_weapons.weapon_id` foreign key 
 
 `backend/app/routers/npcs.py` — NPC (non-player character) CRUD.
 
-| Method | Path | Purpose | Request schema | Response schema |
+<!-- GENERATED:API:npcs:START -->
+| Method | Path | Purpose | Request | Response |
 |---|---|---|---|---|
-| GET | `/api/npcs` | List all NPCs | `limit` (1-500; default 100), `offset` (default 0) | `List[NPC]` |
-| GET | `/api/npcs/{npc_id}` | Fetch NPC by ID | (path param) | `NPC` |
-| POST | `/api/npcs` | Create NPC | `NPCCreate` | `NPC` (201) |
-| PUT | `/api/npcs/{npc_id}` | Update NPC | `NPCUpdate` | `NPC` |
-| DELETE | `/api/npcs/{npc_id}` | Delete NPC | (path param) | (204 No Content) |
+| GET | `/api/npcs` | List all NPCs. | `limit`, `offset` | `List[NPC]` |
+| POST | `/api/npcs` | Create a new NPC. | `NPCCreate` | `NPC` (201) |
+| GET | `/api/npcs/{npc_id}` | Get a specific NPC by ID. | `npc_id` | `NPC` |
+| PUT | `/api/npcs/{npc_id}` | Update an existing NPC. | `NPCUpdate` | `NPC` |
+| DELETE | `/api/npcs/{npc_id}` | Delete an NPC. | `npc_id` | (204 No Content) |
+<!-- GENERATED:API:npcs:END -->
 
 ---
 
@@ -143,13 +161,15 @@ Each entry in an encounter's `creatures` JSON array may carry a soft typed sourc
 player rows may use a null `creature_id`; the existing `kind: "player"` field describes combatant
 behavior and is separate from `source_kind`. No database foreign key is enforced for this JSON field.
 
-| Method | Path | Purpose | Request schema | Response schema |
+<!-- GENERATED:API:encounters:START -->
+| Method | Path | Purpose | Request | Response |
 |---|---|---|---|---|
-| GET | `/api/encounters` | List all encounters | `limit` (1-500; default 100), `offset` (default 0) | `List[Encounter]` |
-| GET | `/api/encounters/{encounter_id}` | Fetch encounter by ID | (path param) | `Encounter` |
-| POST | `/api/encounters` | Create encounter | `EncounterCreate` | `Encounter` (201) |
-| PUT | `/api/encounters/{encounter_id}` | Update encounter | `EncounterUpdate` | `Encounter` |
-| DELETE | `/api/encounters/{encounter_id}` | Delete encounter | (path param) | (204 No Content) |
+| GET | `/api/encounters` | List all encounters. | `limit`, `offset` | `List[Encounter]` |
+| POST | `/api/encounters` | Create a new encounter. | `EncounterCreate` | `Encounter` (201) |
+| GET | `/api/encounters/{encounter_id}` | Get a specific encounter by ID. | `encounter_id` | `Encounter` |
+| PUT | `/api/encounters/{encounter_id}` | Update an existing encounter. | `EncounterUpdate` | `Encounter` |
+| DELETE | `/api/encounters/{encounter_id}` | Delete an encounter. | `encounter_id` | (204 No Content) |
+<!-- GENERATED:API:encounters:END -->
 
 ---
 
@@ -157,13 +177,15 @@ behavior and is separate from `source_kind`. No database foreign key is enforced
 
 `backend/app/routers/dungeons.py` — dungeon module CRUD (room layout, encounters, NPC placements).
 
-| Method | Path | Purpose | Request schema | Response schema |
+<!-- GENERATED:API:dungeons:START -->
+| Method | Path | Purpose | Request | Response |
 |---|---|---|---|---|
-| GET | `/api/dungeons` | List all dungeons | `limit` (1-500; default 100), `offset` (default 0) | `List[Dungeon]` |
-| GET | `/api/dungeons/{dungeon_id}` | Fetch dungeon by ID | (path param) | `Dungeon` |
-| POST | `/api/dungeons` | Create dungeon | `DungeonCreate` | `Dungeon` (201) |
-| PUT | `/api/dungeons/{dungeon_id}` | Update dungeon | `DungeonUpdate` | `Dungeon` |
-| DELETE | `/api/dungeons/{dungeon_id}` | Delete dungeon | (path param) | (204 No Content) |
+| GET | `/api/dungeons` | List all dungeons. | `limit`, `offset` | `List[Dungeon]` |
+| POST | `/api/dungeons` | Create a new dungeon. | `DungeonCreate` | `Dungeon` (201) |
+| GET | `/api/dungeons/{dungeon_id}` | Get a specific dungeon by ID. | `dungeon_id` | `Dungeon` |
+| PUT | `/api/dungeons/{dungeon_id}` | Update an existing dungeon. | `DungeonUpdate` | `Dungeon` |
+| DELETE | `/api/dungeons/{dungeon_id}` | Delete a dungeon. | `dungeon_id` | (204 No Content) |
+<!-- GENERATED:API:dungeons:END -->
 
 ---
 
@@ -171,11 +193,13 @@ behavior and is separate from `source_kind`. No database foreign key is enforced
 
 `backend/app/routers/layouts.py` — dungeon map layout save/load (Map Lab).
 
-| Method | Path | Purpose | Request schema | Response schema |
+<!-- GENERATED:API:layouts:START -->
+| Method | Path | Purpose | Request | Response |
 |---|---|---|---|---|
-| GET | `/api/dungeons/{dungeon_id}/layout` | Fetch dungeon map layout | (path param) | `MapLayoutBlob` |
-| PUT | `/api/dungeons/{dungeon_id}/layout` | Save/update dungeon map layout | `MapLayoutBlob` | `MapLayoutBlob` |
-| GET | `/api/dungeons/{dungeon_id}/incoming-gateways` | List every other dungeon's portal whose `to.dungeon_id` targets this dungeon | (path param) | `List[IncomingGateway]` |
+| GET | `/api/dungeons/{dungeon_id}/incoming-gateways` | List every portal in every other dungeon's layout that links into this dungeon | `dungeon_id` | `List[IncomingGateway]` |
+| GET | `/api/dungeons/{dungeon_id}/layout` | Get the layout for a dungeon (Map Lab editor stage) | `dungeon_id` | `MapLayoutBlob` |
+| PUT | `/api/dungeons/{dungeon_id}/layout` | Save/upsert the layout for a dungeon (Map Lab editor stage) | `MapLayoutBlob` | `MapLayoutBlob` |
+<!-- GENERATED:API:layouts:END -->
 
 Layout data (`map_layout`) and dungeon content data (`dungeons.data`) are saved independently via separate endpoints and debounced separately in the editor. `incoming-gateways` scans every other dungeon's layout blob on each request (no reverse index) — acceptable at this dungeon count, and the only way to surface a one-way, unpaired cross-dungeon link (see Dungeon Connections' "Links are one-way in the data" decision).
 
@@ -185,11 +209,13 @@ Layout data (`map_layout`) and dungeon content data (`dungeons.data`) are saved 
 
 `backend/app/routers/session_state.py` — permanent door/stair/portal toggle state (Map Lab session view), mirroring the layout router's save/load shape.
 
-| Method | Path | Purpose | Request schema | Response schema |
+<!-- GENERATED:API:session_state:START -->
+| Method | Path | Purpose | Request | Response |
 |---|---|---|---|---|
-| GET | `/api/dungeons/{dungeon_id}/session-state` | Fetch dungeon session state (404 if none saved) | (path param) | `MapSessionStateBlob` |
-| PUT | `/api/dungeons/{dungeon_id}/session-state` | Save/update dungeon session state | `MapSessionStateBlob` | `MapSessionStateBlob` |
-| DELETE | `/api/dungeons/{dungeon_id}/session-state` | Reset dungeon session state to authored defaults (deletes the row; 204 whether or not one existed) | (path param) | (204 No Content) |
+| GET | `/api/dungeons/{dungeon_id}/session-state` | Get the permanent door/stair/portal toggle state for a dungeon | `dungeon_id` | `MapSessionStateBlob` |
+| PUT | `/api/dungeons/{dungeon_id}/session-state` | Save/upsert the door/stair/portal toggle state for a dungeon | `MapSessionStateBlob` | `MapSessionStateBlob` |
+| DELETE | `/api/dungeons/{dungeon_id}/session-state` | Reset a dungeon's toggle state to its authored defaults (removes the saved row, if any) | `dungeon_id` | (204 No Content) |
+<!-- GENERATED:API:session_state:END -->
 
 Session state is written through immediately on every toggle (no debounce) — unlike layout/content saves, a toggle is not a form. It writes to a separate table (`map_session_state`) from `map_layout` so opening a door never dirties the authored map document.
 
@@ -199,10 +225,26 @@ Session state is written through immediately on every toggle (no debounce) — u
 
 `backend/app/routers/fog.py` — revealed-cell store for the player-app fog of war (union-write only, so cells can only be revealed, never hidden).
 
-| Method | Path | Purpose | Request schema | Response schema |
+<!-- GENERATED:API:fog:START -->
+| Method | Path | Purpose | Request | Response |
 |---|---|---|---|---|
-| GET | `/api/dungeons/{dungeon_id}/revealed-cells` | Get all revealed fog cells for a dungeon | (path param) | `RevealedCellsBlob` |
-| PUT | `/api/dungeons/{dungeon_id}/revealed-cells` | Reveal fog cells (union write — `INSERT OR IGNORE`, so cells only added, never removed) | `RevealedCellsBlob` | `RevealedCellsBlob` |
+| GET | `/api/dungeons/{dungeon_id}/revealed-cells` | Get all revealed fog cells for a dungeon | `dungeon_id` | `RevealedCellsBlob` |
+| PUT | `/api/dungeons/{dungeon_id}/revealed-cells` | Reveal fog cells (union write — cells can only be added, never removed) | `RevealedCellsBlob` | `RevealedCellsBlob` |
+<!-- GENERATED:API:fog:END -->
+
+---
+
+## Knowledge Router
+
+`backend/app/routers/knowledge.py` — the sparse per-dungeon map knowledge document: which authored facts the party has learned. One row per dungeon, upserted whole, and independently reversible from fog — knowledge and spatial visibility are stored separately and never confused.
+
+<!-- GENERATED:API:knowledge:START -->
+| Method | Path | Purpose | Request | Response |
+|---|---|---|---|---|
+| GET | `/api/dungeons/{dungeon_id}/knowledge` | Get the sparse knowledge document for a dungeon | `dungeon_id` | `MapKnowledgeBlob` |
+| PUT | `/api/dungeons/{dungeon_id}/knowledge` | Save/upsert the knowledge document for a dungeon | `MapKnowledgeBlob` | `MapKnowledgeBlob` |
+| DELETE | `/api/dungeons/{dungeon_id}/knowledge` | Clear a dungeon's knowledge document (removes the saved row, if any) | `dungeon_id` | (204 No Content) |
+<!-- GENERATED:API:knowledge:END -->
 
 ---
 
@@ -210,10 +252,12 @@ Session state is written through immediately on every toggle (no debounce) — u
 
 `backend/app/routers/at_the_table.py` — single-row pointer from the DM app to the player app: which dungeon is currently "at the table".
 
-| Method | Path | Purpose | Request schema | Response schema |
+<!-- GENERATED:API:at_the_table:START -->
+| Method | Path | Purpose | Request | Response |
 |---|---|---|---|---|
-| GET | `/api/at-the-table` | Get the dungeon currently set as 'at the table' (returns `dungeon_id: null` if no row exists) | (none) | `AtTheTableResponse` |
-| PUT | `/api/at-the-table` | Set which dungeon is at the table; validates dungeon exists (404 if not) | `AtTheTableSet` | `AtTheTableResponse` |
+| GET | `/api/at-the-table` | Get the dungeon currently set as 'at the table' | (none) | `AtTheTableResponse` |
+| PUT | `/api/at-the-table` | Set which dungeon is at the table | `AtTheTableSet` | `AtTheTableResponse` |
+<!-- GENERATED:API:at_the_table:END -->
 
 ---
 
@@ -221,14 +265,16 @@ Session state is written through immediately on every toggle (no debounce) — u
 
 `backend/app/routers/reference.py` — read-only reference data (abilities, conditions, damage types, etc.).
 
-| Method | Path | Purpose | Request schema | Response schema |
+<!-- GENERATED:API:reference:START -->
+| Method | Path | Purpose | Request | Response |
 |---|---|---|---|---|
-| GET | `/api/abilities` | List all abilities | (query params: none) | `List[Ability]` |
-| GET | `/api/conditions` | List all conditions | (query params: none) | `List[Condition]` |
-| GET | `/api/damage_types` | List all damage types | (query params: none) | `List[DamageType]` |
-| GET | `/api/weapon_properties` | List all weapon properties | (query params: none) | `List[WeaponProperty]` |
-| GET | `/api/skills` | List all skills | (query params: none) | `List[Skill]` |
-| GET | `/api/spell-components` | List all spell components | (query params: none) | `List[SpellComponent]` |
+| GET | `/api/abilities` | Get the six ability scores (Strength, Dexterity, etc.). | (none) | `List[Ability]` |
+| GET | `/api/conditions` | Get all conditions (Poisoned, Charmed, etc.). | (none) | `List[Condition]` |
+| GET | `/api/damage_types` | Get all damage types (Fire, Cold, Poison, etc.). | (none) | `List[DamageType]` |
+| GET | `/api/skills` | Get all skills mapped to abilities. | (none) | `List[Skill]` |
+| GET | `/api/spell-components` | Get all spell component types (V, S, M). | (none) | `List[SpellComponent]` |
+| GET | `/api/weapon_properties` | Get all weapon properties (Finesse, Versatile, etc.). | (none) | `List[WeaponProperty]` |
+<!-- GENERATED:API:reference:END -->
 
 ---
 
@@ -238,21 +284,29 @@ Session state is written through immediately on every toggle (no debounce) — u
 CRUD, ordered membership (insert/reorder/remove), and the tapestry read. No edges; a per-thread total order
 (`position` on `loom_nodes`, sorted ascending within a thread) replaces the old flat DAG.
 
-| Method | Path | Purpose | Request schema | Response schema |
+<!-- GENERATED:API:loom:START -->
+| Method | Path | Purpose | Request | Response |
 |---|---|---|---|---|
-| GET | `/api/loom/tapestry` | Fetch all sessions, threads (with ordered nodes), and all node identities | (none) | `LoomTapestry` |
-| GET | `/api/loom/threads` | List threads | `limit`, `offset` | `List[LoomThread]` |
-| POST | `/api/loom/sessions/log` | Create one new session row and apply each thread's outcome atomically (`happened`/`fulfilled`, `not_reached`/`carried`, `banked`, or `quiet`) | `LoomSessionLogRequest` | `LoomSession` (201) |
-| POST | `/api/loom/threads` | Create thread; also creates its `start` (position 0) and `end` (position 10) nodes | `LoomThreadCreate` | `LoomThread` (201) |
-| PUT | `/api/loom/threads/{thread_id}` | Update thread name/color/description | `LoomThreadUpdate` | `LoomThread` |
-| DELETE | `/api/loom/threads/{thread_id}` | Delete thread; its exclusive `start`/`end`/`beat` nodes are deleted with it, shared `session` nodes survive, `origin_node_id` back-references on other threads are nulled | (path param) | (204 No Content) |
-| POST | `/api/loom/nodes` | Create a `beat` or `session` node (unplaced) | `LoomNodeCreate` | `LoomNode` (201) |
-| PUT | `/api/loom/nodes/{node_id}` | Update node title/body (kind immutable) | `LoomNodeUpdate` | `LoomNode` |
-| DELETE | `/api/loom/nodes/{node_id}` | Delete a `beat`/`session` node; 422 on `start`/`end` | (path param) | (204 No Content) |
-| POST | `/api/loom/nodes/{node_id}/fulfil` | Convert a placed `beat` into a `session` in place; stamps `fulfilled_planned_title`/`fulfilled_at` | `LoomNodeFulfil` | `LoomNode` |
-| POST | `/api/loom/nodes/{node_id}/bank` | Unplace a `beat` (clears `thread_id`) and record `banked_from_thread_id` for later reuse | (none) | `LoomNode` |
-| POST | `/api/loom/threads/{thread_id}/items` | Place an existing `beat`/`session` node on the thread at a position; also the **restore** path for a banked beat, which clears `banked_from_thread_id` | `LoomThreadItemCreate` | `LoomNode` (201) |
-| POST | `/api/loom/threads/{thread_id}/items/{node_id}/move` | Atomically move a placed `beat`/`session` from `thread_id` to another thread at a position | `LoomNodeMove` | `LoomThreadMoveResult` |
+| POST | `/api/loom/nodes` | Create an unplaced `beat` or `session` node. | `LoomNodeCreate` | `LoomNode` (201) |
+| PUT | `/api/loom/nodes/{node_id}` | Update a node's title or body; kind is immutable except a fulfil undo. | `LoomNodeUpdate` | `LoomNode` |
+| DELETE | `/api/loom/nodes/{node_id}` | Delete a `beat` or `session` node; 422 on `start`/`end`. | `node_id` | (204 No Content) |
+| POST | `/api/loom/nodes/{node_id}/bank` | Unplace a beat, keeping it in the Beat Bank for later reuse. | `node_id` | `LoomNode` |
+| POST | `/api/loom/nodes/{node_id}/fulfil` | Convert a placed beat into a session in place. | `-` | `LoomNode` |
+| GET | `/api/loom/sessions` | List logged sessions in campaign order. | `limit`, `offset` | `List[LoomSession]` |
+| POST | `/api/loom/sessions` | Create a session column on the tapestry. | `LoomSessionCreate` | `LoomSession` (201) |
+| POST | `/api/loom/sessions/log` | Log a new session with per-thread outcomes in one transaction. | `LoomSessionLogRequest` | `LoomSession` (201) |
+| PUT | `/api/loom/sessions/{session_id}` | Update a session's title or date. | `LoomSessionUpdate` | `LoomSession` |
+| DELETE | `/api/loom/sessions/{session_id}` | Delete a session; 422 while any node still belongs to it. | `session_id` | (204 No Content) |
+| GET | `/api/loom/tapestry` | One-shot read: ordered sessions, threads, and thread-exclusive nodes. | (none) | `LoomTapestry` |
+| GET | `/api/loom/threads` | List threads. | `limit`, `offset` | `List[LoomThread]` |
+| POST | `/api/loom/threads` | Create a thread, plus its `start` (position 0) and `end` (position 10) nodes. | `LoomThreadCreate` | `LoomThread` (201) |
+| PUT | `/api/loom/threads/{thread_id}` | Update a thread's name, colour, or description. | `LoomThreadUpdate` | `LoomThread` |
+| DELETE | `/api/loom/threads/{thread_id}` | Delete a thread and its exclusive start/end/beat nodes; shared session nodes survive. | `thread_id` | (204 No Content) |
+| POST | `/api/loom/threads/{thread_id}/items` | Place an existing beat or session node on a thread; also restores a banked beat. | `LoomThreadItemCreate` | `LoomTapestryThread` (201) |
+| PATCH | `/api/loom/threads/{thread_id}/items/{node_id}` | Move a placed node to a new position within its own thread. | `LoomThreadItemPositionUpdate` | `LoomTapestryThread` |
+| DELETE | `/api/loom/threads/{thread_id}/items/{node_id}` | Unplace a node from a thread without deleting it; 422 on `start`/`end`. | `thread_id`, `node_id` | (204 No Content) |
+| POST | `/api/loom/threads/{thread_id}/items/{node_id}/move` | Atomically move a placed node to another thread at a position. | `LoomNodeMove` | `LoomThreadMoveResult` |
+<!-- GENERATED:API:loom:END -->
 
 `position` on `loom_nodes` is an integer, sorted ascending within a thread, and is the sole source of narrative
 order. `start`/`end` nodes can never be placed, reordered, or deleted directly — only whole-thread
@@ -282,126 +336,97 @@ and quiet leaves the thread unchanged. Any invalid thread/outcome rolls the whol
 
 ## Request/Response Shapes
 
-All request and response body shapes are defined in `backend/app/schemas.py` as Pydantic models. Refer there for field names, types, and optionality. Examples:
+Every request and response body is a Pydantic model in `backend/app/schemas.py`, which stays the source of truth for types and validation. The inventory below is generated from those models.
 
-- **Spell:** id, name, level, school, description, quick_rules, alternate_description, damage (JSON list), healing (JSON object), range, higher_levels (JSON object), casting_times (JSON list), duration, concentration, ritual, components (JSON list), materials, attacks (JSON list), area_of_effect (JSON object)
-- **Monster:** id, name, aliases (JSON), sizes (JSON), family, alignment, creature_type (JSON), ac (JSON), hp (JSON), speed (JSON), abilities (JSON), saving_throws (JSON), skills (JSON), passive_perception, damage_resistances (JSON), damage_immunities (JSON), damage_vulnerabilities (JSON), condition_immunities (JSON), senses (JSON), languages (JSON), audio_path, features (JSON), cr, cr_sort, cr_note, experience_points, created_at, updated_at
-- **Weapon:** id, name, base_weapon, rarity, weapon_category, weight, req_attune, property (JSON), focus (JSON), attack (JSON), entries (JSON), quick_rules, weapon_attack_bonus, weapon_damage_bonus
-- **Item:** id, name, value_gp, category, description
-- **LootBundle:** id, name, gold, contents (JSON loot-entry array)
-- **Player:** id, name, child_name, class_, subclass, level, ancestry, background, sizes (JSON), alignment, creature_type (JSON), ac (JSON), hp (JSON), speed (JSON), abilities (JSON), saving_throws (JSON), skills (JSON), passive_perception, damage_resistances (JSON), damage_immunities (JSON), damage_vulnerabilities (JSON), condition_immunities (JSON), senses (JSON), languages (JSON), features (JSON), initiative, proficiency_bonus, spell_attack_bonus, spell_save_dc, max_spell_slots (JSON), notes
-- **NPC:** id, name, race, gender, background, appearance (JSON), notes, plus the monster statblock projection — sizes (JSON), alignment, creature_type (JSON), ac (JSON), hp (JSON), speed (JSON), abilities (JSON), saving_throws (JSON), skills (JSON), passive_perception, damage_resistances (JSON), damage_immunities (JSON), damage_vulnerabilities (JSON), condition_immunities (JSON), senses (JSON), languages (JSON), features (JSON), cr, cr_note, experience_points
-- **Encounter:** id, title, creatures (JSON entries with optional `creature_id` and `source_kind`), active_index
-- **Dungeon:** id, title, data (JSON)
-- **MapLayoutBlob:** data (JSON)
-- **MapSessionStateBlob:** data (JSON)
-- **IncomingGateway:** dungeon_id, dungeon_title, portal_id, title, z, cell (JSON list)
-- **RevealedCell:** x, y
-- **RevealedCellsBlob:** cells (list of RevealedCell)
-- **AtTheTableResponse:** dungeon_id (nullable int)
-- **AtTheTableSet:** dungeon_id (int)
+<!-- GENERATED:API:SCHEMAS:START -->
+| Model | Fields |
+|---|---|
+| `Ability` | `id`, `code`, `name`, `description`* |
+| `AbilityScores` | `str`*, `dex`*, `con`*, `int`*, `wis`*, `cha`* |
+| `ArmorClass` | `value`, `note`*, `alternatives`* |
+| `ArmorClassEntry` | `value`, `note`* |
+| `AtTheTableResponse` | `dungeon_id`* |
+| `AtTheTableSet` | `dungeon_id` |
+| `Attack` | `kind`, `attack_bonus`*, `automatic_hit`*, `range_ft`*, `long_range_ft`*, `targets`*, `damage`* |
+| `AttackDamage` | `formula`, `bonus`*, `damage_types`* |
+| `Condition` | `id`, `name`, `description`* |
+| `CreatureType` | `category`, `tags`*, `swarm_size`* |
+| `DamageModifier` | `damage_type`, `note`*, `conditional`* |
+| `DamageType` | `id`, `code`, `name`, `description`* |
+| `Dungeon` | `id`, `title`, `data` |
+| `DungeonCreate` | `title`, `data` |
+| `DungeonUpdate` | `title`, `data` |
+| `Encounter` | `id`, `title`, `creatures`*, `active_index`* |
+| `EncounterCreate` | `title`, `creatures`*, `active_index`* |
+| `EncounterUpdate` | `title`, `creatures`*, `active_index`* |
+| `Feature-Input` | `name`, `description`*, `attack`* |
+| `Feature-Output` | `name`, `description`*, `attack`* |
+| `HitPoints` | `average`, `formula`* |
+| `IncomingGateway` | `dungeon_id`, `dungeon_title`, `portal_id`, `title`*, `z`, `cell` |
+| `Item` | `id`, `name`, `value_gp`*, `category`*, `description`* |
+| `ItemCreate` | `name`, `value_gp`*, `category`*, `description`* |
+| `ItemUpdate` | `name`, `value_gp`*, `category`*, `description`* |
+| `LoomNode` | `id`, `thread_id`*, `kind`, `title`, `body`*, `session_id`*, `position`, `carried_count`, `fulfilled_planned_title`*, `fulfilled_at`*, `banked_from_thread_id`* |
+| `LoomNodeCreate` | `thread_id`*, `kind`, `title`, `body`*, `session_id`*, `position`*, `carried_count`* |
+| `LoomNodeFulfil` | `title`* |
+| `LoomNodeMove` | `target_thread_id`, `position` |
+| `LoomNodeUpdate` | `thread_id`*, `kind`, `title`, `body`*, `session_id`*, `position`*, `carried_count`* |
+| `LoomSession` | `id`, `ordinal`, `name`, `played_on`*, `notes`* |
+| `LoomSessionCreate` | `ordinal`, `name`, `played_on`*, `notes`* |
+| `LoomSessionLogRequest` | `ordinal`, `name`, `played_on`*, `notes`*, `outcomes` |
+| `LoomSessionUpdate` | `ordinal`, `name`, `played_on`*, `notes`* |
+| `LoomTapestry` | `sessions`, `threads`, `nodes` |
+| `LoomTapestryThread` | `id`, `name`, `color`, `description`*, `origin_node_id`* |
+| `LoomThread` | `id`, `name`, `color`, `description`*, `origin_node_id`* |
+| `LoomThreadCreate` | `name`, `color`*, `description`*, `origin_node_id`*, `start_title`*, `end_title`* |
+| `LoomThreadItemCreate` | `node_id`, `position` |
+| `LoomThreadItemPositionUpdate` | `position` |
+| `LoomThreadMoveResult` | `source`, `target` |
+| `LoomThreadOutcome` | `outcome`, `title`* |
+| `LoomThreadUpdate` | `name`, `color`*, `description`* |
+| `LootBundle` | `id`, `name`, `gold`*, `contents`* |
+| `LootBundleCreate` | `name`, `gold`*, `contents`* |
+| `LootBundleUpdate` | `name`, `gold`*, `contents`* |
+| `MapKnowledgeBlob` | `data` |
+| `MapLayoutBlob` | `data` |
+| `MapSessionStateBlob` | `data` |
+| `Monster` | `name`, `aliases`*, `sizes`*, `family`*, `alignment`*, `creature_type`*, `ac`*, `hp`*, `speed`*, `abilities`*, `saving_throws`*, `skills`*, `passive_perception`*, `damage_resistances`*, `damage_immunities`*, `damage_vulnerabilities`*, `condition_immunities`*, `senses`*, `languages`*, `audio_path`*, `features`*, `cr`*, `cr_note`*, `experience_points`*, `created_at`*, `updated_at`*, `id`, `cr_sort`* |
+| `MonsterCreate` | `name`, `aliases`*, `sizes`*, `family`*, `alignment`*, `creature_type`*, `ac`*, `hp`*, `speed`*, `abilities`*, `saving_throws`*, `skills`*, `passive_perception`*, `damage_resistances`*, `damage_immunities`*, `damage_vulnerabilities`*, `condition_immunities`*, `senses`*, `languages`*, `audio_path`*, `features`*, `cr`*, `cr_note`*, `experience_points`*, `created_at`*, `updated_at`* |
+| `MonsterFeatures-Input` | `traits`*, `spellcasting`*, `actions`*, `bonus_actions`*, `reactions`*, `reaction_intro`*, `legendary_actions`*, `legendary_intro`*, `legendary_actions_per_round`*, `mythic_actions`* |
+| `MonsterFeatures-Output` | `traits`*, `spellcasting`*, `actions`*, `bonus_actions`*, `reactions`*, `reaction_intro`*, `legendary_actions`*, `legendary_intro`*, `legendary_actions_per_round`*, `mythic_actions`* |
+| `MonsterUpdate` | `name`, `aliases`*, `sizes`*, `family`*, `alignment`*, `creature_type`*, `ac`*, `hp`*, `speed`*, `abilities`*, `saving_throws`*, `skills`*, `passive_perception`*, `damage_resistances`*, `damage_immunities`*, `damage_vulnerabilities`*, `condition_immunities`*, `senses`*, `languages`*, `audio_path`*, `features`*, `cr`*, `cr_note`*, `experience_points`*, `created_at`*, `updated_at`* |
+| `MovementSpeed` | `mode`, `feet`, `note`*, `hover`* |
+| `NPC` | `name`, `race`*, `gender`*, `background`*, `sizes`*, `alignment`*, `creature_type`*, `ac`*, `hp`*, `speed`*, `abilities`*, `saving_throws`*, `skills`*, `passive_perception`*, `damage_resistances`*, `damage_immunities`*, `damage_vulnerabilities`*, `condition_immunities`*, `senses`*, `languages`*, `features`*, `cr`*, `cr_note`*, `experience_points`*, `appearance`*, `notes`*, `id` |
+| `NPCCreate` | `name`, `race`*, `gender`*, `background`*, `sizes`*, `alignment`*, `creature_type`*, `ac`*, `hp`*, `speed`*, `abilities`*, `saving_throws`*, `skills`*, `passive_perception`*, `damage_resistances`*, `damage_immunities`*, `damage_vulnerabilities`*, `condition_immunities`*, `senses`*, `languages`*, `features`*, `cr`*, `cr_note`*, `experience_points`*, `appearance`*, `notes`* |
+| `NPCUpdate` | `name`, `race`*, `gender`*, `background`*, `sizes`*, `alignment`*, `creature_type`*, `ac`*, `hp`*, `speed`*, `abilities`*, `saving_throws`*, `skills`*, `passive_perception`*, `damage_resistances`*, `damage_immunities`*, `damage_vulnerabilities`*, `condition_immunities`*, `senses`*, `languages`*, `features`*, `cr`*, `cr_note`*, `experience_points`*, `appearance`*, `notes`* |
+| `Player` | `name`, `child_name`*, `class`*, `subclass`*, `ancestry`*, `background`*, `level`*, `sizes`*, `alignment`*, `creature_type`*, `ac`*, `hp`*, `speed`*, `abilities`*, `saving_throws`*, `skills`*, `passive_perception`*, `damage_resistances`*, `damage_immunities`*, `damage_vulnerabilities`*, `condition_immunities`*, `senses`*, `languages`*, `features`*, `initiative`*, `proficiency_bonus`*, `spell_attack_bonus`*, `spell_save_dc`*, `max_spell_slots`*, `notes`*, `id`, `created_at`*, `updated_at`* |
+| `PlayerCreate` | `name`, `child_name`*, `class`*, `subclass`*, `ancestry`*, `background`*, `level`*, `sizes`*, `alignment`*, `creature_type`*, `ac`*, `hp`*, `speed`*, `abilities`*, `saving_throws`*, `skills`*, `passive_perception`*, `damage_resistances`*, `damage_immunities`*, `damage_vulnerabilities`*, `condition_immunities`*, `senses`*, `languages`*, `features`*, `initiative`*, `proficiency_bonus`*, `spell_attack_bonus`*, `spell_save_dc`*, `max_spell_slots`*, `notes`* |
+| `PlayerDetail` | `name`, `child_name`*, `class`*, `subclass`*, `ancestry`*, `background`*, `level`*, `sizes`*, `alignment`*, `creature_type`*, `ac`*, `hp`*, `speed`*, `abilities`*, `saving_throws`*, `skills`*, `passive_perception`*, `damage_resistances`*, `damage_immunities`*, `damage_vulnerabilities`*, `condition_immunities`*, `senses`*, `languages`*, `features`*, `initiative`*, `proficiency_bonus`*, `spell_attack_bonus`*, `spell_save_dc`*, `max_spell_slots`*, `notes`*, `id`, `created_at`*, `updated_at`*, `spells`*, `weapons`* |
+| `PlayerSpellAssignments` | `spell_ids`* |
+| `PlayerUpdate` | `name`, `child_name`*, `class`*, `subclass`*, `ancestry`*, `background`*, `level`*, `sizes`*, `alignment`*, `creature_type`*, `ac`*, `hp`*, `speed`*, `abilities`*, `saving_throws`*, `skills`*, `passive_perception`*, `damage_resistances`*, `damage_immunities`*, `damage_vulnerabilities`*, `condition_immunities`*, `senses`*, `languages`*, `features`*, `initiative`*, `proficiency_bonus`*, `spell_attack_bonus`*, `spell_save_dc`*, `max_spell_slots`*, `notes`* |
+| `PlayerWeaponAssignments` | `weapon_ids`* |
+| `RevealedCell` | `x`, `y` |
+| `RevealedCellsBlob` | `cells` |
+| `Sense` | `type`, `range`, `note`* |
+| `Skill` | `name`, `ability`, `description`* |
+| `Spell` | `id`, `name`, `level`, `school`*, `description`, `quick_rules`*, `alternate_description`*, `damage`*, `healing`*, `range`, `higher_levels`*, `casting_times`*, `duration`, `concentration`, `ritual`, `components`*, `materials`*, `attacks`*, `area_of_effect`* |
+| `SpellAreaOfEffect` | `shape`*, `size`* |
+| `SpellAttack` | `kind`*, `saving_throws`* |
+| `SpellComponent` | `code`, `name`, `description`* |
+| `SpellCreate` | `name`, `level`, `school`*, `description`, `quick_rules`, `alternate_description`*, `damage`*, `healing`*, `range`, `higher_levels`*, `casting_times`*, `duration`, `concentration`, `ritual`, `components`*, `materials`*, `attacks`*, `area_of_effect`* |
+| `SpellDamage` | `name`, `formula`, `damage_types`* |
+| `SpellGroup` | `label`, `spells`*, `hidden`* |
+| `SpellHealing` | `amount`*, `temp_hp`*, `max_hp`* |
+| `SpellHigherLevels` | `text`*, `damage_by_slot`* |
+| `SpellPlayerAssignments` | `player_ids`* |
+| `SpellReference` | `name`, `hidden`* |
+| `SpellUpdate` | `name`, `level`, `school`*, `description`, `quick_rules`, `alternate_description`*, `damage`*, `healing`*, `range`, `higher_levels`*, `casting_times`*, `duration`, `concentration`, `ritual`, `components`*, `materials`*, `attacks`*, `area_of_effect`* |
+| `SpellcastingBlock-Input` | `name`, `ability`*, `description`*, `resource`*, `groups`*, `footer`* |
+| `SpellcastingBlock-Output` | `name`, `ability`*, `description`*, `resource`*, `groups`*, `footer`* |
+| `Weapon` | `id`, `name`, `base_weapon`*, `rarity`*, `weapon_category`*, `weight`*, `req_attune`*, `property`*, `focus`*, `attack`*, `entries`*, `quick_rules`*, `weapon_attack_bonus`*, `weapon_damage_bonus`* |
+| `WeaponCreate` | `name`, `base_weapon`*, `rarity`*, `weapon_category`*, `weight`*, `req_attune`*, `property`*, `focus`*, `attack`*, `entries`*, `quick_rules`, `weapon_attack_bonus`*, `weapon_damage_bonus`* |
+| `WeaponProperty` | `id`, `code`, `name`, `description`* |
+| `WeaponUpdate` | `name`, `base_weapon`*, `rarity`*, `weapon_category`*, `weight`*, `req_attune`*, `property`*, `focus`*, `attack`*, `entries`*, `quick_rules`, `weapon_attack_bonus`*, `weapon_damage_bonus`* |
 
-All optional fields are `Optional[...]` in the schema; required fields have no `Optional` wrapper. For full detail, read the schema definitions directly in the source file.
-
-<!-- GENERATED:API:START -->
-### Generated API Inventory
-
-| Method | Path | Parameters | Request | Responses |
-|---|---|---|---|---|
-| GET | `/api/abilities` | - | - | 200: List[Ability] |
-| GET | `/api/at-the-table` | - | - | 200: AtTheTableResponse |
-| PUT | `/api/at-the-table` | - | AtTheTableSet | 200: AtTheTableResponse, 422: HTTPValidationError |
-| GET | `/api/conditions` | - | - | 200: List[Condition] |
-| GET | `/api/damage_types` | - | - | 200: List[DamageType] |
-| GET | `/api/dungeons` | `limit` (query), `offset` (query) | - | 200: List[Dungeon], 422: HTTPValidationError |
-| POST | `/api/dungeons` | - | DungeonCreate | 201: Dungeon, 422: HTTPValidationError |
-| DELETE | `/api/dungeons/{dungeon_id}` | `dungeon_id` (path, required) | - | 204: -, 422: HTTPValidationError |
-| GET | `/api/dungeons/{dungeon_id}` | `dungeon_id` (path, required) | - | 200: Dungeon, 422: HTTPValidationError |
-| PUT | `/api/dungeons/{dungeon_id}` | `dungeon_id` (path, required) | DungeonUpdate | 200: Dungeon, 422: HTTPValidationError |
-| GET | `/api/dungeons/{dungeon_id}/incoming-gateways` | `dungeon_id` (path, required) | - | 200: List[IncomingGateway], 422: HTTPValidationError |
-| GET | `/api/dungeons/{dungeon_id}/layout` | `dungeon_id` (path, required) | - | 200: MapLayoutBlob, 422: HTTPValidationError |
-| PUT | `/api/dungeons/{dungeon_id}/layout` | `dungeon_id` (path, required) | MapLayoutBlob | 200: MapLayoutBlob, 422: HTTPValidationError |
-| GET | `/api/dungeons/{dungeon_id}/revealed-cells` | `dungeon_id` (path, required) | - | 200: RevealedCellsBlob, 422: HTTPValidationError |
-| PUT | `/api/dungeons/{dungeon_id}/revealed-cells` | `dungeon_id` (path, required) | RevealedCellsBlob | 200: RevealedCellsBlob, 422: HTTPValidationError |
-| DELETE | `/api/dungeons/{dungeon_id}/session-state` | `dungeon_id` (path, required) | - | 204: -, 422: HTTPValidationError |
-| GET | `/api/dungeons/{dungeon_id}/session-state` | `dungeon_id` (path, required) | - | 200: MapSessionStateBlob, 422: HTTPValidationError |
-| PUT | `/api/dungeons/{dungeon_id}/session-state` | `dungeon_id` (path, required) | MapSessionStateBlob | 200: MapSessionStateBlob, 422: HTTPValidationError |
-| GET | `/api/encounters` | `limit` (query), `offset` (query) | - | 200: List[Encounter], 422: HTTPValidationError |
-| POST | `/api/encounters` | - | EncounterCreate | 201: Encounter, 422: HTTPValidationError |
-| DELETE | `/api/encounters/{encounter_id}` | `encounter_id` (path, required) | - | 204: -, 422: HTTPValidationError |
-| GET | `/api/encounters/{encounter_id}` | `encounter_id` (path, required) | - | 200: Encounter, 422: HTTPValidationError |
-| PUT | `/api/encounters/{encounter_id}` | `encounter_id` (path, required) | EncounterUpdate | 200: Encounter, 422: HTTPValidationError |
-| GET | `/api/items` | `limit` (query), `offset` (query) | - | 200: List[Item], 422: HTTPValidationError |
-| POST | `/api/items` | - | ItemCreate | 201: Item, 422: HTTPValidationError |
-| DELETE | `/api/items/{item_id}` | `item_id` (path, required) | - | 204: -, 422: HTTPValidationError |
-| GET | `/api/items/{item_id}` | `item_id` (path, required) | - | 200: Item, 422: HTTPValidationError |
-| PUT | `/api/items/{item_id}` | `item_id` (path, required) | ItemUpdate | 200: Item, 422: HTTPValidationError |
-| POST | `/api/loom/nodes` | - | LoomNodeCreate | 201: LoomNode, 422: HTTPValidationError |
-| DELETE | `/api/loom/nodes/{node_id}` | `node_id` (path, required) | - | 204: -, 422: HTTPValidationError |
-| PUT | `/api/loom/nodes/{node_id}` | `node_id` (path, required) | LoomNodeUpdate | 200: LoomNode, 422: HTTPValidationError |
-| POST | `/api/loom/nodes/{node_id}/bank` | `node_id` (path, required) | - | 200: LoomNode, 422: HTTPValidationError |
-| POST | `/api/loom/nodes/{node_id}/fulfil` | `node_id` (path, required) | - | 200: LoomNode, 422: HTTPValidationError |
-| GET | `/api/loom/sessions` | `limit` (query), `offset` (query) | - | 200: List[LoomSession], 422: HTTPValidationError |
-| POST | `/api/loom/sessions` | - | LoomSessionCreate | 201: LoomSession, 422: HTTPValidationError |
-| POST | `/api/loom/sessions/log` | - | LoomSessionLogRequest | 201: LoomSession, 422: HTTPValidationError |
-| DELETE | `/api/loom/sessions/{session_id}` | `session_id` (path, required) | - | 204: -, 422: HTTPValidationError |
-| PUT | `/api/loom/sessions/{session_id}` | `session_id` (path, required) | LoomSessionUpdate | 200: LoomSession, 422: HTTPValidationError |
-| GET | `/api/loom/tapestry` | - | - | 200: LoomTapestry |
-| GET | `/api/loom/threads` | `limit` (query), `offset` (query) | - | 200: List[LoomThread], 422: HTTPValidationError |
-| POST | `/api/loom/threads` | - | LoomThreadCreate | 201: LoomThread, 422: HTTPValidationError |
-| DELETE | `/api/loom/threads/{thread_id}` | `thread_id` (path, required) | - | 204: -, 422: HTTPValidationError |
-| PUT | `/api/loom/threads/{thread_id}` | `thread_id` (path, required) | LoomThreadUpdate | 200: LoomThread, 422: HTTPValidationError |
-| POST | `/api/loom/threads/{thread_id}/items` | `thread_id` (path, required) | LoomThreadItemCreate | 201: LoomTapestryThread, 422: HTTPValidationError |
-| DELETE | `/api/loom/threads/{thread_id}/items/{node_id}` | `thread_id` (path, required), `node_id` (path, required) | - | 204: -, 422: HTTPValidationError |
-| PATCH | `/api/loom/threads/{thread_id}/items/{node_id}` | `thread_id` (path, required), `node_id` (path, required) | LoomThreadItemPositionUpdate | 200: LoomTapestryThread, 422: HTTPValidationError |
-| POST | `/api/loom/threads/{thread_id}/items/{node_id}/move` | `thread_id` (path, required), `node_id` (path, required) | LoomNodeMove | 200: LoomThreadMoveResult, 422: HTTPValidationError |
-| GET | `/api/loot-bundles` | `limit` (query), `offset` (query) | - | 200: List[LootBundle], 422: HTTPValidationError |
-| POST | `/api/loot-bundles` | - | LootBundleCreate | 201: LootBundle, 422: HTTPValidationError |
-| DELETE | `/api/loot-bundles/{bundle_id}` | `bundle_id` (path, required) | - | 204: -, 422: HTTPValidationError |
-| GET | `/api/loot-bundles/{bundle_id}` | `bundle_id` (path, required) | - | 200: LootBundle, 422: HTTPValidationError |
-| PUT | `/api/loot-bundles/{bundle_id}` | `bundle_id` (path, required) | LootBundleUpdate | 200: LootBundle, 422: HTTPValidationError |
-| GET | `/api/monsters` | `limit` (query), `offset` (query) | - | 200: List[Monster], 422: HTTPValidationError |
-| POST | `/api/monsters` | - | MonsterCreate | 201: Monster, 422: HTTPValidationError |
-| GET | `/api/monsters/by-name/{name}` | `name` (path, required) | - | 200: Monster, 422: HTTPValidationError |
-| DELETE | `/api/monsters/{monster_id}` | `monster_id` (path, required) | - | 204: -, 422: HTTPValidationError |
-| GET | `/api/monsters/{monster_id}` | `monster_id` (path, required) | - | 200: Monster, 422: HTTPValidationError |
-| PUT | `/api/monsters/{monster_id}` | `monster_id` (path, required) | MonsterUpdate | 200: Monster, 422: HTTPValidationError |
-| GET | `/api/npcs` | `limit` (query), `offset` (query) | - | 200: List[NPC], 422: HTTPValidationError |
-| POST | `/api/npcs` | - | NPCCreate | 201: NPC, 422: HTTPValidationError |
-| DELETE | `/api/npcs/{npc_id}` | `npc_id` (path, required) | - | 204: -, 422: HTTPValidationError |
-| GET | `/api/npcs/{npc_id}` | `npc_id` (path, required) | - | 200: NPC, 422: HTTPValidationError |
-| PUT | `/api/npcs/{npc_id}` | `npc_id` (path, required) | NPCUpdate | 200: NPC, 422: HTTPValidationError |
-| GET | `/api/players` | `limit` (query), `offset` (query) | - | 200: List[Player], 422: HTTPValidationError |
-| POST | `/api/players` | - | PlayerCreate | 201: Player, 422: HTTPValidationError |
-| DELETE | `/api/players/{player_id}` | `player_id` (path, required) | - | 204: -, 422: HTTPValidationError |
-| GET | `/api/players/{player_id}` | `player_id` (path, required) | - | 200: Player, 422: HTTPValidationError |
-| PUT | `/api/players/{player_id}` | `player_id` (path, required) | PlayerUpdate | 200: Player, 422: HTTPValidationError |
-| GET | `/api/players/{player_id}/detail` | `player_id` (path, required) | - | 200: PlayerDetail, 422: HTTPValidationError |
-| GET | `/api/players/{player_id}/spells` | `player_id` (path, required) | - | 200: List[Spell], 422: HTTPValidationError |
-| PUT | `/api/players/{player_id}/spells` | `player_id` (path, required) | PlayerSpellAssignments | 200: List[Spell], 422: HTTPValidationError |
-| DELETE | `/api/players/{player_id}/spells/{spell_id}` | `player_id` (path, required), `spell_id` (path, required) | - | 204: -, 422: HTTPValidationError |
-| POST | `/api/players/{player_id}/spells/{spell_id}` | `player_id` (path, required), `spell_id` (path, required) | - | 201: -, 422: HTTPValidationError |
-| GET | `/api/players/{player_id}/weapons` | `player_id` (path, required) | - | 200: List[Weapon], 422: HTTPValidationError |
-| PUT | `/api/players/{player_id}/weapons` | `player_id` (path, required) | PlayerWeaponAssignments | 200: List[Weapon], 422: HTTPValidationError |
-| DELETE | `/api/players/{player_id}/weapons/{weapon_id}` | `player_id` (path, required), `weapon_id` (path, required) | - | 204: -, 422: HTTPValidationError |
-| POST | `/api/players/{player_id}/weapons/{weapon_id}` | `player_id` (path, required), `weapon_id` (path, required) | - | 201: -, 422: HTTPValidationError |
-| GET | `/api/skills` | - | - | 200: List[Skill] |
-| GET | `/api/spell-components` | - | - | 200: List[SpellComponent] |
-| GET | `/api/spells` | `level` (query), `school` (query), `limit` (query), `offset` (query) | - | 200: List[Spell], 422: HTTPValidationError |
-| POST | `/api/spells` | - | SpellCreate | 201: Spell, 422: HTTPValidationError |
-| GET | `/api/spells/by-title/{spell_name}` | `spell_name` (path, required) | - | 200: Spell, 422: HTTPValidationError |
-| DELETE | `/api/spells/{spell_id}` | `spell_id` (path, required) | - | 204: -, 422: HTTPValidationError |
-| GET | `/api/spells/{spell_id}` | `spell_id` (path, required) | - | 200: Spell, 422: HTTPValidationError |
-| PUT | `/api/spells/{spell_id}` | `spell_id` (path, required) | SpellUpdate | 200: Spell, 422: HTTPValidationError |
-| GET | `/api/spells/{spell_id}/players` | `spell_id` (path, required) | - | 200: List[Player], 422: HTTPValidationError |
-| PUT | `/api/spells/{spell_id}/players` | `spell_id` (path, required) | SpellPlayerAssignments | 200: List[Player], 422: HTTPValidationError |
-| GET | `/api/weapon_properties` | - | - | 200: List[WeaponProperty] |
-| GET | `/api/weapons` | `limit` (query), `offset` (query) | - | 200: List[Weapon], 422: HTTPValidationError |
-| POST | `/api/weapons` | - | WeaponCreate | 201: Weapon, 422: HTTPValidationError |
-| GET | `/api/weapons/by-name/{name}` | `name` (path, required) | - | 200: Weapon, 422: HTTPValidationError |
-| DELETE | `/api/weapons/{weapon_id}` | `weapon_id` (path, required) | - | 204: -, 422: HTTPValidationError |
-| GET | `/api/weapons/{weapon_id}` | `weapon_id` (path, required) | - | 200: Weapon, 422: HTTPValidationError |
-| PUT | `/api/weapons/{weapon_id}` | `weapon_id` (path, required) | WeaponUpdate | 200: Weapon, 422: HTTPValidationError |
-| GET | `/api/weapons/{weapon_id}/players` | `weapon_id` (path, required) | - | 200: List[Player], 422: HTTPValidationError |
-<!-- GENERATED:API:END -->
-
+Fields marked `*` are optional.
+<!-- GENERATED:API:SCHEMAS:END -->

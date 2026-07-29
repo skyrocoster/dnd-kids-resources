@@ -3,6 +3,8 @@
 > **Status:** Next up for Infra now that Docs Restructure is complete. Nothing here blocks running a session: the first record already exists at `../../table-tests/2026-07-23-player-app-skeleton-stage-6.md`, written ahead of its own contract deliberately. No stages shipped.
 
 - **Area guide:** [Infra](../../../areas/infra.md)
+- **Read trigger:** Recording a real session, the table-test format, or its lifecycle and checks
+
 
 ## Touches
 

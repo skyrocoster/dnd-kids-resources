@@ -2,7 +2,9 @@
 
 > **Status:** Complete — all six stages shipped. The Loom now renders a session-column grid with cloth/fell/warp material break, terse cards, a suited rail, guided session logging, and usable drag-drop plan editing.
 
-- **Area guide:** [The Loom](../../areas/loom.md).
+- **Area guide:** [The Loom](../../../areas/loom.md).
+- **Read trigger:** Loom fell-line rebuild history
+
 
 ## What we're building & why
 

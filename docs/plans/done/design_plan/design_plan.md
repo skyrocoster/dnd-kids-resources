@@ -10,6 +10,10 @@ tokens/tooling; see `docs/dungeon_plan.md`'s **Design Phase J** for the current 
 
 > **Status:** DP0–DP4 shipped.
 
+- **Area guide:** [Design](../../../areas/design.md)
+- **Read trigger:** Shared-design implementation history
+
+
 ---
 
 ## What this doc covers

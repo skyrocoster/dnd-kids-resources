@@ -2,6 +2,10 @@
 
 > **Status:** DOC0-DOC6 shipped. This plan is complete.
 
+- **Area guide:** [Infra](../../../areas/infra.md)
+- **Read trigger:** Documentation-contract implementation history
+
+
 ## Goal
 
 Create a deterministic documentation path so every AI context can identify its authority, active plan, minimum context, expected touch set, documentation impact, and proof of synchronization.

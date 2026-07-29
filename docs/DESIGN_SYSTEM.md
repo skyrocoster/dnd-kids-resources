@@ -470,8 +470,9 @@ tracking and Roboto Flex axis tuning.
   (`--control-height-compact`, 32px), reserved for documented desktop-only inspector controls per the visual
   consistency plan's design-system-in-force contract; and Map Lab editor compact property inputs/selects/
   checkboxes inside `.maplab-field-row`, where each compact control is paired with a visible label and the row
-  itself keeps the 48px target footprint. The ordinary catalog authoring and picker controls touched by VW6 also
-  consume this floor.
+  itself keeps the 48px target footprint; and inline glossary term triggers, whose native inline text buttons
+  retain the global visible focus ring but cannot reach 48px high without breaking running-prose layout. The
+  ordinary catalog authoring and picker controls touched by VW6 also consume this floor.
 
 <!-- GENERATED:DESIGN_SYSTEM:START -->
 ### Generated Design Inventory

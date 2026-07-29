@@ -2,7 +2,9 @@
 
 > **Status:** Complete. DG0-DG1 shipped; archived 2026-07-16.
 
-- **Area guide:** [Documentation Governance](../areas/documentation.md).
+- **Area guide:** [Infra](../../../areas/infra.md).
+- **Read trigger:** Plan-template workflow history
+
 
 ---
 

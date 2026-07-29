@@ -1,6 +1,6 @@
 # Reference Area Guide
 
-> **Plan queue:** None.
+- **Read trigger:** Spells, weapons, items, or loot
 
 ## Scope
 
@@ -61,6 +61,12 @@ The browsers are prep surfaces even though they are also consulted at the table,
 - Keep items and loot bundles distinct while preserving their documented map integration.
 
 ## Work queue
+
+<!-- GENERATED:AREA_PLANS:reference:START -->
+_No plan is in flight for this area._
+<!-- GENERATED:AREA_PLANS:reference:END -->
+
+What the table cannot derive:
 
 - [Weapon Quick Reference](../plans/done/weapon-quick-reference/weapon-quick-reference.md) shipped required quick_rules on every weapon, optional sheet-ready totals, Copy as New, cascade-aware delete confirmation, and an authored quick-rules pass across all 218 seeded weapons.
 - Create a focused plan for spell class/source curation or executable mechanics.

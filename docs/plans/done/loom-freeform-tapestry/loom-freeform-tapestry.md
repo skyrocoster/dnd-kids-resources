@@ -2,7 +2,9 @@
 
 > **Status:** All stages shipped — feature complete.
 
-- **Area guide:** [The Loom](../../areas/loom.md)
+- **Area guide:** [The Loom](../../../areas/loom.md)
+- **Read trigger:** Freeform tapestry implementation history
+
 
 ## What we're building & why
 

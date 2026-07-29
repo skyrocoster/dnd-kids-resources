@@ -2,6 +2,10 @@
 
 > **Status:** M3, X0, X1, X2, X3, X4 shipped. Monster experience phase complete.
 
+- **Area guide:** [Encounters](../../../areas/encounters.md)
+- **Read trigger:** Monster implementation history
+
+
 ## What this feature is
 
 The monster area is being **completely rebuilt**, top to bottom: the data model, the backend, the read

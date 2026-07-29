@@ -2,6 +2,10 @@
 
 > **Status:** Not next for Infra; second in the Infra queue, after Table Testing Records. Resumes after Field-Test Readiness. **Part of Stage 1 has already shipped out of band** — see *Landed early* below. First remaining stage: the rest of Stage 1 — the schema as data.
 
+- **Area guide:** [Infra](../../../areas/infra.md)
+- **Read trigger:** Schema generation, database migrations, or the deploy path
+
+
 ## Landed early (outside this plan)
 
 The export half of Stage 1 shipped ahead of this plan, because authoring dungeon content was blocked
@@ -20,8 +24,6 @@ without it:
 **Still open in this plan:** `check_demo_database.py`'s hand-maintained `REQUIRED_COLUMNS`, additive
 migrations, and the deploy path. `--check-db` currently reports one real drift — the live database
 carries a `quests` table `init_database.py` has never heard of.
-
-- **Area guide:** [Infra](../../../areas/infra.md)
 
 ## Touches
 

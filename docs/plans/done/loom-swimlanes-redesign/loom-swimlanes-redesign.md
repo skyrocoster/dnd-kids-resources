@@ -2,7 +2,9 @@
 
 > **Status:** LS0–LS5 shipped. LS6 (Plan Closeout — Documentation Update) is next up.
 
-- **Area guide:** [The Loom](../../areas/loom.md)
+- **Area guide:** [The Loom](../../../areas/loom.md)
+- **Read trigger:** Loom swimlanes redesign history
+
 
 ## What the feature is
 

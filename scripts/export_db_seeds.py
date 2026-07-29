@@ -45,6 +45,7 @@ EXPORT_POLICY = {
     "loom_threads": {"file": "seed_loom_threads.json", "order_by": "id"},
     "loot_bundle": {"file": "seed_loot_bundles.json", "order_by": "name"},
     "map_layout": {"file": "seed_map_layouts.json", "order_by": "dungeon_id"},
+    "map_knowledge": {"file": "seed_map_knowledge.json", "order_by": "dungeon_id"},
     "map_session_state": {"file": "seed_map_session_state.json", "order_by": "dungeon_id"},
     "revealed_cells": {"file": "seed_revealed_cells.json", "order_by": "dungeon_id, x, y"},
     "at_the_table": {"file": "seed_at_the_table.json", "order_by": "lock"},
@@ -69,6 +70,7 @@ JSON_COLUMNS = {
     "dungeons": ["data"],
     "encounter": ["units"],
     "loot_bundle": ["contents"],
+    "map_knowledge": ["data"],
     "map_layout": ["data"],
     "map_session_state": ["data"],
     "monsters": [

@@ -58,6 +58,11 @@ getting wrong and paying a rewrite pass for:
 It then runs `check_orders.py` on the rendered text and **writes nothing if it fails**, so an order
 that reaches disk is an order that passes lint. `--stdout` prints instead of writing.
 
+`new_order.py` and `check_orders.py` are invoke-only. Run `new_order.py --help` for the full argument
+list — thirty lines against several hundred for reading the source, which can only restate the
+interface anyway. A REFUSED message already names the fault and its fix; act on that rather than
+opening the linter to work out what it meant. Open either file only to change its behaviour.
+
 The caps below are enforced at the argument boundary, which is the point: exceeding one is an error
 telling you to split the order, before you have written it.
 
@@ -346,6 +351,19 @@ Four rules keep the delegation honest:
 
 You are not obliged to delegate. If a stage is small enough that you can compile it from files you
 were always going to open, do that and say nothing about it.
+
+## When you were not told which plan
+
+[docs/plans/active/INDEX.md](../../../docs/plans/active/INDEX.md) lists every in-flight plan with the
+state of its orders and, in its `Next` column, which skill each one is waiting for. Read that first
+when the user says "compile the next stage" without naming a feature. A row whose `Next` is
+`to-orders` is one this skill can pick up.
+
+Skip any row whose `State` is `blocked`: it is waiting on a plan that has not shipped, and compiling
+against it means compiling against facts that are about to change.
+
+If exactly one `ready` row says `to-orders`, that is the plan. If several do, say which ones and ask
+— nothing in the repo ranks the ready plans, and choosing between them is the user's call.
 
 ## How to compile a stage
 

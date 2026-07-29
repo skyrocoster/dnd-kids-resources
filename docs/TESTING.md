@@ -139,6 +139,37 @@ CREATE TABLE statement inside `conftest.py`, stop** — the schema comes from
 - `documentation-contract` must be enabled as a required branch-protection check in GitHub repository settings. The workflow cannot enforce that repository setting itself.
 - Use the PR template to record that a fresh reader can route the change from `CLAUDE.md` through `docs/README.md` to the owning plan's minimum context.
 
+## Where the tests live
+
+Generated from the test tree — do not hand-edit. The rules above say what a passing run means; this
+says only where the files are.
+
+<!-- GENERATED:TESTING:LOCATIONS:START -->
+| Location | Files | Test cases |
+|---|---|---|
+| `backend/tests/` | 15 | 378 |
+| `backend/tests/routers/` | 17 | 267 |
+| `frontend/src/__tests__/` | 1 | 4 |
+| `frontend/src/api/__tests__/` | 1 | 5 |
+| `frontend/src/components/__tests__/` | 14 | 149 |
+| `frontend/src/components/form/__tests__/` | 4 | 11 |
+| `frontend/src/features/dungeons/__tests__/` | 2 | 54 |
+| `frontend/src/features/dungeons/maplab/__tests__/` | 19 | 565 |
+| `frontend/src/features/encounters/__tests__/` | 9 | 115 |
+| `frontend/src/features/items/__tests__/` | 3 | 15 |
+| `frontend/src/features/loom/__tests__/` | 9 | 123 |
+| `frontend/src/features/loot/__tests__/` | 5 | 22 |
+| `frontend/src/features/monsters/__tests__/` | 3 | 35 |
+| `frontend/src/features/npcs/__tests__/` | 10 | 85 |
+| `frontend/src/features/players/__tests__/` | 8 | 58 |
+| `frontend/src/features/spells/__tests__/` | 4 | 34 |
+| `frontend/src/features/weapons/__tests__/` | 3 | 25 |
+| `frontend/src/layout/__tests__/` | 1 | 12 |
+| `frontend/src/map/__tests__/` | 3 | 44 |
+| `frontend/src/pages/__tests__/` | 2 | 5 |
+| `frontend/src/player/__tests__/` | 6 | 57 |
+<!-- GENERATED:TESTING:LOCATIONS:END -->
+
 <!-- GENERATED:TESTING:START -->
 ### Generated Test Configuration
 

@@ -2,7 +2,9 @@
 
 > **Status:** LM0–LM8 complete.
 
-- **Area guide:** [The Loom](../areas/loom.md).
+- **Area guide:** [The Loom](../../../areas/loom.md).
+- **Read trigger:** Loom tapestry tracker implementation history
+
 
 ---
 

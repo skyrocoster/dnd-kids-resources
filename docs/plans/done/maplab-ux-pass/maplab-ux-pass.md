@@ -2,7 +2,9 @@
 
 > **Status:** Complete. All eight stages shipped; no further work remains in this Plan.
 
-- **Area guide:** [Dungeons](../../areas/dungeons.md)
+- **Area guide:** [Dungeons](../../../areas/dungeons.md)
+- **Read trigger:** Map Lab editor/viewer chrome, gestures, brushes, undo, or tablet-layout history
+
 
 ## What we're building & why
 

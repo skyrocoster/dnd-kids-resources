@@ -6,6 +6,8 @@
 > which is next up for Players ahead of fog.
 
 - **Area guide:** [Players](../../../areas/players.md)
+- **Read trigger:** The `/play` shell, the import rule, the fog and curtain seams, or how the kid map first reached a table
+
 
 ## Touches
 

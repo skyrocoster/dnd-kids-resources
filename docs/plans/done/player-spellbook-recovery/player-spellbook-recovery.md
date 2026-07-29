@@ -2,7 +2,9 @@
 
 > **Status:** Stage 1-5 shipped. Feature complete.
 
-- **Area guide:** [Players](../../areas/players.md)
+- **Area guide:** [Players](../../../areas/players.md)
+- **Read trigger:** Player recovery data, spell-first reference, or character assignments
+
 
 ## What we're building & why
 

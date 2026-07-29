@@ -2,7 +2,9 @@
 
 > **Status:** All five stages complete — ready to archive to `docs/complete/`.
 
-- **Area guide:** [Documentation Governance](../../areas/documentation.md).
+- **Area guide:** [Infra](../../../areas/infra.md).
+- **Read trigger:** UX reference and design-skill replacement history
+
 
 ## What we're building & why
 

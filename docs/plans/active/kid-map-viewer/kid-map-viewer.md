@@ -5,6 +5,8 @@
 > sessions on 2026-07-27 against `/play/map` on dungeon 4.
 
 - **Area guide:** [Players](../../../areas/players.md)
+- **Read trigger:** How the kid map draws rooms, doors, stairs, markers and names; the shared map canvas; the curtain's per-field visibility; the kid colour families and their solver; the party marker; room label placement in either app
+
 
 ## What we're building & why
 

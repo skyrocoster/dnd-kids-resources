@@ -4,6 +4,10 @@ This plan fixes bugs and gaps in the seed export/import pipeline (`init_database
 
 > **Status:** S0–S5 all shipped.
 
+- **Area guide:** [Infra](../../../areas/infra.md)
+- **Read trigger:** Seed-pipeline repair history
+
+
 ---
 
 ## What this doc covers

@@ -1,6 +1,6 @@
 # The Loom Area Guide
 
-> **Plan queue:** None.
+- **Read trigger:** Story-thread (Loom) behavior
 
 ## Scope
 
@@ -55,6 +55,12 @@ The board is the clearest case of a surface whose mode changes with the moment. 
 - **Loom data is runtime-authored** through the API/UI; the demo seeds are a frozen test/playtest fixture, not the canonical campaign. **Export before rebuild:** `scripts/init_database.py` drops loom tables, so freeze live campaign state via `scripts/export_db_seeds.py` first.
 
 ## Work queue
+
+<!-- GENERATED:AREA_PLANS:loom:START -->
+_No plan is in flight for this area._
+<!-- GENERATED:AREA_PLANS:loom:END -->
+
+What the table cannot derive:
 
 - Deferred until after playtesting: node links to NPCs/dungeons/encounters.
 - Deferred, needs its own Plan: an `End Thread`/`Reach Ending` action pulling an End node into the

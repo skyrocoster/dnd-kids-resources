@@ -97,6 +97,10 @@
       "created_at",
       "updated_at"
     ],
+    "map_knowledge": [
+      "dungeon_id",
+      "data"
+    ],
     "map_layout": [
       "dungeon_id",
       "data"

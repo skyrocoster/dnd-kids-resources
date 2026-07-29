@@ -2,7 +2,9 @@
 
 > **Status:** All 3 stages complete.
 
-- **Area guide:** [Dungeons](../../areas/dungeons.md)
+- **Area guide:** [Dungeons](../../../areas/dungeons.md)
+- **Read trigger:** Permanent session state, optional portal destinations, the connections resolve list, and cross-dungeon gateways implementation history
+
 
 ## What we're building & why
 

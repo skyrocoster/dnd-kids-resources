@@ -2,6 +2,10 @@
 
 > **Status:** Complete.
 
+- **Area guide:** [The Loom](../../../areas/loom.md)
+- **Read trigger:** Loom storyline refactor history
+
+
 | Stage | What shipped (≤2 sentences) |
 |-------|------------------------------|
 | **PA0** | Schema rewrite (new kind CHECK, position, provenance, origin_node_id; dropped loom_edges), promoted v2 seed fixture (3 threads, 15 nodes, 15 memberships), idempotent migration script with backup+report, updated export/seed/conftest wiring. Suite compiles, migrator 13 tests pass. Gate ✅. |

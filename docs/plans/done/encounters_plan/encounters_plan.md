@@ -8,6 +8,10 @@ design system, component anatomy, and reusable pieces — build on them rather t
 > **Status:** Phases 1–3 and Phase 4 shipped. See the Shipped-stages table for the collapsed
 > record.
 
+- **Area guide:** [Encounters](../../../areas/encounters.md)
+- **Read trigger:** Encounter implementation history
+
+
 ---
 
 ## What the feature is

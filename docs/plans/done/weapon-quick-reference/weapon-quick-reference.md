@@ -3,7 +3,9 @@
 > **Status:** Complete. All four stages shipped; the backend suite is green and the weapon seed
 > round-trips through init→seed→export with exact quick_rules strings.
 
-- **Area guide:** [Reference Catalogs](../../areas/reference-catalogs.md)
+- **Area guide:** [Reference](../../../areas/reference.md)
+- **Read trigger:** Weapon quick rules, sheet-ready attacks, or Copy as New
+
 
 ## What we're building & why
 

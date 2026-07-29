@@ -3,6 +3,8 @@
 > **Status:** Complete. Stages 1–5 shipped, and the Infra queue has advanced to Table Testing Records.
 
 - **Area guide:** [Infra](../../../areas/infra.md)
+- **Read trigger:** Documentation routing restructure, area cuts, plan folder layout, manifest shape, or source-map coverage history
+
 
 ## Touches
 

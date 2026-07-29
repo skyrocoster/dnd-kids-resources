@@ -6,6 +6,8 @@
 > from a different diagnosis.
 
 - **Area guide:** [Players](../../../areas/players.md)
+- **Read trigger:** Kid map contrast history, the shared `roomLabelAnchor`, or why the legibility diagnosis was wrong
+
 
 ## Why this was superseded
 

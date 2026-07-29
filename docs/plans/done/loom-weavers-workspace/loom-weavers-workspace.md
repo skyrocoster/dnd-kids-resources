@@ -2,7 +2,9 @@
 
 > **Status:** LU0–LU5 complete.
 
-- **Area guide:** [The Loom](../areas/loom.md).
+- **Area guide:** [The Loom](../../../areas/loom.md).
+- **Read trigger:** Loom UI/UX pass implementation history
+
 
 ---
 

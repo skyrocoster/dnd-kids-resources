@@ -2,7 +2,9 @@
 
 > **Status:** Complete. DC0-DC1 shipped; archived 2026-07-16.
 
-- **Area guide:** [Documentation Governance](../areas/documentation.md).
+- **Area guide:** [Infra](../../../areas/infra.md).
+- **Read trigger:** Plan closeout correction history
+
 
 ---
 

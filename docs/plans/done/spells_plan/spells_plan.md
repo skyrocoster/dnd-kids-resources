@@ -2,6 +2,10 @@
 
 > **Status:** S0-S3, B0-B3, and F0-F3 shipped. Frontend contract rewire complete; a later spell experience/design phase remains deferred.
 
+- **Area guide:** [Reference](../../../areas/reference.md)
+- **Read trigger:** Spell implementation history
+
+
 ## What this feature is
 
 Spells are a 525-row reference catalog whose seed was an ingestion artifact rather than a usable contract.

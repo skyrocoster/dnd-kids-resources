@@ -6,13 +6,13 @@ This is the single authoritative instruction file for AI work in this repository
 
 1. Open the [documentation manifest](docs/README.md).
 2. Select the row for the task you are performing and read its declared minimum context.
-3. For area work, open the area guide it names, then open that guide's active execution plan at its linked current-stage anchor.
+3. For area work, open the area guide it names for ownership and invariants, then open [docs/plans/active/INDEX.md](docs/plans/active/INDEX.md) to find the Plan covering the work and whether it is ready or blocked.
 4. Read only that stage's **Read first** files before exploring source.
 5. Make the plan and exact documentation-impact updates declared by the stage, then run the documentation checker through the repo-local virtualenv (`.venv\Scripts\python.exe scripts/check_docs.py --check` on Windows, `.venv/bin/python scripts/check_docs.py --check` on POSIX).
 
 `scratch/` is a user-owned workspace for temporary notes and artifacts. Do not explore, read, index, or update anything under it unless the user explicitly names a path there.
 
-Active documentation-maintenance plans are queued under the [Infra](docs/areas/repo-infra.md) area. The manifest and area guides, rather than this file, are the sources for active-plan status and task routing.
+[docs/plans/active/INDEX.md](docs/plans/active/INDEX.md), rather than this file, is the source for which Plans are active, what each depends on, and which skill each is waiting for. Area guides own code — routers, routes, invariants, the change map — and no longer track Plans at all.
 
 ## Execution Workflow: Plan → Implement → Reconcile
 
@@ -51,16 +51,19 @@ and opencode both load that directory today): `plan`,
 
 ## Documentation Contract
 
-- Implementation work flows through the Plan → Implement → Reconcile workflow above. Area guides route work and record durable ownership; they never authorize implementation. Create a focused Plan (via the `plan` skill) before changing code in an area that has no active Plan.
+- Implementation work flows through the Plan → Implement → Reconcile workflow above. Area guides record durable code ownership; they never authorize implementation and never list Plans. Create a focused Plan (via the `plan` skill) before changing code no active Plan covers.
+- A Plan that cannot start until another ships declares it with `- **Depends on:** [Other Plan](path)` in its `## Touches` section. That dependency is the only ordering signal in the repo: it licenses file overlap between in-flight Plans, and it is what marks a Plan blocked or ready in the generated index. Nothing ranks the ready Plans — choosing between them is the user's call.
 - Keep canonical references current: update the relevant reference document when an API contract, data model, architecture convention, design token, testing contract, setup instruction, or user-visible capability changes. The `reconcile` skill performs these updates after a stage's work orders ship — do not defer them indefinitely.
-- Regenerate the auto-generated reference inventories whenever their source contracts change: `.venv\Scripts\python.exe scripts/check_docs.py --write-generated`.
-- Archive a completed Plan to `docs/plans/done/`, updating its area guide and the manifest in the same change set; leave a redirect stub only when a known inbound link must survive. `MEMORY.md` is not a parallel plan-status registry.
+- Regenerate the auto-generated reference inventories whenever their source contracts change: `.venv\Scripts\python.exe scripts/check_docs.py --write-generated`. A document may carry any number of generated blocks, each addressed by a `GENERATED:<marker>` comment pair and staleness-checked on its own. What generates today: every per-router endpoint table and the schema inventory in `API_REFERENCE.md`; the area-guide and plan rows in `docs/INVENTORY.md`; each area guide's in-flight plan table; the script inventory in `ARCHITECTURE.md`; the test-location and test-configuration inventories in `TESTING.md`; the schema inventory in `DATA_MODEL.md`; the design-token inventory in `DESIGN_SYSTEM.md`; and both plan indexes, including [docs/plans/active/INDEX.md](docs/plans/active/INDEX.md), the routing table of in-flight plans and the state of their work orders — read that one when you need to know which plan is waiting on which skill.
+- **Write the fact where it is authored, not where it is displayed.** An endpoint's one-line purpose is its route docstring; a plan's routing information is its `**Area guide:**` and `**Read trigger:**` header lines; a plan's progress is its Status line. Each is then rendered into every document that needs it. Editing a generated table by hand is always wrong, and the checker will reject it.
+- Archive a completed Plan to `docs/plans/done/`, updating the manifest in the same change set and regenerating the index, which is what unblocks its dependents; leave a redirect stub only when a known inbound link must survive. `MEMORY.md` is not a parallel plan-status registry.
 - Run the documentation checker through the repo-local virtualenv (`.venv\Scripts\python.exe scripts/check_docs.py --check` on Windows, `.venv/bin/python scripts/check_docs.py --check` on POSIX). Use the `--base <base-ref>` flag to compare against a specific base ref. The repo-local virtualenv is the preferred route for Python-backed validation so the documentation checker imports the project's installed backend dependencies rather than whichever global interpreter happens to be first on `PATH`.
-- The checker validates local links and anchors, active-Plan status lines and manifest completeness, area-guide↔Plan ownership, work-order structure, plan-redirect lifecycle, AI-entry precedence, configured test commands, banned legacy references, and generated reference inventories. It no longer couples per-diff code changes to a Plan edit, so work orders can land independently.
+- The checker validates local links and anchors, active-Plan status lines and manifest completeness, area-guide code ownership (routers, routes, change-map coverage), Plan dependency/touch overlap, work-order structure, plan-redirect lifecycle, AI-entry precedence, configured test commands, banned legacy references, generated reference inventories, a docstring on every `/api/` route, an API-reference section for every router, and an `**Area guide:**` and `**Read trigger:**` line on every Plan. It no longer couples per-diff code changes to a Plan edit, so work orders can land independently.
 - Work orders are written by `scripts/new_order.py`, which renders one from the facts you pass it: it resolves bare filenames, derives a line range and anchor from `path:Symbol` for large files, assembles the STOP WHEN command, enforces the shape caps (4 START IN files, 3 DO bullets, 2 test files) at the argument boundary, and writes nothing unless the result passes the linter.
 - Work-order linting lives in `scripts/check_orders.py` (invoked by the checker, and runnable on its own while compiling a stage). Every rule there is one dispatch-costing fault recorded in `docs/plans/telemetry-log.md`; run it before dispatching anything. Prefer `--fix`, which repairs the mechanical faults — bare filenames, symbol-scoped large files, and line ranges made stale by an upstream order — rather than reporting them for a model to fix by re-reading the file.
 - Two wrappers keep check output out of a model's context: `scripts/order_check.py` for a work order's STOP WHEN, and `scripts/stage_check.py` for reconcile's five full-suite checks. Both print pass/fail plus what failed, not the whole runner output.
 - `scripts/read_guard.py` enforces one executor rule in the harness rather than in prose: once a session invokes `implement-order`, reading a file it has already edited is denied until a check fails or the read is explicitly unlocked. Claude Code wires it through `.claude/settings.json` and opencode through `.opencode/plugin/read-guard.js`, so both executors are bound by it identically.
+- **Every script named above is invoke-only, for every role.** `new_order.py`, `check_docs.py`, `check_orders.py`, `order_check.py`, `stage_check.py`, `order_telemetry.py`, `generate_export_schema.py`: call them and read stdout and the exit code. To learn what arguments one takes, run `--help` — that is thirty lines, where reading the source is several hundred for the same answer, and the source can only tell you what the interface already states. Open one of these files for exactly one reason: you are changing its behaviour. A refusal or a failure message is not a reason to go reading — the message names the fix.
 - GitHub Actions runs the `documentation-contract` check on every pull request and push to `main`; keep it enabled as a required branch-protection check in GitHub settings. The [PR template](.github/pull_request_template.md) requires each author to confirm that a fresh reader can route the change to its owning plan and minimum context.
 
 ## Stable Project Rules
@@ -76,6 +79,7 @@ and opencode both load that directory today): `plan`,
 ## Safety
 
 - Preserve unrelated worktree changes.
+- A successful `reconcile` ends by committing the whole worktree in one commit — that is the one place in this workflow authorized to commit without being asked each time, and only when `stage_check.py` and `check_docs.py --check` are both green. It never pushes.
 - Prefer the smallest correct change and existing local patterns.
 - Do not use destructive Git operations unless the user explicitly requests them.
 

@@ -2,7 +2,9 @@
 
 > **Status:** Complete. VF0-VF5, VW0-VW6, VT0-VT3 shipped; VT4 skipped per user request; plan archived.
 
-- **Area guide:** [Visual Design](../../areas/visual-design.md).
+- **Area guide:** [Design](../../../areas/design.md).
+- **Read trigger:** Visual consistency remediation history
+
 
 ---
 

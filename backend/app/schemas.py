@@ -700,6 +700,10 @@ class MapSessionStateBlob(BaseModel):
     data: Dict[str, Any]
 
 
+class MapKnowledgeBlob(BaseModel):
+    data: Dict[str, Any]
+
+
 class RevealedCell(BaseModel):
     x: int
     y: int

@@ -4,7 +4,9 @@
 > their combat half on the dossier, can pull fields from a monster, and can be added to an encounter
 > roster from their detail pane.
 
-- **Area guide:** [Reference Catalogs](../../areas/reference-catalogs.md)
+- **Area guide:** [Reference](../../../areas/reference.md)
+- **Read trigger:** NPC statblock shape, monster pull panel, and add-to-encounter history
+
 
 ## What we're building & why
 

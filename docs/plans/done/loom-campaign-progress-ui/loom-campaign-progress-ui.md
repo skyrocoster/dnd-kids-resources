@@ -4,7 +4,9 @@
 > a sticky toolbar, stable geometry, a hierarchical inspector action matrix, exact copy contract, and a
 > 768px overlay drawer. This Plan is complete.
 
-- **Area guide:** [The Loom](../../areas/loom.md)
+- **Area guide:** [The Loom](../../../areas/loom.md)
+- **Read trigger:** Loom board/inspector campaign-progress UI patch history
+
 
 ## What we're building & why
 

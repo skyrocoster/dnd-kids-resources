@@ -1,6 +1,6 @@
 # Encounters Area Guide
 
-> **Plan queue:** None.
+- **Read trigger:** Encounter behavior
 
 ## Scope
 
@@ -55,6 +55,12 @@ The runner and its dock are the app's most play-mode surfaces: HP changes are di
 - Keep catalog contracts canonical in the API and data-model references.
 
 ## Work queue
+
+<!-- GENERATED:AREA_PLANS:encounters:START -->
+_No plan is in flight for this area._
+<!-- GENERATED:AREA_PLANS:encounters:END -->
+
+What the table cannot derive:
 
 - Create a focused plan for encounter budgeting, templates, quick-add, player HP, or initiative work.
 - Create a focused plan for monster curation, sound playback, deep links, or stat calculations.

@@ -2,7 +2,9 @@
 
 > **Status:** Complete. All stages shipped; no next stage.
 
-- **Area guide:** [Spells](../areas/spells.md)
+- **Area guide:** [Reference](../../../areas/reference.md)
+- **Read trigger:** Validated placeholders, spell quick rules, extensible reference text, or Spell detail player assignment history
+
 
 ## What we're building & why
 

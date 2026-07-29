@@ -111,6 +111,7 @@ def list_sessions(
     limit: int = Query(100, ge=1, le=500),
     offset: int = Query(0, ge=0),
 ):
+    """List logged sessions in campaign order."""
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute(
@@ -122,6 +123,7 @@ def list_sessions(
 
 @router.post("/loom/sessions", response_model=LoomSession, status_code=201)
 def create_session(session: LoomSessionCreate):
+    """Create a session column on the tapestry."""
     with get_db() as conn:
         cursor = conn.cursor()
         try:
@@ -144,6 +146,7 @@ def create_session(session: LoomSessionCreate):
 
 @router.put("/loom/sessions/{session_id}", response_model=LoomSession)
 def update_session(session_id: int, session: LoomSessionUpdate):
+    """Update a session's title or date."""
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT id FROM loom_sessions WHERE id = ?", (session_id,))
@@ -170,6 +173,7 @@ def update_session(session_id: int, session: LoomSessionUpdate):
 
 @router.delete("/loom/sessions/{session_id}", status_code=204)
 def delete_session(session_id: int):
+    """Delete a session; 422 while any node still belongs to it."""
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT id FROM loom_sessions WHERE id = ?", (session_id,))
@@ -274,6 +278,7 @@ def list_threads(
     limit: int = Query(100, ge=1, le=500),
     offset: int = Query(0, ge=0),
 ):
+    """List threads."""
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute(
@@ -285,6 +290,7 @@ def list_threads(
 
 @router.post("/loom/threads", response_model=LoomThread, status_code=201)
 def create_thread(thread: LoomThreadCreate):
+    """Create a thread, plus its `start` (position 0) and `end` (position 10) nodes."""
     with get_db() as conn:
         cursor = conn.cursor()
 
@@ -329,6 +335,7 @@ def create_thread(thread: LoomThreadCreate):
 
 @router.put("/loom/threads/{thread_id}", response_model=LoomThread)
 def update_thread(thread_id: int, thread: LoomThreadUpdate):
+    """Update a thread's name, colour, or description."""
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT id FROM loom_threads WHERE id = ?", (thread_id,))
@@ -353,6 +360,7 @@ def update_thread(thread_id: int, thread: LoomThreadUpdate):
 
 @router.delete("/loom/threads/{thread_id}", status_code=204)
 def delete_thread(thread_id: int):
+    """Delete a thread and its exclusive start/end/beat nodes; shared session nodes survive."""
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT id FROM loom_threads WHERE id = ?", (thread_id,))
@@ -375,6 +383,7 @@ def delete_thread(thread_id: int):
 
 @router.post("/loom/nodes", response_model=LoomNode, status_code=201)
 def create_node(node: LoomNodeCreate):
+    """Create an unplaced `beat` or `session` node."""
     with get_db() as conn:
         cursor = conn.cursor()
         try:
@@ -403,6 +412,7 @@ def create_node(node: LoomNodeCreate):
 
 @router.put("/loom/nodes/{node_id}", response_model=LoomNode)
 def update_node(node_id: int, node: LoomNodeUpdate):
+    """Update a node's title or body; kind is immutable except a fulfil undo."""
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT kind, fulfilled_planned_title FROM loom_nodes WHERE id = ?", (node_id,))
@@ -458,6 +468,7 @@ def update_node(node_id: int, node: LoomNodeUpdate):
 
 @router.delete("/loom/nodes/{node_id}", status_code=204)
 def delete_node(node_id: int):
+    """Delete a `beat` or `session` node; 422 on `start`/`end`."""
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT kind FROM loom_nodes WHERE id = ?", (node_id,))
@@ -542,6 +553,7 @@ def bank_beat(node_id: int):
 
 @router.post("/loom/threads/{thread_id}/items", response_model=LoomTapestryThread, status_code=201)
 def add_thread_item(thread_id: int, item: LoomThreadItemCreate):
+    """Place an existing beat or session node on a thread; also restores a banked beat."""
     with get_db() as conn:
         cursor = conn.cursor()
         if not _fetch_thread_row(cursor, thread_id):
@@ -582,6 +594,7 @@ def add_thread_item(thread_id: int, item: LoomThreadItemCreate):
 
 @router.patch("/loom/threads/{thread_id}/items/{node_id}", response_model=LoomTapestryThread)
 def reorder_thread_item(thread_id: int, node_id: int, body: LoomThreadItemPositionUpdate):
+    """Move a placed node to a new position within its own thread."""
     with get_db() as conn:
         cursor = conn.cursor()
         if not _fetch_thread_row(cursor, thread_id):
@@ -611,6 +624,7 @@ def reorder_thread_item(thread_id: int, node_id: int, body: LoomThreadItemPositi
 
 @router.delete("/loom/threads/{thread_id}/items/{node_id}", status_code=204)
 def remove_thread_item(thread_id: int, node_id: int):
+    """Unplace a node from a thread without deleting it; 422 on `start`/`end`."""
     with get_db() as conn:
         cursor = conn.cursor()
         if not _fetch_thread_row(cursor, thread_id):
@@ -641,6 +655,7 @@ def remove_thread_item(thread_id: int, node_id: int):
 
 @router.post("/loom/threads/{thread_id}/items/{node_id}/move", response_model=LoomThreadMoveResult)
 def move_thread_item(thread_id: int, node_id: int, body: LoomNodeMove):
+    """Atomically move a placed node to another thread at a position."""
     with get_db() as conn:
         cursor = conn.cursor()
 

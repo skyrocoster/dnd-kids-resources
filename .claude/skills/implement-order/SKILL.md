@@ -64,7 +64,8 @@ not to improve the wider codebase. Staying inside the fence below is what makes 
    checks and prints pass/fail plus the failing test names instead of the whole runner output, which
    is otherwise the largest single result in your context — and repeats on every fix attempt.
 
-   `scripts/check_docs.py`, `scripts/check_orders.py`, `scripts/order_check.py`, and
+   `scripts/check_docs.py`, `scripts/check_orders.py`, `scripts/order_check.py`,
+   `scripts/stage_check.py`, `scripts/new_order.py`, and
    `scripts/order_telemetry.py` are invoke-only tools — call them (e.g.
    `.venv\Scripts\python.exe scripts/check_docs.py --check`) and read their stdout/exit code. Do
    **not** open their source to see how they work; that's wasted context for a check that only needs

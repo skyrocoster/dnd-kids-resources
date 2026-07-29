@@ -2,7 +2,9 @@
 
 > **Status:** Stage 4 complete.
 
-- **Area guide:** [Dungeons](../../areas/dungeons.md)
+- **Area guide:** [Dungeons](../../../areas/dungeons.md)
+- **Read trigger:** Wall kinds, padding, outside features, and map layer/density controls implementation history
+
 
 ## What we're building & why
 

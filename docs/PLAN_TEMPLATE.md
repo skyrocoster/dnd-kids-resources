@@ -37,9 +37,9 @@ another read ends this fast path and sends the order to an executor normally.
 
 ## Layer 1 — the Plan (human-readable)
 
-Lives at `docs/plans/active/<feature>/<feature>.md`, named for a concrete outcome. An area may hold more than
-one active plan, but exactly one of them is **next up** — see *Lifecycle* below. Short, and free of
-code — you read it to understand *what* and *why*.
+Lives at `docs/plans/active/<feature>/<feature>.md`, named for a concrete outcome. Many Plans may be
+active at once; what a Plan waits on is a **dependency**, declared in its `## Touches` section — see
+*Lifecycle* below. Short, and free of code — you read it to understand *what* and *why*.
 
 ```md
 # <Feature> — <one-line outcome>
@@ -47,6 +47,7 @@ code — you read it to understand *what* and *why*.
 > **Status:** <what's done, what's next — one line, rewritten each stage>
 
 - **Area guide:** [<Area>](../../../areas/<area>.md)
+- **Read trigger:** <when a reader should open this plan>
 
 ## What we're building & why
 <1–2 short paragraphs.>
@@ -72,6 +73,13 @@ code — you read it to understand *what* and *why*.
 - **Constraints:** <invariant or canonical reference the orders must preserve>
 - **Open questions:** <what `to-orders` still must resolve, or `none`>
 ```
+
+**`**Area guide:**` and `**Read trigger:**` are required, and the checker enforces both.** They are
+not decoration: the plan's row in [INVENTORY.md](INVENTORY.md) and its row in the owning area guide's
+`## Work queue` are *generated* from them, together with the Status line. Write them once here and
+never restate them anywhere else — a manifest row typed by hand is the drift this replaced. The area
+guide link is relative to the plan file, so from `docs/plans/<state>/<feature>/` it is
+`../../../areas/<area>.md`.
 
 `## Compiler handoff` is a temporary, stage-scoped machine-facing appendix. It preserves verified
 answers planning already paid to discover so `to-orders` can target its exploration instead of
@@ -294,20 +302,22 @@ Each tier runs in the context that can afford its output:
 ## Lifecycle
 
 1. **Active** — the Plan carries a Status line and a plain-English Stages list, and lives under
-   `plans/active/`. An area may have several: a design can be fully settled and written up long
+   `plans/active/`. There may be many at once: a design can be fully settled and written up long
    before there is capacity to build it, and writing it down is how the reasoning survives.
 
-   Exactly one active plan per area is **next up** — the one work should start from. The area
-   guide's `Active plan` line lists every active plan it owns, in order, marking the first
-   `(next up)`. Only the next-up plan may have work orders in its feature directory; the others
-   carry a Status line stating plainly that they are not next and what unblocks them. When the
-   next-up plan completes, the following one inherits the slot and the guide's line is reordered.
+   **Dependencies, not queues, decide what can start.** A Plan that cannot begin until another
+   ships says so with a a `**Depends on:**` entry (see the Layer 1 shape above) in its
+   `## Touches` section. A Plan is **blocked** while any Plan it depends on is still under
+   `plans/active/`, and **ready** once they have all been archived —
+   [plans/active/INDEX.md](plans/active/INDEX.md) derives both and sorts every Plan after the ones
+   it depends on. Several Plans can be ready at once and nothing ranks them: which ready Plan to
+   pick up is the user's call, made per session rather than recorded in a file.
 2. **Shipped** — as each stage's orders finish, `reconcile` collapses them into the Plan's **Shipped**
    table (one ≤2-sentence row per stage) and deletes the spent order files. The commit history is the
    record of *how* each thing was built — never duplicate that prose into the Plan.
-3. **Complete** — when the whole feature ships, move the Plan to `docs/plans/done/<feature>/`, set the
-   area guide back to "no active plan" (or its next plan), and update `docs/README.md` in the same
-   change set. Leave a redirect stub only if a known inbound link must survive.
+3. **Complete** — when the whole feature ships, move the Plan to `docs/plans/done/<feature>/` and
+   update `docs/README.md` in the same change set. Archiving it also unblocks every Plan that
+   declared a dependency on it, so regenerate the index. Leave a redirect stub only if a known inbound link must survive.
 
 ## Required model strength (per work order)
 
@@ -325,9 +335,7 @@ after reading only what it names.
 work orders under `plans/active/<feature>/` by delegating to `scripts/check_orders.py` — the
 load-bearing fields (`GOAL:`, `DEPENDS ON:`, `REQUIRED STRENGTH:`, `CREATES:`, `REMOVES:`,
 `START IN:`, `STOP WHEN:`, `STATUS:`), a `FAILURE REPORT:`
-block whenever a STATUS line reads FAILED or BLOCKED, and the compiling rules above — validates
-area-guide↔Plan ownership — every active plan must be linked
-from its owning guide's `Plan queue`, which may list several — requires every area guide's
+block whenever a STATUS line reads FAILED or BLOCKED, and the compiling rules above — requires every area guide's
 `## Change map` to map recognizable change types to repo-relative source globs, rejecting
 placeholders, unmatched globs, uncovered implementation files, and files claimed across multiple
 areas — enforces the `## Touches` overlap contract: every active Plan must declare a

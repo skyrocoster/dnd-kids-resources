@@ -119,14 +119,42 @@ data/seeds/*.json (canonical reference and campaign data)
 
 ## Scripts
 
-| Script | Purpose |
+Generated from each script's module docstring (or leading comment) — do not hand-edit. A script's
+flags are its own `--help`; the invoke-only rule in [../CLAUDE.md](../CLAUDE.md) means you run that
+rather than read the source.
+
+<!-- GENERATED:ARCHITECTURE:SCRIPTS:START -->
+| Script | What it does |
 |---|---|
-| `scripts/init_database.py` | Creates SQLite schema (`CREATE TABLE` statements) in `dnd_kids_resources.db` |
-| `scripts/seed_database.py` | Loads all `data/seeds/*.json` files into the database |
-| `scripts/generate_export_schema.py` | Derives `data/generated/export_schema.json` from the `CREATE TABLE` statements in `init_database.py`. `--write` regenerates, `--check` fails when stale (run in CI), `--check-db` reports drift against the live database. |
-| `scripts/export_db_seeds.py` | Exports every table back to `data/seeds/*.json`, taking column lists from the generated export schema rather than a hand-written list; run with `--dry-run` before overwriting files. Refuses to overwrite a populated seed file from an empty table unless `--allow-empty`. Dungeons, map layouts, and map session state are included. |
-| `scripts/start_server.ps1` (Windows) | Starts the FastAPI dev server (localhost:8000) |
-| `scripts/stop_server.ps1` (Windows) | Stops the server process |
+| `scripts/check_demo_database.py` | Validate that the local demo SQLite database matches required app columns. |
+| `scripts/check_docs.py` | Documentation contract checker for the D&D Kids Resources repo. |
+| `scripts/check_orders.py` | Work-order linter — enforce the compiling rules the telemetry log paid to learn. |
+| `scripts/export_db_seeds.py` | Export current database tables into JSON files under data/seeds. |
+| `scripts/generate_export_schema.py` | Derive the export schema from init_database.py instead of restating it by hand. |
+| `scripts/generate_spell_quick_rules.py` | Draft conservative spell quick rules from canonical seed data. |
+| `scripts/generate_weapon_quick_rules.py` | Draft conservative weapon quick rules from canonical seed data. |
+| `scripts/init_database.py` | Create the canonical SQLite schema — the single source of truth every other table list derives from. |
+| `scripts/migrate_loom_v2.py` | Migrate a Loom database from the flat-DAG schema (v1) to the ordered-threads schema (v2). |
+| `scripts/migrate_monsters.py` | Transform legacy 5etools monster seed rows to the M1 target shape. |
+| `scripts/migrate_spells.py` | Transform legacy spell seed rows to the canonical target shape. |
+| `scripts/new_order.py` | Emit a work order in the maximum shape a work order is allowed to have. |
+| `scripts/order_check.py` | STOP WHEN wrapper: run an order's checks and print only what the executor can act on. |
+| `scripts/order_telemetry.py` | Extract token telemetry for one completed work order and append it to the running log. |
+| `scripts/read_guard.py` | Post-edit re-read guard, shared by every harness that runs a work order. |
+| `scripts/seed_database.py` | Populate the database from the canonical JSON seeds in data/seeds. |
+| `scripts/stage_check.py` | Run every reconcile-time check and print a summary short enough to read once. |
+| `scripts/derive-kid-palette.mjs` | DP1: Kid-palette solver — deterministic bounded search for four kid-map family colours. |
+| `scripts/generate-md3-tokens.mjs` | DP1: Material Design 3 color-token generator via material-color-utilities. |
+| `scripts/demo_down.ps1` | Stops the demo backend and cloudflared tunnel started by demo_up.ps1. |
+| `scripts/demo_up.ps1` | Starts a public demo: builds the frontend into frontend/dist, runs the backend (which serves that build directly, single process), and opens a cloudflared tunnel to it. |
+| `scripts/open_responsive_checks.ps1` | Opens one Chrome window per viewport width from the VF4 gate's manual verification matrix (320px, 375px, 768px, and a desktop width), each pointed at the frontend dev server. |
+| `scripts/opencode_remote.ps1` | Starts a headless opencode server bound to this machine's LAN address so you can drive it from a phone or tablet on the same network via a plain browser. |
+| `scripts/start_server.ps1` | Starts both the frontend dev server (Vite @ 5173) and backend (FastAPI @ 8000) as background processes, so this terminal is free to keep using. |
+| `scripts/stop_server.ps1` | Stops both the backend and frontend dev servers started by start_server.ps1. |
+<!-- GENERATED:ARCHITECTURE:SCRIPTS:END -->
+
+The database lifecycle scripts and their flags are documented in
+[areas/infra.md](areas/infra.md#tooling).
 
 ## Where to Look Next
 
@@ -139,7 +167,7 @@ data/seeds/*.json (canonical reference and campaign data)
 <!-- GENERATED:ARCHITECTURE:START -->
 ### Generated Registration Inventory
 
-Backend routers registered in `main.py`: `reference.py`, `spells.py`, `monsters.py`, `weapons.py`, `items.py`, `loot.py`, `players.py`, `npcs.py`, `encounters.py`, `dungeons.py`, `layouts.py`, `session_state.py`, `fog.py`, `at_the_table.py`, `loom.py`.
+Backend routers registered in `main.py`: `reference.py`, `spells.py`, `monsters.py`, `weapons.py`, `items.py`, `loot.py`, `players.py`, `npcs.py`, `encounters.py`, `dungeons.py`, `layouts.py`, `session_state.py`, `knowledge.py`, `fog.py`, `at_the_table.py`, `loom.py`.
 
 Frontend feature directories: `dungeons/`, `encounters/`, `items/`, `loom/`, `loot/`, `monsters/`, `npcs/`, `players/`, `spells/`, `weapons/`.
 <!-- GENERATED:ARCHITECTURE:END -->

@@ -3,6 +3,8 @@
 > **Status:** Stages 0–7 shipped. Feature complete.
 
 - **Area guide:** [Dungeons](../../../areas/dungeons.md)
+- **Read trigger:** Map Lab tool palette and flyouts, editor vertical layout, fit/zoom framing, viewer rail, or rooms with no squares
+
 
 ## What we're building & why
 

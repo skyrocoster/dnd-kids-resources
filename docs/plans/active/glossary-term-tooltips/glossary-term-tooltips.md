@@ -1,8 +1,10 @@
 # Glossary term tooltips — hover/tap explanations for rule terms in rendered text
 
-> **Status:** Not started. (next up) — the only Design plan.
+> **Status:** Stage 1 shipped. Stage 2 (GlossaryTerm popover component) is next — the only Design plan.
 
 - **Area guide:** [Design](../../../areas/design.md)
+- **Read trigger:** Glossary term tooltips, rule-term explanations in rendered text
+
 
 ## Touches
 
@@ -70,7 +72,10 @@ Touch:        tap toggles the popover (hover has no touch equivalent); tap outsi
 2. **GlossaryTerm popover component.** A shared component under `frontend/src/components/` that wraps a
    matched term: renders the light-underline mark, and on hover/focus/tap shows a small popover with
    the definition, positioned to stay on-screen, dismissed by Escape, outside click/tap, or blur.
-   Add the DESIGN_SYSTEM.md accessibility-floor exception noted above.
+   Its public content contract is reusable: `children: ReactNode` supplies the inline trigger and
+   `content: ReactNode` supplies the popover body, so Stage 3 can pass matched text plus a definition
+   and Stage 5 can pass a richer catalog summary without replacing the component. Add the
+   DESIGN_SYSTEM.md accessibility-floor exception noted above.
 3. **Wire into existing rule-text rendering.** Run the matcher over the output of `ReferenceText`/
    `DiceText` (or the same call sites that use them today — spell/weapon browsers and editors, and
    player spell section) so glossary terms light up wherever rule text already renders, with no
@@ -91,3 +96,4 @@ Touch:        tap toggles the popover (hover has no touch equivalent); tap outsi
 
 | Stage | What shipped (≤2 sentences) |
 |-------|------------------------------|
+| 1 | Added the static six-entry rule glossary registry and a case-insensitive, whole-word matcher that preserves source text and offsets. Focused tests cover aliases, longest matches, casing, tiling, unmatched text, and duplicate keys. |

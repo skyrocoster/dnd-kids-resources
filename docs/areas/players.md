@@ -1,8 +1,6 @@
 # Players Area Guide
 
-> **Plan queue:**
-> 1. [Player Map Knowledge](../plans/active/player-map-knowledge/player-map-knowledge.md) (next up)
-> 2. [Kid Map Viewer](../plans/active/kid-map-viewer/kid-map-viewer.md) (shipped; awaiting closeout)
+- **Read trigger:** Player records, recovery profiles, player rosters, or the kid app
 
 ## Scope
 
@@ -36,7 +34,7 @@ explicitly named.
 ## Source map
 
 - **DM backend:** `backend/app/routers/players.py` and Player schemas in `backend/app/schemas.py`.
-- **Kid backend:** fog and at-the-table endpoints in `backend/app/routers/`.
+- **Kid backend:** knowledge, fog, and at-the-table endpoints in `backend/app/routers/`.
 - **DM frontend:** `frontend/src/features/players/`.
 - **Kid frontend:** `frontend/src/player/` (shell, navigation, kid components) and the player-view
   transform.
@@ -53,6 +51,7 @@ explicitly named.
 | DM player backend tests | `backend/tests/routers/test_players.py` |
 | Kid fog and at-the-table endpoints | `backend/app/routers/fog.py`<br>`backend/app/routers/at_the_table.py` |
 | Kid fog and at-the-table backend tests | `backend/tests/routers/test_fog.py`<br>`backend/tests/routers/test_at_the_table.py` |
+| Player map knowledge API and tests | `backend/app/routers/knowledge.py`<br>`backend/tests/routers/test_knowledge.py` |
 | DM player browser and editor | `frontend/src/features/players/**` |
 | Kid app (shell, navigation, curtain, and map) | `frontend/src/player/**` |
 | Shared map canvas and marker primitives used by the kid app | `frontend/src/map/**` |
@@ -102,11 +101,18 @@ the tablet.
 
 ## Work queue
 
-- [Player Map Knowledge](../plans/active/player-map-knowledge/player-map-knowledge.md) is next: reversible
-  per-fact disclosure, stable inspector selection, and the DM's actual-player-result preview establish
-  the concealment contract before Fog adds spatial visibility.
-- [Kid Map Viewer](../plans/active/kid-map-viewer/kid-map-viewer.md) shipped Stages 1-9 plus its repair pass: the kid map was
-  rebuilt on the same canvas the DM already uses — absolute zoom, one floor at a time, the DM's own
+<!-- GENERATED:AREA_PLANS:players:START -->
+| Plan | State | Status |
+| --- | --- | --- |
+| [Kid Map Viewer](../plans/active/kid-map-viewer/kid-map-viewer.md) | ready | Stages 1-9 shipped, plus a 6R repair pass. |
+| [Player Map Knowledge](../plans/active/player-map-knowledge/player-map-knowledge.md) | blocked | Stages 1-2 shipped. |
+<!-- GENERATED:AREA_PLANS:players:END -->
+
+What the table cannot derive:
+
+- Player Map Knowledge must land before Fog: reversible per-fact disclosure establishes the
+  concealment contract that spatial visibility then builds on.
+- Kid Map Viewer rebuilt the kid map on the same canvas the DM already uses — absolute zoom, one floor at a time, the DM's own
   drawing rules — and gained a four-family colour language (green goes somewhere, yellow is a way
   through, blue is a thing, pink is a person) solved by script rather than chosen by eye. It
   supersedes [Kid Map Legibility](../plans/done/kid-map-legibility/kid-map-legibility.md), which

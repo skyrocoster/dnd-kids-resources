@@ -653,37 +653,6 @@ def test_work_orders_absent_directory_is_ok(tmp_path: Path):
     assert cd.check_work_orders(docs) == []
 
 
-def test_area_guide_active_plan_link_without_anchor_is_accepted(tmp_path: Path, monkeypatch):
-    """Plan queue with a single (next up) entry is accepted."""
-    monkeypatch.setattr(cd, "REPO_ROOT", tmp_path)
-    docs = _write_docs_tree(tmp_path, manifest="# Docs\n")
-    areas = docs / "areas"
-    areas.mkdir()
-    active = docs / "plans" / "active"
-    active.mkdir(parents=True)
-    loom_dir = active / "loom"
-    loom_dir.mkdir()
-    # Create a minimal implementation file for the change-map glob to match
-    (tmp_path / "frontend" / "src" / "features" / "loom").mkdir(parents=True)
-    (tmp_path / "frontend" / "src" / "features" / "loom" / "LoomPage.tsx").write_text("", encoding="utf-8")
-    (areas / "loom.md").write_text(
-        "# Loom\n\n"
-        "> **Plan queue:**\n"
-        "> 1. [Loom feature](../plans/active/loom/loom.md) (next up)\n\n"
-        "## Scope\n## Read first\n## Source map\n## Change map\n\n"
-        "| Change type | Source globs |\n"
-        "|---|---|\n"
-        "| Loom feature | `frontend/src/features/loom/**` |\n"
-        "## Invariants\n## Work queue\n## Cross-references\n",
-        encoding="utf-8",
-    )
-    (loom_dir / "loom.md").write_text(
-        "# Loom feature\n\n> **Status:** Active.\n\n- **Area guide:** [Loom](../../../areas/loom.md)\n",
-        encoding="utf-8",
-    )
-    assert cd.check_area_guide_contract(docs) == []
-
-
 def test_diff_checks_allow_implementation_without_plan_edit(tmp_path: Path, monkeypatch):
     """Code may land per work order without editing a top-level active plan."""
     docs = _write_docs_tree(tmp_path, manifest="# Docs\n")
@@ -715,8 +684,7 @@ def test_replace_generated_section_rejects_malformed_markers():
 
 def test_generated_section_checker_reports_stale_and_malformed_markers(tmp_path: Path, monkeypatch):
     docs = _write_docs_tree(tmp_path)
-    monkeypatch.setattr(cd, "generated_sections", lambda _root: {"TESTING.md": "fresh\n"})
-    monkeypatch.setattr(cd, "GENERATED_MARKERS", {"TESTING.md": "TESTING"})
+    monkeypatch.setattr(cd, "generated_sections", lambda _root: {("TESTING.md", "TESTING"): "fresh\n"})
     (docs / "TESTING.md").write_text(
         "<!-- GENERATED:TESTING:START -->\nstale\n<!-- GENERATED:TESTING:END -->\n", encoding="utf-8"
     )
@@ -726,6 +694,120 @@ def test_generated_section_checker_reports_stale_and_malformed_markers(tmp_path:
     (docs / "TESTING.md").write_text("no markers\n", encoding="utf-8")
     errs = cd.check_generated_sections(docs, tmp_path)
     assert any("exactly one" in error.message for error in errs)
+
+
+def test_a_document_can_hold_several_generated_blocks(tmp_path: Path, monkeypatch):
+    """Two blocks in one file are written and staleness-checked independently."""
+    docs = _write_docs_tree(tmp_path)
+    monkeypatch.setattr(cd, "generated_sections", lambda _root: {
+        ("TESTING.md", "ONE"): "first\n",
+        ("TESTING.md", "TWO"): "second\n",
+    })
+    (docs / "TESTING.md").write_text(
+        "intro\n"
+        "<!-- GENERATED:ONE:START -->\n<!-- GENERATED:ONE:END -->\n"
+        "middle prose\n"
+        "<!-- GENERATED:TWO:START -->\n<!-- GENERATED:TWO:END -->\n",
+        encoding="utf-8",
+    )
+
+    assert cd.write_generated_sections(docs, tmp_path) == 0
+    written = (docs / "TESTING.md").read_text(encoding="utf-8")
+    assert "first" in written and "second" in written
+    assert "middle prose" in written
+    assert cd.check_generated_sections(docs, tmp_path) == []
+
+    # Staling one block names that block, not the file.
+    (docs / "TESTING.md").write_text(written.replace("second", "drifted"), encoding="utf-8")
+    errs = cd.check_generated_sections(docs, tmp_path)
+    assert len(errs) == 1
+    assert "'TWO' is stale" in errs[0].message
+
+
+def test_colon_segmented_markers_do_not_collide(tmp_path: Path, monkeypatch):
+    """`API:spells` and `API:spells_extra` must not match each other's markers."""
+    docs = _write_docs_tree(tmp_path)
+    monkeypatch.setattr(cd, "generated_sections", lambda _root: {
+        ("TESTING.md", "API:spells"): "spells\n",
+        ("TESTING.md", "API:spells_extra"): "extra\n",
+    })
+    (docs / "TESTING.md").write_text(
+        "<!-- GENERATED:API:spells:START -->\n<!-- GENERATED:API:spells:END -->\n"
+        "<!-- GENERATED:API:spells_extra:START -->\n<!-- GENERATED:API:spells_extra:END -->\n",
+        encoding="utf-8",
+    )
+    assert cd.write_generated_sections(docs, tmp_path) == 0
+    assert cd.check_generated_sections(docs, tmp_path) == []
+
+
+def test_every_api_route_has_a_docstring_for_its_purpose_column():
+    """The Purpose column is a docstring, so a route without one must fail the check."""
+    assert cd.check_route_docstrings(REPO_ROOT) == []
+
+
+def test_api_reference_has_a_section_per_router():
+    """A new router must not be able to ship undocumented."""
+    assert cd.check_api_reference_router_sections(REPO_ROOT / "docs", REPO_ROOT) == []
+
+
+def test_api_router_inventory_reads_purpose_from_the_route_docstring():
+    blocks = cd.generate_api_router_inventories(REPO_ROOT)
+    spells = blocks[("API_REFERENCE.md", "API:spells")]
+    assert "| Method | Path | Purpose | Request | Response |" in spells
+    assert "List all spells with optional filtering." in spells
+    assert "`SpellCreate`" in spells
+    assert "(204 No Content)" in spells
+
+
+def test_every_plan_declares_its_area_guide_and_read_trigger():
+    """The manifest and area queues generate from these, so a plan without them cannot route."""
+    assert cd.check_plan_headers(REPO_ROOT) == []
+
+
+def test_inventory_rows_come_from_the_plans_themselves():
+    rows = cd.generate_inventory_rows(REPO_ROOT)
+    assert "| Document | Type | Authority | Status | Read trigger | Update trigger |" in rows
+    assert "| [areas/players.md](areas/players.md) | Area guide | Canonical |" in rows
+    assert "| Archived plan | Historical | Complete |" in rows
+    assert "Never — archived record |" in rows
+
+
+def test_area_plan_tables_group_plans_by_their_area_guide_link():
+    tables = cd.generate_area_plan_tables(REPO_ROOT)
+    players = tables[("areas/players.md", "AREA_PLANS:players")]
+    assert "kid-map-viewer/kid-map-viewer.md" in players
+    # A plan belonging to another area must not leak in.
+    assert "production-nightly-deploys" not in players
+    assert "production-nightly-deploys" in tables[("areas/infra.md", "AREA_PLANS:infra")]
+
+
+def test_area_with_no_active_plan_says_so_rather_than_rendering_an_empty_table(tmp_path: Path):
+    (tmp_path / "docs" / "areas").mkdir(parents=True)
+    (tmp_path / "docs" / "areas" / "quiet.md").write_text("# Quiet\n", encoding="utf-8")
+    tables = cd.generate_area_plan_tables(tmp_path)
+    assert "No plan is in flight" in tables[("areas/quiet.md", "AREA_PLANS:quiet")]
+
+
+def test_script_inventory_covers_every_script_and_reads_its_own_description():
+    inventory = cd.generate_script_inventory(REPO_ROOT)
+    for name in sorted(p.name for p in (REPO_ROOT / "scripts").glob("*.py")):
+        assert f"`scripts/{name}`" in inventory
+    assert "_(no module docstring)_" not in inventory
+    assert "_(no leading comment)_" not in inventory
+
+
+def test_leading_comment_handles_shebangs_and_powershell_blocks():
+    assert cd._leading_comment("#!/usr/bin/env node\n\n// Does a thing\n// Usage: x\n") == "Does a thing."
+    assert cd._leading_comment("<#\nStarts a server\nin the background.\n\nUsage: x\n#>\n") == \
+        "Starts a server in the background."
+    assert cd._leading_comment("$x = 1\n") == "_(no leading comment)_"
+
+
+def test_test_inventory_counts_cases_per_location():
+    inventory = cd.generate_test_inventory(REPO_ROOT)
+    assert "| Location | Files | Test cases |" in inventory
+    assert "`backend/tests/routers/`" in inventory
+    assert "`frontend/src/player/__tests__/`" in inventory
 
 
 def test_schema_inventory_uses_disposable_database():
@@ -773,16 +855,72 @@ def test_archive_index_checker_reports_stale_content(tmp_path: Path, monkeypatch
     monkeypatch.setattr(
         cd,
         "generated_sections",
-        lambda _root: {"plans/done/INDEX.md": cd.generate_archive_index(tmp_path)},
-    )
-    monkeypatch.setattr(
-        cd,
-        "GENERATED_MARKERS",
-        {"plans/done/INDEX.md": "ARCHIVE_INDEX"},
+        lambda _root: {("plans/done/INDEX.md", "ARCHIVE_INDEX"): cd.generate_archive_index(tmp_path)},
     )
 
     errs = cd.check_generated_sections(tmp_path / "docs", tmp_path)
     assert any("stale" in error.message for error in errs)
+
+
+def _active_plan(tmp_path: Path, feature: str, status: str) -> Path:
+    directory = tmp_path / "docs" / "plans" / "active" / feature
+    directory.mkdir(parents=True, exist_ok=True)
+    (directory / f"{feature}.md").write_text(
+        f"# {feature.replace('-', ' ').title()} — the long outcome clause\n\n"
+        f"> **Status:** {status}\n\n"
+        "- **Area guide:** [Players](../../areas/players.md)\n",
+        encoding="utf-8",
+    )
+    return directory
+
+
+def test_active_index_routes_by_order_status(tmp_path: Path):
+    """The Next column is read off the orders' STATUS lines, not guessed."""
+    nothing = _active_plan(tmp_path, "no-orders", "Not started. Second sentence dropped.")
+    unrun = _active_plan(tmp_path, "unrun-orders", "Stage 1 compiled.")
+    (unrun / "01-a.md").write_text("WORK ORDER 01\n\nSTATUS: DONE\n", encoding="utf-8")
+    (unrun / "02-b.md").write_text("WORK ORDER 02\n\nSTATUS:\n", encoding="utf-8")
+    stuck = _active_plan(tmp_path, "stuck-orders", "Stage 2 running.")
+    (stuck / "01-a.md").write_text("WORK ORDER 01\n\nSTATUS: BLOCKED - bad facts\n", encoding="utf-8")
+    shipped = _active_plan(tmp_path, "shipped-orders", "Stage 3 shipped.")
+    (shipped / "01-a.md").write_text("WORK ORDER 01\n\nSTATUS: DONE\n", encoding="utf-8")
+
+    table = cd.generate_active_index(tmp_path)
+    rows = {line.split("|")[1].strip(): line for line in table.splitlines() if line.startswith("| [")}
+
+    assert "`to-orders`" in rows["[No Orders](no-orders/no-orders.md)"]
+    assert "none compiled" in rows["[No Orders](no-orders/no-orders.md)"]
+    assert "`dispatch-orders`" in rows["[Unrun Orders](unrun-orders/unrun-orders.md)"]
+    assert "1 unrun" in rows["[Unrun Orders](unrun-orders/unrun-orders.md)"]
+    assert "triage" in rows["[Stuck Orders](stuck-orders/stuck-orders.md)"]
+    assert "`reconcile`" in rows["[Shipped Orders](shipped-orders/shipped-orders.md)"]
+
+    # Title stops at the em dash and status at the first sentence, or the table is unreadable.
+    assert "the long outcome clause" not in table
+    assert "Second sentence dropped" not in table
+    assert nothing.exists()
+
+
+def test_active_index_reads_the_placeholder_status_as_unrun(tmp_path: Path):
+    """new_order.py leaves a placeholder, not a blank — it must not read as DONE."""
+    waiting = _active_plan(tmp_path, "waiting-orders", "Stage 1 compiled.")
+    for number in (1, 2, 3):
+        (waiting / f"0{number}-a.md").write_text(
+            "WORK ORDER 0%d\n\nSTATUS: <-- executor writes DONE, FAILED - <reason>, "
+            "or BLOCKED - <reason>\n" % number,
+            encoding="utf-8",
+        )
+    row = next(
+        line for line in cd.generate_active_index(tmp_path).splitlines() if line.startswith("| [")
+    )
+    assert "3 unrun" in row
+    assert "`dispatch-orders`" in row
+    assert "all done" not in row
+
+
+def test_active_index_is_empty_without_plans(tmp_path: Path):
+    (tmp_path / "docs" / "plans" / "active").mkdir(parents=True)
+    assert "no active plans" in cd.generate_active_index(tmp_path)
 
 
 # ── Kid palette contract ────────────────────────────────────────────
@@ -991,132 +1129,6 @@ def test_diff_checks_require_owner_plan_and_declared_documentation(tmp_path: Pat
 
 
 # ── Plan queue contract ───────────────────────────────────────────────
-
-
-def test_plan_queue_none_is_valid(tmp_path: Path, monkeypatch):
-    """A guide with '> **Plan queue:** None.' is valid."""
-    monkeypatch.setattr(cd, "REPO_ROOT", tmp_path)
-    docs = _write_docs_tree(tmp_path, manifest="# Docs\n")
-    areas = docs / "areas"
-    areas.mkdir()
-    # Create a minimal implementation file for the change-map glob to match
-    (tmp_path / "backend" / "app" / "routers").mkdir(parents=True)
-    (tmp_path / "backend" / "app" / "routers" / "encounters.py").write_text("", encoding="utf-8")
-    (areas / "encounters.md").write_text(
-        "# Encounters\n\n"
-        "> **Plan queue:** None.\n\n"
-        "## Scope\n## Read first\n## Source map\n## Change map\n\n"
-        "| Change type | Source globs |\n"
-        "|---|---|\n"
-        "| Encounters | `backend/app/routers/encounters.py` |\n"
-        "## Invariants\n## Work queue\n## Cross-references\n",
-        encoding="utf-8",
-    )
-    assert cd.check_area_guide_contract(docs) == []
-
-
-def test_plan_queue_ordered_first_next_up_is_valid(tmp_path: Path, monkeypatch):
-    """An ordered queue where the first item is (next up) is valid."""
-    monkeypatch.setattr(cd, "REPO_ROOT", tmp_path)
-    docs = _write_docs_tree(tmp_path, manifest="# Docs\n")
-    areas = docs / "areas"
-    areas.mkdir()
-    # Create a minimal implementation file for the change-map glob to match
-    (tmp_path / "scripts").mkdir()
-    (tmp_path / "scripts" / "guide_a.py").write_text("", encoding="utf-8")
-    active = docs / "plans" / "active"
-    active.mkdir(parents=True)
-    plan_a = active / "plan-a"
-    plan_a.mkdir()
-    plan_b = active / "plan-b"
-    plan_b.mkdir()
-    (plan_a / "plan-a.md").write_text(
-        "# Plan A\n\n> **Status:** Active.\n\n- **Area guide:** [Guide A](../../../areas/guide-a.md)\n",
-        encoding="utf-8",
-    )
-    (plan_b / "plan-b.md").write_text(
-        "# Plan B\n\n> **Status:** Queued.\n\n- **Area guide:** [Guide A](../../../areas/guide-a.md)\n",
-        encoding="utf-8",
-    )
-    (areas / "guide-a.md").write_text(
-        "# Guide A\n\n"
-        "> **Plan queue:**\n"
-        "> 1. [Plan A](../plans/active/plan-a/plan-a.md) (next up)\n"
-        "> 2. [Plan B](../plans/active/plan-b/plan-b.md)\n\n"
-        "## Scope\n## Read first\n## Source map\n## Change map\n\n"
-        "| Change type | Source globs |\n"
-        "|---|---|\n"
-        "| Guide A features | `scripts/guide_a.py` |\n"
-        "## Invariants\n## Work queue\n## Cross-references\n",
-        encoding="utf-8",
-    )
-    # Plan A backlinks to guide-a; Plan B backlinks to guide-a too (allowed — one guide, many plans)
-    # The guide targets map will pick the last resolved link; backlink validation checks guide_targets
-    errs = cd.check_area_guide_contract(docs)
-    # We expect only one plan to get the backlink error because guide_targets only records one
-    # per target (the last one wins). The other plan's backlink will be flagged.
-    # Actually both plans have the same Area guide, and the guide has both in its queue.
-    # But guide_targets[plan-a.resolve()] = guide.resolve() and guide_targets[plan-b.resolve()] = guide.resolve()
-    # if both are in the queue. So both should pass.
-    assert errs == []
-
-
-def test_plan_queue_next_up_not_first_is_rejected(tmp_path: Path, monkeypatch):
-    """Only the first queued plan may be marked (next up)."""
-    monkeypatch.setattr(cd, "REPO_ROOT", tmp_path)
-    docs = _write_docs_tree(tmp_path, manifest="# Docs\n")
-    areas = docs / "areas"
-    areas.mkdir()
-    active = docs / "plans" / "active"
-    active.mkdir(parents=True)
-    plan_a = active / "plan-a"
-    plan_a.mkdir()
-    plan_b = active / "plan-b"
-    plan_b.mkdir()
-    (plan_a / "plan-a.md").write_text(
-        "# Plan A\n\n> **Status:** Active.\n\n- **Area guide:** [Guide A](../../../areas/guide-a.md)\n",
-        encoding="utf-8",
-    )
-    (plan_b / "plan-b.md").write_text(
-        "# Plan B\n\n> **Status:** Queued.\n\n- **Area guide:** [Guide A](../../../areas/guide-a.md)\n",
-        encoding="utf-8",
-    )
-    (areas / "guide-a.md").write_text(
-        "# Guide A\n\n"
-        "> **Plan queue:**\n"
-        "> 1. [Plan A](../plans/active/plan-a/plan-a.md)\n"
-        "> 2. [Plan B](../plans/active/plan-b/plan-b.md) (next up)\n\n"  # Wrong: next up on item 2
-        "## Scope\n## Read first\n## Source map\n## Invariants\n## Work queue\n## Cross-references\n",
-        encoding="utf-8",
-    )
-    errs = cd.check_area_guide_contract(docs)
-    assert any("must be marked '(next up)'" in e.message for e in errs)
-    assert any("Only the first" in e.message for e in errs)
-
-
-def test_plan_queue_missing_next_up_is_rejected(tmp_path: Path, monkeypatch):
-    """The first queued plan must be marked (next up)."""
-    monkeypatch.setattr(cd, "REPO_ROOT", tmp_path)
-    docs = _write_docs_tree(tmp_path, manifest="# Docs\n")
-    areas = docs / "areas"
-    areas.mkdir()
-    active = docs / "plans" / "active"
-    active.mkdir(parents=True)
-    plan_a = active / "plan-a"
-    plan_a.mkdir()
-    (plan_a / "plan-a.md").write_text(
-        "# Plan A\n\n> **Status:** Active.\n\n- **Area guide:** [Guide A](../../../areas/guide-a.md)\n",
-        encoding="utf-8",
-    )
-    (areas / "guide-a.md").write_text(
-        "# Guide A\n\n"
-        "> **Plan queue:**\n"
-        "> 1. [Plan A](../plans/active/plan-a/plan-a.md)\n\n"  # No (next up)
-        "## Scope\n## Read first\n## Source map\n## Invariants\n## Work queue\n## Cross-references\n",
-        encoding="utf-8",
-    )
-    errs = cd.check_area_guide_contract(docs)
-    assert any("must be marked '(next up)'" in e.message for e in errs)
 
 
 def test_words_md_files_excluded_from_guides(tmp_path: Path, monkeypatch):

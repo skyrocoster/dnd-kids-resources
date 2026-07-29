@@ -1,5 +1,9 @@
 > **Historical proposal, superseded.** Current design-system rules live in [../DESIGN_SYSTEM.md](../DESIGN_SYSTEM.md).
 
+- **Area guide:** [Design](../../../areas/design.md)
+- **Read trigger:** Design-system migration provenance
+
+
 ---
 
 # Dark Mode Design Plan — Material Design 3

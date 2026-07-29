@@ -2,7 +2,9 @@
 
 > **Status:** Complete.
 
-- **Area guide:** [Visual Design](../areas/visual-design.md)
+- **Area guide:** [Design](../../../areas/design.md)
+- **Read trigger:** Shared BrowserLayout list collapse and catalog rail adoption history
+
 
 ## What we're building & why
 

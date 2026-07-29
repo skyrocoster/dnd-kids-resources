@@ -1,7 +1,6 @@
 # Design Area Guide
 
-> **Plan queue:**
-> 1. [Glossary Term Tooltips](../plans/active/glossary-term-tooltips/glossary-term-tooltips.md) (next up)
+- **Read trigger:** Shared UI, tokens, shell, or accessibility
 
 ## Scope
 
@@ -47,7 +46,13 @@ Modes are defined in [../UX_PATTERNS.md](../UX_PATTERNS.md#surface-modes).
 
 ## Work queue
 
-[Glossary Term Tooltips](../plans/active/glossary-term-tooltips/glossary-term-tooltips.md) — Stage 1 next.
+<!-- GENERATED:AREA_PLANS:design:START -->
+| Plan | State | Status |
+| --- | --- | --- |
+| [Glossary term tooltips](../plans/active/glossary-term-tooltips/glossary-term-tooltips.md) | ready | Stage 1 shipped. |
+<!-- GENERATED:AREA_PLANS:design:END -->
+
+What the table cannot derive:
 
 Three items with no plan yet, raised by
 [Kid Map Viewer](../plans/active/kid-map-viewer/kid-map-viewer.md) planning and deliberately kept out

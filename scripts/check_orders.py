@@ -134,6 +134,38 @@ CONDITIONAL_RE = re.compile(r"^\s*[-*]?\s*if\b|\bif (the|order|it|that|there|you
 
 # No trailing boundary: "mocks", "mocking", "fixtures" and "stubbed" all count, and firing
 # too readily here only costs the compiler a cast example it should have written anyway.
+RAW_PYTEST_RE = re.compile(r"(?<![-\w])pytest\b")
+# Scripts a DO bullet runs rather than edits. Naming one is an instruction to invoke it,
+# so it is not an edit site needing a START IN entry. init_database.py is deliberately
+# absent: it is a schema source that orders really do edit.
+INVOKE_ONLY_SCRIPTS = frozenset(
+    {
+        "check_docs.py",
+        "check_orders.py",
+        "generate_export_schema.py",
+        "new_order.py",
+        "order_check.py",
+        "order_telemetry.py",
+        "stage_check.py",
+    }
+)
+INVOCATION_CUE_RE = re.compile(
+    r"\b(with|using|via|through|by|run|runs|running|rerun|re-run|regenerate\w*|invoke\w*)\b"
+    r"[^.;]{0,30}$",
+    re.IGNORECASE,
+)
+
+
+def is_tool_invocation(bullet: str, path_str: str) -> bool:
+    """True when the bullet runs the script rather than editing it."""
+    if path_str.replace("\\", "/").rsplit("/", 1)[-1] not in INVOKE_ONLY_SCRIPTS:
+        return False
+    index = bullet.replace("\\", "/").find(path_str.replace("\\", "/"))
+    if index < 0:
+        return False
+    return INVOCATION_CUE_RE.search(bullet[:index]) is not None
+
+
 FIXTURE_HINT_RE = re.compile(r"\b(mock|fixture|stub)", re.IGNORECASE)
 CAST_IDIOM_RE = re.compile(r"\bas [A-Z]\w*(\[\])?")
 # Both spellings count: the raw npm script, and the `order_check.py` flag that runs it.
@@ -784,6 +816,8 @@ def lint_order(order_path: Path) -> list[OrderError]:
         )
     for path_str in sorted(do_paths):
         normalised = _normalise(path_str)
+        if any(is_tool_invocation(bullet, path_str) for bullet in do_bullets):
+            continue
         if not any(
             normalised.endswith(candidate) or candidate.endswith(normalised)
             for candidate in start_in_paths
@@ -832,7 +866,11 @@ def lint_order(order_path: Path) -> list[OrderError]:
                 )
 
     stop_when = " ".join(sections.get("STOP WHEN", []))
-    if "pytest" in stop_when and "--no-cov" not in stop_when:
+    # Only a *raw* pytest invocation needs the flag. A substring test also matched the
+    # wrapper's own `--pytest` argument — and since new_order.py always emits the wrapper
+    # form, every backend order was refused on its first run for a flag order_check.py
+    # already passes (scripts/order_check.py line 132).
+    if RAW_PYTEST_RE.search(stop_when) and "--no-cov" not in stop_when:
         fail(
             "STOP WHEN runs pytest without --no-cov",
             "Add --no-cov; without it the 97% coverage gate fails every subset run "

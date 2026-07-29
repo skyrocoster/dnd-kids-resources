@@ -14,12 +14,14 @@ free of code. Preserve useful, verified planning discoveries in a temporary comp
 ## Where it lives
 
 `docs/plans/active/<feature>/<feature>.md`, named for a concrete outcome (e.g. `loom-session-sharing/loom-session-sharing.md`),
-not a whole domain. An area may hold **several active plans, exactly one of which is next up** (see
-the area guides in `docs/areas/` and `docs/PLAN_TEMPLATE.md` §Lifecycle). Write a plan whenever its
-design is settled; if the area already has a next-up plan, say plainly in the Status line that this
-one is not next and what unblocks it, and add it to the guide's `Active plan` line after the
-next-up plan.
-If the owning area guide currently says "no active plan", this is the plan that changes that.
+not a whole domain. **Many plans may be active at once** — write one whenever its design is settled,
+even if nothing can start on it yet. Nothing queues or ranks them.
+
+What a plan waits on is a **dependency**, not a queue position. If this plan cannot begin until
+another ships, add `- **Depends on:** [Other Plan](../other-plan/other-plan.md)` to its `## Touches`
+section: that is what marks it blocked in
+[docs/plans/active/INDEX.md](../../../docs/plans/active/INDEX.md), and it is also what licenses the
+two plans to touch the same files. If it depends on nothing, it is ready the moment it exists.
 
 ## The Plan format
 
@@ -31,6 +33,7 @@ Keep the whole doc to roughly one screen. No code — describe intent, not imple
 > **Status:** <what's done, what's next — one line, rewritten each stage>
 
 - **Area guide:** [<Area>](../../../areas/<area>.md)
+- **Read trigger:** <when a reader should open this plan>
 
 ## What we're building & why
 <1–2 short paragraphs: the user-facing shape and the reason it matters.>
@@ -43,7 +46,24 @@ Keep the whole doc to roughly one screen. No code — describe intent, not imple
 ## Shipped
 | Stage | What shipped (≤2 sentences) |
 |-------|------------------------------|
+
+## Touches
+- `glob/pattern/**`
+- **Depends on:** [Other Plan](../other-plan/other-plan.md)
 ```
+
+`## Touches` is required: repo-root-relative globs for the files this plan's orders may modify, plus
+a `**Depends on:**` line for each plan that must ship first. Omit the dependency line when there is
+none — an absent dependency means ready, not unknown.
+
+**`**Area guide:**` and `**Read trigger:**` are required too, and the checker fails without them.**
+Both are *generated outward*: the plan's row in `docs/INVENTORY.md` and its row in the owning area
+guide's `## Work queue` are built from these two lines plus the Status line. Never write that row by
+hand and never restate the plan's status in an area guide — say it once, here. The area-guide link is
+relative to the plan file: from `docs/plans/active/<feature>/` that is `../../../areas/<area>.md`.
+
+A good read trigger names the *questions* this plan answers, in the words a reader would arrive with
+("Wall kinds, padding, outside features, or map layer and density controls"), not what the plan does.
 
 ## If the feature touches the frontend
 
@@ -59,8 +79,9 @@ part of the relevant stage.
 
 ## How to write it
 
-1. **Understand the outcome first.** Read the owning area guide and the minimum references it names
-   (via `docs/README.md`) yourself. Do the hard thinking here — this is what the planner's tokens are
+1. **Understand the outcome first.** Read the area guide that owns the code you will touch (for its
+   invariants and ownership — it does not track plans) and the minimum references `docs/README.md`
+   names, yourself. Do the hard thinking here — this is what the planner's tokens are
    for. Anything beyond those that is pure survey work can go to the explorer in one batch (see
    below) while you think.
 2. **Break the outcome into stages.** Each stage should be a coherent step that becomes one or a few

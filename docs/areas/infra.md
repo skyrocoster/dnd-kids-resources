@@ -1,8 +1,6 @@
 # Infra Area Guide
 
-> **Plan queue:**
-> 1. [Table Testing Records](../plans/active/table-testing-records/table-testing-records.md) (next up)
-> 2. [Production Nightly Deploys](../plans/active/production-nightly-deploys/production-nightly-deploys.md)
+- **Read trigger:** Shared backend infra, documentation governance, or repo-wide test tooling
 
 ## Scope
 
@@ -71,8 +69,15 @@ see [../DATA_MODEL.md](../DATA_MODEL.md#rebuilding-the-database).
 
 ## Work queue
 
-- [Production Nightly Deploys](../plans/active/production-nightly-deploys/production-nightly-deploys.md) — schema-as-data
-  generation, additive migrations, and a deploy that backs up before it migrates.
+<!-- GENERATED:AREA_PLANS:infra:START -->
+| Plan | State | Status |
+| --- | --- | --- |
+| [Production Nightly Deploys](../plans/active/production-nightly-deploys/production-nightly-deploys.md) | ready | Not next for Infra; second in the Infra queue, after Table Testing Records. |
+| [Table Testing Records](../plans/active/table-testing-records/table-testing-records.md) | ready | Next up for Infra now that Docs Restructure is complete. |
+<!-- GENERATED:AREA_PLANS:infra:END -->
+
+What the table cannot derive:
+
 - Shared backend infra and repo-wide test tooling remain deferred and need a design phase before changes.
 
 ## Cross-references

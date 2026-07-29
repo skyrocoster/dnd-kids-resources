@@ -3,6 +3,10 @@
 > **Status:** Loot system complete. Phase L (items catalog + loot bundles) and Phase M (loot on the dungeon
 > map) shipped.
 
+- **Area guide:** [Reference](../../../areas/reference.md)
+- **Read trigger:** Loot-system implementation history
+
+
 ## What the feature is
 
 A loot system for handing out treasure at the table. Two new domains that reuse existing patterns:

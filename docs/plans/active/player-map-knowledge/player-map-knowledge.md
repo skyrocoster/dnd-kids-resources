@@ -1,8 +1,10 @@
 # Player Map Knowledge — the DM controls each fact the party has learned
 
-> **Status:** Stage 1 shipped. Next: compile Stage 2, Knowledge persists apart from truth; Knowledge precedes Fog.
+> **Status:** Stages 1-2 shipped. Next: compile Stage 3, The Curtain learns facts; Knowledge precedes Fog.
 
 - **Area guide:** [Players](../../../areas/players.md)
+- **Read trigger:** Reversible per-fact disclosure, the map knowledge document, inspector selection, or the DM's player-result preview
+
 
 ## What we're building & why
 
@@ -101,9 +103,11 @@ Touch:        64px floor for existing controls; disclosed cues are presentation,
 | Stage | What shipped (≤2 sentences) |
 |-------|------------------------------|
 | 1 | Passage-like map objects now share the `exists`, `lock`, and `trap` knowledge vocabulary, with Perception DC and Search DC authored and presented separately while both remain behind the Curtain. Room entries have deterministic room-qualified identities derived from stable room ID and one-based authored order without changing legacy dungeon data. |
+| 2 | Each dungeon now has an independently persisted, cascade-deleted knowledge document with replacement-style GET, PUT, and DELETE endpoints. Knowledge participates in seed export and rebuild separately from authored layout, live session truth, and Fog. |
 
 ## Touches
 
+- **Depends on:** [Glossary Term Tooltips](../glossary-term-tooltips/glossary-term-tooltips.md)
 - `scripts/init_database.py`
 - `scripts/seed_database.py`
 - `scripts/export_db_seeds.py`
@@ -124,14 +128,6 @@ Touch:        64px floor for existing controls; disclosed cues are presentation,
 - `frontend/src/theme.css`
 
 ## Compiler handoff
-
-### Stage 2
-- **Verified edit sites:** `backend/app/routers/session_state.py` and `backend/app/schemas.py` — the nearest persistence pattern is a per-dungeon opaque JSON blob with GET/PUT/DELETE and cascade deletion; no knowledge record exists.
-- **Verified edit sites:** `scripts/init_database.py` — `map_session_state` is a one-row-per-dungeon JSON table and `revealed_cells` is a separate many-row Fog table.
-- **Verified tests:** `backend/tests/routers/test_session_state.py` covers 404, upsert, reset, missing dungeon, DB failure, and cascade behavior.
-- **Settled contracts:** store one sparse per-dungeon knowledge document, grouped by object kind and stable ID, containing only independently known fact keys. PUT replaces the confirmed document and permits either-direction correction; DELETE/reset is not coupled to Reset dungeon truth state.
-- **Constraints:** knowledge is separate from `map_session_state`, `map_layout`, and `revealed_cells`; include schema generation and seed export policy in this stage.
-- **Open questions:** none.
 
 ### Stage 3
 - **Verified edit sites:** `frontend/src/player/curtain.ts` — exhaustive visibility maps already classify `hidden`, `locked`, and `trapped` as `whenKnown`, classify DCs and notes as `never`, and currently strip all `whenKnown` fields because no knowledge input exists.

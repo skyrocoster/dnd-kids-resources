@@ -519,6 +519,39 @@ def test_creating_an_exported_type_is_not_a_reshape(repo: Path):
     assert any("FixtureFactXY" in m for m in messages(repo, reshape))
 
 
+def test_wrapper_pytest_flag_is_not_a_raw_pytest_run(repo: Path):
+    """order_check.py passes --no-cov itself; the rule matched its own `--pytest` flag."""
+    order = GOOD_ORDER.replace(
+        "STOP WHEN: `cd frontend && npm run test:check -- src/__tests__/Tile.test.tsx` passes.",
+        "STOP WHEN: `python scripts/order_check.py --pytest backend/tests/test_x.py` passes.",
+    )
+    assert not any("--no-cov" in m for m in messages(repo, order))
+
+    raw = order.replace(
+        "python scripts/order_check.py --pytest backend/tests/test_x.py",
+        "pytest backend/tests/test_x.py",
+    )
+    assert any("--no-cov" in m for m in messages(repo, raw))
+
+
+def test_running_a_generator_is_not_an_edit_site(repo: Path):
+    """`regenerate X with scripts/generate_export_schema.py` invokes it, not edits it."""
+    (repo / "scripts").mkdir()
+    (repo / "scripts" / "generate_export_schema.py").write_text("# gen\n", encoding="utf-8")
+    order = GOOD_ORDER.replace(
+        "- Add one test to src/__tests__/Tile.test.tsx.",
+        "- Regenerate src/api.ts with scripts/generate_export_schema.py; do not hand-edit it.",
+    )
+    found = messages(repo, order)
+    assert not any("generate_export_schema.py" in m for m in found)
+
+    edited = order.replace(
+        "- Regenerate src/api.ts with scripts/generate_export_schema.py; do not hand-edit it.",
+        "- Add a column list branch in scripts/generate_export_schema.py.",
+    )
+    assert any("generate_export_schema.py" in m for m in messages(repo, edited))
+
+
 def test_one_frontend_test_file_per_order(repo: Path):
     (repo / "src" / "__tests__" / "Other.test.tsx").write_text("test('y', () => {})\n", encoding="utf-8")
     order = GOOD_ORDER.replace(

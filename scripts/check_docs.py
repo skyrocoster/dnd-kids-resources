@@ -18,10 +18,12 @@ Exit codes:
 from __future__ import annotations
 
 import argparse
+import ast
 import contextlib
 import importlib.util
 import io
 import json
+import os
 import re
 import sqlite3
 import subprocess
@@ -29,7 +31,7 @@ import sys
 import tempfile
 import textwrap
 from configparser import ConfigParser
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from urllib.parse import unquote
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -73,10 +75,6 @@ GUIDE_PATHS = [
 ]
 MARKDOWN_LINK_RE = re.compile(r"(?<!!)\[[^\]]*\]\(([^)]+)\)")
 HEADING_RE = re.compile(r"^#{1,6}\s+(.+?)\s*#*\s*$", re.MULTILINE)
-PLAN_QUEUE_RE = re.compile(r"^>\s*\*\*Plan queue:\*\*$", re.MULTILINE)
-PLAN_QUEUE_NONE_RE = re.compile(r"^>\s*\*\*Plan queue:\*\*\s*None\.?\s*$", re.MULTILINE)
-PLAN_QUEUE_ITEM_RE = re.compile(r"^>\s*(\d+)\.\s+(.+)$")
-AREA_GUIDE_RE = re.compile(r"^\s*-\s+\*\*Area guide:\*\*\s*\[[^\]]+\]\(([^)]+)\)\.?\s*$", re.MULTILINE)
 AREA_GUIDE_HEADINGS = {"scope", "read-first", "source-map", "invariants", "work-queue", "cross-references"}
 IMPLEMENTATION_PREFIXES = ("backend/", "frontend/", "scripts/", "data/", ".github/")
 ROUTER_PATH_RE = re.compile(r"backend/app/routers/(\w+)\.py")
@@ -86,14 +84,10 @@ GENERATED_CONTRACT_REFERENCES = {
     "frontend/package.json": {"docs/TESTING.md"},
     "frontend/src/theme.css": {"docs/DESIGN_SYSTEM.md"},
 }
-GENERATED_MARKERS = {
-    "API_REFERENCE.md": "API",
-    "DATA_MODEL.md": "DATA_MODEL",
-    "ARCHITECTURE.md": "ARCHITECTURE",
-    "DESIGN_SYSTEM.md": "DESIGN_SYSTEM",
-    "TESTING.md": "TESTING",
-    "plans/done/INDEX.md": "ARCHIVE_INDEX",
-}
+# A document may carry any number of generated blocks. Each is addressed by a
+# marker string that becomes `<!-- GENERATED:<marker>:START -->`; a marker may
+# itself be colon-segmented (`API:spells`) so one document can hold a block per
+# router, per area guide, or per anything else with a stable key.
 GLOB_LIKE_RE = re.compile(r"[/\[\]\*\?\{\}]")
 CHANGE_MAP_EXCLUDE_DIRS = frozenset({
     "__pycache__", "node_modules", "dist", "build", ".venv", "venv",
@@ -669,29 +663,6 @@ def check_plan_lifecycle(docs_dir: Path, readme_path: Path) -> list[CheckError]:
     return errors
 
 
-def _parse_plan_queue_items(content: str, header_match_end: int) -> list[tuple[str, str]]:
-    """Parse ordered list items after the Plan queue header.
-
-    Each item is expected on its own blockquote line:
-        > 1. [Link text](path) (next up)
-
-    Returns a list of (full_item_text, link_url) tuples.
-    """
-    remainder = content[header_match_end:]
-    items: list[tuple[str, str]] = []
-    for line in remainder.splitlines():
-        if not line.strip():
-            continue
-        m = PLAN_QUEUE_ITEM_RE.match(line)
-        if not m:
-            break
-        item_text = m.group(2).strip()
-        link_match = MARKDOWN_LINK_RE.search(item_text)
-        link_url = link_match.group(1) if link_match else ""
-        items.append((item_text, link_url))
-    return items
-
-
 def _parse_guide_source_routers(content: str) -> set[str]:
     """Extract router names from the ## Source map section of an area guide."""
     section_match = re.search(r"## Source map\n(.*?)(?=\n## |\Z)", content, re.DOTALL)
@@ -816,7 +787,6 @@ def check_area_guide_contract(docs_dir: Path) -> list[CheckError]:
     active_plans = find_active_plan_files(docs_dir)
     guide_paths = {guide.resolve() for guide in guides}
     active_paths = {plan.resolve() for plan in active_plans}
-    guide_targets: dict[Path, Path] = {}
 
     # ── Router / route / file duplicate-ownership tracking ──────────
     router_owners: dict[str, str] = {}   # router_name -> guide_rel_path
@@ -836,61 +806,6 @@ def check_area_guide_contract(docs_dir: Path) -> list[CheckError]:
                 f"Missing required area-guide sections: {', '.join(missing)}",
                 "Add the required sections from PLAN_TEMPLATE.md",
             ))
-
-        # ── Plan queue ───────────────────────────────────────────────
-        none_match = PLAN_QUEUE_NONE_RE.search(content)
-        header_match = PLAN_QUEUE_RE.search(content)
-        if not none_match and not header_match:
-            errors.append(CheckError(
-                rel,
-                "Missing Plan queue blockquote",
-                "Add '> **Plan queue:** None.' or an ordered list of queued plans",
-            ))
-            continue
-
-        if none_match is not None:
-            # Valid empty queue — skip link validation
-            pass
-        elif header_match is not None:
-            items = _parse_plan_queue_items(content, header_match.end())
-            if not items:
-                errors.append(CheckError(
-                    rel,
-                    "Plan queue must be 'None.' or an ordered list of links",
-                    "Add '1. [Plan Name](path) (next up)' after the queue header",
-                ))
-                continue
-            for i, (item_text, link_url) in enumerate(items):
-                has_next_up = "(next up)" in item_text
-                if i == 0 and not has_next_up:
-                    errors.append(CheckError(
-                        rel,
-                        "First queued plan must be marked '(next up)'",
-                        "Add '(next up)' after the first plan link",
-                    ))
-                elif i > 0 and has_next_up:
-                    errors.append(CheckError(
-                        rel,
-                        "Only the first queued plan may be marked '(next up)'",
-                        "Remove '(next up)' from later queued plans",
-                    ))
-                if not link_url:
-                    errors.append(CheckError(
-                        rel,
-                        f"Queued item {i+1} has no Markdown link",
-                        "Add a Markdown link to the active execution plan",
-                    ))
-                    continue
-                resolved = _local_link_target(guide, link_url, REPO_ROOT)
-                if resolved is None or resolved[0].resolve() not in active_paths:
-                    errors.append(CheckError(
-                        rel,
-                        f"Plan queue link '{item_text[:60]}' does not target an active execution plan",
-                        "Point it at a file under docs/plans/active/",
-                    ))
-                    continue
-                target, _anchor = resolved
-                guide_targets[target.resolve()] = guide.resolve()
 
         # ── Ownership: source-map routers ────────────────────────────
         for router_name in _parse_guide_source_routers(content):
@@ -968,31 +883,6 @@ def check_area_guide_contract(docs_dir: Path) -> list[CheckError]:
                     "Add a glob for this file to the appropriate area guide's ## Change map",
                 ))
 
-    # ── Active-plan → guide backlink validation ──────────────────────
-    for plan in active_plans:
-        content = plan.read_text(encoding="utf-8")
-        match = AREA_GUIDE_RE.search(content)
-        if not match:
-            errors.append(CheckError(
-                _safe_rel(plan),
-                "Missing Area guide line",
-                "Add an Area guide Markdown link immediately after the status block",
-            ))
-            continue
-        resolved = _local_link_target(plan, match.group(1), REPO_ROOT)
-        if resolved is None or resolved[0].resolve() not in guide_paths:
-            errors.append(CheckError(
-                _safe_rel(plan),
-                "Area guide link does not target a file under docs/areas/",
-                "Link this plan to its owning area guide",
-            ))
-            continue
-        if guide_targets.get(plan.resolve()) != resolved[0].resolve():
-            errors.append(CheckError(
-                _safe_rel(plan),
-                "Owning area guide does not point back to this active plan",
-                "Update the guide's Plan queue with a link to this plan",
-            ))
     return errors
 
 
@@ -1161,31 +1051,257 @@ def _schema_name(value: object) -> str:
     return "-"
 
 
-def generate_api_inventory(repo_root: Path) -> str:
-    """Render endpoints from FastAPI's OpenAPI contract without starting a server."""
+HTTP_METHOD_ORDER = ("get", "post", "put", "patch", "delete")
+
+
+def _openapi_paths(repo_root: Path) -> dict:
+    """FastAPI's OpenAPI contract, read by importing the app without serving it."""
     sys.path.insert(0, str(repo_root))
     try:
         from backend.app.main import app
-        paths = app.openapi()["paths"]
+        return app.openapi()["paths"]
     finally:
         sys.path.pop(0)
 
-    lines = ["### Generated API Inventory", "", "| Method | Path | Parameters | Request | Responses |", "|---|---|---|---|---|"]
+
+def _api_operations(repo_root: Path) -> list[tuple[str, str, str, dict]]:
+    """(tag, path, method, operation) for every documented `/api/` route."""
+    operations: list[tuple[str, str, str, dict]] = []
+    paths = _openapi_paths(repo_root)
     for path in sorted(path for path in paths if path.startswith("/api/")):
-        for method, operation in sorted(paths[path].items()):
-            if method not in {"get", "post", "put", "patch", "delete"}:
+        for method in HTTP_METHOD_ORDER:
+            operation = paths[path].get(method)
+            if operation is None:
                 continue
-            parameters = ", ".join(
-                f"`{item['name']}` ({item['in']}{', required' if item.get('required') else ''})"
-                for item in operation.get("parameters", [])
-            ) or "-"
-            request = _schema_name(operation.get("requestBody", {}).get("content", {}).get("application/json", {}).get("schema", {}))
-            responses = ", ".join(
-                f"{status}: {_schema_name(response.get('content', {}).get('application/json', {}).get('schema', {}))}"
-                for status, response in sorted(operation.get("responses", {}).items())
-            )
-            lines.append(f"| {method.upper()} | `{path}` | {parameters} | {request} | {responses} |")
+            tags = operation.get("tags") or ["untagged"]
+            operations.append((tags[0], path, method, operation))
+    return operations
+
+
+def _api_request_column(operation: dict) -> str:
+    """The request body's schema name, or the route's parameters when it has no body."""
+    body = operation.get("requestBody", {}).get("content", {}).get("application/json", {}).get("schema", {})
+    if body:
+        return f"`{_schema_name(body)}`"
+    parameters = ", ".join(f"`{item['name']}`" for item in operation.get("parameters", []))
+    return parameters or "(none)"
+
+
+def _api_response_column(operation: dict) -> str:
+    """The success response's schema name, with its status code when not 200."""
+    responses = operation.get("responses", {})
+    for status in sorted(status for status in responses if status.startswith("2")):
+        schema = responses[status].get("content", {}).get("application/json", {}).get("schema", {})
+        if not schema:
+            return f"({status} No Content)" if status == "204" else f"({status})"
+        name = _schema_name(schema)
+        return f"`{name}`" if status == "200" else f"`{name}` ({status})"
+    return "-"
+
+
+def generate_api_router_inventories(repo_root: Path) -> dict[tuple[str, str], str]:
+    """One generated endpoint table per router, keyed by the router's OpenAPI tag.
+
+    Purpose comes from each route's docstring, so the reference restates nothing
+    the code does not already say. `check_route_docstrings` is what keeps that
+    column from generating blank.
+    """
+    by_tag: dict[str, list[str]] = {}
+    for tag, path, method, operation in _api_operations(repo_root):
+        purpose = (operation.get("description") or "").strip().splitlines()
+        by_tag.setdefault(tag, []).append(
+            f"| {method.upper()} | `{path}` | {purpose[0] if purpose else '-'} "
+            f"| {_api_request_column(operation)} | {_api_response_column(operation)} |"
+        )
+
+    header = ["| Method | Path | Purpose | Request | Response |", "|---|---|---|---|---|"]
+    return {
+        ("API_REFERENCE.md", f"API:{tag}"): "\n".join(header + rows) + "\n"
+        for tag, rows in by_tag.items()
+    }
+
+
+PLAN_AREA_GUIDE_RE = re.compile(r"^-\s+\*\*Area guide:\*\*\s+\[([^\]]+)\]\(([^)]+)\)", re.MULTILINE)
+PLAN_READ_TRIGGER_RE = re.compile(r"^-\s+\*\*Read trigger:\*\*\s+(.+)$", re.MULTILINE)
+
+
+def _plan_files(repo_root: Path) -> list[Path]:
+    """Every plan document under docs/plans/{active,done}/<feature>/."""
+    plans: list[Path] = []
+    for state in ("active", "done"):
+        directory = repo_root / "docs" / "plans" / state
+        if not directory.is_dir():
+            continue
+        for feature in sorted(directory.iterdir()):
+            if feature.is_dir():
+                plans.extend(sorted(path for path in feature.glob("*.md") if not ORDER_FILE_RE.match(path.name)))
+    return plans
+
+
+def check_plan_headers(repo_root: Path) -> list[CheckError]:
+    """Fail when a plan lacks the header fields the manifest and area guides generate from.
+
+    `**Read trigger:**` and `**Area guide:**` are authored once here and rendered
+    into `INVENTORY.md` and the owning area guide's plan table. A plan missing
+    either cannot be routed to, so it is a failure rather than a blank cell.
+    """
+    errors: list[CheckError] = []
+    for path in _plan_files(repo_root):
+        text = path.read_text(encoding="utf-8", errors="replace")
+        relative = _safe_rel(path, repo_root)
+        if not PLAN_READ_TRIGGER_RE.search(text):
+            errors.append(CheckError(
+                relative,
+                "Plan has no **Read trigger:** line",
+                "Add '- **Read trigger:** <when a reader should open this>' under the Status line",
+            ))
+        area = PLAN_AREA_GUIDE_RE.search(text)
+        if not area:
+            errors.append(CheckError(
+                relative,
+                "Plan has no **Area guide:** line",
+                "Add '- **Area guide:** [<Area>](../../areas/<area>.md)' under the Status line",
+            ))
+            continue
+        target = (path.parent / area.group(2)).resolve()
+        if not target.exists():
+            errors.append(CheckError(
+                relative,
+                f"Plan's area guide link does not resolve: {area.group(2)}",
+                "Point **Area guide:** at an existing docs/areas/<area>.md",
+            ))
+    return errors
+
+
+def _inventory_title(text: str, fallback: str) -> str:
+    for line in text.splitlines():
+        if line.startswith("# "):
+            return line[2:].strip()
+    return fallback
+
+
+def _inventory_status(text: str) -> str:
+    """The plan's Status line, flattened to one sentence."""
+    match = re.search(r"^>\s*\*\*Status:\*\*\s*(.+?)(?=\n(?!>)|\Z)", text, re.MULTILINE | re.DOTALL)
+    if not match:
+        return "-"
+    raw = " ".join(part.strip().lstrip(">").strip() for part in match.group(1).split("\n"))
+    sentence = raw.split(". ")[0].rstrip(".")
+    return _escape_table_cell(sentence + "." if sentence else "-")
+
+
+def _escape_table_cell(value: str) -> str:
+    """Keep a generated cell from breaking the markdown table it lands in."""
+    return value.replace("|", "\\|").replace("\n", " ").strip()
+
+
+def generate_inventory_rows(repo_root: Path) -> str:
+    """The manifest's area-guide and plan rows, read off the documents themselves.
+
+    Every column here restates a fact authored elsewhere — the area guide's or
+    plan's own `**Read trigger:**`, the plan's Status line, its `**Area guide:**`
+    link — so the manifest can never drift from the documents it indexes.
+    """
+    lines = ["| Document | Type | Authority | Status | Read trigger | Update trigger |", "|---|---|---|---|---|---|"]
+
+    areas_dir = repo_root / "docs" / "areas"
+    active_by_area: dict[str, int] = {}
+    plan_rows: list[tuple[str, str]] = []
+
+    for path in _plan_files(repo_root):
+        text = path.read_text(encoding="utf-8", errors="replace")
+        relative = path.relative_to(repo_root / "docs").as_posix()
+        archived = "/done/" in f"/{relative}"
+        trigger = PLAN_READ_TRIGGER_RE.search(text)
+        area = PLAN_AREA_GUIDE_RE.search(text)
+        if area and not archived:
+            slug = PurePosixPath(area.group(2)).stem
+            active_by_area[slug] = active_by_area.get(slug, 0) + 1
+        row = (
+            f"| [{_inventory_title(text, path.stem)}]({relative}) "
+            f"| {'Archived plan' if archived else 'Plan'} "
+            f"| {'Historical' if archived else 'Working'} "
+            f"| {'Complete' if archived else _inventory_status(text)} "
+            f"| {_escape_table_cell(trigger.group(1)) if trigger else '-'} "
+            f"| {'Never — archived record' if archived else 'A stage ships, or its scope or settled decisions change'} |"
+        )
+        plan_rows.append((relative, row))
+
+    for path in sorted(areas_dir.glob("*.md")):
+        if path.name.endswith(".words.md"):
+            continue
+        text = path.read_text(encoding="utf-8", errors="replace")
+        trigger = PLAN_READ_TRIGGER_RE.search(text)
+        active = active_by_area.get(path.stem, 0)
+        lines.append(
+            f"| [areas/{path.name}](areas/{path.name}) | Area guide | Canonical "
+            f"| {'Active plan' if active else 'No active plan'} "
+            f"| {_escape_table_cell(trigger.group(1)) if trigger else '-'} "
+            f"| {path.stem.capitalize()} ownership, source map, or active work changes |"
+        )
+
+    lines.extend(row for _relative, row in sorted(plan_rows))
     return "\n".join(lines) + "\n"
+
+
+def generate_api_schema_inventory(repo_root: Path) -> str:
+    """Render every request/response model's field list from the OpenAPI components."""
+    sys.path.insert(0, str(repo_root))
+    try:
+        from backend.app.main import app
+        components = app.openapi().get("components", {}).get("schemas", {})
+    finally:
+        sys.path.pop(0)
+
+    lines = ["| Model | Fields |", "|---|---|"]
+    for name in sorted(components):
+        if name.startswith("HTTP") or name.startswith("ValidationError"):
+            continue
+        schema = components[name]
+        required = set(schema.get("required", []))
+        fields = ", ".join(
+            f"`{field}`" if field in required else f"`{field}`*"
+            for field in schema.get("properties", {})
+        )
+        lines.append(f"| `{name}` | {fields or '(no fields)'} |")
+    return "\n".join(lines) + "\n\nFields marked `*` are optional.\n"
+
+
+def check_route_docstrings(repo_root: Path) -> list[CheckError]:
+    """Fail when an `/api/` route has no docstring for the reference to generate from."""
+    errors: list[CheckError] = []
+    for _tag, path, method, operation in _api_operations(repo_root):
+        if (operation.get("description") or "").strip():
+            continue
+        errors.append(CheckError(
+            "backend/app/routers/",
+            f"{method.upper()} {path} has no docstring",
+            "Add a one-line docstring to the route function — it is the Purpose column in API_REFERENCE.md",
+        ))
+    return errors
+
+
+def check_api_reference_router_sections(docs_dir: Path, repo_root: Path) -> list[CheckError]:
+    """Fail when a router has no section in API_REFERENCE.md, or a section outlives its router."""
+    errors: list[CheckError] = []
+    content = (docs_dir / "API_REFERENCE.md").read_text(encoding="utf-8")
+    documented = set(re.findall(r"<!-- GENERATED:API:([\w-]+):START -->", content))
+    documented.discard("SCHEMAS")  # the model inventory, not a router
+    live = {tag for tag, _path, _method, _operation in _api_operations(repo_root)}
+
+    for tag in sorted(live - documented):
+        errors.append(CheckError(
+            "docs/API_REFERENCE.md",
+            f"Router '{tag}' has no section in the API reference",
+            f"Add a '## ... Router' section with <!-- GENERATED:API:{tag}:START/END --> markers, then run --write-generated",
+        ))
+    for tag in sorted(documented - live):
+        errors.append(CheckError(
+            "docs/API_REFERENCE.md",
+            f"Section for router '{tag}' has no routes behind it",
+            f"Remove the '{tag}' section — its router or tag is gone",
+        ))
+    return errors
 
 
 def generate_data_model_inventory(repo_root: Path) -> str:
@@ -1225,6 +1341,87 @@ def generate_architecture_inventory(repo_root: Path) -> str:
     routers = re.findall(r"app\.include_router\((\w+)\.router\)", main)
     features = sorted(path.name for path in (repo_root / "frontend" / "src" / "features").iterdir() if path.is_dir() and not path.name.startswith("__"))
     return "\n".join(["### Generated Registration Inventory", "", "Backend routers registered in `main.py`: " + ", ".join(f"`{router}.py`" for router in routers) + ".", "", "Frontend feature directories: " + ", ".join(f"`{feature}/`" for feature in features) + ".", ""])
+
+
+def _leading_comment(source: str) -> str:
+    """A non-Python script's opening description, to its first sentence.
+
+    Handles a PowerShell `<# … #>` block and a `//`-comment header, skipping the
+    shebang, and joins a description that wraps across several lines.
+    """
+    paragraph: list[str] = []
+    in_block = False
+    for line in source.splitlines():
+        stripped = line.strip()
+        if not paragraph and (not stripped or stripped.startswith("#!")):
+            continue
+        if stripped == "<#":
+            in_block = True
+            continue
+        if in_block:
+            if not stripped or stripped == "#>":
+                break
+            paragraph.append(stripped)
+            continue
+        if stripped.startswith(("//", "/*", "*", "#")):
+            # A `//` header is a title line followed by usage notes, not a wrapped
+            # sentence — take the first line only.
+            text = stripped.lstrip("/*# ").strip()
+            if text:
+                paragraph.append(text)
+                break
+            continue
+        break
+
+    if not paragraph:
+        return "_(no leading comment)_"
+    joined = " ".join(paragraph)
+    return joined.split(". ")[0].rstrip(".") + "."
+
+
+def generate_script_inventory(repo_root: Path) -> str:
+    """Render every script in `scripts/` from its module docstring.
+
+    The docstring is read rather than `--help` executed: `CLAUDE.md` declares these
+    scripts invoke-only, and running seventeen of them on every documentation check
+    would be a strange way to honour that.
+    """
+    lines = ["| Script | What it does |", "|---|---|"]
+    for path in sorted((repo_root / "scripts").glob("*.py")):
+        try:
+            docstring = ast.get_docstring(ast.parse(path.read_text(encoding="utf-8", errors="replace")))
+        except SyntaxError:
+            docstring = None
+        summary = (docstring or "").strip().split("\n")[0].strip() or "_(no module docstring)_"
+        lines.append(f"| `scripts/{path.name}` | {_escape_table_cell(summary)} |")
+
+    for pattern in ("*.mjs", "*.ps1"):
+        for path in sorted((repo_root / "scripts").glob(pattern)):
+            if path.name.endswith(".test.mjs"):
+                continue
+            summary = _leading_comment(path.read_text(encoding="utf-8", errors="replace"))
+            lines.append(f"| `scripts/{path.name}` | {_escape_table_cell(summary)} |")
+    return "\n".join(lines) + "\n"
+
+
+def generate_test_inventory(repo_root: Path) -> str:
+    """Render where the tests live and how many cases each file carries."""
+    lines = ["| Location | Files | Test cases |", "|---|---|---|"]
+
+    groups: dict[str, list[Path]] = {}
+    for path in sorted((repo_root / "backend" / "tests").rglob("test_*.py")):
+        groups.setdefault(path.parent.relative_to(repo_root).as_posix(), []).append(path)
+    for path in sorted((repo_root / "frontend" / "src").rglob("*.test.ts*")):
+        groups.setdefault(path.parent.relative_to(repo_root).as_posix(), []).append(path)
+
+    for location, paths in sorted(groups.items()):
+        cases = 0
+        for path in paths:
+            text = path.read_text(encoding="utf-8", errors="replace")
+            cases += len(re.findall(r"^\s*def test_", text, re.MULTILINE))
+            cases += len(re.findall(r"^\s*(?:it|test)\s*\(", text, re.MULTILINE))
+        lines.append(f"| `{location}/` | {len(paths)} | {cases} |")
+    return "\n".join(lines) + "\n"
 
 
 def generate_design_inventory(repo_root: Path) -> str:
@@ -1306,15 +1503,226 @@ def generate_archive_index(repo_root: Path) -> str:
     return "\n".join(lines) + "\n"
 
 
-def generated_sections(repo_root: Path) -> dict[str, str]:
-    return {
-        "API_REFERENCE.md": generate_api_inventory(repo_root),
-        "DATA_MODEL.md": generate_data_model_inventory(repo_root),
-        "ARCHITECTURE.md": generate_architecture_inventory(repo_root),
-        "DESIGN_SYSTEM.md": generate_design_inventory(repo_root),
-        "TESTING.md": generate_testing_inventory(repo_root),
-        "plans/done/INDEX.md": generate_archive_index(repo_root),
+ORDER_FILE_RE = re.compile(r"^(\d{1,3})-.+\.md$")
+ORDER_STATUS_RE = re.compile(r"^STATUS:\s*(.*)$", re.MULTILINE)
+
+
+def _order_states(feature_dir: Path) -> list[tuple[str, str]]:
+    """(order filename, STATUS word) for each work order, '' when unrun."""
+    states: list[tuple[str, str]] = []
+    for path in sorted(feature_dir.iterdir()):
+        if not path.is_file() or not ORDER_FILE_RE.match(path.name):
+            continue
+        match = ORDER_STATUS_RE.search(path.read_text(encoding="utf-8", errors="replace"))
+        raw = (match.group(1).strip() if match else "")
+        # Only the three real words count. An unrun order is not blank on disk — it
+        # carries new_order.py's placeholder, `<-- executor writes DONE, FAILED …`, whose
+        # first token parsed as neither a state nor an absence and left the plan reading
+        # as finished when nothing had been dispatched.
+        first = raw.split()[0].upper().strip("-—:,.") if raw else ""
+        states.append((path.name, first if first in {"DONE", "FAILED", "BLOCKED"} else ""))
+    return states
+
+
+def _collect_active_plans(repo_root: Path) -> dict[str, dict] | None:
+    """Every in-flight plan's title, status, link, dependencies, area guide and order states.
+
+    Read once and shared by the active index and the per-area-guide plan tables,
+    so the two can never disagree about what is in flight.
+    """
+    active_dir = repo_root / "docs" / "plans" / "active"
+    if not active_dir.is_dir():
+        return None
+
+    plans: dict[str, dict] = {}
+    for entry in sorted(active_dir.iterdir()):
+        if not entry.is_dir():
+            continue
+        plan_file = entry / f"{entry.name}.md"
+        if not plan_file.is_file():
+            candidates = sorted(p for p in entry.glob("*.md") if not ORDER_FILE_RE.match(p.name))
+            if not candidates:
+                continue
+            plan_file = candidates[0]
+        text = plan_file.read_text(encoding="utf-8")
+
+        # The plan's own H1 and Status line are written for a reader of that plan, so both
+        # carry a trailing explanation. A routing table wants the name and the headline:
+        # keep the title before its em dash and the status up to its first sentence.
+        title = plan_file.stem.replace("-", " ").title()
+        for line in text.splitlines():
+            if line.startswith("# "):
+                title = re.split(r"\s+[—–-]\s+", line[2:].strip(), maxsplit=1)[0].strip()
+                break
+
+        status = ""
+        for line in text.splitlines():
+            if "**Status:**" in line:
+                raw = line.split("**Status:**", 1)[1].strip().strip(">").strip()
+                status = raw.split(". ")[0].rstrip(".") + "." if ". " in raw else raw
+                break
+
+        _globs, depends_on = _parse_touches(text, plan_file, repo_root)
+        area = PLAN_AREA_GUIDE_RE.search(text)
+        plans[entry.name] = {
+            "title": title,
+            "status": status.replace("|", "\\|"),
+            "link": f"{entry.name}/{plan_file.name}",
+            "depends_on": [d for d in dict.fromkeys(depends_on) if d != entry.name],
+            "states": _order_states(entry),
+            "area": PurePosixPath(area.group(2)).stem if area else "",
+            "path": plan_file,
+        }
+    return plans
+
+
+def generate_active_index(repo_root: Path) -> str:
+    """Generate the routing table of in-flight plans under docs/plans/active/.
+
+    Every column is read off the files: the plan's own Status line, the `Depends on`
+    entries in its ``## Touches`` section, and the STATUS line each executor wrote into
+    its work orders. Rows are sorted so a plan always follows the plans it depends on.
+
+    `State` is dependency-derived: a plan is *blocked* while any plan it depends on is
+    still active, and *ready* once they have all been archived. `Next` names the skill
+    its orders are waiting for. Neither is a priority: several plans can be ready at
+    once, and choosing between them is the user's call.
+    """
+    plans = _collect_active_plans(repo_root)
+    if not plans:
+        return "_(no active plans)_\n"
+
+    rows: list[str] = []
+    for feature in _dependency_order(plans):
+        plan = plans[feature]
+        # A dependency no longer under active/ has been archived, so it no longer blocks.
+        blocking = [dep for dep in plan["depends_on"] if dep in plans]
+        states = plan["states"]
+        done = sum(1 for _, state in states if state == "DONE")
+        stuck = [name for name, state in states if state in {"FAILED", "BLOCKED"}]
+        unrun = sum(1 for _, state in states if not state)
+
+        if not states:
+            orders, nxt = "none compiled", "`to-orders`"
+        elif stuck:
+            orders = f"{len(states)} · {done} done · {len(stuck)} failed/blocked"
+            nxt = "`dispatch-orders` (triage)"
+        elif unrun:
+            orders = f"{len(states)} · {done} done · {unrun} unrun"
+            nxt = "`dispatch-orders`"
+        elif done == len(states):
+            orders = f"{len(states)} · all done"
+            nxt = "`reconcile`"
+        else:
+            # Never conclude "done" by elimination: that is how three undispatched orders
+            # were reported as ready for reconcile.
+            orders = f"{len(states)} · {done} done · {len(states) - done} unrecognised STATUS"
+            nxt = "— check the STATUS lines"
+
+        if blocking:
+            state = "blocked"
+            deps = ", ".join(f"[{plans[d]['title']}]({plans[d]['link']})" for d in blocking)
+        else:
+            state = "ready"
+            deps = "—"
+
+        status_cell = plan["status"] or "—"
+        rows.append(
+            f"| [{plan['title']}]({plan['link']}) | {deps} | {state} | "
+            f"{orders} | {nxt} | {status_cell} |"
+        )
+
+    header = [
+        "| Plan | Depends on | State | Orders | Next | Status |",
+        "| --- | --- | --- | --- | --- | --- |",
+    ]
+    return "\n".join(header + rows) + "\n"
+
+
+def generate_area_plan_tables(repo_root: Path) -> dict[tuple[str, str], str]:
+    """One in-flight-plan table per area guide, keyed by the plan's `**Area guide:**` link.
+
+    An area guide states which plans are live and what each says about itself; the
+    hand-written bullets below the table keep what no script can derive — why a plan
+    supersedes another, what is deferred, what is still undecided.
+    """
+    plans = _collect_active_plans(repo_root) or {}
+    by_area: dict[str, list[str]] = {}
+    for feature in _dependency_order(plans):
+        plan = plans[feature]
+        if not plan["area"]:
+            continue
+        blocking = [dep for dep in plan["depends_on"] if dep in plans]
+        state = "blocked" if blocking else "ready"
+        by_area.setdefault(plan["area"], []).append(
+            f"| [{plan['title']}](../plans/active/{plan['link']}) | {state} | {plan['status'] or '—'} |"
+        )
+
+    header = ["| Plan | State | Status |", "| --- | --- | --- |"]
+    tables: dict[tuple[str, str], str] = {}
+    for path in sorted((repo_root / "docs" / "areas").glob("*.md")):
+        if path.name.endswith(".words.md"):
+            continue
+        rows = by_area.get(path.stem, [])
+        body = "\n".join(header + rows) if rows else "_No plan is in flight for this area._"
+        tables[(f"areas/{path.name}", f"AREA_PLANS:{path.stem}")] = body + "\n"
+    return tables
+
+
+def _dependency_order(plans: dict[str, dict]) -> list[str]:
+    """Feature names sorted so each plan follows the active plans it depends on.
+
+    A dependency cycle cannot be ordered. Rather than dropping those plans or silently
+    reordering them, the unresolvable remainder is appended alphabetically so every plan
+    still appears in the table.
+    """
+    ordered: list[str] = []
+    placed: set[str] = set()
+    remaining = sorted(plans)
+    while remaining:
+        ready = [
+            feature
+            for feature in remaining
+            if all(dep in placed or dep not in plans for dep in plans[feature]["depends_on"])
+        ]
+        if not ready:
+            ordered.extend(remaining)
+            break
+        ordered.extend(ready)
+        placed.update(ready)
+        remaining = [feature for feature in remaining if feature not in placed]
+    return ordered
+
+
+def _plan_title(plan_path: Path) -> str:
+    """The plan's H1, trimmed to the name before its outcome clause."""
+    for line in plan_path.read_text(encoding="utf-8").splitlines():
+        if line.startswith("# "):
+            return re.split(r"\s+[—–-]\s+", line[2:].strip(), maxsplit=1)[0].strip()
+    return plan_path.stem.replace("-", " ").title()
+
+
+def generated_sections(repo_root: Path) -> dict[tuple[str, str], str]:
+    """Every generated block in the documentation, keyed by (filename, marker).
+
+    A document appears once per block it carries, so a file with a block per
+    router or per area guide contributes one entry each.
+    """
+    sections: dict[tuple[str, str], str] = {
+        ("DATA_MODEL.md", "DATA_MODEL"): generate_data_model_inventory(repo_root),
+        ("ARCHITECTURE.md", "ARCHITECTURE"): generate_architecture_inventory(repo_root),
+        ("DESIGN_SYSTEM.md", "DESIGN_SYSTEM"): generate_design_inventory(repo_root),
+        ("TESTING.md", "TESTING"): generate_testing_inventory(repo_root),
+        ("plans/done/INDEX.md", "ARCHIVE_INDEX"): generate_archive_index(repo_root),
+        ("plans/active/INDEX.md", "ACTIVE_INDEX"): generate_active_index(repo_root),
     }
+    sections[("API_REFERENCE.md", "API:SCHEMAS")] = generate_api_schema_inventory(repo_root)
+    sections[("INVENTORY.md", "INVENTORY:AREAS_AND_PLANS")] = generate_inventory_rows(repo_root)
+    sections.update(generate_api_router_inventories(repo_root))
+    sections[("ARCHITECTURE.md", "ARCHITECTURE:SCRIPTS")] = generate_script_inventory(repo_root)
+    sections[("TESTING.md", "TESTING:LOCATIONS")] = generate_test_inventory(repo_root)
+    sections.update(generate_area_plan_tables(repo_root))
+    return sections
 
 
 def replace_generated_section(content: str, marker: str, generated: str) -> str:
@@ -1329,28 +1737,53 @@ def replace_generated_section(content: str, marker: str, generated: str) -> str:
 
 
 def check_generated_sections(docs_dir: Path, repo_root: Path) -> list[CheckError]:
-    """Fail when generated inventories are missing, malformed, or stale."""
+    """Fail when generated blocks are missing, malformed, or stale.
+
+    Each block is reported on its own, naming its marker, so a document holding
+    twenty blocks says which one went stale rather than that the file did.
+    """
     errors: list[CheckError] = []
-    for filename, generated in generated_sections(repo_root).items():
+    for (filename, marker), generated in generated_sections(repo_root).items():
         path = docs_dir / filename
         try:
             content = path.read_text(encoding="utf-8")
-            expected = replace_generated_section(content, GENERATED_MARKERS[filename], generated)
+            expected = replace_generated_section(content, marker, generated)
+        except FileNotFoundError:
+            errors.append(CheckError(
+                _safe_rel(path, repo_root),
+                f"Generated block '{marker}' has no document to live in",
+                "Create the document with the GENERATED markers and run --write-generated",
+            ))
+            continue
         except ValueError as exc:
             errors.append(CheckError(_safe_rel(path, repo_root), str(exc), "Add the stable generated-section markers and run --write-generated"))
             continue
         if expected != content:
-            errors.append(CheckError(_safe_rel(path, repo_root), "Generated inventory is stale", "Run python scripts/check_docs.py --write-generated"))
+            errors.append(CheckError(
+                _safe_rel(path, repo_root),
+                f"Generated block '{marker}' is stale",
+                "Run python scripts/check_docs.py --write-generated",
+            ))
     return errors
 
 
 def write_generated_sections(docs_dir: Path, repo_root: Path = REPO_ROOT) -> int:
-    """Refresh only stable generated sections, preserving surrounding prose."""
+    """Refresh every generated block, preserving surrounding prose.
+
+    Blocks are grouped by document so a file holding several is read and written
+    once rather than once per block.
+    """
+    by_document: dict[str, list[tuple[str, str]]] = {}
+    for (filename, marker), generated in generated_sections(repo_root).items():
+        by_document.setdefault(filename, []).append((marker, generated))
+
     try:
-        for filename, generated in generated_sections(repo_root).items():
+        for filename, blocks in by_document.items():
             path = docs_dir / filename
             content = path.read_text(encoding="utf-8")
-            path.write_text(replace_generated_section(content, GENERATED_MARKERS[filename], generated), encoding="utf-8")
+            for marker, generated in blocks:
+                content = replace_generated_section(content, marker, generated)
+            path.write_text(content, encoding="utf-8")
     except ValueError as exc:
         print(f"Documentation generation failed: {exc}", file=sys.stderr)
         return 1
@@ -1509,6 +1942,9 @@ def main(argv: list[str] | None = None) -> int:
     errors.extend(check_instruction_precedence(REPO_ROOT))
     errors.extend(check_configured_test_commands(REPO_ROOT))
     errors.extend(check_generated_sections(DOCS_DIR, REPO_ROOT))
+    errors.extend(check_route_docstrings(REPO_ROOT))
+    errors.extend(check_plan_headers(REPO_ROOT))
+    errors.extend(check_api_reference_router_sections(DOCS_DIR, REPO_ROOT))
     errors.extend(check_kid_palette(REPO_ROOT))
 
     if args.base:

@@ -299,6 +299,15 @@ Indexes: `sqlite_autoindex_loom_threads_1`.
 | `created_at` | `DATETIME` | no | `CURRENT_TIMESTAMP` |
 | `updated_at` | `DATETIME` | no | `CURRENT_TIMESTAMP` |
 
+#### `map_knowledge`
+
+| Column | Type | Required | Default |
+|---|---|---|---|
+| `dungeon_id` | `INTEGER` | yes | `-` |
+| `data` | `TEXT` | yes | `-` |
+
+Foreign keys: `dungeon_id` -> `dungeons.id` (CASCADE).
+
 #### `map_layout`
 
 | Column | Type | Required | Default |
