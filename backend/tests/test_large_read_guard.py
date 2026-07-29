@@ -98,6 +98,32 @@ def test_arming_is_per_session(guard):
     assert allow is True
 
 
+def test_reading_the_skill_file_arms_the_session(guard):
+    # opencode's `/to-orders` slash command under the default agent fired no `skill` tool
+    # event at all — it just read SKILL.md, and the guard slept through a whole compile.
+    guard._record_post(opencode_read(".claude/skills/to-orders/SKILL.md"))
+    allow, _ = guard._record_pre(claude_read("src/Big.tsx"))
+    assert allow is False
+
+
+def test_catting_the_skill_file_arms_the_session(guard):
+    guard._record_post(
+        {
+            "sessionID": "s1",
+            "tool": "bash",
+            "args": {"command": "cat .claude/skills/to-orders/SKILL.md"},
+        }
+    )
+    allow, _ = guard._record_pre(claude_read("src/Big.tsx"))
+    assert allow is False
+
+
+def test_reading_another_skills_file_does_not_arm(guard):
+    guard._record_post(opencode_read(".claude/skills/reconcile/SKILL.md"))
+    allow, _ = guard._record_pre(claude_read("src/Big.tsx"))
+    assert allow is True
+
+
 def test_an_unrelated_skill_does_not_arm(guard):
     guard._record_post(
         {"session_id": "s1", "tool_name": "Skill", "tool_input": {"skill": "reconcile"}}

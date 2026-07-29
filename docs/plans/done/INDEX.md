@@ -34,6 +34,7 @@ Completed plans are archived here for reference. Each directory under `docs/plan
 - [NPC Statblocks — NPCs gain a combat half, built by pulling fields from monsters](npc-statblocks/npc-statblocks.md) — Complete — all five stages shipped. — (Reference)
 - [Phase E Recovery Plan — restore Map Lab zoom/unified-data after a commit accident](phase-e-recovery-plan/phase-e-recovery-plan.md) — (Dungeons)
 - [Player App Skeleton — a tablet at the table showing the live dungeon map](player-app-skeleton/player-app-skeleton.md) — Complete and archived. — (Players)
+- [Player Map Knowledge — the DM controls each fact the party has learned](player-map-knowledge/player-map-knowledge.md) — All 5 stages shipped — feature complete. — (Players)
 - [Player Spellbook Recovery — fast playtime spell reference backed by recoverable character records](player-spellbook-recovery/player-spellbook-recovery.md) — Stage 1-5 shipped. — (Players)
 - [Seed Pipeline Fix Plan — Export/Import Consistency](seed_pipeline_fix_plan/seed_pipeline_fix_plan.md) — S0–S5 all shipped. — (Infra)
 - [Spells - Data Restructure & Experience Rewire](spells_plan/spells_plan.md) — S0-S3, B0-B3, and F0-F3 shipped. — (Reference)

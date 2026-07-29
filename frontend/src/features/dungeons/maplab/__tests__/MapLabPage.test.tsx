@@ -5,7 +5,7 @@ import { MemoryRouter } from 'react-router-dom'
 import * as api from '../../../../api/client'
 import type { NPC } from '../../../../api/types'
 import { mapLabLayout } from '../maplabData'
-import { MapLabPage } from '../MapLabPage'
+import { MapLabPage, toggleKnowledgeFact } from '../MapLabPage'
 import { InspectorPanel } from '../InspectorPanel'
 import type { MapPortal as MapPortalFixture } from '../../../../model/maplabModel'
 import { DungeonRouteContextProvider, type DungeonRouteContext } from '../dungeonRouteContext'
@@ -102,6 +102,8 @@ beforeEach(() => {
   vi.spyOn(api, 'getDungeonSessionState').mockRejectedValue(new api.ApiError(404, 'Session state not found'))
   vi.spyOn(api, 'saveDungeonSessionState').mockResolvedValue(undefined as unknown as { data: Record<string, unknown> })
   vi.spyOn(api, 'resetDungeonSessionState').mockResolvedValue(undefined)
+  vi.spyOn(api, 'getDungeonKnowledge').mockResolvedValue({ data: {} })
+  vi.spyOn(api, 'saveDungeonKnowledge').mockResolvedValue({ data: {} })
   Element.prototype.scrollIntoView = vi.fn()
 })
 
@@ -262,34 +264,31 @@ describe('MapLabPage (M2.3 walls + door/stair affordances)', () => {
     expect(container.querySelectorAll('.maplab-wall[x1="320"][y1="192"]')).toHaveLength(0)
   })
 
-  it('renders the door with its state icon/token and reveals details on hover', async () => {
+  it('renders the door with its state icon/token and reveals details when selected', async () => {
     const user = userEvent.setup()
     await renderLoadedMapLabPage()
 
-    expect(screen.getByText('Hover or focus a room, door, stair, or prop for details.')).toBeInTheDocument()
+    expect(screen.getByText('Select a room, door, stair, or prop for details.')).toBeInTheDocument()
 
     const door = screen.getByRole('button', { name: /Heavy Stone Door.*Locked/ })
     expect(door).toHaveAttribute('data-state', 'locked')
 
-    await user.hover(door)
+    await user.click(door)
     expect(screen.getByText('Locked')).toBeInTheDocument() // state chip, not the old dl row
     expect(screen.getByText('Break DC')).toBeInTheDocument()
     expect(screen.getByText('23')).toBeInTheDocument()
     expect(screen.getByText('Pick DC')).toBeInTheDocument()
     expect(screen.getByText('18')).toBeInTheDocument()
-
-    await user.unhover(door)
-    expect(screen.getByText('Hover or focus a room, door, stair, or prop for details.')).toBeInTheDocument()
   })
 
-  it('reveals door details on keyboard focus too (not hover-only)', async () => {
+  it('reveals door details on keyboard focus too (not click-only)', async () => {
     await renderLoadedMapLabPage()
     const door = screen.getByRole('button', { name: /Heavy Stone Door/ })
     fireEvent.focus(door)
     expect(screen.getByText('Locked')).toBeInTheDocument()
   })
 
-  it("pins the door's details open on click/Enter, giving touch users the same access as hover", async () => {
+  it("keeps the door's details open on click, and a second click clears the selection", async () => {
     const user = userEvent.setup()
     await renderLoadedMapLabPage()
     const door = screen.getByRole('button', { name: /Heavy Stone Door/ })
@@ -301,42 +300,43 @@ describe('MapLabPage (M2.3 walls + door/stair affordances)', () => {
 
     await user.click(door)
     expect(door).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByText('Select a room, door, stair, or prop for details.')).toBeInTheDocument()
   })
 
-  it('renders the stair with its state icon and reveals details on hover, without breaking floor travel', async () => {
+  it('renders the stair with its state icon and selects it on click, without breaking floor travel', async () => {
     const user = userEvent.setup()
     await renderLoadedMapLabPage()
 
     const stair = screen.getByRole('button', { name: /Stone Stairs.*floor 1/i })
     expect(stair).toHaveAttribute('data-state', 'unlocked')
 
-    await user.hover(stair)
+    // Stair's primary action is still travel — click switches floor as before, and also selects
+    // the stair so the inspector's controls are reachable.
+    await user.click(stair)
     // Unlocked is the clean/unremarkable state — it renders no chip at all (Design Phase J2).
     expect(screen.queryByText('Unlocked')).not.toBeInTheDocument()
-
-    // Stair's primary action is still travel, not pinning — click switches floor as before.
-    await user.click(stair)
+    expect(screen.getByText('Stair')).toBeInTheDocument()
     expect(screen.getByRole('tab', { name: 'First Floor' })).toHaveAttribute('aria-selected', 'true')
   })
 
-  it('hover does not replace a keyboard-focused selection in the inspector', async () => {
+  it('hovering does not replace the selected object in the inspector', async () => {
     const user = userEvent.setup()
     await renderLoadedMapLabPage()
 
-    // Focus a door — establishes it as the inspector target
+    // Select a door — establishes it as the inspector target
     const door = screen.getByRole('button', { name: /Heavy Stone Door/ })
-    fireEvent.focus(door)
+    await user.click(door)
     expect(screen.getByText('Locked')).toBeInTheDocument()
 
-    // Hover over a stair — should NOT replace the focused door in the inspector
+    // Hover over a stair — must NOT replace the selected door in the inspector
     const stair = screen.getByRole('button', { name: /Stone Stairs.*floor 1/i })
     await user.hover(stair)
     expect(screen.getByText('Locked')).toBeInTheDocument()
 
-    // Remove focus — returns to no-selection message (hover preview takes over but stair has no chip)
-    fireEvent.blur(door)
+    // Nor does moving the mouse away clear it — only selecting something else does.
     await user.unhover(stair)
-    expect(screen.getByText('Hover or focus a room, door, stair, or prop for details.')).toBeInTheDocument()
+    fireEvent.blur(door)
+    expect(screen.getByText('Locked')).toBeInTheDocument()
   })
 })
 
@@ -431,15 +431,15 @@ describe('MapLabPage (Stage 2 — Passage visuals)', () => {
 })
 
 describe('MapLabPage (Stage 3 — Generic inspector)', () => {
-  it('shows the room descriptor (title, size, description) in the same panel on hover', async () => {
+  it('shows the room descriptor (title, size, description) in the same panel when selected', async () => {
     const user = userEvent.setup()
     const { container } = renderMapLabPage()
     await flush()
 
-    expect(screen.getByText('Hover or focus a room, door, stair, or prop for details.')).toBeInTheDocument()
+    expect(screen.getByText('Select a room, door, stair, or prop for details.')).toBeInTheDocument()
 
     const hall = screen.getByRole('button', { name: 'Combat Training Hall' })
-    await user.hover(hall)
+    await user.click(hall)
 
     const panel = container.querySelector('.maplab-inspector-panel-container')!
     expect(panel.querySelector('.maplab-inspector-title')).toHaveTextContent('Combat Training Hall')
@@ -447,8 +447,11 @@ describe('MapLabPage (Stage 3 — Generic inspector)', () => {
     expect(panel).toHaveTextContent('24 squares')
     expect(panel).toHaveTextContent(/training/)
 
+    // Moving the mouse away leaves the selection alone; clicking it again clears it.
     await user.unhover(hall)
-    expect(screen.getByText('Hover or focus a room, door, stair, or prop for details.')).toBeInTheDocument()
+    expect(panel.querySelector('.maplab-inspector-title')).toHaveTextContent('Combat Training Hall')
+    await user.click(hall)
+    expect(screen.getByText('Select a room, door, stair, or prop for details.')).toBeInTheDocument()
   })
 
   it('shows the room descriptor on keyboard focus too, same as doors/stairs', async () => {
@@ -467,13 +470,12 @@ describe('MapLabPage (Stage 3 — Generic inspector)', () => {
     await renderLoadedMapLabPage()
 
     const door = screen.getByRole('button', { name: /Heavy Stone Door/ })
-    await user.hover(door)
+    await user.click(door)
     expect(screen.getByText('Door')).toBeInTheDocument()
     expect(screen.getByText('Locked')).toBeInTheDocument()
-    await user.unhover(door)
 
     const stair = screen.getByRole('button', { name: /Stone Stairs.*floor 1/i })
-    await user.hover(stair)
+    await user.click(stair)
     expect(screen.getByText('Stair')).toBeInTheDocument()
     // Unlocked is the clean/unremarkable state — no chip renders for it (Design Phase J2).
     expect(screen.queryByText('Unlocked')).not.toBeInTheDocument()
@@ -485,7 +487,7 @@ describe('MapLabPage (Stage 3 — Generic inspector)', () => {
     await flush()
 
     const hall = screen.getByRole('button', { name: 'Combat Training Hall' })
-    await user.hover(hall)
+    await user.click(hall)
 
     const panel = container.querySelector('.maplab-inspector-panel-container')!
     // Room has descriptor content but no grouped subheadings
@@ -502,7 +504,7 @@ describe('MapLabPage (Design Phase J2 — Passage-state chips)', () => {
     const { container } = await renderLoadedMapLabPage()
 
     const door = screen.getByRole('button', { name: /Heavy Stone Door.*Locked/ })
-    await user.hover(door)
+    await user.click(door)
 
     const chipRow = container.querySelector('.maplab-inspector-chips')!
     expect(chipRow).toBeInTheDocument()
@@ -520,7 +522,7 @@ describe('MapLabPage (Design Phase J2 — Passage-state chips)', () => {
     const { container } = await renderLoadedMapLabPage()
 
     const stair = screen.getByRole('button', { name: /Stone Stairs.*floor 1/i })
-    await user.hover(stair)
+    await user.click(stair)
 
     expect(container.querySelector('.maplab-inspector-chips')).not.toBeInTheDocument()
   })
@@ -533,7 +535,7 @@ describe('MapLabPage (Stage 4 — Passage session state)', () => {
     await flush()
     const door = screen.getByRole('button', { name: /Rusty Trap Door/ })
 
-    // Click pins the door's details panel open (independent of hover/focus).
+    // Click selects the door, opening its details panel.
     await user.click(door)
     expect(door.querySelector('.maplab-door-leaf-closed')).toBeInTheDocument()
     expect(door.querySelector('.maplab-door-leaf')).not.toBeInTheDocument()
@@ -612,8 +614,8 @@ describe('MapLabPage (Stage 4 — Passage session state)', () => {
 
     const panel = container.querySelector('.maplab-inspector-panel-container')!
     expect(panel.querySelector('.maplab-inspector-subheading')).toHaveTextContent('World now')
-    // Players know heading only renders when knowledge data is provided — MapLabPage doesn't pass it yet.
-    expect(screen.queryByText('Players know')).not.toBeInTheDocument()
+    // The session view wires the knowledge document through, so both headings are present.
+    expect(screen.getByText('Players know')).toBeInTheDocument()
   })
 })
 
@@ -643,12 +645,13 @@ describe('MapLabPage (Stage 5 — Knowledge controls)', () => {
     )
 
     expect(screen.getByText('Players know')).toBeInTheDocument()
-    expect(screen.getByText('Known: Exists')).toBeInTheDocument()
+    // Existence reads as hidden/revealed rather than as another "Known:" fact.
+    expect(screen.getByText('Revealed')).toBeInTheDocument()
     expect(screen.getByText('Unknown: Lock')).toBeInTheDocument()
     expect(screen.getByText('Unknown: Trap')).toBeInTheDocument()
   })
 
-  it('only passage-like objects (door/stair/portal) render knowledge toggles — props and rooms skip them', () => {
+  it('only discoverable objects (door/stair/portal/prop) render knowledge toggles — rooms skip them', () => {
     const onToggleExists = vi.fn().mockResolvedValue(undefined)
 
     // Room — no knowledge toggles (even when knowledge prop is passed)
@@ -716,7 +719,7 @@ describe('MapLabPage (Stage 5 — Knowledge controls)', () => {
       </MemoryRouter>,
     )
 
-    await user.click(screen.getByText('Known: Exists'))
+    await user.click(screen.getByText('Revealed'))
     await vi.waitFor(() => {
       expect(screen.getByRole('status')).toHaveTextContent(/Could not update/)
     })
@@ -747,6 +750,119 @@ describe('MapLabPage (Stage 5 — Knowledge controls)', () => {
     expect(buttons.length).toBe(2)
     buttons.forEach((btn) => {
       expect((btn as HTMLElement).className).toContain('maplab-pill-button')
+    })
+  })
+})
+
+describe('MapLabPage (Stage 5 — knowledge wired into the session view)', () => {
+  it('offers lock/trap disclosure for the selected door, saves the flip, and shows the new value', async () => {
+    vi.spyOn(api, 'getDungeonKnowledge').mockResolvedValue({ data: { doors: { '98': { trap: true } } } })
+    const save = vi.spyOn(api, 'saveDungeonKnowledge').mockResolvedValue({ data: {} })
+    const user = userEvent.setup()
+    renderMapLabPage()
+    await flush()
+
+    await user.click(screen.getByRole('button', { name: /Rusty Trap Door/ }))
+    expect(screen.getByText('Known: Trap')).toBeInTheDocument()
+    expect(screen.getByText('Unknown: Lock')).toBeInTheDocument()
+    // Door 98 is not authored hidden, so its existence is nothing the party can discover.
+    expect(screen.queryByText('Hidden')).not.toBeInTheDocument()
+    expect(screen.queryByText('Revealed')).not.toBeInTheDocument()
+
+    await user.click(screen.getByText('Unknown: Lock'))
+
+    await waitFor(() => expect(screen.getByText('Known: Lock')).toBeInTheDocument())
+    expect(save).toHaveBeenCalledWith(4, { data: { doors: { '98': { trap: true, lock: true } } } })
+  })
+
+  it('a rejected write keeps the prior confirmed value and reports the failure inline', async () => {
+    vi.spyOn(api, 'getDungeonKnowledge').mockResolvedValue({ data: {} })
+    vi.spyOn(api, 'saveDungeonKnowledge').mockRejectedValue(new api.ApiError(500, 'server error'))
+    const user = userEvent.setup()
+    renderMapLabPage()
+    await flush()
+
+    await user.click(screen.getByRole('button', { name: /Rusty Trap Door/ }))
+    await user.click(screen.getByText('Unknown: Lock'))
+
+    await waitFor(() => expect(screen.getByText(/Could not update/)).toBeInTheDocument())
+    expect(screen.getByText('Unknown: Lock')).toBeInTheDocument()
+  })
+
+  it('withholds the disclosure controls when the knowledge document itself fails to load', async () => {
+    vi.spyOn(api, 'getDungeonKnowledge').mockRejectedValue(new api.ApiError(500, 'server error'))
+    const user = userEvent.setup()
+    renderMapLabPage()
+    await flush()
+
+    await user.click(screen.getByRole('button', { name: /Rusty Trap Door/ }))
+
+    expect(screen.getByText('Players know')).toBeInTheDocument()
+    expect(screen.getByText("Couldn't load what the players know.")).toBeInTheDocument()
+    expect(screen.queryByText(/^Unknown: /)).not.toBeInTheDocument()
+  })
+
+  it('selects a prop on click and offers its disclosure controls', async () => {
+    vi.spyOn(api, 'getDungeonKnowledge').mockResolvedValue({ data: {} })
+    const save = vi.spyOn(api, 'saveDungeonKnowledge').mockResolvedValue({ data: {} })
+    const user = userEvent.setup()
+    renderMapLabPage()
+    await flush()
+
+    await user.click(screen.getByRole('button', { name: /Treasure Chest/i }))
+    expect(screen.getByText('Prop')).toBeInTheDocument()
+
+    await user.click(screen.getByText('Unknown: Lock'))
+
+    await waitFor(() => expect(screen.getByText('Known: Lock')).toBeInTheDocument())
+    expect(save).toHaveBeenCalledWith(4, { data: { props: { '1': { lock: true } } } })
+  })
+
+  it('offers no trap disclosure for a passage that carries no trap, and reveals a hidden one', async () => {
+    const hiddenTrappedDoor = { ...mapLabLayout.doors[0], door_id: 77, hidden: true, trapped: false }
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({
+      data: { ...mapLabLayout, doors: [hiddenTrappedDoor] } as unknown as Record<string, unknown>,
+    })
+    vi.spyOn(api, 'getDungeonKnowledge').mockResolvedValue({ data: {} })
+    const user = userEvent.setup()
+    renderMapLabPage()
+    await flush()
+
+    await user.click(screen.getAllByRole('button', { name: /Door/i })[0])
+
+    // Authored hidden: existence is offered, and it reads as hidden rather than as a "Known:" fact.
+    // (The word also appears as the door's own state chip, so scope to the toggle button.)
+    expect(screen.getByRole('button', { name: 'Hidden' })).toBeInTheDocument()
+    // No trap on this door, so there is no trap to disclose.
+    expect(screen.queryByText('Unknown: Trap')).not.toBeInTheDocument()
+  })
+
+  it('treats a missing knowledge document (404) as nothing disclosed yet', async () => {
+    vi.spyOn(api, 'getDungeonKnowledge').mockRejectedValue(new api.ApiError(404, 'Knowledge not found'))
+    const user = userEvent.setup()
+    renderMapLabPage()
+    await flush()
+
+    await user.click(screen.getByRole('button', { name: /Rusty Trap Door/ }))
+
+    expect(screen.getByText('Unknown: Lock')).toBeInTheDocument()
+    expect(screen.getByText('Unknown: Trap')).toBeInTheDocument()
+  })
+})
+
+describe('toggleKnowledgeFact', () => {
+  it('sets a fact to true, and clearing the last fact removes the object and its bucket', () => {
+    const known = toggleKnowledgeFact({}, 'doors', 98, 'lock')
+    expect(known).toEqual({ doors: { '98': { lock: true } } })
+
+    expect(toggleKnowledgeFact(known, 'doors', 98, 'lock')).toEqual({})
+  })
+
+  it('leaves other objects, buckets, and facts untouched', () => {
+    const doc = { doors: { '98': { lock: true as const, trap: true as const }, '32': { lock: true as const } }, stairs: { '2': { exists: true as const } } }
+    expect(toggleKnowledgeFact(doc, 'doors', 98, 'trap')).toEqual({
+      doors: { '98': { lock: true }, '32': { lock: true } },
+      stairs: { '2': { exists: true } },
     })
   })
 })
@@ -929,6 +1045,18 @@ describe('MapLabPage (Stage 03 — viewer status chip action failures)', () => {
       )
     })
   })
+
+  it('marks the persisted party room in the DM map view', async () => {
+    vi.mocked(api.getDungeonSessionState).mockResolvedValue({ data: { partyRoomId: 17 } })
+
+    await renderLoadedMapLabPage()
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Training Hall.*party location/i })).toBeInTheDocument()
+    })
+
+    expect(screen.getByRole('button', { name: /Training Hall.*party location/i })).toHaveAttribute('data-party', 'true')
+  })
 })
 
 describe('MapLabPage (Stage F2 — Prop rendering)', () => {
@@ -936,7 +1064,7 @@ describe('MapLabPage (Stage F2 — Prop rendering)', () => {
     vi.restoreAllMocks()
   })
 
-  it('renders the seeded chest prop with its kind icon, locked state, and inspector details on hover', async () => {
+  it('renders the seeded chest prop with its kind icon, locked state, and inspector details when selected', async () => {
     const user = userEvent.setup()
     renderMapLabPage()
     await flush()
@@ -945,7 +1073,7 @@ describe('MapLabPage (Stage F2 — Prop rendering)', () => {
     expect(chest).toHaveAttribute('data-state', 'locked')
     expect(chest.querySelector('svg')).toBeTruthy() // Lucide kind icon rendered inline
 
-    await user.hover(chest)
+    await user.click(chest)
     expect(screen.getByText('Prop')).toBeInTheDocument()
     expect(screen.getByText('Pick DC')).toBeInTheDocument()
     expect(screen.getByText('16')).toBeInTheDocument()
@@ -1031,7 +1159,7 @@ describe('Design Phase M — Loot on the map', () => {
     const chest = screen.getByRole('button', { name: /Treasure Chest.*loot assigned/i })
     expect(chest.querySelector('[data-badge="multiple-statuses"]')).toBeInTheDocument()
 
-    await user.hover(chest)
+    await user.click(chest)
     expect(await screen.findByLabelText('Loot contents')).toBeInTheDocument()
     expect(screen.getByText('Goblin Chest')).toBeInTheDocument()
     expect(screen.getByText('112.5 gp')).toBeInTheDocument()
@@ -1058,7 +1186,7 @@ describe('Design Phase M — Loot on the map', () => {
 
     renderMapLabPage()
     await flush()
-    await user.hover(screen.getByRole('button', { name: /Treasure Chest/i }))
+    await user.click(screen.getByRole('button', { name: /Treasure Chest/i }))
     expect(screen.getByRole('status')).toHaveTextContent('Opening the treasure cache...')
 
     await act(async () => {
@@ -1080,7 +1208,7 @@ describe('Design Phase M — Loot on the map', () => {
 
     renderMapLabPage()
     await flush()
-    await user.hover(screen.getByRole('button', { name: /Treasure Chest/i }))
+    await user.click(screen.getByRole('button', { name: /Treasure Chest/i }))
 
     expect(await screen.findByText('This bundle holds gold only.')).toBeInTheDocument()
   })
@@ -1098,12 +1226,11 @@ describe('MapLabPage (Stage F4 — loot hook affordance)', () => {
 
     const chest = screen.getByRole('button', { name: /Treasure Chest.*Locked/i })
     expect(chest.querySelector('[data-badge="loot"]')).not.toBeInTheDocument()
-    await user.hover(chest)
+    await user.click(chest)
     expect(screen.queryByLabelText('Loot contents')).not.toBeInTheDocument()
 
-    await user.unhover(chest)
     const door = screen.getAllByRole('button', { name: /Door/i })[0]
-    await user.hover(door)
+    await user.click(door)
     expect(screen.queryByLabelText('Loot contents')).not.toBeInTheDocument()
   })
 })
@@ -1337,7 +1464,7 @@ describe('MapLabPage (R4 viewer room-reading surface)', () => {
     const user = userEvent.setup()
     await renderLoadedMapLabPage()
 
-    await user.hover(screen.getByRole('button', { name: /Heavy Stone Door/ }))
+    await user.click(screen.getByRole('button', { name: /Heavy Stone Door/ }))
     expect(screen.getByText('Door')).toBeInTheDocument()
     expect(within(screen.getByLabelText('Room details')).getByRole('heading', { name: 'Training Hall', level: 3 })).toBeInTheDocument()
   })
@@ -1445,7 +1572,7 @@ describe('MapLabPage (Stage H3 — portal viewer rendering + navigation)', () =>
     expect(screen.queryByRole('button', { name: /Shimmering Archway \(return\)/i })).not.toBeInTheDocument()
   })
 
-  it('hovering a portal opens the inspector with title and "Leads to" destination', async () => {
+  it('selecting a portal opens the inspector with title and "Leads to" destination', async () => {
     const user = userEvent.setup()
     const backendLayout = { ...mapLabLayout, portals: [portal, pairedPortal] }
     vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: backendLayout })
@@ -1454,7 +1581,7 @@ describe('MapLabPage (Stage H3 — portal viewer rendering + navigation)', () =>
     await flush()
 
     const marker = screen.getByRole('button', { name: /Shimmering Archway —/i })
-    await user.hover(marker)
+    await user.click(marker)
 
     const inspector = container.querySelector('.maplab-inspector-panel')!
     expect(inspector).toHaveTextContent('Shimmering Archway')
@@ -1988,5 +2115,45 @@ describe('MapLabPage (Map Lab UX Pass Stage 1 — cross-floor door leak)', () =>
 
     // Upper floor: same [x, y] wall, but the door belongs to z=0 — all four walls must render.
     expect(container.querySelectorAll('.maplab-room .maplab-wall')).toHaveLength(4)
+  })
+})
+
+describe('MapLabPage (Stage 6b — What they see preview)', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('enters preview showing curtain result, exits on Escape, and does not write knowledge', async () => {
+    const user = userEvent.setup()
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: mapLabLayout as unknown as Record<string, unknown> })
+    vi.spyOn(api, 'getDungeonSessionState').mockRejectedValue(new api.ApiError(404, 'Session state not found'))
+    vi.spyOn(api, 'saveDungeonSessionState').mockResolvedValue({ data: {} })
+    vi.spyOn(api, 'getDungeonKnowledge').mockResolvedValue({ data: {} })
+    vi.spyOn(api, 'saveDungeonKnowledge').mockResolvedValue({ data: {} })
+
+    renderMapLabPage()
+    await flush()
+
+    // Open the View popover
+    await user.click(screen.getByRole('button', { name: 'View' }))
+
+    // Click "What they see" to enter preview mode
+    await user.click(screen.getByRole('button', { name: 'What they see' }))
+    await flush()
+
+    // Preview shows the PlayerVisibleMap (region with aria-label "Dungeon map")
+    expect(screen.getByRole('region', { name: 'Dungeon map' })).toBeInTheDocument()
+
+    // The editable Rooms toggle is not shown during preview
+    expect(screen.queryByRole('button', { name: 'Open room navigation' })).not.toBeInTheDocument()
+
+    // Press Escape to exit preview
+    await user.keyboard('{Escape}')
+
+    // Editable Rooms toggle is back
+    expect(screen.getByRole('button', { name: 'Open room navigation' })).toBeInTheDocument()
+
+    // The preview did not trigger any knowledge write
+    expect(api.saveDungeonKnowledge).not.toHaveBeenCalled()
   })
 })

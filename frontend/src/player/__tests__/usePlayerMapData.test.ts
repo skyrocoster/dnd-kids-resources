@@ -285,6 +285,22 @@ describe('usePlayerMapData', () => {
     expect(knowledgeArg).toBeUndefined()
   })
 
+  it('still shows the map when the first knowledge request fails', async () => {
+    mockedGetAtTheTable.mockResolvedValue({ dungeon_id: 7 })
+    mockedGetDungeonLayout.mockResolvedValue(layoutResponse('School'))
+    mockedGetDungeonKnowledge.mockRejectedValueOnce(new Error('knowledge table unavailable'))
+
+    const { result } = renderHook(() => usePlayerMapData())
+
+    await waitFor(() => expect(result.current.status).toBe('ready'))
+    expect(result.current.layout).not.toBeNull()
+    expect(mockedPlayerViewTransform).toHaveBeenCalledWith(
+      expect.anything(),
+      undefined,
+      expect.anything(),
+    )
+  })
+
   it('forwards grouped session maps to the curtain', async () => {
     mockedGetAtTheTable.mockResolvedValue({ dungeon_id: 7 })
     mockedGetDungeonLayout.mockResolvedValue(layoutResponse('School'))

@@ -340,6 +340,15 @@
   fill: var(--md-primary-container);
 }
 
+.maplab-room[data-party] .maplab-room-cell {
+  fill: var(--md-secondary-container);
+}
+
+.maplab-room[data-party] .maplab-wall {
+  stroke: var(--md-secondary);
+  stroke-width: 5;
+}
+
 .maplab-room:focus-visible {
   outline: none;
 }
@@ -598,6 +607,23 @@
   flex-wrap: wrap;
   gap: 0.5rem;
   margin-top: 0.75rem;
+}
+
+/* A knowledge toggle stacks its own failure message under the button, so one failed disclosure
+ * reports itself without shifting the neighbouring toggles. */
+.maplab-knowledge-toggle-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.maplab-knowledge-error {
+  color: var(--md-error);
+  font-size: 0.75rem;
+}
+
+.maplab-knowledge-toggle-wrapper .maplab-knowledge-error {
+  max-width: 16ch;
 }
 
 /* `.maplab-session-control-button`/`.maplab-session-reset-button`'s base pill look comes from the

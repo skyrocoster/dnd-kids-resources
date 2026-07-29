@@ -297,6 +297,35 @@ retrieval — they fill your context with file dumps you will use one line of, a
 **Prefer the explorer for retrieval.** In opencode that is the `explore-deepseek` subagent; in Claude
 Code it is the `Explore` agent. Both are read-only and report with `path:line` citations.
 
+### Your own-read budget: 2,000 lines per invocation
+
+`to-orders`, `dispatch-orders` and `reconcile` share one 120k context across a feature's stage. That
+gives compiling roughly **20k tokens of your own file reading — about 2,000 lines total, across every
+file you open yourself, for the whole invocation.** Not per question, not per order. An explorer's
+reads do not count against it; that is the entire point of sending them out.
+
+**Count it as you go and say the running total when you decide to read something.** "This file is
+620 lines, taking me to 1,340 of 2,000" is the check. A judgement you cannot justify at that price is
+a judgement you are making from the wrong evidence, not one that deserves a bigger budget.
+
+Three numbers make "small" countable, so it never has to be felt:
+
+| | Number |
+| --- | --- |
+| a **small** file — safe to read whole | ≤ 400 lines (the same threshold START IN uses) |
+| a **large** file — read only by `offset`/`limit` range, never whole | > 400 lines |
+| the whole invocation's own reads | ≤ 2,000 lines |
+
+**50k of reading is not "small enough" — it is five times the budget and two thirds of the shared
+context.** Any figure you are tempted to defend as small enough has already failed this test; the
+budget is a count, and a count is not an opinion.
+
+When you hit the budget, you are not stuck — you are done reading and not done compiling. Stop, write
+down the specific facts still missing as bounded questions, and send them out. If a stage genuinely
+cannot be compiled within 2,000 lines of your own reading plus explorer reports, that is a sizing
+verdict on the *stage*: say so to the user and compile it in two passes rather than spending the
+context that `dispatch-orders` and `reconcile` still need.
+
 Delegate when the question is answerable by quoting the repo and you do not already know where the
 answer lives:
 
@@ -307,13 +336,18 @@ answer lives:
 
 Go and read it yourself when:
 
-- you need the file anyway to decide the order's shape — a delegated summary plus your own read is
-  strictly more expensive than the read alone;
+- you need the file anyway to decide the order's shape **and it is small** — a delegated summary plus
+  your own read is strictly more expensive than the read alone. A large file you need anyway is read
+  by range, not whole: get the range from the explorer or from `check_orders.py --fix`, then open
+  those lines;
 - the question is judgement wearing a question mark ("is this the right seam", "should this live in
   `model/` or `features/`", "is this order too big") — that is the decision this skill exists to make,
   and the executor pays for a wrong answer, not the explorer;
 - you already know the path and the range, and only need to confirm an anchor line verbatim; or
-- it is two or three small files. A round trip costs a cold start; three `Read` calls do not.
+- it is **at most three small files you can name without searching**. A round trip costs a cold
+  start; three bounded `Read` calls do not. "Three files" stops being the reason the moment you need
+  a fourth, a search to find one, or a file over 400 lines — at that point you are exploring, and
+  exploring is what you delegate.
 
 **Deciding is not the same as reading your way to a decision.** "This is judgement, so I'll look at it
 myself" is how a bounded compile turns into a thirty-file sweep. A decision turns on a small number of
@@ -329,8 +363,10 @@ Turns on: (1) does the editor's save path already mint one? (2) do the seed rows
 → three bounded questions, one dispatch, then I decide.
 ```
 
-If you are past roughly ten files on a single question, the question was never the problem — stop,
-write down what you are actually trying to settle, and go get the specific answer.
+If you are past roughly ten files — or 2,000 lines — on a single question, the question was never the
+problem: stop, write down what you are actually trying to settle, and go get the specific answer.
+Whichever limit you reach first is the one that binds; ten large files is already the whole
+invocation's budget spent on one question.
 
 Four rules keep the delegation honest:
 
@@ -359,8 +395,11 @@ Four rules keep the delegation honest:
   enough to resolve a path or a count into KNOWN STATE. It is *not* enough for a file whose contents
   shape the order — for those, START IN still means a file you opened.
 
-You are not obliged to delegate. If a stage is small enough that you can compile it from files you
-were always going to open, do that and say nothing about it.
+You are not obliged to delegate — but "small enough" is the table above, not a feeling. A stage
+qualifies for compiling entirely from your own reads when **all three** hold: you can name every file
+you will open before you open any of them, no search is needed to find them, and they total under
+about 800 lines. Then do it and say nothing about it. Fail any of the three and the stage is not
+small, however small it feels: send the retrieval out.
 
 ## When you were not told which plan
 

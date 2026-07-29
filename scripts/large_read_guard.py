@@ -12,8 +12,8 @@ The rule
 --------
 While a session is *armed*, reading a file over `LARGE_FILE_LINES` lines is denied unless
 the read is bounded — a `limit` of at most `MAX_WINDOW_LINES` lines. The guard arms itself
-when the session invokes the `to-orders` skill, so a session doing anything else is never
-touched.
+the moment a session picks up the `to-orders` skill — whether it invokes it as a tool or
+simply reads `SKILL.md` — so a session doing anything else is never touched.
 
 Reading a *bounded* range is always allowed, at any size of file. This guard has no opinion
 about how many times you read, only about reading a large file whole.
@@ -58,6 +58,12 @@ STATE_DIR = REPO_ROOT / ".telemetry" / "large-read-guard"
 
 # The skill whose presence means "this session is compiling a stage".
 ARMING_SKILL = "to-orders"
+# ...and the skill's own file, because invoking it is not the only way to start following it.
+# opencode's `/to-orders` slash command, run under the default agent, satisfied itself by
+# *reading* .claude/skills/to-orders/SKILL.md with the read tool: no `skill` tool event, so
+# nothing armed, while ALWAYS_ALLOWED waved the read through. A session holding the skill's
+# text is compiling a stage however it got there.
+ARMING_SKILL_DOC = re.compile(rf"(?:^|/)skills/{re.escape(ARMING_SKILL)}/skill\.md$")
 
 # The repo's own definition of a large file, from check_orders.py and the START IN rule:
 # at or under this, reading the file whole is the scope.
@@ -330,6 +336,29 @@ def _record_pre(payload: dict[str, Any]) -> tuple[bool, str]:
     return allow, reason
 
 
+def _arms(tool: str, args: dict[str, Any], cwd: str | None) -> bool:
+    """Does this completed tool call mean the session is now compiling a stage?
+
+    Three spellings, because three harnesses disagree and a guard that arms on only one of
+    them is a guard that is off. A harness may expose the skill as a `skill` tool taking its
+    name, as a tool named after the skill itself, or not as a tool at all — in which case the
+    model reaches the skill by reading its SKILL.md, and that read is the arming event.
+    """
+    if ARMING_SKILL in tool:
+        return True
+    if tool in SKILL_TOOLS and _mentions_arming_skill(args):
+        return True
+    if tool in READ_TOOLS:
+        path = _normalise(_first(args, PATH_KEYS), cwd)
+        return bool(path and ARMING_SKILL_DOC.search(path))
+    if tool in SHELL_TOOLS:
+        # `cat .claude/skills/to-orders/SKILL.md` is the same read wearing a different tool;
+        # so is a bounded one, since a tail of the skill still starts the session following it.
+        command = (_first(args, COMMAND_KEYS) or "").replace("\\", "/").lower()
+        return f"skills/{ARMING_SKILL}/skill.md" in command
+    return False
+
+
 def _record_post(payload: dict[str, Any]) -> None:
     """Arm the session the moment it invokes the compiler skill."""
     if os.environ.get("LARGE_READ_GUARD", "").lower() in {"off", "0", "false"}:
@@ -337,9 +366,7 @@ def _record_post(payload: dict[str, Any]) -> None:
 
     tool = str(payload.get("tool_name") or payload.get("tool") or "").lower()
     args = payload.get("tool_input") or payload.get("args") or {}
-    # A harness may expose the skill as a `skill` tool taking its name, or as a tool named
-    # after the skill itself. Either spelling arms.
-    if ARMING_SKILL not in tool and not (tool in SKILL_TOOLS and _mentions_arming_skill(args)):
+    if not _arms(tool, args, payload.get("cwd")):
         return
 
     session = str(payload.get("session_id") or payload.get("sessionID") or "unknown")

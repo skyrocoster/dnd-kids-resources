@@ -1,6 +1,6 @@
 # Player Map Knowledge — the DM controls each fact the party has learned
 
-> **Status:** Stages 1-4 shipped. Next: compile Stage 5, the DM sees the real player result.
+> **Status:** All 5 stages shipped — feature complete.
 
 - **Area guide:** [Players](../../../areas/players.md)
 - **Read trigger:** Reversible per-fact disclosure, the map knowledge document, inspector selection, or the DM's player-result preview
@@ -111,6 +111,7 @@ removes that key.
 | 2 | Each dungeon now has an independently persisted, cascade-deleted knowledge document with replacement-style GET, PUT, and DELETE endpoints. Knowledge participates in seed export and rebuild separately from authored layout, live session truth, and Fog. |
 | 3 | The player-view Curtain now consumes sparse knowledge and grouped live passage state, omits authored-hidden objects until existence is disclosed, and reveals lock and trap values independently without leaking DM-only fields. The kid map polls knowledge alongside layout and session state, treating missing knowledge as empty and retaining the last good frame after later knowledge failures. |
 | 4 | Map Lab's inspector now separates live world controls from reversible `Players know` disclosures for passage objects, with immediate local failure handling and 48px controls. Focus and click establish the selected inspector object; hover no longer replaces it. |
+| 5 | The kid map and DM preview share a common `PlayerVisibleMap` renderer with lock and trap icon-text cues. Map Lab's **What they see** mode renders the Curtain result for the DM, previewing what players actually see, without editing layout, session, or knowledge. |
 
 ## Touches
 
@@ -133,10 +134,3 @@ removes that key.
 - `frontend/src/map/**`
 - `frontend/src/theme.css`
 
-### Stage 5
-- **Verified edit sites:** `frontend/src/features/dungeons/maplab/MapLabPage.tsx` — the viewer toolbar already owns Session and View groups, floor tabs, and zoom controls; no player-view preview exists.
-- **Verified edit sites:** `frontend/src/player/PlayerMapRenderer.tsx` — consumes `KidMapLayout`; currently renders open/closed doors but no lock or trap cues.
-- **Verified tests:** `frontend/src/player/__tests__/PlayerMapRenderer.test.tsx` covers object rendering and floor behavior; `frontend/src/features/dungeons/maplab/__tests__/MapLabPage.test.tsx` covers viewer composition and toolbar behavior.
-- **Settled contracts:** preview is a local toolbar mode on the same route, preserves the prior selection, disables structural/live-value editing, and renders the Curtain result with the kid presentation path. Known lock/trap cues use icon plus text/accessibility naming, never hue alone; they add no kid interaction target.
-- **Constraints:** no separate preview transform or approximation; Fog controls and Fog-based room concealment are out of scope.
-- **Open questions:** `to-orders` must determine the smallest shared rendering seam that avoids importing kid components into DM feature code while still guaranteeing both consume the identical transformed result.

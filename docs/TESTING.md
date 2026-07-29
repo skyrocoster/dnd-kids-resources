@@ -147,14 +147,14 @@ says only where the files are.
 <!-- GENERATED:TESTING:LOCATIONS:START -->
 | Location | Files | Test cases |
 |---|---|---|
-| `backend/tests/` | 16 | 399 |
+| `backend/tests/` | 16 | 402 |
 | `backend/tests/routers/` | 17 | 267 |
 | `frontend/src/__tests__/` | 1 | 4 |
 | `frontend/src/api/__tests__/` | 1 | 7 |
 | `frontend/src/components/__tests__/` | 14 | 152 |
 | `frontend/src/components/form/__tests__/` | 4 | 11 |
 | `frontend/src/features/dungeons/__tests__/` | 2 | 54 |
-| `frontend/src/features/dungeons/maplab/__tests__/` | 19 | 572 |
+| `frontend/src/features/dungeons/maplab/__tests__/` | 19 | 582 |
 | `frontend/src/features/encounters/__tests__/` | 9 | 115 |
 | `frontend/src/features/items/__tests__/` | 3 | 15 |
 | `frontend/src/features/loom/__tests__/` | 9 | 123 |
@@ -167,7 +167,7 @@ says only where the files are.
 | `frontend/src/layout/__tests__/` | 1 | 12 |
 | `frontend/src/map/__tests__/` | 3 | 44 |
 | `frontend/src/pages/__tests__/` | 2 | 5 |
-| `frontend/src/player/__tests__/` | 6 | 69 |
+| `frontend/src/player/__tests__/` | 6 | 70 |
 <!-- GENERATED:TESTING:LOCATIONS:END -->
 
 <!-- GENERATED:TESTING:START -->

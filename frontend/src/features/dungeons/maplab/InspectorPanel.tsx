@@ -41,11 +41,15 @@ export function InspectorPanel({
   target,
   controls,
   knowledge,
+  knowledgeError,
   context,
 }: {
   target: Inspectable
   controls?: SessionControls
   knowledge?: KnowledgeControls
+  /** Set when the knowledge document itself failed to load: the disclosure controls are withheld
+   * and this reason is shown in their place, rather than implying nothing has been disclosed. */
+  knowledgeError?: string | null
   /** Extra data `inspectableDescriptor` can't resolve on its own — currently just the destination
    * dungeon's title for a gateway portal, looked up by the caller via `listDungeons()`. */
   context?: { dungeonTitle?: string }
@@ -65,7 +69,10 @@ export function InspectorPanel({
   const [pendingFacts, setPendingFacts] = useState<Record<string, boolean>>({})
   const [errorFacts, setErrorFacts] = useState<Record<string, string | null>>({})
 
-  const isPassage = target.kind === 'door' || target.kind === 'stair' || target.kind === 'portal'
+  // Everything the party can discover carries the knowledge vocabulary — the three passage kinds
+  // plus props, which are equally hideable and lockable. Rooms stay outside it.
+  const isDiscoverable =
+    target.kind === 'door' || target.kind === 'stair' || target.kind === 'portal' || target.kind === 'prop'
 
   return (
     <div className="maplab-inspector-panel">
@@ -133,7 +140,14 @@ export function InspectorPanel({
         </>
       )}
 
-      {knowledge && isPassage && (
+      {knowledgeError && isDiscoverable && (
+        <>
+          <h4 className="maplab-inspector-subheading">Players know</h4>
+          <span role="status" className="maplab-knowledge-error">{knowledgeError}</span>
+        </>
+      )}
+
+      {knowledge && !knowledgeError && isDiscoverable && (
         <>
           <h4 className="maplab-inspector-subheading">Players know</h4>
           <div className="maplab-inspector-controls">
@@ -141,6 +155,10 @@ export function InspectorPanel({
               <KnowledgeToggleButton
                 factKey="exists"
                 label="Exists"
+                // Existence is not a fact stacked beside the others — disclosing it stops the
+                // object being hidden at all, so it says so instead of "Known: Exists".
+                activeLabel="Revealed"
+                inactiveLabel="Hidden"
                 toggle={knowledge.exists}
                 pending={pendingFacts}
                 error={errorFacts}
@@ -183,6 +201,8 @@ export function InspectorPanel({
 function KnowledgeToggleButton({
   factKey,
   label,
+  activeLabel,
+  inactiveLabel,
   toggle,
   pending,
   error,
@@ -191,6 +211,9 @@ function KnowledgeToggleButton({
 }: {
   factKey: string
   label: string
+  /** Button copy overrides; default to `Known: <label>` / `Unknown: <label>`. */
+  activeLabel?: string
+  inactiveLabel?: string
   toggle: KnowledgeToggle
   pending: Record<string, boolean>
   error: Record<string, string | null>
@@ -221,7 +244,7 @@ function KnowledgeToggleButton({
         disabled={isPending}
         onClick={handleClick}
       >
-        {toggle.active ? `Known: ${label}` : `Unknown: ${label}`}
+        {toggle.active ? (activeLabel ?? `Known: ${label}`) : (inactiveLabel ?? `Unknown: ${label}`)}
       </button>
       {errorMessage && (
         <span role="status" className="maplab-knowledge-error">

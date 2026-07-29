@@ -64,18 +64,22 @@ export function usePlayerMapData(): PlayerMapData {
         const blob = await getDungeonLayout(pointer.dungeon_id, request.signal)
         if (cancelled || request.signal.aborted) return
 
-        // Knowledge: 404 means no saved row → treat as empty knowledge (not a map failure).
-        // Non-404 knowledge failures propagate to the outer catch for frame-level error handling.
+        // Knowledge is an optional overlay. On the first frame, an unavailable knowledge document
+        // must not hide an otherwise available map; later failures still retain the last good frame.
         const knowledge = await getDungeonKnowledge(pointer.dungeon_id, request.signal)
           .then(k => k.data as MapKnowledge | undefined)
           .catch((err: unknown) => {
             if (err instanceof ApiError && err.status === 404) return undefined
+            if (!lastGoodFrame.current) return undefined
             throw err
           })
         if (cancelled || request.signal.aborted) return
 
         // A dungeon with no session row yet (404) simply has no open doors — that must not fail the
         // whole frame, so this one call swallows its own error rather than joining the catch below.
+        // Any failure degrades to default (closed, unlocked, armed) state rather than freezing the
+        // frame: a persistently unavailable session endpoint must not stop layout updates reaching
+        // the tablet.
         const session = await getDungeonSessionState(pointer.dungeon_id, request.signal)
           .then((s) => {
             const data = s.data as {
