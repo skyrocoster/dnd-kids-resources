@@ -50,17 +50,17 @@ _Avoid_: state, which is too generic.
 ## Knowledge
 
 What the party has learnt about an object — that it exists, that it is lockable, that it is trapped,
-what it contains. **Ratchets forward only**; the party never un-learns. Stored separately from Value
-and never confused with it.
+what it contains. Normally advances during play, but the DM can reverse any fact to correct an
+accidental disclosure. Stored separately from Value and never confused with it.
 _Avoid_: discovered flags, seen state.
 
 ## Fog
 
-The revealed-cell set for a dungeon: one flat set of absolute cells, permanent, per dungeon. There
+The revealed-cell set for a dungeon: one flat set of absolute cells, reversible by the DM, per dungeon. There
 is exactly one fog layer, so "can they see cell [4,7]?" has exactly one answer. A room's
 revealed-ness is a derived read over its cells — fully, partly, or not shown — never a stored
 boolean.
-_Avoid_: fog of war (this is a knowledge ratchet, not atmosphere), visibility layer, explored rooms.
+_Avoid_: fog of war (this is spatial disclosure, not atmosphere), visibility layer, explored rooms.
 
 ## At the table
 

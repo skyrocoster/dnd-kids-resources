@@ -425,6 +425,100 @@ def test_fixture_order_needs_cast_idiom_and_typecheck(repo: Path):
     assert not any("cast idiom" in m or "typecheck" in m for m in remaining)
 
 
+def test_fixture_rule_ignores_the_word_fixture_inside_a_path(repo: Path):
+    """`fixtureTypes.ts` is a filename, not a mock — the hint must read prose only."""
+    (repo / "src" / "fixtureTypes.ts").write_text("export const f = 1\n", encoding="utf-8")
+    order = GOOD_ORDER.replace(
+        "- src/Tile.tsx — the header block at lines 3-6, nothing else in this file",
+        "- src/fixtureTypes.ts — the field arrays",
+    ).replace(
+        "- Render `label` after the title in src/Tile.tsx.",
+        "- Author the `searchDc` field in src/fixtureTypes.ts.",
+    )
+    remaining = messages(repo, order)
+    assert not any("cast idiom" in m for m in remaining)
+
+
+def test_big_suite_counts_only_bullets_aimed_at_that_suite(repo: Path):
+    """Bullets editing a model or a field list are not behaviours against the suite."""
+    big = repo / "src" / "__tests__" / "Tile.test.tsx"
+    big.write_text("test('x', () => {})\n" * 900, encoding="utf-8")
+    (repo / "src" / "fields.ts").write_text("export const fields = 1\n", encoding="utf-8")
+    order = GOOD_ORDER.replace(
+        "- src/Tile.tsx — the header block at lines 3-6, nothing else in this file",
+        "- src/Tile.tsx — the header block at lines 3-6, nothing else in this file\n- src/fields.ts — the field list",
+    ).replace(
+        "- Add one test to src/__tests__/Tile.test.tsx.",
+        "- Author the `searchDc` field in src/fields.ts.\n- Add one test to src/__tests__/Tile.test.tsx.",
+    )
+    assert not any("integrated suite" in m for m in messages(repo, order))
+
+    several = order.replace(
+        "- Add one test to src/__tests__/Tile.test.tsx.",
+        "- Add a label test to src/__tests__/Tile.test.tsx.\n"
+        "- Add an empty-state test to src/__tests__/Tile.test.tsx.\n"
+        "- Add an error test to src/__tests__/Tile.test.tsx.",
+    )
+    assert any("integrated suite" in m for m in messages(repo, several))
+
+
+def test_excluded_type_is_not_a_reshape(repo: Path):
+    """Saying what an order leaves alone must not read as reshaping it."""
+    # Names are deliberately unlike anything real: call-site detection greps the whole
+    # repo, so a fixture borrowing a live symbol makes this file one of its own hits.
+    (repo / "src" / "model.ts").write_text(
+        "export interface FixtureFlagsXY {}\nexport interface FixtureRoomXY {}\n", encoding="utf-8"
+    )
+    order = GOOD_ORDER.replace(
+        "- src/Tile.tsx — the header block at lines 3-6, nothing else in this file",
+        "- src/model.ts — FixtureFlagsXY",
+    ).replace(
+        "- Render `label` after the title in src/Tile.tsx.",
+        "- In src/model.ts add optional `searchDc` to FixtureFlagsXY, leaving FixtureRoomXY outside it.",
+    )
+    found = messages(repo, order)
+    assert not any("FixtureRoomXY" in m for m in found)
+    assert any("FixtureFlagsXY" in m for m in found)
+
+
+def test_type_name_inside_a_longer_identifier_is_not_a_reshape(repo: Path):
+    """`FixtureDataXY` inside `parseFixtureDataXY` is the parser, not the type."""
+    (repo / "src" / "model.ts").write_text(
+        "export interface FixtureDataXY {}\nexport function parseFixtureDataXY() {}\n",
+        encoding="utf-8",
+    )
+    order = GOOD_ORDER.replace(
+        "- src/Tile.tsx — the header block at lines 3-6, nothing else in this file",
+        "- src/model.ts — parseFixtureDataXY",
+    ).replace(
+        "- Render `label` after the title in src/Tile.tsx.",
+        "- Add one identity scenario inside describe('parseFixtureDataXY') in src/model.ts.",
+    )
+    assert not any("FixtureDataXY" in m for m in messages(repo, order))
+
+
+def test_creating_an_exported_type_is_not_a_reshape(repo: Path):
+    """A new type has no consumers to drag in; only reshaping an existing one does."""
+    (repo / "src" / "model.ts").write_text(
+        "export type FixtureFactXY = 'a' | 'b'\nexport interface FixtureFlagsXY {}\n",
+        encoding="utf-8",
+    )
+    order = GOOD_ORDER.replace(
+        "- src/Tile.tsx — the header block at lines 3-6, nothing else in this file",
+        "- src/model.ts — FixtureFlagsXY",
+    ).replace(
+        "- Render `label` after the title in src/Tile.tsx.",
+        "- In src/model.ts export FixtureFactXY with exactly 'a' | 'b'.",
+    )
+    assert not any("FixtureFactXY" in m for m in messages(repo, order))
+
+    reshape = order.replace(
+        "- In src/model.ts export FixtureFactXY with exactly 'a' | 'b'.",
+        "- In src/model.ts add a third member to FixtureFactXY.",
+    )
+    assert any("FixtureFactXY" in m for m in messages(repo, reshape))
+
+
 def test_one_frontend_test_file_per_order(repo: Path):
     (repo / "src" / "__tests__" / "Other.test.tsx").write_text("test('y', () => {})\n", encoding="utf-8")
     order = GOOD_ORDER.replace(

@@ -26,6 +26,9 @@ export interface MapRoom {
   wallKind?: string // added Stage 1
 }
 
+/** Disclosure keys for what the party knows about a passage — never a snapshot of current state. */
+export type KnowledgeFact = 'exists' | 'lock' | 'trap'
+
 /** Independent state flags shared by any passage (door or stair) a DM might need to call out at the
  * table: a passage can be locked *and* trapped at once, so these are booleans, not one enum. */
 export interface PassageFlags {
@@ -35,6 +38,7 @@ export interface PassageFlags {
   breakDc?: number
   pickDc?: number
   hiddenDc?: number
+  searchDc?: number
   note?: string
 }
 

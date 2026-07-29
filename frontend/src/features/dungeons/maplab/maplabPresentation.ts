@@ -93,6 +93,7 @@ function passageDescriptorLines(passage: PassageFlags): { label: string; value: 
   if (passage.breakDc !== undefined) lines.push({ label: 'Break DC', value: String(passage.breakDc) })
   if (passage.pickDc !== undefined) lines.push({ label: 'Pick DC', value: String(passage.pickDc) })
   if (passage.hiddenDc !== undefined) lines.push({ label: 'Perception DC', value: String(passage.hiddenDc) })
+  if (passage.searchDc !== undefined) lines.push({ label: 'Search DC', value: String(passage.searchDc) })
   if (passage.note) lines.push({ label: 'Note', value: passage.note })
   return lines
 }

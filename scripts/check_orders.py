@@ -519,6 +519,37 @@ TYPE_MUTATION_RE = re.compile(
 EXPORTED_TYPE_RE = re.compile(
     r"^\s*export\s+(?:type|interface)\s+([A-Za-z_]\w*)", re.MULTILINE
 )
+# A bullet often names a type precisely to say it is NOT being touched — "leaving MapRoom
+# outside it", "MapRoom unchanged". Co-occurrence with a mutation verb elsewhere in the
+# same bullet then read as a reshape, so the rule refused orders for being explicit about
+# their boundary. Stating what you do not touch must not cost a rewrite cycle.
+TYPE_EXCLUDED_RE_TEMPLATE = (
+    r"(?:\b(?:leav\w+|keep\w*|keeping|not|never|without|outside|excluding|exclude\w*|"
+    r"unaffected|untouched|unchanged)\b[^.;,]{{0,60}}?\b{name}\b"
+    r"|\b{name}\b[^.;,]{{0,60}}?\b(?:outside|unchanged|untouched|unaffected|alone|as-is|"
+    r"as is|intact)\b)"
+)
+
+
+def type_is_excluded(bullet: str, type_name: str) -> bool:
+    """True when the bullet names the type to exclude it, not to reshape it."""
+    pattern = TYPE_EXCLUDED_RE_TEMPLATE.format(name=re.escape(type_name))
+    return re.search(pattern, bullet, re.IGNORECASE) is not None
+
+
+# Introducing an exported type is not reshaping one: there are no existing consumers to
+# drag into START IN. The rule only saw this after the order landed, when the new type
+# existed and re-linting the still-present order file flagged its own creator.
+TYPE_CREATION_RE_TEMPLATE = (
+    r"\b(?:export|exports|exporting|add|adds|adding|introduce\w*|create\w*|define\w*|"
+    r"declare\w*)\s+(?:a\s+|an\s+|the\s+|new\s+|exported\s+|type\s+|interface\s+)*`?{name}\b"
+)
+
+
+def type_is_created(bullet: str, type_name: str) -> bool:
+    """True when the bullet introduces the type rather than reshaping an existing one."""
+    pattern = TYPE_CREATION_RE_TEMPLATE.format(name=re.escape(type_name))
+    return re.search(pattern, bullet, re.IGNORECASE) is not None
 
 
 def vitest_filters(stop_when: str) -> str:
@@ -900,7 +931,7 @@ def lint_order(order_path: Path) -> list[OrderError]:
     ]
     frontend_tests = [p for p in named_test_files if p.endswith((".test.ts", ".test.tsx"))]
     known_state = "\n".join(sections.get("KNOWN STATE", []))
-    if frontend_tests and FIXTURE_HINT_RE.search(text):
+    if frontend_tests and FIXTURE_HINT_RE.search(PATHFUL_RE.sub(" ", text)):
         if not CAST_IDIOM_RE.search(known_state):
             fail(
                 "Order writes a test fixture but KNOWN STATE has no cast idiom example",
@@ -924,10 +955,25 @@ def lint_order(order_path: Path) -> list[OrderError]:
     for path_str in unique_frontend_tests:
         resolved = _resolve(path_str)
         if resolved.exists() and _line_count(resolved) > BIG_TEST_FILE_LINES:
-            if len(do_bullets) > MAX_DO_BULLETS_BIG_TEST:
+            # Count the bullets aimed at *this suite*, not every bullet in the order. A
+            # bullet editing the model or a fixture module is not a behaviour against the
+            # big suite, and counting it refused orders that were correctly sized.
+            # A bullet naming only *other* files is not a behaviour against this suite: an
+            # order that edits a model, a field list, and adds one test was refused for
+            # asking three behaviours of a suite two of its bullets never touch. Bullets
+            # naming no path at all still count — that is how the abandoned seven-behaviour
+            # order was phrased.
+            base = _normalise(path_str).rsplit("/", 1)[-1]
+            test_bullets = []
+            for bullet in do_bullets:
+                paths = PATHFUL_RE.findall(bullet)
+                if paths and not any(base in p.replace("\\", "/").lower() for p in paths):
+                    continue
+                test_bullets.append(bullet)
+            if len(test_bullets) > MAX_DO_BULLETS_BIG_TEST:
                 fail(
                     f"{path_str} is a {_line_count(resolved)}-line integrated suite and DO "
-                    f"asks for {len(do_bullets)} behaviours",
+                    f"asks for {len(test_bullets)} behaviours",
                     "One behaviour per order against a suite this size, and name the test "
                     "seam it turns on; several at once is the one order in the telemetry "
                     "log that had to be abandoned at both Light and Standard strength",
@@ -947,7 +993,15 @@ def lint_order(order_path: Path) -> list[OrderError]:
             if type_name in declared_symbols:
                 continue
             for bullet in bullets(sections.get("DO", [])):
-                if type_name in bullet and TYPE_MUTATION_RE.search(bullet):
+                # Whole-identifier match only: a substring test read `DungeonData` inside
+                # `parseDungeonData` and charged an order a rewrite for mentioning the
+                # parser's own describe block.
+                if (
+                    re.search(rf"\b{re.escape(type_name)}\b", bullet)
+                    and TYPE_MUTATION_RE.search(bullet)
+                    and not type_is_excluded(bullet, type_name)
+                    and not type_is_created(bullet, type_name)
+                ):
                     fail(
                         f"DO reshapes the exported type `{type_name}` in {path_str} but "
                         "CHANGES SIGNATURE does not declare it",

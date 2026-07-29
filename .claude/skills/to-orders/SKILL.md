@@ -300,10 +300,43 @@ Go and read it yourself when:
 - you already know the path and the range, and only need to confirm an anchor line verbatim; or
 - it is two or three small files. A round trip costs a cold start; three `Read` calls do not.
 
-Three rules keep the delegation honest:
+**Deciding is not the same as reading your way to a decision.** "This is judgement, so I'll look at it
+myself" is how a bounded compile turns into a thirty-file sweep. A decision turns on a small number of
+specific facts; the work is naming them, not touring the code until the answer feels obvious. So when
+you hit a real decision — where an ID comes from, which layer owns a helper, what a migration
+backfills — write down the two or three facts it actually turns on, get *those* as quotes, and decide
+from them:
 
-- **Batch the questions.** One dispatch with six numbered questions, not six dispatches. The explorer's
-  cold start is the cost you are managing.
+```
+Decision: where does a room entry's stable id come from?
+Turns on: (1) does the editor's save path already mint one? (2) do the seed rows carry
+          anything unique today? (3) what does the nearest precedent (encounters) do?
+→ three bounded questions, one dispatch, then I decide.
+```
+
+If you are past roughly ten files on a single question, the question was never the problem — stop,
+write down what you are actually trying to settle, and go get the specific answer.
+
+Four rules keep the delegation honest:
+
+- **Bound every question, and send at most four.** An explorer's context is what you are actually
+  paying for, and it grows with the *scope* of a question far faster than with the number of them.
+  A question is well-formed when it names where to look and what shape the answer takes: a directory
+  or glob, plus "quote the line", "list the paths", "give the count". "How does the player map work?"
+  is not a question, it is a whole context window. Compare:
+
+  ```
+  bad:  How is session state handled in Map Lab?
+  good: In frontend/src/features/dungeons/maplab/, which files call useMapLabSessionState?
+        Give path:line for each call.
+  ```
+
+  Batch the four into one dispatch rather than four dispatches — the cold start is worth amortising —
+  but if you have eight questions, that is two dispatches, not one wide one. Two bounded rounds cost
+  less than one that spirals, and the second round is better aimed for having seen the first.
+- **Expect a partial answer sometimes.** The explorer stops at its read budget rather than widening a
+  question that turned out to be bigger than it looked, and reports what it did not reach. That is
+  working as intended: re-ask the missing part as a narrower question, or go read it yourself.
 - **Ask for quotes, not conclusions.** Never ask it what is stale, what should change, which option is
   better, or what an order should say. Its report is evidence; you are the only one who judges it.
   If a report volunteers a recommendation, treat that as unverified.
@@ -325,9 +358,24 @@ were always going to open, do that and say nothing about it.
    means re-learning the same lesson at the executor's expense.
 1. **Read the Plan stage and, when present, its `### Stage <N>` compiler handoff.** Treat verified
    edit sites, tests, contracts, and constraints as paid-for planning results: carry them into KNOWN
-   STATE and START IN rather than rediscovering them. Resolve every listed open question before
-   writing an order. Explore only the gaps needed to make orders self-contained; do not reopen a
-   named file just to reconfirm a stable fact already recorded by `plan`.
+   STATE and START IN rather than rediscovering them. Explore only the gaps needed to make orders
+   self-contained; do not reopen a named file just to reconfirm a stable fact already recorded by
+   `plan`.
+
+   **Resolve every open question — but first check it is yours to resolve.** A question is yours when
+   it is a lookup: which file, which symbol, what the current value is, what the precedent does. It is
+   *not* yours when answering it sets a contract the rest of the feature inherits — where an identity
+   comes from, what a migration does to existing data, which layer owns a new boundary, what happens
+   to rows that predate the change. Those are design decisions that reached `to-orders` because `plan`
+   left them open, and compiling is the wrong place to settle them: you will explore the whole feature
+   to answer one question, and the answer lands in an order's KNOWN STATE where the user never reviews
+   it.
+
+   When you hit one, **stop and put it to the user** — with the two or three facts it turns on and your
+   recommendation, which is cheap because you have just been through the code. Then record the
+   decision in the Plan and resume compiling. A design decision made in passing during a compile is
+   the most expensive kind of wrong answer this workflow produces: every order in the stage is built
+   on it before anyone sees it.
 
    Write the remaining gaps down as questions before you open anything, then send the ones that are
    pure retrieval to the explorer in **one batched dispatch** (see above) while you read the files
@@ -431,8 +479,9 @@ Preserve the normal lifecycle when taking the fast path:
    "direct planner implementation, no executor usage figures" --fault none --note "<why direct
    completion was cheaper>"` (or the POSIX virtualenv path). `--planner-run` is what lets the fast
    path be compared against dispatched runs later; without it the cheapest route in the workflow is
-   also the one the log cannot measure. While `docs/plans/telemetry-paused.md` exists both commands
-   record nothing and exit 0; run them as written so the step is right when collection resumes.
+   also the one the log cannot measure. **Skip both commands entirely while
+   `docs/plans/telemetry-paused.md` exists** — they record nothing and exit 0, so running them is a
+   round trip that buys nothing.
 6. Compile dependent or overlapping orders from the resulting state. If they were already written,
    re-verify and update any KNOWN STATE facts or anchors the direct change affected before linting.
 

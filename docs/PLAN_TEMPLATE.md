@@ -217,9 +217,11 @@ cycling to avoid writing one.
 
 ### Telemetry — every finished order leaves a cost record
 
-> **Collection is currently paused.** While `docs/plans/telemetry-paused.md` exists, every recording
-> command below prints one line and exits 0, so keep running the steps exactly as written — they are
-> harmless no-ops and nothing has to change when collection comes back. Resume with
+> **Collection is currently paused, so skip every recording command below.** While
+> `docs/plans/telemetry-paused.md` exists they record nothing and exit 0 — running one is a round
+> trip that buys nothing, and a skill that spends three of them per order is paying for silence.
+> Check for the file once per session and move on; the three moments below apply in full the moment
+> it is gone. Resume with
 > `.venv\Scripts\python.exe scripts/order_telemetry.py --resume`. What the log paid for is already
 > enforced in `scripts/check_orders.py`, `scripts/read_guard.py` and `scripts/order_check.py`; the
 > pause stops the measuring, not the enforcement.

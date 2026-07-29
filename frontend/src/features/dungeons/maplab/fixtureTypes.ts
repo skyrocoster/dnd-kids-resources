@@ -38,6 +38,7 @@ export const PASSAGE_FIELDS: FieldSpec[] = [
   { key: 'breakDc', label: 'Break DC', type: 'number', showWhen: (values) => values.locked === true },
   { key: 'pickDc', label: 'Pick Lock DC', type: 'number', showWhen: (values) => values.locked === true },
   { key: 'hiddenDc', label: 'Perception DC', type: 'number', showWhen: (values) => values.hidden === true },
+  { key: 'searchDc', label: 'Search DC', type: 'number', showWhen: (values) => values.hidden === true },
   { key: 'note', label: 'Note', type: 'text' },
 ]
 
@@ -76,6 +77,7 @@ export const PROP_FIELDS: FieldSpec[] = [
   { key: 'breakDc', label: 'Break DC', type: 'number', showWhen: (values) => values.locked === true },
   { key: 'pickDc', label: 'Pick Lock DC', type: 'number', showWhen: (values) => values.locked === true },
   { key: 'hiddenDc', label: 'Perception DC', type: 'number', showWhen: (values) => values.hidden === true },
+  { key: 'searchDc', label: 'Search DC', type: 'number', showWhen: (values) => values.hidden === true },
   { key: 'note', label: 'Note', type: 'text' },
 ]
 
@@ -104,6 +106,7 @@ export const STAIR_FIELDS: FieldSpec[] = [
   { key: 'breakDc', label: 'Break DC', type: 'number', showWhen: (values) => values.locked === true },
   { key: 'pickDc', label: 'Pick Lock DC', type: 'number', showWhen: (values) => values.locked === true },
   { key: 'hiddenDc', label: 'Perception DC', type: 'number', showWhen: (values) => values.hidden === true },
+  { key: 'searchDc', label: 'Search DC', type: 'number', showWhen: (values) => values.hidden === true },
   { key: 'note', label: 'Note', type: 'text' },
 ]
 
@@ -117,6 +120,7 @@ export const PORTAL_FIELDS: FieldSpec[] = [
   { key: 'breakDc', label: 'Break DC', type: 'number', showWhen: (values) => values.locked === true },
   { key: 'pickDc', label: 'Pick Lock DC', type: 'number', showWhen: (values) => values.locked === true },
   { key: 'hiddenDc', label: 'Perception DC', type: 'number', showWhen: (values) => values.hidden === true },
+  { key: 'searchDc', label: 'Search DC', type: 'number', showWhen: (values) => values.hidden === true },
   { key: 'note', label: 'Note', type: 'text' },
 ]
 

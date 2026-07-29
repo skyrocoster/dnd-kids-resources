@@ -5,6 +5,7 @@ import {
   getRoomById,
   getExitsFromRoom,
   groupEntriesByType,
+  roomEntryIdentity,
   getRoomThreatHints,
   getRoomGraph,
   getAdjacentRoomIds,
@@ -169,6 +170,33 @@ describe('dungeonModel', () => {
       expect(entries[0].monster_id).toBe(7)
       expect(entries[1].encounter_id).toBeNull()
       expect(entries[1].monster_id).toBeNull()
+    })
+
+    it('roomEntryIdentity produces room-qualified one-based identities that are stable across repeat calls', () => {
+      // One-based ordinals: index 0 → roomId:1, index 1 → roomId:2
+      expect(roomEntryIdentity(3, 0)).toBe('3:1')
+      expect(roomEntryIdentity(3, 1)).toBe('3:2')
+      expect(roomEntryIdentity(3, 2)).toBe('3:3')
+
+      // Room qualification: different room IDs produce different identities
+      expect(roomEntryIdentity(1, 0)).toBe('1:1')
+      expect(roomEntryIdentity(2, 0)).toBe('2:1')
+
+      // Repeat-call stability
+      expect(roomEntryIdentity(5, 7)).toBe('5:8')
+      expect(roomEntryIdentity(5, 7)).toBe('5:8')
+      expect(roomEntryIdentity(5, 7)).toBe('5:8')
+
+      // Unchanged parsed legacy entries: parseDungeonData still works on real seed data
+      const parsed = parseDungeonData(islyData)
+      expect(parsed.rooms).toBeDefined()
+      expect(parsed.rooms!.length).toBe(5)
+      // Legacy entries have no identity field injected
+      for (const room of parsed.rooms!) {
+        for (const entry of room.entries ?? []) {
+          expect(entry).not.toHaveProperty('entry_id')
+        }
+      }
     })
   })
 

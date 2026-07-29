@@ -25,6 +25,14 @@ function numOrNull(value: unknown): number | null {
   return null
 }
 
+/** Derive a stable, room-qualified identity for a room entry.
+ * Returns `roomId:(index+1)` — one-based so display and debug are human-friendly.
+ * Room qualification makes identities unique across the dungeon, and the
+ * derivation is pure so repeated calls with the same arguments are stable. */
+export function roomEntryIdentity(roomId: number, zeroBasedEntryIndex: number): string {
+  return `${roomId}:${zeroBasedEntryIndex + 1}`
+}
+
 // ============================================================================
 // Type definitions — mirrors the shape from seed_dungeons.json
 // ============================================================================

@@ -78,12 +78,22 @@ field, listing what a seed file actually contains — that is retrieval, and pay
 for it fills the context you need for the design with file dumps.
 
 **Prefer the explorer for the survey.** In opencode that is the `explore-deepseek` subagent; in Claude
-Code it is the `Explore` agent. Both are read-only and cite `path:line`. Send it questions that a
-quote can answer, batched into **one dispatch**:
+Code it is the `Explore` agent. Both are read-only and cite `path:line`.
+
+**Send at most four questions per dispatch, each one bounded.** The cost you are managing is the
+explorer's context, and it grows with the *scope* of a question far faster than with the number of
+them — a survey question is especially easy to phrase so wide that answering it means reading a
+feature directory end to end. Name where to look and what shape the answer takes:
 
 - "List every component under `frontend/src/player/` with its export name and line count."
 - "Does the dungeon API return room notes anywhere? Quote the response model."
 - "Which area guides name Map Lab in their Surfaces table? Quote the rows."
+
+Not "how does the player app work" — that is not a question, it is a whole context window. Eight
+questions means two dispatches, not one wide one; the second round aims better for having seen the
+first. The explorer stops at its read budget and reports what it did not reach rather than widening a
+question on its own, so a partial answer is working as intended — re-ask the gap more narrowly, or go
+read it yourself.
 
 Read it yourself when the answer feeds the design directly: the area guide and the minimum references
 `docs/README.md` names, any canonical reference whose contract you are about to bend, and any file
@@ -114,8 +124,17 @@ After `## Shipped`, add a temporary handoff for each uncompiled stage where usef
 - **Verified tests:** `<repo-relative path>` — <relevant suite, fixture, or harness fact>
 - **Settled contracts:** <exact behavior, ownership boundary, data shape, copy, token, or dependency decision>
 - **Constraints:** <invariant or canonical reference the orders must preserve>
-- **Open questions:** <what `to-orders` still must resolve before writing an order, or `none`>
+- **Open questions:** <a *lookup* `to-orders` still must do before writing an order, or `none`>
 ```
+
+**Open questions are lookups, never design decisions.** "Confirm the exact prop name on
+`RoomDetailsPanel`" is a fair open question. "Decide where a room entry's stable id comes from",
+"decide what the migration does to existing rows", "decide which layer owns the new helper" are not —
+they set a contract every order in the stage inherits, and deferring one does not remove the work,
+it moves it to the compile, where it costs a feature-wide exploration and lands in an order's KNOWN
+STATE without the user ever seeing it. Settle those here, with the user, while the whole design is in
+view. If you cannot settle one, that is a finding about the stage: say so in the Status line and let
+the stage wait, rather than shipping a handoff that hides a decision inside a lookup.
 
 Include only headings that carry useful information. Facts are **verified** only when planning opened
 the named source or canonical reference; otherwise put them under **Open questions**, not edit sites

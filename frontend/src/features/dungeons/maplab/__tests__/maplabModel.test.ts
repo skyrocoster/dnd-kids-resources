@@ -817,6 +817,24 @@ describe('maplabModel (Stage 3 inspector)', () => {
       expect(d.lines).toContainEqual({ label: 'Pick DC', value: '12' })
       expect(d.lines).toContainEqual({ label: 'Perception DC', value: '15' })
     })
+
+    it('shows Perception DC and Search DC independently (both coexist)', () => {
+      const prop: MapProp = {
+        prop_id: 1,
+        kind: 'chest',
+        cell: [0, 0],
+        title: 'Hidden chest',
+        hidden: true,
+        locked: false,
+        trapped: false,
+        hiddenDc: 15,
+        searchDc: 20,
+      }
+      const d = inspectableDescriptor({ kind: 'prop', prop })
+
+      expect(d.lines).toContainEqual({ label: 'Perception DC', value: '15' })
+      expect(d.lines).toContainEqual({ label: 'Search DC', value: '20' })
+    })
   })
 })
 

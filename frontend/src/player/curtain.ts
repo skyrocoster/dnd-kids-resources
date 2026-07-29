@@ -45,6 +45,7 @@ const doorVis = {
   breakDc: 'never',
   pickDc: 'never',
   hiddenDc: 'never',
+  searchDc: 'never',
   note: 'never',
 } as const satisfies Record<keyof MapDoor, Visibility>
 
@@ -59,6 +60,7 @@ const stairVis = {
   breakDc: 'never',
   pickDc: 'never',
   hiddenDc: 'never',
+  searchDc: 'never',
   note: 'never',
 } as const satisfies Record<keyof MapStair, Visibility>
 
@@ -78,6 +80,7 @@ const propVis = {
   breakDc: 'never',
   pickDc: 'never',
   hiddenDc: 'never',
+  searchDc: 'never',
   note: 'never',
 } as const satisfies Record<keyof MapProp, Visibility>
 
@@ -93,6 +96,7 @@ const portalVis = {
   breakDc: 'never',
   pickDc: 'never',
   hiddenDc: 'never',
+  searchDc: 'never',
   note: 'never',
 } as const satisfies Record<keyof MapPortal, Visibility>
 

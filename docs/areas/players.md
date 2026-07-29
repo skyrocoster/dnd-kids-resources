@@ -1,7 +1,8 @@
 # Players Area Guide
 
 > **Plan queue:**
-> 1. [Kid Map Viewer](../plans/active/kid-map-viewer/kid-map-viewer.md) (next up)
+> 1. [Player Map Knowledge](../plans/active/player-map-knowledge/player-map-knowledge.md) (next up)
+> 2. [Kid Map Viewer](../plans/active/kid-map-viewer/kid-map-viewer.md) (shipped; awaiting closeout)
 
 ## Scope
 
@@ -90,7 +91,7 @@ the tablet.
 - **All concealment flows through the curtain.** No kid-facing component reads raw dungeon data. The
   risk being managed is ordinary carelessness, not a kid with devtools, and tests cannot catch it
   because they assert what is shown rather than what is absent.
-- **Knowledge ratchets; value oscillates. They are stored separately and never confused.**
+- **Knowledge and value are independently reversible. They are stored separately and never confused.**
 - **There is exactly one fog layer.** Two layers would mean two answers to one question, a seam
   between inside and outside, and no way to express a partially revealed room.
 - **No position tracking, ever.** The map records information, not where anyone is standing. Combat
@@ -101,16 +102,19 @@ the tablet.
 
 ## Work queue
 
-- [Kid Map Viewer](../plans/active/kid-map-viewer/kid-map-viewer.md) has shipped Stages 1-7; Stage 8 is next: the kid map is
+- [Player Map Knowledge](../plans/active/player-map-knowledge/player-map-knowledge.md) is next: reversible
+  per-fact disclosure, stable inspector selection, and the DM's actual-player-result preview establish
+  the concealment contract before Fog adds spatial visibility.
+- [Kid Map Viewer](../plans/active/kid-map-viewer/kid-map-viewer.md) shipped Stages 1-9 plus its repair pass: the kid map was
   rebuilt on the same canvas the DM already uses — absolute zoom, one floor at a time, the DM's own
-  drawing rules — and gains a four-family colour language (green goes somewhere, yellow is a way
+  drawing rules — and gained a four-family colour language (green goes somewhere, yellow is a way
   through, blue is a thing, pink is a person) solved by script rather than chosen by eye. It
   supersedes [Kid Map Legibility](../plans/done/kid-map-legibility/kid-map-legibility.md), which
   shipped three stages against a wrong diagnosis (contrast, not scale) and was closed on 2026-07-27;
   that plan's shared `roomLabelAnchor` survives, its kid-map palette is largely reversed, and its
   numbered stair badges are dropped.
-- Then, in order: fog as a working ratchet; the per-object knowledge model; ambient identity and
-  the personal surfaces.
+- Then, in order: Fog as one reversible cell layer; a dedicated Personal Surfaces grilling session;
+  and the first personal reference surface.
 - [Player App Skeleton](../plans/done/player-app-skeleton/player-app-skeleton.md) shipped all six
   stages (archived), ending with the first real table test on 2026-07-23.
 - Gear and weapons are an open branch and have no plan. Whether there is a third kid destination at

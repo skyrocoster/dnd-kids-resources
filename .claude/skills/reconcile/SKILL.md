@@ -9,9 +9,35 @@ After the executors have run a stage's work orders, this skill reconciles what a
 into the durable docs and clears the spent orders. The job here is **bookkeeping and documentation**:
 you record what shipped, you don't extend it.
 
+## Send the evidence-gathering out first
+
+Closeout asks the same questions every stage — what each order says it did, what git says actually
+changed, and where the docs currently describe the contracts that moved. That is retrieval, it is
+identical every time, and it is most of the reading in this skill. Send it to the scout in **one
+dispatch, before step 1**: in opencode that is the `reconcile-scout-deepseek` subagent, in Claude
+Code the `Explore` agent given the same five headings. Hand it the feature directory and a base ref
+if you have one; it returns ORDERS, GIT, EXPORTED SURFACES, DOC MENTIONS, and NOT FOUND / UNCERTAIN,
+all quoted with `path:line`.
+
+Its report is evidence for steps 1, 2 and 5. **Every judgement below stays here**, and the scout is
+instructed to refuse all of them:
+
+- whether a `DONE` order actually landed, and whether to re-run its STOP WHEN;
+- whether a changed export is a real *contract* change or an internal detail — step 5 turns on this,
+  and a quoted diff line is the input to that call, never the answer;
+- how a Shipped row and Status line should read;
+- why a `FAILED`/`BLOCKED` order failed, and whether to reissue, split, or escalate;
+- what a doc update should say, and whether a defect escaped the targeted checks.
+
+Read files yourself whenever the answer feeds one of those directly — a FAILURE REPORT and the dirty
+files behind it are diagnosis, not retrieval, and step 3 should always be your own reading. If the
+scout comes back partial, re-ask the gap narrowly rather than treating the report as complete.
+
 ## Steps
 
-1. **Read every work order in `docs/plans/active/<feature>/` and check its STATUS.**
+1. **Read every work order in `docs/plans/active/<feature>/` and check its STATUS.** The scout's
+   ORDERS section already quotes these verbatim; open an order yourself when you need more than it
+   quoted, and always for one that is not `DONE`.
 
 2. **For each `DONE` order:** confirm it really landed (skim the changed files / run the order's STOP
    WHEN command if in doubt), then **collapse it into the Plan's Shipped table** as one ≤2-sentence
@@ -63,8 +89,9 @@ you record what shipped, you don't extend it.
 
    **Then log the stage-level result to the telemetry log, every stage, pass or fail:**
 
-   > Collection is paused while `docs/plans/telemetry-paused.md` exists: this command and the
-   > cycle-close command below print one line, record nothing and exit 0. Run them as written.
+   > **While `docs/plans/telemetry-paused.md` exists, skip this command, the backfill in step 6, and
+   > the cycle-close below.** They record nothing and exit 0, so each is a round trip that buys
+   > nothing. Check for the file once, then carry on with the rest of reconcile.
 
    ```
    .venv\Scripts\python.exe scripts/order_telemetry.py --reconcile "<feature> stage <N>" \
@@ -108,6 +135,12 @@ you record what shipped, you don't extend it.
    update the matching reference (`API_REFERENCE.md`, `DATA_MODEL.md`, `ARCHITECTURE.md`,
    `DESIGN_SYSTEM.md`, `TESTING.md`) and the area guide/manifest routing. If nothing durable changed,
    record that — don't invent updates.
+
+   The scout's EXPORTED SURFACES and DOC MENTIONS sections give you the two halves of this decision:
+   what moved, and what the docs say about it today. Deciding whether a moved export is a *contract*
+   is yours — a new internal helper is not one, a changed response shape is. A symbol the scout
+   reports with no doc mentions is the interesting case, not an empty one: either it needs a first
+   entry, or it was never a documented contract.
 
 6. **Run the documentation checker** from the repo root via the repo-local virtualenv:
    - Windows: `.venv\Scripts\python.exe scripts/check_docs.py --check`
