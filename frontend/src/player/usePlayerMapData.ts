@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { ApiError, getAtTheTable, getDungeonLayout, getDungeonSessionState } from '../api/client'
-import { normalizeLayout, type MapLayout } from '../model/maplabModel'
+import { ApiError, getAtTheTable, getDungeonKnowledge, getDungeonLayout, getDungeonSessionState } from '../api/client'
+import type { MapKnowledge } from '../api/types'
+import { normalizeLayout, type MapLayout, type PassageSessionState } from '../model/maplabModel'
 import { playerOpenDoorIds, playerViewTransform, type KidMapLayout } from './curtain'
 
 export const PLAYER_MAP_POLL_INTERVAL_MS = 5_000
@@ -63,17 +64,36 @@ export function usePlayerMapData(): PlayerMapData {
         const blob = await getDungeonLayout(pointer.dungeon_id, request.signal)
         if (cancelled || request.signal.aborted) return
 
+        // Knowledge: 404 means no saved row → treat as empty knowledge (not a map failure).
+        // Non-404 knowledge failures propagate to the outer catch for frame-level error handling.
+        const knowledge = await getDungeonKnowledge(pointer.dungeon_id, request.signal)
+          .then(k => k.data as MapKnowledge | undefined)
+          .catch((err: unknown) => {
+            if (err instanceof ApiError && err.status === 404) return undefined
+            throw err
+          })
+        if (cancelled || request.signal.aborted) return
+
         // A dungeon with no session row yet (404) simply has no open doors — that must not fail the
         // whole frame, so this one call swallows its own error rather than joining the catch below.
         const session = await getDungeonSessionState(pointer.dungeon_id, request.signal)
           .then((s) => {
-            const data = s.data as { doors?: Record<string, { isOpen?: boolean }>; partyRoomId?: number | null }
-            return { doors: data.doors, partyRoomId: data.partyRoomId ?? null }
+            const data = s.data as {
+              doors?: Record<string, PassageSessionState>
+              stairs?: Record<string, PassageSessionState>
+              portals?: Record<string, PassageSessionState>
+              partyRoomId?: number | null
+            }
+            return { doors: data.doors, stairs: data.stairs, portals: data.portals, partyRoomId: data.partyRoomId ?? null }
           })
-          .catch(() => ({ doors: undefined, partyRoomId: null }))
+          .catch(() => ({ doors: undefined, stairs: undefined, portals: undefined, partyRoomId: null }))
         if (cancelled || request.signal.aborted) return
 
-        const layout = playerViewTransform(normalizeLayout(blob.data as unknown as MapLayout))
+        const layout = playerViewTransform(
+          normalizeLayout(blob.data as unknown as MapLayout),
+          knowledge,
+          { doors: session.doors, stairs: session.stairs, portals: session.portals },
+        )
         const frame: PlayerMapData = {
           dungeonId: pointer.dungeon_id,
           layout,

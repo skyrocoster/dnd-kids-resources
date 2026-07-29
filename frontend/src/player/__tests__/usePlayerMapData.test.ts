@@ -1,6 +1,6 @@
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ApiError, getAtTheTable, getDungeonLayout, getDungeonSessionState } from '../../api/client'
+import { ApiError, getAtTheTable, getDungeonKnowledge, getDungeonLayout, getDungeonSessionState } from '../../api/client'
 import { createEmptyMapLayout } from '../../model/maplabModel'
 import { playerViewTransform } from '../curtain'
 import { PLAYER_MAP_POLL_INTERVAL_MS, usePlayerMapData } from '../usePlayerMapData'
@@ -14,6 +14,7 @@ vi.mock('../../api/client', async () => {
   return {
     ...actual,
     getAtTheTable: vi.fn(),
+    getDungeonKnowledge: vi.fn(),
     getDungeonLayout: vi.fn(),
     getDungeonSessionState: vi.fn(),
   }
@@ -28,6 +29,7 @@ vi.mock('../curtain', async () => {
 })
 
 const mockedGetAtTheTable = vi.mocked(getAtTheTable)
+const mockedGetDungeonKnowledge = vi.mocked(getDungeonKnowledge)
 const mockedGetDungeonLayout = vi.mocked(getDungeonLayout)
 const mockedGetDungeonSessionState = vi.mocked(getDungeonSessionState)
 const mockedPlayerViewTransform = vi.mocked(playerViewTransform)
@@ -35,9 +37,11 @@ const mockedPlayerViewTransform = vi.mocked(playerViewTransform)
 describe('usePlayerMapData', () => {
   beforeEach(() => {
     mockedGetAtTheTable.mockReset()
+    mockedGetDungeonKnowledge.mockReset()
     mockedGetDungeonLayout.mockReset()
     mockedGetDungeonSessionState.mockReset()
     mockedGetDungeonSessionState.mockRejectedValue(new Error('not used'))
+    mockedGetDungeonKnowledge.mockResolvedValue({ data: { doors: { '1': { exists: true } } } })
     mockedPlayerViewTransform.mockClear()
   })
 
@@ -253,5 +257,77 @@ describe('usePlayerMapData', () => {
     expect(result.current.status).toBe('ready')
     expect(result.current.dungeonId).toBe(8)
     expect(result.current.layout?.floors[0].title).toBe('Annex')
+  })
+
+  it('passes knowledge to the curtain', async () => {
+    mockedGetAtTheTable.mockResolvedValue({ dungeon_id: 7 })
+    mockedGetDungeonLayout.mockResolvedValue(layoutResponse('School'))
+    mockedGetDungeonKnowledge.mockResolvedValue({
+      data: { doors: { '1': { exists: true } } },
+    })
+
+    const { result } = renderHook(() => usePlayerMapData())
+
+    await waitFor(() => expect(result.current.status).toBe('ready'))
+    const knowledgeArg = mockedPlayerViewTransform.mock.calls[0][1]
+    expect(knowledgeArg).toEqual({ doors: { '1': { exists: true } } })
+  })
+
+  it('treats 404 knowledge response as empty knowledge', async () => {
+    mockedGetAtTheTable.mockResolvedValue({ dungeon_id: 7 })
+    mockedGetDungeonLayout.mockResolvedValue(layoutResponse('School'))
+    mockedGetDungeonKnowledge.mockRejectedValueOnce(new ApiError(404, ''))
+
+    const { result } = renderHook(() => usePlayerMapData())
+
+    await waitFor(() => expect(result.current.status).toBe('ready'))
+    const knowledgeArg = mockedPlayerViewTransform.mock.calls[0][1]
+    expect(knowledgeArg).toBeUndefined()
+  })
+
+  it('forwards grouped session maps to the curtain', async () => {
+    mockedGetAtTheTable.mockResolvedValue({ dungeon_id: 7 })
+    mockedGetDungeonLayout.mockResolvedValue(layoutResponse('School'))
+    mockedGetDungeonSessionState.mockResolvedValue({
+      data: { doors: { '5': { isOpen: true } }, stairs: { '3': { isOpen: true } }, portals: { '1': { isOpen: true } }, partyRoomId: 42 } as unknown as Record<string, unknown>,
+    })
+
+    const { result } = renderHook(() => usePlayerMapData())
+
+    await waitFor(() => expect(result.current.status).toBe('ready'))
+    expect(result.current.openDoorIds).toEqual(new Set([5]))
+    expect(result.current.partyRoomId).toBe(42)
+    const sessionsArg = mockedPlayerViewTransform.mock.calls[0][2]
+    expect(sessionsArg).toEqual({
+      doors: { '5': { isOpen: true } },
+      stairs: { '3': { isOpen: true } },
+      portals: { '1': { isOpen: true } },
+    })
+  })
+
+  it('retains last good frame through a later knowledge failure', async () => {
+    vi.useFakeTimers()
+    mockedGetAtTheTable
+      .mockResolvedValueOnce({ dungeon_id: 7 })
+      .mockResolvedValueOnce({ dungeon_id: 7 })
+    mockedGetDungeonLayout
+      .mockResolvedValueOnce(layoutResponse('School'))
+      .mockResolvedValueOnce(layoutResponse('School'))
+    mockedGetDungeonKnowledge
+      .mockResolvedValueOnce({ data: { doors: { '1': { exists: true } } } })
+      .mockRejectedValueOnce(new Error('knowledge offline'))
+
+    const { result } = renderHook(() => usePlayerMapData())
+    await act(async () => {})
+    expect(result.current.status).toBe('ready')
+    const firstFrame = result.current.layout
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(PLAYER_MAP_POLL_INTERVAL_MS)
+    })
+
+    expect(result.current.status).toBe('ready')
+    expect(result.current.layout).toBe(firstFrame)
+    expect(result.current.error).toBeNull()
   })
 })

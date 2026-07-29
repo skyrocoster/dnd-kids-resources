@@ -1,6 +1,6 @@
 # Player Map Knowledge — the DM controls each fact the party has learned
 
-> **Status:** Stages 1-2 shipped. Next: compile Stage 3, The Curtain learns facts; Knowledge precedes Fog.
+> **Status:** Stages 1-3 shipped. Next: compile Stage 4, the inspector separates world from knowledge.
 
 - **Area guide:** [Players](../../../areas/players.md)
 - **Read trigger:** Reversible per-fact disclosure, the map knowledge document, inspector selection, or the DM's player-result preview
@@ -109,6 +109,7 @@ removes that key.
 |-------|------------------------------|
 | 1 | Passage-like map objects now share the `exists`, `lock`, and `trap` knowledge vocabulary, with Perception DC and Search DC authored and presented separately while both remain behind the Curtain. Room entries have deterministic room-qualified identities derived from stable room ID and one-based authored order without changing legacy dungeon data. |
 | 2 | Each dungeon now has an independently persisted, cascade-deleted knowledge document with replacement-style GET, PUT, and DELETE endpoints. Knowledge participates in seed export and rebuild separately from authored layout, live session truth, and Fog. |
+| 3 | The player-view Curtain now consumes sparse knowledge and grouped live passage state, omits authored-hidden objects until existence is disclosed, and reveals lock and trap values independently without leaking DM-only fields. The kid map polls knowledge alongside layout and session state, treating missing knowledge as empty and retaining the last good frame after later knowledge failures. |
 
 ## Touches
 

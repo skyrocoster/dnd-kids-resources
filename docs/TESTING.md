@@ -150,7 +150,7 @@ says only where the files are.
 | `backend/tests/` | 15 | 378 |
 | `backend/tests/routers/` | 17 | 267 |
 | `frontend/src/__tests__/` | 1 | 4 |
-| `frontend/src/api/__tests__/` | 1 | 5 |
+| `frontend/src/api/__tests__/` | 1 | 6 |
 | `frontend/src/components/__tests__/` | 14 | 152 |
 | `frontend/src/components/form/__tests__/` | 4 | 11 |
 | `frontend/src/features/dungeons/__tests__/` | 2 | 54 |
@@ -167,7 +167,7 @@ says only where the files are.
 | `frontend/src/layout/__tests__/` | 1 | 12 |
 | `frontend/src/map/__tests__/` | 3 | 44 |
 | `frontend/src/pages/__tests__/` | 2 | 5 |
-| `frontend/src/player/__tests__/` | 6 | 57 |
+| `frontend/src/player/__tests__/` | 6 | 69 |
 <!-- GENERATED:TESTING:LOCATIONS:END -->
 
 <!-- GENERATED:TESTING:START -->

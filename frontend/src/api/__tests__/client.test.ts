@@ -6,6 +6,7 @@ import {
   deleteMonster,
   deleteSpell,
   getAbilities,
+  getDungeonKnowledge,
   updateMonster,
 } from '../client'
 import { targetSpell } from '../../features/spells/__tests__/spellFixtures'
@@ -86,6 +87,20 @@ describe('api client', () => {
     mockFetchOnce({ ok: false, status: 404, statusText: 'Not Found', text: async () => 'Spell not found' })
 
     await expect(getAbilities()).rejects.toMatchObject(new ApiError(404, 'Spell not found'))
+  })
+
+  it('getDungeonKnowledge hits the /api-prefixed knowledge endpoint and forwards signal', async () => {
+    const knowledgeData = { data: { doors: { 'door-1': { exists: true } } } }
+    const controller = new AbortController()
+    const fetchMock = mockFetchOnce({ jsonBody: knowledgeData })
+
+    const result = await getDungeonKnowledge(1, controller.signal)
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/dungeons/1/knowledge',
+      expect.objectContaining({ signal: controller.signal }),
+    )
+    expect(result).toEqual(knowledgeData)
   })
 })
 

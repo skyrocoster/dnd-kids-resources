@@ -1,6 +1,6 @@
 # Table Test — 2026-07-27 — Kid Map Viewer Stage 9
 
-> **Status:** pending
+> **Status:** planned
 
 - **Plan:** [Kid Map Viewer](../plans/active/kid-map-viewer/kid-map-viewer.md) — Stage 9, work order `01-second-table-test-record`
 - **Build:** *(pending — record after session)*
@@ -63,19 +63,20 @@ Checked items denote what was confirmed on real glass before the session; unchec
 | 5 | Is the stacked-slab picker understood — does anyone tap a different floor slab unprompted? | The slab picker is the floor indicator and the floor control in one object. If it is not tapped unprompted, the fog plan may need a more visible floor selector or an auto-reveal heuristic. | *(pending)* |
 | 6 | Are names found by scanning, or does the child search room by room? | Constant on-screen label size was the fix for Stage 6's "scanning, not reading" finding. If scanning still fails, the fog plan revisits label density and fade thresholds. | *(pending)* |
 | 7 | Can the four-year-old identify anything without reading — by disc colour, shape, or position? | The four-year-old's ability to participate without literacy is a hard requirement for the whole project. A "no" here outranks every other finding and forces the fog plan to rely on colour, shape, and position alone. | *(pending)* |
+| 8 | Did anyone try to tap a room expecting something to happen? (No inspector is built.) | A count here is the mandate — or the refusal — for a kid-side room detail view. | *(pending)* |
+| 9 | Did anyone ask for something that was on the map but not findable? | Names a gap between what is drawn and what is legible; sends the fog plan back to label density or disc prominence. | *(pending)* |
+| 10 | Did anyone ask to see a different floor without using the slab picker or a stair disc? | Shows the floor model is understood but its controls are not; the fog plan would need a more visible floor selector or a party-following auto-reveal. | *(pending)* |
 
 ## Standing questions
 
 | # | Question | Answer |
 |---|---|---|
-| 1 | Did anyone name a colour family unprompted ("the green one", "the yellow dots")? | *(pending)* |
-| 2 | Did the four-year-old pick up or echo any of the colour names? | *(pending)* |
-| 3 | Did the stripy room get a spontaneous name before being told? | *(pending)* |
-| 4 | Did anyone tap a green disc expecting it to be a stair? Did anyone not realise it was a stair after tapping? | *(pending)* |
-| 5 | Did anyone try to tap a room expecting something to happen? (Inspector is not built.) | *(pending)* |
-| 6 | Did anyone ask for something that was on the map but not findable? | *(pending)* |
-| 7 | Did anyone ask to see a different floor without using the slab picker or stair discs? | *(pending)* |
-| 8 | *(carried from first record)* Did they remember something because of the app? | *(pending)* |
+| 1 | Did anyone pick the device up unprompted? | *(pending)* |
+| 2 | Did it pull attention **off** the table? | *(pending)* |
+| 3 | Could the older child use it without help? The younger? | *(pending)* |
+| 4 | Did anyone ask you to refresh it, or say it was wrong? | *(pending)* |
+| 5 | Did anyone know something the fiction never told them? | *(pending)* |
+| 6 | *(answered in the **next** record)* Did they remember something because of the app? | *(pending)* |
 
 ## Observed
 
@@ -120,10 +121,3 @@ Every finding routes to the [Kid Map Viewer](../plans/active/kid-map-viewer/kid-
 | Name scanning — whether labels were found by scanning or room-by-room search | Fog plan — label density: if scanning still fails, the fog plan inherits a constraint on how many labels can be visible through fog. |
 | Four-year-old participation — whether Lark identified anything by disc colour, shape, or position without reading | Fog plan — non-literacy requirement: a "no" here forces the fog plan to rely entirely on colour, shape, and position, which may limit what information the fog can reveal to the youngest player. |
 | Spontaneous colour-family names or stripy-room handle — whether the language was adopted during play | Fog plan — spoken-language stickiness: spontaneous use confirms the language is sticky; absence means it did not survive the shift from explanation to play. |
-
----
-
-## STATUS:
-
-## DEVIATIONS:
-- KNOWN STATE re-verified or wrong:

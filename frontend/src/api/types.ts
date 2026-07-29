@@ -577,6 +577,24 @@ export interface MapLayoutBlob {
   data: Record<string, unknown>
 }
 
+export interface MapKnowledgeItem {
+  exists?: true
+  lock?: true
+  trap?: true
+}
+
+export interface MapKnowledge {
+  doors?: Record<string, MapKnowledgeItem>
+  stairs?: Record<string, MapKnowledgeItem>
+  props?: Record<string, MapKnowledgeItem>
+  portals?: Record<string, MapKnowledgeItem>
+  roomEntries?: Record<string, MapKnowledgeItem>
+}
+
+export interface MapKnowledgeBlob {
+  data: MapKnowledge
+}
+
 export interface IncomingGateway {
   dungeon_id: number
   dungeon_title: string

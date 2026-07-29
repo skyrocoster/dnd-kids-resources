@@ -48,6 +48,13 @@ because of the app?
   A format that asks a tired DM to write structured prose at 9pm will not survive its second use.
 - **Records outlive their plans.** They live in `docs/table-tests/`, not under `plans/`, so archiving
   a completed plan never buries the evidence that shaped it.
+- **Exactly three statuses: `planned` → `run` → `folded in`.** No fourth state. The
+  `2026-07-27-kid-map-viewer-stage-9.md` record's `pending` is the same thing as `planned` and is
+  corrected to it, rather than the vocabulary growing to accommodate one record.
+- **The standing questions are a fixed block, identical in every record, checked verbatim.** That is
+  the whole reason they exist — a reworded question breaks the trend as surely as a dropped one.
+  Session-specific questions have a home already: `## Watching for`. The 2026-07-27 record replaced
+  all six with seven of its own; those seven move to `Watching for`, which is where they belonged.
 
 ## Stages
 
@@ -55,7 +62,10 @@ because of the app?
    `planned → run → folded in` lifecycle, the required headings, the standing questions, and the
    record index. Add its manifest row and a Task Router row for "running or recording a real
    session". `docs/table-tests/_example/` and the first record already exist and become the
-   reference's worked example rather than being rewritten. Ends with the format documented and
+   reference's worked example rather than being rewritten. Also normalises
+   `2026-07-27-kid-map-viewer-stage-9.md` to the settled format — status word, the fixed standing
+   block, and the stray work-order footer it still carries — so the Stage 3 checker lands on
+   conforming data. Ends with the format documented and
    routable.
 
 2. **Hook it to plans.** One addition to `PLAN_TEMPLATE.md`: a plan stage that ends at something
