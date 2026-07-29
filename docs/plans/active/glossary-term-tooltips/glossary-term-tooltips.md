@@ -1,6 +1,6 @@
 # Glossary term tooltips — hover/tap explanations for rule terms in rendered text
 
-> **Status:** Stage 1 shipped. Stage 2 (GlossaryTerm popover component) is next — the only Design plan.
+> **Status:** Stages 1-2 shipped. Stage 3 (wire glossary matching into rendered rule text) is next — the only Design plan.
 
 - **Area guide:** [Design](../../../areas/design.md)
 - **Read trigger:** Glossary term tooltips, rule-term explanations in rendered text
@@ -97,3 +97,4 @@ Touch:        tap toggles the popover (hover has no touch equivalent); tap outsi
 | Stage | What shipped (≤2 sentences) |
 |-------|------------------------------|
 | 1 | Added the static six-entry rule glossary registry and a case-insensitive, whole-word matcher that preserves source text and offsets. Focused tests cover aliases, longest matches, casing, tiling, unmatched text, and duplicate keys. |
+| 2 | Added the reusable `GlossaryTerm` inline popover with exclusive hover, focus, tap, keyboard, dismissal, and viewport-clamping behavior. Documented inline glossary triggers as a deliberate exception to the 48px touch-target floor. |
