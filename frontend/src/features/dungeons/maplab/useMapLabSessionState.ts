@@ -8,9 +8,9 @@ import {
   resetDungeonSessionState,
   saveDungeonSessionState,
 } from '../../../api/client'
-import type { PassageSessionState } from '../../../model/maplabModel'
+import type { SessionFixtureState } from '../../../model/maplabModel'
 
-type SessionMap = Record<number, PassageSessionState>
+type SessionMap = Record<number, SessionFixtureState>
 
 interface UseMapLabSessionStateResult {
   doorSessions: SessionMap
@@ -19,6 +19,8 @@ interface UseMapLabSessionStateResult {
   setStairSessions: Dispatch<SetStateAction<SessionMap>>
   portalSessions: SessionMap
   setPortalSessions: Dispatch<SetStateAction<SessionMap>>
+  propSessions: SessionMap
+  setPropSessions: Dispatch<SetStateAction<SessionMap>>
   partyRoomId: number | null
   setPartyRoomId: Dispatch<SetStateAction<number | null>>
   resetSessions: () => void
@@ -31,6 +33,7 @@ export function useMapLabSessionState(dungeonId: number | null): UseMapLabSessio
   const [doorSessions, setDoorSessions] = useState<SessionMap>({})
   const [stairSessions, setStairSessions] = useState<SessionMap>({})
   const [portalSessions, setPortalSessions] = useState<SessionMap>({})
+  const [propSessions, setPropSessions] = useState<SessionMap>({})
   const [partyRoomId, setPartyRoomId] = useState<number | null>(null)
   const [loadStatus, setLoadStatus] = useState<UseMapLabSessionStateResult['loadStatus']>('loading')
   const [actionError, setActionError] = useState<string | null>(null)
@@ -48,6 +51,7 @@ export function useMapLabSessionState(dungeonId: number | null): UseMapLabSessio
       setDoorSessions({})
       setStairSessions({})
       setPortalSessions({})
+      setPropSessions({})
       setPartyRoomId(null)
       setLoadStatus('error')
       return
@@ -59,12 +63,13 @@ export function useMapLabSessionState(dungeonId: number | null): UseMapLabSessio
     getDungeonSessionState(dungeonId)
       .then((blob) => {
         if (cancelled) return
-        const data = blob.data as { doors?: SessionMap; stairs?: SessionMap; portals?: SessionMap; partyRoomId?: number | null }
+        const data = blob.data as { doors?: SessionMap; stairs?: SessionMap; portals?: SessionMap; props?: SessionMap; partyRoomId?: number | null }
         hasLoadedRef.current = true
         skipNextSaveRef.current = true
         setDoorSessions(data.doors ?? {})
         setStairSessions(data.stairs ?? {})
         setPortalSessions(data.portals ?? {})
+        setPropSessions(data.props ?? {})
         setPartyRoomId(data.partyRoomId ?? null)
         setLoadStatus('ready')
       })
@@ -75,6 +80,7 @@ export function useMapLabSessionState(dungeonId: number | null): UseMapLabSessio
         setDoorSessions({})
         setStairSessions({})
         setPortalSessions({})
+        setPropSessions({})
         setPartyRoomId(null)
         setLoadStatus(err instanceof ApiError && err.status === 404 ? 'empty' : 'error')
       })
@@ -91,11 +97,11 @@ export function useMapLabSessionState(dungeonId: number | null): UseMapLabSessio
       return
     }
     saveDungeonSessionState(dungeonId, {
-      data: { doors: doorSessions, stairs: stairSessions, portals: portalSessions, partyRoomId },
+      data: { doors: doorSessions, stairs: stairSessions, portals: portalSessions, props: propSessions, partyRoomId },
     }).catch(() => {
       setActionError("Couldn't save session changes. Try again.")
     })
-  }, [dungeonId, doorSessions, stairSessions, portalSessions, partyRoomId, loadStatus])
+  }, [dungeonId, doorSessions, stairSessions, portalSessions, propSessions, partyRoomId, loadStatus])
 
   function resetSessions() {
     // Skip the save effect this state change would otherwise trigger — resetting must clear the
@@ -104,6 +110,7 @@ export function useMapLabSessionState(dungeonId: number | null): UseMapLabSessio
     setDoorSessions({})
     setStairSessions({})
     setPortalSessions({})
+    setPropSessions({})
     setPartyRoomId(null)
     if (dungeonId !== null) {
       resetDungeonSessionState(dungeonId).catch(() => {
@@ -119,6 +126,8 @@ export function useMapLabSessionState(dungeonId: number | null): UseMapLabSessio
     setStairSessions,
     portalSessions,
     setPortalSessions,
+    propSessions,
+    setPropSessions,
     partyRoomId,
     setPartyRoomId,
     resetSessions,

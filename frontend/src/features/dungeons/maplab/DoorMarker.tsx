@@ -1,6 +1,6 @@
-import { doorPresentation } from './maplabPresentation'
-import { doorSwingGeometry, doorWallSegment, effectivePassageState, type MapDoor, type PassageSessionState } from '../../../model/maplabModel'
-import { collapsedStatusDescriptor, collapsedStatusLabel, markerBadges } from './markerBadges'
+import { fixtureDoorPresentation } from './maplabPresentation'
+import { doorSwingGeometry, doorWallSegment, type MapDoor, type SessionFixtureState } from '../../../model/maplabModel'
+import { collapsedStatusDescriptor, collapsedStatusLabel, fixtureMarkerBadges } from './markerBadges'
 
 const DOOR_BADGE_RADIUS = 8
 const DOOR_LEAF_STROKE_WIDTH = 6
@@ -39,7 +39,7 @@ interface DoorMarkerProps {
   door: MapDoor
   cellSize: number
   /** Live session state — the viewer merges this over the authored flags; the editor omits it. */
-  session?: PassageSessionState
+  session?: SessionFixtureState
   selected?: boolean
   /** Editor-only: whether this door is selected for editing. */
   interactive?: boolean
@@ -53,7 +53,7 @@ interface DoorMarkerProps {
 interface DoorBadgeLayerProps {
   door: MapDoor
   cellSize: number
-  session?: PassageSessionState
+  session?: SessionFixtureState
 }
 
 /** Shared door marker for both the viewer and editor pages. Replaces the inline door renders
@@ -73,17 +73,16 @@ export function DoorMarker({
 }: DoorMarkerProps) {
   const segment = doorWallSegment(door, cellSize)
   const swing = doorSwingGeometry(door, cellSize)
-  const presentation = doorPresentation(door, session)
-  const effective = effectivePassageState(door, session)
-  const badges = markerBadges({ ...door, locked: effective.locked }, effective.trapDisarmed)
+  const presentation = fixtureDoorPresentation(door, session)
+  const badges = fixtureMarkerBadges(door, session)
   const stateLabel = collapsedStatusLabel(badges, presentation.label)
   const label = `${door.title ?? `Door ${door.door_id}`} — ${stateLabel}, ${presentation.isOpen ? 'open' : 'closed'}`
-  const isHidden = effective.hidden
-  const dasharray = isHidden ? HIDDEN_DOOR_DASHARRAY : undefined
-  const pathLength = isHidden ? HIDDEN_DOOR_PATH_LENGTH : undefined
+  const isConcealed = presentation.state === 'concealed'
+  const dasharray = isConcealed ? HIDDEN_DOOR_DASHARRAY : undefined
+  const pathLength = isConcealed ? HIDDEN_DOOR_PATH_LENGTH : undefined
   const openLeafSegment = { x1: swing.hinge.x, y1: swing.hinge.y, x2: swing.leafTip.x, y2: swing.leafTip.y }
-  const renderedOpenLeafSegment = isHidden ? insetSegment(openLeafSegment, HIDDEN_DOT_ENDPOINT_INSET) : openLeafSegment
-  const renderedClosedLeafSegment = isHidden ? insetSegment(segment, HIDDEN_DOT_ENDPOINT_INSET) : segment
+  const renderedOpenLeafSegment = isConcealed ? insetSegment(openLeafSegment, HIDDEN_DOT_ENDPOINT_INSET) : openLeafSegment
+  const renderedClosedLeafSegment = isConcealed ? insetSegment(segment, HIDDEN_DOT_ENDPOINT_INSET) : segment
 
   return (
     <g
@@ -135,7 +134,7 @@ export function DoorMarker({
           y1={renderedClosedLeafSegment.y1}
           x2={renderedClosedLeafSegment.x2}
           y2={renderedClosedLeafSegment.y2}
-          style={{ stroke: 'var(--md-door)', strokeLinecap: isHidden ? 'round' : undefined }}
+          style={{ stroke: 'var(--md-door)', strokeLinecap: isConcealed ? 'round' : undefined }}
           strokeDasharray={dasharray}
           pathLength={pathLength}
         />
@@ -147,12 +146,11 @@ export function DoorMarker({
 /** Door badges intentionally render in a trailing page-level layer so no later door leaf or swing
  * can overpaint them. The open leaf supplies the badge segment; a closed door uses its wall segment. */
 export function DoorBadgeLayer({ door, cellSize, session }: DoorBadgeLayerProps) {
-  const effective = effectivePassageState(door, session)
-  const badges = markerBadges({ ...door, locked: effective.locked }, effective.trapDisarmed)
+  const badges = fixtureMarkerBadges(door, session)
   const badge = collapsedStatusDescriptor(badges)
   if (!badge) return null
 
-  const presentation = doorPresentation(door, session)
+  const presentation = fixtureDoorPresentation(door, session)
   const wallSegment = doorWallSegment(door, cellSize)
   const swing = doorSwingGeometry(door, cellSize)
   const segment = presentation.isOpen

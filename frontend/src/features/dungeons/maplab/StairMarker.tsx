@@ -1,11 +1,10 @@
 import { BadgeRing } from './BadgeRing'
-import { collapsedStatusLabel, markerBadges } from './markerBadges'
-import { stairPresentation } from './maplabPresentation'
+import { collapsedStatusLabel, fixtureMarkerBadges } from './markerBadges'
+import { fixtureStairPresentation } from './maplabPresentation'
 import {
-  effectivePassageState,
   type MapCell,
   type MapStair,
-  type PassageSessionState,
+  type SessionFixtureState,
 } from '../../../model/maplabModel'
 import { onSquareMarkerGeometry, MarkerHitArea, MarkerGlyph } from '../../../map/markerShape'
 
@@ -17,12 +16,9 @@ interface StairMarkerProps {
   cell: MapCell
   activeZ: number
   selected?: boolean
-  /** Live session state (locked/trapDisarmed) — the viewer merges this over the authored flags;
-   * the editor omits it and gets the authored state as-is. */
-  session?: PassageSessionState
-  /** Viewer-only: shows a confirmation badge once a trapped stair's trap has been disarmed, in
-   * addition to (and independent of) the state-driven `BADGE_ICONS` badge above. */
-  trapDisarmed?: boolean
+  /** Live session state — the viewer merges this over the authored state; the editor omits it
+   * and gets the authored state as-is. */
+  session?: SessionFixtureState
   /** Fractional-cell nudge (from `gridMarkerOffset`) when this stair shares its cell with other
    * markers (portals/other stairs/props). */
   offset?: { dx: number; dy: number }
@@ -49,7 +45,6 @@ export function StairMarker({
   activeZ,
   selected,
   session,
-  trapDisarmed,
   offset,
   grouped,
   simplified,
@@ -62,12 +57,10 @@ export function StairMarker({
 }: StairMarkerProps) {
   const { cx, cy, radius, iconSize } = onSquareMarkerGeometry(cell, cellSize, { offset, grouped })
 
-  const effective = effectivePassageState(stair, session)
-  const presentation = stairPresentation(stair, activeZ, session)
+  const presentation = fixtureStairPresentation(stair, activeZ, session)
   const Icon = presentation.icon
-  // Keep the authored trap badge after disarming so the confirmation badge can communicate both facts.
-  const badges = markerBadges({ ...stair, locked: effective.locked }, trapDisarmed ?? effective.trapDisarmed)
-  const dasharray = effective.hidden ? '4 3' : undefined
+  const badges = fixtureMarkerBadges(stair, session)
+  const dasharray = presentation.state === 'concealed' ? '4 3' : undefined
   const resolvedLabel = `${stair.title ?? `Stair ${stair.stair_id}`} — ${collapsedStatusLabel(badges, presentation.label)}${destinationLabel ? ` — ${destinationLabel}` : ''}`
 
   return (

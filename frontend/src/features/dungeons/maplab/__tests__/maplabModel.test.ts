@@ -7,6 +7,7 @@ import {
   stairPresentation,
   doorPresentation,
   inspectableDescriptor,
+  fixtureInspectableDescriptor,
   passageStateChips,
 } from '../maplabPresentation'
 import {
@@ -896,7 +897,7 @@ describe('maplabModel (Stage 4 session state)', () => {
     const d = inspectableDescriptor({
       kind: 'door',
       door,
-      session: { isOpen: true, isLocked: false, trapDisarmed: true },
+      session: { open: true, obstacles: { lock: { armed: false }, trap: { armed: false } } },
     })
 
     expect(d.lines).toContainEqual({ label: 'Position', value: 'Open' })
@@ -1143,6 +1144,60 @@ describe('Design Phase J — Map Lab Decluttering', () => {
       const p = passagePresentation({ ...baseDoorFlags, hidden: true })
       expect(p.token).toBe('--md-passage-hidden')
       expect(p.token).not.toBe('--md-outline')
+    })
+  })
+
+  describe('fixtureInspectableDescriptor — nested-state fixture inspector (Order 21)', () => {
+    it('explicit-false trap session override leaves Lock active, omits Trap/Unlocked, and omits dormant trap DC while retaining active lock DC', () => {
+      const door: MapDoor = {
+        door_id: 10,
+        cell: [0, 0],
+        side: 'N',
+        hidden: false,
+        locked: true,
+        trapped: false,
+        breakDc: 14,
+        pickDc: 15,
+        searchDc: 12,
+        state: {
+          open: false,
+          obstacles: {
+            concealment: { armed: false },
+            lock: { armed: true, shown: true },
+            trap: { armed: true, shown: true },
+          },
+        },
+      }
+
+      const d = fixtureInspectableDescriptor({
+        kind: 'door',
+        door,
+        session: {
+          obstacles: {
+            trap: { armed: false },
+          },
+        },
+      })
+
+      // Lock stays active
+      expect(d.chips.map((c) => c.state)).toEqual(['locked'])
+
+      // No Trap or Unlocked output anywhere
+      const allText = [
+        d.title,
+        d.typeLabel,
+        d.chips.map((c) => c.label).join(' '),
+        d.lines.map((l) => `${l.label}=${l.value}`).join(' '),
+      ].join(' ')
+      expect(allText).not.toMatch(/trap/i)
+      expect(allText).not.toMatch(/unlock/i)
+
+      // Dormant trap DC is omitted
+      expect(d.lines.some((l) => l.label === 'Search DC')).toBe(false)
+
+      // Active lock DC is retained
+      expect(d.lines).toContainEqual({ label: 'Pick DC', value: '15' })
+      expect(d.lines).toContainEqual({ label: 'Break DC', value: '14' })
     })
   })
 })

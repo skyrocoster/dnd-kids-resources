@@ -23,7 +23,7 @@ Point a skill at a row and it has what it needs to start.
 | Plan | Depends on | State | Orders | Next | Status |
 | --- | --- | --- | --- | --- | --- |
 | [Kid Map Viewer](kid-map-viewer/kid-map-viewer.md) | — | ready | none compiled | `to-orders` | Complete and archived. |
-| [Map Obstacle State](map-obstacle-state/map-obstacle-state.md) | — | ready | none compiled | `to-orders` | Ready for Stage 1 compilation; all product decisions are settled in the canonical handoff. |
+| [Map Obstacle State](map-obstacle-state/map-obstacle-state.md) | — | ready | none compiled | `to-orders` | Stage 1 shipped — all 21 orders landed. |
 | [Production Nightly Deploys](production-nightly-deploys/production-nightly-deploys.md) | — | ready | none compiled | `to-orders` | Not next for Infra; second in the Infra queue, after Table Testing Records. |
 | [Table Testing Records](table-testing-records/table-testing-records.md) | — | ready | none compiled | `to-orders` | Stages 1–2 shipped — the format is documented in `docs/TABLE_TESTING.md`, and the workflow now produces records by default: `PLAN_TEMPLATE.md` teaches the `**Table test:**` stage line, `to-orders` stops session-run orders at a record, and Player App Skeleton Stage 6 demonstrates the shape. |
 <!-- GENERATED:ACTIVE_INDEX:END -->

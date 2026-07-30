@@ -308,7 +308,7 @@ describe('MapLabPage (M2.3 walls + door/stair affordances)', () => {
     await renderLoadedMapLabPage()
 
     const stair = screen.getByRole('button', { name: /Stone Stairs.*floor 1/i })
-    expect(stair).toHaveAttribute('data-state', 'unlocked')
+    expect(stair).toHaveAttribute('data-state', 'plain')
 
     // Stair's primary action is still travel — click switches floor as before, and also selects
     // the stair so the inspector's controls are reachable.
@@ -564,7 +564,7 @@ describe('MapLabPage (Stage 4 — Passage session state)', () => {
     expect(door).toHaveAttribute('data-state', 'locked')
 
     await user.click(screen.getByRole('button', { name: 'Unlock' }))
-    expect(door).toHaveAttribute('data-state', 'unlocked')
+    expect(door).toHaveAttribute('data-state', 'plain')
   })
 
   it('disarms traps and reflects the change in the passage glyph', async () => {
@@ -580,9 +580,9 @@ describe('MapLabPage (Stage 4 — Passage session state)', () => {
 
     await user.click(screen.getByRole('button', { name: 'Disarm trap' }))
     expect(door).toHaveAttribute('data-state', 'locked')
-    expect(document.querySelector('.maplab-door-badge-layer [data-badge="trap-disarmed"]')).not.toBeInTheDocument()
-    expect(document.querySelector('.maplab-door-badge-layer [data-badge="multiple-statuses"]')).toBeInTheDocument()
-    expect(door).toHaveAccessibleName(/Trap disarmed/)
+    // Only one active badge (locked) remains — no multiple-statuses or trap-disarmed badges
+    expect(document.querySelector('.maplab-door-badge-layer [data-badge="multiple-statuses"]')).not.toBeInTheDocument()
+    expect(door).toHaveAccessibleName(/Locked/)
   })
 
   it('resets all session overrides via a reset button', async () => {
@@ -616,6 +616,45 @@ describe('MapLabPage (Stage 4 — Passage session state)', () => {
     expect(panel.querySelector('.maplab-inspector-subheading')).toHaveTextContent('World now')
     // The session view wires the knowledge document through, so both headings are present.
     expect(screen.getByText('Players know')).toBeInTheDocument()
+  })
+
+  it('nested door open/lock/trap writes preserve sibling leaves and prop session override reaches its marker', async () => {
+    const user = userEvent.setup()
+
+    // Provide prop session data — Treasure Chest (id=1) lock.armed overridden to false
+    vi.spyOn(api, 'getDungeonSessionState').mockResolvedValue({
+      data: { props: { 1: { obstacles: { lock: { armed: false } } } } },
+    } as any)
+
+    renderMapLabPage()
+    await flush()
+    await flush()
+
+    // === Door: nested writes preserve sibling leaves ===
+    const door = screen.getByRole('button', { name: /Rusty Trap Door/ })
+    await user.click(door)
+
+    // Start: closed, trapped
+    expect(door).toHaveAttribute('data-state', 'trapped')
+    expect(door.querySelector('.maplab-door-leaf-closed')).toBeInTheDocument()
+
+    // Open the door
+    await user.click(screen.getByRole('button', { name: 'Open door' }))
+    expect(door.querySelector('.maplab-door-leaf')).toBeInTheDocument()
+
+    // Disarm trap — leaf stays open (sibling leaf preserved)
+    await user.click(screen.getByRole('button', { name: 'Disarm trap' }))
+    expect(door).toHaveAttribute('data-state', 'locked')
+    expect(door.querySelector('.maplab-door-leaf')).toBeInTheDocument()
+
+    // Unlock — leaf stays open
+    await user.click(screen.getByRole('button', { name: 'Unlock' }))
+    expect(door.querySelector('.maplab-door-leaf')).toBeInTheDocument()
+
+    // === Prop: session override reaches marker ===
+    // Treasure Chest is authored as locked but session overrides lock.armed=false
+    const chest = screen.getByRole('button', { name: /Treasure Chest/ })
+    expect(chest).toHaveAttribute('data-state', 'plain')
   })
 })
 
@@ -1116,6 +1155,14 @@ describe('MapLabPage (Stage F2 — Prop rendering)', () => {
       hidden: true,
       locked: false,
       trapped: false,
+      state: {
+        open: false,
+        obstacles: {
+          concealment: { armed: true },
+          lock: { armed: false, shown: false },
+          trap: { armed: false, shown: false },
+        },
+      },
     }
     const backendLayout = { ...mapLabLayout, props: [...mapLabLayout.props, hiddenProp] }
     vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: backendLayout })
@@ -1124,7 +1171,7 @@ describe('MapLabPage (Stage F2 — Prop rendering)', () => {
     await flush()
 
     const hiddenChest = screen.getByRole('button', { name: /Hidden Chest/i })
-    expect(hiddenChest).toHaveAttribute('data-state', 'hidden')
+    expect(hiddenChest).toHaveAttribute('data-state', 'concealed')
     expect(hiddenChest.querySelector('circle')).toHaveAttribute('stroke-dasharray')
   })
 })

@@ -1,11 +1,12 @@
 import { GatewayPortalIcon, PortalIcon } from '../../../components/icons'
 import { BadgeRing } from './BadgeRing'
-import { collapsedStatusLabel, markerBadges } from './markerBadges'
-import { passagePresentation } from './maplabPresentation'
+import { collapsedStatusLabel, fixtureMarkerBadges } from './markerBadges'
+import { fixturePresentation } from './maplabPresentation'
 import {
-  effectivePassageState,
+  defaultFixtureState,
+  effectiveFixtureState,
   type MapPortal,
-  type PassageSessionState,
+  type SessionFixtureState,
 } from '../../../model/maplabModel'
 import { onSquareMarkerGeometry, MarkerHitArea, MarkerGlyph } from '../../../map/markerShape'
 
@@ -15,9 +16,9 @@ interface PortalMarkerProps {
   portal: MapPortal
   cellSize: number
   selected?: boolean
-  /** Live session state (locked/trapDisarmed) — the viewer merges this over the authored flags;
-   * the editor omits it and gets the authored state as-is. */
-  session?: PassageSessionState
+  /** Live session state — the viewer merges this over the authored state; the editor omits it
+   * and gets the authored state as-is. */
+  session?: SessionFixtureState
   /** Fractional-cell nudge (from `gridMarkerOffset`) when this portal shares its cell with other
    * markers (stairs/other portals/props). */
   offset?: { dx: number; dy: number }
@@ -51,13 +52,12 @@ export function PortalMarker({
 }: PortalMarkerProps) {
   const { cx, cy, radius, iconSize } = onSquareMarkerGeometry(portal.cell, cellSize, { offset, grouped })
 
-  const effective = effectivePassageState(portal, session)
-  const presentation = passagePresentation(effective)
+  const effective = effectiveFixtureState(portal.state ?? defaultFixtureState(), session)
+  const presentation = fixturePresentation(effective)
   const isGateway = portal.to?.dungeon_id !== undefined
   const Icon = isGateway ? GatewayPortalIcon : PortalIcon
-  // Keep the authored trap badge after disarming so the confirmation badge can communicate both facts.
-  const badges = markerBadges({ ...portal, locked: effective.locked }, effective.trapDisarmed)
-  const dasharray = effective.hidden ? '4 3' : undefined
+  const badges = fixtureMarkerBadges(portal, session)
+  const dasharray = presentation.state === 'concealed' ? '4 3' : undefined
   const label = `${portal.title ?? `Portal ${portal.portal_id}`} — ${collapsedStatusLabel(badges, presentation.label)}`
 
   return (

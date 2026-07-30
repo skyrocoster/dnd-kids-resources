@@ -28,13 +28,13 @@ import { StairMarker } from './StairMarker'
 import { DoorBadgeLayer, DoorMarker } from './DoorMarker'
 import { InspectorPanel, type KnowledgeControls, type SessionControls } from './InspectorPanel'
 import { RoomDetailsPanel } from './RoomDetailsPanel'
+import * as sessionActions from './mapLabSessionActions'
 import { useActiveRoom } from './useActiveRoom'
 import { ViewerRoomRail } from './ViewerRoomRail'
 import {
   absoluteCells,
   layoutBounds,
   roomLabelAnchor,
-  defaultPassageSession,
   doorsOnFloor,
   doorWallSegment,
   floorsInLayout,
@@ -54,8 +54,9 @@ import {
   type MapDoor,
   type MapLayout,
   type MapPortal,
+  type MapProp,
   type MapStair,
-  type PassageSessionState,
+  type SessionFixtureState,
 } from '../../../model/maplabModel'
 
 const CELL_SIZE = 64
@@ -278,6 +279,7 @@ export function MapLabPage() {
     setStairSessions,
     portalSessions,
     setPortalSessions,
+    propSessions,
     partyRoomId,
     setPartyRoomId,
     resetSessions,
@@ -461,19 +463,19 @@ export function MapLabPage() {
     )
   }
 
-  function doorSession(door: MapDoor): PassageSessionState {
-    return doorSessions[door.door_id] ?? defaultPassageSession(door)
+    function doorSession(door: MapDoor): SessionFixtureState | undefined {
+    return doorSessions[door.door_id]
   }
 
-  function stairSession(stair: MapStair): PassageSessionState {
-    return stairSessions[stair.stair_id] ?? defaultPassageSession(stair)
+  function stairSession(stair: MapStair): SessionFixtureState | undefined {
+    return stairSessions[stair.stair_id]
   }
 
   function toggleDoorOpen(door: MapDoor) {
     clearViewerStatus()
     setDoorSessions((current) => ({
       ...current,
-      [door.door_id]: { ...doorSession(door), isOpen: !doorSession(door).isOpen },
+      [door.door_id]: sessionActions.toggleDoorOpen(current, door),
     }))
   }
 
@@ -481,7 +483,7 @@ export function MapLabPage() {
     clearViewerStatus()
     setDoorSessions((current) => ({
       ...current,
-      [door.door_id]: { ...doorSession(door), isLocked: !doorSession(door).isLocked },
+      [door.door_id]: sessionActions.toggleDoorLocked(current, door),
     }))
   }
 
@@ -489,7 +491,7 @@ export function MapLabPage() {
     clearViewerStatus()
     setDoorSessions((current) => ({
       ...current,
-      [door.door_id]: { ...doorSession(door), trapDisarmed: true },
+      [door.door_id]: sessionActions.disarmDoorTrap(current, door),
     }))
   }
 
@@ -497,7 +499,7 @@ export function MapLabPage() {
     clearViewerStatus()
     setStairSessions((current) => ({
       ...current,
-      [stair.stair_id]: { ...stairSession(stair), isLocked: !stairSession(stair).isLocked },
+      [stair.stair_id]: sessionActions.toggleStairLocked(current, stair),
     }))
   }
 
@@ -505,19 +507,23 @@ export function MapLabPage() {
     clearViewerStatus()
     setStairSessions((current) => ({
       ...current,
-      [stair.stair_id]: { ...stairSession(stair), trapDisarmed: true },
+      [stair.stair_id]: sessionActions.disarmStairTrap(current, stair),
     }))
   }
 
-  function portalSession(portal: MapPortal): PassageSessionState {
-    return portalSessions[portal.portal_id] ?? defaultPassageSession(portal)
+  function portalSession(portal: MapPortal): SessionFixtureState | undefined {
+    return portalSessions[portal.portal_id]
+  }
+
+  function propSession(prop: MapProp): SessionFixtureState | undefined {
+    return propSessions[prop.prop_id]
   }
 
   function togglePortalLocked(portal: MapPortal) {
     clearViewerStatus()
     setPortalSessions((current) => ({
       ...current,
-      [portal.portal_id]: { ...portalSession(portal), isLocked: !portalSession(portal).isLocked },
+      [portal.portal_id]: sessionActions.togglePortalLocked(current, portal),
     }))
   }
 
@@ -525,7 +531,7 @@ export function MapLabPage() {
     clearViewerStatus()
     setPortalSessions((current) => ({
       ...current,
-      [portal.portal_id]: { ...portalSession(portal), trapDisarmed: true },
+      [portal.portal_id]: sessionActions.disarmPortalTrap(current, portal),
     }))
   }
 
@@ -621,7 +627,7 @@ export function MapLabPage() {
   } else if (activeRef?.kind === 'prop') {
     const prop = layout.props.find((p) => p.prop_id === activeRef.id)
     if (prop) {
-      activeInspectable = { kind: 'prop', prop }
+      activeInspectable = { kind: 'prop', prop, session: propSession(prop) }
       activeKnowledge = knowledgeControls('props', prop.prop_id, prop)
     }
   } else if (activeRef?.kind === 'portal') {
@@ -650,9 +656,10 @@ export function MapLabPage() {
         })
 
       const previewSessionMap = {
-        doors: Object.fromEntries(Object.entries(doorSessions)) as Record<string, PassageSessionState>,
-        stairs: Object.fromEntries(Object.entries(stairSessions)) as Record<string, PassageSessionState>,
-        portals: Object.fromEntries(Object.entries(portalSessions)) as Record<string, PassageSessionState>,
+        doors: Object.fromEntries(Object.entries(doorSessions)) as Record<string, SessionFixtureState>,
+        stairs: Object.fromEntries(Object.entries(stairSessions)) as Record<string, SessionFixtureState>,
+        portals: Object.fromEntries(Object.entries(portalSessions)) as Record<string, SessionFixtureState>,
+        props: Object.fromEntries(Object.entries(propSessions)) as Record<string, SessionFixtureState>,
       }
 
       const kidLayout = playerViewTransform(layout, knowledge, previewSessionMap)
@@ -1072,7 +1079,6 @@ export function MapLabPage() {
                 cell={cell}
                 activeZ={activeZ}
                 session={session}
-                trapDisarmed={stair.trapped && session.trapDisarmed}
                 offset={{ dx, dy }}
                 grouped={grouped}
                 simplified={simplified}
@@ -1121,6 +1127,7 @@ export function MapLabPage() {
                 key={prop.prop_id}
                 prop={prop}
                 cellSize={CELL_SIZE}
+                session={propSession(prop)}
                 offset={propOffset}
                 grouped={propOffset?.grouped}
                 simplified={simplified}

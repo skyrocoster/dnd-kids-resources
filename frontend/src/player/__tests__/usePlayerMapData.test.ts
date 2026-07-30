@@ -82,6 +82,7 @@ describe('usePlayerMapData', () => {
     mockedGetDungeonLayout
       .mockResolvedValueOnce(layoutResponse('School'))
       .mockResolvedValueOnce(layoutResponse('Annex'))
+    mockedGetDungeonSessionState.mockResolvedValue({ data: {} as unknown as Record<string, unknown> })
 
     const { result } = renderHook(() => usePlayerMapData())
     await act(async () => {})
@@ -101,6 +102,7 @@ describe('usePlayerMapData', () => {
     mockedGetDungeonLayout
       .mockResolvedValueOnce(layoutResponse('Before'))
       .mockResolvedValueOnce(layoutResponse('After'))
+    mockedGetDungeonSessionState.mockResolvedValue({ data: {} as unknown as Record<string, unknown> })
 
     const { result } = renderHook(() => usePlayerMapData())
     await act(async () => {})
@@ -238,6 +240,7 @@ describe('usePlayerMapData', () => {
     mockedGetDungeonLayout
       .mockResolvedValueOnce(layoutResponse('School'))
       .mockResolvedValueOnce(layoutResponse('Annex'))
+    mockedGetDungeonSessionState.mockResolvedValue({ data: {} as unknown as Record<string, unknown> })
 
     const { result } = renderHook(() => usePlayerMapData())
     await act(async () => {})
@@ -301,11 +304,17 @@ describe('usePlayerMapData', () => {
     )
   })
 
-  it('forwards grouped session maps to the curtain', async () => {
+  it('forwards grouped session maps including props to the curtain', async () => {
     mockedGetAtTheTable.mockResolvedValue({ dungeon_id: 7 })
     mockedGetDungeonLayout.mockResolvedValue(layoutResponse('School'))
     mockedGetDungeonSessionState.mockResolvedValue({
-      data: { doors: { '5': { isOpen: true } }, stairs: { '3': { isOpen: true } }, portals: { '1': { isOpen: true } }, partyRoomId: 42 } as unknown as Record<string, unknown>,
+      data: {
+        doors: { '5': { open: true }, '6': { open: false } },
+        stairs: { '3': { open: true } },
+        props: { '9': { open: true } },
+        portals: { '1': { open: true } },
+        partyRoomId: 42,
+      } as unknown as Record<string, unknown>,
     })
 
     const { result } = renderHook(() => usePlayerMapData())
@@ -315,9 +324,10 @@ describe('usePlayerMapData', () => {
     expect(result.current.partyRoomId).toBe(42)
     const sessionsArg = mockedPlayerViewTransform.mock.calls[0][2]
     expect(sessionsArg).toEqual({
-      doors: { '5': { isOpen: true } },
-      stairs: { '3': { isOpen: true } },
-      portals: { '1': { isOpen: true } },
+      doors: { '5': { open: true }, '6': { open: false } },
+      stairs: { '3': { open: true } },
+      props: { '9': { open: true } },
+      portals: { '1': { open: true } },
     })
   })
 
@@ -345,5 +355,47 @@ describe('usePlayerMapData', () => {
     expect(result.current.status).toBe('ready')
     expect(result.current.layout).toBe(firstFrame)
     expect(result.current.error).toBeNull()
+  })
+
+  it('survives a later session failure after a settled grouped-session frame', async () => {
+    vi.useFakeTimers()
+    mockedGetAtTheTable
+      .mockResolvedValueOnce({ dungeon_id: 7 })
+      .mockResolvedValueOnce({ dungeon_id: 7 })
+    mockedGetDungeonLayout
+      .mockResolvedValueOnce(layoutResponse('School'))
+      .mockResolvedValueOnce(layoutResponse('School'))
+    mockedGetDungeonSessionState
+      .mockResolvedValueOnce({
+        data: {
+          doors: { '5': { open: true }, '6': { open: false } },
+          stairs: { '3': { open: true } },
+          props: { '9': { open: true } },
+          portals: { '1': { open: true } },
+          partyRoomId: 42,
+        } as unknown as Record<string, unknown>,
+      })
+      .mockRejectedValueOnce(new Error('session offline'))
+
+    const { result } = renderHook(() => usePlayerMapData())
+    await act(async () => {})
+    expect(result.current.status).toBe('ready')
+    expect(result.current.openDoorIds).toEqual(new Set([5]))
+    expect(result.current.partyRoomId).toBe(42)
+    const sessionsArg = mockedPlayerViewTransform.mock.calls[0][2]
+    expect(sessionsArg).toEqual({
+      doors: { '5': { open: true }, '6': { open: false } },
+      stairs: { '3': { open: true } },
+      props: { '9': { open: true } },
+      portals: { '1': { open: true } },
+    })
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(PLAYER_MAP_POLL_INTERVAL_MS)
+    })
+
+    expect(result.current.status).toBe('ready')
+    expect(result.current.openDoorIds).toEqual(new Set([5]))
+    expect(result.current.partyRoomId).toBe(42)
   })
 })

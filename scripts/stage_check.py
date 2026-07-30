@@ -26,12 +26,15 @@ import argparse
 import re
 import subprocess
 import sys
+import tempfile
 import time
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 FRONTEND = REPO_ROOT / "frontend"
+LOG_DIR = REPO_ROOT / ".stage-check"
 
 # Tool output carries ✓/× freely; a Windows console defaults to cp1252 and would otherwise
 # crash the summary *after* the checks have all run, which is the worst possible moment.
@@ -69,6 +72,7 @@ PRIMARY_PATTERNS = {
 }
 MAX_SIGNAL_LINES = 4
 MAX_FAILURE_TAIL = 25
+HEARTBEAT_SECONDS = 60
 ANSI_RE = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
 
 
@@ -85,6 +89,7 @@ class Check:
     output: str = ""
     seconds: float = 0.0
     signals: list[str] = field(default_factory=list)
+    log_path: Path | None = None
 
 
 def _checks() -> list[Check]:
@@ -93,7 +98,7 @@ def _checks() -> list[Check]:
         Check(
             key="backend",
             label="pytest (backend)",
-            command=[python, "-m", "pytest"],
+            command=[python, "-m", "pytest", "-vv"],
             cwd=REPO_ROOT,
             telemetry="pytest",
         ),
@@ -136,6 +141,28 @@ def _clean(line: str) -> str:
     return " ".join(ANSI_RE.sub("", line).split())
 
 
+def _last_output_line(*chunks: str | bytes | None) -> str:
+    """Return one bounded clue from output captured before a heartbeat timeout."""
+    lines: list[str] = []
+    for chunk in chunks:
+        if isinstance(chunk, bytes):
+            chunk = chunk.decode("utf-8", errors="replace")
+        if chunk:
+            lines.extend(cleaned for line in chunk.splitlines() if (cleaned := _clean(line)))
+    return lines[-1][-200:] if lines else ""
+
+
+def _log_tail(path: Path, max_bytes: int = 8192) -> str:
+    """Read enough of a live log to identify the currently running test."""
+    try:
+        with path.open("rb") as log:
+            log.seek(0, 2)
+            log.seek(max(0, log.tell() - max_bytes))
+            return _last_output_line(log.read())
+    except OSError:
+        return ""
+
+
 def _signal_lines(key: str, output: str) -> list[str]:
     patterns = [re.compile(p, re.MULTILINE) for p in SIGNAL_PATTERNS.get(key, ())]
     seen: list[str] = []
@@ -162,30 +189,59 @@ def _primary(check: Check) -> str:
 
 def run_check(check: Check) -> Check:
     started = time.time()
+    LOG_DIR.mkdir(exist_ok=True)
+    log_file = tempfile.NamedTemporaryFile(
+        mode="w+",
+        encoding="utf-8",
+        errors="replace",
+        prefix=f"stage-check-{check.key}-",
+        suffix=".log",
+        dir=LOG_DIR,
+        delete=False,
+    )
+    check.log_path = Path(log_file.name)
+    print(f"RUN   {check.label} (log: {check.log_path})", file=sys.stderr, flush=True)
     try:
-        completed = subprocess.run(
+        process = subprocess.Popen(
             check.command,
             cwd=check.cwd,
             shell=check.shell,
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
+            stdout=log_file,
+            stderr=subprocess.STDOUT,
         )
+        while True:
+            try:
+                process.wait(timeout=HEARTBEAT_SECONDS)
+                break
+            except subprocess.TimeoutExpired:
+                elapsed = time.time() - started
+                active = _log_tail(check.log_path)
+                detail = f"; last: {active}" if active else ""
+                print(
+                    f"WAIT  {check.label} ({elapsed:.0f}s, still running{detail}; "
+                    f"log: {check.log_path})",
+                    file=sys.stderr,
+                    flush=True,
+                )
     except OSError as exc:
+        log_file.close()
         check.passed = False
         check.output = str(exc)
         check.summary = f"could not run ({exc})"
         check.seconds = time.time() - started
         return check
 
+    log_file.close()
     check.seconds = time.time() - started
-    check.output = (completed.stdout or "") + "\n" + (completed.stderr or "")
-    check.passed = completed.returncode == 0
+    check.output = check.log_path.read_text(encoding="utf-8", errors="replace")
+    check.passed = process.returncode == 0
     check.signals = _signal_lines(check.key, check.output)
     check.summary = "; ".join(check.signals) if check.signals else (
-        "pass" if check.passed else f"exit {completed.returncode}"
+        "pass" if check.passed else f"exit {process.returncode}"
     )
+    if check.passed:
+        check.log_path.unlink(missing_ok=True)
+        check.log_path = None
     return check
 
 
@@ -197,6 +253,12 @@ def telemetry_line(checks: list[Check]) -> str:
         detail = _primary(check)
         parts.append(f"{check.telemetry}: {verdict} ({detail})" if detail else f"{check.telemetry}: {verdict}")
     return "- stage checks: " + " / ".join(parts)
+
+
+def run_checks(checks: list[Check]) -> list[Check]:
+    """Run independent gates concurrently while retaining their declared order."""
+    with ThreadPoolExecutor(max_workers=len(checks)) as executor:
+        return list(executor.map(run_check, checks))
 
 
 def main() -> int:
@@ -227,7 +289,7 @@ def main() -> int:
             return 2
         checks = [check for check in checks if check.key in wanted]
 
-    results = [run_check(check) for check in checks]
+    results = run_checks(checks)
     failed = [check for check in results if not check.passed]
 
     if not args.telemetry_line:
@@ -244,6 +306,8 @@ def main() -> int:
         for check in failed:
             print()
             print(f"--- {check.label} ---")
+            if check.log_path:
+                print(f"Full log: {check.log_path}")
             lines = check.output.strip().splitlines()
             tail = lines if args.full_output else lines[-MAX_FAILURE_TAIL:]
             print("\n".join(tail))

@@ -53,6 +53,7 @@ export interface MapDoor extends PassageFlags {
    * stairwell's aligned coordinates), the case this field was added to fix. */
   z?: number
   title?: string
+  state?: FixtureState
 }
 
 /** Stair = crosses z-axis with endpoint cells on two planes. Carries the same `PassageFlags` as a
@@ -62,6 +63,7 @@ export interface MapStair extends PassageFlags {
   from: { z: number; cell: MapCell }
   to: { z: number; cell: MapCell }
   title?: string
+  state?: FixtureState
 }
 
 /** Floor = plane identifier */
@@ -95,6 +97,7 @@ export interface MapProp extends PassageFlags {
   encounter_id?: number | null
   /** (D1+) NPC marker: links to an npc id. */
   npc_id?: number | null
+  state?: FixtureState
 }
 
 /** Portal = a freestanding on-square door linking to a non-adjacent destination with floor + exact-cell
@@ -109,6 +112,7 @@ export interface MapPortal extends PassageFlags {
    * dungeon_id and omits z/cell (this document has no access to that dungeon's layout, so it
    * can't name an exact floor+cell target there). */
   to?: { z?: number; cell?: MapCell; dungeon_id?: number }
+  state?: FixtureState
 }
 
 /** Feature = outdoor region drawn on the outside grid (river, trees, etc.).
@@ -617,14 +621,22 @@ export interface EffectivePassageState extends PassageFlags {
  * session (the reset baseline) falls back to the authored `locked`/`trapped` as-is, door closed
  * (doors render and start closed in the editor and viewer unless explicitly opened), trap armed.
  * A session overrides `locked`/`isOpen`/`trapDisarmed` independently of one another — a
- * locked+trapped door can be unlocked while the trap stays armed, or vice versa. */
+ * locked+trapped door can be unlocked while the trap stays armed, or vice versa.
+ * Accepts both legacy `PassageSessionState` and newer `SessionFixtureState`. */
 export function effectivePassageState(
   flags: PassageFlags,
-  session?: PassageSessionState,
+  session?: PassageSessionState | SessionFixtureState,
 ): EffectivePassageState {
-  const sessionOpen = session?.isOpen ?? false
-  const locked = session?.isLocked ?? flags.locked
-  const trapDisarmed = session?.trapDisarmed ?? false
+  const isLegacy = session != null && 'isOpen' in session
+  const sessionOpen = isLegacy
+    ? (session as PassageSessionState).isOpen
+    : (session as SessionFixtureState | undefined)?.open ?? false
+  const locked = isLegacy
+    ? (session as PassageSessionState).isLocked
+    : (session as SessionFixtureState | undefined)?.obstacles?.lock?.armed ?? flags.locked
+  const trapDisarmed = isLegacy
+    ? (session as PassageSessionState).trapDisarmed
+    : (session as SessionFixtureState | undefined)?.obstacles?.trap?.armed === false
   return {
     ...flags,
     locked,
@@ -642,6 +654,103 @@ export function defaultPassageSession(flags: PassageFlags): PassageSessionState 
 }
 
 // ============================================================================
+// Fixture-state model (replaces PassageSessionState for session overrides)
+// ============================================================================
+
+/** Full authored fixture state — the baseline that session overrides merge onto.
+ * Converted from PassageFlags on load; persisted as part of the layout. */
+export interface FixtureState {
+  open: boolean
+  obstacles: {
+    concealment: { armed: boolean }
+    lock: { armed: boolean; shown: boolean }
+    trap: { armed: boolean; shown: boolean }
+  }
+}
+
+/** Session-only partial of FixtureState. Every leaf may be absent (fall back to authored),
+ * explicitly false (override authored), or present with a value. DCs, if present in a
+ * malformed session record, are ignored and pruned on persistence. */
+export interface SessionFixtureState {
+  open?: boolean
+  obstacles?: {
+    concealment?: {
+      armed?: boolean
+    }
+    lock?: {
+      armed?: boolean
+      shown?: boolean
+    }
+    trap?: {
+      armed?: boolean
+      shown?: boolean
+    }
+  }
+}
+
+/** Top-level persisted session override layer, organizing fixture-state overrides by
+ * kind and ID. Absence means "fall back to authored"; explicit false or presence means
+ * "runtime override". partyRoomId tracks the party's current location. */
+export interface MapSessionState {
+  doors?: Record<string, SessionFixtureState>
+  stairs?: Record<string, SessionFixtureState>
+  props?: Record<string, SessionFixtureState>
+  portals?: Record<string, SessionFixtureState>
+  partyRoomId?: number | null
+}
+
+/** Authored-default FixtureState values. Concealment armed false; lock armed false and
+ * shown false; trap armed false and shown false; door open false. DCs remain absent. */
+export function defaultFixtureState(): FixtureState {
+  return {
+    open: false,
+    obstacles: {
+      concealment: { armed: false },
+      lock: { armed: false, shown: false },
+      trap: { armed: false, shown: false },
+    },
+  }
+}
+
+/** Convert a PassageFlags-typed fixture to its FixtureState. Note the reversal:
+ * `locked: true` in PassageFlags means the lock obstacle is armed; `trapped: true`
+ * means the trap obstacle is armed. */
+export function fixtureStateFromFlags(flags: PassageFlags): FixtureState {
+  return {
+    open: false,
+    obstacles: {
+      concealment: { armed: flags.hidden },
+      lock: { armed: flags.locked, shown: flags.locked },
+      trap: { armed: flags.trapped, shown: flags.trapped },
+    },
+  }
+}
+
+/** Merge authored FixtureState with an optional session override. A session value that is
+ * present (even `false`) overrides the authored value; absent leaves the authored value. */
+export function effectiveFixtureState(
+  authored: FixtureState,
+  session?: SessionFixtureState,
+): FixtureState {
+  return {
+    open: session?.open ?? authored.open,
+    obstacles: {
+      concealment: {
+        armed: session?.obstacles?.concealment?.armed ?? authored.obstacles.concealment.armed,
+      },
+      lock: {
+        armed: session?.obstacles?.lock?.armed ?? authored.obstacles.lock.armed,
+        shown: session?.obstacles?.lock?.shown ?? authored.obstacles.lock.shown,
+      },
+      trap: {
+        armed: session?.obstacles?.trap?.armed ?? authored.obstacles.trap.armed,
+        shown: session?.obstacles?.trap?.shown ?? authored.obstacles.trap.shown,
+      },
+    },
+  }
+}
+
+// ============================================================================
 // Generic inspector (Stage 3)
 // ============================================================================
 
@@ -649,10 +758,10 @@ export function defaultPassageSession(flags: PassageFlags): PassageSessionState 
  * Each carries enough data to render a descriptor panel. */
 export type Inspectable =
   | { kind: 'room'; room: MapRoom }
-  | { kind: 'door'; door: MapDoor; session?: PassageSessionState }
-  | { kind: 'stair'; stair: MapStair; session?: PassageSessionState }
-  | { kind: 'prop'; prop: MapProp }
-  | { kind: 'portal'; portal: MapPortal; session?: PassageSessionState }
+  | { kind: 'door'; door: MapDoor; session?: SessionFixtureState }
+  | { kind: 'stair'; stair: MapStair; session?: SessionFixtureState }
+  | { kind: 'prop'; prop: MapProp; session?: SessionFixtureState }
+  | { kind: 'portal'; portal: MapPortal; session?: SessionFixtureState }
   | { kind: 'feature'; feature: MapFeature }
 
 

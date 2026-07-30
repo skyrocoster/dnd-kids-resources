@@ -104,6 +104,67 @@ def test_failing_check_is_marked_in_the_telemetry_line():
     assert "backend: FAIL" in stage_check.telemetry_line([check])
 
 
+def test_long_running_check_prints_a_bounded_heartbeat(monkeypatch, capsys, tmp_path):
+    class Process:
+        returncode = 0
+
+        def __init__(self):
+            self.calls = 0
+
+        def wait(self, timeout):
+            assert timeout == stage_check.HEARTBEAT_SECONDS
+            self.calls += 1
+            if self.calls == 1:
+                raise stage_check.subprocess.TimeoutExpired("x", timeout)
+            return 0
+
+    log_path = tmp_path / "stage-check-backend.log"
+
+    def popen(*args, **kwargs):
+        kwargs["stdout"].write("backend/tests/test_slow.py::test_waits_forever ")
+        kwargs["stdout"].flush()
+        return Process()
+
+    monkeypatch.setattr(
+        stage_check.tempfile,
+        "NamedTemporaryFile",
+        lambda **kwargs: log_path.open("w+", encoding="utf-8"),
+    )
+    monkeypatch.setattr(stage_check.subprocess, "Popen", popen)
+    monkeypatch.setattr(stage_check.time, "time", iter([0, 60, 61]).__next__)
+
+    result = stage_check.run_check(_check("backend", ""))
+
+    assert result.passed
+    assert capsys.readouterr().err.splitlines() == [
+        f"RUN   backend (log: {log_path})",
+        "WAIT  backend (60s, still running; last: "
+        f"backend/tests/test_slow.py::test_waits_forever; log: {log_path})",
+    ]
+    assert not log_path.exists()
+
+
+def test_backend_check_requests_test_node_progress():
+    backend = next(check for check in stage_check._checks() if check.key == "backend")
+    assert backend.command[-1] == "-vv"
+
+
+def test_stage_checks_run_concurrently_and_keep_declared_order(monkeypatch):
+    checks = [_check("backend", ""), _check("frontend", "")]
+    started = []
+
+    def run(check):
+        started.append(check.key)
+        while len(started) < len(checks):
+            pass
+        return check
+
+    monkeypatch.setattr(stage_check, "run_check", run)
+
+    assert [check.key for check in stage_check.run_checks(checks)] == ["backend", "frontend"]
+    assert set(started) == {"backend", "frontend"}
+
+
 def test_npm_banner_is_not_read_as_a_test_count():
     """`frontend@0.0.0 test:check` parsed as "0 test" before the lookbehind was added."""
     counts = order_check.COUNT_RE.findall(FRONTEND_OUTPUT)

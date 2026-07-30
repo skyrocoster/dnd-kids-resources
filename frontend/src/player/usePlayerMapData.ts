@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { ApiError, getAtTheTable, getDungeonKnowledge, getDungeonLayout, getDungeonSessionState } from '../api/client'
 import type { MapKnowledge } from '../api/types'
-import { normalizeLayout, type MapLayout, type PassageSessionState } from '../model/maplabModel'
+import { normalizeLayout, type MapLayout, type SessionFixtureState } from '../model/maplabModel'
 import { playerOpenDoorIds, playerViewTransform, type KidMapLayout } from './curtain'
 
 export const PLAYER_MAP_POLL_INTERVAL_MS = 5_000
@@ -77,26 +77,35 @@ export function usePlayerMapData(): PlayerMapData {
 
         // A dungeon with no session row yet (404) simply has no open doors — that must not fail the
         // whole frame, so this one call swallows its own error rather than joining the catch below.
-        // Any failure degrades to default (closed, unlocked, armed) state rather than freezing the
-        // frame: a persistently unavailable session endpoint must not stop layout updates reaching
-        // the tablet.
+        // On the first frame, any failure degrades to default (closed, unlocked, armed) state so
+        // the tablet layout still reaches the player. On a later frame, a transient session-read
+        // failure throws to the outer catch which retains the last confirmed frame.
         const session = await getDungeonSessionState(pointer.dungeon_id, request.signal)
           .then((s) => {
             const data = s.data as {
-              doors?: Record<string, PassageSessionState>
-              stairs?: Record<string, PassageSessionState>
-              portals?: Record<string, PassageSessionState>
+              doors?: Record<string, SessionFixtureState>
+              stairs?: Record<string, SessionFixtureState>
+              props?: Record<string, SessionFixtureState>
+              portals?: Record<string, SessionFixtureState>
               partyRoomId?: number | null
             }
-            return { doors: data.doors, stairs: data.stairs, portals: data.portals, partyRoomId: data.partyRoomId ?? null }
+            return { doors: data.doors, stairs: data.stairs, props: data.props, portals: data.portals, partyRoomId: data.partyRoomId ?? null }
           })
-          .catch(() => ({ doors: undefined, stairs: undefined, portals: undefined, partyRoomId: null }))
+          .catch((err: unknown) => {
+            if (err instanceof ApiError && err.status === 404) {
+              return { doors: undefined, stairs: undefined, props: undefined, portals: undefined, partyRoomId: null }
+            }
+            if (!lastGoodFrame.current) {
+              return { doors: undefined, stairs: undefined, props: undefined, portals: undefined, partyRoomId: null }
+            }
+            throw err
+          })
         if (cancelled || request.signal.aborted) return
 
         const layout = playerViewTransform(
           normalizeLayout(blob.data as unknown as MapLayout),
           knowledge,
-          { doors: session.doors, stairs: session.stairs, portals: session.portals },
+          { doors: session.doors, stairs: session.stairs, props: session.props, portals: session.portals },
         )
         const frame: PlayerMapData = {
           dungeonId: pointer.dungeon_id,

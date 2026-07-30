@@ -1,6 +1,6 @@
 import { CoinsIcon, MultipleStatusesIcon, TrapDisarmedIcon, type LucideIcon } from '../../../components/icons'
-import { PASSAGE_STATE_TOKENS, type MapDoor, type MapPortal, type MapProp, type MapStair } from '../../../model/maplabModel'
-import { passageStateChips } from './maplabPresentation'
+import { PASSAGE_STATE_TOKENS, defaultFixtureState, effectiveFixtureState, type MapDoor, type MapPortal, type MapProp, type MapStair, type SessionFixtureState } from '../../../model/maplabModel'
+import { fixtureStateChips, passageStateChips } from './maplabPresentation'
 
 /** A single badge descriptor — one flag → one badge, fed into either a radial ring (on-square
  * markers) or a linear layout (door leaf). The `key` is stable across renders so badges keep
@@ -99,6 +99,46 @@ export function markerBadges(source: BadgeSource, trapDisarmed = false): MarkerB
   }
   if (trapDisarmed) {
     badges.push({ key: 'trap-disarmed', icon: TrapDisarmedIcon, token: '--md-tertiary', onToken: '--md-on-tertiary', label: 'Trap disarmed' })
+  }
+
+  return badges
+}
+
+/** Token CSS variable lookup for fixture state badge backgrounds. */
+const FIXTURE_BADGE_TOKENS: Record<string, string> = {
+  concealed: '--md-passage-hidden',
+  trapped: '--md-error',
+  locked: '--md-passage-locked',
+}
+
+/** Badge composition for fixture-state DM markers. Consumes effective nested state
+ *  (authored + session) and emits only active obstacle and loot badges. Never emits
+ *  trap-disarmed or unlocked badges. Active-obstacle order matches fixtureStateChips:
+ *  concealed → trapped → locked, then Loot when present. */
+export function fixtureMarkerBadges(
+  fixture: BadgeSource,
+  session?: SessionFixtureState,
+): MarkerBadge[] {
+  const effective = effectiveFixtureState(
+    fixture.state ?? defaultFixtureState(),
+    session,
+  )
+  const badges: MarkerBadge[] = fixtureStateChips(effective).map((chip) => ({
+    key: chip.state,
+    icon: chip.icon,
+    token: FIXTURE_BADGE_TOKENS[chip.state],
+    onToken: `--md-on-${FIXTURE_BADGE_TOKENS[chip.state].slice('--md-'.length)}`,
+    label: chip.label,
+  }))
+
+  if ('loot' in fixture && fixture.loot) {
+    badges.push({
+      key: 'loot',
+      icon: CoinsIcon,
+      token: '--md-loot',
+      onToken: '--md-on-loot',
+      label: 'Loot assigned',
+    })
   }
 
   return badges

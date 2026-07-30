@@ -2,7 +2,7 @@ import { render } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { PortalMarker } from '../PortalMarker'
 import { StairMarker } from '../StairMarker'
-import type { MapPortal, MapStair } from '../../../../model/maplabModel'
+import type { FixtureState, MapPortal, MapStair, SessionFixtureState } from '../../../../model/maplabModel'
 
 const stair = (overrides: Partial<MapStair> = {}): MapStair => ({
   stair_id: 1,
@@ -25,11 +25,26 @@ const portal = (overrides: Partial<MapPortal> = {}): MapPortal => ({
   ...overrides,
 })
 
+const lockedFixture: FixtureState = {
+  open: false,
+  obstacles: { concealment: { armed: false }, lock: { armed: true, shown: false }, trap: { armed: false, shown: false } },
+}
+
+const lockedTrappedFixture: FixtureState = {
+  open: false,
+  obstacles: { concealment: { armed: false }, lock: { armed: true, shown: false }, trap: { armed: true, shown: false } },
+}
+
+const concealedLockedFixture: FixtureState = {
+  open: false,
+  obstacles: { concealment: { armed: true }, lock: { armed: true, shown: true }, trap: { armed: false, shown: false } },
+}
+
 // ─── M2 — Bounded On-Square Markers ─────────────────────────────────────────
 describe('StairMarker bounded badge (M2)', () => {
   it('renders one disc for a single flag, Layers for multiple flags', () => {
-    const { container: single } = render(<svg><StairMarker stair={stair({ locked: true })} cellSize={40} cell={[1, 1]} activeZ={1} /></svg>)
-    const { container: multi } = render(<svg><StairMarker stair={stair({ locked: true, trapped: true })} cellSize={40} cell={[1, 1]} activeZ={1} /></svg>)
+    const { container: single } = render(<svg><StairMarker stair={stair({ state: lockedFixture })} cellSize={40} cell={[1, 1]} activeZ={1} /></svg>)
+    const { container: multi } = render(<svg><StairMarker stair={stair({ state: lockedTrappedFixture })} cellSize={40} cell={[1, 1]} activeZ={1} /></svg>)
 
     expect(single.querySelectorAll('.maplab-badge')).toHaveLength(1)
     expect(single.querySelector('.maplab-badge')).toHaveAttribute('data-badge', 'locked')
@@ -44,25 +59,36 @@ describe('StairMarker bounded badge (M2)', () => {
 
   it('keeps identity stroke stable regardless of status', () => {
     const { container: unlocked } = render(<svg><StairMarker stair={stair()} cellSize={40} cell={[1, 1]} activeZ={1} /></svg>)
-    const { container: locked } = render(<svg><StairMarker stair={stair({ locked: true })} cellSize={40} cell={[1, 1]} activeZ={1} /></svg>)
+    const { container: locked } = render(<svg><StairMarker stair={stair({ state: lockedFixture })} cellSize={40} cell={[1, 1]} activeZ={1} /></svg>)
     expect(unlocked.querySelector('.maplab-stair-marker')).toHaveStyle({ stroke: 'var(--md-tertiary)' })
     expect(locked.querySelector('.maplab-stair-marker')).toHaveStyle({ stroke: 'var(--md-tertiary)' })
     expect(unlocked.querySelector('.maplab-stair-icon')).toHaveStyle({ color: 'var(--md-tertiary)' })
     expect(locked.querySelector('.maplab-stair-icon')).toHaveStyle({ color: 'var(--md-tertiary)' })
   })
 
-  it('keeps hidden dashed outline', () => {
-    const { container } = render(<svg><StairMarker stair={stair({ hidden: true, locked: true })} cellSize={40} cell={[1, 1]} activeZ={1} /></svg>)
+  it('keeps concealment dashed outline', () => {
+    const { container } = render(<svg><StairMarker stair={stair({ state: concealedLockedFixture })} cellSize={40} cell={[1, 1]} activeZ={1} /></svg>)
     expect(container.querySelector('.maplab-stair-marker')).toHaveAttribute('stroke-dasharray')
   })
 
-  it('names the Layers disc and narrates all flags in the ARIA label', () => {
-    const { getByRole } = render(<svg><StairMarker stair={stair({ locked: true, trapped: true })} cellSize={40} cell={[1, 1]} activeZ={1} trapDisarmed /></svg>)
-    expect(getByRole('button').getAttribute('aria-label')).toMatch(/Multiple statuses: Trapped, Locked, Trap disarmed/)
+  it('proves independent sparse overrides — session disarms trap, lock badge remains, no positive-state badge', () => {
+    const { getByRole } = render(
+      <svg>
+        <StairMarker
+          stair={stair({ state: lockedTrappedFixture })}
+          cellSize={40}
+          cell={[1, 1]}
+          activeZ={1}
+          session={{ obstacles: { trap: { armed: false } } } as SessionFixtureState}
+        />
+      </svg>,
+    )
+    // Single badge: collapsedStatusLabel emits bare label, not "Multiple statuses:"
+    expect(getByRole('button').getAttribute('aria-label')).toBe('Stair 1 \u2014 Locked')
   })
 
   it('stays within its owning cell', () => {
-    const { container } = render(<svg width={200} height={200}><StairMarker stair={stair({ locked: true })} cellSize={40} cell={[1, 1]} activeZ={1} /></svg>)
+    const { container } = render(<svg width={200} height={200}><StairMarker stair={stair({ state: lockedFixture })} cellSize={40} cell={[1, 1]} activeZ={1} /></svg>)
     const badge = container.querySelector('.maplab-badge')
     const transform = badge?.getAttribute('transform')
     expect(transform).toBe('translate(60, 60)')
@@ -71,8 +97,8 @@ describe('StairMarker bounded badge (M2)', () => {
 
 describe('PortalMarker bounded badge (M2)', () => {
   it('renders one disc for a single flag, Layers for multiple flags', () => {
-    const { container: single } = render(<svg><PortalMarker portal={portal({ locked: true })} cellSize={40} /></svg>)
-    const { container: multi } = render(<svg><PortalMarker portal={portal({ locked: true, trapped: true })} cellSize={40} /></svg>)
+    const { container: single } = render(<svg><PortalMarker portal={portal({ state: lockedFixture })} cellSize={40} /></svg>)
+    const { container: multi } = render(<svg><PortalMarker portal={portal({ state: lockedTrappedFixture })} cellSize={40} /></svg>)
 
     expect(single.querySelectorAll('.maplab-badge')).toHaveLength(1)
     expect(single.querySelector('.maplab-badge')).toHaveAttribute('data-badge', 'locked')
@@ -87,25 +113,34 @@ describe('PortalMarker bounded badge (M2)', () => {
 
   it('keeps identity stroke stable regardless of status', () => {
     const { container: unlocked } = render(<svg><PortalMarker portal={portal()} cellSize={40} /></svg>)
-    const { container: locked } = render(<svg><PortalMarker portal={portal({ locked: true })} cellSize={40} /></svg>)
+    const { container: locked } = render(<svg><PortalMarker portal={portal({ state: lockedFixture })} cellSize={40} /></svg>)
     expect(unlocked.querySelector('.maplab-portal-marker')).toHaveStyle({ stroke: 'var(--md-primary)' })
     expect(locked.querySelector('.maplab-portal-marker')).toHaveStyle({ stroke: 'var(--md-primary)' })
     expect(unlocked.querySelector('.maplab-portal-icon')).toHaveStyle({ color: 'var(--md-primary)' })
     expect(locked.querySelector('.maplab-portal-icon')).toHaveStyle({ color: 'var(--md-primary)' })
   })
 
-  it('keeps hidden dashed outline', () => {
-    const { container } = render(<svg><PortalMarker portal={portal({ hidden: true, locked: true })} cellSize={40} /></svg>)
+  it('keeps concealment dashed outline', () => {
+    const { container } = render(<svg><PortalMarker portal={portal({ state: concealedLockedFixture })} cellSize={40} /></svg>)
     expect(container.querySelector('.maplab-portal-marker')).toHaveAttribute('stroke-dasharray')
   })
 
-  it('names the Layers disc and narrates all flags in the ARIA label', () => {
-    const { getByRole } = render(<svg><PortalMarker portal={portal({ locked: true, trapped: true })} cellSize={40} session={{ isOpen: true, isLocked: true, trapDisarmed: true }} /></svg>)
-    expect(getByRole('button').getAttribute('aria-label')).toMatch(/Multiple statuses: Trapped, Locked, Trap disarmed/)
+  it('proves independent sparse overrides — session disarms trap, lock badge remains, no positive-state badge', () => {
+    const { getByRole } = render(
+      <svg>
+        <PortalMarker
+          portal={portal({ state: lockedTrappedFixture })}
+          cellSize={40}
+          session={{ obstacles: { trap: { armed: false } } } as SessionFixtureState}
+        />
+      </svg>,
+    )
+    // Single badge: collapsedStatusLabel emits bare label, not "Multiple statuses:"
+    expect(getByRole('button').getAttribute('aria-label')).toBe('Portal 1 \u2014 Locked')
   })
 
   it('stays within its owning cell', () => {
-    const { container } = render(<svg width={200} height={200}><PortalMarker portal={portal({ locked: true })} cellSize={40} /></svg>)
+    const { container } = render(<svg width={200} height={200}><PortalMarker portal={portal({ state: lockedFixture })} cellSize={40} /></svg>)
     const badge = container.querySelector('.maplab-badge')
     const transform = badge?.getAttribute('transform')
     expect(transform).toBe('translate(60, 60)')
@@ -113,23 +148,29 @@ describe('PortalMarker bounded badge (M2)', () => {
 })
 
 describe('StairMarker', () => {
-  it('renders one collapsed badge while narrating every active and disarmed status', () => {
+  it('renders one collapsed badge; session-only disarms trap so lock alone remains, no positive-state badge', () => {
     const { container, getByRole } = render(
       <svg>
-        <StairMarker stair={stair({ trapped: true, locked: true })} cellSize={40} cell={[1, 1]} activeZ={1} trapDisarmed />
+        <StairMarker
+          stair={stair({ state: lockedTrappedFixture })}
+          cellSize={40}
+          cell={[1, 1]}
+          activeZ={1}
+          session={{ obstacles: { trap: { armed: false } } } as SessionFixtureState}
+        />
       </svg>,
     )
 
     const badges = container.querySelectorAll('.maplab-badge')
     expect(badges).toHaveLength(1)
-    expect(badges[0]).toHaveAttribute('data-badge', 'multiple-statuses')
-    expect(getByRole('button', { name: 'Stair 1 — Multiple statuses: Trapped, Locked, Trap disarmed' })).toBeTruthy()
+    expect(badges[0]).toHaveAttribute('data-badge', 'locked')
+    expect(getByRole('button', { name: 'Stair 1 \u2014 Locked' })).toBeTruthy()
   })
 
   it('keeps the collapsed badge in the grouped marker sub-slot', () => {
     const { container } = render(
       <svg>
-        <StairMarker stair={stair({ locked: true })} cellSize={40} cell={[1, 1]} activeZ={1} offset={{ dx: 0.2, dy: -0.1 }} grouped />
+        <StairMarker stair={stair({ state: lockedFixture })} cellSize={40} cell={[1, 1]} activeZ={1} offset={{ dx: 0.2, dy: -0.1 }} grouped />
       </svg>,
     )
 
@@ -149,23 +190,27 @@ describe('StairMarker', () => {
 })
 
 describe('PortalMarker', () => {
-  it('renders one collapsed badge while narrating every active and disarmed status', () => {
+  it('renders one collapsed badge; session-only disarms trap so lock alone remains, no positive-state badge', () => {
     const { container, getByRole } = render(
       <svg>
-        <PortalMarker portal={portal({ trapped: true, locked: true })} cellSize={40} session={{ isOpen: true, isLocked: true, trapDisarmed: true }} />
+        <PortalMarker
+          portal={portal({ state: lockedTrappedFixture })}
+          cellSize={40}
+          session={{ obstacles: { trap: { armed: false } } } as SessionFixtureState}
+        />
       </svg>,
     )
 
     expect(container.querySelector('.maplab-badge-ring')).toBeTruthy()
     expect(container.querySelectorAll('.maplab-badge')).toHaveLength(1)
-    expect(container.querySelector('.maplab-badge')).toHaveAttribute('data-badge', 'multiple-statuses')
-    expect(getByRole('button', { name: 'Portal 1 — Multiple statuses: Trapped, Locked, Trap disarmed' })).toBeTruthy()
+    expect(container.querySelector('.maplab-badge')).toHaveAttribute('data-badge', 'locked')
+    expect(getByRole('button', { name: 'Portal 1 \u2014 Locked' })).toBeTruthy()
   })
 
   it('keeps the collapsed badge in the grouped marker sub-slot', () => {
     const { container } = render(
       <svg>
-        <PortalMarker portal={portal({ locked: true })} cellSize={40} offset={{ dx: 0.2, dy: -0.1 }} grouped />
+        <PortalMarker portal={portal({ state: lockedFixture })} cellSize={40} offset={{ dx: 0.2, dy: -0.1 }} grouped />
       </svg>,
     )
 

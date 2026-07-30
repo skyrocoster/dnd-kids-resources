@@ -16,6 +16,7 @@ import type {
   MapPortal,
   MapLayoutMeta,
   PassageSessionState,
+  SessionFixtureState,
 } from '../model/maplabModel'
 import { effectivePassageState } from '../model/maplabModel'
 
@@ -45,6 +46,7 @@ const doorVis = {
   hidden: 'whenKnown',
   locked: 'whenKnown',
   trapped: 'whenKnown',
+  state: 'never',
   breakDc: 'never',
   pickDc: 'never',
   hiddenDc: 'never',
@@ -60,6 +62,7 @@ const stairVis = {
   hidden: 'whenKnown',
   locked: 'whenKnown',
   trapped: 'whenKnown',
+  state: 'never',
   breakDc: 'never',
   pickDc: 'never',
   hiddenDc: 'never',
@@ -80,6 +83,7 @@ const propVis = {
   hidden: 'whenKnown',
   locked: 'whenKnown',
   trapped: 'whenKnown',
+  state: 'never',
   breakDc: 'never',
   pickDc: 'never',
   hiddenDc: 'never',
@@ -96,6 +100,7 @@ const portalVis = {
   hidden: 'whenKnown',
   locked: 'whenKnown',
   trapped: 'whenKnown',
+  state: 'never',
   breakDc: 'never',
   pickDc: 'never',
   hiddenDc: 'never',
@@ -116,9 +121,10 @@ const metaVis = {
 // ── Derived types ──────────────────────────────────────────────────────────
 
 export interface PassageSessionMap {
-  doors?: Record<string, PassageSessionState>
-  stairs?: Record<string, PassageSessionState>
-  portals?: Record<string, PassageSessionState>
+  doors?: Record<string, PassageSessionState | SessionFixtureState>
+  stairs?: Record<string, PassageSessionState | SessionFixtureState>
+  props?: Record<string, SessionFixtureState>
+  portals?: Record<string, PassageSessionState | SessionFixtureState>
 }
 
 type KidField<T, V extends Record<keyof T, Visibility>> = {
@@ -176,15 +182,15 @@ function pickKnown(
 
 // ── Transform ──────────────────────────────────────────────────────────────
 
-/** The session blob's own curtain. A passage's session record carries `isOpen`, `isLocked` and
- * `trapDisarmed`; only open/closed is kid-visible, so this returns the set of open door ids and
- * nothing else — locked and trapped never leave this function. */
+/** The session blob's own curtain. A passage's session record carries `open` (SessionFixtureState)
+ * or legacy `isOpen` (PassageSessionState); only open/closed is kid-visible, so this returns the
+ * set of open door ids and nothing else — locked, trapped, and concealment never leave this function. */
 export function playerOpenDoorIds(
-  doors: Record<string, { isOpen?: boolean }> | undefined,
+  doors: Record<string, { open?: boolean; isOpen?: boolean }> | undefined,
 ): Set<number> {
   const open = new Set<number>()
   for (const [id, state] of Object.entries(doors ?? {})) {
-    if (state?.isOpen) open.add(Number(id))
+    if (state?.open || state?.isOpen) open.add(Number(id))
   }
   return open
 }

@@ -1,9 +1,14 @@
 import { ItemIcon } from '../../../components/icons'
 import { BadgeRing } from './BadgeRing'
 import { PROP_KIND_ICONS } from './fixtureTypes'
-import { collapsedStatusLabel, markerBadges } from './markerBadges'
-import { passagePresentation } from './maplabPresentation'
-import { type MapProp } from '../../../model/maplabModel'
+import { collapsedStatusLabel, fixtureMarkerBadges } from './markerBadges'
+import { fixturePresentation } from './maplabPresentation'
+import {
+  defaultFixtureState,
+  effectiveFixtureState,
+  type MapProp,
+  type SessionFixtureState,
+} from '../../../model/maplabModel'
 import {
   MarkerHitArea,
   MarkerGlyph,
@@ -21,6 +26,9 @@ interface PropMarkerProps {
   prop: MapProp
   cellSize: number
   selected?: boolean
+  /** Live session state — the viewer merges this over the authored state; the editor omits it
+   * and gets the authored state as-is. */
+  session?: SessionFixtureState
   /** Whether this marker responds to pointer/keyboard — off for the read-only editor render
    * (Stage F2); Stage F3 turns it on for authoring select/click. */
   interactive?: boolean
@@ -48,6 +56,7 @@ export function PropMarker({
   prop,
   cellSize,
   selected,
+  session,
   interactive = true,
   offset,
   grouped,
@@ -63,11 +72,12 @@ export function PropMarker({
     ? wallAttachedMarkerGeometry(prop.cell, prop.side!, cellSize)
     : onSquareMarkerGeometry(prop.cell, cellSize, { offset, grouped })
 
-  const presentation = passagePresentation(prop)
+  const effective = effectiveFixtureState(prop.state ?? defaultFixtureState(), session)
+  const presentation = fixturePresentation(effective)
   const token = onWall ? presentation.token : (PROP_IDENTITY_TOKENS[prop.kind] ?? '--md-on-surface-variant')
   const Icon = PROP_KIND_ICONS[prop.kind] ?? ItemIcon
-  const badges = markerBadges(prop)
-  const dasharray = prop.hidden ? '4 3' : undefined
+  const badges = fixtureMarkerBadges(prop, session)
+  const dasharray = presentation.state === 'concealed' ? '4 3' : undefined
   const label = `${prop.title ?? prop.kind} — ${collapsedStatusLabel(badges, presentation.label)}`
 
   return (

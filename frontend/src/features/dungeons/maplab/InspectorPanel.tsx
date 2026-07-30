@@ -7,6 +7,8 @@ import { computeBundleTotal, formatGp } from '../../loot/lootTotals'
 import { inspectableDescriptor } from './maplabPresentation'
 import {
   PASSAGE_STATE_TOKENS,
+  defaultFixtureState,
+  effectiveFixtureState,
   type Inspectable,
 } from '../../../model/maplabModel'
 
@@ -63,7 +65,20 @@ export function InspectorPanel({
         ? target.stair.trapped
         : target.kind === 'portal'
           ? target.portal.trapped
-          : false
+          : target.kind === 'prop'
+            ? target.prop.trapped
+            : false
+
+  // Effective fixture state for session control button labels and states
+  const effective = (() => {
+    switch (target.kind) {
+      case 'door': return effectiveFixtureState(target.door.state ?? defaultFixtureState(), target.session)
+      case 'stair': return effectiveFixtureState(target.stair.state ?? defaultFixtureState(), target.session)
+      case 'portal': return effectiveFixtureState(target.portal.state ?? defaultFixtureState(), target.session)
+      case 'prop': return effectiveFixtureState(target.prop.state ?? defaultFixtureState(), target.session)
+      default: return undefined
+    }
+  })()
 
   // Per-fact pending/error state for knowledge toggles
   const [pendingFacts, setPendingFacts] = useState<Record<string, boolean>>({})
@@ -116,21 +131,21 @@ export function InspectorPanel({
           <div className="maplab-inspector-controls">
             {target.kind === 'door' && controls.onToggleOpen && (
               <button type="button" className="maplab-pill-button maplab-session-control-button" onClick={controls.onToggleOpen}>
-                {target.session?.isOpen ? 'Close door' : 'Open door'}
+                {target.session?.open ? 'Close door' : 'Open door'}
               </button>
             )}
             {controls.onToggleLocked && (
               <button type="button" className="maplab-pill-button maplab-session-control-button" onClick={controls.onToggleLocked}>
-                {(target.kind === 'door' || target.kind === 'stair' || target.kind === 'portal') && target.session?.isLocked
-                  ? 'Unlock'
-                  : 'Lock'}
+            {(target.kind === 'door' || target.kind === 'stair' || target.kind === 'portal' || target.kind === 'prop') && effective?.obstacles.lock.armed
+              ? 'Unlock'
+              : 'Lock'}
               </button>
             )}
             {isTrapped && controls.onDisarmTrap && (
               <button
                 type="button"
                 className="maplab-pill-button maplab-session-control-button"
-                disabled={(target.kind === 'door' || target.kind === 'stair' || target.kind === 'portal') && target.session?.trapDisarmed}
+                disabled={(target.kind === 'door' || target.kind === 'stair' || target.kind === 'portal' || target.kind === 'prop') && effective?.obstacles.trap.armed === false}
                 onClick={controls.onDisarmTrap}
               >
                 Disarm trap

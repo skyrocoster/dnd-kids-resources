@@ -137,6 +137,7 @@ rather than read the source.
 | `scripts/init_database.py` | Create the canonical SQLite schema — the single source of truth every other table list derives from. |
 | `scripts/large_read_guard.py` | Unbounded large-file read guard for the compiler role. |
 | `scripts/migrate_loom_v2.py` | Migrate a Loom database from the flat-DAG schema (v1) to the ordered-threads schema (v2). |
+| `scripts/migrate_map_obstacle_state.py` | Migrate map obstacle state to the new structured format. |
 | `scripts/migrate_monsters.py` | Transform legacy 5etools monster seed rows to the M1 target shape. |
 | `scripts/migrate_spells.py` | Transform legacy spell seed rows to the canonical target shape. |
 | `scripts/new_order.py` | Emit a work order in the maximum shape a work order is allowed to have. |

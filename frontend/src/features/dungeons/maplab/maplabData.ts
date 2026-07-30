@@ -54,6 +54,14 @@ const door32: MapDoor = {
   trapped: false,
   breakDc: 23,
   pickDc: 18,
+  state: {
+    open: false,
+    obstacles: {
+      concealment: { armed: false },
+      lock: { armed: true, shown: true },
+      trap: { armed: false, shown: false },
+    },
+  },
 }
 
 /** Door 98 "Rusty Trap Door" — a Stage-4 test fixture on room 32's own wall (facing unknown space,
@@ -69,6 +77,14 @@ const door98: MapDoor = {
   locked: true,
   trapped: true,
   breakDc: 20,
+  state: {
+    open: false,
+    obstacles: {
+      concealment: { armed: false },
+      lock: { armed: true, shown: true },
+      trap: { armed: true, shown: true },
+    },
+  },
 }
 
 // ============================================================================
@@ -147,6 +163,14 @@ const stair2: MapStair = {
   hidden: false,
   locked: false,
   trapped: false,
+  state: {
+    open: false,
+    obstacles: {
+      concealment: { armed: false },
+      lock: { armed: false, shown: false },
+      trap: { armed: false, shown: false },
+    },
+  },
 }
 
 // ============================================================================
@@ -164,6 +188,14 @@ const prop1: MapProp = {
   locked: true,
   trapped: false,
   pickDc: 16,
+  state: {
+    open: false,
+    obstacles: {
+      concealment: { armed: false },
+      lock: { armed: true, shown: true },
+      trap: { armed: false, shown: false },
+    },
+  },
 }
 
 // ============================================================================

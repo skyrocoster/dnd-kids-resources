@@ -27,6 +27,8 @@ Owns dungeon CRUD, Map Lab viewer/editor composition, room content, layouts, and
 | Room content or details | `frontend/src/features/dungeons/**` |
 | Session state | `backend/app/routers/session_state.py` |
 | Session state backend tests | `backend/tests/routers/test_session_state.py` |
+| Obstacle state migration | `scripts/migrate_map_obstacle_state.py` |
+| Obstacle state migration tests | `backend/tests/test_migrate_map_obstacle_state.py` |
 | Map assets | `data/maps/*.png` |
 | Dungeon seed data | `data/seeds/seed_dungeons.json`<br>`data/seeds/seed_map_layouts.json`<br>`data/seeds/seed_map_session_state.json`<br>`data/seeds/seed_map_knowledge.json` |
 
@@ -64,7 +66,7 @@ The session view is the surface that is open while a game is running: it must st
 <!-- GENERATED:AREA_PLANS:dungeons:START -->
 | Plan | State | Status |
 | --- | --- | --- |
-| [Map Obstacle State](../plans/active/map-obstacle-state/map-obstacle-state.md) | ready | Ready for Stage 1 compilation; all product decisions are settled in the canonical handoff. |
+| [Map Obstacle State](../plans/active/map-obstacle-state/map-obstacle-state.md) | ready | Stage 1 shipped — all 21 orders landed. |
 <!-- GENERATED:AREA_PLANS:dungeons:END -->
 
 What the table cannot derive:
