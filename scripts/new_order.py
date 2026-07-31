@@ -15,9 +15,12 @@ wrong:
   threshold, and refuses to emit an unbounded large file;
 - assembles the STOP WHEN command, adding the typecheck, lint, docs check, and co-located
   suites the linter would have demanded;
-- enforces the shape caps at the argument boundary, so exceeding one is an error about
-  splitting the order rather than a lint failure over a written file; and
-- runs the real linter on the rendered text and writes nothing if it fails.
+- enforces the shape caps at the argument boundary: in the default authoring mode an
+  over-cap order is still written with the split-the-order guidance printed as warnings,
+  and `--strict` escalates the same caps into refusals (the dispatch gate); and
+- runs the real linter on the rendered text and writes nothing if it fails — prose
+  heuristics and shape caps come back as non-fatal warnings, deterministic violations
+  always refuse.
 
     python scripts/new_order.py --feature <feature> --number 11 \
         --title "Room label" \
@@ -238,9 +241,17 @@ def render(args, start_in: list[str], stop_when: str) -> str:
         "",
         "STATUS: <-- executor writes DONE, FAILED - <reason>, or BLOCKED - <reason>",
         "",
-        "DEVIATIONS: <-- executor appends, always — exactly two lines",
-        '- opened beyond START IN: <files or sections outside the named path/symbol/range, or "none">',
+        "DEVIATIONS: <-- executor appends, always (even on DONE) — one line",
         '- KNOWN STATE re-verified or wrong: <one line, or "none">',
+        "",
+        "EVIDENCE ENVELOPE: <-- executor appends, always (even on DONE) — directly below DEVIATIONS",
+        "- COMMAND: <the exact STOP WHEN command the executor ran>",
+        "- RESULT: pass | fail",
+        "- CHECKS: <what passed and what failed — one line per check>",
+        '- DIRTY PATHS: <every file the edits left changed in the worktree, or "none">',
+        "- AUTHORIZATION: <edited files matched to the START IN / DO / CREATES / REMOVES entries that authorize each>",
+        '- GUARD: <read-guard denials or `--unlock` overrides, or "none">',
+        "- ATTEMPTS: <0 if STOP WHEN passed first try, else the number of fix attempts>",
     ]
     return "\n".join(parts) + "\n"
 
@@ -248,31 +259,22 @@ def render(args, start_in: list[str], stop_when: str) -> str:
 # --- caps ---------------------------------------------------------------------------------
 
 
-def enforce_caps(args, start_in_paths: list[str], test_files: list[str]) -> None:
-    """The shape ceiling, checked before anything is written.
+def _cap_refusal(message: str, strict: bool, warnings: list[str]) -> None:
+    """A shape-cap finding: refused under `--strict`, otherwise warned but not blocked."""
+    if strict:
+        raise OrderRefused(message)
+    warnings.append(message)
 
-    Every message here says *split the order*, because that is always the answer. An order
-    over these caps has never been fixable by rewording it.
+
+def check_caps(args, start_in_paths: list[str], test_files: list[str], strict: bool = False) -> list[str]:
+    """The shape ceiling, applied twice: warned at authoring time, refused under --strict.
+
+    Every message here says *split the order*, because that is always the answer. The
+    default authoring mode writes an over-cap order and prints this guidance as warnings
+    so the compiler sees it without losing the order; `--strict` (the dispatch gate)
+    escalates the same findings into refusals. The structural checks below are not caps
+    and are always refused.
     """
-    distinct = list(dict.fromkeys(start_in_paths))
-    if len(distinct) > co.MAX_START_IN_FILES:
-        raise OrderRefused(
-            f"START IN names {len(distinct)} distinct files (max {co.MAX_START_IN_FILES}):\n"
-            + "\n".join(f"    {path}" for path in distinct)
-            + "\n  This is two orders. Split it and set --depends-on on the second."
-            "\n  (Several ranges of the same file count once — those are cheap.)"
-        )
-    if len(args.start_in) > co.MAX_START_IN_ENTRIES:
-        raise OrderRefused(
-            f"START IN has {len(args.start_in)} entries (max {co.MAX_START_IN_ENTRIES}). "
-            "Merge adjacent ranges or split the order."
-        )
-    if len(args.do) > co.MAX_DO_BULLETS:
-        raise OrderRefused(
-            f"DO asks for {len(args.do)} things (max {co.MAX_DO_BULLETS}):\n"
-            + "\n".join(f"    {line}" for line in args.do)
-            + "\n  One work order is one logical change. Split it."
-        )
     if len(args.do) == 0:
         raise OrderRefused("DO is empty: pass at least one --do line saying what changes.")
     if not args.known:
@@ -281,22 +283,54 @@ def enforce_caps(args, start_in_paths: list[str], test_files: list[str]) -> None
             "values, the file locations, the counts. An executor sent to 'go find out' "
             "pays the exploration cost this workflow exists to avoid."
         )
+
+    warnings: list[str] = []
+
+    distinct = list(dict.fromkeys(start_in_paths))
+    if len(distinct) > co.MAX_START_IN_FILES:
+        _cap_refusal(
+            f"START IN names {len(distinct)} distinct files "
+            f"(max {co.MAX_START_IN_FILES}):\n"
+            + "\n".join(f"    {path}" for path in distinct)
+            + "\n  This is two orders. Split it and set --depends-on on the second."
+            "\n  (Several ranges of the same file count once — those are cheap.)",
+            strict,
+            warnings,
+        )
+    if len(args.start_in) > co.MAX_START_IN_ENTRIES:
+        _cap_refusal(
+            f"START IN has {len(args.start_in)} entries (max {co.MAX_START_IN_ENTRIES}). "
+            "Merge adjacent ranges or split the order.",
+            strict,
+            warnings,
+        )
+    if len(args.do) > co.MAX_DO_BULLETS:
+        _cap_refusal(
+            f"DO asks for {len(args.do)} things (max {co.MAX_DO_BULLETS}):\n"
+            + "\n".join(f"    {line}" for line in args.do)
+            + "\n  One work order is one logical change. Split it.",
+            strict,
+            warnings,
+        )
     unique_tests = {Path(path).name for path in test_files}
     if len(unique_tests) > co.MAX_STOP_WHEN_TESTS:
-        raise OrderRefused(
+        _cap_refusal(
             f"STOP WHEN would run {len(unique_tests)} test files "
             f"(max {co.MAX_STOP_WHEN_TESTS}): {', '.join(sorted(unique_tests))}\n"
             "  Some of these came from the co-located-suite rule, which means this order "
             "edits source files belonging to different suites. That is the definition of "
-            "two orders."
+            "two orders.",
+            strict,
+            warnings,
         )
+    return warnings
 
 
 # --- main ----------------------------------------------------------------------------------
 
 
-def build(args) -> tuple[Path, str, list[str]]:
-    """(target path, rendered order, notes about what the tool derived)."""
+def build(args) -> tuple[Path, str, list[str], list[str]]:
+    """(target path, rendered order, derived notes, cap warnings)."""
     notes: list[str] = []
 
     args.creates = [resolve_path(p, allow_missing=True) for p in args.creates]
@@ -352,7 +386,7 @@ def build(args) -> tuple[Path, str, list[str]]:
         docs = True
         notes.append("added --docs: this order changes contract-managed documentation")
 
-    enforce_caps(args, start_in_paths, tests + pytests)
+    cap_warnings = check_caps(args, start_in_paths, tests + pytests, strict=args.strict)
 
     command_parts = ["python scripts/order_check.py"]
     if tests:
@@ -376,17 +410,28 @@ def build(args) -> tuple[Path, str, list[str]]:
     )
 
     target = ORDERS_ROOT / args.feature / f"{args.number}-{args.slug}.md"
-    return target, render(args, start_in_bullets, stop_when), notes
+    return target, render(args, start_in_bullets, stop_when), notes, cap_warnings
 
 
-def lint_rendered(target: Path, text: str) -> list[str]:
-    """Run the real linter over the rendered order without creating the order file."""
+def lint_rendered(target: Path, text: str, strict: bool = False) -> tuple[list[str], list[str]]:
+    """(errors, warnings) from running the real linter over the rendered order.
+
+    Deterministic violations are errors and always refuse. Prose heuristics and shape caps
+    are warnings by default; `--strict` escalates them into errors via the linter itself.
+    """
     host = target.parent if target.parent.is_dir() else ORDERS_ROOT
     host.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(dir=str(host)) as tmp:
         probe = Path(tmp) / target.name
         probe.write_text(text, encoding="utf-8")
-        return [f"{error.message}\n    fix: {error.fix}" for error in co.lint_order(probe)]
+        errors, warnings = [], []
+        for finding in co.lint_order(probe, strict=strict):
+            entry = f"{finding.message}\n    fix: {finding.fix}"
+            if finding.severity == "error":
+                errors.append(entry)
+            else:
+                warnings.append(entry)
+        return errors, warnings
 
 
 def main() -> int:
@@ -443,18 +488,24 @@ def main() -> int:
     parser.add_argument("--docs", action="store_true")
     parser.add_argument("--stdout", action="store_true", help="print instead of writing")
     parser.add_argument("--force", action="store_true", help="overwrite an existing order")
+    parser.add_argument(
+        "--strict",
+        action="store_true",
+        help="refuse orders that exceed the shape caps instead of writing them with "
+        "warnings (the dispatch gate; the default authoring mode is permissive)",
+    )
     args = parser.parse_args()
 
     if not args.slug:
         args.slug = re.sub(r"[^a-z0-9]+", "-", args.title.lower()).strip("-")
 
     try:
-        target, text, notes = build(args)
+        target, text, notes, cap_warnings = build(args)
     except OrderRefused as refusal:
         print(f"REFUSED: {refusal}")
         return 1
 
-    errors = lint_rendered(target, text)
+    errors, lint_warnings = lint_rendered(target, text, strict=args.strict)
     if errors:
         print("REFUSED: the rendered order does not pass scripts/check_orders.py:")
         for error in errors:
@@ -462,6 +513,8 @@ def main() -> int:
         print("\nNothing was written. Fix the arguments above and re-run.")
         return 1
 
+    for warning in cap_warnings + lint_warnings:
+        print(f"warning: {warning}")
     for note in notes:
         print(f"note: {note}")
 
@@ -475,7 +528,9 @@ def main() -> int:
         return 1
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(text, encoding="utf-8")
-    print(f"wrote {co._rel(target)} — passes check_orders.py")
+    count = len(cap_warnings) + len(lint_warnings)
+    suffix = f" ({count} warning{'s' if count != 1 else ''})" if count else ""
+    print(f"wrote {co._rel(target)} — passes check_orders.py{suffix}")
     return 0
 
 

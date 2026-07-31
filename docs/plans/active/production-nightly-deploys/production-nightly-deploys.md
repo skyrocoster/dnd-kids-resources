@@ -1,8 +1,8 @@
 # Production Nightly Deploys — ship every night without losing what you authored
 
-> **Status:** Not next for Infra; second in the Infra queue, after Table Testing Records. Resumes after Field-Test Readiness. **Part of Stage 1 has already shipped out of band** — see *Landed early* below. First remaining stage: the rest of Stage 1 — the schema as data.
+> **Status:** Part of Stage 1 has already shipped out of band — see *Landed early* below. First remaining stage: the rest of Stage 1 — the schema as data.
 
-- **Area guide:** [Infra](../../../areas/infra.md)
+- **Areas:** infra
 - **Read trigger:** Schema generation, database migrations, or the deploy path
 
 

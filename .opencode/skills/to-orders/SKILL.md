@@ -5,589 +5,206 @@ description: Turn ONE stage of a Plan into lean, self-contained work orders that
 
 # to-orders — compile a stage into work orders (Layer 2)
 
-A **work order** is one unit of work an executor model can finish in a single context window without
-getting lost. This is where the planner spends its exploration budget: you look things up **once** so
-the executor never re-explores. The output here is still **the fence, not the code** — an order that
-pre-writes the implementation has just paid the planner's rate for the executor's job. (Verified
-snippets that exploration genuinely forced into existence are the exception: they belong in KNOWN
-STATE, per the `plan` skill's planning-byproducts rule.)
+You are the **strong coordinator**. You spend the exploration budget here — looking things up **once**
+so the weak **executor** never re-explores, and handing pure retrieval to a cheap **scout**. A work
+order is one unit of work an executor can finish in a single context window without getting lost. The
+output is the **fence, not the code**: an order that pre-writes the implementation has just paid the
+coordinator's rate for the executor's job. (Verified snippets planning genuinely forced into
+existence are the exception — they belong in KNOWN STATE, per the `plan` skill's planning-byproducts
+rule.)
 
 ## Where they live
 
-`docs/plans/active/<feature>/NN-<slug>.md` — one file per work order, numbered in execution
-order. `<feature>` matches the Plan's filename.
+`docs/plans/active/<feature>/NN-<slug>.md` — one file per work order, numbered in execution order.
 
-## What to optimise
+## The work order shape — see PLAN_TEMPLATE
 
-**First-pass success, not executor tokens.** An executor run costs cents; the telemetry log's cheap
-and expensive *successful* orders differ by a few pence. A re-dispatch costs a cold start, the
-planner's attention, and a stalled dependency chain behind it — and the one order that had to be
-abandoned and reissued cost more than every token difference in its batch combined. Read the token
-columns as a diagnosis of *why* an order thrashed; aim at getting it right the first time.
-
-Escalating strength does not buy that. The abandoned order stalled at Light and stalled again at
-Standard, and closed only once someone diagnosed the actual failure. Order shape is the lever.
+The full order schema and field rules live in [docs/PLAN_TEMPLATE.md](../../../docs/PLAN_TEMPLATE.md)
+(Layer 2). The load-bearing fields: GOAL, DEPENDS ON, REQUIRED STRENGTH, CREATES/REMOVES, CHANGES
+SIGNATURE, KNOWN STATE, KNOWN TEST FAILURES, START IN, DO, STOP WHEN, and a blank STATUS the executor
+fills. `check_orders.py` enforces most of the field rules, so the shape you write is the shape the
+linter re-checks before dispatch.
 
 ## Write orders with `new_order.py`, not by hand
 
-`scripts/new_order.py` emits an order in the maximum shape an order is allowed to have. Use it as
-the default way to create one. You supply the facts; it does the three things a compiler kept
-getting wrong and paying a rewrite pass for:
+`scripts/new_order.py` renders the maximum allowed shape from the facts you pass and lints the result
+— writing nothing if it fails. It resolves bare filenames to their one repo path, derives a real line
+range and anchor from `path:Symbol` for files over 400 lines, assembles the STOP WHEN command
+(including the co-located suite for each source file DO edits, `--lint` for hooks, `--typecheck` for
+fixtures, `--docs` for contract-managed docs, and existence assertions for every CREATES/REMOVES
+path), and enforces the sizing ceiling at the argument boundary. Run `new_order.py --help` for the
+argument list. `new_order.py` and `check_orders.py` are invoke-only: call them and read stdout — open
+their source only to change their behaviour.
 
-```
-.venv\Scripts\python.exe scripts/new_order.py --feature kid-map-viewer --number 11 \
-  --title "Party room label" \
-  --goal "the party's room shows its name under the marker" \
-  --known "<a fact you verified while compiling>" \
-  --start-in "PlayerMapRenderer.tsx:RoomLabel" \
-  --start-in "PlayerMapRenderer.test.tsx — the describe block the new test joins" \
-  --do "Render the room name under the party marker in frontend/src/player/PlayerMapRenderer.tsx" \
-  --tests src/player/__tests__/PlayerMapRenderer.test.tsx
-```
+**The ceiling is enforced; the sizes below it are preferred, not absolute:**
 
-- **Bare filenames are resolved for you.** `PlayerMapRenderer.tsx` becomes the full repo-relative
-  path when exactly one file has that name, and is *refused with the candidates listed* when more
-  than one does. You never write a directory you had to go and look up, and you never guess one.
-- **`path:Symbol` becomes a real line range and anchor.** For any file over 400 lines the tool
-  derives `lines 47-96 @"export function RoomLabel({"` itself. An unbounded large file is refused
-  rather than emitted.
-- **The stop-check is assembled**, including the co-located suite for every source file DO edits,
-  `--lint` when the order touches a hook, `--typecheck` when it writes a fixture, `--docs` when it
-  changes contract-managed documentation, and an existence assertion for every CREATES/REMOVES path.
-
-It then runs `check_orders.py` on the rendered text and **writes nothing if it fails**, so an order
-that reaches disk is an order that passes lint. `--stdout` prints instead of writing.
-
-`new_order.py` and `check_orders.py` are invoke-only. Run `new_order.py --help` for the full argument
-list — thirty lines against several hundred for reading the source, which can only restate the
-interface anyway. A REFUSED message already names the fault and its fix; act on that rather than
-opening the linter to work out what it meant. Open either file only to change its behaviour.
-
-The caps below are enforced at the argument boundary, which is the point: exceeding one is an error
-telling you to split the order, before you have written it.
-
-| Cap | Limit |
+| Ceiling (tool-enforced) | Meaning |
 | --- | --- |
-| distinct START IN files | 4 (extra *ranges* of an already-named file are free, up to 6 entries) |
-| DO bullets | 3 |
-| test files in STOP WHEN | 2 (and still at most one frontend suite) |
+| 4 distinct START IN files (extra ranges of a named file free, to 6 entries) | the most files one order may name |
+| 3 DO bullets | one logical change, not a list of them |
+| 2 test files in STOP WHEN (at most one frontend suite) | the targeted checks one executor run can judge |
 
-If an order will not fit, that is the tool telling you it is two orders. Split it and set
-`DEPENDS ON` — do not go around the tool by hand-writing a wider order, because
-`check_orders.py` enforces exactly the same ceiling and will reject it after you have written it.
+The ceiling is a refusal, not a target: an order that will not fit is the tool telling you it is two
+orders — split it and set `DEPENDS ON`. Below the ceiling, "2–4 START IN entries", "roughly one
+screen", and "2–3 related files" describe the *preferred* size for a weak model, not a quota to fill.
+Hand-write an order only when it needs a shape the tool cannot express; the fields and the ceiling are
+identical either way.
 
-Hand-write an order only when it needs a shape the tool cannot express (an unusual STOP WHEN, a
-KNOWN TEST FAILURES block with an odd node id); the fields and the caps are identical either way.
+## Get these right and a weak model can't wander
 
-## The work order template
-
-This is what the tool emits. Keep each order to **roughly one screen**. One work order = **one
-logical change** (it may touch 2–3 related files, e.g. a component and its test).
-
-```
-WORK ORDER <NN> — <short title>
-GOAL: <one sentence — what "done" looks like>
-DEPENDS ON: <order NN that must be DONE first, or "none">
-REQUIRED STRENGTH: Light   <-- the default for every order; Standard/High need "— <reason>"
-CREATES: <repo-relative paths this order creates, one bullet each, or "none">
-REMOVES: <repo-relative paths this order removes, one bullet each, or "none">
-CHANGES SIGNATURE: <`symbol` in <path> for each exported signature this order changes, or "none">
-
-KNOWN STATE (already true — do NOT redo or re-derive):
-- <a fact the executor would otherwise waste a context window discovering>
-- <another fact — real values, real file locations, current test count, etc.>
-
-KNOWN TEST FAILURES (pre-existing — NOT yours to fix, NOT caused by you):
-- <backend only: exact pytest node id that already fails; frontend runs use npm run test:check,
-  which reads the checked-in list itself. Omit the section when there is nothing to say.>
-
-START IN:
-- <exact path> — lines <A>-<B> @"<line A, verbatim>"   <-- required for files over 400 lines
-- <exact path> — <what's needed>                        <-- under 400 lines: reading it whole IS the scope
-- <2–4 entries, each verified by opening it while compiling>
-
-DO:
-- <1–3 terse lines: what to change and where, with the anchor text to match — no code>
-
-STOP WHEN: <a single runnable command that must pass, or "if X = Y, stop">
-
-STATUS: <-- executor writes DONE, FAILED - <one-line reason>, or BLOCKED - <one-line reason>
-```
-
-`scripts/check_orders.py` enforces most of what follows. Run it on the stage before you dispatch
-anything (`.venv\Scripts\python.exe scripts/check_orders.py`); it is the same lint the documentation
-gate runs, and every rule in it is one fault the telemetry log already paid for.
-
-## Why each field exists — get these right and a weak model can't wander
-
-- **KNOWN STATE** — the focus leash's memory. Write the *actual answers* here (the value, the file, the
-  count), not a pointer like "check the API". If you tell the executor to "go find out", you've just
-  moved the exploration cost onto the model that's worst at paying it. Answer, don't point.
-
-  **Never write a conditional here.** "If order 03 left that inline, lift it into a shared function",
-  "if the helper doesn't exist yet, create one" — each of these hands the executor an architecture
-  decision, which is exactly what it is worst at and exactly what this skill was supposed to have
-  settled. If dependent orders share code, decide *while compiling* where it lives and say so flatly,
-  including which layers it may import from. (A real case: a conditional like the one above put a
-  `features/` import into `src/model/`, which `ARCHITECTURE.md` forbids. `oxlint` now catches that
-  particular breach; the conditional that caused it would find a different one.) The linter rejects
-  a conditional paired with an imperative verb in KNOWN STATE or DO.
-- **START IN** — bounded exploration. The executor explores *these* files, not the whole repo. Name
-  real, verified paths — open them yourself while compiling to be sure they're right. A bare
-  filename is a search instruction: an order that said `maplabModel.test.ts` with no directory sent
-  its executor probing the wrong folder first. The same goes for a symbol with no home — naming
-  `UserIcon` without `frontend/src/components/icons/index.ts` bought a ~4.3k-token barrel read to
-  find one export.
-
-  **Every entry over 400 lines needs a range and an anchor.** An unbounded START IN file gets read
-  *whole*, so a 1000-line file named for a one-line change costs ~9.7k tokens instead of ~200:
-
-  ```
-  - frontend/src/features/dungeons/maplab/MapLabPage.tsx — the <RoomDetailsPanel> render: lines 860-905 @"function RoomDetailsPanel({"
-  ```
-
-  **A bare line number is not a bound, and a symbol name is not either.** "at line 873" says where
-  to start and nothing about where to stop. A symbol name says what to find but makes the executor
-  pay to find it — four consecutive orders in one stage spent their only measurable waste on exactly
-  that, one re-locating read per symbol per visit. Both are now rejected by the linter for files over
-  400 lines. Under 400 lines, reading the file whole *is* the scope; say what's needed in prose.
-
-  **You do not have to derive ranges by hand.** Write the symbol in backticks and run
-  `.venv\Scripts\python.exe scripts/check_orders.py --fix`: it resolves the symbol to its real line
-  range and writes the anchor for you. Reopening a 2,300-line file to count lines is exactly the cost
-  this workflow exists to avoid, and it applies to the compiler too.
-
-  **The anchor is what keeps the range true.** `@"<verbatim first line of the range>"` lets the
-  linter re-check the range and lets `--fix` repair it. This matters most within a stage: when order
-  04 edits a large file, every line number orders 05 and 06 cite shifts silently. That happened, cost
-  6 locating re-reads, and is now a lint error plus a one-command fix. Re-run `--fix` after each
-  order in a stage lands.
-
-  Scope is a real boundary: if the executor needs a second symbol, helper, setup block, or assertion
-  elsewhere in the same file, name that section too. A path listed once does not silently authorize
-  unrelated ranges.
-
-  **For a new test, anchor the block it joins** — not the fixture it reuses. Naming only the fixture
-  left one executor hunting a 2,000-line suite for the right `describe`, at 6 locating reads;
-  anchoring the insertion point on the next order brought that to 1. The linter checks that a new
-  test's anchor lands on a `describe`/`it`/`test` line.
-- **CHANGES SIGNATURE** — every exported symbol whose signature this order changes, or `none`.
-  Declaring it makes the linter grep the repo for call sites and fail the order if any of them is
-  missing from START IN, and require the changed module's *own* test suite in STOP WHEN. Both rules
-  come from one order that made a shared hook parameter required while STOP WHEN ran only the
-  caller's tests: it blocked once, then leaked a stale assertion and a missing `useCallback`
-  dependency past every targeted check to reconcile.
-  **A type is a signature.** Reshaping an exported `type`/`interface` breaks its consumers exactly as
-  a changed parameter list does. One order stripped a field from an exported player layout type,
-  declared `CHANGES SIGNATURE: none`, and scoped STOP WHEN to a single suite; three other player
-  suites broke and needed a corrective order. The linter now rejects a DO bullet that reshapes an
-  exported type the order does not declare.
-- **Replacing a renderer or wrapper keeps the landmarks.** When an order swaps one component for
-  another, name the accessibility landmarks — roles, `aria-label`s, region names — the replaced
-  component published, and run the *neighbouring route-shell suite* that asserts them, not only the
-  renderer's own colocated tests. A shared-canvas migration silently dropped a `Dungeon map` region
-  and only the full suite caught it.
-- **CREATES / REMOVES** — artifact lifecycle, separate from exploration. A future-created path cannot
-  resolve in START IN, while a deleted source path cannot survive the final documentation check.
-  Declare every created and removed file here, name the same full path in DO, and put an explicit
-  existence or non-existence assertion for each path in STOP WHEN. The linter validates the final
-  state when STATUS is DONE. An existing file that will be removed may still be read from START IN.
-- **DO** — the intent in 1–3 lines. Trust the model to write the code; don't write it for them.
-
-  **If DO says touch a file, START IN must list it** — otherwise the executor edits files it was
-  never told to open, and the telemetry "reads outside START IN" column blames it for your omission.
-  Give each edit site the **anchor text to match**, too: an executor that knows the exact string to
-  edit can change it without reading the file back. The runs that re-read one page component six to
-  eleven times were all orders that said *what* to change without saying *where* to land.
-- **STOP WHEN** — the leash that ends wandering and gold-plating. It must be a **targeted** command
-  naming exact test files — the tests for the files the order touches plus any test the order adds —
-  never a bare `pytest`, `npm test`, or `tsc -b`. Full-suite runs are `reconcile`'s job, once per
-  stage, not the executor's.
-
-  Two rules the linter now enforces, both learned from the same escape: **every source file DO edits
-  must have its own co-located suite in STOP WHEN** (running only the caller's tests is how a stale
-  hook assertion reached reconcile), and **any order touching a React hook or a dependency array
-  must include `npm run lint`** — neither vitest nor `tsc` can see a missing `useCallback`
-  dependency, and one shipped as a latent stale-closure bug.
-
-  Prefer `python scripts/order_check.py --tests <path> --typecheck --lint` to a raw chain: it runs
-  the same checks but prints pass/fail and the failing test names instead of the full runner output,
-  which is otherwise the largest single result in the executor's context and repeats on every fix
-  attempt. The raw command shapes, when you need them:
-  - Backend: `pytest backend/tests/<file>.py --no-cov` — the `--no-cov` is required; without it the
-    97% coverage gate fails every subset run regardless of the tests.
-  - Frontend: `cd frontend && npm run test:check -- <path/to/File.test.tsx>`. This is vitest plus the
-    checked-in known-failure list in `frontend/known-test-failures.json`: it passes when every
-    failure is already known and fails the moment a *new* one appears. Prefer it to `npm test --` —
-    the executor gets a clean pass/fail with no list of pre-existing failures to reason about, and a
-    regression is caught by the tool rather than by a human diff at reconcile.
-
-  **vitest does not typecheck.** It strips types, so a test fixture with the wrong shape passes
-  green and breaks `tsc -b` at reconcile — this has now cost two separate stages. Whenever an order
-  writes or edits a fixture for a domain-typed object (an `frontend/src/api/types.ts` interface, a
-  domain-typed union, anything with branded scalar types), do both of these:
-  - put the repo's minimal-plus-cast idiom in KNOWN STATE with a real example from a sibling test
-    (`mockResolvedValue([{ id: 9, name: 'Mira' }] as NPC[])`) — an executor told to "mock the NPC
-    list" will otherwise invent plausible statblock fields that do not typecheck; and
-  - append `&& npm run typecheck` to that order's STOP WHEN. It is `tsc -b` without the bundle step,
-    so it is the cheapest command that is a real typecheck, and it is the one case where a
-    stage-level check belongs in a single order.
-
-  The linter enforces both halves whenever an order names a frontend test file and mentions a mock
-  or fixture.
-
-  **Structural documentation orders run the real checker.** If an order creates, removes, moves, or
-  edits a contract-managed file under `docs/`, append
-  `.venv\Scripts\python.exe scripts/check_docs.py --check` to STOP WHEN after the direct artifact
-  assertions. Targeted parser tests do not catch stale links, missing files, or real-tree routing.
-
-  **Session-run orders stop at a record, not a command.** A session cannot be closed by a test, so a
-  session-run order's STOP WHEN is the template's "if X = Y, stop" form:
-  `STOP WHEN: the record at docs/table-tests/<YYYY-MM-DD>-<slug>.md exists and its Status line reads
-  run`. The order's own work is pre-writing that record at Status `planned` — a copy of
-  `docs/table-tests/_example/session-template.md` with the header, `## Setup` and `## Watching for`
-  filled from the plan stage. The human who runs the session fills `## Observed`,
-  `## Asked afterwards` and `## Verdict`, and moves the status to `run`; that state change is what
-  closes the order. See
-  [docs/TABLE_TESTING.md](../../../docs/TABLE_TESTING.md) for the format and the division of labour.
-- **STATUS** — left blank; the executor fills it (`DONE`, `FAILED`, or `BLOCKED`, plus a two-line
-  DEVIATIONS block always, and a FAILURE REPORT block on failure — see `docs/PLAN_TEMPLATE.md`).
-  That's the only thing they write outside code/tests.
+- **KNOWN STATE** — answers, not pointers. Write the actual values (the path, the count, the current
+  text), not "check the API". A fact already recorded in the Plan's compiler handoff is paid for —
+  carry it over rather than rediscovering it. A **descriptive** conditional is fine: "If order 03
+  landed, the helper is shared; otherwise each file has its own copy." What the linter rejects, and
+  what hands the executor a decision it is worst at, is an **imperative** conditional — "if the
+  helper doesn't exist, create one". Decide that while compiling and state it flatly.
+- **START IN** — bounded exploration. Name real, verified paths; open them yourself while compiling.
+  A bare filename is a search instruction, and a symbol with no home costs a locating read. Every
+  file over 400 lines needs a range plus an anchor: `lines 860-905 @"function RoomDetailsPanel({"`.
+  A bare line number is not a bound (it says where to start, not where to stop), and an unanchored
+  symbol makes the executor pay to find it. You do not derive ranges by hand — write the symbol in
+  backticks and run `check_orders.py --fix`, which resolves it and keeps the range true against its
+  anchor. Under 400 lines, reading the file whole *is* the scope; say what's needed in prose. When an
+  entry names a range, that range is the authorization — opening unrelated sections of the same file
+  is a deviation. For a new test, anchor the block it joins (a `describe`/`it`/`test` line), not the
+  fixture it reuses.
+- **DO** — the intent in 1–3 lines, with the **anchor text to match** at each edit site. If DO says
+  touch a file, START IN must list it. Trust the executor to write the code; don't write it for them.
+- **CREATES / REMOVES** — artifact lifecycle, declared separately from exploration. Name the same
+  full path in DO, and let the tool add the existence/non-existence assertions to STOP WHEN.
+- **CHANGES SIGNATURE** — every exported symbol whose signature this order changes, or `none` — a
+  type is a signature too. Declaring it makes the linter grep for call sites and require the changed
+  module's own suite in STOP WHEN.
+- **STOP WHEN** — the leash. A **targeted** command naming exact test files — never a bare `pytest`,
+  `npm test`, or `tsc -b`; full-suite runs are `reconcile`'s job. Prefer
+  `python scripts/order_check.py --tests <path> --typecheck --lint` to a raw chain: same checks,
+  pass/fail plus the failing names, none of the runner noise. Raw shapes when needed: backend
+  `pytest backend/tests/<file>.py --no-cov` (the `--no-cov` is required — without it the coverage
+  gate fails every subset), frontend `cd frontend && npm run test:check -- <path/to/File.test.tsx>`
+  (vitest judged against `frontend/known-test-failures.json` — a clean pass/fail that fails only on
+  *new* failures). Two additions the linter enforces: every source file DO edits needs its own
+  co-located suite in STOP WHEN, and any order touching a hook or dependency array includes
+  `npm run lint`. Whenever an order writes a fixture for a domain-typed object, put the repo's cast
+  idiom in KNOWN STATE with a real sibling example and append `&& npm run typecheck`. Structural docs
+  orders append `.venv\Scripts\python.exe scripts/check_docs.py --check`. Session-run orders stop at a
+  record, not a command — see [docs/TABLE_TESTING.md](../../../docs/TABLE_TESTING.md).
+- **STATUS / DEVIATIONS / FAILURE REPORT** — left blank; the executor fills them. Their exact format
+  is in PLAN_TEMPLATE.
 
 ## Sizing an order against a big test file
 
 One order adds tests to **at most one test file**, and against a large integrated suite (over ~800
-lines) it gets **one behaviour**. This is the sizing rule the log paid most for: an order asking for
-seven integrated async behaviours through a 1,700-line page suite stalled at Light, stalled again at
-Standard after a reissue, and closed only when the failure was finally diagnosed directly. Splitting
-hook behaviour from page placement would have made both halves ordinary orders.
-
-When the behaviour turns on a non-obvious **test seam**, name it in KNOWN STATE. In that same case
-the deciding fact — that a save-error test must establish one settled state transition before
-mocking the next request rejection, because the hook suppresses its initial-load save — was never
-written down, and no amount of model strength recovered it.
-
-The latest clean cycle exposed the same issue in smaller form: a route-mode assertion used a
-`MemoryRouter` rerender even though rerender does not change its history, forcing the executor to
-open route-context files outside the named test scope. Whenever a test depends on routing, provider
-state, timers, async settling, or another harness transition, verify the exact transition idiom while
-compiling and state it as an answer in KNOWN STATE. Include the relevant helper/setup section in
-START IN if the executor must use it; do not make the executor diagnose the harness to implement the
-product behavior.
+lines) it gets **one behaviour** — a request for seven integrated async behaviours through a 1,700-line
+page suite is how orders stall. When the behaviour turns on a non-obvious **test seam** (routing,
+provider state, timers, async settling — e.g. "the hook suppresses its initial-load save, so a
+save-error test must settle one transition before mocking the next rejection"), verify the exact
+transition idiom while compiling and state it as an answer in KNOWN STATE. Do not make the executor
+diagnose the harness to implement the behaviour.
 
 ## Frontend orders carry the UX decisions
 
 If an order touches `frontend/src/`, copy the lines of the Plan's **UX decisions** block that apply to
-the files it names into that order's `KNOWN STATE` — the literal copy strings, the empty-state status,
-the confirmation message, the focal element, the touch floor. The executor never reads the `ux-design`
-skill or `docs/UX_PATTERNS.md`; the order is how those decisions reach it. An order that says "add an
-empty state" without giving the exact string is an order that invents one.
-
-If the Plan has no UX decisions block and the stage touches the frontend, stop and run `ux-design`
-before compiling.
+its files into KNOWN STATE — literal copy strings, empty-state status, confirmation message, focal
+element, touch floor. The executor never reads the `ux-design` skill; the order is how those
+decisions reach it. If the Plan has no UX decisions block and the stage touches the frontend, stop
+and run `ux-design` before compiling.
 
 ## Delegate the fact-finding, keep the judgement
 
-Compiling a stage is two different jobs wearing one hat: **finding out what is true** in the repo, and
-**deciding what the order should say**. The first is retrieval and belongs to a cheap explorer; the
-second is why this skill runs on the expensive model. Locating a helper, listing call sites, reading
-off a current test count, or finding the sibling test that shows the repo's mock idiom are all
-retrieval — they fill your context with file dumps you will use one line of, at the planner's rate.
+Compiling is two jobs: **finding out what is true** (retrieval — hand it to the cheap **scout**,
+opencode's `explore-deepseek`) and **deciding what the order should say** (yours). Your own-read
+budget is about **2,000 lines per invocation** — the same context `dispatch-orders` and `reconcile`
+still need for the stage, so spend it as you would money. Small files (≤400 lines, the START IN
+threshold) are safe to read whole; large files only by range; past roughly ten files or 2,000 lines
+on one question, the question was never the problem.
 
-**Prefer the explorer for retrieval.** In opencode that is the `explore-deepseek` subagent, which is
-read-only and reports with `path:line` citations.
+Delegate what you do not already know and can get as a quote: "Which files import
+`useMapLabSessionState`, at what lines?", "Find a test that mocks the NPC list endpoint and quote its
+`mockResolvedValue` line", "How many tests are in `PlayerMapRenderer.test.tsx` and what are the
+`describe` names?". Read it yourself when you need the file anyway to decide the order's shape and it
+is small, when the question is judgement wearing a question mark ("is this the right seam", "is this
+order too big"), or for at most three small files you can name without searching.
 
-### Your own-read budget: 2,000 lines per invocation
-
-`to-orders`, `dispatch-orders` and `reconcile` share one 120k context across a feature's stage. That
-gives compiling roughly **20k tokens of your own file reading — about 2,000 lines total, across every
-file you open yourself, for the whole invocation.** Not per question, not per order. An explorer's
-reads do not count against it; that is the entire point of sending them out.
-
-**Count it as you go and say the running total when you decide to read something.** "This file is
-620 lines, taking me to 1,340 of 2,000" is the check. A judgement you cannot justify at that price is
-a judgement you are making from the wrong evidence, not one that deserves a bigger budget.
-
-Three numbers make "small" countable, so it never has to be felt:
-
-| | Number |
-| --- | --- |
-| a **small** file — safe to read whole | ≤ 400 lines (the same threshold START IN uses) |
-| a **large** file — read only by `offset`/`limit` range, never whole | > 400 lines |
-| the whole invocation's own reads | ≤ 2,000 lines |
-
-**50k of reading is not "small enough" — it is five times the budget and two thirds of the shared
-context.** Any figure you are tempted to defend as small enough has already failed this test; the
-budget is a count, and a count is not an opinion.
-
-When you hit the budget, you are not stuck — you are done reading and not done compiling. Stop, write
-down the specific facts still missing as bounded questions, and send them out. If a stage genuinely
-cannot be compiled within 2,000 lines of your own reading plus explorer reports, that is a sizing
-verdict on the *stage*: say so to the user and compile it in two passes rather than spending the
-context that `dispatch-orders` and `reconcile` still need.
-
-Delegate when the question is answerable by quoting the repo and you do not already know where the
-answer lives:
-
-- "Which files import `useMapLabSessionState`, and at what lines?"
-- "In `frontend/src/features/**/__tests__/`, find a test that mocks an `api.ts` list endpoint and quote its `mockResolvedValue` line verbatim."
-- "Does anything under `backend/` still reference `party_room_id`? Quote each hit."
-- "How many tests are in `PlayerMapRenderer.test.tsx`, and what are the `describe` block names and their line numbers?"
-
-Go and read it yourself when:
-
-- you need the file anyway to decide the order's shape **and it is small** — a delegated summary plus
-  your own read is strictly more expensive than the read alone. A large file you need anyway is read
-  by range, not whole: get the range from the explorer or from `check_orders.py --fix`, then open
-  those lines;
-- the question is judgement wearing a question mark ("is this the right seam", "should this live in
-  `model/` or `features/`", "is this order too big") — that is the decision this skill exists to make,
-  and the executor pays for a wrong answer, not the explorer;
-- you already know the path and the range, and only need to confirm an anchor line verbatim; or
-- it is **at most three small files you can name without searching**. A round trip costs a cold
-  start; three bounded `Read` calls do not. "Three files" stops being the reason the moment you need
-  a fourth, a search to find one, or a file over 400 lines — at that point you are exploring, and
-  exploring is what you delegate.
-
-**Deciding is not the same as reading your way to a decision.** "This is judgement, so I'll look at it
-myself" is how a bounded compile turns into a thirty-file sweep. A decision turns on a small number of
-specific facts; the work is naming them, not touring the code until the answer feels obvious. So when
-you hit a real decision — where an ID comes from, which layer owns a helper, what a migration
-backfills — write down the two or three facts it actually turns on, get *those* as quotes, and decide
-from them:
-
-```
-Decision: where does a room entry's stable id come from?
-Turns on: (1) does the editor's save path already mint one? (2) do the seed rows carry
-          anything unique today? (3) what does the nearest precedent (encounters) do?
-→ three bounded questions, one dispatch, then I decide.
-```
-
-If you are past roughly ten files — or 2,000 lines — on a single question, the question was never the
-problem: stop, write down what you are actually trying to settle, and go get the specific answer.
-Whichever limit you reach first is the one that binds; ten large files is already the whole
-invocation's budget spent on one question.
-
-Four rules keep the delegation honest:
-
-- **Bound every question, and send at most four.** An explorer's context is what you are actually
-  paying for, and it grows with the *scope* of a question far faster than with the number of them.
-  A question is well-formed when it names where to look and what shape the answer takes: a directory
-  or glob, plus "quote the line", "list the paths", "give the count". "How does the player map work?"
-  is not a question, it is a whole context window. Compare:
-
-  ```
-  bad:  How is session state handled in Map Lab?
-  good: In frontend/src/features/dungeons/maplab/, which files call useMapLabSessionState?
-        Give path:line for each call.
-  ```
-
-  Batch the four into one dispatch rather than four dispatches — the cold start is worth amortising —
-  but if you have eight questions, that is two dispatches, not one wide one. Two bounded rounds cost
-  less than one that spirals, and the second round is better aimed for having seen the first.
-- **Expect a partial answer sometimes.** The explorer stops at its read budget rather than widening a
-  question that turned out to be bigger than it looked, and reports what it did not reach. That is
-  working as intended: re-ask the missing part as a narrower question, or go read it yourself.
-- **Ask for quotes, not conclusions.** Never ask it what is stale, what should change, which option is
-  better, or what an order should say. Its report is evidence; you are the only one who judges it.
-  If a report volunteers a recommendation, treat that as unverified.
-- **A citation is not a verification for anything you will reason about.** A cited `path:line` is
-  enough to resolve a path or a count into KNOWN STATE. It is *not* enough for a file whose contents
-  shape the order — for those, START IN still means a file you opened.
-
-You are not obliged to delegate — but "small enough" is the table above, not a feeling. A stage
-qualifies for compiling entirely from your own reads when **all three** hold: you can name every file
-you will open before you open any of them, no search is needed to find them, and they total under
-about 800 lines. Then do it and say nothing about it. Fail any of the three and the stage is not
-small, however small it feels: send the retrieval out.
+Four rules keep delegation honest: bound every question and send at most four per dispatch ("How does
+session state work?" is a whole context window, not a question); expect a partial answer sometimes —
+the scout stops at its read budget and reports what it did not reach; ask for quotes, not conclusions
+— its report is evidence you judge, and a recommendation in it is unverified; and a cited `path:line`
+is not a verification for a file whose contents shape the order — START IN still means a file you
+opened.
 
 ## When you were not told which plan
 
-[docs/plans/active/INDEX.md](../../../docs/plans/active/INDEX.md) lists every in-flight plan with the
-state of its orders and, in its `Next` column, which skill each one is waiting for. Read that first
-when the user says "compile the next stage" without naming a feature. A row whose `Next` is
-`to-orders` is one this skill can pick up.
-
-Skip any row whose `State` is `blocked`: it is waiting on a plan that has not shipped, and compiling
-against it means compiling against facts that are about to change.
-
-If exactly one `ready` row says `to-orders`, that is the plan. If several do, say which ones and ask
-— nothing in the repo ranks the ready plans, and choosing between them is the user's call.
+[docs/plans/active/INDEX.md](../../../docs/plans/active/INDEX.md) lists every in-flight plan and, in
+its `Next` column, which skill it is waiting for. A row whose `Next` is `to-orders` is one you can
+pick up. Skip `blocked` rows. If exactly one `ready` row says `to-orders`, that is the plan; if
+several do, say which and ask — choosing between ready plans is the user's call.
 
 ## How to compile a stage
 
-0. **Read the recent `compiler note:` lines in [docs/plans/telemetry-log.md](../../../docs/plans/telemetry-log.md)**
-   — the tail is enough. Each one is a past dispatcher's post-mortem of an order *you or a
-   predecessor compiled*: which orders ran clean, and which sent an executor down a hole. The
-   recurring faults are cheap to avoid and expensive to repeat — vague file references, conditional
-   instructions that force the executor to go and decide something, a STOP WHEN that pulls in a
-   file the order never touches. This is the only feedback loop this workflow has; skipping it
-   means re-learning the same lesson at the executor's expense.
-1. **Read the Plan stage and, when present, its `### Stage <N>` compiler handoff.** Treat verified
-   edit sites, tests, contracts, and constraints as paid-for planning results: carry them into KNOWN
-   STATE and START IN rather than rediscovering them. Explore only the gaps needed to make orders
-   self-contained; do not reopen a named file just to reconfirm a stable fact already recorded by
-   `plan`.
-
-   **Resolve every open question — but first check it is yours to resolve.** A question is yours when
-   it is a lookup: which file, which symbol, what the current value is, what the precedent does. It is
-   *not* yours when answering it sets a contract the rest of the feature inherits — where an identity
-   comes from, what a migration does to existing data, which layer owns a new boundary, what happens
-   to rows that predate the change. Those are design decisions that reached `to-orders` because `plan`
-   left them open, and compiling is the wrong place to settle them: you will explore the whole feature
-   to answer one question, and the answer lands in an order's KNOWN STATE where the user never reviews
-   it.
-
-   When you hit one, **stop and put it to the user** — with the two or three facts it turns on and your
-   recommendation, which is cheap because you have just been through the code. Then record the
-   decision in the Plan and resume compiling. A design decision made in passing during a compile is
-   the most expensive kind of wrong answer this workflow produces: every order in the stage is built
-   on it before anyone sees it.
-
-   Write the remaining gaps down as questions before you open anything, then send the ones that are
-   pure retrieval to the explorer in **one batched dispatch** (see above) while you read the files
-   whose shape you have to judge yourself.
-2. **Split the stage into logical changes.** If a change needs a paragraph of judgement, it's too big:
-   split it into smaller orders.
-   Before allowing independent orders to run in parallel, compare their edit sites: when one order
-   edits or removes a file another consumes, add an explicit dependency. The linter rejects mutable
-   overlap between independently runnable orders.
-3. **For each order, fill KNOWN STATE with verified facts** you discovered — so the executor starts
-   from truth, not a blank slate.
-4. **Run the order's test command yourself before writing STOP WHEN.** On the frontend,
-   `npm run test:check -- <file>` already judges the run against `frontend/known-test-failures.json`,
-   so a green result means the executor will get one too and the order needs no KNOWN TEST FAILURES
-   block. If it reports a *new* failure, that failure is pre-existing on your branch: fix it, or add
-   it to the list with a reason and a date — never leave it for the executor to trip over. On the
-   backend there is no such list, so any already-failing pytest node id goes verbatim into **KNOWN
-   TEST FAILURES**. An executor that meets an unexplained red suite spends its whole context deciding
-   whether it broke something.
-5. **Name exact START IN files** you actually opened, each **scoped** to what the executor needs, and
-   declare every created/removed artifact. For validator changes, include the validator's direct test
-   module, representative real documents for every accepted grammar shape, and one fixture for every
-   rejected target class stated in KNOWN STATE. Name a **runnable STOP WHEN** that runs the direct
-   test module and, for structural docs, the real documentation checker.
-   For tests driven by routing, providers, timers, or async settling, also verify and record the
-   exact harness transition that makes the requested assertion valid.
-6. **Emit each order with `scripts/new_order.py`** (see above) rather than writing the file by
-   hand. Leave STATUS blank — the tool does. Number the orders in dependency order and set each
-   `DEPENDS ON` with `--depends-on`. A refusal from the tool is a sizing verdict, not an obstacle:
-   split the order and emit two.
-7. **Run the linter before you dispatch:** `.venv\Scripts\python.exe scripts/check_orders.py --fix`.
-   `--fix` repairs everything mechanical and prints what it changed: a bare filename becomes its full
-   repo-relative path (whenever the repo has exactly one file by that name), a backticked symbol
-   becomes a real line range with an anchor, and a range whose anchor has drifted is moved to where
-   the anchor actually is. It leaves anything ambiguous for you to resolve, since a guess there would
-   misdirect an executor silently instead of loudly. The remaining lint still fails on the faults
-   that cost the most in the log — a path that doesn't resolve, a file named in DO but missing from
-   START IN, a conditional instruction, an unscoped large file, a signature change with unlisted call
-   sites, an edited module whose suite STOP WHEN never runs, a hook change with no lint, a new test
-   with no insertion anchor, a fixture without the cast idiom and a typecheck, several behaviours
-   against a big suite. Fixing them here costs a minute; discovering them costs a dispatch.
-
-   After the orders pass lint, remove the compiled stage's `### Stage <N>` compiler handoff from the
-   Plan. Remove `## Compiler handoff` too when it has no stage subsections left. Do not remove future
-   stages' handoffs. Planning byproducts follow their separate move-to-KNOWN-STATE rule below.
-
-   **Re-run `--fix` between dispatches within a stage.** As soon as one order edits a large shared
-   file, every downstream order's line numbers are stale. This is the single most repeated
-   order-shape fault in the log, and it is now one command rather than a re-read.
-8. **Set REQUIRED STRENGTH: Light.** Light is the default for **every** order, not just for
-   bounded mechanical ones. Write `REQUIRED STRENGTH: Light` and move on.
-
-   **Escalation is the exception, and it has to justify itself.** To ask for more, name what a
-   Light executor cannot do here, on the same line:
-
-   ```
-   REQUIRED STRENGTH: Standard — the fixture shape must be derived from three call sites that
-   disagree, and KNOWN STATE cannot pre-answer which one is canonical
-   ```
-
-   `check_orders.py` rejects a higher strength with no reason. Reserve High for broad synthesis
-   that should be surfaced to the user rather than dispatched automatically.
-
-   **Before you escalate, re-read your own order.** "This needs a stronger model" is nearly always
-   "this order does not say enough". Every Light order in the telemetry log finished on its first
-   pass; the only order that ever needed a re-dispatch was Standard, and its own compiler note put
-   the block on a contradiction in KNOWN STATE, not on the executor. Escalating strength has never
-   rescued an under-specified order in this repo — the abandoned order stalled at Light and stalled
-   again at Standard, and closed only once someone diagnosed the real failure. A Standard run also
-   costs roughly three times a Light one, so the wrong answer is expensive twice.
-
-   If you find yourself reaching for Standard, spend that effort on KNOWN STATE and bounded START
-   IN ranges instead, then set Light.
+1. **Resolve the handoff first.** Read the Plan stage and, when present, its `### Stage <N>`
+   contract-readiness handoff — carry verified edit sites, tests, contracts, and constraints into
+   KNOWN STATE and START IN rather than rediscovering them. Resolve every **Open question** that is a
+   lookup. If one turns out to be a design decision (identity source, migration semantics, layer
+   ownership), it is not yours to settle mid-compile: stop, put it to the user with the two or three
+   facts it turns on, record the decision in the Plan, then resume.
+2. **Split the stage into logical changes.** One change per order. When independent orders touch the
+   same files, add explicit `DEPENDS ON` so they never run against each other's edits.
+3. **Fill KNOWN STATE with verified facts** and name exact START IN files you actually opened, each
+   scoped to what the executor needs. Declare every created/removed artifact.
+4. **Verify the stop-check yourself before writing STOP WHEN.** Run the test command; on the frontend
+   a green `test:check` result means the executor gets one too. If a test already fails that is not
+   on `frontend/known-test-failures.json`, fix it or add it — never leave the executor to trip over
+   it. On the backend, put already-failing pytest node ids verbatim into **KNOWN TEST FAILURES**.
+5. **Emit each order with `scripts/new_order.py`** — number in dependency order, set `DEPENDS ON`. A
+   refusal is a sizing verdict: split and emit two. Leave STATUS blank.
+6. **Run the linter before you dispatch:** `.venv\Scripts\python.exe scripts/check_orders.py --fix`.
+   `--fix` repairs the mechanical faults (bare filenames, stale ranges, symbol-scoped entries) and
+   prints what it changed; the remaining failures are the faults that cost a dispatch — fix them here
+   for a minute rather than discovering them at executor rates. After the orders pass lint, remove
+   the compiled stage's `### Stage <N>` handoff from the Plan (and `## Compiler handoff` when no stage
+   subsections remain), and move any `## Planning byproducts` snippets into their orders' KNOWN STATE.
+   **Re-run `--fix` between dispatches within a stage** — the moment one order edits a large shared
+   file, every downstream range is stale.
+7. **Set `REQUIRED STRENGTH: Light`** — the default for every order. Escalation is the exception and
+   has to justify itself on the same line: name what a Light executor cannot do here. The linter
+   rejects a higher strength with no reason. Reserve High for broad synthesis that should be surfaced
+   to the user rather than dispatched. Before you escalate, re-read your own order: "this needs a
+   stronger model" is nearly always "this order does not say enough".
 
 ## Direct-completion fast path
 
-After compiling an order normally, you may implement it directly when dispatching would only make
-an executor reread context you already hold. This is a marginal-cost exception, not a second default.
-Use it only when **all** of these are true:
+After compiling an order normally, you may implement it directly when dispatching would only make an
+executor reread context you already hold — a marginal-cost exception, not a second default. All of
+these must hold: the exact edit is fully determined by files already opened while compiling; it needs
+no additional read, search, diagnosis, design choice, or architecture judgement; the whole change fits
+in one edit attempt; the targeted STOP WHEN is already verified and runnable; and completing it now
+will not invalidate an independently runnable order's facts or anchors. Required strength is not the
+test — a Standard order can qualify when compilation removed all uncertainty, while a Light order
+that still needs exploration belongs with an executor.
 
-- the exact edit is fully determined by files already opened while compiling;
-- it needs no additional read, search, diagnosis, design choice, or architecture judgement;
-- the whole change can be described in one sentence and completed in one edit attempt;
-- the targeted STOP WHEN is already verified and runnable; and
-- completing it now will not invalidate an independently runnable order's KNOWN STATE or anchors.
-
-Required strength is not the test. A Standard order can qualify when compilation removed all
-remaining uncertainty, while a Light order that still needs exploration belongs with an executor.
-
-Preserve the normal lifecycle when taking the fast path:
-
-1. Write the complete order first, including its authorization and STOP WHEN.
-2. State that it qualifies for direct completion and why.
-3. Make the one determined edit and run only STOP WHEN. If the edit does not apply cleanly, the check
-   fails, or you discover that another read is needed, stop immediately and dispatch the order
-   normally; do not turn `to-orders` into an implementation/debugging session.
-4. On success, write `STATUS: DONE — implemented directly by planner` and the normal two-line
-   DEVIATIONS block.
-5. Snapshot the order (`--snapshot --order <order-path>`) before you touch anything, then log it with
-   `.venv\Scripts\python.exe scripts/order_telemetry.py --order <order-path> --planner-run --manual
-   "direct planner implementation, no executor usage figures" --fault none --note "<why direct
-   completion was cheaper>"` (or the POSIX virtualenv path). `--planner-run` is what lets the fast
-   path be compared against dispatched runs later; without it the cheapest route in the workflow is
-   also the one the log cannot measure. **Skip both commands entirely while
-   `docs/plans/telemetry-paused.md` exists** — they record nothing and exit 0, so running them is a
-   round trip that buys nothing.
-6. Compile dependent or overlapping orders from the resulting state. If they were already written,
-   re-verify and update any KNOWN STATE facts or anchors the direct change affected before linting.
-
-At most one order per `to-orders` invocation should take this path. More than one means implementation
-is becoming the session's job; dispatch the rest so planning context does not fill with edits and test
-output.
+Preserve the normal lifecycle: write the complete order first (including its STOP WHEN), state that
+it qualifies for direct completion and why, make the one determined edit, run only STOP WHEN, and on
+success write `STATUS: DONE — implemented directly by planner` with the normal DEVIATIONS line. If the
+edit does not apply cleanly, the check fails, or another read is needed, stop immediately and
+dispatch the order normally — do not turn `to-orders` into an implementation session. At most one
+order per invocation; more than one means implementation is becoming the session's job.
 
 ## Worked example
 
-The reference order lives at
-[docs/plans/_example/99-creature-row-ac.md](../../../docs/plans/_example/99-creature-row-ac.md).
-It names real files and passes `scripts/check_orders.py`, so it is also the fixture that keeps the
-linter honest — read it rather than a paraphrase, and copy its shape:
-
-- every path resolves, and the large one carries a line range with "nothing else in this file";
-- the empty-state string, the divider and the token are given literally, so nothing is invented;
-- the domain type's trap (`ac` is `ArmorClass`, not a number) is pre-answered with the repo's cast
-  idiom, and STOP WHEN carries the typecheck that would catch it anyway;
-- one behaviour, one test file, one runnable stop-check.
-
-The cheapest real run in the telemetry log had exactly this shape — 33 turns, 5k output, no
-duplicate reads, nothing opened outside START IN — because it described the precedent component's
-*shape* in prose instead of pointing at it, and pre-answered the two facts most likely to be got
-wrong. One logical change, one precedent, every fact answered.
+The reference order at
+[docs/plans/_example/99-creature-row-ac.md](../../../docs/plans/_example/99-creature-row-ac.md)
+names real files and passes `check_orders.py` — read it rather than a paraphrase and copy its shape:
+one logical change, one precedent, every fact pre-answered, one runnable stop-check.
 
 ## What NOT to do
 
-- Do not inline the actual code the executor should write. Code written here was paid for at the
-  planner's rate — the whole point is that the cheaper model does the implementation. **One exception:** code that
-  planning already produced. If the Plan has a `## Planning byproducts` appendix (verified snippets
-  that fell out of settling the design), move each snippet verbatim into the KNOWN STATE of the order
-  it belongs to, marked `verified snippet — use as-is:`, and delete the appendix from the Plan. The
-  same applies to any snippet you verify while compiling orders. Relaying already-paid-for code is
-  not writing implementation — making the executor re-derive a tricky regex it will get wrong is the
-  real waste.
+- Do not inline the implementation code the executor should write — code written here was paid for at
+  the coordinator's rate. The single exception is already-paid-for code: snippets from the Plan's
+  `## Planning byproducts` appendix or verified while compiling, moved verbatim into KNOWN STATE and
+  marked `verified snippet — use as-is:`, then deleted from the Plan.
 - Do not touch the manifest, references, or area guides here — that's `reconcile`, after orders ship.
 
 ## Next step
 
-Hand each order to an executor via the `dispatch-orders` skill (which wraps `implement-order`),
-one fresh context per order.
-When a stage's orders are all `DONE`, run **`reconcile`**.
+Hand each order to an executor via the `dispatch-orders` skill (which wraps `implement-order`), one
+fresh context per order. When a stage's orders are all `DONE`, run **`reconcile`**.

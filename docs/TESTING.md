@@ -71,7 +71,13 @@ every seeded player's nested endpoints, asserting **no configured GET endpoint m
 .venv\Scripts\python.exe -m pytest backend/tests/routers/test_spells.py --no-cov  # one file, skip the gate
 .venv\Scripts\python.exe -m pytest -m integration --no-cov                     # only the real-data sweep
 .venv\Scripts\python.exe -m pytest -m "not integration"                        # skip the slower real-data build
+.venv\Scripts\python.exe scripts/stage_check.py --timeout 900                  # full gate, kill checks over 15 minutes
 ```
+
+`stage_check.py` runs the independent gates concurrently, keeps successful output out of the
+console, and stores full logs under `.stage-check/` only for investigation. Each check has a hard
+15-minute default timeout (`--timeout` changes it); timed-out checks are failed and their isolated
+process trees are terminated, including npm/Vitest descendants on Windows.
 
 ## Frontend
 - `cd frontend && npm run test` → vitest run. Test totals are intentionally not recorded here; run the command for the current count.
@@ -147,7 +153,7 @@ says only where the files are.
 <!-- GENERATED:TESTING:LOCATIONS:START -->
 | Location | Files | Test cases |
 |---|---|---|
-| `backend/tests/` | 17 | 425 |
+| `backend/tests/` | 17 | 441 |
 | `backend/tests/routers/` | 17 | 267 |
 | `frontend/src/__tests__/` | 1 | 4 |
 | `frontend/src/api/__tests__/` | 1 | 7 |

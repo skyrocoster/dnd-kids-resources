@@ -552,13 +552,29 @@ def test_running_a_generator_is_not_an_edit_site(repo: Path):
     assert any("generate_export_schema.py" in m for m in messages(repo, edited))
 
 
-def test_one_frontend_test_file_per_order(repo: Path):
+def test_two_frontend_suites_are_permitted_by_default(repo: Path):
     (repo / "src" / "__tests__" / "Other.test.tsx").write_text("test('y', () => {})\n", encoding="utf-8")
     order = GOOD_ORDER.replace(
         "- src/__tests__/Tile.test.tsx\n",
         "- src/__tests__/Tile.test.tsx\n- src/__tests__/Other.test.tsx\n",
+    ).replace(
+        "- Add one test to src/__tests__/Tile.test.tsx.",
+        "- Add one test to src/__tests__/Tile.test.tsx and src/__tests__/Other.test.tsx.",
     )
-    assert any("frontend test files" in m for m in messages(repo, order))
+    assert not any("frontend test files" in m for m in messages(repo, order))
+
+
+def test_three_frontend_suites_are_warned(repo: Path):
+    for name in ("Other", "Third"):
+        (repo / "src" / "__tests__" / f"{name}.test.tsx").write_text(
+            "test('x', () => {})\n", encoding="utf-8"
+        )
+    order = GOOD_ORDER.replace(
+        "- src/__tests__/Tile.test.tsx\n",
+        "- src/__tests__/Tile.test.tsx\n- src/__tests__/Other.test.tsx\n- src/__tests__/Third.test.tsx\n",
+    )
+    found = messages(repo, order)
+    assert any("frontend test files" in m for m in found)
 
 
 def test_big_integrated_suite_gets_one_behaviour(repo: Path):
@@ -925,16 +941,17 @@ def test_do_caps_bullets(repo: Path):
 
 
 def test_stop_when_caps_test_files(repo: Path):
-    for name in ("Second", "Third"):
+    for name in ("Second", "Third", "Fourth"):
         (repo / "src" / "__tests__" / f"{name}.test.tsx").write_text(
             "test('x', () => {})\n", encoding="utf-8"
         )
     order = GOOD_ORDER.replace(
         "npm run test:check -- src/__tests__/Tile.test.tsx",
         "npm run test:check -- src/__tests__/Tile.test.tsx "
-        "src/__tests__/Second.test.tsx src/__tests__/Third.test.tsx",
+        "src/__tests__/Second.test.tsx src/__tests__/Third.test.tsx "
+        "src/__tests__/Fourth.test.tsx",
     )
-    assert any("runs 3 test files" in m for m in messages(repo, order))
+    assert any("runs 4 test files" in m for m in messages(repo, order))
 
 
 def test_one_suite_named_twice_counts_once(repo: Path):
@@ -1002,3 +1019,95 @@ def test_order_check_wrapper_flags_satisfy_the_lint_and_typecheck_rules(repo: Pa
     )
     found = messages(repo, order)
     assert not any("does not run npm run lint" in m for m in found)
+
+
+# ---------------------------------------------------------------------------------------
+# Severity split and the dispatch gate.
+#
+# Deterministic safeguards stay errors; prose-sensitive heuristics and the relaxed shape
+# caps are warnings at authoring time and escalate under `--strict`. `lint_orders` drops
+# warnings by default (so CI gates on objective errors only) and accepts a selected set
+# of order files instead of requiring a full active-tree scan.
+# ---------------------------------------------------------------------------------------
+
+
+def _over_do_order() -> str:
+    return GOOD_ORDER.replace(
+        "- Add one test to src/__tests__/Tile.test.tsx.",
+        "- Add one test to src/__tests__/Tile.test.tsx.\n"
+        "- Rename the header wrapper in src/Tile.tsx.\n"
+        "- Sort the props in src/Tile.tsx.",
+    )
+
+
+def test_shape_caps_are_warnings_until_strict(repo: Path):
+    relaxed = co.lint_order(write(repo, _over_do_order()))
+    assert any(
+        e.severity == "warning" and "DO asks for 4 things" in e.message for e in relaxed
+    )
+    assert not any(
+        e.severity == "error" and "DO asks for 4 things" in e.message for e in relaxed
+    )
+
+    strict = co.lint_order(write(repo, _over_do_order()), strict=True)
+    assert any(
+        e.severity == "error" and "DO asks for 4 things" in e.message for e in strict
+    )
+
+
+def test_strict_escalates_prose_warnings(repo: Path):
+    order = GOOD_ORDER.replace(
+        "- The tile renders the title only.",
+        "- If order 03 left that union inline, lift it into a shared function.",
+    )
+    relaxed = co.lint_order(write(repo, order))
+    assert any(
+        e.severity == "warning" and "conditional instruction" in e.message for e in relaxed
+    )
+    strict = co.lint_order(write(repo, order), strict=True)
+    assert any(
+        e.severity == "error" and "conditional instruction" in e.message for e in strict
+    )
+
+
+def test_deterministic_safeguards_stay_errors(repo: Path):
+    """Path, authorization, lifecycle, and runnable-filter rules are never warnings."""
+    order = GOOD_ORDER.replace("- src/__tests__/Tile.test.tsx\n", "- Tile.test.tsx\n", 1)
+    relaxed = co.lint_order(write(repo, order))
+    assert any(
+        e.severity == "error" and "does not exist" in e.message for e in relaxed
+    )
+
+
+def test_lint_orders_drops_warnings_by_default(repo: Path):
+    path = write(repo, _over_do_order())
+    assert not any("DO asks for 4 things" in e.message for e in co.lint_orders(paths=[path]))
+    shown = co.lint_orders(paths=[path], include_warnings=True)
+    assert any(
+        e.severity == "warning" and "DO asks for 4 things" in e.message for e in shown
+    )
+
+
+def test_lint_orders_strict_escalates_warnings(repo: Path):
+    path = write(repo, _over_do_order())
+    findings = co.lint_orders(paths=[path], strict=True)
+    assert any(
+        e.severity == "error" and "DO asks for 4 things" in e.message for e in findings
+    )
+
+
+def test_selected_orders_are_checked_for_dependency_conflicts(repo: Path):
+    """Dependency conflicts are reported within the named set, not the whole tree."""
+    orders = repo / "orders" / "feat"
+    orders.mkdir(parents=True)
+    (orders / "01-first.md").write_text(GOOD_ORDER, encoding="utf-8")
+    second = GOOD_ORDER.replace("WORK ORDER 01", "WORK ORDER 02")
+    (orders / "02-second.md").write_text(second, encoding="utf-8")
+
+    found = co.lint_orders(paths=[orders / "01-first.md", orders / "02-second.md"])
+    assert any("share mutable paths without a dependency" in e.message for e in found)
+
+    fixed = second.replace("DEPENDS ON: none", "DEPENDS ON: 01")
+    (orders / "02-second.md").write_text(fixed, encoding="utf-8")
+    found = co.lint_orders(paths=[orders / "01-first.md", orders / "02-second.md"])
+    assert not any("share mutable paths without a dependency" in e.message for e in found)

@@ -31,7 +31,7 @@ import sys
 import tempfile
 import textwrap
 from configparser import ConfigParser
-from pathlib import Path, PurePosixPath
+from pathlib import Path
 from urllib.parse import unquote
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -74,7 +74,7 @@ GUIDE_PATHS = [
 ]
 MARKDOWN_LINK_RE = re.compile(r"(?<!!)\[[^\]]*\]\(([^)]+)\)")
 HEADING_RE = re.compile(r"^#{1,6}\s+(.+?)\s*#*\s*$", re.MULTILINE)
-AREA_GUIDE_HEADINGS = {"scope", "read-first", "source-map", "invariants", "work-queue", "cross-references"}
+AREA_GUIDE_HEADINGS = {"scope", "read-first", "source-map", "invariants", "deferred", "cross-references"}
 IMPLEMENTATION_PREFIXES = ("backend/", "frontend/", "scripts/", "data/", ".github/")
 ROUTER_PATH_RE = re.compile(r"backend/app/routers/(\w+)\.py")
 GENERATED_CONTRACT_REFERENCES = {
@@ -266,8 +266,18 @@ def parse_manifest_plan_files(readme_path: Path) -> list[str]:
     return re.findall(r"\[([^\]]+_plan\.md)\]", content)
 
 
+# A redirect stub declares, in its Status line, that the completed plan moved to the
+# archive. The target must be a real plan path under done/ or complete/ — not prose
+# like "moved to `## Watching for`" or "moved to `docs/INVENTORY.md`".
+REDIRECT_RE = re.compile(
+    r"moved to\s+>?\s*\[[^\]]*\]\([^)]*/(?:done|complete)/[^)]*\.md\)"
+    r"|moved to\s+>?\s*`[^`]*plans/(?:done|complete)/",
+    re.IGNORECASE,
+)
+
+
 def _is_redirect(content: str) -> bool:
-    return "moved to" in content.lower() and (
+    return bool(REDIRECT_RE.search(content)) and (
         "complete" in content.lower() or "done" in content.lower()
     )
 
@@ -351,6 +361,11 @@ def check_plan_touch_overlap(docs_dir: Path) -> list[CheckError]:
         try:
             content = plan.read_text(encoding="utf-8")
         except UnicodeDecodeError:
+            continue
+
+        # Redirect stubs stay under active/ only to preserve inbound links; they
+        # are not live plans and take no part in the Touches contract.
+        if _is_redirect(content):
             continue
 
         globs, depends_on = _parse_touches(content, plan, REPO_ROOT)
@@ -769,14 +784,12 @@ def _collect_implementation_files(repo_root: Path) -> set[Path]:
 
 
 def check_area_guide_contract(docs_dir: Path) -> list[CheckError]:
-    """Ensure guides and active plans form one unambiguous ownership relationship.
+    """Ensure area guides keep durable code ownership.
 
-    Replaced the single Active-plan blockquote with a Plan queue contract:
-      > **Plan queue:** None.
-    or an ordered list whose first item is marked (next up):
-      > **Plan queue:**
-      > 1. [Plan A](path) (next up)
-      > 2. [Plan B](path)
+    Area guides own code — routers, routes, and change-map file coverage — and
+    no longer carry any per-area Plan queue or work queue. Which plans are in
+    flight for an area is the global active index's job
+    (`docs/plans/active/INDEX.md`), not an area guide's.
 
     Also validates that no backend router or frontend route is claimed
     by two different area guides.
@@ -1120,7 +1133,21 @@ def generate_api_router_inventories(repo_root: Path) -> dict[tuple[str, str], st
 
 
 PLAN_AREA_GUIDE_RE = re.compile(r"^-\s+\*\*Area guide:\*\*\s+\[([^\]]+)\]\(([^)]+)\)", re.MULTILINE)
+PLAN_AREAS_RE = re.compile(r"^-\s+\*\*Areas:\*\*\s+(.+)$", re.MULTILINE)
 PLAN_READ_TRIGGER_RE = re.compile(r"^-\s+\*\*Read trigger:\*\*\s+(.+)$", re.MULTILINE)
+
+
+def _parse_plan_areas(text: str) -> list[str]:
+    """The plan's stable area-guide IDs from its `**Areas:**` header line.
+
+    `**Areas:**` is the authored routing fact for active and new Plans — a
+    comma-separated list of area-guide slugs (`docs/areas/<slug>.md`). Legacy
+    archived Plans may still use a `**Area guide:**` link instead.
+    """
+    match = PLAN_AREAS_RE.search(text)
+    if not match:
+        return []
+    return [slug.strip() for slug in match.group(1).split(",") if slug.strip()]
 
 
 def _plan_files(repo_root: Path) -> list[Path]:
@@ -1137,35 +1164,49 @@ def _plan_files(repo_root: Path) -> list[Path]:
 
 
 def check_plan_headers(repo_root: Path) -> list[CheckError]:
-    """Fail when a plan lacks the header fields the manifest and area guides generate from.
+    """Fail when a plan lacks the header fields the manifest and indexes generate from.
 
-    `**Read trigger:**` and `**Area guide:**` are authored once here and rendered
-    into `INVENTORY.md` and the owning area guide's plan table. A plan missing
-    either cannot be routed to, so it is a failure rather than a blank cell.
+    `**Read trigger:**` and `**Areas:**` are authored once in the plan and
+    rendered into `INVENTORY.md` and the active index. A plan missing either
+    cannot be routed to, so it is a failure rather than a blank cell. Legacy
+    archived Plans may keep the older `**Area guide:**` link during migration.
+    Redirect stubs are excluded: they exist only to preserve inbound links.
     """
     errors: list[CheckError] = []
     for path in _plan_files(repo_root):
         text = path.read_text(encoding="utf-8", errors="replace")
         relative = _safe_rel(path, repo_root)
+        if _is_redirect(text):
+            continue
         if not PLAN_READ_TRIGGER_RE.search(text):
             errors.append(CheckError(
                 relative,
                 "Plan has no **Read trigger:** line",
                 "Add '- **Read trigger:** <when a reader should open this>' under the Status line",
             ))
-        area = PLAN_AREA_GUIDE_RE.search(text)
-        if not area:
+        areas = _parse_plan_areas(text)
+        legacy = PLAN_AREA_GUIDE_RE.search(text)
+        if not areas and not legacy:
             errors.append(CheckError(
                 relative,
-                "Plan has no **Area guide:** line",
-                "Add '- **Area guide:** [<Area>](../../areas/<area>.md)' under the Status line",
+                "Plan has no **Areas:** line",
+                "Add '- **Areas:** <area-guide slug, comma-separated>' under the Status line",
             ))
             continue
-        target = (path.parent / area.group(2)).resolve()
+        if areas:
+            for slug in areas:
+                if not (AREA_GUIDES_DIR / f"{slug}.md").exists():
+                    errors.append(CheckError(
+                        relative,
+                        f"Plan's **Areas:** ID '{slug}' does not resolve to an area guide",
+                        "Point **Areas:** at slugs matching docs/areas/<slug>.md",
+                    ))
+            continue
+        target = (path.parent / legacy.group(2)).resolve()
         if not target.exists():
             errors.append(CheckError(
                 relative,
-                f"Plan's area guide link does not resolve: {area.group(2)}",
+                f"Plan's area guide link does not resolve: {legacy.group(2)}",
                 "Point **Area guide:** at an existing docs/areas/<area>.md",
             ))
     return errors
@@ -1197,24 +1238,23 @@ def generate_inventory_rows(repo_root: Path) -> str:
     """The manifest's area-guide and plan rows, read off the documents themselves.
 
     Every column here restates a fact authored elsewhere — the area guide's or
-    plan's own `**Read trigger:**`, the plan's Status line, its `**Area guide:**`
-    link — so the manifest can never drift from the documents it indexes.
+    plan's own `**Read trigger:**`, the plan's Status line — so the manifest can
+    never drift from the documents it indexes. No Plan-to-area join is performed:
+    which areas have active work is the global active index's job, not this table's.
+    Redirect stubs are excluded — they are link-preserving shells, not documents.
     """
     lines = ["| Document | Type | Authority | Status | Read trigger | Update trigger |", "|---|---|---|---|---|---|"]
 
     areas_dir = repo_root / "docs" / "areas"
-    active_by_area: dict[str, int] = {}
     plan_rows: list[tuple[str, str]] = []
 
     for path in _plan_files(repo_root):
         text = path.read_text(encoding="utf-8", errors="replace")
         relative = path.relative_to(repo_root / "docs").as_posix()
         archived = "/done/" in f"/{relative}"
+        if _is_redirect(text):
+            continue
         trigger = PLAN_READ_TRIGGER_RE.search(text)
-        area = PLAN_AREA_GUIDE_RE.search(text)
-        if area and not archived:
-            slug = PurePosixPath(area.group(2)).stem
-            active_by_area[slug] = active_by_area.get(slug, 0) + 1
         row = (
             f"| [{_inventory_title(text, path.stem)}]({relative}) "
             f"| {'Archived plan' if archived else 'Plan'} "
@@ -1230,10 +1270,9 @@ def generate_inventory_rows(repo_root: Path) -> str:
             continue
         text = path.read_text(encoding="utf-8", errors="replace")
         trigger = PLAN_READ_TRIGGER_RE.search(text)
-        active = active_by_area.get(path.stem, 0)
         lines.append(
             f"| [areas/{path.name}](areas/{path.name}) | Area guide | Canonical "
-            f"| {'Active plan' if active else 'No active plan'} "
+            f"| - "
             f"| {_escape_table_cell(trigger.group(1)) if trigger else '-'} "
             f"| {path.stem.capitalize()} ownership, source map, or active work changes |"
         )
@@ -1478,9 +1517,13 @@ def generate_archive_index(repo_root: Path) -> str:
                 status = raw.split(".")[0] + "." if "." in raw else raw
                 break
 
-        # Area guide name
+        # Area name from **Areas:** IDs (current) or the legacy **Area guide:** link.
         area = ""
         for line in text.splitlines():
+            areas_match = re.search(r"\*\*Areas:\*\*\s+(.+)", line)
+            if areas_match:
+                area = areas_match.group(1).split(",")[0].strip()
+                break
             if "**Area guide:**" in line:
                 m = re.search(r'\*\*Area guide:\*\*\s+\[([^\]]+)\]', line)
                 if m:
@@ -1523,10 +1566,11 @@ def _order_states(feature_dir: Path) -> list[tuple[str, str]]:
 
 
 def _collect_active_plans(repo_root: Path) -> dict[str, dict] | None:
-    """Every in-flight plan's title, status, link, dependencies, area guide and order states.
+    """Every in-flight plan's title, status, link, dependencies, areas and order states.
 
-    Read once and shared by the active index and the per-area-guide plan tables,
-    so the two can never disagree about what is in flight.
+    Read once and shared by the active index, so every consumer agrees on what is
+    in flight. Redirect stubs (a plan that says it moved to the archive) are
+    excluded — they exist to preserve inbound links, not to appear as live work.
     """
     active_dir = repo_root / "docs" / "plans" / "active"
     if not active_dir.is_dir():
@@ -1543,6 +1587,8 @@ def _collect_active_plans(repo_root: Path) -> dict[str, dict] | None:
                 continue
             plan_file = candidates[0]
         text = plan_file.read_text(encoding="utf-8")
+        if _is_redirect(text):
+            continue
 
         # The plan's own H1 and Status line are written for a reader of that plan, so both
         # carry a trailing explanation. A routing table wants the name and the headline:
@@ -1561,25 +1607,25 @@ def _collect_active_plans(repo_root: Path) -> dict[str, dict] | None:
                 break
 
         _globs, depends_on = _parse_touches(text, plan_file, repo_root)
-        area = PLAN_AREA_GUIDE_RE.search(text)
         plans[entry.name] = {
             "title": title,
             "status": status.replace("|", "\\|"),
             "link": f"{entry.name}/{plan_file.name}",
             "depends_on": [d for d in dict.fromkeys(depends_on) if d != entry.name],
             "states": _order_states(entry),
-            "area": PurePosixPath(area.group(2)).stem if area else "",
+            "areas": _parse_plan_areas(text),
             "path": plan_file,
         }
     return plans
 
 
 def generate_active_index(repo_root: Path) -> str:
-    """Generate the routing table of in-flight plans under docs/plans/active/.
+    """Generate the sole queue/status view of in-flight plans under docs/plans/active/.
 
-    Every column is read off the files: the plan's own Status line, the `Depends on`
-    entries in its ``## Touches`` section, and the STATUS line each executor wrote into
-    its work orders. Rows are sorted so a plan always follows the plans it depends on.
+    Every column is read off the files: the plan's own `**Areas:**` and Status
+    line, the `Depends on` entries in its ``## Touches`` section, and the STATUS
+    line each executor wrote into its work orders. Rows are sorted so a plan
+    always follows the plans it depends on.
 
     `State` is dependency-derived: a plan is *blocked* while any plan it depends on is
     still active, and *ready* once they have all been archived. `Next` names the skill
@@ -1624,47 +1670,20 @@ def generate_active_index(repo_root: Path) -> str:
             state = "ready"
             deps = "—"
 
+        areas = ", ".join(
+            f"[{slug}](../../areas/{slug}.md)" for slug in plan["areas"]
+        ) or "—"
         status_cell = plan["status"] or "—"
         rows.append(
-            f"| [{plan['title']}]({plan['link']}) | {deps} | {state} | "
+            f"| [{plan['title']}]({plan['link']}) | {areas} | {deps} | {state} | "
             f"{orders} | {nxt} | {status_cell} |"
         )
 
     header = [
-        "| Plan | Depends on | State | Orders | Next | Status |",
-        "| --- | --- | --- | --- | --- | --- |",
+        "| Plan | Areas | Depends on | State | Orders | Next | Status |",
+        "| --- | --- | --- | --- | --- | --- | --- |",
     ]
     return "\n".join(header + rows) + "\n"
-
-
-def generate_area_plan_tables(repo_root: Path) -> dict[tuple[str, str], str]:
-    """One in-flight-plan table per area guide, keyed by the plan's `**Area guide:**` link.
-
-    An area guide states which plans are live and what each says about itself; the
-    hand-written bullets below the table keep what no script can derive — why a plan
-    supersedes another, what is deferred, what is still undecided.
-    """
-    plans = _collect_active_plans(repo_root) or {}
-    by_area: dict[str, list[str]] = {}
-    for feature in _dependency_order(plans):
-        plan = plans[feature]
-        if not plan["area"]:
-            continue
-        blocking = [dep for dep in plan["depends_on"] if dep in plans]
-        state = "blocked" if blocking else "ready"
-        by_area.setdefault(plan["area"], []).append(
-            f"| [{plan['title']}](../plans/active/{plan['link']}) | {state} | {plan['status'] or '—'} |"
-        )
-
-    header = ["| Plan | State | Status |", "| --- | --- | --- |"]
-    tables: dict[tuple[str, str], str] = {}
-    for path in sorted((repo_root / "docs" / "areas").glob("*.md")):
-        if path.name.endswith(".words.md"):
-            continue
-        rows = by_area.get(path.stem, [])
-        body = "\n".join(header + rows) if rows else "_No plan is in flight for this area._"
-        tables[(f"areas/{path.name}", f"AREA_PLANS:{path.stem}")] = body + "\n"
-    return tables
 
 
 def _dependency_order(plans: dict[str, dict]) -> list[str]:
@@ -1719,7 +1738,6 @@ def generated_sections(repo_root: Path) -> dict[tuple[str, str], str]:
     sections.update(generate_api_router_inventories(repo_root))
     sections[("ARCHITECTURE.md", "ARCHITECTURE:SCRIPTS")] = generate_script_inventory(repo_root)
     sections[("TESTING.md", "TESTING:LOCATIONS")] = generate_test_inventory(repo_root)
-    sections.update(generate_area_plan_tables(repo_root))
     return sections
 
 

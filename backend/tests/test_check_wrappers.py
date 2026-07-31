@@ -131,14 +131,14 @@ def test_long_running_check_prints_a_bounded_heartbeat(monkeypatch, capsys, tmp_
         lambda **kwargs: log_path.open("w+", encoding="utf-8"),
     )
     monkeypatch.setattr(stage_check.subprocess, "Popen", popen)
-    monkeypatch.setattr(stage_check.time, "time", iter([0, 60, 61]).__next__)
+    monkeypatch.setattr(stage_check.time, "time", iter([0, 60, 61, 62, 63]).__next__)
 
     result = stage_check.run_check(_check("backend", ""))
 
     assert result.passed
     assert capsys.readouterr().err.splitlines() == [
         f"RUN   backend (log: {log_path})",
-        "WAIT  backend (60s, still running; last: "
+        "WAIT  backend (61s, still running; last: "
         f"backend/tests/test_slow.py::test_waits_forever; log: {log_path})",
     ]
     assert not log_path.exists()
@@ -147,6 +147,35 @@ def test_long_running_check_prints_a_bounded_heartbeat(monkeypatch, capsys, tmp_
 def test_backend_check_requests_test_node_progress():
     backend = next(check for check in stage_check._checks() if check.key == "backend")
     assert backend.command[-1] == "-vv"
+
+
+def test_check_is_failed_and_stopped_after_the_hard_timeout(monkeypatch, tmp_path):
+    class Process:
+        returncode = -9
+        pid = 123
+
+        def wait(self, timeout):
+            raise stage_check.subprocess.TimeoutExpired("x", timeout)
+
+        def poll(self):
+            return None
+
+    log_path = tmp_path / "stage-check-backend.log"
+    monkeypatch.setattr(
+        stage_check.tempfile,
+        "NamedTemporaryFile",
+        lambda **kwargs: log_path.open("w+", encoding="utf-8"),
+    )
+    monkeypatch.setattr(stage_check.subprocess, "Popen", lambda *args, **kwargs: Process())
+    monkeypatch.setattr(stage_check, "_stop_process_tree", lambda process: None)
+    monkeypatch.setattr(stage_check, "TIMEOUT_SECONDS", 1)
+    monkeypatch.setattr(stage_check.time, "time", iter([0, 0, 2]).__next__)
+
+    result = stage_check.run_check(_check("backend", ""))
+
+    assert not result.passed
+    assert result.summary == "timed out after 1s"
+    assert result.log_path == log_path
 
 
 def test_stage_checks_run_concurrently_and_keep_declared_order(monkeypatch):

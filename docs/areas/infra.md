@@ -67,16 +67,7 @@ see [../DATA_MODEL.md](../DATA_MODEL.md#rebuilding-the-database).
 - `data/generated/export_schema.json` is generated and committed — CI checks it on a fresh checkout.
   Never hand-edit it.
 
-## Work queue
-
-<!-- GENERATED:AREA_PLANS:infra:START -->
-| Plan | State | Status |
-| --- | --- | --- |
-| [Production Nightly Deploys](../plans/active/production-nightly-deploys/production-nightly-deploys.md) | ready | Not next for Infra; second in the Infra queue, after Table Testing Records. |
-| [Table Testing Records](../plans/active/table-testing-records/table-testing-records.md) | ready | Stages 1–2 shipped — the format is documented in `docs/TABLE_TESTING.md`, and the workflow now produces records by default: `PLAN_TEMPLATE.md` teaches the `**Table test:**` stage line, `to-orders` stops session-run orders at a record, and Player App Skeleton Stage 6 demonstrates the shape. |
-<!-- GENERATED:AREA_PLANS:infra:END -->
-
-What the table cannot derive:
+## Deferred
 
 - Shared backend infra and repo-wide test tooling remain deferred and need a design phase before changes.
 

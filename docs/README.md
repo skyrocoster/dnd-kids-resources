@@ -1,6 +1,6 @@
 # Documentation Manifest — D&D Kids Resources
 
-This is the documentation task router. The full documentation inventory (canonical docs, area guides, entry points, plan archive, and analysis records) is in [INVENTORY.md](INVENTORY.md). Use the router below to find the right area guide and context for your task. It routes to areas, not to plans: which plans are in flight for an area is generated into that area guide's `## Work queue` and into [plans/active/INDEX.md](plans/active/INDEX.md).
+This is the documentation task router. The full documentation inventory (canonical docs, area guides, entry points, plan archive, and analysis records) is in [INVENTORY.md](INVENTORY.md). Use the router below to find the right area guide and context for your task. It routes to areas, not to plans: which plans are in flight, what each is waiting on, and which areas each touches is the global active index's job — [plans/active/INDEX.md](plans/active/INDEX.md) is the sole queue/status view.
 
 Read [../AGENTS.md](../AGENTS.md) first, then use this manifest instead of exploring source to find the smallest relevant context packet. Use [../CONTEXT.md](../CONTEXT.md) for shared vocabulary; use the owning area guide for area-specific vocabulary and invariants.
 

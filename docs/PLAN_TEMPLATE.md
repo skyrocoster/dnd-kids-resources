@@ -1,17 +1,10 @@
 # Plan & Work-Order Template
 
 This repo splits planning from implementation across two roles, defined by model strength rather than
-by vendor:
-
-- **The planner** — the **more powerful model**. Runs `plan`, `to-orders`, `dispatch-orders`, and
-  `reconcile`. It is the only role that reads the Plan and explores the wider codebase.
-- **The executor** — the **cheaper, weaker model**. Runs `implement-order`: one work order at a time,
-  in a fresh context window, seeing only what its order names.
-
-Either role can be filled by any provider or product that is strong enough for it — opencode, ChatGPT,
-a local model. Which ones fill them is an open experiment, so the docs and skills name the
-**role**, never a vendor. Where a specific product genuinely matters (telemetry parsing, subagent
-transport), that is called out as a transport detail, not as who the planner is.
+by vendor: the **planner** (more powerful) runs `plan`, `to-orders`, `dispatch-orders`, and
+`reconcile`; the **executor** (cheaper, weaker) runs `implement-order`, one work order at a time, in a
+fresh context window, seeing only what its order names. Either role can be filled by any provider or
+product strong enough for it, so the docs and skills name the **role**, never a vendor.
 
 The workflow is driven by five skills in `.opencode/skills/`, opencode's native skill directory:
 
@@ -23,14 +16,9 @@ The workflow is driven by five skills in `.opencode/skills/`, opencode's native 
 | `implement-order` | executor | Execute **one** work order, then stop. Writes the code. |
 | `reconcile` | planner | Close out finished orders: collapse the Plan, update docs, run the checker. Bookkeeping, not code. |
 
-The three jobs: **PLAN** (the planner thinks) → **IMPLEMENT** (the executor does one order per
-context) → **RECONCILE** (the planner reconciles docs). The point is to keep the planner's expensive
-context clear of implementation sprawl and test output, which are cheapest in the executor's
-throwaway per-order contexts. That is a cost judgement, not a ban: when a dispatch round trip would
-cost more than the edit — a small, fully-determined change needing no additional exploration — the
-planner may compile and complete one order directly, runs its targeted STOP WHEN, preserves its
-STATUS/DEVIATIONS and telemetry lifecycle, and says so. Any failed edit, failed check, or need for
-another read ends this fast path and sends the order to an executor normally.
+The split is a cost judgement, not a ban: when a dispatch round trip would cost more than the edit — a
+small, fully-determined change needing no additional exploration — the planner may complete one order
+directly, run its STOP WHEN, preserve its STATUS/DEVIATIONS and telemetry lifecycle, and say so.
 
 ---
 
@@ -45,7 +33,7 @@ active at once; what a Plan waits on is a **dependency**, declared in its `## To
 
 > **Status:** <what's done, what's next — one line, rewritten each stage>
 
-- **Area guide:** [<Area>](../../../areas/<area>.md)
+- **Areas:** <area-guide slug, comma-separated>
 - **Read trigger:** <when a reader should open this plan>
 
 ## What we're building & why
@@ -74,12 +62,12 @@ active at once; what a Plan waits on is a **dependency**, declared in its `## To
 - **Open questions:** <what `to-orders` still must resolve, or `none`>
 ```
 
-**`**Area guide:**` and `**Read trigger:**` are required, and the checker enforces both.** They are
-not decoration: the plan's row in [INVENTORY.md](INVENTORY.md) and its row in the owning area guide's
-`## Work queue` are *generated* from them, together with the Status line. Write them once here and
-never restate them anywhere else — a manifest row typed by hand is the drift this replaced. The area
-guide link is relative to the plan file, so from `docs/plans/<state>/<feature>/` it is
-`../../../areas/<area>.md`.
+**`**Areas:**` and `**Read trigger:**` are required, and the checker enforces both.** `**Areas:**`
+holds the stable area-guide slugs the Plan owns (`docs/areas/<slug>.md`), comma-separated; the active
+index's `Areas` column and the manifest are generated from it, together with the Status line. Write
+them once here and never restate them anywhere else — a manifest row typed by hand is the drift this
+replaced. Legacy archived Plans may keep the older `**Area guide:**` link during migration; new and
+active Plans use `**Areas:**`.
 
 A stage that ends at something playable names its table test on the stage line: a `**Table test:**`
 label followed by a link whose text is the session date and whose target is the record under
@@ -90,43 +78,40 @@ what the session found. See [TABLE_TESTING.md](TABLE_TESTING.md) for the record 
 `## Compiler handoff` is a temporary, stage-scoped machine-facing appendix. It preserves verified
 answers planning already paid to discover so `to-orders` can target its exploration instead of
 rereading the same source. Exact paths, symbols, tests, contracts, and constraints belong here;
-unverified assumptions belong under Open questions. It is not a discovery log and contains no
-implementation recipe. `to-orders` consumes the compiled stage's subsection after its orders pass
-lint and removes the heading when no handoffs remain. The human-facing Plan above it stays short.
-
-A Plan may temporarily carry a **`## Planning byproducts`** appendix: verbatim code snippets that
-fell out of settling the design (verified regexes, exact expressions, type signatures). It is a
-hand-off buffer, not documentation — `to-orders` moves each snippet into the relevant order's KNOWN
-STATE (marked `verified snippet — use as-is:`) and deletes the appendix. Paid-for code is relayed,
-never re-derived by the executor; but the appendix is not a licence to pre-write the implementation.
+unverified assumptions belong under Open questions. `to-orders` consumes the compiled stage's
+subsection after its orders pass lint and removes the heading when no handoffs remain. A Plan may
+temporarily carry a **`## Planning byproducts`** appendix of verbatim code snippets that fell out of
+settling the design (verified regexes, exact expressions, type signatures); `to-orders` moves each
+into the relevant order's KNOWN STATE (marked `verified snippet — use as-is:`) and deletes the
+appendix.
 
 Every active Plan **must** declare a `## Touches` section. Each line is a repo-root-relative
 backtick-quoted glob matching files the Plan's work orders may modify. When a Plan directory contains
 at least one `NN-*.md` work order it is *in-flight*; only in-flight Plans participate in overlap
-checks. If two in-flight Plans expand to the same file, the overlap is reported as an error unless
-one Plan directly depends on the other via `- **Depends on:** [Label](#)`
-pointing to the depending Plan's Markdown file under `docs/plans/active/`.
+checks. If two in-flight Plans expand to the same file, the overlap is an error unless one Plan
+directly depends on the other via `- **Depends on:** [Label](#)` pointing to the depending Plan's
+Markdown file under `docs/plans/active/`.
 
 ## Layer 2 — the Work Order (one focused task)
 
-Lives at `docs/plans/active/<feature>/NN-<slug>.md`. One work order = one logical change,
-roughly one screen. The planner fills KNOWN STATE and START IN with verified facts so the executor never
+Lives at `docs/plans/active/<feature>/NN-<slug>.md`. One work order = one logical change, roughly
+one screen. The planner fills KNOWN STATE and START IN with verified facts so the executor never
 re-explores; the executor writes the code and the STATUS line.
 
 **Emit orders with `scripts/new_order.py`.** It renders this shape from the facts you pass it,
 resolves bare filenames to their one repo path, derives a line range and anchor from `path:Symbol`
-for any file over 400 lines, assembles the STOP WHEN command, and lints the result — writing
-nothing if the lint fails. It also enforces the shape ceiling at the argument boundary, so an
-order that is too big is refused as a sizing verdict before it is written: **4 distinct START IN
-files** (extra ranges of an already-named file are free, to 6 entries), **3 DO bullets**, **2 test
-files in STOP WHEN**. `check_orders.py` enforces the same three caps, so hand-writing a wider
-order only moves the rejection later.
+for any file over 400 lines, assembles the STOP WHEN command, and lints the result — writing nothing
+if the lint fails. It also enforces the shape ceiling at the argument boundary, so an order that is
+too big is refused as a sizing verdict before it is written: **4 distinct START IN files** (extra
+ranges of an already-named file are free, to 6 entries), **3 DO bullets**, **2 test files in STOP
+WHEN**. `check_orders.py` enforces the same three caps, so hand-writing a wider order only moves the
+rejection later.
 
 ```
 WORK ORDER <NN> — <short title>
 GOAL: <one sentence — what "done" looks like>
 DEPENDS ON: <order NN that must be DONE first, or "none">
-REQUIRED STRENGTH: Light   <-- the default for every order; Standard/High need "— <why Light can't>"
+REQUIRED STRENGTH: Light   <-- the default for every order; Standard/High need "— <why Light can't>">
 CREATES: <repo-relative paths this order creates, one bullet each, or "none">
 REMOVES: <repo-relative paths this order removes, one bullet each, or "none">
 CHANGES SIGNATURE: <`symbol` in <path> for each exported signature this order changes, or "none">
@@ -152,68 +137,63 @@ STATUS: <-- executor writes DONE, FAILED - <one-line reason>, or BLOCKED - <one-
 
 DEVIATIONS: <-- executor appends, always (even on DONE) — one line
 - KNOWN STATE re-verified or wrong: <one line, or "none">
+
+EVIDENCE ENVELOPE: <-- executor appends, always (even on DONE) — directly below DEVIATIONS
+- COMMAND: <the exact STOP WHEN command the executor ran>
+- RESULT: pass | fail
+- CHECKS: <what passed and what failed — one line per check>
+- DIRTY PATHS: <every file the edits left changed in the worktree, or "none">
+- AUTHORIZATION: <edited files matched to the START IN / DO / CREATES / REMOVES entries that authorize each>
+- GUARD: <read-guard denials or `--unlock` overrides, or "none">
+- ATTEMPTS: <0 if STOP WHEN passed first try, else the number of fix attempts>
 ```
 
-**Anchors, and why a bare line number is not allowed.** A line range tells the executor
-where to stop reading; the `@"..."` anchor is what keeps that range true. Line numbers rot
-the moment an upstream order edits the same file — in one stage, order 04 shifted every
-line below its edit and silently invalidated the ranges orders 05 and 06 had been compiled
-against. With an anchor that is a repairable condition rather than a discovery the executor
-makes mid-run: `scripts/check_orders.py` re-checks that the anchor still sits in its range,
-and `--fix` moves the range to wherever the anchor went. `--fix` will also resolve a
-backticked symbol into a real range, so the compiler never has to reopen a large file to
-find one. Bounding a large file by symbol name or by a bare line number is rejected: four
-consecutive orders in one stage spent their only measurable waste re-locating exactly that
-shape, and naming the range instead cut locating re-reads from 6 to 1.
+**Anchors, and why a bare line number is not allowed.** A line range tells the executor where to stop
+reading; the `@"..."` anchor is what keeps that range true when an upstream order edits the same file.
+`scripts/check_orders.py` re-checks that the anchor still sits in its range, and `--fix` moves the
+range to wherever the anchor went or resolves a backticked symbol into a real range. Bounding a large
+file by symbol name or bare line number is rejected.
 
-**DEVIATIONS is one line, not two.** The executor used to declare what it opened beyond
-START IN as well. That self-report was measurably unreliable — one order declared "none"
-while the transcript recorded a read outside its scope — and `order_telemetry.py` derives
-the same fact from the transcript more accurately and for free. What remains is the one
-thing no transcript can tell you: whether the facts the order asserted were actually true.
+**DEVIATIONS is one line, not two.** The old second line — what the executor opened beyond START IN —
+was measurably unreliable, and `order_telemetry.py` derives the same fact from the transcript more
+accurately and for free.
+
+Below DEVIATIONS the executor always appends the compact **EVIDENCE ENVELOPE** — COMMAND, RESULT,
+CHECKS, DIRTY PATHS, AUTHORIZATION, GUARD, ATTEMPTS — a structured account of the run the coordinator
+judges without re-deriving anything (see step 8 of `.opencode/skills/implement-order/SKILL.md`).
+STATUS stays `DONE` / `FAILED` / `BLOCKED`; **clean** and **anomalous** are coordinator
+classifications derived from the envelope's RESULT, GUARD, and ATTEMPTS, not executor verdicts.
 
 The focus leash: **KNOWN STATE** (answers, not pointers) + **START IN** (bounded exploration, each
 entry scoped to the symbol or line range needed) + **CREATES/REMOVES** (explicit artifact lifecycle)
-+ **STOP WHEN** (a hard stop that ends wandering).
-The path alone is not the whole START IN authorization: when an entry names a symbol or line range,
-opening unrelated sections of that same file is a deviation and must be reported as such.
-See `.opencode/skills/to-orders/SKILL.md` for the full authoring guidance, and
++ **STOP WHEN** (a hard stop that ends wandering). When an entry names a symbol or line range, opening
+unrelated sections of that same file is a deviation and must be reported as such. See
+`.opencode/skills/to-orders/SKILL.md` for full authoring guidance, and
 [the reference order](plans/_example/99-creature-row-ac.md) for a worked example.
 
-`scripts/check_orders.py` lints orders against these rules and is runnable on its own while
-compiling a stage. Each rule is one fault the telemetry log paid to learn — a path that does not
-resolve, an undeclared edit or lifecycle artifact, a bare filename, a conditional instruction, an
-unscoped large file, a stale or unanchored line range, an exported signature change that does not
-enumerate its call sites, a source file whose own suite is missing from STOP WHEN, a hook change
-with no lint, a new test with no insertion anchor, a fixture with no cast idiom or typecheck,
-several behaviours aimed at one big integrated suite, structural documentation without the real
-checker, validator tests omitted from the order, or unsafe parallel edits.
+`scripts/check_orders.py` lints orders against these rules and is runnable on its own while compiling
+a stage. Each rule is one fault the telemetry log paid to learn — an unresolvable path, an undeclared
+edit or lifecycle artifact, a bare filename, a conditional instruction, an unscoped large file, a
+stale or unanchored line range, an exported signature change that does not enumerate its call sites, a
+source file whose own suite is missing from STOP WHEN, a hook change with no lint, a new test with no
+insertion anchor, several behaviours aimed at one big integrated suite, structural documentation
+without the real checker, validator tests omitted from the order, or unsafe parallel edits.
 
-Four scripts keep the workflow's own costs off a model:
-
-- `scripts/new_order.py` writes the order itself, so the faults above are prevented at the
-  argument boundary rather than reported after a file exists.
-- `scripts/check_orders.py --fix` repairs what is mechanical — bare filenames, stale ranges,
-  symbol-scoped entries — so the compiler does not reopen files to re-verify line numbers.
-- `scripts/order_check.py` runs a STOP WHEN and prints pass/fail plus the failing test names
-  instead of the whole runner output, which was routinely the largest single tool result in an
-  executor's context.
-- `scripts/stage_check.py` runs all five reconcile checks and prints ~10 lines plus the
-  `- stage checks:` telemetry line verbatim.
-
-And one rule is enforced by the harness rather than by wording. `scripts/read_guard.py` denies a
-read of a file the session has already edited, once that session has invoked `implement-order`;
-a failing check unlocks everything, and `--unlock <path> --reason "<why>"` is the logged override.
-opencode reaches it through `.opencode/plugin/read-guard.js`, so the rule binds every executor.
-Post-edit re-reading was the only waste class that survived every order-side correction in the log.
+Four scripts keep the workflow's own costs off a model: `new_order.py` writes the order so the faults
+above are prevented at the argument boundary; `check_orders.py --fix` repairs what is mechanical;
+`order_check.py` runs a STOP WHEN and prints pass/fail; `stage_check.py` runs all five reconcile
+checks and prints ~10 lines. One rule is enforced by the harness rather than by wording:
+`scripts/read_guard.py` denies a read of a file the session has already edited, once that session has
+invoked `implement-order`; a failing check unlocks everything, and `--unlock <path> --reason "<why>"`
+is the logged override. opencode reaches it through `.opencode/plugin/read-guard.js`.
 
 ### On failure — the escalation channel back to the planner
 
-The work-order file is also the handoff channel when things go wrong. If the executor cannot make
-STOP WHEN pass (after at most two distinct fix attempts) it writes `STATUS: FAILED - <reason>`; if
-the order cannot be executed as written (KNOWN STATE wrong, named file missing, DO contradicts the
-code) it writes `STATUS: BLOCKED - <reason>`. Either way it appends a **FAILURE REPORT** block below
-the STATUS line and **leaves its partial changes in the worktree**:
+If the executor cannot make STOP WHEN pass — the harness allows two failed verification runs total,
+the initial failure plus at most one repair after it — it writes
+`STATUS: FAILED - <reason>`; if the order cannot be executed as written (KNOWN STATE wrong, named file
+missing, DO contradicts the code) it writes `STATUS: BLOCKED - <reason>`. Either way it appends a
+**FAILURE REPORT** block below the STATUS line and **leaves its partial changes in the worktree**:
 
 ```
 FAILURE REPORT:
@@ -224,73 +204,46 @@ FAILURE REPORT:
 - WORKTREE: <"changes left in place" plus the list of dirty files>
 ```
 
-The verbatim OUTPUT is the load-bearing field: the planner triages from it without re-running
-the work from cold. A failure report is a successful outcome of an order — the executor never keeps
-cycling to avoid writing one.
+The verbatim OUTPUT is the load-bearing field: the planner triages from it without re-running the work
+from cold. A failure report is a successful outcome of an order — the executor never keeps cycling to
+avoid writing one.
 
 ### Telemetry — every finished order leaves a cost record
 
 > **Collection is currently paused, so skip every recording command below.** While
-> `docs/plans/telemetry-paused.md` exists they record nothing and exit 0 — running one is a round
-> trip that buys nothing, and a skill that spends three of them per order is paying for silence.
-> Check for the file once per session and move on; the three moments below apply in full the moment
-> it is gone. Resume with
-> `.venv\Scripts\python.exe scripts/order_telemetry.py --resume`. What the log paid for is already
-> enforced in `scripts/check_orders.py`, `scripts/read_guard.py` and `scripts/order_check.py`; the
-> pause stops the measuring, not the enforcement.
+> `docs/plans/telemetry-paused.md` exists they record nothing and exit 0 — running one is a round trip
+> that buys nothing. Check for the file once per session and move on; the three moments below apply in
+> full the moment it is gone. Resume with
+> `.venv\Scripts\python.exe scripts/order_telemetry.py --resume`.
 
-Telemetry has three moments, and they are all run by `scripts/order_telemetry.py`:
+Telemetry has three moments, all run by `scripts/order_telemetry.py`:
 
-1. **At dispatch** — `--snapshot --order <order-path>` freezes the order's compiled shape. A reissue
-   overwrites the order file, so shape captured afterwards is the shape of whichever version
-   survived; the snapshot also yields the reissue diff.
+1. **At dispatch** — `--snapshot --order <order-path>` freezes the order's compiled shape.
 2. **When the order reports back** — `--order <order-path> --fault <verdict> --note "<why>"` parses
-   the executor's record (token totals, turn count, largest tool results, duplicate reads, reads
-   outside START IN) and folds in the executor's STATUS and DEVIATIONS lines. The opencode transport
-   parses automatically from its local SQLite DB — and only *child* records count, because the
-   dispatcher's own session names the order too and would otherwise be logged as if it were the
-   executor.
-3. **At reconcile** — `--reconcile "<stage>"` records stage-level checks, the defects that escaped
-   the orders' own STOP WHEN commands, and **the planner's own cost for the stage**. Without that
-   last figure the log measures only the cheap half of the workflow and cannot say whether
-   dispatching a stage beat implementing it directly.
+   the executor's record and folds in its STATUS and DEVIATIONS lines. The opencode transport parses
+   automatically from its local SQLite DB, counting only *child* records.
+3. **At reconcile** — `--reconcile "<stage>"` records stage-level checks, the defects that escaped the
+   orders' own STOP WHEN commands, and the planner's own cost for the stage.
 
 Entries are written to `docs/plans/telemetry.jsonl`; `docs/plans/telemetry-log.md` is **generated**
-from it and must never be hand-edited. Prose bullets cannot be summed, and correlating order shape
-against cost is the whole reason the log exists.
-
-**First-pass rate is the metric worth optimising.** An executor run costs cents; a re-dispatch costs
-a cold start, the planner's attention, and a stalled dependency chain. The token columns diagnose
-*why* an order thrashed — they are not the target. Order shape sits beside them because nearly every
-compiler note concludes the order, not the executor, was at fault; the part of shape that actually
-predicts cost is how many START IN lines sat inside a **named range**, not how many lines the files
-held. For anything else (e.g. ChatGPT) the `--manual "<reported usage>"` form logs whatever that
-tool's UI reported. The executor-written STATUS/DEVIATIONS lines are transport-independent either
-way. The record survives order deletion at reconcile — reconcile checks each order has an entry
-before deleting it — and is reviewed every ~10-15 entries to tighten the
-`plan`/`to-orders`/`implement-order` rules. That review ends with `--close-cycle`, which distils the
-cycle into a summary, tags each lesson as `enforced` or `judgement`, and archives the raw entries to
-`docs/plans/telemetry-archive/` so the log stays readable. Executors never self-report token
-numbers; models can't see their own counters, so numbers come only from transcripts or the other
-tool's UI.
+from it and must never be hand-edited. **First-pass rate is the metric worth optimising.** An executor
+run costs cents; a re-dispatch costs a cold start, the planner's attention, and a stalled dependency
+chain. The token columns diagnose *why* an order thrashed — they are not the target. The record
+survives order deletion at reconcile, is reviewed every ~10-15 entries, and that review ends with
+`--close-cycle`. Executors never self-report token numbers; models can't see their own counters.
 
 Triage happens **the moment the failure returns**, in `dispatch-orders` — not at reconcile time —
 because downstream orders `DEPENDS ON` the failed one and stall until it's reissued and passes. A
-`DONE` order needs nothing further; only failures pull the planner back in. `reconcile` triages
-only what is still unresolved at closeout (typically orders that need a human, or an abandoned
-batch).
+`DONE` order needs nothing further; only failures pull the planner back in. Two rules keep failure
+knowledge flowing forward so work is never repeated:
 
-Two rules keep failure knowledge flowing forward so work is never repeated:
-
-- **The planner always tells the executor what already fails.** Whoever compiles an order (`to-orders`
-  or a `reconcile` reissue) runs the relevant test command first and records any pre-existing failures
-  verbatim under **KNOWN TEST FAILURES**. The executor treats those as background noise: it never
-  tries to fix them, never counts them as its own breakage, and STOP WHEN is judged with those
-  failures still present.
-- **A reissued order carries what was already tried.** Whoever reissues a FAILED order (normally
-  `dispatch-orders` mid-flight, `reconcile` at closeout) folds the previous FAILURE REPORT's TRIED
-  and SUSPECT lines into the new order's KNOWN STATE as "already attempted, did not work:
-  <approach>" so the next executor starts past them, not over.
+- **The planner always tells the executor what already fails.** Whoever compiles an order runs the
+  relevant test command first and records any pre-existing failures verbatim under **KNOWN TEST
+  FAILURES**. The executor treats those as background noise and STOP WHEN is judged with them still
+  present.
+- **A reissued order carries what was already tried.** Whoever reissues a FAILED order folds the
+  previous FAILURE REPORT's TRIED and SUSPECT lines into the new order's KNOWN STATE as "already
+  attempted, did not work: <approach>".
 
 ### Test-run tiers
 
@@ -310,19 +263,21 @@ Each tier runs in the context that can afford its output:
    `plans/active/`. There may be many at once: a design can be fully settled and written up long
    before there is capacity to build it, and writing it down is how the reasoning survives.
 
-   **Dependencies, not queues, decide what can start.** A Plan that cannot begin until another
-   ships says so with a a `**Depends on:**` entry (see the Layer 1 shape above) in its
-   `## Touches` section. A Plan is **blocked** while any Plan it depends on is still under
-   `plans/active/`, and **ready** once they have all been archived —
-   [plans/active/INDEX.md](plans/active/INDEX.md) derives both and sorts every Plan after the ones
-   it depends on. Several Plans can be ready at once and nothing ranks them: which ready Plan to
-   pick up is the user's call, made per session rather than recorded in a file.
+   **Dependencies, not queues, decide what can start.** A Plan that cannot begin until another ships
+   says so with a `**Depends on:**` entry in its `## Touches` section. A Plan is **blocked** while any
+   Plan it depends on is still under `plans/active/`, and **ready** once they have all been archived —
+   [plans/active/INDEX.md](plans/active/INDEX.md) derives both and sorts every Plan after the ones it
+   depends on. Several Plans can be ready at once and nothing ranks them: which ready Plan to pick up
+   is the user's call, made per session rather than recorded in a file. That index is the **sole
+   queue/status view** — area guides no longer carry per-area plan tables or queues.
 2. **Shipped** — as each stage's orders finish, `reconcile` collapses them into the Plan's **Shipped**
    table (one ≤2-sentence row per stage) and deletes the spent order files. The commit history is the
    record of *how* each thing was built — never duplicate that prose into the Plan.
 3. **Complete** — when the whole feature ships, move the Plan to `docs/plans/done/<feature>/` and
-   update `docs/README.md` in the same change set. Archiving it also unblocks every Plan that
-   declared a dependency on it, so regenerate the index. Leave a redirect stub only if a known inbound link must survive.
+   update `docs/README.md` in the same change set. Archiving it also unblocks every Plan that declared
+   a dependency on it, so regenerate the index. Leave a redirect stub only if a known inbound link
+   must survive; redirect stubs are excluded from the active index and the manifest inventory, so an
+   archived plan never reads as active.
 
 ## Required model strength (per work order)
 
@@ -336,21 +291,18 @@ after reading only what it names.
 ## The documentation checker
 
 `scripts/check_docs.py` is aligned with this workflow. For an active Plan it requires only a
-`> **Status:**` line (stages are plain-English list items, not `(next up)` execution blocks). It lints
-work orders under `plans/active/<feature>/` by delegating to `scripts/check_orders.py` — the
-load-bearing fields (`GOAL:`, `DEPENDS ON:`, `REQUIRED STRENGTH:`, `CREATES:`, `REMOVES:`,
-`START IN:`, `STOP WHEN:`, `STATUS:`), a `FAILURE REPORT:`
-block whenever a STATUS line reads FAILED or BLOCKED, and the compiling rules above — requires every area guide's
-`## Change map` to map recognizable change types to repo-relative source globs, rejecting
+`> **Status:**` line, an `**Areas:**` and `**Read trigger:**` header (see Layer 1), and a
+`## Touches` section (stages are plain-English list items, not `(next up)` execution blocks). It lints
+work orders under `plans/active/<feature>/` by delegating to `scripts/check_orders.py`; requires every
+area guide's `## Change map` to map recognizable change types to repo-relative source globs, rejecting
 placeholders, unmatched globs, uncovered implementation files, and files claimed across multiple
-areas — enforces the `## Touches` overlap contract: every active Plan must declare a
-`## Touches` section with repo-root-relative globs, undeclared file overlap between in-flight
-Plans is an error, and a `- **Depends on:** [Label](#)` dependency in either
-Plan's `## Touches` section accepts the overlap — and keeps
-the workflow-agnostic safety net: local links/anchors, manifest completeness, plan-redirect lifecycle,
+areas; enforces the `## Touches` overlap contract between in-flight Plans; and keeps the
+workflow-agnostic safety net: local links/anchors, manifest completeness, plan-redirect lifecycle,
 AI-entry precedence, configured test commands, banned legacy references, and the auto-generated
-reference inventories. It no longer couples a per-diff code change to a Plan edit, so the executor's
-work-order commits pass without touching the Plan; the Plan is updated in batches by `reconcile`.
+reference inventories. The generated active index is the sole queue/status view; redirect stubs are
+excluded from it and from the manifest inventory. It no longer couples a per-diff code change to a
+Plan edit, so the executor's work-order commits pass without touching the Plan; the Plan is updated in
+batches by `reconcile`.
 
 An earlier plan format (a `(next up)` heading with eight labeled fields) is no longer enforced. The
 last plan still written that way may remain until it is naturally retired; it validates fine because

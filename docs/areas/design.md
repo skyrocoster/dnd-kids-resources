@@ -44,13 +44,7 @@ Modes are defined in [../UX_PATTERNS.md](../UX_PATTERNS.md#surface-modes).
 - Use semantic theme tokens; do not introduce arbitrary component colors.
 - Preserve domain-specific feature signatures while standardizing shared framing and accessibility.
 
-## Work queue
-
-<!-- GENERATED:AREA_PLANS:design:START -->
-_No plan is in flight for this area._
-<!-- GENERATED:AREA_PLANS:design:END -->
-
-What the table cannot derive:
+## Deferred
 
 Three items with no plan yet, raised by
 [Kid Map Viewer](../plans/done/kid-map-viewer/kid-map-viewer.md) planning and deliberately kept out

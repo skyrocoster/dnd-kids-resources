@@ -99,35 +99,22 @@ the tablet.
 - **The app informs; it never adjudicates.** No rules enforcement, no slot or HP tracking, no dice.
   The binder holds state, the app holds reference, the DM holds the ruling.
 
-## Work queue
+## Deferred
 
-<!-- GENERATED:AREA_PLANS:players:START -->
-| Plan | State | Status |
-| --- | --- | --- |
-| [Kid Map Viewer](../plans/active/kid-map-viewer/kid-map-viewer.md) | ready | Complete and archived. |
-<!-- GENERATED:AREA_PLANS:players:END -->
-
-What the table cannot derive:
-
-- Player Map Knowledge must land before Fog: reversible per-fact disclosure establishes the
-  concealment contract that spatial visibility then builds on.
-- Kid Map Viewer rebuilt the kid map on the same canvas the DM already uses — absolute zoom, one floor at a time, the DM's own
+- Fog, a dedicated Personal Surfaces grilling session, and the first personal reference surface
+  await their own plans; Fog builds on the concealment contract established by
+  [Player Map Knowledge](../plans/done/player-map-knowledge/player-map-knowledge.md).
+- Gear and weapons are an open branch and have no plan. Whether there is a third kid destination at
+  all is undecided, and the question of whether a kid surface should be shaped as a decision tree
+  rather than a browsable list should be settled before the personal surfaces are designed.
+- Player-item inventory remains deferred and needs its own design before schema or UI work.
+- [Kid Map Viewer](../plans/done/kid-map-viewer/kid-map-viewer.md) rebuilt the kid map on the same canvas the DM already uses — absolute zoom, one floor at a time, the DM's own
   drawing rules — and gained a four-family colour language (green goes somewhere, yellow is a way
   through, blue is a thing, pink is a person) solved by script rather than chosen by eye. It
   supersedes [Kid Map Legibility](../plans/done/kid-map-legibility/kid-map-legibility.md), which
   shipped three stages against a wrong diagnosis (contrast, not scale) and was closed on 2026-07-27;
   that plan's shared `roomLabelAnchor` survives, its kid-map palette is largely reversed, and its
   numbered stair badges are dropped.
-- Then, in order: Fog as one reversible cell layer; a dedicated Personal Surfaces grilling session;
-  and the first personal reference surface.
-- [Player App Skeleton](../plans/done/player-app-skeleton/player-app-skeleton.md) shipped all six
-  stages (archived), ending with the first real table test on 2026-07-23.
-- Gear and weapons are an open branch and have no plan. Whether there is a third kid destination at
-  all is undecided, and the question of whether a kid surface should be shaped as a decision tree
-  rather than a browsable list should be settled before the personal surfaces are designed.
-- [Player Spellbook Recovery](../plans/done/player-spellbook-recovery/player-spellbook-recovery.md)
-  shipped Stages 1-5 (archived).
-- Player-item inventory remains deferred and needs its own design before schema or UI work.
 
 ## Cross-references
 

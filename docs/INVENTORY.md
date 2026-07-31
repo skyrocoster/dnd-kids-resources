@@ -24,21 +24,20 @@ Authority: **Canonical** documents define current contracts. **Working** documen
 
 ### Area guides and plans
 
-Generated from each document's own `**Read trigger:**`, `**Area guide:**` and Status line — do not hand-edit.
+Generated from each document's own `**Read trigger:**` and Status line — do not hand-edit.
 
 <!-- GENERATED:INVENTORY:AREAS_AND_PLANS:START -->
 | Document | Type | Authority | Status | Read trigger | Update trigger |
 |---|---|---|---|---|---|
-| [areas/design.md](areas/design.md) | Area guide | Canonical | No active plan | Shared UI, tokens, shell, or accessibility | Design ownership, source map, or active work changes |
-| [areas/dungeons.md](areas/dungeons.md) | Area guide | Canonical | Active plan | Dungeon behavior | Dungeons ownership, source map, or active work changes |
-| [areas/encounters.md](areas/encounters.md) | Area guide | Canonical | No active plan | Encounter behavior | Encounters ownership, source map, or active work changes |
-| [areas/infra.md](areas/infra.md) | Area guide | Canonical | Active plan | Shared backend infra, documentation governance, or repo-wide test tooling | Infra ownership, source map, or active work changes |
-| [areas/loom.md](areas/loom.md) | Area guide | Canonical | No active plan | Story-thread (Loom) behavior | Loom ownership, source map, or active work changes |
-| [areas/players.md](areas/players.md) | Area guide | Canonical | Active plan | Player records, recovery profiles, player rosters, or the kid app | Players ownership, source map, or active work changes |
-| [areas/reference.md](areas/reference.md) | Area guide | Canonical | No active plan | Spells, weapons, items, or loot | Reference ownership, source map, or active work changes |
-| [Kid Map Viewer — the tablet gets the DM's map, and colour a child can say out loud](plans/active/kid-map-viewer/kid-map-viewer.md) | Plan | Working | Complete and archived. | How the kid map draws rooms, doors, stairs, markers and names; the shared map canvas; the curtain's per-field visibility; the kid colour families and their solver; the party marker; room label placement in either app | A stage ships, or its scope or settled decisions change |
+| [areas/design.md](areas/design.md) | Area guide | Canonical | - | Shared UI, tokens, shell, or accessibility | Design ownership, source map, or active work changes |
+| [areas/dungeons.md](areas/dungeons.md) | Area guide | Canonical | - | Dungeon behavior | Dungeons ownership, source map, or active work changes |
+| [areas/encounters.md](areas/encounters.md) | Area guide | Canonical | - | Encounter behavior | Encounters ownership, source map, or active work changes |
+| [areas/infra.md](areas/infra.md) | Area guide | Canonical | - | Shared backend infra, documentation governance, or repo-wide test tooling | Infra ownership, source map, or active work changes |
+| [areas/loom.md](areas/loom.md) | Area guide | Canonical | - | Story-thread (Loom) behavior | Loom ownership, source map, or active work changes |
+| [areas/players.md](areas/players.md) | Area guide | Canonical | - | Player records, recovery profiles, player rosters, or the kid app | Players ownership, source map, or active work changes |
+| [areas/reference.md](areas/reference.md) | Area guide | Canonical | - | Spells, weapons, items, or loot | Reference ownership, source map, or active work changes |
 | [Map Obstacle State - authored baselines and one persisted run overlay](plans/active/map-obstacle-state/map-obstacle-state.md) | Plan | Working | Stage 1 shipped — all 21 orders landed. | Map fixture concealment, locks, traps, DCs, shown state, session overrides, player-map obstacle badges, the Map Lab inspector, or removal of map knowledge and player preview | A stage ships, or its scope or settled decisions change |
-| [Production Nightly Deploys — ship every night without losing what you authored](plans/active/production-nightly-deploys/production-nightly-deploys.md) | Plan | Working | Not next for Infra; second in the Infra queue, after Table Testing Records. | Schema generation, database migrations, or the deploy path | A stage ships, or its scope or settled decisions change |
+| [Production Nightly Deploys — ship every night without losing what you authored](plans/active/production-nightly-deploys/production-nightly-deploys.md) | Plan | Working | Part of Stage 1 has already shipped out of band — see *Landed early* below. | Schema generation, database migrations, or the deploy path | A stage ships, or its scope or settled decisions change |
 | [Table Testing Records — real sessions become a comparable, checked record](plans/active/table-testing-records/table-testing-records.md) | Plan | Working | Stages 1–2 shipped — the format is documented in `docs/TABLE_TESTING.md`, and the workflow now produces records by default: `PLAN_TEMPLATE.md` teaches the `**Table test:**` stage line, `to-orders` stops session-run orders at a record, and Player App Skeleton Stage 6 demonstrates the shape. | Recording a real session, the table-test format, or its lifecycle and checks | A stage ships, or its scope or settled decisions change |
 | [Area Context Refactor — Keep AI context scoped by ownership](plans/done/area-context-refactor/area-context-refactor.md) | Archived plan | Historical | Complete | Area-scoped context refactor history | Never — archived record |
 | [Backend Test Coverage — close the gap toward 100%](plans/done/backend-test-coverage/backend-test-coverage.md) | Archived plan | Historical | Complete | Backend coverage gap-closing history | Never — archived record |

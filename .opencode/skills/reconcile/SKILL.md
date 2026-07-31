@@ -6,8 +6,8 @@ description: Close out finished work orders for a feature — collapse completed
 # reconcile — close out shipped work orders
 
 After the executors have run a stage's work orders, this skill reconciles what actually shipped back
-into the durable docs and clears the spent orders. The job here is **bookkeeping and documentation**:
-you record what shipped, you don't extend it.
+into the durable docs and clears the spent orders. You are the **strong coordinator** here; the job is
+**bookkeeping and documentation** — you record what shipped, you don't extend it.
 
 ## When you were not told which feature
 
@@ -19,57 +19,50 @@ nothing in the repo ranks them.
 ## Send the evidence-gathering out first
 
 Closeout asks the same questions every stage — what each order says it did, what git says actually
-changed, and where the docs currently describe the contracts that moved. That is retrieval, it is
-identical every time, and it is most of the reading in this skill. Send it to the scout in **one
-dispatch, before step 1**: in opencode that is the `reconcile-scout-deepseek` subagent. Hand it the
-feature directory and a base ref if you have one; it returns ORDERS, GIT, EXPORTED SURFACES, DOC
+changed, and where the docs describe the contracts that moved. That is retrieval: hand it to the cheap
+**scout** in one dispatch, before step 1 (opencode: the `reconcile-scout-deepseek` subagent). Hand it
+the feature directory and a base ref if you have one; it returns ORDERS, GIT, EXPORTED SURFACES, DOC
 MENTIONS, and NOT FOUND / UNCERTAIN, all quoted with `path:line`.
 
-Its report is evidence for steps 1, 2 and 5. **Every judgement below stays here**, and the scout is
-instructed to refuse all of them:
-
-- whether a `DONE` order actually landed, and whether to re-run its STOP WHEN;
-- whether a changed export is a real *contract* change or an internal detail — step 5 turns on this,
-  and a quoted diff line is the input to that call, never the answer;
-- how a Shipped row and Status line should read;
-- why a `FAILED`/`BLOCKED` order failed, and whether to reissue, split, or escalate;
-- what a doc update should say, and whether a defect escaped the targeted checks.
-
-Read files yourself whenever the answer feeds one of those directly — a FAILURE REPORT and the dirty
-files behind it are diagnosis, not retrieval, and step 3 should always be your own reading. If the
-scout comes back partial, re-ask the gap narrowly rather than treating the report as complete.
+Its report is evidence for steps 1, 2 and 5. **Every judgement stays here**, and the scout is
+instructed to refuse all of them: whether a `DONE` order actually landed, whether a changed export is
+a real *contract* change, how a Shipped row and Status line should read, why a FAILED/BLOCKED order
+failed, and what a doc update should say. Read files yourself whenever the answer feeds one of those
+directly — a FAILURE REPORT and the dirty files behind it are diagnosis, not retrieval, and step 3 is
+always your own reading. If the scout comes back partial, re-ask the gap narrowly rather than
+treating the report as complete.
 
 ## Steps
 
 1. **Read every work order in `docs/plans/active/<feature>/` and check its STATUS.** The scout's
-   ORDERS section already quotes these verbatim; open an order yourself when you need more than it
-   quoted, and always for one that is not `DONE`.
+   ORDERS section quotes these verbatim; open an order yourself when you need more than it quoted, and
+   always for one that is not `DONE`.
 
 2. **For each `DONE` order:** confirm it really landed (skim the changed files / run the order's STOP
    WHEN command if in doubt), then **collapse it into the Plan's Shipped table** as one ≤2-sentence
-   row. Rewrite the Plan's **Status line** to show progress and name what's next.
+   row and rewrite the Plan's **Status line** to show progress and name what's next. A `DONE` whose
+   DEVIATIONS says a KNOWN STATE fact was wrong is not a clean order: fold that fact-correction into
+   any dependent order's KNOWN STATE, and decide whether the deviation changed what actually shipped —
+   if it did, treat it as a failure and go to step 3.
 
-3. **Triage any order still non-DONE.** Failures are normally triaged mid-flight by
-   `dispatch-orders` — the moment they come back, because dependent orders stall behind them. So by
-   closeout, a lingering FAILED/BLOCKED order usually means it needs the user (a human-only step, a
-   Plan-level decision) or the batch was abandoned mid-stage. Read its FAILURE REPORT before
-   anything else: the executor left its partial changes in the worktree and captured the verbatim
-   failing output; start from that evidence, don't re-run the work from cold. The two statuses route
-   differently:
+3. **Triage any order still non-DONE.** Failures are normally triaged mid-flight by `dispatch-orders`
+   — the moment they come back, because dependent orders stall behind them. So by closeout a lingering
+   FAILED/BLOCKED order usually means it needs the user (a human-only step, a Plan-level decision) or
+   the batch was abandoned mid-stage. Read its FAILURE REPORT before anything else: the executor left
+   its partial changes in the worktree and captured the verbatim failing output; start from that
+   evidence, don't re-run the work from cold. The two statuses route differently:
    - **`FAILED`** (order was doable, test wouldn't pass): diagnose from the report's OUTPUT and the
      dirty files. If the fix is genuinely small and obvious, note it in a corrected work order and
-     reissue; if the report shows the order was mis-scoped, split or rewrite it. Decide explicitly
-     whether the partial worktree changes should be kept as the starting point for the re-run or
-     reverted — say which in the reissued order's KNOWN STATE.
-
-     Every reissued order must carry the failure knowledge forward so no work is repeated: fold the
-     old FAILURE REPORT's TRIED and SUSPECT lines into the new KNOWN STATE as "already attempted,
-     did not work: <approach>", and re-run the test command yourself to fill an up-to-date **KNOWN
-     TEST FAILURES** section (pre-existing failures the executor must ignore, listed verbatim).
-   - **`BLOCKED`** (order couldn't be executed as written): KNOWN STATE or DO was wrong. No
-     debugging needed — verify reality, fix the order's facts, and reissue.
-   Escalate to the user only if the Plan itself is wrong. A FAILED or BLOCKED order is a planning
-   signal, not an executor failure to paper over.
+     reissue; if the report shows the order was mis-scoped, split or rewrite it. Say explicitly
+     whether the partial worktree changes are kept as the re-run's starting point or reverted.
+   - **`BLOCKED`** (order couldn't be executed as written): KNOWN STATE or DO was wrong. No debugging
+     needed — verify reality, fix the order's facts, and reissue.
+   Every reissued order must carry the failure knowledge forward so no work is repeated: fold the old
+   FAILURE REPORT's TRIED and SUSPECT lines into the new KNOWN STATE as "already attempted, did not
+   work: <approach>", and re-run the test command yourself to fill an up-to-date **KNOWN TEST
+   FAILURES** section (pre-existing failures the executor must ignore, listed verbatim). Escalate to
+   the user only if the Plan itself is wrong. A FAILED or BLOCKED order is a planning signal, not an
+   executor failure to paper over.
 
 4. **Run the full suites once for the whole stage** with one command:
 
@@ -79,172 +72,80 @@ scout comes back partial, re-ask the gap narrowly rather than treating the repor
 
    It runs all five checks — `pytest` from the repo root (full suite + coverage gate),
    `npm run test:check -- --strict`, `npm run lint` and `npm run build` in `frontend/`, and
-   `check_docs.py --check` — and prints about ten lines plus the `- stage checks:` line to paste
-   into the telemetry entry. Run separately these are five tool results of roughly a thousand tokens
-   each, read once and then hand-summarised; none of that reading changes a decision. Only a failing
-   check prints its output, and `--full-output` gives you the rest when you need to triage.
+   `check_docs.py --check` — and prints about ten lines. Only a failing check prints its output;
+   `--full-output` gives you the rest when you need to triage. `--strict` is what keeps the
+   known-failure list from rotting: it fails when a listed test now passes, so the stage that fixed
+   it prunes the entry — a one-file edit here.
 
-   (`build` includes `tsc -b`, the only real typecheck; `test:check` is the full vitest run judged
-   against `frontend/known-test-failures.json`; `lint` is where the `src/model/` layering rule is
-   enforced, and CI does not run it.) Triage any failure here yourself or reissue an order for it.
+   **Triage a failure here with the same narrow direct-repair policy `dispatch-orders` uses.** You
+   may fix it in the code yourself only when every one of these holds: the fix is **fully determined**
+   by evidence already in your context; it needs **zero exploration**; it is **small and mechanical**
+   (a wrong import path, a missed rename, a stale assertion — no design thinking); and the check that
+   failed is one you can re-run yourself, and you run it. If any of those fails — the failure needs
+   exploration, spans two or more files, or is more than a couple of lines — do not keep editing:
+   write a corrective work order and run it through `dispatch-orders`.
 
-   `--strict` is what keeps the known-failure list from rotting: it fails when a listed test now
-   passes, so the stage that fixed it prunes the entry. Refreshing that list is a one-file edit
-   here, not a block copied by hand into every order of the next batch — and it is what lets an
-   executor's targeted stop-check be a single command with a trustworthy verdict.
-
-   **Then log the stage-level result to the telemetry log, every stage, pass or fail:**
-
-   > **While `docs/plans/telemetry-paused.md` exists, skip this command, the backfill in step 6, and
-   > the cycle-close below.** They record nothing and exit 0, so each is a round trip that buys
-   > nothing. Check for the file once, then carry on with the rest of reconcile.
-
-   ```
-   .venv\Scripts\python.exe scripts/order_telemetry.py --reconcile "<feature> stage <N>" \
-     --checks "<the `- stage checks:` line stage_check.py printed, minus its prefix>" \
-     --missed "<a defect that passed an order's STOP WHEN but failed here>" \
-     --compile-cost <USD the planner spent compiling this stage> \
-     --dispatch-cost <USD the planner spent dispatching, diagnosing and repairing it> \
-     --reissues <how many orders had to be re-dispatched> \
-     --note "<what to change in to-orders so it cannot happen again>"
-   ```
-
-   **Record the planner cost, every stage.** The executor side of this workflow has always been
-   measured and the planner side never was, so the log could show a stage's orders costing five
-   pence while saying nothing about the compile-and-repair session that produced them — and
-   therefore nothing about whether dispatching the stage beat implementing it directly, which is
-   the workflow's central claim. Read the figures off the sessions that did the work (`/cost`, or
-   the equivalent in whichever harness compiled and dispatched the stage) rather than estimating;
-   if the harness genuinely cannot report them, say so in `--note` instead of guessing. Omitting
-   them logs "planner cost: not recorded" and the script warns you.
-
-   Omit `--note` when nothing escaped and there is nothing to change — a note that only restates
-   "nothing escaped" is noise, and the entry already says it.
-
-   Anything caught at this step is by definition something the orders' targeted STOP WHEN
-   commands could not catch — a stage-level regression, a typecheck break, an architecture-rule
-   violation, a contract the docs checker rejects. **That escape is the single most valuable
-   signal this workflow produces**, and it is invisible in the per-order entries: each order
-   honestly reports DONE against a check that was the wrong shape. Record it here or it is lost
-   when the order files are deleted in step 7.
-   - Pass `--missed` once per defect. Say what broke, which order it traces to, and **whether it
-     has happened before** — a repeat means the fix belongs in the `to-orders` template or the
-     order template's STOP WHEN rules, not in another one-off note.
-   - Attribute honestly. Most escapes are order-authoring faults (a stop-check that ran only
-     `npm test` when the risk was types; a START IN that never mentioned the contract the change
-     would break), not executor faults.
-   - **Log the clean case too.** Omit `--missed` entirely and the entry records that nothing
-     escaped — that is how the log shows a tightened rule actually working, rather than silence.
+   Anything caught at this step is by definition something the orders' targeted STOP WHEN commands
+   could not catch — a stage-level regression, a typecheck break, an architecture-rule violation, a
+   contract the docs checker rejects. **That escape is the single most valuable signal this workflow
+   produces**, and it is invisible in the per-order records: each order honestly reported DONE against
+   a check that was the wrong shape. Name which order it traces to in your report, and whether it has
+   happened before — a repeat means the fix belongs in the `to-orders` rules, not in a one-off note.
 
 5. **Update canonical references only when a real contract changed.** If shipped work changed an API,
    data model, architecture convention, design token, testing contract, or user-visible capability,
    update the matching reference (`API_REFERENCE.md`, `DATA_MODEL.md`, `ARCHITECTURE.md`,
    `DESIGN_SYSTEM.md`, `TESTING.md`) and the area guide/manifest routing. If nothing durable changed,
-   record that — don't invent updates.
-
-   The scout's EXPORTED SURFACES and DOC MENTIONS sections give you the two halves of this decision:
-   what moved, and what the docs say about it today. Deciding whether a moved export is a *contract*
-   is yours — a new internal helper is not one, a changed response shape is. A symbol the scout
-   reports with no doc mentions is the interesting case, not an empty one: either it needs a first
-   entry, or it was never a documented contract.
+   record that — don't invent updates. The scout's EXPORTED SURFACES and DOC MENTIONS give you the two
+   halves: what moved, and what the docs say about it today. Deciding whether a moved export is a
+   *contract* is yours — a new internal helper is not one, a changed response shape is. A symbol the
+   scout reports with no doc mentions is the interesting case, not an empty one: either it needs a
+   first entry, or it was never a documented contract.
 
    **Do not hand-edit what a command derives.** Run
-   `.venv\Scripts\python.exe scripts/check_docs.py --write-generated`. One run refreshes every
-   generated block in the documentation, and the list is now long enough that hand-editing any of it
-   is a mistake rather than a shortcut:
-
-   - **the API reference** — every per-router endpoint table and the schema inventory, from the app's
-     OpenAPI contract. The `Purpose` column is each route's **docstring**, so if this stage added or
-     changed an endpoint, the thing you edit is the docstring in the router, never the table. A route
-     with no docstring, or a router with no section, fails the checker.
-   - **`docs/INVENTORY.md`** — every area-guide and plan row, from each document's own
-     `**Read trigger:**`, `**Area guide:**` and Status line. Adding a plan to the manifest by hand is
-     no longer a step in this skill.
-   - **each area guide's `## Work queue`** — the in-flight plan table, from the plans that name that
-     guide. What stays hand-written below it is only what no script can derive: why a plan supersedes
-     another, what is deferred, what is undecided. Do not restate a plan's status there.
-   - **`docs/plans/active/INDEX.md` and `plans/done/INDEX.md`** — the routing tables, so they reflect
-     the orders you just closed out.
-   - **the script and test inventories** in `ARCHITECTURE.md` and `TESTING.md`, plus the schema,
-     design-token and test-configuration blocks that were already generated.
-
-   Because the manifest and the area queues now derive from the Plan itself, **the Plan's Status line
-   is the single place a stage's progress is recorded.** Get it right and three documents follow.
-
-   Touch an area guide only when this stage changed the code it owns — a new route in its
-   `## Surfaces` table, a new router in its `## Source map`.
-
-   What stays yours: the Plan's Status line and Shipped rows, the hand-written prose around each
-   generated block, the Task Router rows in `docs/README.md`, and every canonical-reference edit in
-   step 5.
+   `.venv\Scripts\python.exe scripts/check_docs.py --write-generated` once. It refreshes every
+   generated block — the per-router endpoint tables and schema inventory in `API_REFERENCE.md`, the
+   area-guide and plan rows in `docs/INVENTORY.md`, both plan indexes (the global
+   `docs/plans/active/INDEX.md` — the sole queue/status view — and the archive index), and the
+   script/test/schema/token inventories. Because the manifest and the plan indexes derive
+   from the Plan itself, **the Plan's Status line is the single place a stage's progress is
+   recorded** — get it right and three documents follow. What stays yours: the Status line and Shipped
+   rows, the hand-written prose around each generated block, the Task Router rows in `docs/README.md`,
+   and every canonical-reference edit in this step.
 
 6. **Run the documentation checker** from the repo root via the repo-local virtualenv:
    - Windows: `.venv\Scripts\python.exe scripts/check_docs.py --check`
    - POSIX: `.venv/bin/python scripts/check_docs.py --check`
    - Also run the `--base <base-ref>` form when a valid base ref is available.
 
-7. **Delete the spent (`DONE`) order files — but only after telemetry is captured.** Deleting an
-   order destroys its STATUS/DEVIATIONS record, so first check `docs/plans/telemetry-log.md` has an
-   entry for each order about to be deleted. For any missing one, run
-   `.venv\Scripts\python.exe scripts/order_telemetry.py --order <order-path> --fault none --note "backfilled at reconcile; compiler judgement unavailable"` (POSIX:
-   `.venv/bin/python`) — it auto-finds opencode sessions; if none exists
-   (ChatGPT transport, or the record is gone), log it with
-   `--manual "backfilled at reconcile, no usage figures"`. Then delete: when every order in
-   the stage is done, the feature directory should be empty of that stage's order files.
-   Leftover DONE files are clutter.
-
-   Every ~10-15 logged entries, tell the user the telemetry log has enough data for a review pass —
-   the log exists so an AI can analyse recurring cost drivers (large reads, duplicate reads split
-   into locating vs post-edit, reads outside START IN, executor deviations, and bounded-vs-total
-   START IN lines) and tighten the `plan`/`to-orders`/`implement-order` rules. Don't run that
-   analysis unprompted; just flag that it's due. When that pass runs, the `escaped targeted checks`
-   lines from the reconcile entries are the first thing to read: a defect class that shows up in
-   two stages has already proven a one-off note won't hold it.
-
-   That review pass ends by closing the cycle, which is what keeps the log from growing without
-   bound:
-
-   ```
-   .venv\Scripts\python.exe scripts/order_telemetry.py --close-cycle "<what this cycle covered>" \
-     --summary "<the prose read of the cycle>" \
-     --lesson "enforced:<where it now lives> — <the rule>" \
-     --lesson "judgement: <what still needs a compiler to decide>"
-   ```
-
-   It distils the live entries into a summary with generated totals, moves the raw entries to
-   `docs/plans/telemetry-archive/`, and clears the dispatch snapshots. **Every lesson needs a
-   prefix**: `enforced:` with the rule, lint, or skill section it now lives in, or `judgement:` when
-   it still depends on a compiler getting it right. A lesson with nowhere to live is one that gets
-   rediscovered next cycle, and the prefix is what makes that repeat legible — when a defect
-   recurs, the record says whether the rule failed or was never written.
+7. **Delete the spent (`DONE`) order files.** Deleting an order destroys its STATUS/DEVIATIONS record,
+   so if telemetry collection is on (see [PLAN_TEMPLATE.md](../../../docs/PLAN_TEMPLATE.md), §
+   Telemetry), make sure each order has an entry first; backfill any missing ones with
+   `scripts/order_telemetry.py` before deleting. When every order in the stage is done, the feature
+   directory should be empty of that stage's order files — leftover DONE files are clutter. Every
+   ~10-15 logged entries, tell the user the telemetry log has enough data for a review pass; don't run
+   that analysis unprompted.
 
 8. **When the whole feature is complete:** move the Plan to `docs/plans/done/<feature>/` and update
-   `docs/README.md` in the same change set. Then regenerate the index
-   (`--write-generated`): archiving is what flips every Plan that declared a `**Depends on:**` this
-   feature from `blocked` to `ready`, so a stale index leaves real work looking unavailable. Leave a
-   redirect stub only if a known inbound link must survive.
+   `docs/README.md` in the same change set. Then regenerate the index (`--write-generated`):
+   archiving is what flips every Plan that declared a `**Depends on:**` this feature from `blocked`
+   to `ready`, so a stale index leaves real work looking unavailable. Leave a redirect stub only if a
+   known inbound link must survive.
 
 9. **Commit everything.** A reconcile that ends green leaves the whole repo consistent — the
-   executors' source changes, the Plan collapse, the regenerated inventories, the deleted order
-   files — and that state is what gets committed, in one commit, across the whole worktree. Leaving
-   it uncommitted is how a later stage inherits a dirty tree it cannot tell apart from its own work.
+   executors' source changes, the Plan collapse, the regenerated inventories, the deleted order files
+   — and that state is what gets committed, in one commit, across the whole worktree. **Only on
+   green:** `stage_check.py` (step 4) and `check_docs.py --check` (step 6) must both pass first. A red
+   check means the stage is not reconciled yet; fix it or reissue an order, and commit after. Never
+   commit to make the tree tidy.
 
-   **Only on green.** `stage_check.py` (step 4) and `check_docs.py --check` (step 6) must both pass
-   first. A red check means the stage is not reconciled yet; fix it or reissue an order, and commit
-   after. Never commit to make the tree tidy.
-
-   Before staging, read `git status --porcelain` and check two things:
-   - **Everything expected is there** — deleted `NN-*.md` orders, the Plan, the regenerated
-     `docs/plans/active/INDEX.md` and any other `GENERATED:` inventory, plus the source and test
-     files the orders touched. An order you believe shipped but whose files are absent means it did
-     not land; go back to step 2.
-   - **Nothing that must never be committed is** — a database, `*.log`, a `.pid`, `.env`,
-     `node_modules/`, `frontend/dist/`. These are all gitignored, so one appearing as untracked is a
-     `.gitignore` gap: stop, say so, and do not add it. Do not paper over it with a path-by-path
-     `git add`.
-
-   Then commit the worktree in one commit. Name the feature and stage, and summarise what shipped in
-   the body rather than restating each order:
+   Before staging, read `git status --porcelain` and check two things: everything expected is there
+   (deleted `NN-*.md` orders, the Plan, the regenerated `docs/plans/active/INDEX.md` and any other
+   `GENERATED:` inventory, plus the source and test files the orders touched — an order you believe
+   shipped but whose files are absent means it did not land; go back to step 2), and nothing that must
+   never be committed is (a database, `*.log`, `.pid`, `.env`, `node_modules/`, `frontend/dist/` —
+   one appearing as untracked is a `.gitignore` gap: stop, say so, and do not add it). Then commit
+   the worktree in one commit:
 
    ```
    git add -A
@@ -259,12 +160,13 @@ scout comes back partial, re-ask the gap narrowly rather than treating the repor
 
 - Do not re-open shipped work or extend the stage's scope — implementation already happened via
   `implement-order`, and closeout is not a second pass at it. The one place you touch code here is
-  step 4: a full-suite failure you can fix on the spot, from the evidence in front of you and without
-  exploring. Anything larger becomes a reissued order.
+  step 4's narrow direct-repair case, under the same conditions `dispatch-orders` uses; anything
+  larger becomes a corrective order.
 - Do not keep a running diary in the Plan. The commit history is the record of *how* things were
   built; the Plan records *what exists* and *what's next*.
 
 ## Reference
 
-The full lifecycle and collapse discipline live in `docs/PLAN_TEMPLATE.md`. Read it if a closeout case
-here isn't covered.
+The full lifecycle, order schema, and failure formats live in
+[docs/PLAN_TEMPLATE.md](../../../docs/PLAN_TEMPLATE.md). Read it if a closeout case here isn't
+covered.

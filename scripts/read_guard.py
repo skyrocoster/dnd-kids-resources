@@ -49,13 +49,23 @@ from typing import Any
 REPO_ROOT = Path(__file__).resolve().parent.parent
 STATE_DIR = REPO_ROOT / ".telemetry" / "read-guard"
 
-# The skill whose presence means "this session is executing a work order".
-ARMING_SKILL = "implement-order"
+# Skills whose presence means "this session is a bounded implementation run".
+ARMING_SKILLS = {"implement-order", "implement-quick"}
 
 READ_TOOLS = {"read"}
 EDIT_TOOLS = {"edit", "write", "multiedit", "patch"}
 SHELL_TOOLS = {"bash", "shell", "powershell", "run"}
 SKILL_TOOLS = {"skill"}
+SEARCH_TOOLS = {"glob", "grep", "list"}
+
+MAX_FAILED_CHECKS = 2
+ORDER_PATH_RE = re.compile(r"^docs/plans/active/[^/]+/\d{2}[^/]*\.md$", re.IGNORECASE)
+VERIFICATION_COMMAND_RE = re.compile(
+    r"(?:^|\s)(?:pytest|vitest|npm\s+(?:run\s+)?(?:test|lint|build)|"
+    r"(?:python(?:\.exe)?\s+)?[^\s]*(?:order_check|stage_check|check_docs|check_orders)\.py|"
+    r"tsc(?:\s|$))",
+    re.IGNORECASE,
+)
 
 # Keys opencode uses for the path and command arguments.
 PATH_KEYS = ("filePath", "path")
@@ -68,6 +78,12 @@ DENY_MESSAGE = (
     "If you genuinely need it back: run the order's STOP WHEN command first — a "
     "failing check unlocks every file automatically. To override deliberately, run "
     '`python scripts/read_guard.py --unlock {path} --reason "<why>"`, which is logged.'
+)
+
+ATTEMPT_LIMIT_MESSAGE = (
+    "read_guard: this bounded executor has already had two failed verification runs. "
+    "Further implementation, exploration, and checks are blocked to prevent a repair loop. "
+    "Stop now and report the exact failing command/output and the dirty files to the coordinator."
 )
 
 # Generous: anything that smells like a red check unlocks. Ordered cheapest-first.
@@ -112,14 +128,27 @@ def _state_path(session: str) -> Path:
 def _load(session: str) -> dict[str, Any]:
     path = _state_path(session)
     if not path.is_file():
-        return {"session": session, "armed": False, "files": {}, "unlocks": []}
+        return {
+            "session": session,
+            "armed": False,
+            "files": {},
+            "unlocks": [],
+            "failed_checks": 0,
+        }
     try:
         state = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError):
-        return {"session": session, "armed": False, "files": {}, "unlocks": []}
+        return {
+            "session": session,
+            "armed": False,
+            "files": {},
+            "unlocks": [],
+            "failed_checks": 0,
+        }
     state.setdefault("files", {})
     state.setdefault("unlocks", [])
     state.setdefault("armed", False)
+    state.setdefault("failed_checks", 0)
     return state
 
 
@@ -178,19 +207,33 @@ def _first(args: dict[str, Any], keys: tuple[str, ...]) -> str | None:
     return None
 
 
-def _mentions_arming_skill(args: dict[str, Any]) -> bool:
+def _arming_skill(args: dict[str, Any]) -> str | None:
     """Any string value naming the arming skill counts."""
 
-    def walk(value: Any) -> bool:
+    def walk(value: Any) -> str | None:
         if isinstance(value, str):
-            return ARMING_SKILL in value.lower()
+            lowered = value.lower()
+            return next((skill for skill in ARMING_SKILLS if skill in lowered), None)
         if isinstance(value, dict):
-            return any(walk(item) for item in value.values())
+            return next((found for item in value.values() if (found := walk(item))), None)
         if isinstance(value, list):
-            return any(walk(item) for item in value)
-        return False
+            return next((found for item in value if (found := walk(item))), None)
+        return None
 
     return walk(args)
+
+
+def _is_verification_command(args: dict[str, Any]) -> bool:
+    command = _first(args, COMMAND_KEYS)
+    return bool(command and VERIFICATION_COMMAND_RE.search(command))
+
+
+def _is_failure_report_edit(payload: dict[str, Any]) -> bool:
+    path = _normalise(
+        _first(payload.get("args") or {}, PATH_KEYS),
+        payload.get("cwd"),
+    )
+    return bool(path and ORDER_PATH_RE.fullmatch(path))
 
 
 def _looks_like_failure(payload: dict[str, Any]) -> bool:
@@ -228,12 +271,18 @@ def _record_pre(payload: dict[str, Any]) -> tuple[bool, str]:
         return True, ""
 
     tool = str(payload.get("tool") or "").lower()
-    if tool not in READ_TOOLS:
-        return True, ""
-
     session = str(payload.get("sessionID") or "unknown")
     state = _load(session)
     if not state.get("armed"):
+        return True, ""
+
+    if state.get("failed_checks", 0) >= MAX_FAILED_CHECKS:
+        if tool in EDIT_TOOLS and _is_failure_report_edit(payload):
+            return True, ""
+        if tool in READ_TOOLS | EDIT_TOOLS | SEARCH_TOOLS | SHELL_TOOLS:
+            return False, ATTEMPT_LIMIT_MESSAGE
+
+    if tool not in READ_TOOLS:
         return True, ""
 
     path = _normalise(
@@ -265,10 +314,13 @@ def _record_post(payload: dict[str, Any]) -> None:
 
     # opencode exposes the skill as a `skill` tool taking its name, or as a tool named
     # after the skill itself. Either spelling arms; a planner session invokes neither.
-    arming = ARMING_SKILL in tool or (tool in SKILL_TOOLS and _mentions_arming_skill(args))
+    arming = next((skill for skill in ARMING_SKILLS if skill in tool), None)
+    if not arming and tool in SKILL_TOOLS:
+        arming = _arming_skill(args)
     if arming:
         if not state.get("armed"):
             state["armed"] = True
+            state["mode"] = arming
             state["armed_at"] = time.time()
             dirty = True
 
@@ -289,11 +341,15 @@ def _record_post(payload: dict[str, Any]) -> None:
 
     elif tool in SHELL_TOOLS:
         # A red check is the sanctioned reason to reopen an edited file.
-        if _looks_like_failure(payload) and state["files"]:
-            for entry in state["files"].values():
-                if entry.get("locked"):
-                    entry["locked"] = False
-                    entry["unlocked_by"] = "failing-check"
+        if _looks_like_failure(payload):
+            if _is_verification_command(args):
+                state["failed_checks"] = state.get("failed_checks", 0) + 1
+                state["last_failed_command"] = _first(args, COMMAND_KEYS)
+            if state["files"]:
+                for entry in state["files"].values():
+                    if entry.get("locked"):
+                        entry["locked"] = False
+                        entry["unlocked_by"] = "failing-check"
             dirty = True
 
     if dirty:
@@ -352,6 +408,10 @@ def _cmd_status(session: str | None) -> int:
     print(f"armed: {state.get('armed', False)}")
     print(f"tracked files: {len(state['files'])} | locked: {len(locked)}")
     print(f"reads denied: {denied} | explicit unlocks: {len(state['unlocks'])}")
+    print(
+        f"failed checks: {state.get('failed_checks', 0)}/{MAX_FAILED_CHECKS} | "
+        f"attempt limit reached: {state.get('failed_checks', 0) >= MAX_FAILED_CHECKS}"
+    )
     for path in locked:
         print(f"  locked: {path}")
     return 0

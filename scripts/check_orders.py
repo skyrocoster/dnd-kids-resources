@@ -40,10 +40,21 @@ compiler may or may not read:
 - a React hook change with no `npm run lint` in STOP WHEN, the only check that catches a
   missing dependency; and
 - an order that is simply too big to be one order — more than four distinct START IN
-  files, more than three DO bullets, or more than two test files in STOP WHEN. These are
-  the caps `scripts/new_order.py` refuses to exceed, so the split happens while the order
-  is being written rather than after a compiler has spent a pass on a shape that cannot
-  pass lint.
+  files, more than six START IN entries, more than three DO bullets, more than two
+  frontend test files, or more than three test files in STOP WHEN. These shape caps are
+  warnings by default — `scripts/new_order.py` writes the order and prints the
+  split-the-order guidance rather than blocking the compiler — and `--strict` escalates
+  them back into failures, which is the gate used before dispatch.
+
+Every finding has one of two severities. *Errors* are deterministic and always fail:
+unresolved paths, an edit site outside START IN/CREATES/REMOVES, a missing dependency, an
+unasserted lifecycle artifact, a stop-check that cannot run or is a full suite, a
+repo-relative vitest filter, an undeclared signature change or an unnamed call site, and
+CREATES/REMOVES overlap. *Warnings* parse prose — a bare filename, a conditional
+instruction, a reshaped exported type, a fixture hint, a new test with no insertion
+anchor, and the shape caps — so they can guess wrong; they are reported but do not block
+authoring, and `--strict` escalates them. `check_docs.py` consumes only errors by default,
+so CI stays green while a compiler works through the warnings.
 
 Run standalone while compiling a stage, before dispatching anything:
 
@@ -53,6 +64,11 @@ Pass `--fix` first to rewrite unambiguous bare-filename faults (exactly one repo
 their full path before linting, so the compiler edits fewer of them by hand:
 
     .venv\\Scripts\\python.exe scripts/check_orders.py --fix
+
+Lint just the orders you name instead of the whole active tree — dependency conflicts are
+then checked within that selected set:
+
+    .venv\\Scripts\\python.exe scripts/check_orders.py docs/plans/active/feat/01-a.md docs/plans/active/feat/02-b.md
 
 `scripts/check_docs.py` imports `lint_orders` so the same rules gate CI.
 """
@@ -79,9 +95,12 @@ MAX_START_IN_ENTRIES = 6
 # executor has already opened is nearly free; a fourth *file* is a fourth thing to hold in
 # one context window, and orders that named more are the ones that came back re-read-heavy.
 MAX_START_IN_FILES = 4
-# One frontend suite is already the rule below; two test files total is what lets an order
-# pair that with a backend module, and no more. Beyond this the order is two orders.
-MAX_STOP_WHEN_TESTS = 2
+# STOP WHEN may target up to two frontend suites by default, plus one backend module;
+# beyond that the order is two orders. All of these shape caps are warnings by default and
+# errors under `--strict`, so the compiler sees the guidance without being blocked at
+# authoring time.
+MAX_STOP_WHEN_TESTS = 3
+MAX_FRONTEND_TESTS = 2
 
 REQUIRED_FIELDS = (
     "GOAL:",
@@ -225,15 +244,24 @@ TEST_BLOCK_RE = re.compile(r"^\s*(describe|it|test)\s*[.(]")
 
 
 class OrderError:
-    """One lint failure, in the shape check_docs.py's reporter expects."""
+    """One lint finding, in the shape check_docs.py's reporter expects.
 
-    def __init__(self, file: str, message: str, fix: str) -> None:
+    `severity` is "error" for the deterministic safeguards (paths, authorization,
+    dependencies, lifecycle, runnable filters, call sites/signatures, overlaps) and
+    "warning" for prose-sensitive heuristics and the relaxed shape caps. Warnings are
+    non-fatal at authoring time; `--strict` escalates them to errors for the dispatch
+    gate. `check_docs.py` reads only `file`, `message`, and `fix`, so it is unaffected.
+    """
+
+    def __init__(self, file: str, message: str, fix: str, severity: str = "error") -> None:
         self.file = file
         self.message = message
         self.fix = fix
+        self.severity = severity
 
     def __str__(self) -> str:  # pragma: no cover - display only
-        return f"{self.file}: {self.message}\n    fix: {self.fix}"
+        kind = "[warning] " if self.severity == "warning" else ""
+        return f"{kind}{self.file}: {self.message}\n    fix: {self.fix}"
 
 
 def _rel(path: Path) -> str:
@@ -653,13 +681,20 @@ def colocated_tests(path_str: str) -> list[str]:
     return [_rel(candidate) for candidate in candidates if candidate.is_file()]
 
 
-def lint_order(order_path: Path) -> list[OrderError]:
-    """Every compiling rule this repo has paid to learn, applied to one order file."""
+def lint_order(order_path: Path, strict: bool = False) -> list[OrderError]:
+    """Every compiling rule this repo has paid to learn, applied to one order file.
+
+    `strict` escalates prose-sensitive heuristics and the shape caps from warnings to
+    errors — the dispatch gate. The default keeps them as warnings so the compiler can
+    author freely and still see what a strict run would refuse.
+    """
     rel = _rel(order_path)
     errors: list[OrderError] = []
 
-    def fail(message: str, fix: str) -> None:
-        errors.append(OrderError(rel, message, fix))
+    def fail(message: str, fix: str, severity: str = "error") -> None:
+        if strict and severity == "warning":
+            severity = "error"
+        errors.append(OrderError(rel, message, fix, severity))
 
     text = order_path.read_text(encoding="utf-8")
     sections = split_sections(text)
@@ -725,6 +760,7 @@ def lint_order(order_path: Path) -> list[OrderError]:
         fail(
             f"START IN names {len(entries)} entries (max {MAX_START_IN_ENTRIES})",
             "Split the order; an executor that must hold this many files will re-read them",
+            severity="warning",
         )
     distinct_start_in_files = {_normalise(path_str) for _, path_str, _ in entries}
     if len(distinct_start_in_files) > MAX_START_IN_FILES:
@@ -733,7 +769,9 @@ def lint_order(order_path: Path) -> list[OrderError]:
             f"(max {MAX_START_IN_FILES})",
             "Split the order. Several ranges of one file are fine — a fourth separate file "
             "is a fourth thing the executor holds at once, and `scripts/new_order.py` "
-            "refuses to emit one so the split happens before the order is written",
+            "refuses to emit one under `--strict`, so the split usually happens before the "
+            "order is written",
+            severity="warning",
         )
 
     start_in_paths: list[str] = []
@@ -813,6 +851,7 @@ def lint_order(order_path: Path) -> list[OrderError]:
             f"DO asks for {len(do_bullets)} things (max {MAX_DO_BULLETS})",
             "One work order is one logical change. A fourth DO bullet is the shape the log "
             "keeps paying for: split it into two orders and set DEPENDS ON",
+            severity="warning",
         )
     for path_str in sorted(do_paths):
         normalised = _normalise(path_str)
@@ -852,9 +891,13 @@ def lint_order(order_path: Path) -> list[OrderError]:
                         f"{field} names `{name}` without its path",
                         "Write the full repo-relative path so the executor does not search "
                         f"for it: {hits[0]}" + (f" (or one of {len(hits)} matches)" if len(hits) > 1 else ""),
+                        severity="warning",
                     )
 
     # Conditional instructions — the single most expensive fault in the telemetry log.
+    # The classification is prose-sensitive (imperative verbs beside a conditional cue),
+    # so it is a warning: an over-eager refusal at authoring time costs a rewrite pass,
+    # while a miss at dispatch is caught by `--strict`.
     for field in ("KNOWN STATE", "DO"):
         for bullet in bullets(sections.get(field, [])):
             if CONDITIONAL_RE.search(bullet) and IMPERATIVE_RE.search(bullet):
@@ -863,6 +906,7 @@ def lint_order(order_path: Path) -> list[OrderError]:
                     "Decide it while compiling and state it flatly, including which layers "
                     "any shared code may import from. A conditional hands the executor an "
                     "architecture decision, which is what it is worst at",
+                    severity="warning",
                 )
 
     stop_when = " ".join(sections.get("STOP WHEN", []))
@@ -946,6 +990,7 @@ def lint_order(order_path: Path) -> list[OrderError]:
             f"(max {MAX_STOP_WHEN_TESTS}): {', '.join(sorted(stop_when_tests))}",
             "A stop-check this wide is a stage check wearing an order's clothes. Run the "
             "suites for the files this order edits and split the rest into their own order",
+            severity="warning",
         )
 
     for match in BARE_FULL_SUITE_RE.finditer(stop_when):
@@ -976,19 +1021,24 @@ def lint_order(order_path: Path) -> list[OrderError]:
                 "Put the repo's minimal-plus-cast idiom in KNOWN STATE with a real sibling "
                 "example (`mockResolvedValue([{ id: 9, name: 'Mira' }] as NPC[])`); an "
                 "executor told to 'mock the NPC list' invents fields that do not typecheck",
+                severity="warning",
             )
         if not TYPECHECK_RE.search(stop_when):
             fail(
                 "Order writes a test fixture but STOP WHEN has no typecheck",
                 "Append `&& npm run typecheck` — vitest strips types, so a wrong-shaped "
                 "fixture passes green and breaks the build at reconcile",
+                severity="warning",
             )
 
     unique_frontend_tests = {_normalise(p) for p in frontend_tests}
-    if len(unique_frontend_tests) > 1:
+    if len(unique_frontend_tests) > MAX_FRONTEND_TESTS:
         fail(
-            f"Order names {len(unique_frontend_tests)} frontend test files",
-            "One order adds tests to at most one test file; split it",
+            f"Order names {len(unique_frontend_tests)} frontend test files "
+            f"(max {MAX_FRONTEND_TESTS})",
+            "Up to two frontend suites are fine in one order; past that it is more than "
+            "one logical change — split it",
+            severity="warning",
         )
     for path_str in unique_frontend_tests:
         resolved = _resolve(path_str)
@@ -1015,6 +1065,7 @@ def lint_order(order_path: Path) -> list[OrderError]:
                     "One behaviour per order against a suite this size, and name the test "
                     "seam it turns on; several at once is the one order in the telemetry "
                     "log that had to be abandoned at both Light and Standard strength",
+                    severity="warning",
                 )
 
     # An exported signature change drags every caller with it. Enumerating them is a
@@ -1046,6 +1097,7 @@ def lint_order(order_path: Path) -> list[OrderError]:
                         f"Declare `CHANGES SIGNATURE: {type_name} in {path_str}`. A type is "
                         "a signature: declaring it is what pulls every consumer into START "
                         "IN and the module's own suite into STOP WHEN",
+                        severity="warning",
                     )
                     break
 
@@ -1104,6 +1156,9 @@ def lint_order(order_path: Path) -> list[OrderError]:
             "Append `&& npm run lint`. A missing useCallback dependency is invisible to "
             "vitest and to tsc; lint is the only check that catches it, and one slipped "
             "through to reconcile as a latent stale-closure bug",
+            # A hook *file* is edited deterministically (the filename says so); a bare
+            # "deps array" mention is a prose guess and only blocks under --strict.
+            severity="error" if hook_paths else "warning",
         )
 
     # Where does a NEW test go? Naming the fixture it reuses is not the same answer.
@@ -1124,6 +1179,7 @@ def lint_order(order_path: Path) -> list[OrderError]:
                     '(`@"describe(\'fullscreen\', ...)"`). Leaving this out after it had '
                     "already been diagnosed let one order pay 6 locating reads of a "
                     "2,000-line suite; naming it on the next order brought that back to 1",
+                    severity="warning",
                 )
 
     return errors
@@ -1319,15 +1375,29 @@ def _discover_orders(orders_root: Path | None = None) -> list[Path]:
     return [order for order in sorted(root.rglob("*.md")) if re.match(r"\d+-", order.name)]
 
 
-def lint_orders(orders_root: Path | None = None) -> list[OrderError]:
-    """Lint every active work order."""
-    orders = _discover_orders(orders_root)
-    errors: list[OrderError] = []
+def lint_orders(
+    orders_root: Path | None = None,
+    paths: list[Path] | None = None,
+    strict: bool = False,
+    include_warnings: bool = False,
+) -> list[OrderError]:
+    """Lint work orders; dependency conflicts are checked within the given set.
+
+    Pass `paths` to validate a selected batch of order files instead of discovering the
+    whole active tree — dependency conflicts are then reported only among the named set,
+    which is the right scope for a single stage. `strict` escalates warnings to errors
+    (the dispatch gate). By default warnings are dropped so `check_docs.py` and CI keep
+    failing only on objective errors; pass `include_warnings` to see them.
+    """
+    orders = list(paths) if paths is not None else _discover_orders(orders_root)
+    findings: list[OrderError] = []
     for order in orders:
         # Only lint numbered work orders, not Plan files in feature directories.
-        errors.extend(lint_order(order))
-    errors.extend(_lint_order_dependencies(orders))
-    return errors
+        findings.extend(lint_order(order, strict=strict))
+    findings.extend(_lint_order_dependencies(orders))
+    if strict or include_warnings:
+        return findings
+    return [finding for finding in findings if finding.severity == "error"]
 
 
 def _lint_order_dependencies(orders: list[Path]) -> list[OrderError]:
@@ -1401,6 +1471,13 @@ def main() -> int:
         "and symbol-scoped large files are resolved to real ranges. Anything ambiguous is "
         "left as an error, since guessing there would be worse",
     )
+    parser.add_argument(
+        "--strict",
+        action="store_true",
+        help="Escalate heuristic warnings (prose guesses and the shape caps) to errors — "
+        "the dispatch gate. Default: report them as non-fatal warnings so a compiler can "
+        "author freely",
+    )
     args = parser.parse_args()
 
     if args.orders:
@@ -1427,18 +1504,29 @@ def main() -> int:
                 print(f"fixed {_rel(path)}: {before} -> {after}")
 
     if args.orders:
-        errors: list[OrderError] = []
+        # Selected-order validation: lint each named order and check dependency conflicts
+        # within the named set, without scanning the rest of the active tree.
+        findings: list[OrderError] = []
         for path in paths:
-            errors.extend(lint_order(path))
+            findings.extend(lint_order(path, strict=args.strict))
+        findings.extend(_lint_order_dependencies(paths))
     else:
-        errors = lint_orders()
+        findings = lint_orders(strict=args.strict, include_warnings=True)
 
-    if not errors:
-        print("Work orders OK.")
-        return 0
+    errors = [finding for finding in findings if finding.severity == "error"]
+    warnings = [finding for finding in findings if finding.severity == "warning"]
     for error in errors:
         print(str(error), file=sys.stderr)
-    print(f"\n{len(errors)} work-order problem(s).", file=sys.stderr)
+    for warning in warnings:
+        print(str(warning), file=sys.stderr)
+    if not errors:
+        suffix = f" ({len(warnings)} warning{'s' if len(warnings) != 1 else ''})" if warnings else ""
+        print(f"Work orders OK.{suffix}")
+        return 0
+    print(
+        f"\n{len(errors)} work-order problem(s), {len(warnings)} warning(s).",
+        file=sys.stderr,
+    )
     return 1
 
 

@@ -758,8 +758,8 @@ def test_api_router_inventory_reads_purpose_from_the_route_docstring():
     assert "(204 No Content)" in spells
 
 
-def test_every_plan_declares_its_area_guide_and_read_trigger():
-    """The manifest and area queues generate from these, so a plan without them cannot route."""
+def test_every_plan_declares_its_areas_and_read_trigger():
+    """The manifest and the active index generate from these, so a plan without them cannot route."""
     assert cd.check_plan_headers(REPO_ROOT) == []
 
 
@@ -771,20 +771,13 @@ def test_inventory_rows_come_from_the_plans_themselves():
     assert "Never — archived record |" in rows
 
 
-def test_area_plan_tables_group_plans_by_their_area_guide_link():
-    tables = cd.generate_area_plan_tables(REPO_ROOT)
-    players = tables[("areas/players.md", "AREA_PLANS:players")]
-    assert "kid-map-viewer/kid-map-viewer.md" in players
-    # A plan belonging to another area must not leak in.
-    assert "production-nightly-deploys" not in players
-    assert "production-nightly-deploys" in tables[("areas/infra.md", "AREA_PLANS:infra")]
-
-
-def test_area_with_no_active_plan_says_so_rather_than_rendering_an_empty_table(tmp_path: Path):
-    (tmp_path / "docs" / "areas").mkdir(parents=True)
-    (tmp_path / "docs" / "areas" / "quiet.md").write_text("# Quiet\n", encoding="utf-8")
-    tables = cd.generate_area_plan_tables(tmp_path)
-    assert "No plan is in flight" in tables[("areas/quiet.md", "AREA_PLANS:quiet")]
+def test_inventory_has_no_plan_to_area_join():
+    """Area-guide rows no longer say 'Active plan'/'No active plan' — the active index owns that."""
+    rows = cd.generate_inventory_rows(REPO_ROOT)
+    assert "Active plan" not in rows
+    assert "No active plan" not in rows
+    # A redirect stub must not appear as a live working plan.
+    assert "plans/active/kid-map-viewer/kid-map-viewer.md" not in rows
 
 
 def test_script_inventory_covers_every_script_and_reads_its_own_description():
@@ -867,7 +860,7 @@ def _active_plan(tmp_path: Path, feature: str, status: str) -> Path:
     (directory / f"{feature}.md").write_text(
         f"# {feature.replace('-', ' ').title()} — the long outcome clause\n\n"
         f"> **Status:** {status}\n\n"
-        "- **Area guide:** [Players](../../areas/players.md)\n",
+        "- **Areas:** players\n",
         encoding="utf-8",
     )
     return directory
@@ -920,6 +913,28 @@ def test_active_index_reads_the_placeholder_status_as_unrun(tmp_path: Path):
 def test_active_index_is_empty_without_plans(tmp_path: Path):
     (tmp_path / "docs" / "plans" / "active").mkdir(parents=True)
     assert "no active plans" in cd.generate_active_index(tmp_path)
+
+
+def test_active_index_lists_areas_and_excludes_redirect_stubs(tmp_path: Path):
+    """The Areas column comes from **Areas:** and a moved-to-archive stub is not live work."""
+    directory = _active_plan(tmp_path, "fog", "Stage 1 compiled.")
+    table = cd.generate_active_index(tmp_path)
+    assert "| Plan | Areas | Depends on | State | Orders | Next | Status |" in table
+    row = next(
+        line for line in table.splitlines() if line.startswith("| [Fog]")
+    )
+    assert "[players](../../areas/players.md)" in row
+
+    # A redirect stub (moved to the archive) must not appear in the active index.
+    stub = directory.parent / "retired"
+    stub.mkdir(parents=True)
+    (stub / "retired.md").write_text(
+        "# Retired — done\n\n"
+        "> **Status:** Complete and archived. This plan moved to\n"
+        "> [docs/plans/done/retired/](../../done/retired/retired.md).\n",
+        encoding="utf-8",
+    )
+    assert "Retired" not in cd.generate_active_index(tmp_path)
 
 
 # ── Kid palette contract ────────────────────────────────────────────
@@ -1127,7 +1142,7 @@ def test_diff_checks_require_owner_plan_and_declared_documentation(tmp_path: Pat
     assert any("docs/DATA_MODEL.md" in error.message for error in errs)
 
 
-# ── Plan queue contract ───────────────────────────────────────────────
+# ── Area-guide ownership contract ───────────────────────────────────
 
 
 def test_words_md_files_excluded_from_guides(tmp_path: Path, monkeypatch):
@@ -1141,12 +1156,11 @@ def test_words_md_files_excluded_from_guides(tmp_path: Path, monkeypatch):
     (tmp_path / "backend" / "app" / "routers" / "dungeons.py").write_text("", encoding="utf-8")
     (areas / "dungeons.md").write_text(
         "# Dungeons\n\n"
-        "> **Plan queue:** None.\n\n"
         "## Scope\n## Read first\n## Source map\n## Change map\n\n"
         "| Change type | Source globs |\n"
         "|---|---|\n"
         "| Dungeons | `backend/app/routers/dungeons.py` |\n"
-        "## Invariants\n## Work queue\n## Cross-references\n",
+        "## Invariants\n## Deferred\n## Cross-references\n",
         encoding="utf-8",
     )
     # This file should be excluded — no required headings, no plan queue needed
@@ -1168,20 +1182,18 @@ def test_duplicate_router_claim_is_rejected(tmp_path: Path, monkeypatch):
     areas.mkdir()
     (areas / "guide-a.md").write_text(
         "# Guide A\n\n"
-        "> **Plan queue:** None.\n\n"
         "## Scope\n## Read first\n"
         "## Source map\n"
         "- Backend: `backend/app/routers/items.py`.\n"
-        "## Invariants\n## Work queue\n## Cross-references\n",
+        "## Invariants\n## Deferred\n## Cross-references\n",
         encoding="utf-8",
     )
     (areas / "guide-b.md").write_text(
         "# Guide B\n\n"
-        "> **Plan queue:** None.\n\n"
         "## Scope\n## Read first\n"
         "## Source map\n"
         "- Backend: `backend/app/routers/items.py`.\n"
-        "## Invariants\n## Work queue\n## Cross-references\n",
+        "## Invariants\n## Deferred\n## Cross-references\n",
         encoding="utf-8",
     )
     errs = cd.check_area_guide_contract(docs)
@@ -1196,24 +1208,22 @@ def test_duplicate_route_claim_is_rejected(tmp_path: Path, monkeypatch):
     areas.mkdir()
     (areas / "guide-a.md").write_text(
         "# Guide A\n\n"
-        "> **Plan queue:** None.\n\n"
         "## Scope\n## Read first\n## Source map\n## Invariants\n"
         "## Surfaces\n\n"
         "| Surface | Route | Mode | Operator |\n"
         "|---|---|---|---|\n"
         "| Item browser | `/items` | prep | DM |\n"
-        "## Work queue\n## Cross-references\n",
+        "## Deferred\n## Cross-references\n",
         encoding="utf-8",
     )
     (areas / "guide-b.md").write_text(
         "# Guide B\n\n"
-        "> **Plan queue:** None.\n\n"
         "## Scope\n## Read first\n## Source map\n## Invariants\n"
         "## Surfaces\n\n"
         "| Surface | Route | Mode | Operator |\n"
         "|---|---|---|---|\n"
         "| Other browser | `/items` | prep | DM |\n"
-        "## Work queue\n## Cross-references\n",
+        "## Deferred\n## Cross-references\n",
         encoding="utf-8",
     )
     errs = cd.check_area_guide_contract(docs)
@@ -1228,11 +1238,10 @@ def test_duplicate_own_router_within_same_guide_is_ok(tmp_path: Path, monkeypatc
     areas.mkdir()
     (areas / "guide-a.md").write_text(
         "# Guide A\n\n"
-        "> **Plan queue:** None.\n\n"
         "## Scope\n## Read first\n"
         "## Source map\n"
         "- Backend: `backend/app/routers/items.py` and `backend/app/routers/items.py`.\n"
-        "## Invariants\n## Work queue\n## Cross-references\n",
+        "## Invariants\n## Deferred\n## Cross-references\n",
         encoding="utf-8",
     )
     errs = cd.check_area_guide_contract(docs)
@@ -1250,8 +1259,7 @@ def test_change_map_missing_section_is_rejected(tmp_path: Path, monkeypatch):
     areas.mkdir()
     (areas / "guide.md").write_text(
         "# Guide\n\n"
-        "> **Plan queue:** None.\n\n"
-        "## Scope\n## Read first\n## Source map\n## Invariants\n## Work queue\n## Cross-references\n",
+        "## Scope\n## Read first\n## Source map\n## Invariants\n## Deferred\n## Cross-references\n",
         encoding="utf-8",
     )
     errs = cd.check_area_guide_contract(docs)
@@ -1274,14 +1282,13 @@ def test_change_map_valid_coverage_is_accepted(tmp_path: Path, monkeypatch):
 
     (areas / "guide-a.md").write_text(
         "# Guide A\n\n"
-        "> **Plan queue:** None.\n\n"
         "## Scope\n## Read first\n## Source map\n## Invariants\n"
         "## Change map\n\n"
         "| Change type | Source globs |\n"
         "|---|---|\n"
         "| Backend | `backend/app/main.py` |\n"
         "| Frontend | `frontend/src/App.tsx` |\n"
-        "## Work queue\n## Cross-references\n",
+        "## Deferred\n## Cross-references\n",
         encoding="utf-8",
     )
     errs = cd.check_area_guide_contract(docs)
@@ -1304,13 +1311,12 @@ def test_change_map_unmatched_file_is_rejected(tmp_path: Path, monkeypatch):
 
     (areas / "guide.md").write_text(
         "# Guide\n\n"
-        "> **Plan queue:** None.\n\n"
         "## Scope\n## Read first\n## Source map\n## Invariants\n"
         "## Change map\n\n"
         "| Change type | Source globs |\n"
         "|---|---|\n"
         "| Backend | `backend/app/main.py` |\n"
-        "## Work queue\n## Cross-references\n",
+        "## Deferred\n## Cross-references\n",
         encoding="utf-8",
     )
     errs = cd.check_area_guide_contract(docs)
@@ -1328,24 +1334,22 @@ def test_change_map_cross_area_duplicate_is_rejected(tmp_path: Path, monkeypatch
 
     (areas / "guide-a.md").write_text(
         "# Guide A\n\n"
-        "> **Plan queue:** None.\n\n"
         "## Scope\n## Read first\n## Source map\n## Invariants\n"
         "## Change map\n\n"
         "| Change type | Source globs |\n"
         "|---|---|\n"
         "| Shared script | `scripts/shared.py` |\n"
-        "## Work queue\n## Cross-references\n",
+        "## Deferred\n## Cross-references\n",
         encoding="utf-8",
     )
     (areas / "guide-b.md").write_text(
         "# Guide B\n\n"
-        "> **Plan queue:** None.\n\n"
         "## Scope\n## Read first\n## Source map\n## Invariants\n"
         "## Change map\n\n"
         "| Change type | Source globs |\n"
         "|---|---|\n"
         "| Also shared | `scripts/shared.py` |\n"
-        "## Work queue\n## Cross-references\n",
+        "## Deferred\n## Cross-references\n",
         encoding="utf-8",
     )
     errs = cd.check_area_guide_contract(docs)
@@ -1362,13 +1366,12 @@ def test_change_map_unmatched_glob_is_rejected(tmp_path: Path, monkeypatch):
 
     (areas / "guide.md").write_text(
         "# Guide\n\n"
-        "> **Plan queue:** None.\n\n"
         "## Scope\n## Read first\n## Source map\n## Invariants\n"
         "## Change map\n\n"
         "| Change type | Source globs |\n"
         "|---|---|\n"
         "| Nonexistent | `scripts/ghost.py` |\n"
-        "## Work queue\n## Cross-references\n",
+        "## Deferred\n## Cross-references\n",
         encoding="utf-8",
     )
     errs = cd.check_area_guide_contract(docs)
@@ -1384,13 +1387,12 @@ def test_change_map_todo_type_is_rejected(tmp_path: Path, monkeypatch):
 
     (areas / "guide.md").write_text(
         "# Guide\n\n"
-        "> **Plan queue:** None.\n\n"
         "## Scope\n## Read first\n## Source map\n## Invariants\n"
         "## Change map\n\n"
         "| Change type | Source globs |\n"
         "|---|---|\n"
         "| TODO | `scripts/stub.py` |\n"
-        "## Work queue\n## Cross-references\n",
+        "## Deferred\n## Cross-references\n",
         encoding="utf-8",
     )
     errs = cd.check_area_guide_contract(docs)
@@ -1406,13 +1408,12 @@ def test_change_map_empty_source_cell_is_rejected(tmp_path: Path, monkeypatch):
 
     (areas / "guide.md").write_text(
         "# Guide\n\n"
-        "> **Plan queue:** None.\n\n"
         "## Scope\n## Read first\n## Source map\n## Invariants\n"
         "## Change map\n\n"
         "| Change type | Source globs |\n"
         "|---|---|\n"
         "| Placeholder |  |\n"
-        "## Work queue\n## Cross-references\n",
+        "## Deferred\n## Cross-references\n",
         encoding="utf-8",
     )
     errs = cd.check_area_guide_contract(docs)

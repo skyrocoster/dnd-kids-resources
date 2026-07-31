@@ -1,9 +1,10 @@
 /**
- * The opencode side of the post-edit re-read guard.
+ * The opencode side of the bounded-executor guard.
  *
  * The rule itself lives in `scripts/read_guard.py` — this file only carries opencode's
- * tool events to it and turns a deny into a thrown error. AGENTS.md declares the rule, and
- * the `implement-order` skill (in `.opencode/skills/`) is what arms it.
+ * tool events to it and turns a deny into a thrown error. The `implement-order` and
+ * `implement-quick` skills arm it. It blocks post-edit rereads and repair loops after two
+ * failed verification runs.
  *
  * Tracked deliberately: `.opencode/` is otherwise gitignored, and an untracked rule is
  * one that silently stops applying on the next clone.

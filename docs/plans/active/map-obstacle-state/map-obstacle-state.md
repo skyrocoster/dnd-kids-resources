@@ -7,7 +7,7 @@
 > Stage 3 (knowledge/prose/preview deletion) and the final legacy-contract removal
 > (`PassageFlags`/`PassageSessionState` drop) are next.
 
-- **Area guide:** [Dungeons](../../../areas/dungeons.md)
+- **Areas:** dungeons
 - **Read trigger:** Map fixture concealment, locks, traps, DCs, shown state, session overrides, player-map obstacle badges, the Map Lab inspector, or removal of map knowledge and player preview
 
 ## Canonical authority

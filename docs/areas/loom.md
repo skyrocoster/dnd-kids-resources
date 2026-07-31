@@ -54,17 +54,11 @@ The board is the clearest case of a surface whose mode changes with the moment. 
 - **Token-key colors:** `loom_threads.color` stores a token key (`thread-1`…`thread-6`), validated by Pydantic pattern `^thread-[1-6]$`. Actual colors are generated MD3 token sets in `frontend/src/theme.css`.
 - **Loom data is runtime-authored** through the API/UI; the demo seeds are a frozen test/playtest fixture, not the canonical campaign. **Export before rebuild:** `scripts/init_database.py` drops loom tables, so freeze live campaign state via `scripts/export_db_seeds.py` first.
 
-## Work queue
+## Deferred
 
-<!-- GENERATED:AREA_PLANS:loom:START -->
-_No plan is in flight for this area._
-<!-- GENERATED:AREA_PLANS:loom:END -->
-
-What the table cannot derive:
-
-- Deferred until after playtesting: node links to NPCs/dungeons/encounters.
-- Deferred, needs its own Plan: an `End Thread`/`Reach Ending` action pulling an End node into the
-  active session — the current model cannot do this today.
+- Node links to NPCs/dungeons/encounters — deferred until after playtesting.
+- An `End Thread`/`Reach Ending` action pulling an End node into the
+  active session — deferred, needs its own Plan; the current model cannot do this today.
 
 ## Cross-references
 

@@ -59,11 +59,19 @@ def opencode_skill(session: str = "s1") -> dict:
     return {"sessionID": session, "tool": "skill", "args": {"name": "implement-order"}}
 
 
-def opencode_bash(output: str, session: str = "s1") -> dict:
+def opencode_quick_skill(session: str = "s1") -> dict:
+    return {"sessionID": session, "tool": "skill", "args": {"name": "implement-quick"}}
+
+
+def opencode_bash(
+    output: str,
+    session: str = "s1",
+    command: str = "npm run test:check",
+) -> dict:
     return {
         "sessionID": session,
         "tool": "bash",
-        "args": {"command": "npm run test:check"},
+        "args": {"command": command},
         "output": {"output": output},
     }
 
@@ -110,6 +118,58 @@ def test_green_check_does_not_unlock(guard):
     guard._record_post(opencode_bash("Tests: 0 failed, 91 passed | 11 known failures"))
     allow, _ = guard._record_pre(opencode_read("src/Tile.tsx"))
     assert allow is False
+
+
+def test_quick_executor_is_armed(guard):
+    guard._record_post(opencode_quick_skill())
+    guard._record_post(opencode_edit("src/Tile.tsx"))
+    allow, _ = guard._record_pre(opencode_read("src/Tile.tsx"))
+    assert allow is False
+
+
+def test_second_failed_check_blocks_further_work(guard):
+    guard._record_post(opencode_skill())
+    guard._record_post(opencode_edit("src/Tile.tsx"))
+    guard._record_post(opencode_bash("Tests: 1 failed"))
+    guard._record_post(opencode_edit("src/Tile.tsx"))
+    guard._record_post(opencode_bash("Tests: 1 failed"))
+
+    for payload in (
+        opencode_read("src/Tile.tsx"),
+        opencode_edit("src/Tile.tsx"),
+        {"sessionID": "s1", "tool": "grep", "args": {"pattern": "Tile"}},
+        {"sessionID": "s1", "tool": "bash", "args": {"command": "npm run test:check"}},
+    ):
+        allow, reason = guard._record_pre(payload)
+        assert allow is False
+        assert "two failed verification runs" in reason
+
+
+def test_attempt_limit_allows_work_order_failure_report(guard):
+    order = guard.REPO_ROOT / "docs" / "plans" / "active" / "feature" / "01-change.md"
+    order.parent.mkdir(parents=True)
+    order.write_text("STATUS:\n", encoding="utf-8")
+    guard._record_post(opencode_skill())
+    guard._record_post(opencode_bash("1 failed"))
+    guard._record_post(opencode_bash("1 failed"))
+
+    allow, _ = guard._record_pre(opencode_edit(str(order)))
+    assert allow is True
+
+
+def test_non_verification_shell_failures_do_not_consume_attempts(guard):
+    guard._record_post(opencode_skill())
+    guard._record_post(opencode_bash("fatal: not a git repository", command="git status"))
+    guard._record_post(opencode_bash("fatal: not a git repository", command="git status"))
+    state = guard._load("s1")
+    assert state["failed_checks"] == 0
+
+
+def test_first_failed_check_still_allows_repair(guard):
+    guard._record_post(opencode_skill())
+    guard._record_post(opencode_bash("Tests: 1 failed"))
+    allow, _ = guard._record_pre(opencode_edit("src/Tile.tsx"))
+    assert allow is True
 
 
 def test_editing_again_relocks(guard):

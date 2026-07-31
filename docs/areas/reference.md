@@ -60,17 +60,13 @@ The browsers are prep surfaces even though they are also consulted at the table,
 - Update the data-model reference with any seed-shape or import/export change.
 - Keep items and loot bundles distinct while preserving their documented map integration.
 
-## Work queue
+## Deferred
 
-<!-- GENERATED:AREA_PLANS:reference:START -->
-_No plan is in flight for this area._
-<!-- GENERATED:AREA_PLANS:reference:END -->
-
-What the table cannot derive:
-
-- [Weapon Quick Reference](../plans/done/weapon-quick-reference/weapon-quick-reference.md) shipped required quick_rules on every weapon, optional sheet-ready totals, Copy as New, cascade-aware delete confirmation, and an authored quick-rules pass across all 218 seeded weapons.
-- Create a focused plan for spell class/source curation or executable mechanics.
+- Spell class/source curation and executable mechanics — create a focused plan before starting.
 - Catalog, bundle, and map-loot expansion remains deferred and needs a design phase.
+- [Weapon Quick Reference](../plans/done/weapon-quick-reference/weapon-quick-reference.md) shipped
+  required quick_rules on every weapon, optional sheet-ready totals, Copy as New, cascade-aware
+  delete confirmation, and an authored quick-rules pass across all 218 seeded weapons.
 
 ## Cross-references
 

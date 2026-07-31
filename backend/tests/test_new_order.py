@@ -134,7 +134,8 @@ def test_unbounded_large_file_is_refused(repo: Path, monkeypatch, capsys):
     assert "needs a bound" in out
 
 
-def test_too_many_start_in_files_is_refused(repo: Path, monkeypatch, capsys):
+def test_too_many_start_in_files_warns_and_still_writes(repo: Path, monkeypatch, capsys):
+    """Caps are warnings at authoring time: the order is written with the guidance."""
     extra = []
     for index in range(4):
         name = f"Extra{index}.ts"
@@ -150,12 +151,36 @@ def test_too_many_start_in_files_is_refused(repo: Path, monkeypatch, capsys):
         "--tests", "src/__tests__/Tile.test.tsx",
         "--stdout",
     )
+    assert code == 0, out
+    assert "warning:" in out
+    assert "distinct files (max 4)" in out
+    assert "This is two orders" in out
+
+
+def test_too_many_start_in_files_refused_under_strict(repo: Path, monkeypatch, capsys):
+    """`--strict` is the dispatch gate: the same caps become refusals."""
+    extra = []
+    for index in range(4):
+        name = f"Extra{index}.ts"
+        (repo / "frontend" / "src" / name).write_text("export const x = 1\n", encoding="utf-8")
+        extra += ["--start-in", name]
+    code, out = run(
+        monkeypatch,
+        capsys,
+        *BASE,
+        "--strict",
+        "--start-in", "Tile.tsx",
+        *extra,
+        "--do", "Render the label",
+        "--tests", "src/__tests__/Tile.test.tsx",
+        "--stdout",
+    )
     assert code == 1
     assert "distinct files (max 4)" in out
     assert "This is two orders" in out
 
 
-def test_too_many_do_bullets_is_refused(repo: Path, monkeypatch, capsys):
+def test_too_many_do_bullets_warns_and_still_writes(repo: Path, monkeypatch, capsys):
     code, out = run(
         monkeypatch,
         capsys,
@@ -168,8 +193,47 @@ def test_too_many_do_bullets_is_refused(repo: Path, monkeypatch, capsys):
         "--tests", "src/__tests__/Tile.test.tsx",
         "--stdout",
     )
+    assert code == 0, out
+    assert "warning:" in out
+    assert "DO asks for 4 things (max 3)" in out
+
+
+def test_too_many_do_bullets_refused_under_strict(repo: Path, monkeypatch, capsys):
+    code, out = run(
+        monkeypatch,
+        capsys,
+        *BASE,
+        "--strict",
+        "--start-in", "Tile.tsx",
+        "--do", "one",
+        "--do", "two",
+        "--do", "three",
+        "--do", "four",
+        "--tests", "src/__tests__/Tile.test.tsx",
+        "--stdout",
+    )
     assert code == 1
     assert "DO asks for 4 things (max 3)" in out
+
+
+def test_two_frontend_suites_are_permitted_by_default(repo: Path, monkeypatch, capsys):
+    (repo / "frontend" / "src" / "__tests__" / "Other.test.tsx").write_text(
+        "test('o', () => {})\n", encoding="utf-8"
+    )
+    code, out = run(
+        monkeypatch,
+        capsys,
+        *BASE,
+        "--start-in", "Tile.tsx",
+        "--start-in", "Tile.test.tsx",
+        "--start-in", "Other.test.tsx",
+        "--do", "Render `label` after the title in frontend/src/Tile.tsx",
+        "--tests", "src/__tests__/Tile.test.tsx",
+        "--tests", "src/__tests__/Other.test.tsx",
+        "--stdout",
+    )
+    assert code == 0, out
+    assert "warning:" not in out
 
 
 def test_colocated_suite_is_added_to_stop_when(repo: Path, monkeypatch, capsys):

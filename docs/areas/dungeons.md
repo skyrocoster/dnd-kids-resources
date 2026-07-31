@@ -61,19 +61,8 @@ The session view is the surface that is open while a game is running: it must st
   markers standing in that room — the union is **derived at read time only**. Placing or moving a
   marker never edits room content, and editing a room's NPC list never moves a marker.
 
-## Work queue
+## Deferred
 
-<!-- GENERATED:AREA_PLANS:dungeons:START -->
-| Plan | State | Status |
-| --- | --- | --- |
-| [Map Obstacle State](../plans/active/map-obstacle-state/map-obstacle-state.md) | ready | Stage 1 shipped — all 21 orders landed. |
-<!-- GENERATED:AREA_PLANS:dungeons:END -->
-
-What the table cannot derive:
-
-- [Dungeon Outside](../plans/done/dungeon-outside/dungeon-outside.md) shipped: wall kinds, per-side padding and a real extent, outside features, and clarity controls.
-- [Dungeon Connections](../plans/done/dungeon-connections/dungeon-connections.md) shipped: permanent per-dungeon session state, optional portal destinations with a connections resolve list, and cross-dungeon gateways. It owns passage-session persistence.
-- [Map Lab UX Pass](../plans/done/maplab-ux-pass/maplab-ux-pass.md) shipped the ghost-floor door-leak fix, gesture core, tool palette/popovers, brush model, forgiveness layer, responsive editor/viewer shells, NPC markers, and canvas-local viewer failure feedback.
 - **No plan yet, raised by [Kid Map Viewer](../plans/done/kid-map-viewer/kid-map-viewer.md)
   planning:** move `npc` and `encounter` out of the fixture flyout — a person and a fight should not be
   chosen from the same menu as Barrel and Statue. This is an authoring-palette change only: no storage
@@ -83,6 +72,14 @@ What the table cannot derive:
   owns (dungeon 4's stair 2 upper endpoint, cell (2,1), is one today). A warning, not a block —
   hard-blocking would eventually prevent placing a stair in a corridor that is not roomed yet, and the
   kid map deliberately still draws these rather than quietly hiding nonsense.
+
+Shipped plans established current behavior: [Dungeon Outside](../plans/done/dungeon-outside/dungeon-outside.md)
+shipped wall kinds, per-side padding and a real extent, outside features, and clarity controls;
+[Dungeon Connections](../plans/done/dungeon-connections/dungeon-connections.md) shipped permanent
+per-dungeon session state, optional portal destinations with a connections resolve list, and
+cross-dungeon gateways — it owns passage-session persistence; [Map Lab UX Pass](../plans/done/maplab-ux-pass/maplab-ux-pass.md)
+shipped the ghost-floor door-leak fix, gesture core, tool palette/popovers, brush model, forgiveness
+layer, responsive editor/viewer shells, NPC markers, and canvas-local viewer failure feedback.
 
 ## Cross-references
 

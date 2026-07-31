@@ -23,6 +23,7 @@ Exit code is 1 if any check failed, so it works as a single gate.
 from __future__ import annotations
 
 import argparse
+import os
 import re
 import subprocess
 import sys
@@ -73,6 +74,9 @@ PRIMARY_PATTERNS = {
 MAX_SIGNAL_LINES = 4
 MAX_FAILURE_TAIL = 25
 HEARTBEAT_SECONDS = 60
+DEFAULT_TIMEOUT_SECONDS = 15 * 60
+TIMEOUT_SECONDS = DEFAULT_TIMEOUT_SECONDS
+KILL_WAIT_SECONDS = 5
 ANSI_RE = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
 
 
@@ -187,6 +191,40 @@ def _primary(check: Check) -> str:
     return "; ".join(chosen) or (check.signals[0] if check.signals else "")
 
 
+def _stop_process_tree(process: subprocess.Popen[bytes | str]) -> None:
+    """Stop the isolated check process and descendants on both supported platforms."""
+    if process.poll() is not None:
+        return
+    if os.name == "nt":
+        subprocess.run(
+            ["taskkill", "/PID", str(process.pid), "/T", "/F"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=False,
+        )
+    else:
+        try:
+            os.killpg(process.pid, 15)
+        except ProcessLookupError:
+            return
+    try:
+        process.wait(timeout=KILL_WAIT_SECONDS)
+    except subprocess.TimeoutExpired:
+        if os.name == "nt":
+            subprocess.run(
+                ["taskkill", "/PID", str(process.pid), "/T", "/F"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                check=False,
+            )
+        else:
+            try:
+                os.killpg(process.pid, 9)
+            except ProcessLookupError:
+                pass
+        process.wait()
+
+
 def run_check(check: Check) -> Check:
     started = time.time()
     LOG_DIR.mkdir(exist_ok=True)
@@ -202,20 +240,39 @@ def run_check(check: Check) -> Check:
     check.log_path = Path(log_file.name)
     print(f"RUN   {check.label} (log: {check.log_path})", file=sys.stderr, flush=True)
     try:
+        popen_kwargs = {
+            "cwd": check.cwd,
+            "shell": check.shell,
+            "stdout": log_file,
+            "stderr": subprocess.STDOUT,
+        }
+        if os.name == "nt":
+            popen_kwargs["creationflags"] = subprocess.CREATE_NEW_PROCESS_GROUP
+        else:
+            popen_kwargs["start_new_session"] = True
         process = subprocess.Popen(
             check.command,
-            cwd=check.cwd,
-            shell=check.shell,
-            stdout=log_file,
-            stderr=subprocess.STDOUT,
+            **popen_kwargs,
         )
+        deadline = started + TIMEOUT_SECONDS
         while True:
             try:
-                process.wait(timeout=HEARTBEAT_SECONDS)
+                remaining = deadline - time.time()
+                if remaining <= 0:
+                    raise subprocess.TimeoutExpired(check.command, TIMEOUT_SECONDS)
+                process.wait(timeout=min(HEARTBEAT_SECONDS, remaining))
                 break
             except subprocess.TimeoutExpired:
                 elapsed = time.time() - started
                 active = _log_tail(check.log_path)
+                if elapsed >= TIMEOUT_SECONDS:
+                    _stop_process_tree(process)
+                    check.passed = False
+                    check.output = check.log_path.read_text(encoding="utf-8", errors="replace")
+                    check.summary = f"timed out after {TIMEOUT_SECONDS}s"
+                    check.seconds = elapsed
+                    log_file.close()
+                    return check
                 detail = f"; last: {active}" if active else ""
                 print(
                     f"WAIT  {check.label} ({elapsed:.0f}s, still running{detail}; "
@@ -278,7 +335,18 @@ def main() -> int:
         help="Print each failing check's whole output instead of the last "
         f"{MAX_FAILURE_TAIL} lines",
     )
+    parser.add_argument(
+        "--timeout",
+        type=float,
+        default=DEFAULT_TIMEOUT_SECONDS,
+        help=f"Maximum seconds for each check (default: {DEFAULT_TIMEOUT_SECONDS:g})",
+    )
     args = parser.parse_args()
+
+    global TIMEOUT_SECONDS
+    if args.timeout <= 0:
+        parser.error("--timeout must be greater than zero")
+    TIMEOUT_SECONDS = args.timeout
 
     checks = _checks()
     if args.only:
