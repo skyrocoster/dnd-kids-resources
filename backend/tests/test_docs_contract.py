@@ -603,11 +603,10 @@ def test_plan_lifecycle_requires_archive_target_for_redirect(tmp_path: Path):
 
 def test_instruction_precedence_reports_missing_manifest_pointer(tmp_path: Path):
     (tmp_path / ".github").mkdir()
-    (tmp_path / "CLAUDE.md").write_text("The single authoritative instruction file.", encoding="utf-8")
-    (tmp_path / "AGENTS.md").write_text("Read CLAUDE.md.", encoding="utf-8")
-    (tmp_path / ".github" / "copilot-instructions.md").write_text("Read CLAUDE.md.", encoding="utf-8")
+    (tmp_path / "AGENTS.md").write_text("The single authoritative instruction file. Read docs/README.md.", encoding="utf-8")
+    (tmp_path / ".github" / "copilot-instructions.md").write_text("Read AGENTS.md.", encoding="utf-8")
     errs = cd.check_instruction_precedence(tmp_path)
-    assert any(error.source == "AGENTS.md" for error in errs)
+    assert any(error.source == ".github/copilot-instructions.md" for error in errs)
 
 
 def test_configured_test_commands_follow_configuration(tmp_path: Path):

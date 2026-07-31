@@ -61,7 +61,7 @@ migrations, so shipping a schema change stops being an event you take a backup b
 
 ### Settled decisions
 
-**`init_database.py` stays the canonical schema and the dev/test reset path.** `CLAUDE.md` requires
+**`init_database.py` stays the canonical schema and the dev/test reset path.** `AGENTS.md` requires
 backend tests to build from the real schema rather than hand-copied fixture DDL, and that rule is
 what keeps the tests honest. Migrations do not replace it — they are how an *existing* database
 catches up to it. A freshly initialised database is already current and must be stamped as such, so

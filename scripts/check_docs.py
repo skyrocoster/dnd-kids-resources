@@ -49,7 +49,6 @@ def _safe_rel(path: Path, anchor: Path = REPO_ROOT) -> str:
         return path.name
 PLAN_TEMPLATE = DOCS_DIR / "PLAN_TEMPLATE.md"
 README = DOCS_DIR / "README.md"
-CLAUDE_MD = REPO_ROOT / "CLAUDE.md"
 AREA_GUIDES_DIR = DOCS_DIR / "areas"
 ACTIVE_PLANS_DIR = DOCS_DIR / "plans" / "active"
 
@@ -887,12 +886,11 @@ def check_area_guide_contract(docs_dir: Path) -> list[CheckError]:
 
 
 def check_instruction_precedence(repo_root: Path) -> list[CheckError]:
-    """Keep every supported AI entry point subordinate to CLAUDE.md."""
+    """Keep every supported AI entry point subordinate to AGENTS.md."""
     errors: list[CheckError] = []
     requirements = {
-        "CLAUDE.md": ("single authoritative instruction",),
-        "AGENTS.md": ("claude.md", "docs/readme.md"),
-        ".github/copilot-instructions.md": ("claude.md", "docs/readme.md"),
+        "AGENTS.md": ("single authoritative instruction", "docs/readme.md"),
+        ".github/copilot-instructions.md": ("agents.md", "docs/readme.md"),
     }
     for relative, phrases in requirements.items():
         path = repo_root / relative
@@ -905,7 +903,7 @@ def check_instruction_precedence(repo_root: Path) -> list[CheckError]:
             errors.append(CheckError(
                 relative,
                 f"Instruction precedence is incomplete; missing: {', '.join(missing)}",
-                "Point the entry file to CLAUDE.md and the documentation manifest",
+                "Point the entry file to AGENTS.md and the documentation manifest",
             ))
     return errors
 
@@ -1382,7 +1380,7 @@ def _leading_comment(source: str) -> str:
 def generate_script_inventory(repo_root: Path) -> str:
     """Render every script in `scripts/` from its module docstring.
 
-    The docstring is read rather than `--help` executed: `CLAUDE.md` declares these
+    The docstring is read rather than `--help` executed: `AGENTS.md` declares these
     scripts invoke-only, and running seventeen of them on every documentation check
     would be a strange way to honour that.
     """

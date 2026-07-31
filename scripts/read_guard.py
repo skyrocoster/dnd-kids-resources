@@ -1,4 +1,4 @@
-"""Post-edit re-read guard, shared by every harness that runs a work order.
+"""Post-edit re-read guard for the opencode work-order executor.
 
 The telemetry log measured one waste class that survived every order-side correction:
 an executor re-reading a file it had just edited, to verify an edit the tool already
@@ -7,10 +7,9 @@ wording in an order or a skill prevented them, because the behaviour is a reflex
 rather than a decision.
 
 So it moves out of the prose and into the harness. This script is the single
-implementation of the rule. Claude Code calls it from a PreToolUse/PostToolUse hook;
-opencode calls it from `.opencode/plugin/read-guard.js`. Both send the same normalised
-payload and get the same answer, so an order behaves identically whichever executor
-picks it up.
+implementation of the rule. opencode calls it from `.opencode/plugin/read-guard.js`,
+which sends a normalised payload and turns a deny into a thrown error, so every
+opencode executor is bound by the same rule.
 
 The rule
 --------
@@ -29,7 +28,6 @@ deny costs a stalled order, which the log values far higher.
 
 CLI
 ---
-    read_guard.py --harness claude   --event pre|post     # hook JSON on stdin
     read_guard.py --harness opencode --event pre|post     # payload JSON on stdin
     read_guard.py --unlock <path> [--reason "<why>"] [--session <id>]
     read_guard.py --status [--session <id>]
@@ -54,13 +52,13 @@ STATE_DIR = REPO_ROOT / ".telemetry" / "read-guard"
 # The skill whose presence means "this session is executing a work order".
 ARMING_SKILL = "implement-order"
 
-READ_TOOLS = {"read", "notebookread"}
-EDIT_TOOLS = {"edit", "write", "multiedit", "notebookedit", "patch"}
+READ_TOOLS = {"read"}
+EDIT_TOOLS = {"edit", "write", "multiedit", "patch"}
 SHELL_TOOLS = {"bash", "shell", "powershell", "run"}
 SKILL_TOOLS = {"skill"}
 
-# Keys the two harnesses use for the path argument.
-PATH_KEYS = ("file_path", "filePath", "path", "notebook_path", "notebookPath")
+# Keys opencode uses for the path and command arguments.
+PATH_KEYS = ("filePath", "path")
 COMMAND_KEYS = ("command", "cmd", "script")
 
 DENY_MESSAGE = (
@@ -154,7 +152,7 @@ def _latest_session() -> str | None:
 
 
 def _normalise(raw: str | None, cwd: str | None = None) -> str | None:
-    """Repo-relative, forward-slashed, case-folded — one key both harnesses agree on."""
+    """Repo-relative, forward-slashed, case-folded — one key the whole pipeline agrees on."""
     if not raw or not isinstance(raw, str):
         return None
     candidate = Path(raw.strip().strip('"').strip("'"))
@@ -181,7 +179,7 @@ def _first(args: dict[str, Any], keys: tuple[str, ...]) -> str | None:
 
 
 def _mentions_arming_skill(args: dict[str, Any]) -> bool:
-    """Any string value naming the arming skill counts, whatever the harness calls it."""
+    """Any string value naming the arming skill counts."""
 
     def walk(value: Any) -> bool:
         if isinstance(value, str):
@@ -196,7 +194,7 @@ def _mentions_arming_skill(args: dict[str, Any]) -> bool:
 
 
 def _looks_like_failure(payload: dict[str, Any]) -> bool:
-    response = payload.get("tool_response", payload.get("output"))
+    response = payload.get("output")
     if isinstance(response, dict):
         if response.get("is_error") or response.get("isError"):
             return True
@@ -229,17 +227,17 @@ def _record_pre(payload: dict[str, Any]) -> tuple[bool, str]:
     if os.environ.get("READ_GUARD", "").lower() in {"off", "0", "false"}:
         return True, ""
 
-    tool = str(payload.get("tool_name") or payload.get("tool") or "").lower()
+    tool = str(payload.get("tool") or "").lower()
     if tool not in READ_TOOLS:
         return True, ""
 
-    session = str(payload.get("session_id") or payload.get("sessionID") or "unknown")
+    session = str(payload.get("sessionID") or "unknown")
     state = _load(session)
     if not state.get("armed"):
         return True, ""
 
     path = _normalise(
-        _first(payload.get("tool_input") or payload.get("args") or {}, PATH_KEYS),
+        _first(payload.get("args") or {}, PATH_KEYS),
         payload.get("cwd"),
     )
     if not path:
@@ -259,13 +257,13 @@ def _record_post(payload: dict[str, Any]) -> None:
     if os.environ.get("READ_GUARD", "").lower() in {"off", "0", "false"}:
         return
 
-    tool = str(payload.get("tool_name") or payload.get("tool") or "").lower()
-    session = str(payload.get("session_id") or payload.get("sessionID") or "unknown")
-    args = payload.get("tool_input") or payload.get("args") or {}
+    tool = str(payload.get("tool") or "").lower()
+    session = str(payload.get("sessionID") or "unknown")
+    args = payload.get("args") or {}
     state = _load(session)
     dirty = False
 
-    # A harness may expose the skill as a `skill` tool taking its name, or as a tool named
+    # opencode exposes the skill as a `skill` tool taking its name, or as a tool named
     # after the skill itself. Either spelling arms; a planner session invokes neither.
     arming = ARMING_SKILL in tool or (tool in SKILL_TOOLS and _mentions_arming_skill(args))
     if arming:
@@ -302,23 +300,7 @@ def _record_post(payload: dict[str, Any]) -> None:
         _save(state)
 
 
-# ---------------------------------------------------------------------- harness I/O
-
-
-def _emit_claude(event: str, allow: bool, reason: str) -> int:
-    if event == "pre" and not allow:
-        print(
-            json.dumps(
-                {
-                    "hookSpecificOutput": {
-                        "hookEventName": "PreToolUse",
-                        "permissionDecision": "deny",
-                        "permissionDecisionReason": reason,
-                    }
-                }
-            )
-        )
-    return 0
+# --------------------------------------------------------------------------- harness I/O
 
 
 def _emit_opencode(allow: bool, reason: str) -> int:
@@ -377,7 +359,7 @@ def _cmd_status(session: str | None) -> int:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--harness", choices=("claude", "opencode"))
+    parser.add_argument("--harness", choices=("opencode",))
     parser.add_argument("--event", choices=("pre", "post"))
     parser.add_argument("--unlock", metavar="PATH")
     parser.add_argument("--reason", default="")
@@ -399,8 +381,6 @@ def main(argv: list[str] | None = None) -> int:
     else:
         allow, reason = _record_pre(payload)
 
-    if args.harness == "claude":
-        return _emit_claude(args.event, allow, reason)
     return _emit_opencode(allow, reason)
 
 

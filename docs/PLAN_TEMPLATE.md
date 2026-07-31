@@ -8,13 +8,12 @@ by vendor:
 - **The executor** — the **cheaper, weaker model**. Runs `implement-order`: one work order at a time,
   in a fresh context window, seeing only what its order names.
 
-Either role can be filled by any provider or product that is strong enough for it — Claude, opencode,
-ChatGPT, a local model. Which ones fill them is an open experiment, so the docs and skills name the
+Either role can be filled by any provider or product that is strong enough for it — opencode, ChatGPT,
+a local model. Which ones fill them is an open experiment, so the docs and skills name the
 **role**, never a vendor. Where a specific product genuinely matters (telemetry parsing, subagent
 transport), that is called out as a transport detail, not as who the planner is.
 
-The workflow is driven by five skills in `.claude/skills/`, read by whichever harness the role runs
-in — Claude Code discovers project skills only there, and opencode reads that directory too:
+The workflow is driven by five skills in `.opencode/skills/`, opencode's native skill directory:
 
 | Skill | Role | Job |
 |---|---|---|
@@ -178,7 +177,7 @@ entry scoped to the symbol or line range needed) + **CREATES/REMOVES** (explicit
 + **STOP WHEN** (a hard stop that ends wandering).
 The path alone is not the whole START IN authorization: when an entry names a symbol or line range,
 opening unrelated sections of that same file is a deviation and must be reported as such.
-See `.claude/skills/to-orders/SKILL.md` for the full authoring guidance, and
+See `.opencode/skills/to-orders/SKILL.md` for the full authoring guidance, and
 [the reference order](plans/_example/99-creature-row-ac.md) for a worked example.
 
 `scripts/check_orders.py` lints orders against these rules and is runnable on its own while
@@ -205,9 +204,8 @@ Four scripts keep the workflow's own costs off a model:
 And one rule is enforced by the harness rather than by wording. `scripts/read_guard.py` denies a
 read of a file the session has already edited, once that session has invoked `implement-order`;
 a failing check unlocks everything, and `--unlock <path> --reason "<why>"` is the logged override.
-Claude Code reaches it through `.claude/settings.json` and opencode through
-`.opencode/plugin/read-guard.js`, so the rule binds both executors identically. Post-edit
-re-reading was the only waste class that survived every order-side correction in the log.
+opencode reaches it through `.opencode/plugin/read-guard.js`, so the rule binds every executor.
+Post-edit re-reading was the only waste class that survived every order-side correction in the log.
 
 ### On failure — the escalation channel back to the planner
 
@@ -248,10 +246,10 @@ Telemetry has three moments, and they are all run by `scripts/order_telemetry.py
    survived; the snapshot also yields the reissue diff.
 2. **When the order reports back** — `--order <order-path> --fault <verdict> --note "<why>"` parses
    the executor's record (token totals, turn count, largest tool results, duplicate reads, reads
-   outside START IN) and folds in the executor's STATUS and DEVIATIONS lines. Two transports parse
-   automatically — Claude Code subagent transcripts and opencode's local SQLite DB — and only
-   *child* records count, because the dispatcher's own session names the order too and would
-   otherwise be logged as if it were the executor.
+   outside START IN) and folds in the executor's STATUS and DEVIATIONS lines. The opencode transport
+   parses automatically from its local SQLite DB — and only *child* records count, because the
+   dispatcher's own session names the order too and would otherwise be logged as if it were the
+   executor.
 3. **At reconcile** — `--reconcile "<stage>"` records stage-level checks, the defects that escaped
    the orders' own STOP WHEN commands, and **the planner's own cost for the stage**. Without that
    last figure the log measures only the cheap half of the workflow and cannot say whether

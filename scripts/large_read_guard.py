@@ -32,7 +32,6 @@ enough, and the tail is a bounded read.
 
 CLI
 ---
-    large_read_guard.py --harness claude   --event pre|post   # hook JSON on stdin
     large_read_guard.py --harness opencode --event pre|post   # payload JSON on stdin
     large_read_guard.py --arm [--session <id>] | --disarm [--session <id>]
     large_read_guard.py --unlock <path> [--reason "<why>"] [--session <id>]
@@ -60,7 +59,7 @@ STATE_DIR = REPO_ROOT / ".telemetry" / "large-read-guard"
 ARMING_SKILL = "to-orders"
 # ...and the skill's own file, because invoking it is not the only way to start following it.
 # opencode's `/to-orders` slash command, run under the default agent, satisfied itself by
-# *reading* .claude/skills/to-orders/SKILL.md with the read tool: no `skill` tool event, so
+# *reading* .opencode/skills/to-orders/SKILL.md with the read tool: no `skill` tool event, so
 # nothing armed, while ALWAYS_ALLOWED waved the read through. A session holding the skill's
 # text is compiling a stage however it got there.
 ARMING_SKILL_DOC = re.compile(rf"(?:^|/)skills/{re.escape(ARMING_SKILL)}/skill\.md$")
@@ -72,11 +71,11 @@ LARGE_FILE_LINES = 400
 # is an unbounded read wearing a limit.
 MAX_WINDOW_LINES = 400
 
-READ_TOOLS = {"read", "notebookread"}
+READ_TOOLS = {"read"}
 SHELL_TOOLS = {"bash", "shell", "powershell", "run"}
 SKILL_TOOLS = {"skill"}
 
-PATH_KEYS = ("file_path", "filePath", "path", "notebook_path", "notebookPath")
+PATH_KEYS = ("filePath", "path")
 LIMIT_KEYS = ("limit", "line_limit", "lineLimit", "length")
 COMMAND_KEYS = ("command", "cmd", "script")
 
@@ -84,7 +83,6 @@ COMMAND_KEYS = ("command", "cmd", "script")
 # define what an order may say, and the plan/order files that are the session's subject.
 # Everything here is either short, or long *because* it is an index.
 ALWAYS_ALLOWED = (
-    "claude.md",
     "agents.md",
     "readme.md",
     "context.md",
@@ -97,7 +95,7 @@ ALWAYS_ALLOWED = (
     "docs/plans/active/**",
     "docs/plans/done/index.md",
     "docs/plans/_example/**",
-    ".claude/skills/**",
+    ".opencode/skills/**",
     ".agents/skills/**",
 )
 # Carved back out of the patterns above: the skill itself says the tail is enough, and a
@@ -112,8 +110,7 @@ DENY_MESSAGE = (
     "  1. Bounded read — grep the file for your anchor, then read a range "
     "(offset/limit, at most {window} lines). A grep hit with context is often the answer.\n"
     "  2. Delegate the retrieval — send a bounded question to the `explore-deepseek` "
-    "subagent (Claude Code: `Explore`). It answers with path:line citations at the cheap "
-    "model's rate.\n"
+    "subagent. It answers with path:line citations at the cheap model's rate.\n"
     "  3. Let the tooling derive it — `scripts/check_orders.py --fix` resolves a backticked "
     "symbol to a real line range and anchor without you opening the file at all.\n"
     "If you genuinely need the whole file (you are judging its shape, not looking something "
@@ -181,7 +178,7 @@ def _latest_session() -> str | None:
 
 
 def _normalise(raw: str | None, cwd: str | None = None) -> str | None:
-    """Repo-relative, forward-slashed, case-folded — one key both harnesses agree on."""
+    """Repo-relative, forward-slashed, case-folded — one key the whole pipeline agrees on."""
     if not raw or not isinstance(raw, str):
         return None
     candidate = Path(raw.strip().strip('"').strip("'"))
@@ -220,7 +217,7 @@ def _first_int(args: dict[str, Any], keys: tuple[str, ...]) -> int | None:
 
 
 def _mentions_arming_skill(args: dict[str, Any]) -> bool:
-    """Any string value naming the arming skill counts, whatever the harness calls it."""
+    """Any string value naming the arming skill counts."""
 
     def walk(value: Any) -> bool:
         if isinstance(value, str):
@@ -295,7 +292,7 @@ def _decide(
     lines = _line_count(path)
     if lines is None or lines <= LARGE_FILE_LINES:
         return True, ""
-    # The state key is case-folded so both harnesses agree on it; the message is not, because
+    # The state key is case-folded so the pipeline agrees on it; the message is not, because
     # the reader may paste it straight into --unlock on a case-sensitive filesystem.
     return False, DENY_MESSAGE.format(
         path=display or path, lines=lines, threshold=LARGE_FILE_LINES, window=MAX_WINDOW_LINES
@@ -307,16 +304,16 @@ def _record_pre(payload: dict[str, Any]) -> tuple[bool, str]:
     if os.environ.get("LARGE_READ_GUARD", "").lower() in {"off", "0", "false"}:
         return True, ""
 
-    tool = str(payload.get("tool_name") or payload.get("tool") or "").lower()
+    tool = str(payload.get("tool") or "").lower()
     if tool not in READ_TOOLS and tool not in SHELL_TOOLS:
         return True, ""
 
-    session = str(payload.get("session_id") or payload.get("sessionID") or "unknown")
+    session = str(payload.get("sessionID") or "unknown")
     state = _load(session)
     if not state.get("armed"):
         return True, ""
 
-    args = payload.get("tool_input") or payload.get("args") or {}
+    args = payload.get("args") or {}
     cwd = payload.get("cwd")
 
     if tool in SHELL_TOOLS:
@@ -339,10 +336,11 @@ def _record_pre(payload: dict[str, Any]) -> tuple[bool, str]:
 def _arms(tool: str, args: dict[str, Any], cwd: str | None) -> bool:
     """Does this completed tool call mean the session is now compiling a stage?
 
-    Three spellings, because three harnesses disagree and a guard that arms on only one of
-    them is a guard that is off. A harness may expose the skill as a `skill` tool taking its
-    name, as a tool named after the skill itself, or not as a tool at all — in which case the
-    model reaches the skill by reading its SKILL.md, and that read is the arming event.
+    Two spellings, because opencode reaches the skill two ways and a guard that arms on
+    only one of them is a guard that is off. It may expose the skill as a `skill` tool
+    taking its name, or as a tool named after the skill itself — or not as a tool at all,
+    in which case the model reaches the skill by reading its SKILL.md, and that read is
+    the arming event.
     """
     if ARMING_SKILL in tool:
         return True
@@ -352,7 +350,7 @@ def _arms(tool: str, args: dict[str, Any], cwd: str | None) -> bool:
         path = _normalise(_first(args, PATH_KEYS), cwd)
         return bool(path and ARMING_SKILL_DOC.search(path))
     if tool in SHELL_TOOLS:
-        # `cat .claude/skills/to-orders/SKILL.md` is the same read wearing a different tool;
+        # `cat .opencode/skills/to-orders/SKILL.md` is the same read wearing a different tool;
         # so is a bounded one, since a tail of the skill still starts the session following it.
         command = (_first(args, COMMAND_KEYS) or "").replace("\\", "/").lower()
         return f"skills/{ARMING_SKILL}/skill.md" in command
@@ -364,12 +362,12 @@ def _record_post(payload: dict[str, Any]) -> None:
     if os.environ.get("LARGE_READ_GUARD", "").lower() in {"off", "0", "false"}:
         return
 
-    tool = str(payload.get("tool_name") or payload.get("tool") or "").lower()
-    args = payload.get("tool_input") or payload.get("args") or {}
+    tool = str(payload.get("tool") or "").lower()
+    args = payload.get("args") or {}
     if not _arms(tool, args, payload.get("cwd")):
         return
 
-    session = str(payload.get("session_id") or payload.get("sessionID") or "unknown")
+    session = str(payload.get("sessionID") or "unknown")
     state = _load(session)
     if state.get("armed"):
         return
@@ -378,23 +376,7 @@ def _record_post(payload: dict[str, Any]) -> None:
     _save(state)
 
 
-# ---------------------------------------------------------------------- harness I/O
-
-
-def _emit_claude(event: str, allow: bool, reason: str) -> int:
-    if event == "pre" and not allow:
-        print(
-            json.dumps(
-                {
-                    "hookSpecificOutput": {
-                        "hookEventName": "PreToolUse",
-                        "permissionDecision": "deny",
-                        "permissionDecisionReason": reason,
-                    }
-                }
-            )
-        )
-    return 0
+# --------------------------------------------------------------------------- harness I/O
 
 
 def _emit_opencode(allow: bool, reason: str) -> int:
@@ -461,7 +443,7 @@ def _cmd_status(session: str | None) -> int:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--harness", choices=("claude", "opencode"))
+    parser.add_argument("--harness", choices=("opencode",))
     parser.add_argument("--event", choices=("pre", "post"))
     parser.add_argument("--arm", action="store_true")
     parser.add_argument("--disarm", action="store_true")
@@ -487,8 +469,6 @@ def main(argv: list[str] | None = None) -> int:
     else:
         allow, reason = _record_pre(payload)
 
-    if args.harness == "claude":
-        return _emit_claude(args.event, allow, reason)
     return _emit_opencode(allow, reason)
 
 

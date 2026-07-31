@@ -67,11 +67,11 @@ executor then pays to re-locate on every return trip.
 
 **Light is the default and carries every order unless the order argues its way out of it.**
 
-| Order says | opencode (preferred) | ChatGPT | Claude Code |
-|---|---|---|---|
-| **Light** (default) | `implement-order-deepseek` subagent (`opencode-go/deepseek-v4-flash`) | the fast/mini tier (e.g. `gpt-5.4-mini`, `gpt-5.6-terra-fast`) | haiku |
-| Standard — `<reason>` | `implement-order-deepseek-pro` subagent (`opencode-go/deepseek-v4-pro`) | the thinking tier (e.g. `gpt-5.5`, `gpt-5.6-sol`) | sonnet |
-| High — `<reason>` | do not dispatch — surface it to the user to decide who runs it | | |
+| Order says | opencode (preferred) | ChatGPT |
+|---|---|---|
+| **Light** (default) | `implement-order-deepseek` subagent (`opencode-go/deepseek-v4-flash`) | the fast/mini tier (e.g. `gpt-5.4-mini`, `gpt-5.6-terra-fast`) |
+| Standard — `<reason>` | `implement-order-deepseek-pro` subagent (`opencode-go/deepseek-v4-pro`) | the thinking tier (e.g. `gpt-5.5`, `gpt-5.6-sol`) |
+| High — `<reason>` | do not dispatch — surface it to the user to decide who runs it | |
 
 **A higher strength with no stated reason is dispatched as Light.** `check_orders.py` rejects the
 order before this point, so an unjustified `Standard` reaching you means the lint was skipped — send
@@ -111,8 +111,7 @@ Two transports, same prompt:
 
 - **Spawn** — hand the template to the mapped executor, **one order per agent/session**, in the
   background. In opencode that is the Task tool against the strength's `implement-order-deepseek*`
-  subagent; in Claude Code it is the Agent tool with the mapped model; other harnesses, their
-  equivalent. Default when the user says "dispatch" or "send off".
+  subagent. Default when the user says "dispatch" or "send off".
 
   **Note the child session/task id the spawn returns, and pass it to the telemetry script.** Your own
   session names the order file too — you wrote the dispatch prompt into it — so auto-discovery has to
@@ -127,11 +126,11 @@ Two transports, same prompt:
 **First, log telemetry for every order that reports back** (DONE, FAILED, or BLOCKED alike),
 before the order file can be deleted at reconcile:
 
-- **Spawned agent (Claude Code) or opencode session:** run
+- **Spawned agent or opencode session:** run
   `.venv\Scripts\python.exe scripts/order_telemetry.py --order docs/plans/active/<feature>/<NN>-<slug>.md --fault <order|executor|mixed|none> --note "<your read of the run>"`
-  (POSIX: `.venv/bin/python`), adding `--opencode-session <child id>` or `--transcript <path>` when
-  you have it. It finds the executor's **child** record in both transports (a Claude subagent
-  transcript or an opencode session with a parent), computes token totals and cost drivers
+  (POSIX: `.venv/bin/python`), adding `--opencode-session <child id>` when
+  you have it. It finds the executor's **child** record (an opencode session with a parent),
+  computes token totals and cost drivers
   (largest tool results, duplicate reads split into locating vs post-edit, reads outside START IN),
   reads the order's shape from its dispatch snapshot, and records the run in
   `docs/plans/telemetry.jsonl`, re-rendering `docs/plans/telemetry-log.md` from it. Do not
@@ -225,9 +224,9 @@ A fresh executor pays for a cold start: it re-reads every file the order names b
 anything. That is the right price for real work and a bad price for a typo. Take the first of these
 that applies.
 
-**A. Resume the executor that failed.** If the transport can continue that session (in Claude Code,
-`SendMessage` to the agent's ID; in opencode, a follow-up message on the same child session) and the
-session is still live, send the correction there. Its context already holds the files, so it fixes
+**A. Resume the executor that failed.** If the transport can continue that session (in opencode, a
+follow-up message on the same child session) and the session is still live, send the correction
+there. Its context already holds the files, so it fixes
 the code with no re-exploration — and telemetry stays attached to one record. Prefer this whenever
 the fix needs any understanding of the code the executor just read. Send the correction the same way
 you'd write it into the order — the missing fact, the corrected DO, the stop-check to rerun — and

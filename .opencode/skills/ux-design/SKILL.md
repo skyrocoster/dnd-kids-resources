@@ -7,7 +7,7 @@ description: Decide the interaction design for a UI surface in the D&D Kids Reso
 
 This repo's visual language is already settled. Colour, type scale, icons, spacing, radius, motion,
 elevation and the accessibility floor live in `frontend/src/theme.css` and
-[docs/DESIGN_SYSTEM.md](../../../docs/DESIGN_SYSTEM.md), and `CLAUDE.md` forbids introducing arbitrary
+[docs/DESIGN_SYSTEM.md](../../../docs/DESIGN_SYSTEM.md), and `AGENTS.md` forbids introducing arbitrary
 colours. **Do not propose a palette, a typeface, or an aesthetic direction.** That work is done.
 
 What is not settled for any *new* surface is how it behaves: what it is for, who is holding the
@@ -15,7 +15,7 @@ device, what wins when the screen is too small, what happens when the save fails
 it is empty. That is this skill's job.
 
 You are working at **planning time**. You produce decisions that go into the Plan and from there into
-work orders. You do not write implementation code — see `CLAUDE.md`.
+work orders. You do not write implementation code — see `AGENTS.md`.
 
 ## Before you decide anything
 

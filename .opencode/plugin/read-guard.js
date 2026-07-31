@@ -1,10 +1,9 @@
 /**
- * opencode half of the post-edit re-read guard.
+ * The opencode side of the post-edit re-read guard.
  *
  * The rule itself lives in `scripts/read_guard.py` — this file only carries opencode's
- * tool events to it and turns a deny into a thrown error. Claude Code reaches the same
- * script through `.claude/settings.json` hooks, so an executor behaves identically in
- * either harness and a work order never has to care which one picked it up.
+ * tool events to it and turns a deny into a thrown error. AGENTS.md declares the rule, and
+ * the `implement-order` skill (in `.opencode/skills/`) is what arms it.
  *
  * Tracked deliberately: `.opencode/` is otherwise gitignored, and an untracked rule is
  * one that silently stops applying on the next clone.
@@ -14,7 +13,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 
-/** Prefer the repo venv, as CLAUDE.md requires for Python-backed validation. */
+/** Prefer the repo venv, as AGENTS.md requires for Python-backed validation. */
 function interpreter(root) {
   const candidates = [
     join(root, ".venv", "Scripts", "python.exe"),
@@ -61,9 +60,9 @@ export const ReadGuard = async ({ directory, worktree }) => {
     // The two hooks carry `args` on opposite objects: `output.args` before the tool runs,
     // `input.args` after it. Reading `output.args` here sent the guard an empty payload for
     // every post event, so it never saw the arming skill and never locked an edited path —
-    // the guard was a silent no-op under opencode for a whole telemetry cycle while the
-    // Claude-side hook worked. `output.args` stays as a fallback in case that shape changes
-    // back; an empty object is the one value that must not be forwarded.
+    // the guard was a silent no-op for a whole telemetry cycle. `output.args` stays as a
+    // fallback in case that shape changes back; an empty object is the one value that must
+    // not be forwarded.
     "tool.execute.after": async (input, output) => {
       callGuard(root, "post", {
         tool: input.tool,

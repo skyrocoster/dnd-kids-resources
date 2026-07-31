@@ -1,12 +1,11 @@
 """Extract token telemetry for one completed work order and append it to the running log.
 
 The executor model cannot see its own token counters, so numbers must come from the
-records the harness wrote. Two transports parse automatically:
+records the harness wrote. One transport parses automatically:
 
-- Claude Code subagents: the transcript JSONL under ~/.claude/projects/<slug>/.
 - opencode sessions: the SQLite DB at ~/.local/share/opencode/opencode.db.
 
-Discovery searches both for the record whose opening prompt names the order file and
+Discovery searches for the record whose opening prompt names the order file and
 uses the newest match. The script computes usage and cost-driver metrics, appends a
 structured record to `docs/plans/telemetry.jsonl`, and re-renders the human-readable
 `docs/plans/telemetry-log.md` from that sidecar.
@@ -46,14 +45,8 @@ Options:
     --first-pass yes|no   override the automatic first-pass detection (default: "no" when
                           the log already holds an entry for this order)
     --planner-run         this order was implemented directly by the planner (the fast
-                          path in CLAUDE.md) rather than dispatched
-    --transcript <path>   explicit Claude transcript JSONL (skips auto-discovery). This is the
-                          subagent record at
-                          ~/.claude/projects/<slug>/<session>/subagents/agent-<id>.jsonl,
-                          NOT the .../tasks/<id>.output path the Agent tool reports — that
-                          one can be an empty stub. Rejected if it holds no assistant turns.
+                          path in AGENTS.md) rather than dispatched
     --opencode-session <id>  explicit opencode session id (skips auto-discovery)
-    --project-dir <path>  Claude Code project dir (default: derived from cwd)
     --opencode-db <path>  opencode DB (default: ~/.local/share/opencode/opencode.db)
     --log <path>          markdown view (default: docs/plans/telemetry-log.md)
     --sidecar <path>      structured record (default: docs/plans/telemetry.jsonl)
@@ -137,83 +130,8 @@ def repo_root() -> Path:
     return Path(__file__).resolve().parent.parent
 
 
-def default_project_dir() -> Path:
-    slug = re.sub(r"[^A-Za-z0-9]", "-", str(repo_root()))
-    return Path.home() / ".claude" / "projects" / slug
-
-
 def now_stamp() -> str:
     return datetime.now().strftime("%Y-%m-%d %H:%M")
-
-
-def iter_records(path: Path):
-    with path.open(encoding="utf-8") as fh:
-        for line in fh:
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                yield json.loads(line)
-            except json.JSONDecodeError:
-                continue
-
-
-def first_user_text(path: Path, max_records: int = 5) -> str:
-    """Concatenated text of the first few user messages (the dispatch prompt)."""
-    chunks: list[str] = []
-    for i, rec in enumerate(iter_records(path)):
-        if i >= max_records:
-            break
-        if rec.get("type") != "user":
-            continue
-        content = rec.get("message", {}).get("content")
-        if isinstance(content, str):
-            chunks.append(content)
-        elif isinstance(content, list):
-            for block in content:
-                if isinstance(block, dict) and block.get("type") == "text":
-                    chunks.append(block.get("text", ""))
-    return "\n".join(chunks)
-
-
-def find_transcript(project_dir: Path, order_path: Path) -> Path | None:
-    """Newest *subagent* transcript whose opening prompt names the order file.
-
-    The dispatcher's own session transcript also names the order — it wrote the dispatch
-    prompt — and it keeps growing after the executor finishes, so mixing both pools into
-    one newest-wins sort hands back the parent whenever the child left no record. Search
-    the subagent pool alone; a missing entry is recoverable, a confident misattribution is
-    not (see the 2026-07-25 20:20 correction in the telemetry log).
-    """
-    needle = order_path.name
-    candidates = sorted(
-        project_dir.glob("*/subagents/agent-*.jsonl"),
-        key=lambda p: p.stat().st_mtime,
-        reverse=True,
-    )
-    for path in candidates:
-        try:
-            if needle in first_user_text(path):
-                return path
-        except OSError:
-            continue
-    return None
-
-
-def block_text(content) -> str:
-    """Flatten a message content field (string or block list) to text."""
-    if isinstance(content, str):
-        return content
-    if isinstance(content, list):
-        parts = []
-        for block in content:
-            if isinstance(block, dict):
-                if isinstance(block.get("text"), str):
-                    parts.append(block["text"])
-                elif isinstance(block.get("content"), (str, list)):
-                    parts.append(block_text(block["content"]))
-        return "".join(parts)
-    return ""
 
 
 def tool_label(name: str, tool_input: dict) -> str:
@@ -495,18 +413,12 @@ def reissue_diff(previous: dict, current: dict) -> str:
 DEFAULT_PRICES = {
     "_note": (
         "USD per million tokens. cache_read/cache_write default to 0.1x and 1.25x of "
-        "input when omitted. Keys match on longest prefix of the model id. Edit this "
-        "file rather than the script when a rate changes; unknown models log as "
-        "'not priced' instead of guessing."
+        "input when omitted. Keys match on longest prefix of the model id. The opencode "
+        "transport reports a cost on every assistant message, so no rates are kept here; "
+        "a model with no entry logs as 'not priced' instead of guessing. Edit "
+        "scripts/model_prices.json rather than the script when a rate becomes available."
     ),
-    "models": {
-        "claude-opus-5": {"input": 15.0, "output": 75.0},
-        "claude-opus-4": {"input": 15.0, "output": 75.0},
-        "claude-sonnet-5": {"input": 3.0, "output": 15.0},
-        "claude-sonnet-4": {"input": 3.0, "output": 15.0},
-        "claude-haiku-4-5": {"input": 1.0, "output": 5.0},
-        "claude-3-5-haiku": {"input": 0.8, "output": 4.0},
-    },
+    "models": {},
 }
 
 
@@ -542,12 +454,12 @@ def estimate_cost(usage: Counter, rates: dict) -> float:
 
 
 def resolve_cost(metrics: dict, prices: dict) -> dict:
-    """One comparable cost field for every transport.
+    """One comparable cost field for every record.
 
-    opencode reports a figure; Claude transcripts do not, so those entries carried no cost
-    at all and could not be compared against the runs they were meant to be compared
-    against. Deriving the missing side from the token counts is the only way the log can
-    answer which role each model is actually worth running.
+    opencode reports a figure on every assistant message, so the transport's number wins
+    when present. A record without one falls back to the price table; a model with no
+    rate logs as 'not priced' rather than as zero, so a hollow entry reads as missing
+    instead of looking measured.
     """
     if metrics.get("cost"):
         return {"value": float(metrics["cost"]), "source": "reported"}
@@ -593,7 +505,7 @@ def _reread_profile(sequence: list[tuple[str, str]]) -> dict[str, dict]:
 
 def _outside_reads(read_paths, start_in: list[str], order_name: str) -> list[str]:
     norm_start = [p.lstrip("./") for p in start_in]
-    skip_prefixes = (".claude/skills/", ".agents/skills/", "docs/plans/active/")
+    skip_prefixes = (".opencode/skills/", ".agents/skills/", "docs/plans/active/")
 
     def outside(path: str) -> bool:
         if path.startswith(skip_prefixes) or path.endswith(order_name):
@@ -607,83 +519,6 @@ def _elapsed(seconds: int | None) -> str:
     if seconds is None:
         return ""
     return f"{seconds // 60}m{seconds % 60:02d}s"
-
-
-def analyse(transcript: Path, start_in: list[str], order_name: str) -> dict:
-    usage_total = Counter()
-    tool_counts: Counter = Counter()
-    tool_by_id: dict[str, str] = {}
-    results: list[tuple[int, str]] = []  # (approx tokens, label)
-    sequence: list[tuple[str, str]] = []
-    turns = 0
-    model = "unknown"
-    first_ts = last_ts = None
-
-    for rec in iter_records(transcript):
-        ts = rec.get("timestamp")
-        if ts:
-            first_ts = first_ts or ts
-            last_ts = ts
-        msg = rec.get("message", {})
-        if rec.get("type") == "assistant":
-            turns += 1
-            model = msg.get("model", model)
-            usage = msg.get("usage") or {}
-            for key in (
-                "input_tokens",
-                "output_tokens",
-                "cache_read_input_tokens",
-                "cache_creation_input_tokens",
-            ):
-                usage_total[key] += usage.get(key) or 0
-            for block in msg.get("content") or []:
-                if isinstance(block, dict) and block.get("type") == "tool_use":
-                    name = block.get("name", "?")
-                    tool_input = block.get("input") or {}
-                    tool_counts[name] += 1
-                    tool_by_id[block.get("id", "")] = tool_label(name, tool_input)
-                    target = tool_input.get("file_path") or tool_input.get("path") or ""
-                    if not target:
-                        continue
-                    lowered = name.lower()
-                    if lowered in READ_TOOLS:
-                        sequence.append(("read", rel_display(str(target))))
-                    elif lowered in EDIT_TOOLS:
-                        sequence.append(("edit", rel_display(str(target))))
-        elif rec.get("type") == "user":
-            content = msg.get("content")
-            if isinstance(content, list):
-                for block in content:
-                    if isinstance(block, dict) and block.get("type") == "tool_result":
-                        text = block_text(block.get("content"))
-                        label = tool_by_id.get(block.get("tool_use_id", ""), "?")
-                        results.append((len(text) // CHARS_PER_TOKEN, label))
-
-    started = None
-    seconds = None
-    if first_ts:
-        try:
-            parse = lambda s: datetime.fromisoformat(s.replace("Z", "+00:00"))
-            started = parse(first_ts).astimezone()
-            if last_ts:
-                seconds = int((parse(last_ts) - parse(first_ts)).total_seconds())
-        except ValueError:
-            started = None
-
-    reads = _reread_profile(sequence)
-    read_paths = {path for kind, path in sequence if kind == "read"}
-    return {
-        "model": model,
-        "turns": turns,
-        "started": started,
-        "wall_seconds": seconds,
-        "elapsed": _elapsed(seconds),
-        "usage": usage_total,
-        "tool_counts": tool_counts,
-        "largest_results": sorted(results, reverse=True)[:3],
-        "duplicate_reads": reads,
-        "outside_reads": _outside_reads(read_paths, start_in, order_name),
-    }
 
 
 def default_opencode_db() -> Path:
@@ -1430,9 +1265,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
         type=int,
         help="Reconcile only. How many orders in this stage had to be re-dispatched.",
     )
-    ap.add_argument("--transcript")
     ap.add_argument("--opencode-session")
-    ap.add_argument("--project-dir")
     ap.add_argument("--opencode-db")
     ap.add_argument("--log", default=DEFAULT_LOG)
     ap.add_argument("--sidecar", default=DEFAULT_SIDECAR)
@@ -1820,73 +1653,39 @@ def main() -> int:
 
     db_path = Path(args.opencode_db) if args.opencode_db else default_opencode_db()
 
-    transcript: Path | None = None
     oc_session: str | None = None
-    if args.transcript:
-        transcript = Path(args.transcript)
-        if not transcript.exists():
-            print(f"ERROR: transcript not found: {transcript}", file=sys.stderr)
-            return 1
-    elif args.opencode_session:
+    if args.opencode_session:
         oc_session = args.opencode_session
     else:
-        # Auto-discover in both transports; use whichever record is newer.
-        project_dir = Path(args.project_dir) if args.project_dir else default_project_dir()
-        claude_hit = find_transcript(project_dir, order_path) if project_dir.exists() else None
-        oc_hit = None
-        if db_path.exists():
-            try:
-                oc_hit = find_opencode_session(db_path, order_path)
-            except sqlite3.Error as exc:
-                print(f"WARNING: could not read opencode DB: {exc}", file=sys.stderr)
-        claude_time = claude_hit.stat().st_mtime if claude_hit else -1.0
-        oc_time = oc_hit[1] if oc_hit else -1.0
-        if claude_hit is None and oc_hit is None:
+        if not db_path.exists():
             print(
-                f"ERROR: no executor record naming {order_path.name} found.\n"
-                "       Only child records count — a Claude subagent transcript or an "
-                "opencode child session.\n"
-                "       The dispatcher's own session names the order too, and logging it "
-                "would record the dispatcher's\n"
-                "       model and tokens as if they were the executor's (see the "
-                "2026-07-25 20:20 correction).\n"
-                "       Pass --transcript / --opencode-session for the child run, or log "
-                "with --manual.",
+                f"ERROR: opencode DB not found at {db_path}.\n"
+                "       Pass --opencode-db if it lives elsewhere, or log with --manual.",
                 file=sys.stderr,
             )
             return 1
-        if claude_time >= oc_time:
-            transcript = claude_hit
-        else:
-            oc_session = oc_hit[0]
+        try:
+            oc_hit = find_opencode_session(db_path, order_path)
+        except sqlite3.Error as exc:
+            print(f"WARNING: could not read opencode DB: {exc}", file=sys.stderr)
+            oc_hit = None
+        if oc_hit is None:
+            print(
+                f"ERROR: no opencode child session naming {order_path.name} found.\n"
+                "       Only child records count — a plain \"newest session naming the "
+                "order\" lookup returns the\n"
+                "       dispatcher's own session, and logging it would record the "
+                "dispatcher's model and tokens as\n"
+                "       if they were the executor's (see the 2026-07-25 20:20 correction).\n"
+                "       Pass --opencode-session for the child run, or log with --manual.",
+                file=sys.stderr,
+            )
+            return 1
+        oc_session = oc_hit[0]
 
-    if transcript is not None:
-        metrics = analyse(transcript, start_in, order_path.name)
-        # A transcript that parses to zero assistant turns is not a cheap run — it is no run
-        # at all, and logging it writes "output 0 | fresh input 0 | cache read 0" into the
-        # record as if that were the measurement. Claude Code's Agent tool reports an
-        # `output_file` under .../tasks/<id>.output that can be an empty stub; the real
-        # executor record is .../projects/<slug>/<session>/subagents/agent-<id>.jsonl, which
-        # is what auto-discovery finds. Refuse rather than log a hollow entry.
-        if metrics["turns"] == 0:
-            print(
-                f"ERROR: {transcript} yielded no assistant turns "
-                f"({transcript.stat().st_size} bytes).\n"
-                "       This is usually the Agent tool's .../tasks/<id>.output stub rather "
-                "than the executor transcript.\n"
-                "       The real record is "
-                "~/.claude/projects/<slug>/<session>/subagents/agent-<id>.jsonl.\n"
-                "       Re-run without --transcript to auto-discover it, pass that path "
-                "directly, or log with --manual.",
-                file=sys.stderr,
-            )
-            return 1
-        source = f"claude transcript {transcript.name}"
-        transport = "claude"
-    else:
-        metrics = analyse_opencode(db_path, oc_session, start_in, order_path.name)
-        source = f"opencode session {oc_session}"
-        transport = "opencode"
+    metrics = analyse_opencode(db_path, oc_session, start_in, order_path.name)
+    source = f"opencode session {oc_session}"
+    transport = "opencode"
 
     if metrics.get("started"):
         record["stamp"] = metrics["started"].strftime("%Y-%m-%d %H:%M")

@@ -1,8 +1,9 @@
 /**
- * opencode half of the unbounded large-file read guard.
+ * The opencode side of the unbounded large-file read guard.
  *
  * The rule itself lives in `scripts/large_read_guard.py` — this file only carries opencode's
- * tool events to it and turns a deny into a thrown error. It is a deliberate copy of
+ * tool events to it and turns a deny into a thrown error. AGENTS.md declares the rule, and
+ * the `to-orders` skill (in `.opencode/skills/`) is what arms it. It is a deliberate copy of
  * `read-guard.js` rather than a shared abstraction: the two guards arm on different skills
  * and police opposite ends of the workflow, and one of them silently no-opping for a whole
  * telemetry cycle (see the `tool.execute.after` note in that file) is the failure mode worth
@@ -16,7 +17,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 
-/** Prefer the repo venv, as CLAUDE.md requires for Python-backed validation. */
+/** Prefer the repo venv, as AGENTS.md requires for Python-backed validation. */
 function interpreter(root) {
   const candidates = [
     join(root, ".venv", "Scripts", "python.exe"),

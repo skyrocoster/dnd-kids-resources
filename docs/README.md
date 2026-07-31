@@ -2,11 +2,11 @@
 
 This is the documentation task router. The full documentation inventory (canonical docs, area guides, entry points, plan archive, and analysis records) is in [INVENTORY.md](INVENTORY.md). Use the router below to find the right area guide and context for your task. It routes to areas, not to plans: which plans are in flight for an area is generated into that area guide's `## Work queue` and into [plans/active/INDEX.md](plans/active/INDEX.md).
 
-Read [../CLAUDE.md](../CLAUDE.md) first, then use this manifest instead of exploring source to find the smallest relevant context packet. Use [../CONTEXT.md](../CONTEXT.md) for shared vocabulary; use the owning area guide for area-specific vocabulary and invariants.
+Read [../AGENTS.md](../AGENTS.md) first, then use this manifest instead of exploring source to find the smallest relevant context packet. Use [../CONTEXT.md](../CONTEXT.md) for shared vocabulary; use the owning area guide for area-specific vocabulary and invariants.
 
 `../scratch/` is deliberately outside this inventory and documentation contract. AI must not explore it unless the user explicitly names a path there.
 
-Each `docs/plans/active/<feature>/` directory holds its Plan and the lean, disposable **work orders** compiled from that Plan's stages and deleted by `reconcile` once shipped. These are regenerated from source plans/maps; no manifest row needed. The Plan → Implement → Reconcile workflow and its five `.claude/skills/` skills are defined in [PLAN_TEMPLATE.md](PLAN_TEMPLATE.md) and [../CLAUDE.md](../CLAUDE.md).
+Each `docs/plans/active/<feature>/` directory holds its Plan and the lean, disposable **work orders** compiled from that Plan's stages and deleted by `reconcile` once shipped. These are regenerated from source plans/maps; no manifest row needed. The Plan → Implement → Reconcile workflow and its five `.opencode/skills/` skills are defined in [PLAN_TEMPLATE.md](PLAN_TEMPLATE.md) and [../AGENTS.md](../AGENTS.md).
 
 ## Task Router
 
@@ -32,4 +32,4 @@ Each `docs/plans/active/<feature>/` directory holds its Plan and the lean, dispo
 | Shared UI, tokens, icons, or accessibility | [Design](areas/design.md) | `DESIGN_SYSTEM.md`, `ARCHITECTURE.md`, `UX_PATTERNS.md`, `TESTING.md` |
 | Test tooling, fixtures, coverage, or CI | Relevant area guide, or [Infra](areas/infra.md) | `TESTING.md`, `ARCHITECTURE.md`, then the plan |
 
-Implementation flows through the **Plan → Implement → Reconcile** workflow (see [../CLAUDE.md](../CLAUDE.md) and [PLAN_TEMPLATE.md](PLAN_TEMPLATE.md)): Claude writes a lean Plan at `plans/active/<feature>/<feature>.md` and compiles each stage into self-contained numbered work orders beside it; a small model executes one order per context window; then `reconcile` collapses the shipped orders into the Plan and updates any canonical reference whose contract changed. Area guides are durable routing documents, not plans. Historical documents are context only; they do not define current behavior.
+Implementation flows through the **Plan → Implement → Reconcile** workflow (see [../AGENTS.md](../AGENTS.md) and [PLAN_TEMPLATE.md](PLAN_TEMPLATE.md)): the planner writes a lean Plan at `plans/active/<feature>/<feature>.md` and compiles each stage into self-contained numbered work orders beside it; a small model executes one order per context window; then `reconcile` collapses the shipped orders into the Plan and updates any canonical reference whose contract changed. Area guides are durable routing documents, not plans. Historical documents are context only; they do not define current behavior.

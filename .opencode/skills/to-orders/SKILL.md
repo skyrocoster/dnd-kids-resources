@@ -294,8 +294,8 @@ second is why this skill runs on the expensive model. Locating a helper, listing
 off a current test count, or finding the sibling test that shows the repo's mock idiom are all
 retrieval — they fill your context with file dumps you will use one line of, at the planner's rate.
 
-**Prefer the explorer for retrieval.** In opencode that is the `explore-deepseek` subagent; in Claude
-Code it is the `Explore` agent. Both are read-only and report with `path:line` citations.
+**Prefer the explorer for retrieval.** In opencode that is the `explore-deepseek` subagent, which is
+read-only and reports with `path:line` citations.
 
 ### Your own-read budget: 2,000 lines per invocation
 

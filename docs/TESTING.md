@@ -47,7 +47,7 @@ every seeded player's nested endpoints, asserting **no configured GET endpoint m
 2. **Coverage ≥ 97%** overall (`--cov-fail-under=97` in `pytest.ini`). Current
    baseline is ~97%. The gate sits under actual so it ratchets against
    backsliding without failing on a single legitimately-added defensive branch.
-   New feature code should land at **>80% on its own lines** (per `CLAUDE.md`) and
+   New feature code should land at **>80% on its own lines** (per `AGENTS.md`) and
    not drag the total below 90.
 
    The remaining uncovered ~3% is in two places: the `except → rollback → raise 400`
@@ -137,7 +137,7 @@ CREATE TABLE statement inside `conftest.py`, stop** — the schema comes from
 - `generate_export_schema.py --check` fails when `data/generated/export_schema.json` no longer matches the `CREATE TABLE` statements in `scripts/init_database.py`. Fix it by running `--write` and committing the result — never by editing the manifest. Use `--check-db` locally to diagnose drift between the schema and your live database.
 - Local runs should prefer the repo-local virtualenv instead: `.venv\Scripts\python.exe scripts/check_docs.py --check` on Windows, `.venv/bin/python scripts/check_docs.py --check` on POSIX.
 - `documentation-contract` must be enabled as a required branch-protection check in GitHub repository settings. The workflow cannot enforce that repository setting itself.
-- Use the PR template to record that a fresh reader can route the change from `CLAUDE.md` through `docs/README.md` to the owning plan's minimum context.
+- Use the PR template to record that a fresh reader can route the change from `AGENTS.md` through `docs/README.md` to the owning plan's minimum context.
 
 ## Where the tests live
 
@@ -147,7 +147,7 @@ says only where the files are.
 <!-- GENERATED:TESTING:LOCATIONS:START -->
 | Location | Files | Test cases |
 |---|---|---|
-| `backend/tests/` | 17 | 421 |
+| `backend/tests/` | 17 | 425 |
 | `backend/tests/routers/` | 17 | 267 |
 | `frontend/src/__tests__/` | 1 | 4 |
 | `frontend/src/api/__tests__/` | 1 | 7 |

@@ -4,10 +4,10 @@ The guard exists because one waste class in docs/plans/telemetry-log.md survived
 order-side correction: an executor re-reading a file it had just edited, to verify an edit
 the tool had already confirmed. Wording never fixed it, so the harness does.
 
-The load-bearing test here is `test_both_harnesses_decide_identically`. The rule is
-implemented once and reached from two different harnesses, and the whole point is that an
-order behaves the same whichever executor picks it up — a rule that only bound Claude
-sessions would be a rule that silently stopped applying half the time.
+The load-bearing tests here are the opencode hook-shape regressions at the bottom. The
+guard is reached only through `.opencode/plugin/read-guard.js`, and a version that reads
+the wrong field off the plugin's payload silently stops applying to every opencode
+executor — which is worse than no guard at all.
 """
 
 from __future__ import annotations
@@ -44,28 +44,7 @@ def guard(tmp_path: Path, monkeypatch):
     return rg
 
 
-# --- payload builders, one per harness ------------------------------------------------
-
-
-def claude_read(path: str, session: str = "s1") -> dict:
-    return {"session_id": session, "tool_name": "Read", "tool_input": {"file_path": path}}
-
-
-def claude_edit(path: str, session: str = "s1") -> dict:
-    return {"session_id": session, "tool_name": "Edit", "tool_input": {"file_path": path}}
-
-
-def claude_skill(session: str = "s1") -> dict:
-    return {"session_id": session, "tool_name": "Skill", "tool_input": {"skill": "implement-order"}}
-
-
-def claude_bash(output: str, session: str = "s1") -> dict:
-    return {
-        "session_id": session,
-        "tool_name": "Bash",
-        "tool_input": {"command": "npm run test:check"},
-        "tool_response": {"stdout": output, "stderr": ""},
-    }
+# --- payload builders, in the shape `.opencode/plugin/read-guard.js` sends ------------
 
 
 def opencode_read(path: str, session: str = "s1") -> dict:
@@ -94,78 +73,78 @@ def opencode_bash(output: str, session: str = "s1") -> dict:
 
 def test_unarmed_session_is_never_blocked(guard):
     """A planner session edits and re-reads freely; only order execution is policed."""
-    guard._record_post(claude_edit("src/Tile.tsx"))
-    allow, _ = guard._record_pre(claude_read("src/Tile.tsx"))
+    guard._record_post(opencode_edit("src/Tile.tsx"))
+    allow, _ = guard._record_pre(opencode_read("src/Tile.tsx"))
     assert allow is True
 
 
 def test_post_edit_reread_is_denied_once_armed(guard):
-    guard._record_post(claude_skill())
-    guard._record_post(claude_edit("src/Tile.tsx"))
-    allow, reason = guard._record_pre(claude_read("src/Tile.tsx"))
+    guard._record_post(opencode_skill())
+    guard._record_post(opencode_edit("src/Tile.tsx"))
+    allow, reason = guard._record_pre(opencode_read("src/Tile.tsx"))
     assert allow is False
     assert "src/tile.tsx" in reason.lower()
 
 
 def test_untouched_files_stay_readable(guard):
-    guard._record_post(claude_skill())
-    guard._record_post(claude_edit("src/Tile.tsx"))
+    guard._record_post(opencode_skill())
+    guard._record_post(opencode_edit("src/Tile.tsx"))
     (guard.REPO_ROOT / "src" / "Other.tsx").write_text("x\n", encoding="utf-8")
-    allow, _ = guard._record_pre(claude_read("src/Other.tsx"))
+    allow, _ = guard._record_pre(opencode_read("src/Other.tsx"))
     assert allow is True
 
 
 def test_failing_check_unlocks(guard):
     """A red STOP WHEN is the sanctioned reason to reopen an edited file."""
-    guard._record_post(claude_skill())
-    guard._record_post(claude_edit("src/Tile.tsx"))
-    guard._record_post(claude_bash("Tests: 3 failed, 2 passed"))
-    allow, _ = guard._record_pre(claude_read("src/Tile.tsx"))
+    guard._record_post(opencode_skill())
+    guard._record_post(opencode_edit("src/Tile.tsx"))
+    guard._record_post(opencode_bash("Tests: 3 failed, 2 passed"))
+    allow, _ = guard._record_pre(opencode_read("src/Tile.tsx"))
     assert allow is True
 
 
 def test_green_check_does_not_unlock(guard):
     """The exact case the guard is for: edit, check passes, reflexively re-read."""
-    guard._record_post(claude_skill())
-    guard._record_post(claude_edit("src/Tile.tsx"))
-    guard._record_post(claude_bash("Tests: 0 failed, 91 passed | 11 known failures"))
-    allow, _ = guard._record_pre(claude_read("src/Tile.tsx"))
+    guard._record_post(opencode_skill())
+    guard._record_post(opencode_edit("src/Tile.tsx"))
+    guard._record_post(opencode_bash("Tests: 0 failed, 91 passed | 11 known failures"))
+    allow, _ = guard._record_pre(opencode_read("src/Tile.tsx"))
     assert allow is False
 
 
 def test_editing_again_relocks(guard):
-    guard._record_post(claude_skill())
-    guard._record_post(claude_edit("src/Tile.tsx"))
-    guard._record_post(claude_bash("1 failed"))
-    guard._record_post(claude_edit("src/Tile.tsx"))
-    allow, _ = guard._record_pre(claude_read("src/Tile.tsx"))
+    guard._record_post(opencode_skill())
+    guard._record_post(opencode_edit("src/Tile.tsx"))
+    guard._record_post(opencode_bash("1 failed"))
+    guard._record_post(opencode_edit("src/Tile.tsx"))
+    allow, _ = guard._record_pre(opencode_read("src/Tile.tsx"))
     assert allow is False
 
 
 def test_explicit_unlock_is_logged(guard):
-    guard._record_post(claude_skill())
-    guard._record_post(claude_edit("src/Tile.tsx"))
+    guard._record_post(opencode_skill())
+    guard._record_post(opencode_edit("src/Tile.tsx"))
     assert guard._cmd_unlock("src/Tile.tsx", "need the imports back", "s1") == 0
-    allow, _ = guard._record_pre(claude_read("src/Tile.tsx"))
+    allow, _ = guard._record_pre(opencode_read("src/Tile.tsx"))
     assert allow is True
     state = guard._load("s1")
     assert state["unlocks"][0]["reason"] == "need the imports back"
 
 
 def test_env_switch_disables_the_guard(guard, monkeypatch):
-    guard._record_post(claude_skill())
-    guard._record_post(claude_edit("src/Tile.tsx"))
+    guard._record_post(opencode_skill())
+    guard._record_post(opencode_edit("src/Tile.tsx"))
     monkeypatch.setenv("READ_GUARD", "off")
-    allow, _ = guard._record_pre(claude_read("src/Tile.tsx"))
+    allow, _ = guard._record_pre(opencode_read("src/Tile.tsx"))
     assert allow is True
 
 
 def test_files_outside_the_repo_are_not_policed(guard, tmp_path):
     outside = tmp_path.parent / "elsewhere.txt"
     outside.write_text("x\n", encoding="utf-8")
-    guard._record_post(claude_skill())
-    guard._record_post(claude_edit(str(outside)))
-    allow, _ = guard._record_pre(claude_read(str(outside)))
+    guard._record_post(opencode_skill())
+    guard._record_post(opencode_edit(str(outside)))
+    allow, _ = guard._record_pre(opencode_read(str(outside)))
     assert allow is True
 
 
@@ -181,29 +160,25 @@ def test_files_outside_the_repo_are_not_policed(guard, tmp_path):
     ],
 )
 def test_failure_detection(guard, output, expected_failure):
-    assert guard._looks_like_failure({"tool_response": {"stdout": output}}) is expected_failure
+    assert guard._looks_like_failure({"output": {"output": output}}) is expected_failure
 
 
-def test_both_harnesses_decide_identically(guard):
-    """One rule, two transports. This is the guarantee, not an implementation detail."""
-    for arm, edit, read, check in (
-        (claude_skill, claude_edit, claude_read, claude_bash),
-        (opencode_skill, opencode_edit, opencode_read, opencode_bash),
-    ):
-        session = "claude" if arm is claude_skill else "opencode"
-        guard._record_post(arm(session))
-        guard._record_post(edit("src/Tile.tsx", session))
+def test_opencode_lifecycle_is_policed_end_to_end(guard):
+    """One harness now. The whole rule walks: arm, edit, deny, green stays, red unlocks."""
+    session = "o1"
+    guard._record_post(opencode_skill(session))
+    guard._record_post(opencode_edit("src/Tile.tsx", session))
 
-        allow, _ = guard._record_pre(read("src/Tile.tsx", session))
-        assert allow is False, f"{session}: post-edit re-read should be denied"
+    allow, _ = guard._record_pre(opencode_read("src/Tile.tsx", session))
+    assert allow is False, "post-edit re-read should be denied"
 
-        guard._record_post(check("Tests: 0 failed, 91 passed", session))
-        allow, _ = guard._record_pre(read("src/Tile.tsx", session))
-        assert allow is False, f"{session}: a green check must not unlock"
+    guard._record_post(opencode_bash("Tests: 0 failed, 91 passed", session))
+    allow, _ = guard._record_pre(opencode_read("src/Tile.tsx", session))
+    assert allow is False, "a green check must not unlock"
 
-        guard._record_post(check("Tests: 2 failed", session))
-        allow, _ = guard._record_pre(read("src/Tile.tsx", session))
-        assert allow is True, f"{session}: a red check must unlock"
+    guard._record_post(opencode_bash("Tests: 2 failed", session))
+    allow, _ = guard._record_pre(opencode_read("src/Tile.tsx", session))
+    assert allow is True, "a red check must unlock"
 
 
 # --- transport wiring -------------------------------------------------------------------

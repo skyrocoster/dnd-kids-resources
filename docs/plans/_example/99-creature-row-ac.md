@@ -7,7 +7,7 @@ REMOVES: none
 CHANGES SIGNATURE: none
 
 KNOWN STATE (already true — do NOT redo or re-derive):
-- This is the reference example for `.claude/skills/to-orders/SKILL.md`. It names real files and
+- This is the reference example for `.opencode/skills/to-orders/SKILL.md`. It names real files and
   passes `scripts/check_orders.py`, so it doubles as the fixture proving the linter accepts a
   well-formed order. It is not queued work; nobody dispatches order 99.
 - `EncounterCreatureRow` already carries `ac: string`

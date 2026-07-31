@@ -279,7 +279,7 @@ def _strip_prefix(path_str: str) -> str:
     """Drop a leading `./` only.
 
     `lstrip("./")` strips a *character set*, so it ate the leading dot of every
-    dot-directory: `.claude/skills/plan/SKILL.md` resolved as `claude/...` and was
+    dot-directory: `.opencode/skills/plan/SKILL.md` resolved as `opencode/...` and was
     reported missing even though the order named it correctly.
     """
     cleaned = path_str.replace("\\", "/")

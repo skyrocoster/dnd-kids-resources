@@ -98,8 +98,8 @@ feature directory to see which surfaces exist, finding out whether an endpoint a
 field, listing what a seed file actually contains — that is retrieval, and paying the planner's rate
 for it fills the context you need for the design with file dumps.
 
-**Prefer the explorer for the survey.** In opencode that is the `explore-deepseek` subagent; in Claude
-Code it is the `Explore` agent. Both are read-only and cite `path:line`.
+**Prefer the explorer for the survey.** In opencode that is the `explore-deepseek` subagent, which is
+read-only and cites `path:line`.
 
 **Send at most four questions per dispatch, each one bounded.** The cost you are managing is the
 explorer's context, and it grows with the *scope* of a question far faster than with the number of

@@ -121,7 +121,7 @@ data/seeds/*.json (canonical reference and campaign data)
 ## Scripts
 
 Generated from each script's module docstring (or leading comment) — do not hand-edit. A script's
-flags are its own `--help`; the invoke-only rule in [../CLAUDE.md](../CLAUDE.md) means you run that
+flags are its own `--help`; the invoke-only rule in [../AGENTS.md](../AGENTS.md) means you run that
 rather than read the source.
 
 <!-- GENERATED:ARCHITECTURE:SCRIPTS:START -->
@@ -143,7 +143,7 @@ rather than read the source.
 | `scripts/new_order.py` | Emit a work order in the maximum shape a work order is allowed to have. |
 | `scripts/order_check.py` | STOP WHEN wrapper: run an order's checks and print only what the executor can act on. |
 | `scripts/order_telemetry.py` | Extract token telemetry for one completed work order and append it to the running log. |
-| `scripts/read_guard.py` | Post-edit re-read guard, shared by every harness that runs a work order. |
+| `scripts/read_guard.py` | Post-edit re-read guard for the opencode work-order executor. |
 | `scripts/seed_database.py` | Populate the database from the canonical JSON seeds in data/seeds. |
 | `scripts/stage_check.py` | Run every reconcile-time check and print a summary short enough to read once. |
 | `scripts/derive-kid-palette.mjs` | DP1: Kid-palette solver — deterministic bounded search for four kid-map family colours. |

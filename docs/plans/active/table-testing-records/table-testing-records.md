@@ -11,7 +11,7 @@
 - `docs/README.md`
 - `docs/table-tests/**`
 - `docs/PLAN_TEMPLATE.md`
-- `.claude/skills/to-orders/SKILL.md`
+- `.opencode/skills/to-orders/SKILL.md`
 - `docs/plans/done/player-app-skeleton/**`
 - `scripts/check_docs.py`
 - `docs/TABLE_TESTING.md`
@@ -49,7 +49,7 @@ because of the app?
 - **`## Observed` is append-only and never edited for tone.** The value is the raw thing that was
   noticed, not the tidy version.
 - **The human fills three sections.** Setup, Watching for, and the header are pre-written from the
-  plan by Claude; the human who runs the session fills only Observed, Asked afterwards, and Verdict.
+  plan by the planner; the human who runs the session fills only Observed, Asked afterwards, and Verdict.
   A format that asks a tired DM to write structured prose at 9pm will not survive its second use.
 - **Records outlive their plans.** They live in `docs/table-tests/`, not under `plans/`, so archiving
   a completed plan never buries the evidence that shaped it.
@@ -60,7 +60,7 @@ because of the app?
   at something playable carries a `**Table test:**` line pointing at the record; the Shipped row for
   that stage links the same file. No `## Table tests` section — a second list of records is the
   hand-maintained restatement this plan exists to avoid, and the forward reference on the stage line
-  is what tells Claude to pre-write the record *before* the session.
+  is what tells the planner to pre-write the record *before* the session.
 - **`## What the session settled` stays in Player App Skeleton.** It states what the session settled
   *for the plan* — the structural claims held, Plan 1's premise untested rather than contradicted —
   which is plan-level judgement, not a copy of the record's Verdict. "Links rather than restates"

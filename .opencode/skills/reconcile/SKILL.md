@@ -21,10 +21,9 @@ nothing in the repo ranks them.
 Closeout asks the same questions every stage — what each order says it did, what git says actually
 changed, and where the docs currently describe the contracts that moved. That is retrieval, it is
 identical every time, and it is most of the reading in this skill. Send it to the scout in **one
-dispatch, before step 1**: in opencode that is the `reconcile-scout-deepseek` subagent, in Claude
-Code the `Explore` agent given the same five headings. Hand it the feature directory and a base ref
-if you have one; it returns ORDERS, GIT, EXPORTED SURFACES, DOC MENTIONS, and NOT FOUND / UNCERTAIN,
-all quoted with `path:line`.
+dispatch, before step 1**: in opencode that is the `reconcile-scout-deepseek` subagent. Hand it the
+feature directory and a base ref if you have one; it returns ORDERS, GIT, EXPORTED SURFACES, DOC
+MENTIONS, and NOT FOUND / UNCERTAIN, all quoted with `path:line`.
 
 Its report is evidence for steps 1, 2 and 5. **Every judgement below stays here**, and the scout is
 instructed to refuse all of them:
@@ -188,7 +187,7 @@ scout comes back partial, re-ask the gap narrowly rather than treating the repor
    order destroys its STATUS/DEVIATIONS record, so first check `docs/plans/telemetry-log.md` has an
    entry for each order about to be deleted. For any missing one, run
    `.venv\Scripts\python.exe scripts/order_telemetry.py --order <order-path> --fault none --note "backfilled at reconcile; compiler judgement unavailable"` (POSIX:
-   `.venv/bin/python`) — it auto-finds Claude Code transcripts and opencode sessions; if neither exists
+   `.venv/bin/python`) — it auto-finds opencode sessions; if none exists
    (ChatGPT transport, or the record is gone), log it with
    `--manual "backfilled at reconcile, no usage figures"`. Then delete: when every order in
    the stage is done, the feature directory should be empty of that stage's order files.

@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import sqlite3
 from pathlib import Path
 
 import pytest
@@ -210,9 +211,9 @@ def test_fmt_duplicates_names_both_causes():
 
 
 def test_model_rates_matches_the_longest_prefix():
-    prices = {"models": {"claude": {"input": 1.0, "output": 1.0},
-                         "claude-sonnet-5": {"input": 3.0, "output": 15.0}}}
-    assert ot.model_rates("claude-sonnet-5-20260101", prices)["input"] == 3.0
+    prices = {"models": {"deepseek": {"input": 1.0, "output": 1.0},
+                         "deepseek-v4-pro": {"input": 2.0, "output": 8.0}}}
+    assert ot.model_rates("deepseek-v4-pro-20260701", prices)["input"] == 2.0
 
 
 def test_estimate_cost_prices_cache_reads_and_writes():
@@ -227,7 +228,8 @@ def test_estimate_cost_prices_cache_reads_and_writes():
 
 
 def test_resolve_cost_prefers_the_transport_figure():
-    metrics = {"cost": 0.0306, "model": "claude-sonnet-5", "usage": {}}
+    """opencode reports a cost on every assistant message; the figure wins over estimation."""
+    metrics = {"cost": 0.0306, "model": "deepseek-v4-flash", "usage": {}}
     assert ot.resolve_cost(metrics, ot.DEFAULT_PRICES) == {
         "value": 0.0306,
         "source": "reported",
@@ -235,24 +237,153 @@ def test_resolve_cost_prefers_the_transport_figure():
 
 
 def test_resolve_cost_derives_a_figure_when_the_transport_reports_none():
-    """Claude transcripts carry tokens but no price, so those entries had no cost at all."""
-    metrics = {"model": "claude-sonnet-5", "usage": {"output_tokens": 1_000_000}}
-    resolved = ot.resolve_cost(metrics, ot.DEFAULT_PRICES)
+    """A record without a reported figure falls back to the price table."""
+    prices = {"models": {"deepseek-v4-flash": {"input": 1.0, "output": 2.0}}}
+    metrics = {"model": "deepseek-v4-flash", "usage": {"output_tokens": 1_000_000}}
+    resolved = ot.resolve_cost(metrics, prices)
     assert resolved["source"] == "estimated"
-    assert resolved["value"] == pytest.approx(15.0)
+    assert resolved["value"] == pytest.approx(2.0)
 
 
 def test_resolve_cost_refuses_to_invent_a_rate():
-    metrics = {"model": "some-new-model", "usage": {"output_tokens": 500}}
+    """The repo keeps no DeepSeek rates, so a DeepSeek record without a reported
+    cost logs as 'not priced' rather than as zero."""
+    metrics = {"model": "deepseek-v4-flash", "usage": {"output_tokens": 500}}
     resolved = ot.resolve_cost(metrics, ot.DEFAULT_PRICES)
     assert resolved == {"value": None, "source": "not priced"}
-    assert "not priced" in ot.fmt_cost(resolved, "some-new-model")
+    assert "not priced" in ot.fmt_cost(resolved, "deepseek-v4-flash")
 
 
-def test_repo_price_table_parses_and_covers_the_models_in_use():
+def test_repo_price_table_parses_and_holds_no_invented_rates():
+    """Claude rates are gone, and no DeepSeek rate is added without an authoritative source."""
     prices = ot.load_prices(REPO_ROOT / "scripts" / "model_prices.json")
-    assert ot.model_rates("claude-sonnet-5", prices)
-    assert ot.model_rates("claude-haiku-4-5-20251001", prices)
+    assert ot.model_rates("claude-sonnet-5", prices) is None
+    assert ot.model_rates("claude-haiku-4-5-20251001", prices) is None
+    assert ot.model_rates("opencode-go/deepseek-v4-flash", prices) is None
+    assert ot.model_rates("deepseek-v4-pro", prices) is None
+
+
+# --------------------------------------------------------------------------------------
+# opencode session telemetry — the one remaining transport
+# --------------------------------------------------------------------------------------
+
+
+def _opencode_db(tmp_path: Path, session_id: str, parent_id: str | None) -> Path:
+    db = tmp_path / "opencode.db"
+    con = sqlite3.connect(db)
+    con.execute("create table session (id text primary key, parent_id text)")
+    con.execute(
+        "create table part (session_id text, time_updated integer, time_created integer, data text)"
+    )
+    con.execute("create table message (session_id text, time_created integer, data text)")
+    con.execute(
+        "insert into part values (?, ?, ?, ?)",
+        (
+            session_id,
+            1_700_000_000_100 if parent_id else 1_700_000_000_000,
+            1_700_000_000_000,
+            json.dumps(
+                {"type": "text", "text": "dispatch prompt naming 01-x.md"},
+                separators=(",", ":"),
+            ),
+        ),
+    )
+    con.execute("insert into session values (?, ?)", (session_id, parent_id))
+    con.commit()
+    con.close()
+    return db
+
+
+def test_find_opencode_session_prefers_the_child_record(tmp_path):
+    """Only a session with a parent counts; the dispatcher's own session must not win."""
+    child_db = _opencode_db(tmp_path, "child", "parent")
+    assert ot.find_opencode_session(child_db, tmp_path / "01-x.md") == (
+        "child",
+        pytest.approx(1_700_000_000.1),
+    )
+
+
+def test_find_opencode_session_ignores_a_parent_only_record(tmp_path):
+    db = _opencode_db(tmp_path, "parent", None)
+    assert ot.find_opencode_session(db, tmp_path / "01-x.md") is None
+
+
+def test_analyse_opencode_extracts_deepseek_metrics(tmp_path):
+    db = _opencode_db(tmp_path, "ses_1", "parent")
+    con = sqlite3.connect(db)
+    msg = {
+        "time": {"created": 1_700_000_000_000, "completed": 1_700_000_090_000},
+        "role": "assistant",
+        "modelID": "deepseek-v4-flash",
+        "cost": 0.0123,
+        "tokens": {
+            "input": 1000,
+            "output": 500,
+            "reasoning": 100,
+            "cache": {"read": 2000, "write": 300},
+        },
+    }
+    con.execute(
+        "insert into message values (?, ?, ?)",
+        ("ses_1", 1_700_000_000_000, json.dumps(msg)),
+    )
+    tool = {
+        "type": "tool",
+        "tool": "read",
+        "state": {"input": {"filePath": "a.tsx"}, "output": "x" * 400},
+    }
+    con.execute(
+        "insert into part values (?, ?, ?, ?)",
+        (
+            "ses_1",
+            1_700_000_010_000,
+            1_700_000_010_000,
+            json.dumps(tool, separators=(",", ":")),
+        ),
+    )
+    con.commit()
+    con.close()
+
+    metrics = ot.analyse_opencode(db, "ses_1", ["a.tsx"], "01-x.md")
+    assert metrics["model"] == "deepseek-v4-flash"
+    assert metrics["turns"] == 1
+    assert metrics["cost"] == 0.0123
+    assert metrics["usage"]["input_tokens"] == 1000
+    assert metrics["usage"]["output_tokens"] == 600  # output + reasoning
+    assert metrics["usage"]["cache_read_input_tokens"] == 2000
+    assert metrics["usage"]["cache_creation_input_tokens"] == 300
+    assert metrics["tool_counts"]["read"] == 1
+    assert metrics["largest_results"] == [(100, "read a.tsx")]
+    assert metrics["duplicate_reads"] == {}
+    assert metrics["outside_reads"] == []
+    assert metrics["elapsed"] == "1m30s"
+
+
+def test_analyse_opencode_skips_project_skill_reads(tmp_path):
+    db = _opencode_db(tmp_path, "ses_2", "parent")
+    con = sqlite3.connect(db)
+    tool = {
+        "type": "tool",
+        "tool": "read",
+        "state": {
+            "input": {"filePath": ".opencode/skills/implement-order/SKILL.md"},
+            "output": "",
+        },
+    }
+    con.execute(
+        "insert into part values (?, ?, ?, ?)",
+        (
+            "ses_2",
+            1_700_000_020_000,
+            1_700_000_020_000,
+            json.dumps(tool, separators=(",", ":")),
+        ),
+    )
+    con.commit()
+    con.close()
+
+    metrics = ot.analyse_opencode(db, "ses_2", ["a.tsx"], "01-x.md")
+    assert metrics["outside_reads"] == []
 
 
 # --------------------------------------------------------------------------------------
@@ -353,17 +484,17 @@ def test_order_entry_carries_the_structured_fault_and_flag():
             "first_pass": "yes",
             "shape_line": "Light | START IN 1 files / 100 lines / 100 bounded",
             "shape_source": "dispatch snapshot 2026-07-26T19:00:00",
-            "model": "claude-haiku-4-5",
+            "model": "deepseek-v4-flash",
             "turns": 27,
             "usage": {"output_tokens": 2658, "input_tokens": 100},
             "cost": {"value": 0.01, "source": "estimated"},
-            "tools": {"Read": 5},
+            "tools": {"read": 5},
             "largest_results": [],
             "reads": {"duplicates": {}, "outside": ["src/other.tsx"]},
             "deviations": "none",
             "fault": "none",
             "note": "Clean run.",
-            "source": "claude transcript agent-x.jsonl",
+            "source": "opencode session ses_060b8e5cdffeRIs2SAeErT6iQJ",
         }
     )
     assert "- compiler note: fault: none — Clean run." in rendered

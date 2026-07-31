@@ -10,7 +10,7 @@ A table test is one real session of the game, run with the real operators on the
 
 A table test record has exactly three statuses:
 
-- **`planned`** — The record is created with its header, `## Setup` and `## Watching for` sections pre-written from the plan stage it serves. Claude writes these before the session.
+- **`planned`** — The record is created with its header, `## Setup` and `## Watching for` sections pre-written from the plan stage it serves. The planner writes these before the session.
 - **`run`** — The human who ran the session has filled `## Observed`, `## Asked afterwards`, and `## Verdict`. The session is complete and the findings are recorded.
 - **`folded in`** — The record's `## Actions` table has been driven into plan stages or GitHub issues. Once folded in, the record is frozen and never edited again.
 
@@ -44,7 +44,7 @@ The standing questions are identical in every table test so the answers form a t
 
 ## Division of labour
 
-- **Claude pre-writes:** The header, `## Setup` (with checkboxes ticked as you go, or marked N/A with reason), and `## Watching for` (questions derived from the plan's open questions and provisional decisions).
+- **The planner pre-writes:** The header, `## Setup` (with checkboxes ticked as you go, or marked N/A with reason), and `## Watching for` (questions derived from the plan's open questions and provisional decisions).
 - **The session runner fills:** `## Observed` (raw bullets, written within 24 hours; append-only and never edited for tone), `## Asked afterwards` (responses from the older child first, then the younger separately), and `## Verdict` (three lines: Worked, Broke, Surprised me).
 - **During fold-in:** `## Actions` is written, pointing each finding outward at a plan stage or a GitHub issue.
 

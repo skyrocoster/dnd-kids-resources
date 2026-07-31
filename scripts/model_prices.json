@@ -1,11 +1,4 @@
 {
-  "_note": "USD per million tokens, used by scripts/order_telemetry.py to derive a cost for transports that do not report one (Claude subagent transcripts carry token counts but no price). cache_read and cache_write default to 0.1x and 1.25x of input when omitted. Keys match on the longest matching prefix of the model id. These are estimates kept in data rather than code so a rate change is a one-line edit; a model with no entry is logged as 'not priced' rather than as zero. Correct a rate here rather than in the script.",
-  "models": {
-    "claude-opus-5": { "input": 15.0, "output": 75.0 },
-    "claude-opus-4": { "input": 15.0, "output": 75.0 },
-    "claude-sonnet-5": { "input": 3.0, "output": 15.0 },
-    "claude-sonnet-4": { "input": 3.0, "output": 15.0 },
-    "claude-haiku-4-5": { "input": 1.0, "output": 5.0 },
-    "claude-3-5-haiku": { "input": 0.8, "output": 4.0 }
-  }
+  "_note": "USD per million tokens, used by scripts/order_telemetry.py to derive a cost only for records that do not report one. The opencode transport reports a cost on every assistant message, so no rates are kept here and a model with no entry is logged as 'not priced' rather than as zero. cache_read and cache_write default to 0.1x and 1.25x of input when omitted. Keys match on the longest matching prefix of the model id. Add a rate here rather than in the script, and only from an authoritative source — do not invent one.",
+  "models": {}
 }

@@ -111,7 +111,7 @@ python scripts/generate_export_schema.py --check-db   # drift vs. your live data
 ## Documentation
 
 - [Documentation manifest](docs/README.md) — task routing, active-plan status, and the complete documentation inventory
-- [AI instructions](CLAUDE.md) — authoritative workflow and documentation contract for AI contributors
+- [AI instructions](AGENTS.md) — authoritative workflow and documentation contract for AI contributors
 
 ---
 
