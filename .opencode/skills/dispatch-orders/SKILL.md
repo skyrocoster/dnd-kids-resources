@@ -30,17 +30,13 @@ Read every order in `docs/plans/active/<feature>/` and select:
 
 **Validate the selected set before spawning.** By default, run
 `.venv\Scripts\python.exe scripts/check_orders.py --fix` against only the selected runnable order
-path(s) — not every active Plan. This keeps deterministic faults as errors while reporting heuristic
-warnings and shape caps without blocking ordinary dispatch. Do not add `--strict` to this validation
-command. `--fix` heals the selected orders from their anchors where genuinely needed.
+path(s) — not every active Plan. Relaxed validation reports all findings without blocking ordinary
+dispatch. Add `--strict` only when the coordinator explicitly wants the legacy gate. `--fix` heals
+the selected orders from their anchors where genuinely needed.
 
-**Warning acceptance is an explicit coordinator decision.** If the coordinator or user says to accept
-the warnings for a selected order, do not rewrite the order merely to silence them: record the warning
-categories in the dispatch report, proceed with the ordinary `.venv\Scripts\python.exe scripts/check_orders.py --fix`
-validation, and continue if there are no deterministic errors. “Accept
-warnings” never accepts missing paths, unauthorized edit sites, broken dependencies, or any other
-error. Strict mode is outside the normal coordinator workflow and must not be added as an automatic
-second pass.
+**Diagnostics are informational by default.** Do not rewrite an order merely to silence them. Record
+useful categories in the dispatch report and continue with relaxed validation. Strict mode is an
+opt-in review gate, not an automatic second pass.
 
 **Re-run the selected-order check before every single dispatch in a stage**, not just once: the moment
 one order lands an edit in a large shared file, every downstream line range is stale, and re-running on

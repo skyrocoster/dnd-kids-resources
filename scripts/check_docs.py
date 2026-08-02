@@ -489,7 +489,9 @@ def check_work_orders(docs_dir: Path) -> list[CheckError]:
     """
     return [
         CheckError(error.file, error.message, error.fix)
-        for error in check_orders.lint_orders(docs_dir / "plans" / "active")
+        for error in check_orders.lint_orders(
+            docs_dir / "plans" / "active", include_warnings=True
+        )
     ]
 
 

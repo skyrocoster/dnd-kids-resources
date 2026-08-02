@@ -24,6 +24,9 @@ On POSIX shells, replace `.venv\Scripts\python.exe` with `.venv/bin/python`. Pre
 - Config lives in `pytest.ini` at the repo root. Running `pytest` via the repo-local
   virtualenv (`.venv\Scripts\python.exe -m pytest` on Windows, `.venv/bin/python -m pytest`
   on POSIX) runs the whole backend suite with coverage.
+- Pytest refreshes generated documentation first by running
+  `scripts/check_docs.py --write-generated`; a failed refresh stops the suite before test
+  collection. This keeps the standard test run from merely reporting generated-doc drift.
 - **Run from the repo root.** `backend/tests/conftest.py` imports the app as the
   absolute package `backend.app.*`; running from `backend/` breaks the import.
 - Test DBs are built from the **real** `scripts/init_database.py` schema — never a
@@ -153,14 +156,14 @@ says only where the files are.
 <!-- GENERATED:TESTING:LOCATIONS:START -->
 | Location | Files | Test cases |
 |---|---|---|
-| `backend/tests/` | 16 | 393 |
-| `backend/tests/routers/` | 17 | 272 |
+| `backend/tests/` | 16 | 392 |
+| `backend/tests/routers/` | 16 | 264 |
 | `frontend/src/__tests__/` | 1 | 4 |
-| `frontend/src/api/__tests__/` | 1 | 7 |
+| `frontend/src/api/__tests__/` | 1 | 5 |
 | `frontend/src/components/__tests__/` | 14 | 152 |
 | `frontend/src/components/form/__tests__/` | 4 | 11 |
-| `frontend/src/features/dungeons/__tests__/` | 2 | 54 |
-| `frontend/src/features/dungeons/maplab/__tests__/` | 20 | 602 |
+| `frontend/src/features/dungeons/__tests__/` | 2 | 31 |
+| `frontend/src/features/dungeons/maplab/__tests__/` | 20 | 589 |
 | `frontend/src/features/encounters/__tests__/` | 9 | 115 |
 | `frontend/src/features/items/__tests__/` | 3 | 15 |
 | `frontend/src/features/loom/__tests__/` | 9 | 123 |
@@ -173,7 +176,7 @@ says only where the files are.
 | `frontend/src/layout/__tests__/` | 1 | 12 |
 | `frontend/src/map/__tests__/` | 3 | 44 |
 | `frontend/src/pages/__tests__/` | 2 | 5 |
-| `frontend/src/player/__tests__/` | 6 | 71 |
+| `frontend/src/player/__tests__/` | 6 | 61 |
 <!-- GENERATED:TESTING:LOCATIONS:END -->
 
 <!-- GENERATED:TESTING:START -->

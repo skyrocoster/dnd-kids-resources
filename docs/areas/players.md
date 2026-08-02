@@ -34,7 +34,7 @@ explicitly named.
 ## Source map
 
 - **DM backend:** `backend/app/routers/players.py` and Player schemas in `backend/app/schemas.py`.
-- **Kid backend:** knowledge, fog, and at-the-table endpoints in `backend/app/routers/`.
+- **Kid backend:** fog and at-the-table endpoints in `backend/app/routers/`.
 - **DM frontend:** `frontend/src/features/players/`.
 - **Kid frontend:** `frontend/src/player/` (shell, navigation, kid components) and the player-view
   transform.
@@ -51,7 +51,6 @@ explicitly named.
 | DM player backend tests | `backend/tests/routers/test_players.py` |
 | Kid fog and at-the-table endpoints | `backend/app/routers/fog.py`<br>`backend/app/routers/at_the_table.py` |
 | Kid fog and at-the-table backend tests | `backend/tests/routers/test_fog.py`<br>`backend/tests/routers/test_at_the_table.py` |
-| Player map knowledge API and tests | `backend/app/routers/knowledge.py`<br>`backend/tests/routers/test_knowledge.py` |
 | DM player browser and editor | `frontend/src/features/players/**` |
 | Kid app (shell, navigation, curtain, and map) | `frontend/src/player/**` |
 | Shared map canvas and marker primitives used by the kid app | `frontend/src/map/**` |

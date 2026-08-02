@@ -49,7 +49,6 @@ def init_database(db_path: Path | None = None):
         "weapons",
         "abilities",
         "map_layout",
-        "map_knowledge",
         "map_session_state",
         "dungeons",
         "encounter",
@@ -337,15 +336,6 @@ def init_database(db_path: Path | None = None):
             x INTEGER NOT NULL,
             y INTEGER NOT NULL,
             PRIMARY KEY (dungeon_id, x, y),
-            FOREIGN KEY (dungeon_id) REFERENCES dungeons(id) ON DELETE CASCADE
-        )
-    """)
-
-    # Per-dungeon map knowledge document (notes, discoveries, lore) — removed with its dungeon.
-    cursor.execute("""
-        CREATE TABLE map_knowledge (
-            dungeon_id INTEGER PRIMARY KEY,
-            data TEXT NOT NULL,
             FOREIGN KEY (dungeon_id) REFERENCES dungeons(id) ON DELETE CASCADE
         )
     """)

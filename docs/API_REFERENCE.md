@@ -234,20 +234,6 @@ Session state is written through immediately on every toggle (no debounce) — u
 
 ---
 
-## Knowledge Router
-
-`backend/app/routers/knowledge.py` — the sparse per-dungeon map knowledge document: which authored facts the party has learned. One row per dungeon, upserted whole, and independently reversible from fog — knowledge and spatial visibility are stored separately and never confused.
-
-<!-- GENERATED:API:knowledge:START -->
-| Method | Path | Purpose | Request | Response |
-|---|---|---|---|---|
-| GET | `/api/dungeons/{dungeon_id}/knowledge` | Get the sparse knowledge document for a dungeon | `dungeon_id` | `MapKnowledgeBlob` |
-| PUT | `/api/dungeons/{dungeon_id}/knowledge` | Save/upsert the knowledge document for a dungeon | `MapKnowledgeBlob` | `MapKnowledgeBlob` |
-| DELETE | `/api/dungeons/{dungeon_id}/knowledge` | Clear a dungeon's knowledge document (removes the saved row, if any) | `dungeon_id` | (204 No Content) |
-<!-- GENERATED:API:knowledge:END -->
-
----
-
 ## At-The-Table Router
 
 `backend/app/routers/at_the_table.py` — single-row pointer from the DM app to the player app: which dungeon is currently "at the table".
@@ -387,7 +373,6 @@ Every request and response body is a Pydantic model in `backend/app/schemas.py`,
 | `LootBundle` | `id`, `name`, `gold`*, `contents`* |
 | `LootBundleCreate` | `name`, `gold`*, `contents`* |
 | `LootBundleUpdate` | `name`, `gold`*, `contents`* |
-| `MapKnowledgeBlob` | `data` |
 | `MapLayoutBlob` | `data` |
 | `MapSessionStateBlob` | `data` |
 | `Monster` | `name`, `aliases`*, `sizes`*, `family`*, `alignment`*, `creature_type`*, `ac`*, `hp`*, `speed`*, `abilities`*, `saving_throws`*, `skills`*, `passive_perception`*, `damage_resistances`*, `damage_immunities`*, `damage_vulnerabilities`*, `condition_immunities`*, `senses`*, `languages`*, `audio_path`*, `features`*, `cr`*, `cr_note`*, `experience_points`*, `created_at`*, `updated_at`*, `id`, `cr_sort`* |

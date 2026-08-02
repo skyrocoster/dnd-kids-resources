@@ -1091,9 +1091,6 @@ def populate_dungeons(cursor, conn, force=False):
     _populate_dungeon_blob_table(
         cursor, conn, "map_session_state", "seed_map_session_state.json", "map session state", force
     )
-    _populate_dungeon_blob_table(
-        cursor, conn, "map_knowledge", "seed_map_knowledge.json", "map knowledge", force
-    )
 
 
 def clear_all_tables(cursor, conn):
@@ -1116,7 +1113,6 @@ def clear_all_tables(cursor, conn):
         "weapons",
         "abilities",
         "map_session_state",
-        "map_knowledge",
         "map_layout",
         "dungeons",
         "encounter",

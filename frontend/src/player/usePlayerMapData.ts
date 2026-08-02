@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { ApiError, getAtTheTable, getDungeonKnowledge, getDungeonLayout, getDungeonSessionState } from '../api/client'
-import type { MapKnowledge } from '../api/types'
+import { ApiError, getAtTheTable, getDungeonLayout, getDungeonSessionState } from '../api/client'
 import { normalizeLayout, type MapLayout, type SessionFixtureState } from '../model/maplabModel'
 import { playerOpenDoorIds, playerViewTransform, type KidMapLayout } from './curtain'
 
@@ -64,17 +63,6 @@ export function usePlayerMapData(): PlayerMapData {
         const blob = await getDungeonLayout(pointer.dungeon_id, request.signal)
         if (cancelled || request.signal.aborted) return
 
-        // Knowledge is an optional overlay. On the first frame, an unavailable knowledge document
-        // must not hide an otherwise available map; later failures still retain the last good frame.
-        const knowledge = await getDungeonKnowledge(pointer.dungeon_id, request.signal)
-          .then(k => k.data as MapKnowledge | undefined)
-          .catch((err: unknown) => {
-            if (err instanceof ApiError && err.status === 404) return undefined
-            if (!lastGoodFrame.current) return undefined
-            throw err
-          })
-        if (cancelled || request.signal.aborted) return
-
         // A dungeon with no session row yet (404) simply has no open doors — that must not fail the
         // whole frame, so this one call swallows its own error rather than joining the catch below.
         // On the first frame, any failure degrades to default (closed, unlocked, armed) state so
@@ -104,7 +92,6 @@ export function usePlayerMapData(): PlayerMapData {
 
         const layout = playerViewTransform(
           normalizeLayout(blob.data as unknown as MapLayout),
-          knowledge,
           { doors: session.doors, stairs: session.stairs, props: session.props, portals: session.portals },
         )
         const frame: PlayerMapData = {

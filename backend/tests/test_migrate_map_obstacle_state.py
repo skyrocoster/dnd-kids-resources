@@ -60,16 +60,6 @@ def temp_db():
         """
         )
 
-        cursor.execute(
-            """
-            CREATE TABLE map_knowledge (
-                dungeon_id INTEGER PRIMARY KEY,
-                data TEXT NOT NULL,
-                FOREIGN KEY (dungeon_id) REFERENCES dungeons(id) ON DELETE CASCADE
-            )
-        """
-        )
-
         conn.commit()
         conn.close()
 
@@ -399,54 +389,6 @@ class TestMigrateDatabase:
         assert count_after == 0
         conn.close()
 
-    def test_migrate_deletes_knowledge(self, temp_db):
-        """Test that migration deletes map_knowledge records."""
-        # Setup
-        conn = sqlite3.connect(str(temp_db))
-        cursor = conn.cursor()
-
-        cursor.execute("INSERT INTO dungeons (id, title) VALUES (1, 'Test Dungeon')")
-
-        layout_data = {
-            "meta": {"cellSizeFt": 5},
-            "doors": [],
-            "stairs": [],
-            "props": [],
-            "portals": [],
-        }
-
-        cursor.execute(
-            "INSERT INTO map_layout (dungeon_id, data) VALUES (1, ?)",
-            (json.dumps(layout_data),),
-        )
-
-        cursor.execute(
-            "INSERT INTO map_knowledge (dungeon_id, data) VALUES (1, ?)",
-            (json.dumps({"discovered": ["room_1"]}),),
-        )
-
-        conn.commit()
-        conn.close()
-
-        # Verify before migration
-        conn = sqlite3.connect(str(temp_db))
-        cursor = conn.cursor()
-        cursor.execute("SELECT COUNT(*) FROM map_knowledge")
-        count_before = cursor.fetchone()[0]
-        assert count_before == 1
-        conn.close()
-
-        # Migrate
-        migrate_database(str(temp_db))
-
-        # Verify after migration
-        conn = sqlite3.connect(str(temp_db))
-        cursor = conn.cursor()
-        cursor.execute("SELECT COUNT(*) FROM map_knowledge")
-        count_after = cursor.fetchone()[0]
-        assert count_after == 0
-        conn.close()
-
     def test_migrate_idempotent(self, temp_db):
         """Test that migration is idempotent."""
         # Setup
@@ -535,23 +477,6 @@ class TestMigrateSeedFiles:
 
         # Verify
         with open(session_file, "r", encoding="utf-8") as f:
-            result = json.load(f)
-
-        assert result == []
-
-    def test_migrate_clears_knowledge_file(self, temp_seeds_dir):
-        """Test that migration clears seed_map_knowledge.json."""
-        # Setup
-        knowledge_file = temp_seeds_dir / "seed_map_knowledge.json"
-
-        with open(knowledge_file, "w", encoding="utf-8") as f:
-            json.dump([{"dungeon_id": 1, "data": {"discovered": []}}], f)
-
-        # Migrate
-        migrate_seed_files(str(temp_seeds_dir))
-
-        # Verify
-        with open(knowledge_file, "r", encoding="utf-8") as f:
             result = json.load(f)
 
         assert result == []

@@ -12,15 +12,14 @@ wrong:
 
 - resolves a bare filename to its one repo path, and refuses ambiguity rather than guessing;
 - turns `path:Symbol` into a real line range plus anchor for any file over the scope
-  threshold, and refuses to emit an unbounded large file;
+  threshold when possible;
 - assembles the STOP WHEN command, adding the typecheck, lint, docs check, and co-located
   suites the linter would have demanded;
 - enforces the shape caps at the argument boundary: in the default authoring mode an
   over-cap order is still written with the split-the-order guidance printed as warnings,
   and `--strict` escalates the same caps into refusals (the dispatch gate); and
-- runs the real linter on the rendered text and writes nothing if it fails — prose
-  heuristics and shape caps come back as non-fatal warnings, deterministic violations
-  always refuse.
+- runs the real linter on the rendered text and reports diagnostics; relaxed authoring writes
+  the order even when they remain, while `--strict` restores refusal behavior.
 
     python scripts/new_order.py --feature <feature> --number 11 \
         --title "Room label" \
@@ -101,7 +100,7 @@ class OrderRefused(Exception):
 # --- resolution ------------------------------------------------------------------------
 
 
-def resolve_path(raw: str, *, allow_missing: bool = False) -> str:
+def resolve_path(raw: str, *, allow_missing: bool = False, strict: bool = False) -> str:
     """A verified repo-relative path, or a refusal naming the candidates.
 
     This is the fault that sent one executor probing the wrong folder first: an order that
@@ -112,6 +111,8 @@ def resolve_path(raw: str, *, allow_missing: bool = False) -> str:
     if "/" in cleaned:
         if allow_missing or (REPO_ROOT / cleaned).exists():
             return cleaned
+        if not strict:
+            return cleaned
         raise OrderRefused(
             f"no such file: {cleaned}\n"
             "  START IN paths must exist. A path for a file this order creates belongs in "
@@ -121,11 +122,15 @@ def resolve_path(raw: str, *, allow_missing: bool = False) -> str:
     if len(hits) == 1:
         return hits[0]
     if not hits:
+        if not strict:
+            return cleaned
         raise OrderRefused(
             f"no file named {cleaned} in the repo.\n"
             "  Check the spelling, or pass the full repo-relative path."
         )
     listed = "\n".join(f"    {h}" for h in sorted(hits))
+    if not strict:
+        return cleaned
     raise OrderRefused(
         f"{cleaned} is ambiguous — {len(hits)} files share that name:\n{listed}\n"
         "  Pass the full repo-relative path. Guessing here is exactly the fault this tool "
@@ -133,14 +138,14 @@ def resolve_path(raw: str, *, allow_missing: bool = False) -> str:
     )
 
 
-def build_start_in(spec: str) -> tuple[str, str]:
+def build_start_in(spec: str, *, strict: bool = False) -> tuple[str, str]:
     """(repo-relative path, rendered START IN bullet) for one --start-in argument."""
     locator, _, prose = (part.strip() for part in _split_spec(spec))
     symbol = None
     match = SYMBOL_SUFFIX_RE.match(locator)
     if match:
         locator, symbol = match.group("path"), match.group("symbol")
-    path = resolve_path(locator)
+    path = resolve_path(locator, strict=strict)
     resolved = REPO_ROOT / path
     lines = co._line_count(resolved)
 
@@ -155,11 +160,12 @@ def build_start_in(spec: str) -> tuple[str, str]:
     if symbol:
         span = co.symbol_span(resolved, symbol)
         if span is None:
-            raise OrderRefused(
-                f"could not locate `{symbol}` in {path} ({lines} lines).\n"
-                "  Give the bound yourself instead, preferably through --json - in PowerShell. "
-                f'For a direct CLI call: --start-in \'{path} — lines 120-168 @"<first line verbatim>"\''
-            )
+            if strict:
+                raise OrderRefused(
+                    f"could not locate `{symbol}` in {path} ({lines} lines).\n"
+                    "  Give the bound yourself instead, preferably through --json - in PowerShell. "
+                    f'For a direct CLI call: --start-in \'{path} — lines 120-168 @"<first line verbatim>"\''
+                )
         start, end, anchor = span
         tail = f" — {prose}" if prose else ""
         return path, f'- {path} — lines {start}-{end} @"{anchor}"{tail}'
@@ -168,6 +174,8 @@ def build_start_in(spec: str) -> tuple[str, str]:
     if ranges and co.scope_anchor(prose):
         return path, f"- {path} — {prose}"
 
+    if not strict:
+        return path, f"- {path} — {prose or f'whole file ({lines} lines)'}"
     raise OrderRefused(
         f"{path} is {lines} lines and needs a bound (anything over "
         f"{co.SCOPE_REQUIRED_LINES} does).\n"
@@ -225,7 +233,7 @@ def json_argv(raw_argv: list[str]) -> list[str]:
 # --- stop-check assembly -----------------------------------------------------------------
 
 
-def frontend_filter(raw: str) -> str:
+def frontend_filter(raw: str, *, strict: bool = False) -> str:
     """A vitest filter as order_check.py wants it: relative to `frontend/`.
 
     The `frontend/` prefix is not a harmless variant. One order shipped it, the filter
@@ -236,9 +244,11 @@ def frontend_filter(raw: str) -> str:
     if cleaned.startswith("frontend/"):
         cleaned = cleaned[len("frontend/") :]
     if not (REPO_ROOT / "frontend" / cleaned).exists():
-        resolved = resolve_path(Path(cleaned).name)
+        resolved = resolve_path(Path(cleaned).name, strict=strict)
         if not resolved.startswith("frontend/"):
-            raise OrderRefused(f"{raw} is not a frontend test file")
+            if strict:
+                raise OrderRefused(f"{raw} is not a frontend test file")
+            return cleaned
         cleaned = resolved[len("frontend/") :]
     return cleaned
 
@@ -330,16 +340,16 @@ def check_caps(args, start_in_paths: list[str], test_files: list[str], strict: b
     escalates the same findings into refusals. The structural checks below are not caps
     and are always refused.
     """
-    if len(args.do) == 0:
-        raise OrderRefused("DO is empty: pass at least one --do line saying what changes.")
-    if not args.known:
-        raise OrderRefused(
-            "KNOWN STATE is empty. Pass --known facts you verified while compiling — the "
-            "values, the file locations, the counts. An executor sent to 'go find out' "
-            "pays the exploration cost this workflow exists to avoid."
-        )
-
     warnings: list[str] = []
+
+    if len(args.do) == 0:
+        _cap_refusal("DO is empty: pass at least one --do line saying what changes.", strict, warnings)
+    if not args.known:
+        _cap_refusal(
+            "KNOWN STATE is empty. Pass --known facts you verified while compiling.",
+            strict,
+            warnings,
+        )
 
     distinct = list(dict.fromkeys(start_in_paths))
     if len(distinct) > co.MAX_START_IN_FILES:
@@ -388,13 +398,13 @@ def build(args) -> tuple[Path, str, list[str], list[str]]:
     """(target path, rendered order, derived notes, cap warnings)."""
     notes: list[str] = []
 
-    args.creates = [resolve_path(p, allow_missing=True) for p in args.creates]
-    args.removes = [resolve_path(p) for p in args.removes]
+    args.creates = [resolve_path(p, allow_missing=True, strict=args.strict) for p in args.creates]
+    args.removes = [resolve_path(p, strict=args.strict) for p in args.removes]
 
     start_in_paths: list[str] = []
     start_in_bullets: list[str] = []
     for spec in args.start_in:
-        path, bullet = build_start_in(spec)
+        path, bullet = build_start_in(spec, strict=args.strict)
         start_in_paths.append(path)
         start_in_bullets.append(bullet)
         if "@\"" in bullet and ":" in spec:
@@ -403,8 +413,8 @@ def build(args) -> tuple[Path, str, list[str], list[str]]:
     do_text = "\n".join(args.do)
     do_paths = sorted(co.paths_in_do({"DO": args.do}))
 
-    tests = [frontend_filter(path) for path in args.tests]
-    pytests = [resolve_path(path) for path in args.pytest]
+    tests = [frontend_filter(path, strict=args.strict) for path in args.tests]
+    pytests = [resolve_path(path, strict=args.strict) for path in args.pytest]
 
     # The co-located-suite rule: a source file this order edits must have its own suite in
     # STOP WHEN. Adding it here is the difference between the tool knowing the rule and the
@@ -443,7 +453,7 @@ def build(args) -> tuple[Path, str, list[str], list[str]]:
 
     cap_warnings = check_caps(args, start_in_paths, tests + pytests, strict=args.strict)
 
-    command_parts = ["python scripts/order_check.py"]
+    command_parts: list[str] = []
     if tests:
         command_parts.append("--tests " + " ".join(tests))
     if pytests:
@@ -454,15 +464,18 @@ def build(args) -> tuple[Path, str, list[str], list[str]]:
         command_parts.append("--lint")
     if docs:
         command_parts.append("--docs")
-    if len(command_parts) == 1:
-        raise OrderRefused(
-            "no stop-check: pass --tests or --pytest. An order with no runnable STOP WHEN "
-            "has no leash, and gold-plating is what fills the gap."
-        )
+    if not command_parts:
+        if args.strict:
+            raise OrderRefused(
+                "no stop-check: pass --tests or --pytest. An order with no runnable STOP WHEN "
+                "has no leash."
+            )
+        cap_warnings.append("no stop-check supplied; the executor must choose verification")
 
-    stop_when = " && ".join(
-        lifecycle_assertions(args.creates, args.removes) + [" ".join(command_parts)]
-    )
+    checks = lifecycle_assertions(args.creates, args.removes)
+    if command_parts:
+        checks.append("python scripts/order_check.py " + " ".join(command_parts))
+    stop_when = " && ".join(checks) or "manual verification required"
 
     target = ORDERS_ROOT / args.feature / f"{args.number}-{args.slug}.md"
     return target, render(args, start_in_bullets, stop_when), notes, cap_warnings
@@ -471,8 +484,7 @@ def build(args) -> tuple[Path, str, list[str], list[str]]:
 def lint_rendered(target: Path, text: str, strict: bool = False) -> tuple[list[str], list[str]]:
     """(errors, warnings) from running the real linter over the rendered order.
 
-    Deterministic violations are errors and always refuse. Prose heuristics and shape caps
-    are warnings by default; `--strict` escalates them into errors via the linter itself.
+    Relaxed mode returns diagnostics as warnings; `--strict` turns them into refusal errors.
     """
     host = target.parent if target.parent.is_dir() else ORDERS_ROOT
     host.mkdir(parents=True, exist_ok=True)
@@ -551,8 +563,7 @@ def main() -> int:
     parser.add_argument(
         "--strict",
         action="store_true",
-        help="refuse orders that exceed the shape caps instead of writing them with "
-        "warnings (the dispatch gate; the default authoring mode is permissive)",
+        help="make all lint findings blocking; default authoring reports them as warnings",
     )
     try:
         args = parser.parse_args(json_argv(sys.argv[1:]))

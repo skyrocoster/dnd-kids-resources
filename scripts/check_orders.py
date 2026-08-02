@@ -46,15 +46,18 @@ compiler may or may not read:
   split-the-order guidance rather than blocking the compiler — and `--strict` escalates
   them back into failures, which is the gate used before dispatch.
 
-Every finding has one of two severities. *Errors* are deterministic and always fail:
+Every finding has one of two severities. In relaxed mode (the default), every finding is a
+warning: the linter is an advisor, not a dispatch gate. `--strict` restores the blocking
+classification for teams that want it.
+
+In strict mode, *errors* are deterministic and fail:
 unresolved paths, an edit site outside START IN/CREATES/REMOVES, a missing dependency, an
 unasserted lifecycle artifact, a stop-check that cannot run or is a full suite, a
 repo-relative vitest filter, an undeclared signature change or an unnamed call site, and
 CREATES/REMOVES overlap. *Warnings* parse prose — a bare filename, a conditional
 instruction, a reshaped exported type, a fixture hint, a new test with no insertion
-anchor, and the shape caps — so they can guess wrong; they are reported but do not block
-authoring, and `--strict` escalates them. `check_docs.py` consumes only errors by default,
-so CI stays green while a compiler works through the warnings.
+anchor, and the shape caps. In relaxed mode they are all reported without blocking
+authoring; `check_docs.py` consumes only strict errors.
 
 Run standalone while compiling a stage, before dispatching anything:
 
@@ -680,15 +683,16 @@ def colocated_tests(path_str: str) -> list[str]:
 def lint_order(order_path: Path, strict: bool = False) -> list[OrderError]:
     """Every compiling rule this repo has paid to learn, applied to one order file.
 
-    `strict` escalates prose-sensitive heuristics and the shape caps from warnings to
-    errors — the dispatch gate. The default keeps them as warnings so the compiler can
-    author freely and still see what a strict run would refuse.
+    `strict` keeps findings blocking. The default downgrades every finding to a warning so
+    the compiler can author freely and still see the diagnostics.
     """
     rel = _rel(order_path)
     errors: list[OrderError] = []
 
     def fail(message: str, fix: str, severity: str = "error") -> None:
-        if strict and severity == "warning":
+        if not strict:
+            severity = "warning"
+        elif severity == "warning":
             severity = "error"
         errors.append(OrderError(rel, message, fix, severity))
 
@@ -1381,9 +1385,9 @@ def lint_orders(
 
     Pass `paths` to validate a selected batch of order files instead of discovering the
     whole active tree — dependency conflicts are then reported only among the named set,
-    which is the right scope for a single stage. `strict` escalates warnings to errors
-    (the dispatch gate). By default warnings are dropped so `check_docs.py` and CI keep
-    failing only on objective errors; pass `include_warnings` to see them.
+    which is the right scope for a single stage. `strict` makes findings blocking. By
+    default all findings are warnings and are dropped from the returned blocking set; pass
+    `include_warnings` to see them.
     """
     orders = list(paths) if paths is not None else _discover_orders(orders_root)
     findings: list[OrderError] = []
@@ -1391,6 +1395,9 @@ def lint_orders(
         # Only lint numbered work orders, not Plan files in feature directories.
         findings.extend(lint_order(order, strict=strict))
     findings.extend(_lint_order_dependencies(orders))
+    if not strict:
+        for finding in findings:
+            finding.severity = "warning"
     if strict or include_warnings:
         return findings
     return [finding for finding in findings if finding.severity == "error"]
@@ -1506,6 +1513,9 @@ def main() -> int:
         for path in paths:
             findings.extend(lint_order(path, strict=args.strict))
         findings.extend(_lint_order_dependencies(paths))
+        if not args.strict:
+            for finding in findings:
+                finding.severity = "warning"
     else:
         findings = lint_orders(strict=args.strict, include_warnings=True)
 

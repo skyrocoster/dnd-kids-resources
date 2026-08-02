@@ -609,23 +609,6 @@
   margin-top: 0.75rem;
 }
 
-/* A knowledge toggle stacks its own failure message under the button, so one failed disclosure
- * reports itself without shifting the neighbouring toggles. */
-.maplab-knowledge-toggle-wrapper {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.maplab-knowledge-error {
-  color: var(--md-error);
-  font-size: 0.75rem;
-}
-
-.maplab-knowledge-toggle-wrapper .maplab-knowledge-error {
-  max-width: 16ch;
-}
-
 /* `.maplab-session-control-button`/`.maplab-session-reset-button`'s base pill look comes from the
  * shared `.maplab-pill-button`; these classes only carry the disabled-state override. */
 .maplab-session-control-button:disabled {

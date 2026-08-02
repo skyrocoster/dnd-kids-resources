@@ -73,7 +73,7 @@ def write(repo: Path, text: str) -> Path:
 
 
 def messages(repo: Path, text: str) -> list[str]:
-    return [error.message for error in co.lint_order(write(repo, text))]
+    return [error.message for error in co.lint_order(write(repo, text), strict=True)]
 
 
 def test_well_formed_order_passes(repo: Path):
@@ -663,7 +663,7 @@ def test_lint_orders_walks_the_tree(repo: Path):
     orders = repo / "orders" / "feat"
     orders.mkdir(parents=True)
     (orders / "01-broken.md").write_text("WORK ORDER 01 — y\nGOAL: x\n", encoding="utf-8")
-    found = co.lint_orders(repo / "orders")
+    found = co.lint_orders(repo / "orders", strict=True)
     assert found and all(error.file.endswith("01-broken.md") for error in found)
 
 
@@ -674,13 +674,13 @@ def test_shared_mutable_path_requires_dependency(repo: Path):
     second = GOOD_ORDER.replace("WORK ORDER 01", "WORK ORDER 02")
     (orders / "02-second.md").write_text(second, encoding="utf-8")
 
-    found = co.lint_orders(repo / "orders")
+    found = co.lint_orders(repo / "orders", strict=True)
     assert any("share mutable paths without a dependency" in error.message for error in found)
 
     (orders / "02-second.md").write_text(
         second.replace("DEPENDS ON: none", "DEPENDS ON: 01"), encoding="utf-8"
     )
-    found = co.lint_orders(repo / "orders")
+    found = co.lint_orders(repo / "orders", strict=True)
     assert not any("share mutable paths without a dependency" in error.message for error in found)
 
 
@@ -1070,12 +1070,19 @@ def test_strict_escalates_prose_warnings(repo: Path):
 
 
 def test_deterministic_safeguards_stay_errors(repo: Path):
-    """Path, authorization, lifecycle, and runnable-filter rules are never warnings."""
+    """Strict mode keeps path, authorization, lifecycle, and runnable-filter errors."""
     order = GOOD_ORDER.replace("- src/__tests__/Tile.test.tsx\n", "- Tile.test.tsx\n", 1)
-    relaxed = co.lint_order(write(repo, order))
+    strict = co.lint_order(write(repo, order), strict=True)
     assert any(
-        e.severity == "error" and "does not exist" in e.message for e in relaxed
+        e.severity == "error" and "does not exist" in e.message for e in strict
     )
+
+
+def test_relaxed_mode_reports_but_does_not_block_any_finding(repo: Path):
+    order = GOOD_ORDER.replace("- src/__tests__/Tile.test.tsx\n", "- Missing.test.tsx\n", 1)
+    findings = co.lint_order(write(repo, order))
+    assert findings
+    assert all(finding.severity == "warning" for finding in findings)
 
 
 def test_lint_orders_drops_warnings_by_default(repo: Path):
@@ -1103,10 +1110,10 @@ def test_selected_orders_are_checked_for_dependency_conflicts(repo: Path):
     second = GOOD_ORDER.replace("WORK ORDER 01", "WORK ORDER 02")
     (orders / "02-second.md").write_text(second, encoding="utf-8")
 
-    found = co.lint_orders(paths=[orders / "01-first.md", orders / "02-second.md"])
+    found = co.lint_orders(paths=[orders / "01-first.md", orders / "02-second.md"], strict=True)
     assert any("share mutable paths without a dependency" in e.message for e in found)
 
     fixed = second.replace("DEPENDS ON: none", "DEPENDS ON: 01")
     (orders / "02-second.md").write_text(fixed, encoding="utf-8")
-    found = co.lint_orders(paths=[orders / "01-first.md", orders / "02-second.md"])
+    found = co.lint_orders(paths=[orders / "01-first.md", orders / "02-second.md"], strict=True)
     assert not any("share mutable paths without a dependency" in e.message for e in found)

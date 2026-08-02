@@ -6,8 +6,6 @@ import {
   deleteMonster,
   deleteSpell,
   getAbilities,
-  getDungeonKnowledge,
-  saveDungeonKnowledge,
   updateMonster,
 } from '../client'
 import { targetSpell } from '../../features/spells/__tests__/spellFixtures'
@@ -90,31 +88,5 @@ describe('api client', () => {
     await expect(getAbilities()).rejects.toMatchObject(new ApiError(404, 'Spell not found'))
   })
 
-  it('getDungeonKnowledge hits the /api-prefixed knowledge endpoint and forwards signal', async () => {
-    const knowledgeData = { data: { doors: { 'door-1': { exists: true } } } }
-    const controller = new AbortController()
-    const fetchMock = mockFetchOnce({ jsonBody: knowledgeData })
-
-    const result = await getDungeonKnowledge(1, controller.signal)
-
-    expect(fetchMock).toHaveBeenCalledWith(
-      '/api/dungeons/1/knowledge',
-      expect.objectContaining({ signal: controller.signal }),
-    )
-    expect(result).toEqual(knowledgeData)
-  })
-
-  it('saveDungeonKnowledge PUTs knowledge blob to the /api-prefixed endpoint', async () => {
-    const knowledgeBlob = { data: { doors: { 'door-1': { exists: true } } } }
-    const fetchMock = mockFetchOnce({ jsonBody: knowledgeBlob })
-
-    const result = await saveDungeonKnowledge(1, knowledgeBlob as any)
-
-    const [path, options] = fetchMock.mock.calls[0]
-    expect(path).toBe('/api/dungeons/1/knowledge')
-    expect(options.method).toBe('PUT')
-    expect(JSON.parse(options.body as string)).toEqual(knowledgeBlob)
-    expect(result).toEqual(knowledgeBlob)
-  })
 })
 

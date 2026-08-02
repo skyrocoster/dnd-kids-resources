@@ -45,8 +45,9 @@ linter re-checks before dispatch.
 
 ## Write orders with `new_order.py`, not by hand
 
-`scripts/new_order.py` renders the maximum allowed shape from the facts you pass and lints the result
-— writing nothing if it fails. It resolves bare filenames to their one repo path, derives a real line
+`scripts/new_order.py` renders the maximum allowed shape from the facts you pass and reports lint
+diagnostics; relaxed authoring writes the order even when diagnostics remain. Pass `--strict` when
+you intentionally want the old refusal gate. It resolves bare filenames to their one repo path, derives a real line
 range and anchor from `path:Symbol` for files over 400 lines, assembles the STOP WHEN command
 (including the co-located suite for each source file DO edits, `--lint` for hooks, `--typecheck` for
 fixtures, `--docs` for contract-managed docs, and existence assertions for every CREATES/REMOVES
@@ -68,8 +69,8 @@ This is still the invoke-only generator path; the JSON is input data, not a hand
 | 3 DO bullets | one logical change, not a list of them |
 | 2 test files in STOP WHEN (at most one frontend suite) | the targeted checks one executor run can judge |
 
-The ceiling is a refusal, not a target: an order that will not fit is the tool telling you it is two
-orders — split it and set `DEPENDS ON`. Below the ceiling, "2–4 START IN entries", "roughly one
+The ceiling is guidance in relaxed mode, not a target: an order that will not fit may still be written,
+but the tool tells you it is probably two orders — split it and set `DEPENDS ON`. Below the ceiling, "2–4 START IN entries", "roughly one
 screen", and "2–3 related files" describe the *preferred* size for a weak model, not a quota to fill.
 Hand-write an order only when it needs a shape the tool cannot express; the fields and the ceiling are
 identical either way.

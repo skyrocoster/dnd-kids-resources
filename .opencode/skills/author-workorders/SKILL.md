@@ -22,11 +22,11 @@ a product, architecture, scope, or split decision open, stop and report the ques
 - Prefer `.venv\Scripts\python.exe scripts/new_order.py` so the order starts in the canonical shape.
 - On PowerShell, use `scripts/new_order.py --json -` with a `ConvertTo-Json -Depth 3` argument object
   whenever values contain prose or punctuation; this avoids shell-quoting failures in `--start-in`.
-- Run `.venv\Scripts\python.exe scripts/check_orders.py --fix` on the authored order files. Treat
-  deterministic findings as blockers. Treat heuristic warnings and shape caps as feedback: report
-  their categories to the coordinator, who may explicitly accept them instead of requiring a rewrite
-  solely to silence them.
-- Correct mechanical failures such as paths, anchors, START IN scope, missing tests, and shape caps.
+- Run `.venv\Scripts\python.exe scripts/check_orders.py --fix` on the authored order files. The
+  default is relaxed: report diagnostics, but do not spend a rewrite cycle merely to silence them.
+  Use `--strict` only when the coordinator explicitly requests a blocking review.
+- Correct a diagnostic only when it would materially mislead the executor; paths, anchors, START IN
+  scope, missing tests, and shape caps are no longer automatic rewrite requirements.
 - Leave `STATUS` blank for the executor and report the created order paths and checker result.
 
 ## Do not

@@ -1,11 +1,10 @@
 /**
  * Player-view transform ("the curtain").
  *
- * Takes the full dungeon layout plus party knowledge and returns the kid-visible subset.
+ * Takes the full dungeon layout and returns the kid-visible subset.
  * Fields declared as `never` or `whenKnown` are stripped; only `always` fields survive.
  * Encounter markers and features are excluded entirely from the returned layout.
  */
-import type { MapKnowledge, MapKnowledgeItem } from '../api/types'
 import type {
   MapLayout,
   MapRoom,
@@ -18,13 +17,12 @@ import type {
   PassageSessionState,
   SessionFixtureState,
 } from '../model/maplabModel'
-import { effectivePassageState } from '../model/maplabModel'
 
 type Visibility = 'never' | 'always' | 'whenKnown'
 
 // ── Per‑field visibility declarations ──────────────────────────────────────
 // Every key must be listed; adding a model field causes a TS error here.
-// `whenKnown` currently resolves to "stripped" because no knowledge record exists.
+// `whenKnown` fields are stripped; only `always` fields survive.
 
 const roomVis = {
   room_id: 'always',
@@ -171,20 +169,6 @@ function pickAlways<T, V extends Record<keyof T, Visibility>>(
   return result as unknown as KidField<T, V>
 }
 
-// ── Knowledge-aware pick helper ────────────────────────────────────────────
-
-function pickKnown(
-  obj: { hidden: boolean; locked: boolean; trapped: boolean },
-  knowledge: MapKnowledgeItem | undefined,
-  effective: { locked: boolean; trapped: boolean },
-): Record<string, unknown> {
-  const result: Record<string, unknown> = {}
-  if (knowledge?.exists) result.hidden = obj.hidden
-  if (knowledge?.lock) result.locked = effective.locked
-  if (knowledge?.trap) result.trapped = effective.trapped
-  return result
-}
-
 // ── Transform ──────────────────────────────────────────────────────────────
 
 /** The session blob's own curtain. A passage's session record carries `open` (SessionFixtureState)
@@ -202,37 +186,24 @@ export function playerOpenDoorIds(
 
 export function playerViewTransform(
   layout: MapLayout,
-  knowledge?: MapKnowledge,
-  sessions?: PassageSessionMap,
+  _sessions?: PassageSessionMap,
 ): KidMapLayout {
   return {
     meta: pickAlways(layout.meta, metaVis),
     rooms: layout.rooms.map(r => pickAlways(r, roomVis)),
     doors: layout.doors
-      .filter(d => !d.hidden || knowledge?.doors?.[String(d.door_id)]?.exists === true)
-      .map(d => ({
-        ...pickAlways(d, doorVis),
-        ...pickKnown(d, knowledge?.doors?.[String(d.door_id)], effectivePassageState(d, sessions?.doors?.[String(d.door_id)])),
-      })),
+      .filter(d => !d.hidden)
+      .map(d => pickAlways(d, doorVis)),
     stairs: layout.stairs
-      .filter(s => !s.hidden || knowledge?.stairs?.[String(s.stair_id)]?.exists === true)
-      .map(s => ({
-        ...pickAlways(s, stairVis),
-        ...pickKnown(s, knowledge?.stairs?.[String(s.stair_id)], effectivePassageState(s, sessions?.stairs?.[String(s.stair_id)])),
-      })),
+      .filter(s => !s.hidden)
+      .map(s => pickAlways(s, stairVis)),
     floors: layout.floors.map(f => pickAlways(f, floorVis)),
     props: layout.props
       .filter(p => p.kind !== 'encounter')
-      .filter(p => !p.hidden || knowledge?.props?.[String(p.prop_id)]?.exists === true)
-      .map(p => ({
-        ...pickAlways(p, propVis),
-        ...pickKnown(p, knowledge?.props?.[String(p.prop_id)], p),
-      })),
+      .filter(p => !p.hidden)
+      .map(p => pickAlways(p, propVis)),
     portals: layout.portals
-      .filter(p => !p.hidden || knowledge?.portals?.[String(p.portal_id)]?.exists === true)
-      .map(p => ({
-        ...pickAlways(p, portalVis),
-        ...pickKnown(p, knowledge?.portals?.[String(p.portal_id)], effectivePassageState(p, sessions?.portals?.[String(p.portal_id)])),
-      })),
+      .filter(p => !p.hidden)
+      .map(p => pickAlways(p, portalVis)),
   }
 }

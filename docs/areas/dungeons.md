@@ -30,7 +30,7 @@ Owns dungeon CRUD, Map Lab viewer/editor composition, room content, layouts, and
 | Obstacle state migration | `scripts/migrate_map_obstacle_state.py` |
 | Obstacle state migration tests | `backend/tests/test_migrate_map_obstacle_state.py` |
 | Map assets | `data/maps/*.png` |
-| Dungeon seed data | `data/seeds/seed_dungeons.json`<br>`data/seeds/seed_map_layouts.json`<br>`data/seeds/seed_map_session_state.json`<br>`data/seeds/seed_map_knowledge.json` |
+| Dungeon seed data | `data/seeds/seed_dungeons.json`<br>`data/seeds/seed_map_layouts.json`<br>`data/seeds/seed_map_session_state.json` |
 
 ## Surfaces
 
@@ -48,6 +48,8 @@ The session view is the surface that is open while a game is running: it must st
 ## Invariants
 
 - Map Lab session overrides are sparse runtime leaves for doors, stairs, props, and portals; absent leaves fall back to authored state, explicit `false` remains meaningful, and layout saves prune stale overrides.
+
+- Room-entry prose concealment was deliberately removed from map disclosure because no current player surface renders it; a future Fog plan may define that capability explicitly.
 
 - Dungeons, map layouts, and map session state **are** seed-backed and **must** be exported before a
   rebuild. `scripts/init_database.py` drops all three, so authored dungeon content that has not been

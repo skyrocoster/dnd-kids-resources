@@ -3,12 +3,9 @@ import { useNavigate } from 'react-router-dom'
 import './MapLabPage.css'
 import { ConfirmDialog } from '../../../components/ConfirmDialog'
 import { FloatingWindow } from '../../../components/FloatingWindow'
-import { ApiError, getAtTheTable, getDungeonKnowledge, listDungeons, saveDungeonKnowledge, setAtTheTable } from '../../../api/client'
+import { getAtTheTable, listDungeons, setAtTheTable } from '../../../api/client'
 import { MapLabRouteState } from './MapLabRouteState'
 import { useDungeonShellContext } from './dungeonRouteContext'
-import { playerOpenDoorIds, playerViewTransform, type KidMapLayout } from '../../../player/curtain'
-import { PlayerVisibleMap } from '../../../map/PlayerVisibleMap'
-import type { MapKnowledge, MapKnowledgeItem } from '../../../api/types'
 import { useMapLabLayout } from './useMapLabLayout'
 import { useMapLabSessionState } from './useMapLabSessionState'
 import { useMapCanvasZoom, type ViewportSize } from '../../../map/useMapCanvasZoom'
@@ -26,14 +23,13 @@ import { PropMarker } from './PropMarker'
 import { PortalMarker } from './PortalMarker'
 import { StairMarker } from './StairMarker'
 import { DoorBadgeLayer, DoorMarker } from './DoorMarker'
-import { InspectorPanel, type KnowledgeControls, type SessionControls } from './InspectorPanel'
+import { InspectorPanel, type SessionControls } from './InspectorPanel'
 import { RoomDetailsPanel } from './RoomDetailsPanel'
 import * as sessionActions from './mapLabSessionActions'
 import { useActiveRoom } from './useActiveRoom'
 import { ViewerRoomRail } from './ViewerRoomRail'
 import {
   absoluteCells,
-  layoutBounds,
   roomLabelAnchor,
   doorsOnFloor,
   doorWallSegment,
@@ -48,7 +44,6 @@ import {
   roomsOnZ,
   stairCellForZ,
   stairEndpointsForZ,
-  type Bounds,
   type Inspectable,
   type MapCell,
   type MapDoor,
@@ -74,36 +69,6 @@ function markerOffset(
   const group = markersAtCell(layout, z, cell)
   const index = group.findIndex((marker) => marker.type === type && marker.id === id)
   return { ...gridMarkerOffset(group.length, index), grouped: group.length > 1 }
-}
-
-/** The knowledge document's discoverable-object buckets and the fact vocabulary each entry
- * carries. Rooms are outside it — room knowledge is Fog's problem, not this plan's. */
-export type KnowledgeCollection = 'doors' | 'stairs' | 'portals' | 'props'
-export type KnowledgeFact = keyof MapKnowledgeItem
-
-/** Flip one fact of one object in the sparse knowledge document, returning a new document.
- * The stored value of a known fact is only ever `true`; clearing a fact removes the key, and an
- * emptied object (or bucket) is removed entirely so the document never accumulates empty shells. */
-export function toggleKnowledgeFact(
-  doc: MapKnowledge,
-  collection: KnowledgeCollection,
-  id: number,
-  fact: KnowledgeFact,
-): MapKnowledge {
-  const key = String(id)
-  const bucket = { ...(doc[collection] ?? {}) }
-  const item: MapKnowledgeItem = { ...(bucket[key] ?? {}) }
-
-  if (item[fact]) delete item[fact]
-  else item[fact] = true
-
-  if (Object.keys(item).length === 0) delete bucket[key]
-  else bucket[key] = item
-
-  const next: MapKnowledge = { ...doc }
-  if (Object.keys(bucket).length === 0) delete next[collection]
-  else next[collection] = bucket
-  return next
 }
 
 type InspectableKind = Inspectable['kind']
@@ -302,13 +267,6 @@ export function MapLabPage() {
   const viewPopoverRef = useRef<HTMLDivElement>(null)
   const [roomsDrawerOpen, setRoomsDrawerOpen] = useState(false)
   const [desktopRailCollapsed, setDesktopRailCollapsed] = useState(false)
-  const [previewMode, setPreviewMode] = useState(false)
-  const [previewKidLayout, setPreviewKidLayout] = useState<KidMapLayout | null>(null)
-  const [previewOpenIds, setPreviewOpenIds] = useState<ReadonlySet<number>>(new Set())
-  const [previewLoading, setPreviewLoading] = useState(false)
-  const [previewError, setPreviewError] = useState<string | null>(null)
-  const [knowledge, setKnowledge] = useState<MapKnowledge>({})
-  const [knowledgeLoadFailed, setKnowledgeLoadFailed] = useState(false)
   const simplified = resolveMapDensity(density, zoomApi.zoom.scale) === 'simple'
   const allLayersHidden = MAP_LAYER_KEYS.every((key) => !layerVisible[key])
 
@@ -327,24 +285,6 @@ export function MapLabPage() {
       .then((response) => setAtTableDungeonId(response.dungeon_id))
       .catch(() => setAtTableDungeonId(null))
   }, [])
-
-  // The dungeon's knowledge document, loaded once per dungeon. A 404 simply means nothing has been
-  // disclosed yet; any other failure leaves the authored map visible and disables the disclosure
-  // controls rather than pretending the party knows nothing.
-  useEffect(() => {
-    if (route.dungeonId === null) return
-    const controller = new AbortController()
-    setKnowledge({})
-    setKnowledgeLoadFailed(false)
-    getDungeonKnowledge(route.dungeonId, controller.signal)
-      .then((blob) => setKnowledge(blob.data ?? {}))
-      .catch((error: unknown) => {
-        if (controller.signal.aborted) return
-        if (error instanceof ApiError && error.status === 404) return
-        setKnowledgeLoadFailed(true)
-      })
-    return () => controller.abort()
-  }, [route.dungeonId])
 
   useEffect(() => {
     if (!viewPopoverOpen) return
@@ -375,15 +315,6 @@ export function MapLabPage() {
     window.addEventListener('keydown', handleEscape)
     return () => window.removeEventListener('keydown', handleEscape)
   }, [roomsDrawerOpen])
-
-  useEffect(() => {
-    if (!previewMode) return
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setPreviewMode(false)
-    }
-    window.addEventListener('keydown', handleEscape)
-    return () => window.removeEventListener('keydown', handleEscape)
-  }, [previewMode])
 
   const isAtTable = route.dungeonId !== null && atTableDungeonId === route.dungeonId
   const viewerError = (partyRoomActionActive ? null : actionError) ?? atTableError
@@ -537,19 +468,6 @@ export function MapLabPage() {
 
   const activeFloor = floors.find((floor) => floor.z === activeZ)
 
-  const floorBounds = useMemo<Bounds>(() => {
-    const roomsHere = roomsOnZ(layout, activeZ)
-    if (roomsHere.length === 0) return bounds
-    const tight = layoutBounds(roomsHere)
-    const { padding } = layout.meta
-    return {
-      minX: tight.minX - padding.left,
-      maxX: tight.maxX + padding.right,
-      minY: tight.minY - padding.top,
-      maxY: tight.maxY + padding.bottom,
-    }
-  }, [layout, activeZ, bounds])
-
   if (route.status === 'loading' || layoutLoading) {
     return <MapLabRouteState title="Loading map" message="Loading dungeon map…" variant="loading" />
   }
@@ -564,42 +482,11 @@ export function MapLabPage() {
     )
   }
 
-  /** Save one flipped fact, then adopt it. Rejecting leaves `knowledge` untouched so the prior
-   * confirmed value stays on screen; `InspectorPanel` turns the rejection into its inline status. */
-  async function toggleKnowledge(collection: KnowledgeCollection, id: number, fact: KnowledgeFact) {
-    if (route.dungeonId === null) return
-    const next = toggleKnowledgeFact(knowledge, collection, id, fact)
-    await saveDungeonKnowledge(route.dungeonId, { data: next })
-    setKnowledge(next)
-  }
-
-  /** Disclosure controls for one discoverable object. Each toggle is only offered where it can
-   * change what the players see: existence for an authored-hidden object (disclosing it stops the
-   * object being hidden at all), and the trap for an object that actually carries one. */
-  function knowledgeControls(
-    collection: KnowledgeCollection,
-    id: number,
-    object: { hidden: boolean; trapped: boolean },
-  ): KnowledgeControls | undefined {
-    if (route.dungeonId === null || knowledgeLoadFailed) return undefined
-    const item = knowledge[collection]?.[String(id)]
-    const toggle = (fact: KnowledgeFact) => ({
-      active: item?.[fact] === true,
-      onToggle: () => toggleKnowledge(collection, id, fact),
-    })
-    return {
-      exists: object.hidden ? toggle('exists') : undefined,
-      lock: toggle('lock'),
-      trap: object.trapped ? toggle('trap') : undefined,
-    }
-  }
-
   const activeRef: InspectableRef | null = selectedInspectable
   const pinnedDoorId = selectedInspectable?.kind === 'door' ? selectedInspectable.id : null
 
   let activeInspectable: Inspectable | null = null
   let activeControls: SessionControls | undefined
-  let activeKnowledge: KnowledgeControls | undefined
   if (activeRef?.kind === 'door') {
     const door = layout.doors.find((d) => d.door_id === activeRef.id)
     if (door) {
@@ -609,7 +496,6 @@ export function MapLabPage() {
         onToggleLocked: () => toggleDoorLocked(door),
         onDisarmTrap: door.trapped ? () => disarmDoorTrap(door) : undefined,
       }
-      activeKnowledge = knowledgeControls('doors', door.door_id, door)
     }
   } else if (activeRef?.kind === 'stair') {
     const stair = layout.stairs.find((s) => s.stair_id === activeRef.id)
@@ -619,7 +505,6 @@ export function MapLabPage() {
         onToggleLocked: () => toggleStairLocked(stair),
         onDisarmTrap: stair.trapped ? () => disarmStairTrap(stair) : undefined,
       }
-      activeKnowledge = knowledgeControls('stairs', stair.stair_id, stair)
     }
   } else if (activeRef?.kind === 'room') {
     const room = layout.rooms.find((r) => r.room_id === activeRef.id)
@@ -628,7 +513,6 @@ export function MapLabPage() {
     const prop = layout.props.find((p) => p.prop_id === activeRef.id)
     if (prop) {
       activeInspectable = { kind: 'prop', prop, session: propSession(prop) }
-      activeKnowledge = knowledgeControls('props', prop.prop_id, prop)
     }
   } else if (activeRef?.kind === 'portal') {
     const portal = layout.portals.find((p) => p.portal_id === activeRef.id)
@@ -638,40 +522,6 @@ export function MapLabPage() {
         onToggleLocked: () => togglePortalLocked(portal),
         onDisarmTrap: portal.trapped ? () => disarmPortalTrap(portal) : undefined,
       }
-      activeKnowledge = knowledgeControls('portals', portal.portal_id, portal)
-    }
-  }
-
-  async function enterPreviewMode() {
-    if (route.dungeonId === null || previewMode) return
-    setViewPopoverOpen(false)
-    setPreviewLoading(true)
-    setPreviewError(null)
-    try {
-      const knowledge = await getDungeonKnowledge(route.dungeonId)
-        .then(k => k.data as MapKnowledge | undefined)
-        .catch((err: unknown) => {
-          if (err instanceof ApiError && err.status === 404) return undefined
-          throw err
-        })
-
-      const previewSessionMap = {
-        doors: Object.fromEntries(Object.entries(doorSessions)) as Record<string, SessionFixtureState>,
-        stairs: Object.fromEntries(Object.entries(stairSessions)) as Record<string, SessionFixtureState>,
-        portals: Object.fromEntries(Object.entries(portalSessions)) as Record<string, SessionFixtureState>,
-        props: Object.fromEntries(Object.entries(propSessions)) as Record<string, SessionFixtureState>,
-      }
-
-      const kidLayout = playerViewTransform(layout, knowledge, previewSessionMap)
-      const openIds = playerOpenDoorIds(previewSessionMap.doors)
-
-      setPreviewKidLayout(kidLayout)
-      setPreviewOpenIds(openIds)
-      setPreviewMode(true)
-    } catch {
-      setPreviewError("Couldn't load player preview.")
-    } finally {
-      setPreviewLoading(false)
     }
   }
 
@@ -715,16 +565,6 @@ export function MapLabPage() {
           </button>
           {viewPopoverOpen && (
             <div className="maplab-view-popover" role="menu">
-              <button
-                type="button"
-                className="maplab-pill-button"
-                aria-pressed={previewMode}
-                data-active={previewMode || undefined}
-                onClick={enterPreviewMode}
-                style={{ minHeight: 48, minWidth: 48 }}
-              >
-                What they see
-              </button>
               <button
                 type="button"
                 className="maplab-pill-button maplab-layer-toggle-button"
@@ -808,35 +648,6 @@ export function MapLabPage() {
       </div>
 
       <div className="maplab-canvas">
-        {previewMode ? (
-          previewLoading ? (
-            <p className="maplab-canvas-preview-status">Loading player view…</p>
-          ) : previewError ? (
-            <p className="maplab-canvas-preview-error">{previewError}</p>
-          ) : previewKidLayout ? (
-            <PlayerVisibleMap
-              layout={previewKidLayout}
-              openDoorIds={previewOpenIds}
-              selectedZ={activeZ}
-              onFloorChange={setActiveZ}
-              bounds={bounds}
-              viewBox={viewBox}
-              zoom={zoomApi.zoom}
-              onWheelZoom={zoomApi.handleWheel}
-              onPanStart={zoomApi.handlePointerDown}
-              onPanMove={zoomApi.handlePointerMove}
-              onPanEnd={zoomApi.handlePointerUp}
-              onViewportResize={handleViewportResize}
-              partyRoomInfo={null}
-              hatchId=""
-              floorBounds={floorBounds}
-              activeFloorTitle={activeFloor?.title}
-            />
-          ) : (
-            <p className="maplab-canvas-preview-empty">The players cannot see any map objects yet.</p>
-          )
-        ) : (
-        <>
         <button
           type="button"
           className="maplab-pill-button maplab-viewer-rail-toggle"
@@ -1087,7 +898,7 @@ export function MapLabPage() {
                 onFocus={() => focusInspectable({ kind: 'stair', id: stair.stair_id })}
                 onClick={() => {
                   // A stair's primary action is still travel; selecting it for the inspector rides
-                  // along so its knowledge controls are reachable from the floor it started on.
+                  // along so its session controls are reachable from the floor it started on.
                   clickInspectable({ kind: 'stair', id: stair.stair_id })
                   setActiveZ(targetZ)
                 }}
@@ -1147,21 +958,13 @@ export function MapLabPage() {
           </MapCanvas>
           )}
         </div>
-        </>
-        )}
 
         <div className="maplab-sidebar">
-          {previewMode ? (
-            <p className="maplab-preview-empty-copy">The players cannot see any map objects yet.</p>
-          ) : (
-            <>
           <div className="maplab-inspector-panel-container" aria-live="polite">
             {activeInspectable ? (
               <InspectorPanel
                 target={activeInspectable}
                 controls={activeControls}
-                knowledge={activeKnowledge}
-                knowledgeError={knowledgeLoadFailed ? "Couldn't load what the players know." : null}
                 context={
                   activeInspectable.kind === 'portal' && activeInspectable.portal.to?.dungeon_id !== undefined
                     ? { dungeonTitle: otherDungeonTitles[activeInspectable.portal.to.dungeon_id] }
@@ -1188,8 +991,6 @@ export function MapLabPage() {
             actionError={partyRoomActionActive ? actionError : null}
             clearActionError={clearActionError}
           />
-            </>
-          )}
         </div>
       </div>
 

@@ -5,8 +5,7 @@ import { MemoryRouter } from 'react-router-dom'
 import * as api from '../../../../api/client'
 import type { NPC } from '../../../../api/types'
 import { mapLabLayout } from '../maplabData'
-import { MapLabPage, toggleKnowledgeFact } from '../MapLabPage'
-import { InspectorPanel } from '../InspectorPanel'
+import { MapLabPage } from '../MapLabPage'
 import type { MapPortal as MapPortalFixture } from '../../../../model/maplabModel'
 import { DungeonRouteContextProvider, type DungeonRouteContext } from '../dungeonRouteContext'
 
@@ -102,8 +101,6 @@ beforeEach(() => {
   vi.spyOn(api, 'getDungeonSessionState').mockRejectedValue(new api.ApiError(404, 'Session state not found'))
   vi.spyOn(api, 'saveDungeonSessionState').mockResolvedValue(undefined as unknown as { data: Record<string, unknown> })
   vi.spyOn(api, 'resetDungeonSessionState').mockResolvedValue(undefined)
-  vi.spyOn(api, 'getDungeonKnowledge').mockResolvedValue({ data: {} })
-  vi.spyOn(api, 'saveDungeonKnowledge').mockResolvedValue({ data: {} })
   Element.prototype.scrollIntoView = vi.fn()
 })
 
@@ -614,8 +611,6 @@ describe('MapLabPage (Stage 4 — Passage session state)', () => {
 
     const panel = container.querySelector('.maplab-inspector-panel-container')!
     expect(panel.querySelector('.maplab-inspector-subheading')).toHaveTextContent('World now')
-    // The session view wires the knowledge document through, so both headings are present.
-    expect(screen.getByText('Players know')).toBeInTheDocument()
   })
 
   it('nested door open/lock/trap writes preserve sibling leaves and prop session override reaches its marker', async () => {
@@ -655,254 +650,6 @@ describe('MapLabPage (Stage 4 — Passage session state)', () => {
     // Treasure Chest is authored as locked but session overrides lock.armed=false
     const chest = screen.getByRole('button', { name: /Treasure Chest/ })
     expect(chest).toHaveAttribute('data-state', 'plain')
-  })
-})
-
-describe('MapLabPage (Stage 5 — Knowledge controls)', () => {
-  it('renders Players know heading with knowledge toggle buttons when knowledge data is provided', () => {
-    const onToggleExists = vi.fn().mockResolvedValue(undefined)
-    const onToggleLock = vi.fn().mockResolvedValue(undefined)
-    const onToggleTrap = vi.fn().mockResolvedValue(undefined)
-    render(
-      <MemoryRouter initialEntries={['/dungeons/4']}>
-        <DungeonRouteContextProvider value={{
-          dungeonId: 4,
-          dungeon: { id: 4, title: 'Test Dungeon', data: dungeonDataFixture },
-          status: 'ready' as const,
-          error: null,
-        }}>
-          <InspectorPanel
-            target={{ kind: 'door', door: { door_id: 1, cell: [0, 0] as [number, number], side: 'N' as const, hidden: false, locked: false, trapped: false } }}
-            knowledge={{
-              exists: { active: true, onToggle: onToggleExists },
-              lock: { active: false, onToggle: onToggleLock },
-              trap: { active: false, onToggle: onToggleTrap },
-            }}
-          />
-        </DungeonRouteContextProvider>
-      </MemoryRouter>,
-    )
-
-    expect(screen.getByText('Players know')).toBeInTheDocument()
-    // Existence reads as hidden/revealed rather than as another "Known:" fact.
-    expect(screen.getByText('Revealed')).toBeInTheDocument()
-    expect(screen.getByText('Unknown: Lock')).toBeInTheDocument()
-    expect(screen.getByText('Unknown: Trap')).toBeInTheDocument()
-  })
-
-  it('only discoverable objects (door/stair/portal/prop) render knowledge toggles — rooms skip them', () => {
-    const onToggleExists = vi.fn().mockResolvedValue(undefined)
-
-    // Room — no knowledge toggles (even when knowledge prop is passed)
-    const { unmount } = render(
-      <MemoryRouter initialEntries={['/dungeons/4']}>
-        <DungeonRouteContextProvider value={{
-          dungeonId: 4,
-          dungeon: { id: 4, title: 'Test Dungeon', data: dungeonDataFixture },
-          status: 'ready' as const,
-          error: null,
-        }}>
-          <InspectorPanel
-            target={{ kind: 'room', room: { room_id: 1, z: 0, origin: [0, 0] as [number, number], cells: [[0, 0]], title: 'Hall' } }}
-            knowledge={{
-              exists: { active: true, onToggle: onToggleExists },
-            }}
-          />
-        </DungeonRouteContextProvider>
-      </MemoryRouter>,
-    )
-
-    expect(screen.queryByText('Players know')).not.toBeInTheDocument()
-    unmount()
-
-    // Stair — should render knowledge toggles
-    render(
-      <MemoryRouter initialEntries={['/dungeons/4']}>
-        <DungeonRouteContextProvider value={{
-          dungeonId: 4,
-          dungeon: { id: 4, title: 'Test Dungeon', data: dungeonDataFixture },
-          status: 'ready' as const,
-          error: null,
-        }}>
-          <InspectorPanel
-            target={{ kind: 'stair', stair: { stair_id: 1, from: { z: 0, cell: [0, 0] }, to: { z: 1, cell: [0, 0] }, hidden: false, locked: false, trapped: false }, session: undefined }}
-            knowledge={{
-              exists: { active: true, onToggle: onToggleExists },
-            }}
-          />
-        </DungeonRouteContextProvider>
-      </MemoryRouter>,
-    )
-
-    expect(screen.getByText('Players know')).toBeInTheDocument()
-  })
-
-  it('shows error with role="status" when a knowledge toggle fails', async () => {
-    const user = userEvent.setup()
-    const onToggleExists = vi.fn().mockRejectedValue(new Error('network error'))
-    render(
-      <MemoryRouter initialEntries={['/dungeons/4']}>
-        <DungeonRouteContextProvider value={{
-          dungeonId: 4,
-          dungeon: { id: 4, title: 'Test Dungeon', data: dungeonDataFixture },
-          status: 'ready' as const,
-          error: null,
-        }}>
-          <InspectorPanel
-            target={{ kind: 'door', door: { door_id: 1, cell: [0, 0] as [number, number], side: 'N' as const, hidden: false, locked: false, trapped: false } }}
-            knowledge={{
-              exists: { active: true, onToggle: onToggleExists },
-            }}
-          />
-        </DungeonRouteContextProvider>
-      </MemoryRouter>,
-    )
-
-    await user.click(screen.getByText('Revealed'))
-    await vi.waitFor(() => {
-      expect(screen.getByRole('status')).toHaveTextContent(/Could not update/)
-    })
-  })
-
-  it('knowledge toggle buttons have pill-button class for 48px touch floor', () => {
-    const onToggleExists = vi.fn().mockResolvedValue(undefined)
-    render(
-      <MemoryRouter initialEntries={['/dungeons/4']}>
-        <DungeonRouteContextProvider value={{
-          dungeonId: 4,
-          dungeon: { id: 4, title: 'Test Dungeon', data: dungeonDataFixture },
-          status: 'ready' as const,
-          error: null,
-        }}>
-          <InspectorPanel
-            target={{ kind: 'door', door: { door_id: 1, cell: [0, 0] as [number, number], side: 'N' as const, hidden: false, locked: false, trapped: false } }}
-            knowledge={{
-              exists: { active: true, onToggle: onToggleExists },
-              lock: { active: false, onToggle: onToggleExists },
-            }}
-          />
-        </DungeonRouteContextProvider>
-      </MemoryRouter>,
-    )
-
-    const buttons = document.querySelectorAll('.maplab-knowledge-toggle-wrapper .maplab-pill-button')
-    expect(buttons.length).toBe(2)
-    buttons.forEach((btn) => {
-      expect((btn as HTMLElement).className).toContain('maplab-pill-button')
-    })
-  })
-})
-
-describe('MapLabPage (Stage 5 — knowledge wired into the session view)', () => {
-  it('offers lock/trap disclosure for the selected door, saves the flip, and shows the new value', async () => {
-    vi.spyOn(api, 'getDungeonKnowledge').mockResolvedValue({ data: { doors: { '98': { trap: true } } } })
-    const save = vi.spyOn(api, 'saveDungeonKnowledge').mockResolvedValue({ data: {} })
-    const user = userEvent.setup()
-    renderMapLabPage()
-    await flush()
-
-    await user.click(screen.getByRole('button', { name: /Rusty Trap Door/ }))
-    expect(screen.getByText('Known: Trap')).toBeInTheDocument()
-    expect(screen.getByText('Unknown: Lock')).toBeInTheDocument()
-    // Door 98 is not authored hidden, so its existence is nothing the party can discover.
-    expect(screen.queryByText('Hidden')).not.toBeInTheDocument()
-    expect(screen.queryByText('Revealed')).not.toBeInTheDocument()
-
-    await user.click(screen.getByText('Unknown: Lock'))
-
-    await waitFor(() => expect(screen.getByText('Known: Lock')).toBeInTheDocument())
-    expect(save).toHaveBeenCalledWith(4, { data: { doors: { '98': { trap: true, lock: true } } } })
-  })
-
-  it('a rejected write keeps the prior confirmed value and reports the failure inline', async () => {
-    vi.spyOn(api, 'getDungeonKnowledge').mockResolvedValue({ data: {} })
-    vi.spyOn(api, 'saveDungeonKnowledge').mockRejectedValue(new api.ApiError(500, 'server error'))
-    const user = userEvent.setup()
-    renderMapLabPage()
-    await flush()
-
-    await user.click(screen.getByRole('button', { name: /Rusty Trap Door/ }))
-    await user.click(screen.getByText('Unknown: Lock'))
-
-    await waitFor(() => expect(screen.getByText(/Could not update/)).toBeInTheDocument())
-    expect(screen.getByText('Unknown: Lock')).toBeInTheDocument()
-  })
-
-  it('withholds the disclosure controls when the knowledge document itself fails to load', async () => {
-    vi.spyOn(api, 'getDungeonKnowledge').mockRejectedValue(new api.ApiError(500, 'server error'))
-    const user = userEvent.setup()
-    renderMapLabPage()
-    await flush()
-
-    await user.click(screen.getByRole('button', { name: /Rusty Trap Door/ }))
-
-    expect(screen.getByText('Players know')).toBeInTheDocument()
-    expect(screen.getByText("Couldn't load what the players know.")).toBeInTheDocument()
-    expect(screen.queryByText(/^Unknown: /)).not.toBeInTheDocument()
-  })
-
-  it('selects a prop on click and offers its disclosure controls', async () => {
-    vi.spyOn(api, 'getDungeonKnowledge').mockResolvedValue({ data: {} })
-    const save = vi.spyOn(api, 'saveDungeonKnowledge').mockResolvedValue({ data: {} })
-    const user = userEvent.setup()
-    renderMapLabPage()
-    await flush()
-
-    await user.click(screen.getByRole('button', { name: /Treasure Chest/i }))
-    expect(screen.getByText('Prop')).toBeInTheDocument()
-
-    await user.click(screen.getByText('Unknown: Lock'))
-
-    await waitFor(() => expect(screen.getByText('Known: Lock')).toBeInTheDocument())
-    expect(save).toHaveBeenCalledWith(4, { data: { props: { '1': { lock: true } } } })
-  })
-
-  it('offers no trap disclosure for a passage that carries no trap, and reveals a hidden one', async () => {
-    const hiddenTrappedDoor = { ...mapLabLayout.doors[0], door_id: 77, hidden: true, trapped: false }
-    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({
-      data: { ...mapLabLayout, doors: [hiddenTrappedDoor] } as unknown as Record<string, unknown>,
-    })
-    vi.spyOn(api, 'getDungeonKnowledge').mockResolvedValue({ data: {} })
-    const user = userEvent.setup()
-    renderMapLabPage()
-    await flush()
-
-    await user.click(screen.getAllByRole('button', { name: /Door/i })[0])
-
-    // Authored hidden: existence is offered, and it reads as hidden rather than as a "Known:" fact.
-    // (The word also appears as the door's own state chip, so scope to the toggle button.)
-    expect(screen.getByRole('button', { name: 'Hidden' })).toBeInTheDocument()
-    // No trap on this door, so there is no trap to disclose.
-    expect(screen.queryByText('Unknown: Trap')).not.toBeInTheDocument()
-  })
-
-  it('treats a missing knowledge document (404) as nothing disclosed yet', async () => {
-    vi.spyOn(api, 'getDungeonKnowledge').mockRejectedValue(new api.ApiError(404, 'Knowledge not found'))
-    const user = userEvent.setup()
-    renderMapLabPage()
-    await flush()
-
-    await user.click(screen.getByRole('button', { name: /Rusty Trap Door/ }))
-
-    expect(screen.getByText('Unknown: Lock')).toBeInTheDocument()
-    expect(screen.getByText('Unknown: Trap')).toBeInTheDocument()
-  })
-})
-
-describe('toggleKnowledgeFact', () => {
-  it('sets a fact to true, and clearing the last fact removes the object and its bucket', () => {
-    const known = toggleKnowledgeFact({}, 'doors', 98, 'lock')
-    expect(known).toEqual({ doors: { '98': { lock: true } } })
-
-    expect(toggleKnowledgeFact(known, 'doors', 98, 'lock')).toEqual({})
-  })
-
-  it('leaves other objects, buckets, and facts untouched', () => {
-    const doc = { doors: { '98': { lock: true as const, trap: true as const }, '32': { lock: true as const } }, stairs: { '2': { exists: true as const } } }
-    expect(toggleKnowledgeFact(doc, 'doors', 98, 'trap')).toEqual({
-      doors: { '98': { lock: true }, '32': { lock: true } },
-      stairs: { '2': { exists: true } },
-    })
   })
 })
 
@@ -2162,45 +1909,5 @@ describe('MapLabPage (Map Lab UX Pass Stage 1 — cross-floor door leak)', () =>
 
     // Upper floor: same [x, y] wall, but the door belongs to z=0 — all four walls must render.
     expect(container.querySelectorAll('.maplab-room .maplab-wall')).toHaveLength(4)
-  })
-})
-
-describe('MapLabPage (Stage 6b — What they see preview)', () => {
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
-
-  it('enters preview showing curtain result, exits on Escape, and does not write knowledge', async () => {
-    const user = userEvent.setup()
-    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: mapLabLayout as unknown as Record<string, unknown> })
-    vi.spyOn(api, 'getDungeonSessionState').mockRejectedValue(new api.ApiError(404, 'Session state not found'))
-    vi.spyOn(api, 'saveDungeonSessionState').mockResolvedValue({ data: {} })
-    vi.spyOn(api, 'getDungeonKnowledge').mockResolvedValue({ data: {} })
-    vi.spyOn(api, 'saveDungeonKnowledge').mockResolvedValue({ data: {} })
-
-    renderMapLabPage()
-    await flush()
-
-    // Open the View popover
-    await user.click(screen.getByRole('button', { name: 'View' }))
-
-    // Click "What they see" to enter preview mode
-    await user.click(screen.getByRole('button', { name: 'What they see' }))
-    await flush()
-
-    // Preview shows the PlayerVisibleMap (region with aria-label "Dungeon map")
-    expect(screen.getByRole('region', { name: 'Dungeon map' })).toBeInTheDocument()
-
-    // The editable Rooms toggle is not shown during preview
-    expect(screen.queryByRole('button', { name: 'Open room navigation' })).not.toBeInTheDocument()
-
-    // Press Escape to exit preview
-    await user.keyboard('{Escape}')
-
-    // Editable Rooms toggle is back
-    expect(screen.getByRole('button', { name: 'Open room navigation' })).toBeInTheDocument()
-
-    // The preview did not trigger any knowledge write
-    expect(api.saveDungeonKnowledge).not.toHaveBeenCalled()
   })
 })

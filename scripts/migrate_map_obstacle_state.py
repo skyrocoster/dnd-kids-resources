@@ -93,7 +93,7 @@ def migrate_database(db_path: str) -> None:
     """Migrate map obstacle state in a SQLite database.
 
     Processes all map_layout records, resets obstacle state, and deletes
-    map_session_state and map_knowledge records.
+    map_session_state records.
     """
     db_path = Path(db_path)
     if not db_path.exists():
@@ -136,12 +136,6 @@ def migrate_database(db_path: str) -> None:
         conn.commit()
         print(f"[OK] Deleted {deleted_session} map_session_state records")
 
-        # Delete map_knowledge records
-        cursor.execute("DELETE FROM map_knowledge")
-        deleted_knowledge = cursor.rowcount
-        conn.commit()
-        print(f"[OK] Deleted {deleted_knowledge} map_knowledge records")
-
     finally:
         conn.close()
 
@@ -149,7 +143,7 @@ def migrate_database(db_path: str) -> None:
 def migrate_seed_files(seeds_dir: str) -> None:
     """Migrate map obstacle state in seed export files.
 
-    Clears map_session_state and map_knowledge seed exports if present.
+    Clears map_session_state seed exports if present.
     Reports and skips absent optional seed files.
     """
     seeds_dir = Path(seeds_dir)
@@ -195,19 +189,6 @@ def migrate_seed_files(seeds_dir: str) -> None:
             sys.exit(1)
     else:
         print(f"  [INFO] seed_map_session_state.json not found; skipping")
-
-    # Clear map_knowledge.json
-    knowledge_file = seeds_dir / "seed_map_knowledge.json"
-    if knowledge_file.exists():
-        try:
-            with open(knowledge_file, "w", encoding="utf-8") as f:
-                json.dump([], f, ensure_ascii=False)
-            print(f"  [OK] Cleared seed_map_knowledge.json")
-        except Exception as e:
-            print(f"  [ERROR] Failed to clear seed_map_knowledge.json: {e}")
-            sys.exit(1)
-    else:
-        print(f"  [INFO] seed_map_knowledge.json not found; skipping")
 
 
 def main():

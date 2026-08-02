@@ -25,14 +25,6 @@ function numOrNull(value: unknown): number | null {
   return null
 }
 
-/** Derive a stable, room-qualified identity for a room entry.
- * Returns `roomId:(index+1)` — one-based so display and debug are human-friendly.
- * Room qualification makes identities unique across the dungeon, and the
- * derivation is pure so repeated calls with the same arguments are stable. */
-export function roomEntryIdentity(roomId: number, zeroBasedEntryIndex: number): string {
-  return `${roomId}:${zeroBasedEntryIndex + 1}`
-}
-
 // ============================================================================
 // Type definitions — mirrors the shape from seed_dungeons.json
 // ============================================================================
@@ -50,8 +42,6 @@ export interface DungeonEntry {
   entry_type: string
   title: string
   content: string
-  is_hidden?: boolean | null
-  hidden_dc?: number | null
   container?: string | null
   container_mechanics?: string | null
   count?: number | null
@@ -74,8 +64,6 @@ export interface DungeonDoor {
   title: string
   content: string
   leads_to: number[] | number
-  is_hidden?: boolean | null
-  hidden_dc?: number | null
   door_mechanics?: string | null
   trap_ids?: number[] | null
 }
@@ -94,8 +82,6 @@ export interface DungeonStair {
   title: string
   leads_to_rooms: number[] | number
   leads_to_floors?: number[] | null
-  is_hidden?: boolean | null
-  hidden_dc?: number | null
 }
 
 export interface DungeonData {
@@ -114,43 +100,6 @@ export interface ThreatHints {
   hasTrap: boolean
   hasMonster: boolean
   hasEncounter: boolean
-}
-
-export interface RoomExit {
-  kind: 'door' | 'stair'
-  door?: DungeonDoor
-  stair?: DungeonStair
-  toRoomId: number
-  toRoom?: DungeonRoom
-  toFloorId?: number | null
-  toFloorTitle?: string | null
-  direction?: 'up' | 'down' | null
-  isHidden: boolean
-  hiddenDc: number | null
-}
-
-export interface RoomNode {
-  roomId: number
-  title: string
-  hints: ThreatHints
-  position?: { x: number; y: number } | null
-  floorId?: number | null
-}
-
-export interface DoorEdge {
-  kind: 'door' | 'stair'
-  doorId?: number
-  stairId?: number
-  a: number
-  b: number
-  isHidden: boolean
-  hiddenDc: number | null
-  title: string
-}
-
-export interface DungeonGraph {
-  nodes: RoomNode[]
-  edges: DoorEdge[]
 }
 
 // ============================================================================
@@ -173,8 +122,6 @@ export function parseDungeonData(data: unknown): DungeonData {
             entry_type: str(entry.entry_type),
             title: str(entry.title),
             content: str(entry.content),
-            is_hidden: entry.is_hidden === true,
-            hidden_dc: typeof entry.hidden_dc === 'number' ? entry.hidden_dc : null,
             container: entry.container ? str(entry.container) : null,
             container_mechanics: entry.container_mechanics ? str(entry.container_mechanics) : null,
             count: typeof entry.count === 'number' ? entry.count : null,
@@ -199,8 +146,6 @@ export function parseDungeonData(data: unknown): DungeonData {
           : typeof door.leads_to === 'number'
             ? [door.leads_to]
             : [],
-        is_hidden: door.is_hidden === true,
-        hidden_dc: typeof door.hidden_dc === 'number' ? door.hidden_dc : null,
         door_mechanics: door.door_mechanics ? str(door.door_mechanics) : null,
         trap_ids: asArray(door.trap_ids).filter((x) => typeof x === 'number'),
       }
@@ -227,8 +172,6 @@ export function parseDungeonData(data: unknown): DungeonData {
             ? [stair.leads_to_rooms]
             : [],
         leads_to_floors: asArray(stair.leads_to_floors).filter((x) => typeof x === 'number'),
-        is_hidden: stair.is_hidden === true,
-        hidden_dc: typeof stair.hidden_dc === 'number' ? stair.hidden_dc : null,
       }
     }),
     corridors: asArray(rec.corridors),
@@ -330,153 +273,3 @@ export function getRoomThreatHints(room: DungeonRoom): ThreatHints {
   }
 }
 
-/** Get adjacent room IDs (convenience over the graph edges). */
-export function getAdjacentRoomIds(data: DungeonData, roomId: number): number[] {
-  const exits = getExitsFromRoom(data, roomId)
-  return exits.map((e) => e.toRoomId)
-}
-
-/** Build a normalized, renderer-agnostic graph structure for the dungeon.
- * Used by the rail, exits, and future map renderers. */
-export function getRoomGraph(data: DungeonData): DungeonGraph {
-  const rooms = getRooms(data)
-  const doors = asArray(data.doors) as DungeonDoor[]
-  const stairs = asArray(data.stairs) as DungeonStair[]
-  const floors = getFloors(data)
-
-  // Map room_id to floor_id for quick lookup
-  const roomToFloor = new Map<number, number>()
-  for (const floor of floors) {
-    for (const roomId of floor.room_ids) {
-      roomToFloor.set(roomId, floor.floor_id)
-    }
-  }
-
-  const nodes: RoomNode[] = rooms.map((room) => ({
-    roomId: room.room_id,
-    title: room.title,
-    hints: getRoomThreatHints(room),
-    position: undefined,
-    floorId: roomToFloor.get(room.room_id),
-  }))
-
-  const edges: DoorEdge[] = []
-  const roomIdSet = new Set(rooms.map((r) => r.room_id))
-
-  // Add door edges
-  for (const door of doors) {
-    const leadsTo = asArray(door.leads_to).filter((x) => typeof x === 'number')
-    if (leadsTo.length !== 2) continue
-
-    const [a, b] = leadsTo
-    if (!roomIdSet.has(a) || !roomIdSet.has(b)) continue // Skip edges to unknown rooms
-    if (a === b) continue // Skip self-loops
-
-    edges.push({
-      kind: 'door',
-      doorId: door.door_id,
-      a,
-      b,
-      isHidden: door.is_hidden || false,
-      hiddenDc: door.hidden_dc || null,
-      title: door.title,
-    })
-  }
-
-  // Add stair edges
-  for (const stair of stairs) {
-    const leadsTo = asArray(stair.leads_to_rooms).filter((x) => typeof x === 'number')
-    if (leadsTo.length !== 2) continue
-
-    const [a, b] = leadsTo
-    if (!roomIdSet.has(a) || !roomIdSet.has(b)) continue // Skip edges to unknown rooms
-    if (a === b) continue // Skip self-loops
-
-    edges.push({
-      kind: 'stair',
-      stairId: stair.stair_id,
-      a,
-      b,
-      isHidden: stair.is_hidden || false,
-      hiddenDc: stair.hidden_dc || null,
-      title: stair.title,
-    })
-  }
-
-  return { nodes, edges }
-}
-
-/** Get exits (doors and stairs) leaving from a specific room.
- * Derives from the graph to ensure consistency.
- * Deduplicates by destination room (first exit wins). */
-export function getExitsFromRoom(data: DungeonData, roomId: number): RoomExit[] {
-  const graph = getRoomGraph(data)
-  const allExits: RoomExit[] = []
-  const seenDestinations = new Set<number>()
-
-  const doors = asArray(data.doors) as DungeonDoor[]
-  const stairs = asArray(data.stairs) as DungeonStair[]
-  const floors = getFloors(data)
-
-  // Map floor_id to floor for quick lookup
-  const floorsById = new Map<number, DungeonFloor>()
-  for (const floor of floors) {
-    floorsById.set(floor.floor_id, floor)
-  }
-
-  for (const edge of graph.edges) {
-    // Find which end of the edge is the current room
-    const destId = edge.a === roomId ? edge.b : edge.b === roomId ? edge.a : undefined
-    if (destId === undefined) continue
-
-    if (seenDestinations.has(destId)) continue // Dedupe by destination
-    seenDestinations.add(destId)
-
-    const destRoom = getRoomById(data, destId)
-
-    if (edge.kind === 'door') {
-      const door = doors.find((d) => d.door_id === edge.doorId)
-      if (!door) continue
-
-      allExits.push({
-        kind: 'door',
-        door,
-        toRoomId: destId,
-        toRoom: destRoom,
-        isHidden: edge.isHidden,
-        hiddenDc: edge.hiddenDc,
-      })
-    } else if (edge.kind === 'stair') {
-      const stair = stairs.find((s) => s.stair_id === edge.stairId)
-      if (!stair) continue
-
-      // Determine direction based on source/dest floor levels
-      const srcFloor = getFloorForRoom(data, roomId)
-      const destFloor = getFloorForRoom(data, destId)
-      let direction: 'up' | 'down' | null = null
-
-      if (srcFloor && destFloor) {
-        // Check if dest is above source (floor_above relationship)
-        if (srcFloor.floor_above === destFloor.floor_id) {
-          direction = 'up'
-        } else if (srcFloor.floor_below === destFloor.floor_id) {
-          direction = 'down'
-        }
-      }
-
-      allExits.push({
-        kind: 'stair',
-        stair,
-        toRoomId: destId,
-        toRoom: destRoom,
-        toFloorId: destFloor?.floor_id,
-        toFloorTitle: destFloor?.title,
-        direction,
-        isHidden: edge.isHidden,
-        hiddenDc: edge.hiddenDc,
-      })
-    }
-  }
-
-  return allExits
-}

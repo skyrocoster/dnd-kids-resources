@@ -24,6 +24,8 @@ import io
 import json
 import shutil
 import sqlite3
+import subprocess
+import sys
 import tempfile
 from contextlib import redirect_stdout
 from pathlib import Path
@@ -32,6 +34,24 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPTS_DIR = REPO_ROOT / "scripts"
+
+
+def pytest_sessionstart(session: pytest.Session) -> None:
+    """Refresh generated documentation before collecting the test suite."""
+    result = subprocess.run(
+        [sys.executable, str(SCRIPTS_DIR / "check_docs.py"), "--write-generated"],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode:
+        detail = (result.stderr or result.stdout).strip()
+        pytest.exit(
+            "Generated documentation refresh failed; tests were not run."
+            + (f"\n{detail}" if detail else ""),
+            returncode=pytest.ExitCode.INTERNAL_ERROR,
+        )
 
 
 def _load_module(name: str, path: Path):

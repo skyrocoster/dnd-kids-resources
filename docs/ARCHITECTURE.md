@@ -169,7 +169,7 @@ The database lifecycle scripts and their flags are documented in
 <!-- GENERATED:ARCHITECTURE:START -->
 ### Generated Registration Inventory
 
-Backend routers registered in `main.py`: `reference.py`, `spells.py`, `monsters.py`, `weapons.py`, `items.py`, `loot.py`, `players.py`, `npcs.py`, `encounters.py`, `dungeons.py`, `layouts.py`, `session_state.py`, `knowledge.py`, `fog.py`, `at_the_table.py`, `loom.py`.
+Backend routers registered in `main.py`: `reference.py`, `spells.py`, `monsters.py`, `weapons.py`, `items.py`, `loot.py`, `players.py`, `npcs.py`, `encounters.py`, `dungeons.py`, `layouts.py`, `session_state.py`, `fog.py`, `at_the_table.py`, `loom.py`.
 
 Frontend feature directories: `dungeons/`, `encounters/`, `items/`, `loom/`, `loot/`, `monsters/`, `npcs/`, `players/`, `spells/`, `weapons/`.
 <!-- GENERATED:ARCHITECTURE:END -->

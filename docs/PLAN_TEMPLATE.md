@@ -171,7 +171,8 @@ unrelated sections of that same file is a deviation and must be reported as such
 [the reference order](plans/_example/99-creature-row-ac.md) for a worked example.
 
 `scripts/check_orders.py` lints orders against these rules and is runnable on its own while compiling
-a stage. Each rule is one fault — an unresolvable path, an undeclared
+a stage. Its default relaxed mode reports findings without blocking; `--strict` is available when a
+dispatch gate is wanted. Each rule is one fault — an unresolvable path, an undeclared
 edit or lifecycle artifact, a bare filename, a conditional instruction, an unscoped large file, a
 stale or unanchored line range, an exported signature change that does not enumerate its call sites, a
 source file whose own suite is missing from STOP WHEN, a hook change with no lint, a new test with no

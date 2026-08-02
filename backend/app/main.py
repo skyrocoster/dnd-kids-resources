@@ -11,7 +11,6 @@ from .routers import (
     dungeons,
     fog,
     items,
-    knowledge,
     layouts,
     loom,
     loot,
@@ -56,7 +55,6 @@ app.include_router(encounters.router)
 app.include_router(dungeons.router)
 app.include_router(layouts.router)
 app.include_router(session_state.router)
-app.include_router(knowledge.router)
 app.include_router(fog.router)
 app.include_router(at_the_table.router)
 app.include_router(loom.router)

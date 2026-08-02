@@ -18,40 +18,20 @@ export interface SessionControls {
   onDisarmTrap?: () => void
 }
 
-export interface KnowledgeToggle {
-  active: boolean
-  onToggle: () => Promise<void>
-}
-
-export interface KnowledgeControls {
-  exists?: KnowledgeToggle
-  lock?: KnowledgeToggle
-  trap?: KnowledgeToggle
-}
-
 /** Element-agnostic descriptor panel — a room, door, stair, or prop all resolve through
  * `inspectableDescriptor` to the same {title, typeLabel, icon, token, chips, lines} shape, so one
  * component renders all four. `chips` (Design Phase J2) replaces the old State/Also text rows with
  * icon+text pills — empty for a room or a fully-unlocked passage. Doors and stairs additionally get
  * live session controls (Stage 4) —
  * rooms and props don't carry that kind of runtime state, so `controls` is only passed for those two
- * kinds. Props can additionally resolve their soft-referenced loot bundle live.
- *
- * Knowledge toggles (Stage 5) render under a "Players know" heading and save immediately — a failed
- * write leaves the prior confirmed value and shows an inline error with role="status". */
+ * kinds. Props can additionally resolve their soft-referenced loot bundle live. */
 export function InspectorPanel({
   target,
   controls,
-  knowledge,
-  knowledgeError,
   context,
 }: {
   target: Inspectable
   controls?: SessionControls
-  knowledge?: KnowledgeControls
-  /** Set when the knowledge document itself failed to load: the disclosure controls are withheld
-   * and this reason is shown in their place, rather than implying nothing has been disclosed. */
-  knowledgeError?: string | null
   /** Extra data `inspectableDescriptor` can't resolve on its own — currently just the destination
    * dungeon's title for a gateway portal, looked up by the caller via `listDungeons()`. */
   context?: { dungeonTitle?: string }
@@ -79,15 +59,6 @@ export function InspectorPanel({
       default: return undefined
     }
   })()
-
-  // Per-fact pending/error state for knowledge toggles
-  const [pendingFacts, setPendingFacts] = useState<Record<string, boolean>>({})
-  const [errorFacts, setErrorFacts] = useState<Record<string, string | null>>({})
-
-  // Everything the party can discover carries the knowledge vocabulary — the three passage kinds
-  // plus props, which are equally hideable and lockable. Rooms stay outside it.
-  const isDiscoverable =
-    target.kind === 'door' || target.kind === 'stair' || target.kind === 'portal' || target.kind === 'prop'
 
   return (
     <div className="maplab-inspector-panel">
@@ -153,118 +124,6 @@ export function InspectorPanel({
             )}
           </div>
         </>
-      )}
-
-      {knowledgeError && isDiscoverable && (
-        <>
-          <h4 className="maplab-inspector-subheading">Players know</h4>
-          <span role="status" className="maplab-knowledge-error">{knowledgeError}</span>
-        </>
-      )}
-
-      {knowledge && !knowledgeError && isDiscoverable && (
-        <>
-          <h4 className="maplab-inspector-subheading">Players know</h4>
-          <div className="maplab-inspector-controls">
-            {knowledge.exists && (
-              <KnowledgeToggleButton
-                factKey="exists"
-                label="Exists"
-                // Existence is not a fact stacked beside the others — disclosing it stops the
-                // object being hidden at all, so it says so instead of "Known: Exists".
-                activeLabel="Revealed"
-                inactiveLabel="Hidden"
-                toggle={knowledge.exists}
-                pending={pendingFacts}
-                error={errorFacts}
-                setPending={setPendingFacts}
-                setError={setErrorFacts}
-              />
-            )}
-            {knowledge.lock && (
-              <KnowledgeToggleButton
-                factKey="lock"
-                label="Lock"
-                toggle={knowledge.lock}
-                pending={pendingFacts}
-                error={errorFacts}
-                setPending={setPendingFacts}
-                setError={setErrorFacts}
-              />
-            )}
-            {knowledge.trap && (
-              <KnowledgeToggleButton
-                factKey="trap"
-                label="Trap"
-                toggle={knowledge.trap}
-                pending={pendingFacts}
-                error={errorFacts}
-                setPending={setPendingFacts}
-                setError={setErrorFacts}
-              />
-            )}
-          </div>
-        </>
-      )}
-    </div>
-  )
-}
-
-/** A single knowledge-fact toggle button with local pending/error state.
- * Saves immediately on click; a failed write leaves the prior confirmed value
- * and reports the error inline with `role="status"`. */
-function KnowledgeToggleButton({
-  factKey,
-  label,
-  activeLabel,
-  inactiveLabel,
-  toggle,
-  pending,
-  error,
-  setPending,
-  setError,
-}: {
-  factKey: string
-  label: string
-  /** Button copy overrides; default to `Known: <label>` / `Unknown: <label>`. */
-  activeLabel?: string
-  inactiveLabel?: string
-  toggle: KnowledgeToggle
-  pending: Record<string, boolean>
-  error: Record<string, string | null>
-  setPending: React.Dispatch<React.SetStateAction<Record<string, boolean>>>
-  setError: React.Dispatch<React.SetStateAction<Record<string, string | null>>>
-}) {
-  const isPending = pending[factKey] ?? false
-  const errorMessage = error[factKey]
-
-  const handleClick = async () => {
-    if (isPending) return
-    setPending((prev) => ({ ...prev, [factKey]: true }))
-    setError((prev) => ({ ...prev, [factKey]: null }))
-    try {
-      await toggle.onToggle()
-    } catch {
-      setError((prev) => ({ ...prev, [factKey]: `Could not update "${label}" knowledge.` }))
-    } finally {
-      setPending((prev) => ({ ...prev, [factKey]: false }))
-    }
-  }
-
-  return (
-    <div className="maplab-knowledge-toggle-wrapper">
-      <button
-        type="button"
-        className="maplab-pill-button maplab-session-control-button"
-        disabled={isPending}
-        onClick={handleClick}
-      >
-        {toggle.active ? (activeLabel ?? `Known: ${label}`) : (inactiveLabel ?? `Unknown: ${label}`)}
-      </button>
-      {errorMessage && (
-        <span role="status" className="maplab-knowledge-error">
-          {errorMessage}
-        </span>
       )}
     </div>
   )

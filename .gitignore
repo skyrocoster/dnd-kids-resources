@@ -48,6 +48,7 @@ dnd_kids_resources.db
 # re-included below; git cannot un-ignore anything inside an excluded directory.
 /data/*
 /data/5eTools/
+data/seeds/seed_monsters.json
 
 data/seeds/archive/
 
@@ -79,4 +80,7 @@ data/seeds/archive/
 .opencode/*
 !.opencode/plugin/
 !.opencode/skills/
+!.opencode/tools/
+!.opencode/agents/
+!.opencode/agents/**
 opencode.json
