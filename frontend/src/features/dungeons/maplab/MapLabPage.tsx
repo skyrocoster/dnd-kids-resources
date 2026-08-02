@@ -7,7 +7,7 @@ import { getAtTheTable, listDungeons, setAtTheTable } from '../../../api/client'
 import { MapLabRouteState } from './MapLabRouteState'
 import { useDungeonShellContext } from './dungeonRouteContext'
 import { useMapLabLayout } from './useMapLabLayout'
-import { useMapLabSessionState } from './useMapLabSessionState'
+import { useMapLabSessionState, type SessionFixtureKind } from './useMapLabSessionState'
 import { useMapCanvasZoom, type ViewportSize } from '../../../map/useMapCanvasZoom'
 import { MapCanvas } from '../../../map/MapCanvas'
 import { ChevronDownIcon, ChevronUpIcon, EyeIcon, FitIcon, ZoomInIcon, ZoomOutIcon } from '../../../components/icons'
@@ -23,9 +23,8 @@ import { PropMarker } from './PropMarker'
 import { PortalMarker } from './PortalMarker'
 import { StairMarker } from './StairMarker'
 import { DoorBadgeLayer, DoorMarker } from './DoorMarker'
-import { InspectorPanel, type SessionControls } from './InspectorPanel'
+import { InspectorPanel, type ObstacleInspectorAdapter } from './InspectorPanel'
 import { RoomDetailsPanel } from './RoomDetailsPanel'
-import * as sessionActions from './mapLabSessionActions'
 import { useActiveRoom } from './useActiveRoom'
 import { ViewerRoomRail } from './ViewerRoomRail'
 import {
@@ -52,9 +51,61 @@ import {
   type MapProp,
   type MapStair,
   type SessionFixtureState,
+  defaultFixtureState,
+  type FixtureState,
 } from '../../../model/maplabModel'
 
 const CELL_SIZE = 64
+
+/** One Armed-column leaf for the shared inspector's `onToggleArmed` — a sparse session override
+ *  carrying just that obstacle's armed value, merged onto the fixture's existing override. */
+function obstacleArmedLeaf(
+  obstacle: 'concealment' | 'lock' | 'trap',
+  armed: boolean,
+): SessionFixtureState {
+  if (obstacle === 'concealment') return { obstacles: { concealment: { armed } } }
+  if (obstacle === 'lock') return { obstacles: { lock: { armed } } }
+  return { obstacles: { trap: { armed } } }
+}
+
+/** Merge a sparse session leaf onto a fixture's current override, then drop any leaf whose value
+ *  equals the authored value — a leaf equal to authored is redundant because the fallback already
+ *  produces it (handoff §3.2 "removes values equal to authored state"), while an explicit value
+ *  that differs from authored (including an explicit `false`) is preserved ("preserves sparse
+ *  explicit false"). Returns `undefined` when no override remains, so the fixture's session entry
+ *  is removed entirely. */
+function mergeSparseLeaf(
+  authored: FixtureState,
+  current: SessionFixtureState | undefined,
+  patch: SessionFixtureState,
+): SessionFixtureState | undefined {
+  const obstacles: SessionFixtureState['obstacles'] = {
+    concealment: { ...(current?.obstacles?.concealment ?? {}), ...(patch.obstacles?.concealment ?? {}) },
+    lock: { ...(current?.obstacles?.lock ?? {}), ...(patch.obstacles?.lock ?? {}) },
+    trap: { ...(current?.obstacles?.trap ?? {}), ...(patch.obstacles?.trap ?? {}) },
+  }
+  const merged: SessionFixtureState = { ...current, ...patch }
+
+  if (patch.obstacles || current?.obstacles) {
+    if (obstacles.concealment?.armed !== undefined && obstacles.concealment.armed === authored.obstacles.concealment.armed) {
+      delete obstacles.concealment
+    }
+    if (obstacles.lock) {
+      if (obstacles.lock.armed !== undefined && obstacles.lock.armed === authored.obstacles.lock.armed) delete obstacles.lock.armed
+      if (obstacles.lock.shown !== undefined && obstacles.lock.shown === authored.obstacles.lock.shown) delete obstacles.lock.shown
+      if (Object.keys(obstacles.lock).length === 0) delete obstacles.lock
+    }
+    if (obstacles.trap) {
+      if (obstacles.trap.armed !== undefined && obstacles.trap.armed === authored.obstacles.trap.armed) delete obstacles.trap.armed
+      if (obstacles.trap.shown !== undefined && obstacles.trap.shown === authored.obstacles.trap.shown) delete obstacles.trap.shown
+      if (Object.keys(obstacles.trap).length === 0) delete obstacles.trap
+    }
+    if (Object.keys(obstacles).length === 0) delete merged.obstacles
+    else merged.obstacles = obstacles
+  }
+  if (merged.open !== undefined && merged.open === authored.open) delete merged.open
+  return Object.keys(merged).length === 0 ? undefined : merged
+}
 
 
 /** Grid-layout offset for one marker among any others (stair/portal/on-square-prop) sharing its
@@ -239,15 +290,15 @@ export function MapLabPage() {
   const focusSelectedRef = useRef(false)
   const {
     doorSessions,
-    setDoorSessions,
     stairSessions,
-    setStairSessions,
     portalSessions,
-    setPortalSessions,
     propSessions,
     partyRoomId,
     setPartyRoomId,
     resetSessions,
+    writeFixture,
+    resetFixture,
+    writeError,
     actionError,
     clearActionError,
   } = useMapLabSessionState(route.dungeonId)
@@ -402,46 +453,6 @@ export function MapLabPage() {
     return stairSessions[stair.stair_id]
   }
 
-  function toggleDoorOpen(door: MapDoor) {
-    clearViewerStatus()
-    setDoorSessions((current) => ({
-      ...current,
-      [door.door_id]: sessionActions.toggleDoorOpen(current, door),
-    }))
-  }
-
-  function toggleDoorLocked(door: MapDoor) {
-    clearViewerStatus()
-    setDoorSessions((current) => ({
-      ...current,
-      [door.door_id]: sessionActions.toggleDoorLocked(current, door),
-    }))
-  }
-
-  function disarmDoorTrap(door: MapDoor) {
-    clearViewerStatus()
-    setDoorSessions((current) => ({
-      ...current,
-      [door.door_id]: sessionActions.disarmDoorTrap(current, door),
-    }))
-  }
-
-  function toggleStairLocked(stair: MapStair) {
-    clearViewerStatus()
-    setStairSessions((current) => ({
-      ...current,
-      [stair.stair_id]: sessionActions.toggleStairLocked(current, stair),
-    }))
-  }
-
-  function disarmStairTrap(stair: MapStair) {
-    clearViewerStatus()
-    setStairSessions((current) => ({
-      ...current,
-      [stair.stair_id]: sessionActions.disarmStairTrap(current, stair),
-    }))
-  }
-
   function portalSession(portal: MapPortal): SessionFixtureState | undefined {
     return portalSessions[portal.portal_id]
   }
@@ -450,20 +461,36 @@ export function MapLabPage() {
     return propSessions[prop.prop_id]
   }
 
-  function togglePortalLocked(portal: MapPortal) {
-    clearViewerStatus()
-    setPortalSessions((current) => ({
-      ...current,
-      [portal.portal_id]: sessionActions.togglePortalLocked(current, portal),
-    }))
-  }
-
-  function disarmPortalTrap(portal: MapPortal) {
-    clearViewerStatus()
-    setPortalSessions((current) => ({
-      ...current,
-      [portal.portal_id]: sessionActions.disarmPortalTrap(current, portal),
-    }))
+  /** DM View's adapter for the shared obstacle inspector. The panel reads effective
+   *  Open/Armed/Shown leaves (authored + session) and every write here emits a contextual sparse
+   *  session leaf immediately, rolling back to the last server-confirmed value on failure (the
+   *  hook does the rollback; `writeError` surfaces the failed write inline, role=status). */
+  function dmViewFixtureAdapter(
+    kind: SessionFixtureKind,
+    id: number,
+    fixture: MapDoor | MapStair | MapPortal | MapProp,
+    session: SessionFixtureState | undefined,
+  ): ObstacleInspectorAdapter {
+    const authored = fixture.state ?? defaultFixtureState()
+    const write = (patch: SessionFixtureState) => {
+      clearViewerStatus()
+      writeFixture(kind, id, mergeSparseLeaf(authored, session, patch))
+    }
+    return {
+      heading: 'World now',
+      onToggleOpen: (open) => write({ open }),
+      onToggleArmed: (obstacle, armed) => write(obstacleArmedLeaf(obstacle, armed)),
+      onToggleShown: (obstacle, shown) => {
+        if (obstacle === 'lock') write({ obstacles: { lock: { shown } } })
+        else if (obstacle === 'trap') write({ obstacles: { trap: { shown } } })
+      },
+      onReset: () => {
+        clearViewerStatus()
+        resetFixture(kind, id)
+      },
+      resetDisabled: !session,
+      writeError,
+    }
   }
 
   const activeFloor = floors.find((floor) => floor.z === activeZ)
@@ -486,25 +513,18 @@ export function MapLabPage() {
   const pinnedDoorId = selectedInspectable?.kind === 'door' ? selectedInspectable.id : null
 
   let activeInspectable: Inspectable | null = null
-  let activeControls: SessionControls | undefined
+  let activeAdapter: ObstacleInspectorAdapter | undefined
   if (activeRef?.kind === 'door') {
     const door = layout.doors.find((d) => d.door_id === activeRef.id)
     if (door) {
       activeInspectable = { kind: 'door', door, session: doorSession(door) }
-      activeControls = {
-        onToggleOpen: () => toggleDoorOpen(door),
-        onToggleLocked: () => toggleDoorLocked(door),
-        onDisarmTrap: door.trapped ? () => disarmDoorTrap(door) : undefined,
-      }
+      activeAdapter = dmViewFixtureAdapter('door', door.door_id, door, doorSession(door))
     }
   } else if (activeRef?.kind === 'stair') {
     const stair = layout.stairs.find((s) => s.stair_id === activeRef.id)
     if (stair) {
       activeInspectable = { kind: 'stair', stair, session: stairSession(stair) }
-      activeControls = {
-        onToggleLocked: () => toggleStairLocked(stair),
-        onDisarmTrap: stair.trapped ? () => disarmStairTrap(stair) : undefined,
-      }
+      activeAdapter = dmViewFixtureAdapter('stair', stair.stair_id, stair, stairSession(stair))
     }
   } else if (activeRef?.kind === 'room') {
     const room = layout.rooms.find((r) => r.room_id === activeRef.id)
@@ -513,15 +533,13 @@ export function MapLabPage() {
     const prop = layout.props.find((p) => p.prop_id === activeRef.id)
     if (prop) {
       activeInspectable = { kind: 'prop', prop, session: propSession(prop) }
+      activeAdapter = dmViewFixtureAdapter('prop', prop.prop_id, prop, propSession(prop))
     }
   } else if (activeRef?.kind === 'portal') {
     const portal = layout.portals.find((p) => p.portal_id === activeRef.id)
     if (portal) {
       activeInspectable = { kind: 'portal', portal, session: portalSession(portal) }
-      activeControls = {
-        onToggleLocked: () => togglePortalLocked(portal),
-        onDisarmTrap: portal.trapped ? () => disarmPortalTrap(portal) : undefined,
-      }
+      activeAdapter = dmViewFixtureAdapter('portal', portal.portal_id, portal, portalSession(portal))
     }
   }
 
@@ -964,7 +982,7 @@ export function MapLabPage() {
             {activeInspectable ? (
               <InspectorPanel
                 target={activeInspectable}
-                controls={activeControls}
+                adapter={activeAdapter}
                 context={
                   activeInspectable.kind === 'portal' && activeInspectable.portal.to?.dungeon_id !== undefined
                     ? { dungeonTitle: otherDungeonTitles[activeInspectable.portal.to.dungeon_id] }

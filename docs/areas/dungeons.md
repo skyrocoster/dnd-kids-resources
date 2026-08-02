@@ -49,6 +49,11 @@ The session view is the surface that is open while a game is running: it must st
 
 - Map Lab session overrides are sparse runtime leaves for doors, stairs, props, and portals; absent leaves fall back to authored state, explicit `false` remains meaningful, and layout saves prune stale overrides.
 
+- The Map Lab inspector is one shared obstacle panel mounted in both session view and editor. Its DM View
+  adapter writes effective obstacle leaves immediately and rolls failed writes back; its DM Edit adapter
+  edits authored leaves through layout autosave. The panel owns independent Armed/Shown controls and DC
+  display, while the adapters own persistence and reset policy.
+
 - Room-entry prose concealment was deliberately removed from map disclosure because no current player surface renders it; a future Fog plan may define that capability explicitly.
 
 - Dungeons, map layouts, and map session state **are** seed-backed and **must** be exported before a

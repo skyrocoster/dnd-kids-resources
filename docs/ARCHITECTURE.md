@@ -76,7 +76,7 @@ features/dungeons/
     ├── useMapLabEditor.ts       # editor hook (dual-save)
     ├── RoomDetailsPanel.tsx     # viewer room-reading sidebar
     ├── RoomContentEditor.tsx    # editor content inspector
-    ├── InspectorPanel.tsx       # fixture inspector (viewer)
+    ├── InspectorPanel.tsx       # shared fixture inspector with DM View/Edit adapters
     ├── ViewerRoomRail.tsx       # floor-grouped room navigation
     ├── MapCanvas.tsx            # SVG canvas renderer
     └── ... (markers, badges, CSS, tests)

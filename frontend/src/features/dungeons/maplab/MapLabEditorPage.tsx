@@ -34,7 +34,7 @@ import {
   ZoomInIcon,
   ZoomOutIcon,
 } from '../../../components/icons'
-import { InspectorPanel } from './InspectorPanel'
+import { InspectorPanel, type ObstacleInspectorAdapter } from './InspectorPanel'
 import { resolveMapDensity, ToolbarTray, useMapDensity, useMapLayerVisibility } from './MapLabPage'
 import { FixturePropertiesForm } from './FixturePropertiesForm'
 import { PropMarker } from './PropMarker'
@@ -69,6 +69,8 @@ import {
   stairCellForZ,
   stairEndpointsForZ,
   type CardinalSide,
+  defaultFixtureState,
+  type FixtureState,
   type MapCell,
   type MapLayout,
   type MapPortal,
@@ -168,6 +170,73 @@ function syncStatusLabel(status: 'idle' | 'saving' | 'saved' | 'error'): string 
 
 function cellKey(cell: MapCell): string {
   return `${cell[0]},${cell[1]}`
+}
+
+/** Authored FixtureState for a fixture — the DM Edit adapter's read side. Fixtures saved before
+ * the nested state contract land without a `state` record, so a missing record falls back to the
+ * authored defaults. */
+function authoredFixtureState(fixture: { state?: FixtureState }): FixtureState {
+  return fixture.state ?? defaultFixtureState()
+}
+
+type ObstacleKey = 'concealment' | 'lock' | 'trap'
+
+/** Rebuild a fixture's authored FixtureState with one obstacle leaf overridden. The
+ * `updateFixtureFlags` reducer merges top-level flags shallowly, so the full nested `state`
+ * record is rebuilt here before dispatch rather than relying on a deep merge. */
+function withObstacleLeaf(
+  fixture: { state?: FixtureState },
+  obstacle: ObstacleKey,
+  leaf: { armed?: boolean; shown?: boolean },
+): FixtureState {
+  const state = authoredFixtureState(fixture)
+  if (obstacle === 'concealment') {
+    return {
+      ...state,
+      obstacles: { ...state.obstacles, concealment: { armed: leaf.armed ?? state.obstacles.concealment.armed } },
+    }
+  }
+  if (obstacle === 'lock') {
+    return {
+      ...state,
+      obstacles: {
+        ...state.obstacles,
+        lock: { armed: leaf.armed ?? state.obstacles.lock.armed, shown: leaf.shown ?? state.obstacles.lock.shown },
+      },
+    }
+  }
+  return {
+    ...state,
+    obstacles: {
+      ...state.obstacles,
+      trap: { armed: leaf.armed ?? state.obstacles.trap.armed, shown: leaf.shown ?? state.obstacles.trap.shown },
+    },
+  }
+}
+
+/** DM Edit's authored-state read/write adapter for the shared obstacle inspector. Every write
+ * flows through the existing debounced layout-autosave reducer path (`updateFixtureFlags`), so
+ * Open/Armed/Shown edits persist exactly like the descriptive title/note/loot edits. No
+ * `onReset` — DM Edit has no session layer to reset. */
+function authoredInspectorAdapter(
+  fixture: { state?: FixtureState },
+  fixtureType: 'door' | 'stair' | 'prop' | 'portal',
+  fixtureId: number,
+  updateFixtureFlags: (
+    fixtureId: number,
+    fixtureType: 'door' | 'stair' | 'prop' | 'portal',
+    flags: Record<string, unknown>,
+  ) => void,
+): ObstacleInspectorAdapter {
+  return {
+    heading: 'Authored',
+    onToggleOpen: (open) =>
+      updateFixtureFlags(fixtureId, fixtureType, { state: { ...authoredFixtureState(fixture), open } }),
+    onToggleArmed: (obstacle, armed) =>
+      updateFixtureFlags(fixtureId, fixtureType, { state: withObstacleLeaf(fixture, obstacle, { armed }) }),
+    onToggleShown: (obstacle, shown) =>
+      updateFixtureFlags(fixtureId, fixtureType, { state: withObstacleLeaf(fixture, obstacle, { shown }) }),
+  }
 }
 
 export function MapLabEditorPage() {
@@ -1986,7 +2055,10 @@ export function MapLabEditorPage() {
             </>
           ) : selectedDoor ? (
             <>
-              <InspectorPanel target={{ kind: 'door', door: selectedDoor }} />
+              <InspectorPanel
+                target={{ kind: 'door', door: selectedDoor }}
+                adapter={authoredInspectorAdapter(selectedDoor, 'door', selectedDoor.door_id, updateFixtureFlags)}
+              />
               <FixturePropertiesForm
                 spec={FIXTURE_TYPES.door}
                 values={selectedDoor as unknown as Record<string, unknown>}
@@ -2008,7 +2080,10 @@ export function MapLabEditorPage() {
             </>
           ) : selectedProp ? (
             <>
-              <InspectorPanel target={{ kind: 'prop', prop: selectedProp }} />
+              <InspectorPanel
+                target={{ kind: 'prop', prop: selectedProp }}
+                adapter={authoredInspectorAdapter(selectedProp, 'prop', selectedProp.prop_id, updateFixtureFlags)}
+              />
               <FixturePropertiesForm
                 spec={FIXTURE_TYPES.prop}
                 values={{ ...selectedProp, side: selectedProp.side ?? 'Off' } as unknown as Record<string, unknown>}
@@ -2021,7 +2096,10 @@ export function MapLabEditorPage() {
             </>
           ) : selectedStair ? (
             <>
-              <InspectorPanel target={{ kind: 'stair', stair: selectedStair }} />
+              <InspectorPanel
+                target={{ kind: 'stair', stair: selectedStair }}
+                adapter={authoredInspectorAdapter(selectedStair, 'stair', selectedStair.stair_id, updateFixtureFlags)}
+              />
               <div className="maplab-field-row maplab-stair-direction-row">
                 <label htmlFor="maplab-stair-direction-up">
                   {stairUpFloor !== null ? `Stairs up to floor ${stairUpFloor}` : 'Stairs up (no floor above)'}
@@ -2060,7 +2138,10 @@ export function MapLabEditorPage() {
             </>
           ) : selectedPortal ? (
             <>
-              <InspectorPanel target={{ kind: 'portal', portal: selectedPortal }} />
+              <InspectorPanel
+                target={{ kind: 'portal', portal: selectedPortal }}
+                adapter={authoredInspectorAdapter(selectedPortal, 'portal', selectedPortal.portal_id, updateFixtureFlags)}
+              />
               <FixturePropertiesForm
                 spec={FIXTURE_TYPES.portal}
                 values={selectedPortal as unknown as Record<string, unknown>}

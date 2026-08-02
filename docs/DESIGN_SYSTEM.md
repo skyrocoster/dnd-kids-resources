@@ -328,10 +328,12 @@ behavior because its resolved output delegates to `DiceText`.
 Generic hover/focus details panel in Map Lab:
 - Driven by `inspectableDescriptor(target)` which resolves any map fixture (room, door, stair, portal, prop, feature)
   to a uniform `{title, typeLabel, icon, token, lines, chips}` shape
-- **Panels** — icon+text chips for passage state, detail lines, grouped `World now` session controls, and
-  `Players know` disclosure toggles; disclosure actions save immediately and report local failures with a status
-  message while retaining the last confirmed value
-- **Session layer** — `effectivePassageState` computed from authored flags + runtime toggles
+- **Obstacle panel** — one shared labelled-checkbox panel renders Open, Concealment, Lock, and Trap with
+  independent Armed/Shown controls, authored/effective adapters, obstacle DC rows, and local action failures.
+  DM View supplies immediate sparse session writes, rollback, and fixture reset; DM Edit supplies authored
+  reducer updates through layout autosave.
+- **Session layer** — `effectiveFixtureState` resolves authored baselines with sparse runtime leaves; no
+  player-knowledge controls or source badges are rendered in the inspector.
 
 ### Map Lab markers (`maplab/`)
 

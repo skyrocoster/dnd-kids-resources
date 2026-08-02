@@ -16,13 +16,40 @@ interface FixturePropertiesFormProps {
   currentDungeonId?: number
 }
 
+/** Non-blocking warning copy for armed obstacles that are missing an authored DC — a DM may arm
+ * an obstacle before its DCs are set ("arming without complete DCs is allowed but warns"), so the
+ * form surfaces exactly which expected DCs are still unset rather than blocking the edit. */
+function incompleteDcWarnings(values: Record<string, unknown>): string[] {
+  const warnings: string[] = []
+  if (values.locked === true) {
+    if (values.breakDc === undefined) warnings.push('Locked: Break DC not set')
+    if (values.pickDc === undefined) warnings.push('Locked: Pick Lock DC not set')
+  }
+  if (values.hidden === true) {
+    if (values.hiddenDc === undefined) warnings.push('Hidden: Perception DC not set')
+    if (values.searchDc === undefined) warnings.push('Hidden: Search DC not set')
+  }
+  if (values.trapped === true && values.searchDc === undefined) {
+    warnings.push('Trapped: Search DC not set')
+  }
+  return warnings
+}
+
 /** Renders any `FieldSpec[]` generically — boolean fields as toggles, number/text as inputs,
  * honoring each field's `showWhen` gate. Doors are the only registered fixture type today; a
  * future `window`/`chest` entry in `FIXTURE_TYPES` renders through this same component with no
  * form rewrite, per the Phase D registry seam. */
 export function FixturePropertiesForm({ spec, values, onChange, layout, currentDungeonId }: FixturePropertiesFormProps) {
+  const dcWarnings = useMemo(() => incompleteDcWarnings(values), [values])
   return (
     <div className="maplab-fixture-form">
+      {dcWarnings.length > 0 && (
+        <div className="maplab-fixture-dc-warning">
+          {dcWarnings.map((warning) => (
+            <p key={warning}>{warning}</p>
+          ))}
+        </div>
+      )}
       {spec.fields
         .filter((field) => !field.showWhen || field.showWhen(values))
         .map((field) => (

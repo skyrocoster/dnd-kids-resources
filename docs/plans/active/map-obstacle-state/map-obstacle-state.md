@@ -1,6 +1,6 @@
 # Map Obstacle State - authored baselines and one persisted run overlay
 
-> **Status:** Stage 3 shipped — knowledge/prose/DM-preview paths are removed and the remaining player/Map Lab consumers use the obstacle-state model. Stage 4 (shared DM inspector) is next; the final legacy-contract removal (`PassageFlags`/`PassageSessionState` drop) remains queued.
+> **Status:** Stage 4 shipped — DM View and DM Edit now share the obstacle inspector with contextual adapters, immediate sparse session writes, authored autosave, rollback, reset, and DC warnings. Stage 5 (shared badge primitive and audience-specific active-state policies) is next; the final legacy-contract removal (`PassageFlags`/`PassageSessionState` drop) remains queued.
 
 - **Areas:** dungeons
 - **Read trigger:** Map fixture concealment, locks, traps, DCs, shown state, session overrides, player-map obstacle badges, the Map Lab inspector, or removal of map knowledge and player preview
@@ -246,6 +246,7 @@ than replacing them with summaries or fresh design decisions.
 | 1 | Nested `FixtureState`/`SessionFixtureState`/`MapSessionState` contract, serialization, and per-leaf `effectiveFixtureState` resolver in `maplabModel.ts`. One-time migration utility (`scripts/migrate_map_obstacle_state.py`) converts every stored fixture to nested defaults, clears session/knowledge rows. Session actions extracted to `mapLabSessionActions.ts` with four-kind `SessionMap` readers, toggles, and disarm functions. All fixture markers (`DoorMarker`, `StairMarker`, `PortalMarker`, `PropMarker`) read nested state via `fixtureDoorPresentation`/`fixtureStairPresentation`/`fixturePresentation`/`fixtureMarkerBadges`. Dotted-key editor interaction, `InspectorPanel` wiring, player curtain (`curtain.ts`/`usePlayerMapData.ts`) resolving four-kind session maps, `fixtureInspectableDescriptor`, and fixture-type `state` fields attached to all `MapDoor`/`MapStair`/`MapProp`/`MapPortal` interfaces. |
 | 2 | Session-state writes now normalize to sparse four-kind runtime leaves, preserve explicit false and `partyRoomId`, and delete empty rows; layout saves prune deleted, moved, or re-authored fixture overrides while preserving descriptive edits. Per-kind monotonic layout counters survive legacy normalization, save/export/import, and deletion; focused regression coverage also restores old-layout loading and the shared Map Lab editor test fixture. |
 | 3 | Removed the obsolete knowledge API/table/schema/seed paths, prose concealment fields and graph helpers, and the DM-side player preview. Player curtain, Map Lab controls, migration cleanup, and focused tests now use the remaining obstacle-state contract; stale knowledge test setup was removed as part of the consumer cleanup. |
+| 4 | Replaced the legacy Map Lab command controls with one shared labelled-checkbox obstacle inspector used by DM View and DM Edit. DM View now persists sparse four-kind session leaves with rollback and fixture reset, while DM Edit autosaves authored obstacle/DC changes and warns about incomplete armed DCs. |
 
 ## Touches
 

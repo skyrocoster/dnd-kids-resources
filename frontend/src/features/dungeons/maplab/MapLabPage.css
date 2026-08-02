@@ -292,6 +292,88 @@
   color: var(--md-on-surface);
 }
 
+/* Shared obstacle-state inspector (map-obstacle-state stage 4) — one canonical labelled-checkbox
+ * grammar for DM View and DM Edit. `overflow-y: auto` is the safety floor from the handoff (§3.8):
+ * the fixed-height inspector still carries variable notes and asynchronous loot summaries, so it
+ * scrolls rather than growing past its container. */
+.maplab-inspector-panel {
+  overflow-y: auto;
+  max-height: 100%;
+}
+
+.maplab-inspector-state {
+  display: grid;
+  gap: 0.375rem;
+  margin-top: 0.75rem;
+}
+
+.maplab-inspector-subheading {
+  margin: 0;
+  font-size: var(--type-caption-size);
+  font-weight: var(--type-caption-weight);
+  letter-spacing: var(--type-caption-tracking);
+  text-transform: uppercase;
+  color: var(--md-on-surface-variant);
+}
+
+.maplab-inspector-open-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: var(--type-body-sm-size);
+}
+
+.maplab-inspector-obstacle-grid {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 0.375rem 0.75rem;
+  font-size: var(--type-body-sm-size);
+}
+
+.maplab-inspector-column-header {
+  font-size: var(--type-caption-size);
+  color: var(--md-on-surface-variant);
+}
+
+.maplab-inspector-obstacle-name {
+  color: var(--md-on-surface);
+}
+
+.maplab-inspector-shown-dash {
+  color: var(--md-on-surface-variant);
+}
+
+.maplab-inspector-dc-lines {
+  display: grid;
+  gap: 0.125rem;
+}
+
+.maplab-inspector-obstacle-dc {
+  margin: 0;
+  padding-left: 1.25rem;
+  font-size: var(--type-caption-size);
+  color: var(--md-on-surface-variant);
+}
+
+.maplab-inspector-write-error {
+  margin: 0.5rem 0 0;
+  padding: 0.375rem 0.5rem;
+  border-radius: var(--radius-sm);
+  background: var(--md-error-container);
+  color: var(--md-on-error-container);
+  font-size: var(--type-body-sm-size);
+}
+
+.maplab-inspector-reset-button {
+  margin-top: 0.75rem;
+}
+
+.maplab-inspector-reset-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .maplab-unknown-space {
   pointer-events: none;
 }
@@ -600,20 +682,6 @@
 
 .maplab-loot-entries svg {
   color: var(--md-loot);
-}
-
-.maplab-inspector-controls {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-top: 0.75rem;
-}
-
-/* `.maplab-session-control-button`/`.maplab-session-reset-button`'s base pill look comes from the
- * shared `.maplab-pill-button`; these classes only carry the disabled-state override. */
-.maplab-session-control-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 
 /* `.maplab-canvas-wrapper`, `.maplab-canvas-viewport` and `.maplab-svg` are owned by the shared

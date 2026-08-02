@@ -272,10 +272,7 @@ describe('MapLabPage (M2.3 walls + door/stair affordances)', () => {
 
     await user.click(door)
     expect(screen.getByText('Locked')).toBeInTheDocument() // state chip, not the old dl row
-    expect(screen.getByText('Break DC')).toBeInTheDocument()
-    expect(screen.getByText('23')).toBeInTheDocument()
-    expect(screen.getByText('Pick DC')).toBeInTheDocument()
-    expect(screen.getByText('18')).toBeInTheDocument()
+    expect(screen.getByText('Break 23 · Pick 18')).toBeInTheDocument()
   })
 
   it('reveals door details on keyboard focus too (not click-only)', async () => {
@@ -390,7 +387,7 @@ describe('MapLabPage (Stage 2 — Passage visuals)', () => {
     // Doors start closed (defaultPassageSession isOpen: false), and a closed leaf is deliberately
     // wall-like — it reads as "sealed". The open state is the one that must not look like a wall.
     await user.click(door)
-    await user.click(screen.getByRole('button', { name: 'Open door' }))
+    await user.click(screen.getByRole('checkbox', { name: 'Open' }))
 
     // A leaf (hinge -> tip) and a swing arc (tip -> far jamb) — no full-span `<line>` across the
     // gap, which is what previously made a door indistinguishable in shape from a plain wall.
@@ -537,11 +534,11 @@ describe('MapLabPage (Stage 4 — Passage session state)', () => {
     expect(door.querySelector('.maplab-door-leaf-closed')).toBeInTheDocument()
     expect(door.querySelector('.maplab-door-leaf')).not.toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'Open door' }))
+    await user.click(screen.getByRole('checkbox', { name: 'Open' }))
     expect(door.querySelector('.maplab-door-leaf')).toBeInTheDocument()
     expect(door.querySelector('.maplab-door-leaf-closed')).not.toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'Close door' }))
+    await user.click(screen.getByRole('checkbox', { name: 'Open' }))
     expect(door.querySelector('.maplab-door-leaf-closed')).toBeInTheDocument()
     expect(door.querySelector('.maplab-door-leaf')).not.toBeInTheDocument()
   })
@@ -556,11 +553,11 @@ describe('MapLabPage (Stage 4 — Passage session state)', () => {
     // Authored locked + trapped — trapped takes display precedence.
     expect(door).toHaveAttribute('data-state', 'trapped')
 
-    await user.click(screen.getByRole('button', { name: 'Disarm trap' }))
+    await user.click(screen.getByRole('checkbox', { name: 'Trap armed' }))
     // Trap disarmed but still locked — the two flags are independent.
     expect(door).toHaveAttribute('data-state', 'locked')
 
-    await user.click(screen.getByRole('button', { name: 'Unlock' }))
+    await user.click(screen.getByRole('checkbox', { name: 'Lock armed' }))
     expect(door).toHaveAttribute('data-state', 'plain')
   })
 
@@ -575,7 +572,7 @@ describe('MapLabPage (Stage 4 — Passage session state)', () => {
     expect(document.querySelector('.maplab-door-badge-layer [data-badge="trap-disarmed"]')).not.toBeInTheDocument()
     expect(document.querySelector('.maplab-door-badge-layer [data-badge="multiple-statuses"]')).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'Disarm trap' }))
+    await user.click(screen.getByRole('checkbox', { name: 'Trap armed' }))
     expect(door).toHaveAttribute('data-state', 'locked')
     // Only one active badge (locked) remains — no multiple-statuses or trap-disarmed badges
     expect(document.querySelector('.maplab-door-badge-layer [data-badge="multiple-statuses"]')).not.toBeInTheDocument()
@@ -589,8 +586,8 @@ describe('MapLabPage (Stage 4 — Passage session state)', () => {
     const door = screen.getByRole('button', { name: /Rusty Trap Door/ })
     await user.click(door)
 
-    await user.click(screen.getByRole('button', { name: 'Open door' }))
-    await user.click(screen.getByRole('button', { name: 'Disarm trap' }))
+    await user.click(screen.getByRole('checkbox', { name: 'Open' }))
+    await user.click(screen.getByRole('checkbox', { name: 'Trap armed' }))
     expect(door).toHaveAttribute('data-state', 'locked')
     expect(door.querySelector('.maplab-door-leaf')).toBeInTheDocument()
 
@@ -634,16 +631,16 @@ describe('MapLabPage (Stage 4 — Passage session state)', () => {
     expect(door.querySelector('.maplab-door-leaf-closed')).toBeInTheDocument()
 
     // Open the door
-    await user.click(screen.getByRole('button', { name: 'Open door' }))
+    await user.click(screen.getByRole('checkbox', { name: 'Open' }))
     expect(door.querySelector('.maplab-door-leaf')).toBeInTheDocument()
 
     // Disarm trap — leaf stays open (sibling leaf preserved)
-    await user.click(screen.getByRole('button', { name: 'Disarm trap' }))
+    await user.click(screen.getByRole('checkbox', { name: 'Trap armed' }))
     expect(door).toHaveAttribute('data-state', 'locked')
     expect(door.querySelector('.maplab-door-leaf')).toBeInTheDocument()
 
     // Unlock — leaf stays open
-    await user.click(screen.getByRole('button', { name: 'Unlock' }))
+    await user.click(screen.getByRole('checkbox', { name: 'Lock armed' }))
     expect(door.querySelector('.maplab-door-leaf')).toBeInTheDocument()
 
     // === Prop: session override reaches marker ===
@@ -668,8 +665,8 @@ describe('MapLabPage (Stage 03 — viewer status chip action failures)', () => {
     // so after pinning it, the inspector shows "Open door".
     const door = screen.getByRole('button', { name: /Rusty Trap Door/ })
     await user.click(door)
-    await user.click(screen.getByRole('button', { name: 'Open door' }))
-    await user.click(screen.getByRole('button', { name: 'Close door' }))
+    await user.click(screen.getByRole('checkbox', { name: 'Open' }))
+    await user.click(screen.getByRole('checkbox', { name: 'Open' }))
 
     const chip = await screen.findByText("Couldn't save session changes. Try again.")
     expect(chip).toBeInTheDocument()
@@ -718,16 +715,16 @@ describe('MapLabPage (Stage 03 — viewer status chip action failures)', () => {
 
     const door = screen.getByRole('button', { name: /Rusty Trap Door/ })
     await user.click(door)
-    await user.click(screen.getByRole('button', { name: 'Open door' }))
+    await user.click(screen.getByRole('checkbox', { name: 'Open' }))
     saveSpy.mockRejectedValue(new Error('network'))
-    await user.click(screen.getByRole('button', { name: 'Close door' }))
+    await user.click(screen.getByRole('checkbox', { name: 'Open' }))
 
     expect(await screen.findByText("Couldn't save session changes. Try again.")).toBeInTheDocument()
 
     // Switch mock to resolve before the next toggle so it succeeds.
     saveSpy.mockResolvedValue(undefined as unknown as { data: Record<string, unknown> })
     // Next toggle (succeeds) — clearViewerStatus removes the stale error
-    await user.click(screen.getByRole('button', { name: 'Open door' }))
+    await user.click(screen.getByRole('checkbox', { name: 'Open' }))
     await flush()
 
     expect(screen.queryByText("Couldn't save session changes. Try again.")).not.toBeInTheDocument()
@@ -748,7 +745,7 @@ describe('MapLabPage (Stage 03 — viewer status chip action failures)', () => {
     // Toggle a door — clears the stale at-table error
     const door = screen.getByRole('button', { name: /Rusty Trap Door/ })
     await user.click(door)
-    await user.click(screen.getByRole('button', { name: 'Open door' }))
+    await user.click(screen.getByRole('checkbox', { name: 'Open' }))
     await flush()
 
     expect(screen.queryByText("Couldn't put this map at the table. Try again.")).not.toBeInTheDocument()
@@ -861,8 +858,7 @@ describe('MapLabPage (Stage F2 — Prop rendering)', () => {
 
     await user.click(chest)
     expect(screen.getByText('Prop')).toBeInTheDocument()
-    expect(screen.getByText('Pick DC')).toBeInTheDocument()
-    expect(screen.getByText('16')).toBeInTheDocument()
+    expect(screen.getByText('Break: DC not set · Pick 16')).toBeInTheDocument()
   })
 
   it('renders an on-wall prop anchored at the wall midpoint, smaller than an on-square prop', async () => {
