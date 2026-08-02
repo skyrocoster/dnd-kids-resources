@@ -1,10 +1,9 @@
 """Post-edit re-read guard for the opencode work-order executor.
 
-The telemetry log measured one waste class that survived every order-side correction:
-an executor re-reading a file it had just edited, to verify an edit the tool already
-confirmed. Orders 05 and 07 of the Map Lab editor stage paid 2 and 3 of these; no
-wording in an order or a skill prevented them, because the behaviour is a reflex
-rather than a decision.
+One waste class survived every order-side correction: an executor re-reading a file it
+had just edited, to verify an edit the tool already confirmed. Orders 05 and 07 of the
+Map Lab editor stage paid 2 and 3 of these; no wording in an order or a skill prevented
+them, because the behaviour is a reflex rather than a decision.
 
 So it moves out of the prose and into the harness. This script is the single
 implementation of the rule. opencode calls it from `.opencode/plugin/read-guard.js`,
@@ -24,7 +23,7 @@ Three things unlock a file, because a re-read is legitimate when the edit is in 
 * `READ_GUARD=off` in the environment, which disables the guard entirely.
 
 Failure detection is deliberately generous. A false unlock costs one re-read; a false
-deny costs a stalled order, which the log values far higher.
+deny stalls the order, which costs far more.
 
 CLI
 ---
@@ -73,8 +72,8 @@ COMMAND_KEYS = ("command", "cmd", "script")
 
 DENY_MESSAGE = (
     "read_guard: {path} was edited by this session and the edit succeeded. "
-    "Re-reading it to confirm the edit is the one waste class the telemetry log "
-    "could not remove with wording, so it is blocked here.\n"
+    "Re-reading it to confirm the edit is the one waste class wording could not "
+    "remove, so it is blocked here.\n"
     "If you genuinely need it back: run the order's STOP WHEN command first — a "
     "failing check unlocks every file automatically. To override deliberately, run "
     '`python scripts/read_guard.py --unlock {path} --reason "<why>"`, which is logged.'

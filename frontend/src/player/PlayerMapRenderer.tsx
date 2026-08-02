@@ -19,7 +19,10 @@ export function PlayerMapRenderer({ layout, openDoorIds, partyRoomId }: {
 }) {
   const ml = layout as unknown as MapLayout
   const bounds = paddedBounds(ml)
-  const floors = floorsInLayout(ml)
+  // Memoized: `floors` feeds the `partyRoomInfo` useMemo, whose identity gates the party-fit
+  // effect. A fresh array every render would churn `partyRoomInfo` on each render and re-run that
+  // effect forever (setState -> render -> new floors -> ...), hanging any test with a partyRoomId.
+  const floors = useMemo(() => floorsInLayout(ml), [ml])
   const [selectedZ, setSelectedZ] = useState<number>(
     floors.length > 0 ? floors[0].z : 0,
   )

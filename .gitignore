@@ -59,9 +59,8 @@ data/seeds/archive/
 !/data/generated/export_schema.json
 
 
-# Dispatch-time work-order snapshots. Transient by design: written by
-# `order_telemetry.py --snapshot`, consumed when the order reports back, and cleared at
-# cycle close. The durable record is docs/plans/telemetry.jsonl.
+# Read-guard session state, written by `scripts/read_guard.py` through
+# `.opencode/plugin/read-guard.js`. Transient by design; regenerated each run.
 .telemetry/
 
 # Claude Code's machine-local directory: settings, vendored skill links, and

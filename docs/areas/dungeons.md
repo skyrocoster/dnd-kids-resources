@@ -47,6 +47,8 @@ The session view is the surface that is open while a game is running: it must st
 
 ## Invariants
 
+- Map Lab session overrides are sparse runtime leaves for doors, stairs, props, and portals; absent leaves fall back to authored state, explicit `false` remains meaningful, and layout saves prune stale overrides.
+
 - Dungeons, map layouts, and map session state **are** seed-backed and **must** be exported before a
   rebuild. `scripts/init_database.py` drops all three, so authored dungeon content that has not been
   written to `data/seeds/` is lost. Freeze it with `scripts/export_db_seeds.py`, which now covers

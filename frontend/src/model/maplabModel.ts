@@ -131,6 +131,13 @@ export interface MapFeature {
 export interface MapLayoutMeta {
   cellSizeFt: number
   padding: { top: number; right: number; bottom: number; left: number }
+  /** Monotonic per-kind ID counters — the next id to allocate for that kind. Persisted in the
+   * layout blob so deleted ids are never reused, across saves and imports. Optional for backfill
+   * of layouts saved before these counters existed. */
+  nextDoorId?: number
+  nextPropId?: number
+  nextStairId?: number
+  nextPortalId?: number
 }
 
 /** Layout = complete coordinate model for a map */
@@ -147,7 +154,14 @@ export interface MapLayout {
 
 export function createEmptyMapLayout(floorTitle: string = 'Starting Floor'): MapLayout {
   return {
-    meta: { cellSizeFt: 5, padding: { top: 3, right: 3, bottom: 3, left: 3 } },
+    meta: {
+      cellSizeFt: 5,
+      padding: { top: 3, right: 3, bottom: 3, left: 3 },
+      nextDoorId: 1,
+      nextPropId: 1,
+      nextStairId: 1,
+      nextPortalId: 1,
+    },
     rooms: [],
     doors: [],
     stairs: [],
@@ -840,24 +854,32 @@ export function nextRoomId(layout: MapLayout): number {
   return Math.max(0, ...layout.rooms.map((r) => r.room_id)) + 1
 }
 
-/** Next free door id — one past the current maximum (1 for an empty layout). */
+/** Next free door id — one past the current maximum (1 for an empty layout), but never below the
+ * persisted nextDoorId counter, so ids freed by deletion are not reused. */
 export function nextDoorId(layout: MapLayout): number {
-  return Math.max(0, ...layout.doors.map((d) => d.door_id)) + 1
+  const maxPlusOne = Math.max(0, ...layout.doors.map((d) => d.door_id)) + 1
+  return Math.max(maxPlusOne, layout.meta.nextDoorId ?? maxPlusOne)
 }
 
-/** Next free prop id — one past the current maximum (1 for an empty layout). */
+/** Next free prop id — one past the current maximum (1 for an empty layout), but never below the
+ * persisted nextPropId counter, so ids freed by deletion are not reused. */
 export function nextPropId(layout: MapLayout): number {
-  return Math.max(0, ...layout.props.map((p) => p.prop_id)) + 1
+  const maxPlusOne = Math.max(0, ...layout.props.map((p) => p.prop_id)) + 1
+  return Math.max(maxPlusOne, layout.meta.nextPropId ?? maxPlusOne)
 }
 
-/** Next free stair id — one past the current maximum (1 for an empty layout). */
+/** Next free stair id — one past the current maximum (1 for an empty layout), but never below the
+ * persisted nextStairId counter, so ids freed by deletion are not reused. */
 export function nextStairId(layout: MapLayout): number {
-  return Math.max(0, ...layout.stairs.map((s) => s.stair_id)) + 1
+  const maxPlusOne = Math.max(0, ...layout.stairs.map((s) => s.stair_id)) + 1
+  return Math.max(maxPlusOne, layout.meta.nextStairId ?? maxPlusOne)
 }
 
-/** Next free portal id — one past the current maximum (1 for an empty layout). */
+/** Next free portal id — one past the current maximum (1 for an empty layout), but never below the
+ * persisted nextPortalId counter, so ids freed by deletion are not reused. */
 export function nextPortalId(layout: MapLayout): number {
-  return Math.max(0, ...layout.portals.map((p) => p.portal_id)) + 1
+  const maxPlusOne = Math.max(0, ...layout.portals.map((p) => p.portal_id)) + 1
+  return Math.max(maxPlusOne, layout.meta.nextPortalId ?? maxPlusOne)
 }
 
 /** Next free feature id — one past the current maximum (1 for an empty layout). */
@@ -877,10 +899,15 @@ export function normalizeLayout(layout: MapLayout): MapLayout {
   const portals = layout.portals ?? []
   const features = layout.features ?? []
   const inferZ = (cell: MapCell): number | undefined => roomOfCell(cell, layout.rooms)?.z
-  const meta =
-    typeof layout.meta.padding === 'number'
+  const meta = {
+    ...(typeof layout.meta.padding === 'number'
       ? { ...layout.meta, padding: { top: layout.meta.padding, right: layout.meta.padding, bottom: layout.meta.padding, left: layout.meta.padding } }
-      : layout.meta
+      : layout.meta),
+    nextDoorId: layout.meta.nextDoorId ?? Math.max(0, ...(layout.doors ?? []).map((d) => d.door_id)) + 1,
+    nextPropId: layout.meta.nextPropId ?? Math.max(0, ...props.map((p) => p.prop_id)) + 1,
+    nextStairId: layout.meta.nextStairId ?? Math.max(0, ...(layout.stairs ?? []).map((s) => s.stair_id)) + 1,
+    nextPortalId: layout.meta.nextPortalId ?? Math.max(0, ...portals.map((p) => p.portal_id)) + 1,
+  }
   return {
     ...layout,
     meta,

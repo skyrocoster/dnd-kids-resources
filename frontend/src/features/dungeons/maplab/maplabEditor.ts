@@ -257,7 +257,11 @@ function reduceEditor(state: EditorState, action: EditorAction): EditorState {
       }
       return {
         ...state,
-        layout: { ...state.layout, doors: [...state.layout.doors, newDoor] },
+        layout: {
+          ...state.layout,
+          doors: [...state.layout.doors, newDoor],
+          meta: { ...state.layout.meta, nextDoorId: door_id + 1 },
+        },
         selectedDoorId: door_id,
         selectedRoomId: null,
         selectedPropId: null,
@@ -361,8 +365,9 @@ function reduceEditor(state: EditorState, action: EditorAction): EditorState {
             })
           } else {
             // No existing pair (e.g. a freshly created portal) — auto-create one at the target.
+            const portal_id = nextPortalId(state.layout)
             const newPortal: MapPortal = {
-              portal_id: nextPortalId(state.layout),
+              portal_id,
               cell: target.cell,
               z: target.z,
               to: { z: updatedSource.z, cell: updatedSource.cell },
@@ -370,10 +375,17 @@ function reduceEditor(state: EditorState, action: EditorAction): EditorState {
               locked: false,
               trapped: false,
             }
-            portals = [
-              ...state.layout.portals.map((portal) => (portal.portal_id === source.portal_id ? updatedSource : portal)),
-              newPortal,
-            ]
+            return {
+              ...state,
+              layout: {
+                ...state.layout,
+                portals: [
+                  ...state.layout.portals.map((portal) => (portal.portal_id === source.portal_id ? updatedSource : portal)),
+                  newPortal,
+                ],
+                meta: { ...state.layout.meta, nextPortalId: portal_id + 1 },
+              },
+            }
           }
           return { ...state, layout: { ...state.layout, portals } }
         }
@@ -410,7 +422,11 @@ function reduceEditor(state: EditorState, action: EditorAction): EditorState {
       }
       return {
         ...state,
-        layout: { ...state.layout, props: [...state.layout.props, newProp] },
+        layout: {
+          ...state.layout,
+          props: [...state.layout.props, newProp],
+          meta: { ...state.layout.meta, nextPropId: prop_id + 1 },
+        },
         selectedPropId: prop_id,
         selectedRoomId: null,
         selectedDoorId: null,
@@ -466,7 +482,11 @@ function reduceEditor(state: EditorState, action: EditorAction): EditorState {
       }
       return {
         ...state,
-        layout: { ...state.layout, stairs: [...state.layout.stairs, newStair] },
+        layout: {
+          ...state.layout,
+          stairs: [...state.layout.stairs, newStair],
+          meta: { ...state.layout.meta, nextStairId: stair_id + 1 },
+        },
         selectedStairId: stair_id,
         selectedRoomId: null,
         selectedDoorId: null,
@@ -514,8 +534,9 @@ function reduceEditor(state: EditorState, action: EditorAction): EditorState {
 
       if (action.enabled) {
         if (existing) return state
+        const stair_id = nextStairId(state.layout)
         const newStair: MapStair = {
-          stair_id: nextStairId(state.layout),
+          stair_id,
           from: { z: action.z, cell: action.cell },
           to: { z: targetZ, cell: action.cell },
           hidden: false,
@@ -524,8 +545,12 @@ function reduceEditor(state: EditorState, action: EditorAction): EditorState {
         }
         return {
           ...state,
-          layout: { ...state.layout, stairs: [...state.layout.stairs, newStair] },
-          selectedStairId: newStair.stair_id,
+          layout: {
+            ...state.layout,
+            stairs: [...state.layout.stairs, newStair],
+            meta: { ...state.layout.meta, nextStairId: stair_id + 1 },
+          },
+          selectedStairId: stair_id,
         }
       }
 
@@ -555,7 +580,11 @@ function reduceEditor(state: EditorState, action: EditorAction): EditorState {
       }
       return {
         ...state,
-        layout: { ...state.layout, portals: [...state.layout.portals, newPortal] },
+        layout: {
+          ...state.layout,
+          portals: [...state.layout.portals, newPortal],
+          meta: { ...state.layout.meta, nextPortalId: portal_id + 1 },
+        },
         selectedPortalId: portal_id,
         selectedRoomId: null,
         selectedDoorId: null,

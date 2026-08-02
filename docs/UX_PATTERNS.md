@@ -85,7 +85,7 @@ Status: IN FORCE.
 
 ## Route shape
 
-The frontend uses three route shapes, named in [../CONTEXT.md](../CONTEXT.md):
+The frontend uses three route shapes:
 
 - **Browser** — a list beside a detail region, plus create and delete. Built on `BrowserLayout`
   (`PageHeader` + `SplitPane`), with `SearchList` on the left.

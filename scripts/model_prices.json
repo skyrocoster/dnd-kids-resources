@@ -1,4 +1,0 @@
-{
-  "_note": "USD per million tokens, used by scripts/order_telemetry.py to derive a cost only for records that do not report one. The opencode transport reports a cost on every assistant message, so no rates are kept here and a model with no entry is logged as 'not priced' rather than as zero. cache_read and cache_write default to 0.1x and 1.25x of input when omitted. Keys match on the longest matching prefix of the model id. Add a rate here rather than in the script, and only from an authoritative source — do not invent one.",
-  "models": {}
-}

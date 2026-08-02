@@ -70,8 +70,8 @@ order's schema and field rules live in [docs/PLAN_TEMPLATE.md](../../../docs/PLA
    is otherwise the largest single result in your context — and repeats on every fix attempt.
 
    `scripts/check_docs.py`, `scripts/check_orders.py`, `scripts/order_check.py`,
-   `scripts/stage_check.py`, `scripts/new_order.py`, and `scripts/order_telemetry.py` are
-   invoke-only tools — call them (e.g. `.venv\Scripts\python.exe scripts/check_docs.py --check`) and
+   `scripts/stage_check.py`, and `scripts/new_order.py` are invoke-only tools — call them
+   (e.g. `.venv\Scripts\python.exe scripts/check_docs.py --check`) and
    read their stdout/exit code. Do **not** open their source to see how they work; that's wasted
    context for a check that only needs its output.
 

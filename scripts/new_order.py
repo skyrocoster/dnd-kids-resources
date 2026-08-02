@@ -37,12 +37,27 @@ order that changes it look like it had an undeclared call site here.
 
 Pass `--stdout` to print the order instead of writing it. The caps live in
 `scripts/check_orders.py`, which is imported here so the two can never disagree.
+
+For PowerShell, prefer structured JSON over quoting compound `--start-in` prose:
+
+    @{ feature = "<feature>"; number = "11"; title = "Room label";
+       goal = "the party's room shows its name"; known = @("<verified fact>");
+       start_in = @("<Renderer>.tsx:<Symbol>", "<Renderer>.test.tsx");
+       do = @("Render the room name in <full path>");
+       tests = @("src/<area>/__tests__/<Renderer>.test.tsx"); stdout = $true }
+    | ConvertTo-Json -Depth 3
+    | .venv\\Scripts\\python.exe scripts/new_order.py --json -
+
+`--json -` reads the structured argument object from stdin; `--json <path>` reads
+the same object from a file. JSON keys use CLI names with underscores, such as
+`start_in` and `depends_on`. CLI arguments after `--json` override scalar values.
 """
 
 from __future__ import annotations
 
 import argparse
 import importlib.util
+import json
 import re
 import sys
 import tempfile
@@ -142,8 +157,8 @@ def build_start_in(spec: str) -> tuple[str, str]:
         if span is None:
             raise OrderRefused(
                 f"could not locate `{symbol}` in {path} ({lines} lines).\n"
-                "  Give the bound yourself instead: "
-                f'--start-in "{path} — lines 120-168 @\\"<first line verbatim>\\""'
+                "  Give the bound yourself instead, preferably through --json - in PowerShell. "
+                f'For a direct CLI call: --start-in \'{path} — lines 120-168 @"<first line verbatim>"\''
             )
         start, end, anchor = span
         tail = f" — {prose}" if prose else ""
@@ -158,13 +173,53 @@ def build_start_in(spec: str) -> tuple[str, str]:
         f"{co.SCOPE_REQUIRED_LINES} does).\n"
         f'  Name the symbol and this tool derives the range: --start-in "{path}:MySymbol"\n'
         "  An unbounded file this size is read whole — that is ~9.7k tokens for a one-line "
-        "change, and it is the single most repeated waste in the telemetry log."
+        "change, and it is the single most repeated waste."
     )
 
 
 def _split_spec(spec: str) -> tuple[str, str, str]:
     parts = SPEC_SPLIT_RE.split(spec.strip(), maxsplit=1)
     return (parts[0], "", parts[1] if len(parts) > 1 else "")
+
+
+def json_argv(raw_argv: list[str]) -> list[str]:
+    """Expand one JSON argument object into argv without shell-quoting compound values."""
+    if "--json" not in raw_argv:
+        return raw_argv
+    index = raw_argv.index("--json")
+    if index + 1 >= len(raw_argv):
+        raise OrderRefused("--json needs a file path or - for stdin")
+    source = raw_argv[index + 1]
+    try:
+        if source == "-":
+            payload = json.load(sys.stdin)
+        else:
+            with Path(source).open(encoding="utf-8") as handle:
+                payload = json.load(handle)
+    except (OSError, json.JSONDecodeError) as error:
+        raise OrderRefused(f"could not read JSON arguments: {error}") from error
+    if not isinstance(payload, dict):
+        raise OrderRefused("JSON arguments must be an object of CLI field names")
+
+    expanded: list[str] = []
+    for key, value in payload.items():
+        if not isinstance(key, str) or not re.fullmatch(r"[A-Za-z][A-Za-z0-9_]*", key):
+            raise OrderRefused(f"invalid JSON argument name: {key!r}")
+        if value is None:
+            continue
+        option = "--" + key.replace("_", "-")
+        values = value if isinstance(value, list) else [value]
+        for item in values:
+            if isinstance(item, bool):
+                if item:
+                    expanded.append(option)
+            elif isinstance(item, (str, int, float)):
+                expanded.extend((option, str(item)))
+            else:
+                raise OrderRefused(f"JSON argument {key!r} values must be scalar or arrays")
+
+    # Keep ordinary CLI overrides usable while removing the transport-only --json pair.
+    return expanded + raw_argv[index + 2 :]
 
 
 # --- stop-check assembly -----------------------------------------------------------------
@@ -487,6 +542,11 @@ def main() -> int:
     parser.add_argument("--lint", action="store_true")
     parser.add_argument("--docs", action="store_true")
     parser.add_argument("--stdout", action="store_true", help="print instead of writing")
+    parser.add_argument(
+        "--json",
+        metavar="PATH",
+        help="read CLI arguments from a JSON object; use - for stdin (PowerShell-safe)",
+    )
     parser.add_argument("--force", action="store_true", help="overwrite an existing order")
     parser.add_argument(
         "--strict",
@@ -494,7 +554,11 @@ def main() -> int:
         help="refuse orders that exceed the shape caps instead of writing them with "
         "warnings (the dispatch gate; the default authoring mode is permissive)",
     )
-    args = parser.parse_args()
+    try:
+        args = parser.parse_args(json_argv(sys.argv[1:]))
+    except OrderRefused as refusal:
+        print(f"REFUSED: {refusal}")
+        return 1
 
     if not args.slug:
         args.slug = re.sub(r"[^a-z0-9]+", "-", args.title.lower()).strip("-")

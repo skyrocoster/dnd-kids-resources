@@ -28,13 +28,23 @@ Read every order in `docs/plans/active/<feature>/` and select:
 - Never redispatch a FAILED/BLOCKED order as-is — triage it first (step 5) and reissue a corrected
   order.
 
-**Validate the selected set before spawning.** Run
-`.venv\Scripts\python.exe scripts/check_orders.py --fix --strict` against only the selected runnable
-order path(s) — not every active Plan; authoring lint is permissive and was already accepted, so only
-what you are about to dispatch needs the strict gate. `--fix` heals the selected orders from their
-anchors where genuinely needed. **Re-run it before every single dispatch in a stage**, not just once:
-the moment one order lands an edit in a large shared file, every downstream line range is stale, and
-re-running on the newly selected order heals it from its anchors automatically.
+**Validate the selected set before spawning.** By default, run
+`.venv\Scripts\python.exe scripts/check_orders.py --fix` against only the selected runnable order
+path(s) — not every active Plan. This keeps deterministic faults as errors while reporting heuristic
+warnings and shape caps without blocking ordinary dispatch. Do not add `--strict` to this validation
+command. `--fix` heals the selected orders from their anchors where genuinely needed.
+
+**Warning acceptance is an explicit coordinator decision.** If the coordinator or user says to accept
+the warnings for a selected order, do not rewrite the order merely to silence them: record the warning
+categories in the dispatch report, proceed with the ordinary `.venv\Scripts\python.exe scripts/check_orders.py --fix`
+validation, and continue if there are no deterministic errors. “Accept
+warnings” never accepts missing paths, unauthorized edit sites, broken dependencies, or any other
+error. Strict mode is outside the normal coordinator workflow and must not be added as an automatic
+second pass.
+
+**Re-run the selected-order check before every single dispatch in a stage**, not just once: the moment
+one order lands an edit in a large shared file, every downstream line range is stale, and re-running on
+the newly selected order heals it from its anchors automatically.
 
 ## 2. Pick the model from the order's required strength
 
@@ -76,8 +86,7 @@ Two transports, same prompt:
 
 - **Spawn** — hand the template to the mapped executor, **one order per agent/session**, in the
   background (opencode: the Task tool against the strength's `implement-order-deepseek*` subagent).
-  Default when the user says "dispatch" or "send off". Note the child session/task id the spawn
-  returns — you will need it for the telemetry record if collection is on.
+  Default when the user says "dispatch" or "send off".
 - **Emit** — print the prompt plus the model recommendation for the user to paste into a direct
   executor session. Use when the user asks for the prompt, or drives the executor themselves.
 
@@ -146,15 +155,6 @@ diagnosis genuinely names work beyond the model's reach — never because the or
 route you took and why in one line, so the choice stays auditable. When every order is `DONE` (or
 parked as needs-user), report the stage state and hand off to `reconcile` for the full-suite run and
 doc closeout.
-
-## Telemetry — only when the user asks
-
-Telemetry collection is optional and currently paused (see [PLAN_TEMPLATE.md](../../../docs/PLAN_TEMPLATE.md),
-§ Telemetry). While `docs/plans/telemetry-paused.md` exists the recording commands record nothing, so
-skip them entirely. If the user wants a cost record for the run, follow PLAN_TEMPLATE's three moments
-(snapshot at dispatch, per-order log on report, reconcile entry) using `scripts/order_telemetry.py`
-with the child session id from step 3. Never hand-edit `docs/plans/telemetry-log.md` — it is
-generated.
 
 ## Not your job
 

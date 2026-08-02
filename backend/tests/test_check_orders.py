@@ -1,9 +1,8 @@
 """Fixture-based tests for scripts/check_orders.py.
 
-Each rule in the linter is one fault recorded in docs/plans/telemetry-log.md that cost a
-dispatch, so each gets a test that fails the way the original order failed — plus a
-matching well-formed order, because a linter that also rejects good orders is worse than
-none at all.
+Each rule in the linter is one fault that cost a dispatch, so each gets a test
+that fails the way the original order failed — plus a matching well-formed order,
+because a linter that also rejects good orders is worse than none at all.
 """
 
 from __future__ import annotations
@@ -688,7 +687,7 @@ def test_shared_mutable_path_requires_dependency(repo: Path):
 # ---------------------------------------------------------------------------------------
 # Signature changes, co-located suites, hook lint, and test insertion points.
 #
-# All four trace to one stage in the telemetry log: an order changed an exported hook
+# All four trace to one dispatch: an order changed an exported hook
 # signature, named only the caller's test file in STOP WHEN, and let two defects reach
 # reconcile — a stale assertion and a missing useCallback dependency. Each is a grep or a
 # path lookup, so none of them should ever cost a model a read again.

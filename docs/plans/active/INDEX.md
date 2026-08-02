@@ -25,7 +25,7 @@ Point a skill at a row and it has what it needs to start.
 <!-- GENERATED:ACTIVE_INDEX:START -->
 | Plan | Areas | Depends on | State | Orders | Next | Status |
 | --- | --- | --- | --- | --- | --- | --- |
-| [Map Obstacle State](map-obstacle-state/map-obstacle-state.md) | [dungeons](../../areas/dungeons.md) | — | ready | 2 · 0 done · 2 unrun | `dispatch-orders` | Stage 1 shipped — all 21 orders landed. |
+| [Map Obstacle State](map-obstacle-state/map-obstacle-state.md) | [dungeons](../../areas/dungeons.md) | — | ready | none compiled | `to-orders` | Stage 2 shipped — sparse session persistence, authoring-aware pruning, monotonic layout |
 | [Production Nightly Deploys](production-nightly-deploys/production-nightly-deploys.md) | [infra](../../areas/infra.md) | — | ready | none compiled | `to-orders` | Part of Stage 1 has already shipped out of band — see *Landed early* below. |
 | [Table Testing Records](table-testing-records/table-testing-records.md) | [infra](../../areas/infra.md) | — | ready | none compiled | `to-orders` | Stages 1–2 shipped — the format is documented in `docs/TABLE_TESTING.md`, and the workflow now produces records by default: `PLAN_TEMPLATE.md` teaches the `**Table test:**` stage line, `to-orders` stops session-run orders at a record, and Player App Skeleton Stage 6 demonstrates the shape. |
 <!-- GENERATED:ACTIVE_INDEX:END -->

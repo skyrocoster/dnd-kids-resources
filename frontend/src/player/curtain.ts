@@ -116,6 +116,11 @@ const floorVis = {
 const metaVis = {
   cellSizeFt: 'always',
   padding: 'always',
+  // Editor-internal monotonic ID counters — never kid-visible.
+  nextDoorId: 'never',
+  nextPropId: 'never',
+  nextStairId: 'never',
+  nextPortalId: 'never',
 } as const satisfies Record<keyof MapLayoutMeta, Visibility>
 
 // ── Derived types ──────────────────────────────────────────────────────────

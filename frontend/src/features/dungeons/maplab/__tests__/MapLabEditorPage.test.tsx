@@ -89,6 +89,7 @@ describe('MapLabEditorPage', () => {
     vi.spyOn(api, 'getDungeon').mockResolvedValue({ id: 4, title: 'Test Dungeon', data: {} })
     vi.spyOn(api, 'listNPCs').mockResolvedValue([])
     vi.spyOn(api, 'updateDungeon').mockResolvedValue({ id: 4, title: 'Test Dungeon', data: {} })
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: mapLabLayoutFixture as unknown as Record<string, unknown> })
   })
 
   afterEach(() => {

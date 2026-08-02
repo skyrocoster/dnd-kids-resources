@@ -213,7 +213,7 @@ Layout data (`map_layout`) and dungeon content data (`dungeons.data`) are saved 
 | Method | Path | Purpose | Request | Response |
 |---|---|---|---|---|
 | GET | `/api/dungeons/{dungeon_id}/session-state` | Get the permanent door/stair/portal toggle state for a dungeon | `dungeon_id` | `MapSessionStateBlob` |
-| PUT | `/api/dungeons/{dungeon_id}/session-state` | Save/upsert the door/stair/portal toggle state for a dungeon | `MapSessionStateBlob` | `MapSessionStateBlob` |
+| PUT | `/api/dungeons/{dungeon_id}/session-state` | Save/upsert normalized runtime toggle state, or clear the row when nothing remains | `MapSessionStateBlob` | `MapSessionStateBlob` |
 | DELETE | `/api/dungeons/{dungeon_id}/session-state` | Reset a dungeon's toggle state to its authored defaults (removes the saved row, if any) | `dungeon_id` | (204 No Content) |
 <!-- GENERATED:API:session_state:END -->
 

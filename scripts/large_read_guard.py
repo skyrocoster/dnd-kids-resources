@@ -27,9 +27,6 @@ Four things get a file through anyway:
 * an explicit `--unlock <path> --reason "<why>"`, which is logged;
 * `LARGE_READ_GUARD=off` in the environment, which disables the guard entirely.
 
-Deliberately *not* an exemption: `docs/plans/telemetry-log.md`. The skill says the tail is
-enough, and the tail is a bounded read.
-
 CLI
 ---
     large_read_guard.py --harness opencode --event pre|post   # payload JSON on stdin
@@ -98,9 +95,6 @@ ALWAYS_ALLOWED = (
     ".opencode/skills/**",
     ".agents/skills/**",
 )
-# Carved back out of the patterns above: the skill itself says the tail is enough, and a
-# tail is a bounded read.
-NEVER_ALLOWED = ("docs/plans/telemetry-log.md",)
 
 DENY_MESSAGE = (
     "large_read_guard: {path} is {lines} lines. While compiling a stage, reading a file "
@@ -232,8 +226,6 @@ def _mentions_arming_skill(args: dict[str, Any]) -> bool:
 
 
 def _exempt(path: str) -> bool:
-    if any(fnmatch.fnmatch(path, pattern) for pattern in NEVER_ALLOWED):
-        return False
     return any(fnmatch.fnmatch(path, pattern) for pattern in ALWAYS_ALLOWED)
 
 

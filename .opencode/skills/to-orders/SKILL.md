@@ -13,6 +13,24 @@ coordinator's rate for the executor's job. (Verified snippets planning genuinely
 existence are the exception — they belong in KNOWN STATE, per the `plan` skill's planning-byproducts
 rule.)
 
+## Delegated authoring
+
+When order authoring is delegated to the `work-order-author` subagent, the coordinator still owns the
+judgment. Give the subagent an explicit handoff containing the Plan and stage, order intent, decisions
+already made, dependencies, and authorized scope. The subagent may locate symbols, tests, anchors, and
+line ranges, then emit and lint the order with `new_order.py` and `check_orders.py --fix`. Authoring is
+permissive: deterministic errors must be repaired, while heuristic warnings and shape caps are advisory.
+The coordinator may explicitly accept named warnings after reviewing them; record the accepted warning
+categories in the handoff/report and do not rewrite the order solely to silence them. The normal
+workflow remains non-strict; do not add a second strict validation pass.
+The explicit decision format is `ACCEPT WARNINGS: <order path> — <warning categories>`.
+
+The subagent must not choose behavior, architecture, order boundaries, dependencies, or required
+strength, and it must not edit the Plan or implementation files. After it returns, the coordinator must
+review every order for semantic correctness, scope, verified KNOWN STATE, START IN authorization, DO
+anchors, dependencies, and STOP WHEN before dispatching any executor. A passing order linter is a
+mechanical gate, not a substitute for that review.
+
 ## Where they live
 
 `docs/plans/active/<feature>/NN-<slug>.md` — one file per work order, numbered in execution order.
@@ -35,6 +53,12 @@ fixtures, `--docs` for contract-managed docs, and existence assertions for every
 path), and enforces the sizing ceiling at the argument boundary. Run `new_order.py --help` for the
 argument list. `new_order.py` and `check_orders.py` are invoke-only: call them and read stdout — open
 their source only to change their behaviour.
+
+**PowerShell quoting:** when a `--start-in` value contains prose, quotes, or an em dash, do not fight
+the shell. Build a JSON object in a PowerShell hashtable, pipe it through `ConvertTo-Json -Depth 3`,
+and invoke `scripts/new_order.py --json -`; repeatable fields are arrays (`known`, `start_in`, `do`,
+`tests`, and so on), booleans are `$true`/`$false`, and keys use underscores (`start_in`, `depends_on`).
+This is still the invoke-only generator path; the JSON is input data, not a hand-written order.
 
 **The ceiling is enforced; the sizes below it are preferred, not absolute:**
 
@@ -118,6 +142,10 @@ still need for the stage, so spend it as you would money. Small files (≤400 li
 threshold) are safe to read whole; large files only by range; past roughly ten files or 2,000 lines
 on one question, the question was never the problem.
 
+In delegated authoring mode, `work-order-author` performs the retrieval and mechanical emission from
+your handoff. You still review its output as described above; do not treat its linter result as a
+semantic approval.
+
 Delegate what you do not already know and can get as a quote: "Which files import
 `useMapLabSessionState`, at what lines?", "Find a test that mocks the NPC list endpoint and quote its
 `mockResolvedValue` line", "How many tests are in `PlayerMapRenderer.test.tsx` and what are the
@@ -159,8 +187,10 @@ several do, say which and ask — choosing between ready plans is the user's cal
    refusal is a sizing verdict: split and emit two. Leave STATUS blank.
 6. **Run the linter before you dispatch:** `.venv\Scripts\python.exe scripts/check_orders.py --fix`.
    `--fix` repairs the mechanical faults (bare filenames, stale ranges, symbol-scoped entries) and
-   prints what it changed; the remaining failures are the faults that cost a dispatch — fix them here
-   for a minute rather than discovering them at executor rates. After the orders pass lint, remove
+   prints what it changed. Deterministic failures are dispatch blockers and must be fixed here. The
+   command may still print heuristic warnings or shape-cap guidance; review those findings, then either
+   repair them or explicitly accept the named warning categories in the coordinator report. Do not
+   split or rewrite an order just to make an accepted warning disappear. After the orders pass lint, remove
    the compiled stage's `### Stage <N>` handoff from the Plan (and `## Compiler handoff` when no stage
    subsections remain), and move any `## Planning byproducts` snippets into their orders' KNOWN STATE.
    **Re-run `--fix` between dispatches within a stage** — the moment one order edits a large shared

@@ -4,8 +4,8 @@ import { PROP_KIND_ICONS } from './fixtureTypes'
 import { collapsedStatusLabel, fixtureMarkerBadges } from './markerBadges'
 import { fixturePresentation } from './maplabPresentation'
 import {
-  defaultFixtureState,
   effectiveFixtureState,
+  fixtureStateFromFlags,
   type MapProp,
   type SessionFixtureState,
 } from '../../../model/maplabModel'
@@ -72,7 +72,7 @@ export function PropMarker({
     ? wallAttachedMarkerGeometry(prop.cell, prop.side!, cellSize)
     : onSquareMarkerGeometry(prop.cell, cellSize, { offset, grouped })
 
-  const effective = effectiveFixtureState(prop.state ?? defaultFixtureState(), session)
+  const effective = effectiveFixtureState(prop.state ?? fixtureStateFromFlags(prop), session)
   const presentation = fixturePresentation(effective)
   const token = onWall ? presentation.token : (PROP_IDENTITY_TOKENS[prop.kind] ?? '--md-on-surface-variant')
   const Icon = PROP_KIND_ICONS[prop.kind] ?? ItemIcon

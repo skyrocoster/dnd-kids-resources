@@ -1,8 +1,8 @@
 """Tests for scripts/read_guard.py.
 
-The guard exists because one waste class in docs/plans/telemetry-log.md survived every
-order-side correction: an executor re-reading a file it had just edited, to verify an edit
-the tool had already confirmed. Wording never fixed it, so the harness does.
+The guard exists because one waste class survived every order-side correction: an
+executor re-reading a file it had just edited, to verify an edit the tool had already
+confirmed. Wording never fixed it, so the harness does.
 
 The load-bearing tests here are the opencode hook-shape regressions at the bottom. The
 guard is reached only through `.opencode/plugin/read-guard.js`, and a version that reads

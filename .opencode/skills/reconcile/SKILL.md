@@ -77,13 +77,36 @@ treating the report as complete.
    known-failure list from rotting: it fails when a listed test now passes, so the stage that fixed
    it prunes the entry — a one-file edit here.
 
-   **Triage a failure here with the same narrow direct-repair policy `dispatch-orders` uses.** You
-   may fix it in the code yourself only when every one of these holds: the fix is **fully determined**
-   by evidence already in your context; it needs **zero exploration**; it is **small and mechanical**
-   (a wrong import path, a missed rename, a stale assertion — no design thinking); and the check that
-   failed is one you can re-run yourself, and you run it. If any of those fails — the failure needs
-   exploration, spans two or more files, or is more than a couple of lines — do not keep editing:
-   write a corrective work order and run it through `dispatch-orders`.
+    **Automatically repair regressions before continuing.** Do not guess from the failing command or
+    jump straight to code. For each distinct failing gate, dispatch at least two parallel,
+    narrowly-scoped `explore-deepseek` scouts with independent questions: one should trace the failure
+    from the verbatim output through the relevant implementation and test, and another should inspect
+    the expected contract, nearby callers, and recent diff or known-failure context. Scouts are
+    read-only retrieval agents: they must return cited evidence and must not diagnose or recommend a
+    fix. If a third evidence question is needed, dispatch another scout rather than asking an existing
+    scout to broaden its answer.
+
+    Read and compare the scout reports yourself. Decide whether the evidence identifies one focused,
+    low-risk repair. If it does, write a complete ephemeral brief with exactly `GOAL`, `AUTHORIZED
+    PATHS`, `KNOWN FACTS`, `CHANGE`, `CHECK`, and `ESCALATE IF`, then dispatch it to `quick-executor`
+    through `implement-quick`. The brief must include the verbatim failing check, the cited root cause,
+    every file the executor may touch, and a check that proves the regression is fixed. Do not send a
+    scout's report or an incomplete hypothesis to the executor. Do not edit the regression yourself
+    unless the existing narrow direct-repair policy below applies.
+
+    Run the quick executor's check and classify its result. A passing repair may proceed to the next
+    failing gate. If the brief escalates, the evidence is contradictory, the repair spans multiple
+    concerns, or the check still fails after the quick executor's two allowed verification runs, stop
+    automatic repair and report the exact evidence and remaining failure to the user; create a
+    corrective work order only when the change needs the normal Plan workflow. Never loop indefinitely
+    or weaken a check to make the stage green.
+
+    The older narrow direct-repair policy remains available only when every one of these holds: the fix
+    is **fully determined** by evidence already in your context; it needs **zero exploration**; it is
+    **small and mechanical** (a wrong import path, a missed rename, a stale assertion — no design
+    thinking); and the check that failed is one you can re-run yourself, and you run it. If any of
+    those fails, use the scout -> coordinator diagnosis -> quick-executor loop above, or reissue a
+    corrective work order when the scope is not quick-fix sized.
 
    Anything caught at this step is by definition something the orders' targeted STOP WHEN commands
    could not catch — a stage-level regression, a typecheck break, an architecture-rule violation, a
@@ -118,13 +141,8 @@ treating the report as complete.
    - POSIX: `.venv/bin/python scripts/check_docs.py --check`
    - Also run the `--base <base-ref>` form when a valid base ref is available.
 
-7. **Delete the spent (`DONE`) order files.** Deleting an order destroys its STATUS/DEVIATIONS record,
-   so if telemetry collection is on (see [PLAN_TEMPLATE.md](../../../docs/PLAN_TEMPLATE.md), §
-   Telemetry), make sure each order has an entry first; backfill any missing ones with
-   `scripts/order_telemetry.py` before deleting. When every order in the stage is done, the feature
-   directory should be empty of that stage's order files — leftover DONE files are clutter. Every
-   ~10-15 logged entries, tell the user the telemetry log has enough data for a review pass; don't run
-   that analysis unprompted.
+7. **Delete the spent (`DONE`) order files.** When every order in the stage is done, the feature
+   directory should be empty of that stage's order files — leftover DONE files are clutter.
 
 8. **When the whole feature is complete:** move the Plan to `docs/plans/done/<feature>/` and update
    `docs/README.md` in the same change set. Then regenerate the index (`--write-generated`):

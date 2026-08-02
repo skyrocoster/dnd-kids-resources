@@ -1,5 +1,5 @@
 import { CoinsIcon, MultipleStatusesIcon, TrapDisarmedIcon, type LucideIcon } from '../../../components/icons'
-import { PASSAGE_STATE_TOKENS, defaultFixtureState, effectiveFixtureState, type MapDoor, type MapPortal, type MapProp, type MapStair, type SessionFixtureState } from '../../../model/maplabModel'
+import { PASSAGE_STATE_TOKENS, effectiveFixtureState, fixtureStateFromFlags, type MapDoor, type MapPortal, type MapProp, type MapStair, type SessionFixtureState } from '../../../model/maplabModel'
 import { fixtureStateChips, passageStateChips } from './maplabPresentation'
 
 /** A single badge descriptor — one flag → one badge, fed into either a radial ring (on-square
@@ -120,7 +120,7 @@ export function fixtureMarkerBadges(
   session?: SessionFixtureState,
 ): MarkerBadge[] {
   const effective = effectiveFixtureState(
-    fixture.state ?? defaultFixtureState(),
+    fixture.state ?? fixtureStateFromFlags(fixture),
     session,
   )
   const badges: MarkerBadge[] = fixtureStateChips(effective).map((chip) => ({

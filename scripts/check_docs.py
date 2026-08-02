@@ -482,10 +482,10 @@ def check_work_orders(docs_dir: Path) -> list[CheckError]:
 
     The rules themselves live next door because a compiler needs to run them while
     writing a stage's orders, not only in CI: `check_orders.py` is runnable on its own
-    and each rule there is one fault the telemetry log paid to learn (an unresolvable
-    path, a file named in DO but missing from START IN, a conditional instruction, an
-    unscoped large file, a fixture with no typecheck). This wrapper just puts them on
-    the documentation gate too.
+    and each rule there is one fault that cost a dispatch (an unresolvable path, a file
+    named in DO but missing from START IN, a conditional instruction, an unscoped large
+    file, a fixture with no typecheck). This wrapper just puts them on the documentation
+    gate too.
     """
     return [
         CheckError(error.file, error.message, error.fix)

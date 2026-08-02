@@ -1,7 +1,7 @@
 #!/usr/bin/env python
-"""Work-order linter — enforce the compiling rules the telemetry log paid to learn.
+"""Work-order linter — enforce the compiling rules the workflow paid to learn.
 
-Every recurring fault in `docs/plans/telemetry-log.md` traces back to how an order was
+Every recurring fault traces back to how an order was
 compiled, not to the executor that ran it. Each one is cheap to detect before dispatch
 and expensive to discover afterwards, so each is a rule here rather than a note a future
 compiler may or may not read:
@@ -23,7 +23,7 @@ compiler may or may not read:
   strips types, so a wrong-shaped fixture is green in the executor and red at reconcile —
   this escaped twice);
 - an order that spreads several behaviours across a large integrated test file (the one
-  order in the log that had to be abandoned at both Light and Standard strength).
+  order that had to be abandoned at both Light and Standard strength).
 - a structural documentation order whose targeted test never ran the real documentation
   checker (missing artifacts and stale links escaped twice);
 - a validator change that omitted the validator's own test module;
@@ -116,14 +116,13 @@ REQUIRED_FIELDS = (
 VALID_STRENGTHS = {"Light", "Standard", "High"}
 DEFAULT_STRENGTH = "Light"
 # Escalating above the default costs real money and, on the evidence so far, buys nothing:
-# every Light order in the log finished on its first pass, while the only order ever to need
-# a re-dispatch was Standard — and its own compiler note put the block on a compile defect,
+# every Light order finished on its first pass, while the only order ever to need a
+# re-dispatch was Standard — and its own compiler note put the block on a compile defect,
 # not on the model. So a higher strength has to say what a Light executor cannot do here.
 STRENGTH_REASON_MIN = 12
 TOOL_TEST_PAIRS = {
     "scripts/check_docs.py": "backend/tests/test_docs_contract.py",
     "scripts/check_orders.py": "backend/tests/test_check_orders.py",
-    "scripts/order_telemetry.py": "backend/tests/test_order_telemetry.py",
 }
 
 SECTION_RE = re.compile(
@@ -164,7 +163,6 @@ INVOKE_ONLY_SCRIPTS = frozenset(
         "generate_export_schema.py",
         "new_order.py",
         "order_check.py",
-        "order_telemetry.py",
         "stage_check.py",
     }
 )
@@ -195,9 +193,8 @@ TYPECHECK_RE = re.compile(r"npm run (typecheck|build)|order_check\.py[^&|]*--typ
 BARE_FULL_SUITE_RE = re.compile(r"`?\s*(npm (run )?test|pytest|tsc -b)\s*`?\s*$", re.MULTILINE)
 
 # --- START IN scope grammar -----------------------------------------------------------
-# Canonical here because both this linter and `order_telemetry.py` classify entries by it;
-# two copies of the parser would drift, and the shape numbers in the log would stop
-# matching the rules that produced them.
+# Canonical here: this linter enforces the grammar and `--fix` rewrites it, so the rules
+# and the parser cannot drift.
 RANGE_RE = re.compile(
     r"\blines?\s*(\d{1,6})\s*(?:-|–|—|to|through|\.\.+)\s*(\d{1,6})", re.IGNORECASE
 )
@@ -350,8 +347,7 @@ def split_strength(text: str) -> tuple[str, str]:
 
     `Light` needs no reason; `Standard — the fixture shape has to be derived from three
     call sites` does. Splitting them keeps the level machine-readable for the dispatcher
-    and the telemetry shape line while leaving room for the justification the escalation
-    now has to carry.
+    while leaving room for the justification the escalation now has to carry.
     """
     parts = re.split(r"\s*(?:[—–-]|\()\s*", text.strip(), maxsplit=1)
     level = parts[0].strip()
@@ -417,7 +413,7 @@ def scope_ranges(scope: str) -> tuple[list[tuple[int, int]], bool]:
 
     A range ("lines 1111-1290") tells the executor where to stop reading. A bare anchor
     ("the toggle at line 1469") does not, and the difference is not cosmetic: three
-    separate compiler notes in the log traced a re-read loop to exactly that shape — an
+    separate compiler notes traced a re-read loop to exactly that shape — an
     exact line number pointing into a file thousands of lines long, which the executor
     then paid to re-locate on every return trip. They are counted apart because they fail
     apart.
@@ -723,7 +719,7 @@ def lint_order(order_path: Path, strict: bool = False) -> list[OrderError]:
                 f"{DEFAULT_STRENGTH} is the default for every order. To escalate, write "
                 f"'REQUIRED STRENGTH: {level} — <what a {DEFAULT_STRENGTH} executor cannot "
                 "do here>'. If the answer is that the order is under-specified, fix the "
-                "order instead — that is what the one abandoned order in the log turned "
+                "order instead — that is what the one abandoned order turned "
                 "out to be",
             )
 
@@ -849,7 +845,7 @@ def lint_order(order_path: Path, strict: bool = False) -> list[OrderError]:
     if len(do_bullets) > MAX_DO_BULLETS:
         fail(
             f"DO asks for {len(do_bullets)} things (max {MAX_DO_BULLETS})",
-            "One work order is one logical change. A fourth DO bullet is the shape the log "
+            "One work order is one logical change. A fourth DO bullet is the shape the workflow "
             "keeps paying for: split it into two orders and set DEPENDS ON",
             severity="warning",
         )
@@ -894,7 +890,7 @@ def lint_order(order_path: Path, strict: bool = False) -> list[OrderError]:
                         severity="warning",
                     )
 
-    # Conditional instructions — the single most expensive fault in the telemetry log.
+    # Conditional instructions — the single most expensive fault the workflow has recorded.
     # The classification is prose-sensitive (imperative verbs beside a conditional cue),
     # so it is a warning: an over-eager refusal at authoring time costs a rewrite pass,
     # while a miss at dispatch is caught by `--strict`.
@@ -1063,8 +1059,8 @@ def lint_order(order_path: Path, strict: bool = False) -> list[OrderError]:
                     f"{path_str} is a {_line_count(resolved)}-line integrated suite and DO "
                     f"asks for {len(test_bullets)} behaviours",
                     "One behaviour per order against a suite this size, and name the test "
-                    "seam it turns on; several at once is the one order in the telemetry "
-                    "log that had to be abandoned at both Light and Standard strength",
+                    "seam it turns on; several at once is the one order that had to be "
+                    "abandoned at both Light and Standard strength",
                     severity="warning",
                 )
 
@@ -1118,7 +1114,7 @@ def lint_order(order_path: Path, strict: bool = False) -> list[OrderError]:
                 f"CHANGES SIGNATURE `{symbol}` has call sites outside START IN: {shown}",
                 "Add every call site to START IN, or the executor is forced out of bounds "
                 "to satisfy its own typecheck — which is exactly what happened to the one "
-                "order in the log that both blocked and leaked a stale assertion",
+                "order that both blocked and leaked a stale assertion",
             )
         for test_path in colocated_tests(path_str):
             if not stop_when_runs(test_path, stop_when):
@@ -1288,7 +1284,7 @@ def _sub_first_range(text: str, start: int, end: int) -> str:
 def autofix_start_in(order_path: Path) -> list[tuple[str, str]]:
     """Re-heal stale line ranges and resolve symbol-scoped entries into ranges.
 
-    This is the automation the telemetry log kept asking for in prose. Two facts drove it:
+    This is the automation the workflow kept asking for in prose. Two facts drove it:
 
     * when consecutive orders edit one large file, every downstream order's line numbers
       go stale the moment the upstream one lands — re-verifying them by hand cost the

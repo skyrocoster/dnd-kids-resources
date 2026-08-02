@@ -1,11 +1,9 @@
 # Map Obstacle State - authored baselines and one persisted run overlay
 
-> **Status:** Stage 1 shipped — all 21 orders landed. The nested `FixtureState`/`SessionFixtureState`
-> contract, one-time migration, session actions extraction (`mapLabSessionActions.ts`), dotted-key
-> editor interaction, fixture presentation/marker transforms, InspectorPanel wiring, player curtain
-> resolution, and fixture-type attachment are live. Stage 2 (persistence durability & pruning),
-> Stage 3 (knowledge/prose/preview deletion) and the final legacy-contract removal
-> (`PassageFlags`/`PassageSessionState` drop) are next.
+> **Status:** Stage 2 shipped — sparse session persistence, authoring-aware pruning, monotonic layout
+> counters, legacy-layout normalization, and editor loading coverage are live. Stage 3 (knowledge/prose/
+> preview deletion) and the final legacy-contract removal (`PassageFlags`/`PassageSessionState` drop)
+> are next.
 
 - **Areas:** dungeons
 - **Read trigger:** Map fixture concealment, locks, traps, DCs, shown state, session overrides, player-map obstacle badges, the Map Lab inspector, or removal of map knowledge and player preview
@@ -249,6 +247,7 @@ than replacing them with summaries or fresh design decisions.
 | Stage | What shipped (<=2 sentences) |
 |-------|------------------------------|
 | 1 | Nested `FixtureState`/`SessionFixtureState`/`MapSessionState` contract, serialization, and per-leaf `effectiveFixtureState` resolver in `maplabModel.ts`. One-time migration utility (`scripts/migrate_map_obstacle_state.py`) converts every stored fixture to nested defaults, clears session/knowledge rows. Session actions extracted to `mapLabSessionActions.ts` with four-kind `SessionMap` readers, toggles, and disarm functions. All fixture markers (`DoorMarker`, `StairMarker`, `PortalMarker`, `PropMarker`) read nested state via `fixtureDoorPresentation`/`fixtureStairPresentation`/`fixturePresentation`/`fixtureMarkerBadges`. Dotted-key editor interaction, `InspectorPanel` wiring, player curtain (`curtain.ts`/`usePlayerMapData.ts`) resolving four-kind session maps, `fixtureInspectableDescriptor`, and fixture-type `state` fields attached to all `MapDoor`/`MapStair`/`MapProp`/`MapPortal` interfaces. |
+| 2 | Session-state writes now normalize to sparse four-kind runtime leaves, preserve explicit false and `partyRoomId`, and delete empty rows; layout saves prune deleted, moved, or re-authored fixture overrides while preserving descriptive edits. Per-kind monotonic layout counters survive legacy normalization, save/export/import, and deletion; focused regression coverage also restores old-layout loading and the shared Map Lab editor test fixture. |
 
 ## Touches
 
@@ -288,10 +287,6 @@ than replacing them with summaries or fresh design decisions.
 - **Settled contracts:** `scratch/map-knowledge-obstacles-handoff.md:166-398`, `:730-752`.
 - **Constraints:** Preserve layout identity, geometry, titles, notes, kinds, destinations, loot, NPCs, encounters, and other non-obstacle content while resetting disposable obstacle/open/session/knowledge state (`:374-396`).
 - **Transition mechanism:** A committed one-time migration utility rewrites both a live SQLite database and the local ignored map seed exports. It converts every stored fixture to the nested defaults, resets door Open, and clears session/knowledge records; initialization and seed loading remain raw rather than hiding migration behavior in permanent import paths.
-
-### Stage 2
-- **Settled contracts:** `scratch/map-knowledge-obstacles-handoff.md:289-303`, `:480-505`, `:529-577`, `:754-767`.
-- **Constraints:** Backend layout save owns pruning; no editor callback may be the sole enforcement point (`:572-573`).
 
 ### Stage 3
 - **Settled contracts:** `scratch/map-knowledge-obstacles-handoff.md:107-120`, `:140-157`, `:400-415`, `:701-728`.

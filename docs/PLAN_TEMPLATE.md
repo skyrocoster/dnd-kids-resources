@@ -14,11 +14,11 @@ The workflow is driven by five skills in `.opencode/skills/`, opencode's native 
 | `to-orders` | planner | Turn one Plan stage into lean **work orders** (Layer 2). Guidance, not code. |
 | `dispatch-orders` | planner | Send runnable orders to the right-sized model; triage failures the moment they return, so dependency chains never stall. Repairs code directly only in the narrow case its step 5 defines. |
 | `implement-order` | executor | Execute **one** work order, then stop. Writes the code. |
-| `reconcile` | planner | Close out finished orders: collapse the Plan, update docs, run the checker. Bookkeeping, not code. |
+| `reconcile` | planner | Close out finished orders: scout and automatically repair focused stage regressions through a coordinator-authored quick brief, then collapse the Plan, update docs, and run the checker. |
 
 The split is a cost judgement, not a ban: when a dispatch round trip would cost more than the edit — a
 small, fully-determined change needing no additional exploration — the planner may complete one order
-directly, run its STOP WHEN, preserve its STATUS/DEVIATIONS and telemetry lifecycle, and say so.
+directly, run its STOP WHEN, preserve its STATUS/DEVIATIONS, and say so.
 
 ---
 
@@ -155,8 +155,7 @@ range to wherever the anchor went or resolves a backticked symbol into a real ra
 file by symbol name or bare line number is rejected.
 
 **DEVIATIONS is one line, not two.** The old second line — what the executor opened beyond START IN —
-was measurably unreliable, and `order_telemetry.py` derives the same fact from the transcript more
-accurately and for free.
+was measurably unreliable, so it is dropped.
 
 Below DEVIATIONS the executor always appends the compact **EVIDENCE ENVELOPE** — COMMAND, RESULT,
 CHECKS, DIRTY PATHS, AUTHORIZATION, GUARD, ATTEMPTS — a structured account of the run the coordinator
@@ -172,7 +171,7 @@ unrelated sections of that same file is a deviation and must be reported as such
 [the reference order](plans/_example/99-creature-row-ac.md) for a worked example.
 
 `scripts/check_orders.py` lints orders against these rules and is runnable on its own while compiling
-a stage. Each rule is one fault the telemetry log paid to learn — an unresolvable path, an undeclared
+a stage. Each rule is one fault — an unresolvable path, an undeclared
 edit or lifecycle artifact, a bare filename, a conditional instruction, an unscoped large file, a
 stale or unanchored line range, an exported signature change that does not enumerate its call sites, a
 source file whose own suite is missing from STOP WHEN, a hook change with no lint, a new test with no
@@ -208,29 +207,7 @@ The verbatim OUTPUT is the load-bearing field: the planner triages from it witho
 from cold. A failure report is a successful outcome of an order — the executor never keeps cycling to
 avoid writing one.
 
-### Telemetry — every finished order leaves a cost record
-
-> **Collection is currently paused, so skip every recording command below.** While
-> `docs/plans/telemetry-paused.md` exists they record nothing and exit 0 — running one is a round trip
-> that buys nothing. Check for the file once per session and move on; the three moments below apply in
-> full the moment it is gone. Resume with
-> `.venv\Scripts\python.exe scripts/order_telemetry.py --resume`.
-
-Telemetry has three moments, all run by `scripts/order_telemetry.py`:
-
-1. **At dispatch** — `--snapshot --order <order-path>` freezes the order's compiled shape.
-2. **When the order reports back** — `--order <order-path> --fault <verdict> --note "<why>"` parses
-   the executor's record and folds in its STATUS and DEVIATIONS lines. The opencode transport parses
-   automatically from its local SQLite DB, counting only *child* records.
-3. **At reconcile** — `--reconcile "<stage>"` records stage-level checks, the defects that escaped the
-   orders' own STOP WHEN commands, and the planner's own cost for the stage.
-
-Entries are written to `docs/plans/telemetry.jsonl`; `docs/plans/telemetry-log.md` is **generated**
-from it and must never be hand-edited. **First-pass rate is the metric worth optimising.** An executor
-run costs cents; a re-dispatch costs a cold start, the planner's attention, and a stalled dependency
-chain. The token columns diagnose *why* an order thrashed — they are not the target. The record
-survives order deletion at reconcile, is reviewed every ~10-15 entries, and that review ends with
-`--close-cycle`. Executors never self-report token numbers; models can't see their own counters.
+### Failure triage at dispatch
 
 Triage happens **the moment the failure returns**, in `dispatch-orders` — not at reconcile time —
 because downstream orders `DEPENDS ON` the failed one and stall until it's reissued and passes. A

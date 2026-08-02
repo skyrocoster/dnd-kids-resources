@@ -76,8 +76,8 @@ or update anything under it unless the user explicitly names a path there.
   the wrappers print pass/fail rather than full runner output. `scripts/read_guard.py` (wired through
   `.opencode/plugin/read-guard.js`) enforces the executor's no-re-read rule in the harness.
 - **Every script named above is invoke-only, for every role.** `new_order.py`, `check_docs.py`,
-  `check_orders.py`, `order_check.py`, `stage_check.py`, `order_telemetry.py`,
-  `generate_export_schema.py`: call them and read stdout and the exit code. To learn what arguments
+  `check_orders.py`, `order_check.py`, `stage_check.py`, `generate_export_schema.py`: call them and
+  read stdout and the exit code. To learn what arguments
   one takes, run `--help`. Open one of these files for exactly one reason: you are changing its
   behaviour.
 - GitHub Actions runs the `documentation-contract` check on every pull request and push to `main`;

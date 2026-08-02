@@ -153,14 +153,14 @@ says only where the files are.
 <!-- GENERATED:TESTING:LOCATIONS:START -->
 | Location | Files | Test cases |
 |---|---|---|
-| `backend/tests/` | 17 | 441 |
-| `backend/tests/routers/` | 17 | 267 |
+| `backend/tests/` | 16 | 393 |
+| `backend/tests/routers/` | 17 | 272 |
 | `frontend/src/__tests__/` | 1 | 4 |
 | `frontend/src/api/__tests__/` | 1 | 7 |
 | `frontend/src/components/__tests__/` | 14 | 152 |
 | `frontend/src/components/form/__tests__/` | 4 | 11 |
 | `frontend/src/features/dungeons/__tests__/` | 2 | 54 |
-| `frontend/src/features/dungeons/maplab/__tests__/` | 20 | 591 |
+| `frontend/src/features/dungeons/maplab/__tests__/` | 20 | 602 |
 | `frontend/src/features/encounters/__tests__/` | 9 | 115 |
 | `frontend/src/features/items/__tests__/` | 3 | 15 |
 | `frontend/src/features/loom/__tests__/` | 9 | 123 |

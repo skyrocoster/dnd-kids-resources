@@ -32,7 +32,7 @@ This doc describes the folder structure, backend/frontend conventions, and reque
 | `encounters.py` | `/api/encounters` | Encounter CRUD, creature rosters |
 | `dungeons.py` | `/api/dungeons` | Runtime-created dungeon CRUD (room-reading data stored in `data` JSON column) |
 | `layouts.py` | `/api/dungeons/{dungeon_id}/layout` | Dungeon map layout save/load (MapLayoutBlob) |
-| `session_state.py` | `/api/dungeons/{dungeon_id}/session-state` | Door/stair/portal toggle persistence (play-mode) |
+| `session_state.py` | `/api/dungeons/{dungeon_id}/session-state` | Sparse four-kind runtime override persistence with authored-state fallback (play-mode) |
 | `fog.py` | `/api/dungeons/{dungeon_id}/revealed-cells` | Fog-of-war revealed-cell ratchet (player app) |
 | `at_the_table.py` | `/api/at-the-table` | Single-row dungeon pointer for the player app |
 | `loom.py` | `/api/loom` | Ordered Thread story tracker |
@@ -129,7 +129,7 @@ rather than read the source.
 |---|---|
 | `scripts/check_demo_database.py` | Validate that the local demo SQLite database matches required app columns. |
 | `scripts/check_docs.py` | Documentation contract checker for the D&D Kids Resources repo. |
-| `scripts/check_orders.py` | Work-order linter — enforce the compiling rules the telemetry log paid to learn. |
+| `scripts/check_orders.py` | Work-order linter — enforce the compiling rules the workflow paid to learn. |
 | `scripts/export_db_seeds.py` | Export current database tables into JSON files under data/seeds. |
 | `scripts/generate_export_schema.py` | Derive the export schema from init_database.py instead of restating it by hand. |
 | `scripts/generate_spell_quick_rules.py` | Draft conservative spell quick rules from canonical seed data. |
@@ -142,7 +142,6 @@ rather than read the source.
 | `scripts/migrate_spells.py` | Transform legacy spell seed rows to the canonical target shape. |
 | `scripts/new_order.py` | Emit a work order in the maximum shape a work order is allowed to have. |
 | `scripts/order_check.py` | STOP WHEN wrapper: run an order's checks and print only what the executor can act on. |
-| `scripts/order_telemetry.py` | Extract token telemetry for one completed work order and append it to the running log. |
 | `scripts/read_guard.py` | Post-edit re-read guard for the opencode work-order executor. |
 | `scripts/seed_database.py` | Populate the database from the canonical JSON seeds in data/seeds. |
 | `scripts/stage_check.py` | Run every reconcile-time check and print a summary short enough to read once. |

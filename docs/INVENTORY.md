@@ -6,7 +6,6 @@ Authority: **Canonical** documents define current contracts. **Working** documen
 
 | Document | Type | Authority | Status | Read trigger | Update trigger |
 |---|---|---|---|---|---|
-| [../CONTEXT.md](../CONTEXT.md) | Context | Canonical | Active | Shared repo vocabulary or area-context routing | A cross-area term or context-routing rule changes |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Reference | Canonical | Active | Folder layout, request flow, registration, or conventions | A structural convention, route tree, or shared architecture changes |
 | [API_REFERENCE.md](API_REFERENCE.md) | Reference | Canonical | Active | API methods, paths, parameters, schemas, or responses | An API contract changes |
 | [DATA_MODEL.md](DATA_MODEL.md) | Reference | Canonical | Active | Tables, relationships, seeds, JSON storage, or database rebuilds | DDL, seed shape, importer, or exporter changes |
@@ -18,8 +17,6 @@ Authority: **Canonical** documents define current contracts. **Working** documen
 | [TABLE_TESTING.md](TABLE_TESTING.md) | Reference | Canonical | Active | Running or recording a real session at the table, the record format, or its lifecycle | The table-test format, lifecycle, standing questions, or checks change |
 | [table-tests/](table-tests/) | Record set | Historical | Active | Tracing what a real session at the table taught us | Append a new record per session; frozen once folded in |
 | [Analysis/README.md](Analysis/README.md) | Archive index | Historical | Active | Tracing analysis or decision provenance | Analysis/archive organization changes |
-| [Analysis/Decisions/spell_schema_decision.md](Analysis/Decisions/spell_schema_decision.md) | Decision | Historical | Accepted | Spell-contract provenance | Supersede with a new decision; do not edit past rationale |
-| [Analysis/Decisions/monster_schema_decision.md](Analysis/Decisions/monster_schema_decision.md) | Decision | Historical | Accepted | Monster-contract provenance | Supersede with a new decision; do not edit past rationale |
 | [Analysis/seed_spells_analysis.md](Analysis/seed_spells_analysis.md) | Analysis | Historical | Complete | Spell migration provenance | Do not update; add a new analysis if needed |
 
 ### Area guides and plans
@@ -36,7 +33,7 @@ Generated from each document's own `**Read trigger:**` and Status line — do no
 | [areas/loom.md](areas/loom.md) | Area guide | Canonical | - | Story-thread (Loom) behavior | Loom ownership, source map, or active work changes |
 | [areas/players.md](areas/players.md) | Area guide | Canonical | - | Player records, recovery profiles, player rosters, or the kid app | Players ownership, source map, or active work changes |
 | [areas/reference.md](areas/reference.md) | Area guide | Canonical | - | Spells, weapons, items, or loot | Reference ownership, source map, or active work changes |
-| [Map Obstacle State - authored baselines and one persisted run overlay](plans/active/map-obstacle-state/map-obstacle-state.md) | Plan | Working | Stage 1 shipped — all 21 orders landed. | Map fixture concealment, locks, traps, DCs, shown state, session overrides, player-map obstacle badges, the Map Lab inspector, or removal of map knowledge and player preview | A stage ships, or its scope or settled decisions change |
+| [Map Obstacle State - authored baselines and one persisted run overlay](plans/active/map-obstacle-state/map-obstacle-state.md) | Plan | Working | Stage 2 shipped — sparse session persistence, authoring-aware pruning, monotonic layout counters, legacy-layout normalization, and editor loading coverage are live. | Map fixture concealment, locks, traps, DCs, shown state, session overrides, player-map obstacle badges, the Map Lab inspector, or removal of map knowledge and player preview | A stage ships, or its scope or settled decisions change |
 | [Production Nightly Deploys — ship every night without losing what you authored](plans/active/production-nightly-deploys/production-nightly-deploys.md) | Plan | Working | Part of Stage 1 has already shipped out of band — see *Landed early* below. | Schema generation, database migrations, or the deploy path | A stage ships, or its scope or settled decisions change |
 | [Table Testing Records — real sessions become a comparable, checked record](plans/active/table-testing-records/table-testing-records.md) | Plan | Working | Stages 1–2 shipped — the format is documented in `docs/TABLE_TESTING.md`, and the workflow now produces records by default: `PLAN_TEMPLATE.md` teaches the `**Table test:**` stage line, `to-orders` stops session-run orders at a record, and Player App Skeleton Stage 6 demonstrates the shape. | Recording a real session, the table-test format, or its lifecycle and checks | A stage ships, or its scope or settled decisions change |
 | [Area Context Refactor — Keep AI context scoped by ownership](plans/done/area-context-refactor/area-context-refactor.md) | Archived plan | Historical | Complete | Area-scoped context refactor history | Never — archived record |

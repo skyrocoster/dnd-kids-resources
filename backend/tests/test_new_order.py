@@ -8,7 +8,9 @@ free, rather than at the lint where it is a rewrite.
 
 from __future__ import annotations
 
+import io
 import importlib.util
+import json
 from pathlib import Path
 
 import pytest
@@ -76,6 +78,35 @@ def test_bare_filename_is_resolved_to_its_one_path(repo: Path, monkeypatch, caps
     assert code == 0
     assert "- frontend/src/Tile.tsx" in out
     assert "- frontend/src/__tests__/Tile.test.tsx" in out
+
+
+def test_json_stdin_preserves_compound_values_without_shell_quoting(
+    repo: Path, monkeypatch, capsys
+):
+    """PowerShell can pipe structured arguments without escaping START IN prose."""
+    monkeypatch.setattr(
+        no.sys,
+        "stdin",
+        io.StringIO(
+            json.dumps(
+                {
+                    "feature": "demo",
+                    "number": "01",
+                    "title": "Show the label",
+                    "goal": "the tile shows its label",
+                    "known": ["The API already returns `label` on each tile."],
+                    "start_in": ["Tile.tsx — the renderer", "Tile.test.tsx — the test"],
+                    "do": ["Render `label` after the title in frontend/src/Tile.tsx"],
+                    "tests": ["src/__tests__/Tile.test.tsx"],
+                    "stdout": True,
+                }
+            )
+        ),
+    )
+    code, out = run(monkeypatch, capsys, "--json", "-")
+    assert code == 0, out
+    assert "- frontend/src/Tile.tsx — the renderer" in out
+    assert "- frontend/src/__tests__/Tile.test.tsx — the test" in out
 
 
 def test_ambiguous_basename_is_refused_rather_than_guessed(repo: Path, monkeypatch, capsys):

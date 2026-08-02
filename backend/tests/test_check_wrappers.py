@@ -60,7 +60,7 @@ AssertionError: expected 224 to be 0
 
 def _check(key: str, output: str) -> stage_check.Check:
     check = stage_check.Check(
-        key=key, label=key, command="x", cwd=REPO_ROOT, telemetry=key, passed=True
+        key=key, label=key, command="x", cwd=REPO_ROOT, passed=True
     )
     check.signals = stage_check._signal_lines(key, output)
     return check
@@ -69,39 +69,6 @@ def _check(key: str, output: str) -> stage_check.Check:
 def test_ansi_and_column_padding_are_stripped():
     assert stage_check._clean("\x1b[32m✓ built  in   526ms\x1b[39m") == "✓ built in 526ms"
     assert stage_check._clean("TOTAL      2217     61    97%") == "TOTAL 2217 61 97%"
-
-
-def test_pytest_telemetry_prefers_counts_over_the_coverage_row():
-    """The coverage row matches first by position; it is not what belongs in the log."""
-    detail = stage_check._primary(_check("backend", PYTEST_OUTPUT))
-    assert detail.startswith("624 passed")
-    assert "Total coverage: 97.25%" in detail
-
-
-def test_frontend_telemetry_carries_the_known_failure_count():
-    detail = stage_check._primary(_check("frontend", FRONTEND_OUTPUT))
-    assert "1380 tests, 10 failing" in detail
-    assert "10 of them already known" in detail
-
-
-def test_build_signal_survives_a_colourised_console():
-    detail = stage_check._primary(_check("build", BUILD_OUTPUT))
-    assert detail == "✓ built in 526ms"
-    assert "\x1b" not in detail
-
-
-def test_telemetry_line_is_one_line_and_names_every_check():
-    checks = [_check("backend", PYTEST_OUTPUT), _check("frontend", FRONTEND_OUTPUT)]
-    line = stage_check.telemetry_line(checks)
-    assert line.startswith("- stage checks: ")
-    assert "\n" not in line
-    assert "backend: pass" in line and "frontend: pass" in line
-
-
-def test_failing_check_is_marked_in_the_telemetry_line():
-    check = _check("backend", PYTEST_OUTPUT)
-    check.passed = False
-    assert "backend: FAIL" in stage_check.telemetry_line([check])
 
 
 def test_long_running_check_prints_a_bounded_heartbeat(monkeypatch, capsys, tmp_path):

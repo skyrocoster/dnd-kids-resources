@@ -2,7 +2,7 @@
 
 > **Status:** planned
 
-- **Plan:** [Kid Map Viewer](../plans/active/kid-map-viewer/kid-map-viewer.md) — Stage 9, work order `01-second-table-test-record`
+- **Plan:** [Kid Map Viewer](../plans/done/kid-map-viewer/kid-map-viewer.md) — Stage 9, work order `01-second-table-test-record`
 - **Build:** *(pending — record after session)*
 - **Device:** *(pending — record device, browser, and network setup used)*
 - **Operators:** Pip (6), Lark (4) — *(same cohort as first session; confirm ages and any new participants)*
@@ -109,7 +109,7 @@ Ask Pip first, then Lark separately.
 
 ## Actions
 
-Every finding routes to the [Kid Map Viewer](../plans/active/kid-map-viewer/kid-map-viewer.md) plan and feeds into the downstream fog plan (the plan that will define how knowledge is revealed to children at the table). The fog plan is the consumer of this record; it will use the findings to decide whether the colour-language premise holds, whether the party-room hatch needs reinforcement, and which affordances need revision before the fog layer is designed.
+Every finding routes to the [Kid Map Viewer](../plans/done/kid-map-viewer/kid-map-viewer.md) plan and feeds into the downstream fog plan (the plan that will define how knowledge is revealed to children at the table). The fog plan is the consumer of this record; it will use the findings to decide whether the colour-language premise holds, whether the party-room hatch needs reinforcement, and which affordances need revision before the fog layer is designed.
 
 | What | Where it went |
 |---|---|
