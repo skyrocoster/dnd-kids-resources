@@ -11,9 +11,9 @@ import {
   PASSAGE_STATE_TOKENS,
 } from '../../../../model/maplabModel'
 
-// Presentation-focused model tests moved from maplabModel.test.ts.
+// Presentation-focused model tests live in this split suite.
 
-describe('maplabModel (Stage 2 stair presentation)', () => {
+describe('maplabModel stair presentation', () => {
   describe('stairDirection', () => {
     const stair2 = mapLabLayout.stairs.find((s) => s.stair_id === 2)!
 

@@ -38,7 +38,7 @@ function armPassageTool(tool: 'door' | 'stair' | 'portal') {
   fireEvent.click(screen.getByRole('menuitem', { name: new RegExp(`^${tool}$`, 'i') }))
 }
 
-describe('MapLabEditorPage (Stage H1 — stair authoring)', () => {
+describe('MapLabEditorPage stair authoring', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
     vi.useFakeTimers()
@@ -165,7 +165,7 @@ describe('MapLabEditorPage (Stage H1 — stair authoring)', () => {
   })
 })
 
-describe('MapLabEditorPage (Stage H2 — portal doors)', () => {
+describe('MapLabEditorPage portal doors', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
     vi.useFakeTimers()

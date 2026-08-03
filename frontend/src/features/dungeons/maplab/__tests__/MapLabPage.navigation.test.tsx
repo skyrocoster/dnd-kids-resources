@@ -163,7 +163,7 @@ describe('MapLabPage (R5 viewer navigation rail)', () => {
   })
 })
 
-describe('MapLabPage (Stage H3 — portal viewer rendering + navigation)', () => {
+describe('MapLabPage portal viewer rendering and navigation', () => {
   afterEach(() => {
     vi.restoreAllMocks()
   })

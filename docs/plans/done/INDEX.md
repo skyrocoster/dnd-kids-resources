@@ -31,6 +31,7 @@ Completed plans are archived here for reference. Each directory under `docs/plan
 - [Loot System — Plan Doc](loot_plan/loot_plan.md) — Loot system complete. — (Reference)
 - [Map Obstacle State - authored baselines and one persisted run overlay](map-obstacle-state/map-obstacle-state.md) — Complete. — (dungeons)
 - [Map Lab Editor Usability — the map fills the screen, and every tool is reachable](maplab-editor-usability/maplab-editor-usability.md) — Stages 0–7 shipped. — (Dungeons)
+- [Map Lab test suite refactor — smaller, behavior-oriented test files](maplab-test-suite-refactor/maplab-test-suite-refactor.md) — Complete — the Map Lab frontend test tree is split into focused behavior-oriented suites and the retired reducer previews are removed. — (dungeons)
 - [Map Lab UX Pass — a calm, touch-first editor and viewer](maplab-ux-pass/maplab-ux-pass.md) — Complete. — (Dungeons)
 - [Monsters — Data Restructure & Stat-Block Redesign](monsters_plan/monsters_plan.md) — M3, X0, X1, X2, X3, X4 shipped. — (Encounters)
 - [NPC Statblocks — NPCs gain a combat half, built by pulling fields from monsters](npc-statblocks/npc-statblocks.md) — Complete — all five stages shipped. — (Reference)
