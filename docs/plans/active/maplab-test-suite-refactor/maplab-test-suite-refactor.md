@@ -1,6 +1,6 @@
 # Map Lab test suite refactor — smaller, behavior-oriented test files
 
-> **Status:** Stage 2 shipped — MapLabPage is split into five behavior-oriented suites with all current viewer coverage preserved; ready for the Stage 3 editor/model split.
+> **Status:** Stage 3 shipped — MapLab editor-page and model tests are split into focused suites with duplicate and placeholder coverage removed; ready for the final suite review.
 
 - **Areas:** dungeons
 - **Read trigger:** Splitting or reorganizing oversized Map Lab frontend tests without changing product behavior or reducing regression coverage.
@@ -28,10 +28,9 @@ removed, and obsolete tests are removed only when their underlying product path 
 |-------|------------------------------|
 | 1 | Recorded a clean Map Lab directory baseline (604 tests, 0 failures) and a four-suite baseline (392 tests, 0 failures). Defined the behavior-oriented destination files and identified two skipped reducer previews plus two no-op responsive placeholders as retired coverage that must not be carried into the split. |
 | 2 | Split the monolithic MapLabPage suite into rendering, inspector, session, navigation, and layout-control files, preserving all current assertions and restoring six viewer tests initially omitted during extraction. The full stage gates passed: 1,472 frontend tests, backend coverage at 97.22%, lint, build, and documentation checks. |
+| 3 | Split the editor page into eight focused suites and the model tests into five pure/unit suites, preserving current behavior while removing duplicated shell coverage and two no-op responsive placeholders. Full frontend, backend, lint, build, and typecheck gates passed. |
 
 ## Touches
-- `frontend/src/features/dungeons/maplab/__tests__/MapLabEditorPage.test.tsx`
-- `frontend/src/features/dungeons/maplab/__tests__/maplabModel.test.ts`
 - `frontend/src/features/dungeons/maplab/__tests__/maplabEditor.test.ts`
 - `frontend/src/features/dungeons/maplab/__tests__/*`
 - `docs/TESTING.md`
@@ -48,14 +47,7 @@ removed, and obsolete tests are removed only when their underlying product path 
   - `maplabEditor.history.test.ts`, `.rooms.test.ts`, `.passages.test.ts`, `.objects.test.ts`, `.stairs-portals.test.ts`, and `.counters.test.ts` for reducer history, room/cell painting, doors, props, stairs/portals, and monotonic IDs.
 - **Retired/preview coverage:** Do not extract the two `it.skip` reducer previews (`H0` stair/portal stubs and `H4` portal visual review) or the two `expect(true).toBe(true)` VT0 responsive placeholders in `MapLabEditorPage.test.tsx`; remove them during the owning split/review rather than presenting them as regression coverage. The MapLabPage assertion that retired prototype copy is absent remains current behavior and is retained.
 - **Constraints:** Preserve the shipped Map Obstacle State contracts; preserve unrelated worktree changes; do not use browser automation; update generated testing inventory only through the repository checker when the file tree changes.
-- **Open questions:** Stage 2 resolved its section boundaries and copied the shared page harness into each focused suite; Stage 3 must keep model/presentation imports honest and decide whether any editor fixture is genuinely shared.
-
-### Stage 3
-- **Verified edit sites:** `frontend/src/features/dungeons/maplab/__tests__/MapLabEditorPage.test.tsx` — the suite contains editor shell, zoom/pan, toolbar, layer, prop, ghost-floor, stair, portal, marker-layout, padding, density, and keyboard/tablet sections; `maplabModel.test.ts` contains geometry, presentation, inspector, session-state, marker-layout, NPC-marker, and token sections.
-- **Verified tests:** `frontend/src/features/dungeons/maplab/__tests__/MapLabEditorPage.test.tsx` and `maplabModel.test.ts` — each extracted suite must run directly with the frontend test-check command.
-- **Settled contracts:** Model tests remain pure/unit-focused; editor-page tests retain DOM interaction coverage; fixtures should be moved or shared without changing the public production modules.
-- **Constraints:** Avoid changing production exports solely to make tests easier to split; preserve import boundaries and test setup; do not combine unrelated model and page behaviors into a new shared helper.
-- **Open questions:** Exact partitions and whether any fixture belongs in a dedicated test-data module are resolved after the Stage 1 baseline.
+- **Open questions:** Stage 2 resolved its section boundaries and copied the shared page harness into each focused suite; Stage 3 resolved its editor/model partitions, kept pure model tests separate from DOM tests, and removed duplicate/placeholder coverage. Stage 4 should review the resulting tree for stale labels, duplicated setup, and discoverability.
 
 ### Stage 4
 - **Verified edit sites:** `frontend/src/features/dungeons/maplab/__tests__/*` — existing colocated suites already demonstrate the repository convention of one focused component, hook, or model concern per test file.

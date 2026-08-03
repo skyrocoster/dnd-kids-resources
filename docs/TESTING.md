@@ -163,7 +163,7 @@ says only where the files are.
 | `frontend/src/components/__tests__/` | 14 | 152 |
 | `frontend/src/components/form/__tests__/` | 4 | 11 |
 | `frontend/src/features/dungeons/__tests__/` | 2 | 31 |
-| `frontend/src/features/dungeons/maplab/__tests__/` | 24 | 574 |
+| `frontend/src/features/dungeons/maplab/__tests__/` | 35 | 569 |
 | `frontend/src/features/encounters/__tests__/` | 9 | 115 |
 | `frontend/src/features/items/__tests__/` | 3 | 15 |
 | `frontend/src/features/loom/__tests__/` | 9 | 123 |
