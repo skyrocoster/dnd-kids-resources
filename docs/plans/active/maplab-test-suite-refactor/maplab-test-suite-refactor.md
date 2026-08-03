@@ -1,6 +1,6 @@
 # Map Lab test suite refactor — smaller, behavior-oriented test files
 
-> **Status:** Planned — ready to begin against the shipped Map Obstacle State contracts.
+> **Status:** Stage 2 shipped — MapLabPage is split into five behavior-oriented suites with all current viewer coverage preserved; ready for the Stage 3 editor/model split.
 
 - **Areas:** dungeons
 - **Read trigger:** Splitting or reorganizing oversized Map Lab frontend tests without changing product behavior or reducing regression coverage.
@@ -26,9 +26,10 @@ removed, and obsolete tests are removed only when their underlying product path 
 ## Shipped
 | Stage | What shipped (≤2 sentences) |
 |-------|------------------------------|
+| 1 | Recorded a clean Map Lab directory baseline (604 tests, 0 failures) and a four-suite baseline (392 tests, 0 failures). Defined the behavior-oriented destination files and identified two skipped reducer previews plus two no-op responsive placeholders as retired coverage that must not be carried into the split. |
+| 2 | Split the monolithic MapLabPage suite into rendering, inspector, session, navigation, and layout-control files, preserving all current assertions and restoring six viewer tests initially omitted during extraction. The full stage gates passed: 1,472 frontend tests, backend coverage at 97.22%, lint, build, and documentation checks. |
 
 ## Touches
-- `frontend/src/features/dungeons/maplab/__tests__/MapLabPage.test.tsx`
 - `frontend/src/features/dungeons/maplab/__tests__/MapLabEditorPage.test.tsx`
 - `frontend/src/features/dungeons/maplab/__tests__/maplabModel.test.ts`
 - `frontend/src/features/dungeons/maplab/__tests__/maplabEditor.test.ts`
@@ -38,18 +39,16 @@ removed, and obsolete tests are removed only when their underlying product path 
 ## Compiler handoff
 
 ### Stage 1
-- **Verified edit sites:** `frontend/src/features/dungeons/maplab/__tests__/MapLabPage.test.tsx`, `MapLabEditorPage.test.tsx`, `maplabModel.test.ts`, and `maplabEditor.test.ts` — the four oversized or central Map Lab suites currently contain chronological `describe` sections and shared setup; their current sizes are approximately 2,206, 2,434, 1,281, and 992 lines respectively.
-- **Verified tests:** `docs/TESTING.md` — frontend tests run through Vitest; the Map Lab directory is currently inventoried as 20 files and 602 test cases, and targeted checks use `npm run test:check -- <path>` from `frontend/`.
-- **Settled contracts:** The refactor must preserve test behavior and coverage; extracted files remain colocated under the existing Map Lab `__tests__` directory; shared helpers are allowed only where they reduce repeated harness setup without hiding behavior-specific fixtures.
+- **Verified edit sites:** `frontend/src/features/dungeons/maplab/__tests__/MapLabPage.test.tsx` (1,909 lines), `MapLabEditorPage.test.tsx` (2,434 lines), `maplabModel.test.ts` (1,115 lines), and `maplabEditor.test.ts` (992 lines). The four suites contain 386 declared test calls (the model suite expands two `it.each` calls), and the directory contains 20 files.
+- **Verified tests:** `docs/TESTING.md` establishes Vitest and `npm run test:check -- <path>` from `frontend/`. On 2026-08-03, `npm run test:check -- src/features/dungeons/maplab/__tests__` passed with 604 tests and 0 failures; the four central suites together passed with 392 tests and 0 failures. The generated inventory's 574-case figure and the old handoff's 602-case figure are stale relative to this run.
+- **Settled contracts:** The refactor must preserve current test behavior and regression coverage; extracted files remain colocated under the existing Map Lab `__tests__` directory; shared helpers are allowed only where they reduce repeated harness setup without hiding behavior-specific fixtures. The final map is:
+  - `MapLabPage.rendering.test.tsx`, `.inspector.test.tsx`, `.session.test.tsx`, `.navigation.test.tsx`, and `.layout-controls.test.tsx` for viewer/session rendering, inspection, session state, navigation, and shell/layout controls respectively.
+  - `MapLabEditorPage.shell.test.tsx`, `.canvas.test.tsx`, `.chrome.test.tsx`, `.props.test.tsx`, `.ghost-floor.test.tsx`, `.stairs-portals.test.tsx`, `.marker-layout.test.tsx`, and `.terrain-controls.test.tsx` for editor loading/autosave, canvas gestures/room authoring, navigation and tool chrome, props/encounters, ghost floors, stairs/portals, markers, and padding/density/layer/keyboard controls.
+  - `maplabModel.geometry.test.ts`, `.presentation.test.ts`, `.session.test.ts`, `.markers.test.ts`, and `.persistence.test.ts` for geometry, inspector descriptors/tokens, effective session state, marker placement/NPC derivation, and normalization/round-trips/counters.
+  - `maplabEditor.history.test.ts`, `.rooms.test.ts`, `.passages.test.ts`, `.objects.test.ts`, `.stairs-portals.test.ts`, and `.counters.test.ts` for reducer history, room/cell painting, doors, props, stairs/portals, and monotonic IDs.
+- **Retired/preview coverage:** Do not extract the two `it.skip` reducer previews (`H0` stair/portal stubs and `H4` portal visual review) or the two `expect(true).toBe(true)` VT0 responsive placeholders in `MapLabEditorPage.test.tsx`; remove them during the owning split/review rather than presenting them as regression coverage. The MapLabPage assertion that retired prototype copy is absent remains current behavior and is retained.
 - **Constraints:** Preserve the shipped Map Obstacle State contracts; preserve unrelated worktree changes; do not use browser automation; update generated testing inventory only through the repository checker when the file tree changes.
-- **Open questions:** Confirm the final behavior-to-file partition and identify any retired knowledge/preview sections against the shipped obstacle-state contract; record the pre-refactor targeted test result before moving tests.
-
-### Stage 2
-- **Verified edit sites:** `frontend/src/features/dungeons/maplab/__tests__/MapLabPage.test.tsx` — shared `renderMapLabPage`, `renderLoadedMapLabPage`, `flush`, route data fixture, and Vitest API setup are currently defined at the top of the file; the file contains distinct rendering, inspector, session, navigation, toolbar, density, and layer-control sections.
-- **Verified tests:** `frontend/src/features/dungeons/maplab/__tests__/MapLabPage.test.tsx` — all extracted files must continue to pass individually and through the Map Lab directory check.
-- **Settled contracts:** Page tests should be grouped by observable behavior and surface responsibility, not by historical stage number; test names and assertions should remain stable where the covered behavior remains current.
-- **Constraints:** Keep route/API mocking semantics equivalent; do not turn the helper into a universal fixture that obscures per-suite setup; remove tests for retired behavior only when the owning implementation has already removed that behavior.
-- **Open questions:** Exact file names and section boundaries are resolved during `to-orders` from the post-dependency source state.
+- **Open questions:** Stage 2 resolved its section boundaries and copied the shared page harness into each focused suite; Stage 3 must keep model/presentation imports honest and decide whether any editor fixture is genuinely shared.
 
 ### Stage 3
 - **Verified edit sites:** `frontend/src/features/dungeons/maplab/__tests__/MapLabEditorPage.test.tsx` — the suite contains editor shell, zoom/pan, toolbar, layer, prop, ghost-floor, stair, portal, marker-layout, padding, density, and keyboard/tablet sections; `maplabModel.test.ts` contains geometry, presentation, inspector, session-state, marker-layout, NPC-marker, and token sections.
