@@ -15,6 +15,12 @@ Borrowed wholesale from the `grill-me`/`grilling` skills:
 
 - Ask the questions **one at a time**, and wait for an answer before asking the next. Several
   questions at once is bewildering.
+- Every question turn must present exactly **three possible answers** immediately below the
+  question. Number them `1.`, `2.`, and `3.`; make them concrete, mutually understandable
+  choices rather than vague prompts.
+- Mark exactly one of the three answers as **(Recommended)**. Give a brief reason for the
+  recommendation before or after the options. The user may choose a different option or provide
+  a fourth answer in their own words.
 - Walk down the decision tree branch by branch, resolving dependencies between decisions one by
   one.
 - If a **fact** can be found by exploring the environment (files, docs, existing code, git

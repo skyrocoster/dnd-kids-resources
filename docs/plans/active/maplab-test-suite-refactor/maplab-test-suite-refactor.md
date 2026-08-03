@@ -1,6 +1,6 @@
 # Map Lab test suite refactor — smaller, behavior-oriented test files
 
-> **Status:** Planned — waiting for Map Obstacle State to finish before changing shared Map Lab tests.
+> **Status:** Planned — ready to begin against the shipped Map Obstacle State contracts.
 
 - **Areas:** dungeons
 - **Read trigger:** Splitting or reorganizing oversized Map Lab frontend tests without changing product behavior or reducing regression coverage.
@@ -34,7 +34,6 @@ removed, and obsolete tests are removed only when their underlying product path 
 - `frontend/src/features/dungeons/maplab/__tests__/maplabEditor.test.ts`
 - `frontend/src/features/dungeons/maplab/__tests__/*`
 - `docs/TESTING.md`
-- **Depends on:** [Map Obstacle State](../map-obstacle-state/map-obstacle-state.md)
 
 ## Compiler handoff
 
@@ -42,8 +41,8 @@ removed, and obsolete tests are removed only when their underlying product path 
 - **Verified edit sites:** `frontend/src/features/dungeons/maplab/__tests__/MapLabPage.test.tsx`, `MapLabEditorPage.test.tsx`, `maplabModel.test.ts`, and `maplabEditor.test.ts` — the four oversized or central Map Lab suites currently contain chronological `describe` sections and shared setup; their current sizes are approximately 2,206, 2,434, 1,281, and 992 lines respectively.
 - **Verified tests:** `docs/TESTING.md` — frontend tests run through Vitest; the Map Lab directory is currently inventoried as 20 files and 602 test cases, and targeted checks use `npm run test:check -- <path>` from `frontend/`.
 - **Settled contracts:** The refactor must preserve test behavior and coverage; extracted files remain colocated under the existing Map Lab `__tests__` directory; shared helpers are allowed only where they reduce repeated harness setup without hiding behavior-specific fixtures.
-- **Constraints:** Do not overlap the active Map Obstacle State implementation; preserve unrelated worktree changes; do not use browser automation; update generated testing inventory only through the repository checker when the file tree changes.
-- **Open questions:** Confirm the final behavior-to-file partition and identify any retired knowledge/preview sections after the dependency has shipped; record the pre-refactor targeted test result before moving tests.
+- **Constraints:** Preserve the shipped Map Obstacle State contracts; preserve unrelated worktree changes; do not use browser automation; update generated testing inventory only through the repository checker when the file tree changes.
+- **Open questions:** Confirm the final behavior-to-file partition and identify any retired knowledge/preview sections against the shipped obstacle-state contract; record the pre-refactor targeted test result before moving tests.
 
 ### Stage 2
 - **Verified edit sites:** `frontend/src/features/dungeons/maplab/__tests__/MapLabPage.test.tsx` — shared `renderMapLabPage`, `renderLoadedMapLabPage`, `flush`, route data fixture, and Vitest API setup are currently defined at the top of the file; the file contains distinct rendering, inspector, session, navigation, toolbar, density, and layer-control sections.

@@ -54,7 +54,7 @@ The session view is the surface that is open while a game is running: it must st
   edits authored leaves through layout autosave. The panel owns independent Armed/Shown controls and DC
   display, while the adapters own persistence and reset policy.
 
-- DM map consumers use the neutral badge descriptors and ring renderer from `frontend/src/map/**`. DM
+- DM map consumers use the neutral badge descriptors and shared token renderer from `frontend/src/map/**`. DM
   badges are armed-state presentation: Concealment, Lock, and Trap remain visible regardless of Shown,
   Loot remains DM-only, and multiple statuses retain their collapsed accessibility label.
 
@@ -96,6 +96,9 @@ per-dungeon session state, optional portal destinations with a connections resol
 cross-dungeon gateways — it owns passage-session persistence; [Map Lab UX Pass](../plans/done/maplab-ux-pass/maplab-ux-pass.md)
 shipped the ghost-floor door-leak fix, gesture core, tool palette/popovers, brush model, forgiveness
 layer, responsive editor/viewer shells, NPC markers, and canvas-local viewer failure feedback.
+[Map Obstacle State](../plans/done/map-obstacle-state/map-obstacle-state.md) shipped the nested
+authored/session obstacle contract, shared Map Lab inspector, sparse session persistence, universal
+fixture badges, and the player-safe curtain boundary.
 
 ## Cross-references
 

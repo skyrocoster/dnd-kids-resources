@@ -20,10 +20,18 @@ judgment. Give the subagent an explicit handoff containing the Plan and stage, o
 already made, dependencies, and authorized scope. The subagent may locate symbols, tests, anchors, and
 line ranges, then emit and lint the order with `new_order.py` and `check_orders.py --fix`. Authoring is
 permissive: deterministic errors must be repaired, while heuristic warnings and shape caps are advisory.
-The coordinator may explicitly accept named warnings after reviewing them; record the accepted warning
-categories in the handoff/report and do not rewrite the order solely to silence them. The normal
-workflow remains non-strict; do not add a second strict validation pass.
+The authoring subagent must explicitly approve remaining warnings, and the coordinator may let them pass
+only when both conditions hold: the subagent approved the named warning categories, and the coordinator's
+own review finds no concrete risk that the order or its resulting change will actively break the application.
+The coordinator's review is a safety check, not a second strict linter pass: check for deterministic errors,
+misleading facts or anchors, unauthorized scope, an unsafe stop condition, and any obvious application-breaking
+impact. If either condition is missing, repair or block the order. Record the accepted warning categories and
+the coordinator's no-breakage judgment in the report; do not rewrite an order solely to silence an accepted warning.
+The normal workflow remains non-strict; do not add a second strict validation pass.
 The explicit decision format is `ACCEPT WARNINGS: <order path> — <warning categories>`.
+Use `ACCEPT WARNINGS` only after the authoring subagent has supplied the same approval and the coordinator
+has confirmed `NO ACTIVE BREAKAGE: <order path> — <brief reason>`. A warning is not a work-order failure
+merely because it remains in relaxed checker output.
 
 The subagent must not choose behavior, architecture, order boundaries, dependencies, or required
 strength, and it must not edit the Plan or implementation files. After it returns, the coordinator must
@@ -189,9 +197,10 @@ several do, say which and ask — choosing between ready plans is the user's cal
 6. **Run the linter before you dispatch:** `.venv\Scripts\python.exe scripts/check_orders.py --fix`.
    `--fix` repairs the mechanical faults (bare filenames, stale ranges, symbol-scoped entries) and
    prints what it changed. Deterministic failures are dispatch blockers and must be fixed here. The
-   command may still print heuristic warnings or shape-cap guidance; review those findings, then either
-   repair them or explicitly accept the named warning categories in the coordinator report. Do not
-   split or rewrite an order just to make an accepted warning disappear. After the orders pass lint, remove
+   command may still print heuristic warnings or shape-cap guidance. Apply the two-part approval gate above:
+   repair or block warnings without subagent approval or with any active-breakage risk; otherwise record
+   `ACCEPT WARNINGS` and `NO ACTIVE BREAKAGE` and continue. Do not split or rewrite an order just to make
+   an accepted warning disappear. After the orders pass lint, remove
    the compiled stage's `### Stage <N>` handoff from the Plan (and `## Compiler handoff` when no stage
    subsections remain), and move any `## Planning byproducts` snippets into their orders' KNOWN STATE.
    **Re-run `--fix` between dispatches within a stage** — the moment one order edits a large shared
@@ -219,6 +228,20 @@ success write `STATUS: DONE — implemented directly by planner` with the normal
 edit does not apply cleanly, the check fails, or another read is needed, stop immediately and
 dispatch the order normally — do not turn `to-orders` into an implementation session. At most one
 order per invocation; more than one means implementation is becoming the session's job.
+
+## Planned quick stages are decided before `to-orders`
+
+If Plan review identifies a stage as a planned quick stage, do not invoke this skill merely to create a
+small order. Route it to `quick-executor` with the existing `implement-quick` brief instead. The brief
+must contain exact `GOAL`, `AUTHORIZED PATHS`, `KNOWN FACTS`, `CHANGE`, `CHECK`, and `ESCALATE IF`
+sections, and the coordinator must already have verified every fact it supplies.
+
+This exception is narrower than normal work-order compilation: one atomic edit, no remaining design,
+architecture, contract, or diagnosis decision, and one focused check. The quick executor does not edit
+the Plan or create bookkeeping. On success, the coordinator records the stage in the Plan and explicitly
+invokes `reconcile` for that Plan for normal stage-level closeout. On escalation or failed verification,
+stop the quick route and compile a normal work order with the settled facts; do not repair by widening
+the brief.
 
 ## Worked example
 

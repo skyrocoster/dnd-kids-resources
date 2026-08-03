@@ -9,6 +9,15 @@ After the executors have run a stage's work orders, this skill reconciles what a
 into the durable docs and clears the spent orders. You are the **strong coordinator** here; the job is
 **bookkeeping and documentation** — you record what shipped, you don't extend it.
 
+### Planned quick stages
+
+A planned quick stage has no work-order file and therefore cannot appear as `reconcile` in the active
+index. The coordinator must name the Plan explicitly. Use the quick executor's reported files and check
+result as the stage evidence, confirm that the change stayed inside the Plan's settled scope, and then
+record the stage in the Plan's Status and Shipped table. Run the same stage-level checks and
+documentation closeout as an ordered stage. If the brief escalated or its check failed, do not mark it
+shipped; route the stage back through `to-orders` instead.
+
 ## When you were not told which feature
 
 [docs/plans/active/INDEX.md](../../../docs/plans/active/INDEX.md) lists every in-flight plan with its

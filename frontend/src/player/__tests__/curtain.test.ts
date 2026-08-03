@@ -168,6 +168,17 @@ describe('curtain (player-view transform)', () => {
     expect(result.doors).toHaveLength(0)
   })
 
+  it('omits a legacy fixture when session concealment is armed', () => {
+    const layout = createEmptyMapLayout('Test')
+    layout.doors.push({ door_id: 1, cell: [0, 0], side: 'N', hidden: false, locked: false, trapped: false })
+
+    const result = playerViewTransform(layout, {
+      doors: { '1': { obstacles: { concealment: { armed: true } } } },
+    })
+
+    expect(result.doors).toHaveLength(0)
+  })
+
   it('projects nested authored and session state into flat player facts', () => {
     const layout = createEmptyMapLayout('Test')
     layout.doors.push({

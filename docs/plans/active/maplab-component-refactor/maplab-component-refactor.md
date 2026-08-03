@@ -1,6 +1,6 @@
 # Map Lab component refactor — smaller responsibility-oriented component files
 
-> **Status:** Planned — waiting for Map Obstacle State to finish before changing shared Map Lab components.
+> **Status:** Planned — ready to begin against the shipped Map Obstacle State contracts.
 
 - **Areas:** dungeons
 - **Read trigger:** Splitting or reorganizing oversized Map Lab frontend components without changing the viewer or editor experience.
@@ -35,7 +35,6 @@ semantics, persistence, and visual language remain intact.
 - `frontend/src/features/dungeons/maplab/*.css`
 - `frontend/src/features/dungeons/maplab/__tests__/*`
 - `docs/TESTING.md`
-- **Depends on:** [Map Obstacle State](../map-obstacle-state/map-obstacle-state.md)
 
 ## UX decisions — Map Lab viewer and editor composition
 
@@ -61,8 +60,8 @@ Touch:        preserve the 48px floor; retain only the existing documented Map L
 - **Verified edit sites:** `frontend/src/features/dungeons/maplab/MapLabPage.tsx` — 1,032 lines spanning viewer state, shared toolbar hooks, toolbar tray, canvas rendering, inspector composition, room details, and docks; `MapLabEditorPage.tsx` — 2,114 lines spanning editor state, tools, navigation, canvas rendering, selection editing, and dialogs; `FixturePropertiesForm.tsx` — 505 lines spanning generic fields, catalog pickers, destination pickers, and loot loading.
 - **Verified tests:** `frontend/src/features/dungeons/maplab/__tests__/MapLabPage.test.tsx`, `MapLabEditorPage.test.tsx`, `FixturePropertiesForm.test.tsx`, and the focused colocated component suites — the current tests exercise the page harness and the existing extracted marker/panel components.
 - **Settled contracts:** The refactor preserves route behavior, rendered copy, DOM accessibility roles, Map Lab state ownership, API/client boundaries, autosave and session persistence, gestures, keyboard shortcuts, and current test coverage; new files remain colocated under the existing Map Lab directory.
-- **Constraints:** Do not overlap the active Map Obstacle State implementation; do not change production exports solely for test convenience; preserve unrelated worktree changes; do not use browser automation; exact file boundaries are resolved from the post-dependency source state.
-- **Open questions:** Record the final component file map and any shared helper boundary after the dependency ships; identify whether any stage-era comments or dead exports can be removed without changing behavior.
+- **Constraints:** Preserve the shipped Map Obstacle State contracts; do not change production exports solely for test convenience; preserve unrelated worktree changes; do not use browser automation; exact file boundaries are resolved from the current source state.
+- **Open questions:** Record the final component file map and any shared helper boundary; identify whether any stage-era comments or dead exports can be removed without changing behavior.
 
 ### Stage 2
 - **Verified edit sites:** `frontend/src/features/dungeons/maplab/MapLabPage.tsx` — viewer toolbar and persistent preference hooks at the top, viewer state/effects in the page body, SVG map layers in the main return, and inspector/dock/reset composition near the end; `ToolbarTray`, `useToolbarTrayCollapse`, `useMapLayerVisibility`, and `useMapDensity` are also imported by the editor.

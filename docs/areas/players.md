@@ -68,6 +68,7 @@ Modes are defined in [../UX_PATTERNS.md](../UX_PATTERNS.md#surface-modes).
 | Manage Weapons | modal over the browser | prep | DM |
 | Player shell | `/play` | play | kid |
 | Kid map | `/play/map` | play | kid |
+| Kid spellbook | `/play/spells` | play | kid |
 
 The kid surfaces are read-only and offer no route out of `/play`. The kid map is the
 party-shared, identity-free surface: it records information, which is shared by nature. Personal

@@ -1,6 +1,6 @@
 # Table Testing Records — real sessions become a comparable, checked record
 
-> **Status:** Stages 1–2 shipped — the format is documented in `docs/TABLE_TESTING.md`, and the workflow now produces records by default: `PLAN_TEMPLATE.md` teaches the `**Table test:**` stage line, `to-orders` stops session-run orders at a record, and Player App Skeleton Stage 6 demonstrates the shape. Next is Stage 3, extending `scripts/check_docs.py` so record status, required headings, the frozen `folded in` state, and a generated record index are checked rather than trusted.
+> **Status:** Superseded by the Table Testing Contract plan; do not compile further orders from this plan. Its shipped work is historical context for the replacement contract.
 
 - **Areas:** infra
 - **Read trigger:** Recording a real session, the table-test format, or its lifecycle and checks

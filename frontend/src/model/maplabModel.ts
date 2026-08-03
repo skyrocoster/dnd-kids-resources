@@ -746,19 +746,20 @@ export function effectiveFixtureState(
   authored: FixtureState,
   session?: SessionFixtureState,
 ): FixtureState {
+  const defaults = defaultFixtureState()
   return {
-    open: session?.open ?? authored.open,
+    open: session?.open ?? authored.open ?? defaults.open,
     obstacles: {
       concealment: {
-        armed: session?.obstacles?.concealment?.armed ?? authored.obstacles.concealment.armed,
+        armed: session?.obstacles?.concealment?.armed ?? authored.obstacles?.concealment?.armed ?? defaults.obstacles.concealment.armed,
       },
       lock: {
-        armed: session?.obstacles?.lock?.armed ?? authored.obstacles.lock.armed,
-        shown: session?.obstacles?.lock?.shown ?? authored.obstacles.lock.shown,
+        armed: session?.obstacles?.lock?.armed ?? authored.obstacles?.lock?.armed ?? defaults.obstacles.lock.armed,
+        shown: session?.obstacles?.lock?.shown ?? authored.obstacles?.lock?.shown ?? defaults.obstacles.lock.shown,
       },
       trap: {
-        armed: session?.obstacles?.trap?.armed ?? authored.obstacles.trap.armed,
-        shown: session?.obstacles?.trap?.shown ?? authored.obstacles.trap.shown,
+        armed: session?.obstacles?.trap?.armed ?? authored.obstacles?.trap?.armed ?? defaults.obstacles.trap.armed,
+        shown: session?.obstacles?.trap?.shown ?? authored.obstacles?.trap?.shown ?? defaults.obstacles.trap.shown,
       },
     },
   }

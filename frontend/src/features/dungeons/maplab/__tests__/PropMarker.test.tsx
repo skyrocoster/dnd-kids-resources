@@ -27,13 +27,13 @@ describe('PropMarker bounded badge (M2)', () => {
   it('renders one status disc with its own icon for a single active flag', () => {
     const { container } = renderMarker(prop({ locked: true }))
 
-    expect(container.querySelectorAll('.maplab-badge-ring .maplab-badge')).toHaveLength(1)
+    expect(container.querySelectorAll('.maplab-badge')).toHaveLength(1)
     expect(container.querySelector('[data-badge="locked"] svg')).toHaveStyle({ color: 'var(--md-on-passage-locked)' })
   })
 
   it('renders Layers icon disc for multiple active flags', () => {
     const { container } = renderMarker(prop({ locked: true, trapped: true }))
-    const badges = container.querySelectorAll('.maplab-badge-ring .maplab-badge')
+    const badges = container.querySelectorAll('.maplab-badge')
 
     expect(badges).toHaveLength(1)
     expect(container.querySelector('[data-badge="multiple-statuses"] svg')).toHaveStyle({ color: 'var(--md-on-surface)' })
@@ -41,7 +41,7 @@ describe('PropMarker bounded badge (M2)', () => {
 
   it('renders no disc when no flags are active', () => {
     const { container } = renderMarker(prop())
-    expect(container.querySelector('.maplab-badge-ring .maplab-badge')).toBeNull()
+    expect(container.querySelector('.maplab-badge')).toBeNull()
   })
 
   it('does not change identity stroke/icon token when status changes', () => {

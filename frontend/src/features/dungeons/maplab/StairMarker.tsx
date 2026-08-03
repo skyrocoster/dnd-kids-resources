@@ -1,5 +1,5 @@
-import { BadgeRing } from '../../../map/BadgeRing'
-import { collapsedStatusLabel, fixtureMarkerBadges } from '../../../map/markerBadges'
+import { BadgeDisc } from '../../../map/BadgeDisc'
+import { boundedBadgeLayout, collapsedStatusDescriptor, collapsedStatusLabel, fixtureMarkerBadges } from '../../../map/markerBadges'
 import { fixtureStairPresentation } from './maplabPresentation'
 import {
   type MapCell,
@@ -60,6 +60,8 @@ export function StairMarker({
   const presentation = fixtureStairPresentation(stair, activeZ, session)
   const Icon = presentation.icon
   const badges = fixtureMarkerBadges(stair, session)
+  const badge = collapsedStatusDescriptor(badges)
+  const badgePosition = badge ? boundedBadgeLayout(cell[0] * cellSize, cell[1] * cellSize, cellSize, cx, cy, radius, 8) : null
   const dasharray = presentation.state === 'concealed' ? '4 3' : undefined
   const resolvedLabel = `${stair.title ?? `Stair ${stair.stair_id}`} — ${collapsedStatusLabel(badges, presentation.label)}${destinationLabel ? ` — ${destinationLabel}` : ''}`
 
@@ -95,16 +97,16 @@ export function StairMarker({
         className="maplab-stair-icon"
         simplified={simplified}
       />
-      <BadgeRing
-        badges={badges}
-        cx={cx}
-        cy={cy}
-        cellX={cell[0] * cellSize}
-        cellY={cell[1] * cellSize}
-        cellSize={cellSize}
-        markerRadius={radius}
-        badgeRadius={8}
-      />
+      {badge && badgePosition ? (
+        <BadgeDisc
+          badge={badge}
+          cx={badgePosition.cx}
+          cy={badgePosition.cy}
+          radius={badgePosition.radius}
+          className="maplab-badge"
+          dataBadge={badge.key}
+        />
+      ) : null}
     </MarkerHitArea>
   )
 }

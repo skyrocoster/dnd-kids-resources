@@ -1,6 +1,6 @@
 # Map Obstacle State - authored baselines and one persisted run overlay
 
-> **Status:** Stage 6 shipped — the player curtain now emits effective, player-safe fixture facts, filters concealment, and removes loot and authoring fields; the player renderer consumes one Trap-before-Lock cue across all fixture kinds, with focused proof and full repository gates green. The final legacy-contract removal (`PassageFlags`/`PassageSessionState` drop) remains queued.
+> **Status:** Complete. All six stages shipped; the player curtain emits effective, player-safe fixture facts, the player renderer consumes one Trap-before-Lock cue across all fixture kinds, and the final legacy contract removal is complete. No further work remains in this Plan.
 
 - **Areas:** dungeons
 - **Read trigger:** Map fixture concealment, locks, traps, DCs, shown state, session overrides, player-map obstacle badges, the Map Lab inspector, or removal of map knowledge and player preview

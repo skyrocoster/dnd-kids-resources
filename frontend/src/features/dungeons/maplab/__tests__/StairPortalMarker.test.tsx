@@ -201,7 +201,6 @@ describe('PortalMarker', () => {
       </svg>,
     )
 
-    expect(container.querySelector('.maplab-badge-ring')).toBeTruthy()
     expect(container.querySelectorAll('.maplab-badge')).toHaveLength(1)
     expect(container.querySelector('.maplab-badge')).toHaveAttribute('data-badge', 'locked')
     expect(getByRole('button', { name: 'Portal 1 \u2014 Locked' })).toBeTruthy()

@@ -17,7 +17,8 @@ import {
 } from '../model/maplabModel'
 import type { KidMapLayout } from '../player/curtain'
 import type { Bounds, MapDoor, MapLayout, MapPortal, MapProp, MapStair } from '../model/maplabModel'
-import { fixtureMarkerBadges, type MarkerBadge } from './markerBadges'
+import { boundedBadgeLayout, playerFixtureBadge, type MarkerBadge } from './markerBadges'
+import { BadgeDisc } from './BadgeDisc'
 import { MapCanvas } from './MapCanvas'
 import { BASE_PX_PER_UNIT } from './useMapCanvasZoom'
 import type { ViewportSize, ZoomState } from './useMapCanvasZoom'
@@ -62,19 +63,13 @@ function roomLabelFontSize(cells: [number, number][], title: string): number {
 
 /** The single badge the player map shows for a fixture, per the player policy: at most one
  *  icon-only status per fixture, Trap before Lock, and only statuses that are armed and shown.
- *  The winning descriptor comes from the shared neutral badge list (`fixtureMarkerBadges`) — the
- *  same armed-obstacle precedence and labels the DM tools use — restricted to the one shown,
- *  armed status the player can see; concealment and loot never reach the player map. */
+ *  The winning descriptor comes from the shared neutral badge vocabulary, restricted to the one
+ *  player-legal active-and-shown status emitted by the curtain; concealment and loot never reach
+ *  the player map. */
 function playerStatusDescriptor(
   fixture: MapDoor | MapStair | MapProp | MapPortal,
 ): MarkerBadge | null {
-  const status: 'trapped' | 'locked' | null = fixture.trapped
-    ? 'trapped'
-    : fixture.locked
-      ? 'locked'
-      : null
-  if (!status) return null
-  return fixtureMarkerBadges(fixture).find((badge) => badge.key === status) ?? null
+  return playerFixtureBadge(fixture)
 }
 
 export interface PartyRoomInfo {
@@ -221,41 +216,34 @@ export function PlayerVisibleMap({
   // --- Lock/trap cues for disclosed conditions ---
   // Player policy: at most one icon-only badge per fixture — Trap before Lock, only statuses the
   // player can see (armed and shown), and no status text or fixture title. The badge is driven by
-  // the shared fixture-state descriptor (winning icon, tokens, and accessible label) and sized in
-  // constant screen pixels so the cue stays legible at every zoom.
-  const CUE_DX_PX = 4
-  const CUE_DY_PX = -12
-  const CUE_RADIUS_PX = 10
-  const CUE_ICON_PX = 12
+  // the shared fixture-state descriptor (winning icon, tokens, and accessible label) and bounded
+  // to the owning cell so the cue uses the same geometry at every zoom.
 
   const lockTrapEls: ReactNode[] = []
-  const cueScale = zoom.scale > 0 ? zoom.scale : 1
 
   const addCue = (key: string, cell: [number, number], fixture: MapDoor | MapStair | MapProp | MapPortal) => {
     const descriptor = playerStatusDescriptor(fixture)
     if (!descriptor) return
-    const cx = (cell[0] + 0.5) * CELL_SIZE + CUE_DX_PX / cueScale
-    const cy = (cell[1] + 0.5) * CELL_SIZE + CUE_DY_PX / cueScale
-    const cueRadius = CUE_RADIUS_PX / cueScale
-    const cueIconPx = CUE_ICON_PX / cueScale
-    const Icon = descriptor.icon
+    const geometry = boundedBadgeLayout(
+      cell[0] * CELL_SIZE,
+      cell[1] * CELL_SIZE,
+      CELL_SIZE,
+      (cell[0] + 0.5) * CELL_SIZE,
+      (cell[1] + 0.5) * CELL_SIZE,
+      DISC_RADIUS_PX,
+      DISC_RADIUS_PX,
+    )
     lockTrapEls.push(
-      <g
+      <BadgeDisc
+        badge={descriptor}
+        cx={geometry.cx}
+        cy={geometry.cy}
+        radius={geometry.radius}
         key={key}
         className={`player-map-cue player-map-cue--${descriptor.key}`}
-        aria-label={descriptor.label}
-      >
-        <circle
-          className="player-map-cue-disc"
-          cx={cx}
-          cy={cy}
-          r={cueRadius}
-          style={{ fill: `var(${descriptor.token})`, stroke: `var(${descriptor.onToken})` }}
-        />
-        <g transform={`translate(${cx - cueIconPx / 2}, ${cy - cueIconPx / 2})`}>
-          <Icon width={cueIconPx} height={cueIconPx} style={{ color: `var(${descriptor.onToken})` }} />
-        </g>
-      </g>,
+        discClassName="player-map-cue-disc"
+        dataBadge={descriptor.key}
+      />,
     )
   }
 

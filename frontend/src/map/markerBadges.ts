@@ -156,6 +156,28 @@ const FIXTURE_CHIP_LABELS: Record<FixtureChipState, string> = {
   locked: 'Locked',
 }
 
+function fixtureBadge(state: FixtureChipState): MarkerBadge {
+  return {
+    key: state,
+    icon: FIXTURE_CHIP_ICONS[state],
+    token: FIXTURE_BADGE_TOKENS[state],
+    onToken: `--md-on-${FIXTURE_BADGE_TOKENS[state].slice('--md-'.length)}`,
+    label: FIXTURE_CHIP_LABELS[state],
+  }
+}
+
+/** Player policy: one active, shown obstacle descriptor, with danger before obstruction. */
+export function playerFixtureBadge(
+  fixture: Pick<MapDoor | MapStair | MapPortal | MapProp, 'locked' | 'trapped'>,
+): MarkerBadge | null {
+  const state: Exclude<FixtureChipState, 'concealed'> | null = fixture.trapped
+    ? 'trapped'
+    : fixture.locked
+      ? 'locked'
+      : null
+  return state ? fixtureBadge(state) : null
+}
+
 /** Badge composition for fixture-state DM markers. Consumes effective nested state
  *  (authored + session) and emits only active obstacle and loot badges. Never emits
  *  trap-disarmed or unlocked badges. Active-obstacle order matches the shared fixture
@@ -164,27 +186,27 @@ export function fixtureMarkerBadges(
   fixture: BadgeSource,
   session?: SessionFixtureState,
 ): MarkerBadge[] {
+  // The player curtain deliberately flattens authored state to `open`/`closed` strings. When the
+  // player renderer reuses this badge composer, recover the visible lock/trap flags instead of
+  // treating that display string as a FixtureState object.
+  const authored = typeof fixture.state === 'object' && fixture.state !== null
+    ? fixture.state
+    : fixtureStateFromFlags(fixture)
   const effective = effectiveFixtureState(
-    fixture.state ?? fixtureStateFromFlags(fixture),
+    authored,
     session,
   )
-  const chips: { state: FixtureChipState; icon: LucideIcon; label: string }[] = []
+  const chips: FixtureChipState[] = []
   if (effective.obstacles.concealment.armed) {
-    chips.push({ state: 'concealed', icon: FIXTURE_CHIP_ICONS.concealed, label: FIXTURE_CHIP_LABELS.concealed })
+    chips.push('concealed')
   }
   if (effective.obstacles.trap.armed) {
-    chips.push({ state: 'trapped', icon: FIXTURE_CHIP_ICONS.trapped, label: FIXTURE_CHIP_LABELS.trapped })
+    chips.push('trapped')
   }
   if (effective.obstacles.lock.armed) {
-    chips.push({ state: 'locked', icon: FIXTURE_CHIP_ICONS.locked, label: FIXTURE_CHIP_LABELS.locked })
+    chips.push('locked')
   }
-  const badges: MarkerBadge[] = chips.map((chip) => ({
-    key: chip.state,
-    icon: chip.icon,
-    token: FIXTURE_BADGE_TOKENS[chip.state],
-    onToken: `--md-on-${FIXTURE_BADGE_TOKENS[chip.state].slice('--md-'.length)}`,
-    label: chip.label,
-  }))
+  const badges: MarkerBadge[] = chips.map(fixtureBadge)
 
   if ('loot' in fixture && fixture.loot) {
     badges.push({

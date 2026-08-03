@@ -22,11 +22,17 @@ or update anything under it unless the user explicitly names a path there.
 
 - **Structured workflow (default for planned work):** the Plan → Implement → Reconcile split across
   two roles by model strength — the planner thinks, writes the human-readable Plan, and compiles each
-  stage into lean work orders; the executor runs one work order per fresh context window. Five skills
-  in `.opencode/skills/` drive it: `plan`, `to-orders`, `dispatch-orders`, `implement-order`, and
-  `reconcile`. The split is **cost discipline, not a prohibition**: where a dispatch round trip would
+  stage into lean work orders; the executor runs one work order per fresh context window. The workflow
+  skills in `.opencode/skills/` are `plan`, `to-orders`, `dispatch-orders`, `implement-order`,
+  `implement-quick`, and `reconcile`. The split is **cost discipline, not a prohibition**: where a dispatch round trip would
   plainly cost more than the edit itself, the planner may complete a fully-determined change directly
   and say so. Formats and lifecycle are normative in [docs/PLAN_TEMPLATE.md](docs/PLAN_TEMPLATE.md).
+- **Planned quick stage:** during Plan review, the coordinator may route one atomic stage directly to
+  `quick-executor` without compiling a work order. This is allowed only when the exact edit, authorized
+  paths, known facts, and focused check are already settled; there may be no remaining design,
+  architecture, diagnosis, or contract decision. Use the existing `implement-quick` brief, keep the
+  Plan as the durable record, and update its Status/Shipped row only after the brief passes. If the
+  brief escalates, compile that stage normally with `to-orders`; never widen the quick brief in place.
 - **Bounded quick mode (when the user requests direct implementation):** proceed without a Plan or
   work orders. Touch only the files the user names; keep the change small, structured, and local;
   run the applicable focused tests and the documentation checker; preserve unrelated worktree
@@ -108,10 +114,11 @@ or update anything under it unless the user explicitly names a path there.
 
 ### Execution workflow
 
-Five skills in `.opencode/skills/` implement the Plan → Implement → Reconcile workflow: `plan`
+The skills in `.opencode/skills/` implement the Plan → Implement → Reconcile workflow: `plan`
 (write the Plan), `to-orders` (compile a stage into work orders), `dispatch-orders` (send runnable
-orders to the right-sized model), `implement-order` (executor runs one order), and `reconcile`
-(close out finished orders). See [docs/PLAN_TEMPLATE.md](docs/PLAN_TEMPLATE.md).
+orders to the right-sized model), `implement-order` (executor runs one order), `implement-quick`
+(executor runs one planned quick stage), and `reconcile` (close out finished work). See
+[docs/PLAN_TEMPLATE.md](docs/PLAN_TEMPLATE.md).
 
 ### Issue tracker
 

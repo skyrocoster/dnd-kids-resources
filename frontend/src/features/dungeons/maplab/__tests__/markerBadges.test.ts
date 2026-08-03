@@ -10,6 +10,7 @@ import {
   collapsedStatusLabel,
   collapsedStatusDescriptor,
   fixtureMarkerBadges,
+  playerFixtureBadge,
   linearBadgeLayout,
   markerBadges,
   MULTIPLE_STATUSES_BADGE,
@@ -88,6 +89,28 @@ describe('fixtureMarkerBadges (DM policy)', () => {
     expect(fixtureMarkerBadges(fixture).map((badge) => badge.key)).toEqual(['loot'])
     expect(fixtureMarkerBadges(prop()).map((badge) => badge.key)).not.toContain('unlocked')
     expect(fixtureMarkerBadges(fixture).map((badge) => badge.key)).not.toContain('trap-disarmed')
+  })
+
+  it('tolerates an authored state missing obstacles', () => {
+    const fixture = prop({ state: { open: false } as NonNullable<MapProp['state']> })
+
+    expect(fixtureMarkerBadges(fixture)).toEqual([])
+  })
+})
+
+describe('playerFixtureBadge (player policy)', () => {
+  it('selects one shared descriptor with trap before lock', () => {
+    expect(playerFixtureBadge(prop({ locked: true, trapped: true }))).toMatchObject({
+      key: 'trapped',
+      token: '--md-error',
+      onToken: '--md-on-error',
+    })
+    expect(playerFixtureBadge(prop({ locked: true }))).toMatchObject({
+      key: 'locked',
+      token: '--md-passage-locked',
+      onToken: '--md-on-passage-locked',
+    })
+    expect(playerFixtureBadge(prop())).toBeNull()
   })
 })
 

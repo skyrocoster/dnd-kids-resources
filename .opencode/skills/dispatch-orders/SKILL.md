@@ -34,9 +34,13 @@ path(s) — not every active Plan. Relaxed validation reports all findings witho
 dispatch. Add `--strict` only when the coordinator explicitly wants the legacy gate. `--fix` heals
 the selected orders from their anchors where genuinely needed.
 
-**Diagnostics are informational by default.** Do not rewrite an order merely to silence them. Record
-useful categories in the dispatch report and continue with relaxed validation. Strict mode is an
-opt-in review gate, not an automatic second pass.
+**Diagnostics are informational by default.** Do not rewrite an order merely to silence them. For a
+remaining warning, continue only when the work-order author explicitly approved that warning category
+and your review finds no concrete risk that the order or resulting application change will actively break
+the application. Record both `ACCEPT WARNINGS` and `NO ACTIVE BREAKAGE` in the dispatch report. A warning
+without author approval, or any deterministic error, misleading anchor/fact, unsafe stop condition,
+unauthorized scope, or obvious application-breaking risk is a blocker and must be repaired before dispatch.
+Strict mode is an opt-in review gate, not an automatic second pass.
 
 **Re-run the selected-order check before every single dispatch in a stage**, not just once: the moment
 one order lands an edit in a large shared file, every downstream line range is stale, and re-running on

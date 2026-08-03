@@ -1,66 +1,74 @@
-# Table Test — YYYY-MM-DD — <plan> Stage <n>
+# Table Test — YYYY-MM-DD — <short name>
 
-> **Status:** planned
+> **Status:** draft
 
-- **Plan:** `docs/plans/active/<plan>.md` — Stage `<n>`
 - **Build:** `<git sha>`
 - **Device:** `<tablet, browser, how it was launched>`
 - **Operators:** `<name (age), name (age)>`
 - **Content:** `<what was at the table>`
-- **Previous record:** `docs/table-tests/<earlier file>.md`
+- **Previous record:** `<optional link or none>`
 
-## Setup
+## Focused questions
 
-*Pre-written before the session. Tick as you go. If a box cannot be ticked, say so and run anyway —
-a failed setup step is itself a finding.*
+*Write one to five questions before the session. Each question should name what you are trying to
+understand and what outcome you expect.*
 
-- [ ] …
+### Question 1 — <what we are trying to understand>
 
-## Watching for
+- **Expectation:** <what we expect to happen>
+- **Confirmation / challenge signal:** <what would confirm or challenge that expectation>
+- **Actual outcome:** <what happened>
+- **Raw evidence:**
+  - <direct observation, quote, or other evidence; preserve the original wording>
+- **Interpretation:** <what this may mean>
+- **Possible ideas:** <ideas worth keeping separate from any implementation plan>
 
-*Pre-written from the plan's open questions and provisional decisions. These are the things this
-particular session exists to answer.*
+### Question 2 — <what we are trying to understand>
 
-| # | Question | What the answer would change |
-|---|---|---|
-| 1 | … | … |
+- **Expectation:** <what we expect to happen>
+- **Confirmation / challenge signal:** <what would confirm or challenge that expectation>
+- **Actual outcome:** <what happened>
+- **Raw evidence:**
+  - <direct observation, quote, or other evidence; preserve the original wording>
+- **Interpretation:** <what this may mean>
+- **Possible ideas:** <ideas worth keeping separate from any implementation plan>
 
-## Standing questions
+### Question 3 — <what we are trying to understand>
 
-*Identical in every table test, so the answers form a trend rather than an anecdote.*
+- **Expectation:** <what we expect to happen>
+- **Confirmation / challenge signal:** <what would confirm or challenge that expectation>
+- **Actual outcome:** <what happened>
+- **Raw evidence:**
+  - <direct observation, quote, or other evidence; preserve the original wording>
+- **Interpretation:** <what this may mean>
+- **Possible ideas:** <ideas worth keeping separate from any implementation plan>
 
-| # | Question | Answer |
-|---|---|---|
-| 1 | Did anyone pick the device up unprompted? | |
-| 2 | Did it pull attention **off** the table? | |
-| 3 | Could the older child use it without help? The younger? | |
-| 4 | Did anyone ask you to refresh it, or say it was wrong? | |
-| 5 | Did anyone know something the fiction never told them? | |
-| 6 | *(answered in the **next** record)* Did they remember something because of the app? | |
+### Question 4 — <what we are trying to understand>
 
-## Observed
+- **Expectation:** <what we expect to happen>
+- **Confirmation / challenge signal:** <what would confirm or challenge that expectation>
+- **Actual outcome:** <what happened>
+- **Raw evidence:**
+  - <direct observation, quote, or other evidence; preserve the original wording>
+- **Interpretation:** <what this may mean>
+- **Possible ideas:** <ideas worth keeping separate from any implementation plan>
 
-*You fill this. Ugly bullets, written within 24 hours. Append-only — never edited for tone, because
-the value is in the raw thing you noticed, not the tidy version of it. Capture on paper at the
-table; transcribe after.*
+### Question 5 — <what we are trying to understand>
 
--
+- **Expectation:** <what we expect to happen>
+- **Confirmation / challenge signal:** <what would confirm or challenge that expectation>
+- **Actual outcome:** <what happened>
+- **Raw evidence:**
+  - <direct observation, quote, or other evidence; preserve the original wording>
+- **Interpretation:** <what this may mean>
+- **Possible ideas:** <ideas worth keeping separate from any implementation plan>
 
-## Asked afterwards
+## Review
 
-*Ask the older child first, then the younger one separately so they do not simply agree.*
+*Complete after the session. Set the status to `recorded` when the evidence is captured, then to
+`reviewed` when the interpretations have been checked without rewriting the raw evidence.*
 
-| Question | `<older>` | `<younger>` |
-|---|---|---|
-| … | | |
-
-## Verdict
-
-*Three lines. No more.*
-
-- **Worked:**
-- **Broke:**
-- **Surprised me:**
+- **Follow-up references:** <optional plan stage or issue links; the session itself does not require a plan>
 
 ## Actions
 

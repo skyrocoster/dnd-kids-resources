@@ -83,7 +83,7 @@ export function playerViewTransform(
     const open = sessionValue?.open ?? sessionValue?.isOpen ?? effective.open
     const hidden = sessionValue?.hidden ?? (value.state === undefined ? value.hidden : undefined)
     return {
-      visible: !(hidden ?? effective.obstacles.concealment.armed),
+      visible: !(hidden === true || effective.obstacles.concealment.armed),
       state: open ? ('open' as const) : ('closed' as const),
       locked: effective.obstacles.lock.armed && effective.obstacles.lock.shown ? true as const : undefined,
       trapped: effective.obstacles.trap.armed && effective.obstacles.trap.shown ? true as const : undefined,

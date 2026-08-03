@@ -1,6 +1,7 @@
 import { fixtureDoorPresentation } from './maplabPresentation'
 import { doorSwingGeometry, doorWallSegment, type MapDoor, type SessionFixtureState } from '../../../model/maplabModel'
 import { collapsedStatusDescriptor, collapsedStatusLabel, fixtureMarkerBadges } from '../../../map/markerBadges'
+import { BadgeDisc } from '../../../map/BadgeDisc'
 
 const DOOR_BADGE_RADIUS = 8
 const DOOR_LEAF_STROKE_WIDTH = 6
@@ -157,14 +158,14 @@ export function DoorBadgeLayer({ door, cellSize, session }: DoorBadgeLayerProps)
     ? { x1: swing.hinge.x, y1: swing.hinge.y, x2: swing.leafTip.x, y2: swing.leafTip.y }
     : wallSegment
   const position = pointOnSegment(segment, DOOR_BADGE_T)
-  const Icon = badge.icon
-
   return (
-    <g className="maplab-door-badge maplab-badge" data-badge={badge.key} transform={`translate(${position.x}, ${position.y})`}>
-      <circle r={DOOR_BADGE_RADIUS} fill={`var(${badge.token})`} />
-      <g transform="translate(-5.6, -5.6)">
-        <Icon width={11.2} height={11.2} style={{ color: `var(${badge.onToken})` }} />
-      </g>
-    </g>
+    <BadgeDisc
+      badge={badge}
+      cx={position.x}
+      cy={position.y}
+      radius={DOOR_BADGE_RADIUS}
+      className="maplab-door-badge maplab-badge"
+      dataBadge={badge.key}
+    />
   )
 }

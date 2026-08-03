@@ -27,7 +27,11 @@ a product, architecture, scope, or split decision open, stop and report the ques
   Use `--strict` only when the coordinator explicitly requests a blocking review.
 - Correct a diagnostic only when it would materially mislead the executor; paths, anchors, START IN
   scope, missing tests, and shape caps are no longer automatic rewrite requirements.
-- Leave `STATUS` blank for the executor and report the created order paths and checker result.
+- Leave `STATUS` blank for the executor and report the created order paths and checker result. For
+  remaining heuristic warnings, explicitly state whether you approve them for coordinator review:
+  `ACCEPT WARNINGS: <order path> — <warning categories>` or
+  `DO NOT ACCEPT WARNINGS: <order path> — <reason>`. Approval is only a recommendation; the
+  coordinator must still reject any warning that could actively break the application.
 
 ## Do not
 

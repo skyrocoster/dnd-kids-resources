@@ -6,7 +6,7 @@ by vendor: the **planner** (more powerful) runs `plan`, `to-orders`, `dispatch-o
 fresh context window, seeing only what its order names. Either role can be filled by any provider or
 product strong enough for it, so the docs and skills name the **role**, never a vendor.
 
-The workflow is driven by five skills in `.opencode/skills/`, opencode's native skill directory:
+The workflow is driven by six skills in `.opencode/skills/`, opencode's native skill directory:
 
 | Skill | Role | Job |
 |---|---|---|
@@ -14,11 +14,31 @@ The workflow is driven by five skills in `.opencode/skills/`, opencode's native 
 | `to-orders` | planner | Turn one Plan stage into lean **work orders** (Layer 2). Guidance, not code. |
 | `dispatch-orders` | planner | Send runnable orders to the right-sized model; triage failures the moment they return, so dependency chains never stall. Repairs code directly only in the narrow case its step 5 defines. |
 | `implement-order` | executor | Execute **one** work order, then stop. Writes the code. |
+| `implement-quick` | quick executor | Execute one fully settled, Plan-backed atomic change from an ephemeral brief; the coordinator records the result in the Plan. |
 | `reconcile` | planner | Close out finished orders: scout and automatically repair focused stage regressions through a coordinator-authored quick brief, then collapse the Plan, update docs, and run the checker. |
 
 The split is a cost judgement, not a ban: when a dispatch round trip would cost more than the edit — a
 small, fully-determined change needing no additional exploration — the planner may complete one order
 directly, run its STOP WHEN, preserve its STATUS/DEVIATIONS, and say so.
+
+### Stage execution routing
+
+After settling a Plan stage, choose the smallest safe route:
+
+- **Planned quick stage:** use `quick-executor` when the stage is one atomic change, the exact edit and
+  authorized paths are known, no design/architecture/contract/diagnosis work remains, and one focused
+  check can judge it. The coordinator writes the ephemeral `implement-quick` brief, dispatches it, and
+  records the successful result in the Plan's Status and Shipped table. The executor never edits the
+  Plan. The coordinator names this Plan explicitly when invoking `reconcile`, because no work-order
+  file exists for the active-index `Next` column to discover. A failed or escalated brief becomes a
+  normal `to-orders` stage; do not expand the brief.
+- **Work-ordered stage:** use `to-orders` when the executor needs bounded exploration, the stage has
+  dependencies, more than one logical change, or normal order evidence and sequencing.
+- **Human stage:** stop and surface the decision when the stage needs a table session, unresolved
+  product/design judgment, or High-strength synthesis.
+
+The quick route is a transport optimization, not a second Plan format. The Plan remains the durable
+record even though no work-order file is created.
 
 ---
 

@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 import { createEmptyMapLayout } from '../../model/maplabModel'
+import { playerViewTransform } from '../curtain'
 import { PlayerMapRenderer } from '../PlayerMapRenderer'
 
 function stairLayout() {
@@ -326,10 +327,22 @@ describe('PlayerMapRenderer', () => {
     const cues = container.querySelectorAll('.player-map-cue')
     expect(cues).toHaveLength(1)
     expect(cues[0]).toHaveClass('player-map-cue--locked')
+    expect(cues[0]).toHaveAttribute('data-badge', 'locked')
     expect(cues[0]).toHaveAttribute('aria-label', 'Locked')
+    expect(cues[0]).toHaveAttribute('transform', 'translate(160, 224)')
     // Icon-only: no visible status text, no fixture title
     expect(cues[0].querySelector('.player-map-cue-text')).not.toBeInTheDocument()
     expect(container.querySelector('.player-map-cue-disc')).toBeInTheDocument()
+  })
+
+  it('renders lock and trap cues after the player curtain flattens fixture state', () => {
+    const source = roomLayout()
+    source.doors[0].locked = true
+    source.doors[0].trapped = true
+
+    const { container } = render(<PlayerMapRenderer layout={playerViewTransform(source)} />)
+
+    expect(container.querySelector('.player-map-cue--trapped')).toBeInTheDocument()
   })
 
   it('renders a single icon-only trap cue for a trapped door with the shared label', () => {

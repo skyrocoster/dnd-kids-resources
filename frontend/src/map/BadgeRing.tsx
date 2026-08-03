@@ -1,5 +1,6 @@
 import type { MarkerBadge } from './markerBadges'
 import { boundedBadgeLayout, collapsedStatusDescriptor } from './markerBadges'
+import { BadgeDisc } from './BadgeDisc'
 
 interface BadgeRingProps {
   badges: MarkerBadge[]
@@ -19,17 +20,9 @@ export function BadgeRing({ badges, cx, cy, cellX, cellY, cellSize, markerRadius
   if (!badge) return null
 
   const position = boundedBadgeLayout(cellX, cellY, cellSize, cx, cy, markerRadius, badgeRadius)
-  const Icon = badge.icon
-  const iconSize = badgeRadius * 1.4
-
   return (
     <g className="maplab-badge-ring" aria-hidden="true">
-      <g className="maplab-badge" data-badge={badge.key} transform={`translate(${position.cx}, ${position.cy})`}>
-        <circle r={position.radius} fill={`var(${badge.token})`} />
-        <g transform={`translate(${-iconSize / 2}, ${-iconSize / 2})`}>
-          <Icon width={iconSize} height={iconSize} style={{ color: `var(${badge.onToken})` }} />
-        </g>
-      </g>
+      <BadgeDisc badge={badge} cx={position.cx} cy={position.cy} radius={position.radius} />
     </g>
   )
 }

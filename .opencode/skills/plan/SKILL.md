@@ -47,6 +47,19 @@ a row in their area guide's `## Surfaces` table — note it in the relevant stag
 2. **Break the outcome into stages** — coherent steps that each become one or a few work orders,
    ordered so each builds on the last. State each as intent in plain English, never as a code recipe.
 3. **Leave the Shipped table empty** — `reconcile` fills it as stages complete.
+4. **Route each stage by cost and uncertainty** — after its contracts are settled, make one of these
+   decisions:
+   - **planned quick stage:** one atomic edit, exact paths and facts already verified, one focused
+     check, and no remaining design, architecture, diagnosis, or contract decision. Dispatch the
+     existing `implement-quick` brief directly; do not create a work order.
+   - **work-ordered stage:** anything needing bounded executor exploration, sequencing, dependencies,
+     multiple logical changes, or durable order evidence. Send it through `to-orders`.
+   - **human stage:** a table session or unresolved judgment that must be surfaced to the user.
+
+   A planned quick stage still belongs to the Plan. The coordinator updates its Status and Shipped row
+   only after the brief passes, then explicitly invokes `reconcile` for that Plan because no order file
+   exists for the active index to discover. If the brief escalates, stop and compile the stage normally;
+   never let the quick executor make the scope decision.
 
 ## Delegate the survey, keep the design
 

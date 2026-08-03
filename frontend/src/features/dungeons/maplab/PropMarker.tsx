@@ -1,7 +1,7 @@
 import { ItemIcon } from '../../../components/icons'
-import { BadgeRing } from '../../../map/BadgeRing'
+import { BadgeDisc } from '../../../map/BadgeDisc'
 import { PROP_KIND_ICONS } from './fixtureTypes'
-import { collapsedStatusLabel, fixtureMarkerBadges } from '../../../map/markerBadges'
+import { boundedBadgeLayout, collapsedStatusDescriptor, collapsedStatusLabel, fixtureMarkerBadges } from '../../../map/markerBadges'
 import { fixturePresentation } from './maplabPresentation'
 import {
   effectiveFixtureState,
@@ -77,6 +77,8 @@ export function PropMarker({
   const token = onWall ? presentation.token : (PROP_IDENTITY_TOKENS[prop.kind] ?? '--md-on-surface-variant')
   const Icon = PROP_KIND_ICONS[prop.kind] ?? ItemIcon
   const badges = fixtureMarkerBadges(prop, session)
+  const badge = collapsedStatusDescriptor(badges)
+  const badgePosition = badge ? boundedBadgeLayout(prop.cell[0] * cellSize, prop.cell[1] * cellSize, cellSize, cx, cy, radius, 8) : null
   const dasharray = presentation.state === 'concealed' ? '4 3' : undefined
   const label = `${prop.title ?? prop.kind} — ${collapsedStatusLabel(badges, presentation.label)}`
 
@@ -111,16 +113,16 @@ export function PropMarker({
         className="maplab-prop-icon"
         simplified={simplified}
       />
-      <BadgeRing
-        badges={badges}
-        cx={cx}
-        cy={cy}
-        cellX={prop.cell[0] * cellSize}
-        cellY={prop.cell[1] * cellSize}
-        cellSize={cellSize}
-        markerRadius={radius}
-        badgeRadius={8}
-      />
+      {badge && badgePosition ? (
+        <BadgeDisc
+          badge={badge}
+          cx={badgePosition.cx}
+          cy={badgePosition.cy}
+          radius={badgePosition.radius}
+          className="maplab-badge"
+          dataBadge={badge.key}
+        />
+      ) : null}
     </MarkerHitArea>
   )
 }
