@@ -9,10 +9,11 @@ import {
   boundedBadgeLayout,
   collapsedStatusLabel,
   collapsedStatusDescriptor,
+  fixtureMarkerBadges,
   linearBadgeLayout,
   markerBadges,
   MULTIPLE_STATUSES_BADGE,
-} from '../markerBadges'
+} from '../../../../map/markerBadges'
 import {
   GROUPED_MARKER_RADIUS_FRACTION,
   gridMarkerOffset,
@@ -52,6 +53,41 @@ describe('markerBadges', () => {
 
   it('returns empty array for unlocked with no loot', () => {
     expect(markerBadges(prop())).toEqual([])
+  })
+})
+
+describe('fixtureMarkerBadges (DM policy)', () => {
+  it('emits armed obstacle vocabulary regardless of Shown', () => {
+    const fixture = prop({
+      state: {
+        open: false,
+        obstacles: {
+          concealment: { armed: true },
+          lock: { armed: true, shown: false },
+          trap: { armed: true, shown: false },
+        },
+      },
+    })
+
+    expect(fixtureMarkerBadges(fixture).map((badge) => badge.key)).toEqual(['concealed', 'trapped', 'locked'])
+  })
+
+  it('keeps Loot DM-only and stays silent for disarmed obstacles', () => {
+    const fixture = prop({
+      loot: { bundle_id: 1 },
+      state: {
+        open: false,
+        obstacles: {
+          concealment: { armed: false },
+          lock: { armed: false, shown: true },
+          trap: { armed: false, shown: true },
+        },
+      },
+    })
+
+    expect(fixtureMarkerBadges(fixture).map((badge) => badge.key)).toEqual(['loot'])
+    expect(fixtureMarkerBadges(prop()).map((badge) => badge.key)).not.toContain('unlocked')
+    expect(fixtureMarkerBadges(fixture).map((badge) => badge.key)).not.toContain('trap-disarmed')
   })
 })
 

@@ -56,12 +56,11 @@ try {
       join(frontendRoot, 'node_modules', 'vitest', 'vitest.mjs'),
       'run',
       '--silent=passed-only',
-      '--reporter=verbose',
       '--reporter=json',
       `--outputFile.json=${reportPath}`,
       ...vitestArgs,
     ],
-    { cwd: frontendRoot, stdio: ['ignore', 'inherit', 'inherit'] },
+    { cwd: frontendRoot, stdio: ['ignore', 'ignore', 'inherit'] },
   )
 
   let report

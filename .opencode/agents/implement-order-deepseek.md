@@ -1,7 +1,8 @@
 ---
-description: Executes one work order via implement-order on DeepSeek V4 Flash.
+description: Executes one work order via implement-order on Luna Medium.
 mode: subagent
-model: opencode-go/deepseek-v4-flash
+model: openai/gpt-5.6-luna
+variant: medium
 permission:
   edit: allow
   bash: allow

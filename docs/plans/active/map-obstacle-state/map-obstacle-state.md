@@ -1,6 +1,6 @@
 # Map Obstacle State - authored baselines and one persisted run overlay
 
-> **Status:** Stage 4 shipped — DM View and DM Edit now share the obstacle inspector with contextual adapters, immediate sparse session writes, authored autosave, rollback, reset, and DC warnings. Stage 5 (shared badge primitive and audience-specific active-state policies) is next; the final legacy-contract removal (`PassageFlags`/`PassageSessionState` drop) remains queued.
+> **Status:** Stage 5 shipped — shared map badge primitives now serve DM and player consumers, DM badges use armed-state policy, and the player map renders one icon-only Trap-or-Lock cue across all fixture kinds. Stage 6 (final player curtain cleanup, end-to-end proof, and canonical documentation reconciliation) is next; the final legacy-contract removal (`PassageFlags`/`PassageSessionState` drop) remains queued.
 
 - **Areas:** dungeons
 - **Read trigger:** Map fixture concealment, locks, traps, DCs, shown state, session overrides, player-map obstacle badges, the Map Lab inspector, or removal of map knowledge and player preview
@@ -247,6 +247,7 @@ than replacing them with summaries or fresh design decisions.
 | 2 | Session-state writes now normalize to sparse four-kind runtime leaves, preserve explicit false and `partyRoomId`, and delete empty rows; layout saves prune deleted, moved, or re-authored fixture overrides while preserving descriptive edits. Per-kind monotonic layout counters survive legacy normalization, save/export/import, and deletion; focused regression coverage also restores old-layout loading and the shared Map Lab editor test fixture. |
 | 3 | Removed the obsolete knowledge API/table/schema/seed paths, prose concealment fields and graph helpers, and the DM-side player preview. Player curtain, Map Lab controls, migration cleanup, and focused tests now use the remaining obstacle-state contract; stale knowledge test setup was removed as part of the consumer cleanup. |
 | 4 | Replaced the legacy Map Lab command controls with one shared labelled-checkbox obstacle inspector used by DM View and DM Edit. DM View now persists sparse four-kind session leaves with rollback and fixture reset, while DM Edit autosaves authored obstacle/DC changes and warns about incomplete armed DCs. |
+| 5 | Moved badge descriptors and the ring renderer to neutral shared map ownership, retained DM collapse/Loot policy with armed-only statuses, and replaced door-only player cues with one icon-only Trap-before-Lock badge across doors, stairs, props, and portals. |
 
 ## Touches
 

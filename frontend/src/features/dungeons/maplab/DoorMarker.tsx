@@ -1,6 +1,6 @@
 import { fixtureDoorPresentation } from './maplabPresentation'
 import { doorSwingGeometry, doorWallSegment, type MapDoor, type SessionFixtureState } from '../../../model/maplabModel'
-import { collapsedStatusDescriptor, collapsedStatusLabel, fixtureMarkerBadges } from './markerBadges'
+import { collapsedStatusDescriptor, collapsedStatusLabel, fixtureMarkerBadges } from '../../../map/markerBadges'
 
 const DOOR_BADGE_RADIUS = 8
 const DOOR_LEAF_STROKE_WIDTH = 6

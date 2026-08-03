@@ -54,6 +54,10 @@ The session view is the surface that is open while a game is running: it must st
   edits authored leaves through layout autosave. The panel owns independent Armed/Shown controls and DC
   display, while the adapters own persistence and reset policy.
 
+- DM map consumers use the neutral badge descriptors and ring renderer from `frontend/src/map/**`. DM
+  badges are armed-state presentation: Concealment, Lock, and Trap remain visible regardless of Shown,
+  Loot remains DM-only, and multiple statuses retain their collapsed accessibility label.
+
 - Room-entry prose concealment was deliberately removed from map disclosure because no current player surface renders it; a future Fog plan may define that capability explicitly.
 
 - Dungeons, map layouts, and map session state **are** seed-backed and **must** be exported before a

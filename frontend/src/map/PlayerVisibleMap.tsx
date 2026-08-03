@@ -5,7 +5,9 @@ import {
   doorSwingGeometry,
   doorWallSegment,
   doorsOnFloor,
+  effectiveFixtureState,
   findDoorAtEdge,
+  fixtureStateFromFlags,
   gridMarkerOffset,
   markersAtCell,
   otherFloorZ,
@@ -16,7 +18,8 @@ import {
   stairEndpointsForZ,
 } from '../model/maplabModel'
 import type { KidMapLayout } from '../player/curtain'
-import type { Bounds, MapLayout } from '../model/maplabModel'
+import type { Bounds, MapDoor, MapLayout, MapPortal, MapProp, MapStair } from '../model/maplabModel'
+import { fixtureMarkerBadges, type MarkerBadge } from './markerBadges'
 import { MapCanvas } from './MapCanvas'
 import { BASE_PX_PER_UNIT } from './useMapCanvasZoom'
 import type { ViewportSize, ZoomState } from './useMapCanvasZoom'
@@ -57,6 +60,24 @@ function roomLabelFontSize(cells: [number, number][], title: string): number {
   const byWidth = (boxWidth * 0.9) / (title.length * LABEL_CHAR_WIDTH_RATIO)
   const byHeight = boxHeight * 0.5
   return Math.max(LABEL_MIN_UNITS, Math.min(LABEL_UNITS, byWidth, byHeight))
+}
+
+/** The single badge the player map shows for a fixture, per the player policy: at most one
+ *  icon-only status per fixture, Trap before Lock, and only statuses that are armed and shown.
+ *  The winning descriptor comes from the shared neutral badge list (`fixtureMarkerBadges`) — the
+ *  same armed-obstacle precedence and labels the DM tools use — restricted to the one shown,
+ *  armed status the player can see; concealment and loot never reach the player map. */
+function playerStatusDescriptor(
+  fixture: MapDoor | MapStair | MapProp | MapPortal,
+): MarkerBadge | null {
+  const effective = effectiveFixtureState(fixture.state ?? fixtureStateFromFlags(fixture))
+  const status: 'trapped' | 'locked' | null = effective.obstacles.trap.armed && effective.obstacles.trap.shown
+    ? 'trapped'
+    : effective.obstacles.lock.armed && effective.obstacles.lock.shown
+      ? 'locked'
+      : null
+  if (!status) return null
+  return fixtureMarkerBadges(fixture).find((badge) => badge.key === status) ?? null
 }
 
 export interface PartyRoomInfo {
@@ -201,60 +222,67 @@ export function PlayerVisibleMap({
     })
 
   // --- Lock/trap cues for disclosed conditions ---
+  // Player policy: at most one icon-only badge per fixture — Trap before Lock, only statuses the
+  // player can see (armed and shown), and no status text or fixture title. The badge is driven by
+  // the shared fixture-state descriptor (winning icon, tokens, and accessible label) and sized in
+  // constant screen pixels so the cue stays legible at every zoom.
+  const CUE_DX_PX = 4
+  const CUE_DY_PX = -12
+  const CUE_RADIUS_PX = 10
+  const CUE_ICON_PX = 12
+
   const lockTrapEls: ReactNode[] = []
+  const cueScale = zoom.scale > 0 ? zoom.scale : 1
+
+  const addCue = (key: string, cell: [number, number], fixture: MapDoor | MapStair | MapProp | MapPortal) => {
+    const descriptor = playerStatusDescriptor(fixture)
+    if (!descriptor) return
+    const cx = (cell[0] + 0.5) * CELL_SIZE + CUE_DX_PX / cueScale
+    const cy = (cell[1] + 0.5) * CELL_SIZE + CUE_DY_PX / cueScale
+    const cueRadius = CUE_RADIUS_PX / cueScale
+    const cueIconPx = CUE_ICON_PX / cueScale
+    const Icon = descriptor.icon
+    lockTrapEls.push(
+      <g
+        key={key}
+        className={`player-map-cue player-map-cue--${descriptor.key}`}
+        aria-label={descriptor.label}
+      >
+        <circle
+          className="player-map-cue-disc"
+          cx={cx}
+          cy={cy}
+          r={cueRadius}
+          style={{ fill: `var(${descriptor.token})`, stroke: `var(${descriptor.onToken})` }}
+        />
+        <g transform={`translate(${cx - cueIconPx / 2}, ${cy - cueIconPx / 2})`}>
+          <Icon width={cueIconPx} height={cueIconPx} style={{ color: `var(${descriptor.onToken})` }} />
+        </g>
+      </g>,
+    )
+  }
+
   for (const door of doors) {
     const isOpen = openDoorIds?.has(door.door_id) ?? false
     if (isOpen) continue
+    addCue(`door-${door.door_id}`, door.cell, door)
+  }
 
-    const cx = (door.cell[0] + 0.5) * CELL_SIZE
-    const cy = (door.cell[1] + 0.5) * CELL_SIZE
+  for (const stair of stairEndpointsForZ(ml, selectedZ)) {
+    const cell = stairCellForZ(stair, selectedZ)
+    if (!cell) continue
+    if (stairDirection(stair, selectedZ) === 'level') continue
+    addCue(`stair-${stair.stair_id}-${selectedZ}`, cell, stair)
+  }
 
-    if (door.locked) {
-      lockTrapEls.push(
-        <g
-          key={`locked-${door.door_id}`}
-          className="player-map-cue player-map-cue--locked"
-          aria-label={`Door ${door.door_id} locked`}
-        >
-          {/* Simple padlock icon */}
-          <g transform={`translate(${cx + 4}, ${cy - 12})`}>
-            <rect x="0" y="3" width="10" height="7" rx="1" fill="none" stroke="currentColor" strokeWidth="1.5" />
-            <path d="M2 3V1.5a3 3 0 0 1 6 0V3" fill="none" stroke="currentColor" strokeWidth="1.5" />
-          </g>
-          <text
-            x={cx + 18}
-            y={cy - 5}
-            className="player-map-cue-text"
-          >
-            Locked
-          </text>
-        </g>,
-      )
-    }
+  for (const prop of ml.props ?? []) {
+    if (prop.z !== selectedZ) continue
+    addCue(`prop-${prop.prop_id}`, prop.cell, prop)
+  }
 
-    if (door.trapped) {
-      lockTrapEls.push(
-        <g
-          key={`trapped-${door.door_id}`}
-          className="player-map-cue player-map-cue--trapped"
-          aria-label={`Door ${door.door_id} trapped`}
-        >
-          {/* Simple hazard diamond icon */}
-          <g transform={`translate(${cx + 4}, ${cy + 4})`}>
-            <polygon points="5,0 10,5 5,10 0,5" fill="none" stroke="currentColor" strokeWidth="1.5" />
-            <line x1="5" y1="3" x2="5" y2="6" stroke="currentColor" strokeWidth="1.5" />
-            <circle cx="5" cy="8" r="0.75" fill="currentColor" />
-          </g>
-          <text
-            x={cx + 18}
-            y={cy + 11}
-            className="player-map-cue-text"
-          >
-            Trapped
-          </text>
-        </g>,
-      )
-    }
+  for (const portal of ml.portals ?? []) {
+    if (portal.z !== selectedZ) continue
+    addCue(`portal-${portal.portal_id}`, portal.cell, portal)
   }
 
   return (

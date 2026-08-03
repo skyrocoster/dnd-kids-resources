@@ -1,6 +1,17 @@
-import { CoinsIcon, MultipleStatusesIcon, TrapDisarmedIcon, type LucideIcon } from '../../../components/icons'
-import { PASSAGE_STATE_TOKENS, effectiveFixtureState, fixtureStateFromFlags, type MapDoor, type MapPortal, type MapProp, type MapStair, type SessionFixtureState } from '../../../model/maplabModel'
-import { fixtureStateChips, passageStateChips } from './maplabPresentation'
+import { AlertTriangle, CheckCircle2, Coins, EyeOff, Layers, Lock, type LucideIcon } from 'lucide-react'
+import {
+  effectiveFixtureState,
+  fixtureStateFromFlags,
+  isPassageStateActive,
+  PASSAGE_STATE_PRECEDENCE,
+  PASSAGE_STATE_TOKENS,
+  type MapDoor,
+  type MapPortal,
+  type MapProp,
+  type MapStair,
+  type PassageState,
+  type SessionFixtureState,
+} from '../model/maplabModel'
 
 /** A single badge descriptor — one flag → one badge, fed into either a radial ring (on-square
  * markers) or a linear layout (door leaf). The `key` is stable across renders so badges keep
@@ -24,7 +35,7 @@ export type CollapsedStatusDescriptor = MarkerBadge | null
 
 export const MULTIPLE_STATUSES_BADGE: MarkerBadge = {
   key: 'multiple-statuses',
-  icon: MultipleStatusesIcon,
+  icon: Layers,
   token: '--md-surface',
   onToken: '--md-on-surface',
   label: 'Multiple statuses',
@@ -81,24 +92,41 @@ export function boundedBadgeLayout(
   }
 }
 
+/** Passage chip icon/label selection, mirroring the feature presentation chips but kept local so
+ *  this module stays inside the neutral `src/map/**` boundary (model + lucide-react only).
+ *  Precedence and activeness come from the shared model helpers. */
+const PASSAGE_CHIP_ICONS: Record<Exclude<PassageState, 'unlocked'>, LucideIcon> = {
+  trapped: AlertTriangle,
+  locked: Lock,
+  hidden: EyeOff,
+}
+
+const PASSAGE_CHIP_LABELS: Record<Exclude<PassageState, 'unlocked'>, string> = {
+  trapped: 'Trapped',
+  locked: 'Locked',
+  hidden: 'Hidden',
+}
+
 /** Derive the ordered badge descriptor list from a marker's passage flags and session state.
- * Composed from, in fixed precedence: trapped ▸ locked ▸ hidden (from `passageStateChips`),
- * then loot (when present), then trap-disarmed. Stable ordering so a badge keeps its clock
- * position as unrelated flags toggle. */
+ *  Composed from, in fixed precedence: trapped ▸ locked ▸ hidden, then loot (when present), then
+ *  trap-disarmed. Stable ordering so a badge keeps its clock position as unrelated flags toggle. */
 export function markerBadges(source: BadgeSource, trapDisarmed = false): MarkerBadge[] {
-  const badges: MarkerBadge[] = passageStateChips(source).map(({ state, icon, label }) => ({
+  const badges: MarkerBadge[] = PASSAGE_STATE_PRECEDENCE.filter(
+    (state): state is Exclude<PassageState, 'unlocked'> =>
+      state !== 'unlocked' && isPassageStateActive(state, source),
+  ).map((state) => ({
     key: state,
-    icon,
+    icon: PASSAGE_CHIP_ICONS[state],
     token: PASSAGE_STATE_TOKENS[state],
     onToken: `--md-on-${PASSAGE_STATE_TOKENS[state].slice('--md-'.length)}`,
-    label,
+    label: PASSAGE_CHIP_LABELS[state],
   }))
 
   if ('loot' in source && source.loot) {
-    badges.push({ key: 'loot', icon: CoinsIcon, token: '--md-loot', onToken: '--md-on-loot', label: 'Loot assigned' })
+    badges.push({ key: 'loot', icon: Coins, token: '--md-loot', onToken: '--md-on-loot', label: 'Loot assigned' })
   }
   if (trapDisarmed) {
-    badges.push({ key: 'trap-disarmed', icon: TrapDisarmedIcon, token: '--md-tertiary', onToken: '--md-on-tertiary', label: 'Trap disarmed' })
+    badges.push({ key: 'trap-disarmed', icon: CheckCircle2, token: '--md-tertiary', onToken: '--md-on-tertiary', label: 'Trap disarmed' })
   }
 
   return badges
@@ -111,10 +139,27 @@ const FIXTURE_BADGE_TOKENS: Record<string, string> = {
   locked: '--md-passage-locked',
 }
 
+type FixtureChipState = 'concealed' | 'trapped' | 'locked'
+
+/** Fixture-state chip icon/label selection for DM marker badges, mirroring the feature
+ *  presentation chips (armed obstacles, concealed → trapped → locked) within the neutral
+ *  `src/map/**` boundary. */
+const FIXTURE_CHIP_ICONS: Record<FixtureChipState, LucideIcon> = {
+  concealed: EyeOff,
+  trapped: AlertTriangle,
+  locked: Lock,
+}
+
+const FIXTURE_CHIP_LABELS: Record<FixtureChipState, string> = {
+  concealed: 'Concealed',
+  trapped: 'Trapped',
+  locked: 'Locked',
+}
+
 /** Badge composition for fixture-state DM markers. Consumes effective nested state
  *  (authored + session) and emits only active obstacle and loot badges. Never emits
- *  trap-disarmed or unlocked badges. Active-obstacle order matches fixtureStateChips:
- *  concealed → trapped → locked, then Loot when present. */
+ *  trap-disarmed or unlocked badges. Active-obstacle order matches the shared fixture
+ *  chips: concealed → trapped → locked, then Loot when present. */
 export function fixtureMarkerBadges(
   fixture: BadgeSource,
   session?: SessionFixtureState,
@@ -123,7 +168,17 @@ export function fixtureMarkerBadges(
     fixture.state ?? fixtureStateFromFlags(fixture),
     session,
   )
-  const badges: MarkerBadge[] = fixtureStateChips(effective).map((chip) => ({
+  const chips: { state: FixtureChipState; icon: LucideIcon; label: string }[] = []
+  if (effective.obstacles.concealment.armed) {
+    chips.push({ state: 'concealed', icon: FIXTURE_CHIP_ICONS.concealed, label: FIXTURE_CHIP_LABELS.concealed })
+  }
+  if (effective.obstacles.trap.armed) {
+    chips.push({ state: 'trapped', icon: FIXTURE_CHIP_ICONS.trapped, label: FIXTURE_CHIP_LABELS.trapped })
+  }
+  if (effective.obstacles.lock.armed) {
+    chips.push({ state: 'locked', icon: FIXTURE_CHIP_ICONS.locked, label: FIXTURE_CHIP_LABELS.locked })
+  }
+  const badges: MarkerBadge[] = chips.map((chip) => ({
     key: chip.state,
     icon: chip.icon,
     token: FIXTURE_BADGE_TOKENS[chip.state],
@@ -134,7 +189,7 @@ export function fixtureMarkerBadges(
   if ('loot' in fixture && fixture.loot) {
     badges.push({
       key: 'loot',
-      icon: CoinsIcon,
+      icon: Coins,
       token: '--md-loot',
       onToken: '--md-on-loot',
       label: 'Loot assigned',

@@ -89,6 +89,9 @@ the tablet.
 - **All concealment flows through the curtain.** No kid-facing component reads raw dungeon data. The
   risk being managed is ordinary carelessness, not a kid with devtools, and tests cannot catch it
   because they assert what is shown rather than what is absent.
+- **Obstacle cues are presentation-only.** The kid map polls effective persisted state, renders at most
+  one icon-only active-and-shown Trap-or-Lock cue per fixture with Trap precedence, and renders no
+  fixture title, status text, Loot, Concealment, DC, or focus target.
 - **Knowledge and value are independently reversible. They are stored separately and never confused.**
 - **There is exactly one fog layer.** Two layers would mean two answers to one question, a seam
   between inside and outside, and no way to express a partially revealed room.

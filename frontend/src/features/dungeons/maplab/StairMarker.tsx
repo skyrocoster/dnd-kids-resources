@@ -1,5 +1,5 @@
-import { BadgeRing } from './BadgeRing'
-import { collapsedStatusLabel, fixtureMarkerBadges } from './markerBadges'
+import { BadgeRing } from '../../../map/BadgeRing'
+import { collapsedStatusLabel, fixtureMarkerBadges } from '../../../map/markerBadges'
 import { fixtureStairPresentation } from './maplabPresentation'
 import {
   type MapCell,

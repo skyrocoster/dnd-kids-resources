@@ -1,7 +1,8 @@
 ---
-description: Executes one Standard-strength work order via implement-order on DeepSeek V4 Pro.
+description: Executes one Standard-strength work order via implement-order on Luna Medium.
 mode: subagent
-model: opencode-go/deepseek-v4-pro
+model: openai/gpt-5.6-luna
+variant: medium
 permission:
   edit: allow
   bash: allow

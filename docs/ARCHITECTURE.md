@@ -52,6 +52,7 @@ This doc describes the folder structure, backend/frontend conventions, and reque
 | `components/` | Shared UI primitives (Card, ConfirmDialog, DiceText, FloatingWindow, SearchList, SplitPane) + subdirs for form inputs and icon components |
 | `features/` | Domain modules — `dungeons/`, `encounters/`, `items/`, `loot/`, `monsters/`, `npcs/`, `players/`, `spells/`, `weapons/`. Each feature dir contains pages, editor forms, and local state management. |
 | `model/` | Pure domain models shared by both the DM app and the Player app (`maplabModel.ts`). Modules here must import nothing from `components/`, `features/`, `layout/`, or `pages/` — enforced by the `no-restricted-imports` override in `frontend/.oxlintrc.json`, after a work order once lifted a helper here with a `features/` import and nothing caught it until reconcile. |
+| `map/` | Neutral shared canvas geometry, marker primitives, badge descriptors, and badge rendering used by DM and Player map surfaces. Modules here import only model/local siblings and direct icon packages, never feature or component modules. |
 | `player/` | Player app shell, navigation, curtain (player-view transform), kid-facing components, and the `/play/map` live map renderer/data seam |
 | `pages/` | Top-level router pages (HomePage, ComponentDemoPage, StubPage) — entry points for each route |
 | `layout/` | AppShell.tsx — header, nav, footer layout that wraps all pages; navSections.ts — shared nav-section → route map consumed by AppShell's rail/drawer and HomePage's chapter tabs |
@@ -79,7 +80,7 @@ features/dungeons/
     ├── InspectorPanel.tsx       # shared fixture inspector with DM View/Edit adapters
     ├── ViewerRoomRail.tsx       # floor-grouped room navigation
     ├── MapCanvas.tsx            # SVG canvas renderer
-    └── ... (markers, badges, CSS, tests)
+    └── ... (markers, CSS, tests; shared badge primitives live in map/)
 ```
 
 This pattern is used across the nine feature domains. If building a new feature domain, follow the local shape that fits its UI.

@@ -102,6 +102,40 @@ describe('DoorBadgeLayer collapsed status (M3)', () => {
     expect(container.querySelector('.maplab-door-badge')).toBeNull()
   })
 
+  it('shows armed statuses even when their player-facing Shown flags are false', () => {
+    const { container } = renderDoor(door({
+      state: {
+        open: false,
+        obstacles: {
+          concealment: { armed: true },
+          lock: { armed: true, shown: false },
+          trap: { armed: true, shown: false },
+        },
+      },
+    }))
+
+    expect(container.querySelector('.maplab-door-badge')).toHaveAttribute('data-badge', 'multiple-statuses')
+    expect(container.querySelector('[aria-label]')).toHaveAttribute(
+      'aria-label',
+      expect.stringContaining('Multiple statuses: Concealed, Trapped, Locked'),
+    )
+  })
+
+  it('does not render badges for disarmed obstacles', () => {
+    const { container } = renderDoor(door({
+      state: {
+        open: false,
+        obstacles: {
+          concealment: { armed: false },
+          lock: { armed: false, shown: true },
+          trap: { armed: false, shown: true },
+        },
+      },
+    }))
+
+    expect(container.querySelector('.maplab-door-badge')).toBeNull()
+  })
+
   it('keeps the door leaf in fixed --md-door regardless of status', () => {
     const { container } = renderDoor(door({
       state: {

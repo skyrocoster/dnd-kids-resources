@@ -311,4 +311,92 @@ describe('PlayerMapRenderer', () => {
     // Party cells should be on the correct floor
     expect(container.querySelector('[data-floor="1"] .player-map-room-cell--party')).toBeInTheDocument()
   })
+
+  // --- Lock/trap cues (shared descriptor, player policy) ---
+
+  it('renders no lock/trap cue for a plain fixture', () => {
+    const { container } = render(<PlayerMapRenderer layout={roomLayout()} />)
+    expect(container.querySelector('.player-map-cue')).not.toBeInTheDocument()
+  })
+
+  it('renders a single icon-only lock cue for a locked door with the shared label', () => {
+    const layout = roomLayout()
+    layout.doors[0].locked = true
+    const { container } = render(<PlayerMapRenderer layout={layout} />)
+    const cues = container.querySelectorAll('.player-map-cue')
+    expect(cues).toHaveLength(1)
+    expect(cues[0]).toHaveClass('player-map-cue--locked')
+    expect(cues[0]).toHaveAttribute('aria-label', 'Locked')
+    // Icon-only: no visible status text, no fixture title
+    expect(cues[0].querySelector('.player-map-cue-text')).not.toBeInTheDocument()
+    expect(container.querySelector('.player-map-cue-disc')).toBeInTheDocument()
+  })
+
+  it('renders a single icon-only trap cue for a trapped door with the shared label', () => {
+    const layout = roomLayout()
+    layout.doors[0].trapped = true
+    const { container } = render(<PlayerMapRenderer layout={layout} />)
+    const cues = container.querySelectorAll('.player-map-cue')
+    expect(cues).toHaveLength(1)
+    expect(cues[0]).toHaveClass('player-map-cue--trapped')
+    expect(cues[0]).toHaveAttribute('aria-label', 'Trapped')
+    expect(cues[0].querySelector('.player-map-cue-text')).not.toBeInTheDocument()
+  })
+
+  it('shows only the trap cue when a fixture is both trapped and locked (Trap before Lock)', () => {
+    const layout = roomLayout()
+    layout.doors[0].trapped = true
+    layout.doors[0].locked = true
+    const { container } = render(<PlayerMapRenderer layout={layout} />)
+    expect(container.querySelectorAll('.player-map-cue')).toHaveLength(1)
+    expect(container.querySelector('.player-map-cue--trapped')).toBeInTheDocument()
+    expect(container.querySelector('.player-map-cue--locked')).not.toBeInTheDocument()
+  })
+
+  it('does not render the fixture title on a cued fixture', () => {
+    const layout = roomLayout()
+    layout.doors[0].locked = true
+    layout.doors[0].title = 'Vault Door'
+    const { container } = render(<PlayerMapRenderer layout={layout} />)
+    expect(container.querySelector('.player-map-cue--locked')).toBeInTheDocument()
+    expect(screen.queryByText('Vault Door')).not.toBeInTheDocument()
+  })
+
+  it('renders one icon-only trap cue for each supported fixture kind', () => {
+    const layout = roomLayout()
+    layout.doors[0].trapped = true
+    layout.floors.push({ z: 1, title: 'Upstairs' })
+    layout.stairs.push({
+      stair_id: 7,
+      from: { z: 0, cell: [2, 3] },
+      to: { z: 1, cell: [2, 3] },
+      hidden: false,
+      locked: false,
+      trapped: true,
+    })
+    layout.props.push({ prop_id: 1, kind: 'chest', cell: [0, 0], z: 0, hidden: false, locked: false, trapped: true })
+    layout.portals.push({ portal_id: 1, cell: [1, 1], z: 0, hidden: false, locked: false, trapped: true })
+    const { container } = render(<PlayerMapRenderer layout={layout} />)
+    expect(container.querySelectorAll('.player-map-cue--trapped')).toHaveLength(4)
+    expect(container.querySelectorAll('.player-map-cue--locked')).toHaveLength(0)
+    // Every cue is icon-only and carries the winning shared descriptor label
+    container.querySelectorAll('.player-map-cue').forEach((cue) => {
+      expect(cue).toHaveAttribute('aria-label', 'Trapped')
+      expect(cue.querySelector('.player-map-cue-text')).not.toBeInTheDocument()
+    })
+  })
+
+  it('omits the cue for a fixture whose trap is armed but not shown', () => {
+    const layout = roomLayout()
+    layout.doors[0].state = {
+      open: false,
+      obstacles: {
+        concealment: { armed: false },
+        lock: { armed: false, shown: false },
+        trap: { armed: true, shown: false },
+      },
+    }
+    const { container } = render(<PlayerMapRenderer layout={layout} />)
+    expect(container.querySelector('.player-map-cue')).not.toBeInTheDocument()
+  })
 })

@@ -1,7 +1,7 @@
 import { ItemIcon } from '../../../components/icons'
-import { BadgeRing } from './BadgeRing'
+import { BadgeRing } from '../../../map/BadgeRing'
 import { PROP_KIND_ICONS } from './fixtureTypes'
-import { collapsedStatusLabel, fixtureMarkerBadges } from './markerBadges'
+import { collapsedStatusLabel, fixtureMarkerBadges } from '../../../map/markerBadges'
 import { fixturePresentation } from './maplabPresentation'
 import {
   effectiveFixtureState,

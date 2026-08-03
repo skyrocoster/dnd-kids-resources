@@ -335,7 +335,7 @@ Generic hover/focus details panel in Map Lab:
 - **Session layer** — `effectiveFixtureState` resolves authored baselines with sparse runtime leaves; no
   player-knowledge controls or source badges are rendered in the inspector.
 
-### Map Lab markers (`maplab/`)
+### Map Lab markers (`map/` shared primitives, `maplab/` DM consumers)
 
 - **On-square markers** — props, stairs, and portals retain neutral marker bodies with stable fixture-identity
   ring/icon color. One bounded status disc appears inside the owning cell: the specific status icon for one
@@ -343,6 +343,10 @@ Generic hover/focus details panel in Map Lab:
   still enumerate every independent state.
 - **Doors** — the leaf and identity glyph always use `--md-door`; door state is communicated by its
   icon-bearing badges, distributed alongside the current leaf in a trailing SVG layer.
+- **Audience policy** — DM maps show active Concealment, Trap, and Lock badges regardless of `Shown`, retain
+  the Multiple-statuses collapse, and keep Loot DM-only. The kid map is read-only and shows at most one
+  icon-only active-and-shown Trap-or-Lock cue per fixture, with Trap winning over Lock and no fixture title
+  or visible status text.
 
 ### Collapsible nav rail (`layout/AppShell.tsx`)
 

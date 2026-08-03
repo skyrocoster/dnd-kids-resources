@@ -1,6 +1,6 @@
 import { GatewayPortalIcon, PortalIcon } from '../../../components/icons'
-import { BadgeRing } from './BadgeRing'
-import { collapsedStatusLabel, fixtureMarkerBadges } from './markerBadges'
+import { BadgeRing } from '../../../map/BadgeRing'
+import { collapsedStatusLabel, fixtureMarkerBadges } from '../../../map/markerBadges'
 import { fixturePresentation } from './maplabPresentation'
 import {
   defaultFixtureState,
