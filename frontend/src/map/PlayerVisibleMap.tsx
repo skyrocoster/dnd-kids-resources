@@ -5,9 +5,7 @@ import {
   doorSwingGeometry,
   doorWallSegment,
   doorsOnFloor,
-  effectiveFixtureState,
   findDoorAtEdge,
-  fixtureStateFromFlags,
   gridMarkerOffset,
   markersAtCell,
   otherFloorZ,
@@ -70,10 +68,9 @@ function roomLabelFontSize(cells: [number, number][], title: string): number {
 function playerStatusDescriptor(
   fixture: MapDoor | MapStair | MapProp | MapPortal,
 ): MarkerBadge | null {
-  const effective = effectiveFixtureState(fixture.state ?? fixtureStateFromFlags(fixture))
-  const status: 'trapped' | 'locked' | null = effective.obstacles.trap.armed && effective.obstacles.trap.shown
+  const status: 'trapped' | 'locked' | null = fixture.trapped
     ? 'trapped'
-    : effective.obstacles.lock.armed && effective.obstacles.lock.shown
+    : fixture.locked
       ? 'locked'
       : null
   if (!status) return null

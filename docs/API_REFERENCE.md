@@ -207,7 +207,7 @@ Layout data (`map_layout`) and dungeon content data (`dungeons.data`) are saved 
 
 ## Session State Router
 
-`backend/app/routers/session_state.py` — permanent door/stair/portal toggle state (Map Lab session view), mirroring the layout router's save/load shape.
+`backend/app/routers/session_state.py` — permanent four-kind fixture toggle and obstacle state (Map Lab session view), mirroring the layout router's save/load shape.
 
 <!-- GENERATED:API:session_state:START -->
 | Method | Path | Purpose | Request | Response |
@@ -217,7 +217,7 @@ Layout data (`map_layout`) and dungeon content data (`dungeons.data`) are saved 
 | DELETE | `/api/dungeons/{dungeon_id}/session-state` | Reset a dungeon's toggle state to its authored defaults (removes the saved row, if any) | `dungeon_id` | (204 No Content) |
 <!-- GENERATED:API:session_state:END -->
 
-Session state is written through immediately on every toggle (no debounce) — unlike layout/content saves, a toggle is not a form. It writes to a separate table (`map_session_state`) from `map_layout` so opening a door never dirties the authored map document.
+Session state is written through immediately on every toggle (no debounce) — unlike layout/content saves, a toggle is not a form. It writes sparse four-kind fixture leaves to a separate table (`map_session_state`) from `map_layout` so play-state changes never dirty the authored map document; the player curtain consumes only the effective player-visible result.
 
 ---
 

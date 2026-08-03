@@ -58,6 +58,9 @@ The session view is the surface that is open while a game is running: it must st
   badges are armed-state presentation: Concealment, Lock, and Trap remain visible regardless of Shown,
   Loot remains DM-only, and multiple statuses retain their collapsed accessibility label.
 
+- The player curtain consumes effective four-kind session state and emits only player-visible fixture
+  facts; authoring-only loot, notes, DCs, and concealment fields do not cross that rendering boundary.
+
 - Room-entry prose concealment was deliberately removed from map disclosure because no current player surface renders it; a future Fog plan may define that capability explicitly.
 
 - Dungeons, map layouts, and map session state **are** seed-backed and **must** be exported before a

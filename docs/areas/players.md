@@ -92,6 +92,8 @@ the tablet.
 - **Obstacle cues are presentation-only.** The kid map polls effective persisted state, renders at most
   one icon-only active-and-shown Trap-or-Lock cue per fixture with Trap precedence, and renders no
   fixture title, status text, Loot, Concealment, DC, or focus target.
+- The curtain resolves authored state with sparse session overrides, omits concealment-armed fixtures,
+  and exposes only effective open/closed geometry plus active-and-shown Trap/Lock facts to the renderer.
 - **Knowledge and value are independently reversible. They are stored separately and never confused.**
 - **There is exactly one fog layer.** Two layers would mean two answers to one question, a seam
   between inside and outside, and no way to express a partially revealed room.

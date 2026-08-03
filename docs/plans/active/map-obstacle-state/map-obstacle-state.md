@@ -1,6 +1,6 @@
 # Map Obstacle State - authored baselines and one persisted run overlay
 
-> **Status:** Stage 5 shipped — shared map badge primitives now serve DM and player consumers, DM badges use armed-state policy, and the player map renders one icon-only Trap-or-Lock cue across all fixture kinds. Stage 6 (final player curtain cleanup, end-to-end proof, and canonical documentation reconciliation) is next; the final legacy-contract removal (`PassageFlags`/`PassageSessionState` drop) remains queued.
+> **Status:** Stage 6 shipped — the player curtain now emits effective, player-safe fixture facts, filters concealment, and removes loot and authoring fields; the player renderer consumes one Trap-before-Lock cue across all fixture kinds, with focused proof and full repository gates green. The final legacy-contract removal (`PassageFlags`/`PassageSessionState` drop) remains queued.
 
 - **Areas:** dungeons
 - **Read trigger:** Map fixture concealment, locks, traps, DCs, shown state, session overrides, player-map obstacle badges, the Map Lab inspector, or removal of map knowledge and player preview
@@ -248,6 +248,7 @@ than replacing them with summaries or fresh design decisions.
 | 3 | Removed the obsolete knowledge API/table/schema/seed paths, prose concealment fields and graph helpers, and the DM-side player preview. Player curtain, Map Lab controls, migration cleanup, and focused tests now use the remaining obstacle-state contract; stale knowledge test setup was removed as part of the consumer cleanup. |
 | 4 | Replaced the legacy Map Lab command controls with one shared labelled-checkbox obstacle inspector used by DM View and DM Edit. DM View now persists sparse four-kind session leaves with rollback and fixture reset, while DM Edit autosaves authored obstacle/DC changes and warns about incomplete armed DCs. |
 | 5 | Moved badge descriptors and the ring renderer to neutral shared map ownership, retained DM collapse/Loot policy with armed-only statuses, and replaced door-only player cues with one icon-only Trap-before-Lock badge across doors, stairs, props, and portals. |
+| 6 | Finished the player curtain contract and runtime seam: effective authored/session state now filters concealed fixtures and emits only open/closed plus active-and-shown Trap/Lock facts, with loot and authoring fields removed from `KidMapLayout`. Added focused curtain and renderer safety coverage; backend, frontend, build, lint, and documentation gates pass. |
 
 ## Touches
 
@@ -299,7 +300,3 @@ than replacing them with summaries or fresh design decisions.
 ### Stage 5
 - **Settled contracts:** `scratch/map-knowledge-obstacles-handoff.md:589-661`.
 - **Constraints:** Shared descriptors/primitives, separate audience policies; no positive badge state and no player multiplicity glyph or visible status text (`:597-620`, `:622-648`).
-
-### Stage 6
-- **Settled contracts:** `scratch/map-knowledge-obstacles-handoff.md:663-681`, `:769-790`.
-- **Constraints:** Curtain is a rendering contract, not a security boundary; preserve last good player frame on transient session failure (`:663-681`, `:789`).
