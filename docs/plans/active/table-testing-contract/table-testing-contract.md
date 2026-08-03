@@ -1,6 +1,6 @@
 # Table Testing Contract — focused questions become reusable evidence and ideas
 
-> **Status:** Contract agreed; ready to replace the plan-coupled table-test format and add the AI preparation/review workflow.
+> **Status:** Stage 1 shipped — the canonical reference and blank session template now define compact, independent, question-led records. Next is the grilling-style AI preparation and review skill.
 
 - **Areas:** infra
 - **Read trigger:** Designing, preparing, recording, reviewing, or organizing a focused table test without creating an implementation plan
@@ -41,6 +41,7 @@ reconcile workflow, but table testing never creates, blocks, edits, or prioritiz
 
 | Stage | What shipped (≤2 sentences) |
 |-------|------------------------------|
+| 1 | Replaced the plan-coupled table-testing reference and blank template with the independent `draft` → `recorded` → `reviewed` lifecycle. Each record now uses one to five focused questions comparing expected and actual outcomes, while keeping interpretation and possible ideas separate from implementation Plans. |
 
 ## Compiler handoff
 

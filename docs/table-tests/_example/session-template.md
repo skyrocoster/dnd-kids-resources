@@ -69,12 +69,3 @@ understand and what outcome you expect.*
 `reviewed` when the interpretations have been checked without rewriting the raw evidence.*
 
 - **Follow-up references:** <optional plan stage or issue links; the session itself does not require a plan>
-
-## Actions
-
-*Nothing is fixed here. Every action points outward at a plan stage or a GitHub issue, so this record
-stays a record and never becomes a second, parallel plan.*
-
-| What | Where it went |
-|---|---|
-| … | … |
