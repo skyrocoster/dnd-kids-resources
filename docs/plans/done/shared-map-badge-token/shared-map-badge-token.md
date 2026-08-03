@@ -1,6 +1,6 @@
 # Shared Map Badge Token — one visual system for DM and player maps
 
-> **Status:** Stage 1 shipped — DM and player map markers now use the shared badge renderer and geometry; Stage 2 remains to reconcile audience policy helpers and marker-only legacy presentation.
+> **Status:** Stage 2 shipped — marker-only legacy presentation helpers were removed while inspector behavior and the shared DM/player audience policies remain intact.
 
 - **Areas:** design, dungeons, players
 - **Read trigger:** When changing map marker badge anatomy, shared badge rendering, or the audience-specific information shown by a map token.
@@ -37,6 +37,7 @@ Touch:        existing Map Lab canvas-glyph exception; no new interactive badge 
 | Stage | What shipped (≤2 sentences) |
 |-------|------------------------------|
 | Stage 1 | DM prop, stair, portal, and door markers plus the player map cue now use the shared bounded badge renderer and geometry. Existing audience-specific status selection and curtain filtering remain unchanged. |
+| Stage 2 | Removed marker-only legacy passage presentation exports while retaining inspector descriptors and fixture presentation helpers. Focused DM/player policy regression suites passed with no audience-policy or geometry changes required. |
 
 ## Touches
 - `frontend/src/map/**`
@@ -48,12 +49,3 @@ Touch:        existing Map Lab canvas-glyph exception; no new interactive badge 
 - `docs/DESIGN_SYSTEM.md`
 - `docs/areas/dungeons.md`
 - `docs/areas/players.md`
-
-## Compiler handoff
-
-### Stage 2
-- **Verified edit sites:** `frontend/src/map/markerBadges.ts` — DM armed-state composition and player Trap/Lock precedence. `frontend/src/player/curtain.ts` — player-visible fixture filtering on armed and shown. `frontend/src/features/dungeons/maplab/maplabPresentation.ts` — legacy flat passage presentation helpers. `frontend/src/features/dungeons/maplab/InspectorPanel.tsx` and related presentation consumers — retain any non-marker inspector behavior.
-- **Verified tests:** `frontend/src/map/__tests__/markerBadges.test.ts` — DM armed regardless of shown and player descriptor behavior. `frontend/src/player/__tests__/curtain.test.ts` — player field-removal and armed/shown disclosure contract. Existing Map Lab marker suites cover multiple-status collapse and DM visibility.
-- **Settled contracts:** DM displays armed Concealment, Lock, and Trap regardless of `shown`; multiple active DM statuses collapse to one multiple-status token. Player displays only curtain-filtered armed-and-shown Trap/Lock facts, with Trap precedence. The player renderer remains presentation-only and relies on the curtain. Remove only marker-only legacy helpers; retain helpers needed by inspector prose/chips.
-- **Constraints:** Preserve Loot as DM-only, concealment removal at the curtain, accessibility labels enumerating collapsed states, and the existing shared obstacle inspector's independent Armed/Shown controls. Update canonical design/area references during reconcile if their current marker anatomy statements change.
-- **Open questions:** `to-orders` must identify which legacy helpers are marker-only and confirm the exact focused test command for the final touch set.

@@ -38,7 +38,7 @@ export interface PassagePresentation {
   label: string
 }
 
-export function passagePresentation(passage: PassageFlags): PassagePresentation {
+function passagePresentationForDescriptor(passage: PassageFlags): PassagePresentation {
   if (passage.trapped) {
     return { state: 'trapped', icon: TrapIcon, token: '--md-error', label: 'Trapped' }
   }
@@ -51,14 +51,7 @@ export function passagePresentation(passage: PassageFlags): PassagePresentation 
   return { state: 'unlocked', icon: UnlockIcon, token: '--md-on-surface-variant', label: 'Unlocked' }
 }
 
-export function secondaryPassageStates(passage: PassageFlags): PassageState[] {
-  const primary = passagePresentation(passage).state
-  return PASSAGE_STATE_PRECEDENCE.filter(
-    (state) => state !== primary && state !== 'unlocked' && isPassageStateActive(state, passage),
-  )
-}
-
-export interface PassageStateChip {
+interface PassageStateChip {
   state: PassageState
   icon: LucideIcon
   label: string
@@ -76,7 +69,7 @@ const PASSAGE_STATE_CHIP_LABELS: Record<Exclude<PassageState, 'unlocked'>, strin
   hidden: 'Hidden',
 }
 
-export function passageStateChips(passage: PassageFlags): PassageStateChip[] {
+function passageStateChipsForDescriptor(passage: PassageFlags): PassageStateChip[] {
   return PASSAGE_STATE_PRECEDENCE.filter(
     (state): state is Exclude<PassageState, 'unlocked'> =>
       state !== 'unlocked' && isPassageStateActive(state, passage),
@@ -125,7 +118,7 @@ export function inspectableDescriptor(
     }
     case 'door': {
       const { door, session } = target
-      const presentation = doorPresentation(door, session)
+      const presentation = doorPresentationForDescriptor(door, session)
       const effective = effectivePassageState(door, session)
       const lines = passageDescriptorLines(effective)
       lines.unshift({ label: 'Position', value: effective.sessionOpen ? 'Open' : 'Closed' })
@@ -135,14 +128,14 @@ export function inspectableDescriptor(
         typeLabel: 'Door',
         icon: presentation.icon,
         token: presentation.token,
-        chips: passageStateChips(effective),
+        chips: passageStateChipsForDescriptor(effective),
         lines,
       }
     }
     case 'stair': {
       const { stair, session } = target
       const effective = effectivePassageState(stair, session)
-      const presentation = passagePresentation(effective)
+      const presentation = passagePresentationForDescriptor(effective)
       const lines = passageDescriptorLines(effective)
       if (stair.trapped && effective.trapDisarmed) lines.push({ label: 'Trap', value: 'Disarmed' })
       return {
@@ -150,7 +143,7 @@ export function inspectableDescriptor(
         typeLabel: 'Stair',
         icon: presentation.icon,
         token: presentation.token,
-        chips: passageStateChips(effective),
+        chips: passageStateChipsForDescriptor(effective),
         lines,
       }
     }
@@ -160,15 +153,15 @@ export function inspectableDescriptor(
         title: prop.title ?? prop.kind,
         typeLabel: 'Prop',
         icon: PROP_KIND_ICONS[prop.kind] ?? ItemIcon,
-        token: passagePresentation(prop).token,
-        chips: passageStateChips(prop),
+        token: passagePresentationForDescriptor(prop).token,
+        chips: passageStateChipsForDescriptor(prop),
         lines: passageDescriptorLines(prop),
       }
     }
     case 'portal': {
       const { portal, session } = target
       const effective = effectivePassageState(portal, session)
-      const presentation = passagePresentation(effective)
+      const presentation = passagePresentationForDescriptor(effective)
       const lines = passageDescriptorLines(effective)
       lines.push(
         portal.to?.dungeon_id !== undefined
@@ -182,7 +175,7 @@ export function inspectableDescriptor(
         typeLabel: 'Portal',
         icon: presentation.icon,
         token: presentation.token,
-        chips: passageStateChips(effective),
+        chips: passageStateChipsForDescriptor(effective),
         lines,
       }
     }
@@ -204,32 +197,13 @@ export function inspectableDescriptor(
   }
 }
 
-export interface StairPresentation extends PassagePresentation {
-  direction: 'up' | 'down' | 'level'
-}
-
-export function stairPresentation(stair: MapStair, fromZ?: number, session?: PassageSessionState | SessionFixtureState): StairPresentation {
-  const effective = effectivePassageState(stair, session)
-  const base = passagePresentation(effective)
-  const direction = stairDirection(stair, fromZ)
-  const icon =
-    base.state === 'unlocked'
-      ? direction === 'up'
-        ? StairsUpIcon
-        : direction === 'down'
-          ? StairsDownIcon
-          : StairsIcon
-      : base.icon
-  return { ...base, icon, direction }
-}
-
-export interface DoorPresentation extends PassagePresentation {
+interface DoorPresentation extends PassagePresentation {
   isOpen: boolean
 }
 
-export function doorPresentation(door: MapDoor, session?: PassageSessionState | SessionFixtureState): DoorPresentation {
+function doorPresentationForDescriptor(door: MapDoor, session?: PassageSessionState | SessionFixtureState): DoorPresentation {
   const effective = effectivePassageState(door, session)
-  const base = passagePresentation(effective)
+  const base = passagePresentationForDescriptor(effective)
   const isOpen = effective.sessionOpen ?? false
   const icon = base.state === 'unlocked' ? (isOpen ? DoorOpenIcon : DoorClosedIcon) : base.icon
   return { ...base, icon, isOpen }

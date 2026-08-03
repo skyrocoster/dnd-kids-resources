@@ -39,6 +39,7 @@ Completed plans are archived here for reference. Each directory under `docs/plan
 - [Player Map Knowledge — the DM controls each fact the party has learned](player-map-knowledge/player-map-knowledge.md) — All 5 stages shipped — feature complete. — (Players)
 - [Player Spellbook Recovery — fast playtime spell reference backed by recoverable character records](player-spellbook-recovery/player-spellbook-recovery.md) — Stage 1-5 shipped. — (Players)
 - [Seed Pipeline Fix Plan — Export/Import Consistency](seed_pipeline_fix_plan/seed_pipeline_fix_plan.md) — S0–S5 all shipped. — (Infra)
+- [Shared Map Badge Token — one visual system for DM and player maps](shared-map-badge-token/shared-map-badge-token.md) — Stage 2 shipped — marker-only legacy presentation helpers were removed while inspector behavior and the shared DM/player audience policies remain intact. — (design)
 - [Spells - Data Restructure & Experience Rewire](spells_plan/spells_plan.md) — S0-S3, B0-B3, and F0-F3 shipped. — (Reference)
 - [UX Patterns — give the repo one design skill and a reference for how the app behaves](ux-patterns/ux-patterns.md) — All five stages complete — ready to archive to `docs/complete/`. — (Infra)
 - [D&D Kids Resources — v2 Rebuild Plan (staged)](v2-rebuild-plan/v2-rebuild-plan.md) — (Infra)

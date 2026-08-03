@@ -14,6 +14,7 @@ Each `docs/plans/active/<feature>/` directory holds its Plan and the lean, dispo
 |---|---|---|
 | Documentation maintenance | [Infra](areas/infra.md) | `PLAN_TEMPLATE.md`, `scripts/check_docs.py`, `TESTING.md`, and existing GitHub workflow files |
 | Running or recording a real session at the table | [Infra](areas/infra.md) | `TABLE_TESTING.md`, `docs/table-tests/_example/session-template.md`, then the plan the session serves |
+| Capturing a candidate idea from table-testing evidence | [Infra](areas/infra.md) | `TABLE_TESTING.md`, then `ideas/README.md` and the example idea card |
 | Designing or changing any UI surface | [Design](areas/design.md) | `UX_PATTERNS.md`, `DESIGN_SYSTEM.md`, the owning area guide's `## Surfaces` table |
 | Visual consistency work | [Design](areas/design.md) | `areas/design.md`, `DESIGN_SYSTEM.md`, `ARCHITECTURE.md`, `TESTING.md` |
 | Story threads, Loom tapestry, beats, or session nodes | [Loom](areas/loom.md) | `areas/loom.md`, `DESIGN_SYSTEM.md`, `ARCHITECTURE.md`, `API_REFERENCE.md`, `DATA_MODEL.md`, `TESTING.md` |

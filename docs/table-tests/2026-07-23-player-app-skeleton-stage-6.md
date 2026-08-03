@@ -1,8 +1,8 @@
 # Table Test — 2026-07-26 — Player App Skeleton Stage 6
 
-> **Status:** run
+> **Status:** historical — legacy Plan-coupled record; not an authoritative current-contract record
 
-- **Plan:** [Player App Skeleton](../plans/done/player-app-skeleton/player-app-skeleton.md) — Stage 6, work order `03-session-run`
+- **Legacy Plan:** [Player App Skeleton](../plans/done/player-app-skeleton/player-app-skeleton.md) — Stage 6, work order `03-session-run` (historical routing only)
 - **Build:** `e1687738c650095fade7a50a03072c479d53eab5`
 - **Device:** tablet browser over the LAN to the Vite dev server; DM on the laptop at
   `http://127.0.0.1:5173/dungeons/4`. Tablet model not recorded.

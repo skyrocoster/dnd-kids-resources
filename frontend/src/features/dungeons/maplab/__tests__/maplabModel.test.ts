@@ -1,14 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { mapLabLayout } from '../maplabData'
-import { UnlockIcon, StairsUpIcon, StairsDownIcon } from '../../../../components/icons'
 import {
-  passagePresentation,
-  secondaryPassageStates,
-  stairPresentation,
-  doorPresentation,
   inspectableDescriptor,
   fixtureInspectableDescriptor,
-  passageStateChips,
 } from '../maplabPresentation'
 import {
   absoluteCells,
@@ -188,73 +182,6 @@ describe('maplabModel (M0a scaffold)', () => {
     it('returns the west wall segment of a cell', () => {
       const door: MapDoor = { door_id: 1, cell: [1, 1], side: 'W', ...baseDoorFlags }
       expect(doorWallSegment(door, 48)).toEqual({ x1: 48, y1: 48, x2: 48, y2: 96 })
-    })
-  })
-
-  describe('passagePresentation', () => {
-    const base: MapDoor = { door_id: 1, cell: [0, 0], side: 'N', ...baseDoorFlags }
-
-    it('shows trapped state with highest precedence', () => {
-      const door: MapDoor = { ...base, trapped: true, locked: true, hidden: true }
-      const p = passagePresentation(door)
-      expect(p.state).toBe('trapped')
-      expect(p.token).toBe('--md-error')
-      expect(p.label).toBe('Trapped')
-      expect(p.icon).toBeDefined()
-    })
-
-    it('shows locked state when not trapped', () => {
-      const door: MapDoor = { ...base, locked: true, hidden: true }
-      const p = passagePresentation(door)
-      expect(p.state).toBe('locked')
-      expect(p.token).toBe('--md-passage-locked')
-      expect(p.label).toBe('Locked')
-    })
-
-    it('shows hidden state when not trapped or locked', () => {
-      const door: MapDoor = { ...base, hidden: true }
-      const p = passagePresentation(door)
-      expect(p.state).toBe('hidden')
-      expect(p.token).toBe('--md-passage-hidden')
-      expect(p.label).toBe('Hidden')
-    })
-
-    it('shows unlocked state when no flags are set', () => {
-      const p = passagePresentation(base)
-      expect(p.state).toBe('unlocked')
-      expect(p.token).toBe('--md-on-surface-variant')
-      expect(p.label).toBe('Unlocked')
-    })
-
-    it('presents a stair identically to a door — same flags, same mapping', () => {
-      const stair: MapStair = {
-        stair_id: 9,
-        from: { z: 0, cell: [0, 0] },
-        to: { z: 1, cell: [0, 0] },
-        trapped: true,
-        locked: false,
-        hidden: false,
-      }
-      const p = passagePresentation(stair)
-      expect(p.state).toBe('trapped')
-      expect(p.token).toBe('--md-error')
-    })
-  })
-
-  describe('secondaryPassageStates', () => {
-    it('surfaces the non-primary active flags as secondary states', () => {
-      const door: MapDoor = { door_id: 1, cell: [0, 0], side: 'N', trapped: true, locked: true, hidden: true }
-      expect(secondaryPassageStates(door)).toEqual(['locked', 'hidden'])
-    })
-
-    it('returns an empty array when only the primary flag is set', () => {
-      const door: MapDoor = { door_id: 1, cell: [0, 0], side: 'N', trapped: true, locked: false, hidden: false }
-      expect(secondaryPassageStates(door)).toEqual([])
-    })
-
-    it('returns an empty array for a plain unlocked passage', () => {
-      const door: MapDoor = { door_id: 1, cell: [0, 0], side: 'N', ...baseDoorFlags }
-      expect(secondaryPassageStates(door)).toEqual([])
     })
   })
 
@@ -660,35 +587,6 @@ describe('maplabModel (Stage 2 stair presentation)', () => {
     })
   })
 
-  describe('stairPresentation', () => {
-    const stair2 = mapLabLayout.stairs.find((s) => s.stair_id === 2)!
-
-    it('gives a plain (unlocked) stair a real directional glyph instead of the generic unlock icon', () => {
-      const p = stairPresentation(stair2, 0)
-      expect(p.direction).toBe('up')
-      expect(p.icon).toBe(StairsUpIcon)
-      expect(p.icon).not.toBe(UnlockIcon)
-    })
-
-    it('flips to the down glyph when viewed from the other endpoint', () => {
-      const p = stairPresentation(stair2, 1)
-      expect(p.direction).toBe('down')
-      expect(p.icon).toBe(StairsDownIcon)
-    })
-
-    it('keeps the state icon (not the directional glyph) for a trapped/locked/hidden stair', () => {
-      const trapped: MapStair = { ...stair2, trapped: true }
-      const p = stairPresentation(trapped, 0)
-      expect(p.state).toBe('trapped')
-      expect(p.icon).not.toBe(StairsUpIcon)
-      expect(p.icon).not.toBe(StairsDownIcon)
-    })
-
-    it('shares one token family between the base passage state and the stair presentation', () => {
-      const p = stairPresentation(stair2, 0)
-      expect(p.token).toBe(passagePresentation(stair2).token)
-    })
-  })
 })
 
 describe('maplabModel (Stage 3 inspector)', () => {
@@ -846,7 +744,6 @@ describe('maplabModel (Stage 4 session state)', () => {
     const effective = effectivePassageState(flags, { isOpen: false, isLocked: false, trapDisarmed: false })
 
     expect(effective.locked).toBe(false)
-    expect(passagePresentation(effective).state).toBe('unlocked')
   })
 
   it('effectivePassageState reflects disarmed traps in the presentation', () => {
@@ -857,7 +754,6 @@ describe('maplabModel (Stage 4 session state)', () => {
     expect(effective.trapDisarmed).toBe(true)
     // Trap disarmed, but still locked — presentation steps to the next active flag, not straight
     // to unlocked, since the flags are independent.
-    expect(passagePresentation(effective).state).toBe('locked')
   })
 
   it('effectivePassageState falls back to the authored defaults with no session (door closed by default)', () => {
@@ -872,25 +768,6 @@ describe('maplabModel (Stage 4 session state)', () => {
   it('defaultPassageSession seeds the reset baseline from authored flags (closed by default)', () => {
     const flags = { hidden: false, locked: true, trapped: true }
     expect(defaultPassageSession(flags)).toEqual({ isOpen: false, isLocked: true, trapDisarmed: false })
-  })
-
-  it('doorPresentation swaps in a closed/open glyph on the unlocked case', () => {
-    const door: MapDoor = { door_id: 1, cell: [0, 0], side: 'N', ...baseDoorFlags }
-
-    const closed = doorPresentation(door, defaultPassageSession(door))
-    expect(closed.state).toBe('unlocked')
-    expect(closed.isOpen).toBe(false)
-    expect(closed.icon).not.toBe(UnlockIcon)
-
-    const open = doorPresentation(door, { isOpen: true, isLocked: false, trapDisarmed: false })
-    expect(open.isOpen).toBe(true)
-    expect(open.icon).not.toBe(closed.icon)
-  })
-
-  it('doorPresentation keeps the state icon when trapped/locked/hidden, regardless of open/closed', () => {
-    const door: MapDoor = { door_id: 2, cell: [0, 0], side: 'N', hidden: false, locked: true, trapped: false }
-    const presentation = doorPresentation(door, { isOpen: true, isLocked: true, trapDisarmed: false })
-    expect(presentation.state).toBe('locked')
   })
 
   it('inspectableDescriptor reflects session overrides for a door', () => {
@@ -1179,49 +1056,6 @@ describe('Design Phase J — Map Lab Decluttering', () => {
         hidden: '--md-passage-hidden',
         unlocked: '--md-on-surface-variant',
       })
-    })
-  })
-
-  describe('passageStateChips', () => {
-    it('returns a trapped-only chip for a trapped passage', () => {
-      const chips = passageStateChips({ ...baseDoorFlags, trapped: true })
-      expect(chips.map((c) => c.state)).toEqual(['trapped'])
-      expect(chips[0].label).toBe('Trapped')
-    })
-
-    it('returns a locked-only chip for a locked passage', () => {
-      const chips = passageStateChips({ ...baseDoorFlags, locked: true })
-      expect(chips.map((c) => c.state)).toEqual(['locked'])
-      expect(chips[0].label).toBe('Locked')
-    })
-
-    it('returns a hidden-only chip for a hidden passage', () => {
-      const chips = passageStateChips({ ...baseDoorFlags, hidden: true })
-      expect(chips.map((c) => c.state)).toEqual(['hidden'])
-      expect(chips[0].label).toBe('Hidden')
-    })
-
-    it('returns trapped + locked chips for a trapped and locked passage', () => {
-      const chips = passageStateChips({ ...baseDoorFlags, trapped: true, locked: true })
-      expect(chips.map((c) => c.state)).toEqual(['trapped', 'locked'])
-    })
-
-    it('returns no chips for a fully unlocked passage', () => {
-      expect(passageStateChips(baseDoorFlags)).toEqual([])
-    })
-  })
-
-  describe('passage-state color tokens (J3 — repointed to design_plan.md DP1 banked tokens)', () => {
-    it('locked passage uses the banked --md-passage-locked token, not --md-secondary', () => {
-      const p = passagePresentation({ ...baseDoorFlags, locked: true })
-      expect(p.token).toBe('--md-passage-locked')
-      expect(p.token).not.toBe('--md-secondary')
-    })
-
-    it('hidden passage uses the banked --md-passage-hidden token, not --md-outline', () => {
-      const p = passagePresentation({ ...baseDoorFlags, hidden: true })
-      expect(p.token).toBe('--md-passage-hidden')
-      expect(p.token).not.toBe('--md-outline')
     })
   })
 

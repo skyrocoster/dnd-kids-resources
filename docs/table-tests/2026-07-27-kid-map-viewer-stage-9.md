@@ -1,8 +1,8 @@
 # Table Test — 2026-07-27 — Kid Map Viewer Stage 9
 
-> **Status:** planned
+> **Status:** historical — legacy Plan-coupled record; not an authoritative current-contract record
 
-- **Plan:** [Kid Map Viewer](../plans/done/kid-map-viewer/kid-map-viewer.md) — Stage 9, work order `01-second-table-test-record`
+- **Legacy Plan:** [Kid Map Viewer](../plans/done/kid-map-viewer/kid-map-viewer.md) — Stage 9, work order `01-second-table-test-record` (historical routing only)
 - **Build:** *(pending — record after session)*
 - **Device:** *(pending — record device, browser, and network setup used)*
 - **Operators:** Pip (6), Lark (4) — *(same cohort as first session; confirm ages and any new participants)*

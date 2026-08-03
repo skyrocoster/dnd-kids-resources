@@ -18,6 +18,9 @@ A table-testing record is independent of implementation Plans. It has exactly th
   considered separately from the record; reviewing does not turn the record into an implementation
   plan.
 
+Candidate ideas belong in the independent [ideas bank](ideas/README.md). They remain candidates
+until separately evaluated through the normal planning process.
+
 Statuses describe the record, not a feature or a Plan. Existing real session records remain
 historical and are not rewritten to fit this contract.
 
@@ -68,6 +71,10 @@ blocks.
 The `docs/table-tests/_example/` folder is a template only and holds no session data. It is excluded
 from the record index. Records live outside `docs/plans/` so the evidence remains independent of
 Plan lifecycle.
+
+If a reviewed record suggests a possible direction, capture that candidate in
+[`docs/ideas/`](ideas/README.md). The ideas bank is separate from both these records and
+implementation Plans; it does not create a Plan or change the record index.
 
 ## Record index
 

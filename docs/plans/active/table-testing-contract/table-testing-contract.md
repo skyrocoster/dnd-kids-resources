@@ -1,6 +1,6 @@
 # Table Testing Contract — focused questions become reusable evidence and ideas
 
-> **Status:** Stage 1 shipped — the canonical reference and blank session template now define compact, independent, question-led records. Next is the grilling-style AI preparation and review skill.
+> **Status:** Stage 3 shipped — the independent candidate ideas bank and evidence-linked card format are documented, and legacy table-test records are clearly marked as historical. Next is decoupling implementation workflow guidance from mandatory table tests.
 
 - **Areas:** infra
 - **Read trigger:** Designing, preparing, recording, reviewing, or organizing a focused table test without creating an implementation plan
@@ -9,6 +9,7 @@
 
 - `docs/TABLE_TESTING.md`
 - `docs/table-tests/**`
+- `docs/ideas/**`
 - `docs/PLAN_TEMPLATE.md`
 - `.opencode/skills/contract/SKILL.md`
 - `.opencode/skills/to-orders/SKILL.md`
@@ -42,22 +43,10 @@ reconcile workflow, but table testing never creates, blocks, edits, or prioritiz
 | Stage | What shipped (≤2 sentences) |
 |-------|------------------------------|
 | 1 | Replaced the plan-coupled table-testing reference and blank template with the independent `draft` → `recorded` → `reviewed` lifecycle. Each record now uses one to five focused questions comparing expected and actual outcomes, while keeping interpretation and possible ideas separate from implementation Plans. |
+| 2 | Added the `table-test` AI skill with separate preparation and review modes. It uses grilling-style, one-question-at-a-time prompts, preserves human wording, requires explicit confirmation before writing records or ideas, and prohibits invented evidence or automatic Plan changes. |
+| 3 | Added the independent candidate ideas bank and evidence-linked card template, with routing from the table-testing documentation. Preserved the two existing Plan-coupled records as explicitly historical evidence and clarified the superseded contract without rewriting their raw observations. |
 
 ## Compiler handoff
-
-### Stage 2
-- **Verified edit sites:** `.opencode/skills/contract/SKILL.md` — one-question-at-a-time grilling mechanics and recommended choices; `.opencode/skills/` — native repository skill location.
-- **Verified tests:** `.venv\Scripts\python.exe scripts/check_docs.py --check` — AI-entry and documentation contract checks.
-- **Settled contracts:** The skill has two conversational passes: AI preparation before the session and AI review afterward; the human receives only the focused session sheet; the AI asks one question at a time with three concrete options and one recommendation; it preserves the user's words and asks for confirmation before writing artifacts.
-- **Constraints:** The skill may suggest ideas but must not create or modify implementation Plans, issues, or priorities automatically.
-- **Open questions:** Decide the exact skill command/name and whether preparation/review are separate invocation modes or one skill with a mode prompt.
-
-### Stage 3
-- **Verified edit sites:** `docs/README.md` — task router and documentation manifest entry points; `docs/INVENTORY.md` — generated documentation inventory; `scripts/check_docs.py` — generated-document and link checks.
-- **Verified tests:** `.venv\Scripts\python.exe scripts/check_docs.py --check`.
-- **Settled contracts:** Idea cards are small: title, source table-test link, observed finding, possible direction, and unresolved questions; the bank is separate from both records and Plans.
-- **Constraints:** Do not create a parallel implementation queue or hand-maintained generated index; ideas remain candidates until a later contract selects one.
-- **Open questions:** Confirm whether the bank needs a generated index or only a directory README and individual cards.
 
 ### Stage 4
 - **Verified edit sites:** `docs/PLAN_TEMPLATE.md` — current mandatory table-test guidance; `.opencode/skills/to-orders/SKILL.md` — current session-run stop condition; `docs/plans/active/table-testing-records/table-testing-records.md` — superseded plan-coupled contract.

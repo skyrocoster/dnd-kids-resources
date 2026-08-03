@@ -53,9 +53,11 @@ because of the app?
   A format that asks a tired DM to write structured prose at 9pm will not survive its second use.
 - **Records outlive their plans.** They live in `docs/table-tests/`, not under `plans/`, so archiving
   a completed plan never buries the evidence that shaped it.
-- **Exactly three statuses: `planned` → `run` → `folded in`.** No fourth state. The
-  `2026-07-27-kid-map-viewer-stage-9.md` record's `pending` is the same thing as `planned` and is
-  corrected to it, rather than the vocabulary growing to accommodate one record.
+- **Historical lifecycle (superseded): `planned` → `run` → `folded in`.** This was the former
+  Plan-coupled lifecycle documented by this now-superseded Plan; it is retained only as historical
+  context and is not the independent current contract. No current record should be routed through
+  this sequence. The `2026-07-27-kid-map-viewer-stage-9.md` record's `pending` was the same thing as
+  `planned` in that historical context; both existing records remain raw historical evidence.
 - **A plan names its table test on the stage line, not in a section of its own.** The stage that ends
   at something playable carries a `**Table test:**` line pointing at the record; the Shipped row for
   that stage links the same file. No `## Table tests` section — a second list of records is the
