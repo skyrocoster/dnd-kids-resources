@@ -35,7 +35,7 @@ import {
   ZoomOutIcon,
 } from '../../../components/icons'
 import { InspectorPanel, type ObstacleInspectorAdapter } from './InspectorPanel'
-import { resolveMapDensity, ToolbarTray, useMapDensity, useMapLayerVisibility } from './MapLabPage'
+import { resolveMapDensity, ToolbarTray, useMapDensity, useMapLayerVisibility } from './MapLabToolbar'
 import { FixturePropertiesForm } from './FixturePropertiesForm'
 import { PropMarker } from './PropMarker'
 import { PortalMarker } from './PortalMarker'

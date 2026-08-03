@@ -1,52 +1,42 @@
-import { useCallback, useEffect, useMemo, useState, useRef, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import './MapLabPage.css'
-import { ConfirmDialog } from '../../../components/ConfirmDialog'
-import { FloatingWindow } from '../../../components/FloatingWindow'
 import { getAtTheTable, listDungeons, setAtTheTable } from '../../../api/client'
 import { MapLabRouteState } from './MapLabRouteState'
 import { useDungeonShellContext } from './dungeonRouteContext'
 import { useMapLabLayout } from './useMapLabLayout'
 import { useMapLabSessionState, type SessionFixtureKind } from './useMapLabSessionState'
 import { useMapCanvasZoom, type ViewportSize } from '../../../map/useMapCanvasZoom'
-import { MapCanvas } from '../../../map/MapCanvas'
-import { ChevronDownIcon, ChevronUpIcon, EyeIcon, FitIcon, ZoomInIcon, ZoomOutIcon } from '../../../components/icons'
-import { EncounterDock } from '../../encounters/EncounterDock'
-import { NPCStatCard } from '../../npcs/NPCStatCard'
-import { StatePanel } from '../../../components/StatePanel'
-import { resolveMapDensity, AUTO_DENSITY_SIMPLE_THRESHOLD } from '../../../map/mapDensity'
-import type { MapDensity } from '../../../map/mapDensity'
-export { resolveMapDensity, AUTO_DENSITY_SIMPLE_THRESHOLD }
-import { useNpc } from '../../npcs/useNpc'
-import { parseDungeonData } from '../dungeonModel'
-import { PropMarker } from './PropMarker'
-import { PortalMarker } from './PortalMarker'
-import { StairMarker } from './StairMarker'
-import { DoorBadgeLayer, DoorMarker } from './DoorMarker'
-import { InspectorPanel, type ObstacleInspectorAdapter } from './InspectorPanel'
-import { RoomDetailsPanel } from './RoomDetailsPanel'
-import { useActiveRoom } from './useActiveRoom'
-import { ViewerRoomRail } from './ViewerRoomRail'
+import { EyeIcon } from '../../../components/icons'
 import {
-  absoluteCells,
-  roomLabelAnchor,
+  MAP_LAYER_KEYS,
+  resolveMapDensity,
+  ToolbarTray,
+  useMapDensity,
+  useMapLayerVisibility,
+} from './MapLabToolbar'
+export { resolveMapDensity, AUTO_DENSITY_SIMPLE_THRESHOLD } from './MapLabToolbar'
+export {
+  ToolbarTray,
+  useMapDensity,
+  useMapLayerVisibility,
+  useToolbarTrayCollapse,
+} from './MapLabToolbar'
+import { parseDungeonData } from '../dungeonModel'
+import { type ObstacleInspectorAdapter } from './InspectorPanel'
+import { useActiveRoom } from './useActiveRoom'
+import { MapLabViewerCanvas } from './MapLabViewerCanvas'
+import { MapLabViewerOverlays } from './MapLabViewerOverlays'
+import {
   doorsOnFloor,
-  doorWallSegment,
   floorsInLayout,
-  gridMarkerOffset,
-  markersAtCell,
-  nonDoorWallSegments,
   paddedBounds,
-  otherFloorZ,
   portalsOnFloor,
   propsOnFloor,
   roomsOnZ,
-  stairCellForZ,
   stairEndpointsForZ,
   type Inspectable,
-  type MapCell,
   type MapDoor,
-  type MapLayout,
   type MapPortal,
   type MapProp,
   type MapStair,
@@ -67,7 +57,6 @@ function obstacleArmedLeaf(
   if (obstacle === 'lock') return { obstacles: { lock: { armed } } }
   return { obstacles: { trap: { armed } } }
 }
-
 /** Merge a sparse session leaf onto a fixture's current override, then drop any leaf whose value
  *  equals the authored value — a leaf equal to authored is redundant because the fallback already
  *  produces it (handoff §3.2 "removes values equal to authored state"), while an explicit value
@@ -108,170 +97,10 @@ function mergeSparseLeaf(
 }
 
 
-/** Grid-layout offset for one marker among any others (stair/portal/on-square-prop) sharing its
- * exact `(z, cell)` — the I3 replacement for the stair-only `stairMarkerOffset`. */
-function markerOffset(
-  layout: MapLayout,
-  z: number,
-  cell: MapCell,
-  type: 'stair' | 'portal' | 'prop',
-  id: number,
-): { dx: number; dy: number; grouped: boolean } {
-  const group = markersAtCell(layout, z, cell)
-  const index = group.findIndex((marker) => marker.type === type && marker.id === id)
-  return { ...gridMarkerOffset(group.length, index), grouped: group.length > 1 }
-}
-
 type InspectableKind = Inspectable['kind']
 interface InspectableRef {
   kind: InspectableKind
   id: number
-}
-
-const TOOLBAR_TRAY_STORAGE_PREFIX = 'dnd-kids-maplab-tray-collapsed:'
-
-function readStoredTrayCollapsed(groupKey: string): boolean {
-  try {
-    return window.localStorage.getItem(TOOLBAR_TRAY_STORAGE_PREFIX + groupKey) === 'true'
-  } catch {
-    return false
-  }
-}
-
-/** Per-group toolbar-tray collapse (Design Phase J1, `docs/dungeon_plan.md`): each toolbar group
- * (Create/Session/View/Status) collapses independently rather than through one unified "compact
- * mode" switch, since a DM running combat wants Session/Status open while rarely touching Create.
- * `localStorage`-backed per `groupKey`, default expanded — same pattern as `docs/design_plan.md`
- * DP2's `useNavCollapse`, keyed per group instead of one global flag. */
-export function useToolbarTrayCollapse(groupKey: string): { collapsed: boolean; toggle: () => void } {
-  const [collapsed, setCollapsed] = useState<boolean>(() => readStoredTrayCollapsed(groupKey))
-
-  const toggle = useCallback(() => {
-    setCollapsed((prev) => {
-      const next = !prev
-      try {
-        window.localStorage.setItem(TOOLBAR_TRAY_STORAGE_PREFIX + groupKey, String(next))
-      } catch {
-        // localStorage unavailable (e.g. private mode) — collapse state just won't persist
-      }
-      return next
-    })
-  }, [groupKey])
-
-  return { collapsed, toggle }
-}
-
-export type MapLayerKey = 'outside' | 'props' | 'passages' | 'labels'
-
-const LAYER_VISIBILITY_STORAGE_PREFIX = 'dnd-kids-maplab-layer-visible:'
-
-const MAP_LAYER_KEYS: MapLayerKey[] = ['outside', 'props', 'passages', 'labels']
-
-function readStoredLayerVisible(key: MapLayerKey): boolean {
-  try {
-    return window.localStorage.getItem(LAYER_VISIBILITY_STORAGE_PREFIX + key) !== 'false'
-  } catch {
-    return true
-  }
-}
-
-/** Tracks visibility of the four map layers — Outside, Props, Passages, Labels — defaulting all
- * to visible (absence of a stored value ≠ `'false'`), persisted per-key in `localStorage`. Same
- * try/catch-and-ignore pattern as `useToolbarTrayCollapse`, inverted default. */
-export function useMapLayerVisibility(): {
-  visible: Record<MapLayerKey, boolean>
-  toggleLayer: (key: MapLayerKey) => void
-} {
-  const [visible, setVisible] = useState<Record<MapLayerKey, boolean>>(() => {
-    const initial = {} as Record<MapLayerKey, boolean>
-    for (const key of MAP_LAYER_KEYS) {
-      initial[key] = readStoredLayerVisible(key)
-    }
-    return initial
-  })
-
-  const toggleLayer = useCallback((key: MapLayerKey) => {
-    setVisible((prev) => {
-      const next = { ...prev, [key]: !prev[key] }
-      try {
-        window.localStorage.setItem(LAYER_VISIBILITY_STORAGE_PREFIX + key, String(next[key]))
-      } catch {
-        // localStorage unavailable (e.g. private mode) — visibility state just won't persist
-      }
-      return next
-    })
-  }, [])
-
-  return { visible, toggleLayer }
-}
-
-const DENSITY_STORAGE_KEY = 'dnd-kids-maplab-density'
-
-function readStoredDensity(): MapDensity {
-  try {
-    const stored = window.localStorage.getItem(DENSITY_STORAGE_KEY)
-    if (stored === 'detailed' || stored === 'auto' || stored === 'simple') return stored
-  } catch {
-    // localStorage unavailable — use default
-  }
-  return 'auto'
-}
-
-/** Persisted density preference for the whole dungeon canvas — `Detailed` / `Auto` / `Simple`.
- *  Same try/catch-and-ignore pattern as `useMapLayerVisibility`. */
-export function useMapDensity(): {
-  density: MapDensity
-  setDensity: (value: MapDensity) => void
-} {
-  const [density, setDensity] = useState<MapDensity>(() => readStoredDensity())
-
-  const updateDensity = useCallback((value: MapDensity) => {
-    setDensity(value)
-    try {
-      window.localStorage.setItem(DENSITY_STORAGE_KEY, value)
-    } catch {
-      // localStorage unavailable — density state just won't persist
-    }
-  }, [])
-
-  return { density, setDensity: updateDensity }
-}
-
-/** A collapsible toolbar group: label + chevron toggle always visible (so the group structure
- * stays legible collapsed), controls hidden via width/overflow (never `display:none`) when
- * collapsed. Shared by `MapLabPage`'s Session group and `MapLabEditorPage`'s Create/Session/View/
- * Status groups — the reusable half of J1's per-group collapse. */
-export function ToolbarTray({
-  groupKey,
-  label,
-  extraClassName,
-  children,
-}: {
-  groupKey: string
-  label: string
-  extraClassName?: string
-  children: ReactNode
-}) {
-  const { collapsed, toggle } = useToolbarTrayCollapse(groupKey)
-  const ChevronIcon = collapsed ? ChevronDownIcon : ChevronUpIcon
-  return (
-    <div
-      className={`maplab-toolbar-group maplab-toolbar-tray${extraClassName ? ` ${extraClassName}` : ''}`}
-      data-collapsed={collapsed || undefined}
-    >
-      <span className="maplab-toolbar-group-label">{label}</span>
-      <button
-        type="button"
-        className="maplab-toolbar-tray-toggle"
-        aria-expanded={!collapsed}
-        aria-label={`${collapsed ? 'Expand' : 'Collapse'} ${label} tools`}
-        onClick={toggle}
-      >
-        <ChevronIcon width={14} height={14} aria-hidden="true" />
-      </button>
-      <div className="maplab-toolbar-tray-controls">{children}</div>
-    </div>
-  )
 }
 
 /** Map Lab prototype page — Stage M2.3: walls, and door/stair affordances with state + details. */
@@ -493,8 +322,6 @@ export function MapLabPage() {
     }
   }
 
-  const activeFloor = floors.find((floor) => floor.z === activeZ)
-
   if (route.status === 'loading' || layoutLoading) {
     return <MapLabRouteState title="Loading map" message="Loading dungeon map…" variant="loading" />
   }
@@ -551,7 +378,7 @@ export function MapLabPage() {
 
       <div className="maplab-toolbar">
         <ToolbarTray groupKey="viewer-session" label="Session">
-          <button
+         <button
             type="button"
             className="maplab-pill-button maplab-session-reset-button"
             onClick={() => setResetDungeonConfirmOpen(true)}
@@ -568,11 +395,11 @@ export function MapLabPage() {
           >
             {isAtTable ? 'At the table' : 'Put at the table'}
           </button>
-        </ToolbarTray>
+         </ToolbarTray>
         <div className="maplab-view-popover-wrap" ref={viewPopoverRef}>
-          <button
-            type="button"
-            className="maplab-pill-button"
+           <button
+             type="button"
+             className="maplab-pill-button"
             aria-haspopup="true"
             aria-expanded={viewPopoverOpen}
             data-active={viewPopoverOpen || undefined}
@@ -665,7 +492,56 @@ export function MapLabPage() {
         </div>
       </div>
 
-      <div className="maplab-canvas">
+       <MapLabViewerCanvas
+         layout={layout}
+         parsed={parsed}
+         activeZ={activeZ}
+         activeRoomId={activeRoomId}
+         partyRoomId={partyRoomId}
+         rooms={rooms}
+         doors={doors}
+         stairs={stairs}
+         portals={portals}
+         props={props}
+         features={features}
+         bounds={bounds}
+         viewBox={viewBox}
+         rulerX1={rulerX1}
+         rulerX2={rulerX2}
+         rulerY={rulerY}
+         rulerTick={rulerTick}
+         layerVisible={layerVisible}
+         simplified={simplified}
+         allLayersHidden={allLayersHidden}
+         zoom={zoomApi.zoom}
+         viewerError={viewerError}
+         roomsDrawerOpen={roomsDrawerOpen}
+         desktopRailCollapsed={desktopRailCollapsed}
+         selectedInspectable={selectedInspectable}
+         pinnedDoorId={pinnedDoorId}
+         onSelectRoom={(id) => { setActiveRoomId(id); setRoomsDrawerOpen(false) }}
+         onToggleRoomsDrawer={() => setRoomsDrawerOpen((open) => !open)}
+         onToggleRail={() => setDesktopRailCollapsed((collapsed) => !collapsed)}
+         onCloseRoomsDrawer={() => setRoomsDrawerOpen(false)}
+         onFocus={focusInspectable}
+         onClick={clickInspectable}
+         onSetActiveZ={setActiveZ}
+         onNavigate={navigate}
+         onSetActiveEncounterId={setActiveEncounterId}
+         onWheelZoom={zoomApi.handleWheel}
+         onPanStart={zoomApi.handlePointerDown}
+         onPanMove={zoomApi.handlePointerMove}
+         onPanEnd={zoomApi.handlePointerUp}
+         onViewportResize={handleViewportResize}
+         onFit={() => zoomApi.fitToBounds(bounds, viewportSize, bounds)}
+         onZoomIn={() => zoomApi.zoomIn(viewportSize)}
+         onZoomOut={() => zoomApi.zoomOut(viewportSize)}
+         doorSession={doorSession}
+         stairSession={stairSession}
+          portalSession={portalSession}
+           propSession={propSession}
+         />
+        {/*
         <button
           type="button"
           className="maplab-pill-button maplab-viewer-rail-toggle"
@@ -673,15 +549,15 @@ export function MapLabPage() {
           aria-expanded={roomsDrawerOpen}
           aria-controls="maplab-viewer-room-rail"
           onClick={() => setRoomsDrawerOpen((open) => !open)}
-        >
-          Rooms
+        />
+           Rooms
         </button>
         <div
           id="maplab-viewer-room-rail"
           className="maplab-viewer-rail-container"
           data-open={roomsDrawerOpen || undefined}
           data-collapsed={desktopRailCollapsed || undefined}
-        >
+        />
           <ViewerRoomRail
             layout={layout}
             parsed={parsed}
@@ -690,7 +566,7 @@ export function MapLabPage() {
               setActiveRoomId(id)
               setRoomsDrawerOpen(false)
             }}
-          />
+         >
         </div>
         <button
           type="button"
@@ -975,76 +851,41 @@ export function MapLabPage() {
           })}
           </MapCanvas>
           )}
-        </div>
+          </MapLabViewerCanvas>
+        */}
 
-        <div className="maplab-sidebar">
-          <div className="maplab-inspector-panel-container" aria-live="polite">
-            {activeInspectable ? (
-              <InspectorPanel
-                target={activeInspectable}
-                adapter={activeAdapter}
-                context={
-                  activeInspectable.kind === 'portal' && activeInspectable.portal.to?.dungeon_id !== undefined
-                    ? { dungeonTitle: otherDungeonTitles[activeInspectable.portal.to.dungeon_id] }
-                    : undefined
-                }
-              />
-            ) : (
-              <p className="maplab-affordance-placeholder">Select a room, door, stair, or prop for details.</p>
-            )}
-          </div>
-          <RoomDetailsPanel
-            room={activeLayoutRoom}
-            dungeonRoom={activeDungeonRoom}
-            parsed={parsed}
-            dungeonId={route.dungeonId ?? 0}
-            layout={layout}
-            onRunEncounter={setActiveEncounterId}
-            onOpenNpc={setActiveNpcId}
-            onPartyIsHere={() => {
-              clearViewerStatus()
-              setPartyRoomActionActive(true)
-              setPartyRoomId(activeRoomId)
-            }}
-            actionError={partyRoomActionActive ? actionError : null}
-            clearActionError={clearActionError}
-          />
-        </div>
-      </div>
-
-      {activeEncounterId != null && (
-        <EncounterDock encounterId={activeEncounterId} onClose={() => setActiveEncounterId(null)} />
-      )}
-      {activeNpcId != null && <NpcDock npcId={activeNpcId} onClose={() => setActiveNpcId(null)} />}
-
-      {resetDungeonConfirmOpen && (
-        <ConfirmDialog
-          message={`Reset "${route.dungeon?.title}"? Every door, trap, and toggle returns to its authored state. This cannot be undone.`}
-          confirmLabel="Reset"
-          onConfirm={() => {
+        <MapLabViewerOverlays
+          activeInspectable={activeInspectable}
+          activeAdapter={activeAdapter}
+          otherDungeonTitles={otherDungeonTitles}
+          activeLayoutRoom={activeLayoutRoom}
+          activeDungeonRoom={activeDungeonRoom}
+          parsed={parsed}
+          dungeonId={route.dungeonId ?? 0}
+          layout={layout}
+          onRunEncounter={setActiveEncounterId}
+          onOpenNpc={setActiveNpcId}
+          onPartyIsHere={() => {
+            clearViewerStatus()
+            setPartyRoomActionActive(true)
+            setPartyRoomId(activeRoomId)
+          }}
+          actionError={partyRoomActionActive ? actionError : null}
+          clearActionError={clearActionError}
+          activeEncounterId={activeEncounterId}
+          onCloseEncounter={() => setActiveEncounterId(null)}
+          activeNpcId={activeNpcId}
+          onCloseNpc={() => setActiveNpcId(null)}
+          resetDungeonConfirmOpen={resetDungeonConfirmOpen}
+          dungeonTitle={route.dungeon?.title}
+          onConfirmReset={() => {
             clearViewerStatus()
             resetSessions()
             setResetDungeonConfirmOpen(false)
           }}
-          onCancel={() => setResetDungeonConfirmOpen(false)}
+          onCancelReset={() => setResetDungeonConfirmOpen(false)}
         />
-      )}
     </div>
   )
 }
 
-function NpcDock({ npcId, onClose }: { npcId: number; onClose: () => void }) {
-  const { npc, loading, error } = useNpc(npcId)
-
-  return (
-    <FloatingWindow
-      title={loading ? 'Loading…' : npc?.name ?? `NPC #${npcId}`}
-      storageKey="dungeon-npc-dock-position"
-      onClose={onClose}
-    >
-      {loading && <StatePanel status="loading" message="Loading NPC…" />}
-      {!loading && error && <StatePanel status="error" message={error} />}
-      {!loading && npc && <NPCStatCard npc={npc} compact />}
-    </FloatingWindow>
-  )
-}

@@ -1,6 +1,6 @@
 # Map Lab component refactor — smaller responsibility-oriented component files
 
-> **Status:** Planned — ready to begin against the shipped Map Obstacle State contracts.
+> **Status:** Stage 2 shipped; Stage 3 is ready to begin against the preserved viewer contracts.
 
 - **Areas:** dungeons
 - **Read trigger:** Splitting or reorganizing oversized Map Lab frontend components without changing the viewer or editor experience.
@@ -28,6 +28,8 @@ semantics, persistence, and visual language remain intact.
 ## Shipped
 | Stage | What shipped (≤2 sentences) |
 |-------|------------------------------|
+| 1 | Established the current Map Lab responsibility baseline and settled the component/file map without changing runtime behavior. Existing focused marker, panel, hook, model, and navigation files remain intact. |
+| 2 | Moved shared toolbar preferences and controls into `MapLabToolbar.tsx`, and split the viewer canvas/layers and viewer overlays into `MapLabViewerCanvas.tsx` and `MapLabViewerOverlays.tsx`. Viewer/editor imports, route/session ownership, SVG ordering, accessibility, inspector behavior, docks, reset confirmation, and existing focused checks remain intact. |
 
 ## Touches
 - `frontend/src/features/dungeons/maplab/*.tsx`
@@ -56,19 +58,13 @@ Touch:        preserve the 48px floor; retain only the existing documented Map L
 
 ## Compiler handoff
 
-### Stage 1
-- **Verified edit sites:** `frontend/src/features/dungeons/maplab/MapLabPage.tsx` — 1,032 lines spanning viewer state, shared toolbar hooks, toolbar tray, canvas rendering, inspector composition, room details, and docks; `MapLabEditorPage.tsx` — 2,114 lines spanning editor state, tools, navigation, canvas rendering, selection editing, and dialogs; `FixturePropertiesForm.tsx` — 505 lines spanning generic fields, catalog pickers, destination pickers, and loot loading.
-- **Verified tests:** `frontend/src/features/dungeons/maplab/__tests__/MapLabPage.test.tsx`, `MapLabEditorPage.test.tsx`, `FixturePropertiesForm.test.tsx`, and the focused colocated component suites — the current tests exercise the page harness and the existing extracted marker/panel components.
-- **Settled contracts:** The refactor preserves route behavior, rendered copy, DOM accessibility roles, Map Lab state ownership, API/client boundaries, autosave and session persistence, gestures, keyboard shortcuts, and current test coverage; new files remain colocated under the existing Map Lab directory.
-- **Constraints:** Preserve the shipped Map Obstacle State contracts; do not change production exports solely for test convenience; preserve unrelated worktree changes; do not use browser automation; exact file boundaries are resolved from the current source state.
-- **Open questions:** Record the final component file map and any shared helper boundary; identify whether any stage-era comments or dead exports can be removed without changing behavior.
-
-### Stage 2
-- **Verified edit sites:** `frontend/src/features/dungeons/maplab/MapLabPage.tsx` — viewer toolbar and persistent preference hooks at the top, viewer state/effects in the page body, SVG map layers in the main return, and inspector/dock/reset composition near the end; `ToolbarTray`, `useToolbarTrayCollapse`, `useMapLayerVisibility`, and `useMapDensity` are also imported by the editor.
-- **Verified tests:** `frontend/src/features/dungeons/maplab/__tests__/MapLabPage.test.tsx`, `useMapLayerVisibility.test.tsx`, `ViewerRoomRail.test.tsx`, `RoomDetailsPanel.test.tsx`, and focused marker/panel tests.
-- **Settled contracts:** The viewer remains a play-mode bespoke canvas workspace with room navigation as a responsive overlay, direct session controls, bottom-center action feedback, and no behavior changes; shared toolbar preference exports must remain available to the editor or move behind an equivalent stable local boundary.
-- **Constraints:** Keep route/API mocking semantics and component import boundaries equivalent; do not create a universal viewer fixture or hide behavior-specific composition behind an opaque wrapper; preserve SVG keyboard semantics and layer ordering.
-- **Open questions:** Exact extracted filenames and whether viewer canvas layers should be grouped by map concern or interaction concern are resolved during `to-orders` from the post-dependency source state.
+### Stage 1 baseline (complete)
+- **Verified source state:** `MapLabPage.tsx` is 1,050 lines and `MapLabEditorPage.tsx` is 2,195 lines. `FixturePropertiesForm.tsx` is 532 lines. The source has no monolithic `MapLabPage.test.tsx` or `MapLabEditorPage.test.tsx`; coverage is already split across focused viewer/editor suites.
+- **Existing focused files to keep:** `MapLabRouteState.tsx`, `SelectionActions.tsx`, `ViewerRoomRail.tsx`, `useActiveRoom.ts`, `roomContent.ts`, `GhostFloorLayer.tsx`, `DungeonShell.tsx`, `ConnectionsResolveList.tsx`, `useCanvasStroke.ts`, `mapLabSessionActions.ts`, `RoomDetailsPanel.tsx`, `useMapLabSessionState.ts`, `RoomContentEditor.tsx`, `InspectorPanel.tsx`, `useMapLabLayout.ts`, and the marker components remain responsibility-oriented and are not split merely to reduce line count.
+- **Settled responsibility map:** Stage 2 extracts shared viewer/editor chrome into `MapLabToolbar.tsx` (toolbar preference hooks, `ToolbarTray`, layer/density controls, and the stable `resolveMapDensity` boundary), viewer composition into `MapLabViewerCanvas.tsx` and `MapLabViewerOverlays.tsx`, and keeps route/session orchestration in `MapLabPage.tsx`. Stage 3 applies the analogous editor split with `MapLabEditorChrome.tsx`, `MapLabEditorCanvas.tsx`, and `MapLabEditorSelection.tsx`; Stage 4 reviews `FixturePropertiesForm.tsx`, `RoomContentEditor.tsx`, and `InspectorPanel.tsx` only for real remaining seams.
+- **Shared boundary decision:** `MapLabToolbar.tsx` becomes the sole production home for shared toolbar exports; `MapLabPage.tsx` may re-export `resolveMapDensity` only while existing tests require that compatibility, and no production export is removed solely for test convenience. The editor must import shared toolbar symbols from the new module, never from the page component.
+- **Cleanup decision:** Remove only stage-era comments that are plainly historical after extraction and only exports proven unused by production and test callers; do not remove `mapLabSessionActions.ts` or alter model/reducer exports during this refactor.
+- **Preserved contracts:** Route behavior, rendered copy, DOM accessibility roles, Map Lab state ownership, API/client boundaries, autosave and session persistence, gestures, keyboard shortcuts, layer ordering, and current test coverage remain unchanged. New files remain colocated under the existing Map Lab directory; browser automation is not used.
 
 ### Stage 3
 - **Verified edit sites:** `frontend/src/features/dungeons/maplab/MapLabEditorPage.tsx` — editor tool state and flyouts, map/view controls, floor/room/connections rail, canvas layers and placement overlays, selection sheet, and confirmation dialogs are all co-located in the 2,114-line page.

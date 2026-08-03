@@ -363,7 +363,7 @@ Site-wide navigation shell:
 - **CSS transition** — `width 0.2s ease`; `prefers-reduced-motion` disables via root reset
 - **`visually-hidden` class** — `position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0)`
 
-### Map Lab viewer room rail (`maplab/MapLabPage.tsx`)
+### Map Lab viewer room rail (`maplab/MapLabViewerCanvas.tsx`)
 
 - **Desktop (>768px)** — the room rail has an independent labelled seam control with a 12px visual
   affordance inside a 48px pointer target. Selecting a room does not collapse the rail.
@@ -372,7 +372,7 @@ Site-wide navigation shell:
 - **Floor selection** — the viewer floor tablist is the final control group inside the toolbar and
   remains outside the room drawer.
 
-### ToolbarTray (`maplab/MapLabPage.tsx`)
+### ToolbarTray (`maplab/MapLabToolbar.tsx`)
 
 Independently collapsible toolbar group in Map Lab:
 - **Structure** — label text + chevron toggle button + controls container

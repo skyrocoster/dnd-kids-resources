@@ -71,6 +71,9 @@ features/dungeons/
     ├── DungeonShell.tsx         # layout route with view/edit mode toggle
     ├── MapLabPage.tsx           # viewer (read + encounter/NPC use)
     ├── MapLabEditorPage.tsx     # editor (geometry + content authoring)
+    ├── MapLabToolbar.tsx        # shared viewer/editor toolbar preferences and tray
+    ├── MapLabViewerCanvas.tsx   # viewer rail, SVG canvas, and ordered map layers
+    ├── MapLabViewerOverlays.tsx # viewer inspector, room details, docks, and reset
     ├── maplabEditor.ts          # editor reducer (31 actions)
     ├── maplabPresentation.ts    # icon-bearing presentation helpers
     ├── useMapLabLayout.ts       # viewer layout fetch
