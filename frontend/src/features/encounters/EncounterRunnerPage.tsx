@@ -1,4 +1,5 @@
 import { useNavigate, useParams } from 'react-router-dom'
+import { PageHeader } from '../../components/PageHeader'
 import { StatePanel } from '../../components/StatePanel'
 import { useEncounterRunner } from './useEncounterRunner'
 import { EncounterRunnerBoard } from './EncounterRunnerBoard'
@@ -24,12 +25,14 @@ export function EncounterRunnerPage() {
 
   return (
     <div className="encounter-runner-page">
-      <div className="encounter-runner-page-header">
-        <h1>{runner.loading ? 'Loading…' : runner.title}</h1>
+      <PageHeader
+        title={runner.loading ? 'Loading…' : runner.title}
+        actions={
         <button type="button" className="dungeon-back-button" onClick={() => navigate('/encounters')}>
           Back to encounters
         </button>
-      </div>
+        }
+      />
 
       {runner.loadError && (
         <StatePanel

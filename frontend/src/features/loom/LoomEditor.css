@@ -1,11 +1,5 @@
 /* Canvas mutation UI: command bar, error banner, thread manager. */
 
-.loom-page-header {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
 .loom-command-bar {
   display: flex;
   flex-wrap: wrap;
@@ -18,17 +12,6 @@
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
-}
-
-.loom-eyebrow {
-  margin: 0;
-  color: var(--md-on-surface-variant);
-  font-family: var(--type-face);
-  font-size: var(--type-caption-size);
-  font-weight: var(--type-caption-weight);
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  font-variation-settings: 'wght' 560, 'wdth' 118, 'opsz' 14;
 }
 
 .loom-error-banner {

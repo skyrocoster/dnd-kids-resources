@@ -102,7 +102,8 @@ describe('EncounterRunnerPage', () => {
       await Promise.resolve()
     })
 
-    expect(screen.getByRole('heading', { name: 'Kennels' })).toBeInTheDocument()
+    expect(screen.getAllByRole('heading', { name: 'Kennels' })).toHaveLength(1)
+    expect(screen.getByRole('button', { name: 'Back to encounters' })).toBeInTheDocument()
     expect(allCardNames()).toEqual(['Goblin', 'Wolf'])
     expect(screen.getByText('Round 1')).toBeInTheDocument()
   })

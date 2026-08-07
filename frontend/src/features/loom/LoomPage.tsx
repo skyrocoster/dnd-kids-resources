@@ -30,9 +30,6 @@ import {
 } from '../../api/client'
 import type { LoomNode as LoomNodeType, LoomNodeKind } from '../../api/types'
 
-const LOOM_EYEBROW = 'TAPESTRY · CONTINUITY'
-const LOOM_SUBTITLE = 'Track where every story thread stands between sessions.'
-
 function errorMessage(err: unknown, fallback: string): string {
   return err instanceof Error ? err.message : fallback
 }
@@ -300,10 +297,7 @@ export function LoomPage() {
   )
 
   const pageHeader = (
-    <div className="loom-page-header">
-      <p className="loom-eyebrow">{LOOM_EYEBROW}</p>
-      <PageHeader title="The Loom" subtitle={LOOM_SUBTITLE} actions={commandBar} />
-    </div>
+    <PageHeader title="The Loom" actions={commandBar} />
   )
 
   if (tapestry.status === 'loading' || tapestry.status === 'idle') {

@@ -758,6 +758,7 @@ may record an `Accepted` state.
 | Slice | Route | State | Evidence |
 |---|---|---|---|
 | FL-01 | Direct | Accepted 2026-08-07 | Removed the non-functional `AppShell` footer and its style; the focused `AppShell.test.tsx` check passed and the user signed off the visible result. |
+| FL-02 | Plan | Implemented; awaiting human acceptance | [Frontend Operational Top Row](../plans/active/frontend-operational-top-row/frontend-operational-top-row.md) merged the brand-only and route headers into one AppShell operational row across Field Guide and browsers, Map Lab, Loom, and encounter play; automated stage checks pass. |
 
 ## Explicitly outside this master plan
 

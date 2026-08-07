@@ -1,6 +1,6 @@
 # Frontend Operational Top Row — merge global and surface identity
 
-> **Status:** Stages 1–2 shipped the shared operational row across standard pages and Map Lab; Stage 3 Loom and encounter adoption is next.
+> **Status:** FL-02 is implemented and all automated gates pass; awaiting explicit human UX acceptance at wide and constrained widths.
 
 - **Areas:** design, dungeons, loom, encounters
 - **Read trigger:** When implementing or reviewing FL-02's merged DM application and surface header
@@ -56,6 +56,7 @@ in-flow row below the identity row rather than being reclassified or relocated.
 |-------|------------------------------|
 | 1 | AppShell now owns one operational identity row, with the home/brand action first in the wide navigation rail and the constrained navigation trigger leading the row. Shared PageHeader identity and actions render into that row while chapter tabs retain a separate, empty-collapsing row immediately below it. |
 | 2 | Map Lab now contributes its `Map Lab` heading, dungeon context, quiet save status, View/Edit mode, and Back route to the shared operational row. Its fill workspace, route states, canvas chrome, and persistence behavior remain unchanged. |
+| 3 | Loom now contributes only `The Loom` and its existing command actions to the shared row, and encounter play contributes its encounter title and Back route through the same PageHeader seam. Loom board/rail behavior and encounter round, sync, next-turn, roster, and direct controls remain in place. |
 
 ## Touches
 
@@ -79,15 +80,6 @@ in-flow row below the identity row rather than being reclassified or relocated.
 - `docs/areas/loom.md`
 - `docs/areas/encounters.md`
 - `docs/master-plans/frontend-layout-redesign.md`
-
-## Compiler handoff
-
-### Stage 3
-- **Verified edit sites:** `frontend/src/features/loom/LoomPage.tsx` — redundant eyebrow plus `PageHeader` title/subtitle/actions; `frontend/src/features/encounters/EncounterRunnerPage.tsx` — route title and Back action above the board's separate live controls.
-- **Verified tests:** `frontend/src/features/loom/__tests__/LoomPage.test.tsx` covers Loom title/action framing; `frontend/src/features/encounters/__tests__/EncounterRunnerPage.test.tsx` covers header actions and 520px reachability.
-- **Settled contracts:** Loom removes only its non-operational eyebrow/subtitle and contributes `The Loom` plus its current primary action. Encounter contributes its current title and route action; round, sync, Next turn, and roster controls remain where they are.
-- **Constraints:** Preserve Loom board/rail behavior, encounter direct controls and persistent play action reachability, all local error handling, and 48px targets. Stop at `Implemented; awaiting human acceptance`; do not begin FL-03, FL-04, FL-06, FL-09, FL-12, FL-13, or FL-14.
-- **Open questions:** none.
 
 ## Human acceptance
 

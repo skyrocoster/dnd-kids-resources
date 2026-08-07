@@ -42,20 +42,23 @@ describe('LoomPage', () => {
     expect(screen.getByRole('button', { name: 'Advance Campaign' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Add Beat' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Manage Threads' })).toBeInTheDocument()
+    expect(screen.queryByText('TAPESTRY · CONTINUITY')).not.toBeInTheDocument()
+    expect(screen.queryByText('Track where every story thread stands between sessions.')).not.toBeInTheDocument()
     expect(screen.getByText('Beat Bank (1)')).toBeInTheDocument()
   })
 
-  it('renders the sticky toolbar with all three commands', async () => {
+  it('renders the shared operational row with all three commands', async () => {
     vi.spyOn(api, 'getLoomTapestry').mockResolvedValue(demoTapestry())
 
     render(<LoomPage />)
 
     await waitFor(() => expect(screen.getAllByText('The Lost Puppy').length).toBeGreaterThan(0))
-    const toolbar = document.querySelector('.loom-page-header')
-    expect(toolbar).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'The Loom' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Advance Campaign' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Add Beat' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Manage Threads' })).toBeInTheDocument()
+    expect(screen.queryByText('TAPESTRY · CONTINUITY')).not.toBeInTheDocument()
+    expect(screen.queryByText('Track where every story thread stands between sessions.')).not.toBeInTheDocument()
   })
 
   it('renders Now and Next badges on the active thread', async () => {

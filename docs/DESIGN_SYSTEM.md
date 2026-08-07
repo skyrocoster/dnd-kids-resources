@@ -466,8 +466,7 @@ to suppress transitions.
 `aria-label="{kind}: {title}"`. Every kind pill in the rail and legend carries a glyph
 (◇ Start, ◆ Beat, ● Session, ■ End, N Now, → Next) so no semantic information relies on color alone.
 `:focus-visible` rings (`2px solid var(--md-primary)`, 2–3px offset) on all interactive elements.
-Touch targets ≥48px where feasible. The `.loom-eyebrow` uses `--type-caption-*` tokens with wider
-tracking and Roboto Flex axis tuning.
+Touch targets ≥48px where feasible.
 
 ---
 
