@@ -1,6 +1,6 @@
 # Frontend Operational Top Row — merge global and surface identity
 
-> **Status:** FL-02 is implemented and all automated gates pass; awaiting explicit human UX acceptance at wide and constrained widths.
+> **Status:** Completed and accepted 2026-08-07 — FL-02's merged operational top row passed automated gates and human UX review.
 
 - **Areas:** design, dungeons, loom, encounters
 - **Read trigger:** When implementing or reviewing FL-02's merged DM application and surface header
@@ -87,4 +87,4 @@ At representative wide and constrained widths, open Field Guide, one standard br
 and edit, Loom, and encounter play. Confirm there is one operational top row rather than separate brand
 and page headers; navigation remains reachable; each route has one visible `h1`; existing tabs, mode,
 status, Back/primary actions, and live controls remain usable by keyboard-plus-mouse and touch; and no
-content is obscured. Stop with FL-02 awaiting explicit human acceptance.
+content is obscured. The user explicitly confirmed acceptance on 2026-08-07.
