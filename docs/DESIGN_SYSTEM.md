@@ -417,9 +417,9 @@ Editor chrome for arming tools and adjusting view/map settings without a five-tr
 - **Viewer View popover** — `MapLabPage` uses the same local trigger/panel and click-outside/Escape
   dismissal pattern for its four layer toggles and three density choices. Live Session controls stay
   directly visible in their `ToolbarTray`.
-- **Save status** — portals from `MapLabEditorPage` into `DungeonShell`'s header via
-  `DungeonShellStatusSlotContext`/`useDungeonShellStatusSlot()` (`dungeonRouteContext.ts`), so it
-  renders in the shell chrome instead of the editor toolbar.
+- **Save status** — portals from `MapLabEditorPage` through
+  `DungeonShellStatusSlotContext`/`useDungeonShellStatusSlot()` (`dungeonRouteContext.ts`) into Map
+  Lab's contribution to the shared AppShell operational row, instead of the editor toolbar.
 
 ---
 

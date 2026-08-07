@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Link, Outlet, useLocation, useParams } from 'react-router-dom'
+import { useAppShellRowSlots } from '../../../layout/AppShell'
 import './DungeonShell.css'
 import { MapLabRouteState } from './MapLabRouteState'
 import {
@@ -8,18 +10,12 @@ import {
   useDungeonRouteContext,
 } from './dungeonRouteContext'
 
-function shellSubtitle(pathname: string, dungeonId: number | null): string {
-  if (dungeonId !== null && pathname.endsWith(`/dungeons/${dungeonId}/edit`)) {
-    return 'Create rooms, shape their footprint, and place map fixtures.'
-  }
-  return 'Run the dungeon from the map with production room context and navigation.'
-}
-
 export function DungeonShell() {
   const { dungeonId: dungeonIdParam } = useParams()
   const location = useLocation()
   const route = useDungeonRouteContext(dungeonIdParam)
   const [statusSlotEl, setStatusSlotEl] = useState<HTMLDivElement | null>(null)
+  const { identitySlot } = useAppShellRowSlots()
 
   // Dungeon routes are app-like, not document-like: the map fills the window and never scrolls the
   // page. Flagged on <body> rather than matched with a `:has()` selector so it also works on the
@@ -46,6 +42,28 @@ export function DungeonShell() {
   const viewPath = dungeonId === null ? '/dungeons' : `/dungeons/${dungeonId}`
   const editPath = dungeonId === null ? '/dungeons' : `/dungeons/${dungeonId}/edit`
   const isEditMode = dungeonId !== null && location.pathname === editPath
+  const rowIdentity = (
+    <div className="dungeon-shell-row">
+      <div className="dungeon-shell-heading">
+        <h1 className="dungeon-shell-title">Map Lab</h1>
+        <span className="dungeon-shell-context">{route.dungeon?.title}</span>
+      </div>
+      <div className="dungeon-shell-row-controls">
+        <nav className="dungeon-shell-mode-toggle" aria-label="Dungeon mode">
+          <Link to={viewPath} className="dungeon-shell-mode-link" aria-current={isEditMode ? undefined : 'page'} data-active={isEditMode ? undefined : 'true'}>
+            View
+          </Link>
+          <Link to={editPath} className="dungeon-shell-mode-link" aria-current={isEditMode ? 'page' : undefined} data-active={isEditMode ? 'true' : undefined}>
+            Edit map
+          </Link>
+        </nav>
+        <div className="dungeon-shell-status-slot" ref={setStatusSlotEl} />
+        <Link to="/dungeons" className="dungeon-shell-back-link">
+          Back to dungeons
+        </Link>
+      </div>
+    </div>
+  )
 
   return (
     <DungeonRouteContextProvider value={route}>
@@ -59,36 +77,7 @@ export function DungeonShell() {
           </>
         ) : (
           <>
-            <header className="dungeon-shell-header" data-edit-mode={isEditMode ? '' : undefined}>
-              <div className="dungeon-shell-heading">
-                <Link to="/dungeons" className="dungeon-shell-back-link">
-                  Back to dungeons
-                </Link>
-                <h1 className="dungeon-shell-title">{route.dungeon?.title}</h1>
-                <p className="dungeon-shell-subtitle">{shellSubtitle(location.pathname, dungeonId)}</p>
-              </div>
-
-              <nav className="dungeon-shell-mode-toggle" aria-label="Dungeon mode">
-                <Link
-                  to={viewPath}
-                  className="dungeon-shell-mode-link"
-                  aria-current={isEditMode ? undefined : 'page'}
-                  data-active={isEditMode ? undefined : 'true'}
-                >
-                  View
-                </Link>
-                <Link
-                  to={editPath}
-                  className="dungeon-shell-mode-link"
-                  aria-current={isEditMode ? 'page' : undefined}
-                  data-active={isEditMode ? 'true' : undefined}
-                >
-                  Edit map
-                </Link>
-              </nav>
-
-              <div className="dungeon-shell-status-slot" ref={setStatusSlotEl} />
-            </header>
+            {identitySlot ? createPortal(rowIdentity, identitySlot) : rowIdentity}
 
             <div className="dungeon-shell-body">
               <DungeonShellStatusSlotProvider value={statusSlotEl}>

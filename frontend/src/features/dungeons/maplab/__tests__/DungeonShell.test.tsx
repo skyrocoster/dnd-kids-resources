@@ -1,7 +1,8 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import * as api from '../../../../api/client'
+import { AppShell } from '../../../../layout/AppShell'
 import { DungeonShell } from '../DungeonShell'
 import { MapLabPage } from '../MapLabPage'
 import { MapLabEditorPage } from '../MapLabEditorPage'
@@ -14,16 +15,21 @@ async function flush() {
 }
 
 function renderDungeonRoute(initialEntry: string) {
-  return render(
-    <MemoryRouter initialEntries={[initialEntry]}>
-      <Routes>
-        <Route path="/dungeons/:dungeonId" element={<DungeonShell />}>
-          <Route index element={<MapLabPage />} />
-          <Route path="edit" element={<MapLabEditorPage />} />
-        </Route>
-      </Routes>
-    </MemoryRouter>,
-  )
+  const router = createMemoryRouter([
+    {
+      path: '/',
+      element: <AppShell />,
+      children: [{
+        path: 'dungeons/:dungeonId',
+        element: <DungeonShell />,
+        children: [
+          { index: true, element: <MapLabPage /> },
+          { path: 'edit', element: <MapLabEditorPage /> },
+        ],
+      }],
+    },
+  ], { initialEntries: [initialEntry] })
+  return render(<RouterProvider router={router} />)
 }
 
 beforeEach(() => {
@@ -54,17 +60,38 @@ describe('DungeonShell', () => {
     renderDungeonRoute('/dungeons/4')
     await flush()
 
-    expect(screen.getByRole('heading', { name: 'Test Dungeon' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Map Lab' })).toBeInTheDocument()
+    expect(screen.getByText('Test Dungeon')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'View' })).toHaveAttribute('href', '/dungeons/4')
     expect(screen.getByRole('link', { name: 'Edit map' })).toHaveAttribute('href', '/dungeons/4/edit')
 
     fireEvent.click(screen.getByRole('link', { name: 'Edit map' }))
     await flush()
 
-    expect(screen.getByRole('heading', { name: 'Test Dungeon' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Map Lab' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'View' })).toHaveAttribute('href', '/dungeons/4')
     expect(screen.getByRole('link', { name: 'Edit map' })).toHaveAttribute('href', '/dungeons/4/edit')
-    expect(document.querySelector('.dungeon-shell-header')).toHaveAttribute('data-edit-mode')
+    expect(screen.getByRole('link', { name: 'Edit map' })).toHaveAttribute('aria-current', 'page')
+  })
+
+  it('keeps the complete operational row in identity and leaves tabs empty', async () => {
+    renderDungeonRoute('/dungeons/4')
+    await flush()
+
+    const identitySlot = document.querySelector('.app-row-slot--identity')
+    const tabsSlot = document.querySelector('.app-row-slot--tabs')
+
+    expect(identitySlot).toContainElement(screen.getByRole('heading', { name: 'Map Lab' }))
+    expect(identitySlot).toContainElement(screen.getByText('Test Dungeon'))
+    expect(identitySlot).toContainElement(screen.getByRole('link', { name: 'View' }))
+    expect(identitySlot).toContainElement(screen.getByRole('link', { name: 'Edit map' }))
+    expect(identitySlot).toContainElement(document.querySelector('.dungeon-shell-status-slot'))
+    expect(identitySlot).toContainElement(screen.getByRole('link', { name: 'Back to dungeons' }))
+    expect(tabsSlot).toBeEmptyDOMElement()
+    expect(screen.getAllByRole('heading', { name: 'Map Lab' })).toHaveLength(1)
+    expect(document.querySelector('.dungeon-shell-subtitle')).not.toBeInTheDocument()
+    expect(screen.queryByText(/Create rooms, shape their footprint/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Run the dungeon from the map/)).not.toBeInTheDocument()
   })
 
   it('renders a return-to-browser link to /dungeons', async () => {
@@ -132,7 +159,7 @@ describe('DungeonShell', () => {
     renderDungeonRoute('/dungeons/4')
     await flush()
 
-    expect(screen.getByRole('heading', { name: 'Test Dungeon' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Map Lab' })).toBeInTheDocument()
     expect(screen.getByText('No saved layout yet. This dungeon is starting from a blank map.')).toBeInTheDocument()
     expect(screen.getByRole('tab', { name: 'Starting Floor' })).toBeInTheDocument()
   })
@@ -150,7 +177,7 @@ describe('DungeonShell', () => {
     Object.defineProperty(shell, 'offsetWidth', { value: 520 })
 
     expect(shell.scrollWidth).toBeLessThanOrEqual(shell.clientWidth + 1)
-    expect(screen.getByRole('heading', { name: 'Test Dungeon' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Map Lab' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'View' })).toBeVisible()
     expect(screen.getByRole('link', { name: 'Edit map' })).toBeVisible()
   })

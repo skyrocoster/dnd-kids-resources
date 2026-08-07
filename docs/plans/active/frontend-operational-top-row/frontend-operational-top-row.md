@@ -1,6 +1,6 @@
 # Frontend Operational Top Row — merge global and surface identity
 
-> **Status:** Stage 1 shipped the shared operational-row seam and standard PageHeader adoption; Stage 2 Map Lab adoption is next.
+> **Status:** Stages 1–2 shipped the shared operational row across standard pages and Map Lab; Stage 3 Loom and encounter adoption is next.
 
 - **Areas:** design, dungeons, loom, encounters
 - **Read trigger:** When implementing or reviewing FL-02's merged DM application and surface header
@@ -55,6 +55,7 @@ in-flow row below the identity row rather than being reclassified or relocated.
 | Stage | What shipped (≤2 sentences) |
 |-------|------------------------------|
 | 1 | AppShell now owns one operational identity row, with the home/brand action first in the wide navigation rail and the constrained navigation trigger leading the row. Shared PageHeader identity and actions render into that row while chapter tabs retain a separate, empty-collapsing row immediately below it. |
+| 2 | Map Lab now contributes its `Map Lab` heading, dungeon context, quiet save status, View/Edit mode, and Back route to the shared operational row. Its fill workspace, route states, canvas chrome, and persistence behavior remain unchanged. |
 
 ## Touches
 
@@ -80,13 +81,6 @@ in-flow row below the identity row rather than being reclassified or relocated.
 - `docs/master-plans/frontend-layout-redesign.md`
 
 ## Compiler handoff
-
-### Stage 2
-- **Verified edit sites:** `frontend/src/features/dungeons/maplab/DungeonShell.tsx` — current local title, subtitle, Back route, View/Edit mode, and status slot; `DungeonShellStatusSlotContext` already receives editor save status.
-- **Verified tests:** `frontend/src/features/dungeons/maplab/__tests__/DungeonShell.test.tsx` covers dungeon identity, View/Edit links, edit-mode state, and Back route.
-- **Settled contracts:** The operational row shows `Map Lab` as `h1`, dungeon title as context, current View/Edit mode, Back route, and existing save status. The status portal may be adapted to the shared row but its meaning and save behavior do not change.
-- **Constraints:** Preserve fill layout, viewer/editor mode, canvas dimensions, toolbar and rail placement, selection, session state, autosave, and every Map Lab interaction. No FL-05 through FL-11 behavior.
-- **Open questions:** none.
 
 ### Stage 3
 - **Verified edit sites:** `frontend/src/features/loom/LoomPage.tsx` — redundant eyebrow plus `PageHeader` title/subtitle/actions; `frontend/src/features/encounters/EncounterRunnerPage.tsx` — route title and Back action above the board's separate live controls.
