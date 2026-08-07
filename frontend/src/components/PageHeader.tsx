@@ -1,4 +1,6 @@
 import type { ReactNode } from 'react'
+import { createPortal } from 'react-dom'
+import { useAppShellRowSlots } from '../layout/AppShell'
 import './PageHeader.css'
 
 interface ChapterTab {
@@ -24,32 +26,47 @@ export function PageHeader({
   onTabSelect,
   actions,
 }: PageHeaderProps) {
+  const { identitySlot, tabsSlot } = useAppShellRowSlots()
+  const pageHeaderMain = (
+    <div className="page-header-main">
+      <div className="page-header-titles">
+        <h1 className="page-header-title">{title}</h1>
+        {subtitle && <p className="page-header-subtitle">{subtitle}</p>}
+      </div>
+      {actions && <div className="page-header-actions">{actions}</div>}
+    </div>
+  )
+  const pageHeaderTabs = chapterTabs && chapterTabs.length > 0 && (
+    <nav className="page-header-tabs" aria-label="Content sections">
+      {chapterTabs.map((tab) => (
+        <button
+          key={tab.key}
+          type="button"
+          className={`page-header-tab ${activeTab === tab.key ? 'page-header-tab--active' : ''}`}
+          aria-selected={activeTab === tab.key}
+          role="tab"
+          onClick={() => onTabSelect?.(tab.key)}
+        >
+          {tab.icon}
+          <span>{tab.label}</span>
+        </button>
+      ))}
+    </nav>
+  )
+
+  if (identitySlot || tabsSlot) {
+    return (
+      <>
+        {identitySlot ? createPortal(pageHeaderMain, identitySlot) : pageHeaderMain}
+        {tabsSlot && pageHeaderTabs ? createPortal(pageHeaderTabs, tabsSlot) : pageHeaderTabs}
+      </>
+    )
+  }
+
   return (
     <header className="page-header">
-      <div className="page-header-main">
-        <div className="page-header-titles">
-          <h1 className="page-header-title">{title}</h1>
-          {subtitle && <p className="page-header-subtitle">{subtitle}</p>}
-        </div>
-        {actions && <div className="page-header-actions">{actions}</div>}
-      </div>
-      {chapterTabs && chapterTabs.length > 0 && (
-        <nav className="page-header-tabs" aria-label="Content sections">
-          {chapterTabs.map((tab) => (
-            <button
-              key={tab.key}
-              type="button"
-              className={`page-header-tab ${activeTab === tab.key ? 'page-header-tab--active' : ''}`}
-              aria-selected={activeTab === tab.key}
-              role="tab"
-              onClick={() => onTabSelect?.(tab.key)}
-            >
-              {tab.icon}
-              <span>{tab.label}</span>
-            </button>
-          ))}
-        </nav>
-      )}
+      {pageHeaderMain}
+      {pageHeaderTabs}
     </header>
   )
 }

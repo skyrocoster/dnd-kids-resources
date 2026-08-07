@@ -48,6 +48,27 @@ describe('AppShell', () => {
     expect(screen.getByText('Loot')).toBeInTheDocument()
   })
 
+  it('puts the home action first in the desktop rail and exposes row slots', () => {
+    renderShell()
+    const nav = document.querySelector('.app-nav') as HTMLElement
+    const header = document.querySelector('.app-header') as HTMLElement
+    const tabsRow = document.querySelector('.app-tabs-row') as HTMLElement
+    expect(nav.firstElementChild).toHaveClass('app-brand')
+    expect(document.querySelector('.app-row-slot--identity')).toBeInTheDocument()
+    expect(document.querySelector('.app-row-slot--tabs')).toBeInTheDocument()
+    expect(header.parentElement).toHaveClass('app-top-band')
+    expect(header.nextElementSibling).toBe(tabsRow)
+    expect(tabsRow.querySelector('.app-row-slot--tabs')).toBeInTheDocument()
+  })
+
+  it('collapses the empty tabs slot without reserving row height', async () => {
+    const { readFileSync } = await import('node:fs')
+    const { resolve } = await import('node:path')
+    const css = readFileSync(resolve(process.cwd(), 'src/layout/AppShell.css'), 'utf-8')
+    expect(css).toContain('.app-row-slot--tabs:empty')
+    expect(css).toMatch(/\.app-row-slot--tabs:empty\s*\{[^}]*display:\s*none;/s)
+  })
+
   it('renders links for every kept feature area', () => {
     renderShell()
     const labels = [

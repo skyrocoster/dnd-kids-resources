@@ -229,12 +229,16 @@ values cluster around 0.5rem–1.5rem in practice. VW/VT stages adopt the spacin
 
 ## Shell and entry-point contract (VF4)
 
-- **`AppShell`** (`layout/AppShell.tsx`) — the site brand (`.app-brand`) is a `Link to="/"`, not a route `h1`;
-  each routed page establishes its own `h1` via `PageHeader`. The persisted desktop rail (`useNavCollapse()`,
-  `.app-nav`) is unchanged from VF1-VF3. At the `768px` breakpoint the rail is hidden (`display: none`) and an
-  `.app-nav-mobile-trigger` `IconButton` (`aria-label="Open navigation"`) appears in the header, opening a
-  `Dialog`-based drawer (`title="Navigate"`) that lists the same nav sections; selecting a link closes the
-  drawer. `IconButton` does not merge a passed `className` (it hardcodes `className="icon-btn"` and spreads
+- **`AppShell`** (`layout/AppShell.tsx`) — owns the DM app's operational identity row. The site brand
+  (`.app-brand`) remains a `Link to="/"`, not a route `h1`, and is the first item in the persisted desktop
+  rail (`useNavCollapse()`, `.app-nav`); each routed page establishes its own visible `h1` via `PageHeader`.
+  `useAppShellRowSlots()` exposes shell-local identity and chapter-tab portal targets: `PageHeader` contributes
+  title, optional context, and actions to the operational row, while chapter tabs remain in a separate in-flow
+  row immediately below it that spends no height when empty. At the `768px` breakpoint the rail is hidden
+  (`display: none`) and an `.app-nav-mobile-trigger` `IconButton` (`aria-label="Open navigation"`) leads the
+  operational row, opening a `Dialog`-based drawer (`title="Navigate"`) that lists the same nav sections;
+  selecting a link closes the drawer. `IconButton` does not merge a passed `className` (it hardcodes
+  `className="icon-btn"` and spreads
   `...rest` after it, so a caller `className` silently replaces it) — wrap it in a container element for any
   responsive/positioning class instead of passing `className` directly to `IconButton`.
 - **`navSections`** (`layout/navSections.ts`) — the single source of truth for the nav-section → route mapping
@@ -352,7 +356,8 @@ Generic hover/focus details panel in Map Lab:
 ### Collapsible nav rail (`layout/AppShell.tsx`)
 
 Site-wide navigation shell:
-- **Expanded** — 200px fixed-width nav with section headers (Reference, Campaign), link labels, icons
+- **Expanded** — 200px fixed-width nav with the home/brand action first, followed by the collapse toggle,
+  section headers (Reference, Campaign), link labels, and icons
 - **Collapsed** — 64px icon-only rail, section headers become `visually-hidden`, sections separated by
   `border-top` dividers, links center icons without labels
 - **Toggle** — 48×48px button at top of rail, `PanelLeftCloseIcon`/`PanelLeftOpenIcon`, persisted to

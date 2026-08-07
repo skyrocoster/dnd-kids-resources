@@ -173,7 +173,7 @@ says only where the files are.
 | `frontend/src/features/players/__tests__/` | 8 | 58 |
 | `frontend/src/features/spells/__tests__/` | 4 | 34 |
 | `frontend/src/features/weapons/__tests__/` | 3 | 25 |
-| `frontend/src/layout/__tests__/` | 1 | 12 |
+| `frontend/src/layout/__tests__/` | 1 | 14 |
 | `frontend/src/map/__tests__/` | 3 | 44 |
 | `frontend/src/pages/__tests__/` | 2 | 5 |
 | `frontend/src/player/__tests__/` | 8 | 80 |

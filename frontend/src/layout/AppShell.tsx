@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { createContext, useContext, useState } from 'react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
 import { useNavCollapse } from '../hooks/useNavCollapse'
 import { navSections } from './navSections'
@@ -7,26 +7,46 @@ import { IconButton } from '../components/IconButton'
 import { MapIcon, MenuIcon, NavCollapseIcon, NavExpandIcon } from '../components/icons'
 import './AppShell.css'
 
+type AppShellRowSlots = {
+  identitySlot: HTMLElement | null
+  tabsSlot: HTMLElement | null
+}
+
+const appShellRowSlotsContext = createContext<AppShellRowSlots>({ identitySlot: null, tabsSlot: null })
+
+export function useAppShellRowSlots(): AppShellRowSlots {
+  return useContext(appShellRowSlotsContext)
+}
+
 export function AppShell() {
   const { collapsed, toggle } = useNavCollapse()
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
+  const [identitySlot, setIdentitySlot] = useState<HTMLElement | null>(null)
+  const [tabsSlot, setTabsSlot] = useState<HTMLElement | null>(null)
   const ToggleIcon = collapsed ? NavExpandIcon : NavCollapseIcon
 
   return (
-    <div className="app-shell">
-      <header className="app-header">
-        <Link to="/" className="app-brand">
-          <MapIcon size={22} aria-hidden="true" />
-          <span>D&D Kids Resources</span>
-        </Link>
-        <div className="app-nav-mobile-trigger">
-          <IconButton label="Open navigation" onClick={() => setMobileNavOpen(true)}>
-            <MenuIcon size={20} aria-hidden="true" />
-          </IconButton>
-        </div>
-      </header>
+    <appShellRowSlotsContext.Provider value={{ identitySlot, tabsSlot }}>
+       <div className="app-shell">
+       <div className="app-top-band">
+         <header className="app-header">
+           <div className="app-nav-mobile-trigger">
+             <IconButton label="Open navigation" onClick={() => setMobileNavOpen(true)}>
+               <MenuIcon size={20} aria-hidden="true" />
+             </IconButton>
+           </div>
+           <div className="app-row-slot app-row-slot--identity" ref={setIdentitySlot} />
+         </header>
+         <div className="app-tabs-row">
+           <div className="app-row-slot app-row-slot--tabs" ref={setTabsSlot} />
+         </div>
+       </div>
       <div className="app-body">
         <nav className={`app-nav ${collapsed ? 'app-nav--collapsed' : ''}`}>
+          <Link to="/" className="app-brand">
+            <MapIcon size={22} aria-hidden="true" />
+            <span>D&D Kids Resources</span>
+          </Link>
           <button
             type="button"
             className="app-nav-toggle"
@@ -84,6 +104,7 @@ export function AppShell() {
           ))}
         </nav>
       </Dialog>
-    </div>
+      </div>
+    </appShellRowSlotsContext.Provider>
   )
 }
