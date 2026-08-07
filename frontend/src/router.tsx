@@ -18,6 +18,7 @@ import { AppShell } from './layout/AppShell'
 import { ComponentDemoPage } from './pages/ComponentDemoPage'
 import { HomePage } from './pages/HomePage'
 import { PlayerHome, PlayerMapRoute, PlayerShell } from './player/PlayerShell'
+import { PlayerSpellbookRoute } from './player/PlayerSpellbookRoute'
 
 export const routes = [
   {
@@ -55,6 +56,7 @@ export const routes = [
     children: [
       { index: true, element: <PlayerHome /> },
       { path: 'map', element: <PlayerMapRoute /> },
+      { path: 'spells', element: <PlayerSpellbookRoute /> },
     ],
   },
 ]

@@ -22,9 +22,10 @@ describe('PlayerShell', () => {
     })
   })
 
-  it('renders the Map destination as a native route target', () => {
+  it('renders native player destination route targets', () => {
     render(<PlayerHome />)
     expect(screen.getByRole('link', { name: /map/i })).toHaveAttribute('href', '/play/map')
+    expect(screen.getByRole('link', { name: /spells/i })).toHaveAttribute('href', '/play/spells')
   })
 
   it('renders the loading message', () => {
@@ -79,8 +80,9 @@ describe('PlayerShell', () => {
 
   it('each player-destination meets the 64px kid touch-target floor', () => {
     render(<PlayerHome />)
-    const dest = screen.getByRole('link', { name: /map/i })
-    const minHeight = parseFloat(getComputedStyle(dest).minHeight)
-    expect(minHeight).toBeGreaterThanOrEqual(64)
+    for (const dest of screen.getAllByRole('link')) {
+      const minHeight = parseFloat(getComputedStyle(dest).minHeight)
+      expect(minHeight).toBeGreaterThanOrEqual(64)
+    }
   })
 })

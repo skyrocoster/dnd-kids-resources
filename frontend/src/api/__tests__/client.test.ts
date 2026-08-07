@@ -6,6 +6,7 @@ import {
   deleteMonster,
   deleteSpell,
   getAbilities,
+  getPlayerSpellbook,
   updateMonster,
 } from '../client'
 import { targetSpell } from '../../features/spells/__tests__/spellFixtures'
@@ -36,6 +37,20 @@ describe('api client', () => {
 
     expect(fetchMock).toHaveBeenCalledWith('/api/abilities', expect.objectContaining({ headers: expect.any(Object) }))
     expect(result).toEqual([{ id: 1, name: 'Strength', description: null }])
+  })
+
+  it('gets the assigned player spellbook and forwards an AbortSignal', async () => {
+    const spellbook = [{ id: 7, name: 'Mira', spells: [targetSpell] }]
+    const fetchMock = mockFetchOnce({ jsonBody: spellbook })
+    const signal = new AbortController().signal
+
+    const result = await getPlayerSpellbook(signal)
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/players/spellbook',
+      expect.objectContaining({ signal, headers: expect.any(Object) }),
+    )
+    expect(result).toEqual(spellbook)
   })
 
   it('POST requests send a JSON body', async () => {

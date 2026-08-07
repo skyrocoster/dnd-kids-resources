@@ -53,7 +53,7 @@ This doc describes the folder structure, backend/frontend conventions, and reque
 | `features/` | Domain modules — `dungeons/`, `encounters/`, `items/`, `loot/`, `monsters/`, `npcs/`, `players/`, `spells/`, `weapons/`. Each feature dir contains pages, editor forms, and local state management. |
 | `model/` | Pure domain models shared by both the DM app and the Player app (`maplabModel.ts`). Modules here must import nothing from `components/`, `features/`, `layout/`, or `pages/` — enforced by the `no-restricted-imports` override in `frontend/.oxlintrc.json`, after a work order once lifted a helper here with a `features/` import and nothing caught it until reconcile. |
 | `map/` | Neutral shared canvas geometry, marker primitives, badge descriptors, and badge rendering used by DM and Player map surfaces. Modules here import only model/local siblings and direct icon packages, never feature or component modules. |
-| `player/` | Player app shell, navigation, curtain (player-view transform), kid-facing components, and the `/play/map` live map renderer/data seam; the curtain emits only effective player-visible fixture facts and hides authored/session detail |
+| `player/` | Player app shell, navigation, curtain (player-view transform), kid-facing components, and the `/play/map` and `/play/spells` live data seams; the curtain emits only effective player-visible fixture facts and hides authored/session detail |
 | `pages/` | Top-level router pages (HomePage, ComponentDemoPage, StubPage) — entry points for each route |
 | `layout/` | AppShell.tsx — header, nav, footer layout that wraps all pages; navSections.ts — shared nav-section → route map consumed by AppShell's rail/drawer and HomePage's chapter tabs |
 | `router.tsx` | React Router configuration; exports a `routes` array (dev-only `demo` route gated by `import.meta.env.DEV`) and the `router` built from it |
@@ -101,7 +101,7 @@ matched entries from the bundled rule glossary with the shared inline disclosure
 
 **Frontend convention: standard browser routes.** Standard catalog browsers use `BrowserLayout` for the routed `PageHeader`, action slot, error alert, `SplitPane`, and optional editor/confirmation-dialog slots. They pass `listCollapsible` so the shared list rail exposes the persisted collapse/restore control on desktop. They model the collection request with `RemoteState<T>` and pass its loading/error status to `SearchList`; a selected item sets `detailOpen`, which at `520px` presents a detail-only view with an in-flow Back-to-list button. Feature routes keep their own sorting, selection, detail card, editor, and deletion behavior.
 
-**Frontend convention: player route family.** `/play` is a top-level sibling of `/`, outside `AppShell`, and owns descendants such as `/play/map` inside `PlayerShell`. Player routes use native route targets, offer no route out of `/play`, and keep their data seams/renderers under `frontend/src/player/` rather than importing DM feature components.
+**Frontend convention: player route family.** `/play` is a top-level sibling of `/`, outside `AppShell`, and owns descendants such as `/play/map` and `/play/spells` inside `PlayerShell`. Player routes use native route targets, offer no route out of `/play`, and keep their data seams/renderers under `frontend/src/player/` rather than importing DM feature components; route-local state that must survive sibling navigation is owned above the shell's `Outlet` and remains in memory only.
 
 ## Data Flow
 

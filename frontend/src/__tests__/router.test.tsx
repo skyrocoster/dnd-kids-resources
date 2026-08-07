@@ -26,7 +26,7 @@ describe('router', () => {
     expect(playRoute).toBeDefined()
   })
 
-  it('keeps /play and /play/map outside the app shell route family', async () => {
+  it('keeps /play destinations outside the app shell route family', async () => {
     const { routes } = await import('../router')
     const appChildren = routes[0].children ?? []
     const playRoute = routes.find((r) => r.path === '/play')
@@ -34,5 +34,6 @@ describe('router', () => {
     expect(appChildren.some((route) => route.path === 'play' || route.path === 'play/map')).toBe(false)
     expect(playRoute?.children?.some((route) => route.index)).toBe(true)
     expect(playRoute?.children?.some((route) => route.path === 'map')).toBe(true)
+    expect(playRoute?.children?.some((route) => route.path === 'spells')).toBe(true)
   })
 })

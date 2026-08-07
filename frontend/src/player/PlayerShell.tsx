@@ -2,11 +2,14 @@ import { Outlet } from 'react-router-dom'
 import './PlayerShell.css'
 import { PlayerMapRenderer } from './PlayerMapRenderer'
 import { usePlayerMapData } from './usePlayerMapData'
+import { PlayerSpellbookSessionProvider } from './PlayerSpellbookSession'
 
 export function PlayerShell() {
   return (
     <div className="player-shell">
-      <Outlet />
+      <PlayerSpellbookSessionProvider>
+        <Outlet />
+      </PlayerSpellbookSessionProvider>
     </div>
   )
 }
@@ -17,6 +20,10 @@ export function PlayerHome() {
       <a className="player-destination" href="/play/map">
         <span className="player-destination-icon" aria-hidden="true">[]</span>
         <span>Map</span>
+      </a>
+      <a className="player-destination" href="/play/spells">
+        <span className="player-destination-icon" aria-hidden="true">✦</span>
+        <span>Spells</span>
       </a>
     </nav>
   )

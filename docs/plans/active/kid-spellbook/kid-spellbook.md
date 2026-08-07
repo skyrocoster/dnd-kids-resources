@@ -1,6 +1,6 @@
 # Kid Spellbook — Give children a read-only assigned-spell reference
 
-> **Status:** Stages 1–2 shipped — categorized spell data and constrained DM category editing are complete; Stage 3 kid spellbook routing, bootstrap, and resilient polling are next.
+> **Status:** Stages 1–3 shipped — the kid spellbook route, character bootstrap, sticky in-memory session state, and resilient polling are complete; Stage 4 browse modes and spell details are next.
 
 - **Areas:** players, reference, design
 - **Read trigger:** When changing the kid spellbook route, assigned-spell payload, spell categories, or the DM spell editor's category assignment.
@@ -24,6 +24,7 @@ The shared spell catalog gains a fixed, validated action-category field. AI supp
 |-------|------------------------------|
 | 1 | Added the fixed normalized spell-category contract across schema, SQLite storage, CRUD and assigned-spell responses, plus `GET /api/players/spellbook`. All 525 canonical spell seeds now carry semantic categories that survive rebuild/export round-tripping. |
 | 2 | Added the fixed category vocabulary to frontend spell response, request, and form contracts, then exposed `Categories` in the existing DM Spell editor as a constrained multi-select. Focused form and create/update serialization coverage verifies selections pass through the existing Save flow. |
+| 3 | Added `/play/spells` outside `AppShell` with two response-driven character tabs, persistent Map navigation, and PlayerShell-scoped per-character in-memory view state. The abort-aware bootstrap now polls every five seconds and on visibility wake while retaining the last good frame through background failures. |
 
 ## Touches
 - `backend/app/routers/spells.py`
@@ -73,13 +74,6 @@ Keyboard:     DOM-order Tab traversal through character tabs, Map, Browse by, ca
 Touch:        64px minimum for every kid control, as required by the Kid UX contract; no smaller exception.
 
 ## Compiler handoff
-
-### Stage 3
-- **Verified edit sites:** `frontend/src/router.tsx` — `/play` is a top-level route outside `AppShell`; `frontend/src/player/PlayerShell.tsx` — shell owns `/play` destinations and `/play/map`; `frontend/src/player/usePlayerMapData.ts` — existing 5-second polling, visibility refresh, AbortController, and last-good-frame pattern; `frontend/src/player/__tests__/importRule.test.ts` — `player/` cannot import from `features`, `components`, `layout`, or `pages`.
-- **Verified tests:** `frontend/src/__tests__/router.test.tsx` protects the top-level kid route boundary; `frontend/src/player/__tests__/PlayerShell.test.tsx` protects native kid navigation and the 64px floor; existing player poll tests are the model for stale-frame behavior.
-- **Settled contracts:** `/play/spells` remains outside `AppShell`, has a persistent Map link to `/play/map`, and has exactly two explicit character tabs sourced from the current two seeded player records in stable API order. Reopening the route restores the last character and each character's category, slot section, expanded spell, and scroll position. Polls update quietly and retain the last good frame on failure.
-- **Constraints:** Keep `player/` imports within `api/`, `theme.css`, and pure model modules; no local writes, no DM exit, no manual refresh, no browser automation required by this contract.
-- **Open questions:** Determine the least fragile in-memory state owner across route unmount/remount; do not introduce persistence beyond the agreed last-place behavior without a new decision.
 
 ### Stage 4
 - **Verified edit sites:** `frontend/src/features/players/PlayerSpellSection.tsx` — existing assigned spells group by level but is feature-side and cannot be imported by `player/`; `frontend/src/api/types.ts` — canonical spell fields include quick rules, damage, slot level, and full reference fields; `docs/UX_PATTERNS.md` — kid controls require icon-plus-word, automatic polling, no exit, and a 64px floor.

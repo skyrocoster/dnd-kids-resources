@@ -19,6 +19,7 @@ import type {
   Player,
   PlayerInput,
   PlayerDetail,
+  PlayerSpellbookCharacter,
   PlayerSpellAssignments,
   PlayerWeaponAssignments,
   NPC,
@@ -135,6 +136,8 @@ export const getPlayerDetail = (id: number) => get<PlayerDetail>(`/players/${id}
 export const createPlayer = (player: PlayerInput) => post<Player>('/players', player)
 export const updatePlayer = (id: number, player: PlayerInput) => put<Player>(`/players/${id}`, player)
 export const deletePlayer = (id: number) => del(`/players/${id}`)
+export const getPlayerSpellbook = (signal?: AbortSignal) =>
+  get<PlayerSpellbookCharacter[]>('/players/spellbook', { signal })
 export const getPlayerSpells = (id: number) => get<Spell[]>(`/players/${id}/spells`)
 export const getPlayerWeapons = (id: number) => get<Weapon[]>(`/players/${id}/weapons`)
 export const replacePlayerSpells = (playerId: number, spellIds: number[]) =>

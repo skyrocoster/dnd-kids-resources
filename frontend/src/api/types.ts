@@ -77,6 +77,12 @@ export interface Spell {
   area_of_effect: SpellAreaOfEffect
 }
 
+export interface PlayerSpellbookCharacter {
+  id: number
+  name: string
+  spells: Spell[]
+}
+
 export interface SpellDamage {
   name: string
   formula: string
