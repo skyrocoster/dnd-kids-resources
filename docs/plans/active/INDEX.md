@@ -25,6 +25,7 @@ Point a skill at a row and it has what it needs to start.
 <!-- GENERATED:ACTIVE_INDEX:START -->
 | Plan | Areas | Depends on | State | Orders | Next | Status |
 | --- | --- | --- | --- | --- | --- | --- |
+| [Frontend Play Navigation](frontend-play-navigation/frontend-play-navigation.md) | [design](../../areas/design.md), [encounters](../../areas/encounters.md) | — | ready | none compiled | `to-orders` | Stage 1 shipped; awaiting human UX acceptance for FL-03. |
 | [Production Nightly Deploys](production-nightly-deploys/production-nightly-deploys.md) | [infra](../../areas/infra.md) | — | ready | none compiled | `to-orders` | Part of Stage 1 has already shipped out of band — see *Landed early* below. |
 | [Table Testing Contract](table-testing-contract/table-testing-contract.md) | [infra](../../areas/infra.md) | — | ready | none compiled | `to-orders` | Stage 3 shipped — the independent candidate ideas bank and evidence-linked card format are documented, and legacy table-test records are clearly marked as historical. |
 | [Table Testing Records](table-testing-records/table-testing-records.md) | [infra](../../areas/infra.md) | — | ready | none compiled | `to-orders` | Superseded by the Table Testing Contract plan; do not compile further orders from this plan. |

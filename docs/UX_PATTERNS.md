@@ -81,6 +81,15 @@ The Loom's `Advance Campaign` toolbar action is the first shipped application of
 
 Status: IN FORCE.
 
+### Compact play navigation
+
+The routed encounter runner uses the compact wide-screen AppShell navigation presentation so the live
+surface remains focal. This presentation is temporary: it does not write, clear, or reinterpret the
+DM's persisted preparation navigation preference. The complete navigation set remains reachable, and
+constrained layouts continue to use the labelled navigation trigger and drawer.
+
+Status: IN FORCE.
+
 ---
 
 ## Route shape

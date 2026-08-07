@@ -16,6 +16,7 @@ function renderShell(initialPath = '/') {
         children: [
           { index: true, element: <div>home content</div> },
           { path: 'spells', element: <div>spells content</div> },
+          { path: 'encounters/:id/run', element: <div>encounter runner content</div> },
         ],
       },
     ],
@@ -113,6 +114,25 @@ describe('AppShell', () => {
     renderShell()
     const nav = document.querySelector('.app-nav')
     expect(nav).toHaveClass('app-nav--collapsed')
+  })
+
+  it('uses compact navigation for the encounter runner without changing the preference', () => {
+    window.localStorage.setItem(STORAGE_KEY, 'false')
+    renderShell('/encounters/123/run')
+
+    expect(document.querySelector('.app-nav')).toHaveClass('app-nav--play')
+    expect(document.querySelector('.app-nav')).not.toHaveClass('app-nav--collapsed')
+    expect(window.localStorage.getItem(STORAGE_KEY)).toBe('false')
+    expect(screen.getByText('encounter runner content')).toBeInTheDocument()
+  })
+
+  it('leaves preparation navigation preference-controlled after leaving the runner', () => {
+    window.localStorage.setItem(STORAGE_KEY, 'false')
+    renderShell('/spells')
+
+    expect(document.querySelector('.app-nav')).not.toHaveClass('app-nav--play')
+    expect(document.querySelector('.app-nav')).not.toHaveClass('app-nav--collapsed')
+    expect(window.localStorage.getItem(STORAGE_KEY)).toBe('false')
   })
 
   it('icon-only rail keeps links clickable', async () => {

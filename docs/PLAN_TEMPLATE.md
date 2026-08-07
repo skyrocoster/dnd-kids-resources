@@ -19,9 +19,10 @@ The workflow is driven by eight skills in `.opencode/skills/`, opencode's native
 | `quick-reconcile` | planner | Close a directly delivered master-plan slice: update canonical docs and its slice receipt, run full checks, and remove redundant artifacts. |
 | `reconcile` | planner | Close out finished orders: scout and automatically repair focused stage regressions through a coordinator-authored quick brief, then collapse the Plan, update docs, and run the checker. |
 
-The split is a cost judgement, not a ban: when a dispatch round trip would cost more than the edit — a
-small, fully-determined change needing no additional exploration — the planner may complete one order
-directly, run its STOP WHEN, preserve its STATUS/DEVIATIONS, and say so.
+The split is also a context-preservation rule: when `to-orders` emits exactly one order, the creating
+planner implements that order in the current context, runs its STOP WHEN, and preserves its
+STATUS/DEVIATIONS/EVIDENCE ENVELOPE. Only stages emitting two or more orders use `dispatch-orders`
+and fresh executor contexts.
 
 ### Stage execution routing
 

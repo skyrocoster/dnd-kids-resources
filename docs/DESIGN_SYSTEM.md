@@ -241,6 +241,7 @@ values cluster around 0.5rem–1.5rem in practice. VW/VT stages adopt the spacin
   `className="icon-btn"` and spreads
   `...rest` after it, so a caller `className` silently replaces it) — wrap it in a container element for any
   responsive/positioning class instead of passing `className` directly to `IconButton`.
+- The routed encounter runner (`/encounters/:id/run`) adds the temporary `.app-nav--play` compact wide-screen presentation without changing `dnd-kids-nav-collapsed`; preparation routes remain controlled by the persisted preference, and constrained navigation remains the labelled trigger/drawer path.
 - **`navSections`** (`layout/navSections.ts`) — the single source of truth for the nav-section → route mapping
   (`{ label, icon, links: { to, label, linkIcon }[] }`), consumed by both `AppShell`'s desktop rail/mobile
   drawer and `HomePage`'s chapter tabs. Add a new feature route's nav entry here once, not per-consumer.

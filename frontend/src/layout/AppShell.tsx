@@ -1,5 +1,5 @@
 import { createContext, useContext, useState } from 'react'
-import { Link, NavLink, Outlet } from 'react-router-dom'
+import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useNavCollapse } from '../hooks/useNavCollapse'
 import { navSections } from './navSections'
 import { Dialog } from '../components/Dialog'
@@ -20,10 +20,12 @@ export function useAppShellRowSlots(): AppShellRowSlots {
 
 export function AppShell() {
   const { collapsed, toggle } = useNavCollapse()
+  const { pathname } = useLocation()
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const [identitySlot, setIdentitySlot] = useState<HTMLElement | null>(null)
   const [tabsSlot, setTabsSlot] = useState<HTMLElement | null>(null)
   const ToggleIcon = collapsed ? NavExpandIcon : NavCollapseIcon
+  const isEncounterRunner = /^\/encounters\/[^/]+\/run\/?$/.test(pathname)
 
   return (
     <appShellRowSlotsContext.Provider value={{ identitySlot, tabsSlot }}>
@@ -42,7 +44,7 @@ export function AppShell() {
          </div>
        </div>
       <div className="app-body">
-        <nav className={`app-nav ${collapsed ? 'app-nav--collapsed' : ''}`}>
+         <nav className={`app-nav ${collapsed ? 'app-nav--collapsed' : ''} ${isEncounterRunner ? 'app-nav--play' : ''}`}>
           <Link to="/" className="app-brand">
             <MapIcon size={22} aria-hidden="true" />
             <span>D&D Kids Resources</span>

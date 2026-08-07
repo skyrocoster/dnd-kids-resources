@@ -86,7 +86,8 @@
   overflow: hidden;
 }
 
-.app-nav--collapsed {
+.app-nav--collapsed,
+.app-nav--play {
   width: 64px;
   padding: var(--space-4) var(--space-2);
 }
@@ -109,7 +110,8 @@
   background: var(--md-surface-3);
 }
 
-.app-nav--collapsed .app-nav-toggle {
+.app-nav--collapsed .app-nav-toggle,
+.app-nav--play .app-nav-toggle {
   margin-left: 0;
 }
 
@@ -123,13 +125,15 @@
   margin: var(--space-4) 0 var(--space-2);
 }
 
-.app-nav--collapsed .app-nav-section {
+.app-nav--collapsed .app-nav-section,
+.app-nav--play .app-nav-section {
   margin-top: var(--space-3);
   padding-top: var(--space-3);
   border-top: 1px solid var(--md-surface-3);
 }
 
-.app-nav--collapsed .app-nav-section:first-child {
+.app-nav--collapsed .app-nav-section:first-child,
+.app-nav--play .app-nav-section:first-child {
   margin-top: 0;
   padding-top: 0;
   border-top: none;
@@ -160,7 +164,8 @@
   color: var(--md-on-surface);
 }
 
-.app-nav--collapsed .app-nav-section a {
+.app-nav--collapsed .app-nav-section a,
+.app-nav--play .app-nav-section a {
   justify-content: center;
   margin: 0;
 }

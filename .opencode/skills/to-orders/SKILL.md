@@ -1,6 +1,6 @@
 ---
 name: to-orders
-description: Turn ONE stage of a Plan into lean, self-contained work orders that a cheaper, weaker model can execute one at a time, each in a fresh context window. Use this after `create-plan` or `to-plan`, whenever the user says "turn stage N into work orders", "compile this stage", "make the tickets/orders for X", or is ready to hand implementation to an executor model. This is where the planner does the exploration up front so the executor never has to. Produces work-order files rather than code — just goal, known state, starting files, and a hard stop condition.
+description: Turn ONE stage of a Plan into lean, self-contained work orders and implement a single emitted order in the current context. Use this after `create-plan` or `to-plan`, whenever the user says "turn stage N into work orders", "compile this stage", "make the tickets/orders for X", or is ready to hand implementation to an executor model. This is where the planner does the exploration up front so the executor never has to. Multiple emitted orders go to dispatch; a single emitted order is implemented by the creating agent.
 ---
 
 # to-orders — compile a stage into work orders (Layer 2)
@@ -211,23 +211,25 @@ several do, say which and ask — choosing between ready plans is the user's cal
    to the user rather than dispatched. Before you escalate, re-read your own order: "this needs a
    stronger model" is nearly always "this order does not say enough".
 
-## Direct-completion fast path
+## Single-order completion
 
-After compiling an order normally, you may implement it directly when dispatching would only make an
-executor reread context you already hold — a marginal-cost exception, not a second default. All of
-these must hold: the exact edit is fully determined by files already opened while compiling; it needs
-no additional read, search, diagnosis, design choice, or architecture judgement; the whole change fits
-in one edit attempt; the targeted STOP WHEN is already verified and runnable; and completing it now
-will not invalidate an independently runnable order's facts or anchors. Required strength is not the
-test — a Standard order can qualify when compilation removed all uncertainty, while a Light order
-that still needs exploration belongs with an executor.
+When compilation produces exactly one order, the creating coordinator implements that order in the
+same context instead of dispatching it to a fresh executor. This is the normal single-order route,
+not an optional optimization: use the files and facts already gathered while compiling, and do not
+throw away that context merely to have the executor reread it. Additional narrow reads are allowed
+when needed to execute the already-settled order; do not make new design, architecture, contract, or
+scope decisions during implementation.
 
-Preserve the normal lifecycle: write the complete order first (including its STOP WHEN), state that
-it qualifies for direct completion and why, make the one determined edit, run only STOP WHEN, and on
-success write `STATUS: DONE — implemented directly by planner` with the normal DEVIATIONS line. If the
-edit does not apply cleanly, the check fails, or another read is needed, stop immediately and
-dispatch the order normally — do not turn `to-orders` into an implementation session. At most one
-order per invocation; more than one means implementation is becoming the session's job.
+Preserve the normal lifecycle: write and lint the complete order first (including its STOP WHEN),
+then implement only that order, run only STOP WHEN, and on success write `STATUS: DONE — implemented
+directly by planner` with the normal DEVIATIONS and EVIDENCE ENVELOPE. If the order exposes an
+unsettled design, architecture, contract, diagnosis, or scope question, stop and surface it rather
+than widening the work. If the edit or check fails, record the failure in the order and triage it in
+the current context; do not silently hand the single order to `dispatch-orders` after compilation.
+
+If compilation produces two or more orders, do not implement any of them in this context. Leave every
+order complete and linted, then hand the stage to `dispatch-orders`, one fresh executor context per
+order, in dependency order.
 
 ## Planned quick stages are decided before `to-orders`
 
@@ -252,13 +254,18 @@ one logical change, one precedent, every fact pre-answered, one runnable stop-ch
 
 ## What NOT to do
 
-- Do not inline the implementation code the executor should write — code written here was paid for at
-  the coordinator's rate. The single exception is already-paid-for code: snippets from the Plan's
-  `## Planning byproducts` appendix or verified while compiling, moved verbatim into KNOWN STATE and
-  marked `verified snippet — use as-is:`, then deleted from the Plan.
+- Do not implement any order when the stage produced two or more orders; those belong to fresh
+  executors through `dispatch-orders`. For a single emitted order, implementation in this context is
+  explicitly required after the complete order is written and linted. Do not inline implementation
+  code in the order itself — code written here was paid for at the coordinator's rate. The exception
+  is already-paid-for code: snippets from the Plan's `## Planning byproducts` appendix or verified
+  while compiling, moved verbatim into KNOWN STATE (marked `verified snippet — use as-is:`), then
+  deleted from the Plan.
 - Do not touch the manifest, references, or area guides here — that's `reconcile`, after orders ship.
 
 ## Next step
 
-Hand each order to an executor via the `dispatch-orders` skill (which wraps `implement-order`), one
-fresh context per order. When a stage's orders are all `DONE`, run **`reconcile`**.
+For one emitted order, finish its implementation and STOP WHEN in this context. For two or more
+orders, hand each order to an executor via the `dispatch-orders` skill (which wraps
+`implement-order`), one fresh context per order. When a stage's orders are all `DONE`, run
+**`reconcile`**.
