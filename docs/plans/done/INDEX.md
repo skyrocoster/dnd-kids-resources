@@ -17,6 +17,7 @@ Completed plans are archived here for reference. Each directory under `docs/plan
 - [Dungeon Feature - Map Lab Cutover Plan](dungeon_plan/dungeon_plan.md) — All stages shipped. — (Dungeons)
 - [Encounters Feature — Expansion Plan](encounters_plan/encounters_plan.md) — Phases 1–3 and Phase 4 shipped. — (Encounters)
 - [Frontend Operational Top Row — merge global and surface identity](frontend-operational-top-row/frontend-operational-top-row.md) — Completed and accepted 2026-08-07 — FL-02's merged operational top row passed automated gates and human UX review. — (design)
+- [Frontend Play Navigation — compact global navigation for play surfaces](frontend-play-navigation/frontend-play-navigation.md) — Completed and accepted 2026-08-07 — FL-03 compact play navigation passed automated checks and human UX review. — (design)
 - [Generated Documentation — the docs a script can derive stop being written by hand](generated-documentation/generated-documentation.md) — Complete — all seven stages shipped 2026-07-29. — (Infra)
 - [Glossary term tooltips — hover/tap explanations for rule terms in rendered text](glossary-term-tooltips/glossary-term-tooltips.md) — Complete. — (Design)
 - [Kid Map Legibility — the tablet map reads from a child's seat](kid-map-legibility/kid-map-legibility.md) — Closed 2026-07-27, superseded before completion. — (Players)

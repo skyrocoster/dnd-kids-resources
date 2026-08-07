@@ -1,6 +1,6 @@
 # Frontend Play Navigation — compact global navigation for play surfaces
 
-> **Status:** Stage 1 shipped; awaiting human UX acceptance for FL-03.
+> **Status:** Completed and accepted 2026-08-07 — FL-03 compact play navigation passed automated checks and human UX review.
 
 - **Areas:** design, encounters
 - **Read trigger:** When implementing or reviewing FL-03 compact navigation for the DM encounter runner
@@ -78,7 +78,7 @@ Constrained:
 
 ## Prerequisite
 
-FL-02 is accepted in the master-plan receipt and archived Plan [Frontend Operational Top Row](../../done/frontend-operational-top-row/frontend-operational-top-row.md).
+FL-02 is accepted in the master-plan receipt and archived Plan [Frontend Operational Top Row](../frontend-operational-top-row/frontend-operational-top-row.md).
 
 ## Human acceptance script
 
