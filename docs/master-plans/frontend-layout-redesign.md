@@ -760,7 +760,7 @@ may record an `Accepted` state.
 | FL-01 | Direct | Accepted 2026-08-07 | Removed the non-functional `AppShell` footer and its style; the focused `AppShell.test.tsx` check passed and the user signed off the visible result. |
 | FL-02 | Plan | Accepted 2026-08-07 | [Frontend Operational Top Row](../plans/done/frontend-operational-top-row/frontend-operational-top-row.md) merged the brand-only and route headers into one AppShell operational row across Field Guide and browsers, Map Lab, Loom, and encounter play; automated stage checks passed and the user accepted the visible result. |
 | FL-03 | Plan | Accepted 2026-08-07 | [Frontend Play Navigation](../plans/done/frontend-play-navigation/frontend-play-navigation.md) adds temporary compact wide-screen AppShell navigation to the encounter runner while preserving the preparation preference and constrained navigation; focused and full automated checks passed and the user confirmed UX acceptance. |
-| FL-04 | Plan | Implemented; awaiting human acceptance | [Frontend Standard Browser Actions](../plans/active/frontend-standard-browser-actions/frontend-standard-browser-actions.md) adds Monster selected-detail Delete and regression coverage for collection Create plus selected Edit/Delete across all nine standard browsers; focused checks passed. |
+| FL-04 | Plan | Accepted 2026-08-07 | [Frontend Standard Browser Actions](../plans/done/frontend-standard-browser-actions/frontend-standard-browser-actions.md) adds Monster selected-detail Delete and regression coverage for collection Create plus selected Edit/Delete across all nine standard browsers; focused and full checks passed and the user confirmed UX acceptance. |
 
 ## Explicitly outside this master plan
 

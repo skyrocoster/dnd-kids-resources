@@ -1,6 +1,6 @@
 # Frontend Standard Browser Actions — Consistent collection and selection actions
 
-> **Status:** Stage 1 shipped; automated checks are complete and FL-04 is awaiting human UX acceptance at wide and constrained widths.
+> **Status:** Completed and accepted 2026-08-07; FL-04 standard browser actions are shipped.
 
 - **Areas:** design
 - **Read trigger:** Implementing FL-04 of the frontend layout redesign: standard browser collection actions and selected-record actions.
@@ -69,7 +69,7 @@ FL-02 is accepted and archived in `docs/plans/done/frontend-operational-top-row/
 
 | Stage | What shipped (≤2 sentences) |
 |-------|------------------------------|
-| 1 | Added Monster selected-detail Delete with the existing confirmation/reload pattern and regression coverage for Create plus selected Edit/Delete across all nine standard browsers. Focused browser tests, typecheck, and lint passed; awaiting the FL-04 human UX gate. |
+| 1 | Added Monster selected-detail Delete with the existing confirmation/reload pattern and regression coverage for Create plus selected Edit/Delete across all nine standard browsers. Focused and full checks passed, and the user accepted the wide, constrained, keyboard, and touch layouts. |
 
 ## Touches
 
