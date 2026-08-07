@@ -62,6 +62,7 @@ function dragRoomBrush(container: HTMLElement, bounds: { minX: number; minY: num
 
 describe('MapLabEditorPage (Stage 03 — editable per-side padding)', () => {
   beforeEach(() => {
+    window.sessionStorage.clear()
     vi.restoreAllMocks()
     vi.useFakeTimers()
     vi.spyOn(api, 'getDungeon').mockResolvedValue({ id: 4, title: 'Test Dungeon', data: {} })

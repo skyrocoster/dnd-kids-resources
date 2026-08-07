@@ -92,6 +92,7 @@ const miraNpc: NPC = {
 }
 
 beforeEach(() => {
+  window.sessionStorage.clear()
   vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: mapLabLayout as unknown as Record<string, unknown> })
   vi.spyOn(api, 'listNPCs').mockResolvedValue([{ id: 9, name: 'Mira' }])
   vi.spyOn(api, 'getNPC').mockResolvedValue(miraNpc)

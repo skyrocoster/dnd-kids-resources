@@ -64,6 +64,7 @@ describe('MapLabEditorPage (Stage E2 — Canvas zoom & pan)', () => {
 
   beforeEach(() => {
     vi.restoreAllMocks()
+    window.sessionStorage.clear()
     originalResizeObserver = (globalThis as { ResizeObserver?: unknown }).ResizeObserver
     vi.spyOn(api, 'getDungeon').mockResolvedValue({ id: 4, title: 'Test Dungeon', data: {} })
     vi.spyOn(api, 'listNPCs').mockResolvedValue([])

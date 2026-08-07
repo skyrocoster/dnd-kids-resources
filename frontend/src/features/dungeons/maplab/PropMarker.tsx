@@ -46,6 +46,7 @@ interface PropMarkerProps {
   onFocus?: () => void
   onBlur?: () => void
   onClick?: () => void
+  onContextMenu?: () => void
 }
 
 /** Shared prop-marker render for both the viewer and editor pages — an on-square prop centers on
@@ -66,6 +67,7 @@ export function PropMarker({
   onFocus,
   onBlur,
   onClick,
+  onContextMenu,
 }: PropMarkerProps) {
   const onWall = prop.side !== undefined
   const { cx, cy, radius, iconSize } = onWall
@@ -95,6 +97,7 @@ export function PropMarker({
       onFocus={onFocus}
       onBlur={onBlur}
       onClick={onClick}
+      onContextMenu={interactive ? onContextMenu : undefined}
     >
       <circle
         className="maplab-prop-marker"

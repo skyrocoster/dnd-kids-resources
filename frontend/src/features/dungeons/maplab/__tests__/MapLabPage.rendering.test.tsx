@@ -94,6 +94,7 @@ const miraNpc: NPC = {
 // (6x4 hall, L-shape Armoury, seeded chest/trap-door), so pin that as the default backend layout
 // here; per-test `vi.spyOn` calls still override it where a test supplies its own `backendLayout`.
 beforeEach(() => {
+  window.sessionStorage.clear()
   vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: mapLabLayout as unknown as Record<string, unknown> })
   vi.spyOn(api, 'listNPCs').mockResolvedValue([{ id: 9, name: 'Mira' }])
   vi.spyOn(api, 'getNPC').mockResolvedValue(miraNpc)

@@ -32,6 +32,7 @@ interface PortalMarkerProps {
   onFocus?: () => void
   onBlur?: () => void
   onClick?: () => void
+  onContextMenu?: () => void
 }
 
 /** Portal marker — stable portal identity color on the ring/icon; one collapsed status
@@ -49,6 +50,7 @@ export function PortalMarker({
   onFocus,
   onBlur,
   onClick,
+  onContextMenu,
 }: PortalMarkerProps) {
   const { cx, cy, radius, iconSize } = onSquareMarkerGeometry(portal.cell, cellSize, { offset, grouped })
 
@@ -76,6 +78,7 @@ export function PortalMarker({
       onFocus={onFocus}
       onBlur={onBlur}
       onClick={onClick}
+      onContextMenu={onContextMenu}
     >
       <circle
         className="maplab-portal-marker"

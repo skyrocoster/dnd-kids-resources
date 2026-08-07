@@ -49,6 +49,7 @@ interface DoorMarkerProps {
   onFocus?: () => void
   onBlur?: () => void
   onClick?: () => void
+  onContextMenu?: () => void
 }
 
 interface DoorBadgeLayerProps {
@@ -71,6 +72,7 @@ export function DoorMarker({
   onFocus,
   onBlur,
   onClick,
+  onContextMenu,
 }: DoorMarkerProps) {
   const segment = doorWallSegment(door, cellSize)
   const swing = doorSwingGeometry(door, cellSize)
@@ -103,11 +105,17 @@ export function DoorMarker({
         onClick?.()
       } : undefined}
       onKeyDown={interactive ? (event) => {
+        if (event.key === 'ContextMenu' || (event.key === 'F10' && event.shiftKey)) {
+          event.preventDefault()
+          onContextMenu?.()
+          return
+        }
         if (event.key === 'Enter' || event.key === ' ') {
           event.preventDefault()
           onClick?.()
         }
       } : undefined}
+      onContextMenu={interactive ? (event) => { event.preventDefault(); onContextMenu?.() } : undefined}
     >
       <title>{door.title ?? `Door ${door.door_id}`}</title>
       {presentation.isOpen ? (

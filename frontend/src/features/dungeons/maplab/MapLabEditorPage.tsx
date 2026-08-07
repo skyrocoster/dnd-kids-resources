@@ -7,6 +7,7 @@ import { useMapLabEditor } from './useMapLabEditor'
 import { listDungeons, listIncomingGateways } from '../../../api/client'
 import type { Dungeon, IncomingGateway } from '../../../api/types'
 import { useMapCanvasZoom, type ViewportSize } from '../../../map/useMapCanvasZoom'
+import { useMapLabNavigationSession } from './useMapLabNavigationSession'
 import { useCanvasStroke } from './useCanvasStroke'
 import { MapLabEditorCanvas } from './MapLabEditorCanvas'
 import { MapLabEditorChrome, MapLabEditorNavigation } from './MapLabEditorChrome'
@@ -179,6 +180,7 @@ function authoredInspectorAdapter(
 
 export function MapLabEditorPage() {
   const route = useDungeonShellContext()
+  const navigation = useMapLabNavigationSession(route.dungeonId)
   const statusSlot = useDungeonShellStatusSlot()
   const {
     state,
@@ -269,7 +271,28 @@ export function MapLabEditorPage() {
   const { visible: layerVisible, toggleLayer } = useMapLayerVisibility()
   const { density, setDensity } = useMapDensity()
   const pointerMode = placeDoorMode || placePropMode || placeStairMode || placePortalMode || drawFeatureKind !== null || placeRoomMode ? 'tool' : 'pan'
-  const zoomApi = useMapCanvasZoom({ wheelZoomMode: 'always', pointerMode })
+  const zoomApi = useMapCanvasZoom({ wheelZoomMode: 'always', pointerMode, initialZoom: navigation.state.zoom })
+  // Restore the session's active floor only when the dungeon route key initializes or changes —
+  // never on ordinary editor floor changes, which would deadlock against the write effect below.
+  const navigationRouteKey = useRef<number | null>(null)
+  const navigationRestorePending = useRef(false)
+  useEffect(() => {
+    if (route.dungeonId === null) {
+      navigationRouteKey.current = null
+      return
+    }
+    if (navigationRouteKey.current === route.dungeonId) return
+    navigationRouteKey.current = route.dungeonId
+    navigationRestorePending.current = true
+    if (navigation.state.activeZ !== state.activeZ) setActiveZ(navigation.state.activeZ)
+  }, [navigation.state.activeZ, route.dungeonId, setActiveZ, state.activeZ])
+  useEffect(() => {
+    if (navigationRestorePending.current) {
+      navigationRestorePending.current = false
+      return
+    }
+    navigation.setState((current) => ({ ...current, activeZ: state.activeZ, zoom: zoomApi.zoom }))
+  }, [navigation.setState, state.activeZ, zoomApi.zoom])
   const simplified = resolveMapDensity(density, zoomApi.zoom.scale) === 'simple'
   const [viewportSize, setViewportSize] = useState<ViewportSize>({ width: 0, height: 0 })
   const handleViewportResize = useCallback((size: ViewportSize) => setViewportSize(size), [])
@@ -593,6 +616,129 @@ export function MapLabEditorPage() {
     [state.layout.features, state.selectedFeatureId]
   )
 
+  const lastCanvasSelection = useRef<{ kind: string; id: number; at: number } | null>(null)
+
+  const centerSelection = useCallback((kind: string, id: number, force = false) => {
+    const fixture = kind === 'room'
+      ? state.layout.rooms.find((room) => room.room_id === id)
+      : kind === 'door'
+        ? state.layout.doors.find((door) => door.door_id === id)
+        : kind === 'stair'
+          ? state.layout.stairs.find((stair) => stair.stair_id === id)
+          : kind === 'portal'
+            ? state.layout.portals.find((portal) => portal.portal_id === id)
+            : kind === 'prop'
+              ? state.layout.props.find((prop) => prop.prop_id === id)
+              : state.layout.features.find((feature) => feature.feature_id === id)
+    const cell = fixture && 'cell' in fixture
+      ? fixture.cell
+      : fixture && 'origin' in fixture
+        ? fixture.origin
+        : fixture && 'from' in fixture
+          ? (fixture.from.z === state.activeZ ? fixture.from.cell : fixture.to.cell)
+          : fixture && 'cells' in fixture
+            ? fixture.cells[0]
+            : null
+    if (cell) {
+      const activeElement = document.activeElement
+      const viewport = activeElement?.closest('.maplab-canvas-viewport')
+      const elementRect = activeElement?.getBoundingClientRect()
+      const viewportRect = viewport?.getBoundingClientRect()
+      const isVisible = Boolean(viewport && elementRect && viewportRect
+        && elementRect.bottom >= viewportRect.top
+        && elementRect.top <= viewportRect.bottom
+        && elementRect.right >= viewportRect.left
+        && elementRect.left <= viewportRect.right)
+       if (force || !isVisible) zoomApi.centerOn({ x: cell[0], y: cell[1] }, viewportSize)
+     }
+  }, [state.layout, state.activeZ, viewportSize, zoomApi.centerOn])
+
+  const centerCanvasSelection = useCallback((kind: string, id: number) => {
+    const now = Date.now()
+    const previous = lastCanvasSelection.current
+    const isDoubleClick = previous?.kind === kind && previous.id === id && now - previous.at < 400
+    lastCanvasSelection.current = { kind, id, at: now }
+    centerSelection(kind, id, isDoubleClick)
+  }, [centerSelection])
+
+  const selectFeatureForCanvas = useCallback((id: number | null) => {
+    selectFeature(id)
+     if (id !== null) centerCanvasSelection('feature', id)
+  }, [centerCanvasSelection, selectFeature])
+  const selectRoomForCanvas = useCallback((id: number | null) => {
+    selectRoom(id)
+     if (id !== null) centerCanvasSelection('room', id)
+  }, [centerCanvasSelection, selectRoom])
+  const selectDoorForCanvas = useCallback((id: number | null) => {
+    selectDoor(id)
+     if (id !== null) centerCanvasSelection('door', id)
+  }, [centerCanvasSelection, selectDoor])
+  const selectStairForCanvas = useCallback((id: number | null) => {
+    selectStair(id)
+     if (id !== null) centerCanvasSelection('stair', id)
+  }, [centerCanvasSelection, selectStair])
+  const selectPortalForCanvas = useCallback((id: number | null) => {
+    selectPortal(id)
+     if (id !== null) centerCanvasSelection('portal', id)
+  }, [centerCanvasSelection, selectPortal])
+  const selectPropForCanvas = useCallback((id: number | null) => {
+    selectProp(id)
+     if (id !== null) centerCanvasSelection('prop', id)
+  }, [centerCanvasSelection, selectProp])
+
+  useEffect(() => {
+    const target = navigation.state.selectedTarget
+    if (!target) return
+    if (target.kind === 'feature') selectFeature(target.id)
+    else if (target.kind === 'room') selectRoom(target.id)
+    else if (target.kind === 'door') selectDoor(target.id)
+    else if (target.kind === 'stair') selectStair(target.id)
+    else if (target.kind === 'portal') selectPortal(target.id)
+    else if (target.kind === 'prop') selectProp(target.id)
+  }, [navigation.state.selectedTarget, selectDoor, selectFeature, selectPortal, selectProp, selectRoom, selectStair])
+
+  useEffect(() => {
+    const target = navigation.state.focusTarget
+    if (!target) return
+    if (target.kind === 'feature') {
+      selectFeature(target.id)
+      centerSelection('feature', target.id)
+    } else if (target.kind === 'room') {
+      selectRoom(target.id)
+      centerSelection('room', target.id)
+    } else if (target.kind === 'door') {
+      selectDoor(target.id)
+      centerSelection('door', target.id)
+    } else if (target.kind === 'stair') {
+      selectStair(target.id)
+      centerSelection('stair', target.id)
+    } else if (target.kind === 'portal') {
+      selectPortal(target.id)
+      centerSelection('portal', target.id)
+    } else if (target.kind === 'prop') {
+      selectProp(target.id)
+      centerSelection('prop', target.id)
+    }
+    navigation.setState((current) => current.focusTarget === target ? { ...current, focusTarget: null } : current)
+  }, [centerSelection, navigation.state.focusTarget, navigation.setState, selectDoor, selectFeature, selectPortal, selectProp, selectRoom, selectStair])
+
+  useEffect(() => {
+    const selectedTarget = selectedFeature
+      ? { kind: 'feature', id: selectedFeature.feature_id }
+      : selectedRoom
+        ? { kind: 'room', id: selectedRoom.room_id }
+        : selectedDoor
+          ? { kind: 'door', id: selectedDoor.door_id }
+          : selectedProp
+            ? { kind: 'prop', id: selectedProp.prop_id }
+            : selectedStair
+              ? { kind: 'stair', id: selectedStair.stair_id }
+              : selectedPortal
+                ? { kind: 'portal', id: selectedPortal.portal_id }
+                : null
+    navigation.setState((current) => ({ ...current, selectedTarget }))
+  }, [navigation.setState, selectedDoor, selectedFeature, selectedPortal, selectedProp, selectedRoom, selectedStair])
+
   const deleteFixtureWithUndo = useCallback((thing: string, remove: () => void) => {
     remove()
     setPlacementError(null)
@@ -744,7 +890,11 @@ export function MapLabEditorPage() {
 
       if (event.key === 'Escape') {
         event.preventDefault()
-        if (openFlyout !== null) {
+        if (strokeCells.length > 0) {
+          setStrokeCells([])
+          strokeModeRef.current = null
+          strokeRoomIdRef.current = null
+        } else if (openFlyout !== null) {
           setOpenFlyout(null)
         } else if (mapPopoverOpen) {
           setMapPopoverOpen(false)
@@ -754,6 +904,16 @@ export function MapLabEditorPage() {
           setTabletNavOpen(false)
         } else if (selectionSheetExpanded) {
           setSelectionSheetExpanded(false)
+        } else if (
+          state.selectedRoomId !== null || state.selectedFeatureId !== null || state.selectedDoorId !== null ||
+          state.selectedStairId !== null || state.selectedPortalId !== null || state.selectedPropId !== null
+        ) {
+          selectFeature(null)
+          selectRoom(null)
+          selectDoor(null)
+          selectStair(null)
+          selectPortal(null)
+          selectProp(null)
         } else {
           setArmedTool('select')
           setPlacementError(null)
@@ -824,7 +984,7 @@ export function MapLabEditorPage() {
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [brushArmed, mapPopoverOpen, openFlyout, redo, selectionSheetExpanded, tabletNavOpen, undo, viewPopoverOpen])
+  }, [brushArmed, mapPopoverOpen, openFlyout, redo, selectDoor, selectFeature, selectPortal, selectProp, selectRoom, selectStair, selectionSheetExpanded, state.selectedDoorId, state.selectedFeatureId, state.selectedPortalId, state.selectedPropId, state.selectedRoomId, state.selectedStairId, strokeCells.length, tabletNavOpen, undo, viewPopoverOpen])
 
   useEffect(() => {
     if (route.dungeonId === null) return
@@ -1124,12 +1284,17 @@ export function MapLabEditorPage() {
            drawFeatureKind={drawFeatureKind}
            simplified={simplified}
            selectedPropKind={selectedPropKind}
-           selectFeature={selectFeature}
-           selectRoom={selectRoom}
-           selectDoor={selectDoor}
-           selectStair={selectStair}
-           selectPortal={selectPortal}
-           selectProp={selectProp}
+            selectFeature={selectFeatureForCanvas}
+            selectRoom={selectRoomForCanvas}
+            selectDoor={selectDoorForCanvas}
+            selectStair={selectStairForCanvas}
+             selectPortal={selectPortalForCanvas}
+             selectProp={selectPropForCanvas}
+             selectRoomContextually={selectRoom}
+             selectDoorContextually={selectDoor}
+             selectStairContextually={selectStair}
+             selectPortalContextually={selectPortal}
+             selectPropContextually={selectProp}
            addProp={addProp}
            addDoor={addDoor}
            addStair={addStair}

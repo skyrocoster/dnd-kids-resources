@@ -7,6 +7,7 @@ import { useDungeonShellContext } from './dungeonRouteContext'
 import { useMapLabLayout } from './useMapLabLayout'
 import { useMapLabSessionState, type SessionFixtureKind } from './useMapLabSessionState'
 import { useMapCanvasZoom, type ViewportSize } from '../../../map/useMapCanvasZoom'
+import { useMapLabNavigationSession } from './useMapLabNavigationSession'
 import { EyeIcon } from '../../../components/icons'
 import {
   MAP_LAYER_KEYS,
@@ -30,10 +31,12 @@ import { MapLabViewerOverlays } from './MapLabViewerOverlays'
 import {
   doorsOnFloor,
   floorsInLayout,
+  otherFloorZ,
   paddedBounds,
   portalsOnFloor,
   propsOnFloor,
   roomsOnZ,
+  stairCellForZ,
   stairEndpointsForZ,
   type Inspectable,
   type MapDoor,
@@ -111,11 +114,12 @@ export function MapLabPage() {
   const { layout, loading: layoutLoading, status: layoutStatus, error: layoutError } = useMapLabLayout(route.dungeonId)
   const [parsed, setParsed] = useState(() => parseDungeonData(route.dungeon?.data ?? {}))
   const floors = useMemo(() => floorsInLayout(layout), [layout])
-  const [activeZ, setActiveZ] = useState<number>(floors[0]?.z ?? 0)
+  const navigation = useMapLabNavigationSession(route.dungeonId)
+  const [activeZ, setActiveZ] = useState<number>(navigation.state.activeZ ?? floors[0]?.z ?? 0)
   // The inspector follows one explicitly selected object — the same rule the editor uses. Click,
   // Enter/Space, and keyboard focus select; hovering only highlights, and nothing clears the
   // selection except selecting something else or re-selecting the same object.
-  const [selectedInspectable, setSelectedInspectable] = useState<InspectableRef | null>(null)
+  const [selectedInspectable, setSelectedInspectable] = useState<InspectableRef | null>(navigation.state.selectedTarget as InspectableRef | null)
   const focusSelectedRef = useRef(false)
   const {
     doorSessions,
@@ -138,7 +142,19 @@ export function MapLabPage() {
   const [partyRoomActionActive, setPartyRoomActionActive] = useState(false)
   const [activeEncounterId, setActiveEncounterId] = useState<number | null>(null)
   const [activeNpcId, setActiveNpcId] = useState<number | null>(null)
-  const zoomApi = useMapCanvasZoom()
+  const [portalNavigationError, setPortalNavigationError] = useState<string | null>(null)
+  const zoomApi = useMapCanvasZoom({ initialZoom: navigation.state.zoom })
+  const navigationRouteKey = useRef(route.dungeonId)
+  useEffect(() => {
+    if (navigationRouteKey.current !== route.dungeonId) {
+      navigationRouteKey.current = route.dungeonId
+      if (navigation.state.activeZ !== undefined) {
+        setActiveZ(navigation.state.activeZ)
+        return
+      }
+    }
+    navigation.setState((current) => ({ ...current, activeZ, zoom: zoomApi.zoom, selectedTarget: selectedInspectable }))
+  }, [activeZ, navigation.setState, navigation.state.activeZ, navigation.state.zoom, route.dungeonId, selectedInspectable, zoomApi.zoom])
   const [viewportSize, setViewportSize] = useState<ViewportSize>({ width: 0, height: 0 })
   const handleViewportResize = useCallback((size: ViewportSize) => setViewportSize(size), [])
   const { visible: layerVisible, toggleLayer } = useMapLayerVisibility()
@@ -197,7 +213,7 @@ export function MapLabPage() {
   }, [roomsDrawerOpen])
 
   const isAtTable = route.dungeonId !== null && atTableDungeonId === route.dungeonId
-  const viewerError = (partyRoomActionActive ? null : actionError) ?? atTableError
+  const viewerError = (partyRoomActionActive ? null : actionError) ?? atTableError ?? portalNavigationError
 
   function clearViewerStatus() {
     clearActionError()
@@ -255,10 +271,114 @@ export function MapLabPage() {
   } = useActiveRoom(layout, activeZ, parsed, setActiveZ)
 
   /** Focus an object — from the keyboard or as the first half of a click — selects it. */
+  const pendingConnectionNavigation = useRef<{ kind: 'stair' | 'portal'; id: number; timer: ReturnType<typeof setTimeout> } | null>(null)
+
   function focusInspectable(ref: InspectableRef) {
     focusSelectedRef.current = true
     setSelectedInspectable(ref)
+    navigation.setState((current) => ({ ...current, focusTarget: ref }))
+    const fixture = ref.kind === 'room'
+      ? layout.rooms.find((room) => room.room_id === ref.id)
+      : ref.kind === 'door'
+        ? layout.doors.find((door) => door.door_id === ref.id)
+        : ref.kind === 'stair'
+          ? layout.stairs.find((stair) => stair.stair_id === ref.id)
+          : ref.kind === 'portal'
+            ? layout.portals.find((portal) => portal.portal_id === ref.id)
+            : layout.props.find((prop) => prop.prop_id === ref.id)
+    const cell = fixture && 'cell' in fixture
+      ? fixture.cell
+      : fixture && 'origin' in fixture
+        ? fixture.origin
+        : fixture && 'from' in fixture
+          ? (fixture.from.z === activeZ ? fixture.from.cell : fixture.to.cell)
+          : null
+    if (cell) zoomApi.centerOn({ x: cell[0], y: cell[1] }, viewportSize)
   }
+
+  function navigateStair(stair: MapStair) {
+    const pending = pendingConnectionNavigation.current
+    if (pending?.kind === 'stair' && pending.id === stair.stair_id) {
+      clearTimeout(pending.timer)
+      pendingConnectionNavigation.current = null
+      focusInspectable({ kind: 'stair', id: stair.stair_id })
+      return
+    }
+    if (pending) clearTimeout(pending.timer)
+    const targetZ = otherFloorZ(stair, activeZ)
+    const targetCell = stairCellForZ(stair, targetZ)
+    setActiveZ(targetZ)
+    if (targetCell && viewportSize.width > 0 && viewportSize.height > 0) zoomApi.centerOn({ x: targetCell[0], y: targetCell[1] }, viewportSize)
+    pendingConnectionNavigation.current = {
+      kind: 'stair',
+      id: stair.stair_id,
+      timer: setTimeout(() => {
+        pendingConnectionNavigation.current = null
+      }, 250),
+    }
+  }
+
+  function navigatePortal(portal: MapPortal) {
+    const pending = pendingConnectionNavigation.current
+    if (pending?.kind === 'portal' && pending.id === portal.portal_id) {
+      clearTimeout(pending.timer)
+      pendingConnectionNavigation.current = null
+      focusInspectable({ kind: 'portal', id: portal.portal_id })
+      return
+    }
+    if (pending) clearTimeout(pending.timer)
+    performPortalNavigation(portal)
+    pendingConnectionNavigation.current = {
+      kind: 'portal',
+      id: portal.portal_id,
+      timer: setTimeout(() => {
+        pendingConnectionNavigation.current = null
+      }, 250),
+    }
+  }
+
+  function performPortalNavigation(portal: MapPortal) {
+    const destination = portal.to
+    setPortalNavigationError(null)
+    if (!destination) {
+      setPortalNavigationError('This portal has no destination.')
+      return
+    }
+    if (destination.dungeon_id !== undefined) {
+      navigate(`/dungeons/${destination.dungeon_id}`)
+      return
+    }
+    if (destination.z !== undefined && destination.cell) {
+      setActiveZ(destination.z)
+      if (viewportSize.width > 0 && viewportSize.height > 0) zoomApi.centerOn({ x: destination.cell[0], y: destination.cell[1] }, viewportSize)
+      return
+    }
+    setPortalNavigationError('This portal has no destination.')
+  }
+
+  useEffect(() => {
+    const target = navigation.state.focusTarget
+    if (!target) return
+    setSelectedInspectable(target as InspectableRef)
+    const fixture = target.kind === 'room'
+      ? layout.rooms.find((room) => room.room_id === target.id)
+      : target.kind === 'door'
+        ? layout.doors.find((door) => door.door_id === target.id)
+        : target.kind === 'stair'
+          ? layout.stairs.find((stair) => stair.stair_id === target.id)
+          : target.kind === 'portal'
+            ? layout.portals.find((portal) => portal.portal_id === target.id)
+            : layout.props.find((prop) => prop.prop_id === target.id)
+    const cell = fixture && 'cell' in fixture
+      ? fixture.cell
+      : fixture && 'origin' in fixture
+        ? fixture.origin
+        : fixture && 'from' in fixture
+          ? (fixture.from.z === activeZ ? fixture.from.cell : fixture.to.cell)
+          : null
+    if (cell) zoomApi.centerOn({ x: cell[0], y: cell[1] }, viewportSize)
+    navigation.setState((current) => current.focusTarget === target ? { ...current, focusTarget: null } : current)
+  }, [activeZ, layout, navigation.state.focusTarget, navigation.setState, viewportSize, zoomApi.centerOn])
 
   /** Click selects, and clicking the already-selected object again clears the selection. A click
    * that also moved focus here has already selected through `focusInspectable`, so it must not
@@ -523,10 +643,13 @@ export function MapLabPage() {
          onToggleRoomsDrawer={() => setRoomsDrawerOpen((open) => !open)}
          onToggleRail={() => setDesktopRailCollapsed((collapsed) => !collapsed)}
          onCloseRoomsDrawer={() => setRoomsDrawerOpen(false)}
-         onFocus={focusInspectable}
-         onClick={clickInspectable}
-         onSetActiveZ={setActiveZ}
-         onNavigate={navigate}
+          onFocus={focusInspectable}
+          onClick={clickInspectable}
+          onClearSelection={() => setSelectedInspectable(null)}
+           onSetActiveZ={setActiveZ}
+          onNavigate={navigate}
+          onNavigateStair={navigateStair}
+          onNavigatePortal={navigatePortal}
          onSetActiveEncounterId={setActiveEncounterId}
          onWheelZoom={zoomApi.handleWheel}
          onPanStart={zoomApi.handlePointerDown}
@@ -815,11 +938,15 @@ export function MapLabPage() {
                 onFocus={() => focusInspectable({ kind: 'portal', id: portal.portal_id })}
                 onClick={() => {
                   clickInspectable({ kind: 'portal', id: portal.portal_id })
-                  if (portal.to?.dungeon_id !== undefined) {
-                    navigate(`/dungeons/${portal.to.dungeon_id}`)
-                  } else if (portal.to?.z !== undefined) {
-                    setActiveZ(portal.to.z)
-                  }
+                   setPortalNavigationError(null)
+                   if (portal.to?.dungeon_id !== undefined) {
+                     navigate(`/dungeons/${portal.to.dungeon_id}`)
+                   } else if (portal.to?.z !== undefined) {
+                     setActiveZ(portal.to.z)
+                     if (portal.to.cell) zoomApi.centerOn({ x: portal.to.cell[0], y: portal.to.cell[1] }, viewportSize)
+                   } else {
+                     setPortalNavigationError('This portal has no destination.')
+                   }
                 }}
               />
             )

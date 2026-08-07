@@ -262,4 +262,20 @@ describe('useMapCanvasZoom', () => {
     expect(result.current.zoom.scale).toBeCloseTo(scaleBefore + 0.25)
   })
 
+  it('centers a map-space point at the viewport center without changing scale', () => {
+    const { result } = renderHook(() => useMapCanvasZoom())
+    const viewport = { width: 400, height: 300 }
+
+    act(() => result.current.zoomIn())
+    const scaleBefore = result.current.zoom.scale
+
+    act(() => result.current.centerOn({ x: 3, y: 2 }, viewport))
+
+    expect(result.current.zoom.scale).toBe(scaleBefore)
+    expect(result.current.zoom.pan).toEqual({
+      x: 3 * 64 * scaleBefore - viewport.width / 2,
+      y: 2 * 64 * scaleBefore - viewport.height / 2,
+    })
+  })
+
 })

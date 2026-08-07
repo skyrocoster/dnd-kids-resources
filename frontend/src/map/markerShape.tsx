@@ -92,6 +92,7 @@ interface MarkerHitAreaProps {
   onFocus?: () => void
   onBlur?: () => void
   onClick?: () => void
+  onContextMenu?: () => void
   children: ReactNode
 }
 
@@ -109,6 +110,7 @@ export function MarkerHitArea({
   onFocus,
   onBlur,
   onClick,
+  onContextMenu,
   children,
 }: MarkerHitAreaProps) {
   return (
@@ -135,6 +137,11 @@ export function MarkerHitArea({
       onKeyDown={
         interactive
           ? (event) => {
+              if (event.key === 'ContextMenu' || (event.key === 'F10' && event.shiftKey)) {
+                event.preventDefault()
+                onContextMenu?.()
+                return
+              }
               if (event.key === 'Enter' || event.key === ' ') {
                 event.preventDefault()
                 onClick?.()
@@ -142,6 +149,7 @@ export function MarkerHitArea({
             }
           : undefined
       }
+      onContextMenu={interactive ? (event) => { event.preventDefault(); onContextMenu?.() } : undefined}
     >
       <title>{title}</title>
       {children}

@@ -43,6 +43,10 @@ function clientPointForCell(cell: [number, number], bounds: { minX: number; minY
 }
 
 describe('MapLabEditorPage (Stage F2 — prop rendering)', () => {
+  beforeEach(() => {
+    window.sessionStorage.clear()
+  })
+
   afterEach(() => {
     vi.restoreAllMocks()
   })

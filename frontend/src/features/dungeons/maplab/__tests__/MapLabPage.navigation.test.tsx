@@ -217,6 +217,24 @@ describe('MapLabPage portal viewer rendering and navigation', () => {
     expect(inspector).toHaveTextContent('3,3 (z:1)')
   })
 
+  it('clears a selected viewer inspectable when empty space is clicked', async () => {
+    // Portal travel changes the active floor, so a portal is not a stable selection
+    // to clear; use a room instead — rooms do not navigate away on selection.
+    const user = userEvent.setup()
+    const { container } = await renderLoadedMapLabPage()
+
+    // Rooms do not expose `data-selected`; the page-owned inspector is the
+    // observable for the selection the empty-space callback clears.
+    const mapArmoury = within(screen.getByRole('group', { name: /dungeon floor map/i })).getByRole('button', { name: 'Armoury' })
+    await user.click(mapArmoury)
+    const inspector = container.querySelector('.maplab-inspector-panel-container')!
+    expect(inspector.querySelector('.maplab-inspector-title')).toHaveTextContent('Armoury')
+
+    fireEvent.click(container.querySelector('.maplab-unknown-space')!)
+
+    expect(inspector.querySelector('.maplab-inspector-title')).not.toBeInTheDocument()
+  })
+
   it('clicking a portal jumps the active floor to its destination z', async () => {
     const user = userEvent.setup()
     const backendLayout = { ...mapLabLayout, portals: [portal, pairedPortal] }

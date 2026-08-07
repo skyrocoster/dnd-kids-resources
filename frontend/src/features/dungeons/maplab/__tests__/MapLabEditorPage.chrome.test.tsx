@@ -47,6 +47,7 @@ describe('MapLabEditorPage (Stage E3 — Toolbar reorganization & persistent ins
   }
 
   beforeEach(() => {
+    window.sessionStorage.clear()
     vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: oneRoomOneDoorLayout })
     vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: oneRoomOneDoorLayout })
   })

@@ -19,6 +19,7 @@ export type PointerMode = 'pan' | 'tool'
 export interface UseMapCanvasZoomOptions {
   wheelZoomMode?: WheelZoomMode
   pointerMode?: PointerMode
+  initialZoom?: ZoomState
 }
 
 export const MIN_SCALE = 0.25
@@ -62,8 +63,8 @@ interface PointerPoint {
   y: number
 }
 
-export function useMapCanvasZoom({ wheelZoomMode = 'modifier', pointerMode = 'pan' }: UseMapCanvasZoomOptions = {}) {
-  const [zoom, setZoom] = useState<ZoomState>({ scale: 1, pan: { x: 0, y: 0 } })
+export function useMapCanvasZoom({ wheelZoomMode = 'modifier', pointerMode = 'pan', initialZoom }: UseMapCanvasZoomOptions = {}) {
+  const [zoom, setZoom] = useState<ZoomState>(initialZoom ?? { scale: 1, pan: { x: 0, y: 0 } })
   const dragOrigin = useRef<DragOrigin | null>(null)
   // Every pointer currently down on the viewport, keyed by `pointerId`. Two or more concurrent
   // pointers means a pinch, which takes over from any single-pointer drag already in flight.
@@ -130,6 +131,16 @@ export function useMapCanvasZoom({ wheelZoomMode = 'modifier', pointerMode = 'pa
 
   const reset = useCallback(() => {
     setZoom({ scale: 1, pan: { x: 0, y: 0 } })
+  }, [])
+
+  const centerOn = useCallback((point: { x: number; y: number }, viewport: ViewportSize) => {
+    setZoom((current) => ({
+      ...current,
+      pan: {
+        x: point.x * BASE_PX_PER_UNIT * current.scale - viewport.width / 2,
+        y: point.y * BASE_PX_PER_UNIT * current.scale - viewport.height / 2,
+      },
+    }))
   }, [])
 
   /** `options.floorScale` sets a scale the fit may not go below — for a surface where legibility
@@ -307,9 +318,11 @@ export function useMapCanvasZoom({ wheelZoomMode = 'modifier', pointerMode = 'pa
 
   return {
     zoom,
+    setZoom,
     zoomIn,
     zoomOut,
     reset,
+    centerOn,
     fitToBounds,
     handleWheel,
     handlePointerDown,

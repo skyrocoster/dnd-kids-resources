@@ -34,6 +34,7 @@ interface StairMarkerProps {
   onFocus?: () => void
   onBlur?: () => void
   onClick?: () => void
+  onContextMenu?: () => void
 }
 
 /** Stair marker — the stair glyph and ring carry stable fixture identity; one collapsed
@@ -54,6 +55,7 @@ export function StairMarker({
   onFocus,
   onBlur,
   onClick,
+  onContextMenu,
 }: StairMarkerProps) {
   const { cx, cy, radius, iconSize } = onSquareMarkerGeometry(cell, cellSize, { offset, grouped })
 
@@ -79,6 +81,7 @@ export function StairMarker({
       onFocus={onFocus}
       onBlur={onBlur}
       onClick={onClick}
+      onContextMenu={onContextMenu}
     >
       <circle
         className="maplab-stair-marker"

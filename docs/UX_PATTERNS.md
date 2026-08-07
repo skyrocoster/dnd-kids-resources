@@ -130,6 +130,25 @@ for room navigation at tablet widths, with floor chips remaining outside the dra
 
 Status: IN FORCE.
 
+### Map Lab navigation context
+
+The Map Lab editor and viewer preserve their current floor, pan, zoom, selected target, and focus
+context in browser session state keyed to the dungeon. This navigation context is local to the browser
+session and never becomes authored layout or encounter session data. Selecting an off-screen target may
+center it; selecting a visible target preserves the current framing. Stair and resolved portal travel
+changes floor or dungeon and centers the destination, while an unresolved portal remains in place and
+reports a local error. The editor's primary stair/portal click remains select-only; the viewer's remains
+the travel action.
+
+Select-mode empty space clears the active selection. Escape cancels an active stroke or preview before
+clearing selection or returning to Select, and otherwise dismisses only the highest open layer. Right-click
+and Context Menu/Shift+F10 select a canvas target without travel; contextual menu actions and long-press
+menus are defined by the Map Lab contextual-menu slice. Double-clicking a stair or portal centers its
+current connection without travel, and a browser double-click sequence never duplicates ordinary viewer
+navigation.
+
+Status: IN FORCE.
+
 ### Inline versus modal editing
 
 Which one you get is decided by what is being edited, not by feature preference:

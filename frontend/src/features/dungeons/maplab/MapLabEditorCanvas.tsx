@@ -1,4 +1,4 @@
-import type { ComponentProps } from 'react'
+import type { ComponentProps, KeyboardEvent, MouseEvent } from 'react'
 import { MapCanvas } from '../../../map/MapCanvas'
 import { PropMarker } from './PropMarker'
 import { PortalMarker } from './PortalMarker'
@@ -51,6 +51,11 @@ type MapLabEditorCanvasProps = Omit<ComponentProps<typeof MapCanvas>, 'children'
   selectStair: (id: number | null) => void
   selectPortal: (id: number | null) => void
   selectProp: (id: number | null) => void
+  selectRoomContextually: (id: number | null) => void
+  selectDoorContextually: (id: number | null) => void
+  selectStairContextually: (id: number | null) => void
+  selectPortalContextually: (id: number | null) => void
+  selectPropContextually: (id: number | null) => void
   addProp: (cell: MapCell, kind: string) => void
   addDoor: (cell: MapCell, side: CardinalSide) => void
   addStair: (value: { z: number; cell: MapCell }) => void
@@ -80,6 +85,8 @@ export function MapLabEditorCanvas({
   portalsOnActiveFloor, propsOnActiveFloor, placementEdges, strokeCells, placeRoomMode, eraseArmed,
   placePropMode, placeDoorMode, placeStairMode, placePortalMode, drawFeatureKind, simplified,
   selectedPropKind, selectFeature, selectRoom, selectDoor, selectStair, selectPortal, selectProp,
+  selectRoomContextually, selectDoorContextually, selectStairContextually, selectPortalContextually,
+  selectPropContextually,
   addProp, addDoor, addStair, addPortal, setArmedTool, setPlacementError, viewBox, bounds, zoom,
   ariaLabel, variant, fullscreen, onToggleFullscreen, onExitFullscreen, onWheelZoom, onPanStart,
   onPanMove, onPanEnd, onStrokePointerDown, onStrokePointerMove, onStrokePointerUp,
@@ -87,6 +94,20 @@ export function MapLabEditorCanvas({
   controlsSlot, brushCellStateForCell,
 }: MapLabEditorCanvasProps) {
   const CELL_SIZE = 64
+  const contextualSelectionAllowed = !drawFeatureKind && !placeDoorMode && !placePropMode
+    && !placeStairMode && !placePortalMode && !placeRoomMode
+  const handleContextualKeyDown = (event: KeyboardEvent<SVGGElement>, select: () => void) => {
+    if (!contextualSelectionAllowed || !(event.key === 'ContextMenu' || (event.key === 'F10' && event.shiftKey))) return
+    event.preventDefault()
+    event.stopPropagation()
+    select()
+  }
+  const handleContextMenu = (event: MouseEvent<SVGGElement>, select: () => void) => {
+    if (!contextualSelectionAllowed) return
+    event.preventDefault()
+    event.stopPropagation()
+    select()
+  }
   return (
     <MapCanvas viewBox={viewBox} bounds={bounds} zoom={zoom} ariaLabel={ariaLabel} variant={variant}
       fullscreen={fullscreen} onToggleFullscreen={onToggleFullscreen} onExitFullscreen={onExitFullscreen}
@@ -112,8 +133,13 @@ export function MapLabEditorCanvas({
       {layerVisible.outside && <rect className="maplab-unknown-space" x={bounds.minX * CELL_SIZE} y={bounds.minY * CELL_SIZE}
         width={(bounds.maxX - bounds.minX + 1) * CELL_SIZE} height={(bounds.maxY - bounds.minY + 1) * CELL_SIZE}
         fill="var(--maplab-outside-fill)" onClick={() => {
-          if (drawFeatureKind || placeDoorMode || placePropMode || placeStairMode || placePortalMode) return
-          if (state.selectedRoomId !== null) return
+          if (drawFeatureKind || placeDoorMode || placePropMode || placeStairMode || placePortalMode || placeRoomMode) return
+          selectFeature(null)
+          selectRoom(null)
+          selectDoor(null)
+          selectStair(null)
+          selectPortal(null)
+          selectProp(null)
         }} />}
       {showGhostFloor && ghostZ !== null && <GhostFloorLayer rooms={ghostRooms} doors={ghostDoors} props={ghostProps} features={ghostFeatures} cellSize={CELL_SIZE} />}
       {layerVisible.outside && featuresOnActiveFloor.map((feature) => <g key={feature.feature_id} className="maplab-feature"
@@ -123,26 +149,28 @@ export function MapLabEditorCanvas({
         onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); selectFeature(feature.feature_id === state.selectedFeatureId ? null : feature.feature_id) } }}>
         {feature.cells.map(([x, y]) => <rect key={`${x}-${y}`} className="maplab-feature-cell" x={x * CELL_SIZE} y={y * CELL_SIZE} width={CELL_SIZE} height={CELL_SIZE} fill={`url(#feature-${feature.kind}-pattern)`} />)}
       </g>)}
-      {roomsOnActiveFloor.filter((room) => !roomIsOffMap(room)).map((room) => <g key={room.room_id} className="maplab-room"
-        data-selected={room.room_id === state.selectedRoomId || undefined} role="button" tabIndex={0}
-        aria-pressed={room.room_id === state.selectedRoomId} aria-label={room.title ?? `Room ${room.room_id}`}
-        onClick={() => { const nextRoomId = room.room_id === state.selectedRoomId ? null : room.room_id; selectRoom(nextRoomId); if (nextRoomId !== null) setArmedTool('select') }}
+       {roomsOnActiveFloor.filter((room) => !roomIsOffMap(room)).map((room) => <g key={room.room_id} className="maplab-room"
+         data-selected={room.room_id === state.selectedRoomId || undefined} role="button" tabIndex={0}
+         aria-pressed={room.room_id === state.selectedRoomId} aria-label={room.title ?? `Room ${room.room_id}`}
+         onContextMenu={(event) => handleContextMenu(event, () => selectRoomContextually(room.room_id))}
+         onKeyDownCapture={(event) => handleContextualKeyDown(event, () => selectRoomContextually(room.room_id))}
+         onClick={() => { const nextRoomId = room.room_id === state.selectedRoomId ? null : room.room_id; selectRoom(nextRoomId); if (nextRoomId !== null) setArmedTool('select') }}
         onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); const nextRoomId = room.room_id === state.selectedRoomId ? null : room.room_id; selectRoom(nextRoomId); if (nextRoomId !== null) setArmedTool('select') } }}>
         {absoluteCells(room).map(([x, y]) => <rect key={`${x}-${y}`} className="maplab-room-cell" x={x * CELL_SIZE} y={y * CELL_SIZE} width={CELL_SIZE} height={CELL_SIZE} />)}
         {nonDoorWallSegments(room, doorsOnActiveFloor).map((edge) => { const segment = doorWallSegment(edge, CELL_SIZE); return <line key={`${edge.cell[0]}-${edge.cell[1]}-${edge.side}`} className="maplab-wall" x1={segment.x1} y1={segment.y1} x2={segment.x2} y2={segment.y2} /> })}
         {layerVisible.labels && (() => { const anchor = roomLabelAnchor(room, CELL_SIZE); return <text className="maplab-room-title" x={anchor.x} y={anchor.y}>{room.title ?? `Room ${room.room_id}`}</text> })()}
       </g>)}
       {placeRoomMode && strokeCells.length > 0 && <g className="maplab-room-brush-preview" aria-hidden="true">{strokeCells.map((cell) => <rect key={`${cell[0]}-${cell[1]}`} className="maplab-room-brush-cell" data-brush-state={brushCellStateForCell(state.layout, state.activeZ, state.selectedRoomId, eraseArmed, cell)} x={cell[0] * CELL_SIZE} y={cell[1] * CELL_SIZE} width={CELL_SIZE} height={CELL_SIZE} />)}</g>}
-      {layerVisible.passages && doorsOnActiveFloor.map((door) => { const isSelected = door.door_id === state.selectedDoorId; return <DoorMarker key={door.door_id} door={door} cellSize={CELL_SIZE} selected={isSelected} onClick={() => selectDoor(isSelected ? null : door.door_id)} /> })}
+       {layerVisible.passages && doorsOnActiveFloor.map((door) => { const isSelected = door.door_id === state.selectedDoorId; return <g key={door.door_id} onContextMenu={(event) => handleContextMenu(event, () => selectDoorContextually(door.door_id))} onKeyDownCapture={(event) => handleContextualKeyDown(event, () => selectDoorContextually(door.door_id))}><DoorMarker door={door} cellSize={CELL_SIZE} selected={isSelected} onClick={() => selectDoor(isSelected ? null : door.door_id)} /></g> })}
       {layerVisible.passages && <g className="maplab-door-badge-layer" aria-hidden="true">{doorsOnActiveFloor.map((door) => <DoorBadgeLayer key={door.door_id} door={door} cellSize={CELL_SIZE} />)}</g>}
-      {layerVisible.passages && stairsOnActiveFloor.map((stair) => { const cell = stairCellForZ(stair, state.activeZ); if (!cell) return null; const { dx, dy, grouped } = markerOffset(state.layout, state.activeZ, cell, 'stair', stair.stair_id); const isSelected = stair.stair_id === state.selectedStairId; return <StairMarker key={stair.stair_id} stair={stair} cellSize={CELL_SIZE} cell={cell} activeZ={state.activeZ} selected={isSelected} offset={{ dx, dy }} grouped={grouped} simplified={simplified} onClick={() => selectStair(isSelected ? null : stair.stair_id)} /> })}
-      {layerVisible.passages && portalsOnActiveFloor.map((portal) => { const { grouped, ...offset } = markerOffset(state.layout, state.activeZ, portal.cell, 'portal', portal.portal_id); return <PortalMarker key={portal.portal_id} portal={portal} cellSize={CELL_SIZE} selected={portal.portal_id === state.selectedPortalId} offset={offset} grouped={grouped} simplified={simplified} onClick={() => selectPortal(portal.portal_id === state.selectedPortalId ? null : portal.portal_id)} /> })}
+       {layerVisible.passages && stairsOnActiveFloor.map((stair) => { const cell = stairCellForZ(stair, state.activeZ); if (!cell) return null; const { dx, dy, grouped } = markerOffset(state.layout, state.activeZ, cell, 'stair', stair.stair_id); const isSelected = stair.stair_id === state.selectedStairId; return <g key={stair.stair_id} onContextMenu={(event) => handleContextMenu(event, () => selectStairContextually(stair.stair_id))} onKeyDownCapture={(event) => handleContextualKeyDown(event, () => selectStairContextually(stair.stair_id))}><StairMarker stair={stair} cellSize={CELL_SIZE} cell={cell} activeZ={state.activeZ} selected={isSelected} offset={{ dx, dy }} grouped={grouped} simplified={simplified} onClick={() => selectStair(isSelected ? null : stair.stair_id)} /></g> })}
+       {layerVisible.passages && portalsOnActiveFloor.map((portal) => { const { grouped, ...offset } = markerOffset(state.layout, state.activeZ, portal.cell, 'portal', portal.portal_id); return <g key={portal.portal_id} onContextMenu={(event) => handleContextMenu(event, () => selectPortalContextually(portal.portal_id))} onKeyDownCapture={(event) => handleContextualKeyDown(event, () => selectPortalContextually(portal.portal_id))}><PortalMarker portal={portal} cellSize={CELL_SIZE} selected={portal.portal_id === state.selectedPortalId} offset={offset} grouped={grouped} simplified={simplified} onClick={() => selectPortal(portal.portal_id === state.selectedPortalId ? null : portal.portal_id)} /></g> })}
       {placePropMode && <g className="maplab-prop-placement-overlay">{roomsOnActiveFloor.flatMap((room) => absoluteCells(room).map(([x, y]) => <rect key={`${room.room_id}-${x}-${y}`} className="maplab-prop-placement-cell" x={x * CELL_SIZE} y={y * CELL_SIZE} width={CELL_SIZE} height={CELL_SIZE} role="button" aria-label={`Place prop at ${x}, ${y}`} onClick={(event) => { event.stopPropagation(); if (cellIsFull(state.layout, state.activeZ, [x, y])) { setPlacementError('That square already has 4 markers — pick a different square.'); return } setPlacementError(null); addProp([x, y], selectedPropKind) }} />))}</g>}
       {placeDoorMode && <g className="maplab-door-placement-overlay">{placementEdges.map((edge) => { const segment = doorWallSegment(edge, CELL_SIZE); const isHorizontal = segment.y1 === segment.y2; const hitBandDepth = 40; const hitRect = isHorizontal ? { x: Math.min(segment.x1, segment.x2), y: segment.y1 - hitBandDepth / 2, width: Math.abs(segment.x2 - segment.x1), height: hitBandDepth } : { x: segment.x1 - hitBandDepth / 2, y: Math.min(segment.y1, segment.y2), width: hitBandDepth, height: Math.abs(segment.y2 - segment.y1) }; return <g key={edgeKey(edge)}><rect className="maplab-door-placement-hitband" {...hitRect} role="button" aria-label={`Place door at ${edge.cell[0]}, ${edge.cell[1]} ${edge.side}`} onClick={(event) => { event.stopPropagation(); addDoor(edge.cell, edge.side as CardinalSide); setArmedTool('select') }} /><line className="maplab-door-placement-edge" x1={segment.x1} y1={segment.y1} x2={segment.x2} y2={segment.y2} /></g> })}</g>}
       {placeStairMode && <g className="maplab-stair-placement-overlay">{roomsOnActiveFloor.flatMap((room) => absoluteCells(room).map(([x, y]) => <rect key={`${room.room_id}-${x}-${y}`} className="maplab-stair-placement-cell" x={x * CELL_SIZE} y={y * CELL_SIZE} width={CELL_SIZE} height={CELL_SIZE} role="button" aria-label={`Place stair at ${x}, ${y}`} onClick={(event) => { event.stopPropagation(); if (cellIsFull(state.layout, state.activeZ, [x, y])) { setPlacementError('That square already has 4 markers — pick a different square.'); return } setPlacementError(null); addStair({ z: state.activeZ, cell: [x, y] }) }} />))}</g>}
       {placePortalMode && <g className="maplab-portal-placement-overlay">{roomsOnActiveFloor.flatMap((room) => absoluteCells(room).map(([x, y]) => <rect key={`${room.room_id}-${x}-${y}`} className="maplab-portal-placement-cell" x={x * CELL_SIZE} y={y * CELL_SIZE} width={CELL_SIZE} height={CELL_SIZE} role="button" aria-label={`Place portal at ${x}, ${y}`} onClick={(event) => { event.stopPropagation(); if (cellIsFull(state.layout, state.activeZ, [x, y])) { setPlacementError('That square already has 4 markers — pick a different square.'); return } setPlacementError(null); addPortal([x, y]) }} />))}</g>}
       {drawFeatureKind && <rect className="maplab-feature-stroke-overlay" x={bounds.minX * CELL_SIZE} y={bounds.minY * CELL_SIZE} width={(bounds.maxX - bounds.minX + 1) * CELL_SIZE} height={(bounds.maxY - bounds.minY + 1) * CELL_SIZE} fill="transparent" aria-hidden="true" />}
-      {layerVisible.props && propsOnActiveFloor.map((prop) => { const propOffset = prop.side === undefined ? markerOffset(state.layout, state.activeZ, prop.cell, 'prop', prop.prop_id) : undefined; return <PropMarker key={prop.prop_id} prop={prop} cellSize={CELL_SIZE} selected={prop.prop_id === state.selectedPropId} offset={propOffset} grouped={propOffset?.grouped} simplified={simplified} onClick={() => selectProp(prop.prop_id === state.selectedPropId ? null : prop.prop_id)} /> })}
+       {layerVisible.props && propsOnActiveFloor.map((prop) => { const propOffset = prop.side === undefined ? markerOffset(state.layout, state.activeZ, prop.cell, 'prop', prop.prop_id) : undefined; return <g key={prop.prop_id} onContextMenu={(event) => handleContextMenu(event, () => selectPropContextually(prop.prop_id))} onKeyDownCapture={(event) => handleContextualKeyDown(event, () => selectPropContextually(prop.prop_id))}><PropMarker prop={prop} cellSize={CELL_SIZE} selected={prop.prop_id === state.selectedPropId} offset={propOffset} grouped={propOffset?.grouped} simplified={simplified} onClick={() => selectProp(prop.prop_id === state.selectedPropId ? null : prop.prop_id)} /></g> })}
     </MapCanvas>
   )
 }

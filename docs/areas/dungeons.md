@@ -70,6 +70,15 @@ The session view is the surface that is open while a game is running: it must st
   dungeons were never seed data — that rule left the one domain nobody can regenerate as the only
   domain with no backup path.
 - Preserve Map Lab geometry, reducer, autosave, zoom/pan, fullscreen, and layout persistence unless a focused plan explicitly owns them.
+- Map Lab editor and viewer navigation context (floor, pan, zoom, selection, and focus) may persist in
+  browser session storage keyed by dungeon, but must never be written into authored layout or encounter
+  session data. Resolved stair/portal travel centers its destination; unresolved portals stay put and
+  report local feedback. The editor's primary stair/portal click remains select-only while the viewer's
+  primary click travels.
+- Select-mode empty space clears selection; Escape cancels the highest applicable Map Lab layer or
+  in-progress stroke first. Right-click and Context Menu/Shift+F10 select without travel, while
+  double-click centers the current stair/portal connection without duplicate navigation. Contextual
+  menu actions and long-press behavior remain separately owned by FL-11.
 - Rooms are the focal element of the map. Anything drawn outside them is reinforcement and must not out-shout them.
 - No authored map content is ever silently clipped by the map's extent.
 - Map geometry and room content are separate documents and neither writes to the other. Where a room

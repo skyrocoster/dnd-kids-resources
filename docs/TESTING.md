@@ -163,7 +163,7 @@ says only where the files are.
 | `frontend/src/components/__tests__/` | 14 | 151 |
 | `frontend/src/components/form/__tests__/` | 4 | 11 |
 | `frontend/src/features/dungeons/__tests__/` | 2 | 31 |
-| `frontend/src/features/dungeons/maplab/__tests__/` | 40 | 570 |
+| `frontend/src/features/dungeons/maplab/__tests__/` | 41 | 575 |
 | `frontend/src/features/encounters/__tests__/` | 9 | 115 |
 | `frontend/src/features/items/__tests__/` | 3 | 15 |
 | `frontend/src/features/loom/__tests__/` | 9 | 123 |
@@ -174,7 +174,7 @@ says only where the files are.
 | `frontend/src/features/spells/__tests__/` | 4 | 34 |
 | `frontend/src/features/weapons/__tests__/` | 3 | 25 |
 | `frontend/src/layout/__tests__/` | 1 | 16 |
-| `frontend/src/map/__tests__/` | 3 | 44 |
+| `frontend/src/map/__tests__/` | 3 | 45 |
 | `frontend/src/pages/__tests__/` | 2 | 5 |
 | `frontend/src/player/__tests__/` | 8 | 80 |
 <!-- GENERATED:TESTING:LOCATIONS:END -->

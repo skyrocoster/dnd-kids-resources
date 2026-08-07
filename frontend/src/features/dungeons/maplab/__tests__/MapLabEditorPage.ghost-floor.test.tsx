@@ -40,6 +40,7 @@ function openViewPopover() {
 }
 
 beforeEach(() => {
+  window.sessionStorage.clear()
   vi.restoreAllMocks()
   vi.useFakeTimers()
   vi.spyOn(api, 'getDungeon').mockResolvedValue({ id: 4, title: 'Test Dungeon', data: {} })
