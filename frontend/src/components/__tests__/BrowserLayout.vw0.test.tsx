@@ -24,6 +24,7 @@ const spellA: Spell = {
   name: 'Cure Wounds',
   level: 1,
   school: 'Evocation',
+  categories: ['Other'],
   description: 'A creature regains 1d8+3 hit points.',
   alternate_description: null,
   quick_rules: null,
@@ -46,6 +47,7 @@ const spellB: Spell = {
   name: 'Fireball',
   level: 3,
   school: 'Evocation',
+  categories: ['Other'],
   description: 'A bright streak flashes.',
   alternate_description: null,
   quick_rules: 'Action: creatures in the area make a Dexterity save or take fire damage.',
@@ -289,101 +291,97 @@ describe('catalog browser rail adoption', () => {
     window.localStorage.removeItem('dnd-kids-browser-rail')
   })
 
-  it('exposes the shared collapse control on every catalog browser', async () => {
-    const cases = [
-      {
-        label: 'spell list',
-        setup: () => vi.spyOn(api, 'listSpells').mockResolvedValue([spellA]),
-        renderPage: async () => {
-          const { SpellBrowserPage } = await import('../../features/spells/SpellBrowserPage')
-          return render(<SpellBrowserPage />)
-        },
+  const cases = [
+    {
+      label: 'spell list',
+      setup: () => vi.spyOn(api, 'listSpells').mockResolvedValue([spellA]),
+      renderPage: async () => {
+        const { SpellBrowserPage } = await import('../../features/spells/SpellBrowserPage')
+        return render(<SpellBrowserPage />)
       },
-      {
-        label: 'weapon list',
-        setup: () => vi.spyOn(api, 'listWeapons').mockResolvedValue([weaponA]),
-        renderPage: async () => {
-          const { WeaponBrowserPage } = await import('../../features/weapons/WeaponBrowserPage')
-          return render(<WeaponBrowserPage />)
-        },
+    },
+    {
+      label: 'weapon list',
+      setup: () => vi.spyOn(api, 'listWeapons').mockResolvedValue([weaponA]),
+      renderPage: async () => {
+        const { WeaponBrowserPage } = await import('../../features/weapons/WeaponBrowserPage')
+        return render(<WeaponBrowserPage />)
       },
-      {
-        label: 'player list',
-        setup: () => {
-          vi.spyOn(api, 'listPlayers').mockResolvedValue([playerA])
-          vi.spyOn(api, 'getPlayerSpells').mockResolvedValue([])
-          vi.spyOn(api, 'getPlayerWeapons').mockResolvedValue([])
-          vi.spyOn(api, 'listSpells').mockResolvedValue([])
-          vi.spyOn(api, 'listWeapons').mockResolvedValue([])
-        },
-        renderPage: async () => {
-          const { PlayerBrowserPage } = await import('../../features/players/PlayerBrowserPage')
-          return render(<PlayerBrowserPage />)
-        },
+    },
+    {
+      label: 'player list',
+      setup: () => {
+        vi.spyOn(api, 'listPlayers').mockResolvedValue([playerA])
+        vi.spyOn(api, 'getPlayerSpells').mockResolvedValue([])
+        vi.spyOn(api, 'getPlayerWeapons').mockResolvedValue([])
+        vi.spyOn(api, 'listSpells').mockResolvedValue([])
+        vi.spyOn(api, 'listWeapons').mockResolvedValue([])
       },
-      {
-        label: 'monster list',
-        setup: () => vi.spyOn(api, 'listMonsters').mockResolvedValue([monsterA]),
-        renderPage: async () => {
-          const { MonsterBrowserPage } = await import('../../features/monsters/MonsterBrowserPage')
-          return render(<MemoryRouter><MonsterBrowserPage /></MemoryRouter>)
-        },
+      renderPage: async () => {
+        const { PlayerBrowserPage } = await import('../../features/players/PlayerBrowserPage')
+        return render(<PlayerBrowserPage />)
       },
-      {
-        label: 'npc list',
-        setup: () => vi.spyOn(api, 'listNPCs').mockResolvedValue([npcA]),
-        renderPage: async () => {
-          const { NPCBrowserPage } = await import('../../features/npcs/NPCBrowserPage')
-          return render(<NPCBrowserPage />)
-        },
+    },
+    {
+      label: 'monster list',
+      setup: () => vi.spyOn(api, 'listMonsters').mockResolvedValue([monsterA]),
+      renderPage: async () => {
+        const { MonsterBrowserPage } = await import('../../features/monsters/MonsterBrowserPage')
+        return render(<MemoryRouter><MonsterBrowserPage /></MemoryRouter>)
       },
-      {
-        label: 'item list',
-        setup: () => vi.spyOn(api, 'listItems').mockResolvedValue([itemA]),
-        renderPage: async () => {
-          const { ItemBrowserPage } = await import('../../features/items/ItemBrowserPage')
-          return render(<ItemBrowserPage />)
-        },
+    },
+    {
+      label: 'npc list',
+      setup: () => vi.spyOn(api, 'listNPCs').mockResolvedValue([npcA]),
+      renderPage: async () => {
+        const { NPCBrowserPage } = await import('../../features/npcs/NPCBrowserPage')
+        return render(<NPCBrowserPage />)
       },
-      {
-        label: 'loot bundle list',
-        setup: () => vi.spyOn(api, 'listLootBundles').mockResolvedValue([lootA]),
-        renderPage: async () => {
-          const { LootBundleBrowserPage } = await import('../../features/loot/LootBundleBrowserPage')
-          return render(<LootBundleBrowserPage />)
-        },
+    },
+    {
+      label: 'item list',
+      setup: () => vi.spyOn(api, 'listItems').mockResolvedValue([itemA]),
+      renderPage: async () => {
+        const { ItemBrowserPage } = await import('../../features/items/ItemBrowserPage')
+        return render(<ItemBrowserPage />)
       },
-      {
-        label: 'encounter list',
-        setup: () => {
-          vi.spyOn(api, 'listEncounters').mockResolvedValue([encounterA])
-          vi.spyOn(api, 'listMonsters').mockResolvedValue([])
-        },
-        renderPage: async () => {
-          const { EncounterBrowserPage } = await import('../../features/encounters/EncounterBrowserPage')
-          return render(<MemoryRouter><EncounterBrowserPage /></MemoryRouter>)
-        },
+    },
+    {
+      label: 'loot bundle list',
+      setup: () => vi.spyOn(api, 'listLootBundles').mockResolvedValue([lootA]),
+      renderPage: async () => {
+        const { LootBundleBrowserPage } = await import('../../features/loot/LootBundleBrowserPage')
+        return render(<LootBundleBrowserPage />)
       },
-      {
-        label: 'dungeon list',
-        setup: () => vi.spyOn(api, 'listDungeons').mockResolvedValue([dungeonA]),
-        renderPage: async () => {
-          const { DungeonBrowserPage } = await import('../../features/dungeons/DungeonBrowserPage')
-          return render(<MemoryRouter><DungeonBrowserPage /></MemoryRouter>)
-        },
+    },
+    {
+      label: 'encounter list',
+      setup: () => {
+        vi.spyOn(api, 'listEncounters').mockResolvedValue([encounterA])
+        vi.spyOn(api, 'listMonsters').mockResolvedValue([])
       },
-    ]
+      renderPage: async () => {
+        const { EncounterBrowserPage } = await import('../../features/encounters/EncounterBrowserPage')
+        return render(<MemoryRouter><EncounterBrowserPage /></MemoryRouter>)
+      },
+    },
+    {
+      label: 'dungeon list',
+      setup: () => vi.spyOn(api, 'listDungeons').mockResolvedValue([dungeonA]),
+      renderPage: async () => {
+        const { DungeonBrowserPage } = await import('../../features/dungeons/DungeonBrowserPage')
+        return render(<MemoryRouter><DungeonBrowserPage /></MemoryRouter>)
+      },
+    },
+  ]
 
-    for (const catalog of cases) {
-      vi.restoreAllMocks()
-      window.localStorage.removeItem('dnd-kids-browser-rail')
-      catalog.setup()
-      const view = await catalog.renderPage()
+  it.each(cases)('exposes the shared collapse control on the $label browser', async (catalog) => {
+    catalog.setup()
+    const view = await catalog.renderPage()
 
-      expect(await screen.findByRole('button', { name: `Collapse ${catalog.label}` })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: `Collapse ${catalog.label}` })).toBeInTheDocument()
 
-      view.unmount()
-    }
+    view.unmount()
   })
 })
 /* ------------------------------------------------------------------ */

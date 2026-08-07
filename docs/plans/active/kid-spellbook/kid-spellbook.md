@@ -1,6 +1,6 @@
 # Kid Spellbook — Give children a read-only assigned-spell reference
 
-> **Status:** Stage 1 shipped — spell categories, assigned-spell serialization, the kid bootstrap API, and seed round-tripping are complete; Stage 2 DM category editing is next.
+> **Status:** Stages 1–2 shipped — categorized spell data and constrained DM category editing are complete; Stage 3 kid spellbook routing, bootstrap, and resilient polling are next.
 
 - **Areas:** players, reference, design
 - **Read trigger:** When changing the kid spellbook route, assigned-spell payload, spell categories, or the DM spell editor's category assignment.
@@ -23,6 +23,7 @@ The shared spell catalog gains a fixed, validated action-category field. AI supp
 | Stage | What shipped (≤2 sentences) |
 |-------|------------------------------|
 | 1 | Added the fixed normalized spell-category contract across schema, SQLite storage, CRUD and assigned-spell responses, plus `GET /api/players/spellbook`. All 525 canonical spell seeds now carry semantic categories that survive rebuild/export round-tripping. |
+| 2 | Added the fixed category vocabulary to frontend spell response, request, and form contracts, then exposed `Categories` in the existing DM Spell editor as a constrained multi-select. Focused form and create/update serialization coverage verifies selections pass through the existing Save flow. |
 
 ## Touches
 - `backend/app/routers/spells.py`
@@ -46,6 +47,7 @@ The shared spell catalog gains a fixed, validated action-category field. AI supp
 - `frontend/src/player/__tests__/**`
 - `frontend/src/features/spells/__tests__/**`
 - `frontend/src/features/players/__tests__/**`
+- `frontend/src/components/__tests__/BrowserLayout.vw0.test.tsx`
 - `frontend/src/__tests__/router.test.tsx`
 - `docs/areas/players.md`
 - `docs/API_REFERENCE.md`
@@ -71,13 +73,6 @@ Keyboard:     DOM-order Tab traversal through character tabs, Map, Browse by, ca
 Touch:        64px minimum for every kid control, as required by the Kid UX contract; no smaller exception.
 
 ## Compiler handoff
-
-### Stage 2
-- **Verified edit sites:** `frontend/src/features/spells/SpellEditor.tsx` — existing modal fetches option lists and submits `SpellInput` through `createSpell`/`updateSpell`; `frontend/src/features/spells/spellForm.ts` — form conversion boundary; `frontend/src/api/types.ts` — `Spell` and `SpellInput` currently omit categories; `frontend/src/components/form/MultiSelectField.tsx` — existing shared multi-select control.
-- **Verified tests:** `frontend/src/features/spells/__tests__/SpellContract.audit.test.ts` guards spell API/editor contracts; existing Spell editor tests and fixtures are the nearest form/persistence harness.
-- **Settled contracts:** The DM sees one `Categories` multi-select using the fixed vocabulary only; labels are editable but categories cannot be created, renamed, or made per-character. Empty selection is valid only if the backend preserves `Other` discoverability through seed/normalization rules; do not silently invent a kid-only label.
-- **Constraints:** Keep the existing modal/Dialog and explicit Save flow, quick-rules validation, shared form controls, semantic tokens, and no arbitrary colors.
-- **Open questions:** Verify the exact fixture/editor test filename and whether category normalization belongs in the Pydantic model or router boundary during order compilation.
 
 ### Stage 3
 - **Verified edit sites:** `frontend/src/router.tsx` — `/play` is a top-level route outside `AppShell`; `frontend/src/player/PlayerShell.tsx` — shell owns `/play` destinations and `/play/map`; `frontend/src/player/usePlayerMapData.ts` — existing 5-second polling, visibility refresh, AbortController, and last-good-frame pattern; `frontend/src/player/__tests__/importRule.test.ts` — `player/` cannot import from `features`, `components`, `layout`, or `pages`.

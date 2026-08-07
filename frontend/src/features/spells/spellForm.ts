@@ -1,4 +1,4 @@
-import type { Spell, SpellInput } from '../../api/types'
+import type { Spell, SpellCategory, SpellInput } from '../../api/types'
 
 let rowIdCounter = 0
 export function nextRowId(): string {
@@ -23,6 +23,7 @@ export interface SpellFormState {
   name: string
   level: string
   school: string
+  categories: SpellCategory[]
   castingTimes: string
   duration: string
   range: string
@@ -49,6 +50,7 @@ export function emptySpellForm(): SpellFormState {
     name: '',
     level: '0',
     school: '',
+    categories: [],
     castingTimes: '',
     duration: '',
     range: '',
@@ -76,6 +78,7 @@ export function spellToFormState(spell: Spell): SpellFormState {
     name: spell.name,
     level: String(spell.level),
     school: spell.school || '',
+    categories: spell.categories,
     castingTimes: spell.casting_times.join('\n'),
     duration: spell.duration,
     range: spell.range,
@@ -114,6 +117,7 @@ export function formStateToSpellInput(form: SpellFormState): SpellInput {
     name: form.name || 'New Spell',
     level: Number.parseInt(form.level, 10) || 0,
     school: form.school || null,
+    categories: form.categories,
     description: form.description,
     alternate_description: form.alternateDescription || null,
     quick_rules: form.quickRules,

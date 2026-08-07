@@ -18,6 +18,11 @@ instruction files only point here; if they conflict, this file wins.
 `scratch/` is a user-owned workspace for temporary notes and artifacts. Do not explore, read, index,
 or update anything under it unless the user explicitly names a path there.
 
+Detailed cross-cutting destinations use the `master-plan` skill and
+[docs/MASTER_PLAN_TEMPLATE.md](docs/MASTER_PLAN_TEMPLATE.md). Master plans define desired behavior and
+small human-visible slices, but never authorize implementation; each selected slice still enters the
+normal focused Plan workflow.
+
 ## Two working modes
 
 - **Structured workflow (default for planned work):** the Plan → Implement → Reconcile split across
@@ -114,7 +119,8 @@ or update anything under it unless the user explicitly names a path there.
 
 ### Execution workflow
 
-The skills in `.opencode/skills/` implement the Plan → Implement → Reconcile workflow: `plan`
+The `master-plan` skill defines broad product destinations before execution planning when needed. The
+remaining skills in `.opencode/skills/` implement the Plan → Implement → Reconcile workflow: `plan`
 (write the Plan), `to-orders` (compile a stage into work orders), `dispatch-orders` (send runnable
 orders to the right-sized model), `implement-order` (executor runs one order), `implement-quick`
 (executor runs one planned quick stage), and `reconcile` (close out finished work). See

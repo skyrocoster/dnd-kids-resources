@@ -9,7 +9,8 @@ Read [../AGENTS.md](../AGENTS.md) first, then use this manifest instead of explo
 Detailed master design plans under `master-plans/` define a cross-cutting destination and the small,
 human-visible slices that may implement it. They are not execution status or implementation authority:
 each slice still requires a focused Plan under `plans/active/`, and only the generated active index
-tracks whether that work is ready, blocked, or shipped.
+tracks whether that work is ready, blocked, or shipped. Create them with
+[MASTER_PLAN_TEMPLATE.md](MASTER_PLAN_TEMPLATE.md).
 
 Each `docs/plans/active/<feature>/` directory holds its Plan and the lean, disposable **work orders** compiled from that Plan's stages and deleted by `reconcile` once shipped. These are regenerated from source plans/maps; no manifest row needed. The Plan → Implement → Reconcile workflow and its five `.opencode/skills/` skills are defined in [PLAN_TEMPLATE.md](PLAN_TEMPLATE.md) and [../AGENTS.md](../AGENTS.md).
 
@@ -18,6 +19,7 @@ Each `docs/plans/active/<feature>/` directory holds its Plan and the lean, dispo
 | Task | Area | Read first |
 |---|---|---|
 | Documentation maintenance | [Infra](areas/infra.md) | `PLAN_TEMPLATE.md`, `scripts/check_docs.py`, `TESTING.md`, and existing GitHub workflow files |
+| Creating or refining a cross-cutting master plan | Relevant owning areas | `MASTER_PLAN_TEMPLATE.md`, related canonical references, and any existing master plan for the destination |
 | Running or recording a real session at the table | [Infra](areas/infra.md) | `TABLE_TESTING.md`, `docs/table-tests/_example/session-template.md`, then the plan the session serves |
 | Capturing a candidate idea from table-testing evidence | [Infra](areas/infra.md) | `TABLE_TESTING.md`, then `ideas/README.md` and the example idea card |
 | Designing or changing any UI surface | [Design](areas/design.md) | `UX_PATTERNS.md`, `DESIGN_SYSTEM.md`, the owning area guide's `## Surfaces` table |

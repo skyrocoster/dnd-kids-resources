@@ -16,6 +16,10 @@ only through focused Plans under `docs/plans/active/`. Those Plans must link bac
 declare exact paths and dependencies, preserve all unrelated work, and stop for human UX acceptance at
 the end of every visible slice.
 
+Unless a paragraph explicitly describes the existing implementation, present-tense language below
+describes the agreed destination, not behavior already shipped. Canonical `IN FORCE` references continue
+to describe the live app until the focused slice ships and reconcile updates those references.
+
 ## Why this redesign exists
 
 The application already supports both touch and keyboard-plus-mouse, but its layout vocabulary has
@@ -238,7 +242,9 @@ Highest      Dialog or confirmation
 - A dialog sits above and temporarily blocks lower layers.
 - Escape dismisses only the highest applicable layer.
 - A docked inspector may remain while a menu or popover is used.
-- Choosing Delete closes the contextual menu before opening `ConfirmDialog`.
+- Choosing any action closes the contextual menu before the next operation or layer begins. Irreversible
+  room deletion then opens `ConfirmDialog`; reversible fixture/feature deletion remains immediate and
+  offers Undo through the canvas status chip.
 - Play-mode persistent reference windows are an intentional exception described below.
 
 ### 11. Popovers contain immediate choices, not private drafts
@@ -260,9 +266,10 @@ receives no speculative menu actions from this master plan.
 
 ### 13. Persistent references float wide and dock when constrained
 
-Wide live surfaces may retain draggable, resizable, minimisable `FloatingWindow` references. On
-constrained layouts those references become edge-docked sheets. Multiple references may remain open,
-but only one is expanded at a time; labelled minimized tabs preserve the rest.
+Wide live surfaces may retain multiple draggable, resizable, minimisable `FloatingWindow` references at
+once. On constrained layouts those references become edge-docked sheets. Multiple references may remain
+represented there, but only one constrained sheet is expanded at a time; labelled minimized tabs
+preserve the rest.
 
 ```text
 Wide:                              Constrained:
@@ -340,14 +347,17 @@ Room operation                 Shape method
 - Right-click or keyboard contextual invocation selects it without travelling.
 - Double-clicking a stair or portal centers the current connection without travelling.
 - A browser double-click sequence must not trigger duplicate navigation.
-- Editor/viewer switching and ordinary refresh preserve floor, coordinates, zoom, and focus during the
-  browser session without turning navigation context into authored dungeon data.
+- The destination requires editor/viewer switching and ordinary refresh to preserve floor, coordinates,
+  zoom, and focus during the browser session without turning navigation context into authored dungeon
+  data. This is FL-05 work, not a claim about current persistence.
 - A return-to-previous-view action remains rejected.
 
 ### Room Finder replaces the room rail
 
-The permanent desktop room rail and responsive Rooms drawer are not part of the destination. The
-command band provides `Find room…`.
+The permanent desktop room rail and responsive Rooms drawer are not part of the destination. This
+intentionally supersedes the former rail presentation while preserving its selection, cross-floor,
+off-screen focus, visible-room framing, and off-map reachability contracts. The command band provides
+`Find room…`.
 
 ```text
 +---------------------------------------------------------------+
@@ -388,6 +398,8 @@ The current rail's unrelated responsibilities move separately before rail remova
 - Erase is explicit, applies to one gesture, then returns to Smart mode.
 - A contextual drawing action closes its menu and arms the next gesture.
 - Right-click never becomes the first painted cell.
+- Direct canvas targeting for Extend or Erase is available only after explicitly arming that operation.
+- The selected room remains the target while Extend or Erase is active.
 
 Rectangle and Freehand share the continuity rule. Removing blocked cells may leave a continuous L-shape
 or similar result, but disconnected results are invalid and never partially commit. Previews identify
@@ -401,6 +413,8 @@ focus, tool changes, and previews are not history entries.
 - Clicking the already-selected item clears selection.
 - Escape cancels an active stroke/preview before clearing selection or returning to Select.
 - Right-clicking an entity selects it before opening its contextual menu.
+- Long-press contextual selection is active only in Select mode and must not interfere with drawing
+  gestures.
 - Inspector, command band, and contextual menu always refer to the same target.
 - Double-clicking an ordinary item centers it.
 - Space or middle-mouse drag temporarily pans while a desktop drawing tool is active.
@@ -411,9 +425,18 @@ focus, tool changes, and previews are not history entries.
 ### Map Lab contextual menus
 
 Editor and viewer share contextual targeting. Editor menus expose existing authoring actions. Viewer
-menus expose inspection/focus actions without mutation. The first menu set covers rooms, props, doors,
-stairs, portals, terrain, and empty ground. Changing prop type, opening a door, duplication, movement,
-and connected-room editing remain deferred.
+menus expose inspection/focus actions without mutation. The first menu set is explicit:
+
+- Rooms: existing inspect/edit, Extend, Erase, focus, and delete behavior.
+- Doors, stairs, and portals: existing inspect/edit/delete behavior in the editor, inspection/focus in
+  the viewer, and ordinary left-click travel for stairs/portals remains unchanged.
+- Props: existing inspect, focus, and reversible delete behavior in the editor; inspection/focus only in
+  the viewer.
+- Terrain features: existing inspect, erase, and reversible delete behavior in the editor;
+  inspection/focus only in the viewer.
+- Empty ground: room creation and existing placement choices in the editor; no mutation in the viewer.
+
+Changing prop type, opening a door, duplication, movement, and connected-room editing remain deferred.
 
 ### Feedback, safety, and history
 
@@ -491,29 +514,69 @@ Every focused Plan copied from this master plan must include:
 7. **Stop condition** — the exact point where work stops instead of flowing into the next slice.
 8. **Dependency** — encoded in the canonical active Plan when another slice must be accepted first.
 
+### Focused-slice specification template
+
+Use this block when refining a master-plan feature into a focused active Plan. Replace every prompt;
+`standard`, `responsive`, and `as appropriate` are not decisions.
+
+```md
+### <slice ID> — <human-visible feature name>
+
+**Human-visible outcome**
+> <One sentence a non-developer can verify by looking at and operating the app.>
+
+**Before**
+<ASCII composition or exact description of what the human sees now.>
+
+**After**
+<ASCII composition or exact description of what the human will see.>
+
+**Included**
+- <Visible behavior delivered by this slice.>
+
+**Explicitly excluded**
+- <Nearby work that must not hitchhike.>
+
+**Prerequisite**
+<Accepted slice or none; encode this in the focused Plan's dependency.>
+
+**Human acceptance script**
+1. <Action at a named surface and viewport condition.>
+2. <Visible result.>
+3. <Keyboard-plus-mouse path where applicable.>
+4. <Touch path where applicable.>
+
+**Automated gate**
+- <Focused behavior/accessibility regressions and required repository checks.>
+
+**Stop condition**
+> Stop when <exact visible outcome>, checks pass, and the human marks <slice ID> accepted.
+> Do not begin <named adjacent slices>.
+```
+
 ### Slice ledger
 
 The IDs below identify destination slices, not active queue status. Focused Plans may narrow a slice
 further if source evidence shows it is still too broad; they may not silently combine adjacent rows.
 
-| Slice | Human-visible outcome | Explicit boundary | Human gate |
-|---|---|---|---|
-| FL-01 | The non-functional application footer is gone. | No header, nav, or route-content change. | Compare one browser, workspace, and live surface; no content is obscured at the bottom. |
-| FL-02 | The app-brand header and page header become one operational top row. | Footer already handled; no tool relocation. | Check Field Guide, one browser, Map Lab, Loom, and encounter play at wide and constrained widths. |
-| FL-03 | Play surfaces begin with compact global navigation while prep preference remains unchanged. | No local workspace redesign. | Enter/leave play surfaces and verify navigation remains reachable and prep rail preference survives. |
-| FL-04 | Standard browsers place Create in the top row and selected-record actions with detail. | No editor behavior or autosave migration. | Use one representative browser wide and narrow, then verify all standard browsers match. |
-| FL-05 | Map Lab floor creation, room deletion, and connection resolution have clear homes outside the room rail. | The room rail still exists; no finder yet. | Add a floor, delete a selected room, and resolve a connection without using mixed rail controls. |
-| FL-06 | `Find room…` replaces the permanent room rail and responsive Rooms drawer. | No canvas, inspector, Smart Room, or context-menu redesign. | Find visible, off-screen, cross-floor, and off-map rooms with pointer, keyboard, and touch. |
-| FL-07 | Map Lab has one command band with primary tools and explicit active-tool options. | Existing tool behavior remains; Smart Room is separate. | Activate every tool and setting at wide and constrained widths without arbitrary toolbar wrapping. |
-| FL-08 | Map Lab inspector consumes no space without selection and adapts drawer/sheet presentation by available shape. | No property-field or obstacle-state redesign. | Select, clear, reselect, resize, and verify target/state continuity. |
-| FL-09 | Editor and viewer teach the same pan, zoom, floor, selection, focus, and Escape behavior. | No room authoring or context actions. | Run the shared navigation script, including stair/portal click, context selection, and double-click. |
-| FL-10 | Room authoring visibly supports Rectangle-first Smart Room, one-gesture overrides, previews, and undo. | No context menus or persistence-model redesign. | Complete the accepted room/porch/separate-room workflow with mouse, touch, and keyboard-accessible controls. |
-| FL-11 | Map Lab contextual menus work by right-click, Shift+F10/Context Menu, and long-press while all actions retain visible alternatives. | No speculative actions. | Exercise every first-set target in editor and viewer and verify the layered Escape order. |
-| FL-12 | Loom utilities have labelled command-band homes with visible counts. | Inspector behavior remains until utility relocation is accepted. | Open thread navigation, legend, and Beat Bank without selecting a node. |
-| FL-13 | Loom inspector appears only for selected nodes; the board fills released space. | No node model or speculative contextual menu. | Select, clear, use utilities, and test drawer/sheet behavior at constrained widths. |
-| FL-14 | Persistent encounter/NPC references float wide and dock as one-expanded-at-a-time sheets when constrained. | No encounter rules or card-content redesign. | Open multiple references, resize the viewport, switch expanded references, and preserve state. |
+| Slice | Requires accepted | Human-visible outcome | Explicit boundary | Human gate |
+|---|---|---|---|---|
+| FL-01 | — | The non-functional application footer is gone. | No header, nav, or route-content change. | Compare one browser, workspace, and live surface; no content is obscured at the bottom. |
+| FL-02 | FL-01 | The app-brand header and page header become one operational top row. | Footer already handled; no tool relocation. | Check Field Guide, one browser, Map Lab, Loom, and encounter play at wide and constrained widths. |
+| FL-03 | FL-02 | Play surfaces begin with compact global navigation while prep preference remains unchanged. | No local workspace redesign. | Enter/leave play surfaces and verify navigation remains reachable and prep rail preference survives. |
+| FL-04 | FL-02 | Standard browsers place Create in the top row and selected-record actions with detail. | No editor behavior or autosave migration. | Use one representative browser wide and narrow, then verify all standard browsers match. |
+| FL-05 | — | Editor and viewer teach the same pan, zoom, floor, selection, focus, and Escape behavior. | No room authoring, layout replacement, or menu actions; contextual selection without travel is included. | Run the shared navigation script, including stair/portal click, right-click/keyboard selection without travel, and double-click. |
+| FL-06 | FL-02 | Map Lab has one command band with primary tools and explicit active-tool options. | Existing tool behavior remains; Smart Room is separate. | Activate every existing tool and setting at wide and constrained widths without arbitrary toolbar wrapping. |
+| FL-07 | FL-06 | Map Lab floor creation, room deletion, and connection resolution have clear homes outside the room rail. | The room rail still exists; no finder yet. | Add a floor, delete a selected room, and resolve a connection without using mixed rail controls. |
+| FL-08 | FL-05, FL-07 | `Find room…` replaces the permanent room rail and responsive Rooms drawer. | No canvas, inspector, Smart Room, or context-menu redesign. | Find visible, off-screen, cross-floor, and off-map rooms with pointer, keyboard, and touch. |
+| FL-09 | FL-02 | Map Lab inspector consumes no space without selection and adapts drawer/sheet presentation by available shape. | No property-field or obstacle-state redesign. | Select, clear, reselect, resize, and verify target/state continuity. |
+| FL-10 | FL-05, FL-06 | Room authoring visibly supports Rectangle-first Smart Room, one-gesture overrides, previews, and undo. | No context menus or persistence-model redesign. | Complete the accepted room/porch/separate-room workflow with mouse, touch, and keyboard-accessible controls. |
+| FL-11 | FL-05, FL-10 | Map Lab contextual menus work by right-click, Shift+F10/Context Menu, and long-press while all actions retain visible alternatives. | No speculative actions. | Exercise every listed first-set target/action in editor and viewer and verify the layered Escape order. |
+| FL-12 | FL-02 | Loom utilities have labelled command-band homes with visible counts. | Inspector behavior remains until utility relocation is accepted. | Open thread navigation, legend, and Beat Bank without selecting a node. |
+| FL-13 | FL-12 | Loom inspector appears only for selected nodes; the board fills released space. | No node model or speculative contextual menu. | Select, clear, use utilities, and test drawer/sheet behavior at constrained widths. |
+| FL-14 | FL-03 | Persistent encounter/NPC references float wide and dock as one-expanded-at-a-time sheets when constrained. | No encounter rules or card-content redesign; multiple wide windows may remain expanded. | Open multiple references, resize the viewport, switch the one expanded constrained reference, and preserve state. |
 
-### Detailed example slice — FL-06 Room Finder
+### Detailed example slice — FL-08 Room Finder
 
 **Human-visible outcome**
 
@@ -576,7 +639,9 @@ Opening the finder:
 
 **Prerequisite**
 
-FL-05 has moved unrelated floor, deletion, and connection actions and received human acceptance.
+FL-05 has shipped the selection/focus behavior the finder will invoke. FL-06 has established the
+command-band host. FL-07 has moved unrelated floor, deletion, and connection actions. All three have
+received human acceptance.
 
 **Human acceptance script**
 
@@ -595,7 +660,7 @@ FL-05 has moved unrelated floor, deletion, and connection actions and received h
 **Stop condition**
 
 > Stop when Room Finder has replaced room-list navigation in both Map Lab surfaces, automated checks
-> pass, and the human marks FL-06 accepted. Do not begin toolbar, inspector, Smart Room, or contextual
+> pass, and the human marks FL-08 accepted. Do not begin inspector, Smart Room, or contextual
 > menu changes.
 
 ## Explicitly outside this master plan
@@ -769,3 +834,23 @@ This document supersedes the former Map Lab Editor UX Contract and Map Lab Edito
 Their settled interaction model, rationale, safety boundaries, implementation phasing, and accepted
 mockups are preserved here. Historical implementation context remains available in the archived Map Lab
 UX, component-refactor, test-refactor, and editor-usability Plans.
+
+The full-redesign review deliberately changes two former presentation/phasing decisions: Room Finder
+replaces the rail while retaining its behavioral payoff, and the formerly bundled navigation + Smart
+Room release is split by independently usable layout slices. Behavioral dependency remains explicit:
+shared navigation is accepted before Smart Room and contextual menus, and Smart Room is accepted before
+contextual menu actions. These are intentional supersessions, not accidental omissions.
+
+Repository evidence folded into the former handoff remains the basis for later focused exploration:
+Map Lab orchestration is separated from toolbar/navigation, canvas composition, and selection-sheet
+components; its reducer/history excludes selection and active-floor changes from undo history;
+`useCanvasStroke` owns pointer capture and stroke continuity; `maplabModel.ts` owns validity, adjacency,
+and geometry; and the Dungeons invariants preserve geometry, reducer, autosave, zoom/pan, fullscreen, and
+persistence unless a focused Plan names them.
+
+Comparable-product evidence used during the accepted review was directional rather than authoritative:
+Tiled separates selection from boundary editing and supports contextual actions; Dungeon Alchemist
+supports draw-first rooms and expansion; Foundry VTT uses focused canvas tools and contextual controls;
+Inkarnate and Dungeondraft distinguish room/shape tools from freehand/object tools; and Figma/Miro
+reinforce explicit selection and reversible edits. The repo-specific decisions in this master plan—not
+those products—remain binding.

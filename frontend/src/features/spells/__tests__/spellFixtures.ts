@@ -5,6 +5,7 @@ export const targetSpell: Spell = {
   name: 'Plant Growth',
   level: 3,
   school: 'transmutation',
+  categories: ['Create'],
   description: 'Plants in the area grow vigorously.',
   alternate_description: null,
   quick_rules: 'Action: choose a point in range; plants in a 100-foot radius grow thick and tangled.',

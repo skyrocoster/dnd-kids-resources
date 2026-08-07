@@ -8,6 +8,7 @@ const baseSpell: Spell = {
   name: 'Acid Splash',
   level: 0,
   school: 'conjuration',
+  categories: ['Damage', 'Other'],
   description: 'You hurl a bubble of acid.',
   damage: [{ name: 'primary', formula: '1d6', damage_types: ['acid'] }],
   attacks: [{ kind: null, saving_throws: ['dex'] }],
@@ -27,6 +28,7 @@ describe('spellToFormState', () => {
     expect(form.areaShape).toBe('multiple targets')
     expect(form.higherLevelDamageBySlot).toEqual({ '2': '2d6' })
     expect(form.components).toEqual(['V', 'S'])
+    expect(form.categories).toEqual(['Damage', 'Other'])
     expect(form.quickRules).toBe(targetSpell.quick_rules)
   })
 
@@ -61,6 +63,7 @@ describe('formStateToSpellInput', () => {
     expect(input.area_of_effect).toEqual({ shape: 'multiple targets', size: null })
     expect(input.higher_levels).toEqual({ text: 'The damage increases.', damage_by_slot: { '2': '2d6' } })
     expect(input.quick_rules).toBe(targetSpell.quick_rules)
+    expect(input.categories).toEqual(['Damage', 'Other'])
   })
 
   it('preserves quick-rules whitespace and newlines exactly', () => {
@@ -77,6 +80,8 @@ describe('formStateToSpellInput', () => {
     expect(input.area_of_effect).toEqual({ shape: null, size: null })
     expect(input.healing).toEqual({ amount: null, temp_hp: false, max_hp: false })
     expect(input.name).toBe('New Spell')
+    expect(emptySpellForm().categories).toEqual([])
+    expect(input.categories).toEqual([])
   })
 
   it('serializes heal fields when an amount is set', () => {

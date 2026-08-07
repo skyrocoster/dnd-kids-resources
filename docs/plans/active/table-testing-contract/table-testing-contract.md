@@ -11,7 +11,7 @@
 - `docs/table-tests/**`
 - `docs/ideas/**`
 - `docs/PLAN_TEMPLATE.md`
-- `.opencode/skills/contract/SKILL.md`
+- `.opencode/skills/master-plan/SKILL.md`
 - `.opencode/skills/to-orders/SKILL.md`
 - `docs/README.md`
 - `docs/INVENTORY.md`

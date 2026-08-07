@@ -1,7 +1,7 @@
 import { useEffect, useId, useState } from 'react'
 import type { FormEvent } from 'react'
 import * as api from '../../api/client'
-import type { Spell } from '../../api/types'
+import { SPELL_CATEGORIES, type Spell, type SpellCategory } from '../../api/types'
 import { Button } from '../../components/Button'
 import { Dialog } from '../../components/Dialog'
 import { CheckboxField } from '../../components/form/CheckboxField'
@@ -16,6 +16,7 @@ import { emptySpellForm, formStateToSpellInput, nextRowId, spellToFormState } fr
 import './SpellEditor.css'
 
 const QUICK_RULES_STATUS_ERROR = 'Fix the Quick Rules errors before saving.'
+const CATEGORY_OPTIONS = SPELL_CATEGORIES.map((category) => ({ value: category, label: category }))
 
 function validateQuickRules(value: string): string {
   if (value.trim().length === 0) return 'Quick Rules is required.'
@@ -195,6 +196,13 @@ export function SpellEditor({ spell, onClose, onSaved }: SpellEditorProps) {
             multiline
             value={form.materials}
             onChange={(e) => patch({ materials: e.target.value })}
+          />
+
+          <MultiSelectField
+            label="Categories"
+            options={CATEGORY_OPTIONS}
+            selected={form.categories}
+            onChange={(categories) => patch({ categories: categories as SpellCategory[] })}
           />
 
           {componentOptions.length > 0 && (

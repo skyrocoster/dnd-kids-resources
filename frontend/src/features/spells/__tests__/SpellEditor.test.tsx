@@ -21,12 +21,18 @@ describe('SpellEditor', () => {
     const user = userEvent.setup()
     render(<SpellEditor onClose={vi.fn()} onSaved={onSaved} />)
 
-    await user.type(screen.getByLabelText('Spell Name'), 'Moonbeam')
+    fireEvent.change(screen.getByLabelText('Spell Name'), { target: { value: 'Moonbeam' } })
     fireEvent.change(screen.getByLabelText('Quick Rules'), { target: { value: validQuickRules } })
-    await user.type(screen.getByLabelText('Description'), 'Radiant light shines down.')
-    await user.type(screen.getByLabelText('Range'), '120 feet')
-    await user.type(screen.getByLabelText('Duration'), 'Concentration, up to 1 minute')
-    await user.type(screen.getByLabelText('Casting Time'), '1 action')
+    fireEvent.change(screen.getByLabelText('Description'), { target: { value: 'Radiant light shines down.' } })
+    fireEvent.change(screen.getByLabelText('Range'), { target: { value: '120 feet' } })
+    fireEvent.change(screen.getByLabelText('Duration'), { target: { value: 'Concentration, up to 1 minute' } })
+    fireEvent.change(screen.getByLabelText('Casting Time'), { target: { value: '1 action' } })
+    const damageCheckbox = screen.getByRole('checkbox', { name: 'Damage' })
+    const otherCheckbox = screen.getByRole('checkbox', { name: 'Other' })
+    await user.click(damageCheckbox)
+    await user.click(otherCheckbox)
+    expect(damageCheckbox).toBeChecked()
+    expect(otherCheckbox).toBeChecked()
     await user.click(screen.getByRole('button', { name: 'Create Spell' }))
 
     await waitFor(() => expect(createSpell).toHaveBeenCalledOnce())
@@ -38,6 +44,7 @@ describe('SpellEditor', () => {
       range: '120 feet',
       duration: 'Concentration, up to 1 minute',
       casting_times: ['1 action'],
+      categories: ['Damage', 'Other'],
       damage: [],
       attacks: [],
     }))
@@ -52,12 +59,18 @@ describe('SpellEditor', () => {
     const quickRules = screen.getByLabelText('Quick Rules')
     await user.clear(quickRules)
     fireEvent.change(quickRules, { target: { value: 'Save: target rolls against {spell_save_dc}.' } })
+    const damageCheckbox = screen.getByRole('checkbox', { name: 'Damage' })
+    await user.click(damageCheckbox)
+    expect(damageCheckbox).toBeChecked()
     await user.click(screen.getByRole('button', { name: 'Save Changes' }))
 
     await waitFor(() => expect(updateSpell).toHaveBeenCalledOnce())
     expect(updateSpell).toHaveBeenCalledWith(
       targetSpell.id,
-      expect.objectContaining({ quick_rules: 'Save: target rolls against {spell_save_dc}.' }),
+      expect.objectContaining({
+        quick_rules: 'Save: target rolls against {spell_save_dc}.',
+        categories: ['Create', 'Damage'],
+      }),
     )
   })
 

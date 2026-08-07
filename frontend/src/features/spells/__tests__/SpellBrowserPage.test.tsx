@@ -72,6 +72,7 @@ describe('SpellBrowserPage', () => {
       ...targetSpell,
       id: 10,
       name: 'Reference Bolt',
+      categories: ['Other'],
       level: 0,
       quick_rules: 'Roll 1d20 + {spell_attack_bonus}; target saves against {spell_save_dc}.',
       description: 'Full reference description.',

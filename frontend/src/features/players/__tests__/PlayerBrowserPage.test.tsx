@@ -15,6 +15,7 @@ const spellFireball: Spell = {
   name: 'Fireball',
   level: 3,
   school: 'Evocation',
+  categories: ['Other'],
   casting_times: ['1 action'],
   range: '150 feet',
   components: ['V', 'S', 'M'],

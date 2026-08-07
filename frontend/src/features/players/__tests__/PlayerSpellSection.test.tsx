@@ -18,6 +18,7 @@ function makeSpell(overrides: Partial<Spell> = {}): Spell {
     name: 'Fireball',
     level: 3,
     school: 'evocation',
+    categories: ['Other'],
     description: 'A bright streak flashes from your finger',
     alternate_description: null,
     quick_rules: '8d6 fire damage in 20 ft. radius',

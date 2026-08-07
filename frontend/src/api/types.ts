@@ -39,11 +39,27 @@ export interface SpellComponent {
   description?: string | null
 }
 
+export const SPELL_CATEGORIES = [
+  'Damage',
+  'Heal',
+  'Protect',
+  'Control',
+  'Move',
+  'Detect',
+  'Influence',
+  'Create',
+  'Summon',
+  'Other',
+] as const
+
+export type SpellCategory = (typeof SPELL_CATEGORIES)[number]
+
 export interface Spell {
   id: number
   name: string
   level: number
   school: string | null
+  categories: SpellCategory[]
   description: string
   alternate_description: string | null
   quick_rules: string | null
@@ -92,6 +108,7 @@ export interface SpellInput {
   name: string
   level: number
   school?: string | null
+  categories: SpellCategory[]
   description: string
   alternate_description?: string | null
   quick_rules: string
