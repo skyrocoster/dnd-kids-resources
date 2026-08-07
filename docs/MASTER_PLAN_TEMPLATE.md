@@ -1,11 +1,12 @@
 # Master Plan Template
 
-A master plan defines a broad, cross-cutting product destination in enough detail that later focused
-Plans can implement it without reopening settled product decisions. It is a working design document,
-not an execution Plan, queue entry, or implementation authority.
+A master plan defines a broad, cross-cutting product destination in enough detail that later execution
+does not reopen settled product decisions. It is a working design document, not an execution Plan,
+queue entry, or implementation authority.
 
-Master plans live at `docs/master-plans/<slug>.md`. Each implementation slice still requires its own
-focused Plan under `docs/plans/active/`, explicit dependencies, and human acceptance. Use
+Master plans live at `docs/master-plans/<slug>.md`. For exactly one selected slice, `to-plan`
+autonomously chooses direct quick delivery or a focused Plan under `docs/plans/active/`, preserving
+explicit dependencies and human acceptance. Use
 [frontend-layout-redesign.md](master-plans/frontend-layout-redesign.md) as the detailed reference
 example.
 
@@ -138,6 +139,16 @@ or green in CI.
 | <MP-01> | - | <One visible result> | <One operable capability> | <Nearby work excluded> | <Shortest decisive acceptance path> |
 | <MP-02> | <MP-01> | <One visible result> | <One operable capability> | <Nearby work excluded> | <Shortest decisive acceptance path> |
 
+## Slice Delivery Receipts
+
+This table is written only by `quick-reconcile` or `reconcile`. It is route-independent delivery and
+acceptance evidence, not an implementation queue. Omit rows for slices that have not reached a
+reconcile path.
+
+| Slice | Route | State | Evidence |
+|---|---|---|---|
+| <MP-01> | Direct or Plan | Implemented; awaiting human acceptance or Accepted YYYY-MM-DD | <Focused check and short outcome, or linked Plan> |
+
 ### <MP-01> - <Human-Visible Feature Name>
 
 **Human can see**
@@ -238,3 +249,6 @@ Before keeping a slice, answer yes to every question:
 7. Does the stop condition forbid starting the next visible change?
 
 If any answer is no, refine the decision or split the slice before creating a focused Plan.
+
+Slice quality does not decide execution transport. When a slice is selected, `to-plan` judges from
+current repository evidence whether direct delivery is safe or durable Plan state is necessary.

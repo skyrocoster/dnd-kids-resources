@@ -20,16 +20,17 @@ or update anything under it unless the user explicitly names a path there.
 
 Detailed cross-cutting destinations use the `master-plan` skill and
 [docs/MASTER_PLAN_TEMPLATE.md](docs/MASTER_PLAN_TEMPLATE.md). Master plans define desired behavior and
-small human-visible slices, but never authorize implementation; each selected slice still enters the
-normal focused Plan workflow.
+small human-visible slices, but never authorize implementation by themselves. When the user selects a
+slice for implementation, `to-plan` autonomously routes it to direct quick delivery or a focused Plan;
+the user is not asked to choose workflow transport.
 
 ## Two working modes
 
 - **Structured workflow (default for planned work):** the Plan → Implement → Reconcile split across
   two roles by model strength — the planner thinks, writes the human-readable Plan, and compiles each
   stage into lean work orders; the executor runs one work order per fresh context window. The workflow
-  skills in `.opencode/skills/` are `plan`, `to-orders`, `dispatch-orders`, `implement-order`,
-  `implement-quick`, and `reconcile`. The split is **cost discipline, not a prohibition**: where a dispatch round trip would
+  skills in `.opencode/skills/` are `create-plan`, `to-plan`, `to-orders`, `dispatch-orders`, `implement-order`,
+  `implement-quick`, `quick-reconcile`, and `reconcile`. The split is **cost discipline, not a prohibition**: where a dispatch round trip would
   plainly cost more than the edit itself, the planner may complete a fully-determined change directly
   and say so. Formats and lifecycle are normative in [docs/PLAN_TEMPLATE.md](docs/PLAN_TEMPLATE.md).
 - **Planned quick stage:** during Plan review, the coordinator may route one atomic stage directly to
@@ -38,6 +39,12 @@ normal focused Plan workflow.
   architecture, diagnosis, or contract decision. Use the existing `implement-quick` brief, keep the
   Plan as the durable record, and update its Status/Shipped row only after the brief passes. If the
   brief escalates, compile that stage normally with `to-orders`; never widen the quick brief in place.
+- **Direct master-plan slice:** when a selected slice is fully settled, atomic, immediately executable,
+  and needs no durable coordination state, `to-plan` must skip both the focused Plan and work orders,
+  dispatch a verified `implement-quick` brief, and invoke `quick-reconcile` on success. The coordinator
+  judges this from evidence without asking the user. `quick-reconcile` updates canonical docs and the
+  master plan's route-independent slice receipt, runs full checks, and removes any redundant temporary
+  workflow artifacts. A failed or widened brief falls back to a focused Plan.
 - **Bounded quick mode (when the user requests direct implementation):** proceed without a Plan or
   work orders. Touch only the files the user names; keep the change small, structured, and local;
   run the applicable focused tests and the documentation checker; preserve unrelated worktree
@@ -48,16 +55,18 @@ normal focused Plan workflow.
 ## Documentation Contract
 
 - Area guides own code — routers, routes, invariants, the change map — and never authorize
-  implementation and never list Plans. Create a focused Plan (via the `plan` skill) before changing
-  code no active Plan covers.
+  implementation and never list Plans. Create a focused Plan via `create-plan`, or route one selected
+  master-plan slice via `to-plan`, before changing code no active Plan covers. `to-plan` may authorize
+  only the bounded direct-slice route defined above; the master plan alone never does.
 - A Plan that cannot start until another ships declares `- **Depends on:** [Other Plan](path)` in its
   `## Touches` section. That dependency is the only ordering signal in the repo: it licenses file
   overlap between in-flight Plans, and it is what marks a Plan blocked or ready in the generated
   index. Nothing ranks the ready Plans — choosing between them is the user's call.
 - Keep canonical references current: update the relevant reference document when an API contract,
   data model, architecture convention, design token, testing contract, setup instruction, or
-  user-visible capability changes. The `reconcile` skill performs these updates after a stage's work
-  orders ship — do not defer them indefinitely.
+  user-visible capability changes. `reconcile` performs these updates after a Plan stage ships and
+  `quick-reconcile` performs them after direct slice delivery — do not defer them indefinitely. Both
+  update any linked master-plan slice receipt; automated checks never record human acceptance.
 - **Write the fact where it is authored, not where it is displayed.** A plan's routing facts are its
   `**Areas:**` (stable area-guide IDs) and `**Read trigger:**` header lines; a plan's progress is its
   Status line. Each is then rendered into the documents that need it. Editing a generated table by
@@ -119,11 +128,12 @@ normal focused Plan workflow.
 
 ### Execution workflow
 
-The `master-plan` skill defines broad product destinations before execution planning when needed. The
-remaining skills in `.opencode/skills/` implement the Plan → Implement → Reconcile workflow: `plan`
-(write the Plan), `to-orders` (compile a stage into work orders), `dispatch-orders` (send runnable
+The `master-plan` skill defines broad product destinations before execution planning when needed.
+`create-plan` writes a focused Plan directly; `to-plan` routes one selected master-plan slice to direct
+quick delivery or a focused Plan. The remaining skills implement the Plan → Implement → Reconcile workflow: `to-orders` (compile a stage into work orders), `dispatch-orders` (send runnable
 orders to the right-sized model), `implement-order` (executor runs one order), `implement-quick`
-(executor runs one planned quick stage), and `reconcile` (close out finished work). See
+(executor runs one atomic brief), `quick-reconcile` (close out a direct slice), and `reconcile` (close
+out Plan-backed work). See
 [docs/PLAN_TEMPLATE.md](docs/PLAN_TEMPLATE.md).
 
 ### Issue tracker

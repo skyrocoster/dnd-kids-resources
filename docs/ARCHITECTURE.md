@@ -55,7 +55,7 @@ This doc describes the folder structure, backend/frontend conventions, and reque
 | `map/` | Neutral shared canvas geometry, marker primitives, badge descriptors, and badge rendering used by DM and Player map surfaces. Modules here import only model/local siblings and direct icon packages, never feature or component modules. |
 | `player/` | Player app shell, navigation, curtain (player-view transform), kid-facing components, and the `/play/map` and `/play/spells` live data seams; the curtain emits only effective player-visible fixture facts and hides authored/session detail |
 | `pages/` | Top-level router pages (HomePage, ComponentDemoPage, StubPage) — entry points for each route |
-| `layout/` | AppShell.tsx — header, nav, footer layout that wraps all pages; navSections.ts — shared nav-section → route map consumed by AppShell's rail/drawer and HomePage's chapter tabs |
+| `layout/` | AppShell.tsx — header/navigation shell wrapping DM pages; navSections.ts — shared nav-section → route map consumed by AppShell's rail/drawer and HomePage's chapter tabs |
 | `router.tsx` | React Router configuration; exports a `routes` array (dev-only `demo` route gated by `import.meta.env.DEV`) and the `router` built from it |
 | `theme.css` | Material Design 3 dark-mode tokens (--md-primary, --md-surface-1, --type-headline, etc.) — design system; consume these, never hand-pick colors |
 | `index.css` | Global resets and baseline styles |

@@ -1,20 +1,23 @@
 # Frontend Layout Redesign — Master Plan
 
 > **Status:** Desired state agreed through guided review; no implementation Plan is authorized by
-> this document. Each visible slice below requires its own focused Plan and explicit human acceptance
-> before the next dependent slice begins.
+> this document alone. When a slice is selected, `to-plan` autonomously routes it to direct quick
+> delivery or a focused Plan. Every slice still requires explicit human acceptance before the next
+> dependent slice begins.
 
 ## What this document is
 
-This is the detailed product destination for the DM application's layout. It is deliberately broader
-than a repository execution Plan and more concrete than a design principle. It records what the human
-should see, how the major surfaces should transform, and how the redesign must be divided into small,
-independently reviewable outcomes.
+This is the detailed product destination for the DM application's layout and the explicitly included
+completion of the kid spellbook reference surface. It is deliberately broader than a repository
+execution Plan and more concrete than a design principle. It records what the human should see, how
+the major surfaces should transform, and how the redesign must be divided into small, independently
+reviewable outcomes.
 
-This master plan is not part of the active-Plan queue and carries no implementation status. Work ships
-only through focused Plans under `docs/plans/active/`. Those Plans must link back to the relevant slice,
-declare exact paths and dependencies, preserve all unrelated work, and stop for human UX acceptance at
-the end of every visible slice.
+This master plan is not part of the active-Plan queue. Work ships either through a focused Plan under
+`docs/plans/active/` or, for a fully settled atomic slice, through the bounded direct route selected by
+`to-plan`. Route-independent delivery receipts below preserve implementation and acceptance evidence;
+they do not rank or queue work. Every route declares exact paths and dependencies, preserves unrelated
+work, and stops for human UX acceptance at the end of every visible slice.
 
 Unless a paragraph explicitly describes the existing implementation, present-tense language below
 describes the agreed destination, not behavior already shipped. Canonical `IN FORCE` references continue
@@ -29,8 +32,10 @@ drawers, inspectors, floating windows, and dialogs have individually useful beha
 composition model.
 
 The redesign must make the primary work obvious, give every secondary surface one job, and protect the
-DM's attention at the table. It must not become a big-bang rewrite. Every change must leave the app
-usable, produce one visible result a human can judge, and pause before dependent visual work proceeds.
+DM's attention at the table. The remaining kid spellbook work belongs here because it is now a visible
+reference-layout outcome rather than a new data or routing capability. The redesign must not become a
+big-bang rewrite. Every change must leave the app usable, produce one visible result a human can judge,
+and pause before dependent visual work proceeds.
 
 ## Governing product principle
 
@@ -91,7 +96,7 @@ The surface name remains a visible `<h1>`. A subtitle appears only when it carri
 The app brand/home action moves into the wide navigation rail. The persistent footer is removed; any
 project identity copy belongs on the Field Guide home page.
 
-### 2. Three surface families
+### 2. Four surface families
 
 #### Catalog browser
 
@@ -148,6 +153,31 @@ Used by encounter running and other at-table control surfaces.
 Play surfaces begin with compact global navigation on wide screens without overwriting the normal prep
 navigation preference. Their workflow-advancing action remains visible. Navigation remains reachable;
 play surfaces do not become traps.
+
+#### Kid reference surface
+
+Used by the read-only kid spellbook. This is not a DM catalog browser: it has no collection-wide
+catalog, selection/detail split, create action, mutation flow, or route back to the DM app. Persistent
+character tabs, `Map`, and `Browse by` controls frame the active character's assigned-spell reference.
+
+```text
++---------------------------------------------------------------+
+| [character] [character] [Map]                                 |
++---------------------------------------------------------------+
+| Browse by [Actions v]                                         |
++---------------------------------------------------------------+
+| [icon] Damage                                           [open] |
+|   Spell slot 1                                                |
+|     Burning Hands — 15-foot cone; 3d6 fire                    |
+|       expanded canonical reference                            |
+| [icon] Heal                                         [disabled]|
++---------------------------------------------------------------+
+```
+
+The surface is designed for children to get an answer and return attention to the table. Controls use
+an icon plus words and retain the 64px kid touch floor. Only the active character's assigned spells
+appear. The app remains read-only, polls automatically, and preserves the last readable frame through
+background failures.
 
 ### 3. One identity band and at most one command band
 
@@ -474,9 +504,53 @@ workflow-advancing action, glanceable direct controls, and local errors. Encount
 windows remain free-floating on wide screens and become edge-docked sheets on constrained screens.
 Multiple references may remain represented, but only one constrained sheet is expanded at a time.
 
+### Kid spellbook
+
+The route, response-driven character tabs, persistent `Map` action, per-character in-memory view state,
+automatic polling, and last-good-frame behavior already exist. Each character tab retains the
+character's name and simple icon, and the active tab remains unmistakable. The remaining destination
+completes the assigned-spell reading surface without turning it into a recommender, rules engine, slot
+tracker, or full-catalog browser.
+
+`Actions` is the default browse mode. Its fixed visible category order is `Damage`, `Heal`, `Protect`,
+`Control`, `Move`, `Detect`, `Influence`, `Create`, `Summon`, and `Other`. One action category is open at
+a time. Empty categories remain visible but disabled; empty spell-slot groups are hidden. Category
+controls use a simple first-pass icon plus the category word. Inside an open category, assigned spells
+are grouped under collapsible `Spell slot` levels, with one slot section open at a time. Categories
+describe what a spell helps accomplish rather than its school or attack mechanic; a spell may appear
+in multiple categories, and `Other` keeps every assigned spell discoverable.
+
+A spell row shows only its name and existing concise `quick_rules`. One spell detail may be expanded at
+a time, inline beneath its row. The detail begins with quick rules and then renders the canonical
+casting time, range, duration, components, concentration and ritual state, description, and higher-level
+text. It does not show remaining-slot counts, spent state, recommendations, or ranking, calculate rules,
+or rewrite the source for children.
+
+`Browse by` switches the same assigned collection rather than adding permanent filter chrome:
+
+- `Spell Slot` groups by slot level and then action category.
+- `Damage Type` groups by damage type and then slot level; a multi-type spell appears under every
+  applicable type.
+- Returning to `Actions` restores the character's last state. Character switching continues to retain
+  that character's browse mode, open category or slot group, expanded spell, and scroll position.
+
+Empty assignment state reads `No spells assigned yet.` A temporarily empty group reads `No spells in
+this group.` The bootstrap-only no-character state reads `Choose a character to see their spells.` An
+initial load failure reads `The spellbook didn't load. Ask your DM.` Background poll failure keeps the
+last readable content instead of interrupting an expanded spell. Control failures are reported beside
+the affected control with status semantics and never blank the reading surface.
+
+Keyboard focus follows DOM order through character tabs, `Map`, `Browse by`, groups, spell rows, and
+links; Enter and Space activate native buttons. Escape does not change route or dismiss persistent
+content. Touch uses the same behavior with the 64px control floor. Final iconography, tactical
+recommendations, favourites, usage ranking, current-slot state, and additional metadata browse modes
+remain outside the destination.
+
 ## Shared DM/kid surface impact
 
-The full layout redesign is scoped to the DM application, but some map infrastructure is shared.
+The shell, catalog, workspace, Loom, and encounter redesign remains scoped to the DM application. The
+kid spellbook completion above is the one explicit kid-layout inclusion. Some map infrastructure is
+also shared even though the kid map itself is not being redesigned.
 
 Shared contracts include `frontend/src/map/**`, `frontend/src/model/maplabModel.ts`, canvas geometry,
 pan/zoom/fit, marker geometry, badge primitives, and theme tokens. DM composition work changes chrome
@@ -489,7 +563,7 @@ Every focused Plan that touches shared map/model paths must:
 - run DM and player map regression checks;
 - preserve the kid 64px floor, no-exit rule, read-only behavior, and two-tap destination;
 - keep `/play` outside `AppShell`; and
-- reconcile active Kid Spellbook path overlap before implementation.
+- preserve the completed kid spellbook route, polling, navigation, and per-character session state.
 
 The kid app does not import DM `components/`, `features/`, `layout/`, or `pages/`. This redesign does not
 weaken that boundary or make DM state components universal.
@@ -498,11 +572,11 @@ weaken that boundary or make DM state components universal.
 
 ### Hard human gate
 
-Each focused Plan ends in `Awaiting human UX acceptance`. Automated checks prove contracts but do not
+Each delivery route ends in `Awaiting human UX acceptance`. Automated checks prove contracts but do not
 substitute for human layout judgment. A dependent Plan may be drafted, but its implementation must not
-begin until the user explicitly accepts the prior visible result.
+begin until the user explicitly accepts the prior visible result and the receipt records that acceptance.
 
-Every focused Plan copied from this master plan must include:
+Every focused Plan copied from this master plan, and every direct brief where applicable, preserves:
 
 1. **Human-visible outcome** — one sentence a non-developer can verify.
 2. **Before and after** — an ASCII composition or equally concrete description.
@@ -512,12 +586,22 @@ Every focused Plan copied from this master plan must include:
    applicable.
 6. **Automated gate** — focused regressions plus required repo checks.
 7. **Stop condition** — the exact point where work stops instead of flowing into the next slice.
-8. **Dependency** — encoded in the canonical active Plan when another slice must be accepted first.
+8. **Dependency** — encoded in the canonical active Plan or verified against the slice receipts when
+   another slice must be accepted first.
+
+### Autonomous route selection
+
+When the user selects a slice, `to-plan` judges the execution route without asking whether a Plan or
+work order is wanted. A slice goes directly through `implement-quick` and mandatory `quick-reconcile`
+only when current repository evidence proves one atomic change, exact authorized paths and check, no
+unsettled design/architecture/API/data/migration/compatibility/diagnosis decision, accepted
+prerequisites, and no need for queued or multi-context coordination state. Otherwise it receives a
+focused Plan. File count and a human acceptance gate do not by themselves require a Plan.
 
 ### Focused-slice specification template
 
-Use this block when refining a master-plan feature into a focused active Plan. Replace every prompt;
-`standard`, `responsive`, and `as appropriate` are not decisions.
+Use this block when a slice needs a focused active Plan. Replace every prompt; `standard`, `responsive`,
+and `as appropriate` are not decisions.
 
 ```md
 ### <slice ID> — <human-visible feature name>
@@ -575,6 +659,8 @@ further if source evidence shows it is still too broad; they may not silently co
 | FL-12 | FL-02 | Loom utilities have labelled command-band homes with visible counts. | Inspector behavior remains until utility relocation is accepted. | Open thread navigation, legend, and Beat Bank without selecting a node. |
 | FL-13 | FL-12 | Loom inspector appears only for selected nodes; the board fills released space. | No node model or speculative contextual menu. | Select, clear, use utilities, and test drawer/sheet behavior at constrained widths. |
 | FL-14 | FL-03 | Persistent encounter/NPC references float wide and dock as one-expanded-at-a-time sheets when constrained. | No encounter rules or card-content redesign; multiple wide windows may remain expanded. | Open multiple references, resize the viewport, switch the one expanded constrained reference, and preserve state. |
+| FL-15 | — | The kid spellbook opens in Actions mode with icon-and-word categories, assigned spells grouped by slot, and one inline canonical spell detail. | No alternate browse modes, recommendations, slot tracking, final icon polish, API/data redesign, or DM-app layout change. | Switch characters, browse populated and empty categories, expand one spell at a time, return to Map and back, and repeat with keyboard and touch. |
+| FL-16 | FL-15 | `Browse by` switches the kid spellbook among Actions, Spell Slot, and Damage Type without adding permanent filter chrome. | No additional metadata modes, personalized ordering, or changes to the fixed category vocabulary. | Exercise all three modes, verify multi-type duplication and per-character sticky state, and confirm only assigned spells appear. |
 
 ### Detailed example slice — FL-08 Room Finder
 
@@ -663,11 +749,24 @@ received human acceptance.
 > pass, and the human marks FL-08 accepted. Do not begin inspector, Smart Room, or contextual
 > menu changes.
 
+## Slice delivery receipts
+
+This route-independent table is maintained by `quick-reconcile` and `reconcile`; it is evidence, not
+the active queue. Automated checks may record implementation, but only explicit human UX acceptance
+may record an `Accepted` state.
+
+| Slice | Route | State | Evidence |
+|---|---|---|---|
+| FL-01 | Direct | Accepted 2026-08-07 | Removed the non-functional `AppShell` footer and its style; the focused `AppShell.test.tsx` check passed and the user signed off the visible result. |
+
 ## Explicitly outside this master plan
 
 - A new palette, typeface, token scale, or arbitrary component colours.
 - A global command palette, global search, toast system, or bespoke global hotkey layer.
-- Kid-app layout redesign, mutation, exits to the DM app, or weakened import boundaries.
+- Kid-app layout beyond FL-15 and FL-16, kid mutation, exits to the DM app, or weakened import
+  boundaries.
+- Changes to the fixed action vocabulary before evidence from children using it, source cleanup or a
+  child-facing rewrite for malformed canonical spell prose, and broader kid gear/reference surfaces.
 - API, database, seed, dungeon semantic, room semantic, passage, stair, portal, or connection redesign.
 - Shared map renderer or geometry redesign unless a later focused Plan explicitly owns both audiences.
 - Autosave migration for the six existing modal record editors; it still requires a shared undo design.
@@ -798,9 +897,9 @@ AMBIGUOUS OR INVALID PREVIEW:
 
 ```
 
-## Source ownership expected by future focused Plans
+## Source ownership expected by future delivery routes
 
-This master plan changes no application code. Likely ownership packets for later focused Plans are:
+This master plan changes no application code. Likely ownership packets for later routes are:
 
 - Shared shell and browser composition: Design area; `frontend/src/layout/**`, shared components,
   standard browser consumers, and colocated tests.
@@ -810,18 +909,24 @@ This master plan changes no application code. Likely ownership packets for later
 - Loom layout: Loom and Design areas; `frontend/src/features/loom/**` and tests.
 - Encounter live-console references: Encounters and Design areas; encounter/NPC features, shared
   `FloatingWindow`, and tests.
+- Kid spellbook completion: Players, Reference, and Design areas; `frontend/src/player/**`, pure API or
+  model contracts importable by the player build, player-owned tests, and canonical kid UX references.
 - Canonical UX/layout changes: `docs/UX_PATTERNS.md`, `docs/DESIGN_SYSTEM.md`, affected area-guide
   Surfaces rows, this master plan, and generated documentation.
 
-Every focused Plan narrows these paths. None inherits the entire list merely by referencing this
-document.
+Every focused Plan or direct brief narrows these paths. None inherits the entire list merely by
+referencing this document.
 
 ## Verification standard for future slices
 
 Automated checks include focused Vitest/React Testing Library suites, `npm run test:check` for bounded
 frontend work, typecheck, lint, build where applicable, relevant player-map regressions for shared map
-touches, and the documentation checker. Tests must prove behavior and accessibility contracts, not only
-class names.
+touches, and the documentation checker. FL-15 and FL-16 each prove their focused kid interactions and
+the player-build import boundary. FL-16 closeout additionally preserves regression evidence for
+category validation and persistence, AI-seeded values, DM category edits, assigned-only responses, and
+seed export/rebuild round-tripping. Generated API, data-model, testing, area-guide, and plan inventories
+are refreshed only when their source contracts change. Tests must prove behavior and accessibility
+contracts, not only class names.
 
 The final UX gate remains human. Each slice's acceptance script must be performed at representative
 wide and constrained sizes with keyboard-plus-mouse and touch where applicable. Browser automation is
@@ -829,6 +934,15 @@ not assumed; it is used only when explicitly requested. Human rejection returns 
 to design/repair and does not authorize the next dependency.
 
 ## Provenance folded into this plan
+
+The unshipped Kid Spellbook Stage 4 browse surface and Stage 5 verification closeout have been folded
+into this destination as FL-15 and FL-16. The former `docs/Contracts/kid-spellbook.md` readiness
+contract is superseded and removed rather than retained as a second source of future behavior. The
+archived Kid Spellbook Plan remains the record that Stages 1–3 shipped the category/API contract, DM
+category editor, `/play/spells` route, character bootstrap, navigation, sticky session state, and
+resilient polling; it authorizes no further implementation. The former Stage 5 was not a visible
+product slice, so its verification and documentation duties now live in the gates for FL-15 and FL-16
+instead of becoming a duplicate ledger row.
 
 This document supersedes the former Map Lab Editor UX Contract and Map Lab Editor UX Grilling Handoff.
 Their settled interaction model, rationale, safety boundaries, implementation phasing, and accepted

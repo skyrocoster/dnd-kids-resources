@@ -178,13 +178,6 @@ body[data-app-layout='fill'] .app-main {
   padding: 0;
 }
 
-.app-footer {
-  padding: var(--space-2) var(--space-5);
-  font-size: var(--type-caption-size);
-  color: var(--md-on-surface-variant);
-  background: var(--md-surface-2);
-}
-
 .app-nav-mobile h2 {
   font-size: var(--type-caption-size);
   line-height: var(--type-caption-line);

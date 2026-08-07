@@ -1,6 +1,6 @@
 ---
 name: implement-quick
-description: Execute exactly ONE focused change from an ephemeral quick-executor brief. Use whenever you are handed a brief containing GOAL, AUTHORIZED PATHS, KNOWN FACTS, CHANGE, CHECK, and ESCALATE IF and asked to implement it. One change, no Plan, no work order. Designed for a cheaper executor model on a fresh context window.
+description: Execute exactly ONE focused change from an ephemeral quick-executor brief. Use for a planned quick stage, a directly routed master-plan slice, or a bounded repair when handed GOAL, AUTHORIZED PATHS, KNOWN FACTS, CHANGE, CHECK, and ESCALATE IF. One change, no work order; a Plan may or may not exist.
 ---
 
 # implement-quick — one focused change, then stop

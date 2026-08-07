@@ -1,6 +1,6 @@
 ---
 name: reconcile
-description: Close out finished work orders for a feature — collapse completed orders into the Plan's Shipped table, update any canonical references/manifest/area guide whose contract changed, run the documentation checker, delete the spent order files, and commit the whole repo once every check is green. Use this after a stage's work orders are all marked DONE (or when some are FAILED and need re-planning), whenever the user says "reconcile", "close out the orders", "the stage is done", or "update the docs for what shipped". This is documentation closeout, not an implementation pass.
+description: Close out finished work orders for a feature — collapse completed orders into the Plan's Shipped table, update any linked master-plan slice receipt and canonical references, run the documentation checker, delete spent orders, and commit once green. Use after a stage's work orders are DONE or when the user says "reconcile", "close out the orders", or "the stage is done". This is documentation closeout, not an implementation pass.
 ---
 
 # reconcile — close out shipped work orders
@@ -143,7 +143,17 @@ treating the report as complete.
    from the Plan itself, **the Plan's Status line is the single place a stage's progress is
    recorded** — get it right and three documents follow. What stays yours: the Status line and Shipped
    rows, the hand-written prose around each generated block, the Task Router rows in `docs/README.md`,
-   and every canonical-reference edit in this step.
+    and every canonical-reference edit in this step.
+
+   **Update a linked master-plan receipt.** If the Plan identifies a source master plan and slice ID,
+   add or update that document's `## Slice delivery receipts` row with route `Plan`. Use
+   `Implemented; awaiting human acceptance` after implementation passes but the slice's explicit human
+   gate has not been accepted. Use `Accepted YYYY-MM-DD` only when the Plan contains or the user has
+   supplied explicit acceptance evidence. Automated checks never imply acceptance. The row's Evidence
+   names the archived/active Plan and summarizes the shipped outcome; it does not duplicate order
+   history. A dependent slice treats only an `Accepted YYYY-MM-DD` receipt (or legacy accepted archived
+   Plan evidence) as satisfying its prerequisite. Do this for partial-stage reconcile only when the
+   stage completes the slice's human-visible outcome; otherwise leave the receipt unchanged.
 
 6. **Run the documentation checker** from the repo root via the repo-local virtualenv:
    - Windows: `.venv\Scripts\python.exe scripts/check_docs.py --check`
@@ -157,7 +167,8 @@ treating the report as complete.
    `docs/README.md` in the same change set. Then regenerate the index (`--write-generated`):
    archiving is what flips every Plan that declared a `**Depends on:**` this feature from `blocked`
    to `ready`, so a stale index leaves real work looking unavailable. Leave a redirect stub only if a
-   known inbound link must survive.
+   known inbound link must survive. Update the linked master-plan receipt before regeneration so its
+   Evidence points at the final archived path.
 
 9. **Commit everything.** A reconcile that ends green leaves the whole repo consistent — the
    executors' source changes, the Plan collapse, the regenerated inventories, the deleted order files

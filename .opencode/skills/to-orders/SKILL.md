@@ -1,6 +1,6 @@
 ---
 name: to-orders
-description: Turn ONE stage of a Plan into lean, self-contained work orders that a cheaper, weaker model can execute one at a time, each in a fresh context window. Use this after the `plan` skill, whenever the user says "turn stage N into work orders", "compile this stage", "make the tickets/orders for X", or is ready to hand implementation to an executor model. This is where the planner does the exploration up front so the executor never has to. Produces work-order files rather than code — just goal, known state, starting files, and a hard stop condition.
+description: Turn ONE stage of a Plan into lean, self-contained work orders that a cheaper, weaker model can execute one at a time, each in a fresh context window. Use this after `create-plan` or `to-plan`, whenever the user says "turn stage N into work orders", "compile this stage", "make the tickets/orders for X", or is ready to hand implementation to an executor model. This is where the planner does the exploration up front so the executor never has to. Produces work-order files rather than code — just goal, known state, starting files, and a hard stop condition.
 ---
 
 # to-orders — compile a stage into work orders (Layer 2)
@@ -10,7 +10,7 @@ so the weak **executor** never re-explores, and handing pure retrieval to a chea
 order is one unit of work an executor can finish in a single context window without getting lost. The
 output is the **fence, not the code**: an order that pre-writes the implementation has just paid the
 coordinator's rate for the executor's job. (Verified snippets planning genuinely forced into
-existence are the exception — they belong in KNOWN STATE, per the `plan` skill's planning-byproducts
+existence are the exception — they belong in KNOWN STATE, per the plan-creation skills' planning-byproducts
 rule.)
 
 ## Delegated authoring

@@ -8,11 +8,13 @@ Read [../AGENTS.md](../AGENTS.md) first, then use this manifest instead of explo
 
 Detailed master design plans under `master-plans/` define a cross-cutting destination and the small,
 human-visible slices that may implement it. They are not execution status or implementation authority:
-each slice still requires a focused Plan under `plans/active/`, and only the generated active index
-tracks whether that work is ready, blocked, or shipped. Create them with
+when a slice is selected, `to-plan` autonomously routes it either to direct quick delivery or a focused
+Plan under `plans/active/`. Only focused Plans appear in the generated active index. A master plan's
+slice delivery receipts preserve route-independent implementation and human-acceptance evidence without
+becoming a queue. Create master plans with
 [MASTER_PLAN_TEMPLATE.md](MASTER_PLAN_TEMPLATE.md).
 
-Each `docs/plans/active/<feature>/` directory holds its Plan and the lean, disposable **work orders** compiled from that Plan's stages and deleted by `reconcile` once shipped. These are regenerated from source plans/maps; no manifest row needed. The Plan → Implement → Reconcile workflow and its five `.opencode/skills/` skills are defined in [PLAN_TEMPLATE.md](PLAN_TEMPLATE.md) and [../AGENTS.md](../AGENTS.md).
+Each `docs/plans/active/<feature>/` directory holds its Plan and the lean, disposable **work orders** compiled from that Plan's stages and deleted by `reconcile` once shipped. These are regenerated from source plans/maps; no manifest row needed. The Plan → Implement → Reconcile workflow and its `.opencode/skills/` entry points are defined in [PLAN_TEMPLATE.md](PLAN_TEMPLATE.md) and [../AGENTS.md](../AGENTS.md).
 
 ## Task Router
 
@@ -20,6 +22,7 @@ Each `docs/plans/active/<feature>/` directory holds its Plan and the lean, dispo
 |---|---|---|
 | Documentation maintenance | [Infra](areas/infra.md) | `PLAN_TEMPLATE.md`, `scripts/check_docs.py`, `TESTING.md`, and existing GitHub workflow files |
 | Creating or refining a cross-cutting master plan | Relevant owning areas | `MASTER_PLAN_TEMPLATE.md`, related canonical references, and any existing master plan for the destination |
+| Creating a focused Plan directly or from one master-plan slice | Relevant owning areas | `PLAN_TEMPLATE.md`, `plans/active/INDEX.md`, owning area guides, and the selected master plan when using `to-plan` |
 | Running or recording a real session at the table | [Infra](areas/infra.md) | `TABLE_TESTING.md`, `docs/table-tests/_example/session-template.md`, then the plan the session serves |
 | Capturing a candidate idea from table-testing evidence | [Infra](areas/infra.md) | `TABLE_TESTING.md`, then `ideas/README.md` and the example idea card |
 | Designing or changing any UI surface | [Design](areas/design.md) | `UX_PATTERNS.md`, `DESIGN_SYSTEM.md`, the owning area guide's `## Surfaces` table |
@@ -41,4 +44,4 @@ Each `docs/plans/active/<feature>/` directory holds its Plan and the lean, dispo
 | Shared UI, tokens, icons, or accessibility | [Design](areas/design.md) | `DESIGN_SYSTEM.md`, `ARCHITECTURE.md`, `UX_PATTERNS.md`, `TESTING.md` |
 | Test tooling, fixtures, coverage, or CI | Relevant area guide, or [Infra](areas/infra.md) | `TESTING.md`, `ARCHITECTURE.md`, then the plan |
 
-Implementation flows through the **Plan → Implement → Reconcile** workflow (see [../AGENTS.md](../AGENTS.md) and [PLAN_TEMPLATE.md](PLAN_TEMPLATE.md)): the planner writes a lean Plan at `plans/active/<feature>/<feature>.md` and compiles each stage into self-contained numbered work orders beside it; a small model executes one order per context window; then `reconcile` collapses the shipped orders into the Plan and updates any canonical reference whose contract changed. Area guides are durable routing documents, not plans. Historical documents are context only; they do not define current behavior.
+Implementation uses the smallest safe route described in [../AGENTS.md](../AGENTS.md) and [PLAN_TEMPLATE.md](PLAN_TEMPLATE.md). `create-plan` writes a focused Plan directly. For one selected master-plan slice, `to-plan` autonomously chooses direct `implement-quick` → `quick-reconcile` delivery or creates a focused Plan. Planned stages then use quick execution or self-contained work orders, followed by `reconcile`. Both reconcile routes update canonical references and the linked master-plan slice receipt. Area guides are durable routing documents, not plans. Historical documents are context only; they do not define current behavior.

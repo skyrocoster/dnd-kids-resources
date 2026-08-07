@@ -1,20 +1,22 @@
 # Plan & Work-Order Template
 
 This repo splits planning from implementation across two roles, defined by model strength rather than
-by vendor: the **planner** (more powerful) runs `plan`, `to-orders`, `dispatch-orders`, and
-`reconcile`; the **executor** (cheaper, weaker) runs `implement-order`, one work order at a time, in a
+by vendor: the **planner** (more powerful) runs `create-plan`, `to-plan`, `to-orders`, `dispatch-orders`,
+`quick-reconcile`, and `reconcile`; the **executor** (cheaper, weaker) runs `implement-order`, one work order at a time, in a
 fresh context window, seeing only what its order names. Either role can be filled by any provider or
 product strong enough for it, so the docs and skills name the **role**, never a vendor.
 
-The workflow is driven by six skills in `.opencode/skills/`, opencode's native skill directory:
+The workflow is driven by eight skills in `.opencode/skills/`, opencode's native skill directory:
 
 | Skill | Role | Job |
 |---|---|---|
-| `plan` | planner | Write the short human **Plan** (Layer 1) and a temporary handoff of verified specifics. Intent, not code. |
+| `create-plan` | planner | Write a focused human **Plan** (Layer 1) directly for one concrete outcome. Intent, not code. |
+| `to-plan` | planner | Autonomously route one selected master-plan slice to direct quick delivery or a focused **Plan**. |
 | `to-orders` | planner | Turn one Plan stage into lean **work orders** (Layer 2). Guidance, not code. |
 | `dispatch-orders` | planner | Send runnable orders to the right-sized model; triage failures the moment they return, so dependency chains never stall. Repairs code directly only in the narrow case its step 5 defines. |
 | `implement-order` | executor | Execute **one** work order, then stop. Writes the code. |
-| `implement-quick` | quick executor | Execute one fully settled, Plan-backed atomic change from an ephemeral brief; the coordinator records the result in the Plan. |
+| `implement-quick` | quick executor | Execute one fully settled atomic change from an ephemeral brief for a Plan stage, direct slice, or bounded repair. |
+| `quick-reconcile` | planner | Close a directly delivered master-plan slice: update canonical docs and its slice receipt, run full checks, and remove redundant artifacts. |
 | `reconcile` | planner | Close out finished orders: scout and automatically repair focused stage regressions through a coordinator-authored quick brief, then collapse the Plan, update docs, and run the checker. |
 
 The split is a cost judgement, not a ban: when a dispatch round trip would cost more than the edit — a
@@ -39,6 +41,25 @@ After settling a Plan stage, choose the smallest safe route:
 
 The quick route is a transport optimization, not a second Plan format. The Plan remains the durable
 record even though no work-order file is created.
+
+### Master-plan slice routing
+
+Before a focused Plan exists, `to-plan` judges transport without asking the user. It delivers a selected
+slice directly only when behavior and ownership are settled, prerequisites have durable acceptance
+evidence, implementation is one atomic change, exact authorized paths/facts/check are verified, no
+design/architecture/API/data/migration/compatibility/diagnosis decision remains, and no queued or
+multi-context coordination state is needed. File count and the presence of a human acceptance gate do
+not decide this.
+
+A qualifying slice goes directly through an `implement-quick` brief and mandatory `quick-reconcile`.
+Anything unproven gets a focused Plan. An escalated direct brief also becomes a focused Plan carrying
+the failed brief's evidence; it is never widened in place.
+
+Every master-plan-backed route writes the master plan's `## Slice delivery receipts` table during
+closeout. `quick-reconcile` records route `Direct`; full `reconcile` records route `Plan`. Checks may
+write `Implemented; awaiting human acceptance`; only explicit human acceptance writes
+`Accepted YYYY-MM-DD`. Only that accepted receipt, or equivalent accepted archived-Plan evidence,
+satisfies a dependent slice.
 
 ---
 

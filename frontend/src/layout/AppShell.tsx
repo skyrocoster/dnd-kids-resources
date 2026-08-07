@@ -61,9 +61,6 @@ export function AppShell() {
           <Outlet />
         </main>
       </div>
-      <footer className="app-footer">
-        <span>Built for running games at the table.</span>
-      </footer>
       <Dialog open={mobileNavOpen} title="Navigate" onClose={() => setMobileNavOpen(false)}>
         <nav className="app-nav-mobile" aria-label="Site navigation">
           {navSections.map((section) => (
