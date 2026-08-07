@@ -11,7 +11,7 @@ router = APIRouter(prefix="/api", tags=["spells"])
 _SPELL_COLUMNS = """
     id, name, level, school, description, quick_rules, alternate_description,
     damage, healing, range, higher_levels, casting_times, duration,
-    concentration, ritual, components, materials, attacks, area_of_effect
+    concentration, ritual, components, materials, attacks, area_of_effect, categories
 """
 
 
@@ -24,6 +24,7 @@ def _spell_values(spell: SpellCreate) -> tuple:
         json.dumps(data["casting_times"]), data["duration"], data["concentration"],
         data["ritual"], json.dumps(data["components"]), data["materials"],
         json.dumps(data["attacks"]), json.dumps(data["area_of_effect"]),
+        json.dumps(data["categories"]),
     )
 
 
@@ -170,8 +171,8 @@ def create_spell(spell: SpellCreate):
                 """INSERT INTO spells
                    (name, level, school, description, quick_rules, alternate_description, damage, healing,
                     range, higher_levels, casting_times, duration, concentration, ritual,
-                    components, materials, attacks, area_of_effect)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    components, materials, attacks, area_of_effect, categories)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 _spell_values(spell),
             )
             conn.commit()
@@ -206,7 +207,7 @@ def update_spell(spell_id: int, spell: SpellUpdate):
                    SET name = ?, level = ?, school = ?, description = ?, quick_rules = ?, alternate_description = ?,
                        damage = ?, healing = ?, range = ?, higher_levels = ?, casting_times = ?,
                        duration = ?, concentration = ?, ritual = ?, components = ?, materials = ?,
-                       attacks = ?, area_of_effect = ?
+                       attacks = ?, area_of_effect = ?, categories = ?
                    WHERE id = ?""",
                 (*_spell_values(spell), spell_id),
             )

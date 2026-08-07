@@ -1,6 +1,6 @@
 # Kid Spellbook — Give children a read-only assigned-spell reference
 
-> **Status:** Planned from the agreed readiness contract; implementation has not started.
+> **Status:** Stage 1 shipped — spell categories, assigned-spell serialization, the kid bootstrap API, and seed round-tripping are complete; Stage 2 DM category editing is next.
 
 - **Areas:** players, reference, design
 - **Read trigger:** When changing the kid spellbook route, assigned-spell payload, spell categories, or the DM spell editor's category assignment.
@@ -22,6 +22,7 @@ The shared spell catalog gains a fixed, validated action-category field. AI supp
 ## Shipped
 | Stage | What shipped (≤2 sentences) |
 |-------|------------------------------|
+| 1 | Added the fixed normalized spell-category contract across schema, SQLite storage, CRUD and assigned-spell responses, plus `GET /api/players/spellbook`. All 525 canonical spell seeds now carry semantic categories that survive rebuild/export round-tripping. |
 
 ## Touches
 - `backend/app/routers/spells.py`
@@ -70,13 +71,6 @@ Keyboard:     DOM-order Tab traversal through character tabs, Map, Browse by, ca
 Touch:        64px minimum for every kid control, as required by the Kid UX contract; no smaller exception.
 
 ## Compiler handoff
-
-### Stage 1
-- **Verified edit sites:** `backend/app/routers/spells.py` — `_SPELL_COLUMNS`, `_spell_values`, and spell CRUD routes currently serialize the 18-field spell projection; `backend/app/routers/players.py` — assigned-spell routes and `get_player_detail` currently return canonical `Spell` rows; `backend/app/schemas.py` — `Spell`, `SpellCreate`, and `SpellUpdate` define the current canonical contract; `scripts/init_database.py` — `spells` is a JSON-column-backed table with no category column; `data/seeds/seed_players.json` — current seed contains exactly two players, Lark (id 2) and Pip (id 1).
-- **Verified tests:** `backend/tests/test_b1_persistence.py` covers the real spell schema and seed persistence; `backend/tests/test_db_helpers.py` covers JSON spell parsing; `backend/tests/routers/test_crud_completeness.py` covers player-spell assignment lifecycle and errors; the integration suite must continue exercising seeded spell/player responses.
-- **Settled contracts:** Persist `categories` as a JSON list of strings on each spell. The only valid values are `Damage`, `Heal`, `Protect`, `Control`, `Move`, `Detect`, `Influence`, `Create`, `Summon`, and `Other`; order responses deterministically by the fixed vocabulary. A spell may have multiple categories and `Other` is the discoverability fallback. The kid response must contain only assigned spells for the selected player and retain the existing canonical detail fields; no slot counts or computed rules are added.
-- **Constraints:** Preserve the existing 18 canonical fields and JSON parsing conventions; use the real schema for tests; seed files remain canonical and must round-trip through init, seed, and export; every new route gets a docstring, focused happy/error tests, generated API documentation, and real-seed integration coverage.
-- **Open questions:** Confirm whether the kid bootstrap should be a new combined endpoint or compose existing player/detail endpoints; prefer one response if it avoids a race between the two character tabs.
 
 ### Stage 2
 - **Verified edit sites:** `frontend/src/features/spells/SpellEditor.tsx` — existing modal fetches option lists and submits `SpellInput` through `createSpell`/`updateSpell`; `frontend/src/features/spells/spellForm.ts` — form conversion boundary; `frontend/src/api/types.ts` — `Spell` and `SpellInput` currently omit categories; `frontend/src/components/form/MultiSelectField.tsx` — existing shared multi-select control.

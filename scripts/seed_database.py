@@ -135,16 +135,17 @@ def insert_spell(cursor, spell_data):
     cursor.execute(
         """
         INSERT INTO spells
-        (id, name, level, school, description, quick_rules, alternate_description, damage, healing, range,
+        (id, name, level, school, categories, description, quick_rules, alternate_description, damage, healing, range,
          higher_levels, casting_times, duration, concentration, ritual, components, materials, attacks,
          area_of_effect)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             spell_data["id"],
             spell_data["name"],
             spell_data["level"],
             spell_data.get("school"),
+            serialize_for_db(spell_data.get("categories", [])),
             spell_data["description"],
             quick_rules,
             spell_data.get("alternate_description"),

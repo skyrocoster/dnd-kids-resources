@@ -87,7 +87,7 @@ JSON_COLUMNS = {
         "damage_vulnerabilities", "condition_immunities", "senses", "languages", "features",
     ],
     "spells": [
-        "damage", "healing", "higher_levels", "casting_times", "components", "attacks",
+        "categories", "damage", "healing", "higher_levels", "casting_times", "components", "attacks",
         "area_of_effect",
     ],
     "weapons": [

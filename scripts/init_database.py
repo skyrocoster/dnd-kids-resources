@@ -167,6 +167,7 @@ def init_database(db_path: Path | None = None):
             concentration BOOLEAN NOT NULL DEFAULT 0,
             ritual BOOLEAN NOT NULL DEFAULT 0,
             components TEXT NOT NULL DEFAULT '[]',
+            categories TEXT NOT NULL DEFAULT '["Other"]',
             materials TEXT,
             attacks TEXT NOT NULL DEFAULT '[]',
             area_of_effect TEXT NOT NULL DEFAULT '{"shape": null, "size": null}',

@@ -120,6 +120,7 @@ Deleting a weapon relies on the existing `player_weapons.weapon_id` foreign key 
 |---|---|---|---|---|
 | GET | `/api/players` | List all players. | `limit`, `offset` | `List[Player]` |
 | POST | `/api/players` | Create a new player. | `PlayerCreate` | `Player` (201) |
+| GET | `/api/players/spellbook` | Get every player's assigned spells as a combined spellbook bootstrap. | (none) | `List[PlayerSpellbookCharacter]` |
 | GET | `/api/players/{player_id}` | Get a specific player by ID. | `player_id` | `Player` |
 | PUT | `/api/players/{player_id}` | Update an existing player. | `PlayerUpdate` | `Player` |
 | DELETE | `/api/players/{player_id}` | Delete a player. | `player_id` | (204 No Content) |
@@ -388,24 +389,25 @@ Every request and response body is a Pydantic model in `backend/app/schemas.py`,
 | `PlayerCreate` | `name`, `child_name`*, `class`*, `subclass`*, `ancestry`*, `background`*, `level`*, `sizes`*, `alignment`*, `creature_type`*, `ac`*, `hp`*, `speed`*, `abilities`*, `saving_throws`*, `skills`*, `passive_perception`*, `damage_resistances`*, `damage_immunities`*, `damage_vulnerabilities`*, `condition_immunities`*, `senses`*, `languages`*, `features`*, `initiative`*, `proficiency_bonus`*, `spell_attack_bonus`*, `spell_save_dc`*, `max_spell_slots`*, `notes`* |
 | `PlayerDetail` | `name`, `child_name`*, `class`*, `subclass`*, `ancestry`*, `background`*, `level`*, `sizes`*, `alignment`*, `creature_type`*, `ac`*, `hp`*, `speed`*, `abilities`*, `saving_throws`*, `skills`*, `passive_perception`*, `damage_resistances`*, `damage_immunities`*, `damage_vulnerabilities`*, `condition_immunities`*, `senses`*, `languages`*, `features`*, `initiative`*, `proficiency_bonus`*, `spell_attack_bonus`*, `spell_save_dc`*, `max_spell_slots`*, `notes`*, `id`, `created_at`*, `updated_at`*, `spells`*, `weapons`* |
 | `PlayerSpellAssignments` | `spell_ids`* |
+| `PlayerSpellbookCharacter` | `id`, `name`, `spells`* |
 | `PlayerUpdate` | `name`, `child_name`*, `class`*, `subclass`*, `ancestry`*, `background`*, `level`*, `sizes`*, `alignment`*, `creature_type`*, `ac`*, `hp`*, `speed`*, `abilities`*, `saving_throws`*, `skills`*, `passive_perception`*, `damage_resistances`*, `damage_immunities`*, `damage_vulnerabilities`*, `condition_immunities`*, `senses`*, `languages`*, `features`*, `initiative`*, `proficiency_bonus`*, `spell_attack_bonus`*, `spell_save_dc`*, `max_spell_slots`*, `notes`* |
 | `PlayerWeaponAssignments` | `weapon_ids`* |
 | `RevealedCell` | `x`, `y` |
 | `RevealedCellsBlob` | `cells` |
 | `Sense` | `type`, `range`, `note`* |
 | `Skill` | `name`, `ability`, `description`* |
-| `Spell` | `id`, `name`, `level`, `school`*, `description`, `quick_rules`*, `alternate_description`*, `damage`*, `healing`*, `range`, `higher_levels`*, `casting_times`*, `duration`, `concentration`, `ritual`, `components`*, `materials`*, `attacks`*, `area_of_effect`* |
+| `Spell` | `id`, `name`, `level`, `school`*, `description`, `quick_rules`*, `alternate_description`*, `damage`*, `healing`*, `range`, `higher_levels`*, `casting_times`*, `duration`, `concentration`, `ritual`, `components`*, `materials`*, `attacks`*, `area_of_effect`*, `categories`* |
 | `SpellAreaOfEffect` | `shape`*, `size`* |
 | `SpellAttack` | `kind`*, `saving_throws`* |
 | `SpellComponent` | `code`, `name`, `description`* |
-| `SpellCreate` | `name`, `level`, `school`*, `description`, `quick_rules`, `alternate_description`*, `damage`*, `healing`*, `range`, `higher_levels`*, `casting_times`*, `duration`, `concentration`, `ritual`, `components`*, `materials`*, `attacks`*, `area_of_effect`* |
+| `SpellCreate` | `name`, `level`, `school`*, `description`, `quick_rules`, `alternate_description`*, `damage`*, `healing`*, `range`, `higher_levels`*, `casting_times`*, `duration`, `concentration`, `ritual`, `components`*, `materials`*, `attacks`*, `area_of_effect`*, `categories`* |
 | `SpellDamage` | `name`, `formula`, `damage_types`* |
 | `SpellGroup` | `label`, `spells`*, `hidden`* |
 | `SpellHealing` | `amount`*, `temp_hp`*, `max_hp`* |
 | `SpellHigherLevels` | `text`*, `damage_by_slot`* |
 | `SpellPlayerAssignments` | `player_ids`* |
 | `SpellReference` | `name`, `hidden`* |
-| `SpellUpdate` | `name`, `level`, `school`*, `description`, `quick_rules`, `alternate_description`*, `damage`*, `healing`*, `range`, `higher_levels`*, `casting_times`*, `duration`, `concentration`, `ritual`, `components`*, `materials`*, `attacks`*, `area_of_effect`* |
+| `SpellUpdate` | `name`, `level`, `school`*, `description`, `quick_rules`, `alternate_description`*, `damage`*, `healing`*, `range`, `higher_levels`*, `casting_times`*, `duration`, `concentration`, `ritual`, `components`*, `materials`*, `attacks`*, `area_of_effect`*, `categories`* |
 | `SpellcastingBlock-Input` | `name`, `ability`*, `description`*, `resource`*, `groups`*, `footer`* |
 | `SpellcastingBlock-Output` | `name`, `ability`*, `description`*, `resource`*, `groups`*, `footer`* |
 | `Weapon` | `id`, `name`, `base_weapon`*, `rarity`*, `weapon_category`*, `weight`*, `req_attune`*, `property`*, `focus`*, `attack`*, `entries`*, `quick_rules`*, `weapon_attack_bonus`*, `weapon_damage_bonus`* |

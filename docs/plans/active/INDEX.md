@@ -25,8 +25,7 @@ Point a skill at a row and it has what it needs to start.
 <!-- GENERATED:ACTIVE_INDEX:START -->
 | Plan | Areas | Depends on | State | Orders | Next | Status |
 | --- | --- | --- | --- | --- | --- | --- |
-| [Kid Spellbook](kid-spellbook/kid-spellbook.md) | [players](../../areas/players.md), [reference](../../areas/reference.md), [design](../../areas/design.md) | — | ready | none compiled | `to-orders` | Planned from the agreed readiness contract; implementation has not started. |
-| [Map Lab component refactor](maplab-component-refactor/maplab-component-refactor.md) | [dungeons](../../areas/dungeons.md) | — | ready | none compiled | `to-orders` | Stage 2 shipped; Stage 3 is ready to begin against the preserved viewer contracts. |
+| [Kid Spellbook](kid-spellbook/kid-spellbook.md) | [players](../../areas/players.md), [reference](../../areas/reference.md), [design](../../areas/design.md) | — | ready | none compiled | `to-orders` | Stage 1 shipped — spell categories, assigned-spell serialization, the kid bootstrap API, and seed round-tripping are complete; Stage 2 DM category editing is next. |
 | [Production Nightly Deploys](production-nightly-deploys/production-nightly-deploys.md) | [infra](../../areas/infra.md) | — | ready | none compiled | `to-orders` | Part of Stage 1 has already shipped out of band — see *Landed early* below. |
 | [Table Testing Contract](table-testing-contract/table-testing-contract.md) | [infra](../../areas/infra.md) | — | ready | none compiled | `to-orders` | Stage 3 shipped — the independent candidate ideas bank and evidence-linked card format are documented, and legacy table-test records are clearly marked as historical. |
 | [Table Testing Records](table-testing-records/table-testing-records.md) | [infra](../../areas/infra.md) | — | ready | none compiled | `to-orders` | Superseded by the Table Testing Contract plan; do not compile further orders from this plan. |

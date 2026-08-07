@@ -101,6 +101,33 @@ class SpellAreaOfEffect(StrictModel):
     size: Optional[int] = None
 
 
+SPELL_CATEGORY_ORDER = (
+    "Damage",
+    "Heal",
+    "Protect",
+    "Control",
+    "Move",
+    "Detect",
+    "Influence",
+    "Create",
+    "Summon",
+    "Other",
+)
+
+
+def normalize_spell_categories(value: Any) -> List[str]:
+    if value is None:
+        return ["Other"]
+    if not isinstance(value, list):
+        raise ValueError("categories must be a list")
+    if any(not isinstance(category, str) for category in value):
+        raise ValueError("categories must contain only strings")
+    unknown = [category for category in value if category not in SPELL_CATEGORY_ORDER]
+    if unknown:
+        raise ValueError("categories contains an unknown value")
+    return [category for category in SPELL_CATEGORY_ORDER if category in value] or ["Other"]
+
+
 class Spell(StrictModel):
     """Response model for the 18-field canonical spell contract."""
     id: int
@@ -122,6 +149,12 @@ class Spell(StrictModel):
     materials: Optional[str] = None
     attacks: List[SpellAttack] = Field(default_factory=list)
     area_of_effect: SpellAreaOfEffect = Field(default_factory=SpellAreaOfEffect)
+    categories: List[str] = Field(default_factory=lambda: ["Other"], validate_default=True)
+
+    @field_validator("categories", mode="before")
+    @classmethod
+    def validate_categories(cls, value: Any) -> List[str]:
+        return normalize_spell_categories(value)
 
 
 class SpellCreate(StrictModel):
@@ -144,6 +177,7 @@ class SpellCreate(StrictModel):
     materials: Optional[str] = None
     attacks: List[SpellAttack] = Field(default_factory=list)
     area_of_effect: SpellAreaOfEffect = Field(default_factory=SpellAreaOfEffect)
+    categories: List[str] = Field(default_factory=lambda: ["Other"], validate_default=True)
 
 
     @field_validator("quick_rules")
@@ -158,6 +192,11 @@ class SpellCreate(StrictModel):
         if not validation["valid"]:
             raise ValueError("quick_rules contains invalid reference text")
         return value
+
+    @field_validator("categories", mode="before")
+    @classmethod
+    def validate_categories(cls, value: Any) -> List[str]:
+        return normalize_spell_categories(value)
 
 
 class SpellUpdate(SpellCreate):
@@ -469,6 +508,12 @@ class Player(PlayerFields):
 class PlayerDetail(Player):
     spells: List[Spell] = Field(default_factory=list)
     weapons: List[Weapon] = Field(default_factory=list)
+
+
+class PlayerSpellbookCharacter(StrictModel):
+    id: int
+    name: str
+    spells: List[Spell] = Field(default_factory=list)
 
 
 class PlayerCreate(PlayerFields):

@@ -11,6 +11,7 @@ from backend.app.schemas import (
     Spell,
     SpellCreate,
     SpellUpdate,
+    PlayerSpellbookCharacter,
 )
 
 
@@ -143,6 +144,7 @@ class TestSpellConstruction:
         assert spell.casting_times == ["1 reaction"]
         assert spell.components == ["S", "M"]
         assert spell.attacks == []
+        assert spell.categories == ["Other"]
 
     def test_minimal_create(self):
         minimal = {
@@ -161,6 +163,31 @@ class TestSpellConstruction:
         assert spell.components == []
         assert spell.casting_times == []
         assert spell.area_of_effect.shape is None
+        assert spell.categories == ["Other"]
+
+    def test_categories_normalize_order_and_duplicates(self):
+        spell = SpellCreate(**{**_SAMPLE_CREATE, "categories": ["Other", "Damage", "Damage", "Heal"]})
+        assert spell.categories == ["Damage", "Heal", "Other"]
+
+    def test_categories_reject_non_strings_and_unknown_values(self):
+        with pytest.raises(Exception):
+            SpellCreate(**{**_SAMPLE_CREATE, "categories": ["Damage", 1]})
+        with pytest.raises(Exception):
+            SpellCreate(**{**_SAMPLE_CREATE, "categories": ["Damage", "Unknown"]})
+
+    def test_explicit_empty_categories_normalize_to_other(self):
+        assert SpellCreate(**{**_SAMPLE_CREATE, "categories": []}).categories == ["Other"]
+
+    def test_spellbook_character_contains_only_assigned_spells(self):
+        character = PlayerSpellbookCharacter(
+            id=7,
+            name="Talia",
+            spells=[Spell(**{**_SAMPLE_CANONICAL, "categories": ["Detect"]})],
+        )
+        assert character.id == 7
+        assert character.name == "Talia"
+        assert character.spells[0].categories == ["Detect"]
+        assert set(character.model_dump()) == {"id", "name", "spells"}
 
     def test_create_round_trip(self):
         create = SpellCreate(**_SAMPLE_CREATE)

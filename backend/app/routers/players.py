@@ -3,7 +3,7 @@ from typing import List
 import json
 
 from ..db import get_db, dict_from_row, parse_json_value, parse_spell_row as _parse_spell_row
-from ..schemas import Player, PlayerCreate, PlayerUpdate, PlayerDetail, PlayerSpellAssignments, PlayerWeaponAssignments, Spell, Weapon
+from ..schemas import Player, PlayerCreate, PlayerUpdate, PlayerDetail, PlayerSpellAssignments, PlayerWeaponAssignments, PlayerSpellbookCharacter, Spell, Weapon
 
 router = APIRouter(prefix="/api", tags=["players"])
 
@@ -113,6 +113,38 @@ def list_players(
         return [dict_from_row(row) for row in rows]
 
 
+@router.get("/players/spellbook", response_model=List[PlayerSpellbookCharacter])
+def get_player_spellbook():
+    """Get every player's assigned spells as a combined spellbook bootstrap."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            """SELECT p.id AS player_id, p.name AS player_name,
+                      s.id, s.name, s.level, s.school, s.description, s.alternate_description,
+                      s.quick_rules, s.damage, s.healing, s.range, s.higher_levels,
+                      s.casting_times, s.duration, s.concentration, s.ritual, s.components,
+                      s.materials, s.attacks, s.area_of_effect, s.categories
+               FROM players p
+               LEFT JOIN player_spells ps ON p.id = ps.player_id
+               LEFT JOIN spells s ON s.id = ps.spell_id
+               ORDER BY p.name, s.name"""
+        )
+
+        characters = {}
+        for row in cursor.fetchall():
+            player_id = row["player_id"]
+            character = characters.setdefault(
+                player_id, {"id": player_id, "name": row["player_name"], "spells": []}
+            )
+            if row["id"] is not None:
+                spell_row = dict_from_row(row)
+                spell_row.pop("player_id")
+                spell_row.pop("player_name")
+                character["spells"].append(_parse_spell_row(spell_row))
+
+        return sorted(characters.values(), key=lambda character: character["name"])
+
+
 @router.get("/players/{player_id}", response_model=Player, response_model_by_alias=False)
 def get_player(player_id: int):
     """Get a specific player by ID."""
@@ -208,7 +240,8 @@ def get_player_spells(player_id: int):
         cursor.execute(
             """SELECT s.id, s.name, s.level, s.school, s.description, s.alternate_description, s.quick_rules,
                        s.damage, s.healing, s.range, s.higher_levels, s.casting_times, s.duration,
-                       s.concentration, s.ritual, s.components, s.materials, s.attacks, s.area_of_effect
+                       s.concentration, s.ritual, s.components, s.materials, s.attacks, s.area_of_effect,
+                       s.categories
                FROM spells s
                JOIN player_spells ps ON s.id = ps.spell_id
                WHERE ps.player_id = ?
@@ -285,7 +318,8 @@ def replace_player_spells(player_id: int, assignments: PlayerSpellAssignments):
         cursor.execute(
             """SELECT s.id, s.name, s.level, s.school, s.description, s.alternate_description, s.quick_rules,
                       s.damage, s.healing, s.range, s.higher_levels, s.casting_times, s.duration,
-                      s.concentration, s.ritual, s.components, s.materials, s.attacks, s.area_of_effect
+                      s.concentration, s.ritual, s.components, s.materials, s.attacks, s.area_of_effect,
+                      s.categories
                FROM spells s
                JOIN player_spells ps ON s.id = ps.spell_id
                WHERE ps.player_id = ?
@@ -397,7 +431,8 @@ def get_player_detail(player_id: int):
         cursor.execute(
             """SELECT s.id, s.name, s.level, s.school, s.description, s.alternate_description, s.quick_rules,
                       s.damage, s.healing, s.range, s.higher_levels, s.casting_times, s.duration,
-                      s.concentration, s.ritual, s.components, s.materials, s.attacks, s.area_of_effect
+                       s.concentration, s.ritual, s.components, s.materials, s.attacks, s.area_of_effect,
+                       s.categories
                FROM spells s
                JOIN player_spells ps ON s.id = ps.spell_id
                WHERE ps.player_id = ?

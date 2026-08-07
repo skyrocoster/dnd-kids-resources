@@ -574,6 +574,21 @@ def test_every_player_nested_endpoints_serialize(real_client):
     player_list = players.json()
     assert player_list, "No seeded players — cannot exercise nested endpoints"
 
+    spellbook = real_client.get("/api/players/spellbook")
+    assert spellbook.status_code == 200
+    characters = spellbook.json()
+    assert [(character["id"], character["name"]) for character in characters] == [(2, "Lark"), (1, "Pip")]
+    assert all("weapons" not in character for character in characters)
+    assert all("unassigned" not in character for character in characters)
+    for character in characters:
+        assert [spell["name"] for spell in character["spells"]] == sorted(
+            spell["name"] for spell in character["spells"]
+        )
+        for spell in character["spells"]:
+            _assert_canonical_spell(spell)
+            assert isinstance(spell["categories"], list)
+            assert all(isinstance(category, str) for category in spell["categories"])
+
     for player in player_list:
         pid = player["id"]
         spells = real_client.get(f"/api/players/{pid}/spells")
@@ -583,12 +598,17 @@ def test_every_player_nested_endpoints_serialize(real_client):
         assert isinstance(spells.json(), list)
         for spell in spells.json():
             _assert_canonical_spell(spell)
-
+            assert isinstance(spell["categories"], list)
+            assert all(isinstance(category, str) for category in spell["categories"])
         weapons = real_client.get(f"/api/players/{pid}/weapons")
         assert weapons.status_code == 200, (
             f"/api/players/{pid}/weapons -> {weapons.status_code}: {weapons.text[:300]}"
         )
         assert isinstance(weapons.json(), list)
+
+    assigned = [spell for character in characters for spell in character["spells"]]
+    assert assigned
+    assert any(category != "Other" for spell in assigned for category in spell["categories"])
 
 
 def test_every_player_detail_endpoint_serializes(real_client):

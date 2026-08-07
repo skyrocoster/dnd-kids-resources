@@ -484,6 +484,7 @@ Indexes: `sqlite_autoindex_revealed_cells_1`.
 | `concentration` | `BOOLEAN` | yes | `0` |
 | `ritual` | `BOOLEAN` | yes | `0` |
 | `components` | `TEXT` | yes | `'[]'` |
+| `categories` | `TEXT` | yes | `'["Other"]'` |
 | `materials` | `TEXT` | no | `-` |
 | `attacks` | `TEXT` | yes | `'[]'` |
 | `area_of_effect` | `TEXT` | yes | `'{"shape": null, "size": null}'` |

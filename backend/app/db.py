@@ -75,7 +75,7 @@ def dict_from_row(row):
 # JSON-encoded spell columns, split by expected decoded shape. Kept here (not in a
 # router) so every endpoint that returns a spell row parses it identically.
 _SPELL_OBJECT_COLUMNS = ["healing", "higher_levels", "area_of_effect"]
-_SPELL_LIST_COLUMNS = ["damage", "casting_times", "components", "attacks"]
+_SPELL_LIST_COLUMNS = ["damage", "casting_times", "components", "categories", "attacks"]
 
 
 def parse_spell_row(row):

@@ -66,6 +66,7 @@ def test_target_schema_creates_correct_columns(tmp_path: Path):
 
     names = [row[1] for row in columns if row[1] != "created_at"]
     types = {row[1]: row[2] for row in columns if row[1] != "created_at"}
+    defaults = {row[1]: row[4] for row in columns if row[1] != "created_at"}
 
     assert names == [
         "id",
@@ -84,6 +85,7 @@ def test_target_schema_creates_correct_columns(tmp_path: Path):
         "concentration",
         "ritual",
         "components",
+        "categories",
         "materials",
         "attacks",
         "area_of_effect",
@@ -92,6 +94,7 @@ def test_target_schema_creates_correct_columns(tmp_path: Path):
     assert types["level"] == "INTEGER"
     assert types["concentration"] == "BOOLEAN"
     assert types["ritual"] == "BOOLEAN"
+    assert defaults["categories"] == "'[\"Other\"]'"
     assert all(
         types[name] == "TEXT"
         for name in names
@@ -126,6 +129,34 @@ def test_seed_all_525_insert_with_ids_preserved(tmp_path: Path):
 
     assert count == 525
     assert ids == list(range(1, 526))
+
+
+def test_seed_categories_are_fixed_nonempty_and_round_trip(tmp_path: Path):
+    db_path = tmp_path / "seed-categories.db"
+    export_dir = tmp_path / "seeds"
+    export_dir.mkdir()
+    allowed = {"Damage", "Heal", "Protect", "Control", "Move", "Detect", "Influence", "Create", "Summon", "Other"}
+    original = json.loads((REPO_ROOT / "data" / "seeds" / "seed_spells.json").read_text(encoding="utf-8"))
+
+    _init_schema(db_path)
+    _seed_spells(db_path, force=True)
+    assert len(original) == 525
+    assert all(spell["categories"] for spell in original)
+    assert all(set(spell["categories"]) <= allowed for spell in original)
+    assert all(spell["categories"] == list(dict.fromkeys(spell["categories"])) for spell in original)
+
+    original_dir = EXPORT_DB.SEEDS_DIR
+    try:
+        EXPORT_DB.SEEDS_DIR = export_dir
+        with sqlite3.connect(str(db_path)) as export_conn:
+            EXPORT_DB.export_table(export_conn.cursor(), "spells")
+    finally:
+        EXPORT_DB.SEEDS_DIR = original_dir
+
+    exported = json.loads((export_dir / "seed_spells.json").read_text(encoding="utf-8"))
+    assert {spell["id"]: spell["categories"] for spell in exported} == {
+        spell["id"]: spell["categories"] for spell in original
+    }
 
 
 def test_seed_all_525_quick_rules_are_nonblank_and_valid(tmp_path: Path):
@@ -222,10 +253,11 @@ def test_empty_collections_survive_storage(tmp_path: Path):
         conn.commit()
 
         row = conn.execute(
-            "SELECT damage, healing, higher_levels, casting_times, components, attacks, area_of_effect FROM spells WHERE id = ?",
+            "SELECT categories, damage, healing, higher_levels, casting_times, components, attacks, area_of_effect FROM spells WHERE id = ?",
             (9999,),
         ).fetchone()
         parsed = {
+            "categories": json.loads(row["categories"]),
             "damage": json.loads(row["damage"]),
             "healing": json.loads(row["healing"]),
             "higher_levels": json.loads(row["higher_levels"]),
@@ -237,6 +269,7 @@ def test_empty_collections_survive_storage(tmp_path: Path):
     finally:
         conn.close()
 
+    assert parsed["categories"] == []
     assert parsed["damage"] == []
     assert parsed["healing"] == {"amount": None, "temp_hp": False, "max_hp": False}
     assert parsed["higher_levels"] == {"text": None, "damage_by_slot": {}}
@@ -400,6 +433,7 @@ def test_quick_rules_round_trip_exact_string(tmp_path: Path):
                 "name": "Quick Rules Test",
                 "level": 1,
                 "school": "evocation",
+                "categories": ["utility", "battle"],
                 "description": "Quick rules test",
                 "quick_rules": "Deal {spell_attack_bonus} damage.",
                 "alternate_description": None,
@@ -437,6 +471,7 @@ def test_quick_rules_round_trip_exact_string(tmp_path: Path):
     exported = json.loads((export_dir / "seed_spells.json").read_text(encoding="utf-8"))
     exported_row = next(item for item in exported if item["id"] == 321)
     assert exported_row["quick_rules"] == "Deal {spell_attack_bonus} damage."
+    assert exported_row["categories"] == ["utility", "battle"]
 
 
 def test_seeded_quick_rules_round_trip_exact_strings(tmp_path: Path):

@@ -32,7 +32,7 @@ Borrowed wholesale from the `grill-me`/`grilling` skills:
 
 ## What the contract ends with
 
-A short summary — roughly one screen — that fixes the scope so implementation cannot drift:
+A detailed plan of what was decided and why. This is not a plan, it is a clear understanding of desired state:
 
 - the change to make (what is in, and what is explicitly out),
 - the paths the change touches,

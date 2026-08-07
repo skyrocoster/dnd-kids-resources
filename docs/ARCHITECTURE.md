@@ -74,6 +74,9 @@ features/dungeons/
     ├── MapLabToolbar.tsx        # shared viewer/editor toolbar preferences and tray
     ├── MapLabViewerCanvas.tsx   # viewer rail, SVG canvas, and ordered map layers
     ├── MapLabViewerOverlays.tsx # viewer inspector, room details, docks, and reset
+    ├── MapLabEditorChrome.tsx   # editor toolbar/status and responsive navigation
+    ├── MapLabEditorCanvas.tsx   # editor canvas shell, ordered layers, and placement overlays
+    ├── MapLabEditorSelection.tsx # editor selection sheet and property editors
     ├── maplabEditor.ts          # editor reducer (31 actions)
     ├── maplabPresentation.ts    # icon-bearing presentation helpers
     ├── useMapLabLayout.ts       # viewer layout fetch

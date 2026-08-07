@@ -165,6 +165,29 @@ def test_create_spell(test_client):
     assert data["id"] is not None
 
 
+def test_create_spell_categories_round_trip(test_client):
+    new_spell = {
+        "name": "Category Round Trip Spell",
+        "level": 1,
+        "school": "evocation",
+        "description": "A categorized spell",
+        "quick_rules": "Cast it, deal damage.",
+        "range": "60 feet",
+        "duration": "Instantaneous",
+        "components": ["V"],
+        "concentration": False,
+        "ritual": False,
+        "categories": ["Damage", "Protect"],
+    }
+
+    response = test_client.post("/api/spells", json=new_spell)
+    assert response.status_code == 201
+    spell_id = response.json()["id"]
+    assert response.json()["categories"] == ["Damage", "Protect"]
+    assert test_client.get(f"/api/spells/by-title/{new_spell['name']}").json()["categories"] == ["Damage", "Protect"]
+    assert test_client.get(f"/api/spells/{spell_id}").json()["categories"] == ["Damage", "Protect"]
+
+
 def test_create_spell_duplicate_name_fails(test_client):
     """Test that creating a spell with a duplicate name fails."""
     new_spell = {

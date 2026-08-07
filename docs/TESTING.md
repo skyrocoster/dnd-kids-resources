@@ -156,8 +156,8 @@ says only where the files are.
 <!-- GENERATED:TESTING:LOCATIONS:START -->
 | Location | Files | Test cases |
 |---|---|---|
-| `backend/tests/` | 16 | 392 |
-| `backend/tests/routers/` | 16 | 264 |
+| `backend/tests/` | 16 | 393 |
+| `backend/tests/routers/` | 16 | 273 |
 | `frontend/src/__tests__/` | 1 | 4 |
 | `frontend/src/api/__tests__/` | 1 | 5 |
 | `frontend/src/components/__tests__/` | 14 | 152 |

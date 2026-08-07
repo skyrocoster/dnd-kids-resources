@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
 import './MapLabPage.css'
 import './MapLabEditor.css'
 import { MapLabRouteState } from './MapLabRouteState'
@@ -9,53 +8,30 @@ import { listDungeons, listIncomingGateways } from '../../../api/client'
 import type { Dungeon, IncomingGateway } from '../../../api/types'
 import { useMapCanvasZoom, type ViewportSize } from '../../../map/useMapCanvasZoom'
 import { useCanvasStroke } from './useCanvasStroke'
-import { MapCanvas } from '../../../map/MapCanvas'
+import { MapLabEditorCanvas } from './MapLabEditorCanvas'
+import { MapLabEditorChrome, MapLabEditorNavigation } from './MapLabEditorChrome'
 import {
-  ChevronDownIcon,
-  ChevronUpIcon,
   DoorClosedIcon,
-  EraserIcon,
-  EyeIcon,
   FitIcon,
   FullscreenEnterIcon,
   FullscreenExitIcon,
-  MapIcon,
-  MousePointer2,
-  OffMapIcon,
-  PlusIcon,
   PortalIcon,
-  PropIcon,
-  RoomIcon,
-  SaveIcon,
   StairsIcon,
-  TrashIcon,
   Trees,
   Waves,
   ZoomInIcon,
   ZoomOutIcon,
 } from '../../../components/icons'
-import { InspectorPanel, type ObstacleInspectorAdapter } from './InspectorPanel'
-import { resolveMapDensity, ToolbarTray, useMapDensity, useMapLayerVisibility } from './MapLabToolbar'
-import { FixturePropertiesForm } from './FixturePropertiesForm'
-import { PropMarker } from './PropMarker'
-import { PortalMarker } from './PortalMarker'
-import { StairMarker } from './StairMarker'
-import { DoorBadgeLayer, DoorMarker } from './DoorMarker'
-import { GhostFloorLayer } from './GhostFloorLayer'
-import { FIXTURE_TYPES, PROP_KIND_ICONS, PROP_KIND_OPTIONS } from './fixtureTypes'
-import { RoomContentEditor } from './RoomContentEditor'
-import { ConnectionsResolveList } from './ConnectionsResolveList'
+import { type ObstacleInspectorAdapter } from './InspectorPanel'
+import { resolveMapDensity, useMapDensity, useMapLayerVisibility } from './MapLabToolbar'
+import { PROP_KIND_OPTIONS } from './fixtureTypes'
 import { SelectionActions } from './SelectionActions'
-import { roomIsOffMap } from './roomContent'
 import { ConfirmDialog } from '../../../components/ConfirmDialog'
 import {
   absoluteCells,
   canPaintCell,
-  doorWallSegment,
   doorsOnFloor,
-  MAX_MARKERS_PER_CELL,
   ghostFloorZ,
-  gridMarkerOffset,
   layoutBounds,
   markersAtCell,
   neighborCell,
@@ -63,12 +39,10 @@ import {
   oppositeSide,
   paddedBounds,
   propsOnFloor,
-  roomLabelAnchor,
   roomOfCell,
   roomsOnZ,
   stairCellForZ,
   stairEndpointsForZ,
-  type CardinalSide,
   defaultFixtureState,
   type FixtureState,
   type MapCell,
@@ -91,29 +65,6 @@ function edgeKey(edge: WallEdge): string {
 function mirrorEdgeKey(edge: WallEdge): string {
   const neighbor = neighborCell(edge.cell, edge.side)
   return `${neighbor[0]},${neighbor[1]},${oppositeSide(edge.side)}`
-}
-
-/** Grid-layout offset (plus whether this marker is sharing its cell) for one marker among any
- * others (stair/portal/on-square-prop) at its exact `(z, cell)` — the I3 replacement for the
- * stair-only `stairMarkerOffset`. `grouped` drives the shrink-to-fit sizing that keeps 2+ markers
- * visually distinct instead of full-size circles overlapping at `gridMarkerOffset`'s spacing. */
-function markerOffset(
-  layout: MapLayout,
-  z: number,
-  cell: MapCell,
-  type: 'stair' | 'portal' | 'prop',
-  id: number,
-): { dx: number; dy: number; grouped: boolean } {
-  const group = markersAtCell(layout, z, cell)
-  const index = group.findIndex((marker) => marker.type === type && marker.id === id)
-  return { ...gridMarkerOffset(group.length, index), grouped: group.length > 1 }
-}
-
-/** Whether `cell` already holds as many markers as `gridMarkerOffset` can lay out (a 2x2 block) —
- * placement handlers check this before dispatching so a 5th stair/portal/prop is refused with a
- * visible message instead of silently landing off-grid. */
-function cellIsFull(layout: MapLayout, z: number, cell: MapCell): boolean {
-  return markersAtCell(layout, z, cell).length >= MAX_MARKERS_PER_CELL
 }
 
 /** Clickable wall edges for door placement, deduped across a shared wall — a shared wall between
@@ -154,19 +105,6 @@ function brushCellStateForCell(
   return owner.room_id === selectedRoomId ? 'paint' : 'blocked'
 }
 
-
-function syncStatusLabel(status: 'idle' | 'saving' | 'saved' | 'error'): string {
-  switch (status) {
-    case 'saving':
-      return 'Saving…'
-    case 'saved':
-      return 'Saved'
-    case 'error':
-      return 'Save failed'
-    default:
-      return ''
-  }
-}
 
 function cellKey(cell: MapCell): string {
   return `${cell[0]},${cell[1]}`
@@ -924,22 +862,6 @@ export function MapLabEditorPage() {
     [addPortal, setActiveZ, state.activeZ, state.layout],
   )
 
-  const renderFlyoutFilter = (label: string) => (
-    <input
-      type="search"
-      className="maplab-tool-palette-filter"
-      aria-label={label}
-      placeholder="Filter tools"
-      value={flyoutFilter}
-      onChange={(event) => setFlyoutFilter(event.currentTarget.value)}
-      onKeyDown={(event) => {
-        if (event.key !== 'Enter') return
-        event.preventDefault()
-        activateTopFilteredTool()
-      }}
-    />
-  )
-
   if (route.status === 'loading' || layoutLoading) {
     return <MapLabRouteState title="Loading map editor" message="Loading dungeon layout…" variant="loading" />
   }
@@ -967,444 +889,57 @@ export function MapLabEditorPage() {
         <p className="maplab-subtitle">No saved layout yet. Your first edit will save this blank map.</p>
       )}
 
-      <div className="maplab-toolbar">
-        <ToolbarTray groupKey="editor-create" label="Create">
-          <div className="maplab-tool-palette" role="group" aria-label="Drawing tools">
-            <button
-              type="button"
-              className="maplab-pill-button maplab-tool-palette-button"
-              aria-pressed={armedTool === 'select'}
-              data-active={armedTool === 'select' || undefined}
-              onClick={() => {
-                setArmedTool('select')
-                setPlacementError(null)
-              }}
-            >
-              <MousePointer2 width={18} height={18} aria-hidden="true" />
-              Select
-            </button>
+       <MapLabEditorChrome
+         state={{ layout: state.layout, activeZ: state.activeZ, selectedRoomId: state.selectedRoomId }}
+         lastPassageTool={lastPassageTool}
+         lastTerrainTool={lastTerrainTool}
+         openFlyout={openFlyout}
+         setOpenFlyout={setOpenFlyout}
+         setArmedTool={setArmedTool}
+         setPlacementError={setPlacementError}
+         brushArmed={brushArmed}
+         eraseArmed={eraseArmed}
+         setEraseArmed={setEraseArmed}
+         selectedPropKind={selectedPropKind}
+         flyoutFilter={flyoutFilter}
+         setFlyoutFilter={setFlyoutFilter}
+         passagesMenuRef={passagesMenuRef}
+         terrainMenuRef={terrainMenuRef}
+         propMenuRef={propMenuRef}
+         passageToolOptions={passageToolOptions}
+         propKindOptions={propKindOptions}
+         terrainToolOptions={terrainToolOptions}
+         activatePassageTool={activatePassageTool}
+         activatePropKind={activatePropKind}
+         activateTerrainTool={activateTerrainTool}
+         activateTopFilteredTool={activateTopFilteredTool}
+         layerVisible={layerVisible}
+         toggleLayer={toggleLayer}
+         viewPopoverOpen={viewPopoverOpen}
+         setViewPopoverOpen={setViewPopoverOpen}
+         viewPopoverRef={viewPopoverRef}
+         mapPopoverOpen={mapPopoverOpen}
+         setMapPopoverOpen={setMapPopoverOpen}
+         mapPopoverRef={mapPopoverRef}
+         showGhostFloor={showGhostFloor}
+         setShowGhostFloor={setShowGhostFloor}
+         ghostZ={ghostZ}
+         density={density}
+         setDensity={setDensity}
+         updatePadding={updatePadding}
+         setConfirmingReset={setConfirmingReset}
+         statusSlot={statusSlot}
+         armedTool={armedTool}
+         floors={floors}
+         passagesFlyoutRef={passagesFlyoutRef}
+         terrainFlyoutRef={terrainFlyoutRef}
+         propFlyoutRef={propFlyoutRef}
+         setActiveZ={setActiveZ}
+         setTabletNavOpen={setTabletNavOpen}
+         saveStatus={saveStatus}
+       />
 
-            <button
-              type="button"
-              className="maplab-pill-button maplab-tool-palette-button"
-              aria-pressed={placeRoomMode}
-              data-active={placeRoomMode || undefined}
-              title={placeRoomMode ? 'Click again or press Escape to return to Select.' : undefined}
-              onClick={() => {
-                if (armedTool === 'room') {
-                  setArmedTool('select')
-                } else {
-                  setArmedTool('room')
-                }
-                setPlacementError(null)
-              }}
-            >
-              <RoomIcon width={18} height={18} aria-hidden="true" />
-              Room
-            </button>
-
-            <div className="maplab-tool-palette-group" ref={passagesFlyoutRef}>
-              <button
-                type="button"
-                className="maplab-pill-button maplab-tool-palette-button"
-                aria-label="Passage tools"
-                aria-pressed={placeDoorMode || placeStairMode || placePortalMode}
-                data-active={(placeDoorMode || placeStairMode || placePortalMode) || undefined}
-                title={(placeDoorMode || placeStairMode || placePortalMode) ? 'Click again or press Escape to return to Select.' : undefined}
-                onClick={() => {
-                  if (placeDoorMode || placeStairMode || placePortalMode) {
-                    setArmedTool('select')
-                  } else {
-                    setArmedTool(lastPassageTool)
-                  }
-                  setPlacementError(null)
-                  setOpenFlyout(null)
-                }}
-              >
-                {lastPassageTool === 'stair' ? (
-                  <StairsIcon width={18} height={18} aria-hidden="true" />
-                ) : lastPassageTool === 'portal' ? (
-                  <PortalIcon width={18} height={18} aria-hidden="true" />
-                ) : (
-                  <DoorClosedIcon width={18} height={18} aria-hidden="true" />
-                )}
-                Passages
-              </button>
-              <button
-                type="button"
-                className="maplab-pill-button maplab-tool-palette-flyout-toggle"
-                aria-label="Choose passage tool"
-                aria-haspopup="menu"
-                aria-expanded={openFlyout === 'passages'}
-                onClick={() => setOpenFlyout((open) => (open === 'passages' ? null : 'passages'))}
-              >
-                {openFlyout === 'passages' ? (
-                  <ChevronUpIcon width={14} height={14} aria-hidden="true" />
-                ) : (
-                  <ChevronDownIcon width={14} height={14} aria-hidden="true" />
-                )}
-              </button>
-              {openFlyout === 'passages' && passagesFlyoutRef.current && createPortal(
-                <div
-                  className="maplab-tool-palette-flyout"
-                  role="menu"
-                  ref={passagesMenuRef}
-                  style={{
-                    position: 'fixed',
-                    top: passagesFlyoutRef.current.getBoundingClientRect().bottom,
-                    left: passagesFlyoutRef.current.getBoundingClientRect().left,
-                    zIndex: 'var(--z-floating)',
-                  }}
-                >
-                  {renderFlyoutFilter('Filter passage tools')}
-                  {passageToolOptions.length === 0 ? (
-                    <p className="maplab-tool-palette-empty">No tools match that.</p>
-                  ) : passageToolOptions.map((option) => {
-                    const Icon = option.icon
-                    return (
-                      <button
-                        key={option.key}
-                        type="button"
-                        role="menuitem"
-                        className="maplab-pill-button"
-                        data-active={option.active || undefined}
-                        onClick={() => activatePassageTool(option.key)}
-                      >
-                        <Icon width={16} height={16} aria-hidden="true" />
-                        {option.label}
-                      </button>
-                    )
-                  })}
-                </div>,
-                document.body
-              )}
-            </div>
-
-            <div className="maplab-tool-palette-group" ref={propFlyoutRef}>
-              <button
-                type="button"
-                className="maplab-pill-button maplab-tool-palette-button"
-                aria-pressed={placePropMode}
-                data-active={placePropMode || undefined}
-                title={placePropMode ? 'Click again or press Escape to return to Select.' : undefined}
-                onClick={() => {
-                  if (armedTool === 'prop') {
-                    setArmedTool('select')
-                  } else {
-                    setArmedTool('prop')
-                  }
-                  setPlacementError(null)
-                  setOpenFlyout(null)
-                }}
-              >
-                <PropIcon width={18} height={18} aria-hidden="true" />
-                Prop
-              </button>
-              <button
-                type="button"
-                className="maplab-pill-button maplab-tool-palette-flyout-toggle"
-                aria-label="Choose prop kind"
-                aria-haspopup="menu"
-                aria-expanded={openFlyout === 'prop'}
-                onClick={() => setOpenFlyout((open) => (open === 'prop' ? null : 'prop'))}
-              >
-                {openFlyout === 'prop' ? (
-                  <ChevronUpIcon width={14} height={14} aria-hidden="true" />
-                ) : (
-                  <ChevronDownIcon width={14} height={14} aria-hidden="true" />
-                )}
-              </button>
-              {openFlyout === 'prop' && propFlyoutRef.current && createPortal(
-                <div
-                  className="maplab-tool-palette-flyout"
-                  role="menu"
-                  ref={propMenuRef}
-                  style={{
-                    position: 'fixed',
-                    top: propFlyoutRef.current.getBoundingClientRect().bottom,
-                    left: propFlyoutRef.current.getBoundingClientRect().left,
-                    zIndex: 'var(--z-floating)',
-                  }}
-                >
-                  {renderFlyoutFilter('Filter prop tools')}
-                  {propKindOptions.length === 0 ? (
-                    <p className="maplab-tool-palette-empty">No tools match that.</p>
-                  ) : propKindOptions.map((option) => {
-                    const KindIcon = PROP_KIND_ICONS[option.value as keyof typeof PROP_KIND_ICONS]
-                    return (
-                      <button
-                        key={option.value}
-                        type="button"
-                        role="menuitem"
-                        className="maplab-pill-button"
-                        data-active={selectedPropKind === option.value || undefined}
-                        onClick={() => activatePropKind(option.value)}
-                      >
-                        <KindIcon width={16} height={16} aria-hidden="true" />
-                        {option.label}
-                      </button>
-                    )
-                  })}
-                </div>,
-                document.body
-              )}
-            </div>
-
-            <div className="maplab-tool-palette-group" ref={terrainFlyoutRef}>
-              <button
-                type="button"
-                className="maplab-pill-button maplab-tool-palette-button"
-                aria-pressed={drawFeatureKind !== null}
-                data-active={drawFeatureKind !== null || undefined}
-                title={drawFeatureKind !== null ? 'Click again or press Escape to return to Select.' : undefined}
-                onClick={() => {
-                  if (drawFeatureKind !== null) {
-                    setArmedTool('select')
-                  } else {
-                    setArmedTool(lastTerrainTool)
-                  }
-                  setDismissZWarning(false)
-                  setPlacementError(null)
-                  setOpenFlyout(null)
-                }}
-              >
-                {lastTerrainTool === 'trees' ? (
-                  <Trees width={18} height={18} aria-hidden="true" />
-                ) : (
-                  <Waves width={18} height={18} aria-hidden="true" />
-                )}
-                Terrain
-              </button>
-              <button
-                type="button"
-                className="maplab-pill-button maplab-tool-palette-flyout-toggle"
-                aria-label="Choose terrain tool"
-                aria-haspopup="menu"
-                aria-expanded={openFlyout === 'terrain'}
-                onClick={() => setOpenFlyout((open) => (open === 'terrain' ? null : 'terrain'))}
-              >
-                {openFlyout === 'terrain' ? (
-                  <ChevronUpIcon width={14} height={14} aria-hidden="true" />
-                ) : (
-                  <ChevronDownIcon width={14} height={14} aria-hidden="true" />
-                )}
-              </button>
-              {openFlyout === 'terrain' && terrainFlyoutRef.current && createPortal(
-                <div
-                  className="maplab-tool-palette-flyout"
-                  role="menu"
-                  ref={terrainMenuRef}
-                  style={{
-                    position: 'fixed',
-                    top: terrainFlyoutRef.current.getBoundingClientRect().bottom,
-                    left: terrainFlyoutRef.current.getBoundingClientRect().left,
-                    zIndex: 'var(--z-floating)',
-                  }}
-                >
-                  {renderFlyoutFilter('Filter terrain tools')}
-                  {terrainToolOptions.length === 0 ? (
-                    <p className="maplab-tool-palette-empty">No tools match that.</p>
-                  ) : terrainToolOptions.map((option) => {
-                    const Icon = option.icon
-                    return (
-                      <button
-                        key={option.key}
-                        type="button"
-                        role="menuitem"
-                        className="maplab-pill-button"
-                        data-active={option.active || undefined}
-                        onClick={() => activateTerrainTool(option.key)}
-                      >
-                        <Icon width={16} height={16} aria-hidden="true" />
-                        {option.label}
-                      </button>
-                    )
-                  })}
-                </div>,
-                document.body
-              )}
-            </div>
-          </div>
-
-          {brushArmed && (
-            <div className="maplab-tool-options" role="group" aria-label="Brush options">
-              <button
-                type="button"
-                className="maplab-pill-button maplab-tool-options-erase"
-                aria-pressed={eraseArmed}
-                data-active={eraseArmed || undefined}
-                onClick={() => setEraseArmed((active) => !active)}
-              >
-                <EraserIcon width={18} height={18} aria-hidden="true" />
-                Erase
-              </button>
-            </div>
-          )}
-
-        </ToolbarTray>
-        <div className="maplab-view-popover-wrap" ref={viewPopoverRef}>
-          <button
-            type="button"
-            className="maplab-pill-button maplab-editor-toolbar-button"
-            aria-haspopup="true"
-            aria-expanded={viewPopoverOpen}
-            data-active={viewPopoverOpen || undefined}
-            onClick={() => setViewPopoverOpen((open) => !open)}
-          >
-            <EyeIcon width={18} height={18} aria-hidden="true" />
-            View
-          </button>
-          {viewPopoverOpen && (
-            <div className="maplab-view-popover" role="menu">
-              <button
-                type="button"
-                className="maplab-pill-button maplab-layer-toggle-button"
-                aria-pressed={layerVisible.outside}
-                data-active={layerVisible.outside || undefined}
-                onClick={() => toggleLayer('outside')}
-              >
-                Outside
-              </button>
-              <button
-                type="button"
-                className="maplab-pill-button maplab-layer-toggle-button"
-                aria-pressed={layerVisible.props}
-                data-active={layerVisible.props || undefined}
-                onClick={() => toggleLayer('props')}
-              >
-                Props
-              </button>
-              <button
-                type="button"
-                className="maplab-pill-button maplab-layer-toggle-button"
-                aria-pressed={layerVisible.passages}
-                data-active={layerVisible.passages || undefined}
-                onClick={() => toggleLayer('passages')}
-              >
-                Passages
-              </button>
-              <button
-                type="button"
-                className="maplab-pill-button maplab-layer-toggle-button"
-                aria-pressed={layerVisible.labels}
-                data-active={layerVisible.labels || undefined}
-                onClick={() => toggleLayer('labels')}
-              >
-                Labels
-              </button>
-              <button
-                type="button"
-                className="maplab-pill-button maplab-editor-toolbar-button"
-                aria-pressed={showGhostFloor}
-                data-active={showGhostFloor || undefined}
-                disabled={ghostZ === null}
-                onClick={() => setShowGhostFloor((active) => !active)}
-              >
-                Ghost lower floor
-              </button>
-              <button
-                type="button"
-                className="maplab-pill-button"
-                aria-pressed={density === 'detailed'}
-                data-active={density === 'detailed' || undefined}
-                onClick={() => setDensity('detailed')}
-              >
-                Detailed
-              </button>
-              <button
-                type="button"
-                className="maplab-pill-button"
-                aria-pressed={density === 'auto'}
-                data-active={density === 'auto' || undefined}
-                onClick={() => setDensity('auto')}
-              >
-                Auto
-              </button>
-              <button
-                type="button"
-                className="maplab-pill-button"
-                aria-pressed={density === 'simple'}
-                data-active={density === 'simple' || undefined}
-                onClick={() => setDensity('simple')}
-              >
-                Simple
-              </button>
-            </div>
-          )}
-        </div>
-        <div className="maplab-map-popover-wrap" ref={mapPopoverRef}>
-          <button
-            type="button"
-            className="maplab-pill-button maplab-editor-toolbar-button"
-            aria-haspopup="true"
-            aria-expanded={mapPopoverOpen}
-            data-active={mapPopoverOpen || undefined}
-            onClick={() => setMapPopoverOpen((open) => !open)}
-          >
-            <MapIcon width={18} height={18} aria-hidden="true" />
-            Map
-          </button>
-          {mapPopoverOpen && (
-            <div className="maplab-map-popover" role="menu">
-              <label className="maplab-field-row maplab-room-content-field maplab-editor-padding-input">
-                <span>Top</span>
-                <input type="number" min={0} value={state.layout.meta.padding.top}
-                  onChange={(event) => updatePadding({ ...state.layout.meta.padding, top: Number(event.target.value) })} />
-              </label>
-              <label className="maplab-field-row maplab-room-content-field maplab-editor-padding-input">
-                <span>Right</span>
-                <input type="number" min={0} value={state.layout.meta.padding.right}
-                  onChange={(event) => updatePadding({ ...state.layout.meta.padding, right: Number(event.target.value) })} />
-              </label>
-              <label className="maplab-field-row maplab-room-content-field maplab-editor-padding-input">
-                <span>Bottom</span>
-                <input type="number" min={0} value={state.layout.meta.padding.bottom}
-                  onChange={(event) => updatePadding({ ...state.layout.meta.padding, bottom: Number(event.target.value) })} />
-              </label>
-              <label className="maplab-field-row maplab-room-content-field maplab-editor-padding-input">
-                <span>Left</span>
-                <input type="number" min={0} value={state.layout.meta.padding.left}
-                  onChange={(event) => updatePadding({ ...state.layout.meta.padding, left: Number(event.target.value) })} />
-              </label>
-              <button
-                type="button"
-                className="maplab-pill-button maplab-editor-toolbar-button"
-                onClick={() => setConfirmingReset(true)}
-              >
-                Reset unsaved changes
-              </button>
-            </div>
-          )}
-        </div>
-        <div className="maplab-floor-tabs" role="tablist" aria-label="Dungeon floors">
-            {floors.map((floor) => (
-              <button
-                key={floor.z}
-                type="button"
-                role="tab"
-                className="maplab-pill-button maplab-floor-tab"
-                aria-selected={floor.z === state.activeZ}
-                onClick={() => {
-                  setActiveZ(floor.z)
-                  setTabletNavOpen(false)
-                }}
-              >
-                {floor.title ?? `Floor ${floor.z}`}
-              </button>
-            ))}
-        </div>
-      </div>
-
-      {statusSlot &&
-        createPortal(
-          <span className="maplab-editor-save-status" data-status={saveStatus.status} role="status" aria-live="polite">
-            <SaveIcon width={16} height={16} aria-hidden="true" />
-            {syncStatusLabel(saveStatus.status)}
-          </span>,
-          statusSlot,
-        )}
-
-      {drawFeatureKind !== null && state.activeZ !== 0 && !dismissZWarning && (
+       {drawFeatureKind !== null && state.activeZ !== 0 && !dismissZWarning && (
         <p className="maplab-placement-error" role="status">
           Rivers and woods usually sit on the ground floor. Draw it here anyway?
           <button
@@ -1419,109 +954,28 @@ export function MapLabEditorPage() {
       )}
 
       <div className="maplab-editor-layout">
-        <button
-          type="button"
-          className="maplab-pill-button maplab-editor-nav-toggle"
-          aria-label="Open map editor navigation"
-          aria-expanded={tabletNavOpen}
-          aria-controls="maplab-editor-navigation"
-          onClick={() => setTabletNavOpen((open) => !open)}
-        >
-          Floors, rooms, and connections
-        </button>
-        <div
-          id="maplab-editor-navigation"
-          className="maplab-editor-nav-rail"
-          data-open={tabletNavOpen || undefined}
-        >
-          <div className="maplab-floor-tabs maplab-editor-nav-floor-tabs" aria-hidden="true" />
-          <div className="maplab-editor-floor-actions" aria-label="Floor actions">
-            <button
-              type="button"
-              className="maplab-pill-button maplab-editor-floor-action"
-              disabled={hasFloorAbove}
-              onClick={() => addFloorAbove()}
-            >
-              <PlusIcon width={16} height={16} aria-hidden="true" />
-              Add floor above
-            </button>
-            <button
-              type="button"
-              className="maplab-pill-button maplab-editor-floor-action"
-              disabled={hasFloorBelow}
-              onClick={() => addFloorBelow()}
-            >
-              <PlusIcon width={16} height={16} aria-hidden="true" />
-              Add floor below
-            </button>
-          </div>
-
-          <button
-            type="button"
-            className="maplab-pill-button maplab-editor-room-list-new"
-            onClick={() => {
-              selectRoom(null)
-              setArmedTool('room')
-              setPlacementError(null)
-            }}
-          >
-            <PlusIcon width={16} height={16} aria-hidden="true" />
-            New room
-          </button>
-
-          <ul className="maplab-editor-room-list" aria-label="Rooms on this floor">
-            {roomsOnActiveFloor.map((room) => (
-              <li
-                key={room.room_id}
-                className="maplab-editor-room-item"
-                data-selected={room.room_id === state.selectedRoomId || undefined}
-                data-off-map={roomIsOffMap(room) || undefined}
-              >
-                <button
-                  type="button"
-                  className="maplab-editor-room-item-select"
-                  aria-pressed={room.room_id === state.selectedRoomId}
-                  onClick={() => {
-                    const nextRoomId = room.room_id === state.selectedRoomId ? null : room.room_id
-                    selectRoom(nextRoomId)
-                    if (nextRoomId !== null) setArmedTool('room')
-                  }}
-                >
-                  {room.title ?? `Room ${room.room_id}`}
-                  {roomIsOffMap(room) && (
-                    <span className="maplab-editor-room-offmap">
-                      <OffMapIcon width={14} height={14} aria-hidden="true" />
-                      not on the map
-                    </span>
-                  )}
-                </button>
-                <button
-                  type="button"
-                  className="maplab-editor-room-item-delete"
-                  aria-label={`Delete ${room.title ?? `Room ${room.room_id}`}`}
-                  onClick={() => setRoomToDelete(room)}
-                >
-                  <TrashIcon width={16} height={16} aria-hidden="true" />
-                </button>
-              </li>
-            ))}
-            {roomsOnActiveFloor.length === 0 && <li className="maplab-editor-room-list-empty">No rooms on this floor yet.</li>}
-          </ul>
-
-          <ConnectionsResolveList
-            layout={state.layout}
-            dungeons={dungeons}
-            incomingGateways={incomingGateways}
-            connectionsLoaded={connectionsLoaded}
-            connectionsLoadError={connectionsLoadError}
-            onResolve={(portal) => {
-              setActiveZ(portal.z)
-              selectPortal(portal.portal_id)
-            }}
-            onRemoveGateway={(portal) => setGatewayToRemove(portal)}
-            onAddReturnGateway={handleAddReturnGateway}
-          />
-        </div>
+        <MapLabEditorNavigation
+          state={{ layout: state.layout, activeZ: state.activeZ, selectedRoomId: state.selectedRoomId }}
+          tabletNavOpen={tabletNavOpen}
+          setTabletNavOpen={setTabletNavOpen}
+          hasFloorAbove={hasFloorAbove}
+          hasFloorBelow={hasFloorBelow}
+          addFloorAbove={addFloorAbove}
+          addFloorBelow={addFloorBelow}
+          roomsOnActiveFloor={roomsOnActiveFloor}
+          selectRoom={selectRoom}
+          setArmedTool={setArmedTool}
+          setPlacementError={setPlacementError}
+          setRoomToDelete={setRoomToDelete}
+          dungeons={dungeons}
+          incomingGateways={incomingGateways}
+          connectionsLoaded={connectionsLoaded}
+          connectionsLoadError={connectionsLoadError}
+          setActiveZ={setActiveZ}
+          selectPortal={selectPortal}
+          setGatewayToRemove={setGatewayToRemove}
+          handleAddReturnGateway={handleAddReturnGateway}
+        />
         <button
           type="button"
           className="maplab-editor-nav-backdrop"
@@ -1530,7 +984,7 @@ export function MapLabEditorPage() {
           onClick={() => setTabletNavOpen(false)}
         />
 
-        <MapCanvas
+        <MapLabEditorCanvas
           viewBox={viewBox}
           bounds={bounds}
           zoom={zoomApi.zoom}
@@ -1645,515 +1099,76 @@ export function MapLabEditorPage() {
               </div>
             </>
           }
-        >
-          <defs>
-            <pattern id="feature-river-pattern" patternUnits="userSpaceOnUse" width={CELL_SIZE} height={CELL_SIZE}>
-              <rect width={CELL_SIZE} height={CELL_SIZE} fill="var(--feature-river-fill)" />
-              <line x1={0} y1={CELL_SIZE * 0.35} x2={CELL_SIZE} y2={CELL_SIZE * 0.35} stroke="var(--md-arcane)" strokeWidth={1.5} strokeDasharray="4 3" />
-              <line x1={0} y1={CELL_SIZE * 0.65} x2={CELL_SIZE} y2={CELL_SIZE * 0.65} stroke="var(--md-arcane)" strokeWidth={1.5} strokeDasharray="4 3" />
-            </pattern>
-            <pattern id="feature-trees-pattern" patternUnits="userSpaceOnUse" width={CELL_SIZE} height={CELL_SIZE}>
-              <rect width={CELL_SIZE} height={CELL_SIZE} fill="var(--feature-trees-fill)" />
-              <circle cx={CELL_SIZE * 0.25} cy={CELL_SIZE * 0.3} r={3} fill="var(--md-nature)" opacity={0.55} />
-              <circle cx={CELL_SIZE * 0.7} cy={CELL_SIZE * 0.45} r={2.5} fill="var(--md-nature)" opacity={0.45} />
-              <circle cx={CELL_SIZE * 0.4} cy={CELL_SIZE * 0.7} r={3.5} fill="var(--md-nature)" opacity={0.4} />
-              <circle cx={CELL_SIZE * 0.75} cy={CELL_SIZE * 0.75} r={2} fill="var(--md-nature)" opacity={0.55} />
-            </pattern>
-          </defs>
+           state={state}
+           layerVisible={layerVisible}
+           showGhostFloor={showGhostFloor}
+           ghostZ={ghostZ}
+           ghostRooms={ghostRooms}
+           ghostDoors={ghostDoors}
+           ghostProps={ghostProps}
+           ghostFeatures={ghostFeatures}
+           featuresOnActiveFloor={featuresOnActiveFloor}
+           roomsOnActiveFloor={roomsOnActiveFloor}
+           doorsOnActiveFloor={doorsOnActiveFloor}
+           stairsOnActiveFloor={stairsOnActiveFloor}
+           portalsOnActiveFloor={portalsOnActiveFloor}
+           propsOnActiveFloor={propsOnActiveFloor}
+           placementEdges={placementEdges}
+           strokeCells={strokeCells}
+           placeRoomMode={placeRoomMode}
+           eraseArmed={eraseArmed}
+           placePropMode={placePropMode}
+           placeDoorMode={placeDoorMode}
+           placeStairMode={placeStairMode}
+           placePortalMode={placePortalMode}
+           drawFeatureKind={drawFeatureKind}
+           simplified={simplified}
+           selectedPropKind={selectedPropKind}
+           selectFeature={selectFeature}
+           selectRoom={selectRoom}
+           selectDoor={selectDoor}
+           selectStair={selectStair}
+           selectPortal={selectPortal}
+           selectProp={selectProp}
+           addProp={addProp}
+           addDoor={addDoor}
+           addStair={addStair}
+           addPortal={addPortal}
+           setArmedTool={setArmedTool}
+           setPlacementError={setPlacementError}
+           brushCellStateForCell={brushCellStateForCell}
+        />
 
-          {layerVisible.outside && (
-            <rect
-            className="maplab-unknown-space"
-            x={bounds.minX * CELL_SIZE}
-            y={bounds.minY * CELL_SIZE}
-            width={(bounds.maxX - bounds.minX + 1) * CELL_SIZE}
-            height={(bounds.maxY - bounds.minY + 1) * CELL_SIZE}
-            fill="var(--maplab-outside-fill)"
-            onClick={() => {
-              if (drawFeatureKind || placeDoorMode || placePropMode || placeStairMode || placePortalMode) return
-              if (state.selectedRoomId !== null) return
-            }}
-          />
-          )}
-
-          {showGhostFloor && ghostZ !== null && (
-            <GhostFloorLayer rooms={ghostRooms} doors={ghostDoors} props={ghostProps} features={ghostFeatures} cellSize={CELL_SIZE} />
-          )}
-
-          {layerVisible.outside && featuresOnActiveFloor.map((feature) => (
-            <g
-              key={feature.feature_id}
-              className="maplab-feature"
-              data-feature-kind={feature.kind}
-              data-selected={feature.feature_id === state.selectedFeatureId || undefined}
-              role="button"
-              tabIndex={0}
-              aria-pressed={feature.feature_id === state.selectedFeatureId}
-              aria-label={feature.title ?? feature.kind}
-              onClick={() => selectFeature(feature.feature_id === state.selectedFeatureId ? null : feature.feature_id)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter' || event.key === ' ') {
-                  event.preventDefault()
-                  selectFeature(feature.feature_id === state.selectedFeatureId ? null : feature.feature_id)
-                }
-              }}
-            >
-              {feature.cells.map(([x, y]) => (
-                <rect
-                  key={`${x}-${y}`}
-                  className="maplab-feature-cell"
-                  x={x * CELL_SIZE}
-                  y={y * CELL_SIZE}
-                  width={CELL_SIZE}
-                  height={CELL_SIZE}
-                  fill={`url(#feature-${feature.kind}-pattern)`}
-                />
-              ))}
-            </g>
-          ))}
-
-          {roomsOnActiveFloor.filter((room) => !roomIsOffMap(room)).map((room) => (
-            <g
-              key={room.room_id}
-              className="maplab-room"
-              data-selected={room.room_id === state.selectedRoomId || undefined}
-              role="button"
-              tabIndex={0}
-              aria-pressed={room.room_id === state.selectedRoomId}
-              aria-label={room.title ?? `Room ${room.room_id}`}
-              onClick={() => {
-                const nextRoomId = room.room_id === state.selectedRoomId ? null : room.room_id
-                selectRoom(nextRoomId)
-                if (nextRoomId !== null) setArmedTool('room')
-              }}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter' || event.key === ' ') {
-                  event.preventDefault()
-                  const nextRoomId = room.room_id === state.selectedRoomId ? null : room.room_id
-                  selectRoom(nextRoomId)
-                  if (nextRoomId !== null) setArmedTool('room')
-                }
-              }}
-            >
-              {absoluteCells(room).map(([x, y]) => (
-                <rect
-                  key={`${x}-${y}`}
-                  className="maplab-room-cell"
-                  x={x * CELL_SIZE}
-                  y={y * CELL_SIZE}
-                  width={CELL_SIZE}
-                  height={CELL_SIZE}
-                />
-              ))}
-              {nonDoorWallSegments(room, doorsOnActiveFloor).map((edge) => {
-                const segment = doorWallSegment(edge, CELL_SIZE)
-                return (
-                  <line
-                    key={`${edge.cell[0]}-${edge.cell[1]}-${edge.side}`}
-                    className="maplab-wall"
-                    x1={segment.x1}
-                    y1={segment.y1}
-                    x2={segment.x2}
-                    y2={segment.y2}
-                  />
-                )
-              })}
-              {layerVisible.labels && (() => {
-                const anchor = roomLabelAnchor(room, CELL_SIZE)
-                return (
-                  <text className="maplab-room-title" x={anchor.x} y={anchor.y}>
-                    {room.title ?? `Room ${room.room_id}`}
-                  </text>
-                )
-              })()}
-            </g>
-          ))}
-
-          {placeRoomMode && strokeCells.length > 0 && (
-            <g className="maplab-room-brush-preview" aria-hidden="true">
-              {strokeCells.map((cell) => {
-                const [x, y] = cell
-                const brushState = brushCellStateForCell(state.layout, state.activeZ, state.selectedRoomId, eraseArmed, cell)
-                return (
-                  <rect
-                    key={`${x}-${y}`}
-                    className="maplab-room-brush-cell"
-                    data-brush-state={brushState}
-                    x={x * CELL_SIZE}
-                    y={y * CELL_SIZE}
-                    width={CELL_SIZE}
-                    height={CELL_SIZE}
-                  />
-                )
-              })}
-            </g>
-          )}
-
-          {layerVisible.passages && doorsOnActiveFloor.map((door) => {
-            const isSelected = door.door_id === state.selectedDoorId
-            return (
-              <DoorMarker
-                key={door.door_id}
-                door={door}
-                cellSize={CELL_SIZE}
-                selected={isSelected}
-                onClick={() => selectDoor(isSelected ? null : door.door_id)}
-              />
-            )
-          })}
-          {layerVisible.passages && (
-            <g className="maplab-door-badge-layer" aria-hidden="true">
-              {doorsOnActiveFloor.map((door) => <DoorBadgeLayer key={door.door_id} door={door} cellSize={CELL_SIZE} />)}
-            </g>
-          )}
-
-          {layerVisible.passages && stairsOnActiveFloor.map((stair) => {
-            const cell = stairCellForZ(stair, state.activeZ)
-            if (!cell) return null
-            const { dx, dy, grouped } = markerOffset(state.layout, state.activeZ, cell, 'stair', stair.stair_id)
-            const isSelected = stair.stair_id === state.selectedStairId
-            return (
-              <StairMarker
-                key={stair.stair_id}
-                stair={stair}
-                cellSize={CELL_SIZE}
-                cell={cell}
-                activeZ={state.activeZ}
-                selected={isSelected}
-                offset={{ dx, dy }}
-                grouped={grouped}
-                simplified={simplified}
-                onClick={() => selectStair(isSelected ? null : stair.stair_id)}
-              />
-            )
-          })}
-
-          {layerVisible.passages && portalsOnActiveFloor.map((portal) => {
-            const { grouped, ...offset } = markerOffset(state.layout, state.activeZ, portal.cell, 'portal', portal.portal_id)
-            return (
-              <PortalMarker
-                key={portal.portal_id}
-                portal={portal}
-                cellSize={CELL_SIZE}
-                selected={portal.portal_id === state.selectedPortalId}
-                offset={offset}
-                grouped={grouped}
-                simplified={simplified}
-                onClick={() => selectPortal(portal.portal_id === state.selectedPortalId ? null : portal.portal_id)}
-              />
-            )
-          })}
-
-          {placePropMode && (
-            <g className="maplab-prop-placement-overlay">
-              {roomsOnActiveFloor.flatMap((room) =>
-                absoluteCells(room).map(([x, y]) => (
-                  <rect
-                    key={`${room.room_id}-${x}-${y}`}
-                    className="maplab-prop-placement-cell"
-                    x={x * CELL_SIZE}
-                    y={y * CELL_SIZE}
-                    width={CELL_SIZE}
-                    height={CELL_SIZE}
-                    role="button"
-                    aria-label={`Place prop at ${x}, ${y}`}
-                    onClick={(event) => {
-                      event.stopPropagation()
-                      if (cellIsFull(state.layout, state.activeZ, [x, y])) {
-                        setPlacementError(`That square already has ${MAX_MARKERS_PER_CELL} markers — pick a different square.`)
-                        return
-                      }
-                      setPlacementError(null)
-                      addProp([x, y], selectedPropKind)
-                    }}
-                  />
-                ))
-              )}
-            </g>
-          )}
-
-          {placeDoorMode && (
-            <g className="maplab-door-placement-overlay">
-              {placementEdges.map((edge) => {
-                const segment = doorWallSegment(edge, CELL_SIZE)
-                const isHorizontal = segment.y1 === segment.y2
-                const hitBandDepth = 40
-                const hitRect = isHorizontal
-                  ? {
-                      x: Math.min(segment.x1, segment.x2),
-                      y: segment.y1 - hitBandDepth / 2,
-                      width: Math.abs(segment.x2 - segment.x1),
-                      height: hitBandDepth,
-                    }
-                  : {
-                      x: segment.x1 - hitBandDepth / 2,
-                      y: Math.min(segment.y1, segment.y2),
-                      width: hitBandDepth,
-                      height: Math.abs(segment.y2 - segment.y1),
-                    }
-                const handleDoorPlacement = (event: { stopPropagation: () => void }) => {
-                  event.stopPropagation()
-                  addDoor(edge.cell, edge.side as CardinalSide)
-                  setArmedTool('select')
-                }
-                return (
-                  <g key={edgeKey(edge)}>
-                    <rect
-                      className="maplab-door-placement-hitband"
-                      x={hitRect.x}
-                      y={hitRect.y}
-                      width={hitRect.width}
-                      height={hitRect.height}
-                      role="button"
-                      aria-label={`Place door at ${edge.cell[0]}, ${edge.cell[1]} ${edge.side}`}
-                      onClick={handleDoorPlacement}
-                    />
-                    <line
-                      className="maplab-door-placement-edge"
-                      x1={segment.x1}
-                      y1={segment.y1}
-                      x2={segment.x2}
-                      y2={segment.y2}
-                    />
-                  </g>
-                )
-              })}
-            </g>
-          )}
-
-          {placeStairMode && (
-            <g className="maplab-stair-placement-overlay">
-              {roomsOnActiveFloor.flatMap((room) =>
-                absoluteCells(room).map(([x, y]) => (
-                  <rect
-                    key={`${room.room_id}-${x}-${y}`}
-                    className="maplab-stair-placement-cell"
-                    x={x * CELL_SIZE}
-                    y={y * CELL_SIZE}
-                    width={CELL_SIZE}
-                    height={CELL_SIZE}
-                    role="button"
-                    aria-label={`Place stair at ${x}, ${y}`}
-                    onClick={(event) => {
-                      event.stopPropagation()
-                      if (cellIsFull(state.layout, state.activeZ, [x, y])) {
-                        setPlacementError(`That square already has ${MAX_MARKERS_PER_CELL} markers — pick a different square.`)
-                        return
-                      }
-                      setPlacementError(null)
-                      addStair({ z: state.activeZ, cell: [x, y] })
-                    }}
-                  />
-                ))
-              )}
-            </g>
-          )}
-
-          {placePortalMode && (
-            <g className="maplab-portal-placement-overlay">
-              {roomsOnActiveFloor.flatMap((room) =>
-                absoluteCells(room).map(([x, y]) => (
-                  <rect
-                    key={`${room.room_id}-${x}-${y}`}
-                    className="maplab-portal-placement-cell"
-                    x={x * CELL_SIZE}
-                    y={y * CELL_SIZE}
-                    width={CELL_SIZE}
-                    height={CELL_SIZE}
-                    role="button"
-                    aria-label={`Place portal at ${x}, ${y}`}
-                    onClick={(event) => {
-                      event.stopPropagation()
-                      if (cellIsFull(state.layout, state.activeZ, [x, y])) {
-                        setPlacementError(`That square already has ${MAX_MARKERS_PER_CELL} markers — pick a different square.`)
-                        return
-                      }
-                      setPlacementError(null)
-                      addPortal([x, y])
-                    }}
-                  />
-                ))
-              )}
-            </g>
-          )}
-
-          {drawFeatureKind && (
-            <rect
-              className="maplab-feature-stroke-overlay"
-              x={bounds.minX * CELL_SIZE}
-              y={bounds.minY * CELL_SIZE}
-              width={(bounds.maxX - bounds.minX + 1) * CELL_SIZE}
-              height={(bounds.maxY - bounds.minY + 1) * CELL_SIZE}
-              fill="transparent"
-              aria-hidden="true"
-            />
-          )}
-
-          {/* Rendered after the paint/placement overlays so a prop marker always stays on top and
-           * clickable — the room brush preview in particular can cover cells of the selected room
-           * (including ones a prop sits on), and would otherwise swallow the prop's click/hover. */}
-          {layerVisible.props && propsOnActiveFloor.map((prop) => {
-            const propOffset =
-              prop.side === undefined ? markerOffset(state.layout, state.activeZ, prop.cell, 'prop', prop.prop_id) : undefined
-            return (
-              <PropMarker
-                key={prop.prop_id}
-                prop={prop}
-                cellSize={CELL_SIZE}
-                selected={prop.prop_id === state.selectedPropId}
-                offset={propOffset}
-                grouped={propOffset?.grouped}
-                simplified={simplified}
-                onClick={() => selectProp(prop.prop_id === state.selectedPropId ? null : prop.prop_id)}
-              />
-            )
-          })}
-        </MapCanvas>
-
-        {selectionActions && (
-          <aside
-            className="maplab-inspector-rail maplab-selection-sheet"
-            aria-label={`${selectedItemName} editor`}
-            data-expanded={selectionSheetExpanded || undefined}
-          >
-            <div className="maplab-selection-sheet-peek">
-              <strong>{selectedItemName}</strong>
-              <button
-                type="button"
-                className="maplab-pill-button maplab-selection-sheet-toggle"
-                aria-expanded={selectionSheetExpanded}
-                aria-controls="maplab-selection-sheet-content"
-                onClick={() => setSelectionSheetExpanded((expanded) => !expanded)}
-              >
-                {selectionSheetExpanded ? 'Collapse editor' : 'Edit'}
-              </button>
-              {selectionActions}
-            </div>
-            <div className="maplab-selection-sheet-content" id="maplab-selection-sheet-content">
-          {selectedFeature ? (
-            <>
-              <InspectorPanel target={{ kind: 'feature', feature: selectedFeature }} />
-              <div className="maplab-field-row">
-                <label>Kind</label>
-                <select
-                  value={selectedFeature.kind}
-                  onChange={(e) => updateFeatureMeta(selectedFeature.feature_id, { kind: e.target.value })}
-                >
-                  {FEATURE_KIND_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="maplab-field-row">
-                <label>Title</label>
-                <input
-                  type="text"
-                  value={selectedFeature.title ?? ''}
-                  onChange={(e) => updateFeatureMeta(selectedFeature.feature_id, { title: e.target.value })}
-                />
-              </div>
-            </>
-          ) : selectedDoor ? (
-            <>
-              <InspectorPanel
-                target={{ kind: 'door', door: selectedDoor }}
-                adapter={authoredInspectorAdapter(selectedDoor, 'door', selectedDoor.door_id, updateFixtureFlags)}
-              />
-              <FixturePropertiesForm
-                spec={FIXTURE_TYPES.door}
-                values={selectedDoor as unknown as Record<string, unknown>}
-                onChange={(key, value) => updateFixtureFlags(selectedDoor.door_id, 'door', { [key]: value })}
-              />
-            </>
-          ) : selectedRoom ? (
-            <>
-              <RoomContentEditor
-                key={selectedRoom.room_id}
-                room={selectedRoom}
-                dungeonRoom={selectedDungeonRoom}
-                onUpdateRoomTitle={updateRoomTitle}
-                onUpdateRoomWallKind={updateRoomWallKind}
-                onUpdateRoomEntries={updateRoomEntries}
-                onUpdateRoomNpcs={updateRoomNpcs}
-                onCreateRoomData={createRoomData}
-              />
-            </>
-          ) : selectedProp ? (
-            <>
-              <InspectorPanel
-                target={{ kind: 'prop', prop: selectedProp }}
-                adapter={authoredInspectorAdapter(selectedProp, 'prop', selectedProp.prop_id, updateFixtureFlags)}
-              />
-              <FixturePropertiesForm
-                spec={FIXTURE_TYPES.prop}
-                values={{ ...selectedProp, side: selectedProp.side ?? 'Off' } as unknown as Record<string, unknown>}
-                onChange={(key, value) =>
-                  updateFixtureFlags(selectedProp.prop_id, 'prop', {
-                    [key]: key === 'side' && value === 'Off' ? undefined : value,
-                  })
-                }
-              />
-            </>
-          ) : selectedStair ? (
-            <>
-              <InspectorPanel
-                target={{ kind: 'stair', stair: selectedStair }}
-                adapter={authoredInspectorAdapter(selectedStair, 'stair', selectedStair.stair_id, updateFixtureFlags)}
-              />
-              <div className="maplab-field-row maplab-stair-direction-row">
-                <label htmlFor="maplab-stair-direction-up">
-                  {stairUpFloor !== null ? `Stairs up to floor ${stairUpFloor}` : 'Stairs up (no floor above)'}
-                </label>
-                <input
-                  id="maplab-stair-direction-up"
-                  type="checkbox"
-                  disabled={stairUpFloor === null || !selectedStairCell}
-                  checked={hasStairInDirection('up')}
-                  onChange={(event) =>
-                    selectedStairCell &&
-                    setStairDirection(state.activeZ, selectedStairCell, 'up', event.target.checked)
-                  }
-                />
-              </div>
-              <div className="maplab-field-row maplab-stair-direction-row">
-                <label htmlFor="maplab-stair-direction-down">
-                  {stairDownFloor !== null ? `Stairs down to floor ${stairDownFloor}` : 'Stairs down (no floor below)'}
-                </label>
-                <input
-                  id="maplab-stair-direction-down"
-                  type="checkbox"
-                  disabled={stairDownFloor === null || !selectedStairCell}
-                  checked={hasStairInDirection('down')}
-                  onChange={(event) =>
-                    selectedStairCell &&
-                    setStairDirection(state.activeZ, selectedStairCell, 'down', event.target.checked)
-                  }
-                />
-              </div>
-              <FixturePropertiesForm
-                spec={FIXTURE_TYPES.stair}
-                values={selectedStair as unknown as Record<string, unknown>}
-                onChange={(key, value) => updateFixtureFlags(selectedStair.stair_id, 'stair', { [key]: value })}
-              />
-            </>
-          ) : selectedPortal ? (
-            <>
-              <InspectorPanel
-                target={{ kind: 'portal', portal: selectedPortal }}
-                adapter={authoredInspectorAdapter(selectedPortal, 'portal', selectedPortal.portal_id, updateFixtureFlags)}
-              />
-              <FixturePropertiesForm
-                spec={FIXTURE_TYPES.portal}
-                values={selectedPortal as unknown as Record<string, unknown>}
-                layout={state.layout}
-                currentDungeonId={route.dungeonId ?? undefined}
-                onChange={(key, value) => updateFixtureFlags(selectedPortal.portal_id, 'portal', { [key]: value })}
-              />
-              </>
-            ) : null}
-            </div>
-          </aside>
-        )}
+        <MapLabEditorSelection
+          selectionActions={selectionActions}
+          selectedItemName={selectedItemName}
+          selectionSheetExpanded={selectionSheetExpanded}
+          onToggleExpanded={() => setSelectionSheetExpanded((expanded) => !expanded)}
+          selectedFeature={selectedFeature}
+          selectedDoor={selectedDoor}
+          selectedRoom={selectedRoom}
+          selectedDungeonRoom={selectedDungeonRoom}
+          selectedProp={selectedProp}
+          selectedStair={selectedStair}
+          selectedStairCell={selectedStairCell}
+          selectedPortal={selectedPortal}
+          stairUpFloor={stairUpFloor}
+          stairDownFloor={stairDownFloor}
+          hasStairInDirection={hasStairInDirection}
+          activeZ={state.activeZ}
+          routeDungeonId={route.dungeonId ?? undefined}
+          layout={state.layout}
+          updateFeatureMeta={updateFeatureMeta}
+          updateFixtureFlags={updateFixtureFlags}
+          updateRoomTitle={updateRoomTitle}
+          updateRoomWallKind={updateRoomWallKind}
+          updateRoomEntries={updateRoomEntries}
+          updateRoomNpcs={updateRoomNpcs}
+          createRoomData={createRoomData}
+          setStairDirection={setStairDirection}
+          authoredInspectorAdapter={authoredInspectorAdapter}
+          featureKindOptions={FEATURE_KIND_OPTIONS}
+        />
       </div>
 
       {roomToDelete && (
@@ -2193,3 +1208,4 @@ export function MapLabEditorPage() {
     </div>
   )
 }
+import { MapLabEditorSelection } from './MapLabEditorSelection'

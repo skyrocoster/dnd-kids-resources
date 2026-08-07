@@ -30,6 +30,7 @@ Completed plans are archived here for reference. Each directory under `docs/plan
 - [The Loom — Weaver's Workspace (UI/UX Pass)](loom-weavers-workspace/loom-weavers-workspace.md) — LU0–LU5 complete. — (The Loom)
 - [Loot System — Plan Doc](loot_plan/loot_plan.md) — Loot system complete. — (Reference)
 - [Map Obstacle State - authored baselines and one persisted run overlay](map-obstacle-state/map-obstacle-state.md) — Complete. — (dungeons)
+- [Map Lab component refactor — smaller responsibility-oriented component files](maplab-component-refactor/maplab-component-refactor.md) — Complete — viewer and editor composition now live in responsibility-oriented files; further form splitting was intentionally declined after Stage 3. — (dungeons)
 - [Map Lab Editor Usability — the map fills the screen, and every tool is reachable](maplab-editor-usability/maplab-editor-usability.md) — Stages 0–7 shipped. — (Dungeons)
 - [Map Lab test suite refactor — smaller, behavior-oriented test files](maplab-test-suite-refactor/maplab-test-suite-refactor.md) — Complete — the Map Lab frontend test tree is split into focused behavior-oriented suites and the retired reducer previews are removed. — (dungeons)
 - [Map Lab UX Pass — a calm, touch-first editor and viewer](maplab-ux-pass/maplab-ux-pass.md) — Complete. — (Dungeons)

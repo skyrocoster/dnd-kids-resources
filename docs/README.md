@@ -6,6 +6,11 @@ Read [../AGENTS.md](../AGENTS.md) first, then use this manifest instead of explo
 
 `../scratch/` is deliberately outside this inventory and documentation contract. AI must not explore it unless the user explicitly names a path there.
 
+Detailed master design plans under `master-plans/` define a cross-cutting destination and the small,
+human-visible slices that may implement it. They are not execution status or implementation authority:
+each slice still requires a focused Plan under `plans/active/`, and only the generated active index
+tracks whether that work is ready, blocked, or shipped.
+
 Each `docs/plans/active/<feature>/` directory holds its Plan and the lean, disposable **work orders** compiled from that Plan's stages and deleted by `reconcile` once shipped. These are regenerated from source plans/maps; no manifest row needed. The Plan → Implement → Reconcile workflow and its five `.opencode/skills/` skills are defined in [PLAN_TEMPLATE.md](PLAN_TEMPLATE.md) and [../AGENTS.md](../AGENTS.md).
 
 ## Task Router
@@ -16,12 +21,13 @@ Each `docs/plans/active/<feature>/` directory holds its Plan and the lean, dispo
 | Running or recording a real session at the table | [Infra](areas/infra.md) | `TABLE_TESTING.md`, `docs/table-tests/_example/session-template.md`, then the plan the session serves |
 | Capturing a candidate idea from table-testing evidence | [Infra](areas/infra.md) | `TABLE_TESTING.md`, then `ideas/README.md` and the example idea card |
 | Designing or changing any UI surface | [Design](areas/design.md) | `UX_PATTERNS.md`, `DESIGN_SYSTEM.md`, the owning area guide's `## Surfaces` table |
+| Planning cross-route DM layout work or compiling a frontend-layout slice | [Design](areas/design.md) | `UX_PATTERNS.md`, `DESIGN_SYSTEM.md`, `master-plans/frontend-layout-redesign.md`, then every owning area guide named by the slice |
 | Visual consistency work | [Design](areas/design.md) | `areas/design.md`, `DESIGN_SYSTEM.md`, `ARCHITECTURE.md`, `TESTING.md` |
 | Story threads, Loom tapestry, beats, or session nodes | [Loom](areas/loom.md) | `areas/loom.md`, `DESIGN_SYSTEM.md`, `ARCHITECTURE.md`, `API_REFERENCE.md`, `DATA_MODEL.md`, `TESTING.md` |
 | Existing dungeon, encounter, monster, spell, or loot behavior | Relevant area guide | `ARCHITECTURE.md`, `API_REFERENCE.md`, `DATA_MODEL.md`, `TESTING.md` |
 | Wall kinds, map extent/padding, outside features, or map layer and density controls | [Dungeons](areas/dungeons.md) | `UX_PATTERNS.md`, `DESIGN_SYSTEM.md`, `DATA_MODEL.md`, `TESTING.md`, then the plan |
-| Map Lab editor/viewer chrome, canvas gestures, brushes, undo, or tablet layout | [Dungeons](areas/dungeons.md) | `UX_PATTERNS.md`, `DESIGN_SYSTEM.md`, `TESTING.md`, then the archived plan for history |
-| Map Lab tool palette and flyouts, editor vertical layout, fit/zoom framing, viewer rail, or rooms with no squares | [Dungeons](areas/dungeons.md) | `UX_PATTERNS.md`, `DESIGN_SYSTEM.md`, `TESTING.md`, then the archived plan for history |
+| Map Lab editor/viewer chrome, canvas gestures, brushes, undo, or tablet layout | [Dungeons](areas/dungeons.md) | `UX_PATTERNS.md`, `DESIGN_SYSTEM.md`, `TESTING.md`, `master-plans/frontend-layout-redesign.md`, then archived Plans only for history |
+| Map Lab tool palette and flyouts, editor vertical layout, fit/zoom framing, room finding, viewer rail, or rooms with no squares | [Dungeons](areas/dungeons.md) | `UX_PATTERNS.md`, `DESIGN_SYSTEM.md`, `TESTING.md`, `master-plans/frontend-layout-redesign.md`, then archived Plans only for history |
 | Room label placement or sizing, in either app | [Players](areas/players.md) | `UX_PATTERNS.md`, `DESIGN_SYSTEM.md`, `TESTING.md`, then the active plan |
 | Spells, weapons, items, or loot | [Reference](areas/reference.md) | `DATA_MODEL.md`, `API_REFERENCE.md`, `UX_PATTERNS.md`, `TESTING.md` |
 | Encounters, monsters, or NPCs (incl. NPC statblocks, the pull panel, or adding an NPC to an encounter) | [Encounters](areas/encounters.md) | `DATA_MODEL.md`, `API_REFERENCE.md`, `UX_PATTERNS.md`, `TESTING.md` |

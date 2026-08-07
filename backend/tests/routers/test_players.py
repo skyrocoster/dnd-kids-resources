@@ -131,6 +131,8 @@ def test_delete_player(test_client):
 
 def test_get_player_spells(test_client):
     """Test GET /api/players/{id}/spells."""
+    assert test_client.get("/api/players/spellbook").json() == []
+
     new_player = {
         "name": "Spellcaster",
         "class_": "Wizard",
@@ -157,7 +159,13 @@ def test_get_player_spells(test_client):
         player_spell = next(s for s in player_spells if s["id"] == spell_id)
         assert "quick_rules" in player_spell
         assert player_spell["quick_rules"] == spells[0]["quick_rules"]
+        assert isinstance(player_spell["categories"], list)
         assert all("name" in spell for spell in player_spells)
+
+        spellbook = test_client.get("/api/players/spellbook")
+        assert spellbook.status_code == 200
+        assert spellbook.json()[0]["id"] == player_id
+        assert spellbook.json()[0]["spells"][0]["id"] == spell_id
 
 
 def test_create_player_with_abilities(test_client):
@@ -275,6 +283,7 @@ def test_get_player_detail(test_client):
 
     if spells:
         assert data["spells"][0]["id"] == spells[0]["id"]
+        assert isinstance(data["spells"][0]["categories"], list)
     if weapons:
         assert data["weapons"][0]["id"] == weapons[0]["id"]
 

@@ -5,7 +5,7 @@ _TARGET_FIELDS = {
     "id", "name", "level", "school", "description", "alternate_description",
     "damage", "healing", "range", "higher_levels", "casting_times", "duration",
     "concentration", "ritual", "components", "materials", "attacks",
-    "area_of_effect", "quick_rules",
+    "area_of_effect", "categories", "quick_rules",
 }
 
 # Legacy fields that must NOT appear in any target response.
@@ -122,6 +122,13 @@ class TestSpellListTargetShape:
             assert "shape" in spell["area_of_effect"]
             assert "size" in spell["area_of_effect"]
 
+    def test_list_categories_are_normalized_lists(self, test_client):
+        resp = test_client.get("/api/spells")
+        for spell in resp.json():
+            assert isinstance(spell["categories"], list)
+            assert all(category in {"Damage", "Heal", "Protect", "Control", "Move", "Detect", "Influence", "Create", "Summon", "Other"}
+                       for category in spell["categories"])
+
 
 class TestSpellDetailTargetShape:
     """GET /api/spells/{id} returns only target fields."""
@@ -205,6 +212,17 @@ class TestCreateSpellContract:
         assert isinstance(spell["higher_levels"], dict)
         assert isinstance(spell["area_of_effect"], dict)
 
+    def test_create_categories_default_to_empty_list(self, test_client):
+        resp = test_client.post("/api/spells", json=_CREATE_PAYLOAD)
+        assert resp.status_code == 201
+        assert resp.json()["categories"] == ["Other"]
+
+    def test_create_multiple_categories_are_normalized(self, test_client):
+        payload = {**_CREATE_PAYLOAD, "name": "B0 Categorized Spell", "categories": ["Damage", "Protect"]}
+        resp = test_client.post("/api/spells", json=payload)
+        assert resp.status_code == 201
+        assert resp.json()["categories"] == ["Damage", "Protect"]
+
     def test_create_cantrip_level_zero(self, test_client):
         resp = test_client.post("/api/spells", json=_CREATE_CANTRIP)
         assert resp.status_code == 201
@@ -228,6 +246,15 @@ class TestUpdateSpellContract:
         spell = resp.json()
         assert set(spell.keys()) == _TARGET_FIELDS
         assert spell["name"] == "Updated Spell"
+
+    def test_update_categories_round_trip(self, test_client):
+        spell_id = test_client.get("/api/spells").json()[0]["id"]
+        update = {**_CREATE_PAYLOAD, "name": "B0 Updated Categories", "categories": ["Control", "Heal"]}
+        resp = test_client.put(f"/api/spells/{spell_id}", json=update)
+        assert resp.status_code == 200
+        assert resp.json()["categories"] == ["Heal", "Control"]
+        detail = test_client.get(f"/api/spells/{spell_id}")
+        assert detail.json()["categories"] == ["Heal", "Control"]
 
 
 class TestDeleteSpell:

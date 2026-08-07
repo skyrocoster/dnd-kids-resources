@@ -75,6 +75,7 @@ def test_parse_spell_row_decodes_every_json_column():
         concentration=False,
         ritual=False,
         components='["V", "S"]',
+        categories='["Combat", "Area"]',
         materials=None,
         attacks='[{"kind": "ranged", "saving_throws": ["dex"]}]',
         area_of_effect='{"shape": "sphere", "size": 20}',
@@ -86,6 +87,7 @@ def test_parse_spell_row_decodes_every_json_column():
     assert parsed["higher_levels"] == {"text": "At higher levels", "damage_by_slot": {"3": "3d6"}}
     assert parsed["casting_times"] == ["1 action"]
     assert parsed["components"] == ["V", "S"]
+    assert parsed["categories"] == ["Combat", "Area"]
     assert parsed["attacks"] == [{"kind": "ranged", "saving_throws": ["dex"]}]
 
 
