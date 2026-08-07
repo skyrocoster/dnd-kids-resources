@@ -275,7 +275,21 @@ describe('Monster CRUD (M3)', () => {
     // M3: stub becomes real when CRUD endpoints land
   })
 
-  it.skip('deleteMonster sends DELETE and removes the monster', () => {
-    // M3: stub becomes real when CRUD endpoints land
+  it('deleteMonster confirms, deletes the selected monster, clears selection, and reloads', async () => {
+    const listMonsters = vi.spyOn(api, 'listMonsters')
+      .mockResolvedValueOnce(monsters)
+      .mockResolvedValueOnce([])
+    const deleteMonster = vi.spyOn(api, 'deleteMonster').mockResolvedValue(undefined)
+    const user = userEvent.setup()
+
+    renderPage()
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Aarakocra' })).toBeInTheDocument())
+    await user.click(screen.getAllByRole('button', { name: 'Delete' })[0])
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument()
+    await user.click(screen.getByRole('alertdialog').querySelector('button:last-of-type') as HTMLButtonElement)
+
+    await waitFor(() => expect(deleteMonster).toHaveBeenCalledWith(1))
+    expect(screen.getByText(/Choose a monster/)).toBeInTheDocument()
+    await waitFor(() => expect(listMonsters).toHaveBeenCalledTimes(3))
   })
 })

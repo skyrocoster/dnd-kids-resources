@@ -168,7 +168,7 @@ says only where the files are.
 | `frontend/src/features/items/__tests__/` | 3 | 15 |
 | `frontend/src/features/loom/__tests__/` | 9 | 123 |
 | `frontend/src/features/loot/__tests__/` | 5 | 22 |
-| `frontend/src/features/monsters/__tests__/` | 3 | 35 |
+| `frontend/src/features/monsters/__tests__/` | 3 | 36 |
 | `frontend/src/features/npcs/__tests__/` | 10 | 85 |
 | `frontend/src/features/players/__tests__/` | 8 | 58 |
 | `frontend/src/features/spells/__tests__/` | 4 | 34 |

@@ -6,6 +6,7 @@ import { BrowserLayout } from '../../components/BrowserLayout'
 import { Button } from '../../components/Button'
 import { SearchList } from '../../components/SearchList'
 import { StatePanel } from '../../components/StatePanel'
+import { ConfirmDialog } from '../../components/ConfirmDialog'
 import { initialRemoteState, remoteError, remoteLoading, remoteSuccess } from '../../components/remoteState'
 import type { RemoteState } from '../../components/remoteState'
 import { SkullIcon } from '../../components/icons'
@@ -17,6 +18,8 @@ export function MonsterBrowserPage() {
   const location = useLocation()
   const [monstersRemote, setMonstersRemote] = useState<RemoteState<Monster[]>>(initialRemoteState)
   const [selectedId, setSelectedId] = useState<number | null>(null)
+  const [pendingDelete, setPendingDelete] = useState<Monster | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
     setMonstersRemote(remoteLoading())
@@ -38,6 +41,20 @@ export function MonsterBrowserPage() {
 
   const monsters = monstersRemote.status === 'success' ? monstersRemote.data : []
   const selected = monsters.find((m) => m.id === selectedId) || null
+  const deleteSelected = async () => {
+    if (!pendingDelete) return
+    setDeleting(true)
+    try {
+      await api.deleteMonster(pendingDelete.id)
+      setPendingDelete(null)
+      setSelectedId(null)
+      setMonstersRemote(remoteLoading())
+      const data = await api.listMonsters()
+      setMonstersRemote(remoteSuccess([...data].sort((a, b) => a.name.localeCompare(b.name))))
+    } finally {
+      setDeleting(false)
+    }
+  }
 
   return (
     <div className="monster-browser-page">
@@ -69,7 +86,10 @@ export function MonsterBrowserPage() {
               <Button className="browser-layout-back" variant="ghost" onClick={() => setSelectedId(null)}>Back to monsters</Button>
               <div className="monster-browser-detail-header">
                 <div className="monster-browser-detail-kicker">Bestiary Field Card</div>
-                <Button variant="secondary" onClick={() => navigate(`/monsters/${selected.id}/edit`)}>Edit</Button>
+                <div>
+                  <Button variant="secondary" onClick={() => navigate(`/monsters/${selected.id}/edit`)}>Edit</Button>
+                  <Button variant="secondary" onClick={() => setPendingDelete(selected)}>Delete</Button>
+                </div>
               </div>
               <MonsterStatBlock monster={selected} />
             </div>
@@ -77,6 +97,15 @@ export function MonsterBrowserPage() {
             <StatePanel status="noSelection" message="Choose a monster from the list to see its stat block." />
           )
         }
+        dialog={pendingDelete ? (
+          <ConfirmDialog
+            message={`Delete ${pendingDelete.name}?`}
+            confirmLabel="Delete"
+            onConfirm={deleteSelected}
+            onCancel={() => setPendingDelete(null)}
+            pending={deleting}
+          />
+        ) : null}
       />
     </div>
   )

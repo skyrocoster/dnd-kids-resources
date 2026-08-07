@@ -375,6 +375,17 @@ describe('catalog browser rail adoption', () => {
     },
   ]
 
+  it.each(cases)('places create and selected edit/delete actions on the $label browser', async (catalog) => {
+    catalog.setup()
+    const view = await catalog.renderPage()
+
+    expect(await screen.findByRole('button', { name: /^(Add|New|Create)/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: 'Delete' }).length).toBeGreaterThan(0)
+
+    view.unmount()
+  })
+
   it.each(cases)('exposes the shared collapse control on the $label browser', async (catalog) => {
     catalog.setup()
     const view = await catalog.renderPage()
