@@ -137,6 +137,8 @@ export function useMapCanvasZoom({ wheelZoomMode = 'modifier', pointerMode = 'pa
     setZoom((current) => ({
       ...current,
       pan: {
+        // Pan is the content-space offset: subtracting the viewport midpoint places the
+        // real map anchor at the canvas midpoint without changing the current scale.
         x: point.x * BASE_PX_PER_UNIT * current.scale - viewport.width / 2,
         y: point.y * BASE_PX_PER_UNIT * current.scale - viewport.height / 2,
       },

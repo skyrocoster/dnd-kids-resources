@@ -1,6 +1,6 @@
 # Map Lab Shared Navigation — editor and viewer use one navigation language
 
-> **Status:** Stage 4 shipped; Stage 5 is ready to compile.
+> **Status:** Stage 5 shipped; Stage 6 is ready to compile.
 
 - **Areas:** dungeons, design
 - **Read trigger:** Map Lab editor/viewer shared navigation, selection, focus, or keyboard behavior
@@ -59,6 +59,7 @@ Touch:        preserve the 48px control floor and pan/pinch gestures; long-press
 | 2 | Editor and viewer now clear selection through empty-space and layered Escape behavior, support right-click/Context Menu/Shift+F10 selection without travel, and center double-clicked connections without duplicate navigation. Focused and full automated checks passed; human UX acceptance remains outstanding. |
 | 3 | Canonical references and the durable [FL-05 shared navigation acceptance script](../../../FL-05-maplab-navigation-acceptance.md) are complete. Documentation checks passed at implementation closeout, but the 2026-08-07 browser execution failed several required behaviors; the human result remains intentionally unfilled. |
 | 4 | Browser-session hydration and route restoration now preserve one dungeon-keyed floor, pan, zoom, selection, and requested-focus context before write-back, including editor/viewer return timing. Focused and full automated checks passed; human UX acceptance remains outstanding. |
+| 5 | Rendered editor and viewer navigation now use real target geometry for framing, preserve visible selection, clear genuine canvas background selection, keep connection activation centered without travel, and apply the viewer's layered Escape order. Focused and full automated checks passed; human UX acceptance remains outstanding. |
 
 ## Touches
 
@@ -71,13 +72,6 @@ Touch:        preserve the 48px control floor and pan/pinch gestures; long-press
 - `docs/master-plans/frontend-layout-redesign.md`
 
 ## Compiler handoff
-
-### Stage 5
-- **Verified edit sites:** `frontend/src/map/useMapCanvasZoom.ts` — shared `centerOn` geometry primitive; `frontend/src/features/dungeons/maplab/MapLabPage.tsx` — viewer focus, travel, double-activation, empty-space, and Escape flows; `frontend/src/features/dungeons/maplab/MapLabEditorPage.tsx` — editor visibility/centering and double-activation flows; `frontend/src/features/dungeons/maplab/MapLabEditorCanvas.tsx` and `MapLabViewerCanvas.tsx` — canvas selection and background event wiring.
-- **Verified tests:** `frontend/src/map/__tests__/useMapCanvasZoom.test.ts` proves the primitive; `MapLabEditorPage.canvas.test.tsx` can assert SVG translation; `MapLabPage.navigation.test.tsx` covers travel, contextual no-travel selection, one bounded empty-space path, and only drawer/popover Escape.
-- **Settled contracts:** Center using the target's real map anchor and the current canvas viewport. Ordinary visible selection preserves framing; off-screen selection and explicit focus center; travel centers the destination after floor/dungeon resolution; double-click centers the current connection without toggling it off or travelling; any genuine canvas background clears selection; viewer Escape closes one Map Lab layer at a time and clears selection after overlays are gone.
-- **Constraints:** Preserve primary-click editor select-only/viewer travel behavior and right-click/Context Menu/Shift+F10 select-without-travel. Do not add long-press, menus, or menu actions; those remain FL-11.
-- **Open questions:** determine whether the failed background clicks landed beyond the current outside-layer rect or exposed an additional event-target gap; fix the complete canvas-background contract, not one test coordinate.
 
 ### Stage 6
 - **Verified edit sites:** `frontend/src/features/dungeons/maplab/__tests__/MapLabPage.navigation.test.tsx`, `MapLabEditorPage.canvas.test.tsx`, and `useMapLabNavigationSession.test.ts` — current focused seams; `frontend/src/model/__tests__/maplabModel.geometry.test.ts` and `frontend/src/map/__tests__/useMapCanvasZoom.test.ts` — geometry seams; `docs/FL-05-maplab-navigation-acceptance.md` — durable desktop/tablet acceptance ledger.

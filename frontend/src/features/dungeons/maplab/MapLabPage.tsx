@@ -195,22 +195,33 @@ export function MapLabPage() {
   }, [viewPopoverOpen])
 
   useEffect(() => {
-    if (!viewPopoverOpen) return
     const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setViewPopoverOpen(false)
+      if (event.key !== 'Escape') return
+      if (viewPopoverOpen) {
+        setViewPopoverOpen(false)
+        return
+      }
+      if (roomsDrawerOpen) {
+        setRoomsDrawerOpen(false)
+        return
+      }
+      if (activeEncounterId !== null) {
+        setActiveEncounterId(null)
+        return
+      }
+      if (activeNpcId !== null) {
+        setActiveNpcId(null)
+        return
+      }
+      if (resetDungeonConfirmOpen) {
+        setResetDungeonConfirmOpen(false)
+        return
+      }
+      setSelectedInspectable(null)
     }
     window.addEventListener('keydown', handleEscape)
     return () => window.removeEventListener('keydown', handleEscape)
-  }, [viewPopoverOpen])
-
-  useEffect(() => {
-    if (!roomsDrawerOpen) return
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setRoomsDrawerOpen(false)
-    }
-    window.addEventListener('keydown', handleEscape)
-    return () => window.removeEventListener('keydown', handleEscape)
-  }, [roomsDrawerOpen])
+  }, [activeEncounterId, activeNpcId, resetDungeonConfirmOpen, roomsDrawerOpen, viewPopoverOpen])
 
   const isAtTable = route.dungeonId !== null && atTableDungeonId === route.dungeonId
   const viewerError = (partyRoomActionActive ? null : actionError) ?? atTableError ?? portalNavigationError

@@ -640,9 +640,11 @@ export function MapLabEditorPage() {
             ? fixture.cells[0]
             : null
     if (cell) {
-      const activeElement = document.activeElement
-      const viewport = activeElement?.closest('.maplab-canvas-viewport')
-      const elementRect = activeElement?.getBoundingClientRect()
+      const target = document.querySelector<SVGGElement>(
+        `[data-maplab-target-kind="${kind}"][data-maplab-target-id="${id}"]`,
+      )
+      const viewport = target?.closest('.maplab-canvas-viewport')
+      const elementRect = target?.getBoundingClientRect()
       const viewportRect = viewport?.getBoundingClientRect()
       const isVisible = Boolean(viewport && elementRect && viewportRect
         && elementRect.bottom >= viewportRect.top

@@ -263,10 +263,11 @@ describe('useMapCanvasZoom', () => {
   })
 
   it('centers a map-space point at the viewport center without changing scale', () => {
-    const { result } = renderHook(() => useMapCanvasZoom())
+    const { result } = renderHook(() =>
+      useMapCanvasZoom({ initialZoom: { scale: 1.25, pan: { x: 87, y: -42 } } }),
+    )
     const viewport = { width: 400, height: 300 }
 
-    act(() => result.current.zoomIn())
     const scaleBefore = result.current.zoom.scale
 
     act(() => result.current.centerOn({ x: 3, y: 2 }, viewport))
