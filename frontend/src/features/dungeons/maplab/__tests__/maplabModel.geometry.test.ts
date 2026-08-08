@@ -546,5 +546,17 @@ describe('maplabModel (Stage 1 geometry helpers)', () => {
       const empty: MapRoom = { room_id: 2, z: 0, origin: [5, 3], cells: [], title: 'Empty' }
       expect(roomLabelAnchor(empty, 64)).toEqual({ x: 352, y: 224 })
     })
+
+    it('chooses the settled owned-cell anchor rather than the hole in an asymmetric room', () => {
+      const asymmetric: MapRoom = {
+        room_id: 3,
+        z: 0,
+        origin: [10, 4],
+        cells: [[0, 0], [1, 0], [2, 0], [0, 1]],
+        title: 'Asymmetric Room',
+      }
+
+      expect(roomLabelAnchor(asymmetric, 64)).toEqual({ x: 736, y: 288 })
+    })
   })
 })

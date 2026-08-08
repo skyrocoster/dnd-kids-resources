@@ -51,4 +51,23 @@ describe('Map Lab navigation session codec', () => {
     setItem.mockRestore()
     sessionStorage.clear()
   })
+
+  it('hydrates the requested dungeon key without borrowing another dungeon session', () => {
+    const otherDungeon = JSON.stringify({
+      activeZ: 3,
+      zoom: { scale: 0.75, pan: { x: -24, y: 16 } },
+      selectedTarget: { kind: 'prop', id: 9 },
+      focusTarget: { kind: 'stair', id: 5 },
+    })
+    sessionStorage.setItem('maplab-navigation:7', otherDungeon)
+    sessionStorage.setItem('maplab-navigation:8', valid)
+
+    const { result } = renderHook(() => useMapLabNavigationSession(8))
+
+    expect(result.current.state).toEqual(JSON.parse(valid))
+    expect(result.current.state.activeZ).toBe(0)
+    expect(result.current.state.selectedTarget).toEqual({ kind: 'room', id: 4 })
+    expect(result.current.state.focusTarget).toEqual({ kind: 'door', id: 2 })
+    sessionStorage.clear()
+  })
 })

@@ -267,6 +267,10 @@ export function MapLabPage() {
   const viewBox = `${bounds.minX * CELL_SIZE} ${bounds.minY * CELL_SIZE} ${
     (bounds.maxX - bounds.minX + 1) * CELL_SIZE
   } ${(bounds.maxY - bounds.minY + 1) * CELL_SIZE}`
+  const contentCell = (cell: [number, number]) => ({
+    x: cell[0] - bounds.minX,
+    y: cell[1] - bounds.minY,
+  })
 
   // Scale ruler: one cell, ticked at both ends, sits in the padding band above the rooms.
   const rulerX1 = (bounds.minX + 1) * CELL_SIZE
@@ -304,7 +308,7 @@ export function MapLabPage() {
         : fixture && 'from' in fixture
           ? (fixture.from.z === activeZ ? fixture.from.cell : fixture.to.cell)
           : null
-    if (cell) zoomApi.centerOn({ x: cell[0], y: cell[1] }, viewportSize)
+    if (cell) zoomApi.centerOn(contentCell(cell), viewportSize)
   }
 
   function navigateStair(stair: MapStair) {
@@ -319,7 +323,7 @@ export function MapLabPage() {
     const targetZ = otherFloorZ(stair, activeZ)
     const targetCell = stairCellForZ(stair, targetZ)
     setActiveZ(targetZ)
-    if (targetCell && viewportSize.width > 0 && viewportSize.height > 0) zoomApi.centerOn({ x: targetCell[0], y: targetCell[1] }, viewportSize)
+    if (targetCell && viewportSize.width > 0 && viewportSize.height > 0) zoomApi.centerOn(contentCell(targetCell), viewportSize)
     pendingConnectionNavigation.current = {
       kind: 'stair',
       id: stair.stair_id,
@@ -361,7 +365,7 @@ export function MapLabPage() {
     }
     if (destination.z !== undefined && destination.cell) {
       setActiveZ(destination.z)
-      if (viewportSize.width > 0 && viewportSize.height > 0) zoomApi.centerOn({ x: destination.cell[0], y: destination.cell[1] }, viewportSize)
+      if (viewportSize.width > 0 && viewportSize.height > 0) zoomApi.centerOn(contentCell(destination.cell), viewportSize)
       return
     }
     setPortalNavigationError('This portal has no destination.')
@@ -387,7 +391,7 @@ export function MapLabPage() {
         : fixture && 'from' in fixture
           ? (fixture.from.z === activeZ ? fixture.from.cell : fixture.to.cell)
           : null
-    if (cell) zoomApi.centerOn({ x: cell[0], y: cell[1] }, viewportSize)
+    if (cell) zoomApi.centerOn(contentCell(cell), viewportSize)
     navigation.setState((current) => current.focusTarget === target ? { ...current, focusTarget: null } : current)
   }, [activeZ, layout, navigation.state.focusTarget, navigation.setState, viewportSize, zoomApi.centerOn])
 

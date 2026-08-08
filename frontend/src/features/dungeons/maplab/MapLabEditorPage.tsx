@@ -651,9 +651,11 @@ export function MapLabEditorPage() {
         && elementRect.top <= viewportRect.bottom
         && elementRect.right >= viewportRect.left
         && elementRect.left <= viewportRect.right)
-       if (force || !isVisible) zoomApi.centerOn({ x: cell[0], y: cell[1] }, viewportSize)
-     }
-  }, [state.layout, state.activeZ, viewportSize, zoomApi.centerOn])
+       if (force || !isVisible) {
+         zoomApi.centerOn({ x: cell[0] - bounds.minX, y: cell[1] - bounds.minY }, viewportSize)
+       }
+      }
+  }, [bounds.minX, bounds.minY, state.layout, state.activeZ, viewportSize, zoomApi.centerOn])
 
   const centerCanvasSelection = useCallback((kind: string, id: number) => {
     const now = Date.now()

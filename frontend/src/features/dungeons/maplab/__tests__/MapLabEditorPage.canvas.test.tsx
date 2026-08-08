@@ -42,7 +42,7 @@ function dragRoomBrush(container: HTMLElement, bounds: { minX: number; minY: num
   fireEvent.pointerUp(window, { pointerId: 1 })
 }
 
-function readTranslate(svg: SVGSVGElement): { x: number; y: number } {
+  function readTranslate(svg: SVGSVGElement): { x: number; y: number } {
   const style = svg.getAttribute('style') ?? ''
   const match = style.match(/translate\(\s*(-?[\d.]+)px,\s*(-?[\d.]+)px\s*\)/)
   return { x: match ? Number(match[1]) : 0, y: match ? Number(match[2]) : 0 }
@@ -56,6 +56,21 @@ describe('MapLabEditorPage (Stage E2 — Canvas zoom & pan)', () => {
     stairs: [],
     floors: [{ z: 0, title: 'Ground Floor' }],
     props: [],
+  }
+
+  function readRoomCenter(room: Element, svg: SVGSVGElement) {
+    const shape = room.matches('rect') ? room : room.querySelector('rect')
+    if (!shape) throw new Error('Expected a room rectangle')
+    const x = Number(shape.getAttribute('x'))
+    const y = Number(shape.getAttribute('y'))
+    const width = Number(shape.getAttribute('width'))
+    const height = Number(shape.getAttribute('height'))
+    const scale = Number(svg.getAttribute('width')) / CONTENT_PX_AT_SCALE_1
+    const translate = readTranslate(svg)
+    return {
+      x: (x + width / 2) * scale + translate.x,
+      y: (y + height / 2) * scale + translate.y,
+    }
   }
   // 1 cell, padded ±3 on every side -> a 7x7-unit bounds -> 448x448px at scale 1 (BASE_PX_PER_UNIT=64).
   const CONTENT_PX_AT_SCALE_1 = 448
@@ -93,9 +108,9 @@ describe('MapLabEditorPage (Stage E2 — Canvas zoom & pan)', () => {
     delete (HTMLElement.prototype as unknown as Record<string, unknown>).clientHeight
   })
 
-  async function renderEditor() {
-    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: singleRoomLayout })
-    vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: singleRoomLayout })
+  async function renderEditor(layout = singleRoomLayout) {
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: layout })
+    vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: layout })
     const utils = renderMapLabEditorPage()
     await flush()
     return utils
@@ -203,6 +218,109 @@ describe('MapLabEditorPage (Stage E2 — Canvas zoom & pan)', () => {
     expect(Number(svg.getAttribute('width'))).toBeCloseTo(CONTENT_PX_AT_SCALE_1 * 3)
     expect(Number(svg.getAttribute('height'))).toBeCloseTo(CONTENT_PX_AT_SCALE_1 * 3)
     expect(readTranslate(svg)).toEqual({ x: -352, y: -352 })
+  })
+
+  it('centers an off-screen room on its origin', async () => {
+    const layout = {
+      ...singleRoomLayout,
+       rooms: [{ room_id: 1, z: 0, origin: [12, 8], cells: [[0, 0], [1, 0], [0, 1]], title: 'Far Room' }],
+    } as typeof singleRoomLayout
+    const { container } = await renderEditor(layout)
+    const svg = container.querySelector('.maplab-svg') as SVGSVGElement
+    const viewport = container.querySelector('.maplab-canvas-viewport') as HTMLElement
+    const room = container.querySelector('.maplab-room') as Element
+    vi.spyOn(room, 'getBoundingClientRect').mockReturnValue({ top: 1000, left: 1000, bottom: 1100, right: 1100, width: 100, height: 100, x: 1000, y: 1000, toJSON: () => ({}) } as DOMRect)
+
+    fireEvent.pointerDown(viewport, { clientX: 0, clientY: 0 })
+    fireEvent.pointerMove(window, { clientX: 500, clientY: 500 })
+    fireEvent.pointerUp(window)
+    fireEvent.click(room)
+    await flush()
+
+    // Settled anchor is the room origin (3,3) relative to the padded bounds; the zoom scale stays 1
+    // through this pan-only interaction, so the CSS transform is 320 - 3 * 64 * 1 = 128 per axis.
+    expect(readTranslate(svg)).toEqual({ x: 320 - 3 * 64, y: 320 - 3 * 64 })
+  })
+
+  it('preserves framing when the selected room is already visible', async () => {
+    const layout = {
+      ...singleRoomLayout,
+      rooms: [{ room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0], [1, 0]], title: 'Visible Room' }],
+    } as typeof singleRoomLayout
+    const { container } = await renderEditor(layout)
+    const svg = container.querySelector('.maplab-svg') as SVGSVGElement
+    const room = container.querySelector('.maplab-room') as Element
+    const before = readRoomCenter(room, svg)
+    const translateBefore = readTranslate(svg)
+
+    fireEvent.click(room)
+    await flush()
+
+    expect(readTranslate(svg)).toEqual(translateBefore)
+    expect(readRoomCenter(room, svg)).toEqual(before)
+  })
+
+  it('uses the room origin as the room framing anchor', async () => {
+    const layout = {
+      ...singleRoomLayout,
+       rooms: [{ room_id: 1, z: 0, origin: [20, 20], cells: [[0, 0], [1, 0], [2, 0], [0, 1]], title: 'L Room' }],
+    } as typeof singleRoomLayout
+    const { container } = await renderEditor(layout)
+    const svg = container.querySelector('.maplab-svg') as SVGSVGElement
+    const viewport = container.querySelector('.maplab-canvas-viewport') as HTMLElement
+    const room = container.querySelector('.maplab-room') as Element
+    vi.spyOn(room, 'getBoundingClientRect').mockReturnValue({ top: 1000, left: 1000, bottom: 1100, right: 1100, width: 100, height: 100, x: 1000, y: 1000, toJSON: () => ({}) } as DOMRect)
+
+    fireEvent.pointerDown(viewport, { clientX: 0, clientY: 0 })
+    fireEvent.pointerMove(window, { clientX: 500, clientY: 500 })
+    fireEvent.pointerUp(window)
+    fireEvent.click(room)
+
+    // Settled anchor is the room origin (3,3) relative to the padded bounds; the zoom scale stays 1
+    // through this pan-only interaction, so the CSS transform is 320 - 3 * 64 * 1 = 128 per axis.
+    expect(readTranslate(svg)).toEqual({ x: 320 - 3 * 64, y: 320 - 3 * 64 })
+  })
+
+  it('centers a connection on double-click without travelling or saving', async () => {
+    const layout = {
+      ...singleRoomLayout,
+      rooms: [
+        { room_id: 1, z: 0, origin: [0, 0], cells: [[0, 0]], title: 'Room 1' },
+        { room_id: 2, z: 0, origin: [12, 0], cells: [[0, 0]], title: 'Room 2' },
+      ],
+       doors: [{ door_id: 1, z: 0, cell: [6, 0], side: 'E' }],
+    } as typeof singleRoomLayout
+    const { container } = await renderEditor(layout)
+    const svg = container.querySelector('.maplab-svg') as SVGSVGElement
+    const viewport = container.querySelector('.maplab-canvas-viewport') as HTMLElement
+    const connection = container.querySelector('.maplab-door') as Element
+    expect(connection).toBeInTheDocument()
+    const translateBefore = readTranslate(svg)
+
+    fireEvent.pointerDown(viewport, { clientX: 0, clientY: 0 })
+    fireEvent.pointerMove(window, { clientX: 500, clientY: 500 })
+    fireEvent.pointerUp(window)
+    await flush()
+    fireEvent.doubleClick(connection)
+    await flush()
+
+    expect(readTranslate(svg)).not.toEqual(translateBefore)
+    expect(api.updateDungeon).not.toHaveBeenCalled()
+    expect(api.saveDungeonLayout).not.toHaveBeenCalled()
+  })
+
+  it('clears selection when the background is clicked outside padded bounds', async () => {
+    const { container } = await renderEditor()
+    const room = container.querySelector('.maplab-room') as Element
+    const unknownSpace = container.querySelector('.maplab-unknown-space') as Element
+
+    fireEvent.click(room)
+    await flush()
+    expect(room).toHaveAttribute('data-selected', 'true')
+
+    fireEvent.click(unknownSpace)
+
+    expect(room).not.toHaveAttribute('data-selected', 'true')
   })
 })
 

@@ -279,4 +279,33 @@ describe('useMapCanvasZoom', () => {
     })
   })
 
+  it('centers the actual destination point even when it starts off-screen', () => {
+    const { result } = renderHook(() =>
+      useMapCanvasZoom({ initialZoom: { scale: 1.5, pan: { x: -900, y: 700 } } }),
+    )
+    const viewport = { width: 640, height: 480 }
+
+    act(() => result.current.centerOn({ x: 12, y: 8 }, viewport))
+
+    expect(result.current.zoom.pan).toEqual({
+      x: 12 * 64 * 1.5 - viewport.width / 2,
+      y: 8 * 64 * 1.5 - viewport.height / 2,
+    })
+  })
+
+  it('keeps the current scale while reframing a destination already in view', () => {
+    const { result } = renderHook(() =>
+      useMapCanvasZoom({ initialZoom: { scale: 0.75, pan: { x: 20, y: 30 } } }),
+    )
+    const viewport = { width: 400, height: 300 }
+
+    act(() => result.current.centerOn({ x: 3, y: 2 }, viewport))
+
+    expect(result.current.zoom.scale).toBe(0.75)
+    expect(result.current.zoom.pan).toEqual({
+      x: 3 * 64 * 0.75 - viewport.width / 2,
+      y: 2 * 64 * 0.75 - viewport.height / 2,
+    })
+  })
+
 })

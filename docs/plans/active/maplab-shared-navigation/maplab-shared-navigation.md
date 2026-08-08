@@ -1,6 +1,6 @@
 # Map Lab Shared Navigation — editor and viewer use one navigation language
 
-> **Status:** Stage 5 shipped; Stage 6 is ready to compile.
+> **Status:** Stage 6 shipped; automated regression coverage is complete and FL-05 browser rerun readiness is recorded; human UX acceptance remains outstanding.
 
 - **Areas:** dungeons, design
 - **Read trigger:** Map Lab editor/viewer shared navigation, selection, focus, or keyboard behavior
@@ -60,6 +60,7 @@ Touch:        preserve the 48px control floor and pan/pinch gestures; long-press
 | 3 | Canonical references and the durable [FL-05 shared navigation acceptance script](../../../FL-05-maplab-navigation-acceptance.md) are complete. Documentation checks passed at implementation closeout, but the 2026-08-07 browser execution failed several required behaviors; the human result remains intentionally unfilled. |
 | 4 | Browser-session hydration and route restoration now preserve one dungeon-keyed floor, pan, zoom, selection, and requested-focus context before write-back, including editor/viewer return timing. Focused and full automated checks passed; human UX acceptance remains outstanding. |
 | 5 | Rendered editor and viewer navigation now use real target geometry for framing, preserve visible selection, clear genuine canvas background selection, keep connection activation centered without travel, and apply the viewer's layered Escape order. Focused and full automated checks passed; human UX acceptance remains outstanding. |
+| 6 | Added hydration, geometry, viewer, and editor regressions and normalized origin-based centering against padded SVG bounds; focused and full automated checks passed. The FL-05 ledger records browser-rerun readiness only, so human UX acceptance remains outstanding. |
 
 ## Touches
 
@@ -70,12 +71,3 @@ Touch:        preserve the 48px control floor and pan/pinch gestures; long-press
 - `docs/areas/dungeons.md`
 - `docs/FL-05-maplab-navigation-acceptance.md`
 - `docs/master-plans/frontend-layout-redesign.md`
-
-## Compiler handoff
-
-### Stage 6
-- **Verified edit sites:** `frontend/src/features/dungeons/maplab/__tests__/MapLabPage.navigation.test.tsx`, `MapLabEditorPage.canvas.test.tsx`, and `useMapLabNavigationSession.test.ts` — current focused seams; `frontend/src/model/__tests__/maplabModel.geometry.test.ts` and `frontend/src/map/__tests__/useMapCanvasZoom.test.ts` — geometry seams; `docs/FL-05-maplab-navigation-acceptance.md` — durable desktop/tablet acceptance ledger.
-- **Verified tests:** Current suites omit off-screen room centering, room-anchor choice, connection double-click, destination framing, page-level hydration, viewer selection Escape, and background clicks outside the padded-bounds rect. The live browser run must measure target position relative to the canvas viewport rather than infer centering from selection.
-- **Settled contracts:** Every in-scope automated row must pass at 1440×1000 and 768×1024 before requesting human acceptance. Automated evidence may update the execution ledger and FL-05 receipt but may not record human acceptance.
-- **Constraints:** Treat optional session-state 404 as the documented empty-state flow; do not widen into backend session-state work. The unresolved-portal post-error zoom observation was not a reproduced defect and is a rerun check, not an authorized repair. Run full frontend and documentation gates after focused checks.
-- **Open questions:** none.

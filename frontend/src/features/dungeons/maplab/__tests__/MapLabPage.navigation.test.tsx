@@ -249,6 +249,97 @@ describe('MapLabPage portal viewer rendering and navigation', () => {
     expect(screen.getByRole('button', { name: /Shimmering Archway \(return\) —/i })).toBeInTheDocument()
   })
 
+  it('centres an off-screen room without changing the selected room', async () => {
+    const user = userEvent.setup()
+    await renderLoadedMapLabPage()
+
+    await user.click(within(screen.getByRole('navigation', { name: 'Room navigation' })).getByRole('button', { name: 'First Floor Landing' }))
+
+    expect(screen.getByText('Balcony')).toBeInTheDocument()
+    expect(within(screen.getByRole('navigation', { name: 'Room navigation' })).getByRole('button', { name: 'First Floor Landing' })).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('preserves the frame when the already-visible room is selected', async () => {
+    const user = userEvent.setup()
+    await renderLoadedMapLabPage()
+
+    await user.click(within(screen.getByRole('navigation', { name: 'Room navigation' })).getByRole('button', { name: 'Armoury' }))
+
+    expect(screen.getByText('Weapon Racks')).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'Ground Floor' })).toHaveAttribute('aria-selected', 'true')
+  })
+
+  it('frames a resolved stair destination without travelling twice', async () => {
+    const user = userEvent.setup()
+    const stair = {
+      stair_id: 601,
+      from: { z: 0, cell: [0, 0] as [number, number] },
+      to: { z: 1, cell: [3, 3] as [number, number] },
+      title: 'Resolved Stair',
+      hidden: false,
+      locked: false,
+      trapped: false,
+    }
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: { ...mapLabLayout, stairs: [stair] } })
+
+    renderMapLabPage()
+    await flush()
+    await user.click(screen.getByRole('button', { name: /Resolved Stair/i }))
+
+    expect(screen.getByRole('tab', { name: 'First Floor' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByRole('button', { name: /Resolved Stair/i })).toBeInTheDocument()
+  })
+
+  it('double-clicking a connection does not activate it twice or travel', async () => {
+    const user = userEvent.setup()
+    const stair = {
+      stair_id: 602,
+      from: { z: 0, cell: [0, 0] as [number, number] },
+      to: { z: 0, cell: [3, 3] as [number, number] },
+      title: 'Double Click Stair',
+      hidden: false,
+      locked: false,
+      trapped: false,
+    }
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: { ...mapLabLayout, stairs: [stair] } })
+
+    renderMapLabPage()
+    await flush()
+    const marker = screen.getByRole('button', { name: /Double Click Stair/i })
+    await user.dblClick(marker)
+
+    expect(screen.getByRole('tab', { name: 'Ground Floor' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getAllByRole('button', { name: /Double Click Stair/i })).toHaveLength(1)
+  })
+
+  it('hydrates the viewer in its empty state without mutating authored or encounter state', async () => {
+    const getLayout = vi.spyOn(api, 'getDungeonLayout')
+    const saveSession = vi.spyOn(api, 'saveDungeonSessionState')
+
+    await renderLoadedMapLabPage()
+
+    expect(getLayout).toHaveBeenCalledWith(4)
+    expect(screen.getByText('Select a room, door, stair, or prop for details.')).toBeInTheDocument()
+    expect(saveSession).not.toHaveBeenCalled()
+  })
+
+  it('Escape dismisses the drawer before clearing the selected viewer target', async () => {
+    const user = userEvent.setup()
+    const { container } = await renderLoadedMapLabPage()
+    await user.click(within(screen.getByRole('group', { name: /dungeon floor map/i })).getByRole('button', { name: 'Armoury' }))
+    const inspector = container.querySelector('.maplab-inspector-panel-container')!
+    expect(inspector.querySelector('.maplab-inspector-title')).toHaveTextContent('Armoury')
+
+    await user.click(screen.getByRole('button', { name: 'Open room navigation' }))
+    await user.keyboard('{Escape}')
+
+    expect(screen.getByRole('button', { name: 'Open room navigation' })).toHaveAttribute('aria-expanded', 'false')
+    expect(inspector.querySelector('.maplab-inspector-title')).toHaveTextContent('Armoury')
+
+    await user.keyboard('{Escape}')
+    expect(inspector.querySelector('.maplab-inspector-title')).not.toBeInTheDocument()
+  })
+
   it('a co-located stair and portal render as distinct, non-overlapping markers', async () => {
     const stair = {
       stair_id: 601,

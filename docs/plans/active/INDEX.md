@@ -25,7 +25,7 @@ Point a skill at a row and it has what it needs to start.
 <!-- GENERATED:ACTIVE_INDEX:START -->
 | Plan | Areas | Depends on | State | Orders | Next | Status |
 | --- | --- | --- | --- | --- | --- | --- |
-| [Map Lab Shared Navigation](maplab-shared-navigation/maplab-shared-navigation.md) | [dungeons](../../areas/dungeons.md), [design](../../areas/design.md) | — | ready | none compiled | `to-orders` | Stage 5 shipped; Stage 6 is ready to compile. |
+| [Map Lab Shared Navigation](maplab-shared-navigation/maplab-shared-navigation.md) | [dungeons](../../areas/dungeons.md), [design](../../areas/design.md) | — | ready | none compiled | `to-orders` | Stage 6 shipped; automated regression coverage is complete and FL-05 browser rerun readiness is recorded; human UX acceptance remains outstanding. |
 | [Production Nightly Deploys](production-nightly-deploys/production-nightly-deploys.md) | [infra](../../areas/infra.md) | — | ready | none compiled | `to-orders` | Part of Stage 1 has already shipped out of band — see *Landed early* below. |
 | [Table Testing Contract](table-testing-contract/table-testing-contract.md) | [infra](../../areas/infra.md) | — | ready | none compiled | `to-orders` | Stage 3 shipped — the independent candidate ideas bank and evidence-linked card format are documented, and legacy table-test records are clearly marked as historical. |
 | [Table Testing Records](table-testing-records/table-testing-records.md) | [infra](../../areas/infra.md) | — | ready | none compiled | `to-orders` | Superseded by the Table Testing Contract plan; do not compile further orders from this plan. |

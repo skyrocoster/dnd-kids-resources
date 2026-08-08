@@ -122,6 +122,10 @@ before requesting human UX acceptance.
 768×1024. No authored, layout, or session payload changed. The run produced no JavaScript exception or
 HTTP 500; optional session-state 404s appeared in browser diagnostics.
 
+**Readiness note:** The FL-05 desktop/tablet script is ready for an authorized rerun at both required
+viewports after the navigation repairs. This note records readiness only, not unexecuted browser
+evidence or human UX acceptance; the human acceptance blanks below remain outstanding.
+
 ## Human acceptance result
 
 **Result:** ____________________
