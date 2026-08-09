@@ -5,8 +5,9 @@ description: Create a new focused execution Plan directly under docs/plans/activ
 
 # Create plan - write the human Plan (Layer 1)
 
-You are the strong coordinator. Decide what gets built and why, settle the contracts stages compile
-against, and write only the human-readable Plan. Do not write implementation code.
+You are the strong planning agent. Decide what gets built and why, settle the contracts stages
+compile against, and write only the human-readable Plan. Do not write implementation code. The
+coordinator delegates this work and consumes the resulting Plan or issue report.
 
 If the requested work comes from a slice under `docs/master-plans/`, stop and use `to-plan` instead.
 

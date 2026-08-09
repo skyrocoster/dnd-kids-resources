@@ -52,7 +52,7 @@ describe('MapLabEditorPage (Stage E3 — Toolbar reorganization & persistent ins
     vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: oneRoomOneDoorLayout })
   })
 
-  it('toolbar groups Create buttons into a tray and folds Reset into the Map popover', async () => {
+  it('toolbar separates Primary and Active tool options and folds Reset into the Map popover', async () => {
     const { container } = renderMapLabEditorPage()
     await flush()
 
@@ -60,11 +60,12 @@ describe('MapLabEditorPage (Stage E3 — Toolbar reorganization & persistent ins
     expect(groups.length).toBeGreaterThanOrEqual(1)
 
     const labels = Array.from(groups).map((group) => group.querySelector('.maplab-toolbar-group-label')?.textContent)
-    expect(labels).toContain('Create')
+    expect(labels).toEqual(expect.arrayContaining(['Primary', 'Active tool options']))
 
-    const createGroup = Array.from(groups).find((group) => group.querySelector('.maplab-toolbar-group-label')?.textContent === 'Create')
-    expect(createGroup?.textContent).toMatch(/Room/)
-    expect(createGroup?.textContent).toMatch(/Passages/)
+    const primaryGroup = Array.from(groups).find((group) => group.querySelector('.maplab-toolbar-group-label')?.textContent === 'Primary')
+    const activeOptionsGroup = Array.from(groups).find((group) => group.querySelector('.maplab-toolbar-group-label')?.textContent === 'Active tool options')
+    expect(primaryGroup?.textContent).toMatch(/Select.*Room/)
+    expect(activeOptionsGroup?.textContent).toMatch(/Passages.*Prop.*Terrain/)
 
     expect(screen.queryByRole('button', { name: 'Reset unsaved changes' })).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Map' }))
@@ -100,25 +101,26 @@ describe('MapLabEditorPage (Stage E3 — Toolbar reorganization & persistent ins
 
   describe('Design Phase J1 — toolbar trays', () => {
     afterEach(() => {
-      window.localStorage.removeItem('dnd-kids-maplab-tray-collapsed:editor-create')
+      window.localStorage.removeItem('dnd-kids-maplab-tray-collapsed:editor-primary')
+      window.localStorage.removeItem('dnd-kids-maplab-tray-collapsed:editor-active-options')
     })
 
-    it('the Create toolbar group collapses', async () => {
+    it('the Primary toolbar group collapses', async () => {
       renderMapLabEditorPage()
       await flush()
 
-      fireEvent.click(screen.getByRole('button', { name: 'Collapse Create tools' }))
+      fireEvent.click(screen.getByRole('button', { name: 'Collapse Primary tools' }))
 
-      expect(screen.getByRole('button', { name: 'Expand Create tools' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Expand Primary tools' })).toBeInTheDocument()
     })
 
     it('toolbar tray collapse state persists across remount via localStorage', async () => {
-      window.localStorage.setItem('dnd-kids-maplab-tray-collapsed:editor-create', 'true')
+      window.localStorage.setItem('dnd-kids-maplab-tray-collapsed:editor-primary', 'true')
 
       renderMapLabEditorPage()
       await flush()
 
-      expect(screen.getByRole('button', { name: 'Expand Create tools' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Expand Primary tools' })).toBeInTheDocument()
     })
   })
 

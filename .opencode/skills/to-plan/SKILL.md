@@ -5,6 +5,10 @@ description: Route exactly one selected slice from docs/master-plans/ to the sma
 
 # To plan - route one master-plan slice
 
+This skill runs in the dedicated `plan-router` subagent. That subagent owns repository retrieval,
+routing judgment, Plan creation, and the handoff to the next workflow action. The coordinator
+delegates here and consumes the compact result; it must not duplicate this method in its own context.
+
 Turn one agreed destination slice into the smallest safe execution path without reopening the whole
 master plan or combining neighboring slices. A focused Plan is durable coordination state, not a toll
 every slice must pay.
@@ -73,6 +77,25 @@ same shortcut again.
    `to-orders` should not rediscover.
 10. Run the documentation checker. Stop with the Plan ready for its routed first stage; write no code
     or work orders on the focused-Plan route.
+
+## Subagent Handoff
+
+Return only the following compact result to the coordinator. Do not include discovery logs or
+unrequested source excerpts:
+
+```text
+RESULT: ROUTED | BLOCKED | ESCALATED | FAILED
+ROUTE: DIRECT | FOCUSED-PLAN | NONE
+ARTIFACT: <path or none>
+NEXT: <single next workflow action>
+CHECKS: <commands and pass/fail status>
+ISSUE: <none, or exact blocker with path:line evidence>
+```
+
+`ROUTED` means the selected route and artifact are ready for `NEXT`. Use `BLOCKED` for missing or
+contradictory repository facts, `ESCALATED` for unresolved product or human decisions, and `FAILED`
+for an attempted route whose required check did not pass. The coordinator should need no additional
+reads for a clean `ROUTED` result.
 
 ## Stage Shape
 

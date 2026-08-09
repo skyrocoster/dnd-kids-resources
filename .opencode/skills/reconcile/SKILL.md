@@ -5,8 +5,13 @@ description: Close out finished work orders for a feature — collapse completed
 
 # reconcile — close out shipped work orders
 
+This skill runs in the dedicated `reconcile-agent` subagent. That subagent owns the complete
+closeout, including evidence, judgement, documentation edits, generated refreshes, checks, cleanup,
+archiving, and the authorized commit. The coordinator delegates here and consumes only the compact
+handoff; it must not duplicate the closeout in its own context.
+
 After the executors have run a stage's work orders, this skill reconciles what actually shipped back
-into the durable docs and clears the spent orders. You are the **strong coordinator** here; the job is
+into the durable docs and clears the spent orders. You are the **strong reconcile agent** here; the job is
 **bookkeeping and documentation** — you record what shipped, you don't extend it.
 
 ### Planned quick stages
@@ -208,3 +213,21 @@ treating the report as complete.
 The full lifecycle, order schema, and failure formats live in
 [docs/PLAN_TEMPLATE.md](../../../docs/PLAN_TEMPLATE.md). Read it if a closeout case here isn't
 covered.
+
+## Subagent Handoff
+
+Return only the following compact result to the coordinator:
+
+```text
+RESULT: RECONCILED | BLOCKED | FAILED | ESCALATED
+FEATURE: <feature path>
+COMMIT: <hash and subject, or none>
+CHECKS: <stage/docs check status>
+GIT: <clean, or concise remaining status>
+ISSUE: <none, or exact blocker with path:line evidence>
+```
+
+`RECONCILED` means all required closeout work and the authorized commit completed. Use `BLOCKED`
+for an unexecutable closeout, `FAILED` for a required check or closeout action that did not pass,
+and `ESCALATED` for a Plan-level or human decision. The coordinator should need no additional
+reads for a clean result.

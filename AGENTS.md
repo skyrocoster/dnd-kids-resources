@@ -112,7 +112,9 @@ the user is not asked to choose workflow transport.
 - Seed export column lists are generated from `scripts/init_database.py` by `scripts/generate_export_schema.py`; never hand-edit `data/generated/export_schema.json`.
 - Use the shared tokens in `frontend/src/theme.css`; do not introduce arbitrary colors.
 - Backend tests use the real schema from `scripts/init_database.py`, never hand-copied fixture DDL.
-- Do not drive a browser unless the user explicitly asks for browser automation in the current turn. Run applicable automated checks and report manual verification still needed.
+- Browser verification is available through the configured `browser-automation-luna` subagent and
+  Playwright MCP server. Use it when the task or acceptance brief requires live UI evidence; otherwise
+  run applicable automated checks and report any live verification that remains.
 - Do not commit databases, logs, PID files, `.env`, `node_modules/`, or `frontend/dist/`.
 
 ## Safety

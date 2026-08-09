@@ -834,11 +834,19 @@
   gap: var(--space-2);
   padding: 0 var(--space-4);
   border-left: 1px solid var(--md-outline-variant);
+  min-width: 0;
 }
 
 .maplab-toolbar-group:first-child {
+  flex: 1 1 36rem;
+  min-width: min(100%, 36rem);
   padding-left: 0;
   border-left: none;
+}
+
+.maplab-toolbar-group:nth-child(2) {
+  flex: 0 1 28rem;
+  min-width: min(100%, 20rem);
 }
 
 .maplab-toolbar-group-status {
@@ -846,6 +854,7 @@
 }
 
 .maplab-toolbar-group-label {
+  flex: 0 0 auto;
   font-size: var(--type-caption-size);
   font-weight: var(--type-caption-weight);
   letter-spacing: var(--type-caption-tracking);
@@ -1285,13 +1294,21 @@
 
   .maplab-toolbar-group {
     flex: 1 1 100%;
+    min-width: 0;
     padding: var(--space-2) 0;
     border-left: none;
     border-top: 1px solid var(--md-outline-variant);
   }
 
   .maplab-toolbar-group:first-child {
+    flex-basis: 100%;
+    min-width: 0;
     border-top: none;
+  }
+
+  .maplab-toolbar-group:nth-child(2) {
+    flex-basis: 100%;
+    min-width: 0;
   }
 
   .maplab-toolbar-tray {

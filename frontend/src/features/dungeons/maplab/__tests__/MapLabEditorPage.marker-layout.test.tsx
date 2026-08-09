@@ -159,7 +159,7 @@ describe('MapLabEditorPage (Stage I3 — grid marker layout)', () => {
     expect(redo).toBeDisabled()
     expect(undo.closest('.maplab-map-controls')).toBeInTheDocument()
 
-    fireEvent.click(within(screen.getByRole('group', { name: 'Drawing tools' })).getByRole('button', { name: 'Room' }))
+    fireEvent.click(within(screen.getByRole('group', { name: 'Primary drawing tools' })).getByRole('button', { name: 'Room' }))
     dragRoomBrush(container, { minX: -3, minY: -3 }, [[2, 0]])
 
     expect(undo).toBeEnabled()

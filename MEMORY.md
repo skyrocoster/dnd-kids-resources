@@ -1,5 +1,5 @@
 # Project Memory
 
-- Browser automation policy: do not drive Chrome, Playwright, or any browser UI unless the user explicitly
-  asks for browser automation in the current turn. The user performs manual UI verification; agents should run
-  automated tests/typecheck/build and report manual checks that remain.
+- Browser verification is handled by the `browser-automation-luna` subagent through the repository's
+  Playwright MCP server. It may start and stop the local app with `scripts/start_server.ps1` and
+  `scripts/stop_server.ps1`, and returns live UI evidence to the coordinator.

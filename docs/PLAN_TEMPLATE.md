@@ -17,7 +17,16 @@ The workflow is driven by eight skills in `.opencode/skills/`, opencode's native
 | `implement-order` | executor | Execute **one** work order, then stop. Writes the code. |
 | `implement-quick` | quick executor | Execute one fully settled atomic change from an ephemeral brief for a Plan stage, direct slice, or bounded repair. |
 | `quick-reconcile` | planner | Close a directly delivered master-plan slice: update canonical docs and its slice receipt, run full checks, and remove redundant artifacts. |
-| `reconcile` | planner | Close out finished orders: scout and automatically repair focused stage regressions through a coordinator-authored quick brief, then collapse the Plan, update docs, and run the checker. |
+| `reconcile` | planner | Close out finished orders: the `reconcile-agent` scouts and automatically repairs focused stage regressions, then collapses the Plan, updates docs, runs the checker, and commits once green. |
+
+The coordinator delegates `to-plan` and focused Plan creation to the dedicated `plan-router`
+subagent. The coordinator consumes its compact route handoff and only reads cited evidence when
+the subagent reports a blocker or escalation; it does not duplicate the planning packet in its own
+context.
+
+The coordinator also delegates the complete `reconcile` closeout to `reconcile-agent`. After a clean
+handoff it checks only git status, diff summary, and the reported commit; it reads cited evidence
+only when closeout reports a blocker, failure, or escalation.
 
 The split is also a context-preservation rule: when `to-orders` emits exactly one order, the creating
 planner implements that order in the current context, runs its STOP WHEN, and preserves its

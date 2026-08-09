@@ -388,15 +388,16 @@ Independently collapsible toolbar group in Map Lab:
   legible)
 - **Toggle** — `ChevronUpIcon`/`ChevronDownIcon`, `aria-expanded` reflects state, `aria-label` includes
   group name and expand/collapse action
-- **Reused by** — `MapLabPage` (Session group) and `MapLabEditorPage` (Create group, now
-  wrapping the tool palette below — Session/View/Status groups were replaced by popovers and a
-  header portal, see below)
+- **Reused by** — `MapLabPage` (Session group) and `MapLabEditorPage` (Primary and Active tool
+  options groups, wrapping the tool palette below — Session/View/Status groups were replaced by
+  popovers and a header portal, see below)
 
 ### Tool palette + popovers (`maplab/MapLabEditorPage.tsx`, `maplab/MapLabPage.tsx`)
 
 Editor chrome for arming tools and adjusting view/map settings without a five-tray toolbar:
-- **Tool palette** — five sticky slots (Select, Room, Passages, Prop, Terrain) inside the `Create`
-  `ToolbarTray`; one `armedTool` stays armed until another tool or Esc is chosen. Group slots
+- **Tool palette** — five sticky slots (Select, Room, Passages, Prop, Terrain) inside the `Primary`
+  `ToolbarTray`; active-tool options are presented in a separate labelled `Active tool options`
+  group. One `armedTool` stays armed until another tool or Esc is chosen. Group slots
   (Passages, Terrain) remember their last-used sub-tool — tap re-arms it, the chevron button opens a
   `role="menu"` flyout (`maplab-tool-palette-flyout`) to pick a specific sub-tool.
 - **Options slot** — while a brush tool is armed, an Erase toggle (`maplab-tool-options-erase`)
