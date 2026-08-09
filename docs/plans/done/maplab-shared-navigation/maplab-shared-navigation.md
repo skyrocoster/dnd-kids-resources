@@ -1,6 +1,6 @@
 # Map Lab Shared Navigation — editor and viewer use one navigation language
 
-> **Status:** Stage 6 shipped; automated regression coverage is complete and FL-05 browser rerun readiness is recorded; human UX acceptance remains outstanding.
+> **Status:** Completed and accepted 2026-08-09; FL-05 shared navigation is shipped.
 
 - **Areas:** dungeons, design
 - **Read trigger:** Map Lab editor/viewer shared navigation, selection, focus, or keyboard behavior
@@ -60,7 +60,7 @@ Touch:        preserve the 48px control floor and pan/pinch gestures; long-press
 | 3 | Canonical references and the durable [FL-05 shared navigation acceptance script](../../../FL-05-maplab-navigation-acceptance.md) are complete. Documentation checks passed at implementation closeout, but the 2026-08-07 browser execution failed several required behaviors; the human result remains intentionally unfilled. |
 | 4 | Browser-session hydration and route restoration now preserve one dungeon-keyed floor, pan, zoom, selection, and requested-focus context before write-back, including editor/viewer return timing. Focused and full automated checks passed; human UX acceptance remains outstanding. |
 | 5 | Rendered editor and viewer navigation now use real target geometry for framing, preserve visible selection, clear genuine canvas background selection, keep connection activation centered without travel, and apply the viewer's layered Escape order. Focused and full automated checks passed; human UX acceptance remains outstanding. |
-| 6 | Added hydration, geometry, viewer, and editor regressions and normalized origin-based centering against padded SVG bounds; focused and full automated checks passed. The FL-05 ledger records browser-rerun readiness only, so human UX acceptance remains outstanding. |
+| 6 | Added hydration, geometry, viewer, and editor regressions and normalized origin-based centering against padded SVG bounds; focused and full automated checks passed. The FL-05 acceptance outcome was accepted on 2026-08-09. |
 
 ## Touches
 

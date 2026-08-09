@@ -36,6 +36,7 @@ Completed plans are archived here for reference. Each directory under `docs/plan
 - [Map Obstacle State - authored baselines and one persisted run overlay](map-obstacle-state/map-obstacle-state.md) — Complete. — (dungeons)
 - [Map Lab component refactor — smaller responsibility-oriented component files](maplab-component-refactor/maplab-component-refactor.md) — Complete — viewer and editor composition now live in responsibility-oriented files; further form splitting was intentionally declined after Stage 3. — (dungeons)
 - [Map Lab Editor Usability — the map fills the screen, and every tool is reachable](maplab-editor-usability/maplab-editor-usability.md) — Stages 0–7 shipped. — (Dungeons)
+- [Map Lab Shared Navigation — editor and viewer use one navigation language](maplab-shared-navigation/maplab-shared-navigation.md) — Completed and accepted 2026-08-09; FL-05 shared navigation is shipped. — (dungeons)
 - [Map Lab test suite refactor — smaller, behavior-oriented test files](maplab-test-suite-refactor/maplab-test-suite-refactor.md) — Complete — the Map Lab frontend test tree is split into focused behavior-oriented suites and the retired reducer previews are removed. — (dungeons)
 - [Map Lab UX Pass — a calm, touch-first editor and viewer](maplab-ux-pass/maplab-ux-pass.md) — Complete. — (Dungeons)
 - [Monsters — Data Restructure & Stat-Block Redesign](monsters_plan/monsters_plan.md) — M3, X0, X1, X2, X3, X4 shipped. — (Encounters)

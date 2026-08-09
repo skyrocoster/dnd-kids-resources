@@ -122,15 +122,14 @@ before requesting human UX acceptance.
 768×1024. No authored, layout, or session payload changed. The run produced no JavaScript exception or
 HTTP 500; optional session-state 404s appeared in browser diagnostics.
 
-**Readiness note:** The FL-05 desktop/tablet script is ready for an authorized rerun at both required
-viewports after the navigation repairs. This note records readiness only, not unexecuted browser
-evidence or human UX acceptance; the human acceptance blanks below remain outstanding.
+**Acceptance note:** The repaired navigation behavior passed the focused and full automated checks,
+and the user accepted the visible FL-05 outcome on 2026-08-09.
 
 ## Human acceptance result
 
-**Result:** ____________________
+**Result:** ACCEPTED
 
-**Reviewer:** ____________________  **Date:** ____________________
+**Reviewer:** User  **Date:** 2026-08-09
 
 **Notes / failed checks:**
 
@@ -138,4 +137,4 @@ ________________________________________________________________________________
 
 ________________________________________________________________________________
 
-STATUS: <-- human reviewer fills this field after performing the script -->
+STATUS: ACCEPTED 2026-08-09
