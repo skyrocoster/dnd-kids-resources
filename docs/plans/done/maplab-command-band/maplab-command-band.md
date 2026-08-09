@@ -1,6 +1,6 @@
 # Map Lab Command Band — one labelled tool row with explicit active options
 
-> **Status:** Stages 1–2 shipped; awaiting human acceptance for FL-06.
+> **Status:** Completed and accepted 2026-08-09; FL-06 command band is shipped.
 
 - **Areas:** design, dungeons
 - **Read trigger:** When implementing FL-06 of the Frontend Layout Redesign master plan.
