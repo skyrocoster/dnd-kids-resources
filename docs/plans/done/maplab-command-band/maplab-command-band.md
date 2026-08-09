@@ -1,6 +1,6 @@
 # Map Lab Command Band — one labelled tool row with explicit active options
 
-> **Status:** Stage 1 shipped; Stage 2 is ready to compile for viewer parity and responsive closeout.
+> **Status:** Stages 1–2 shipped; awaiting human acceptance for FL-06.
 
 - **Areas:** design, dungeons
 - **Read trigger:** When implementing FL-06 of the Frontend Layout Redesign master plan.
@@ -28,6 +28,7 @@ floor/deletion/connection responsibilities later; FL-08 removes that rail; Smart
 | Stage | What shipped (≤2 sentences) |
 |-------|------------------------------|
 | Stage 1 | The Map Lab editor now separates Primary tools from Active tool options while preserving existing tool activation, flyouts, shortcuts, and utility controls. Focused tests and the full stage checks passed. |
+| Stage 2 | The Map Lab viewer now presents Session, View, and floor controls in an explicit DOM order with deliberate constrained-width rows, visible labels, native keyboard behavior, and focused regression coverage. |
 
 ## Touches
 - `frontend/src/features/dungeons/maplab/MapLabEditorChrome.tsx`

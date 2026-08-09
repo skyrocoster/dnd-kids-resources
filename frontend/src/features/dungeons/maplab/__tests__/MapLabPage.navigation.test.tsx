@@ -448,6 +448,12 @@ describe('VT0 — Viewer room drawer (tablet)', () => {
     expect(toolbar).toContainElement(tablist)
     const drawer = document.querySelector('.maplab-viewer-rail-container')
     expect(drawer).not.toContainElement(tablist)
+
+    const viewButton = screen.getByRole('button', { name: 'View' })
+    const firstTab = screen.getByRole('tab', { name: 'Ground Floor' })
+    expect(viewButton.compareDocumentPosition(firstTab) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(firstTab).toHaveAccessibleName('Ground Floor')
+    expect(screen.getByRole('tab', { name: 'First Floor' })).toHaveAccessibleName('First Floor')
   })
 
   it('room buttons inside the drawer meet the 48px touch floor', async () => {

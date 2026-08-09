@@ -1290,6 +1290,7 @@
 
   .maplab-toolbar {
     align-items: stretch;
+    row-gap: 0;
   }
 
   .maplab-toolbar-group {
@@ -1308,6 +1309,21 @@
 
   .maplab-toolbar-group:nth-child(2) {
     flex-basis: 100%;
+    min-width: 0;
+  }
+
+  .maplab-toolbar-group-label {
+    min-height: 48px;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .maplab-view-popover-wrap {
+    flex: 0 0 auto;
+  }
+
+  .maplab-floor-tabs {
+    flex: 1 1 100%;
     min-width: 0;
   }
 

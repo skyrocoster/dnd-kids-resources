@@ -34,6 +34,7 @@ Completed plans are archived here for reference. Each directory under `docs/plan
 - [The Loom — Weaver's Workspace (UI/UX Pass)](loom-weavers-workspace/loom-weavers-workspace.md) — LU0–LU5 complete. — (The Loom)
 - [Loot System — Plan Doc](loot_plan/loot_plan.md) — Loot system complete. — (Reference)
 - [Map Obstacle State - authored baselines and one persisted run overlay](map-obstacle-state/map-obstacle-state.md) — Complete. — (dungeons)
+- [Map Lab Command Band — one labelled tool row with explicit active options](maplab-command-band/maplab-command-band.md) — Stages 1–2 shipped; awaiting human acceptance for FL-06. — (design)
 - [Map Lab component refactor — smaller responsibility-oriented component files](maplab-component-refactor/maplab-component-refactor.md) — Complete — viewer and editor composition now live in responsibility-oriented files; further form splitting was intentionally declined after Stage 3. — (dungeons)
 - [Map Lab Editor Usability — the map fills the screen, and every tool is reachable](maplab-editor-usability/maplab-editor-usability.md) — Stages 0–7 shipped. — (Dungeons)
 - [Map Lab Shared Navigation — editor and viewer use one navigation language](maplab-shared-navigation/maplab-shared-navigation.md) — Completed and accepted 2026-08-09; FL-05 shared navigation is shipped. — (dungeons)

@@ -257,6 +257,20 @@ describe('MapLabPage (density control)', () => {
 })
 
 describe('MapLabPage (View popover)', () => {
+  it('keeps Session utilities before View and exposes visible layer labels', async () => {
+    const user = userEvent.setup()
+    await renderLoadedMapLabPage()
+
+    const resetButton = screen.getByRole('button', { name: 'Reset dungeon' })
+    const viewButton = screen.getByRole('button', { name: 'View' })
+    expect(resetButton.compareDocumentPosition(viewButton) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+
+    await user.click(viewButton)
+    for (const label of ['Outside', 'Props', 'Passages', 'Labels']) {
+      expect(screen.getByRole('button', { name: label })).toBeVisible()
+    }
+  })
+
   it('closes on outside click', async () => {
     const user = userEvent.setup()
     renderMapLabPage()
@@ -280,6 +294,22 @@ describe('MapLabPage (View popover)', () => {
 
     await user.keyboard('{Escape}')
     expect(screen.queryByRole('button', { name: 'Detailed' })).not.toBeInTheDocument()
+  })
+
+  it('opens with native keyboard activation and Escape dismisses the View layer', async () => {
+    const user = userEvent.setup()
+    await renderLoadedMapLabPage()
+
+    const viewButton = screen.getByRole('button', { name: 'View' })
+    viewButton.focus()
+    await user.keyboard('{Enter}')
+    expect(screen.getByRole('button', { name: 'Detailed' })).toBeVisible()
+
+    await user.keyboard('{Escape}')
+    expect(screen.queryByRole('button', { name: 'Detailed' })).not.toBeInTheDocument()
+
+    await user.keyboard(' ')
+    expect(screen.getByRole('button', { name: 'Detailed' })).toBeVisible()
   })
 })
 
