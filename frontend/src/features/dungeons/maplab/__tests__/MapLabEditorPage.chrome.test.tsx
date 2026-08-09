@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MemoryRouter } from 'react-router-dom'
 import * as api from '../../../../api/client'
@@ -203,22 +204,22 @@ describe('MapLabEditorPage (Stage E3 — Toolbar reorganization & persistent ins
     })
   })
 
-  it('left navigation rail (nav-rail) holds floor tabs and room list vertically', async () => {
+  it('left navigation rail holds the room list while floor creation controls live in the command band', async () => {
     const { container } = renderMapLabEditorPage()
     await flush()
 
     const navRail = container.querySelector('.maplab-editor-nav-rail')
     expect(navRail).toBeInTheDocument()
-    const floorTabs = navRail?.querySelector('.maplab-floor-tabs')
-    const floorActions = navRail?.querySelector('.maplab-editor-floor-actions')
     const roomList = navRail?.querySelector('.maplab-editor-room-list')
-    expect(floorTabs).toBeInTheDocument()
-    expect(floorActions).toBeInTheDocument()
     expect(roomList).toBeInTheDocument()
 
-    // Floor tabs precede the room list in document order (top of the column).
-    const position = floorTabs?.compareDocumentPosition(roomList as Node)
-    expect((position as number) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    // Floor creation controls moved to the command band; the rail is room navigation.
+    expect(navRail?.querySelector('.maplab-editor-floor-actions')).not.toBeInTheDocument()
+    const toolbar = container.querySelector('.maplab-toolbar')
+    const floorActions = toolbar?.querySelector('.maplab-editor-floor-actions')
+    expect(floorActions).toBeInTheDocument()
+    expect(floorActions?.textContent).toMatch(/Add floor above.*Add floor below/)
+    expect(floorActions?.textContent).not.toMatch(/delete|connection/i)
   })
 
   it('room list is the named scroll owner inside the editor navigation rail', async () => {
@@ -259,6 +260,33 @@ describe('MapLabEditorPage (Stage E3 — Toolbar reorganization & persistent ins
 
     const basementTab = screen.getByRole('tab', { name: 'Basement' })
     expect(basementTab).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByRole('button', { name: 'Add floor above' })).toBeDisabled()
+  })
+
+  it('keeps floor tabs ordered and activates Add floor above with Enter', async () => {
+    const user = userEvent.setup()
+    renderMapLabEditorPage()
+    await flush()
+
+    const addAbove = screen.getByRole('button', { name: 'Add floor above' })
+    addAbove.focus()
+    await user.keyboard('{Enter}')
+
+    expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual(['Ground Floor', 'First Floor'])
+    expect(screen.getByRole('tab', { name: 'First Floor' })).toHaveAttribute('aria-selected', 'true')
+  })
+
+  it('activates Add floor below with Space and keeps the floor controls as native buttons', async () => {
+    const user = userEvent.setup()
+    renderMapLabEditorPage()
+    await flush()
+
+    const addBelow = screen.getByRole('button', { name: 'Add floor below' })
+    expect(addBelow.tagName).toBe('BUTTON')
+    addBelow.focus()
+    await user.keyboard(' ')
+
+    expect(screen.getByRole('tab', { name: 'Basement' })).toHaveAttribute('aria-selected', 'true')
     expect(screen.getByRole('button', { name: 'Add floor above' })).toBeDisabled()
   })
 

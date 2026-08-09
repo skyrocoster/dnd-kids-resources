@@ -1093,8 +1093,12 @@ export function MapLabEditorPage() {
          updatePadding={updatePadding}
          setConfirmingReset={setConfirmingReset}
          statusSlot={statusSlot}
-         armedTool={armedTool}
-         floors={floors}
+          armedTool={armedTool}
+          floors={floors}
+          hasFloorAbove={hasFloorAbove}
+          hasFloorBelow={hasFloorBelow}
+          addFloorAbove={addFloorAbove}
+          addFloorBelow={addFloorBelow}
          passagesFlyoutRef={passagesFlyoutRef}
          terrainFlyoutRef={terrainFlyoutRef}
          propFlyoutRef={propFlyoutRef}
@@ -1120,12 +1124,8 @@ export function MapLabEditorPage() {
       <div className="maplab-editor-layout">
         <MapLabEditorNavigation
           state={{ layout: state.layout, activeZ: state.activeZ, selectedRoomId: state.selectedRoomId }}
-          tabletNavOpen={tabletNavOpen}
-          setTabletNavOpen={setTabletNavOpen}
-          hasFloorAbove={hasFloorAbove}
-          hasFloorBelow={hasFloorBelow}
-          addFloorAbove={addFloorAbove}
-          addFloorBelow={addFloorBelow}
+           tabletNavOpen={tabletNavOpen}
+           setTabletNavOpen={setTabletNavOpen}
           roomsOnActiveFloor={roomsOnActiveFloor}
           selectRoom={selectRoom}
           setArmedTool={setArmedTool}
