@@ -39,7 +39,7 @@ if (Test-Path $FrontendPidFile) {
 }
 
 if (-not (Test-Path $Python)) {
-    Write-Host "Python venv not found at $Python — falling back to 'python' on PATH." -ForegroundColor Yellow
+    Write-Host "Python venv not found at $Python - falling back to 'python' on PATH." -ForegroundColor Yellow
     $Python = "python"
 }
 

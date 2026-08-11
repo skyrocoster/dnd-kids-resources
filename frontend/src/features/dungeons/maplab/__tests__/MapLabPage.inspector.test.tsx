@@ -485,6 +485,6 @@ describe('MapLabPage (R4 viewer room-reading surface)', () => {
 
   it('data-only rooms are not invented on the map', async () => {
     await renderLoadedMapLabPage()
-    expect(screen.queryByRole('button', { name: 'Data Only Room' })).not.toBeInTheDocument()
+    expect(within(screen.getByRole('group', { name: /dungeon floor map/i })).queryByRole('button', { name: 'Data Only Room' })).not.toBeInTheDocument()
   })
 })

@@ -145,7 +145,7 @@ describe('MapLabPage (R5 viewer navigation rail)', () => {
     const user = userEvent.setup()
     await renderLoadedMapLabPage()
 
-    await user.click(screen.getAllByRole('button', { name: 'Armoury' })[0])
+    await user.click(within(screen.getByRole('group', { name: /dungeon floor map/i })).getByRole('button', { name: 'Armoury' }))
 
     const rail = screen.getByRole('navigation', { name: 'Room navigation' })
     expect(within(rail).getByRole('button', { name: 'Armoury' })).toHaveAttribute('aria-pressed', 'true')
@@ -256,6 +256,7 @@ describe('MapLabPage portal viewer rendering and navigation', () => {
     await user.click(within(screen.getByRole('navigation', { name: 'Room navigation' })).getByRole('button', { name: 'First Floor Landing' }))
 
     expect(screen.getByText('Balcony')).toBeInTheDocument()
+    await user.click(within(screen.getByRole('navigation', { name: 'Room navigation' })).getByRole('button', { name: 'Find room…' }))
     expect(within(screen.getByRole('navigation', { name: 'Room navigation' })).getByRole('button', { name: 'First Floor Landing' })).toHaveAttribute('aria-pressed', 'true')
   })
 

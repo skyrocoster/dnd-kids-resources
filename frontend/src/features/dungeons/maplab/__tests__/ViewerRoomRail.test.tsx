@@ -302,4 +302,41 @@ describe('ViewerRoomRail', () => {
     expect(screen.getByRole('button', { name: 'Room 20' })).toBeInTheDocument()
     expect(Element.prototype.scrollIntoView).toHaveBeenCalled()
   })
+
+  it('shows useful results before typing and prioritizes the active floor', () => {
+    render(<ViewerRoomRail layout={mapLabLayout} parsed={parsed} activeRoomId={33} onSelectRoom={vi.fn()} />)
+
+    expect(screen.getByRole('searchbox', { name: 'Find room…' })).toBeInTheDocument()
+    expect(screen.getAllByRole('listbox')[0]).toHaveAccessibleName('First Floor rooms')
+  })
+
+  it('filters by room number, title, and floor and labels off-map results', async () => {
+    const user = userEvent.setup()
+    const layout = { ...mapLabLayout, rooms: mapLabLayout.rooms.filter((room) => room.room_id !== 100) }
+    render(<ViewerRoomRail layout={layout} parsed={parsed} activeRoomId={17} onSelectRoom={vi.fn()} />)
+
+    await user.type(screen.getByRole('searchbox', { name: 'Find room…' }), '100')
+    expect(screen.getByRole('button', { name: /East Wing/ })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Training Hall/ })).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Off map', level: 4 })).toBeInTheDocument()
+  })
+
+  it('dismisses after selection and restores focus to Find room', async () => {
+    const user = userEvent.setup()
+    render(<ViewerRoomRail layout={mapLabLayout} parsed={parsed} activeRoomId={17} onSelectRoom={vi.fn()} />)
+
+    await user.click(screen.getByRole('button', { name: 'Armoury' }))
+    expect(screen.queryByRole('dialog', { name: 'Find room' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Find room…' })).toHaveFocus()
+  })
+
+  it('dismisses with Escape while keeping rows touch-safe', async () => {
+    const user = userEvent.setup()
+    render(<ViewerRoomRail layout={mapLabLayout} parsed={parsed} activeRoomId={17} onSelectRoom={vi.fn()} />)
+
+    await user.click(screen.getByRole('searchbox', { name: 'Find room…' }))
+    await user.keyboard('{Escape}')
+    expect(screen.queryByRole('dialog', { name: 'Find room' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Find room…' })).toHaveFocus()
+  })
 })

@@ -369,14 +369,14 @@ Site-wide navigation shell:
 - **CSS transition** — `width 0.2s ease`; `prefers-reduced-motion` disables via root reset
 - **`visually-hidden` class** — `position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0)`
 
-### Map Lab viewer room rail (`maplab/MapLabViewerCanvas.tsx`)
+### Map Lab room finder (`maplab/ViewerRoomRail.tsx`)
 
-- **Desktop (>768px)** — the room rail has an independent labelled seam control with a 12px visual
-  affordance inside a 48px pointer target. Selecting a room does not collapse the rail.
-- **Tablet (<=768px)** — the seam does not render; the labelled Rooms toggle and backdrop own the
-  overlay drawer, and selecting a room closes it.
-- **Floor selection** — the viewer floor tablist is the final control group inside the toolbar and
-  remains outside the room drawer.
+- **Presentation** — the shared room-navigation control is labelled `Find room…`, opens with useful
+  grouped results, prioritizes the current floor, and filters by room number, title, or floor while
+  retaining all-floor and off-map results.
+- **Interaction** — native controls remain at least 48px, keyboard focus is visible, Escape dismisses
+  the finder, and selecting a room closes it and restores focus to the trigger. Viewer threat/NPC hints
+  remain concise; editor and viewer integration/removal of permanent navigation is owned by later stages.
 
 ### ToolbarTray (`maplab/MapLabToolbar.tsx`)
 

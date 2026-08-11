@@ -99,6 +99,49 @@
   gap: 1rem;
 }
 
+.maplab-viewer-rail-trigger,
+.maplab-viewer-rail-close {
+  min-height: 48px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--md-outline-variant);
+  border-radius: 8px;
+  background: var(--md-surface-2);
+  color: var(--md-on-surface);
+  cursor: pointer;
+}
+
+.maplab-viewer-rail-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.maplab-viewer-rail-search-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.maplab-viewer-rail-search-row label {
+  font-weight: 600;
+}
+
+.maplab-viewer-rail-panel input {
+  min-height: 48px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--md-outline-variant);
+  border-radius: 8px;
+  background: var(--md-surface);
+  color: var(--md-on-surface);
+}
+
+.maplab-viewer-rail-result-summary {
+  margin: 0;
+  color: var(--md-on-surface-variant);
+  font-size: var(--type-caption-size);
+}
+
 .maplab-viewer-rail-floor {
   display: flex;
   flex-direction: column;
@@ -160,6 +203,12 @@
 
 .maplab-viewer-rail-room-name {
   min-width: 0;
+}
+
+.maplab-viewer-rail-room-number {
+  color: var(--md-on-surface-variant);
+  font-size: var(--type-caption-size);
+  white-space: nowrap;
 }
 
 .maplab-viewer-rail-room-hints {

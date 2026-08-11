@@ -522,7 +522,7 @@ describe('MapLabPage (Stage 2 — Passage visuals)', () => {
       const marker = screen.getByRole('button', { name: /Unlinked Marker/i })
       await user.click(marker)
 
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+      expect(screen.queryByRole('dialog', { name: 'Goblin Ambush' })).not.toBeInTheDocument()
       expect(getEncounterSpy).not.toHaveBeenCalled()
     })
 
