@@ -1,0 +1,205 @@
+- generic [ref=f2e3]:
+  - banner [ref=f2e5]:
+    - generic [ref=f2e171]:
+      - generic [ref=f2e172]:
+        - heading "Map Lab" [level=1] [ref=f2e173]
+        - generic [ref=f2e174]: Isly Castle
+      - generic [ref=f2e175]:
+        - navigation "Dungeon mode" [ref=f2e176]:
+          - link "View" [ref=f2e177] [cursor=pointer]:
+            - /url: /dungeons/3
+          - link "Edit map" [ref=f2e178] [cursor=pointer]:
+            - /url: /dungeons/3/edit
+        - link "Back to dungeons" [ref=f2e179] [cursor=pointer]:
+          - /url: /dungeons
+  - generic [ref=f2e20]:
+    - navigation [ref=f2e21]:
+      - link "D&D Kids Resources" [ref=f2e22] [cursor=pointer]:
+        - /url: /
+      - button "Collapse navigation" [ref=f2e26] [cursor=pointer]
+      - generic [ref=f2e30]:
+        - heading "Reference" [level=2] [ref=f2e31]
+        - list [ref=f2e32]:
+          - listitem [ref=f2e33]:
+            - link "Spells" [ref=f2e34] [cursor=pointer]:
+              - /url: /spells
+          - listitem [ref=f2e39]:
+            - link "Monsters" [ref=f2e40] [cursor=pointer]:
+              - /url: /monsters
+          - listitem [ref=f2e47]:
+            - link "Weapons" [ref=f2e48] [cursor=pointer]:
+              - /url: /weapons
+      - generic [ref=f2e59]:
+        - heading "Campaign" [level=2] [ref=f2e60]
+        - list [ref=f2e61]:
+          - listitem [ref=f2e62]:
+            - link "Players" [ref=f2e63] [cursor=pointer]:
+              - /url: /players
+          - listitem [ref=f2e70]:
+            - link "NPCs" [ref=f2e71] [cursor=pointer]:
+              - /url: /npcs
+          - listitem [ref=f2e82]:
+            - link "The Loom" [ref=f2e83] [cursor=pointer]:
+              - /url: /loom
+          - listitem [ref=f2e92]:
+            - link "Encounters" [ref=f2e93] [cursor=pointer]:
+              - /url: /encounters
+          - listitem [ref=f2e97]:
+            - link "Dungeons" [ref=f2e98] [cursor=pointer]:
+              - /url: /dungeons
+      - generic [ref=f2e103]:
+        - heading "Loot" [level=2] [ref=f2e104]
+        - list [ref=f2e105]:
+          - listitem [ref=f2e106]:
+            - link "Items" [ref=f2e107] [cursor=pointer]:
+              - /url: /items
+          - listitem [ref=f2e112]:
+            - link "Loot Bundles" [ref=f2e113] [cursor=pointer]:
+              - /url: /loot
+    - main [ref=f2e120]:
+      - generic [ref=f2e182]:
+        - generic [ref=f2e183]:
+          - generic [ref=f2e184]:
+            - generic [ref=f2e185]: Session
+            - button "Collapse Session tools" [expanded] [ref=f2e186] [cursor=pointer]
+            - generic [ref=f2e189]:
+              - button "Reset dungeon" [ref=f2e190] [cursor=pointer]
+              - button "At the table" [disabled] [pressed] [ref=f2e191] [cursor=pointer]
+          - button "View" [ref=f2e193] [cursor=pointer]
+          - tablist "Dungeon floors" [ref=f2e197]:
+            - tab "Undercroft" [ref=f2e198] [cursor=pointer]
+            - tab "Ground Floor" [selected] [ref=f2e199] [cursor=pointer]
+            - tab "Upper Floor" [ref=f2e200] [cursor=pointer]
+        - generic [ref=f2e201]:
+          - navigation "Room navigation" [ref=f2e203]:
+            - button "Find room…" [active] [ref=f2e204] [cursor=pointer]
+          - generic [ref=f2e524]:
+            - generic "Map canvas" [ref=f2e525]:
+              - group "Dungeon floor map — Floor 0" [ref=f2e526]:
+                - generic [ref=f2e527]: 1 square = 5 ft
+                - button "Portcullis Passage" [ref=f2e529] [cursor=pointer]
+                - button "Grand Entrance Hall" [ref=f2e554] [cursor=pointer]
+                - button "The Library" [pressed] [ref=f2e595] [cursor=pointer]
+                - button "Cross Hall" [ref=f2e716] [cursor=pointer]
+                - button "Great Hall" [ref=f2e783] [cursor=pointer]
+                - button "The Star Rotunda (Divination Classroom)" [ref=f2e1054] [cursor=pointer]
+                - button "Potions Classroom" [ref=f2e1230] [cursor=pointer]
+                - button "The Training Hall" [ref=f2e1251] [cursor=pointer]
+                - button "Lower Corridor" [ref=f2e1420] [cursor=pointer]
+                - button "The Music Hall" [ref=f2e1449] [cursor=pointer]
+                - button "The Forbidden Archive" [ref=f2e1562] [cursor=pointer]
+                - button "The Long Gallery" [ref=f2e1675] [cursor=pointer]
+                - button "The Scriptorium" [ref=f2e1844] [cursor=pointer]
+                - button "East Bastion (Necromancy Classroom)" [ref=f2e1877] [cursor=pointer]
+                - button "Round Tower (Evocation Classroom)" [ref=f2e1926] [cursor=pointer]
+                - button "The Cloister Walk" [ref=f2e1985] [cursor=pointer]
+                - button "Main Courtyard" [ref=f2e2061] [cursor=pointer]
+                - button "The Tack Room" [ref=f2e2232] [cursor=pointer]
+                - button "The Stables" [ref=f2e2239] [cursor=pointer]
+                - button "The Back Passage" [ref=f2e2276] [cursor=pointer]
+                - button "Abjuration Classroom" [ref=f2e2333] [cursor=pointer]
+                - button "Conjuration Classroom" [ref=f2e2364] [cursor=pointer]
+                - button "Transmutation Classroom" [ref=f2e2407] [cursor=pointer]
+                - button "Illusion Classroom" [ref=f2e2429] [cursor=pointer]
+                - button "The Old Keep — Great Chamber" [ref=f2e2451] [cursor=pointer]
+                - button "Servants' Wing — Scullery" [ref=f2e2540] [cursor=pointer]
+                - button "Enchantment Classroom" [ref=f2e2556] [cursor=pointer]
+                - button "Drama Classroom — The Stage Hall" [ref=f2e2582] [cursor=pointer]
+                - button "The Larder" [ref=f2e2638] [cursor=pointer]
+                - button "Sealed Storeroom" [ref=f2e2674] [cursor=pointer]
+                - button "Servants' Wing — Below-Stairs Hall" [ref=f2e2703] [cursor=pointer]
+                - button "Servants' Wing — Back Stairwell Landing" [ref=f2e2776] [cursor=pointer]
+                - button "Grand Staircase — Lower Landing" [ref=f2e2789] [cursor=pointer]
+                - button "The Great Kitchen" [ref=f2e2814] [cursor=pointer]
+                - button "The Chapel" [ref=f2e2865] [cursor=pointer]
+                - button "The Porter's Lodge" [ref=f2e2954] [cursor=pointer]
+                - button "The Armoury & Forge" [ref=f2e2967] [cursor=pointer]
+                - button "The Groundskeeper's Lodge" [ref=f2e3040] [cursor=pointer]
+                - button "The Kitchen Garden" [ref=f2e3069] [cursor=pointer]
+                - button "The Laundry & Bath House" [ref=f2e3098] [cursor=pointer]
+                - button "The Masters' Common Room" [ref=f2e3159] [cursor=pointer]
+                - button "The Reading Gallery" [ref=f2e3208] [cursor=pointer]
+                - button "The Service Passage" [ref=f2e3249] [cursor=pointer]
+                - button "Room 87" [ref=f2e3268] [cursor=pointer]
+                - button "Portcullis Passage ↔ Grand Entrance Hall — Plain, closed"
+                - button "Grand Entrance Hall ↔ The Library — Plain, closed"
+                - button "Grand Entrance Hall ↔ Cross Hall — Plain, closed"
+                - button "Cross Hall ↔ Great Hall — Plain, closed"
+                - button "Cross Hall ↔ The Star Rotunda (Divination Classroom) — Plain, closed"
+                - button "Grand Entrance Hall ↔ Potions Classroom — Plain, closed"
+                - button "The Training Grounds ↔ Lower Corridor — Plain, closed"
+                - button "Potions Classroom ↔ Lower Corridor — Plain, closed"
+                - button "The Music Hall ↔ Drama Classroom — The Stage Hall — Plain, closed"
+                - button "Lower Corridor ↔ The Music Hall — Plain, closed"
+                - button "Great Hall ↔ The Cloister Walk — Plain, closed"
+                - button "The Long Gallery ↔ The Back Passage — Plain, closed"
+                - button "Round Tower (Evocation Classroom) ↔ Abjuration Classroom — Plain, closed"
+                - button "The Long Gallery ↔ Abjuration Classroom — Plain, closed"
+                - button "The Cloister Walk ↔ The Back Passage — Plain, closed"
+                - button "Potions Classroom ↔ Enchantment Classroom — Plain, closed"
+                - button "Enchantment Classroom ↔ Drama Classroom — The Stage Hall — Plain, closed"
+                - button "The Long Gallery ↔ The Scriptorium — Plain, closed"
+                - button "The Forbidden Archive ↔ The Long Gallery — Plain, closed"
+                - button "The Scriptorium ↔ East Bastion (Necromancy Classroom) — Plain, closed"
+                - button "The Back Passage ↔ The Larder — Plain, closed"
+                - button "The Back Passage ↔ Servants' Wing — Back Stairwell Landing — Plain, closed"
+                - button "Servants' Wing — Below-Stairs Hall ↔ Servants' Wing — Back Stairwell Landing — Plain, closed"
+                - button "Servants' Wing — Scullery ↔ Servants' Wing — Below-Stairs Hall — Plain, closed"
+                - button "The Cloister Walk ↔ The Back Passage — Plain, closed"
+                - button "The Cloister Walk ↔ Main Courtyard — Plain, closed"
+                - button "Main Courtyard ↔ The Tack Room — Plain, closed"
+                - button "Main Courtyard ↔ The Stables — Plain, closed"
+                - button "Transmutation Classroom ↔ Illusion Classroom — Plain, closed"
+                - button "Conjuration Classroom ↔ Illusion Classroom — Plain, closed"
+                - button "Main Courtyard ↔ Conjuration Classroom — Plain, closed"
+                - button "Cross Hall ↔ Grand Staircase — Plain, closed"
+                - button "Great Hall ↔ Grand Staircase — Plain, closed"
+                - button "The Long Gallery ↔ Grand Staircase — Plain, closed"
+                - button "Main Courtyard ↔ The Reading Gallery — Plain, closed"
+                - button "The Reading Gallery ↔ The Library — Plain, closed"
+                - button "The Library ↔ Great Hall — Plain, closed"
+                - button "The Scriptorium ↔ The Forbidden Archive — Locked, closed"
+                - button "The Forbidden Archive ↔ East Bastion (Necromancy Classroom) — Concealed, closed"
+                - button "The Long Gallery ↔ The Masters' Common Room — Plain, closed"
+                - button "The Scriptorium ↔ The Masters' Common Room — Plain, closed"
+                - button "The Music Hall ↔ Conjuration Classroom — Locked, closed"
+                - button "The Great Kitchen ↔ Servants' Wing — Below-Stairs Hall — Plain, closed"
+                - button "The Great Kitchen ↔ Servants' Wing — Scullery — Plain, closed"
+                - button "The Great Kitchen ↔ The Cloister Walk — Plain, closed"
+                - button "The Great Kitchen ↔ The Back Passage — Plain, closed"
+                - button "The Laundry & Bath House ↔ Servants' Wing — Below-Stairs Hall — Plain, closed"
+                - button "The Service Passage ↔ Main Courtyard — Plain, closed"
+                - button "The Service Passage ↔ Servants' Wing — Scullery — Plain, closed"
+                - button "The Service Passage ↔ The Cloister Walk — Plain, closed"
+                - button "The Larder ↔ Sealed Storeroom — Concealed, closed"
+                - button "Main Courtyard ↔ The Old Keep — Great Chamber — Plain, closed"
+                - button "Portcullis Passage ↔ The Porter's Lodge — Plain, closed"
+                - button "The Porter's Lodge ↔ The Training Hall — Plain, closed"
+                - button "Portcullis Passage ↔ The Chapel — Plain, closed"
+                - button "The Chapel ↔ The Training Hall — Plain, closed"
+                - button "The Training Hall ↔ The Armoury & Forge — Plain, closed"
+                - button "The Tack Room ↔ The Stables — Plain, closed"
+                - button "The Stables ↔ The Kitchen Garden — Plain, closed"
+                - button "The Kitchen Garden ↔ The Groundskeeper's Lodge — Plain, closed"
+                - button "Castle Stair — Plain — go to floor 1" [ref=f2e3303] [cursor=pointer]
+                - button "Grand Staircase — Plain — go to floor 1" [ref=f2e3306] [cursor=pointer]
+                - button "Keep Tower Stair — Plain — go to floor 1" [ref=f2e3309] [cursor=pointer]
+                - button "Kitchen Cellar Stair — Plain — go to floor -1" [ref=f2e3312] [cursor=pointer]
+                - button "Storeroom Undercroft Stair — Concealed — go to floor -1" [ref=f2e3315] [cursor=pointer]:
+                  - generic "Concealed"
+                - button "Stable Loft Stair — Plain — go to floor 1" [ref=f2e3318] [cursor=pointer]
+                - button "— Locked" [ref=f2e3321] [cursor=pointer]:
+                  - generic "Locked"
+            - generic [ref=f2e3324]:
+              - button "Fit map to viewport" [ref=f2e3325] [cursor=pointer]
+              - generic [ref=f2e3331]:
+                - button "Zoom in" [ref=f2e3332] [cursor=pointer]
+                - button "Zoom out" [ref=f2e3336] [cursor=pointer]
+            - paragraph: Drag to pan. Pinch or scroll to zoom.
+        - generic [ref=f2e3340]:
+          - paragraph [ref=f2e3342]: Select a room, door, stair, or prop for details.
+          - region "Room details" [ref=f2e3343]:
+            - generic [ref=f2e3344]:
+              - heading "The Library" [level=3] [ref=f2e3984]
+              - button "Party is here" [ref=f2e3346] [cursor=pointer]
+            - paragraph [ref=f2e3347]: This room is empty.

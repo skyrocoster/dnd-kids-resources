@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
-import { act, render, screen, within } from '@testing-library/react'
+import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import * as api from '../../../../api/client'
@@ -134,35 +134,13 @@ describe('Design Phase J1 — toolbar trays', () => {
   })
 })
 
-it('desktop seam collapses and restores the rail; desktop room pick does not close it', async () => {
-  const user = userEvent.setup()
+it('keeps the viewer finder in the canvas composition without a permanent rail', async () => {
   await renderLoadedMapLabPage()
-  const container = document.querySelector('.maplab-viewer-rail-container') as HTMLElement
 
-  // Seam handle present with correct initial state
-  const seam = document.querySelector('.maplab-viewer-rail-seam') as HTMLButtonElement
-  expect(seam).toBeInTheDocument()
-  expect(seam).toHaveAttribute('aria-label', 'Hide room rail')
-  expect(seam).toHaveAttribute('aria-expanded', 'true')
-  expect(seam).toHaveAttribute('aria-controls', 'maplab-viewer-room-rail')
-  expect(container).not.toHaveAttribute('data-collapsed')
-
-  // Collapse the rail
-  await user.click(seam)
-  expect(container).toHaveAttribute('data-collapsed')
-  expect(seam).toHaveAttribute('aria-label', 'Show room rail')
-  expect(seam).toHaveAttribute('aria-expanded', 'false')
-
-  // Restore the rail
-  await user.click(seam)
-  expect(container).not.toHaveAttribute('data-collapsed')
-  expect(seam).toHaveAttribute('aria-label', 'Hide room rail')
-  expect(seam).toHaveAttribute('aria-expanded', 'true')
-
-  // Desktop room pick does NOT collapse the desktop rail
-  const rail = screen.getByRole('navigation', { name: 'Room navigation' })
-  await user.click(within(rail).getByRole('button', { name: 'Armoury' }))
-  expect(container).not.toHaveAttribute('data-collapsed')
+  expect(document.querySelector('.maplab-viewer-finder')).toBeInTheDocument()
+  expect(document.querySelector('.maplab-viewer-rail-container')).not.toBeInTheDocument()
+  expect(document.querySelector('.maplab-viewer-rail-seam')).not.toBeInTheDocument()
+  expect(screen.getByRole('searchbox', { name: 'Find room…' })).toBeInTheDocument()
 })
 
 describe('MapLabPage (Stage 1 — Wall kind rendering)', () => {

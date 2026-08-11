@@ -161,8 +161,6 @@ export function MapLabPage() {
   const { density, setDensity } = useMapDensity()
   const [viewPopoverOpen, setViewPopoverOpen] = useState(false)
   const viewPopoverRef = useRef<HTMLDivElement>(null)
-  const [roomsDrawerOpen, setRoomsDrawerOpen] = useState(false)
-  const [desktopRailCollapsed, setDesktopRailCollapsed] = useState(false)
   const simplified = resolveMapDensity(density, zoomApi.zoom.scale) === 'simple'
   const allLayersHidden = MAP_LAYER_KEYS.every((key) => !layerVisible[key])
 
@@ -201,10 +199,6 @@ export function MapLabPage() {
         setViewPopoverOpen(false)
         return
       }
-      if (roomsDrawerOpen) {
-        setRoomsDrawerOpen(false)
-        return
-      }
       if (activeEncounterId !== null) {
         setActiveEncounterId(null)
         return
@@ -221,7 +215,7 @@ export function MapLabPage() {
     }
     window.addEventListener('keydown', handleEscape)
     return () => window.removeEventListener('keydown', handleEscape)
-  }, [activeEncounterId, activeNpcId, resetDungeonConfirmOpen, roomsDrawerOpen, viewPopoverOpen])
+  }, [activeEncounterId, activeNpcId, resetDungeonConfirmOpen, viewPopoverOpen])
 
   const isAtTable = route.dungeonId !== null && atTableDungeonId === route.dungeonId
   const viewerError = (partyRoomActionActive ? null : actionError) ?? atTableError ?? portalNavigationError
@@ -650,14 +644,9 @@ export function MapLabPage() {
          allLayersHidden={allLayersHidden}
          zoom={zoomApi.zoom}
          viewerError={viewerError}
-         roomsDrawerOpen={roomsDrawerOpen}
-         desktopRailCollapsed={desktopRailCollapsed}
          selectedInspectable={selectedInspectable}
          pinnedDoorId={pinnedDoorId}
-         onSelectRoom={(id) => { setActiveRoomId(id); setRoomsDrawerOpen(false) }}
-         onToggleRoomsDrawer={() => setRoomsDrawerOpen((open) => !open)}
-         onToggleRail={() => setDesktopRailCollapsed((collapsed) => !collapsed)}
-         onCloseRoomsDrawer={() => setRoomsDrawerOpen(false)}
+          onSelectRoom={(id) => { setActiveRoomId(id) }}
           onFocus={focusInspectable}
           onClick={clickInspectable}
           onClearSelection={() => setSelectedInspectable(null)}

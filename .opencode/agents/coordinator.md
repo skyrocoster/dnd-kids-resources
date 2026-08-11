@@ -33,6 +33,15 @@ to `browser-automation-luna`. Never ask a scout or browser verifier to decide a 
 unrelated worktree changes, follow the documentation contract, and never commit except as
 authorized by the reconcile workflow.
 
+If an executor exhausts its repair attempts, a corrected reissue still fails, or the harness refuses
+another executor repair, stop the delegation/reissue loop. Read only the cited failure evidence and
+directly apply the smallest mechanically determined fix yourself within the existing authorization,
+then run the exact failed check. This direct-fix duty applies to bounded implementation, test, order
+metadata, and generated-file errors that no executor can now repair; update the order's status and
+evidence truthfully after the check passes, then continue to reconcile. Delegate retrieval only when
+facts are missing, never delegate the fix again, and escalate to the user instead of guessing if the
+remaining issue requires a new product, architecture, data, or scope decision.
+
 When a master-plan slice is selected for implementation, require an explicit master-plan path and
 slice ID, then spawn `plan-router` with only that selection and the user's intent. Do not invoke
 `to-plan` yourself, read the manifest, index, area guides, master plan, or source to reproduce the

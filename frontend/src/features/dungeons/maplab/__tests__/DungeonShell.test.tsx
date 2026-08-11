@@ -182,17 +182,16 @@ describe('DungeonShell', () => {
     expect(screen.getByRole('link', { name: 'Edit map' })).toBeVisible()
   })
 
-  it('room rail and details panel are reachable in narrow layout (VT2 narrow room access)', async () => {
-    // VT2: At 520px, the room rail (ViewerRoomRail), map canvas, and RoomDetailsPanel must
-    // be reachable in deliberate order: rail first for floor/room navigation, then canvas, then
-    // details sidebar. Narrow layout stacks these as separate flex sections.
+  it('room finder and details panel are reachable in narrow layout (VT2 narrow room access)', async () => {
+    // VT2: At 520px, the room finder, map canvas, and RoomDetailsPanel must remain reachable
+    // in the constrained composition.
     renderDungeonRoute('/dungeons/4')
     await flush()
 
-    // At 520px, the room rail must be accessible (part of the stacked narrow layout).
+    // At 520px, the finder must be accessible in the canvas composition.
     const canvas = document.querySelector('.maplab-canvas')
     expect(canvas).toBeInTheDocument()
-    expect(document.querySelector('.maplab-viewer-rail-container')).toBeInTheDocument()
+    expect(screen.getByRole('searchbox', { name: 'Find room…' })).toBeInTheDocument()
     expect(document.querySelector('.maplab-sidebar')).toBeInTheDocument()
   })
 })

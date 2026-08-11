@@ -331,10 +331,10 @@ describe('MapLabPage portal viewer rendering and navigation', () => {
     const inspector = container.querySelector('.maplab-inspector-panel-container')!
     expect(inspector.querySelector('.maplab-inspector-title')).toHaveTextContent('Armoury')
 
-    await user.click(screen.getByRole('button', { name: 'Open room navigation' }))
+    await user.click(screen.getByRole('searchbox', { name: 'Find room…' }))
     await user.keyboard('{Escape}')
 
-    expect(screen.getByRole('button', { name: 'Open room navigation' })).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.queryByRole('dialog', { name: 'Find room' })).not.toBeInTheDocument()
     expect(inspector.querySelector('.maplab-inspector-title')).toHaveTextContent('Armoury')
 
     await user.keyboard('{Escape}')
@@ -368,7 +368,7 @@ describe('MapLabPage portal viewer rendering and navigation', () => {
 })
 // ── VT0 scaffold seams ──────────────────────────────────────────────────────
 
-describe('VT0 — Viewer room drawer (tablet)', () => {
+describe('VT0 — Viewer room finder', () => {
   beforeEach(() => {
     vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: mapLabLayout as unknown as Record<string, unknown> })
     vi.spyOn(api, 'listNPCs').mockResolvedValue([{ id: 9, name: 'Mira' }])
@@ -383,72 +383,46 @@ describe('VT0 — Viewer room drawer (tablet)', () => {
     vi.restoreAllMocks()
   })
 
-  it('shows a labelled Rooms toggle button to open the drawer', async () => {
+  it('shows the labelled Find room finder', async () => {
     await renderLoadedMapLabPage()
-    const toggle = screen.getByRole('button', { name: 'Open room navigation' })
-    expect(toggle).toBeInTheDocument()
-    expect(toggle).toHaveTextContent('Rooms')
-    expect(toggle).toHaveAttribute('aria-expanded', 'false')
-    expect(toggle).toHaveAttribute('aria-controls', 'maplab-viewer-room-rail')
+    expect(screen.getByRole('navigation', { name: 'Room navigation' })).toBeInTheDocument()
+    expect(screen.getByRole('searchbox', { name: 'Find room…' })).toBeInTheDocument()
   })
 
-  it('opening the drawer sets data-open on the rail container', async () => {
-    const user = userEvent.setup()
+  it('keeps the finder in the canvas composition without a rail container', async () => {
     await renderLoadedMapLabPage()
-    const toggle = screen.getByRole('button', { name: 'Open room navigation' })
-    await user.click(toggle)
-    expect(toggle).toHaveAttribute('aria-expanded', 'true')
-    const container = document.querySelector('.maplab-viewer-rail-container')
-    expect(container).toHaveAttribute('data-open')
+    expect(document.querySelector('.maplab-viewer-finder')).toBeInTheDocument()
+    expect(document.querySelector('.maplab-viewer-rail-container')).not.toBeInTheDocument()
   })
 
-  it('closes the drawer on backdrop click', async () => {
+  it('closes the finder on Escape', async () => {
     const user = userEvent.setup()
     await renderLoadedMapLabPage()
-    await user.click(screen.getByRole('button', { name: 'Open room navigation' }))
-    const container = document.querySelector('.maplab-viewer-rail-container')
-    expect(container).toHaveAttribute('data-open')
-    const backdrop = container!.parentElement!.querySelector('.maplab-viewer-rail-backdrop') as HTMLElement
-    fireEvent.click(backdrop)
-    expect(container).not.toHaveAttribute('data-open')
-  })
-
-  it('closes the drawer on Escape', async () => {
-    const user = userEvent.setup()
-    await renderLoadedMapLabPage()
-    await user.click(screen.getByRole('button', { name: 'Open room navigation' }))
-    const container = document.querySelector('.maplab-viewer-rail-container')
-    expect(container).toHaveAttribute('data-open')
     await user.keyboard('{Escape}')
-    expect(container).not.toHaveAttribute('data-open')
+    expect(screen.queryByRole('dialog', { name: 'Find room' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Find room…' })).toHaveFocus()
   })
 
-  it('closes the drawer on room selection', async () => {
+  it('closes the finder on room selection', async () => {
     const user = userEvent.setup()
     await renderLoadedMapLabPage()
-    await user.click(screen.getByRole('button', { name: 'Open room navigation' }))
-    const container = document.querySelector('.maplab-viewer-rail-container')
-    expect(container).toHaveAttribute('data-open')
     const rail = screen.getByRole('navigation', { name: 'Room navigation' })
     await user.click(within(rail).getByRole('button', { name: 'Armoury' }))
-    expect(container).not.toHaveAttribute('data-open')
+    expect(screen.queryByRole('dialog', { name: 'Find room' })).not.toBeInTheDocument()
   })
 
   it('floor tabs remain visible when the drawer is open', async () => {
-    const user = userEvent.setup()
     await renderLoadedMapLabPage()
-    await user.click(screen.getByRole('button', { name: 'Open room navigation' }))
     expect(screen.getByRole('tab', { name: 'Ground Floor' })).toBeInTheDocument()
     expect(screen.getByRole('tab', { name: 'First Floor' })).toBeInTheDocument()
   })
 
-  it('floor tabs live inside the toolbar and outside the room drawer', async () => {
+  it('floor tabs live inside the toolbar and outside the finder', async () => {
     await renderLoadedMapLabPage()
     const toolbar = document.querySelector('.maplab-toolbar')
     const tablist = screen.getByRole('tablist', { name: 'Dungeon floors' })
     expect(toolbar).toContainElement(tablist)
-    const drawer = document.querySelector('.maplab-viewer-rail-container')
-    expect(drawer).not.toContainElement(tablist)
+    expect(document.querySelector('.maplab-viewer-finder')).not.toContainElement(tablist)
 
     const viewButton = screen.getByRole('button', { name: 'View' })
     const firstTab = screen.getByRole('tab', { name: 'Ground Floor' })
@@ -457,9 +431,9 @@ describe('VT0 — Viewer room drawer (tablet)', () => {
     expect(screen.getByRole('tab', { name: 'First Floor' })).toHaveAccessibleName('First Floor')
   })
 
-  it('room buttons inside the drawer meet the 48px touch floor', async () => {
+  it('room buttons inside the finder meet the 48px touch floor', async () => {
     await renderLoadedMapLabPage()
-    const container = document.querySelector('.maplab-viewer-rail-container') as HTMLElement
+    const container = document.querySelector('.maplab-viewer-finder') as HTMLElement
     const roomButton = within(container!).getByRole('button', { name: 'Armoury' })
     expect(roomButton).toBeInTheDocument()
     // The rail's min-height: 48px is set by the desktop CSS rule; the 40px narrow

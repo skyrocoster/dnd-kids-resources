@@ -1,0 +1,61 @@
+- generic [ref=f2e3]:
+  - banner [ref=f2e5]:
+    - button "Open navigation" [ref=f2e3986] [cursor=pointer]
+    - generic [ref=f2e171]:
+      - generic [ref=f2e172]:
+        - heading "Map Lab" [level=1] [ref=f2e173]
+        - generic [ref=f2e174]: Isly Castle
+      - generic [ref=f2e175]:
+        - navigation "Dungeon mode" [ref=f2e176]:
+          - link "View" [ref=f2e177] [cursor=pointer]:
+            - /url: /dungeons/3
+          - link "Edit map" [ref=f2e178] [cursor=pointer]:
+            - /url: /dungeons/3/edit
+        - link "Back to dungeons" [ref=f2e179] [cursor=pointer]:
+          - /url: /dungeons
+  - main [ref=f2e120]:
+    - generic [ref=f2e182]:
+      - generic [ref=f2e183]:
+        - generic [ref=f2e184]:
+          - generic [ref=f2e185]: Session
+          - button "Collapse Session tools" [expanded] [ref=f2e186] [cursor=pointer]
+          - generic [ref=f2e189]:
+            - button "Reset dungeon" [ref=f2e190] [cursor=pointer]
+            - button "At the table" [disabled] [pressed] [ref=f2e191] [cursor=pointer]
+        - button "View" [ref=f2e193] [cursor=pointer]
+        - tablist "Dungeon floors" [ref=f2e197]:
+          - tab "Undercroft" [selected] [ref=f2e198] [cursor=pointer]
+          - tab "Ground Floor" [ref=f2e199] [cursor=pointer]
+          - tab "Upper Floor" [ref=f2e200] [cursor=pointer]
+      - generic [ref=f2e201]:
+        - navigation "Room navigation" [ref=f2e203]:
+          - button "Find room…" [active] [ref=f2e204] [cursor=pointer]
+        - generic [ref=f2e524]:
+          - generic "Map canvas" [ref=f2e525]:
+            - group "Dungeon floor map — Floor -1" [ref=f2e4306]:
+              - generic [ref=f2e527]: 1 square = 5 ft
+              - button "Cellar Stair Foot" [ref=f2e4307] [cursor=pointer]
+              - button "The Wine Cellar" [pressed] [ref=f2e4324] [cursor=pointer]
+              - button "Undercroft Passage" [ref=f2e4485] [cursor=pointer]
+              - button "The Great Undercroft" [ref=f2e4612] [cursor=pointer]
+              - button "The Old Crypt" [ref=f2e4883] [cursor=pointer]
+              - button "Cellar Stair Foot ↔ The Wine Cellar — Plain, closed"
+              - button "The Wine Cellar ↔ Undercroft Passage — Plain, closed"
+              - button "Undercroft Passage ↔ The Great Undercroft — Plain, closed"
+              - button "The Great Undercroft ↔ The Old Crypt — Plain, closed"
+              - button "Kitchen Cellar Stair — Plain — go to floor 0" [ref=f2e5004] [cursor=pointer]
+              - button "Storeroom Undercroft Stair — Concealed — go to floor 0" [ref=f2e5005] [cursor=pointer]:
+                - generic "Concealed"
+          - generic [ref=f2e3324]:
+            - button "Fit map to viewport" [ref=f2e3325] [cursor=pointer]
+            - generic [ref=f2e3331]:
+              - button "Zoom in" [ref=f2e3332] [cursor=pointer]
+              - button "Zoom out" [ref=f2e3336] [cursor=pointer]
+          - paragraph: Drag to pan. Pinch or scroll to zoom.
+      - generic [ref=f2e3340]:
+        - paragraph [ref=f2e3342]: Select a room, door, stair, or prop for details.
+        - region "Room details" [ref=f2e3343]:
+          - generic [ref=f2e3344]:
+            - heading "The Wine Cellar" [level=3] [ref=f2e5006]
+            - button "Party is here" [ref=f2e3346] [cursor=pointer]
+          - paragraph [ref=f2e3347]: This room is empty.

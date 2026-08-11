@@ -53,14 +53,9 @@ interface Props {
   allLayersHidden: boolean
   zoom: ComponentProps<typeof MapCanvas>['zoom']
   viewerError: string | null
-  roomsDrawerOpen: boolean
-  desktopRailCollapsed: boolean
   selectedInspectable: InspectableRef | null
   pinnedDoorId: number | null
   onSelectRoom: (id: number) => void
-  onToggleRoomsDrawer: () => void
-  onToggleRail: () => void
-  onCloseRoomsDrawer: () => void
   onFocus: (ref: InspectableRef) => void
   onClick: (ref: InspectableRef) => void
   onClearSelection: () => void
@@ -92,20 +87,16 @@ function markerOffset(layout: MapLayout, z: number, cell: MapCell, type: 'stair'
 export function MapLabViewerCanvas({
   layout, parsed, activeZ, activeRoomId, partyRoomId, rooms, doors, stairs, portals, props, features,
   bounds, viewBox, rulerX1, rulerX2, rulerY, rulerTick, layerVisible, simplified, allLayersHidden,
-  zoom, viewerError, roomsDrawerOpen, desktopRailCollapsed, selectedInspectable, pinnedDoorId,
-  onSelectRoom, onToggleRoomsDrawer,
-  onToggleRail, onCloseRoomsDrawer, onFocus, onClick, onClearSelection, onNavigateStair, onNavigatePortal, onSetActiveEncounterId,
+  zoom, viewerError, selectedInspectable, pinnedDoorId,
+  onSelectRoom, onFocus, onClick, onClearSelection, onNavigateStair, onNavigatePortal, onSetActiveEncounterId,
   onWheelZoom, onPanStart, onPanMove, onPanEnd, onViewportResize, onFit, onZoomIn, onZoomOut,
   doorSession, stairSession, portalSession, propSession,
 }: Props) {
   return (
     <div className="maplab-canvas">
-      <button type="button" className="maplab-pill-button maplab-viewer-rail-toggle" aria-label="Open room navigation" aria-expanded={roomsDrawerOpen} aria-controls="maplab-viewer-room-rail" onClick={onToggleRoomsDrawer}>Rooms</button>
-      <div id="maplab-viewer-room-rail" className="maplab-viewer-rail-container" data-open={roomsDrawerOpen || undefined} data-collapsed={desktopRailCollapsed || undefined}>
+      <div className="maplab-viewer-finder">
         <ViewerRoomRail layout={layout} parsed={parsed} activeRoomId={activeRoomId} onSelectRoom={onSelectRoom} />
       </div>
-      <button type="button" className="maplab-viewer-rail-seam" aria-label={desktopRailCollapsed ? 'Show room rail' : 'Hide room rail'} aria-expanded={!desktopRailCollapsed} aria-controls="maplab-viewer-room-rail" onClick={onToggleRail} />
-      <button type="button" className="maplab-viewer-rail-backdrop" aria-label="Close room navigation" tabIndex={roomsDrawerOpen ? 0 : -1} onClick={onCloseRoomsDrawer} />
 
       <div className="maplab-canvas-area">
         {allLayersHidden ? <p className="maplab-canvas-filtered-empty">All layers are hidden. Turn one on to see the map.</p> : (

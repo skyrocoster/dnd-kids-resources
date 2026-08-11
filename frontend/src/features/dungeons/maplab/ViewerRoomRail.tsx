@@ -67,7 +67,7 @@ export function ViewerRoomRail({ layout, parsed, activeRoomId, onSelectRoom }: V
           <label htmlFor="maplab-room-search">Find room…</label>
           <button type="button" className="maplab-viewer-rail-close" onClick={close} aria-label="Close room finder">Close</button>
         </div>
-        <input ref={searchRef} id="maplab-room-search" type="search" value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={(event) => event.key === 'Escape' && close()} placeholder="Search by number, title, or floor" />
+        <input ref={searchRef} id="maplab-room-search" type="search" value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={(event) => { if (event.key === 'Escape') { event.stopPropagation(); close() } }} placeholder="Search by number, title, or floor" />
         <p className="maplab-viewer-rail-result-summary" aria-live="polite">Results from all floors</p>
       {orderedFloorGroups.map(({ floor, rooms }) => {
         const floorTitle = floor.title ?? `Floor ${floor.z}`

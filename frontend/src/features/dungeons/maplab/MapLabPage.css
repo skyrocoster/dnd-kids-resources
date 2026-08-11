@@ -37,60 +37,15 @@
   display: flex;
   flex-direction: column;
   align-self: stretch;
+  position: relative;
 }
 
-.maplab-viewer-rail-container {
-  flex: 0 0 14rem;
-  max-height: 100%;
-  overflow-y: auto;
-}
-
-.maplab-viewer-rail-toggle.maplab-pill-button {
-  display: none; /* chained selector beats .maplab-pill-button single-class specificity */
-}
-
-/* Desktop seam handle — collapses the room rail at widths > 768px.
- * Visual: 12px, pointer hit area: 48px. Hidden on mobile. */
-.maplab-viewer-rail-seam {
-  display: none;
-}
-
-@media (min-width: 769px) {
-  .maplab-viewer-rail-seam {
-    display: flex;
-    flex: 0 0 auto;
-    align-items: center;
-    justify-content: center;
-    width: 48px; /* pointer hit area */
-    align-self: stretch;
-    cursor: pointer;
-    background: transparent;
-    border: none;
-    padding: 0;
-  }
-
-  .maplab-viewer-rail-seam::after {
-    content: '';
-    width: 12px; /* visual */
-    height: 2rem;
-    border-radius: 2px;
-    background: var(--md-outline-variant);
-    transition: background 0.15s ease;
-  }
-
-  .maplab-viewer-rail-seam:hover::after {
-    background: var(--md-outline);
-  }
-
-  .maplab-viewer-rail-container[data-collapsed] {
-    flex: 0 0 0;
-    overflow: hidden;
-    min-width: 0;
-  }
-}
-
-.maplab-viewer-rail-backdrop {
-  display: none;
+.maplab-viewer-finder {
+  position: absolute;
+  z-index: 3;
+  top: var(--space-3);
+  left: var(--space-3);
+  max-width: min(20rem, calc(100% - var(--space-6)));
 }
 
 .maplab-viewer-rail {
