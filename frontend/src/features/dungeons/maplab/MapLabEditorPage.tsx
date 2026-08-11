@@ -228,7 +228,6 @@ export function MapLabEditorPage() {
     dropEmptyRoom,
   } = useMapLabEditor(route.dungeonId, route.dungeon)
   const [isCanvasFullscreen, setIsCanvasFullscreen] = useState(false)
-  const [tabletNavOpen, setTabletNavOpen] = useState(false)
   const [selectionSheetExpanded, setSelectionSheetExpanded] = useState(false)
   const [armedTool, setArmedTool] = useState<ArmedTool>('select')
   const [lastPassageTool, setLastPassageTool] = useState<'door' | 'stair' | 'portal'>('door')
@@ -673,6 +672,12 @@ export function MapLabEditorPage() {
     selectRoom(id)
      if (id !== null) centerCanvasSelection('room', id)
   }, [centerCanvasSelection, selectRoom])
+  const selectRoomFromFinder = useCallback((roomId: number) => {
+    const room = state.layout.rooms.find((candidate) => candidate.room_id === roomId)
+    if (room && room.z !== state.activeZ) setActiveZ(room.z)
+    selectRoom(roomId)
+    if (room) centerSelection('room', roomId, true)
+  }, [centerSelection, selectRoom, setActiveZ, state.activeZ, state.layout.rooms])
   const selectDoorForCanvas = useCallback((id: number | null) => {
     selectDoor(id)
      if (id !== null) centerCanvasSelection('door', id)
@@ -904,8 +909,6 @@ export function MapLabEditorPage() {
           setMapPopoverOpen(false)
         } else if (viewPopoverOpen) {
           setViewPopoverOpen(false)
-        } else if (tabletNavOpen) {
-          setTabletNavOpen(false)
         } else if (selectionSheetExpanded) {
           setSelectionSheetExpanded(false)
         } else if (
@@ -988,7 +991,7 @@ export function MapLabEditorPage() {
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [brushArmed, mapPopoverOpen, openFlyout, redo, selectDoor, selectFeature, selectPortal, selectProp, selectRoom, selectStair, selectionSheetExpanded, state.selectedDoorId, state.selectedFeatureId, state.selectedPortalId, state.selectedPropId, state.selectedRoomId, state.selectedStairId, strokeCells.length, tabletNavOpen, undo, viewPopoverOpen])
+  }, [brushArmed, mapPopoverOpen, openFlyout, redo, selectDoor, selectFeature, selectPortal, selectProp, selectRoom, selectStair, selectionSheetExpanded, state.selectedDoorId, state.selectedFeatureId, state.selectedPortalId, state.selectedPropId, state.selectedRoomId, state.selectedStairId, strokeCells.length, undo, viewPopoverOpen])
 
   useEffect(() => {
     if (route.dungeonId === null) return
@@ -1102,8 +1105,9 @@ export function MapLabEditorPage() {
          passagesFlyoutRef={passagesFlyoutRef}
          terrainFlyoutRef={terrainFlyoutRef}
          propFlyoutRef={propFlyoutRef}
-         setActiveZ={setActiveZ}
-         setTabletNavOpen={setTabletNavOpen}
+          setActiveZ={setActiveZ}
+          parsed={dungeonData}
+          onSelectRoom={selectRoomFromFinder}
           saveStatus={saveStatus}
           dungeons={dungeons}
           incomingGateways={incomingGateways}
@@ -1129,23 +1133,11 @@ export function MapLabEditorPage() {
       )}
 
       <div className="maplab-editor-layout">
-        <MapLabEditorNavigation
-          state={{ layout: state.layout, activeZ: state.activeZ, selectedRoomId: state.selectedRoomId }}
-           tabletNavOpen={tabletNavOpen}
-           setTabletNavOpen={setTabletNavOpen}
-          roomsOnActiveFloor={roomsOnActiveFloor}
-          selectRoom={selectRoom}
+         <MapLabEditorNavigation
+           selectRoom={selectRoom}
           setArmedTool={setArmedTool}
           setPlacementError={setPlacementError}
          />
-        <button
-          type="button"
-          className="maplab-editor-nav-backdrop"
-          aria-label="Close map editor navigation"
-          tabIndex={tabletNavOpen ? 0 : -1}
-          onClick={() => setTabletNavOpen(false)}
-        />
-
         <MapLabEditorCanvas
           viewBox={viewBox}
           bounds={bounds}

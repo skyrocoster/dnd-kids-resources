@@ -199,7 +199,8 @@ describe('MapLabEditorPage (Stage F4 — prop stays clickable under the paint ov
     vi.spyOn(api, 'saveDungeonLayout').mockResolvedValue({ data: layoutWithProp })
     const { container } = renderMapLabEditorPage()
     await flush()
-    fireEvent.click(container.querySelector('.maplab-editor-room-item-select') as Element)
+    fireEvent.click(container.querySelector('.maplab-room') as Element)
+    fireEvent.click(screen.getByRole('button', { name: 'Room' }))
     const viewport = container.querySelector('.maplab-canvas-viewport') as HTMLElement
     fireEvent.pointerDown(viewport, { pointerId: 1, button: 0, ...clientPointForCell([0, 0], { minX: -3, minY: -3 }) })
     expect(container.querySelector('.maplab-room-brush-cell[data-brush-state="paint"]')).toBeInTheDocument()
@@ -234,7 +235,7 @@ describe('VT0 — Live-surface scaffolding seams', () => {
   afterEach(() => { vi.runOnlyPendingTimers(); vi.useRealTimers() })
   it('inspector Delete/Close actions are grouped in a distinct selection-action region (VT3 inspector actions)', async () => {
     const { container } = renderMapLabEditorPage(); await flush()
-    fireEvent.click(container.querySelector('.maplab-editor-room-item-select') as Element)
+    fireEvent.click(container.querySelector('.maplab-room') as Element)
     const actionRegion = screen.getByRole('group', { name: 'Selection actions' })
     expect(actionRegion).toBeInTheDocument(); expect(actionRegion).toHaveClass('maplab-inspector-actions')
     expect(within(actionRegion).getByRole('button', { name: /delete room/i })).toBeInTheDocument()

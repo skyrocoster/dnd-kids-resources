@@ -376,7 +376,7 @@ Site-wide navigation shell:
   retaining all-floor and off-map results.
 - **Interaction** — native controls remain at least 48px, keyboard focus is visible, Escape dismisses
   the finder, and selecting a room closes it and restores focus to the trigger. Viewer threat/NPC hints
-  remain concise; editor and viewer integration/removal of permanent navigation is owned by later stages.
+  remain concise; both editor and viewer use the finder instead of permanent room navigation.
 
 ### ToolbarTray (`maplab/MapLabToolbar.tsx`)
 

@@ -886,6 +886,25 @@
   min-width: 0;
 }
 
+.maplab-editor .maplab-viewer-rail {
+  position: relative;
+}
+
+.maplab-editor .maplab-viewer-rail-panel {
+  position: absolute;
+  top: calc(100% + var(--space-2));
+  left: 0;
+  z-index: var(--z-floating);
+  width: min(24rem, 80vw);
+  max-height: min(70vh, 36rem);
+  overflow-y: auto;
+  padding: var(--space-3);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--radius-lg);
+  background: var(--md-surface-2);
+  box-shadow: var(--shadow-lg);
+}
+
 .maplab-toolbar-group:first-child {
   flex: 1 1 36rem;
   min-width: min(100%, 36rem);
@@ -1250,51 +1269,6 @@
   .maplab-editor-layout > .maplab-canvas-wrapper {
     flex: 1 1 auto;
     min-height: 0;
-  }
-
-  .maplab-editor-nav-toggle {
-    display: inline-flex;
-    position: absolute;
-    z-index: 3;
-    top: var(--space-3);
-    left: var(--space-3);
-    min-height: var(--control-height);
-  }
-
-  .maplab-editor-nav-backdrop {
-    position: absolute;
-    z-index: 4;
-    inset: 0;
-    border: 0;
-    background: color-mix(in srgb, var(--md-scrim) 32%, transparent);
-  }
-
-  .maplab-editor-nav-rail {
-    position: absolute;
-    z-index: 5;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    width: min(20rem, calc(100% - var(--space-6)));
-    max-height: none;
-    padding: var(--space-3);
-    overflow: hidden;
-    background: var(--md-surface);
-    box-shadow: var(--shadow-lg);
-    transform: translateX(calc(-100% - var(--space-3)));
-    transition: transform 160ms ease;
-  }
-
-  .maplab-editor-nav-rail[data-open] {
-    transform: translateX(0);
-  }
-
-  .maplab-editor-nav-rail[data-open] ~ .maplab-editor-nav-backdrop {
-    display: block;
-  }
-
-  .maplab-editor-room-list {
-    flex: 1 1 auto;
   }
 
   .maplab-toolbar-group-status {

@@ -52,20 +52,6 @@
   align-self: stretch;
 }
 
-.maplab-editor-room-list {
-  flex: 0 0 14rem;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  /* The editor layout is viewport-height bound, so a long room list scrolls itself rather than
-   * stretching the workspace past the bottom of the window. */
-  max-height: 100%;
-  overflow-y: auto;
-}
-
 .maplab-editor-floor-actions {
   display: flex;
   align-items: center;
@@ -82,52 +68,6 @@
 .maplab-editor-room-list-new {
   justify-content: flex-start;
   align-self: stretch;
-}
-
-.maplab-editor-room-item {
-  display: flex;
-  align-items: stretch;
-  gap: var(--space-2);
-  border: 1px solid var(--md-outline-variant);
-  border-radius: var(--radius-lg);
-  background: var(--md-surface-2);
-}
-
-.maplab-editor-room-item[data-selected] {
-  border-color: var(--md-primary);
-  background: var(--md-primary-container);
-}
-
-.maplab-editor-room-item-select {
-  flex: 1 1 auto;
-  min-height: var(--control-height);
-  padding: var(--space-2) var(--space-3);
-  border: none;
-  background: transparent;
-  color: var(--md-on-surface);
-  font-size: var(--type-body-sm-size);
-  text-align: left;
-  cursor: pointer;
-}
-
-.maplab-editor-room-item-select:focus-visible {
-  outline: 2px solid var(--md-primary);
-  outline-offset: -2px;
-}
-
-.maplab-editor-room-offmap {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  margin-left: var(--space-2);
-  color: var(--md-on-surface-variant);
-  font-size: var(--type-body-sm-size);
-}
-
-.maplab-editor-room-list-empty {
-  font-size: var(--type-body-sm-size);
-  color: var(--md-on-surface-variant);
-  padding: var(--space-2) 0;
 }
 
 .maplab-connections-resolve-list {

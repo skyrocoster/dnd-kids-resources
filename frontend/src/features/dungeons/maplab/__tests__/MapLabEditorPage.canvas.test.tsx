@@ -338,6 +338,7 @@ describe('MapLabEditorPage (Phase K scaffolding)', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
     vi.useFakeTimers()
+    window.sessionStorage.clear()
     vi.spyOn(api, 'getDungeon').mockResolvedValue({ id: 4, title: 'Test Dungeon', data: {} })
     vi.spyOn(api, 'listNPCs').mockResolvedValue([])
     vi.spyOn(api, 'updateDungeon').mockResolvedValue({ id: 4, title: 'Test Dungeon', data: {} })
@@ -349,6 +350,13 @@ describe('MapLabEditorPage (Phase K scaffolding)', () => {
     vi.clearAllTimers()
     vi.useRealTimers()
   })
+
+  const selectRoomFromFinder = (roomName = 'Room 1', armRoom = false) => {
+    if (armRoom) fireEvent.click(screen.getByRole('button', { name: 'Room' }))
+    const finder = screen.getByRole('button', { name: 'Find room…' })
+    if (finder.getAttribute('aria-expanded') !== 'true') fireEvent.click(finder)
+    fireEvent.click(within(screen.getByRole('listbox', { name: /Ground Floor rooms/i })).getByRole('button', { name: roomName }))
+  }
 
   it('K1: fullscreen toggle and Escape exit the fullscreen workspace', async () => {
     const { container } = renderMapLabEditorPage()
@@ -368,13 +376,13 @@ describe('MapLabEditorPage (Phase K scaffolding)', () => {
   })
 
   it('K3: the Room tool surfaces create vs. paint instructions depending on selection', async () => {
-    const { container } = renderMapLabEditorPage()
+    renderMapLabEditorPage()
     await flush()
 
     fireEvent.click(screen.getByRole('button', { name: 'Room' }))
     expect(screen.getByText(/drag on empty ground to start a new room/i)).toBeInTheDocument()
 
-    fireEvent.click(container.querySelector('.maplab-editor-room-item-select') as Element)
+    selectRoomFromFinder()
     expect(screen.getByText(/drag to add squares to the room/i)).toBeInTheDocument()
   })
 
@@ -416,14 +424,13 @@ describe('MapLabEditorPage (Phase K scaffolding)', () => {
     expect(screen.getByRole('button', { name: 'Room' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Select/ })).toBeInTheDocument()
 
-    // The room list is inside the fullscreen workspace
-    const roomList = editor.querySelector('.maplab-editor-room-list')
-    expect(roomList).toBeInTheDocument()
-    expect(within(roomList as HTMLElement).getByText('Room 1')).toBeInTheDocument()
+    // The labelled Find room finder is inside the fullscreen workspace and lists the room
+    expect(screen.getByRole('button', { name: 'Find room…' })).toBeInTheDocument()
+    expect(container.querySelector('.maplab-viewer-rail')).toBeInTheDocument()
+    expect(within(screen.getByRole('listbox', { name: 'Ground Floor rooms' })).getByText('Room 1')).toBeInTheDocument()
 
-    // Navigation rail is inside the fullscreen workspace
-    const navRail = editor.querySelector('.maplab-editor-nav-rail')
-    expect(navRail).toBeInTheDocument()
+    // The legacy navigation rail is gone from the workspace
+    expect(container.querySelector('.maplab-editor-nav-rail')).not.toBeInTheDocument()
   })
 
   it('tool mode: selecting a room prevents drag-pan on the canvas (paint overlay holds the pointer)', async () => {
@@ -433,8 +440,9 @@ describe('MapLabEditorPage (Phase K scaffolding)', () => {
     const viewport = container.querySelector('.maplab-canvas-viewport') as HTMLElement
     const svg = container.querySelector('.maplab-svg') as SVGSVGElement
 
-    // Select a room to enter tool mode
-    fireEvent.click(container.querySelector('.maplab-editor-room-item-select') as Element)
+    // Select on the canvas, then re-arm Room without losing the selection.
+    fireEvent.click(container.querySelector('.maplab-room') as Element)
+    fireEvent.click(screen.getByRole('button', { name: 'Room' }))
 
     // Attempt to drag from the canvas — in tool mode, this does not pan
     fireEvent.pointerDown(viewport, { clientX: 0, clientY: 0 })
@@ -472,7 +480,8 @@ describe('MapLabEditorPage (Phase K scaffolding)', () => {
     const { container } = renderMapLabEditorPage()
     await flush()
 
-    fireEvent.click(container.querySelector('.maplab-editor-room-item-select') as Element)
+    fireEvent.click(container.querySelector('.maplab-room') as Element)
+    fireEvent.click(screen.getByRole('button', { name: 'Room' }))
     dragRoomBrush(container, ROOM_BOUNDS, [[1, 0], [2, 0]])
 
     await act(async () => {
@@ -496,7 +505,8 @@ describe('MapLabEditorPage (Phase K scaffolding)', () => {
     const { container } = renderMapLabEditorPage()
     await flush()
 
-    fireEvent.click(container.querySelector('.maplab-editor-room-item-select') as Element)
+    fireEvent.click(container.querySelector('.maplab-room') as Element)
+    fireEvent.click(screen.getByRole('button', { name: 'Room' }))
     fireEvent.click(screen.getByRole('button', { name: 'Erase' }))
     dragRoomBrush(container, ROOM_BOUNDS, [[1, 0]])
 
@@ -520,7 +530,8 @@ describe('MapLabEditorPage (Phase K scaffolding)', () => {
     const { container } = renderMapLabEditorPage()
     await flush()
 
-    fireEvent.click(container.querySelector('.maplab-editor-room-item-select') as Element)
+    fireEvent.click(container.querySelector('.maplab-room') as Element)
+    fireEvent.click(screen.getByRole('button', { name: 'Room' }))
     fireEvent.click(screen.getByRole('button', { name: 'Erase' }))
     dragRoomBrush(container, ROOM_BOUNDS, [[0, 0]])
 
@@ -561,7 +572,8 @@ describe('MapLabEditorPage (Phase K scaffolding)', () => {
     const { container } = renderMapLabEditorPage()
     await flush()
 
-    fireEvent.click(container.querySelector('.maplab-editor-room-item-select') as Element)
+    fireEvent.click(container.querySelector('.maplab-room') as Element)
+    fireEvent.click(screen.getByRole('button', { name: 'Room' }))
     dragRoomBrush(container, ROOM_BOUNDS, [[2, 0]])
 
     await act(async () => {
@@ -576,12 +588,12 @@ describe('MapLabEditorPage (Phase K scaffolding)', () => {
     const { container } = renderMapLabEditorPage()
     await flush()
 
-    fireEvent.click(container.querySelector('.maplab-editor-room-item-select') as Element)
-    expect(container.querySelector('.maplab-editor-room-item[data-selected]')).toBeInTheDocument()
+    selectRoomFromFinder()
+    expect(container.querySelector('.maplab-room')).toHaveAttribute('data-selected', 'true')
 
     fireEvent.click(screen.getByRole('button', { name: 'New room' }))
 
-    expect(container.querySelector('.maplab-editor-room-item[data-selected]')).not.toBeInTheDocument()
+    expect(container.querySelector('.maplab-room')).not.toHaveAttribute('data-selected', 'true')
     expect(screen.getByRole('button', { name: 'Room' })).toHaveAttribute('aria-pressed', 'true')
   })
 })

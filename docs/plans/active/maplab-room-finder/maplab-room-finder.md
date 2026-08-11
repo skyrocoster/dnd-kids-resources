@@ -1,6 +1,6 @@
 # Map Lab Room Finder — replace permanent room navigation
 
-> **Status:** Stage 1 shipped — the shared Room Finder presentation and regression contract are in place; next, compile Stage 2 for editor integration.
+> **Status:** Stage 2 shipped — the editor now uses the shared Room Finder with floor and off-map reachability while preserving authoring workflows; next, compile Stage 3 for viewer integration.
 
 - **Areas:** design, dungeons
 - **Read trigger:** When implementing FL-08 of the Frontend Layout Redesign master plan.
@@ -21,6 +21,7 @@ This is a composition and navigation change only. Existing map geometry, focus r
 | Stage | What shipped (≤2 sentences) |
 |-------|------------------------------|
 | 1 | Adapted the shared viewer room-navigation presentation into a labelled `Find room…` finder with useful grouped results, current-floor prioritization, number/title/floor filtering, off-map labels, selection dismissal, focus restoration, and touch-safe controls. Extended `ViewerRoomRail` regression coverage for these behaviors while preserving room selection and viewer hints. |
+| 2 | Replaced the editor's permanent room list and responsive Rooms drawer with the shared `Find room…` control, preserving floor controls, New room creation, selection/focus behavior, off-map and cross-floor reachability, and existing authoring semantics. Removed the obsolete editor navigation presentation and added focused regression coverage for the composition and tool interactions. |
 
 ## Touches
 - `frontend/src/features/dungeons/maplab/ViewerRoomRail.tsx`

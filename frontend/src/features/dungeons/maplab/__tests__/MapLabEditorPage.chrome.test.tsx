@@ -71,6 +71,8 @@ describe('MapLabEditorPage (Stage E3 — Toolbar reorganization & persistent ins
     expect(screen.queryByRole('button', { name: 'Reset unsaved changes' })).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Map' }))
     expect(screen.getByRole('button', { name: 'Reset unsaved changes' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Find room…' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'New room' })).toBeInTheDocument()
   })
 
   it('portals the save-status chip into the shell status slot instead of the toolbar', async () => {
@@ -204,17 +206,12 @@ describe('MapLabEditorPage (Stage E3 — Toolbar reorganization & persistent ins
     })
   })
 
-  it('left navigation rail holds the room list while floor creation controls live in the command band', async () => {
+  it('command band holds the room finder while floor creation controls remain labelled', async () => {
     const { container } = renderMapLabEditorPage()
     await flush()
 
-    const navRail = container.querySelector('.maplab-editor-nav-rail')
-    expect(navRail).toBeInTheDocument()
-    const roomList = navRail?.querySelector('.maplab-editor-room-list')
-    expect(roomList).toBeInTheDocument()
-
-    // Floor creation controls moved to the command band; the rail is room navigation.
-    expect(navRail?.querySelector('.maplab-editor-floor-actions')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Find room…' })).toBeInTheDocument()
+    expect(container.querySelector('.maplab-editor-nav-rail')).not.toBeInTheDocument()
     const toolbar = container.querySelector('.maplab-toolbar')
     const floorActions = toolbar?.querySelector('.maplab-editor-floor-actions')
     expect(floorActions).toBeInTheDocument()
@@ -222,20 +219,12 @@ describe('MapLabEditorPage (Stage E3 — Toolbar reorganization & persistent ins
     expect(floorActions?.textContent).not.toMatch(/delete|connection/i)
   })
 
-  it('room list is the named scroll owner inside the editor navigation rail', async () => {
+  it('finder results use the shared labelled room navigation contract', async () => {
     const { container } = renderMapLabEditorPage()
     await flush()
 
-    const navRail = container.querySelector('.maplab-editor-nav-rail')
-    expect(navRail).toBeInTheDocument()
-
-    // The room list carries the scroll-owner class and named aria-label.
-    const roomList = navRail?.querySelector('.maplab-editor-room-list')
-    expect(roomList).toBeInTheDocument()
-    expect(roomList?.getAttribute('aria-label')).toBe('Rooms on this floor')
-
-    // Only one element in the rail carries the room-list class (it's the unique scroll owner).
-    expect(navRail?.querySelectorAll('.maplab-editor-room-list').length).toBe(1)
+    expect(screen.getByRole('button', { name: 'Find room…' })).toBeInTheDocument()
+    expect(container.querySelector('.maplab-viewer-rail')).toBeInTheDocument()
   })
 
   it('adds a new floor above the current floor and activates it', async () => {
@@ -246,7 +235,7 @@ describe('MapLabEditorPage (Stage E3 — Toolbar reorganization & persistent ins
 
     const firstFloorTab = screen.getByRole('tab', { name: 'First Floor' })
     expect(firstFloorTab).toHaveAttribute('aria-selected', 'true')
-    expect(screen.getByText('No rooms on this floor yet.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Find room…' })).toBeInTheDocument()
   })
 
   it('adds a new floor below the current floor and disables the add button once it exists', async () => {
@@ -301,12 +290,12 @@ describe('MapLabEditorPage (Stage E3 — Toolbar reorganization & persistent ins
     const { container } = renderMapLabEditorPage()
     await flush()
 
-    fireEvent.click(container.querySelector('.maplab-editor-room-item-select') as Element)
+    const room = container.querySelector('.maplab-room') as Element
+    fireEvent.click(room)
 
     const rail = container.querySelector('.maplab-inspector-rail')
     expect(rail?.textContent).toMatch(/Room 1/)
-    expect(container.querySelector('.maplab-editor-nav-rail')).toBeInTheDocument()
-    expect(container.querySelector('.maplab-editor-nav-rail')?.querySelector('[aria-label^="Delete"]')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'New room' })).toBeInTheDocument()
     expect(rail?.textContent).toMatch(/Delete room/)
   })
 
@@ -316,7 +305,8 @@ describe('MapLabEditorPage (Stage E3 — Toolbar reorganization & persistent ins
 
     expect(container.querySelector('.maplab-inspector-rail')).not.toBeInTheDocument()
 
-    fireEvent.click(container.querySelector('.maplab-editor-room-item-select') as Element)
+    const room = container.querySelector('.maplab-room') as Element
+    fireEvent.click(room)
     const sheet = container.querySelector('.maplab-selection-sheet') as HTMLElement
     expect(sheet).toBeInTheDocument()
     expect(sheet).not.toHaveAttribute('data-expanded')

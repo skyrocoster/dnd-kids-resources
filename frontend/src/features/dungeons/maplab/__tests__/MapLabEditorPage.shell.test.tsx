@@ -84,7 +84,7 @@ describe('MapLabEditorPage', () => {
     await flush()
 
     expect(screen.getByText('No saved layout yet. Your first edit will save this blank map.')).toBeInTheDocument()
-    expect(screen.getByText('No rooms on this floor yet.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Find room…' })).toBeInTheDocument()
     expect(screen.queryByText('Combat Training Hall')).not.toBeInTheDocument()
     expect(saveSpy).not.toHaveBeenCalled()
 
@@ -145,7 +145,7 @@ describe('MapLabEditorPage', () => {
     const { container } = renderMapLabEditorPage()
     await flush()
 
-    expect(screen.getByText('No rooms on this floor yet.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Find room…' })).toBeInTheDocument()
     expect(saveSpy).not.toHaveBeenCalled()
 
     fireEvent.click(screen.getByRole('button', { name: 'Room' }))
@@ -244,7 +244,8 @@ describe('MapLabEditorPage', () => {
     const { container } = renderMapLabEditorPage()
     await flush()
 
-    fireEvent.click(container.querySelector('.maplab-editor-room-item-select') as Element)
+    const room = container.querySelector('.maplab-room') as Element
+    fireEvent.click(room)
     fireEvent.click(screen.getByRole('button', { name: 'Delete room' }))
     expect(screen.getByText('Delete "Room 1"? This cannot be undone.')).toBeInTheDocument()
     expect(container.querySelector('.maplab-room')).toBeInTheDocument()

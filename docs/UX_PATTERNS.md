@@ -122,16 +122,16 @@ board's sole scroll owner, the desktop inspector owns only its own vertical over
 below the inspector becomes an overlay drawer rather than a second page scroll region or a
 board-shrinking column.
 
-The Map Lab editor also applies this rule: at tablet widths its Floors/Rooms/Connections navigation
-overlays the canvas as a drawer while floor chips stay visible, and the selected-item inspector
+The Map Lab editor also applies this rule: its room navigation is a command-band finder that overlays
+the canvas when open, while floor chips stay visible, and the selected-item inspector
 becomes a peek-to-full bottom sheet. On desktop the navigation remains docked and no inspector width
 is reserved when nothing is selected. The Map Lab session viewer uses the same overlay-drawer rule
 for room navigation at tablet widths, with floor chips remaining outside the drawer.
 
-In the editor, floor creation belongs to the labelled command-band floor controls rather than the room
-navigation rail. Selected-room deletion belongs to the selected-room inspector rather than room-navigation
-rows. The rail remains available for room navigation, and floor selection and adjacent-floor disabled
-behavior remain part of the existing floor model.
+In the editor, floor creation belongs to the labelled command-band floor controls rather than room
+navigation. Selected-room deletion belongs to the selected-room inspector rather than finder rows. The
+finder remains available for room navigation, and floor selection and adjacent-floor disabled behavior
+remain part of the existing floor model.
 
 The editor's connection-resolution actions belong to a separately labelled command-band utility, not the
 room-navigation rail. The utility remains keyboard- and touch-reachable and preserves the existing
