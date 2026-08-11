@@ -1104,7 +1104,14 @@ export function MapLabEditorPage() {
          propFlyoutRef={propFlyoutRef}
          setActiveZ={setActiveZ}
          setTabletNavOpen={setTabletNavOpen}
-         saveStatus={saveStatus}
+          saveStatus={saveStatus}
+          dungeons={dungeons}
+          incomingGateways={incomingGateways}
+          connectionsLoaded={connectionsLoaded}
+          connectionsLoadError={connectionsLoadError}
+          selectPortal={selectPortal}
+          setGatewayToRemove={setGatewayToRemove}
+          handleAddReturnGateway={handleAddReturnGateway}
        />
 
        {drawFeatureKind !== null && state.activeZ !== 0 && !dismissZWarning && (
@@ -1130,15 +1137,7 @@ export function MapLabEditorPage() {
           selectRoom={selectRoom}
           setArmedTool={setArmedTool}
           setPlacementError={setPlacementError}
-          dungeons={dungeons}
-          incomingGateways={incomingGateways}
-          connectionsLoaded={connectionsLoaded}
-          connectionsLoadError={connectionsLoadError}
-          setActiveZ={setActiveZ}
-          selectPortal={selectPortal}
-          setGatewayToRemove={setGatewayToRemove}
-          handleAddReturnGateway={handleAddReturnGateway}
-        />
+         />
         <button
           type="button"
           className="maplab-editor-nav-backdrop"

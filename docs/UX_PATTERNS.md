@@ -133,6 +133,11 @@ navigation rail. Selected-room deletion belongs to the selected-room inspector r
 rows. The rail remains available for room navigation, and floor selection and adjacent-floor disabled
 behavior remain part of the existing floor model.
 
+The editor's connection-resolution actions belong to a separately labelled command-band utility, not the
+room-navigation rail. The utility remains keyboard- and touch-reachable and preserves the existing
+unresolved, broken, missing-return, empty, and local load-error states; the room rail remains for room
+navigation only.
+
 Status: IN FORCE.
 
 ### Map Lab navigation context

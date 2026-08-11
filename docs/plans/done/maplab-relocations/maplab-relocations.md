@@ -1,6 +1,6 @@
 # Map Lab Relocations — clear homes for floors, room deletion, and connections
 
-> **Status:** Stages 1–2 shipped; floor creation lives in the command band and selected-room deletion lives in the inspector. Next: Stage 3 — give connection resolution a labelled utility home.
+> **Status:** Completed and accepted 2026-08-11; FL-07 floor creation, selected-room deletion, and connection resolution now have clear homes outside the room rail.
 
 - **Areas:** design, dungeons
 - **Read trigger:** When implementing FL-07 of the Frontend Layout Redesign master plan.
@@ -26,6 +26,7 @@ belong there. This is a presentation and ownership relocation, not a new dungeon
 |-------|------------------------------|
 | 1 | Moved Add floor above/below from the room-navigation rail into the labelled command-band floor controls, preserving floor selection, disabled adjacent-floor behavior, handlers, keyboard semantics, responsive layout, and room-rail navigation. Added focused regression coverage for the relocated composition and preserved interactions. |
 | 2 | Removed the selected-room Delete room control from room-navigation rows so the selected-room inspector is its sole room-delete home. Preserved the existing confirmed deletion, selection cleanup, and room-navigation behavior with focused chrome and shell regressions. |
+| 3 | Moved connection resolution into a separately labelled, keyboard-openable command-band utility while preserving unresolved, broken, missing-return, empty, and load-error states, existing callbacks, and responsive overlay behavior. Focused and full checks passed; live acceptance passed at `/dungeons/3/edit` at 1280x900 and 700x900 with no console errors or relevant failed requests. |
 
 ## Touches
 - `frontend/src/features/dungeons/maplab/MapLabEditorChrome.tsx`
