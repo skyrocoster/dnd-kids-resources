@@ -129,8 +129,9 @@ is reserved when nothing is selected. The Map Lab session viewer uses the same o
 for room navigation at tablet widths, with floor chips remaining outside the drawer.
 
 In the editor, floor creation belongs to the labelled command-band floor controls rather than the room
-navigation rail. The rail remains available for room navigation, and floor selection and adjacent-floor
-disabled behavior remain part of the existing floor model.
+navigation rail. Selected-room deletion belongs to the selected-room inspector rather than room-navigation
+rows. The rail remains available for room navigation, and floor selection and adjacent-floor disabled
+behavior remain part of the existing floor model.
 
 Status: IN FORCE.
 

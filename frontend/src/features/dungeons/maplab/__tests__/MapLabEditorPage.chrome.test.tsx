@@ -305,7 +305,9 @@ describe('MapLabEditorPage (Stage E3 — Toolbar reorganization & persistent ins
 
     const rail = container.querySelector('.maplab-inspector-rail')
     expect(rail?.textContent).toMatch(/Room 1/)
-    expect(screen.getByRole('button', { name: 'Delete room' })).toBeInTheDocument()
+    expect(container.querySelector('.maplab-editor-nav-rail')).toBeInTheDocument()
+    expect(container.querySelector('.maplab-editor-nav-rail')?.querySelector('[aria-label^="Delete"]')).not.toBeInTheDocument()
+    expect(rail?.textContent).toMatch(/Delete room/)
   })
 
   it('opens a tablet selection sheet at peek height and expands its editor on demand', async () => {

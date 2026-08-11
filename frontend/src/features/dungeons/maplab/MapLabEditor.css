@@ -124,27 +124,6 @@
   font-size: var(--type-body-sm-size);
 }
 
-.maplab-editor-room-item-delete {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 var(--control-height);
-  min-height: var(--control-height);
-  border: none;
-  background: transparent;
-  color: var(--md-on-surface-variant);
-  cursor: pointer;
-}
-
-.maplab-editor-room-item-delete:hover {
-  color: var(--md-error);
-}
-
-.maplab-editor-room-item-delete:focus-visible {
-  outline: 2px solid var(--md-primary);
-  outline-offset: -2px;
-}
-
 .maplab-editor-room-list-empty {
   font-size: var(--type-body-sm-size);
   color: var(--md-on-surface-variant);

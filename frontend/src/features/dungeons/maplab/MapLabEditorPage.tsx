@@ -1130,7 +1130,6 @@ export function MapLabEditorPage() {
           selectRoom={selectRoom}
           setArmedTool={setArmedTool}
           setPlacementError={setPlacementError}
-          setRoomToDelete={setRoomToDelete}
           dungeons={dungeons}
           incomingGateways={incomingGateways}
           connectionsLoaded={connectionsLoaded}
