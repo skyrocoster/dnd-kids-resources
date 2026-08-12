@@ -55,7 +55,7 @@ describe('ItemBrowserPage', () => {
     expect(screen.getByRole('tab', { name: 'Items' })).toBeInTheDocument()
   })
 
-  it('Back to items clears the selected detail', async () => {
+  it('Back to items returns to the list without clearing selection', async () => {
     vi.spyOn(api, 'listItems').mockResolvedValue([ruby])
     const user = userEvent.setup()
     render(<ItemBrowserPage />)
@@ -64,7 +64,7 @@ describe('ItemBrowserPage', () => {
     // The back affordance is mobile-only (`.browser-layout-back` is display:none above 520px), and
     // jsdom never matches the media query — so it has no accessible name here. Query by text.
     await user.click(screen.getByText('Back to items'))
-    expect(screen.queryByRole('heading', { name: 'Ruby' })).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Ruby' })).toBeInTheDocument()
   })
 
   it('shows a pending confirm dialog while deleting', async () => {

@@ -427,6 +427,7 @@ describe('MapLabEditorPage (Phase K scaffolding)', () => {
     // The labelled Find room finder is inside the fullscreen workspace and lists the room
     expect(screen.getByRole('button', { name: 'Find room…' })).toBeInTheDocument()
     expect(container.querySelector('.maplab-viewer-rail')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Find room…' }))
     expect(within(screen.getByRole('listbox', { name: 'Ground Floor rooms' })).getByText('Room 1')).toBeInTheDocument()
 
     // The legacy navigation rail is gone from the workspace

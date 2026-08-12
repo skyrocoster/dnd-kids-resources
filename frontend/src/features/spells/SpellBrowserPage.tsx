@@ -214,7 +214,7 @@ export function SpellBrowserPage() {
         detail={
             selected ? (
               <div className="spell-browser-detail">
-                <Button className="browser-layout-back" variant="ghost" onClick={() => setSelectedId(null)}>Back to spells</Button>
+                 <Button className="browser-layout-back" variant="ghost">Back to spells</Button>
                 <Card
                   title={selected.name}
                   subtitle={`${levelLabel(selected.level)}${selected.school ? ` · ${selected.school}` : ''}`}

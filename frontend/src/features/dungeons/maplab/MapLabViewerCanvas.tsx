@@ -1,4 +1,4 @@
-import type { ComponentProps } from 'react'
+import type { ComponentProps, ReactNode } from 'react'
 import { MapCanvas } from '../../../map/MapCanvas'
 import { FitIcon, ZoomInIcon, ZoomOutIcon } from '../../../components/icons'
 import { DoorBadgeLayer, DoorMarker } from './DoorMarker'
@@ -76,6 +76,9 @@ interface Props {
   stairSession: (stair: MapStair) => SessionFixtureState | undefined
   portalSession: (portal: MapPortal) => SessionFixtureState | undefined
   propSession: (prop: MapProp) => SessionFixtureState | undefined
+  finderOpen: boolean
+  onFinderOpenChange: (open: boolean) => void
+  children?: ReactNode
 }
 
 function markerOffset(layout: MapLayout, z: number, cell: MapCell, type: 'stair' | 'portal' | 'prop', id: number) {
@@ -90,12 +93,12 @@ export function MapLabViewerCanvas({
   zoom, viewerError, selectedInspectable, pinnedDoorId,
   onSelectRoom, onFocus, onClick, onClearSelection, onNavigateStair, onNavigatePortal, onSetActiveEncounterId,
   onWheelZoom, onPanStart, onPanMove, onPanEnd, onViewportResize, onFit, onZoomIn, onZoomOut,
-  doorSession, stairSession, portalSession, propSession,
+  doorSession, stairSession, portalSession, propSession, finderOpen, onFinderOpenChange, children,
 }: Props) {
   return (
     <div className="maplab-canvas">
       <div className="maplab-viewer-finder">
-        <ViewerRoomRail layout={layout} parsed={parsed} activeRoomId={activeRoomId} onSelectRoom={onSelectRoom} />
+        <ViewerRoomRail layout={layout} parsed={parsed} activeRoomId={activeRoomId} onSelectRoom={(id) => { onSelectRoom(id); onClick({ kind: 'room', id }) }} open={finderOpen} onOpenChange={onFinderOpenChange} />
       </div>
 
       <div className="maplab-canvas-area">
@@ -120,6 +123,7 @@ export function MapLabViewerCanvas({
           </MapCanvas>
         )}
       </div>
+      {children}
     </div>
   )
 }

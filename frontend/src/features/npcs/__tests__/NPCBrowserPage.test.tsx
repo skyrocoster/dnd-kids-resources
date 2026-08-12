@@ -104,7 +104,7 @@ describe('NPCBrowserPage', () => {
     expect(screen.getByRole('tab', { name: 'NPCs' })).toBeInTheDocument()
   })
 
-  it('Back to NPCs clears the selected detail', async () => {
+  it('Back to NPCs returns to the list without clearing selection', async () => {
     vi.spyOn(api, 'listNPCs').mockResolvedValue(npcs)
     const user = userEvent.setup()
 
@@ -114,8 +114,7 @@ describe('NPCBrowserPage', () => {
     // The back affordance is mobile-only (`.browser-layout-back` is display:none above 520px), and
     // jsdom never matches the media query — so it has no accessible name here. Query by text.
     await user.click(screen.getByText('Back to NPCs'))
-    expect(screen.queryByRole('heading', { name: 'Emery Hart' })).not.toBeInTheDocument()
-    expect(screen.getByText(/Choose an NPC/)).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Emery Hart' })).toBeInTheDocument()
   })
 
   it('shows a pending confirm dialog while deleting', async () => {

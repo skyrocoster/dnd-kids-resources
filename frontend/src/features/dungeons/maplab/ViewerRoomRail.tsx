@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { getRoomById, getRoomThreatHints, type DungeonData } from '../dungeonModel'
 import { floorsInLayout, getNpcUnion, roomsOnZ, type MapLayout } from '../../../model/maplabModel'
 
@@ -7,14 +7,21 @@ interface ViewerRoomRailProps {
   parsed: DungeonData
   activeRoomId: number | null
   onSelectRoom: (roomId: number) => void
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
-export function ViewerRoomRail({ layout, parsed, activeRoomId, onSelectRoom }: ViewerRoomRailProps) {
+export function ViewerRoomRail({ layout, parsed, activeRoomId, onSelectRoom, open, onOpenChange }: ViewerRoomRailProps) {
   const activeItemRef = useRef<HTMLLIElement | null>(null)
   const triggerRef = useRef<HTMLButtonElement | null>(null)
   const searchRef = useRef<HTMLInputElement | null>(null)
   const [query, setQuery] = useState('')
-  const [isOpen, setIsOpen] = useState(true)
+  const [localOpen, setLocalOpen] = useState(false)
+  const isOpen = open ?? localOpen
+  const setIsOpen = useCallback((next: boolean) => {
+    if (open === undefined) setLocalOpen(next)
+    onOpenChange?.(next)
+  }, [onOpenChange, open])
 
   const floorGroups = useMemo(() => {
     return floorsInLayout(layout)
@@ -36,11 +43,11 @@ export function ViewerRoomRail({ layout, parsed, activeRoomId, onSelectRoom }: V
     [activeFloor, floorGroups],
   )
 
-  const close = () => {
+  const close = useCallback(() => {
     setIsOpen(false)
     setQuery('')
     triggerRef.current?.focus()
-  }
+  }, [setIsOpen])
 
   const selectRoom = (roomId: number) => {
     onSelectRoom(roomId)
@@ -52,10 +59,37 @@ export function ViewerRoomRail({ layout, parsed, activeRoomId, onSelectRoom }: V
   }, [isOpen])
 
   useEffect(() => {
+    if (!isOpen) return
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        event.stopPropagation()
+        close()
+        return
+      }
+      if (event.key !== 'Tab') return
+      const panel = searchRef.current?.closest<HTMLElement>('.maplab-viewer-rail-panel')
+      const focusable = panel?.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled])')
+      if (!focusable?.length) return
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault()
+        first.focus()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown, true)
+    return () => window.removeEventListener('keydown', handleKeyDown, true)
+  }, [close, isOpen])
+
+  useEffect(() => {
     if (typeof activeItemRef.current?.scrollIntoView === 'function') {
       activeItemRef.current.scrollIntoView({ block: 'nearest', inline: 'nearest' })
     }
-  }, [activeRoomId])
+  }, [activeRoomId, isOpen])
 
   return (
     <div className="maplab-viewer-rail" role="navigation" aria-label="Room navigation">
@@ -67,7 +101,7 @@ export function ViewerRoomRail({ layout, parsed, activeRoomId, onSelectRoom }: V
           <label htmlFor="maplab-room-search">Find room…</label>
           <button type="button" className="maplab-viewer-rail-close" onClick={close} aria-label="Close room finder">Close</button>
         </div>
-        <input ref={searchRef} id="maplab-room-search" type="search" value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={(event) => { if (event.key === 'Escape') { event.stopPropagation(); close() } }} placeholder="Search by number, title, or floor" />
+        <input ref={searchRef} id="maplab-room-search" type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search by number, title, or floor" />
         <p className="maplab-viewer-rail-result-summary" aria-live="polite">Results from all floors</p>
       {orderedFloorGroups.map(({ floor, rooms }) => {
         const floorTitle = floor.title ?? `Floor ${floor.z}`

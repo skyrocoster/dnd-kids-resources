@@ -87,7 +87,7 @@ export function LootBundleBrowserPage() {
         detail={
           selected ? (
             <div className="loot-browser-detail">
-              <Button className="browser-layout-back" variant="ghost" onClick={() => setSelectedId(null)}>Back to loot bundles</Button>
+              <Button className="browser-layout-back" variant="ghost">Back to loot bundles</Button>
               <Card
                 title={selected.name}
                 subtitle={formatGp(computeBundleTotal(selected.gold, selected.contents))}

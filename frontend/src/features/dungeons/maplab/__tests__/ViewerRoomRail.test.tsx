@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { fireEvent, render as rtlRender, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { parseDungeonData } from '../../dungeonModel'
@@ -42,7 +42,20 @@ beforeEach(() => {
   Element.prototype.scrollIntoView = vi.fn()
 })
 
+function render(...args: Parameters<typeof rtlRender>) {
+  const result = rtlRender(...args)
+  fireEvent.click(screen.getByRole('button', { name: 'Find room…' }))
+  return result
+}
+
 describe('ViewerRoomRail', () => {
+  it('starts closed and opens from its labelled trigger', async () => {
+    rtlRender(<ViewerRoomRail layout={mapLabLayout} parsed={parsed} activeRoomId={17} onSelectRoom={vi.fn()} />)
+    expect(screen.queryByRole('dialog', { name: 'Find room' })).not.toBeInTheDocument()
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Find room…' }))
+    expect(screen.getByRole('dialog', { name: 'Find room' })).toBeInTheDocument()
+    expect(screen.getByRole('searchbox', { name: 'Find room…' })).toHaveFocus()
+  })
   it('groups rooms by floor with headings for multi-floor layouts', () => {
     render(
       <ViewerRoomRail layout={mapLabLayout} parsed={parsed} activeRoomId={17} onSelectRoom={vi.fn()} />,

@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import * as api from '../../../../api/client'
@@ -191,7 +191,10 @@ describe('DungeonShell', () => {
     // At 520px, the finder must be accessible in the canvas composition.
     const canvas = document.querySelector('.maplab-canvas')
     expect(canvas).toBeInTheDocument()
+    expect(screen.queryByRole('searchbox', { name: 'Find room…' })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Find room…' }))
     expect(screen.getByRole('searchbox', { name: 'Find room…' })).toBeInTheDocument()
+    fireEvent.click(within(screen.getByRole('group', { name: /dungeon floor map/i })).getByRole('button', { name: 'Combat Training Hall' }))
     expect(document.querySelector('.maplab-sidebar')).toBeInTheDocument()
   })
 })

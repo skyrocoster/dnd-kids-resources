@@ -140,7 +140,7 @@ it('keeps the viewer finder in the canvas composition without a permanent rail',
   expect(document.querySelector('.maplab-viewer-finder')).toBeInTheDocument()
   expect(document.querySelector('.maplab-viewer-rail-container')).not.toBeInTheDocument()
   expect(document.querySelector('.maplab-viewer-rail-seam')).not.toBeInTheDocument()
-  expect(screen.getByRole('searchbox', { name: 'Find room…' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Find room…' })).toHaveAttribute('aria-expanded', 'false')
 })
 
 describe('MapLabPage (Stage 1 — Wall kind rendering)', () => {

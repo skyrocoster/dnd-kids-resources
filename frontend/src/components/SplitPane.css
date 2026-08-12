@@ -113,7 +113,7 @@
   border-radius: 0 0.5rem 0.5rem 0;
 }
 
-@media (max-width: 520px) {
+@media (max-width: 768px) {
   .split-pane-rail-action,
   .split-pane-restore {
     display: none;

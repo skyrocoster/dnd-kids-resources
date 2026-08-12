@@ -47,7 +47,7 @@ export function AppShell() {
          <nav className={`app-nav ${collapsed ? 'app-nav--collapsed' : ''} ${isEncounterRunner ? 'app-nav--play' : ''}`}>
           <Link to="/" className="app-brand">
             <MapIcon size={22} aria-hidden="true" />
-            <span>D&D Kids Resources</span>
+             <span className={isEncounterRunner ? 'visually-hidden' : undefined}>D&D Kids Resources</span>
           </Link>
           <button
             type="button"
@@ -60,7 +60,7 @@ export function AppShell() {
           </button>
           {navSections.map((section) => (
             <div className="app-nav-section" key={section.label}>
-              <h2 className={collapsed ? 'visually-hidden' : undefined}>{section.label}</h2>
+               <h2 className={collapsed || isEncounterRunner ? 'visually-hidden' : undefined}>{section.label}</h2>
               <ul>
                 {section.links.map((link) => (
                   <li key={link.to}>
@@ -71,7 +71,7 @@ export function AppShell() {
                       title={link.label}
                     >
                       <link.linkIcon size={20} aria-hidden="true" />
-                      <span className={collapsed ? 'visually-hidden' : undefined}>{link.label}</span>
+                       <span className={collapsed || isEncounterRunner ? 'visually-hidden' : undefined}>{link.label}</span>
                     </NavLink>
                   </li>
                 ))}

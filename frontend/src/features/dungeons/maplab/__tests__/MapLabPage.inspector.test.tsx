@@ -107,7 +107,7 @@ describe('MapLabPage (Stage 3 — Generic inspector)', () => {
     const { container } = renderMapLabPage()
     await flush()
 
-    expect(screen.getByText('Select a room, door, stair, or prop for details.')).toBeInTheDocument()
+    expect(document.querySelector('.maplab-sidebar')).not.toBeInTheDocument()
 
     const hall = screen.getByRole('button', { name: 'Combat Training Hall' })
     await user.click(hall)
@@ -121,7 +121,7 @@ describe('MapLabPage (Stage 3 — Generic inspector)', () => {
     await user.unhover(hall)
     expect(panel.querySelector('.maplab-inspector-title')).toHaveTextContent('Combat Training Hall')
     await user.click(hall)
-    expect(screen.getByText('Select a room, door, stair, or prop for details.')).toBeInTheDocument()
+    expect(document.querySelector('.maplab-sidebar')).not.toBeInTheDocument()
   })
 
   it('shows the room descriptor on keyboard focus too, same as doors/stairs', async () => {
@@ -376,8 +376,9 @@ describe('MapLabPage (Stage F4 — loot hook affordance)', () => {
 })
 
 describe('MapLabPage (R4 viewer room-reading surface)', () => {
-  it('shows the default room details panel after load', async () => {
+  it('shows room details after selecting the default active room', async () => {
     await renderLoadedMapLabPage()
+    fireEvent.click(within(screen.getByRole('group', { name: /dungeon floor map/i })).getByRole('button', { name: 'Combat Training Hall' }))
 
     const details = screen.getByLabelText('Room details')
     expect(within(details).getByRole('heading', { name: 'Training Hall', level: 3 })).toBeInTheDocument()
@@ -409,6 +410,7 @@ describe('MapLabPage (R4 viewer room-reading surface)', () => {
     await renderLoadedMapLabPage()
 
     await user.click(screen.getByRole('tab', { name: 'First Floor' }))
+    await user.click(within(screen.getByRole('group', { name: /dungeon floor map/i })).getByRole('button', { name: 'First Floor Landing' }))
     expect(screen.getByText('Balcony')).toBeInTheDocument()
     expect(screen.queryByText('Banner')).not.toBeInTheDocument()
   })
@@ -433,6 +435,7 @@ describe('MapLabPage (R4 viewer room-reading surface)', () => {
     vi.spyOn(api, 'getConditions').mockResolvedValue([])
 
     await renderLoadedMapLabPage()
+    await user.click(within(screen.getByRole('group', { name: /dungeon floor map/i })).getByRole('button', { name: 'Combat Training Hall' }))
     await user.click(screen.getByRole('button', { name: 'Run encounter' }))
 
     expect(await screen.findByRole('dialog', { name: 'Goblin Drill' })).toBeInTheDocument()
@@ -441,6 +444,7 @@ describe('MapLabPage (R4 viewer room-reading surface)', () => {
   it('NPC chips open the NPC dock', async () => {
     const user = userEvent.setup()
     await renderLoadedMapLabPage()
+    await user.click(within(screen.getByRole('group', { name: /dungeon floor map/i })).getByRole('button', { name: 'Combat Training Hall' }))
 
     await user.click(await screen.findByRole('button', { name: 'Mira' }))
     expect(await screen.findByRole('dialog', { name: 'Mira' })).toBeInTheDocument()
@@ -457,6 +461,7 @@ describe('MapLabPage (R4 viewer room-reading surface)', () => {
     vi.spyOn(api, 'getNPC').mockRejectedValue(new Error('Failed to load NPC.'))
 
     await renderLoadedMapLabPage()
+    await user.click(within(screen.getByRole('group', { name: /dungeon floor map/i })).getByRole('button', { name: 'Combat Training Hall' }))
     await user.click(await screen.findByRole('button', { name: 'Mira' }))
 
     const dock = await screen.findByRole('dialog', { name: 'NPC #9' })

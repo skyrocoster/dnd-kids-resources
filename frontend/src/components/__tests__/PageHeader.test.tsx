@@ -49,4 +49,13 @@ describe('PageHeader', () => {
     render(<PageHeader title="Dungeon" actions={<button type="button">Edit</button>} />)
     expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument()
   })
+
+  it('uses a wrapping intrinsic row so actions cannot overlay the title', async () => {
+    const { readFileSync } = await import('node:fs')
+    const { resolve } = await import('node:path')
+    const css = readFileSync(resolve(process.cwd(), 'src/components/PageHeader.css'), 'utf-8')
+    expect(css).toMatch(/\.page-header-main\s*\{[^}]*flex-wrap:\s*wrap;/s)
+    expect(css).toMatch(/\.page-header-titles\s*\{[^}]*flex:\s*1 1/s)
+    expect(css).toMatch(/\.page-header-actions\s*\{[^}]*flex-shrink:\s*0;/s)
+  })
 })

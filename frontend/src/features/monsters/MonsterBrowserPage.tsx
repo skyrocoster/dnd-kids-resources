@@ -83,7 +83,7 @@ export function MonsterBrowserPage() {
         detail={
           selected ? (
             <div className="monster-browser-detail" data-variant="monster">
-              <Button className="browser-layout-back" variant="ghost" onClick={() => setSelectedId(null)}>Back to monsters</Button>
+              <Button className="browser-layout-back" variant="ghost">Back to monsters</Button>
               <div className="monster-browser-detail-header">
                 <div className="monster-browser-detail-kicker">Bestiary Field Card</div>
                 <div>

@@ -122,21 +122,22 @@ board's sole scroll owner, the desktop inspector owns only its own vertical over
 below the inspector becomes an overlay drawer rather than a second page scroll region or a
 board-shrinking column.
 
-The Map Lab editor also applies this rule: its room navigation is a command-band finder that overlays
-the canvas when open, while floor chips stay visible, and the selected-item inspector
-becomes a peek-to-full bottom sheet. On desktop the navigation remains docked and no inspector width
-is reserved when nothing is selected. The Map Lab session viewer uses the same overlay-drawer rule
-for room navigation at tablet widths, with floor chips remaining outside the drawer.
+The Map Lab editor also applies this rule: its room navigation is a closed-by-default command-band
+finder that overlays the canvas when open, while floor chips stay visible, and the selected-item
+inspector becomes a peek-to-full bottom sheet. On desktop the finder is a bounded panel anchored to
+its trigger and no inspector width is reserved when nothing is selected. The Map Lab session viewer
+uses the same bounded finder and selection-only details contract, presenting both as contained sheets
+at tablet widths while floor chips remain outside the finder.
 
 In the editor, floor creation belongs to the labelled command-band floor controls rather than room
 navigation. Selected-room deletion belongs to the selected-room inspector rather than finder rows. The
 finder remains available for room navigation, and floor selection and adjacent-floor disabled behavior
 remain part of the existing floor model.
 
-The editor's connection-resolution actions belong to a separately labelled command-band utility, not the
-room-navigation rail. The utility remains keyboard- and touch-reachable and preserves the existing
-unresolved, broken, missing-return, empty, and local load-error states; the room rail remains for room
-navigation only.
+The editor's connection-resolution actions belong to a separately labelled, counted command-band
+utility, not the room-navigation finder. Its body opens in a bounded internally scrolling panel and is
+mutually exclusive with Finder, View, and Map. The utility remains keyboard- and touch-reachable and
+preserves the existing unresolved, broken, missing-return, empty, and local load-error states.
 
 Status: IN FORCE.
 

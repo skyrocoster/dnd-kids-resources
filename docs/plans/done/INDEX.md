@@ -16,6 +16,7 @@ Completed plans are archived here for reference. Each directory under `docs/plan
 - [Dungeon Outside — the world around the rooms becomes real, authored map space](dungeon-outside/dungeon-outside.md) — Stage 4 complete. — (Dungeons)
 - [Dungeon Feature - Map Lab Cutover Plan](dungeon_plan/dungeon_plan.md) — All stages shipped. — (Dungeons)
 - [Encounters Feature — Expansion Plan](encounters_plan/encounters_plan.md) — Phases 1–3 and Phase 4 shipped. — (Encounters)
+- [Frontend Layout Recovery — restore the focal page after FL-01–FL-08](frontend-layout-recovery/frontend-layout-recovery.md) — Stages 1–4 shipped; automated checks and the complete post-fix screenshot matrix passed. — (design)
 - [Frontend Operational Top Row — merge global and surface identity](frontend-operational-top-row/frontend-operational-top-row.md) — Completed and accepted 2026-08-07 — FL-02's merged operational top row passed automated gates and human UX review. — (design)
 - [Frontend Play Navigation — compact global navigation for play surfaces](frontend-play-navigation/frontend-play-navigation.md) — Completed and accepted 2026-08-07 — FL-03 compact play navigation passed automated checks and human UX review. — (design)
 - [Frontend Standard Browser Actions — Consistent collection and selection actions](frontend-standard-browser-actions/frontend-standard-browser-actions.md) — Completed and accepted 2026-08-07; FL-04 standard browser actions are shipped. — (design)

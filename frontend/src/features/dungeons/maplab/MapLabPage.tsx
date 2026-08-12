@@ -160,6 +160,7 @@ export function MapLabPage() {
   const { visible: layerVisible, toggleLayer } = useMapLayerVisibility()
   const { density, setDensity } = useMapDensity()
   const [viewPopoverOpen, setViewPopoverOpen] = useState(false)
+  const [finderOpen, setFinderOpen] = useState(false)
   const viewPopoverRef = useRef<HTMLDivElement>(null)
   const simplified = resolveMapDensity(density, zoomApi.zoom.scale) === 'simple'
   const allLayersHidden = MAP_LAYER_KEYS.every((key) => !layerVisible[key])
@@ -199,6 +200,10 @@ export function MapLabPage() {
         setViewPopoverOpen(false)
         return
       }
+      if (finderOpen) {
+        setFinderOpen(false)
+        return
+      }
       if (activeEncounterId !== null) {
         setActiveEncounterId(null)
         return
@@ -215,7 +220,7 @@ export function MapLabPage() {
     }
     window.addEventListener('keydown', handleEscape)
     return () => window.removeEventListener('keydown', handleEscape)
-  }, [activeEncounterId, activeNpcId, resetDungeonConfirmOpen, viewPopoverOpen])
+  }, [activeEncounterId, activeNpcId, finderOpen, resetDungeonConfirmOpen, viewPopoverOpen])
 
   const isAtTable = route.dungeonId !== null && atTableDungeonId === route.dungeonId
   const viewerError = (partyRoomActionActive ? null : actionError) ?? atTableError ?? portalNavigationError
@@ -532,7 +537,7 @@ export function MapLabPage() {
             aria-haspopup="true"
             aria-expanded={viewPopoverOpen}
             data-active={viewPopoverOpen || undefined}
-            onClick={() => setViewPopoverOpen((open) => !open)}
+             onClick={() => setViewPopoverOpen((open) => { const next = !open; if (next) setFinderOpen(false); return next })}
           >
             <EyeIcon width={18} height={18} aria-hidden="true" />
             View
@@ -646,7 +651,7 @@ export function MapLabPage() {
          viewerError={viewerError}
          selectedInspectable={selectedInspectable}
          pinnedDoorId={pinnedDoorId}
-          onSelectRoom={(id) => { setActiveRoomId(id) }}
+           onSelectRoom={(id) => { setActiveRoomId(id) }}
           onFocus={focusInspectable}
           onClick={clickInspectable}
           onClearSelection={() => setSelectedInspectable(null)}
@@ -666,8 +671,10 @@ export function MapLabPage() {
          doorSession={doorSession}
          stairSession={stairSession}
           portalSession={portalSession}
-           propSession={propSession}
-         />
+          propSession={propSession}
+          finderOpen={finderOpen}
+          onFinderOpenChange={(open) => { setFinderOpen(open); if (open) setViewPopoverOpen(false) }}
+          >
         {/*
         <button
           type="button"
@@ -1016,6 +1023,7 @@ export function MapLabPage() {
           }}
           onCancelReset={() => setResetDungeonConfirmOpen(false)}
         />
+        </MapLabViewerCanvas>
     </div>
   )
 }

@@ -97,7 +97,7 @@ export function ItemBrowserPage() {
         detail={
           selected ? (
             <div className="item-browser-detail">
-              <Button className="browser-layout-back" variant="ghost" onClick={() => setSelectedId(null)}>Back to items</Button>
+              <Button className="browser-layout-back" variant="ghost">Back to items</Button>
               <Card
                 title={selected.name}
                 subtitle={formatGp(selected.value_gp)}

@@ -141,7 +141,7 @@ export function WeaponBrowserPage() {
         detail={
             selected ? (
               <div className="weapon-browser-detail">
-                <Button className="browser-layout-back" variant="ghost" onClick={() => setSelectedId(null)}>Back to weapons</Button>
+                 <Button className="browser-layout-back" variant="ghost">Back to weapons</Button>
                 <Card
                   title={selected.name}
                   subtitle={selected.base_weapon || selected.weapon_category || undefined}

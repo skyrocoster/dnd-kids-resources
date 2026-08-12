@@ -191,7 +191,7 @@ describe('DungeonBrowserPage', () => {
     expect(screen.getByRole('tab', { name: 'Dungeons' })).toBeInTheDocument()
   })
 
-  it('Back to dungeons clears the selected detail', async () => {
+  it('Back to dungeons returns to the list without clearing selection', async () => {
     const user = userEvent.setup()
 
     render(
@@ -204,8 +204,7 @@ describe('DungeonBrowserPage', () => {
     // The back affordance is mobile-only (`.browser-layout-back` is display:none above 520px), and
     // jsdom never matches the media query — so it has no accessible name here. Query by text.
     await user.click(screen.getByText('Back to dungeons'))
-    expect(screen.queryByRole('heading', { name: 'Greenhouse' })).not.toBeInTheDocument()
-    expect(screen.getByText(/Choose a dungeon/)).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Greenhouse' })).toBeInTheDocument()
   })
 
   it('filtering to no matches shows filtered-empty state', async () => {

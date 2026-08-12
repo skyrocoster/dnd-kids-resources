@@ -142,7 +142,7 @@ export function PlayerBrowserPage() {
         detail={
             selected ? (
               <div className="player-browser-detail">
-                <Button className="browser-layout-back" variant="ghost" onClick={() => setSelectedId(null)}>Back to players</Button>
+                 <Button className="browser-layout-back" variant="ghost">Back to players</Button>
                 <Card
                   title={selected.name}
                   subtitle={selected.class_ || undefined}

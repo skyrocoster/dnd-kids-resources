@@ -265,7 +265,7 @@ describe('MapLabPage (M2.3 walls + door/stair affordances)', () => {
     const user = userEvent.setup()
     await renderLoadedMapLabPage()
 
-    expect(screen.getByText('Select a room, door, stair, or prop for details.')).toBeInTheDocument()
+    expect(document.querySelector('.maplab-sidebar')).not.toBeInTheDocument()
 
     const door = screen.getByRole('button', { name: /Heavy Stone Door.*Locked/ })
     expect(door).toHaveAttribute('data-state', 'locked')
@@ -294,7 +294,7 @@ describe('MapLabPage (M2.3 walls + door/stair affordances)', () => {
 
     await user.click(door)
     expect(door).toHaveAttribute('aria-pressed', 'false')
-    expect(screen.getByText('Select a room, door, stair, or prop for details.')).toBeInTheDocument()
+    expect(document.querySelector('.maplab-sidebar')).not.toBeInTheDocument()
   })
 
   it('renders the stair with its state icon and selects it on click, without breaking floor travel', async () => {

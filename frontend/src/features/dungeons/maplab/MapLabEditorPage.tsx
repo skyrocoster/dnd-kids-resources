@@ -10,7 +10,7 @@ import { useMapCanvasZoom, type ViewportSize } from '../../../map/useMapCanvasZo
 import { useMapLabNavigationSession } from './useMapLabNavigationSession'
 import { useCanvasStroke } from './useCanvasStroke'
 import { MapLabEditorCanvas } from './MapLabEditorCanvas'
-import { MapLabEditorChrome, MapLabEditorNavigation } from './MapLabEditorChrome'
+import { MapLabEditorChrome } from './MapLabEditorChrome'
 import {
   DoorClosedIcon,
   FitIcon,
@@ -244,6 +244,7 @@ export function MapLabEditorPage() {
   const mapPopoverRef = useRef<HTMLDivElement>(null)
   const [viewPopoverOpen, setViewPopoverOpen] = useState(false)
   const viewPopoverRef = useRef<HTMLDivElement>(null)
+  const [openUtility, setOpenUtility] = useState<'finder' | 'connections' | null>(null)
   const [confirmingReset, setConfirmingReset] = useState(false)
   const placeDoorMode = armedTool === 'door'
   const placePropMode = armedTool === 'prop'
@@ -909,6 +910,8 @@ export function MapLabEditorPage() {
           setMapPopoverOpen(false)
         } else if (viewPopoverOpen) {
           setViewPopoverOpen(false)
+        } else if (openUtility !== null) {
+          setOpenUtility(null)
         } else if (selectionSheetExpanded) {
           setSelectionSheetExpanded(false)
         } else if (
@@ -991,7 +994,7 @@ export function MapLabEditorPage() {
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [brushArmed, mapPopoverOpen, openFlyout, redo, selectDoor, selectFeature, selectPortal, selectProp, selectRoom, selectStair, selectionSheetExpanded, state.selectedDoorId, state.selectedFeatureId, state.selectedPortalId, state.selectedPropId, state.selectedRoomId, state.selectedStairId, strokeCells.length, undo, viewPopoverOpen])
+  }, [brushArmed, mapPopoverOpen, openFlyout, openUtility, redo, selectDoor, selectFeature, selectPortal, selectProp, selectRoom, selectStair, selectionSheetExpanded, state.selectedDoorId, state.selectedFeatureId, state.selectedPortalId, state.selectedPropId, state.selectedRoomId, state.selectedStairId, strokeCells.length, undo, viewPopoverOpen])
 
   useEffect(() => {
     if (route.dungeonId === null) return
@@ -1116,7 +1119,10 @@ export function MapLabEditorPage() {
           selectPortal={selectPortal}
           setGatewayToRemove={setGatewayToRemove}
           handleAddReturnGateway={handleAddReturnGateway}
-       />
+          openUtility={openUtility}
+          setOpenUtility={setOpenUtility}
+          onNewRoom={() => { selectRoom(null); setArmedTool('room'); setPlacementError(null) }}
+        />
 
        {drawFeatureKind !== null && state.activeZ !== 0 && !dismissZWarning && (
         <p className="maplab-placement-error" role="status">
@@ -1133,11 +1139,6 @@ export function MapLabEditorPage() {
       )}
 
       <div className="maplab-editor-layout">
-         <MapLabEditorNavigation
-           selectRoom={selectRoom}
-          setArmedTool={setArmedTool}
-          setPlacementError={setPlacementError}
-         />
         <MapLabEditorCanvas
           viewBox={viewBox}
           bounds={bounds}

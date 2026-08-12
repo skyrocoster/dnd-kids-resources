@@ -21,20 +21,20 @@ export function setViewport(width: number, height: number) {
       .loom-inspector-toggle { display: inline-flex !important; }
       .loom-inspector-drawer-header { display: flex !important; }
       .loom-inspector-drawer--open { display: flex !important; }
-    `
-  } else {
-    overrideStyle.textContent = ''
-  }
-
-  if (width <= 520) {
-    overrideStyle.textContent += `
+      .browser-layout:not(.browser-layout--detail-open) .split-pane-right,
+      .browser-layout:not(.browser-layout--detail-open) .split-pane-handle,
+      .browser-layout:not(.browser-layout--detail-open) .split-pane-restore { display: none !important; }
+      .browser-layout:not(.browser-layout--detail-open) .split-pane-left { width: 100% !important; }
       .browser-layout--detail-open .split-pane-left,
       .browser-layout--detail-open .split-pane-handle,
       .browser-layout--detail-open .split-pane-restore { display: none !important; }
       .browser-layout--detail-open .split-pane-right { width: 100% !important; }
       .browser-layout--detail-open .browser-layout-back { display: inline-flex !important; }
     `
+  } else {
+    overrideStyle.textContent = ''
   }
+
 }
 
 export function resetViewport() {

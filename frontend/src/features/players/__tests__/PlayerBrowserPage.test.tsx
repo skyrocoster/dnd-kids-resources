@@ -112,7 +112,7 @@ describe('PlayerBrowserPage', () => {
     // The back affordance is mobile-only (`.browser-layout-back` is display:none above 520px), and
     // jsdom never matches the media query — so it has no accessible name here. Query by text.
     await user.click(screen.getByText('Back to players'))
-    expect(screen.getByText('Select an item')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Lark' })).toBeInTheDocument()
   })
 
   it('does not re-fetch a player detail already cached from a previous visit', async () => {

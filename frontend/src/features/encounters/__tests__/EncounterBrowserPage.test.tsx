@@ -134,7 +134,7 @@ describe('EncounterBrowserPage', () => {
     expect(screen.getByRole('tab', { name: 'Encounters' })).toBeInTheDocument()
   })
 
-  it('Back to encounters clears the selected detail', async () => {
+  it('Back to encounters returns to the list without clearing selection', async () => {
     vi.spyOn(api, 'listEncounters').mockResolvedValue(encounters)
     const user = userEvent.setup()
 
@@ -144,8 +144,7 @@ describe('EncounterBrowserPage', () => {
     // The back affordance is mobile-only (`.browser-layout-back` is display:none above 520px), and
     // jsdom never matches the media query — so it has no accessible name here. Query by text.
     await user.click(screen.getByText('Back to encounters'))
-    expect(screen.queryByRole('heading', { name: 'Ants' })).not.toBeInTheDocument()
-    expect(screen.getByText(/Choose an encounter/)).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Ants' })).toBeInTheDocument()
   })
 
   it('filtering to no matches shows filtered-empty state', async () => {

@@ -125,7 +125,7 @@ describe('SpellBrowserPage', () => {
     await user.type(screen.getByRole('searchbox'), 'missing')
     expect(screen.getByText('No matches')).toBeInTheDocument()
     await user.click(screen.getByText('Back to spells'))
-    expect(screen.getByText('Select an item')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /Cure Wounds/ })).toBeInTheDocument()
   })
 
   describe('responsive narrow breakpoint', () => {
@@ -139,12 +139,14 @@ describe('SpellBrowserPage', () => {
       const user = userEvent.setup()
       render(<SpellBrowserPage />)
 
-      await screen.findByRole('heading', { name: /Cure Wounds/ })
+      await screen.findAllByText('Cure Wounds')
+      const cureWoundsRow = screen.getAllByText('Cure Wounds').find((element) => element.closest('.search-list-item'))
+      await user.click(cureWoundsRow!)
 
       const backBtn = screen.getByRole('button', { name: 'Back to spells' })
       expect(backBtn).toBeInTheDocument()
       await user.click(backBtn)
-      expect(screen.getByText('Select an item')).toBeInTheDocument()
+      expect(screen.getAllByText('Cure Wounds').find((element) => element.closest('.search-list-item'))).toBeInTheDocument()
     })
   })
 

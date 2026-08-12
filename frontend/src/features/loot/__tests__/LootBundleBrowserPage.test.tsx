@@ -62,7 +62,7 @@ describe('LootBundleBrowserPage', () => {
     expect(screen.getByRole('tab', { name: 'Loot Bundles' })).toBeInTheDocument()
   })
 
-  it('Back to loot bundles clears the selected detail', async () => {
+  it('Back to loot bundles returns to the list without clearing selection', async () => {
     vi.spyOn(api, 'listLootBundles').mockResolvedValue([{ id: 1, name: 'Bandit Cache', gold: 12.5, contents: [] }])
     const user = userEvent.setup()
     render(<MemoryRouter><LootBundleBrowserPage /></MemoryRouter>)
@@ -71,7 +71,7 @@ describe('LootBundleBrowserPage', () => {
     // The back affordance is mobile-only (`.browser-layout-back` is display:none above 520px), and
     // jsdom never matches the media query — so it has no accessible name here. Query by text.
     await user.click(screen.getByText('Back to loot bundles'))
-    expect(screen.queryByRole('heading', { name: 'Bandit Cache' })).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Bandit Cache' })).toBeInTheDocument()
   })
 
   it('shows a pending confirm dialog while deleting', async () => {

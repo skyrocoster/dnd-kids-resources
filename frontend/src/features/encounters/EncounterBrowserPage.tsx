@@ -101,7 +101,7 @@ export function EncounterBrowserPage() {
         detail={
           selected ? (
             <div className="encounter-browser-detail">
-              <Button className="browser-layout-back" variant="ghost" onClick={() => setSelectedId(null)}>
+              <Button className="browser-layout-back" variant="ghost">
                 Back to encounters
               </Button>
               <Card

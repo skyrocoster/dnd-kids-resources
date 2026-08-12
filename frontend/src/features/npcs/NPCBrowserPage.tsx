@@ -95,7 +95,7 @@ export function NPCBrowserPage() {
         detail={
           selected ? (
             <div className="npc-browser-detail">
-              <Button className="browser-layout-back" variant="ghost" onClick={() => setSelectedId(null)}>Back to NPCs</Button>
+              <Button className="browser-layout-back" variant="ghost">Back to NPCs</Button>
               <NPCStatCard npc={selected} onPull={() => setPullTarget(selected)} />
               <div className="npc-browser-actions">
                 <Button variant="secondary" onClick={() => setPullTarget(selected)}>Pull from a monster…</Button>

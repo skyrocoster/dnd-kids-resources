@@ -179,7 +179,7 @@ describe('MonsterBrowserPage', () => {
     await waitFor(() => expect(screen.getByText(/server error/)).toBeInTheDocument())
   })
 
-  it('Back to monsters clears the selected detail', async () => {
+  it('Back to monsters returns to the list without clearing selection context', async () => {
     vi.spyOn(api, 'listMonsters').mockResolvedValue(monsters)
     const user = userEvent.setup()
 
@@ -189,8 +189,8 @@ describe('MonsterBrowserPage', () => {
     // The back affordance is mobile-only (`.browser-layout-back` is display:none above 520px), and
     // jsdom never matches the media query — so it has no accessible name here. Query by text.
     await user.click(screen.getByText('Back to monsters'))
-    expect(screen.queryByRole('heading', { name: 'Aarakocra' })).not.toBeInTheDocument()
-    expect(screen.getByText(/Choose a monster/)).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Aarakocra' })).toBeInTheDocument()
+    expect(screen.getAllByText('Aarakocra').find((element) => element.closest('.search-list-item'))?.closest('button')).toHaveAttribute('aria-current', 'true')
   })
 })
 

@@ -71,12 +71,30 @@
 }
 
 .maplab-connections-resolve-list {
-  flex: 1 1 14rem;
-  min-width: 14rem;
-  max-width: 28rem;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+}
+
+.maplab-connections-utility {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.maplab-connections-panel {
+  position: absolute;
+  z-index: var(--z-floating);
+  top: calc(100% + var(--space-2));
+  right: 0;
+  width: min(24rem, calc(100vw - var(--space-6)));
+  max-height: min(70vh, 36rem);
+  overflow-y: auto;
+  padding: var(--space-3);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--radius-lg);
+  background: var(--md-surface-2);
+  box-shadow: var(--elevation-shadow);
 }
 
 .maplab-connections-resolve-list-title {
@@ -446,7 +464,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   flex: 1 1 auto;
   min-width: 0;
 }

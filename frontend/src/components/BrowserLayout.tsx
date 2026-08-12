@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { PageHeader } from './PageHeader'
 import { SplitPane } from './SplitPane'
@@ -31,9 +32,11 @@ export function BrowserLayout({
   listCollapsible = false,
 }: BrowserLayoutProps) {
   const resolvedListLabel = listLabel || `${title} list`
+  const [detailRequested, setDetailRequested] = useState(false)
+  const showConstrainedDetail = detailOpen && detailRequested
 
   return (
-    <div className={`browser-layout ${detailOpen ? 'browser-layout--detail-open' : ''}`}>
+    <div className={`browser-layout ${showConstrainedDetail ? 'browser-layout--detail-open' : ''}`}>
       <PageHeader
         title={title}
         actions={actions}
@@ -46,8 +49,22 @@ export function BrowserLayout({
       <div className="browser-layout-split">
         <SplitPane
           leftLabel={resolvedListLabel}
-          left={list}
-          right={detail}
+          left={
+            <div onClickCapture={(event) => {
+              if ((event.target as HTMLElement).closest('.search-list-item')) setDetailRequested(true)
+            }}>
+              {list}
+            </div>
+          }
+          right={
+            <div onClickCapture={(event) => {
+              if (!(event.target as HTMLElement).closest('.browser-layout-back')) return
+              event.stopPropagation()
+              setDetailRequested(false)
+            }}>
+              {detail}
+            </div>
+          }
           collapsible={listCollapsible}
         />
       </div>

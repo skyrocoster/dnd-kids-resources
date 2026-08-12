@@ -15,7 +15,7 @@ interface SplitPaneProps {
 }
 
 const STEP = 16
-const MOBILE_QUERY = '(max-width: 520px)'
+const MOBILE_QUERY = '(max-width: 768px)'
 const DEFAULT_STORAGE_KEY = 'dnd-kids-browser-rail'
 
 interface SplitPanePreference {

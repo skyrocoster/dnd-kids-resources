@@ -124,6 +124,9 @@ describe('AppShell', () => {
     expect(document.querySelector('.app-nav')).not.toHaveClass('app-nav--collapsed')
     expect(window.localStorage.getItem(STORAGE_KEY)).toBe('false')
     expect(screen.getByText('encounter runner content')).toBeInTheDocument()
+    expect(document.querySelector('.app-nav .app-brand span')).toHaveClass('visually-hidden')
+    expect(document.querySelector('.app-nav .app-nav-section h2')).toHaveClass('visually-hidden')
+    expect(document.querySelector('.app-nav .app-nav-section a span')).toHaveClass('visually-hidden')
   })
 
   it('leaves preparation navigation preference-controlled after leaving the runner', () => {

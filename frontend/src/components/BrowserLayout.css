@@ -17,7 +17,18 @@
   display: none;
 }
 
-@media (max-width: 520px) {
+@media (max-width: 768px) {
+  .browser-layout:not(.browser-layout--detail-open) .split-pane-right,
+  .browser-layout:not(.browser-layout--detail-open) .split-pane-handle,
+  .browser-layout:not(.browser-layout--detail-open) .split-pane-restore {
+    display: none;
+  }
+
+  .browser-layout:not(.browser-layout--detail-open) .split-pane-left {
+    width: 100%;
+    border-radius: var(--radius-md);
+  }
+
   .browser-layout--detail-open .split-pane-left,
   .browser-layout--detail-open .split-pane-handle,
   .browser-layout--detail-open .split-pane-restore {

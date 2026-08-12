@@ -112,7 +112,7 @@
   padding: 0;
 }
 
-@media (max-width: 520px) {
+@media (max-width: 768px) {
   .dungeon-shell-row {
     align-items: flex-start;
     flex-direction: column;

@@ -187,8 +187,9 @@ values cluster around 0.5rem–1.5rem in practice. VW/VT stages adopt the spacin
   focused separator) remains available when expanded and is absent while collapsed. When enabled by
   `BrowserLayout`'s `listCollapsible` prop, the list rail has labelled icon buttons to collapse/restore, keeps
   children mounted so search/selection/scroll state survives, and persists collapse state plus last expanded width in
-  `localStorage` under `dnd-kids-browser-rail` with an in-memory fallback. At the 520px mobile breakpoint the
-  shared collapse controls are suppressed so existing list/detail navigation owns the narrow layout.
+  `localStorage` under `dnd-kids-browser-rail` with an in-memory fallback. At 768px and below the
+  shared collapse controls are suppressed and catalogs present one mounted list or detail view at a time;
+  Back restores the list without discarding search, selection, or scroll context.
 - **Shared form controls** (`form/form.css`'s `.form-control`, consumed by `TextField`/`SelectField`) — meet the
   48px floor via `min-height: var(--control-height)`; `.form-field-checkbox` (consumed by `CheckboxField` and
   `MultiSelectField`) does the same for its checkbox+label row. `.form-textarea`'s explicit `6rem` min-height
@@ -374,9 +375,11 @@ Site-wide navigation shell:
 - **Presentation** — the shared room-navigation control is labelled `Find room…`, opens with useful
   grouped results, prioritizes the current floor, and filters by room number, title, or floor while
   retaining all-floor and off-map results.
-- **Interaction** — native controls remain at least 48px, keyboard focus is visible, Escape dismisses
-  the finder, and selecting a room closes it and restores focus to the trigger. Viewer threat/NPC hints
-  remain concise; both editor and viewer use the finder instead of permanent room navigation.
+- **Interaction** — the finder is closed by default. Native controls remain at least 48px, keyboard focus
+  is visible and contained while open, Escape dismisses the finder, and selecting a room closes it and
+  restores focus to the trigger. Wide panels are bounded and trigger-anchored; at 768px and below they are
+  viewport-contained sheets. Viewer threat/NPC hints remain concise; both editor and viewer use the finder
+  instead of permanent room navigation.
 
 ### ToolbarTray (`maplab/MapLabToolbar.tsx`)
 

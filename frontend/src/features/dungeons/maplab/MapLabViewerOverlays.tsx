@@ -60,7 +60,7 @@ export function MapLabViewerOverlays({
 }: MapLabViewerOverlaysProps) {
   return (
     <>
-      <div className="maplab-sidebar">
+      {activeInspectable && <aside className="maplab-sidebar" aria-label="Selected details">
         <div className="maplab-inspector-panel-container" aria-live="polite">
           {activeInspectable ? (
             <InspectorPanel
@@ -72,9 +72,7 @@ export function MapLabViewerOverlays({
                   : undefined
               }
             />
-          ) : (
-            <p className="maplab-affordance-placeholder">Select a room, door, stair, or prop for details.</p>
-          )}
+          ) : null}
         </div>
         <RoomDetailsPanel
           room={activeLayoutRoom}
@@ -88,7 +86,7 @@ export function MapLabViewerOverlays({
           actionError={actionError}
           clearActionError={clearActionError}
         />
-      </div>
+      </aside>}
 
       {activeEncounterId != null && <EncounterDock encounterId={activeEncounterId} onClose={onCloseEncounter} />}
       {activeNpcId != null && <NpcDock npcId={activeNpcId} onClose={onCloseNpc} />}

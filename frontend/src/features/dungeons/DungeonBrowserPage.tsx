@@ -119,7 +119,7 @@ export function DungeonBrowserPage() {
         detail={
           selected ? (
             <div className="dungeon-browser-detail">
-              <Button className="browser-layout-back" variant="ghost" onClick={() => setSelectedId(null)}>
+              <Button className="browser-layout-back" variant="ghost">
                 Back to dungeons
               </Button>
               <Card
