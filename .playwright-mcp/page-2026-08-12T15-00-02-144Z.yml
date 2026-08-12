@@ -1,0 +1,53 @@
+- generic [ref=f4e3]:
+  - banner [ref=f4e5]
+  - generic [ref=f4e6]:
+    - navigation [ref=f4e7]:
+      - link "D&D Kids Resources" [ref=f4e8] [cursor=pointer]:
+        - /url: /
+      - button "Collapse navigation" [ref=f4e12] [cursor=pointer]
+      - generic [ref=f4e16]:
+        - heading "Reference" [level=2] [ref=f4e17]
+        - list [ref=f4e18]:
+          - listitem [ref=f4e19]:
+            - link "Spells" [ref=f4e20] [cursor=pointer]:
+              - /url: /spells
+          - listitem [ref=f4e25]:
+            - link "Monsters" [ref=f4e26] [cursor=pointer]:
+              - /url: /monsters
+          - listitem [ref=f4e33]:
+            - link "Weapons" [ref=f4e34] [cursor=pointer]:
+              - /url: /weapons
+      - generic [ref=f4e45]:
+        - heading "Campaign" [level=2] [ref=f4e46]
+        - list [ref=f4e47]:
+          - listitem [ref=f4e48]:
+            - link "Players" [ref=f4e49] [cursor=pointer]:
+              - /url: /players
+          - listitem [ref=f4e56]:
+            - link "NPCs" [ref=f4e57] [cursor=pointer]:
+              - /url: /npcs
+          - listitem [ref=f4e68]:
+            - link "The Loom" [ref=f4e69] [cursor=pointer]:
+              - /url: /loom
+          - listitem [ref=f4e78]:
+            - link "Encounters" [ref=f4e79] [cursor=pointer]:
+              - /url: /encounters
+          - listitem [ref=f4e83]:
+            - link "Dungeons" [ref=f4e84] [cursor=pointer]:
+              - /url: /dungeons
+      - generic [ref=f4e89]:
+        - heading "Loot" [level=2] [ref=f4e90]
+        - list [ref=f4e91]:
+          - listitem [ref=f4e92]:
+            - link "Items" [ref=f4e93] [cursor=pointer]:
+              - /url: /items
+          - listitem [ref=f4e98]:
+            - link "Loot Bundles" [ref=f4e99] [cursor=pointer]:
+              - /url: /loot
+    - main [ref=f4e106]:
+      - generic [ref=f4e107]:
+        - status [ref=f4e108]:
+          - heading "Loading dungeon" [level=1] [ref=f4e109]
+          - paragraph [ref=f4e110]: Loading dungeon details…
+        - link "Back to dungeons" [ref=f4e111] [cursor=pointer]:
+          - /url: /dungeons

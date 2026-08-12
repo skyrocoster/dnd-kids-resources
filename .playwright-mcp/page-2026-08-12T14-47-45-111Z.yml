@@ -1,0 +1,168 @@
+- generic [ref=f1e3]:
+  - banner [ref=f1e5]:
+    - generic [ref=f1e173]:
+      - generic [ref=f1e174]:
+        - heading "Map Lab" [level=1] [ref=f1e175]
+        - generic [ref=f1e176]: Isly Castle
+      - generic [ref=f1e177]:
+        - navigation "Dungeon mode" [ref=f1e178]:
+          - link "View" [ref=f1e179] [cursor=pointer]:
+            - /url: /dungeons/3
+          - link "Edit map" [active] [ref=f1e180] [cursor=pointer]:
+            - /url: /dungeons/3/edit
+        - status [ref=f1e3049]
+        - link "Back to dungeons" [ref=f1e181] [cursor=pointer]:
+          - /url: /dungeons
+  - generic [ref=f1e20]:
+    - navigation [ref=f1e21]:
+      - link "D&D Kids Resources" [ref=f1e22] [cursor=pointer]:
+        - /url: /
+      - button "Collapse navigation" [ref=f1e26] [cursor=pointer]
+      - generic [ref=f1e30]:
+        - heading "Reference" [level=2] [ref=f1e31]
+        - list [ref=f1e32]:
+          - listitem [ref=f1e33]:
+            - link "Spells" [ref=f1e34] [cursor=pointer]:
+              - /url: /spells
+          - listitem [ref=f1e39]:
+            - link "Monsters" [ref=f1e40] [cursor=pointer]:
+              - /url: /monsters
+          - listitem [ref=f1e47]:
+            - link "Weapons" [ref=f1e48] [cursor=pointer]:
+              - /url: /weapons
+      - generic [ref=f1e59]:
+        - heading "Campaign" [level=2] [ref=f1e60]
+        - list [ref=f1e61]:
+          - listitem [ref=f1e62]:
+            - link "Players" [ref=f1e63] [cursor=pointer]:
+              - /url: /players
+          - listitem [ref=f1e70]:
+            - link "NPCs" [ref=f1e71] [cursor=pointer]:
+              - /url: /npcs
+          - listitem [ref=f1e82]:
+            - link "The Loom" [ref=f1e83] [cursor=pointer]:
+              - /url: /loom
+          - listitem [ref=f1e92]:
+            - link "Encounters" [ref=f1e93] [cursor=pointer]:
+              - /url: /encounters
+          - listitem [ref=f1e97]:
+            - link "Dungeons" [ref=f1e98] [cursor=pointer]:
+              - /url: /dungeons
+      - generic [ref=f1e103]:
+        - heading "Loot" [level=2] [ref=f1e104]
+        - list [ref=f1e105]:
+          - listitem [ref=f1e106]:
+            - link "Items" [ref=f1e107] [cursor=pointer]:
+              - /url: /items
+          - listitem [ref=f1e112]:
+            - link "Loot Bundles" [ref=f1e113] [cursor=pointer]:
+              - /url: /loot
+    - main [ref=f1e120]:
+      - generic [ref=f1e3054]:
+        - generic [ref=f1e3055]:
+          - generic [ref=f1e3056]:
+            - generic [ref=f1e3057]:
+              - generic [ref=f1e3058]: Primary
+              - button "Collapse Primary tools" [expanded] [ref=f1e3059] [cursor=pointer]
+              - group "Primary drawing tools" [ref=f1e3063]:
+                - button "Select" [pressed] [ref=f1e3064] [cursor=pointer]
+                - button "Room" [ref=f1e3067] [cursor=pointer]
+            - generic [ref=f1e3073]:
+              - generic [ref=f1e3074]: Active tool options
+              - button "Collapse Active tool options tools" [expanded] [ref=f1e3075] [cursor=pointer]
+              - group "Active tool options" [ref=f1e3079]:
+                - generic [ref=f1e3080]:
+                  - button "Passage tools" [ref=f1e3081] [cursor=pointer]: Passages
+                  - button "Choose passage tool" [ref=f1e3084] [cursor=pointer]
+                - generic [ref=f1e3087]:
+                  - button "Prop" [ref=f1e3088] [cursor=pointer]
+                  - button "Choose prop kind" [ref=f1e3093] [cursor=pointer]
+                - generic [ref=f1e3096]:
+                  - button "Terrain" [ref=f1e3097] [cursor=pointer]
+                  - button "Choose terrain tool" [ref=f1e3102] [cursor=pointer]
+            - button "View" [ref=f1e3106] [cursor=pointer]
+            - button "Map" [ref=f1e3111] [cursor=pointer]
+          - generic [ref=f1e3114]:
+            - tablist "Dungeon floors" [ref=f1e3115]:
+              - tab "Undercroft" [selected] [ref=f1e3116] [cursor=pointer]
+              - tab "Ground Floor" [ref=f1e3117] [cursor=pointer]
+              - tab "Upper Floor" [ref=f1e3118] [cursor=pointer]
+            - generic "Floor actions" [ref=f1e3119]:
+              - button "Add floor above" [disabled] [ref=f1e3120] [cursor=pointer]
+              - button "Add floor below" [ref=f1e3122] [cursor=pointer]
+            - button "New room" [ref=f1e3124] [cursor=pointer]
+            - navigation "Room navigation" [ref=f1e3126]:
+              - button "Find room…" [ref=f1e3127] [cursor=pointer]
+            - button "Connections (0)" [ref=f1e3129] [cursor=pointer]
+        - generic [ref=f1e3133]:
+          - generic [ref=f1e3134]:
+            - generic "Map canvas" [ref=f1e3135]:
+              - group "Editor floor map — Floor -1" [ref=f1e3136]:
+                - button "Cellar Stair Foot" [ref=f1e3137] [cursor=pointer]
+                - button "The Wine Cellar" [pressed] [ref=f1e3154] [cursor=pointer]
+                - button "Undercroft Passage" [ref=f1e3315] [cursor=pointer]
+                - button "The Great Undercroft" [ref=f1e3442] [cursor=pointer]
+                - button "The Old Crypt" [ref=f1e3713] [cursor=pointer]
+                - generic:
+                  - button "Cellar Stair Foot ↔ The Wine Cellar — Plain, closed"
+                - generic:
+                  - button "The Wine Cellar ↔ Undercroft Passage — Plain, closed"
+                - generic:
+                  - button "Undercroft Passage ↔ The Great Undercroft — Plain, closed"
+                - generic:
+                  - button "The Great Undercroft ↔ The Old Crypt — Plain, closed"
+                - button "Kitchen Cellar Stair — Plain" [ref=f1e3835] [cursor=pointer]
+                - button "Storeroom Undercroft Stair — Concealed" [ref=f1e3838] [cursor=pointer]:
+                  - generic "Concealed"
+            - button "Enter fullscreen map editor" [ref=f1e3841] [cursor=pointer]
+            - generic [ref=f1e3847]:
+              - generic [ref=f1e3848]:
+                - button "Undo" [disabled] [ref=f1e3849] [cursor=pointer]
+                - button "Redo" [disabled] [ref=f1e3850] [cursor=pointer]
+              - button "Fit map to viewport" [ref=f1e3851] [cursor=pointer]
+              - generic [ref=f1e3857]:
+                - button "Zoom in" [ref=f1e3858] [cursor=pointer]
+                - button "Zoom out" [ref=f1e3862] [cursor=pointer]
+          - complementary "The Wine Cellar editor" [ref=f1e3866]:
+            - generic [ref=f1e3867]:
+              - strong [ref=f1e3868]: The Wine Cellar
+              - group "Selection actions" [ref=f1e3869]:
+                - button "Delete room" [ref=f1e3870] [cursor=pointer]
+                - button "Close" [ref=f1e3874] [cursor=pointer]
+            - region "Room content editor" [ref=f1e3876]:
+              - generic [ref=f1e3877]:
+                - generic [ref=f1e3878]:
+                  - generic [ref=f1e3884]: The Wine Cellar
+                  - generic [ref=f1e3885]: Room
+                - generic [ref=f1e3886]:
+                  - term [ref=f1e3887]: Wall kind
+                  - definition [ref=f1e3888]: solid
+                  - term [ref=f1e3889]: Size
+                  - definition [ref=f1e3890]: 160 squares
+              - generic [ref=f1e3891]:
+                - generic [ref=f1e3892]:
+                  - generic [ref=f1e3893]: Title
+                  - textbox "Title" [ref=f1e3894]: The Wine Cellar
+                - generic [ref=f1e3895]:
+                  - generic [ref=f1e3896]: Wall kind
+                  - combobox "Wall kind" [ref=f1e3897] [cursor=pointer]:
+                    - option "Solid" [selected]
+                    - option "Natural"
+                    - option "Open"
+                - generic [ref=f1e3898]:
+                  - generic [ref=f1e3899]:
+                    - generic [ref=f1e3900]: Description
+                    - generic [ref=f1e3901]: No description
+                  - generic [ref=f1e3902]:
+                    - generic [ref=f1e3903]: Kind
+                    - generic [ref=f1e3904]: Unspecified
+                - generic [ref=f1e3905]:
+                  - generic [ref=f1e3906]:
+                    - heading "NPCs" [level=4] [ref=f1e3907]
+                    - button "Edit NPCs" [ref=f1e3908] [cursor=pointer]
+                  - paragraph [ref=f1e3909]: No NPCs assigned.
+                - generic [ref=f1e3910]:
+                  - generic [ref=f1e3911]:
+                    - heading "Entries" [level=4] [ref=f1e3912]
+                    - button "Add entry" [ref=f1e3913] [cursor=pointer]
+                  - paragraph [ref=f1e3914]: No entries yet.

@@ -1,0 +1,10 @@
+- generic [ref=f50e3]:
+  - banner [ref=f50e5]:
+    - button "Open navigation" [ref=f50e7] [cursor=pointer]
+  - main [ref=f50e10]:
+    - generic [ref=f50e11]:
+      - status [ref=f50e12]:
+        - heading "Loading dungeon" [level=1] [ref=f50e13]
+        - paragraph [ref=f50e14]: Loading dungeon details…
+      - link "Back to dungeons" [ref=f50e15] [cursor=pointer]:
+        - /url: /dungeons

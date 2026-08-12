@@ -28,8 +28,11 @@ Delegate master-plan slice routing and focused Plan creation to `plan-router`, c
 closeout to `reconcile-agent`, work-order authoring to `work-order-author`, retrieval to
 `explore-deepseek` and
 `reconcile-scout-deepseek`, implementation to the DeepSeek order executors, planned quick stages and
-bounded repairs to `quick-executor`, test validation to `test-validator`, and live UI verification
-to `browser-automation-luna`. Never ask a scout or browser verifier to decide a fix. Preserve
+bounded repairs to `quick-executor`, and automated plus live frontend validation to the Luna-powered
+`test-validator`. Give it exact checks or browser flows, target routes/viewports, and requested
+screenshot/artifact evidence. Use `browser-automation-luna` only for a narrowly isolated browser
+verification when separating it from test validation is useful. Never ask a test or browser verifier
+to decide a production fix. Preserve
 unrelated worktree changes, follow the documentation contract, and never commit except as
 authorized by the reconcile workflow.
 

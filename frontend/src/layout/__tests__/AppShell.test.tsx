@@ -114,6 +114,7 @@ describe('AppShell', () => {
     renderShell()
     const nav = document.querySelector('.app-nav')
     expect(nav).toHaveClass('app-nav--collapsed')
+    expect(document.querySelector('.app-nav .app-brand span')).toHaveClass('visually-hidden')
   })
 
   it('uses compact navigation for the encounter runner without changing the preference', () => {

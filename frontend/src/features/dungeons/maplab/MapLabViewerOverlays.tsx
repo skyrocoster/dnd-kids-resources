@@ -60,19 +60,17 @@ export function MapLabViewerOverlays({
 }: MapLabViewerOverlaysProps) {
   return (
     <>
-      {activeInspectable && <aside className="maplab-sidebar" aria-label="Selected details">
-        <div className="maplab-inspector-panel-container" aria-live="polite">
-          {activeInspectable ? (
-            <InspectorPanel
-              target={activeInspectable}
-              adapter={activeAdapter}
-              context={
-                activeInspectable.kind === 'portal' && activeInspectable.portal.to?.dungeon_id !== undefined
-                  ? { dungeonTitle: otherDungeonTitles[activeInspectable.portal.to.dungeon_id] }
-                  : undefined
-              }
-            />
-          ) : null}
+      {activeInspectable ? <aside className="maplab-sidebar" aria-label="Selected details">
+         <div className="maplab-inspector-panel-container" aria-live="polite">
+          <InspectorPanel
+            target={activeInspectable}
+            adapter={activeAdapter}
+            context={
+              activeInspectable.kind === 'portal' && activeInspectable.portal.to?.dungeon_id !== undefined
+                ? { dungeonTitle: otherDungeonTitles[activeInspectable.portal.to.dungeon_id] }
+                : undefined
+            }
+          />
         </div>
         <RoomDetailsPanel
           room={activeLayoutRoom}
@@ -86,7 +84,7 @@ export function MapLabViewerOverlays({
           actionError={actionError}
           clearActionError={clearActionError}
         />
-      </aside>}
+      </aside> : null}
 
       {activeEncounterId != null && <EncounterDock encounterId={activeEncounterId} onClose={onCloseEncounter} />}
       {activeNpcId != null && <NpcDock npcId={activeNpcId} onClose={onCloseNpc} />}

@@ -1,0 +1,67 @@
+- generic [ref=f1e3]:
+  - generic [ref=f1e4]:
+    - banner [ref=f1e5]:
+      - generic [ref=f1e7]:
+        - heading "Dungeons" [level=1] [ref=f1e9]
+        - button "New Dungeon" [ref=f1e11] [cursor=pointer]
+    - navigation "Content sections" [ref=f1e14]:
+      - tab "Dungeons" [selected] [ref=f1e15] [cursor=pointer]
+  - generic [ref=f1e20]:
+    - navigation [ref=f1e21]:
+      - link "D&D Kids Resources" [ref=f1e22] [cursor=pointer]:
+        - /url: /
+      - button "Collapse navigation" [ref=f1e26] [cursor=pointer]
+      - generic [ref=f1e30]:
+        - heading "Reference" [level=2] [ref=f1e31]
+        - list [ref=f1e32]:
+          - listitem [ref=f1e33]:
+            - link "Spells" [ref=f1e34] [cursor=pointer]:
+              - /url: /spells
+          - listitem [ref=f1e39]:
+            - link "Monsters" [ref=f1e40] [cursor=pointer]:
+              - /url: /monsters
+          - listitem [ref=f1e47]:
+            - link "Weapons" [ref=f1e48] [cursor=pointer]:
+              - /url: /weapons
+      - generic [ref=f1e59]:
+        - heading "Campaign" [level=2] [ref=f1e60]
+        - list [ref=f1e61]:
+          - listitem [ref=f1e62]:
+            - link "Players" [ref=f1e63] [cursor=pointer]:
+              - /url: /players
+          - listitem [ref=f1e70]:
+            - link "NPCs" [ref=f1e71] [cursor=pointer]:
+              - /url: /npcs
+          - listitem [ref=f1e82]:
+            - link "The Loom" [ref=f1e83] [cursor=pointer]:
+              - /url: /loom
+          - listitem [ref=f1e92]:
+            - link "Encounters" [ref=f1e93] [cursor=pointer]:
+              - /url: /encounters
+          - listitem [ref=f1e97]:
+            - link "Dungeons" [ref=f1e98] [cursor=pointer]:
+              - /url: /dungeons
+      - generic [ref=f1e103]:
+        - heading "Loot" [level=2] [ref=f1e104]
+        - list [ref=f1e105]:
+          - listitem [ref=f1e106]:
+            - link "Items" [ref=f1e107] [cursor=pointer]:
+              - /url: /items
+          - listitem [ref=f1e112]:
+            - link "Loot Bundles" [ref=f1e113] [cursor=pointer]:
+              - /url: /loot
+    - main [ref=f1e120]:
+      - generic [ref=f1e124]:
+        - generic [ref=f1e125]:
+          - button "Collapse dungeon list" [expanded] [ref=f1e127] [cursor=pointer]
+          - generic [ref=f1e133]:
+            - generic [ref=f1e134]:
+              - generic [ref=f1e135]: Search dungeons…
+              - searchbox "Search dungeons…" [ref=f1e136]
+            - status [ref=f1e137]:
+              - heading "Loading…" [level=3] [ref=f1e139]
+              - paragraph [ref=f1e140]: Fetching data.
+        - separator "Resize dungeon list" [ref=f1e141]
+        - status [ref=f1e144]:
+          - heading "Select an item" [level=3] [ref=f1e145]
+          - paragraph [ref=f1e146]: Choose a dungeon from the list to see its details.

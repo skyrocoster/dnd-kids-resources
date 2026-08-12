@@ -1,0 +1,53 @@
+- generic [ref=e3]:
+  - banner [ref=e5]
+  - generic [ref=e6]:
+    - navigation [ref=e7]:
+      - link "D&D Kids Resources" [ref=e8] [cursor=pointer]:
+        - /url: /
+      - button "Collapse navigation" [ref=e12] [cursor=pointer]
+      - generic [ref=e16]:
+        - heading "Reference" [level=2] [ref=e17]
+        - list [ref=e18]:
+          - listitem [ref=e19]:
+            - link "Spells" [ref=e20] [cursor=pointer]:
+              - /url: /spells
+          - listitem [ref=e25]:
+            - link "Monsters" [ref=e26] [cursor=pointer]:
+              - /url: /monsters
+          - listitem [ref=e33]:
+            - link "Weapons" [ref=e34] [cursor=pointer]:
+              - /url: /weapons
+      - generic [ref=e45]:
+        - heading "Campaign" [level=2] [ref=e46]
+        - list [ref=e47]:
+          - listitem [ref=e48]:
+            - link "Players" [ref=e49] [cursor=pointer]:
+              - /url: /players
+          - listitem [ref=e56]:
+            - link "NPCs" [ref=e57] [cursor=pointer]:
+              - /url: /npcs
+          - listitem [ref=e68]:
+            - link "The Loom" [ref=e69] [cursor=pointer]:
+              - /url: /loom
+          - listitem [ref=e78]:
+            - link "Encounters" [ref=e79] [cursor=pointer]:
+              - /url: /encounters
+          - listitem [ref=e83]:
+            - link "Dungeons" [ref=e84] [cursor=pointer]:
+              - /url: /dungeons
+      - generic [ref=e89]:
+        - heading "Loot" [level=2] [ref=e90]
+        - list [ref=e91]:
+          - listitem [ref=e92]:
+            - link "Items" [ref=e93] [cursor=pointer]:
+              - /url: /items
+          - listitem [ref=e98]:
+            - link "Loot Bundles" [ref=e99] [cursor=pointer]:
+              - /url: /loot
+    - main [ref=e106]:
+      - generic [ref=e107]:
+        - status [ref=e108]:
+          - heading "Loading dungeon" [level=1] [ref=e109]
+          - paragraph [ref=e110]: Loading dungeon details…
+        - link "Back to dungeons" [ref=e111] [cursor=pointer]:
+          - /url: /dungeons

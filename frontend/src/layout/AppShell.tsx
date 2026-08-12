@@ -47,7 +47,7 @@ export function AppShell() {
          <nav className={`app-nav ${collapsed ? 'app-nav--collapsed' : ''} ${isEncounterRunner ? 'app-nav--play' : ''}`}>
           <Link to="/" className="app-brand">
             <MapIcon size={22} aria-hidden="true" />
-             <span className={isEncounterRunner ? 'visually-hidden' : undefined}>D&D Kids Resources</span>
+             <span className={collapsed || isEncounterRunner ? 'visually-hidden' : undefined}>D&D Kids Resources</span>
           </Link>
           <button
             type="button"

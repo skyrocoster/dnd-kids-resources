@@ -1,0 +1,81 @@
+- generic [ref=f4e3]:
+  - banner [ref=f4e5]:
+    - button "Open navigation" [ref=f4e3303] [cursor=pointer]
+    - generic [ref=f4e113]:
+      - generic [ref=f4e114]:
+        - heading "Map Lab" [level=1] [ref=f4e115]
+        - generic [ref=f4e116]: Isly Castle
+      - generic [ref=f4e117]:
+        - navigation "Dungeon mode" [ref=f4e118]:
+          - link "View" [ref=f4e119] [cursor=pointer]:
+            - /url: /dungeons/3
+          - link "Edit map" [active] [ref=f4e120] [cursor=pointer]:
+            - /url: /dungeons/3/edit
+        - status [ref=f4e3306]
+        - link "Back to dungeons" [ref=f4e121] [cursor=pointer]:
+          - /url: /dungeons
+  - main [ref=f4e106]:
+    - generic [ref=f4e3311]:
+      - generic [ref=f4e3312]:
+        - generic [ref=f4e3313]:
+          - generic [ref=f4e3314]:
+            - generic [ref=f4e3315]: Primary
+            - button "Collapse Primary tools" [expanded] [ref=f4e3316] [cursor=pointer]
+            - group "Primary drawing tools" [ref=f4e3320]:
+              - button "Select" [pressed] [ref=f4e3321] [cursor=pointer]
+              - button "Room" [ref=f4e3324] [cursor=pointer]
+          - generic [ref=f4e3330]:
+            - generic [ref=f4e3331]: Active tool options
+            - button "Collapse Active tool options tools" [expanded] [ref=f4e3332] [cursor=pointer]
+            - group "Active tool options" [ref=f4e3336]:
+              - generic [ref=f4e3337]:
+                - button "Passage tools" [ref=f4e3338] [cursor=pointer]: Passages
+                - button "Choose passage tool" [ref=f4e3341] [cursor=pointer]
+              - generic [ref=f4e3344]:
+                - button "Prop" [ref=f4e3345] [cursor=pointer]
+                - button "Choose prop kind" [ref=f4e3350] [cursor=pointer]
+              - generic [ref=f4e3353]:
+                - button "Terrain" [ref=f4e3354] [cursor=pointer]
+                - button "Choose terrain tool" [ref=f4e3359] [cursor=pointer]
+          - button "View" [ref=f4e3363] [cursor=pointer]
+          - button "Map" [ref=f4e3368] [cursor=pointer]
+        - generic [ref=f4e3371]:
+          - tablist "Dungeon floors" [ref=f4e3372]:
+            - tab "Undercroft" [selected] [ref=f4e3373] [cursor=pointer]
+            - tab "Ground Floor" [ref=f4e3374] [cursor=pointer]
+            - tab "Upper Floor" [ref=f4e3375] [cursor=pointer]
+          - generic "Floor actions" [ref=f4e3376]:
+            - button "Add floor above" [disabled] [ref=f4e3377] [cursor=pointer]
+            - button "Add floor below" [ref=f4e3379] [cursor=pointer]
+          - button "New room" [ref=f4e3381] [cursor=pointer]
+          - navigation "Room navigation" [ref=f4e3383]:
+            - button "Find room…" [ref=f4e3384] [cursor=pointer]
+          - button "Connections (0)" [ref=f4e3386] [cursor=pointer]
+      - generic [ref=f4e3391]:
+        - generic "Map canvas" [ref=f4e3392]:
+          - group "Editor floor map — Floor -1" [ref=f4e3393]:
+            - button "Cellar Stair Foot" [ref=f4e3394] [cursor=pointer]
+            - button "The Wine Cellar" [ref=f4e3411] [cursor=pointer]
+            - button "Undercroft Passage" [ref=f4e3572] [cursor=pointer]
+            - button "The Great Undercroft" [ref=f4e3699] [cursor=pointer]
+            - button "The Old Crypt" [ref=f4e3970] [cursor=pointer]
+            - generic:
+              - button "Cellar Stair Foot ↔ The Wine Cellar — Plain, closed"
+            - generic:
+              - button "The Wine Cellar ↔ Undercroft Passage — Plain, closed"
+            - generic:
+              - button "Undercroft Passage ↔ The Great Undercroft — Plain, closed"
+            - generic:
+              - button "The Great Undercroft ↔ The Old Crypt — Plain, closed"
+            - button "Kitchen Cellar Stair — Plain" [ref=f4e4092] [cursor=pointer]
+            - button "Storeroom Undercroft Stair — Concealed" [ref=f4e4096] [cursor=pointer]:
+              - generic "Concealed"
+        - button "Enter fullscreen map editor" [ref=f4e4100] [cursor=pointer]
+        - generic [ref=f4e4106]:
+          - generic [ref=f4e4107]:
+            - button "Undo" [disabled] [ref=f4e4108] [cursor=pointer]
+            - button "Redo" [disabled] [ref=f4e4109] [cursor=pointer]
+          - button "Fit map to viewport" [ref=f4e4110] [cursor=pointer]
+          - generic [ref=f4e4116]:
+            - button "Zoom in" [ref=f4e4117] [cursor=pointer]
+            - button "Zoom out" [ref=f4e4121] [cursor=pointer]
