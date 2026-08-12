@@ -1,44 +1,25 @@
 ---
 name: author-workorders
-description: Turn an explicit coordinator handoff into mechanically valid work-order files by locating exact source anchors and running the order tooling. Use only when a coordinator has already decided the behavior, scope, and order split.
+description: Render frontier-approved work-order compile packets losslessly. Use only after behavior, scope, boundaries, dependencies, proof, and acceptance are settled.
 ---
 
-# author-workorders — compile the coordinator's decisions
+# author-workorders — preserve the reviewed packet
 
-You are a **bounded work-order author**, not the planner. The coordinator has already decided the
-behavior, scope, split, dependencies, and design choices. Your job is to retrieve the facts needed to
-write the orders and make their structure mechanically valid.
+You are a bounded artifact author, not a planner or executor. The coordinator supplies one complete
+JSON compile packet per approved order. Do not choose behavior, architecture, order boundaries,
+dependencies, strength, paths, proof, acceptance, exclusions, or escalation rules.
 
-## Input contract
+Invoke `scripts/new_order.py --packet -` or `--packet <path>`. Never read `new_order.py` or
+`check_orders.py`; they are invoke-only. The packet's `output_path` must be the exact canonical path:
 
-The coordinator must provide the Plan path, stage, order intent, decisions already made, dependencies,
-and any authorized paths or constraints. Treat those decisions as authoritative. If the handoff leaves
-a product, architecture, scope, or split decision open, stop and report the question; do not decide it.
+`docs/plans/active/<feature>/orders/<NN>-<slug>.md`
 
-## Your job
+The packet separately carries authorization, bounded context, known facts, structured ordered actions,
+exact proof commands, coordinator/optional validator acceptance, exclusions, and escalation boundaries.
+Preserve every value. Do not infer files, add anchors, compress actions, synthesize wrappers, or rewrite
+commands. Root dot-directory paths such as `.opencode/...` must remain exact.
 
-- Explore the repository to locate the exact symbols, tests, current values, and edit anchors.
-- Write only `docs/plans/active/<feature>/NN-<slug>.md` work-order files.
-- Prefer `.venv\Scripts\python.exe scripts/new_order.py` so the order starts in the canonical shape.
-- On PowerShell, use `scripts/new_order.py --json -` with a `ConvertTo-Json -Depth 3` argument object
-  whenever values contain prose or punctuation; this avoids shell-quoting failures in `--start-in`.
-- Run `.venv\Scripts\python.exe scripts/check_orders.py --fix` on the authored order files. The
-  default is relaxed: report diagnostics, but do not spend a rewrite cycle merely to silence them.
-  Use `--strict` only when the coordinator explicitly requests a blocking review.
-- Correct a diagnostic only when it would materially mislead the executor; paths, anchors, START IN
-  scope, missing tests, and shape caps are no longer automatic rewrite requirements.
-- Leave `STATUS` blank for the executor and report the created order paths and checker result. For
-  remaining heuristic warnings, explicitly state whether you approve them for coordinator review:
-  `ACCEPT WARNINGS: <order path> — <warning categories>` or
-  `DO NOT ACCEPT WARNINGS: <order path> — <reason>`. Approval is only a recommendation; the
-  coordinator must still reject any warning that could actively break the application.
-
-## Do not
-
-- Do not edit the Plan, source code, tests, area guides, or canonical documentation.
-- Do not choose architecture, product behavior, order boundaries, dependencies, or required strength.
-- Do not implement the order or dispatch an executor.
-- Do not remove the Plan's compiler handoff; the coordinator owns that review and cleanup.
-
-The coordinator reviews the resulting orders semantically before dispatch. A passing linter is necessary,
-not sufficient: report any fact you could not verify or any instruction that conflicts with the handoff.
+After rendering, invoke `scripts/check_orders.py <exact order paths>`. One frontier correction and one
+deterministic generator/checker repair are the maximum when that limit is part of the calling protocol.
+Report outputs and diagnostics. Do not edit Plans, implementation, generated references, or production
+tooling; do not execute or dispatch the order.

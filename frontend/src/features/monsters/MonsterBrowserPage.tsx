@@ -86,7 +86,8 @@ export function MonsterBrowserPage() {
               <Button className="browser-layout-back" variant="ghost">Back to monsters</Button>
               <div className="monster-browser-detail-header">
                 <div className="monster-browser-detail-kicker">Bestiary Field Card</div>
-                <div>
+                <div className="monster-browser-detail-actions">
+                  <Button variant="secondary" onClick={() => window.print()}>Print Monster</Button>
                   <Button variant="secondary" onClick={() => navigate(`/monsters/${selected.id}/edit`)}>Edit</Button>
                   <Button variant="secondary" onClick={() => setPendingDelete(selected)}>Delete</Button>
                 </div>

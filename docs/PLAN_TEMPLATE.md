@@ -29,8 +29,8 @@ handoff it checks only git status, diff summary, and the reported commit; it rea
 only when closeout reports a blocker, failure, or escalation.
 
 The split is also a context-preservation rule: when `to-orders` emits exactly one order, the creating
-planner implements that order in the current context, runs its STOP WHEN, and preserves its
-STATUS/DEVIATIONS/EVIDENCE ENVELOPE. Only stages emitting two or more orders use `dispatch-orders`
+planner implements that order in the current context, runs its exact proof entries, and preserves its
+STATUS/EXECUTOR RESULT. Only stages emitting two or more orders use `dispatch-orders`
 and fresh executor contexts.
 
 ### Stage execution routing
@@ -133,131 +133,71 @@ unverified assumptions belong under Open questions. `to-orders` consumes the com
 subsection after its orders pass lint and removes the heading when no handoffs remain. A Plan may
 temporarily carry a **`## Planning byproducts`** appendix of verbatim code snippets that fell out of
 settling the design (verified regexes, exact expressions, type signatures); `to-orders` moves each
-into the relevant order's KNOWN STATE (marked `verified snippet — use as-is:`) and deletes the
+into the relevant order's known facts (marked `verified snippet — use as-is:`) and deletes the
 appendix.
 
 Every active Plan **must** declare a `## Touches` section. Each line is a repo-root-relative
-backtick-quoted glob matching files the Plan's work orders may modify. When a Plan directory contains
-at least one `NN-*.md` work order it is *in-flight*; only in-flight Plans participate in overlap
+backtick-quoted glob matching files the Plan's work orders may modify. When a Plan's `orders/` directory
+contains at least one canonical `NN-*.md` work order it is *in-flight*; only in-flight Plans participate in overlap
 checks. If two in-flight Plans expand to the same file, the overlap is an error unless one Plan
 directly depends on the other via `- **Depends on:** [Label](#)` pointing to the depending Plan's
 Markdown file under `docs/plans/active/`.
 
-## Layer 2 — the Work Order (one focused task)
+## Layer 2 — the Work Order (one executor boundary)
 
-Lives at `docs/plans/active/<feature>/NN-<slug>.md`. One work order = one logical change, roughly
-one screen. The planner fills KNOWN STATE and START IN with verified facts so the executor never
-re-explores; the executor writes the code and the STATUS line.
+Lives only at `docs/plans/active/<feature>/orders/<NN>-<slug>.md`. A Plan stage is a coherent
+human-visible shipment; work orders are internal executor boundaries. A one-order Plan is valid when
+one executor can safely own the reviewed outcome. No arbitrary path, context, action, or proof caps apply.
 
-**Emit orders with `scripts/new_order.py`.** It renders this shape from the facts you pass it,
-resolves bare filenames to their one repo path, derives a line range and anchor from `path:Symbol`
-for any file over 400 lines, assembles the STOP WHEN command, and lints the result — writing nothing
-if the lint fails. It also enforces the shape ceiling at the argument boundary, so an order that is
-too big is refused as a sizing verdict before it is written: **4 distinct START IN files** (extra
-ranges of an already-named file are free, to 6 entries), **3 DO bullets**, **2 test files in STOP
-WHEN**. `check_orders.py` enforces the same three caps, so hand-writing a wider order only moves the
-rejection later.
+**Emit orders with `scripts/new_order.py` from one reviewed JSON compile packet.** `output_path` in the
+packet is mandatory and authoritative. Use `--packet -` for stdin or `--packet <path>` for a JSON file.
+The generator renders only: it does not infer paths, derive anchors, compress actions, synthesize lifecycle
+checks, choose wrappers, or rewrite proof commands.
 
-```
-WORK ORDER <NN> — <short title>
-GOAL: <one sentence — what "done" looks like>
-DEPENDS ON: <order NN that must be DONE first, or "none">
-REQUIRED STRENGTH: Light   <-- the default for every order; Standard/High need "— <why Light can't>">
-CREATES: <repo-relative paths this order creates, one bullet each, or "none">
-REMOVES: <repo-relative paths this order removes, one bullet each, or "none">
-CHANGES SIGNATURE: <`symbol` in <path> for each exported signature this order changes, or "none">
+The packet separates identity/dependencies/strength, authorized creates/edits/removes, bounded context,
+known facts, ordered structured actions, exact proof entries (`cwd`, `command`, purpose), coordinator and
+optional validator acceptance, exclusions, and escalation boundaries. File actions name exact authorized
+paths. Explicit non-file actions carry a machine-readable operation and `paths: []`. Context is independent
+from authorization and uses `whole_file`, one exact `anchor`, or an anchored line range. New files need no
+fabricated context entry. Dependencies are canonical order paths. Root dot-directory paths round-trip.
 
-KNOWN STATE (already true — do NOT redo or re-derive):
-- <verified fact: real value, real file location, current test count>
+Generated Markdown is human-readable and embeds the immutable canonical JSON packet. It ends with:
 
-KNOWN TEST FAILURES (pre-existing — NOT yours to fix, NOT caused by you):
-- <backend only: exact pytest node id that already fails; frontend stop-checks use
-  npm run test:check, which reads frontend/known-test-failures.json itself. Omit when empty.>
+```text
+STATUS: PENDING
 
-START IN:
-- <exact path> — lines <A>-<B> @"<line A, verbatim>"   <-- files over 400 lines
-- <exact path> — <what's needed>                        <-- files under 400 lines: reading it whole IS the scope
-- <2–4 entries, each verified by opening it while compiling>
-
-DO:
-- <1–3 terse lines: what to change and where, with the anchor text to match — no code>
-
-STOP WHEN: <a single runnable command that must pass, or "if X = Y, stop">
-
-STATUS: <-- executor writes DONE, FAILED - <one-line reason>, or BLOCKED - <one-line reason>
-
-DEVIATIONS: <-- executor appends, always (even on DONE) — one line
-- KNOWN STATE re-verified or wrong: <one line, or "none">
-
-EVIDENCE ENVELOPE: <-- executor appends, always (even on DONE) — directly below DEVIATIONS
-- COMMAND: <the exact STOP WHEN command the executor ran>
-- RESULT: pass | fail
-- CHECKS: <what passed and what failed — one line per check>
-- DIRTY PATHS: <every file the edits left changed in the worktree, or "none">
-- AUTHORIZATION: <edited files matched to the START IN / DO / CREATES / REMOVES entries that authorize each>
-- GUARD: <read-guard denials or `--unlock` overrides, or "none">
-- ATTEMPTS: <0 if STOP WHEN passed first try, else the number of fix attempts>
+EXECUTOR RESULT:
+- DEVIATIONS: none
+- PROOF RESULTS: pending
+- DIRTY PATHS: pending
+- AUTHORIZATION AUDIT: pending
+- GUARD EVENTS: none
+- ATTEMPTS: 0
+- ESCALATION: none
 ```
 
-**Anchors, and why a bare line number is not allowed.** A line range tells the executor where to stop
-reading; the `@"..."` anchor is what keeps that range true when an upstream order edits the same file.
-`scripts/check_orders.py` re-checks that the anchor still sits in its range, and `--fix` moves the
-range to wherever the anchor went or resolves a backticked symbol into a real range. Bounding a large
-file by symbol name or bare line number is rejected.
+The executor fills only these values. Exact proof commands run in packet order from their declared working
+directories; `order_check.py` is used only when the packet names it. `scripts/check_orders.py` strictly
+validates canonical location, packet/artifact agreement, authorization, actions, context, proof, acceptance,
+exclusions, escalation, dependencies, and executor evidence. It does not redesign or resize the order.
 
-**DEVIATIONS is one line, not two.** The old second line — what the executor opened beyond START IN —
-was measurably unreliable, so it is dropped.
-
-Below DEVIATIONS the executor always appends the compact **EVIDENCE ENVELOPE** — COMMAND, RESULT,
-CHECKS, DIRTY PATHS, AUTHORIZATION, GUARD, ATTEMPTS — a structured account of the run the coordinator
-judges without re-deriving anything (see step 8 of `.opencode/skills/implement-order/SKILL.md`).
-STATUS stays `DONE` / `FAILED` / `BLOCKED`; **clean** and **anomalous** are coordinator
-classifications derived from the envelope's RESULT, GUARD, and ATTEMPTS, not executor verdicts.
-
-The focus leash: **KNOWN STATE** (answers, not pointers) + **START IN** (bounded exploration, each
-entry scoped to the symbol or line range needed) + **CREATES/REMOVES** (explicit artifact lifecycle)
-+ **STOP WHEN** (a hard stop that ends wandering). When an entry names a symbol or line range, opening
-unrelated sections of that same file is a deviation and must be reported as such. See
-`.opencode/skills/to-orders/SKILL.md` for full authoring guidance, and
-[the reference order](plans/_example/99-creature-row-ac.md) for a worked example.
-
-`scripts/check_orders.py` lints orders against these rules and is runnable on its own while compiling
-a stage. Its default relaxed mode reports findings without blocking; `--strict` is available when a
-dispatch gate is wanted. Each rule is one fault — an unresolvable path, an undeclared
-edit or lifecycle artifact, a bare filename, a conditional instruction, an unscoped large file, a
-stale or unanchored line range, an exported signature change that does not enumerate its call sites, a
-source file whose own suite is missing from STOP WHEN, a hook change with no lint, a new test with no
-insertion anchor, several behaviours aimed at one big integrated suite, structural documentation
-without the real checker, validator tests omitted from the order, or unsafe parallel edits.
-
-Four scripts keep the workflow's own costs off a model: `new_order.py` writes the order so the faults
-above are prevented at the argument boundary; `check_orders.py --fix` repairs what is mechanical;
-`order_check.py` runs a STOP WHEN and prints pass/fail; `stage_check.py` runs all five reconcile
-checks and prints ~10 lines. One rule is enforced by the harness rather than by wording:
+Three scripts keep workflow mechanics out of model context: `new_order.py` renders the reviewed packet;
+`check_orders.py` validates it; `stage_check.py` performs reconcile checks. `order_check.py` remains an
+optional compact proof wrapper. One rule is enforced by the harness rather than by wording:
 `scripts/read_guard.py` denies a read of a file the session has already edited, once that session has
 invoked `implement-order`; a failing check unlocks everything, and `--unlock <path> --reason "<why>"`
 is the logged override. opencode reaches it through `.opencode/plugin/read-guard.js`.
 
 ### On failure — the escalation channel back to the planner
 
-If the executor cannot make STOP WHEN pass — the harness allows two failed verification runs total,
+If the executor cannot make an exact proof pass — the harness allows two failed verification runs total,
 the initial failure plus at most one repair after it — it writes
-`STATUS: FAILED - <reason>`; if the order cannot be executed as written (KNOWN STATE wrong, named file
-missing, DO contradicts the code) it writes `STATUS: BLOCKED - <reason>`. Either way it appends a
-**FAILURE REPORT** block below the STATUS line and **leaves its partial changes in the worktree**:
-
-```
-FAILURE REPORT:
-- TRIED: <2-4 lines: what changes were made, in which files>
-- FAILING COMMAND: <the exact STOP WHEN command run>
-- OUTPUT: <last ~20 lines of failing output, verbatim, in a code fence>
-- SUSPECT: <one line: executor's best guess at why — allowed to be wrong>
-- WORKTREE: <"changes left in place" plus the list of dirty files>
-```
-
-The verbatim OUTPUT is the load-bearing field: the planner triages from it without re-running the work
-from cold. A failure report is a successful outcome of an order — the executor never keeps cycling to
-avoid writing one.
+`STATUS: FAILED - <reason>`; if the order cannot be executed as written (known fact wrong, named file
+missing, or an action contradicts the code) it writes `STATUS: BLOCKED - <reason>`. Either way it fills
+the canonical EXECUTOR RESULT with the failed command/output under PROOF RESULTS, dirty paths,
+authorization audit, attempts, deviations, guard events, and escalation, then leaves partial changes
+in the worktree. That evidence is a successful failure outcome; the executor never keeps cycling to
+avoid reporting it.
 
 ### Failure triage at dispatch
 
@@ -267,11 +207,11 @@ because downstream orders `DEPENDS ON` the failed one and stall until it's reiss
 knowledge flowing forward so work is never repeated:
 
 - **The planner always tells the executor what already fails.** Whoever compiles an order runs the
-  relevant test command first and records any pre-existing failures verbatim under **KNOWN TEST
-  FAILURES**. The executor treats those as background noise and STOP WHEN is judged with them still
+  relevant test command first and records any pre-existing failures verbatim in known facts. The
+  executor treats those as background noise and exact proof is judged with them still
   present.
 - **A reissued order carries what was already tried.** Whoever reissues a FAILED order folds the
-  previous FAILURE REPORT's TRIED and SUSPECT lines into the new order's KNOWN STATE as "already
+  previous failure evidence into the new order's known facts as "already
   attempted, did not work: <approach>".
 
 ### Test-run tiers
@@ -280,7 +220,7 @@ Each tier runs in the context that can afford its output:
 
 | Tier | Who | What |
 |---|---|---|
-| Targeted | executor (`implement-order`) | Only the STOP WHEN command — exact test files, `--no-cov` for pytest subsets, `npm run test:check -- <file>` on the frontend. Never the full suite. `npm run typecheck` is the one stage-level check allowed in an order, and only when it writes a fixture for a domain-typed object. |
+| Targeted | executor (`implement-order`) | Only the packet's exact proof commands, in order and from their declared working directories. |
 | Full | `reconcile`, once per stage | `pytest` (full suite + coverage gate), `npm run test:check -- --strict`, `npm run lint`, `npm run build` (includes `tsc -b`). Prunes `frontend/known-test-failures.json`. |
 | Backstop | CI on push/PR | Everything, always. |
 

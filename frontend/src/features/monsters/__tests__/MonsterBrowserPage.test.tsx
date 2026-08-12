@@ -172,6 +172,18 @@ describe('MonsterBrowserPage', () => {
     expect(screen.getByText(/darkvision 60 ft\./)).toBeInTheDocument()
   })
 
+  it('prints the currently selected monster', async () => {
+    vi.spyOn(api, 'listMonsters').mockResolvedValue(monsters)
+    const print = vi.spyOn(window, 'print').mockImplementation(() => undefined)
+    const user = userEvent.setup()
+
+    renderPage()
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Aarakocra' })).toBeInTheDocument())
+
+    await user.click(screen.getByRole('button', { name: 'Print Monster' }))
+    expect(print).toHaveBeenCalledOnce()
+  })
+
   it('shows an error message when loading fails', async () => {
     vi.spyOn(api, 'listMonsters').mockRejectedValue(new Error('server error'))
 

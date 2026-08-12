@@ -1,42 +1,76 @@
-WORK ORDER 99 — Show armour class on the collapsed creature row (EXAMPLE — never dispatch)
-GOAL: a collapsed creature row card shows its AC beside the existing HP summary.
-DEPENDS ON: none
-REQUIRED STRENGTH: Light
-CREATES: none
-REMOVES: none
-CHANGES SIGNATURE: none
+# WORK ORDER 99 — Show armour class on the collapsed creature row (EXAMPLE — never dispatch)
 
-KNOWN STATE (already true — do NOT redo or re-derive):
-- This is the reference example for `.opencode/skills/to-orders/SKILL.md`. It names real files and
-  passes `scripts/check_orders.py`, so it doubles as the fixture proving the linter accepts a
-  well-formed order. It is not queued work; nobody dispatches order 99.
-- `EncounterCreatureRow` already carries `ac: string`
-  (frontend/src/features/encounters/encounterForm.ts line 16), populated from the monster at
-  line 63. Nothing new is needed on the form model.
-- The collapsed header renders `displayName` and `hpSummary` only
-  (frontend/src/features/encounters/CreatureRowCard.tsx lines 32-34). `hpSummary` is the precedent
-  for the empty case: it reads `'No HP set'` rather than rendering nothing.
-- `Monster.ac` is `ArmorClass | null`, a domain type, not a number (frontend/src/api/types.ts
-  line 237). A fixture that writes `ac: 12` passes vitest and fails `tsc -b`; the repo's idiom is
-  minimal-plus-cast — `mockResolvedValue([{ id: 9, name: 'Goblin' }] as Monster[])`.
-- UX decisions that apply here: AC sits after the HP summary on the same header line, separated by
-  the existing `·` divider; when `row.ac` is empty the card reads `No AC set`; no new colour —
-  reuse the `.creature-row-summary` token already on that line.
+This is a human-readable illustration of the canonical packet shape. Active executable orders live
+under `docs/plans/active/<feature>/orders/` and embed the full JSON packet rendered by `new_order.py`.
 
-START IN:
-- frontend/src/features/encounters/CreatureRowCard.tsx — the collapsed header block at lines 32-45, nothing else in this file
-- frontend/src/features/encounters/__tests__/CreatureRowCard.test.tsx — the collapsed-row describe block
-- frontend/src/api/types.ts — the `Monster` interface, for the `ArmorClass` shape: lines 229-256 @"export interface Monster {"
+## Authorization
 
-DO:
-- Render `row.ac` after `hpSummary` in the collapsed header, falling back to `No AC set`.
-- Add one test to frontend/src/features/encounters/__tests__/CreatureRowCard.test.tsx covering the
-  set and the empty case.
+### Creates
+- none
 
-STOP WHEN: `cd frontend && npm run test:check -- src/features/encounters/__tests__/CreatureRowCard.test.tsx && npm run typecheck` passes. Then stop — change nothing else.
+### Edits
+- `frontend/src/features/encounters/CreatureRowCard.tsx`
+- `frontend/src/features/encounters/__tests__/CreatureRowCard.test.tsx`
 
-STATUS: <-- executor writes DONE, or FAILED - reason
+### Removes
+- none
 
-DEVIATIONS: <-- executor appends, always — exactly two lines
-- opened beyond START IN: <files or sections outside the named path/symbol/range, or "none">
-- KNOWN STATE re-verified or wrong: <one line, or "none">
+## Context inputs
+
+1. `frontend/src/features/encounters/CreatureRowCard.tsx` — anchor `function CreatureRowCard`
+   - Purpose: collapsed-row rendering seam.
+2. `frontend/src/features/encounters/__tests__/CreatureRowCard.test.tsx` — whole file
+   - Purpose: focused behavior suite.
+3. `frontend/src/api/types.ts` — lines 229-256, anchor `export interface Monster {`
+   - Purpose: trusted ArmorClass context; read-only and not edit authorization.
+
+## Known facts
+
+- The row already carries `ac`; no model change is required.
+- AC follows the HP summary and uses `No AC set` when empty.
+
+## Ordered actions
+
+1. **file** (`frontend/src/features/encounters/CreatureRowCard.tsx`) — Render AC after HP.
+2. **file** (`frontend/src/features/encounters/__tests__/CreatureRowCard.test.tsx`) — Cover set and empty states.
+
+## Exact proof commands
+
+### Proof 1 — Focused behavior
+Working directory: `frontend`
+
+```text
+npm run test:check -- src/features/encounters/__tests__/CreatureRowCard.test.tsx
+```
+
+### Proof 2 — Type safety
+Working directory: `frontend`
+
+```text
+npm run typecheck
+```
+
+## Acceptance handoff
+
+### Coordinator
+- Confirm the collapsed row shows the reviewed set and empty copy.
+
+### Validator
+- none
+
+## Exclusions
+- No model, API, or style-token change.
+
+## Escalate if
+- The row does not already carry AC or the existing summary seam is absent.
+
+STATUS: PENDING
+
+EXECUTOR RESULT:
+- DEVIATIONS: none
+- PROOF RESULTS: pending
+- DIRTY PATHS: pending
+- AUTHORIZATION AUDIT: pending
+- GUARD EVENTS: none
+- ATTEMPTS: 0
+- ESCALATION: none

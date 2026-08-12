@@ -113,7 +113,7 @@ Some tests fail on `main` and are carried deliberately. They live in
 `npm run test:check` judges a run against that list: it exits 0 when every failure is
 already known and 1 the moment a **new** one appears.
 
-- `npm run test:check -- <path>` — the shape a work order's STOP WHEN uses. The executor
+- `npm run test:check -- <path>` — an exact command a reviewed work-order proof entry may preserve. The executor
   gets a clean verdict with no list of pre-existing failures to reason about.
 - `npm run test:check -- --strict` — also fails when a listed test now *passes*, so the
   stage that fixed it prunes the entry. `reconcile` runs this once per stage.
@@ -122,7 +122,7 @@ already known and 1 the moment a **new** one appears.
 `src/player/__tests__/x.test.tsx`, never the repo-relative `frontend/src/player/...`. A filter
 that matches nothing now **fails** rather than reporting a pass over an empty run: until
 2026-07-27 the repo-relative form printed `0 tests` and `PASS`, which is a false green of the
-same family as `tsc --noEmit` above, and one a work order's STOP WHEN would have accepted. The
+same family as `tsc --noEmit` above, and one an exact work-order proof entry may accept. The
 script also fails a non-zero vitest exit that no failing test explains — a config error or an
 unhandled rejection is not a green run either.
 
@@ -156,7 +156,7 @@ says only where the files are.
 <!-- GENERATED:TESTING:LOCATIONS:START -->
 | Location | Files | Test cases |
 |---|---|---|
-| `backend/tests/` | 16 | 393 |
+| `backend/tests/` | 18 | 324 |
 | `backend/tests/routers/` | 16 | 273 |
 | `frontend/src/__tests__/` | 1 | 4 |
 | `frontend/src/api/__tests__/` | 1 | 6 |
@@ -168,7 +168,7 @@ says only where the files are.
 | `frontend/src/features/items/__tests__/` | 3 | 15 |
 | `frontend/src/features/loom/__tests__/` | 9 | 123 |
 | `frontend/src/features/loot/__tests__/` | 5 | 22 |
-| `frontend/src/features/monsters/__tests__/` | 3 | 36 |
+| `frontend/src/features/monsters/__tests__/` | 3 | 37 |
 | `frontend/src/features/npcs/__tests__/` | 10 | 85 |
 | `frontend/src/features/players/__tests__/` | 8 | 58 |
 | `frontend/src/features/spells/__tests__/` | 4 | 34 |

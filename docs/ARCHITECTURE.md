@@ -136,7 +136,7 @@ rather than read the source.
 |---|---|
 | `scripts/check_demo_database.py` | Validate that the local demo SQLite database matches required app columns. |
 | `scripts/check_docs.py` | Documentation contract checker for the D&D Kids Resources repo. |
-| `scripts/check_orders.py` | Work-order linter — enforce the compiling rules the workflow paid to learn. |
+| `scripts/check_orders.py` | Strict checker for canonical, lossless work-order artifacts. |
 | `scripts/export_db_seeds.py` | Export current database tables into JSON files under data/seeds. |
 | `scripts/generate_export_schema.py` | Derive the export schema from init_database.py instead of restating it by hand. |
 | `scripts/generate_spell_quick_rules.py` | Draft conservative spell quick rules from canonical seed data. |
@@ -147,7 +147,7 @@ rather than read the source.
 | `scripts/migrate_map_obstacle_state.py` | Migrate map obstacle state to the new structured format. |
 | `scripts/migrate_monsters.py` | Transform legacy 5etools monster seed rows to the M1 target shape. |
 | `scripts/migrate_spells.py` | Transform legacy spell seed rows to the canonical target shape. |
-| `scripts/new_order.py` | Emit a work order in the maximum shape a work order is allowed to have. |
+| `scripts/new_order.py` | Render one canonical work order from one lossless JSON compile packet. |
 | `scripts/order_check.py` | STOP WHEN wrapper: run an order's checks and print only what the executor can act on. |
 | `scripts/read_guard.py` | Post-edit re-read guard for the opencode work-order executor. |
 | `scripts/seed_database.py` | Populate the database from the canonical JSON seeds in data/seeds. |

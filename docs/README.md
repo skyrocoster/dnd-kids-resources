@@ -14,7 +14,7 @@ slice delivery receipts preserve route-independent implementation and human-acce
 becoming a queue. Create master plans with
 [MASTER_PLAN_TEMPLATE.md](MASTER_PLAN_TEMPLATE.md).
 
-Each `docs/plans/active/<feature>/` directory holds its Plan and the lean, disposable **work orders** compiled from that Plan's stages and deleted by `reconcile` once shipped. These are regenerated from source plans/maps; no manifest row needed. The Plan → Implement → Reconcile workflow and its `.opencode/skills/` entry points are defined in [PLAN_TEMPLATE.md](PLAN_TEMPLATE.md) and [../AGENTS.md](../AGENTS.md).
+Each `docs/plans/active/<feature>/` directory holds its Plan; canonical, disposable **work orders** live under its `orders/` directory and preserve reviewed JSON compile packets losslessly. `reconcile` deletes them once shipped. No manifest row is needed. The Plan → Implement → Reconcile workflow and its `.opencode/skills/` entry points are defined in [PLAN_TEMPLATE.md](PLAN_TEMPLATE.md) and [../AGENTS.md](../AGENTS.md).
 
 ## Task Router
 

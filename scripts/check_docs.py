@@ -102,7 +102,7 @@ BACKTICK_RE = re.compile(r"`([^`]+)`")
 TOUCHES_SECTION_RE = re.compile(r"^## Touches\s*\n(.*?)(?=\n## |\Z)", re.DOTALL | re.MULTILINE)
 TOUCH_GLOB_RE = re.compile(r"^\s*-\s+`([^`]+)`\s*$", re.MULTILINE)
 TOUCH_DEPENDS_RE = re.compile(r"^\s*-\s+\*\*Depends on:\*\*\s+\[([^\]]+)\]\(([^)]+)\)", re.MULTILINE)
-ACTIVE_WORK_ORDER_RE = re.compile(r"^\d{2,}-.*\.md$")
+ACTIVE_WORK_ORDER_RE = re.compile(r"^\d{2}-.*\.md$")
 
 
 class CheckError:
@@ -239,14 +239,12 @@ def _parse_touches(content: str, plan_path: Path, repo_root: Path) -> tuple[list
 
 
 def _has_work_orders(plan_dir: Path) -> bool:
-    """Return True when *plan_dir* contains at least one ``NN-*.md`` work order."""
-    try:
-        return any(
-            entry.name.endswith(".md") and ACTIVE_WORK_ORDER_RE.match(entry.name)
-            for entry in plan_dir.iterdir()
-        )
-    except FileNotFoundError:
-        return False
+    """Return True when *plan_dir* contains a canonical nested work order."""
+    orders_dir = plan_dir / "orders"
+    return orders_dir.is_dir() and any(
+        entry.is_file() and ACTIVE_WORK_ORDER_RE.match(entry.name)
+        for entry in orders_dir.iterdir()
+    )
 
 
 def find_area_guides(docs_dir: Path) -> list[Path]:
@@ -340,8 +338,8 @@ def check_plan_touch_overlap(docs_dir: Path) -> list[CheckError]:
     """Validate ``## Touches`` contract and reject unacknowledged file overlap between in-flight Plans.
 
     Every active Plan must declare a ``## Touches`` section listing repo-root-relative
-    backtick-quoted globs.  A Plan is *in-flight* when its sibling directory contains at
-    least one ``NN-*.md`` work order; only in-flight Plans participate in overlap checks.
+    backtick-quoted globs. A Plan is *in-flight* when its ``orders/`` directory contains at
+    least one canonical ``NN-*.md`` work order; only in-flight Plans participate in overlap checks.
 
     When two in-flight Plans expand to the same file the overlap is accepted only if
     either Plan directly depends on the other via ``- **Depends on:** ``feature-name`` ``.
@@ -478,19 +476,11 @@ def check_plan_touch_overlap(docs_dir: Path) -> list[CheckError]:
 
 
 def check_work_orders(docs_dir: Path) -> list[CheckError]:
-    """Lint work orders against the compiling rules in scripts/check_orders.py.
-
-    The rules themselves live next door because a compiler needs to run them while
-    writing a stage's orders, not only in CI: `check_orders.py` is runnable on its own
-    and each rule there is one fault that cost a dispatch (an unresolvable path, a file
-    named in DO but missing from START IN, a conditional instruction, an unscoped large
-    file, a fixture with no typecheck). This wrapper just puts them on the documentation
-    gate too.
-    """
+    """Apply the strict canonical work-order contract to active nested orders."""
     return [
         CheckError(error.file, error.message, error.fix)
         for error in check_orders.lint_orders(
-            docs_dir / "plans" / "active", include_warnings=True
+            docs_dir / "plans" / "active"
         )
     ]
 
@@ -1546,22 +1536,22 @@ def generate_archive_index(repo_root: Path) -> str:
     return "\n".join(lines) + "\n"
 
 
-ORDER_FILE_RE = re.compile(r"^(\d{1,3})-.+\.md$")
+ORDER_FILE_RE = re.compile(r"^(\d{2})-.+\.md$")
 ORDER_STATUS_RE = re.compile(r"^STATUS:\s*(.*)$", re.MULTILINE)
 
 
 def _order_states(feature_dir: Path) -> list[tuple[str, str]]:
     """(order filename, STATUS word) for each work order, '' when unrun."""
     states: list[tuple[str, str]] = []
-    for path in sorted(feature_dir.iterdir()):
+    orders_dir = feature_dir / "orders"
+    if not orders_dir.is_dir():
+        return states
+    for path in sorted(orders_dir.iterdir()):
         if not path.is_file() or not ORDER_FILE_RE.match(path.name):
             continue
         match = ORDER_STATUS_RE.search(path.read_text(encoding="utf-8", errors="replace"))
         raw = (match.group(1).strip() if match else "")
-        # Only the three real words count. An unrun order is not blank on disk — it
-        # carries new_order.py's placeholder, `<-- executor writes DONE, FAILED …`, whose
-        # first token parsed as neither a state nor an absence and left the plan reading
-        # as finished when nothing had been dispatched.
+        # Only the three terminal words count. Canonical PENDING remains unrun.
         first = raw.split()[0].upper().strip("-—:,.") if raw else ""
         states.append((path.name, first if first in {"DONE", "FAILED", "BLOCKED"} else ""))
     return states

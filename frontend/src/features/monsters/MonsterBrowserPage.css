@@ -25,3 +25,57 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
+
+.monster-browser-detail-actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+@media print {
+  @page {
+    size: portrait;
+    margin: 0.5in;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  .monster-browser-detail,
+  .monster-browser-detail * {
+    visibility: visible;
+  }
+
+  .monster-browser-detail {
+    position: absolute;
+    inset: 0;
+    display: block;
+    height: auto;
+    overflow: visible;
+    padding: 0;
+    background: white;
+    color: #111;
+  }
+
+  .monster-browser-detail-header {
+    margin-bottom: 0.5rem;
+  }
+
+  .monster-browser-detail-actions {
+    display: none;
+  }
+
+  .monster-stat-block {
+    padding: 0;
+    background: white;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    color: #111;
+  }
+
+  .monster-stat-block::before {
+    display: none;
+  }
+}

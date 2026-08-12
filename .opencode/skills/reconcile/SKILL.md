@@ -42,7 +42,7 @@ Its report is evidence for steps 1, 2 and 5. **Every judgement stays here**, and
 instructed to refuse all of them: whether a `DONE` order actually landed, whether a changed export is
 a real *contract* change, how a Shipped row and Status line should read, why a FAILED/BLOCKED order
 failed, and what a doc update should say. Read files yourself whenever the answer feeds one of those
-directly — a FAILURE REPORT and the dirty files behind it are diagnosis, not retrieval, and step 3 is
+directly — a failed EXECUTOR RESULT and the dirty files behind it are diagnosis, not retrieval, and step 3 is
 always your own reading. If the scout comes back partial, re-ask the gap narrowly rather than
 treating the report as complete.
 
@@ -55,24 +55,24 @@ treating the report as complete.
 2. **For each `DONE` order:** confirm it really landed (skim the changed files / run the order's STOP
    WHEN command if in doubt), then **collapse it into the Plan's Shipped table** as one ≤2-sentence
    row and rewrite the Plan's **Status line** to show progress and name what's next. A `DONE` whose
-   DEVIATIONS says a KNOWN STATE fact was wrong is not a clean order: fold that fact-correction into
-   any dependent order's KNOWN STATE, and decide whether the deviation changed what actually shipped —
+   DEVIATIONS says a known fact was wrong is not a clean order: fold that fact-correction into
+   any dependent order's known facts, and decide whether the deviation changed what actually shipped —
    if it did, treat it as a failure and go to step 3.
 
 3. **Triage any order still non-DONE.** Failures are normally triaged mid-flight by `dispatch-orders`
    — the moment they come back, because dependent orders stall behind them. So by closeout a lingering
    FAILED/BLOCKED order usually means it needs the user (a human-only step, a Plan-level decision) or
-   the batch was abandoned mid-stage. Read its FAILURE REPORT before anything else: the executor left
+   the batch was abandoned mid-stage. Read its EXECUTOR RESULT before anything else: the executor left
    its partial changes in the worktree and captured the verbatim failing output; start from that
    evidence, don't re-run the work from cold. The two statuses route differently:
    - **`FAILED`** (order was doable, test wouldn't pass): diagnose from the report's OUTPUT and the
      dirty files. If the fix is genuinely small and obvious, note it in a corrected work order and
      reissue; if the report shows the order was mis-scoped, split or rewrite it. Say explicitly
      whether the partial worktree changes are kept as the re-run's starting point or reverted.
-   - **`BLOCKED`** (order couldn't be executed as written): KNOWN STATE or DO was wrong. No debugging
+   - **`BLOCKED`** (order couldn't be executed as written): a known fact or action was wrong. No debugging
      needed — verify reality, fix the order's facts, and reissue.
    Every reissued order must carry the failure knowledge forward so no work is repeated: fold the old
-   FAILURE REPORT's TRIED and SUSPECT lines into the new KNOWN STATE as "already attempted, did not
+   failed result evidence into the new known facts as "already attempted, did not
    work: <approach>", and re-run the test command yourself to fill an up-to-date **KNOWN TEST
    FAILURES** section (pre-existing failures the executor must ignore, listed verbatim). Escalate to
    the user only if the Plan itself is wrong. A FAILED or BLOCKED order is a planning signal, not an
@@ -122,7 +122,7 @@ treating the report as complete.
     those fails, use the scout -> coordinator diagnosis -> quick-executor loop above, or reissue a
     corrective work order when the scope is not quick-fix sized.
 
-   Anything caught at this step is by definition something the orders' targeted STOP WHEN commands
+   Anything caught at this step is by definition something the orders' targeted exact proof commands
    could not catch — a stage-level regression, a typecheck break, an architecture-rule violation, a
    contract the docs checker rejects. **That escape is the single most valuable signal this workflow
    produces**, and it is invisible in the per-order records: each order honestly reported DONE against

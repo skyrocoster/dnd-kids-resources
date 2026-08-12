@@ -165,14 +165,16 @@ def test_find_legacy_plan_files_accepts_underscored_feature_names(tmp_path: Path
 
 
 def test_find_active_plan_files_ignores_sibling_orders(tmp_path: Path):
-    """Active Plan discovery must select only <feature>/<feature>.md, never sibling numbered orders."""
+    """Active Plan discovery selects only <feature>/<feature>.md, never nested orders."""
     docs = tmp_path / "docs"
     active = docs / "plans" / "active"
     feature_dir = active / "tooling"
     feature_dir.mkdir(parents=True)
     (feature_dir / "tooling.md").write_text("# Tooling\n\n> **Status:** Active.\n", encoding="utf-8")
-    (feature_dir / "01-setup.md").write_text("WORK ORDER 01", encoding="utf-8")
-    (feature_dir / "02-tune.md").write_text("WORK ORDER 02", encoding="utf-8")
+    orders = feature_dir / "orders"
+    orders.mkdir()
+    (orders / "01-setup.md").write_text("WORK ORDER 01", encoding="utf-8")
+    (orders / "02-tune.md").write_text("WORK ORDER 02", encoding="utf-8")
     plans = cd.find_active_plan_files(docs)
     assert len(plans) == 1
     assert plans[0].name == "tooling.md"
@@ -200,7 +202,9 @@ def _setup_active_plan(
     plan_dir.mkdir(parents=True, exist_ok=True)
     (plan_dir / f"{feature}.md").write_text(content, encoding="utf-8")
     for n in range(1, work_orders + 1):
-        (plan_dir / f"{n:02d}-task-{n}.md").write_text(
+        orders = plan_dir / "orders"
+        orders.mkdir(exist_ok=True)
+        (orders / f"{n:02d}-task-{n}.md").write_text(
             f"WORK ORDER {n:02d}\nGOAL: Task {n}\n", encoding="utf-8",
         )
     if create_files:
@@ -629,22 +633,15 @@ def test_configured_test_commands_follow_configuration(tmp_path: Path):
 def test_work_orders_flag_missing_fields(tmp_path: Path, monkeypatch):
     """check_docs delegates to check_orders; the rules themselves are tested there."""
     monkeypatch.setattr(check_orders, "REPO_ROOT", tmp_path)
+    monkeypatch.setattr(check_orders, "ORDERS_ROOT", tmp_path / "docs/plans/active")
     docs = _write_docs_tree(tmp_path, manifest="# Docs\n")
     feat_dir = docs / "plans" / "active" / "feat"
     feat_dir.mkdir(parents=True)
-    (tmp_path / "file.py").write_text("x = 1\n", encoding="utf-8")
-    (feat_dir / "01-good.md").write_text(
-        "WORK ORDER 01 — x\nGOAL: do a thing\nDEPENDS ON: none\n"
-        "REQUIRED STRENGTH: Light\nCREATES: none\nREMOVES: none\n"
-        "CHANGES SIGNATURE: none\n\n"
-        "START IN:\n- file.py\n\nDO:\n- change the thing\n\n"
-        "STOP WHEN: tests pass\nSTATUS: DONE\n",
-        encoding="utf-8",
-    )
-    (feat_dir / "02-bad.md").write_text("WORK ORDER 02 — y\nGOAL: do a thing\n", encoding="utf-8")
+    orders = feat_dir / "orders"
+    orders.mkdir()
+    (orders / "02-bad.md").write_text("WORK ORDER 02 — y\nGOAL: do a thing\n", encoding="utf-8")
     errs = cd.check_work_orders(docs)
     assert any("02-bad.md" in e.source for e in errs)
-    assert not any("01-good.md" in e.source for e in errs)
 
 
 def test_work_orders_absent_directory_is_ok(tmp_path: Path):
@@ -870,12 +867,15 @@ def test_active_index_routes_by_order_status(tmp_path: Path):
     """The Next column is read off the orders' STATUS lines, not guessed."""
     nothing = _active_plan(tmp_path, "no-orders", "Not started. Second sentence dropped.")
     unrun = _active_plan(tmp_path, "unrun-orders", "Stage 1 compiled.")
-    (unrun / "01-a.md").write_text("WORK ORDER 01\n\nSTATUS: DONE\n", encoding="utf-8")
-    (unrun / "02-b.md").write_text("WORK ORDER 02\n\nSTATUS:\n", encoding="utf-8")
+    (unrun / "orders").mkdir()
+    (unrun / "orders/01-a.md").write_text("WORK ORDER 01\n\nSTATUS: DONE\n", encoding="utf-8")
+    (unrun / "orders/02-b.md").write_text("WORK ORDER 02\n\nSTATUS: PENDING\n", encoding="utf-8")
     stuck = _active_plan(tmp_path, "stuck-orders", "Stage 2 running.")
-    (stuck / "01-a.md").write_text("WORK ORDER 01\n\nSTATUS: BLOCKED - bad facts\n", encoding="utf-8")
+    (stuck / "orders").mkdir()
+    (stuck / "orders/01-a.md").write_text("WORK ORDER 01\n\nSTATUS: BLOCKED - bad facts\n", encoding="utf-8")
     shipped = _active_plan(tmp_path, "shipped-orders", "Stage 3 shipped.")
-    (shipped / "01-a.md").write_text("WORK ORDER 01\n\nSTATUS: DONE\n", encoding="utf-8")
+    (shipped / "orders").mkdir()
+    (shipped / "orders/01-a.md").write_text("WORK ORDER 01\n\nSTATUS: DONE\n", encoding="utf-8")
 
     table = cd.generate_active_index(tmp_path)
     rows = {line.split("|")[1].strip(): line for line in table.splitlines() if line.startswith("| [")}
@@ -894,12 +894,12 @@ def test_active_index_routes_by_order_status(tmp_path: Path):
 
 
 def test_active_index_reads_the_placeholder_status_as_unrun(tmp_path: Path):
-    """new_order.py leaves a placeholder, not a blank — it must not read as DONE."""
+    """new_order.py leaves canonical PENDING, which must not read as DONE."""
     waiting = _active_plan(tmp_path, "waiting-orders", "Stage 1 compiled.")
+    (waiting / "orders").mkdir()
     for number in (1, 2, 3):
-        (waiting / f"0{number}-a.md").write_text(
-            "WORK ORDER 0%d\n\nSTATUS: <-- executor writes DONE, FAILED - <reason>, "
-            "or BLOCKED - <reason>\n" % number,
+        (waiting / "orders" / f"0{number}-a.md").write_text(
+            "WORK ORDER 0%d\n\nSTATUS: PENDING\n" % number,
             encoding="utf-8",
         )
     row = next(

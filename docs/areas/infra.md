@@ -30,7 +30,7 @@ not own any product behavior, API contract, or data model — those stay with th
 | Backend test plumbing | `backend/tests/conftest.py`<br>`backend/tests/routers/__init__.py` |
 | API and test plumbing | `frontend/src/api/**`<br>`frontend/src/test/**` |
 | Database lifecycle | `scripts/init_database.py`<br>`scripts/seed_database.py`<br>`scripts/export_db_seeds.py`<br>`scripts/generate_export_schema.py` |
-| Documentation and work-order tooling | `scripts/check_docs.py`<br>`scripts/check_orders.py`<br>`scripts/new_order.py`<br>`backend/tests/test_new_order.py` |
+| Documentation and work-order tooling | `scripts/check_docs.py`<br>`scripts/check_orders.py`<br>`scripts/new_order.py`<br>`backend/tests/test_new_order.py`<br>`backend/tests/test_work_order_packet_contract.py`<br>`backend/tests/test_experimental_order_authoring_contract.py` |
 | Check wrappers (summarise instead of dumping full tool output) | `scripts/stage_check.py`<br>`scripts/order_check.py`<br>`backend/tests/test_check_wrappers.py` |
 | Read discipline enforced by the harness (executor: no re-reading an edited file; compiler: no unbounded read of a large file) | `scripts/read_guard.py`<br>`scripts/large_read_guard.py`<br>`backend/tests/test_read_guard.py`<br>`backend/tests/test_large_read_guard.py`<br>`.opencode/plugin/**` |
 | CI | `.github/**` |
