@@ -49,7 +49,14 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 STATE_DIR = REPO_ROOT / ".telemetry" / "read-guard"
 
 # Skills whose presence means "this session is a bounded implementation run".
-ARMING_SKILLS = {"implement-order", "implement-quick"}
+ARMING_SKILLS = {"implement-order", "implement-quick", "browser-validation-invoke"}
+VALIDATOR_CLOSEOUT_PHASES = {"APPLY CLOSEOUT", "ARCHIVE AND CLEAN", "VERIFY CLOSEOUT", "COMMIT"}
+VALIDATOR_CLOSEOUT_SKILL = "coordinator-test-validator"
+
+# Browser validation is deliberately invoke-only: the runner source must not be
+# inspected by a validation session, even though ordinary maintainer sessions may
+# read it.
+PROTECTED_VALIDATION_PATH = "scripts/browser_validation.py"
 
 READ_TOOLS = {"read"}
 EDIT_TOOLS = {"edit", "write", "multiedit", "patch"}
@@ -222,6 +229,22 @@ def _arming_skill(args: dict[str, Any]) -> str | None:
     return walk(args)
 
 
+def _closeout_authorization(args: dict[str, Any], cwd: str | None) -> dict[str, Any] | None:
+    """Parse only explicit validator approval and its exact repository manifest."""
+    if str(args.get("validator") or "") != VALIDATOR_CLOSEOUT_SKILL:
+        return None
+    if args.get("coordinator_approved") is not True:
+        return None
+    phase = str(args.get("phase") or "").strip().upper()
+    paths = args.get("approved_paths")
+    if phase not in VALIDATOR_CLOSEOUT_PHASES or not isinstance(paths, list) or not paths:
+        return None
+    manifest = {_normalise(path, cwd) for path in paths if isinstance(path, str)}
+    if len(manifest) != len(paths) or None in manifest:
+        return None
+    return {"phase": phase, "paths": sorted(manifest)}
+
+
 def _is_verification_command(args: dict[str, Any]) -> bool:
     command = _first(args, COMMAND_KEYS)
     return bool(command and VERIFICATION_COMMAND_RE.search(command))
@@ -275,6 +298,18 @@ def _record_pre(payload: dict[str, Any]) -> tuple[bool, str]:
     if not state.get("armed"):
         return True, ""
 
+    if tool in READ_TOOLS:
+        requested = _normalise(
+            _first(payload.get("args") or {}, PATH_KEYS), payload.get("cwd")
+        )
+        if requested == PROTECTED_VALIDATION_PATH:
+            return False, "read_guard: browser-validation sessions may invoke the runner but may not read its source."
+        authorization = state.get("closeout_authorization")
+        if authorization and state.get("mode") == "validator-closeout":
+            if requested in authorization.get("paths", []):
+                return True, ""
+            return False, "read_guard: path is outside the coordinator-approved validator closeout manifest."
+
     if state.get("failed_checks", 0) >= MAX_FAILED_CHECKS:
         if tool in EDIT_TOOLS and _is_failure_report_edit(payload):
             return True, ""
@@ -322,6 +357,13 @@ def _record_post(payload: dict[str, Any]) -> None:
             state["mode"] = arming
             state["armed_at"] = time.time()
             dirty = True
+
+    authorization = _closeout_authorization(args, payload.get("cwd"))
+    if authorization and state.get("mode") not in {"implement-order", "implement-quick"}:
+        state["armed"] = True
+        state["mode"] = "validator-closeout"
+        state["closeout_authorization"] = authorization
+        dirty = True
 
     elif not state.get("armed"):
         # A planner session edits and checks all day and is never policed, so there is

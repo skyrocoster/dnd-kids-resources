@@ -23,5 +23,8 @@ You execute exactly one fully settled experimental quick brief. Invoke `implemen
 The brief is your complete context: do not read a Plan, other stages, unrelated docs, or wider repository files.
 Never plan, decide behavior, widen scope, reconcile, commit, push, or start a second change.
 
+Any browser run additionally requires `browser-validation-invoke` before the runner command; never read
+`scripts/browser_validation.py`.
+
 This fresh executor is for a planned quick stage or another complete bounded brief. It is not the direct
 free-form bug route: that route resumes `coordinator-test-caseworker` so assessment context is retained.

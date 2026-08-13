@@ -1,6 +1,6 @@
 # Browser Validation Harness — repeatable, isolated browser evidence
 
-> **Status:** Not started. One ordered stage remains: implement and prove the repository-owned browser-validation harness.
+> **Status:** Complete. Stage 1 shipped and validated: the isolated browser-validation harness (fixed `weapon-edit-dialog` scenario, owned lifecycle, evidence/result contract, read-guard arming, invoke-only skill, and documentation) passed 37 focused tests, frontend typecheck, the documentation contract, and independent live Windows evidence with deterministic owned-process cleanup.
 
 - **Areas:** infra
 - **Read trigger:** Reusable browser validation, Playwright evidence capture, or experimental validator/executor browser contracts
@@ -8,7 +8,7 @@
 ## What we're building & why
 
 Replace improvised server and Playwright commands with one repository-owned Python invocation for the
-initial fixed `monster-printing` scenario. Each run owns isolated backend/frontend processes, ports,
+initial fixed `weapon-edit-dialog` scenario. Each run owns isolated backend/frontend processes, ports,
 browser profile, lock, and artifacts, and reports machine-readable infrastructure versus product outcomes.
 
 The runner uses the repository venv's installed Python Playwright package, not the Playwright MCP server.
@@ -24,6 +24,7 @@ the sole open decision; this work creates no scenario plugin, registry, DSL, or 
 ## Shipped
 | Stage | What shipped (≤2 sentences) |
 |-------|------------------------------|
+| 1 | Shipped the repository-owned browser-validation harness: fixed `weapon-edit-dialog` runner with owned Windows-safe lifecycle, evidence/result contract, read-guard arming, invoke-only skill, docs, and tests; validated live on Windows with deterministic owned cleanup and INFRA_FAIL classification. |
 
 ## Touches
 
@@ -39,7 +40,7 @@ the sole open decision; this work creates no scenario plugin, registry, DSL, or 
 - `docs/areas/infra.md`
 - `docs/TESTING.md`
 - `backend/tests/test_read_guard.py`
-- `docs/plans/active/browser-validation-harness/browser-validation-harness.md`
+- `docs/plans/done/browser-validation-harness/browser-validation-harness.md`
 
 ## Compiler handoff
 
@@ -58,7 +59,9 @@ the sole open decision; this work creates no scenario plugin, registry, DSL, or 
   `playwright` Python package). `backend/requirements.txt` supplies FastAPI/Uvicorn but does not declare
   Playwright; implementation must document or add that dependency if the focused environment check
   requires it. The standalone command is:
-  `.venv\Scripts\python.exe scripts\browser_validation.py --case <case-id> --scenario monster-printing --output <artifact-dir>`.
+  `.venv\Scripts\python.exe scripts\browser_validation.py --case <case-id> --scenario weapon-edit-dialog`,
+  which defaults to `artifacts/browser-validation-<case-id>/`; `--output <named-folder>` selects one
+  folder beneath repository `artifacts/` and rejects absolute/traversal paths.
   Browser control uses `from playwright.sync_api import sync_playwright`, an isolated
   `launch_persistent_context(user_data_dir=<profile>)`, and page event listeners. MCP is not used by
   the Python runner.
@@ -94,10 +97,11 @@ the sole open decision; this work creates no scenario plugin, registry, DSL, or 
   profile, lock, and temporary process logs. Windows path normalization, process-tree-safe termination,
   and already-exited-child tolerance are required.
 
-- **Settled evidence contract:** The fixed `monster-printing` flow captures desktop, narrow, and print
-  media states; screenshots; observable DOM/accessibility evidence; console messages; failed network
-  requests; and print-interception status. Intercept `window.print` in page context so no system dialog
-  opens, while recording that printing was reached.
+- **Settled evidence contract:** The fixed `weapon-edit-dialog` flow navigates to `/weapons`, waits for
+  the weapon list, selects an existing weapon, opens the existing `Edit Weapon: selected-name` dialog, and
+  captures desktop, narrow, and print media states; screenshots; observable DOM/accessibility evidence;
+  console messages; failed network requests; and print-interception status. Intercept `window.print` in
+  page context so no system dialog opens, while recording that printing was reached.
 
 - **Settled result contract:** Emit JSON with `PASS`, `PRODUCT_FAIL`, or `INFRA_FAIL`. Application
   assertions classify as `PRODUCT_FAIL`; process, port, readiness, Playwright, print-hook, artifact, or

@@ -5,6 +5,7 @@ Completed plans are archived here for reference. Each directory under `docs/plan
 <!-- GENERATED:ARCHIVE_INDEX:START -->
 - [Area Context Refactor — Keep AI context scoped by ownership](area-context-refactor/area-context-refactor.md) — Complete. — (Infra)
 - [Backend Test Coverage — close the gap toward 100%](backend-test-coverage/backend-test-coverage.md) — Complete. — (Infra)
+- [Browser Validation Harness — repeatable, isolated browser evidence](browser-validation-harness/browser-validation-harness.md) — Complete. — (infra)
 - [Collapsible Catalog Rail — every browser can give its detail view more room](collapsible-catalog-rail/collapsible-catalog-rail.md) — Complete. — (Design)
 - [Dark Mode Design Plan — Material Design 3](design-system-dark-mode/design-system-dark-mode.md) — (Design)
 - [Design Plan — Cross-Cutting Site Chrome & Tooling](design_plan/design_plan.md) — DP0–DP4 shipped. — (Design)

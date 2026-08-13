@@ -30,6 +30,10 @@ build/
 .demo-tunnel.pid
 .coverage
 
+# Browser-validation runtime evidence; acceptance may retain artifacts locally,
+# but generated runs must not become committed repository content.
+/artifacts/browser-validation-*/
+
 # Frontend (v2)
 frontend/node_modules/
 frontend/dist/

@@ -63,6 +63,18 @@ def opencode_quick_skill(session: str = "s1") -> dict:
     return {"sessionID": session, "tool": "skill", "args": {"name": "implement-quick"}}
 
 
+def opencode_browser_skill(session: str = "s1") -> dict:
+    return {"sessionID": session, "tool": "skill", "args": {"name": "browser-validation-invoke"}}
+
+
+def opencode_closeout_skill(session: str = "s1", phase: str = "APPLY CLOSEOUT", approved: bool = True) -> dict:
+    return {"sessionID": session, "tool": "skill", "args": {
+        "name": "coordinator-test-validator", "validator": "coordinator-test-validator",
+        "phase": phase, "coordinator_approved": approved,
+        "approved_paths": ["docs/plans/active/feature/01-change.md"],
+    }}
+
+
 def opencode_bash(
     output: str,
     session: str = "s1",
@@ -125,6 +137,28 @@ def test_quick_executor_is_armed(guard):
     guard._record_post(opencode_edit("src/Tile.tsx"))
     allow, _ = guard._record_pre(opencode_read("src/Tile.tsx"))
     assert allow is False
+
+
+def test_browser_validation_source_is_protected_when_armed(guard):
+    guard._record_post(opencode_browser_skill())
+    allow, reason = guard._record_pre(opencode_read("scripts/browser_validation.py"))
+    assert allow is False
+    assert "may not read" in reason
+
+
+def test_approved_validator_closeout_reads_only_manifest(guard):
+    guard._record_post(opencode_closeout_skill())
+    allowed, _ = guard._record_pre(opencode_read("docs/plans/active/feature/01-change.md"))
+    denied, reason = guard._record_pre(opencode_read("docs/plans/active/feature/02-other.md"))
+    assert allowed is True
+    assert denied is False and "manifest" in reason
+
+
+def test_closeout_requires_approval_and_phase(guard):
+    guard._record_post(opencode_closeout_skill(approved=False))
+    assert guard._load("s1").get("closeout_authorization") is None
+    guard._record_post(opencode_closeout_skill(phase="VALIDATE"))
+    assert guard._load("s1").get("closeout_authorization") is None
 
 
 def test_second_failed_check_blocks_further_work(guard):

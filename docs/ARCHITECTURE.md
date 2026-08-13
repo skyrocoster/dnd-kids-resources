@@ -134,6 +134,7 @@ rather than read the source.
 <!-- GENERATED:ARCHITECTURE:SCRIPTS:START -->
 | Script | What it does |
 |---|---|
+| `scripts/browser_validation.py` | Owned, isolated browser evidence runner for the fixed weapon dialog case. |
 | `scripts/check_demo_database.py` | Validate that the local demo SQLite database matches required app columns. |
 | `scripts/check_docs.py` | Documentation contract checker for the D&D Kids Resources repo. |
 | `scripts/check_orders.py` | Strict checker for canonical, lossless work-order artifacts. |

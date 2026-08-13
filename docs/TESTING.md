@@ -141,6 +141,20 @@ CREATE TABLE statement inside `conftest.py`, stop** — the schema comes from
 `scripts/init_database.py`, and the fixtures build from it.
 
 ## Documentation Contract CI
+
+### Isolated browser validation
+
+Use the invoke-only contract after arming the read guard:
+
+```text
+.venv\Scripts\python.exe scripts\browser_validation.py --case <case-id> --scenario weapon-edit-dialog
+```
+
+The JSON result distinguishes `PASS`, `PRODUCT_FAIL`, and `INFRA_FAIL`; each run owns its
+servers, ports, profile, lock, and artifacts. Evidence defaults to
+`artifacts/browser-validation-<case-id>/`; `--output <named-folder>` selects a single
+folder under repository `artifacts/`, while absolute and traversal paths are rejected.
+
 - GitHub Actions runs `Documentation Contract` for every pull request and every push to `main`.
 - The workflow uses Python 3.12, installs `requirements.txt`, runs `python scripts/generate_export_schema.py --check`, then `python scripts/check_docs.py --check`, and on pull requests also runs `python scripts/check_docs.py --check --base <base-sha>`.
 - `generate_export_schema.py --check` fails when `data/generated/export_schema.json` no longer matches the `CREATE TABLE` statements in `scripts/init_database.py`. Fix it by running `--write` and committing the result — never by editing the manifest. Use `--check-db` locally to diagnose drift between the schema and your live database.
@@ -156,7 +170,7 @@ says only where the files are.
 <!-- GENERATED:TESTING:LOCATIONS:START -->
 | Location | Files | Test cases |
 |---|---|---|
-| `backend/tests/` | 18 | 324 |
+| `backend/tests/` | 20 | 342 |
 | `backend/tests/routers/` | 16 | 273 |
 | `frontend/src/__tests__/` | 1 | 4 |
 | `frontend/src/api/__tests__/` | 1 | 6 |

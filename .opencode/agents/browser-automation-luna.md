@@ -23,9 +23,12 @@ source, tests, plans, or configuration, and never decide a fix.
 
 ## Runtime routing
 
+Before any browser run, invoke the `browser-validation-invoke` skill. This is invoke-only;
+do not read `scripts/browser_validation.py`.
+
 - Work from the repository root: `F:\DND\Kids Resources`.
-- Start the real backend and Vite frontend with
-  `powershell -ExecutionPolicy Bypass -File .\scripts\start_server.ps1`.
+- Run the repository-owned browser-validation command supplied by the brief; do not reuse an
+  existing server or profile.
 - Stop them when finished with
   `powershell -ExecutionPolicy Bypass -File .\scripts\stop_server.ps1`.
 - The default targets are `http://127.0.0.1:5173` (frontend) and

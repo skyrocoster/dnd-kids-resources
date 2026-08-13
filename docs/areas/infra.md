@@ -31,6 +31,7 @@ not own any product behavior, API contract, or data model — those stay with th
 | API and test plumbing | `frontend/src/api/**`<br>`frontend/src/test/**` |
 | Database lifecycle | `scripts/init_database.py`<br>`scripts/seed_database.py`<br>`scripts/export_db_seeds.py`<br>`scripts/generate_export_schema.py` |
 | Documentation and work-order tooling | `scripts/check_docs.py`<br>`scripts/check_orders.py`<br>`scripts/new_order.py`<br>`backend/tests/test_new_order.py`<br>`backend/tests/test_work_order_packet_contract.py`<br>`backend/tests/test_experimental_order_authoring_contract.py` |
+| Experimental validator contract | `backend/tests/test_coordinator_test_validator_contract.py` |
 | Check wrappers (summarise instead of dumping full tool output) | `scripts/stage_check.py`<br>`scripts/order_check.py`<br>`backend/tests/test_check_wrappers.py` |
 | Read discipline enforced by the harness (executor: no re-reading an edited file; compiler: no unbounded read of a large file) | `scripts/read_guard.py`<br>`scripts/large_read_guard.py`<br>`backend/tests/test_read_guard.py`<br>`backend/tests/test_large_read_guard.py`<br>`.opencode/plugin/**` |
 | CI | `.github/**` |
@@ -38,6 +39,7 @@ not own any product behavior, API contract, or data model — those stay with th
 | Frontend config | `frontend/package.json`<br>`frontend/package-lock.json`<br>`frontend/tsconfig.json`<br>`frontend/tsconfig.app.json`<br>`frontend/tsconfig.node.json`<br>`frontend/vite.config.ts`<br>`frontend/.gitignore`<br>`frontend/.oxlintrc.json`<br>`frontend/index.html`<br>`frontend/README.md`<br>`frontend/known-test-failures.json`<br>`frontend/public/**` |
 | Shell scripts and tooling | `scripts/demo_up.ps1`<br>`scripts/demo_down.ps1`<br>`scripts/start_server.ps1`<br>`scripts/stop_server.ps1`<br>`scripts/open_responsive_checks.ps1`<br>`scripts/opencode_remote.ps1` |
 | Unclaimed helper scripts | `scripts/check_demo_database.py`<br>`scripts/generate_spell_quick_rules.py`<br>`scripts/generate_weapon_quick_rules.py` |
+| Browser validation harness | `scripts/browser_validation.py`<br>`backend/tests/test_browser_validation.py`<br>`.opencode/skills/browser-validation-invoke/**` |
 | Database binary | `data/kids_resources.db` |
 | Seed corrections | `data/seeds/_generate_corrections.py`<br>`data/seeds/weapon_quick_rules_review.json` |
 

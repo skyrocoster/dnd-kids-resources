@@ -64,12 +64,32 @@ Review an `ESCALATED` result against the original paths and intent before starti
 repair is already authorized and deterministic, resume the same case-worker with clarification and the remaining
 verification attempt. Start a narrow ASSESS only when new facts, decisions, or scope are genuinely required.
 
-After `FIXED-PENDING-VALIDATION`, spawn `coordinator-test-validator` only when the approved proof requires
-independent live evidence. Give it an observable script, not source context. If validation fails, resume the
-original case-worker only when the repair is fully inside approved facts and paths; otherwise route to a focused
-Plan. Permit at most one validation repair cycle in this experiment.
+After `FIXED-PENDING-VALIDATION`, a fresh `coordinator-test-validator` may receive only the observable proof packet
+and diff/baseline facts, never implementation narrative. It runs the inert validator phase machine only when a
+future handoff names the exact phase and approvals. Validation cannot repair product implementation. REVALIDATE
+and later phases require retained-session handoffs plus explicit coordinator gates; closeout and COMMIT are never
+implied by passing validation, and this route does not execute current lifecycle operations.
 
 No direct route auto-commits. Present the implementation proof and an observable human-acceptance checklist.
+
+## Experimental ordered implementation
+
+The frontier may resume the retained case-worker for exactly one explicitly approved canonical work order. This is
+distinct from direct delivery and order authoring; it does not dispatch, validate, reconcile, or perform lifecycle
+closeout.
+
+```text
+PHASE: EXECUTE ORDER
+ROUTE APPROVED: yes
+ORDER PATH: docs/plans/active/<feature>/orders/<NN>-<slug>.md
+ESCALATE IF: <exact boundaries>
+Invoke `implement-order-test`.
+```
+
+The case-worker uses the order's packet as its immutable envelope, touches only packet-authorized paths, runs only
+exact packet proof commands in order, permits one deterministic in-scope repair, and returns `DONE`, `FAILED`,
+`BLOCKED`, or `ESCALATED` with proof, scope, guard, attempt, and deviation telemetry. It must stop without executing
+the example browser-validation order unless that exact order is separately approved and handed off.
 
 ## Plan candidate
 
@@ -163,4 +183,5 @@ validation, reconcile, commit, or Plan-status work. Outcomes are `PROPOSAL PASS 
 `PROPOSAL+WRITE PASS`. `WRITE` supplies one lossless canonical JSON packet per approved order and uses
 `new_order.py --packet`; it never uses repeated authoring flags or lets the generator infer the reviewed envelope.
 Preserve proposal-to-write continuity and the invoke-only tool rules in the shared skill.
-Ordered execution remains unsupported after successful materialization.
+This experimental ordered implementation route is bounded to the retained case-worker and one approved order;
+production dispatch and later lifecycle parts remain outside this workflow.

@@ -36,16 +36,19 @@ shared `coordinator-test-order-author` skill through either a retained or fresh 
 the workflow specifies. Do not route to a specialized strong-model order author; stronger-model variants are deferred.
 The Luna case-worker owns bounded repository retrieval, route evidence, Plan drafting/writing, and approved
 direct implementation. A fully settled planned quick stage may use `coordinator-test-quick-executor` after
-frontier stage review. Independent live validation belongs to `coordinator-test-validator`.
+ frontier stage review. Independent validation and later closeout capabilities belong to `coordinator-test-validator`;
+ its eight phases are inert unless a future phase-specific handoff supplies immutable paths and coordinator approvals.
 
 This agent is experimental. Do not invoke the production `plan-router`, `quick-executor`, `test-validator`,
 or reconcile agents as substitutes. Experimental work-order authoring is allowed only through the bounded shared
-Luna skill protocol. Do not author orders directly, dispatch ordered stages, reconcile, commit, or push: ordered
-execution and later lifecycle parts are not settled yet. You may test one planned quick stage only
+Luna skill protocol. Do not author orders directly, dispatch ordered stages, reconcile, commit, or push. The
+case-worker may execute only one explicitly approved canonical order through its bounded experimental route; later
+lifecycle parts remain outside the experiment. You may test one planned quick stage only
 when its Plan and stage are explicitly named and the stage review can produce the complete brief required by
 `coordinator-test-workflow`. Otherwise stop after a reviewed focused Plan, or after a direct change has focused
 proof, required independent validation, documentation checking, and a clear human-acceptance handoff. The
 original case-worker owns implementation and bounded repair; a fresh validator owns independent observable
-proof; a postmortem request is review only and is not implementation authorization. The shared experimental order-
+ proof without implementation narrative. Its retained session may only perform explicitly approved closeout phases
+ and never repairs product implementation. A postmortem request is review only and is not implementation authorization. The shared experimental order-
 authoring skill is not a production compiler or dispatch/reconcile substitute; a frontier-authorized Luna session may
 author only the approved bounded order artifact through the workflow protocol.
