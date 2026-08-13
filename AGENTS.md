@@ -7,9 +7,7 @@ instruction files only point here; if they conflict, this file wins.
 
 1. Open the [documentation manifest](docs/README.md).
 2. Select the row for the task you are performing and read its declared minimum context.
-3. For area work, open the area guide it names for ownership and invariants, then open
-   [docs/plans/active/INDEX.md](docs/plans/active/INDEX.md) — the sole queue/status view — to find the
-   Plan covering the work and whether it is ready or blocked.
+3. Open the relevant canonical reference and locate Plans directly under `docs/plans/active/`.
 4. Read only that stage's **Read first** files before exploring source.
 5. Run the documentation checker through the repo-local virtualenv (`.venv\Scripts\python.exe
    scripts/check_docs.py --check` on Windows, `.venv/bin/python scripts/check_docs.py --check` on
@@ -54,7 +52,7 @@ the user is not asked to choose workflow transport.
 
 ## Documentation Contract
 
-- Area guides own code — routers, routes, invariants, the change map — and never authorize
+- Canonical references own current contracts and never authorize
   implementation and never list Plans. Create a focused Plan via `create-plan`, or route one selected
   master-plan slice via `to-plan`, before changing code no active Plan covers. `to-plan` may authorize
   only the bounded direct-slice route defined above; the master plan alone never does.
@@ -67,30 +65,24 @@ the user is not asked to choose workflow transport.
   user-visible capability changes. `reconcile` performs these updates after a Plan stage ships and
   `quick-reconcile` performs them after direct slice delivery — do not defer them indefinitely. Both
   update any linked master-plan slice receipt; automated checks never record human acceptance.
-- **Write the fact where it is authored, not where it is displayed.** A plan's routing facts are its
-  `**Areas:**` (stable area-guide IDs) and `**Read trigger:**` header lines; a plan's progress is its
+- **Write the fact where it is authored, not where it is displayed.** A Plan's routing facts are its
+  location, `**Read trigger:**`, Status, Touches, dependencies, and local order metadata; a plan's progress is its
   Status line. Each is then rendered into the documents that need it. Editing a generated table by
   hand is always wrong — regenerate with
   `.venv\Scripts\python.exe scripts/check_docs.py --write-generated`.
 - Regenerate the auto-generated reference inventories whenever their source contracts change. A
   document may carry any number of generated blocks, each addressed by a `GENERATED:<marker>`
-  comment pair and staleness-checked on its own. What generates today: API endpoint and schema
-  inventories; the area-guide and plan rows in `docs/INVENTORY.md`; script, test, data-model, and
-  design-token inventories; and both plan indexes, including
-  [docs/plans/active/INDEX.md](docs/plans/active/INDEX.md).
-- Archive a completed Plan to `docs/plans/done/`, updating the manifest in the same change set and
-  regenerating the index, which is what unblocks its dependents; leave a redirect stub only when a
-  known inbound link must survive. Redirect stubs are excluded from the active index and the manifest
-  inventory, so an archived plan never reads as active. `MEMORY.md` is not a parallel plan-status
-  registry.
+  comment pair and staleness-checked on its own. What generates today: API endpoint and schema,
+  script, test, data-model, and design-token inventories. Plans and orders are discovered directly
+  from their folders and local metadata.
+- Archive a completed Plan to `docs/plans/done/`; folder-local metadata is sufficient and Git history is
+  the archive. Do not create redirects or historical documentation registries.
 - Run the documentation checker through the repo-local virtualenv (`.venv\Scripts\python.exe
   scripts/check_docs.py --check`), and use `--base <base-ref>` to compare against a specific base
-  ref. The checker validates local links and anchors, active-Plan status lines and manifest
-  completeness, area-guide code ownership (routers, routes, change-map coverage), Plan
+  ref. The checker validates local links and anchors, Plan status/read-trigger metadata, Plan
   dependency/touch overlap, work-order structure, plan-redirect lifecycle, AI-entry precedence,
   configured test commands, banned legacy references, generated reference inventories, a docstring on
-  every `/api/` route, an API-reference section for every router, and an `**Areas:**` and
-  `**Read trigger:**` line on every Plan.
+  every `/api/` route, and an API-reference section for every router.
 - Work orders are written by `scripts/new_order.py`, linted by `scripts/check_orders.py` (prefer
   `--fix`), run one at a time by `scripts/order_check.py`, and closed out by `scripts/stage_check.py` —
   the wrappers print pass/fail rather than full runner output. `scripts/read_guard.py` (wired through

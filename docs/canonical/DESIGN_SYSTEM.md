@@ -1,3 +1,9 @@
+---
+title: Design System
+purpose: Shared visual tokens, component anatomy, icons, and accessibility floor.
+read-when: Shared tokens, icons, visual primitives, or accessibility
+---
+
 # Design System — D&D Kids Resources
 
 Canonical reference for the site-wide design system: color tokens, type scale, icons, spacing, elevation,

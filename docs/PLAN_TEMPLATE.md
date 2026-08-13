@@ -84,7 +84,6 @@ active at once; what a Plan waits on is a **dependency**, declared in its `## To
 
 > **Status:** <what's done, what's next — one line, rewritten each stage>
 
-- **Areas:** <area-guide slug, comma-separated>
 - **Read trigger:** <when a reader should open this plan>
 
 ## What we're building & why
@@ -93,7 +92,7 @@ active at once; what a Plan waits on is a **dependency**, declared in its `## To
 ## Stages
 1. <plain-English intent of stage 1>
 2. <plain-English intent of stage 2>
-3. <plain-English intent of stage 3> **Table test:** [YYYY-MM-DD](../../../table-tests/YYYY-MM-DD-slug.md)
+3. <plain-English intent of stage 3>
 
 ## Shipped
 | Stage | What shipped (≤2 sentences) |
@@ -113,19 +112,7 @@ active at once; what a Plan waits on is a **dependency**, declared in its `## To
 - **Open questions:** <what `to-orders` still must resolve, or `none`>
 ```
 
-**`**Areas:**` and `**Read trigger:**` are required, and the checker enforces both.** `**Areas:**`
-holds the stable area-guide slugs the Plan owns (`docs/areas/<slug>.md`), comma-separated; the active
-index's `Areas` column and the manifest are generated from it, together with the Status line. Write
-them once here and never restate them anywhere else — a manifest row typed by hand is the drift this
-replaced. Legacy archived Plans may keep the older `**Area guide:**` link during migration; new and
-active Plans use `**Areas:**`.
-
-A stage that ends at something playable names its table test on the stage line: a `**Table test:**`
-label followed by a link whose text is the session date and whose target is the record under
-`../../../table-tests/`. That stage's row in `## Shipped` links the same record rather than restating
-what the session found. See [TABLE_TESTING.md](TABLE_TESTING.md) for the record format, the
-`planned` → `run` → `folded in` lifecycle, and the standing questions.
-
+**`**Read trigger:**` is required.**
 `## Compiler handoff` is a temporary, stage-scoped machine-facing appendix. It preserves verified
 answers planning already paid to discover so `to-orders` can target its exploration instead of
 rereading the same source. Exact paths, symbols, tests, contracts, and constraints belong here;
@@ -232,21 +219,18 @@ Each tier runs in the context that can afford its output:
    `plans/active/`. There may be many at once: a design can be fully settled and written up long
    before there is capacity to build it, and writing it down is how the reasoning survives.
 
-   **Dependencies, not queues, decide what can start.** A Plan that cannot begin until another ships
+    **Dependencies decide what can start.** A Plan that cannot begin until another ships
    says so with a `**Depends on:**` entry in its `## Touches` section. A Plan is **blocked** while any
    Plan it depends on is still under `plans/active/`, and **ready** once they have all been archived —
-   [plans/active/INDEX.md](plans/active/INDEX.md) derives both and sorts every Plan after the ones it
-   depends on. Several Plans can be ready at once and nothing ranks them: which ready Plan to pick up
-   is the user's call, made per session rather than recorded in a file. That index is the **sole
-   queue/status view** — area guides no longer carry per-area plan tables or queues.
+     Plan dependencies and folder-local metadata determine readiness. Several Plans can be ready at once
+    and nothing ranks them: which ready Plan to pick up is the user's call, made per session rather than
+    recorded in a file.
 2. **Shipped** — as each stage's orders finish, `reconcile` collapses them into the Plan's **Shipped**
    table (one ≤2-sentence row per stage) and deletes the spent order files. The commit history is the
    record of *how* each thing was built — never duplicate that prose into the Plan.
 3. **Complete** — when the whole feature ships, move the Plan to `docs/plans/done/<feature>/` and
-   update `docs/README.md` in the same change set. Archiving it also unblocks every Plan that declared
-   a dependency on it, so regenerate the index. Leave a redirect stub only if a known inbound link
-   must survive; redirect stubs are excluded from the active index and the manifest inventory, so an
-   archived plan never reads as active.
+    update `docs/README.md` in the same change set. Archiving it also unblocks every Plan that declared
+    a dependency on it. Leave a redirect stub only if a known inbound link must survive.
 
 ## Required model strength (per work order)
 
@@ -260,18 +244,14 @@ after reading only what it names.
 ## The documentation checker
 
 `scripts/check_docs.py` is aligned with this workflow. For an active Plan it requires only a
-`> **Status:**` line, an `**Areas:**` and `**Read trigger:**` header (see Layer 1), and a
+`> **Status:**` line, a `**Read trigger:**` header (see Layer 1), and a
 `## Touches` section (stages are plain-English list items, not `(next up)` execution blocks). It lints
-work orders under `plans/active/<feature>/` by delegating to `scripts/check_orders.py`; requires every
-area guide's `## Change map` to map recognizable change types to repo-relative source globs, rejecting
-placeholders, unmatched globs, uncovered implementation files, and files claimed across multiple
-areas; enforces the `## Touches` overlap contract between in-flight Plans; and keeps the
-workflow-agnostic safety net: local links/anchors, manifest completeness, plan-redirect lifecycle,
+work orders under `plans/active/<feature>/` by delegating to `scripts/check_orders.py`; enforces the
+`## Touches` overlap contract between in-flight Plans; and keeps the workflow-agnostic safety net:
+local links/anchors, plan metadata and discovery, plan-redirect lifecycle,
 AI-entry precedence, configured test commands, banned legacy references, and the auto-generated
-reference inventories. The generated active index is the sole queue/status view; redirect stubs are
-excluded from it and from the manifest inventory. It no longer couples a per-diff code change to a
-Plan edit, so the executor's work-order commits pass without touching the Plan; the Plan is updated in
-batches by `reconcile`.
+reference inventories. It no longer couples a per-diff code change to a Plan edit, so the executor's
+work-order commits pass without touching the Plan; the Plan is updated in batches by `reconcile`.
 
 An earlier plan format (a `(next up)` heading with eight labeled fields) is no longer enforced. The
 last plan still written that way may remain until it is naturally retired; it validates fine because

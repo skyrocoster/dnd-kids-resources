@@ -1,16 +1,56 @@
 ---
 name: coordinator-test-workflow
-description: Use ONLY as coordinatorTest's experimental single-entry workflow for free-form repository requests, resumable Luna cases, direct-route approval, and focused Plan review.
+description: Use ONLY as coordinatorTest's experimental single-entry workflow for coordinator-owned grilling, DeepSeek factual scouting, resumable Luna cases, direct-route approval, and focused Plan review.
 ---
 
 # Coordinator test workflow
 
 Keep frontier context for decisions. Do not spend it on routine repository retrieval.
 
-## Entry
+## Entry and grilling
 
-Answer a purely informational/meta request directly only when no repository investigation is needed. For every
-other request, spawn `coordinator-test-caseworker` with this handoff:
+Answer a purely informational/meta request directly only when no repository investigation is needed. For vague
+repository-dependent requests or any user request to discuss, grill, interview, explore, or reach shared
+understanding before acting, invoke `grilling` and follow its design-tree protocol before assessment. For a vague
+repository-dependent request, invoke the `scout-case-test` agent with one bounded lookup before asking
+the first question; use the user's message and the minimum routing documents to identify the concrete setup and
+likely decision boundary without diagnosing or proposing a solution. Then ask exactly one dependency-ready frontier
+decision per turn, provide explicit options and one clearly labeled recommendation, and wait for the user's answer
+before recomputing the frontier. A recommendation is not the user's answer: never select an option for them. Preserve
+confirmed answers, decisions, reasons, uncertainty, and the stopping rationale.
+
+For repository facts needed by the decision tree, invoke a fresh `scout-case-test` agent with one bounded
+factual question, known context, lookup limits, and stop conditions. Treat the running
+lookup as an unsettled prerequisite: do not ask its downstream question until the lookup returns. The scout returns facts only; it may not diagnose, advise, infer intent, propose a route or
+implementation, ask the user questions, edit, or invoke assessment.
+
+The initial scout is not a one-time gate. Whenever a later frontier question needs repository evidence that is
+missing, stale, contradictory, or too broad to support a grounded recommendation, invoke a fresh
+`scout-case-test` agent with another bounded lookup. Scout only the prerequisite fact needed for that next
+question, incorporate the result into the decision tree, and repeat as often as required without switching to
+assessment or asking the user for retrievable repository facts.
+
+Do not assess, route, write, or implement while the grilling tree has an open frontier or pending fact lookup. When
+the frontier is empty, present the shared-understanding summary and obtain the user's explicit confirmation required
+by `grilling`. Only that confirmation ends the grilling phase and permits assessment.
+
+When outcome and evidence are sufficient, explicitly hand the clarified request and accumulated facts to
+`assess-case-test`. Assessment may recommend `MASTER-PLAN-CANDIDATE` using its operational gate, but this
+experimental workflow never authors, writes, implements, or routes downstream master-plan work.
+
+Small conversations need no document. At least four confirmed decisions, or an explicit user request, requires
+presenting a complete verbose record for confirmation before writing. Obtain or confirm an explicit safe target path
+then; never invent a persistent location. Preserve the original request, every question and answer, every confirmed
+decision and its reason, repository evidence, unresolved items, and stop rationale. This is neither a Plan nor
+implementation authorization.
+
+Qualifying coordinator grilling records are stored under `docs/grilling-docs/` using a conservative descriptive
+filename. The fixed directory removes the need to ask for a destination, but does not remove the requirement to
+present the complete record for user review and receive explicit confirmation before writing it. These records are
+historical design-review evidence only: they do not create or update Plans, master plans, implementation routes, or
+product behavior.
+
+For other requests, spawn `coordinator-test-caseworker` with this handoff:
 
 ```text
 PHASE: ASSESS
@@ -31,7 +71,10 @@ The case-worker returns `DIRECT-CANDIDATE`, `PLAN-CANDIDATE`, `MASTER-PLAN-CANDI
   irreversible/external contract. Batch all known blocking questions once.
 - For reversible Plan details, choose conservative defaults: repository precedent; lossless over lossy;
   accessible/readable over dense; temporary over persisted; smallest coherent scope.
-- `MASTER-PLAN-CANDIDATE` is not implemented by this experiment. Explain the route and stop.
+- `MASTER-PLAN-CANDIDATE` is recommendation-only in this experiment. Confirm the compact envelope,
+  explain that master-plan authoring is the separate production route, and stop. An already-covered
+  slice is not a new master-plan candidate: report its exact path and slice ID and stop for normal
+  `to-plan` routing rather than authoring or executing it here.
 
 Before approving a Plan candidate, require explicit observable acceptance and exclusions. Frontier-settled
 stages are recorded as `ORDERED` or `QUICK-CANDIDATE`, never `ORDERED-CANDIDATE`. A dirty generated index
@@ -153,6 +196,34 @@ stops. Direct free-form fixes never use this fresh executor; they resume their o
 
 Normal Plan handling uses two case-worker calls: `ASSESS + PLAN-DRAFT`, then resumed `WRITE PLAN`. Only a truly
 blocking batched question adds a call. Do not request separate route, draft, audit, and write passes.
+
+Before every retained `coordinator-test-caseworker` resume, invoke `context_budget` with its task/session ID. The
+tool measures the latest completed assistant request's active context as input plus cache-read tokens; never replace
+that runtime value with an estimate or cumulative billed tokens.
+
+- Below 100k: resume normally.
+- From 100k through 119,999: note the warning and prefer a compact handoff when the next phase is separable.
+- From 120k through 199,999: record an explicit `RESUME`, `ROLLOVER`, or `STOP` decision before continuing.
+- At 200k or above: `ROLLOVER` is the hard default. Resume only when critical authorization or unresolved reasoning
+  cannot be transferred safely and the next operation is short; state the exceptional rationale.
+- If telemetry is unavailable: do not guess. Prefer `ROLLOVER`; use `STOP` if a safe continuation packet cannot be
+  produced.
+
+Record the gate as:
+
+```text
+CONTEXT DECISION: RESUME | ROLLOVER | STOP
+ACTIVE TOKENS: <runtime value or unavailable>
+NEXT PHASE: <phase>
+RATIONALE: <why continuity or freshness is safer>
+```
+
+Choose `ROLLOVER` when starting a distinct phase, when a Plan/order/approved envelope fully carries the next action,
+after compaction, or when substantial reads, edits, or proof output remain. A rollover launches a fresh
+`coordinator-test-caseworker`; never resume the old task ID. Supply only the approved outcome, current route and
+phase, decisions and exclusions, exact authorized paths, cited verified facts, remaining action, proof contract,
+escalation boundaries, and prior results that affect the next phase. Do not transfer the transcript or discovery
+narrative. Choose `STOP` when that packet cannot preserve required authorization or unresolved decisions safely.
 
 ## Experimental order-authoring review
 

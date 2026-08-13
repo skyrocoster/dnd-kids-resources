@@ -25,7 +25,7 @@ shipped; route the stage back through `to-orders` instead.
 
 ## When you were not told which feature
 
-[docs/plans/active/INDEX.md](../../../docs/plans/active/INDEX.md) lists every in-flight plan with its
+Active Plan folders and local order metadata identify every in-flight Plan with its
 order counts and the skill each is waiting for. A row whose `Next` is `reconcile` has every order
 `DONE` and is ready for this skill. One such row is your answer; several means ask which, since
 nothing in the repo ranks them.
@@ -132,7 +132,7 @@ treating the report as complete.
 5. **Update canonical references only when a real contract changed.** If shipped work changed an API,
    data model, architecture convention, design token, testing contract, or user-visible capability,
    update the matching reference (`API_REFERENCE.md`, `DATA_MODEL.md`, `ARCHITECTURE.md`,
-   `DESIGN_SYSTEM.md`, `TESTING.md`) and the area guide/manifest routing. If nothing durable changed,
+    `DESIGN_SYSTEM.md`, `TESTING.md`). If nothing durable changed,
    record that — don't invent updates. The scout's EXPORTED SURFACES and DOC MENTIONS give you the two
    halves: what moved, and what the docs say about it today. Deciding whether a moved export is a
    *contract* is yours — a new internal helper is not one, a changed response shape is. A symbol the
@@ -142,13 +142,10 @@ treating the report as complete.
    **Do not hand-edit what a command derives.** Run
    `.venv\Scripts\python.exe scripts/check_docs.py --write-generated` once. It refreshes every
    generated block — the per-router endpoint tables and schema inventory in `API_REFERENCE.md`, the
-   area-guide and plan rows in `docs/INVENTORY.md`, both plan indexes (the global
-   `docs/plans/active/INDEX.md` — the sole queue/status view — and the archive index), and the
-   script/test/schema/token inventories. Because the manifest and the plan indexes derive
-   from the Plan itself, **the Plan's Status line is the single place a stage's progress is
-   recorded** — get it right and three documents follow. What stays yours: the Status line and Shipped
-   rows, the hand-written prose around each generated block, the Task Router rows in `docs/README.md`,
-    and every canonical-reference edit in this step.
+    script/test/schema/token inventories. The Plan's Status line is the single place a stage's progress
+    is recorded. What stays yours: the Status line and Shipped rows, the hand-written prose around each
+    generated block, the Task Router rows in `docs/README.md`, and every canonical-reference edit in
+    this step.
 
    **Update a linked master-plan receipt.** If the Plan identifies a source master plan and slice ID,
    add or update that document's `## Slice delivery receipts` row with route `Plan`. Use
@@ -183,7 +180,7 @@ treating the report as complete.
    commit to make the tree tidy.
 
    Before staging, read `git status --porcelain` and check two things: everything expected is there
-   (deleted `NN-*.md` orders, the Plan, the regenerated `docs/plans/active/INDEX.md` and any other
+   (deleted `NN-*.md` orders, the Plan, and any other
    `GENERATED:` inventory, plus the source and test files the orders touched — an order you believe
    shipped but whose files are absent means it did not land; go back to step 2), and nothing that must
    never be committed is (a database, `*.log`, `.pid`, `.env`, `node_modules/`, `frontend/dist/` —

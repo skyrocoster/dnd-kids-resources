@@ -1,3 +1,9 @@
+---
+title: Testing
+purpose: Test commands, fixtures, coverage gates, CI, and regression rules.
+read-when: Commands, fixtures, coverage, or test locations
+---
+
 # Testing & regression rules
 
 This is the contract for "does the code pass." Read it before adding a feature or
@@ -170,7 +176,7 @@ says only where the files are.
 <!-- GENERATED:TESTING:LOCATIONS:START -->
 | Location | Files | Test cases |
 |---|---|---|
-| `backend/tests/` | 20 | 342 |
+| `backend/tests/` | 22 | 351 |
 | `backend/tests/routers/` | 16 | 273 |
 | `frontend/src/__tests__/` | 1 | 4 |
 | `frontend/src/api/__tests__/` | 1 | 6 |

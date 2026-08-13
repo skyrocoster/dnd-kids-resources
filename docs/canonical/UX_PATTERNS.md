@@ -1,3 +1,9 @@
+---
+title: UX Patterns
+purpose: Surface behavior, interaction states, saving, feedback, and keyboard conventions.
+read-when: Surface modes, route shape, data/error states, saving, destructive actions, or keyboard
+---
+
 # UX Patterns — D&D Kids Resources
 
 Canonical reference for how the app **behaves**: surface modes, route shape, data and error states,

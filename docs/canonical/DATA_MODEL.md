@@ -1,3 +1,9 @@
+---
+title: Data Model
+purpose: Seed inputs, database tables, relationships, and JSON-encoded columns.
+read-when: Tables, relationships, seeds, JSON storage, or database rebuilds
+---
+
 # Data Model — D&D Kids Resources
 
 Reference for seed files, tables, relationships, and JSON-encoded columns.

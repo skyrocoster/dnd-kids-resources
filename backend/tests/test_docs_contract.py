@@ -748,33 +748,34 @@ def test_api_reference_has_a_section_per_router():
 
 def test_api_router_inventory_reads_purpose_from_the_route_docstring():
     blocks = cd.generate_api_router_inventories(REPO_ROOT)
-    spells = blocks[("API_REFERENCE.md", "API:spells")]
+    spells = blocks[("canonical/API_REFERENCE.md", "API:spells")]
     assert "| Method | Path | Purpose | Request | Response |" in spells
     assert "List all spells with optional filtering." in spells
     assert "`SpellCreate`" in spells
     assert "(204 No Content)" in spells
 
 
-def test_every_plan_declares_its_areas_and_read_trigger():
-    """The manifest and the active index generate from these, so a plan without them cannot route."""
+def test_every_plan_declares_a_read_trigger():
+    """Folder-local Plan metadata routes readers without area labels or central indexes."""
     assert cd.check_plan_headers(REPO_ROOT) == []
 
 
-def test_inventory_rows_come_from_the_plans_themselves():
-    rows = cd.generate_inventory_rows(REPO_ROOT)
-    assert "| Document | Type | Authority | Status | Read trigger | Update trigger |" in rows
-    assert "| [areas/players.md](areas/players.md) | Area guide | Canonical |" in rows
-    assert "| Archived plan | Historical | Complete |" in rows
-    assert "Never — archived record |" in rows
+def test_canonical_references_expose_routing_metadata():
+    canonical = REPO_ROOT / "docs" / "canonical"
+    for name in ("ARCHITECTURE", "API_REFERENCE", "DATA_MODEL", "DESIGN_SYSTEM", "UX_PATTERNS", "TESTING"):
+        text = (canonical / f"{name}.md").read_text(encoding="utf-8")
+        assert text.startswith("---\n")
+        assert "title:" in text and "purpose:" in text and "read-when:" in text
+    index = (canonical / "README.md").read_text(encoding="utf-8")
+    assert "GENERATED:CANONICAL:START" in index
+    assert "ARCHITECTURE.md" in index
 
 
-def test_inventory_has_no_plan_to_area_join():
-    """Area-guide rows no longer say 'Active plan'/'No active plan' — the active index owns that."""
-    rows = cd.generate_inventory_rows(REPO_ROOT)
-    assert "Active plan" not in rows
-    assert "No active plan" not in rows
-    # A redirect stub must not appear as a live working plan.
-    assert "plans/active/kid-map-viewer/kid-map-viewer.md" not in rows
+def test_central_plan_representations_are_absent():
+    """Folder-local discovery has no inventory or active/done index dependency."""
+    assert not (REPO_ROOT / "docs" / "INVENTORY.md").exists()
+    assert not (REPO_ROOT / "docs" / "plans" / "active" / "INDEX.md").exists()
+    assert not (REPO_ROOT / "docs" / "plans" / "done" / "INDEX.md").exists()
 
 
 def test_script_inventory_covers_every_script_and_reads_its_own_description():
@@ -857,44 +858,27 @@ def _active_plan(tmp_path: Path, feature: str, status: str) -> Path:
     (directory / f"{feature}.md").write_text(
         f"# {feature.replace('-', ' ').title()} — the long outcome clause\n\n"
         f"> **Status:** {status}\n\n"
-        "- **Areas:** players\n",
+        "- **Read trigger:** Testing folder-local Plan discovery.\n",
         encoding="utf-8",
     )
     return directory
 
 
 def test_active_index_routes_by_order_status(tmp_path: Path):
-    """The Next column is read off the orders' STATUS lines, not guessed."""
+    """Active Plan discovery reads Plan files directly from their feature folders."""
     nothing = _active_plan(tmp_path, "no-orders", "Not started. Second sentence dropped.")
     unrun = _active_plan(tmp_path, "unrun-orders", "Stage 1 compiled.")
     (unrun / "orders").mkdir()
     (unrun / "orders/01-a.md").write_text("WORK ORDER 01\n\nSTATUS: DONE\n", encoding="utf-8")
-    (unrun / "orders/02-b.md").write_text("WORK ORDER 02\n\nSTATUS: PENDING\n", encoding="utf-8")
     stuck = _active_plan(tmp_path, "stuck-orders", "Stage 2 running.")
     (stuck / "orders").mkdir()
-    (stuck / "orders/01-a.md").write_text("WORK ORDER 01\n\nSTATUS: BLOCKED - bad facts\n", encoding="utf-8")
-    shipped = _active_plan(tmp_path, "shipped-orders", "Stage 3 shipped.")
-    (shipped / "orders").mkdir()
-    (shipped / "orders/01-a.md").write_text("WORK ORDER 01\n\nSTATUS: DONE\n", encoding="utf-8")
-
-    table = cd.generate_active_index(tmp_path)
-    rows = {line.split("|")[1].strip(): line for line in table.splitlines() if line.startswith("| [")}
-
-    assert "`to-orders`" in rows["[No Orders](no-orders/no-orders.md)"]
-    assert "none compiled" in rows["[No Orders](no-orders/no-orders.md)"]
-    assert "`dispatch-orders`" in rows["[Unrun Orders](unrun-orders/unrun-orders.md)"]
-    assert "1 unrun" in rows["[Unrun Orders](unrun-orders/unrun-orders.md)"]
-    assert "triage" in rows["[Stuck Orders](stuck-orders/stuck-orders.md)"]
-    assert "`reconcile`" in rows["[Shipped Orders](shipped-orders/shipped-orders.md)"]
-
-    # Title stops at the em dash and status at the first sentence, or the table is unreadable.
-    assert "the long outcome clause" not in table
-    assert "Second sentence dropped" not in table
-    assert nothing.exists()
+    assert set(cd._plan_files(tmp_path)) == {
+        nothing / "no-orders.md", unrun / "unrun-orders.md", stuck / "stuck-orders.md"
+    }
 
 
 def test_active_index_reads_the_placeholder_status_as_unrun(tmp_path: Path):
-    """new_order.py leaves canonical PENDING, which must not read as DONE."""
+    """Canonical order files remain nested under the owning Plan folder."""
     waiting = _active_plan(tmp_path, "waiting-orders", "Stage 1 compiled.")
     (waiting / "orders").mkdir()
     for number in (1, 2, 3):
@@ -902,39 +886,20 @@ def test_active_index_reads_the_placeholder_status_as_unrun(tmp_path: Path):
             "WORK ORDER 0%d\n\nSTATUS: PENDING\n" % number,
             encoding="utf-8",
         )
-    row = next(
-        line for line in cd.generate_active_index(tmp_path).splitlines() if line.startswith("| [")
-    )
-    assert "3 unrun" in row
-    assert "`dispatch-orders`" in row
-    assert "all done" not in row
+    assert len(list((waiting / "orders").glob("[0-9][0-9]-*.md"))) == 3
+    assert waiting / "waiting-orders.md" in cd._plan_files(tmp_path)
 
 
 def test_active_index_is_empty_without_plans(tmp_path: Path):
     (tmp_path / "docs" / "plans" / "active").mkdir(parents=True)
-    assert "no active plans" in cd.generate_active_index(tmp_path)
+    assert cd._plan_files(tmp_path) == []
 
 
 def test_active_index_lists_areas_and_excludes_redirect_stubs(tmp_path: Path):
-    """The Areas column comes from **Areas:** and a moved-to-archive stub is not live work."""
+    """Plan discovery does not require Areas or central index rows."""
     directory = _active_plan(tmp_path, "fog", "Stage 1 compiled.")
-    table = cd.generate_active_index(tmp_path)
-    assert "| Plan | Areas | Depends on | State | Orders | Next | Status |" in table
-    row = next(
-        line for line in table.splitlines() if line.startswith("| [Fog]")
-    )
-    assert "[players](../../areas/players.md)" in row
-
-    # A redirect stub (moved to the archive) must not appear in the active index.
-    stub = directory.parent / "retired"
-    stub.mkdir(parents=True)
-    (stub / "retired.md").write_text(
-        "# Retired — done\n\n"
-        "> **Status:** Complete and archived. This plan moved to\n"
-        "> [docs/plans/done/retired/](../../done/retired/retired.md).\n",
-        encoding="utf-8",
-    )
-    assert "Retired" not in cd.generate_active_index(tmp_path)
+    assert directory / "fog.md" in cd._plan_files(tmp_path)
+    assert cd.check_plan_headers(tmp_path) == []
 
 
 # ── Kid palette contract ────────────────────────────────────────────

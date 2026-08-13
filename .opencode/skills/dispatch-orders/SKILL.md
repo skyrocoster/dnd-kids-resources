@@ -14,7 +14,7 @@ stall. A clean `DONE` needs nothing from you; a failure needs you now, not at re
 ## 1. Select what is runnable, then validate it
 
 If you were not given a feature, open
-[docs/plans/active/INDEX.md](../../../docs/plans/active/INDEX.md): a row whose `Next` is
+the active Plan folder and its local order metadata:
 `dispatch-orders` has orders to run — `(triage)` on the row means the batch is stalled on a
 FAILED/BLOCKED order, so start at step 5. Skip rows whose `State` is `blocked`: those wait on another
 plan, not on you. One matching ready row is your answer; several means ask which, since nothing in

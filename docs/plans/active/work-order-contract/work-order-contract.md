@@ -2,7 +2,6 @@
 
 > **Status:** Not started. One ordered bootstrap stage remains.
 
-- **Areas:** infra
 - **Read trigger:** Replacing the work-order artifact contract, compiler, checker, or authoring guidance
 
 ## What we're building & why
@@ -36,7 +35,6 @@ reconcile, commit, or a general ordered-execution route.
 - `docs/README.md`
 - `docs/ARCHITECTURE.md`
 - `docs/TESTING.md`
-- `docs/areas/infra.md`
 - `.opencode/skills/to-orders/SKILL.md`
 - `.opencode/skills/author-workorders/SKILL.md`
 - `.opencode/skills/implement-order/SKILL.md`

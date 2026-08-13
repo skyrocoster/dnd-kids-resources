@@ -1,3 +1,9 @@
+---
+title: API Reference
+purpose: Backend endpoints, request/response models, and API contract guidance.
+read-when: API methods, paths, parameters, schemas, or responses
+---
+
 # API Reference — D&D Kids Resources Backend
 
 **The endpoint tables and the schema inventory on this page are generated** from the running app's OpenAPI contract by `scripts/check_docs.py`, and `--check` fails when they go stale. Each router's `Purpose` column is its route's docstring, so a route is documented where it is written. The prose around each table is hand-written and carries what the code does not state.

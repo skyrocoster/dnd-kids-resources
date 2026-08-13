@@ -972,11 +972,8 @@ def run_all_checks(docs_dir: Path) -> list[CheckError]:
         errors.extend(check_plan_metadata(plan))
 
     errors.extend(check_work_orders(docs_dir))
-    errors.extend(check_manifest_completeness(docs_dir, readme, docs_dir / "INVENTORY.md"))
     errors.extend(check_forbidden_references(docs_dir))
     errors.extend(check_plan_lifecycle(docs_dir, readme))
-    errors.extend(check_area_guide_contract(docs_dir))
-    errors.extend(check_plan_touch_overlap(docs_dir))
 
     return errors
 
@@ -1119,12 +1116,11 @@ def generate_api_router_inventories(repo_root: Path) -> dict[tuple[str, str], st
 
     header = ["| Method | Path | Purpose | Request | Response |", "|---|---|---|---|---|"]
     return {
-        ("API_REFERENCE.md", f"API:{tag}"): "\n".join(header + rows) + "\n"
+        ("canonical/API_REFERENCE.md", f"API:{tag}"): "\n".join(header + rows) + "\n"
         for tag, rows in by_tag.items()
     }
 
 
-PLAN_AREA_GUIDE_RE = re.compile(r"^-\s+\*\*Area guide:\*\*\s+\[([^\]]+)\]\(([^)]+)\)", re.MULTILINE)
 PLAN_AREAS_RE = re.compile(r"^-\s+\*\*Areas:\*\*\s+(.+)$", re.MULTILINE)
 PLAN_READ_TRIGGER_RE = re.compile(r"^-\s+\*\*Read trigger:\*\*\s+(.+)$", re.MULTILINE)
 
@@ -1175,31 +1171,6 @@ def check_plan_headers(repo_root: Path) -> list[CheckError]:
                 relative,
                 "Plan has no **Read trigger:** line",
                 "Add '- **Read trigger:** <when a reader should open this>' under the Status line",
-            ))
-        areas = _parse_plan_areas(text)
-        legacy = PLAN_AREA_GUIDE_RE.search(text)
-        if not areas and not legacy:
-            errors.append(CheckError(
-                relative,
-                "Plan has no **Areas:** line",
-                "Add '- **Areas:** <area-guide slug, comma-separated>' under the Status line",
-            ))
-            continue
-        if areas:
-            for slug in areas:
-                if not (AREA_GUIDES_DIR / f"{slug}.md").exists():
-                    errors.append(CheckError(
-                        relative,
-                        f"Plan's **Areas:** ID '{slug}' does not resolve to an area guide",
-                        "Point **Areas:** at slugs matching docs/areas/<slug>.md",
-                    ))
-            continue
-        target = (path.parent / legacy.group(2)).resolve()
-        if not target.exists():
-            errors.append(CheckError(
-                relative,
-                f"Plan's area guide link does not resolve: {legacy.group(2)}",
-                "Point **Area guide:** at an existing docs/areas/<area>.md",
             ))
     return errors
 
@@ -1313,7 +1284,7 @@ def check_route_docstrings(repo_root: Path) -> list[CheckError]:
 def check_api_reference_router_sections(docs_dir: Path, repo_root: Path) -> list[CheckError]:
     """Fail when a router has no section in API_REFERENCE.md, or a section outlives its router."""
     errors: list[CheckError] = []
-    content = (docs_dir / "API_REFERENCE.md").read_text(encoding="utf-8")
+    content = (docs_dir / "canonical" / "API_REFERENCE.md").read_text(encoding="utf-8")
     documented = set(re.findall(r"<!-- GENERATED:API:([\w-]+):START -->", content))
     documented.discard("SCHEMAS")  # the model inventory, not a router
     live = {tag for tag, _path, _method, _operation in _api_operations(repo_root)}
@@ -1718,18 +1689,15 @@ def generated_sections(repo_root: Path) -> dict[tuple[str, str], str]:
     router or per area guide contributes one entry each.
     """
     sections: dict[tuple[str, str], str] = {
-        ("DATA_MODEL.md", "DATA_MODEL"): generate_data_model_inventory(repo_root),
-        ("ARCHITECTURE.md", "ARCHITECTURE"): generate_architecture_inventory(repo_root),
-        ("DESIGN_SYSTEM.md", "DESIGN_SYSTEM"): generate_design_inventory(repo_root),
-        ("TESTING.md", "TESTING"): generate_testing_inventory(repo_root),
-        ("plans/done/INDEX.md", "ARCHIVE_INDEX"): generate_archive_index(repo_root),
-        ("plans/active/INDEX.md", "ACTIVE_INDEX"): generate_active_index(repo_root),
+        ("canonical/DATA_MODEL.md", "DATA_MODEL"): generate_data_model_inventory(repo_root),
+        ("canonical/ARCHITECTURE.md", "ARCHITECTURE"): generate_architecture_inventory(repo_root),
+        ("canonical/DESIGN_SYSTEM.md", "DESIGN_SYSTEM"): generate_design_inventory(repo_root),
+        ("canonical/TESTING.md", "TESTING"): generate_testing_inventory(repo_root),
     }
-    sections[("API_REFERENCE.md", "API:SCHEMAS")] = generate_api_schema_inventory(repo_root)
-    sections[("INVENTORY.md", "INVENTORY:AREAS_AND_PLANS")] = generate_inventory_rows(repo_root)
+    sections[("canonical/API_REFERENCE.md", "API:SCHEMAS")] = generate_api_schema_inventory(repo_root)
     sections.update(generate_api_router_inventories(repo_root))
-    sections[("ARCHITECTURE.md", "ARCHITECTURE:SCRIPTS")] = generate_script_inventory(repo_root)
-    sections[("TESTING.md", "TESTING:LOCATIONS")] = generate_test_inventory(repo_root)
+    sections[("canonical/ARCHITECTURE.md", "ARCHITECTURE:SCRIPTS")] = generate_script_inventory(repo_root)
+    sections[("canonical/TESTING.md", "TESTING:LOCATIONS")] = generate_test_inventory(repo_root)
     return sections
 
 
@@ -1939,11 +1907,12 @@ def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
 
-    if args.write_generated:
+    if args.write_generated or not args.check:
         result = write_generated_sections(DOCS_DIR, REPO_ROOT)
         if not write_kid_palette(REPO_ROOT):
             result = 1
-        return result
+        if args.write_generated:
+            return result
 
     errors = run_all_checks(DOCS_DIR)
     errors.extend(check_local_links(DOCS_DIR, REPO_ROOT))

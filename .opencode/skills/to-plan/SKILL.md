@@ -52,8 +52,8 @@ same shortcut again.
 
 ## Method
 
-1. Read `docs/README.md`, `docs/PLAN_TEMPLATE.md`, the selected master plan, the slice's owning area
-   guides and minimum references, and `docs/plans/active/INDEX.md`.
+1. Read `docs/README.md`, `docs/PLAN_TEMPLATE.md`, the selected master plan, its minimum canonical
+   references, and active Plans directly from `docs/plans/active/`.
 2. Confirm the slice's prerequisite acceptance. A prerequisite still represented by an active Plan
    becomes a `**Depends on:**` entry; an accepted and archived prerequisite needs no active dependency.
 3. Confirm no active Plan already owns the slice and no source evidence makes the slice too broad. A

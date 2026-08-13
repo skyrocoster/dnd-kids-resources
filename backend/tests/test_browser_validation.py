@@ -60,7 +60,7 @@ def test_validator_registers_invoke_skill_before_browser_runs():
 def test_artifact_contract_is_ignored_and_documented():
     assert "/artifacts/browser-validation-*/" in (ROOT / ".gitignore").read_text(encoding="utf-8")
     skill = (ROOT / ".opencode/skills/browser-validation-invoke/SKILL.md").read_text(encoding="utf-8")
-    docs = (ROOT / "docs/TESTING.md").read_text(encoding="utf-8")
+    docs = (ROOT / "docs/canonical/TESTING.md").read_text(encoding="utf-8")
     validator = (ROOT / ".opencode/agents/coordinator-test-validator.md").read_text(encoding="utf-8")
     assert "artifacts/browser-validation-<case-id>" in skill
     assert "artifacts/" in docs and "artifacts/" in validator

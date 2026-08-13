@@ -23,12 +23,12 @@ Use the exact Layer 1 schema in `docs/PLAN_TEMPLATE.md`. Keep the human-facing P
 and free of code. The checker requires each fact once at its source:
 
 - `> **Status:**` is the one-line progress source.
-- `**Areas:**` and `**Read trigger:**` are required routing facts.
+- `**Read trigger:**` is a required routing fact.
 - `## Touches` contains repo-root-relative globs and any active-Plan dependencies.
 
 ## Method
 
-1. Read `docs/README.md`, the owning area guides, `docs/plans/active/INDEX.md`, and the minimum canonical
+1. Read `docs/README.md`, the minimum canonical
    references they name. Read any contract the Plan will change.
 2. Understand one concrete human outcome. If the request is broad enough to require several focused
    Plans or cross-cutting destination decisions, stop and use `master-plan` first.

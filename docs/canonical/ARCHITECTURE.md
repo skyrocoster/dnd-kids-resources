@@ -1,3 +1,9 @@
+---
+title: Architecture
+purpose: Repository structure, runtime conventions, and data flow.
+read-when: Folder layout, request flow, registration, or conventions
+---
+
 # Architecture — D&D Kids Resources v2
 
 This doc describes the folder structure, backend/frontend conventions, and request flow. Read this to understand where code lives and why before exploring the codebase.
@@ -128,7 +134,7 @@ data/seeds/*.json (canonical reference and campaign data)
 ## Scripts
 
 Generated from each script's module docstring (or leading comment) — do not hand-edit. A script's
-flags are its own `--help`; the invoke-only rule in [../AGENTS.md](../AGENTS.md) means you run that
+flags are its own `--help`; the invoke-only rule in [../../AGENTS.md](../../AGENTS.md) means you run that
 rather than read the source.
 
 <!-- GENERATED:ARCHITECTURE:SCRIPTS:START -->
@@ -163,15 +169,14 @@ rather than read the source.
 | `scripts/stop_server.ps1` | Stops both the backend and frontend dev servers started by start_server.ps1. |
 <!-- GENERATED:ARCHITECTURE:SCRIPTS:END -->
 
-The database lifecycle scripts and their flags are documented in
-[areas/infra.md](areas/infra.md#tooling).
+The database lifecycle scripts and their flags are documented in the relevant script `--help` output.
 
 ## Where to Look Next
 
 - **API endpoint inventory:** [`docs/API_REFERENCE.md`](API_REFERENCE.md)
 - **Seed domains & table relationships:** [`docs/DATA_MODEL.md`](DATA_MODEL.md)
 - **Test pass/fail contract:** [`docs/TESTING.md`](TESTING.md)
-- **Area routing and active work:** [`docs/areas/`](areas/) — open the relevant area guide, then follow its active-plan link when present
+- **Planning and active work:** [`docs/README.md`](../README.md) — use the direct documentation router and folder-local Plans.
 - **Design system reference:** [`docs/DESIGN_SYSTEM.md`](DESIGN_SYSTEM.md) — color tokens, type scale, icons, component anatomy, accessibility floor
 
 <!-- GENERATED:ARCHITECTURE:START -->

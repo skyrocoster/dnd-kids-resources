@@ -516,7 +516,8 @@ def lint_order(order_path: Path, strict: bool = True) -> list[OrderError]:
     if isinstance(output, str) and normalise_path(output) != source:
         findings.append(OrderError(source, "Artifact path contradicts packet output_path", "Move or regenerate the order at its authoritative path"))
     compiled = render_compiled(packet) if not validate_packet(packet, source=source, check_files=False) else None
-    if compiled is not None and not text.startswith(compiled):
+    envelope = compiled.split("\nSTATUS:", 1)[0] if compiled is not None else None
+    if envelope is not None and not text.startswith(envelope):
         findings.append(OrderError(source, "Rendered compile-envelope sections do not match the canonical packet", "Regenerate; do not hand-edit compiled sections"))
     findings.extend(_validate_executor_result(text, source))
     return findings
