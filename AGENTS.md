@@ -24,13 +24,10 @@ the user is not asked to choose workflow transport.
 
 ## Two working modes
 
-- **Structured workflow (default for planned work):** the Plan → Implement → Reconcile split across
-  two roles by model strength — the planner thinks, writes the human-readable Plan, and compiles each
-  stage into lean work orders; the executor runs one work order per fresh context window. The workflow
-  skills in `.opencode/skills/` are `create-plan`, `to-plan`, `to-orders`, `dispatch-orders`, `implement-order`,
-  `implement-quick`, `quick-reconcile`, and `reconcile`. The split is **cost discipline, not a prohibition**: where a dispatch round trip would
-  plainly cost more than the edit itself, the planner may complete a fully-determined change directly
-  and say so. Formats and lifecycle are normative in [docs/PLAN_TEMPLATE.md](docs/PLAN_TEMPLATE.md).
+- **CoordinatorTest workflow:** repository-dependent work enters through `.opencode/agents/coordinatorTest.md`
+  and invokes `coordinator-test-workflow`. It owns assessment, route review, focused Plan writing,
+  bounded order authoring, and approved execution. Formats and lifecycle boundaries are normative in
+  [docs/PLAN_TEMPLATE.md](docs/PLAN_TEMPLATE.md).
 - **Planned quick stage:** during Plan review, the coordinator may route one atomic stage directly to
   `quick-executor` without compiling a work order. This is allowed only when the exact edit, authorized
   paths, known facts, and focused check are already settled; there may be no remaining design,
@@ -85,8 +82,7 @@ the user is not asked to choose workflow transport.
   every `/api/` route, and an API-reference section for every router.
 - Work orders are written by `scripts/new_order.py`, linted by `scripts/check_orders.py` (prefer
   `--fix`), run one at a time by `scripts/order_check.py`, and closed out by `scripts/stage_check.py` —
-  the wrappers print pass/fail rather than full runner output. `scripts/read_guard.py` (wired through
-  `.opencode/plugin/read-guard.js`) enforces the executor's no-re-read rule in the harness.
+  the wrappers print pass/fail rather than full runner output.
 - **Every script named above is invoke-only, for every role.** `new_order.py`, `check_docs.py`,
   `check_orders.py`, `order_check.py`, `stage_check.py`, `generate_export_schema.py`: call them and
   read stdout and the exit code. To learn what arguments

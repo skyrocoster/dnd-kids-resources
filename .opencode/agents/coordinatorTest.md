@@ -51,8 +51,8 @@ direct implementation. A fully settled planned quick stage may use `coordinator-
  frontier stage review. Independent validation and later closeout capabilities belong to `coordinator-test-validator`;
  its eight phases are inert unless a future phase-specific handoff supplies immutable paths and coordinator approvals.
 
-This agent is experimental. Do not invoke the production `plan-router`, `quick-executor`, `test-validator`,
-or reconcile agents as substitutes. Experimental work-order authoring is allowed only through the bounded shared
+This agent is experimental. Do not invoke retired production substitutes or production lifecycle agents as substitutes.
+Experimental work-order authoring is allowed only through the bounded shared
 Luna skill protocol. Do not author orders directly, dispatch ordered stages, reconcile, commit, or push. The
 case-worker may execute only one explicitly approved canonical order through its bounded experimental route; later
 lifecycle parts remain outside the experiment. You may test one planned quick stage only

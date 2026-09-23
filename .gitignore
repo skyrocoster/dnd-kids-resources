@@ -63,11 +63,6 @@ data/seeds/archive/
 /data/generated/*
 !/data/generated/export_schema.json
 
-
-# Read-guard session state, written by `scripts/read_guard.py` through
-# `.opencode/plugin/read-guard.js`. Transient by design; regenerated each run.
-.telemetry/
-
 # Claude Code's machine-local directory: settings, vendored skill links, and
 # per-machine state. No tracked Claude assets remain — the project skills moved
 # to `.opencode/skills/` and the read guard is opencode-only — so ignore it whole.
@@ -78,9 +73,7 @@ data/seeds/archive/
 # Vendored skills kept on disk for local use. Ones added before this rule stay
 # tracked; the rule keeps new vendored drops out of the repo.
 .agents/skills/*
-# Ignore opencode's working dir, but track our own plugins and skills. The read
-# guard is a workflow rule, and an untracked rule silently stops applying on the
-# next clone — the same trap `dispatch-orders` fell into.
+# Ignore opencode's working dir, but track our own plugins and skills.
 .opencode/*
 !.opencode/plugin/
 !.opencode/skills/

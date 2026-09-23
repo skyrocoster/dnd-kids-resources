@@ -33,7 +33,6 @@ RESULT_KEYS = (
     "PROOF RESULTS",
     "DIRTY PATHS",
     "AUTHORIZATION AUDIT",
-    "GUARD EVENTS",
     "ATTEMPTS",
     "ESCALATION",
 )
@@ -440,7 +439,6 @@ def render_order(packet: dict[str, Any]) -> str:
         "- PROOF RESULTS: pending\n"
         "- DIRTY PATHS: pending\n"
         "- AUTHORIZATION AUDIT: pending\n"
-        "- GUARD EVENTS: none\n"
         "- ATTEMPTS: 0\n"
         "- ESCALATION: none\n"
     )
@@ -482,7 +480,6 @@ def _validate_executor_result(text: str, source: str) -> list[OrderError]:
             "PROOF RESULTS": "pending",
             "DIRTY PATHS": "pending",
             "AUTHORIZATION AUDIT": "pending",
-            "GUARD EVENTS": "none",
             "ATTEMPTS": "0",
             "ESCALATION": "none",
         }

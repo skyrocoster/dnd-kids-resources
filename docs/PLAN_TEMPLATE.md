@@ -1,12 +1,10 @@
 # Plan & Work-Order Template
 
-This repo splits planning from implementation across two roles, defined by model strength rather than
-by vendor: the **planner** (more powerful) runs `create-plan`, `to-plan`, `to-orders`, `dispatch-orders`,
-`quick-reconcile`, and `reconcile`; the **executor** (cheaper, weaker) runs `implement-order`, one work order at a time, in a
-fresh context window, seeing only what its order names. Either role can be filled by any provider or
-product strong enough for it, so the docs and skills name the **role**, never a vendor.
+Repository-dependent work is coordinated through `coordinatorTest`, which owns assessment, route review,
+focused Plan writing, bounded order authoring, and approved execution. Retained support agents and skills
+provide bounded case-worker, validation, browser, and proof capabilities.
 
-The workflow is driven by eight skills in `.opencode/skills/`, opencode's native skill directory:
+The workflow is driven by retained coordinatorTest skills in `.opencode/skills/`, opencode's native skill directory:
 
 | Skill | Role | Job |
 |---|---|---|
@@ -19,14 +17,9 @@ The workflow is driven by eight skills in `.opencode/skills/`, opencode's native
 | `quick-reconcile` | planner | Close a directly delivered master-plan slice: update canonical docs and its slice receipt, run full checks, and remove redundant artifacts. |
 | `reconcile` | planner | Close out finished orders: the `reconcile-agent` scouts and automatically repairs focused stage regressions, then collapses the Plan, updates docs, runs the checker, and commits once green. |
 
-The coordinator delegates `to-plan` and focused Plan creation to the dedicated `plan-router`
-subagent. The coordinator consumes its compact route handoff and only reads cited evidence when
-the subagent reports a blocker or escalation; it does not duplicate the planning packet in its own
-context.
-
-The coordinator also delegates the complete `reconcile` closeout to `reconcile-agent`. After a clean
-handoff it checks only git status, diff summary, and the reported commit; it reads cited evidence
-only when closeout reports a blocker, failure, or escalation.
+`coordinatorTest` is the sole official primary coordinator. It owns route decisions, scope, proof
+sufficiency, and user communication; the case-worker executes only explicitly approved bounded work and
+never commits, dispatches, reconciles, or pushes.
 
 The split is also a context-preservation rule: when `to-orders` emits exactly one order, the creating
 planner implements that order in the current context, runs its exact proof entries, and preserves its
@@ -158,7 +151,6 @@ EXECUTOR RESULT:
 - PROOF RESULTS: pending
 - DIRTY PATHS: pending
 - AUTHORIZATION AUDIT: pending
-- GUARD EVENTS: none
 - ATTEMPTS: 0
 - ESCALATION: none
 ```
@@ -171,9 +163,6 @@ exclusions, escalation, dependencies, and executor evidence. It does not redesig
 Three scripts keep workflow mechanics out of model context: `new_order.py` renders the reviewed packet;
 `check_orders.py` validates it; `stage_check.py` performs reconcile checks. `order_check.py` remains an
 optional compact proof wrapper. One rule is enforced by the harness rather than by wording:
-`scripts/read_guard.py` denies a read of a file the session has already edited, once that session has
-invoked `implement-order`; a failing check unlocks everything, and `--unlock <path> --reason "<why>"`
-is the logged override. opencode reaches it through `.opencode/plugin/read-guard.js`.
 
 ### On failure — the escalation channel back to the planner
 
@@ -182,7 +171,7 @@ the initial failure plus at most one repair after it — it writes
 `STATUS: FAILED - <reason>`; if the order cannot be executed as written (known fact wrong, named file
 missing, or an action contradicts the code) it writes `STATUS: BLOCKED - <reason>`. Either way it fills
 the canonical EXECUTOR RESULT with the failed command/output under PROOF RESULTS, dirty paths,
-authorization audit, attempts, deviations, guard events, and escalation, then leaves partial changes
+authorization audit, attempts, deviations, and escalation, then leaves partial changes
 in the worktree. That evidence is a successful failure outcome; the executor never keeps cycling to
 avoid reporting it.
 

@@ -149,14 +149,12 @@ rather than read the source.
 | `scripts/generate_spell_quick_rules.py` | Draft conservative spell quick rules from canonical seed data. |
 | `scripts/generate_weapon_quick_rules.py` | Draft conservative weapon quick rules from canonical seed data. |
 | `scripts/init_database.py` | Create the canonical SQLite schema — the single source of truth every other table list derives from. |
-| `scripts/large_read_guard.py` | Unbounded large-file read guard for the compiler role. |
 | `scripts/migrate_loom_v2.py` | Migrate a Loom database from the flat-DAG schema (v1) to the ordered-threads schema (v2). |
 | `scripts/migrate_map_obstacle_state.py` | Migrate map obstacle state to the new structured format. |
 | `scripts/migrate_monsters.py` | Transform legacy 5etools monster seed rows to the M1 target shape. |
 | `scripts/migrate_spells.py` | Transform legacy spell seed rows to the canonical target shape. |
 | `scripts/new_order.py` | Render one canonical work order from one lossless JSON compile packet. |
 | `scripts/order_check.py` | STOP WHEN wrapper: run an order's checks and print only what the executor can act on. |
-| `scripts/read_guard.py` | Post-edit re-read guard for the opencode work-order executor. |
 | `scripts/seed_database.py` | Populate the database from the canonical JSON seeds in data/seeds. |
 | `scripts/stage_check.py` | Run every reconcile-time check and print a summary short enough to read once. |
 | `scripts/derive-kid-palette.mjs` | DP1: Kid-palette solver — deterministic bounded search for four kid-map family colours. |

@@ -94,7 +94,6 @@ EXECUTOR RESULT:
 - PROOF RESULTS: pending
 - DIRTY PATHS: pending
 - AUTHORIZATION AUDIT: pending
-- GUARD EVENTS: none
 - ATTEMPTS: 0
 - ESCALATION: none
 ```
@@ -147,8 +146,7 @@ commands are executor-visible exact commands and are not routed through it unles
 .venv\Scripts\python.exe scripts/check_docs.py --check
 ```
 
-If context validation changes guard integration, also run the focused read-guard and large-read-guard
-suites. The packet contract test is `backend/tests/test_work_order_packet_contract.py`.
+The packet contract test is `backend/tests/test_work_order_packet_contract.py`.
 
 ## Exclusions
 
@@ -158,7 +156,7 @@ suites. The packet contract test is `backend/tests/test_work_order_packet_contra
 - No change to `scripts/order_check.py`.
 - No automatic proof wrappers, lifecycle assertions, co-located-suite inference, action splitting, or
   semantic rewriting.
-- No artificial order-size policy and no weakening of read-guard or large-read-guard safety.
+- No artificial order-size policy.
 - Archived/done orders are historical and are not migrated.
 
 ## Compiler handoff

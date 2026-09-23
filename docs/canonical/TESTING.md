@@ -150,7 +150,7 @@ CREATE TABLE statement inside `conftest.py`, stop** — the schema comes from
 
 ### Isolated browser validation
 
-Use the invoke-only contract after arming the read guard:
+Use the invoke-only browser-validation contract:
 
 ```text
 .venv\Scripts\python.exe scripts\browser_validation.py --case <case-id> --scenario weapon-edit-dialog
@@ -176,7 +176,7 @@ says only where the files are.
 <!-- GENERATED:TESTING:LOCATIONS:START -->
 | Location | Files | Test cases |
 |---|---|---|
-| `backend/tests/` | 22 | 351 |
+| `backend/tests/` | 20 | 304 |
 | `backend/tests/routers/` | 16 | 273 |
 | `frontend/src/__tests__/` | 1 | 4 |
 | `frontend/src/api/__tests__/` | 1 | 6 |

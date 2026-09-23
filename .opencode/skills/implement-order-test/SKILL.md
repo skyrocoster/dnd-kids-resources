@@ -18,15 +18,14 @@ non-canonical, or multiple order paths; never discover or select an order.
 
 1. Read the named order once. Trust its embedded canonical JSON compile packet; do not re-derive facts, authorization,
    actions, proof, acceptance, exclusions, or escalation boundaries.
-2. Read only packet `context` paths. Respect repository read-guard/no-reread contracts and do not reflexively reread
-   edited sources.
+2. Read only packet `context` paths and do not reflexively reread edited sources.
 3. Perform ordered packet actions and touch only `authorization.creates`, `authorization.edits`, and
    `authorization.removes`. Never add paths, actions, adapters, or semantics.
 4. Run each exact packet proof command in declared order. Do not execute coordinator or validator acceptance.
 5. On proof failure, make at most one deterministic in-scope repair, then rerun that proof once. Escalate rather than
    diagnosing broadly, weakening proof, or widening scope.
 6. Audit dirty paths and authorization; preserve unrelated worktree changes.
-7. Record truthful proof, scope, guard, attempts, telemetry, deviations, and escalation details. Do not rewrite the
+7. Record truthful proof, scope, attempts, deviations, and escalation details. Do not rewrite the
    order, packet, Plan, status, or lifecycle artifacts.
 8. Stop after this one order. Never dispatch another order, independently validate, reconcile, close out a Plan/order
    lifecycle, commit, or push.
