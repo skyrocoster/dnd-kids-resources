@@ -1,68 +1,47 @@
 ---
 name: grilling
-description: Interview the user one decision at a time until every branch of a plan, design, decision, or idea is settled. Use whenever the user asks to be grilled, interviewed in depth, questioned exhaustively, stress-test an idea, reach shared understanding before acting, or explore a decision tree.
+description: Use when the user requests an interview or material decisions must be settled before routing work.
 ---
 
 # Grilling
 
-Interview the user relentlessly until both sides share a complete understanding. Treat the subject as a design tree: each decision branches into the decisions that depend on it.
+Use only for an explicit interview or genuine unsettled product, visual, architecture, data, contract, or direction
+choices. It is optional and does not create a mandatory document chain.
 
-## Work the decision tree
+Treat grilling as both discovery and decision coaching. Help the user make strong, repeatable, well-structured
+decisions by making the relevant goal, criteria, tradeoffs, and reasoning visible without taking the decision away
+from them.
 
-1. Build and continuously revise an internal tree of decisions, their prerequisites, and their dependent branches.
-2. Mark as the current **frontier** every unsettled decision whose prerequisites are settled. These are the questions that can be answered now without guessing about another open answer.
-3. Choose the single highest-leverage question on the frontier. Ask exactly that one question, then stop.
-4. Wait for the user's answer before asking another question.
-5. Apply those answers to the tree, including any new branches or changed premises they reveal, then recompute the frontier.
-6. Keep working outward until the frontier is empty and every branch has been visited. Surface hidden assumptions as decisions rather than silently choosing them.
+1. Build and update an internal decision tree. A question is ready only when its prerequisites are settled.
+2. Retrieve repository facts through bounded `scout` lookups; do not ask the user for facts the tools can answer.
+3. Ask exactly one highest-leverage ready question per turn in a light ELI5 style: use plain language, short
+   sentences, and concrete examples when helpful, but never talk down to the user or hide important nuance.
+4. Offer distinct options when useful, identify one recommendation, and explain it briefly in terms of the current
+   goal, decision criteria, and tradeoffs. Frame the reasoning so the user could apply it again in a similar case.
+5. Record the answer, reason, uncertainty, exclusions, and any new dependent decisions. Never decide for the user
+   or repeat a settled question.
+6. When no material frontier remains, present a concise shared-understanding summary and ask for confirmation.
 
-A question whose answer depends on another question still open in the current round is not on the frontier. Hold it for a later round.
+After confirmation, write one free-form synthesis under `docs/grilling-docs/` only when the user asks or future
+work needs durable directional evidence. It is historical evidence, not a Plan or implementation authorization.
+Do not edit completed records or begin implementation.
 
-Do not repeat settled questions. If an answer is partial, contradictory, or creates a new prerequisite, keep that branch unsettled and ask the smallest clarifying decision in a later frontier round.
+## Grilling Q&A Template
 
-## Ask decisions, find facts
+**What changed**
+- <the decision just settled by the user's previous answer>
+- <any important consequence, constraint, or newly unlocked decision>
+- <omit on the first question>
 
-Finding facts is the agent's job. Never ask the user for repository, filesystem, tool, or environment facts that can be retrieved directly.
+**Decision**
+<Ask exactly one highest-leverage ready question in plain, concrete language. Briefly explain why it matters when
+that is not obvious.>
 
-Before the first question in a repository-dependent or deliberately vague conversation, retrieve enough bounded
-facts to ground the first decision. When any later frontier branch needs an environmental fact:
+**Options**
+- **A. <Option name>** — <brief consequence or tradeoff>
+- **B. <Option name>** — <brief consequence or tradeoff>
+- **C. <Option name>** — <brief consequence or tradeoff>
 
-- Dispatch an appropriate sub-agent to retrieve it, with a bounded factual question and no authority to make the decision.
-- Treat the running lookup as an unsettled prerequisite. Hold only the questions downstream of that fact.
-- Do not ask a question whose recommendation depends on a pending lookup. Complete the bounded lookup first.
-- Incorporate the returned evidence, recompute the frontier, and put the resulting decisions to the user.
-
-Scouting is repeatable, not limited to conversation entry. Trigger another bounded lookup whenever the evidence
-needed for the next question is missing, stale, contradictory, or insufficient for a grounded recommendation.
-
-Facts constrain the tree; they do not settle the user's decisions. Never answer a question on the user's behalf.
-Give a recommendation for every decision, but always wait for the user to choose.
-
-## Question format
-
-Number questions continuously across the session. Ask exactly one question per assistant turn. Give explicit,
-mutually distinguishable options whenever the decision is not naturally free-form, and identify one option as the
-recommendation. Format the question exactly like this:
-
-```markdown
-❓ **Q1** - **<question title>**: <question body>
-
-Options: **A.** <option> · **B.** <option> · **C.** <option>
-
-➡️ **Recommended: <option letter and label>.** <concise reason>
-```
-
-Keep separate decisions as separate numbered questions and separate turns. Options and recommendations are advice,
-not inferred answers; the user must choose or provide their own answer.
-
-## Completion gate
-
-The session is not complete merely because the user says the current answers look good. It is complete only when the recomputed frontier is empty: all known branches are settled, no lookup is pending, and nothing material remains silently assumed.
-
-When the frontier first becomes empty:
-
-1. Present a concise shared-understanding summary containing the settled decisions, important reasons, constraints, and explicit exclusions.
-2. State that the decision tree has no remaining frontier.
-3. Ask the user to confirm that shared understanding is complete.
-
-Do not plan implementation, edit files, execute the agreed work, or hand it to another workflow until the user explicitly confirms. After confirmation, stop the grilling session and respond to whatever action the user requests next.
+**Recommendation:** **<recommended option>**  
+<Briefly explain why this option best fits the goal and criteria, what tradeoff it accepts, and how the same
+reasoning could guide a similar decision later.>
