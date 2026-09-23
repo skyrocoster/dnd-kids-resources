@@ -1,16 +1,20 @@
 from typing import List
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import Query
 
+from ..api_errors import ApiError, ApiRouter, error_responses
+from ..caching import cached_get
 from ..db import dict_from_row, get_db
 from ..schemas import Item, ItemCreate, ItemUpdate
+from ..schemas.errors import ItemError
 
-router = APIRouter(prefix="/api", tags=["items"])
+router = ApiRouter(prefix="/api", tags=["items"])
 
 SELECT_COLUMNS = "id, name, value_gp, category, description"
 
 
-@router.get("/items", response_model=List[Item])
+@router.get("/items", response_model=List[Item], operation_id="listItems")
+@cached_get("items")
 def list_items(
     limit: int = Query(100, ge=1, le=500),
     offset: int = Query(0, ge=0),
@@ -25,7 +29,13 @@ def list_items(
         return [dict_from_row(row) for row in cursor.fetchall()]
 
 
-@router.get("/items/{item_id}", response_model=Item)
+@router.get(
+    "/items/{item_id}",
+    response_model=Item,
+    operation_id="getItem",
+    responses=error_responses(ItemError, 404),
+)
+@cached_get("items")
 def get_item(item_id: int):
     """Get a catalog item by ID."""
     with get_db() as conn:
@@ -33,11 +43,11 @@ def get_item(item_id: int):
         cursor.execute(f"SELECT {SELECT_COLUMNS} FROM items WHERE id = ?", (item_id,))
         item = dict_from_row(cursor.fetchone())
         if item is None:
-            raise HTTPException(status_code=404, detail="Item not found")
+            raise ApiError(404, ItemError(code="item_not_found", message="Item not found"))
         return item
 
 
-@router.post("/items", response_model=Item, status_code=201)
+@router.post("/items", response_model=Item, status_code=201, operation_id="createItem")
 def create_item(item: ItemCreate):
     """Create a catalog item."""
     with get_db() as conn:
@@ -52,14 +62,19 @@ def create_item(item: ItemCreate):
         return dict_from_row(cursor.fetchone())
 
 
-@router.put("/items/{item_id}", response_model=Item)
+@router.put(
+    "/items/{item_id}",
+    response_model=Item,
+    operation_id="updateItem",
+    responses=error_responses(ItemError, 404),
+)
 def update_item(item_id: int, item: ItemUpdate):
     """Update a catalog item."""
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT id FROM items WHERE id = ?", (item_id,))
         if cursor.fetchone() is None:
-            raise HTTPException(status_code=404, detail="Item not found")
+            raise ApiError(404, ItemError(code="item_not_found", message="Item not found"))
 
         cursor.execute(
             """UPDATE items
@@ -73,13 +88,18 @@ def update_item(item_id: int, item: ItemUpdate):
         return dict_from_row(cursor.fetchone())
 
 
-@router.delete("/items/{item_id}", status_code=204)
+@router.delete(
+    "/items/{item_id}",
+    status_code=204,
+    operation_id="deleteItem",
+    responses=error_responses(ItemError, 404),
+)
 def delete_item(item_id: int):
     """Delete a catalog item."""
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT id FROM items WHERE id = ?", (item_id,))
         if cursor.fetchone() is None:
-            raise HTTPException(status_code=404, detail="Item not found")
+            raise ApiError(404, ItemError(code="item_not_found", message="Item not found"))
         cursor.execute("DELETE FROM items WHERE id = ?", (item_id,))
         conn.commit()

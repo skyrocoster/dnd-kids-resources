@@ -1,4 +1,5 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
+import { Button } from './Button'
 import './IconButton.css'
 
 interface IconButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'> {
@@ -6,16 +7,18 @@ interface IconButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 
   children: ReactNode
 }
 
-export function IconButton({ label, children, disabled, ...rest }: IconButtonProps) {
+export function IconButton({ label, children, disabled, className, ...rest }: IconButtonProps) {
   return (
-    <button
-      className="icon-btn"
+    <Button
+      variant="ghost"
+      size="compact"
+      className={['btn', 'btn--ghost', 'btn--compact', 'icon-btn', className].filter(Boolean).join(' ')}
       aria-label={label}
       disabled={disabled}
       type="button"
       {...rest}
     >
       {children}
-    </button>
+    </Button>
   )
 }

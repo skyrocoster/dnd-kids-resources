@@ -249,7 +249,7 @@ def test_update_spell_duplicate_name_fails(test_client):
     spell_b["name"] = "Duplicate Test A"
     response = test_client.put(f"/api/spells/{spell_b_id}", json=spell_b)
     assert response.status_code == 400
-    assert response.json()["detail"] == "A spell with this name already exists"
+    assert response.json()["message"] == "A spell with this name already exists"
 
 
 def test_update_spell(test_client):
@@ -335,7 +335,7 @@ def test_replace_spell_players_rejects_duplicate_player_ids(test_client):
 
     response = test_client.put(f"/api/spells/{spell_id}/players", json={"player_ids": [player["id"], player["id"]]})
     assert response.status_code == 400
-    assert response.json()["detail"] == "Duplicate player ids"
+    assert response.json()["message"] == "Duplicate player ids"
 
 
 def test_spell_player_assignment_404s(test_client):

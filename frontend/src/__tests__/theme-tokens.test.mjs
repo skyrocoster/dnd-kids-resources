@@ -1,5 +1,5 @@
 // DP1: Token derivation format validation
-// (Full deriveTokens unit tests run in Node via scripts/generate-md3-tokens.mjs --test)
+// The generated MD3 values are documented in theme.css; token-generation tools live in src/tools.
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, it, expect } from 'vitest'

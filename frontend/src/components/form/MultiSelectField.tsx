@@ -1,3 +1,6 @@
+import { Checkbox } from '@base-ui/react/checkbox'
+import { CheckboxGroup as BaseCheckboxGroup } from '@base-ui/react/checkbox-group'
+import { Check } from 'lucide-react'
 import { useId } from 'react'
 import './form.css'
 
@@ -14,38 +17,33 @@ interface MultiSelectFieldProps {
 }
 
 export function MultiSelectField({ label, options, selected, onChange }: MultiSelectFieldProps) {
-  const groupId = useId()
-
-  const toggle = (value: string) => {
-    if (selected.includes(value)) {
-      onChange(selected.filter((v) => v !== value))
-    } else {
-      onChange([...selected, value])
-    }
-  }
+  const labelId = useId()
 
   return (
-    <fieldset className="form-field form-multiselect" aria-describedby={groupId}>
-      <legend className="form-label">{label}</legend>
-      <div className="form-multiselect-options">
+    <div className="form-field form-multiselect">
+      <span className="form-label" id={labelId}>{label}</span>
+      <BaseCheckboxGroup
+        aria-labelledby={labelId}
+        className="form-multiselect-options"
+        value={selected}
+        onValueChange={(nextValue) => onChange(nextValue)}
+        allValues={options.map((option) => option.value)}
+      >
         {options.map((option) => {
-          const id = `${groupId}-${option.value}`
           return (
-            <div className="form-field form-field-checkbox" key={option.value}>
-              <input
-                id={id}
-                type="checkbox"
-                className="form-checkbox"
-                checked={selected.includes(option.value)}
-                onChange={() => toggle(option.value)}
-              />
-              <label htmlFor={id} className="form-label form-label-checkbox">
+            <label className="form-field form-field-checkbox" key={option.value}>
+              <Checkbox.Root className="form-multiselect-checkbox" value={option.value}>
+                <Checkbox.Indicator className="form-multiselect-checkbox-indicator">
+                  <Check aria-hidden="true" />
+                </Checkbox.Indicator>
+              </Checkbox.Root>
+              <span className="form-label form-label-checkbox">
                 {option.label}
-              </label>
-            </div>
+              </span>
+            </label>
           )
         })}
-      </div>
-    </fieldset>
+      </BaseCheckboxGroup>
+    </div>
   )
 }

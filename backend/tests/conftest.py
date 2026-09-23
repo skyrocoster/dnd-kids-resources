@@ -1,7 +1,7 @@
 """Pytest fixtures for the D&D Kids Resources backend.
 
 Design principle (learned the hard way — see docs/v2-rebuild-plan.md Task 10 notes):
-the test database schema MUST be built from the real ``scripts/init_database.py``,
+the test database schema MUST be built from the real ``backend/database/init_database.py``,
 never hand-copied here. Two earlier hand-written schema copies drifted from
 production and hid real 500s (monsters ``cr`` vs ``challenge``, players' dropped
 ``class``, and the players-spells JSON parser). Building from the real schema makes
@@ -14,7 +14,7 @@ Fixtures come in two layers:
   curated spell deliberately populates every JSON-encoded column so serialization
   bugs surface here too, not only against full production data.
 * **Integration layer** (`real_client`) — the real schema seeded from the actual
-  frozen ``data/seeds/*.json`` via ``scripts/seed_database.py``. Session-scoped and
+  frozen ``data/seeds/*.json`` via ``backend/database/seed_database.py``. Session-scoped and
   read-only; this is what proves the API serializes the real 525 spells / 2734
   monsters / etc. without 500s.
 """
@@ -24,8 +24,6 @@ import io
 import json
 import shutil
 import sqlite3
-import subprocess
-import sys
 import tempfile
 from contextlib import redirect_stdout
 from pathlib import Path
@@ -33,29 +31,11 @@ from pathlib import Path
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-SCRIPTS_DIR = REPO_ROOT / "scripts"
-
-
-def pytest_sessionstart(session: pytest.Session) -> None:
-    """Refresh generated documentation before collecting the test suite."""
-    result = subprocess.run(
-        [sys.executable, str(SCRIPTS_DIR / "check_docs.py"), "--write-generated"],
-        cwd=REPO_ROOT,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    if result.returncode:
-        detail = (result.stderr or result.stdout).strip()
-        pytest.exit(
-            "Generated documentation refresh failed; tests were not run."
-            + (f"\n{detail}" if detail else ""),
-            returncode=pytest.ExitCode.INTERNAL_ERROR,
-        )
+DATABASE_DIR = REPO_ROOT / "backend" / "database"
 
 
 def _load_module(name: str, path: Path):
-    """Import a standalone script (scripts/ is not a package) by file path."""
+    """Import a standalone module by file path."""
     spec = importlib.util.spec_from_file_location(name, path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
@@ -68,7 +48,7 @@ def _create_real_schema(db_path: str) -> None:
     Guarantees the test DB's tables/columns/constraints match what the app runs
     against in production — no hand-maintained copy to drift.
     """
-    init_mod = _load_module("_init_database_for_tests", SCRIPTS_DIR / "init_database.py")
+    init_mod = _load_module("_init_database_for_tests", DATABASE_DIR / "init_database.py")
     original = init_mod.DB_PATH
     init_mod.DB_PATH = Path(db_path)
     try:
@@ -80,7 +60,7 @@ def _create_real_schema(db_path: str) -> None:
 
 def _seed_real_data(db_path: str) -> None:
     """Populate ``db_path`` from the frozen data/seeds/*.json via the real seeder."""
-    seed_mod = _load_module("_seed_database_for_tests", SCRIPTS_DIR / "seed_database.py")
+    seed_mod = _load_module("_seed_database_for_tests", DATABASE_DIR / "seed_database.py")
     original = seed_mod.DB_PATH
     seed_mod.DB_PATH = Path(db_path)
     try:
@@ -88,7 +68,7 @@ def _seed_real_data(db_path: str) -> None:
         conn.execute("PRAGMA foreign_keys = OFF")
         cursor = conn.cursor()
         with redirect_stdout(io.StringIO()):
-            # Same order scripts/seed_database.py:main() uses (FK-safe).
+            # Same order backend/database/seed_database.py:main() uses (FK-safe).
             seed_mod.populate_abilities(cursor, conn)
             seed_mod.populate_damage_types(cursor, conn)
             seed_mod.populate_weapon_properties(cursor, conn)
@@ -288,7 +268,10 @@ def db_conn(seeded_db):
 def test_client(monkeypatch, test_db_path):
     """FastAPI TestClient backed by a fresh real-schema DB with curated data."""
     import backend.app.db as db_module
+    from backend.app.caching import invalidate_cache
+
     monkeypatch.setattr(db_module, "DB_PATH", test_db_path)
+    invalidate_cache(db_path=test_db_path)
 
     _create_real_schema(test_db_path)
     conn = sqlite3.connect(test_db_path)

@@ -1,12 +1,15 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import Query
 from typing import List, Optional
 import json
 import sqlite3
 
+from ..api_errors import ApiError, ApiRouter, error_responses
+from ..caching import cached_get
 from ..db import get_db, dict_from_row, parse_spell_row as _parse_spell_row
 from ..schemas import Player, Spell, SpellCreate, SpellPlayerAssignments, SpellUpdate
+from ..schemas.errors import SpellError
 
-router = APIRouter(prefix="/api", tags=["spells"])
+router = ApiRouter(prefix="/api", tags=["spells"])
 
 _SPELL_COLUMNS = """
     id, name, level, school, description, quick_rules, alternate_description,
@@ -28,7 +31,8 @@ def _spell_values(spell: SpellCreate) -> tuple:
     )
 
 
-@router.get("/spells", response_model=List[Spell])
+@router.get("/spells", response_model=List[Spell], operation_id="listSpells")
+@cached_get("spells")
 def list_spells(
     level: Optional[int] = Query(None, description="Filter by spell level"),
     school: Optional[str] = Query(None, description="Filter by spell school"),
@@ -66,7 +70,13 @@ def list_spells(
         return [_parse_spell_row(row) for row in rows]
 
 
-@router.get("/spells/{spell_id}/players", response_model=List[Player])
+@router.get(
+    "/spells/{spell_id}/players",
+    response_model=List[Player],
+    operation_id="getSpellPlayers",
+    responses=error_responses(SpellError, 404),
+)
+@cached_get("spells")
 def get_spell_players(spell_id: int):
     """Get all players assigned to a spell."""
     with get_db() as conn:
@@ -74,7 +84,7 @@ def get_spell_players(spell_id: int):
 
         cursor.execute("SELECT id FROM spells WHERE id = ?", (spell_id,))
         if not cursor.fetchone():
-            raise HTTPException(status_code=404, detail="Spell not found")
+            raise ApiError(404, SpellError(code="spell_not_found", message="Spell not found"))
 
         cursor.execute(
             """SELECT p.id, p.name, p.class AS class_, p.level
@@ -87,19 +97,24 @@ def get_spell_players(spell_id: int):
         return [dict_from_row(row) for row in cursor.fetchall()]
 
 
-@router.put("/spells/{spell_id}/players", response_model=List[Player])
+@router.put(
+    "/spells/{spell_id}/players",
+    response_model=List[Player],
+    operation_id="replaceSpellPlayers",
+    responses=error_responses(SpellError, 400, 404),
+)
 def replace_spell_players(spell_id: int, assignments: SpellPlayerAssignments):
     """Replace all player assignments for a spell."""
     player_ids = assignments.player_ids
     if len(player_ids) != len(set(player_ids)):
-        raise HTTPException(status_code=400, detail="Duplicate player ids")
+        raise ApiError(400, SpellError(code="duplicate_player_ids", message="Duplicate player ids"))
 
     with get_db() as conn:
         cursor = conn.cursor()
 
         cursor.execute("SELECT id FROM spells WHERE id = ?", (spell_id,))
         if not cursor.fetchone():
-            raise HTTPException(status_code=404, detail="Spell not found")
+            raise ApiError(404, SpellError(code="spell_not_found", message="Spell not found"))
 
         if player_ids:
             placeholders = ",".join("?" for _ in player_ids)
@@ -107,7 +122,7 @@ def replace_spell_players(spell_id: int, assignments: SpellPlayerAssignments):
             found = {row["id"] for row in cursor.fetchall()}
             missing = [player_id for player_id in player_ids if player_id not in found]
             if missing:
-                raise HTTPException(status_code=404, detail="Player not found")
+                raise ApiError(404, SpellError(code="player_not_found", message="Player not found"))
 
         try:
             cursor.execute("DELETE FROM player_spells WHERE spell_id = ?", (spell_id,))
@@ -118,7 +133,10 @@ def replace_spell_players(spell_id: int, assignments: SpellPlayerAssignments):
             conn.commit()
         except Exception as e:
             conn.rollback()
-            raise HTTPException(status_code=400, detail=f"Failed to replace spell players: {str(e)}")
+            raise ApiError(
+                400,
+                SpellError(code="failed_to_replace_spell_players", message=f"Failed to replace spell players: {str(e)}"),
+            )
 
         cursor.execute(
             """SELECT p.id, p.name, p.class AS class_, p.level
@@ -130,7 +148,13 @@ def replace_spell_players(spell_id: int, assignments: SpellPlayerAssignments):
         )
         return [dict_from_row(row) for row in cursor.fetchall()]
 
-@router.get("/spells/{spell_id}", response_model=Spell)
+@router.get(
+    "/spells/{spell_id}",
+    response_model=Spell,
+    operation_id="getSpell",
+    responses=error_responses(SpellError, 404),
+)
+@cached_get("spells")
 def get_spell(spell_id: int):
     """Get a specific spell by ID."""
     with get_db() as conn:
@@ -141,11 +165,17 @@ def get_spell(spell_id: int):
         )
         row = cursor.fetchone()
         if not row:
-            raise HTTPException(status_code=404, detail="Spell not found")
+            raise ApiError(404, SpellError(code="spell_not_found", message="Spell not found"))
         return _parse_spell_row(row)
 
 
-@router.get("/spells/by-title/{spell_name}", response_model=Spell)
+@router.get(
+    "/spells/by-title/{spell_name}",
+    response_model=Spell,
+    operation_id="getSpellByTitle",
+    responses=error_responses(SpellError, 404),
+)
+@cached_get("spells")
 def get_spell_by_title(spell_name: str):
     """Get a specific spell by name."""
     with get_db() as conn:
@@ -156,11 +186,17 @@ def get_spell_by_title(spell_name: str):
         )
         row = cursor.fetchone()
         if not row:
-            raise HTTPException(status_code=404, detail="Spell not found")
+            raise ApiError(404, SpellError(code="spell_not_found", message="Spell not found"))
         return _parse_spell_row(row)
 
 
-@router.post("/spells", response_model=Spell, status_code=201)
+@router.post(
+    "/spells",
+    response_model=Spell,
+    status_code=201,
+    operation_id="createSpell",
+    responses=error_responses(SpellError, 400),
+)
 def create_spell(spell: SpellCreate):
     """Create a new spell."""
     with get_db() as conn:
@@ -179,7 +215,10 @@ def create_spell(spell: SpellCreate):
             spell_id = cursor.lastrowid
         except sqlite3.IntegrityError:
             conn.rollback()
-            raise HTTPException(status_code=400, detail="A spell with this name already exists")
+            raise ApiError(
+                400,
+                SpellError(code="spell_name_already_exists", message="A spell with this name already exists"),
+            )
 
         # Fetch the created spell
         cursor.execute(
@@ -190,7 +229,12 @@ def create_spell(spell: SpellCreate):
         return _parse_spell_row(row)
 
 
-@router.put("/spells/{spell_id}", response_model=Spell)
+@router.put(
+    "/spells/{spell_id}",
+    response_model=Spell,
+    operation_id="updateSpell",
+    responses=error_responses(SpellError, 400, 404),
+)
 def update_spell(spell_id: int, spell: SpellUpdate):
     """Update an existing spell."""
     with get_db() as conn:
@@ -199,7 +243,7 @@ def update_spell(spell_id: int, spell: SpellUpdate):
         # Verify spell exists
         cursor.execute("SELECT id FROM spells WHERE id = ?", (spell_id,))
         if not cursor.fetchone():
-            raise HTTPException(status_code=404, detail="Spell not found")
+            raise ApiError(404, SpellError(code="spell_not_found", message="Spell not found"))
 
         try:
             cursor.execute(
@@ -214,7 +258,10 @@ def update_spell(spell_id: int, spell: SpellUpdate):
             conn.commit()
         except sqlite3.IntegrityError:
             conn.rollback()
-            raise HTTPException(status_code=400, detail="A spell with this name already exists")
+            raise ApiError(
+                400,
+                SpellError(code="spell_name_already_exists", message="A spell with this name already exists"),
+            )
 
         # Fetch and return the updated spell
         cursor.execute(
@@ -225,7 +272,12 @@ def update_spell(spell_id: int, spell: SpellUpdate):
         return _parse_spell_row(row)
 
 
-@router.delete("/spells/{spell_id}", status_code=204)
+@router.delete(
+    "/spells/{spell_id}",
+    status_code=204,
+    operation_id="deleteSpell",
+    responses=error_responses(SpellError, 400, 404),
+)
 def delete_spell(spell_id: int):
     """Delete a spell."""
     with get_db() as conn:
@@ -234,12 +286,12 @@ def delete_spell(spell_id: int):
         # Verify spell exists
         cursor.execute("SELECT id FROM spells WHERE id = ?", (spell_id,))
         if not cursor.fetchone():
-            raise HTTPException(status_code=404, detail="Spell not found")
+            raise ApiError(404, SpellError(code="spell_not_found", message="Spell not found"))
 
         try:
             cursor.execute("DELETE FROM spells WHERE id = ?", (spell_id,))
             conn.commit()
         except Exception as e:
             conn.rollback()
-            raise HTTPException(status_code=400, detail=f"Failed to delete spell: {str(e)}")
+            raise ApiError(400, SpellError(code="failed_to_delete_spell", message=f"Failed to delete spell: {str(e)}"))
 

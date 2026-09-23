@@ -3,7 +3,7 @@
   See docs/design-system-dark-mode.md for the full rationale (seed hues,
   content-role mapping, elevation model). Don't hand-pick colors per
   component — extend this file and consume the tokens.
-  Generate new token sets via scripts/generate-md3-tokens.mjs.
+  Generate new token sets via frontend/src/tools/generate-md3-tokens.mjs.
 */
 
 :root[data-theme='dark'] {
@@ -72,7 +72,7 @@
      #e85d9e, Blend.harmonize()'d toward the primary/violet seed (#d0bcff),
      landing at hue 340.6 / chroma 40 (clamped from the raw harmonize chroma
      of 68.1 to match the other seeds' ~22-38 range), tones 80/20/30/90.
-     Regenerate via scripts/generate-md3-tokens.mjs if seed hues change. */
+     Regenerate via frontend/src/tools/generate-md3-tokens.mjs if seed hues change. */
   --md-npc: #fbafe3;
   --md-on-npc: #521b46;
   --md-npc-container: #6c325e;
@@ -88,7 +88,7 @@
 
   /* Loom thread accents — hue-spread seeds so the six thread colors stay
      mutually distinguishable at a glance. Generated via
-     scripts/generate-md3-tokens.mjs; regenerate if seed hues change. */
+     frontend/src/tools/generate-md3-tokens.mjs; regenerate if seed hues change. */
   /* loom-thread-1 — source #e05d5d, harmonized hue 5.5, chroma 40 */
   --md-loom-thread-1: #FFB1C1;
   --md-on-loom-thread-1: #59192C;
@@ -313,7 +313,7 @@
   /* Kid map family colours — solved via derive-kid-palette.mjs (DP1)
      Colour says family: green (stairs/portals), yellow (doors/windows),
      blue (fixtures), pink (people). Do not hand-pick — regenerate via
-     node scripts/derive-kid-palette.mjs. */
+     node frontend/src/tools/derive-kid-palette.mjs. */
   /* KID_PALETTE:START */
   /* transition â€” green family, solved via material-color-utilities
      hue 139.0, chroma 50.3, tone 58.1. */

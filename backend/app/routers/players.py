@@ -1,11 +1,14 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import Query
 from typing import List
 import json
 
+from ..api_errors import ApiError, ApiRouter, error_responses
+from ..caching import cached_get
 from ..db import get_db, dict_from_row, parse_json_value, parse_spell_row as _parse_spell_row
 from ..schemas import Player, PlayerCreate, PlayerUpdate, PlayerDetail, PlayerSpellAssignments, PlayerWeaponAssignments, PlayerSpellbookCharacter, Spell, Weapon
+from ..schemas.errors import PlayerError
 
-router = APIRouter(prefix="/api", tags=["players"])
+router = ApiRouter(prefix="/api", tags=["players"])
 
 PLAYER_FIELDS = [
     "name",
@@ -88,11 +91,12 @@ def _select_player(cursor, player_id: int) -> dict:
     cursor.execute(f"SELECT {columns} FROM players WHERE id = ?", (player_id,))
     row = cursor.fetchone()
     if not row:
-        raise HTTPException(status_code=404, detail="Player not found")
+        raise ApiError(404, PlayerError(code="player_not_found", message="Player not found"))
     return _parse_player_row(row)
 
 
-@router.get("/players", response_model=List[Player], response_model_by_alias=False)
+@router.get("/players", response_model=List[Player], response_model_by_alias=False, operation_id="listPlayers")
+@cached_get("players")
 def list_players(
     limit: int = Query(100, ge=1, le=500),
     offset: int = Query(0, ge=0),
@@ -113,7 +117,8 @@ def list_players(
         return [dict_from_row(row) for row in rows]
 
 
-@router.get("/players/spellbook", response_model=List[PlayerSpellbookCharacter])
+@router.get("/players/spellbook", response_model=List[PlayerSpellbookCharacter], operation_id="getPlayerSpellbook")
+@cached_get("players")
 def get_player_spellbook():
     """Get every player's assigned spells as a combined spellbook bootstrap."""
     with get_db() as conn:
@@ -145,7 +150,14 @@ def get_player_spellbook():
         return sorted(characters.values(), key=lambda character: character["name"])
 
 
-@router.get("/players/{player_id}", response_model=Player, response_model_by_alias=False)
+@router.get(
+    "/players/{player_id}",
+    response_model=Player,
+    response_model_by_alias=False,
+    operation_id="getPlayer",
+    responses=error_responses(PlayerError, 404),
+)
+@cached_get("players")
 def get_player(player_id: int):
     """Get a specific player by ID."""
     with get_db() as conn:
@@ -153,7 +165,14 @@ def get_player(player_id: int):
         return _select_player(cursor, player_id)
 
 
-@router.post("/players", response_model=Player, status_code=201, response_model_by_alias=False)
+@router.post(
+    "/players",
+    response_model=Player,
+    status_code=201,
+    response_model_by_alias=False,
+    operation_id="createPlayer",
+    responses=error_responses(PlayerError, 400, 404),
+)
 def create_player(player: PlayerCreate):
     """Create a new player."""
     values = _serialize_player(player)
@@ -172,12 +191,18 @@ def create_player(player: PlayerCreate):
             player_id = cursor.lastrowid
         except Exception as e:
             conn.rollback()
-            raise HTTPException(status_code=400, detail=f"Failed to create player: {str(e)}")
+            raise ApiError(400, PlayerError(code="failed_to_create_player", message=f"Failed to create player: {str(e)}"))
 
         return _select_player(cursor, player_id)
 
 
-@router.put("/players/{player_id}", response_model=Player, response_model_by_alias=False)
+@router.put(
+    "/players/{player_id}",
+    response_model=Player,
+    response_model_by_alias=False,
+    operation_id="updatePlayer",
+    responses=error_responses(PlayerError, 400, 404),
+)
 def update_player(player_id: int, player: PlayerUpdate):
     """Update an existing player."""
     values = _serialize_player(player)
@@ -188,7 +213,7 @@ def update_player(player_id: int, player: PlayerUpdate):
 
         cursor.execute("SELECT id FROM players WHERE id = ?", (player_id,))
         if not cursor.fetchone():
-            raise HTTPException(status_code=404, detail="Player not found")
+            raise ApiError(404, PlayerError(code="player_not_found", message="Player not found"))
 
         try:
             cursor.execute(
@@ -200,12 +225,17 @@ def update_player(player_id: int, player: PlayerUpdate):
             conn.commit()
         except Exception as e:
             conn.rollback()
-            raise HTTPException(status_code=400, detail=f"Failed to update player: {str(e)}")
+            raise ApiError(400, PlayerError(code="failed_to_update_player", message=f"Failed to update player: {str(e)}"))
 
         return _select_player(cursor, player_id)
 
 
-@router.delete("/players/{player_id}", status_code=204)
+@router.delete(
+    "/players/{player_id}",
+    status_code=204,
+    operation_id="deletePlayer",
+    responses=error_responses(PlayerError, 400, 404),
+)
 def delete_player(player_id: int):
     """Delete a player."""
     with get_db() as conn:
@@ -213,7 +243,7 @@ def delete_player(player_id: int):
 
         cursor.execute("SELECT id FROM players WHERE id = ?", (player_id,))
         if not cursor.fetchone():
-            raise HTTPException(status_code=404, detail="Player not found")
+            raise ApiError(404, PlayerError(code="player_not_found", message="Player not found"))
 
         try:
             # Delete related player_spells and player_weapons
@@ -223,10 +253,16 @@ def delete_player(player_id: int):
             conn.commit()
         except Exception as e:
             conn.rollback()
-            raise HTTPException(status_code=400, detail=f"Failed to delete player: {str(e)}")
+            raise ApiError(400, PlayerError(code="failed_to_delete_player", message=f"Failed to delete player: {str(e)}"))
 
 
-@router.get("/players/{player_id}/spells", response_model=List[Spell])
+@router.get(
+    "/players/{player_id}/spells",
+    response_model=List[Spell],
+    operation_id="getPlayerSpells",
+    responses=error_responses(PlayerError, 404),
+)
+@cached_get("players")
 def get_player_spells(player_id: int):
     """Get all spells assigned to a player."""
     with get_db() as conn:
@@ -235,7 +271,7 @@ def get_player_spells(player_id: int):
         # Verify player exists
         cursor.execute("SELECT id FROM players WHERE id = ?", (player_id,))
         if not cursor.fetchone():
-            raise HTTPException(status_code=404, detail="Player not found")
+            raise ApiError(404, PlayerError(code="player_not_found", message="Player not found"))
 
         cursor.execute(
             """SELECT s.id, s.name, s.level, s.school, s.description, s.alternate_description, s.quick_rules,
@@ -252,7 +288,12 @@ def get_player_spells(player_id: int):
         return [_parse_spell_row(row) for row in rows]
 
 
-@router.post("/players/{player_id}/spells/{spell_id}", status_code=201)
+@router.post(
+    "/players/{player_id}/spells/{spell_id}",
+    status_code=201,
+    operation_id="addSpellToPlayer",
+    responses=error_responses(PlayerError, 400, 404),
+)
 def add_spell_to_player(player_id: int, spell_id: int):
     """Assign a spell to a player."""
     with get_db() as conn:
@@ -261,11 +302,11 @@ def add_spell_to_player(player_id: int, spell_id: int):
         # Verify player and spell exist
         cursor.execute("SELECT id FROM players WHERE id = ?", (player_id,))
         if not cursor.fetchone():
-            raise HTTPException(status_code=404, detail="Player not found")
+            raise ApiError(404, PlayerError(code="player_not_found", message="Player not found"))
 
         cursor.execute("SELECT id FROM spells WHERE id = ?", (spell_id,))
         if not cursor.fetchone():
-            raise HTTPException(status_code=404, detail="Spell not found")
+            raise ApiError(404, PlayerError(code="spell_not_found", message="Spell not found"))
 
         try:
             cursor.execute(
@@ -276,25 +317,30 @@ def add_spell_to_player(player_id: int, spell_id: int):
         except Exception as e:
             conn.rollback()
             if "UNIQUE constraint failed" in str(e):
-                raise HTTPException(status_code=400, detail="Spell already assigned to player")
-            raise HTTPException(status_code=400, detail=f"Failed to assign spell: {str(e)}")
+                raise ApiError(400, PlayerError(code="spell_already_assigned_to_player", message="Spell already assigned to player"))
+            raise ApiError(400, PlayerError(code="failed_to_assign_spell", message=f"Failed to assign spell: {str(e)}"))
 
         return {"message": "Spell assigned successfully"}
 
 
-@router.put("/players/{player_id}/spells", response_model=List[Spell])
+@router.put(
+    "/players/{player_id}/spells",
+    response_model=List[Spell],
+    operation_id="replacePlayerSpells",
+    responses=error_responses(PlayerError, 400, 404),
+)
 def replace_player_spells(player_id: int, assignments: PlayerSpellAssignments):
     """Replace all spell assignments for a player."""
     spell_ids = assignments.spell_ids
     if len(spell_ids) != len(set(spell_ids)):
-        raise HTTPException(status_code=400, detail="Duplicate spell ids")
+        raise ApiError(400, PlayerError(code="duplicate_spell_ids", message="Duplicate spell ids"))
 
     with get_db() as conn:
         cursor = conn.cursor()
 
         cursor.execute("SELECT id FROM players WHERE id = ?", (player_id,))
         if not cursor.fetchone():
-            raise HTTPException(status_code=404, detail="Player not found")
+            raise ApiError(404, PlayerError(code="player_not_found", message="Player not found"))
 
         if spell_ids:
             placeholders = ",".join("?" for _ in spell_ids)
@@ -302,7 +348,7 @@ def replace_player_spells(player_id: int, assignments: PlayerSpellAssignments):
             found = {row["id"] for row in cursor.fetchall()}
             missing = [sid for sid in spell_ids if sid not in found]
             if missing:
-                raise HTTPException(status_code=400, detail="Spell not found")
+                raise ApiError(400, PlayerError(code="spell_not_found", message="Spell not found"))
 
         try:
             cursor.execute("DELETE FROM player_spells WHERE player_id = ?", (player_id,))
@@ -313,7 +359,7 @@ def replace_player_spells(player_id: int, assignments: PlayerSpellAssignments):
             conn.commit()
         except Exception as e:
             conn.rollback()
-            raise HTTPException(status_code=400, detail=f"Failed to replace player spells: {str(e)}")
+            raise ApiError(400, PlayerError(code="failed_to_replace_player_spells", message=f"Failed to replace player spells: {str(e)}"))
 
         cursor.execute(
             """SELECT s.id, s.name, s.level, s.school, s.description, s.alternate_description, s.quick_rules,
@@ -329,7 +375,12 @@ def replace_player_spells(player_id: int, assignments: PlayerSpellAssignments):
         return [_parse_spell_row(row) for row in cursor.fetchall()]
 
 
-@router.delete("/players/{player_id}/spells/{spell_id}", status_code=204)
+@router.delete(
+    "/players/{player_id}/spells/{spell_id}",
+    status_code=204,
+    operation_id="removeSpellFromPlayer",
+    responses=error_responses(PlayerError, 400, 404),
+)
 def remove_spell_from_player(player_id: int, spell_id: int):
     """Remove a spell from a player."""
     with get_db() as conn:
@@ -341,7 +392,7 @@ def remove_spell_from_player(player_id: int, spell_id: int):
             (player_id, spell_id)
         )
         if not cursor.fetchone():
-            raise HTTPException(status_code=404, detail="Spell assignment not found")
+            raise ApiError(404, PlayerError(code="spell_assignment_not_found", message="Spell assignment not found"))
 
         try:
             cursor.execute(
@@ -351,10 +402,16 @@ def remove_spell_from_player(player_id: int, spell_id: int):
             conn.commit()
         except Exception as e:
             conn.rollback()
-            raise HTTPException(status_code=400, detail=f"Failed to remove spell: {str(e)}")
+            raise ApiError(400, PlayerError(code="failed_to_remove_spell_from_player", message=f"Failed to remove spell: {str(e)}"))
 
 
-@router.get("/players/{player_id}/weapons", response_model=List[Weapon])
+@router.get(
+    "/players/{player_id}/weapons",
+    response_model=List[Weapon],
+    operation_id="getPlayerWeapons",
+    responses=error_responses(PlayerError, 404),
+)
+@cached_get("players")
 def get_player_weapons(player_id: int):
     """Get all weapons assigned to a player."""
     with get_db() as conn:
@@ -363,7 +420,7 @@ def get_player_weapons(player_id: int):
         # Verify player exists
         cursor.execute("SELECT id FROM players WHERE id = ?", (player_id,))
         if not cursor.fetchone():
-            raise HTTPException(status_code=404, detail="Player not found")
+            raise ApiError(404, PlayerError(code="player_not_found", message="Player not found"))
 
         cursor.execute(
             """SELECT w.id, w.name, w.rarity
@@ -377,19 +434,24 @@ def get_player_weapons(player_id: int):
         return [dict_from_row(row) for row in rows]
 
 
-@router.put("/players/{player_id}/weapons", response_model=List[Weapon])
+@router.put(
+    "/players/{player_id}/weapons",
+    response_model=List[Weapon],
+    operation_id="replacePlayerWeapons",
+    responses=error_responses(PlayerError, 400, 404),
+)
 def replace_player_weapons(player_id: int, assignments: PlayerWeaponAssignments):
     """Replace all weapon assignments for a player."""
     weapon_ids = assignments.weapon_ids
     if len(weapon_ids) != len(set(weapon_ids)):
-        raise HTTPException(status_code=400, detail="Duplicate weapon ids")
+        raise ApiError(400, PlayerError(code="duplicate_weapon_ids", message="Duplicate weapon ids"))
 
     with get_db() as conn:
         cursor = conn.cursor()
 
         cursor.execute("SELECT id FROM players WHERE id = ?", (player_id,))
         if not cursor.fetchone():
-            raise HTTPException(status_code=404, detail="Player not found")
+            raise ApiError(404, PlayerError(code="player_not_found", message="Player not found"))
 
         if weapon_ids:
             placeholders = ",".join("?" for _ in weapon_ids)
@@ -397,7 +459,7 @@ def replace_player_weapons(player_id: int, assignments: PlayerWeaponAssignments)
             found = {row["id"] for row in cursor.fetchall()}
             missing = [wid for wid in weapon_ids if wid not in found]
             if missing:
-                raise HTTPException(status_code=400, detail="Weapon not found")
+                raise ApiError(400, PlayerError(code="weapon_not_found", message="Weapon not found"))
 
         try:
             cursor.execute("DELETE FROM player_weapons WHERE player_id = ?", (player_id,))
@@ -408,7 +470,7 @@ def replace_player_weapons(player_id: int, assignments: PlayerWeaponAssignments)
             conn.commit()
         except Exception as e:
             conn.rollback()
-            raise HTTPException(status_code=400, detail=f"Failed to replace player weapons: {str(e)}")
+            raise ApiError(400, PlayerError(code="failed_to_replace_player_weapons", message=f"Failed to replace player weapons: {str(e)}"))
 
         cursor.execute(
             """SELECT w.id, w.name, w.rarity
@@ -421,7 +483,14 @@ def replace_player_weapons(player_id: int, assignments: PlayerWeaponAssignments)
         return [dict_from_row(row) for row in cursor.fetchall()]
 
 
-@router.get("/players/{player_id}/detail", response_model=PlayerDetail, response_model_by_alias=False)
+@router.get(
+    "/players/{player_id}/detail",
+    response_model=PlayerDetail,
+    response_model_by_alias=False,
+    operation_id="getPlayerDetail",
+    responses=error_responses(PlayerError, 404),
+)
+@cached_get("players")
 def get_player_detail(player_id: int):
     """Fetch complete player detail with spells and weapons."""
     with get_db() as conn:
@@ -454,7 +523,12 @@ def get_player_detail(player_id: int):
         return {**player, "spells": spells, "weapons": weapons}
 
 
-@router.post("/players/{player_id}/weapons/{weapon_id}", status_code=201)
+@router.post(
+    "/players/{player_id}/weapons/{weapon_id}",
+    status_code=201,
+    operation_id="addWeaponToPlayer",
+    responses=error_responses(PlayerError, 400, 404),
+)
 def add_weapon_to_player(player_id: int, weapon_id: int):
     """Assign a weapon to a player."""
     with get_db() as conn:
@@ -463,11 +537,11 @@ def add_weapon_to_player(player_id: int, weapon_id: int):
         # Verify player and weapon exist
         cursor.execute("SELECT id FROM players WHERE id = ?", (player_id,))
         if not cursor.fetchone():
-            raise HTTPException(status_code=404, detail="Player not found")
+            raise ApiError(404, PlayerError(code="player_not_found", message="Player not found"))
 
         cursor.execute("SELECT id FROM weapons WHERE id = ?", (weapon_id,))
         if not cursor.fetchone():
-            raise HTTPException(status_code=404, detail="Weapon not found")
+            raise ApiError(404, PlayerError(code="weapon_not_found", message="Weapon not found"))
 
         try:
             cursor.execute(
@@ -478,13 +552,18 @@ def add_weapon_to_player(player_id: int, weapon_id: int):
         except Exception as e:
             conn.rollback()
             if "UNIQUE constraint failed" in str(e):
-                raise HTTPException(status_code=400, detail="Weapon already assigned to player")
-            raise HTTPException(status_code=400, detail=f"Failed to assign weapon: {str(e)}")
+                raise ApiError(400, PlayerError(code="weapon_already_assigned_to_player", message="Weapon already assigned to player"))
+            raise ApiError(400, PlayerError(code="failed_to_assign_weapon", message=f"Failed to assign weapon: {str(e)}"))
 
         return {"message": "Weapon assigned successfully"}
 
 
-@router.delete("/players/{player_id}/weapons/{weapon_id}", status_code=204)
+@router.delete(
+    "/players/{player_id}/weapons/{weapon_id}",
+    status_code=204,
+    operation_id="removeWeaponFromPlayer",
+    responses=error_responses(PlayerError, 400, 404),
+)
 def remove_weapon_from_player(player_id: int, weapon_id: int):
     """Remove a weapon from a player."""
     with get_db() as conn:
@@ -496,7 +575,7 @@ def remove_weapon_from_player(player_id: int, weapon_id: int):
             (player_id, weapon_id)
         )
         if not cursor.fetchone():
-            raise HTTPException(status_code=404, detail="Weapon assignment not found")
+            raise ApiError(404, PlayerError(code="weapon_assignment_not_found", message="Weapon assignment not found"))
 
         try:
             cursor.execute(
@@ -506,4 +585,4 @@ def remove_weapon_from_player(player_id: int, weapon_id: int):
             conn.commit()
         except Exception as e:
             conn.rollback()
-            raise HTTPException(status_code=400, detail=f"Failed to remove weapon: {str(e)}")
+            raise ApiError(400, PlayerError(code="failed_to_remove_weapon_from_player", message=f"Failed to remove weapon: {str(e)}"))

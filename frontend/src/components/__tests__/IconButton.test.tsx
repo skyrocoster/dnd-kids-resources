@@ -10,7 +10,9 @@ describe('IconButton', () => {
         <span aria-hidden="true">×</span>
       </IconButton>,
     )
-    expect(screen.getByRole('button', { name: 'Close' })).toBeInTheDocument()
+    const button = screen.getByRole('button', { name: 'Close' })
+    expect(button).toBeInTheDocument()
+    expect(button).toHaveClass('btn', 'btn--ghost', 'btn--compact', 'icon-btn')
   })
 
   it('calls onClick when clicked', async () => {

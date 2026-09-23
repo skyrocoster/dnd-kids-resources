@@ -1,12 +1,14 @@
-from fastapi import APIRouter, HTTPException
 from typing import List
 import json
 
+from ..api_errors import ApiError, ApiRouter, error_responses
+from ..caching import cached_get
 from ..db import get_db, parse_json_value
 from ..schemas import MapLayoutBlob, IncomingGateway
+from ..schemas.errors import LayoutError
 from .session_state import _normalize_session_state
 
-router = APIRouter(prefix="/api", tags=["layouts"])
+router = ApiRouter(prefix="/api", tags=["layouts"])
 
 _FIXTURE_ID_KEYS = {
     "doors": "door_id",
@@ -152,7 +154,13 @@ def _prune_session_state(prior_layout: dict, incoming_layout: dict, session_data
     return pruned
 
 
-@router.get("/dungeons/{dungeon_id}/layout", response_model=MapLayoutBlob)
+@router.get(
+    "/dungeons/{dungeon_id}/layout",
+    response_model=MapLayoutBlob,
+    operation_id="getDungeonLayout",
+    responses=error_responses(LayoutError, 404),
+)
+@cached_get("layouts")
 def get_dungeon_layout(dungeon_id: int) -> dict:
     """Get the layout for a dungeon (Map Lab editor stage)"""
     with get_db() as conn:
@@ -160,18 +168,24 @@ def get_dungeon_layout(dungeon_id: int) -> dict:
         cursor.execute("SELECT data FROM map_layout WHERE dungeon_id = ?", (dungeon_id,))
         row = cursor.fetchone()
         if not row:
-            raise HTTPException(status_code=404, detail="Layout not found")
+            raise ApiError(404, LayoutError(code="layout_not_found", message="Layout not found"))
         return {"data": parse_json_value(row["data"])}
 
 
-@router.get("/dungeons/{dungeon_id}/incoming-gateways", response_model=List[IncomingGateway])
+@router.get(
+    "/dungeons/{dungeon_id}/incoming-gateways",
+    response_model=List[IncomingGateway],
+    operation_id="getIncomingGateways",
+    responses=error_responses(LayoutError, 404),
+)
+@cached_get("layouts")
 def get_incoming_gateways(dungeon_id: int) -> list:
     """List every portal in every other dungeon's layout that links into this dungeon"""
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT 1 FROM dungeons WHERE id = ?", (dungeon_id,))
         if not cursor.fetchone():
-            raise HTTPException(status_code=404, detail="Dungeon not found")
+            raise ApiError(404, LayoutError(code="dungeon_not_found", message="Dungeon not found"))
 
         cursor.execute(
             """SELECT map_layout.dungeon_id AS dungeon_id, dungeons.title AS dungeon_title,
@@ -202,14 +216,19 @@ def get_incoming_gateways(dungeon_id: int) -> list:
     return gateways
 
 
-@router.put("/dungeons/{dungeon_id}/layout", response_model=MapLayoutBlob)
+@router.put(
+    "/dungeons/{dungeon_id}/layout",
+    response_model=MapLayoutBlob,
+    operation_id="saveDungeonLayout",
+    responses=error_responses(LayoutError, 400, 404),
+)
 def save_dungeon_layout(dungeon_id: int, blob: MapLayoutBlob) -> dict:
     """Save/upsert the layout for a dungeon (Map Lab editor stage)"""
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT 1 FROM dungeons WHERE id = ?", (dungeon_id,))
         if not cursor.fetchone():
-            raise HTTPException(status_code=404, detail="Dungeon not found")
+            raise ApiError(404, LayoutError(code="dungeon_not_found", message="Dungeon not found"))
         try:
             # Load the prior layout and session row inside the save transaction so a
             # layout save prunes only the session overrides it invalidates (deletion,
@@ -248,7 +267,10 @@ def save_dungeon_layout(dungeon_id: int, blob: MapLayoutBlob) -> dict:
             conn.commit()
         except Exception as e:
             conn.rollback()
-            raise HTTPException(status_code=400, detail=f"Failed to save layout: {str(e)}")
+            raise ApiError(
+                400,
+                LayoutError(code="failed_to_save_layout", message=f"Failed to save layout: {str(e)}"),
+            )
 
         cursor.execute("SELECT data FROM map_layout WHERE dungeon_id = ?", (dungeon_id,))
         row = cursor.fetchone()

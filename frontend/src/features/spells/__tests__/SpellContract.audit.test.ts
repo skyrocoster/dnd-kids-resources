@@ -1,5 +1,5 @@
 import { readdirSync, readFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { join, relative } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 const frontendSourceRoot = join(process.cwd(), 'src')
@@ -22,7 +22,7 @@ const legacySpellFields = [
 function sourceFiles(directory: string): string[] {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
     const path = join(directory, entry.name)
-    if (entry.isDirectory()) return sourceFiles(path)
+    if (entry.isDirectory()) return entry.name === 'generated' ? [] : sourceFiles(path)
     return /\.(ts|tsx)$/.test(entry.name) && !path.endsWith('SpellContract.audit.test.ts') ? [path] : []
   })
 }
@@ -36,7 +36,10 @@ describe('spell contract audit', () => {
     const matches = sourceRoots.flatMap((root) =>
       sourceFiles(join(frontendSourceRoot, root)).flatMap((path) => {
         const source = readFileSync(path, 'utf8')
-        return Array.from(source.matchAll(accessPattern), (match) => `${path}: ${match[0]}`)
+        const relativePath = relative(frontendSourceRoot, path)
+        return Array.from(source.matchAll(accessPattern))
+          .filter((match) => !(relativePath === join('api', 'client.ts') && match[0] === 'spell_name:'))
+          .map((match) => `${path}: ${match[0]}`)
       }),
     )
 

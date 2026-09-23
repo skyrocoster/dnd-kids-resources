@@ -1,0 +1,25 @@
+# Ruff and pytest configuration; Ruff settings mirror G:\ChessMoveTrainer\pyproject.toml.
+# Run from the repo root: `.venv/Scripts/python.exe -m ruff check backend`
+# or `.venv/Scripts/python.exe -m ruff format --check backend`.
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["backend/tests"]
+addopts = [
+    "-q",
+    "--tb=short",
+    "--strict-markers",
+    "--strict-config",
+    "--cov=backend/app",
+    "--cov-report=term-missing",
+    "--cov-fail-under=97",
+]
+markers = [
+    "integration: exercises endpoints against the full frozen data/seeds/*.json (read-only, slower)",
+]

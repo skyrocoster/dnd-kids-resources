@@ -91,49 +91,28 @@ def test_parse_spell_row_decodes_every_json_column():
     assert parsed["attacks"] == [{"kind": "ranged", "saving_throws": ["dex"]}]
 
 
-def test_get_conn_returns_connection_with_row_factory():
+def test_get_conn_returns_connection_with_row_factory(monkeypatch, tmp_path):
+    monkeypatch.setattr(_db_mod, "DB_PATH", tmp_path / "test.db")
     conn = get_conn()
     assert conn.row_factory is sqlite3.Row
     conn.close()
 
 
-def test_get_db_context_manager():
+def test_get_db_context_manager(monkeypatch, tmp_path):
+    monkeypatch.setattr(_db_mod, "DB_PATH", tmp_path / "test.db")
     with get_db() as conn:
         assert conn.row_factory is sqlite3.Row
 
 
-def test__get_db_path_uses_cwd_when_repo_root_missing(monkeypatch):
-    calls = []
-    original_exists = Path.exists
-
-    def mock_exists(self):
-        calls.append(self)
-        if "dnd_kids_resources.db" in str(self):
-            if len(calls) == 1:
-                return False
-            if len(calls) == 2:
-                return True
-        return original_exists(self)
-
-    monkeypatch.setattr(Path, "exists", mock_exists)
-    result = _get_db_path()
-    assert result == Path.cwd() / "dnd_kids_resources.db"
+def test__get_db_path_uses_configured_docker_database(monkeypatch, tmp_path):
+    configured_path = tmp_path / "docker-database.db"
+    monkeypatch.setenv("DND_DATABASE_PATH", str(configured_path))
+    assert _get_db_path() == configured_path
 
 
-def test__get_db_path_fallback_when_no_candidate_exists(monkeypatch):
-    calls = []
-    original_exists = Path.exists
-
-    def mock_exists(self):
-        calls.append(self)
-        if "dnd_kids_resources.db" in str(self):
-            return False
-        return original_exists(self)
-
-    monkeypatch.setattr(Path, "exists", mock_exists)
-    result = _get_db_path()
-    expected = Path(_db_mod.__file__).parent.parent.parent / "dnd_kids_resources.db"
-    assert result == expected
+def test__get_db_path_defaults_to_docker_volume(monkeypatch):
+    monkeypatch.delenv("DND_DATABASE_PATH", raising=False)
+    assert _get_db_path() == Path("/workspace/data/database/dnd_kids_resources.db")
 
 
 def test_parse_spell_row_empty_collections_survive():

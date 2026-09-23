@@ -25,12 +25,12 @@ def _load_module(name: str, path: Path):
     return module
 
 
-INIT_DB = _load_module("_b1_init_database", REPO_ROOT / "scripts" / "init_database.py")
-SEED_DB = _load_module("_b1_seed_database", REPO_ROOT / "scripts" / "seed_database.py")
-EXPORT_DB = _load_module("_b1_export_db_seeds", REPO_ROOT / "scripts" / "export_db_seeds.py")
+INIT_DB = _load_module("_b1_init_database", REPO_ROOT / "backend" / "database" / "init_database.py")
+SEED_DB = _load_module("_b1_seed_database", REPO_ROOT / "backend" / "database" / "seed_database.py")
+EXPORT_DB = _load_module("_b1_export_db_seeds", REPO_ROOT / "src" / "tools" / "export_db_seeds.py")
 QUICK_RULES = _load_module(
     "_b1_generate_spell_quick_rules",
-    REPO_ROOT / "scripts" / "generate_spell_quick_rules.py",
+    REPO_ROOT / "src" / "tools" / "generate_spell_quick_rules.py",
 )
 
 

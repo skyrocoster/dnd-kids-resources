@@ -1,7 +1,9 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import Query
 from typing import List
 import sqlite3
 
+from ..api_errors import ApiError, ApiRouter, error_responses
+from ..caching import cached_get
 from ..db import get_db, dict_from_row
 from ..schemas import (
     LoomSession,
@@ -22,8 +24,19 @@ from ..schemas import (
     LoomNodeMove,
     LoomThreadMoveResult,
 )
+from ..schemas.errors import LoomError
 
-router = APIRouter(prefix="/api", tags=["loom"])
+router = ApiRouter(prefix="/api", tags=["loom"])
+
+
+def _loom_error(status_code: int, code: str, message: str) -> ApiError:
+    return ApiError(status_code, LoomError(code=code, message=message))
+
+
+class _SessionLogError(ValueError):
+    def __init__(self, code: str, message: str):
+        self.code = code
+        super().__init__(message)
 
 _SESSION_COLUMNS = "id, ordinal, name, played_on, notes"
 _NODE_COLUMNS = """id, thread_id, kind, title, body, session_id, position, carried_count,
@@ -83,7 +96,8 @@ def _fetch_thread_row(cursor, thread_id: int):
 # ---------------------------------------------------------------------------
 
 
-@router.get("/loom/tapestry", response_model=LoomTapestry)
+@router.get("/loom/tapestry", response_model=LoomTapestry, operation_id="getTapestry")
+@cached_get("loom")
 def get_tapestry():
     """One-shot read: ordered sessions, threads, and thread-exclusive nodes."""
     with get_db() as conn:
@@ -106,7 +120,8 @@ def get_tapestry():
 # ---------------------------------------------------------------------------
 
 
-@router.get("/loom/sessions", response_model=List[LoomSession])
+@router.get("/loom/sessions", response_model=List[LoomSession], operation_id="listSessions")
+@cached_get("loom")
 def list_sessions(
     limit: int = Query(100, ge=1, le=500),
     offset: int = Query(0, ge=0),
@@ -121,7 +136,13 @@ def list_sessions(
         return [dict_from_row(row) for row in cursor.fetchall()]
 
 
-@router.post("/loom/sessions", response_model=LoomSession, status_code=201)
+@router.post(
+    "/loom/sessions",
+    response_model=LoomSession,
+    status_code=201,
+    operation_id="createSession",
+    responses=error_responses(LoomError, 400),
+)
 def create_session(session: LoomSessionCreate):
     """Create a session column on the tapestry."""
     with get_db() as conn:
@@ -135,23 +156,28 @@ def create_session(session: LoomSessionCreate):
             conn.commit()
         except sqlite3.IntegrityError:
             conn.rollback()
-            raise HTTPException(status_code=400, detail="A session with this ordinal already exists")
+            raise _loom_error(400, "session_ordinal_already_exists", "A session with this ordinal already exists")
         except Exception as e:
             conn.rollback()
-            raise HTTPException(status_code=400, detail=f"Failed to create session: {str(e)}")
+            raise _loom_error(400, "failed_to_create_session", f"Failed to create session: {str(e)}")
 
         cursor.execute(f"SELECT {_SESSION_COLUMNS} FROM loom_sessions WHERE id = ?", (session_id,))
         return dict_from_row(cursor.fetchone())
 
 
-@router.put("/loom/sessions/{session_id}", response_model=LoomSession)
+@router.put(
+    "/loom/sessions/{session_id}",
+    response_model=LoomSession,
+    operation_id="updateSession",
+    responses=error_responses(LoomError, 400, 404),
+)
 def update_session(session_id: int, session: LoomSessionUpdate):
     """Update a session's title or date."""
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT id FROM loom_sessions WHERE id = ?", (session_id,))
         if not cursor.fetchone():
-            raise HTTPException(status_code=404, detail="Session not found")
+            raise _loom_error(404, "session_not_found", "Session not found")
 
         try:
             cursor.execute(
@@ -162,37 +188,48 @@ def update_session(session_id: int, session: LoomSessionUpdate):
             conn.commit()
         except sqlite3.IntegrityError:
             conn.rollback()
-            raise HTTPException(status_code=400, detail="A session with this ordinal already exists")
+            raise _loom_error(400, "session_ordinal_already_exists", "A session with this ordinal already exists")
         except Exception as e:
             conn.rollback()
-            raise HTTPException(status_code=400, detail=f"Failed to update session: {str(e)}")
+            raise _loom_error(400, "failed_to_update_session", f"Failed to update session: {str(e)}")
 
         cursor.execute(f"SELECT {_SESSION_COLUMNS} FROM loom_sessions WHERE id = ?", (session_id,))
         return dict_from_row(cursor.fetchone())
 
 
-@router.delete("/loom/sessions/{session_id}", status_code=204)
+@router.delete(
+    "/loom/sessions/{session_id}",
+    status_code=204,
+    operation_id="deleteSession",
+    responses=error_responses(LoomError, 400, 404, 422),
+)
 def delete_session(session_id: int):
     """Delete a session; 422 while any node still belongs to it."""
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT id FROM loom_sessions WHERE id = ?", (session_id,))
         if not cursor.fetchone():
-            raise HTTPException(status_code=404, detail="Session not found")
+            raise _loom_error(404, "session_not_found", "Session not found")
 
         cursor.execute("SELECT 1 FROM loom_nodes WHERE session_id = ? LIMIT 1", (session_id,))
         if cursor.fetchone():
-            raise HTTPException(status_code=422, detail="Cannot delete a session with nodes")
+            raise _loom_error(422, "cannot_delete_session_with_nodes", "Cannot delete a session with nodes")
 
         try:
             cursor.execute("DELETE FROM loom_sessions WHERE id = ?", (session_id,))
             conn.commit()
         except Exception as e:
             conn.rollback()
-            raise HTTPException(status_code=400, detail=f"Failed to delete session: {str(e)}")
+            raise _loom_error(400, "failed_to_delete_session", f"Failed to delete session: {str(e)}")
 
 
-@router.post("/loom/sessions/log", response_model=LoomSession, status_code=201)
+@router.post(
+    "/loom/sessions/log",
+    response_model=LoomSession,
+    status_code=201,
+    operation_id="logSession",
+    responses=error_responses(LoomError, 400, 422),
+)
 def log_session(payload: LoomSessionLogRequest):
     """Log a new session with per-thread outcomes in one transaction."""
     with get_db() as conn:
@@ -207,7 +244,7 @@ def log_session(payload: LoomSessionLogRequest):
             for thread_id, thread_outcome in payload.outcomes.items():
                 cursor.execute("SELECT id FROM loom_threads WHERE id = ?", (thread_id,))
                 if not cursor.fetchone():
-                    raise ValueError(f"Unknown thread {thread_id}")
+                    raise _SessionLogError("unknown_thread", f"Unknown thread {thread_id}")
 
                 outcome = thread_outcome.outcome
 
@@ -222,7 +259,7 @@ def log_session(payload: LoomSessionLogRequest):
                 )
                 beat = cursor.fetchone()
                 if not beat:
-                    raise ValueError(f"No pending beat on thread {thread_id}")
+                    raise _SessionLogError("no_pending_beat", f"No pending beat on thread {thread_id}")
 
                 beat_id = beat["id"]
 
@@ -256,13 +293,14 @@ def log_session(payload: LoomSessionLogRequest):
             conn.commit()
         except ValueError as e:
             conn.rollback()
-            raise HTTPException(status_code=422, detail=str(e))
+            code = e.code if isinstance(e, _SessionLogError) else "invalid_session_log"
+            raise _loom_error(422, code, str(e))
         except sqlite3.IntegrityError:
             conn.rollback()
-            raise HTTPException(status_code=400, detail="A session with this ordinal already exists")
+            raise _loom_error(400, "session_ordinal_already_exists", "A session with this ordinal already exists")
         except Exception as e:
             conn.rollback()
-            raise HTTPException(status_code=400, detail=f"Failed to log session: {str(e)}")
+            raise _loom_error(400, "failed_to_log_session", f"Failed to log session: {str(e)}")
 
         cursor.execute(f"SELECT {_SESSION_COLUMNS} FROM loom_sessions WHERE id = ?", (session_id,))
         return dict_from_row(cursor.fetchone())
@@ -273,7 +311,8 @@ def log_session(payload: LoomSessionLogRequest):
 # --------------------------------------------------------------------------
 
 
-@router.get("/loom/threads", response_model=List[LoomThread])
+@router.get("/loom/threads", response_model=List[LoomThread], operation_id="listThreads")
+@cached_get("loom")
 def list_threads(
     limit: int = Query(100, ge=1, le=500),
     offset: int = Query(0, ge=0),
@@ -288,7 +327,13 @@ def list_threads(
         return [dict_from_row(row) for row in cursor.fetchall()]
 
 
-@router.post("/loom/threads", response_model=LoomThread, status_code=201)
+@router.post(
+    "/loom/threads",
+    response_model=LoomThread,
+    status_code=201,
+    operation_id="createThread",
+    responses=error_responses(LoomError, 400, 422),
+)
 def create_thread(thread: LoomThreadCreate):
     """Create a thread, plus its `start` (position 0) and `end` (position 10) nodes."""
     with get_db() as conn:
@@ -298,11 +343,9 @@ def create_thread(thread: LoomThreadCreate):
             cursor.execute("SELECT kind FROM loom_nodes WHERE id = ?", (thread.origin_node_id,))
             origin_row = cursor.fetchone()
             if not origin_row:
-                raise HTTPException(status_code=422, detail="Unknown origin_node_id")
+                raise _loom_error(422, "unknown_origin_node_id", "Unknown origin_node_id")
             if origin_row["kind"] != "session":
-                raise HTTPException(
-                    status_code=422, detail="origin_node_id must reference a session node"
-                )
+                raise _loom_error(422, "origin_node_must_reference_session", "origin_node_id must reference a session node")
 
         try:
             cursor.execute(
@@ -325,22 +368,27 @@ def create_thread(thread: LoomThreadCreate):
             conn.commit()
         except sqlite3.IntegrityError:
             conn.rollback()
-            raise HTTPException(status_code=400, detail="A thread with this name already exists")
+            raise _loom_error(400, "thread_name_already_exists", "A thread with this name already exists")
         except Exception as e:
             conn.rollback()
-            raise HTTPException(status_code=400, detail=f"Failed to create thread: {str(e)}")
+            raise _loom_error(400, "failed_to_create_thread", f"Failed to create thread: {str(e)}")
 
         return dict_from_row(_fetch_thread_row(cursor, thread_id))
 
 
-@router.put("/loom/threads/{thread_id}", response_model=LoomThread)
+@router.put(
+    "/loom/threads/{thread_id}",
+    response_model=LoomThread,
+    operation_id="updateThread",
+    responses=error_responses(LoomError, 400, 404),
+)
 def update_thread(thread_id: int, thread: LoomThreadUpdate):
     """Update a thread's name, colour, or description."""
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT id FROM loom_threads WHERE id = ?", (thread_id,))
         if not cursor.fetchone():
-            raise HTTPException(status_code=404, detail="Thread not found")
+            raise _loom_error(404, "thread_not_found", "Thread not found")
 
         try:
             cursor.execute(
@@ -350,22 +398,27 @@ def update_thread(thread_id: int, thread: LoomThreadUpdate):
             conn.commit()
         except sqlite3.IntegrityError:
             conn.rollback()
-            raise HTTPException(status_code=400, detail="A thread with this name already exists")
+            raise _loom_error(400, "thread_name_already_exists", "A thread with this name already exists")
         except Exception as e:
             conn.rollback()
-            raise HTTPException(status_code=400, detail=f"Failed to update thread: {str(e)}")
+            raise _loom_error(400, "failed_to_update_thread", f"Failed to update thread: {str(e)}")
 
         return dict_from_row(_fetch_thread_row(cursor, thread_id))
 
 
-@router.delete("/loom/threads/{thread_id}", status_code=204)
+@router.delete(
+    "/loom/threads/{thread_id}",
+    status_code=204,
+    operation_id="deleteThread",
+    responses=error_responses(LoomError, 400, 404),
+)
 def delete_thread(thread_id: int):
     """Delete a thread and its exclusive start/end/beat nodes; shared session nodes survive."""
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT id FROM loom_threads WHERE id = ?", (thread_id,))
         if not cursor.fetchone():
-            raise HTTPException(status_code=404, detail="Thread not found")
+            raise _loom_error(404, "thread_not_found", "Thread not found")
 
         try:
             cursor.execute("DELETE FROM loom_nodes WHERE thread_id = ?", (thread_id,))
@@ -373,7 +426,7 @@ def delete_thread(thread_id: int):
             conn.commit()
         except Exception as e:
             conn.rollback()
-            raise HTTPException(status_code=400, detail=f"Failed to delete thread: {str(e)}")
+            raise _loom_error(400, "failed_to_delete_thread", f"Failed to delete thread: {str(e)}")
 
 
 # ---------------------------------------------------------------------------
@@ -381,7 +434,13 @@ def delete_thread(thread_id: int):
 # ---------------------------------------------------------------------------
 
 
-@router.post("/loom/nodes", response_model=LoomNode, status_code=201)
+@router.post(
+    "/loom/nodes",
+    response_model=LoomNode,
+    status_code=201,
+    operation_id="createNode",
+    responses=error_responses(LoomError, 400),
+)
 def create_node(node: LoomNodeCreate):
     """Create an unplaced `beat` or `session` node."""
     with get_db() as conn:
@@ -405,12 +464,17 @@ def create_node(node: LoomNodeCreate):
             conn.commit()
         except Exception as e:
             conn.rollback()
-            raise HTTPException(status_code=400, detail=f"Failed to create node: {str(e)}")
+            raise _loom_error(400, "failed_to_create_node", f"Failed to create node: {str(e)}")
 
         return _load_node(cursor, node_id)
 
 
-@router.put("/loom/nodes/{node_id}", response_model=LoomNode)
+@router.put(
+    "/loom/nodes/{node_id}",
+    response_model=LoomNode,
+    operation_id="updateNode",
+    responses=error_responses(LoomError, 400, 404, 422),
+)
 def update_node(node_id: int, node: LoomNodeUpdate):
     """Update a node's title or body; kind is immutable except a fulfil undo."""
     with get_db() as conn:
@@ -418,13 +482,13 @@ def update_node(node_id: int, node: LoomNodeUpdate):
         cursor.execute("SELECT kind, fulfilled_planned_title FROM loom_nodes WHERE id = ?", (node_id,))
         row = cursor.fetchone()
         if not row:
-            raise HTTPException(status_code=404, detail="Node not found")
+            raise _loom_error(404, "node_not_found", "Node not found")
 
         is_fulfil_undo = (
             row["kind"] == "session" and node.kind == "beat" and row["fulfilled_planned_title"] is not None
         )
         if row["kind"] != node.kind and not is_fulfil_undo:
-            raise HTTPException(status_code=422, detail="Node kind is immutable")
+            raise _loom_error(422, "node_kind_is_immutable", "Node kind is immutable")
 
         try:
             if is_fulfil_undo:
@@ -461,12 +525,17 @@ def update_node(node_id: int, node: LoomNodeUpdate):
             conn.commit()
         except Exception as e:
             conn.rollback()
-            raise HTTPException(status_code=400, detail=f"Failed to update node: {str(e)}")
+            raise _loom_error(400, "failed_to_update_node", f"Failed to update node: {str(e)}")
 
         return _load_node(cursor, node_id)
 
 
-@router.delete("/loom/nodes/{node_id}", status_code=204)
+@router.delete(
+    "/loom/nodes/{node_id}",
+    status_code=204,
+    operation_id="deleteNode",
+    responses=error_responses(LoomError, 400, 404, 422),
+)
 def delete_node(node_id: int):
     """Delete a `beat` or `session` node; 422 on `start`/`end`."""
     with get_db() as conn:
@@ -474,21 +543,24 @@ def delete_node(node_id: int):
         cursor.execute("SELECT kind FROM loom_nodes WHERE id = ?", (node_id,))
         row = cursor.fetchone()
         if not row:
-            raise HTTPException(status_code=404, detail="Node not found")
+            raise _loom_error(404, "node_not_found", "Node not found")
         if row["kind"] in ("start", "end"):
-            raise HTTPException(
-                status_code=422, detail="Delete the thread to remove its Start/End nodes"
-            )
+            raise _loom_error(422, "cannot_delete_start_end_node", "Delete the thread to remove its Start/End nodes")
 
         try:
             cursor.execute("DELETE FROM loom_nodes WHERE id = ?", (node_id,))
             conn.commit()
         except Exception as e:
             conn.rollback()
-            raise HTTPException(status_code=400, detail=f"Failed to delete node: {str(e)}")
+            raise _loom_error(400, "failed_to_delete_node", f"Failed to delete node: {str(e)}")
 
 
-@router.post("/loom/nodes/{node_id}/fulfil", response_model=LoomNode)
+@router.post(
+    "/loom/nodes/{node_id}/fulfil",
+    response_model=LoomNode,
+    operation_id="fulfilBeat",
+    responses=error_responses(LoomError, 404, 422),
+)
 def fulfil_beat(node_id: int, payload: LoomNodeFulfil = LoomNodeFulfil()):
     """Convert a placed beat into a session in place."""
     with get_db() as conn:
@@ -496,13 +568,13 @@ def fulfil_beat(node_id: int, payload: LoomNodeFulfil = LoomNodeFulfil()):
         cursor.execute("SELECT kind, title, thread_id, session_id FROM loom_nodes WHERE id = ?", (node_id,))
         row = cursor.fetchone()
         if not row:
-            raise HTTPException(status_code=404, detail="Node not found")
+            raise _loom_error(404, "node_not_found", "Node not found")
         if row["kind"] != "beat":
-            raise HTTPException(status_code=422, detail="Only a beat can be fulfilled")
+            raise _loom_error(422, "only_beats_can_be_fulfilled", "Only a beat can be fulfilled")
         if row["thread_id"] is None:
-            raise HTTPException(status_code=422, detail="Beat must be placed on a thread to be fulfilled")
+            raise _loom_error(422, "beat_must_be_placed_to_be_fulfilled", "Beat must be placed on a thread to be fulfilled")
         if row["session_id"] is None:
-            raise HTTPException(status_code=422, detail="Beat must have a session_id to be fulfilled")
+            raise _loom_error(422, "beat_must_have_session_to_be_fulfilled", "Beat must have a session_id to be fulfilled")
 
         new_title = payload.title if payload.title else row["title"]
         cursor.execute(
@@ -515,7 +587,12 @@ def fulfil_beat(node_id: int, payload: LoomNodeFulfil = LoomNodeFulfil()):
         return _load_node(cursor, node_id)
 
 
-@router.post("/loom/nodes/{node_id}/bank", response_model=LoomNode)
+@router.post(
+    "/loom/nodes/{node_id}/bank",
+    response_model=LoomNode,
+    operation_id="bankBeat",
+    responses=error_responses(LoomError, 400, 404, 422),
+)
 def bank_beat(node_id: int):
     """Unplace a beat, keeping it in the Beat Bank for later reuse."""
     with get_db() as conn:
@@ -523,11 +600,11 @@ def bank_beat(node_id: int):
         cursor.execute("SELECT kind, thread_id FROM loom_nodes WHERE id = ?", (node_id,))
         row = cursor.fetchone()
         if not row:
-            raise HTTPException(status_code=404, detail="Node not found")
+            raise _loom_error(404, "node_not_found", "Node not found")
         if row["kind"] != "beat":
-            raise HTTPException(status_code=422, detail="Only a beat can be banked")
+            raise _loom_error(422, "only_beats_can_be_banked", "Only a beat can be banked")
         if row["thread_id"] is None:
-            raise HTTPException(status_code=422, detail="Beat is not placed on a thread")
+            raise _loom_error(422, "beat_is_not_placed_on_a_thread", "Beat is not placed on a thread")
         thread_id = row["thread_id"]
 
         try:
@@ -541,7 +618,7 @@ def bank_beat(node_id: int):
             conn.commit()
         except Exception as e:
             conn.rollback()
-            raise HTTPException(status_code=400, detail=f"Failed to bank beat: {str(e)}")
+            raise _loom_error(400, "failed_to_bank_beat", f"Failed to bank beat: {str(e)}")
 
         return _load_node(cursor, node_id)
 
@@ -551,27 +628,31 @@ def bank_beat(node_id: int):
 # ---------------------------------------------------------------------------
 
 
-@router.post("/loom/threads/{thread_id}/items", response_model=LoomTapestryThread, status_code=201)
+@router.post(
+    "/loom/threads/{thread_id}/items",
+    response_model=LoomTapestryThread,
+    status_code=201,
+    operation_id="addThreadItem",
+    responses=error_responses(LoomError, 400, 404, 422),
+)
 def add_thread_item(thread_id: int, item: LoomThreadItemCreate):
     """Place an existing beat or session node on a thread; also restores a banked beat."""
     with get_db() as conn:
         cursor = conn.cursor()
         if not _fetch_thread_row(cursor, thread_id):
-            raise HTTPException(status_code=404, detail="Thread not found")
+            raise _loom_error(404, "thread_not_found", "Thread not found")
 
         cursor.execute("SELECT kind, thread_id FROM loom_nodes WHERE id = ?", (item.node_id,))
         node_row = cursor.fetchone()
         if not node_row:
-            raise HTTPException(status_code=404, detail="Node not found")
+            raise _loom_error(404, "node_not_found", "Node not found")
         if node_row["kind"] not in ("beat", "session"):
-            raise HTTPException(
-                status_code=422, detail="Only beat or session nodes can be placed on a thread"
-            )
+            raise _loom_error(422, "only_beats_or_sessions_can_be_placed", "Only beat or session nodes can be placed on a thread")
 
         if node_row["thread_id"] == thread_id:
-            raise HTTPException(status_code=422, detail="Node is already a member of this thread")
+            raise _loom_error(422, "node_already_in_thread", "Node is already a member of this thread")
         if node_row["thread_id"] is not None:
-            raise HTTPException(status_code=422, detail="Node is already placed on another thread")
+            raise _loom_error(422, "node_already_on_another_thread", "Node is already placed on another thread")
 
         existing_ids, positions_by_node = _thread_ordered(cursor, thread_id)
         index = _clamped_index(existing_ids, positions_by_node, item.position)
@@ -587,25 +668,30 @@ def add_thread_item(thread_id: int, item: LoomThreadItemCreate):
             conn.commit()
         except Exception as e:
             conn.rollback()
-            raise HTTPException(status_code=400, detail=f"Failed to place node: {str(e)}")
+            raise _loom_error(400, "failed_to_place_node", f"Failed to place node: {str(e)}")
 
         return _load_tapestry_thread(cursor, _fetch_thread_row(cursor, thread_id))
 
 
-@router.patch("/loom/threads/{thread_id}/items/{node_id}", response_model=LoomTapestryThread)
+@router.patch(
+    "/loom/threads/{thread_id}/items/{node_id}",
+    response_model=LoomTapestryThread,
+    operation_id="reorderThreadItem",
+    responses=error_responses(LoomError, 400, 404, 422),
+)
 def reorder_thread_item(thread_id: int, node_id: int, body: LoomThreadItemPositionUpdate):
     """Move a placed node to a new position within its own thread."""
     with get_db() as conn:
         cursor = conn.cursor()
         if not _fetch_thread_row(cursor, thread_id):
-            raise HTTPException(status_code=404, detail="Thread not found")
+            raise _loom_error(404, "thread_not_found", "Thread not found")
 
         cursor.execute("SELECT kind, thread_id FROM loom_nodes WHERE id = ?", (node_id,))
         node_row = cursor.fetchone()
         if not node_row or node_row["thread_id"] != thread_id:
-            raise HTTPException(status_code=404, detail="Node is not a member of this thread")
+            raise _loom_error(404, "node_not_a_member_of_thread", "Node is not a member of this thread")
         if node_row["kind"] in ("start", "end"):
-            raise HTTPException(status_code=422, detail="Start/End position is fixed")
+            raise _loom_error(422, "start_end_position_is_fixed", "Start/End position is fixed")
 
         existing_ids, positions_by_node = _thread_ordered(cursor, thread_id)
         remaining = [n for n in existing_ids if n != node_id]
@@ -617,27 +703,30 @@ def reorder_thread_item(thread_id: int, node_id: int, body: LoomThreadItemPositi
             conn.commit()
         except Exception as e:
             conn.rollback()
-            raise HTTPException(status_code=400, detail=f"Failed to reorder node: {str(e)}")
+            raise _loom_error(400, "failed_to_reorder_node", f"Failed to reorder node: {str(e)}")
 
         return _load_tapestry_thread(cursor, _fetch_thread_row(cursor, thread_id))
 
 
-@router.delete("/loom/threads/{thread_id}/items/{node_id}", status_code=204)
+@router.delete(
+    "/loom/threads/{thread_id}/items/{node_id}",
+    status_code=204,
+    operation_id="removeThreadItem",
+    responses=error_responses(LoomError, 400, 404, 422),
+)
 def remove_thread_item(thread_id: int, node_id: int):
     """Unplace a node from a thread without deleting it; 422 on `start`/`end`."""
     with get_db() as conn:
         cursor = conn.cursor()
         if not _fetch_thread_row(cursor, thread_id):
-            raise HTTPException(status_code=404, detail="Thread not found")
+            raise _loom_error(404, "thread_not_found", "Thread not found")
 
         cursor.execute("SELECT kind, thread_id FROM loom_nodes WHERE id = ?", (node_id,))
         node_row = cursor.fetchone()
         if not node_row or node_row["thread_id"] != thread_id:
-            raise HTTPException(status_code=404, detail="Node is not a member of this thread")
+            raise _loom_error(404, "node_not_a_member_of_thread", "Node is not a member of this thread")
         if node_row["kind"] in ("start", "end"):
-            raise HTTPException(
-                status_code=422, detail="Cannot remove Start/End; delete the thread instead"
-            )
+            raise _loom_error(422, "cannot_remove_start_end_nodes", "Cannot remove Start/End; delete the thread instead")
 
         try:
             cursor.execute(
@@ -650,10 +739,15 @@ def remove_thread_item(thread_id: int, node_id: int):
             conn.commit()
         except Exception as e:
             conn.rollback()
-            raise HTTPException(status_code=400, detail=f"Failed to remove node from thread: {str(e)}")
+            raise _loom_error(400, "failed_to_remove_node_from_thread", f"Failed to remove node from thread: {str(e)}")
 
 
-@router.post("/loom/threads/{thread_id}/items/{node_id}/move", response_model=LoomThreadMoveResult)
+@router.post(
+    "/loom/threads/{thread_id}/items/{node_id}/move",
+    response_model=LoomThreadMoveResult,
+    operation_id="moveThreadItem",
+    responses=error_responses(LoomError, 400, 404, 422),
+)
 def move_thread_item(thread_id: int, node_id: int, body: LoomNodeMove):
     """Atomically move a placed node to another thread at a position."""
     with get_db() as conn:
@@ -662,25 +756,23 @@ def move_thread_item(thread_id: int, node_id: int, body: LoomNodeMove):
         # 1 — both threads exist and are different
         source_row = _fetch_thread_row(cursor, thread_id)
         if not source_row:
-            raise HTTPException(status_code=404, detail="Thread not found")
+            raise _loom_error(404, "thread_not_found", "Thread not found")
 
         target_row = _fetch_thread_row(cursor, body.target_thread_id)
         if not target_row:
-            raise HTTPException(status_code=404, detail="Target thread not found")
+            raise _loom_error(404, "target_thread_not_found", "Target thread not found")
 
         if body.target_thread_id == thread_id:
-            raise HTTPException(
-                status_code=422, detail="Use the reorder endpoint to move within the same thread"
-            )
+            raise _loom_error(422, "cannot_move_within_same_thread", "Use the reorder endpoint to move within the same thread")
 
         cursor.execute("SELECT kind, thread_id FROM loom_nodes WHERE id = ?", (node_id,))
         node_row = cursor.fetchone()
         if not node_row or node_row["thread_id"] != thread_id:
-            raise HTTPException(status_code=404, detail="Node is not a member of this thread")
+            raise _loom_error(404, "node_not_a_member_of_thread", "Node is not a member of this thread")
 
         kind = node_row["kind"]
         if kind in ("start", "end"):
-            raise HTTPException(status_code=422, detail="Start/End position is fixed")
+            raise _loom_error(422, "start_end_position_is_fixed", "Start/End position is fixed")
 
         target_thread_id = body.target_thread_id
 
@@ -702,7 +794,7 @@ def move_thread_item(thread_id: int, node_id: int, body: LoomNodeMove):
             conn.commit()
         except Exception as e:
             conn.rollback()
-            raise HTTPException(status_code=400, detail=f"Failed to move node: {str(e)}")
+            raise _loom_error(400, "failed_to_move_node", f"Failed to move node: {str(e)}")
 
         return {
             "source": _load_tapestry_thread(cursor, _fetch_thread_row(cursor, thread_id)),

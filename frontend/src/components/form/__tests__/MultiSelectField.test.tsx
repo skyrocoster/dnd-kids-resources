@@ -11,15 +11,15 @@ const options = [
 describe('MultiSelectField', () => {
   it('renders a checkbox per option, checked per the selected list', () => {
     render(<MultiSelectField label="Classes" options={options} selected={['wizard']} onChange={() => {}} />)
-    expect(screen.getByLabelText('Wizard')).toBeChecked()
-    expect(screen.getByLabelText('Sorcerer')).not.toBeChecked()
+    expect(screen.getByRole('checkbox', { name: 'Wizard' })).toBeChecked()
+    expect(screen.getByRole('checkbox', { name: 'Sorcerer' })).not.toBeChecked()
   })
 
   it('adds a value when an unselected option is clicked', async () => {
     const user = userEvent.setup()
     const onChange = vi.fn()
     render(<MultiSelectField label="Classes" options={options} selected={['wizard']} onChange={onChange} />)
-    await user.click(screen.getByLabelText('Sorcerer'))
+    await user.click(screen.getByRole('checkbox', { name: 'Sorcerer' }))
     expect(onChange).toHaveBeenCalledWith(['wizard', 'sorcerer'])
   })
 
@@ -27,7 +27,7 @@ describe('MultiSelectField', () => {
     const user = userEvent.setup()
     const onChange = vi.fn()
     render(<MultiSelectField label="Classes" options={options} selected={['wizard', 'sorcerer']} onChange={onChange} />)
-    await user.click(screen.getByLabelText('Wizard'))
+    await user.click(screen.getByRole('checkbox', { name: 'Wizard' }))
     expect(onChange).toHaveBeenCalledWith(['sorcerer'])
   })
 })

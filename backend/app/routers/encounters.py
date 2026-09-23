@@ -1,11 +1,14 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import Query
 from typing import List
 import json
 
+from ..api_errors import ApiError, ApiRouter, error_responses
+from ..caching import cached_get
 from ..db import get_db, dict_from_row, parse_json_value
 from ..schemas import Encounter, EncounterCreate, EncounterUpdate
+from ..schemas.errors import EncounterError
 
-router = APIRouter(prefix="/api", tags=["encounters"])
+router = ApiRouter(prefix="/api", tags=["encounters"])
 
 SELECT_COLUMNS = "id, name as title, units as creatures, active_index"
 
@@ -22,7 +25,8 @@ def _parse_encounter_row(row) -> dict:
     return encounter
 
 
-@router.get("/encounters", response_model=List[Encounter])
+@router.get("/encounters", response_model=List[Encounter], operation_id="listEncounters")
+@cached_get("encounters")
 def list_encounters(
     limit: int = Query(100, ge=1, le=500),
     offset: int = Query(0, ge=0),
@@ -38,7 +42,13 @@ def list_encounters(
         return [_parse_encounter_row(row) for row in rows]
 
 
-@router.get("/encounters/{encounter_id}", response_model=Encounter)
+@router.get(
+    "/encounters/{encounter_id}",
+    response_model=Encounter,
+    operation_id="getEncounter",
+    responses=error_responses(EncounterError, 404),
+)
+@cached_get("encounters")
 def get_encounter(encounter_id: int):
     """Get a specific encounter by ID."""
     with get_db() as conn:
@@ -46,11 +56,17 @@ def get_encounter(encounter_id: int):
         cursor.execute(f"SELECT {SELECT_COLUMNS} FROM encounter WHERE id = ?", (encounter_id,))
         row = cursor.fetchone()
         if not row:
-            raise HTTPException(status_code=404, detail="Encounter not found")
+            raise ApiError(404, EncounterError(code="encounter_not_found", message="Encounter not found"))
         return _parse_encounter_row(row)
 
 
-@router.post("/encounters", response_model=Encounter, status_code=201)
+@router.post(
+    "/encounters",
+    response_model=Encounter,
+    status_code=201,
+    operation_id="createEncounter",
+    responses=error_responses(EncounterError, 400),
+)
 def create_encounter(encounter: EncounterCreate):
     """Create a new encounter."""
     with get_db() as conn:
@@ -69,14 +85,22 @@ def create_encounter(encounter: EncounterCreate):
             encounter_id = cursor.lastrowid
         except Exception as e:
             conn.rollback()
-            raise HTTPException(status_code=400, detail=f"Failed to create encounter: {str(e)}")
+            raise ApiError(
+                400,
+                EncounterError(code="failed_to_create_encounter", message=f"Failed to create encounter: {str(e)}"),
+            )
 
         cursor.execute(f"SELECT {SELECT_COLUMNS} FROM encounter WHERE id = ?", (encounter_id,))
         row = cursor.fetchone()
         return _parse_encounter_row(row)
 
 
-@router.put("/encounters/{encounter_id}", response_model=Encounter)
+@router.put(
+    "/encounters/{encounter_id}",
+    response_model=Encounter,
+    operation_id="updateEncounter",
+    responses=error_responses(EncounterError, 400, 404),
+)
 def update_encounter(encounter_id: int, encounter: EncounterUpdate):
     """Update an existing encounter."""
     with get_db() as conn:
@@ -84,7 +108,7 @@ def update_encounter(encounter_id: int, encounter: EncounterUpdate):
 
         cursor.execute("SELECT id FROM encounter WHERE id = ?", (encounter_id,))
         if not cursor.fetchone():
-            raise HTTPException(status_code=404, detail="Encounter not found")
+            raise ApiError(404, EncounterError(code="encounter_not_found", message="Encounter not found"))
 
         try:
             cursor.execute(
@@ -99,14 +123,22 @@ def update_encounter(encounter_id: int, encounter: EncounterUpdate):
             conn.commit()
         except Exception as e:
             conn.rollback()
-            raise HTTPException(status_code=400, detail=f"Failed to update encounter: {str(e)}")
+            raise ApiError(
+                400,
+                EncounterError(code="failed_to_update_encounter", message=f"Failed to update encounter: {str(e)}"),
+            )
 
         cursor.execute(f"SELECT {SELECT_COLUMNS} FROM encounter WHERE id = ?", (encounter_id,))
         row = cursor.fetchone()
         return _parse_encounter_row(row)
 
 
-@router.delete("/encounters/{encounter_id}", status_code=204)
+@router.delete(
+    "/encounters/{encounter_id}",
+    status_code=204,
+    operation_id="deleteEncounter",
+    responses=error_responses(EncounterError, 400, 404),
+)
 def delete_encounter(encounter_id: int):
     """Delete an encounter."""
     with get_db() as conn:
@@ -114,11 +146,14 @@ def delete_encounter(encounter_id: int):
 
         cursor.execute("SELECT id FROM encounter WHERE id = ?", (encounter_id,))
         if not cursor.fetchone():
-            raise HTTPException(status_code=404, detail="Encounter not found")
+            raise ApiError(404, EncounterError(code="encounter_not_found", message="Encounter not found"))
 
         try:
             cursor.execute("DELETE FROM encounter WHERE id = ?", (encounter_id,))
             conn.commit()
         except Exception as e:
             conn.rollback()
-            raise HTTPException(status_code=400, detail=f"Failed to delete encounter: {str(e)}")
+            raise ApiError(
+                400,
+                EncounterError(code="failed_to_delete_encounter", message=f"Failed to delete encounter: {str(e)}"),
+            )

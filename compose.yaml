@@ -1,0 +1,92 @@
+name: dnd-kids-resources
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    command: ["python", "-m", "uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload", "--reload-dir", "/workspace/backend", "--reload-exclude", ".venv/*"]
+    working_dir: /workspace
+    environment:
+      DND_DATABASE_PATH: /workspace/data/database/dnd_kids_resources.db
+      PYTHONUNBUFFERED: "1"
+      WATCHFILES_FORCE_POLLING: "true"
+    volumes:
+      - .:/workspace
+      - dnd-database:/workspace/data/database
+    ports: ["127.0.0.1:8000:8000"]
+    init: true
+    restart: "no"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/openapi.json', timeout=2).read()"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    command: ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+    working_dir: /workspace/frontend
+    environment:
+      VITE_API_PROXY_TARGET: http://backend:8000
+      CHOKIDAR_USEPOLLING: "true"
+      CHOKIDAR_INTERVAL: "1000"
+    volumes:
+      - ./frontend:/workspace/frontend
+      - frontend-node-modules:/workspace/frontend/node_modules
+    ports: ["127.0.0.1:5173:5173"]
+    init: true
+    restart: "no"
+    depends_on:
+      backend: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:5173').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 20s
+
+  storybook:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    command: ["npm", "run", "storybook", "--", "--host", "0.0.0.0", "--port", "6007"]
+    working_dir: /workspace/frontend
+    environment:
+      CHOKIDAR_USEPOLLING: "true"
+      CHOKIDAR_INTERVAL: "1000"
+    volumes:
+      - ./frontend:/workspace/frontend
+      - storybook-node-modules:/workspace/frontend/node_modules
+    ports: ["127.0.0.1:6007:6007"]
+    init: true
+    restart: "no"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:6007').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 30s
+
+  datasette:
+    image: datasetteproject/datasette:latest
+    command: ["datasette", "serve", "/data/dnd_kids_resources.db", "--host", "0.0.0.0", "--port", "8667"]
+    volumes:
+      - dnd-database:/data
+    ports: ["127.0.0.1:8667:8667"]
+    init: true
+    restart: "no"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8667/-/databases.json', timeout=2).read()"]
+      interval: 10s
+      timeout: 3s
+      retries: 20
+      start_period: 20s
+
+volumes:
+  dnd-database:
+  frontend-node-modules:
+  storybook-node-modules:

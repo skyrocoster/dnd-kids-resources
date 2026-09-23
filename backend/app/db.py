@@ -2,41 +2,58 @@ import sqlite3
 import json
 from pathlib import Path
 from contextlib import contextmanager
+from contextvars import ContextVar
 import os
 
+from fastapi import Depends, Request
 
-# DB_PATH: resolve to repo root, handling both dev (from backend/) and test (monkeypatched) runs
+
+DEFAULT_DB_PATH = Path("/workspace/data/database/dnd_kids_resources.db")
+
+
 def _get_db_path():
-    # Try multiple paths to find the database
-    # Path 1: from backend/app/db.py -> ../../dnd_kids_resources.db (when running from backend/)
-    candidate = Path(__file__).parent.parent.parent / "dnd_kids_resources.db"
-    if candidate.exists():
-        return candidate
-
-    # Path 2: from cwd (when running from repo root)
-    candidate = Path.cwd() / "dnd_kids_resources.db"
-    if candidate.exists():
-        return candidate
-
-    # Path 3: fallback (tests may monkeypatch this)
-    return Path(__file__).parent.parent.parent / "dnd_kids_resources.db"
+    """Use the Docker volume DB; never fall back to an old host-side copy."""
+    configured_path = os.environ.get("DND_DATABASE_PATH")
+    return Path(configured_path) if configured_path else DEFAULT_DB_PATH
 
 
 DB_PATH = _get_db_path()
+_REQUEST_DB_PATH: ContextVar[Path | None] = ContextVar("request_db_path", default=None)
 
 
-def get_conn():
+def get_db_path(request: Request) -> Path:
+    """Resolve the database path configured for this FastAPI app/request."""
+    configured_path = request.app.state.database_path
+    return Path(configured_path) if configured_path is not None else DB_PATH
+
+
+def get_active_db_path() -> Path:
+    """Return the DB path bound to this request, or the configured default."""
+    return Path(_REQUEST_DB_PATH.get() or DB_PATH)
+
+
+async def bind_db_path(db_path: Path = Depends(get_db_path)):
+    """Make the injected path available to the existing synchronous DB helpers."""
+    token = _REQUEST_DB_PATH.set(Path(db_path))
+    try:
+        yield
+    finally:
+        _REQUEST_DB_PATH.reset(token)
+
+
+def get_conn(db_path: Path | str | None = None):
     """Get a SQLite connection with Row factory for dict-like access."""
-    conn = sqlite3.connect(str(DB_PATH))
+    path = db_path or _REQUEST_DB_PATH.get() or DB_PATH
+    conn = sqlite3.connect(str(path))
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
     return conn
 
 
 @contextmanager
-def get_db():
+def get_db(db_path: Path | str | None = None):
     """Context manager for database connections."""
-    conn = get_conn()
+    conn = get_conn() if db_path is None else get_conn(db_path)
     try:
         yield conn
     finally:
@@ -87,6 +104,10 @@ def parse_spell_row(row):
     spell = dict_from_row(row)
     if spell is None:
         return None
+
+    for field in ("concentration", "ritual"):
+        if field in spell and spell[field] is not None:
+            spell[field] = bool(spell[field])
 
     for field in _SPELL_OBJECT_COLUMNS:
         if field in spell and spell[field] is not None:

@@ -1,13 +1,16 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import Query
 from typing import List
 from fractions import Fraction
 import json
 import sqlite3
 
 from ..db import get_db, dict_from_row, parse_json_value
+from ..caching import cached_get
 from ..schemas import Monster, MonsterCreate, MonsterUpdate
+from ..api_errors import ApiError, ApiRouter, error_responses
+from ..schemas.errors import MonsterError
 
-router = APIRouter(prefix="/api", tags=["monsters"])
+router = ApiRouter(prefix="/api", tags=["monsters"])
 
 MONSTER_COLUMNS = [
     "id",
@@ -94,11 +97,12 @@ def _select_monster(cursor, monster_id: int) -> dict:
     cursor.execute(f"SELECT {columns} FROM monsters WHERE id = ?", (monster_id,))
     row = cursor.fetchone()
     if not row:
-        raise HTTPException(status_code=404, detail="Monster not found")
+        raise ApiError(404, MonsterError(code="monster_not_found", message="Monster not found"))
     return _parse_monster_row(row)
 
 
-@router.get("/monsters", response_model=List[Monster])
+@router.get("/monsters", response_model=List[Monster], operation_id="listMonsters")
+@cached_get("monsters")
 def list_monsters(
     limit: int = Query(100, ge=1, le=500),
     offset: int = Query(0, ge=0),
@@ -120,7 +124,8 @@ def list_monsters(
         return [_parse_monster_row(row) for row in rows]
 
 
-@router.get("/monsters/{monster_id}", response_model=Monster)
+@router.get("/monsters/{monster_id}", response_model=Monster, operation_id="getMonster")
+@cached_get("monsters")
 def get_monster(monster_id: int):
     """Get a specific monster by ID."""
     with get_db() as conn:
@@ -129,11 +134,17 @@ def get_monster(monster_id: int):
         cursor.execute(f"SELECT {columns} FROM monsters WHERE id = ?", (monster_id,))
         row = cursor.fetchone()
         if not row:
-            raise HTTPException(status_code=404, detail="Monster not found")
+            raise ApiError(404, MonsterError(code="monster_not_found", message="Monster not found"))
         return _parse_monster_row(row)
 
 
-@router.get("/monsters/by-name/{name}", response_model=Monster)
+@router.get(
+    "/monsters/by-name/{name}",
+    response_model=Monster,
+    operation_id="getMonsterByName",
+    responses=error_responses(MonsterError, 404),
+)
+@cached_get("monsters")
 def get_monster_by_name(name: str):
     """Get a specific monster by name."""
     with get_db() as conn:
@@ -142,11 +153,17 @@ def get_monster_by_name(name: str):
         cursor.execute(f"SELECT {columns} FROM monsters WHERE name = ?", (name,))
         row = cursor.fetchone()
         if not row:
-            raise HTTPException(status_code=404, detail="Monster not found")
+            raise ApiError(404, MonsterError(code="monster_not_found", message="Monster not found"))
         return _parse_monster_row(row)
 
 
-@router.post("/monsters", response_model=Monster, status_code=201)
+@router.post(
+    "/monsters",
+    response_model=Monster,
+    status_code=201,
+    operation_id="createMonster",
+    responses=error_responses(MonsterError, 400, 404, 409),
+)
 def create_monster(monster: MonsterCreate):
     """Create a new monster."""
     values = _serialize_monster(monster)
@@ -165,16 +182,21 @@ def create_monster(monster: MonsterCreate):
         except sqlite3.IntegrityError as exc:
             conn.rollback()
             if "UNIQUE" in str(exc).upper():
-                raise HTTPException(status_code=409, detail="Monster name already exists")
-            raise HTTPException(status_code=400, detail=f"Failed to create monster: {str(exc)}")
+                raise ApiError(409, MonsterError(code="monster_name_already_exists", message="Monster name already exists"))
+            raise ApiError(400, MonsterError(code="failed_to_create_monster", message=f"Failed to create monster: {str(exc)}"))
         except Exception as exc:
             conn.rollback()
-            raise HTTPException(status_code=400, detail=f"Failed to create monster: {str(exc)}")
+            raise ApiError(400, MonsterError(code="failed_to_create_monster", message=f"Failed to create monster: {str(exc)}"))
 
         return _select_monster(cursor, monster_id)
 
 
-@router.put("/monsters/{monster_id}", response_model=Monster)
+@router.put(
+    "/monsters/{monster_id}",
+    response_model=Monster,
+    operation_id="updateMonster",
+    responses=error_responses(MonsterError, 400, 404, 409),
+)
 def update_monster(monster_id: int, monster: MonsterUpdate):
     """Update an existing monster."""
     values = _serialize_monster(monster)
@@ -185,7 +207,7 @@ def update_monster(monster_id: int, monster: MonsterUpdate):
         cursor = conn.cursor()
         cursor.execute("SELECT id FROM monsters WHERE id = ?", (monster_id,))
         if not cursor.fetchone():
-            raise HTTPException(status_code=404, detail="Monster not found")
+            raise ApiError(404, MonsterError(code="monster_not_found", message="Monster not found"))
 
         try:
             cursor.execute(
@@ -196,27 +218,32 @@ def update_monster(monster_id: int, monster: MonsterUpdate):
         except sqlite3.IntegrityError as exc:
             conn.rollback()
             if "UNIQUE" in str(exc).upper():
-                raise HTTPException(status_code=409, detail="Monster name already exists")
-            raise HTTPException(status_code=400, detail=f"Failed to update monster: {str(exc)}")
+                raise ApiError(409, MonsterError(code="monster_name_already_exists", message="Monster name already exists"))
+            raise ApiError(400, MonsterError(code="failed_to_update_monster", message=f"Failed to update monster: {str(exc)}"))
         except Exception as exc:
             conn.rollback()
-            raise HTTPException(status_code=400, detail=f"Failed to update monster: {str(exc)}")
+            raise ApiError(400, MonsterError(code="failed_to_update_monster", message=f"Failed to update monster: {str(exc)}"))
 
         return _select_monster(cursor, monster_id)
 
 
-@router.delete("/monsters/{monster_id}", status_code=204)
+@router.delete(
+    "/monsters/{monster_id}",
+    status_code=204,
+    operation_id="deleteMonster",
+    responses=error_responses(MonsterError, 400, 404),
+)
 def delete_monster(monster_id: int):
     """Delete a monster."""
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT id FROM monsters WHERE id = ?", (monster_id,))
         if not cursor.fetchone():
-            raise HTTPException(status_code=404, detail="Monster not found")
+            raise ApiError(404, MonsterError(code="monster_not_found", message="Monster not found"))
 
         try:
             cursor.execute("DELETE FROM monsters WHERE id = ?", (monster_id,))
             conn.commit()
         except Exception as exc:
             conn.rollback()
-            raise HTTPException(status_code=400, detail=f"Failed to delete monster: {str(exc)}")
+            raise ApiError(400, MonsterError(code="failed_to_delete_monster", message=f"Failed to delete monster: {str(exc)}"))

@@ -1,245 +1,275 @@
+import * as sdk from './generated/sdk.gen'
+import { client as generatedClient } from './generated/client.gen'
 import type {
-  Ability,
-  Condition,
-  DamageType,
-  WeaponProperty,
-  Skill,
-  SpellComponent,
-  Spell,
-  SpellInput,
-  SpellPlayerReplacement,
-  Monster,
-  MonsterInput,
-  Weapon,
-  WeaponInput,
-  Item,
-  ItemInput,
-  LootBundle,
-  LootBundleInput,
-  Player,
-  PlayerInput,
-  PlayerDetail,
-  PlayerSpellbookCharacter,
-  PlayerSpellAssignments,
-  PlayerWeaponAssignments,
-  NPC,
-  NPCInput,
-  Encounter,
-  EncounterInput,
-  Dungeon,
-  DungeonInput,
-  MapLayoutBlob,
-  MapSessionStateBlob,
-  IncomingGateway,
-  LoomThread,
-  LoomThreadCreate,
-  LoomNode,
-  LoomNodeInput,
-  LoomNodeFulfil,
-  LoomSessionLogRequest,
-  LoomTapestry,
-  LoomTapestryThread,
-  LoomThreadItemCreate,
-  LoomThreadItemPositionUpdate,
-  LoomNodeMove,
-  LoomThreadMoveResult,
-  LoomSession,
-  LoomSessionInput,
-  RevealedCellsBlob,
   AtTheTableResponse,
   AtTheTableSet,
+  DungeonInput,
+  EncounterInput,
+  ItemInput,
+  LoomNodeFulfil,
+  LoomNodeInput,
+  LoomNodeMove,
+  LoomSessionInput,
+  LoomSessionLogRequest,
+  LoomThreadCreate,
+  LoomThreadItemCreate,
+  LoomThreadItemPositionUpdate,
+  LootBundleInput,
+  MapLayoutBlob,
+  MapSessionStateBlob,
+  MonsterInput,
+  NPCInput,
+  PlayerInput,
+  PlayerSpellAssignments,
+  PlayerSpellbookCharacter,
+  PlayerWeaponAssignments,
+  RevealedCellsBlob,
+  SpellInput,
+  SpellPlayerReplacement,
+  WeaponInput,
 } from './types'
 
+export { queryKeys } from './queryKeys'
+export { queryInvalidation } from './queryInvalidation'
+
+/** A request error that retains the HTTP status used by existing feature error handling. */
 export class ApiError extends Error {
-  status: number
+  readonly status: number
+  readonly code?: string
 
-  constructor(status: number, message: string) {
+  constructor(status: number, message: string, code?: string) {
     super(message)
+    this.name = 'ApiError'
     this.status = status
+    this.code = code
   }
 }
 
-async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`/api${path}`, {
-    headers: { 'Content-Type': 'application/json' },
-    ...options,
-  })
+const configuredBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim()
+const baseUrl = (configuredBaseUrl || (typeof window === 'undefined' ? '' : window.location.origin)).replace(/\/+$/, '')
 
-  if (!res.ok) {
-    const body = await res.text().catch(() => '')
-    throw new ApiError(res.status, body || res.statusText)
-  }
+/** Shared generated Hey API client. Every production request uses this configured instance. */
+export const apiClient = generatedClient
+apiClient.setConfig({ baseUrl, responseStyle: 'fields', throwOnError: true })
 
-  if (res.status === 204) {
-    return undefined as T
-  }
+apiClient.interceptors.error.use((error, response) => {
+  if (error instanceof ApiError) return error
 
-  return res.json() as Promise<T>
-}
+  const payload = error && typeof error === 'object' ? (error as Record<string, unknown>) : null
+  const detailMessage =
+    typeof payload?.detail === 'string'
+      ? payload.detail
+      : payload?.detail === undefined
+        ? ''
+        : JSON.stringify(payload)
+  const message =
+    (typeof payload?.message === 'string' && payload.message) ||
+    detailMessage ||
+    (error instanceof Error ? error.message : typeof error === 'string' ? error : '') ||
+    response?.statusText ||
+    'API request failed'
+  const code = typeof payload?.code === 'string' ? payload.code : undefined
+  return new ApiError(response?.status ?? 0, message, code)
+})
 
-const get = <T>(path: string, options?: RequestInit) => request<T>(path, options)
-const post = <T>(path: string, body: unknown) =>
-  request<T>(path, { method: 'POST', body: JSON.stringify(body) })
-const put = <T>(path: string, body: unknown) =>
-  request<T>(path, { method: 'PUT', body: JSON.stringify(body) })
-const patch = <T>(path: string, body: unknown) =>
-  request<T>(path, { method: 'PATCH', body: JSON.stringify(body) })
-const del = (path: string) => request<void>(path, { method: 'DELETE' })
+type DataResult<T> = { data: T }
+const resultData = <T>(request: Promise<DataResult<T>>): Promise<T> => request.then(({ data }) => data)
+const options = { client: apiClient, responseStyle: 'fields', throwOnError: true } as const
 
 // Reference data
-export const getAbilities = () => get<Ability[]>('/abilities')
-export const getConditions = () => get<Condition[]>('/conditions')
-export const getDamageTypes = () => get<DamageType[]>('/damage_types')
-export const getWeaponProperties = () => get<WeaponProperty[]>('/weapon_properties')
-export const getSkills = () => get<Skill[]>('/skills')
-export const getSpellComponents = () => get<SpellComponent[]>('/spell-components')
+export const getAbilities = () => resultData(sdk.getAbilities(options))
+export const getConditions = () => resultData(sdk.getConditions(options))
+export const getDamageTypes = () => resultData(sdk.getDamageTypes(options))
+export const getWeaponProperties = () => resultData(sdk.getWeaponProperties(options))
+export const getSkills = () => resultData(sdk.getSkills(options))
+export const getSpellComponents = () => resultData(sdk.getSpellComponents(options))
 
 // Spells
-export const listSpells = () => get<Spell[]>('/spells')
-export const getSpell = (id: number) => get<Spell>(`/spells/${id}`)
-export const getSpellByTitle = (name: string) => get<Spell>(`/spells/by-title/${encodeURIComponent(name)}`)
-export const createSpell = (spell: SpellInput) => post<Spell>('/spells', spell)
-export const updateSpell = (id: number, spell: SpellInput) => put<Spell>(`/spells/${id}`, spell)
-export const deleteSpell = (id: number) => del(`/spells/${id}`)
-export const getSpellPlayers = (spellId: number) => get<Player[]>(`/spells/${spellId}/players`)
+export const listSpells = () => resultData(sdk.listSpells(options))
+export const getSpell = (id: number) => resultData(sdk.getSpell({ ...options, path: { spell_id: id } }))
+export const getSpellByTitle = (name: string) =>
+  resultData(sdk.getSpellByTitle({ ...options, path: { spell_name: name } }))
+export const createSpell = (spell: SpellInput) => resultData(sdk.createSpell({ ...options, body: spell }))
+export const updateSpell = (id: number, spell: SpellInput) =>
+  resultData(sdk.updateSpell({ ...options, path: { spell_id: id }, body: spell }))
+export const deleteSpell = (id: number) =>
+  resultData(sdk.deleteSpell({ ...options, path: { spell_id: id } })).then(() => undefined)
+export const getSpellPlayers = (spellId: number) =>
+  resultData(sdk.getSpellPlayers({ ...options, path: { spell_id: spellId } }))
 export const replaceSpellPlayers = (spellId: number, playerIds: number[]) =>
-  put<Player[]>(`/spells/${spellId}/players`, { player_ids: playerIds } satisfies SpellPlayerReplacement)
+  resultData(
+    sdk.replaceSpellPlayers({
+      ...options,
+      path: { spell_id: spellId },
+      body: { player_ids: playerIds } satisfies SpellPlayerReplacement,
+    }),
+  )
 
 // Monsters
-export const listMonsters = () => get<Monster[]>('/monsters')
-export const getMonster = (id: number) => get<Monster>(`/monsters/${id}`)
-export const getMonsterByName = (name: string) => get<Monster>(`/monsters/by-name/${encodeURIComponent(name)}`)
-export const createMonster = (monster: MonsterInput) => post<Monster>('/monsters', monster)
-export const updateMonster = (id: number, monster: MonsterInput) => put<Monster>(`/monsters/${id}`, monster)
-export const deleteMonster = (id: number) => del(`/monsters/${id}`)
+export const listMonsters = () => resultData(sdk.listMonsters(options))
+export const getMonster = (id: number) => resultData(sdk.getMonster({ ...options, path: { monster_id: id } }))
+export const getMonsterByName = (name: string) =>
+  resultData(sdk.getMonsterByName({ ...options, path: { name } }))
+export const createMonster = (monster: MonsterInput) =>
+  resultData(sdk.createMonster({ ...options, body: monster }))
+export const updateMonster = (id: number, monster: MonsterInput) =>
+  resultData(sdk.updateMonster({ ...options, path: { monster_id: id }, body: monster }))
+export const deleteMonster = (id: number) =>
+  resultData(sdk.deleteMonster({ ...options, path: { monster_id: id } })).then(() => undefined)
 
 // Weapons
-export const listWeapons = () => get<Weapon[]>('/weapons')
-export const getWeapon = (id: number) => get<Weapon>(`/weapons/${id}`)
-export const getWeaponByName = (name: string) => get<Weapon>(`/weapons/by-name/${encodeURIComponent(name)}`)
-export const createWeapon = (weapon: WeaponInput) => post<Weapon>('/weapons', weapon)
-export const updateWeapon = (id: number, weapon: WeaponInput) => put<Weapon>(`/weapons/${id}`, weapon)
-export const deleteWeapon = (id: number) => del(`/weapons/${id}`)
-export const getWeaponPlayers = (id: number) => get<Player[]>(`/weapons/${id}/players`)
+export const listWeapons = () => resultData(sdk.listWeapons(options))
+export const getWeapon = (id: number) => resultData(sdk.getWeapon({ ...options, path: { weapon_id: id } }))
+export const getWeaponByName = (name: string) =>
+  resultData(sdk.getWeaponByName({ ...options, path: { name } }))
+export const createWeapon = (weapon: WeaponInput) => resultData(sdk.createWeapon({ ...options, body: weapon }))
+export const updateWeapon = (id: number, weapon: WeaponInput) =>
+  resultData(sdk.updateWeapon({ ...options, path: { weapon_id: id }, body: weapon }))
+export const deleteWeapon = (id: number) =>
+  resultData(sdk.deleteWeapon({ ...options, path: { weapon_id: id } })).then(() => undefined)
+export const getWeaponPlayers = (id: number) =>
+  resultData(sdk.getWeaponPlayers({ ...options, path: { weapon_id: id } }))
 
-// Items
-export const listItems = () => get<Item[]>('/items')
-export const getItem = (id: number) => get<Item>(`/items/${id}`)
-export const createItem = (item: ItemInput) => post<Item>('/items', item)
-export const updateItem = (id: number, item: ItemInput) => put<Item>(`/items/${id}`, item)
-export const deleteItem = (id: number) => del(`/items/${id}`)
+// Items and loot bundles
+export const listItems = () => resultData(sdk.listItems(options))
+export const getItem = (id: number) => resultData(sdk.getItem({ ...options, path: { item_id: id } }))
+export const createItem = (item: ItemInput) => resultData(sdk.createItem({ ...options, body: item }))
+export const updateItem = (id: number, item: ItemInput) =>
+  resultData(sdk.updateItem({ ...options, path: { item_id: id }, body: item }))
+export const deleteItem = (id: number) =>
+  resultData(sdk.deleteItem({ ...options, path: { item_id: id } })).then(() => undefined)
+export const listLootBundles = () => resultData(sdk.listLootBundles(options))
+export const getLootBundle = (id: number) =>
+  resultData(sdk.getLootBundle({ ...options, path: { bundle_id: id } }))
+export const createLootBundle = (bundle: LootBundleInput) =>
+  resultData(sdk.createLootBundle({ ...options, body: bundle }))
+export const updateLootBundle = (id: number, bundle: LootBundleInput) =>
+  resultData(sdk.updateLootBundle({ ...options, path: { bundle_id: id }, body: bundle }))
+export const deleteLootBundle = (id: number) =>
+  resultData(sdk.deleteLootBundle({ ...options, path: { bundle_id: id } })).then(() => undefined)
 
-// Players
-export const listPlayers = () => get<Player[]>('/players')
-export const getPlayer = (id: number) => get<Player>(`/players/${id}`)
-export const getPlayerDetail = (id: number) => get<PlayerDetail>(`/players/${id}/detail`)
-export const createPlayer = (player: PlayerInput) => post<Player>('/players', player)
-export const updatePlayer = (id: number, player: PlayerInput) => put<Player>(`/players/${id}`, player)
-export const deletePlayer = (id: number) => del(`/players/${id}`)
+// Players and assignments
+export const listPlayers = () => resultData(sdk.listPlayers(options))
+export const getPlayer = (id: number) => resultData(sdk.getPlayer({ ...options, path: { player_id: id } }))
+export const getPlayerDetail = (id: number) =>
+  resultData(sdk.getPlayerDetail({ ...options, path: { player_id: id } }))
+export const createPlayer = (player: PlayerInput) => resultData(sdk.createPlayer({ ...options, body: player }))
+export const updatePlayer = (id: number, player: PlayerInput) =>
+  resultData(sdk.updatePlayer({ ...options, path: { player_id: id }, body: player }))
+export const deletePlayer = (id: number) =>
+  resultData(sdk.deletePlayer({ ...options, path: { player_id: id } })).then(() => undefined)
 export const getPlayerSpellbook = (signal?: AbortSignal) =>
-  get<PlayerSpellbookCharacter[]>('/players/spellbook', { signal })
-export const getPlayerSpells = (id: number) => get<Spell[]>(`/players/${id}/spells`)
-export const getPlayerWeapons = (id: number) => get<Weapon[]>(`/players/${id}/weapons`)
+  resultData(sdk.getPlayerSpellbook({ ...options, signal })) as Promise<PlayerSpellbookCharacter[]>
+export const getPlayerSpells = (id: number) =>
+  resultData(sdk.getPlayerSpells({ ...options, path: { player_id: id } }))
+export const getPlayerWeapons = (id: number) =>
+  resultData(sdk.getPlayerWeapons({ ...options, path: { player_id: id } }))
 export const replacePlayerSpells = (playerId: number, spellIds: number[]) =>
-  put<Spell[]>(`/players/${playerId}/spells`, { spell_ids: spellIds } satisfies PlayerSpellAssignments)
+  resultData(
+    sdk.replacePlayerSpells({
+      ...options,
+      path: { player_id: playerId },
+      body: { spell_ids: spellIds } satisfies PlayerSpellAssignments,
+    }),
+  )
 export const replacePlayerWeapons = (playerId: number, weaponIds: number[]) =>
-  put<Weapon[]>(`/players/${playerId}/weapons`, { weapon_ids: weaponIds } satisfies PlayerWeaponAssignments)
+  resultData(
+    sdk.replacePlayerWeapons({
+      ...options,
+      path: { player_id: playerId },
+      body: { weapon_ids: weaponIds } satisfies PlayerWeaponAssignments,
+    }),
+  )
 
 // NPCs
-export const listNPCs = () => get<NPC[]>('/npcs')
-export const getNPC = (id: number) => get<NPC>(`/npcs/${id}`)
-export const createNPC = (npc: NPCInput) => post<NPC>('/npcs', npc)
-export const updateNPC = (id: number, npc: NPCInput) => put<NPC>(`/npcs/${id}`, npc)
-export const deleteNPC = (id: number) => del(`/npcs/${id}`)
+export const listNPCs = () => resultData(sdk.listNpcs(options))
+export const getNPC = (id: number) => resultData(sdk.getNpc({ ...options, path: { npc_id: id } }))
+export const createNPC = (npc: NPCInput) => resultData(sdk.createNpc({ ...options, body: npc }))
+export const updateNPC = (id: number, npc: NPCInput) =>
+  resultData(sdk.updateNpc({ ...options, path: { npc_id: id }, body: npc }))
+export const deleteNPC = (id: number) =>
+  resultData(sdk.deleteNpc({ ...options, path: { npc_id: id } })).then(() => undefined)
 
 // Encounters
-export const listEncounters = () => get<Encounter[]>('/encounters')
-export const getEncounter = (id: number) => get<Encounter>(`/encounters/${id}`)
-export const createEncounter = (encounter: EncounterInput) => post<Encounter>('/encounters', encounter)
+export const listEncounters = () => resultData(sdk.listEncounters(options))
+export const getEncounter = (id: number) =>
+  resultData(sdk.getEncounter({ ...options, path: { encounter_id: id } }))
+export const createEncounter = (encounter: EncounterInput) =>
+  resultData(sdk.createEncounter({ ...options, body: encounter }))
 export const updateEncounter = (id: number, encounter: EncounterInput) =>
-  put<Encounter>(`/encounters/${id}`, encounter)
-export const deleteEncounter = (id: number) => del(`/encounters/${id}`)
+  resultData(sdk.updateEncounter({ ...options, path: { encounter_id: id }, body: encounter }))
+export const deleteEncounter = (id: number) =>
+  resultData(sdk.deleteEncounter({ ...options, path: { encounter_id: id } })).then(() => undefined)
 
-// Loot bundles
-export const listLootBundles = () => get<LootBundle[]>('/loot-bundles')
-export const getLootBundle = (id: number) => get<LootBundle>(`/loot-bundles/${id}`)
-export const createLootBundle = (bundle: LootBundleInput) => post<LootBundle>('/loot-bundles', bundle)
-export const updateLootBundle = (id: number, bundle: LootBundleInput) =>
-  put<LootBundle>(`/loot-bundles/${id}`, bundle)
-export const deleteLootBundle = (id: number) => del(`/loot-bundles/${id}`)
-
-// Dungeons
-export const listDungeons = () => get<Dungeon[]>('/dungeons')
-export const getDungeon = (id: number) => get<Dungeon>(`/dungeons/${id}`)
-export const createDungeon = (dungeon: DungeonInput) => post<Dungeon>('/dungeons', dungeon)
-export const updateDungeon = (id: number, dungeon: DungeonInput) => put<Dungeon>(`/dungeons/${id}`, dungeon)
-export const deleteDungeon = (id: number) => del(`/dungeons/${id}`)
-
-// Map Lab layout
+// Dungeons and Map Lab
+export const listDungeons = () => resultData(sdk.listDungeons(options))
+export const getDungeon = (id: number) =>
+  resultData(sdk.getDungeon({ ...options, path: { dungeon_id: id } }))
+export const createDungeon = (dungeon: DungeonInput) =>
+  resultData(sdk.createDungeon({ ...options, body: dungeon }))
+export const updateDungeon = (id: number, dungeon: DungeonInput) =>
+  resultData(sdk.updateDungeon({ ...options, path: { dungeon_id: id }, body: dungeon }))
+export const deleteDungeon = (id: number) =>
+  resultData(sdk.deleteDungeon({ ...options, path: { dungeon_id: id } })).then(() => undefined)
 export const getDungeonLayout = (dungeonId: number, signal?: AbortSignal) =>
-  get<MapLayoutBlob>(`/dungeons/${dungeonId}/layout`, { signal })
+  resultData(sdk.getDungeonLayout({ ...options, path: { dungeon_id: dungeonId }, signal }))
 export const saveDungeonLayout = (dungeonId: number, blob: MapLayoutBlob) =>
-  put<MapLayoutBlob>(`/dungeons/${dungeonId}/layout`, blob)
+  resultData(sdk.saveDungeonLayout({ ...options, path: { dungeon_id: dungeonId }, body: blob }))
 export const listIncomingGateways = (dungeonId: number) =>
-  get<IncomingGateway[]>(`/dungeons/${dungeonId}/incoming-gateways`)
-
-// Map Lab session state
+  resultData(sdk.getIncomingGateways({ ...options, path: { dungeon_id: dungeonId } }))
 export const getDungeonSessionState = (dungeonId: number, signal?: AbortSignal) =>
-  get<MapSessionStateBlob>(`/dungeons/${dungeonId}/session-state`, { signal })
+  resultData(sdk.getDungeonSessionState({ ...options, path: { dungeon_id: dungeonId }, signal }))
 export const saveDungeonSessionState = (dungeonId: number, blob: MapSessionStateBlob) =>
-  put<MapSessionStateBlob>(`/dungeons/${dungeonId}/session-state`, blob)
+  resultData(sdk.saveDungeonSessionState({ ...options, path: { dungeon_id: dungeonId }, body: blob }))
 export const resetDungeonSessionState = (dungeonId: number) =>
-  del(`/dungeons/${dungeonId}/session-state`)
+  resultData(sdk.resetDungeonSessionState({ ...options, path: { dungeon_id: dungeonId } })).then(() => undefined)
 
-// Loom — tapestry
-export const getLoomTapestry = () => get<LoomTapestry>('/loom/tapestry')
-
-// Loom — threads
-export const listLoomThreads = () => get<LoomThread[]>('/loom/threads')
+// Loom
+export const getLoomTapestry = () => resultData(sdk.getTapestry(options))
+export const listLoomThreads = () => resultData(sdk.listThreads(options))
 export const createLoomThread = (thread: LoomThreadCreate) =>
-  post<LoomTapestryThread>('/loom/threads', thread)
+  resultData(sdk.createThread({ ...options, body: thread }))
 export const updateLoomThread = (id: number, thread: LoomThreadCreate) =>
-  put<LoomThread>(`/loom/threads/${id}`, thread)
-export const deleteLoomThread = (id: number) => del(`/loom/threads/${id}`)
-
-// Loom — nodes
-export const createLoomNode = (node: LoomNodeInput) => post<LoomNode>('/loom/nodes', node)
+  resultData(sdk.updateThread({ ...options, path: { thread_id: id }, body: thread }))
+export const deleteLoomThread = (id: number) =>
+  resultData(sdk.deleteThread({ ...options, path: { thread_id: id } })).then(() => undefined)
+export const createLoomNode = (node: LoomNodeInput) =>
+  resultData(sdk.createNode({ ...options, body: node }))
 export const updateLoomNode = (id: number, node: LoomNodeInput) =>
-  put<LoomNode>(`/loom/nodes/${id}`, node)
-export const deleteLoomNode = (id: number) => del(`/loom/nodes/${id}`)
+  resultData(sdk.updateNode({ ...options, path: { node_id: id }, body: node }))
+export const deleteLoomNode = (id: number) =>
+  resultData(sdk.deleteNode({ ...options, path: { node_id: id } })).then(() => undefined)
 export const fulfilLoomNode = (id: number, payload: LoomNodeFulfil = {}) =>
-  post<LoomNode>(`/loom/nodes/${id}/fulfil`, payload)
+  resultData(sdk.fulfilBeat({ ...options, path: { node_id: id }, body: payload }))
 export const bankLoomNode = (id: number) =>
-  post<LoomNode>(`/loom/nodes/${id}/bank`, {})
-
-// Loom — sessions
-export const getLoomSessions = () => get<LoomSession[]>('/loom/sessions')
+  resultData(sdk.bankBeat({ ...options, path: { node_id: id } }))
+export const getLoomSessions = () => resultData(sdk.listSessions(options))
 export const createLoomSession = (session: LoomSessionInput) =>
-  post<LoomSession>('/loom/sessions', session)
+  resultData(sdk.createSession({ ...options, body: session }))
 export const updateLoomSession = (id: number, session: LoomSessionInput) =>
-  put<LoomSession>(`/loom/sessions/${id}`, session)
-export const deleteLoomSession = (id: number) => del(`/loom/sessions/${id}`)
+  resultData(sdk.updateSession({ ...options, path: { session_id: id }, body: session }))
+export const deleteLoomSession = (id: number) =>
+  resultData(sdk.deleteSession({ ...options, path: { session_id: id } })).then(() => undefined)
 export const logLoomSession = (request: LoomSessionLogRequest) =>
-  post<LoomSession>('/loom/sessions/log', request)
-
-// Loom — thread items (ordered membership)
+  resultData(sdk.logSession({ ...options, body: request }))
 export const insertLoomThreadItem = (threadId: number, item: LoomThreadItemCreate) =>
-  post<LoomTapestryThread>(`/loom/threads/${threadId}/items`, item)
-export const reorderLoomThreadItem = (threadId: number, nodeId: number, update: LoomThreadItemPositionUpdate) =>
-  patch<LoomTapestryThread>(`/loom/threads/${threadId}/items/${nodeId}`, update)
+  resultData(sdk.addThreadItem({ ...options, path: { thread_id: threadId }, body: item }))
+export const reorderLoomThreadItem = (
+  threadId: number,
+  nodeId: number,
+  update: LoomThreadItemPositionUpdate,
+) => resultData(sdk.reorderThreadItem({ ...options, path: { thread_id: threadId, node_id: nodeId }, body: update }))
 export const removeLoomThreadItem = (threadId: number, nodeId: number) =>
-  del(`/loom/threads/${threadId}/items/${nodeId}`)
+  resultData(sdk.removeThreadItem({ ...options, path: { thread_id: threadId, node_id: nodeId } })).then(() => undefined)
 export const moveLoomThreadItem = (threadId: number, nodeId: number, body: LoomNodeMove) =>
-  post<LoomThreadMoveResult>(`/loom/threads/${threadId}/items/${nodeId}/move`, body)
+  resultData(sdk.moveThreadItem({ ...options, path: { thread_id: threadId, node_id: nodeId }, body }))
 
-// Fog of war (player app)
+// Fog of war and the shared DM-to-player pointer
 export const getRevealedCells = (dungeonId: number) =>
-  get<RevealedCellsBlob>(`/dungeons/${dungeonId}/revealed-cells`)
+  resultData(sdk.getRevealedCells({ ...options, path: { dungeon_id: dungeonId } }))
 export const revealCells = (dungeonId: number, blob: RevealedCellsBlob) =>
-  put<RevealedCellsBlob>(`/dungeons/${dungeonId}/revealed-cells`, blob)
-
-// At-the-table pointer (DM → player app)
-export const getAtTheTable = (signal?: AbortSignal) => get<AtTheTableResponse>('/at-the-table', { signal })
-export const setAtTheTable = (blob: AtTheTableSet) => put<AtTheTableResponse>('/at-the-table', blob)
-
-
+  resultData(sdk.revealCells({ ...options, path: { dungeon_id: dungeonId }, body: blob }))
+export const getAtTheTable = (signal?: AbortSignal) =>
+  resultData(sdk.getAtTheTable({ ...options, signal })) as Promise<AtTheTableResponse>
+export const setAtTheTable = (blob: AtTheTableSet) =>
+  resultData(sdk.setAtTheTable({ ...options, body: blob }))

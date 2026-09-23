@@ -11,8 +11,8 @@ import pytest
 # Import the migration module
 import sys
 
-sys.path.insert(0, str(Path(__file__).parent.parent.parent / "scripts"))
-from migrate_map_obstacle_state import (
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from backend.migrations.migrate_map_obstacle_state import (
     reset_fixture_obstacles,
     reset_layout_obstacles,
     migrate_database,

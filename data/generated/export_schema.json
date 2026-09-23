@@ -1,6 +1,6 @@
 {
-  "_generated_by": "scripts/generate_export_schema.py",
-  "_source": "scripts/init_database.py",
+  "_generated_by": "src/tools/generate_export_schema.py",
+  "_source": "backend/database/init_database.py",
   "_do_not_edit": "Regenerate with --write; CI runs --check.",
   "tables": {
     "abilities": [

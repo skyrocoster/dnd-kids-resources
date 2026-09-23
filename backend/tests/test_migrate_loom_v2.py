@@ -1,4 +1,4 @@
-"""Tests for scripts/migrate_loom_v2.py — the v1→v2 Loom schema migrator.
+"""Tests for backend/migrations/migrate_loom_v2.py — the v1→v2 Loom schema migrator.
 
 Each test creates a temporary SQLite database with the OLD v1 schema,
 populates it with test data, runs the migration, and asserts the results.
@@ -15,7 +15,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
-SCRIPT_PATH = ROOT / "scripts" / "migrate_loom_v2.py"
+SCRIPT_PATH = ROOT / "backend" / "migrations" / "migrate_loom_v2.py"
 
 spec = importlib.util.spec_from_file_location("migrate_loom_v2", SCRIPT_PATH)
 migrate_mod = importlib.util.module_from_spec(spec)

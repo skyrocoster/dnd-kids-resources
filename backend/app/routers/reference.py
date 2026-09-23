@@ -2,13 +2,15 @@ from fastapi import APIRouter, HTTPException
 from typing import List
 import json
 
+from ..caching import cached_get
 from ..db import get_db, dict_from_row, parse_json_value
 from ..schemas import Ability, Condition, DamageType, WeaponProperty, Skill, SpellComponent
 
 router = APIRouter(prefix="/api", tags=["reference"])
 
 
-@router.get("/abilities", response_model=List[Ability])
+@router.get("/abilities", response_model=List[Ability], operation_id="getAbilities")
+@cached_get("reference")
 def get_abilities():
     """Get the six ability scores (Strength, Dexterity, etc.)."""
     with get_db() as conn:
@@ -21,7 +23,8 @@ def get_abilities():
         return [dict_from_row(row) for row in rows]
 
 
-@router.get("/conditions", response_model=List[Condition])
+@router.get("/conditions", response_model=List[Condition], operation_id="getConditions")
+@cached_get("reference")
 def get_conditions():
     """Get all conditions (Poisoned, Charmed, etc.)."""
     with get_db() as conn:
@@ -31,7 +34,8 @@ def get_conditions():
         return [dict_from_row(row) for row in rows]
 
 
-@router.get("/damage_types", response_model=List[DamageType])
+@router.get("/damage_types", response_model=List[DamageType], operation_id="getDamageTypes")
+@cached_get("reference")
 def get_damage_types():
     """Get all damage types (Fire, Cold, Poison, etc.)."""
     with get_db() as conn:
@@ -41,7 +45,8 @@ def get_damage_types():
         return [dict_from_row(row) for row in rows]
 
 
-@router.get("/weapon_properties", response_model=List[WeaponProperty])
+@router.get("/weapon_properties", response_model=List[WeaponProperty], operation_id="getWeaponProperties")
+@cached_get("reference")
 def get_weapon_properties():
     """Get all weapon properties (Finesse, Versatile, etc.)."""
     with get_db() as conn:
@@ -51,7 +56,8 @@ def get_weapon_properties():
         return [dict_from_row(row) for row in rows]
 
 
-@router.get("/skills", response_model=List[Skill])
+@router.get("/skills", response_model=List[Skill], operation_id="getSkills")
+@cached_get("reference")
 def get_skills():
     """Get all skills mapped to abilities."""
     # Standard D&D 5e skills
@@ -78,7 +84,8 @@ def get_skills():
     return skills
 
 
-@router.get("/spell-components", response_model=List[SpellComponent])
+@router.get("/spell-components", response_model=List[SpellComponent], operation_id="getSpellComponents")
+@cached_get("reference")
 def get_spell_components():
     """Get all spell component types (V, S, M)."""
     components = [

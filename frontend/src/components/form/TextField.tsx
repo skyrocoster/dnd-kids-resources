@@ -1,3 +1,5 @@
+import { Field as BaseField } from '@base-ui/react/field'
+import { Input } from '@base-ui/react/input'
 import { useId } from 'react'
 import type { InputHTMLAttributes, TextareaHTMLAttributes } from 'react'
 import './form.css'
@@ -20,10 +22,15 @@ export function TextField(props: TextFieldProps | TextAreaFieldProps) {
   const { label, error, multiline, ...rest } = props
 
   return (
-    <div className="form-field">
-      <label htmlFor={id} className="form-label">
+    <BaseField.Root
+      className="form-field"
+      name={rest.name}
+      disabled={rest.disabled}
+      invalid={!!error}
+    >
+      <BaseField.Label htmlFor={id} className="form-label">
         {label}
-      </label>
+      </BaseField.Label>
       {multiline ? (
         <textarea
           id={id}
@@ -33,7 +40,7 @@ export function TextField(props: TextFieldProps | TextAreaFieldProps) {
           {...(rest as TextareaHTMLAttributes<HTMLTextAreaElement>)}
         />
       ) : (
-        <input
+        <Input
           id={id}
           className="form-control"
           aria-invalid={!!error}
@@ -42,10 +49,10 @@ export function TextField(props: TextFieldProps | TextAreaFieldProps) {
         />
       )}
       {error && (
-        <p className="form-error" id={errorId}>
+        <BaseField.Error id={errorId} className="form-error" match={!!error}>
           {error}
-        </p>
+        </BaseField.Error>
       )}
-    </div>
+    </BaseField.Root>
   )
 }

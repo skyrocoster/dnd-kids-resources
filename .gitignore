@@ -24,10 +24,6 @@ Thumbs.db
 build/
 *.log
 *.log.err
-.server.pid
-.frontend.pid
-.demo-backend.pid
-.demo-tunnel.pid
 .coverage
 
 # Browser-validation runtime evidence; acceptance may retain artifacts locally,

@@ -287,7 +287,7 @@ class TestDuplicateNameContract:
         assert test_client.post("/api/spells", json=_CREATE_PAYLOAD).status_code == 201
         resp = test_client.post("/api/spells", json=_CREATE_PAYLOAD)
         assert resp.status_code == 400
-        assert resp.json()["detail"] == "A spell with this name already exists"
+        assert resp.json()["message"] == "A spell with this name already exists"
 
 
 class TestSchoolFilterNormalization:

@@ -10,7 +10,7 @@ import pytest
 from backend.app.schemas import Monster
 
 ROOT = Path(__file__).resolve().parents[2]
-SCRIPT_PATH = ROOT / "scripts" / "migrate_monsters.py"
+SCRIPT_PATH = ROOT / "src" / "tools" / "migrate_monsters.py"
 SEED_PATH = ROOT / "data" / "seeds" / "seed_monsters.json"
 LEGACY_TOP_LEVEL_FIELDS = {
     "alias",

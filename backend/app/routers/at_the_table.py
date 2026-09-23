@@ -1,14 +1,16 @@
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException
-
+from ..api_errors import ApiError, ApiRouter, error_responses
+from ..caching import cached_get
 from ..db import get_db
 from ..schemas import AtTheTableResponse, AtTheTableSet
+from ..schemas.errors import AtTheTableError
 
-router = APIRouter(prefix="/api", tags=["at_the_table"])
+router = ApiRouter(prefix="/api", tags=["at_the_table"])
 
 
-@router.get("/at-the-table", response_model=AtTheTableResponse)
+@router.get("/at-the-table", response_model=AtTheTableResponse, operation_id="getAtTheTable")
+@cached_get("at_the_table")
 def get_at_the_table() -> dict:
     """Get the dungeon currently set as 'at the table'"""
     with get_db() as conn:
@@ -20,14 +22,22 @@ def get_at_the_table() -> dict:
         return {"dungeon_id": row["dungeon_id"]}
 
 
-@router.put("/at-the-table", response_model=AtTheTableResponse)
+@router.put(
+    "/at-the-table",
+    response_model=AtTheTableResponse,
+    operation_id="setAtTheTable",
+    responses=error_responses(AtTheTableError, 400, 404),
+)
 def set_at_the_table(blob: AtTheTableSet) -> dict:
     """Set which dungeon is at the table"""
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT 1 FROM dungeons WHERE id = ?", (blob.dungeon_id,))
         if not cursor.fetchone():
-            raise HTTPException(status_code=404, detail="Dungeon not found")
+            raise ApiError(
+                404,
+                AtTheTableError(code="dungeon_not_found", message="Dungeon not found"),
+            )
         try:
             cursor.execute(
                 """INSERT INTO at_the_table (lock, dungeon_id) VALUES (1, ?)
@@ -37,6 +47,12 @@ def set_at_the_table(blob: AtTheTableSet) -> dict:
             conn.commit()
         except Exception as e:
             conn.rollback()
-            raise HTTPException(status_code=400, detail=f"Failed to set at-the-table: {str(e)}")
+            raise ApiError(
+                400,
+                AtTheTableError(
+                    code="failed_to_set_at_the_table",
+                    message=f"Failed to set at-the-table: {str(e)}",
+                ),
+            )
 
         return {"dungeon_id": blob.dungeon_id}

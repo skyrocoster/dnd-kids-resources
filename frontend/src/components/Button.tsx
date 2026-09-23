@@ -1,3 +1,4 @@
+import { Button as BaseButton } from '@base-ui/react/button'
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
 import './Button.css'
 
@@ -19,14 +20,17 @@ export function Button({
   disabled,
   ...rest
 }: ButtonProps) {
+  // Rendered through the Base UI headless Button (a <button>) so behavior,
+  // disabled handling, and focus stay consistent with future Base UI
+  // primitives. Visuals still come from ./Button.css and the theme.css tokens.
   return (
-    <button
+    <BaseButton
       className={`btn btn--${variant} btn--${size}`}
       disabled={disabled || loading}
       aria-busy={loading || undefined}
       {...rest}
     >
       {children}
-    </button>
+    </BaseButton>
   )
 }

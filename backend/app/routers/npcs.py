@@ -1,11 +1,14 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import Query
 from typing import List
 import json
 
+from ..api_errors import ApiError, ApiRouter, error_responses
+from ..caching import cached_get
 from ..db import get_db, dict_from_row, parse_json_value
 from ..schemas import NPC, NPCCreate, NPCUpdate
+from ..schemas.errors import NpcError
 
-router = APIRouter(prefix="/api", tags=["npcs"])
+router = ApiRouter(prefix="/api", tags=["npcs"])
 
 NPC_COLUMNS = [
     "id",
@@ -81,11 +84,12 @@ def _select_npc(cursor, npc_id: int) -> dict:
     cursor.execute(f"SELECT {columns} FROM npcs WHERE id = ?", (npc_id,))
     row = cursor.fetchone()
     if not row:
-        raise HTTPException(status_code=404, detail="NPC not found")
+        raise ApiError(404, NpcError(code="npc_not_found", message="NPC not found"))
     return _parse_npc_row(row)
 
 
-@router.get("/npcs", response_model=List[NPC])
+@router.get("/npcs", response_model=List[NPC], operation_id="listNpcs")
+@cached_get("npcs")
 def list_npcs(
     limit: int = Query(100, ge=1, le=500),
     offset: int = Query(0, ge=0),
@@ -102,7 +106,13 @@ def list_npcs(
         return [_parse_npc_row(row) for row in rows]
 
 
-@router.get("/npcs/{npc_id}", response_model=NPC)
+@router.get(
+    "/npcs/{npc_id}",
+    response_model=NPC,
+    operation_id="getNpc",
+    responses=error_responses(NpcError, 404),
+)
+@cached_get("npcs")
 def get_npc(npc_id: int):
     """Get a specific NPC by ID."""
     with get_db() as conn:
@@ -110,7 +120,13 @@ def get_npc(npc_id: int):
         return _select_npc(cursor, npc_id)
 
 
-@router.post("/npcs", response_model=NPC, status_code=201)
+@router.post(
+    "/npcs",
+    response_model=NPC,
+    status_code=201,
+    operation_id="createNpc",
+    responses=error_responses(NpcError, 400, 404),
+)
 def create_npc(npc: NPCCreate):
     """Create a new NPC."""
     values = _serialize_npc(npc)
@@ -129,12 +145,17 @@ def create_npc(npc: NPCCreate):
             npc_id = cursor.lastrowid
         except Exception as e:
             conn.rollback()
-            raise HTTPException(status_code=400, detail=f"Failed to create NPC: {str(e)}")
+            raise ApiError(400, NpcError(code="failed_to_create_npc", message=f"Failed to create NPC: {str(e)}"))
 
         return _select_npc(cursor, npc_id)
 
 
-@router.put("/npcs/{npc_id}", response_model=NPC)
+@router.put(
+    "/npcs/{npc_id}",
+    response_model=NPC,
+    operation_id="updateNpc",
+    responses=error_responses(NpcError, 400, 404),
+)
 def update_npc(npc_id: int, npc: NPCUpdate):
     """Update an existing NPC."""
     values = _serialize_npc(npc)
@@ -146,7 +167,7 @@ def update_npc(npc_id: int, npc: NPCUpdate):
 
         cursor.execute("SELECT id FROM npcs WHERE id = ?", (npc_id,))
         if not cursor.fetchone():
-            raise HTTPException(status_code=404, detail="NPC not found")
+            raise ApiError(404, NpcError(code="npc_not_found", message="NPC not found"))
 
         try:
             cursor.execute(
@@ -156,12 +177,17 @@ def update_npc(npc_id: int, npc: NPCUpdate):
             conn.commit()
         except Exception as e:
             conn.rollback()
-            raise HTTPException(status_code=400, detail=f"Failed to update NPC: {str(e)}")
+            raise ApiError(400, NpcError(code="failed_to_update_npc", message=f"Failed to update NPC: {str(e)}"))
 
         return _select_npc(cursor, npc_id)
 
 
-@router.delete("/npcs/{npc_id}", status_code=204)
+@router.delete(
+    "/npcs/{npc_id}",
+    status_code=204,
+    operation_id="deleteNpc",
+    responses=error_responses(NpcError, 400, 404),
+)
 def delete_npc(npc_id: int):
     """Delete an NPC."""
     with get_db() as conn:
@@ -169,11 +195,11 @@ def delete_npc(npc_id: int):
 
         cursor.execute("SELECT id FROM npcs WHERE id = ?", (npc_id,))
         if not cursor.fetchone():
-            raise HTTPException(status_code=404, detail="NPC not found")
+            raise ApiError(404, NpcError(code="npc_not_found", message="NPC not found"))
 
         try:
             cursor.execute("DELETE FROM npcs WHERE id = ?", (npc_id,))
             conn.commit()
         except Exception as e:
             conn.rollback()
-            raise HTTPException(status_code=400, detail=f"Failed to delete NPC: {str(e)}")
+            raise ApiError(400, NpcError(code="failed_to_delete_npc", message=f"Failed to delete NPC: {str(e)}"))

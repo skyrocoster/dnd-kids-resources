@@ -1,12 +1,15 @@
 import json
 from typing import List
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import Query
 
+from ..api_errors import ApiError, ApiRouter, error_responses
+from ..caching import cached_get
 from ..db import dict_from_row, get_db, parse_json_value
 from ..schemas import LootBundle, LootBundleCreate, LootBundleUpdate
+from ..schemas.errors import LootError
 
-router = APIRouter(prefix="/api", tags=["loot"])
+router = ApiRouter(prefix="/api", tags=["loot"])
 
 SELECT_COLUMNS = "id, name, gold, contents"
 
@@ -23,7 +26,8 @@ def _parse_loot_bundle_row(row) -> dict:
     return bundle
 
 
-@router.get("/loot-bundles", response_model=List[LootBundle])
+@router.get("/loot-bundles", response_model=List[LootBundle], operation_id="listLootBundles")
+@cached_get("loot")
 def list_loot_bundles(
     limit: int = Query(100, ge=1, le=500),
     offset: int = Query(0, ge=0),
@@ -38,7 +42,13 @@ def list_loot_bundles(
         return [_parse_loot_bundle_row(row) for row in cursor.fetchall()]
 
 
-@router.get("/loot-bundles/{bundle_id}", response_model=LootBundle)
+@router.get(
+    "/loot-bundles/{bundle_id}",
+    response_model=LootBundle,
+    operation_id="getLootBundle",
+    responses=error_responses(LootError, 404),
+)
+@cached_get("loot")
 def get_loot_bundle(bundle_id: int):
     """Get a loot bundle by ID."""
     with get_db() as conn:
@@ -46,11 +56,17 @@ def get_loot_bundle(bundle_id: int):
         cursor.execute(f"SELECT {SELECT_COLUMNS} FROM loot_bundle WHERE id = ?", (bundle_id,))
         bundle = _parse_loot_bundle_row(cursor.fetchone())
         if bundle is None:
-            raise HTTPException(status_code=404, detail="Loot bundle not found")
+            raise ApiError(404, LootError(code="loot_bundle_not_found", message="Loot bundle not found"))
         return bundle
 
 
-@router.post("/loot-bundles", response_model=LootBundle, status_code=201)
+@router.post(
+    "/loot-bundles",
+    response_model=LootBundle,
+    status_code=201,
+    operation_id="createLootBundle",
+    responses=error_responses(LootError, 400),
+)
 def create_loot_bundle(bundle: LootBundleCreate):
     """Create a loot bundle."""
     with get_db() as conn:
@@ -64,20 +80,28 @@ def create_loot_bundle(bundle: LootBundleCreate):
             bundle_id = cursor.lastrowid
         except Exception as e:
             conn.rollback()
-            raise HTTPException(status_code=400, detail=f"Failed to create loot bundle: {str(e)}")
+            raise ApiError(
+                400,
+                LootError(code="failed_to_create_loot_bundle", message=f"Failed to create loot bundle: {str(e)}"),
+            )
 
         cursor.execute(f"SELECT {SELECT_COLUMNS} FROM loot_bundle WHERE id = ?", (bundle_id,))
         return _parse_loot_bundle_row(cursor.fetchone())
 
 
-@router.put("/loot-bundles/{bundle_id}", response_model=LootBundle)
+@router.put(
+    "/loot-bundles/{bundle_id}",
+    response_model=LootBundle,
+    operation_id="updateLootBundle",
+    responses=error_responses(LootError, 400, 404),
+)
 def update_loot_bundle(bundle_id: int, bundle: LootBundleUpdate):
     """Update a loot bundle."""
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT id FROM loot_bundle WHERE id = ?", (bundle_id,))
         if cursor.fetchone() is None:
-            raise HTTPException(status_code=404, detail="Loot bundle not found")
+            raise ApiError(404, LootError(code="loot_bundle_not_found", message="Loot bundle not found"))
 
         try:
             cursor.execute(
@@ -94,24 +118,35 @@ def update_loot_bundle(bundle_id: int, bundle: LootBundleUpdate):
             conn.commit()
         except Exception as e:
             conn.rollback()
-            raise HTTPException(status_code=400, detail=f"Failed to update loot bundle: {str(e)}")
+            raise ApiError(
+                400,
+                LootError(code="failed_to_update_loot_bundle", message=f"Failed to update loot bundle: {str(e)}"),
+            )
 
         cursor.execute(f"SELECT {SELECT_COLUMNS} FROM loot_bundle WHERE id = ?", (bundle_id,))
         return _parse_loot_bundle_row(cursor.fetchone())
 
 
-@router.delete("/loot-bundles/{bundle_id}", status_code=204)
+@router.delete(
+    "/loot-bundles/{bundle_id}",
+    status_code=204,
+    operation_id="deleteLootBundle",
+    responses=error_responses(LootError, 400, 404),
+)
 def delete_loot_bundle(bundle_id: int):
     """Delete a loot bundle."""
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT id FROM loot_bundle WHERE id = ?", (bundle_id,))
         if cursor.fetchone() is None:
-            raise HTTPException(status_code=404, detail="Loot bundle not found")
+            raise ApiError(404, LootError(code="loot_bundle_not_found", message="Loot bundle not found"))
 
         try:
             cursor.execute("DELETE FROM loot_bundle WHERE id = ?", (bundle_id,))
             conn.commit()
         except Exception as e:
             conn.rollback()
-            raise HTTPException(status_code=400, detail=f"Failed to delete loot bundle: {str(e)}")
+            raise ApiError(
+                400,
+                LootError(code="failed_to_delete_loot_bundle", message=f"Failed to delete loot bundle: {str(e)}"),
+            )

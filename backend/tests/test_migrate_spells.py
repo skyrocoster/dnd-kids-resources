@@ -12,7 +12,7 @@ import pytest
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 ROOT = Path(__file__).resolve().parents[2]
-SCRIPT_PATH = ROOT / "scripts" / "migrate_spells.py"
+SCRIPT_PATH = ROOT / "src" / "tools" / "migrate_spells.py"
 SEED_PATH = ROOT / "data" / "seeds" / "seed_spells.json"
 TARGET_FIELDS = [
     "id",

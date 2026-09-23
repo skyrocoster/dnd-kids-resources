@@ -18,6 +18,14 @@ describe('TextField', () => {
     expect(screen.getByLabelText('Description').tagName).toBe('TEXTAREA')
   })
 
+  it('keeps native number input attributes available', () => {
+    render(<TextField label="Damage" type="number" min="0" step="any" value="2" onChange={() => {}} />)
+    const input = screen.getByLabelText('Damage')
+    expect(input).toHaveAttribute('type', 'number')
+    expect(input).toHaveAttribute('min', '0')
+    expect(input).toHaveAttribute('step', 'any')
+  })
+
   it('shows an error message and marks the field invalid', () => {
     render(<TextField label="Spell name" value="" onChange={() => {}} error="Required" />)
     expect(screen.getByText('Required')).toBeInTheDocument()
