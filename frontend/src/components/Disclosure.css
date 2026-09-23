@@ -1,0 +1,7 @@
+.cmt-disclosure{box-sizing:border-box;min-inline-size:0;grid-column:1/-1;border:1px solid var(--md-outline);border-radius:var(--radius-md);background:var(--md-surface-2);color:var(--md-on-surface)}
+.cmt-disclosure__summary{cursor:pointer;display:flex;align-items:center;gap:var(--space-2);margin:0;padding:var(--space-2) var(--space-4);border:0;background:transparent;color:var(--md-primary);font-family:var(--type-face);font-size:var(--type-title-size);font-weight:var(--type-title-weight);line-height:var(--type-title-line);text-align:start}
+.cmt-disclosure__summary::before{content:"\25B6";display:inline-block;flex:none;transition:transform var(--motion-fast)}
+.cmt-disclosure__summary[data-panel-open]::before{transform:rotate(90deg)}
+.cmt-disclosure__summary:focus-visible{outline:2px solid var(--md-primary);outline-offset:2px}
+.cmt-disclosure__panel{min-inline-size:0}
+@media(forced-colors:active){.cmt-disclosure{background:Canvas;color:CanvasText;border-color:CanvasText}.cmt-disclosure__summary{color:LinkText}.cmt-disclosure__summary:focus-visible{outline-color:Highlight}}

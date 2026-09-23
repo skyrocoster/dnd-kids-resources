@@ -6,6 +6,7 @@ interface TooltipProviderProps {
   children: ReactNode
   delay?: number
   closeDelay?: number
+  timeout?: number
 }
 
 interface TooltipProps {
@@ -17,14 +18,15 @@ interface TooltipProps {
   disabled?: boolean
   delay?: number
   closeDelay?: number
+  closeOnClick?: boolean
   triggerProps?: Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'>
   popupClassName?: string
 }
 
 /** Shares hover-delay behavior between nearby tooltips. */
-export function TooltipProvider({ children, delay, closeDelay }: TooltipProviderProps) {
+export function TooltipProvider({ children, delay, closeDelay, timeout }: TooltipProviderProps) {
   return (
-    <BaseTooltip.Provider delay={delay} closeDelay={closeDelay}>
+      <BaseTooltip.Provider delay={delay} closeDelay={closeDelay} timeout={timeout}>
       {children}
     </BaseTooltip.Provider>
   )
@@ -45,6 +47,7 @@ export function Tooltip({
   disabled,
   delay,
   closeDelay,
+  closeOnClick,
   triggerProps,
   popupClassName,
 }: TooltipProps) {
@@ -59,6 +62,7 @@ export function Tooltip({
       <BaseTooltip.Trigger
         delay={delay}
         closeDelay={closeDelay}
+        closeOnClick={closeOnClick}
         {...restTriggerProps}
         className={['tooltip-trigger', triggerClassName].filter(Boolean).join(' ')}
       >
@@ -70,6 +74,7 @@ export function Tooltip({
             className={['tooltip-popup', popupClassName].filter(Boolean).join(' ')}
             role="tooltip"
           >
+            <BaseTooltip.Arrow className="tooltip-arrow" />
             {content}
           </BaseTooltip.Popup>
         </BaseTooltip.Positioner>

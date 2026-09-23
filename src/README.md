@@ -1,6 +1,6 @@
 # Python source
 
-- `tools/` — repository-wide data, schema, and browser-validation tooling
+- `tools/` — repository-wide data and schema tooling
 - `backend/` — FastAPI service, database setup, and database migrations
 - `frontend/` — React/Vite client and its theme-token tools
 

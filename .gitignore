@@ -26,13 +26,11 @@ build/
 *.log.err
 .coverage
 
-# Browser-validation runtime evidence; acceptance may retain artifacts locally,
-# but generated runs must not become committed repository content.
-/artifacts/browser-validation-*/
-
 # Frontend (v2)
 frontend/node_modules/
 frontend/dist/
+frontend/playwright-report/
+frontend/test-results/
 
 # Database files (regenerate from seed files instead)
 dnd_kids_resources.db

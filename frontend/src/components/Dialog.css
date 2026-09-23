@@ -60,3 +60,11 @@
   padding-top: var(--space-3);
   border-top: 1px solid var(--md-outline-variant);
 }
+
+.overlay-dialog-backdrop { position: fixed; inset: 0; z-index: var(--z-dialog); background: var(--backdrop-color); }
+.overlay-dialog-viewport { position: fixed; z-index: var(--z-dialog); inset: 0; display: grid; overflow-y: auto; place-items: center; padding: var(--space-5); }
+.overlay-dialog-popup { box-sizing: border-box; display: grid; gap: var(--space-4); width: min(34rem, 100%); max-height: calc(100vh - var(--space-7)); overflow-y: auto; padding: var(--space-5); border: 1px solid var(--md-outline); border-radius: var(--radius-lg); outline: 0; background: var(--md-surface-2); color: var(--md-on-surface); box-shadow: var(--elevation-shadow); }
+.overlay-dialog-title { margin: 0; font-size: var(--type-headline-size); font-weight: var(--type-title-weight); }
+.overlay-dialog-description { margin: 0; color: var(--md-on-surface-variant); }
+.overlay-dialog-footer { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--space-2); }
+.overlay-dialog-close,.overlay-dialog-trigger { display: inline-flex; align-items: center; min-height: var(--control-height-compact); padding: var(--space-2) var(--space-3); border: 1px solid var(--md-outline-variant); border-radius: var(--radius-md); background: var(--md-surface-3); color: var(--md-on-surface); cursor: pointer; }

@@ -92,11 +92,13 @@ ported — they belong to ChessMoveTrainer's app, not to shared tooling.
   `test_work_order_packet_contract.py` — every test in those files was already
   failing with `FileNotFoundError` for workflow files deleted from this
   checkout. Removed the `pytest_sessionstart` docs-refresh gate from
-  `backend/tests/conftest.py` and the 3 dead skill-contract tests from
-  `test_browser_validation.py` (the live browser-runner tests in that file
-  stay, as does `src/tools/browser_validation.py` itself). The ignored
-  `.stage-check/` log litter went too. All deleted files were committed, so
-  `git checkout` restores any of them.
+  `backend/tests/conftest.py` and the three dead skill-contract tests then
+  associated with the browser runner. The ignored `.stage-check/` log litter
+  went too. All files from that cleanup were committed, so `git checkout`
+  restores any of them.
+- Later retired the remaining fixed-case Python browser evidence runner and its
+  contract tests, replacing them with the frontend Playwright suite in
+  `frontend/tests/e2e/`.
 - `prettier --check`, `eslint`, and `ruff check` all run at the new versions.
   No bulk reformat or auto-fix was executed, so no existing file was touched
   by the new tools.

@@ -1,8 +1,10 @@
 import { useEffect, useId, useRef } from 'react'
-import type { ReactNode } from 'react'
+import { Dialog as BaseDialog } from '@base-ui/react/dialog'
+import type { ComponentPropsWithoutRef, ReactNode } from 'react'
 import './Dialog.css'
+import './OverlayPrimitives.css'
 
-interface DialogProps {
+interface LegacyDialogProps {
   open: boolean
   title: string
   description?: string
@@ -17,7 +19,28 @@ interface DialogProps {
 const FOCUSABLE_SELECTOR =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
-export function Dialog({
+export interface CompoundDialogProps {
+  trigger?: ReactNode; title: ReactNode; description?: ReactNode; children: ReactNode; footer?: ReactNode
+  closeLabel?: ReactNode | null; open?: boolean; defaultOpen?: boolean; onOpenChange?: (open: boolean) => void
+  modal?: boolean | 'trap-focus'; disablePointerDismissal?: boolean
+  triggerProps?: Omit<ComponentPropsWithoutRef<'button'>, 'children'>; popupClassName?: string
+}
+export type DialogProps = LegacyDialogProps | CompoundDialogProps
+export type DialogCloseProps = ComponentPropsWithoutRef<'button'>
+export function DialogClose({ className, type = 'button', ...props }: DialogCloseProps) {
+  return <BaseDialog.Close {...props} type={type} className={['overlay-dialog-close', className].filter(Boolean).join(' ')} />
+}
+export function Dialog(props: DialogProps) {
+  if ('onClose' in props) return <LegacyDialog {...props as LegacyDialogProps} />
+  return <CompoundDialog {...props as CompoundDialogProps} />
+}
+function CompoundDialog({ trigger, title, description, children, footer, closeLabel = 'Close', open, defaultOpen, onOpenChange, modal, disablePointerDismissal, triggerProps, popupClassName }: CompoundDialogProps) {
+ return <BaseDialog.Root open={open} defaultOpen={defaultOpen} onOpenChange={onOpenChange} modal={modal} disablePointerDismissal={disablePointerDismissal}>
+  {trigger && <BaseDialog.Trigger {...triggerProps} className={['overlay-dialog-trigger', triggerProps?.className].filter(Boolean).join(' ')}>{trigger}</BaseDialog.Trigger>}
+  <BaseDialog.Portal><BaseDialog.Backdrop className="overlay-dialog-backdrop"/><BaseDialog.Viewport className="overlay-dialog-viewport"><BaseDialog.Popup className={['overlay-dialog-popup', popupClassName].filter(Boolean).join(' ')}><BaseDialog.Title className="overlay-dialog-title">{title}</BaseDialog.Title>{description && <BaseDialog.Description className="overlay-dialog-description">{description}</BaseDialog.Description>}<div>{children}</div>{(footer || closeLabel) && <div className="overlay-dialog-footer">{footer}{closeLabel && <DialogClose>{closeLabel}</DialogClose>}</div>}</BaseDialog.Popup></BaseDialog.Viewport></BaseDialog.Portal>
+ </BaseDialog.Root>
+}
+function LegacyDialog({
   open,
   title,
   description,
@@ -27,7 +50,7 @@ export function Dialog({
   pending = false,
   role = 'dialog',
   className,
-}: DialogProps) {
+}: LegacyDialogProps) {
   const titleId = useId()
   const descId = useId()
   const dialogRef = useRef<HTMLDivElement>(null)

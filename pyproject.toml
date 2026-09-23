@@ -1,6 +1,10 @@
 # Ruff and pytest configuration; Ruff settings mirror G:\ChessMoveTrainer\pyproject.toml.
 # Run from the repo root: `.venv/Scripts/python.exe -m ruff check backend`
 # or `.venv/Scripts/python.exe -m ruff format --check backend`.
+[project]
+name = "dnd-kids-resources"
+requires-python = ">=3.12,<3.13"
+
 [tool.ruff]
 line-length = 100
 target-version = "py312"

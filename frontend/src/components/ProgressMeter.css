@@ -1,0 +1,7 @@
+.progress-meter { display: grid; min-inline-size: 0; gap: var(--space-1); }
+.progress-meter__track { box-sizing: border-box; display: block; inline-size: 100%; block-size: 10px; min-inline-size: 0; overflow: hidden; border: 1px solid var(--md-outline-variant); border-radius: var(--radius-sm); background: var(--md-surface-3); }
+.progress-meter__indicator { display: block; block-size: 100%; min-inline-size: 0; background: var(--md-primary); transition: inline-size var(--motion-fast); }
+.progress-meter__unavailable-label { color: var(--md-on-surface-variant); font: var(--type-label-size)/var(--type-label-line) var(--type-face); }
+.progress-meter__visually-hidden { position: absolute; inline-size: 1px; block-size: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; clip-path: inset(50%); }
+@media (prefers-reduced-motion: reduce) { .progress-meter__indicator { transition: none; } }
+@media (forced-colors: active) { .progress-meter__track { border-color: CanvasText; background: Canvas; } .progress-meter__indicator { background: Highlight; } .progress-meter--unavailable .progress-meter__track { border-style: dashed; } .progress-meter__unavailable-label { color: CanvasText; } }
