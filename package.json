@@ -1,0 +1,12 @@
+{
+  "name": "dnd-kids-resources",
+  "private": true,
+  "version": "0.0.0",
+  "engines": {
+    "node": ">=24.15 <25"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
+    "@playwright/test": "1.63.0"
+  }
+}
