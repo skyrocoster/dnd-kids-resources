@@ -235,9 +235,15 @@ export function SpellEditor({ spell, onClose, onSaved }: SpellEditorProps) {
           <section className="spell-editor-section">
             <div className="spell-editor-section-header">
               <h3>Attack / Save Rows</h3>
-              <button type="button" className="spell-editor-add" onClick={addAttackRow}>
+              <Button
+                type="button"
+                variant="secondary"
+                size="normal"
+                className="btn btn--secondary btn--normal spell-editor-add"
+                onClick={addAttackRow}
+              >
                 Add Attack
-              </button>
+              </Button>
             </div>
             {form.attackRows.length === 0 && <p className="spell-editor-empty">No rows added.</p>}
             {form.attackRows.map((row) => (
@@ -253,20 +259,25 @@ export function SpellEditor({ spell, onClose, onSaved }: SpellEditorProps) {
                   <fieldset className="spell-editor-check-group">
                     <legend>Save</legend>
                     {abilityOptions.map((ability) => (
-                      <label key={ability.value} className="spell-editor-check-option">
-                        <input
-                          type="checkbox"
-                          checked={row.savingThrows.includes(ability.value)}
-                          onChange={() => updateAttackRow(row.id, { savingThrows: toggleRowMulti(row.savingThrows, ability.value) })}
-                        />
-                        {ability.label}
-                      </label>
+                      <CheckboxField
+                        key={ability.value}
+                        label={ability.label}
+                        className="spell-editor-check-option-checkbox"
+                        checked={row.savingThrows.includes(ability.value)}
+                        onChange={() => updateAttackRow(row.id, { savingThrows: toggleRowMulti(row.savingThrows, ability.value) })}
+                      />
                     ))}
                   </fieldset>
                 </div>
-                <button type="button" className="spell-editor-row-remove" onClick={() => removeAttackRow(row.id)}>
+                <Button
+                  type="button"
+                  variant="danger"
+                  size="normal"
+                  className="btn btn--danger btn--normal spell-editor-row-remove"
+                  onClick={() => removeAttackRow(row.id)}
+                >
                   Remove Row
-                </button>
+                </Button>
               </div>
             ))}
           </section>
@@ -274,9 +285,15 @@ export function SpellEditor({ spell, onClose, onSaved }: SpellEditorProps) {
           <section className="spell-editor-section">
             <div className="spell-editor-section-header">
               <h3>Damage Rows</h3>
-              <button type="button" className="spell-editor-add" onClick={addDamageRow}>
+              <Button
+                type="button"
+                variant="secondary"
+                size="normal"
+                className="btn btn--secondary btn--normal spell-editor-add"
+                onClick={addDamageRow}
+              >
                 Add Damage
-              </button>
+              </Button>
             </div>
             {form.damageRows.length === 0 && <p className="spell-editor-empty">No rows added.</p>}
             {form.damageRows.map((row) => (
@@ -295,20 +312,25 @@ export function SpellEditor({ spell, onClose, onSaved }: SpellEditorProps) {
                   <fieldset className="spell-editor-check-group">
                     <legend>Damage Type</legend>
                     {damageTypeOptions.map((dt) => (
-                      <label key={dt.value} className="spell-editor-check-option">
-                        <input
-                          type="checkbox"
-                          checked={row.damageTypes.includes(dt.value)}
-                          onChange={() => updateDamageRow(row.id, { damageTypes: toggleRowMulti(row.damageTypes, dt.value) })}
-                        />
-                        {dt.label}
-                      </label>
+                      <CheckboxField
+                        key={dt.value}
+                        label={dt.label}
+                        className="spell-editor-check-option-checkbox"
+                        checked={row.damageTypes.includes(dt.value)}
+                        onChange={() => updateDamageRow(row.id, { damageTypes: toggleRowMulti(row.damageTypes, dt.value) })}
+                      />
                     ))}
                   </fieldset>
                 </div>
-                <button type="button" className="spell-editor-row-remove" onClick={() => removeDamageRow(row.id)}>
+                <Button
+                  type="button"
+                  variant="danger"
+                  size="normal"
+                  className="btn btn--danger btn--normal spell-editor-row-remove"
+                  onClick={() => removeDamageRow(row.id)}
+                >
                   Remove Row
-                </button>
+                </Button>
               </div>
             ))}
           </section>

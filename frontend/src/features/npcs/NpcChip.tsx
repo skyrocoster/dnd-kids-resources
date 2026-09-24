@@ -1,4 +1,5 @@
 import { UserIcon } from '../../components/icons'
+import { Button } from '../../components/Button'
 import './NpcChip.css'
 
 export interface NpcChipProps {
@@ -13,9 +14,14 @@ export function NpcChip({ npcId, roster, onClick }: NpcChipProps) {
   const name = roster.get(npcId) ?? `NPC #${npcId}`
 
   return (
-    <button type="button" className="npc-chip dungeon-chip" data-variant="npc" onClick={() => onClick(npcId)}>
+    <Button
+      type="button"
+      className="btn btn--primary btn--normal npc-chip dungeon-chip"
+      data-variant="npc"
+      onClick={() => onClick(npcId)}
+    >
       <UserIcon size={14} aria-hidden />
       {name}
-    </button>
+    </Button>
   )
 }

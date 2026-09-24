@@ -1,5 +1,7 @@
 """Weapon CRUD round-trip and quick_rules validation tests."""
 
+import pytest
+
 _VALID_PAYLOAD = {
     "name": "Test Blade",
     "rarity": "rare",
@@ -48,22 +50,17 @@ class TestWeaponCreate:
         assert data["quick_rules"] == _VALID_PAYLOAD["quick_rules"]
         assert data["weapon_attack_bonus"] == 2
 
-    def test_create_rejects_blank_quick_rules(self, test_client):
-        resp = test_client.post("/api/weapons", json={**_VALID_PAYLOAD, "quick_rules": "   "})
-        assert resp.status_code == 422
+    @pytest.mark.parametrize(
+        "quick_rules",
+        ["   ", "Use {bogus_token}", "Use {weapon_attack_bonus"],
+        ids=["blank", "unknown-token", "malformed"],
+    )
+    def test_create_rejects_bad_quick_rules(self, test_client, quick_rules):
+        assert test_client.post("/api/weapons", json={**_VALID_PAYLOAD, "quick_rules": quick_rules}).status_code == 422
 
     def test_create_rejects_missing_quick_rules(self, test_client):
         payload = {k: v for k, v in _VALID_PAYLOAD.items() if k != "quick_rules"}
-        resp = test_client.post("/api/weapons", json=payload)
-        assert resp.status_code == 422
-
-    def test_create_rejects_unknown_token(self, test_client):
-        resp = test_client.post("/api/weapons", json={**_VALID_PAYLOAD, "quick_rules": "Use {bogus_token}"})
-        assert resp.status_code == 422
-
-    def test_create_rejects_malformed_reference(self, test_client):
-        resp = test_client.post("/api/weapons", json={**_VALID_PAYLOAD, "quick_rules": "Use {weapon_attack_bonus"})
-        assert resp.status_code == 422
+        assert test_client.post("/api/weapons", json=payload).status_code == 422
 
 
 class TestWeaponUpdate:
@@ -81,12 +78,6 @@ class TestWeaponUpdate:
         assert data["weapon_attack_bonus"] == 5
         assert data["weapon_damage_bonus"] == 2
 
-    def test_update_rejects_blank_quick_rules(self, test_client):
-        created = test_client.post("/api/weapons", json=_VALID_PAYLOAD).json()
-        wid = created["id"]
-        resp = test_client.put(f"/api/weapons/{wid}", json={**_VALID_PAYLOAD, "quick_rules": "   "})
-        assert resp.status_code == 422
-
     def test_update_preserves_intrinsic_attack_mod_damage_mod(self, test_client):
         payload = {
             **_VALID_PAYLOAD,
@@ -103,25 +94,6 @@ class TestWeaponUpdate:
         data = resp.json()
         assert data["attack"][0]["attack_mod"] == 4
         assert data["attack"][0]["damage_mod"] == 1
-
-    def test_update_rejects_unknown_token(self, test_client):
-        created = test_client.post("/api/weapons", json=_VALID_PAYLOAD).json()
-        wid = created["id"]
-        resp = test_client.put(
-            f"/api/weapons/{wid}",
-            json={**_VALID_PAYLOAD, "quick_rules": "Use {bogus_token}"},
-        )
-        assert resp.status_code == 422
-
-    def test_update_rejects_malformed_reference(self, test_client):
-        created = test_client.post("/api/weapons", json=_VALID_PAYLOAD).json()
-        wid = created["id"]
-        resp = test_client.put(
-            f"/api/weapons/{wid}",
-            json={**_VALID_PAYLOAD, "quick_rules": "Use {weapon_attack_bonus"},
-        )
-        assert resp.status_code == 422
-
 
 class TestWeaponSheetReadyTotals:
     def test_optional_totals_default_to_null(self, test_client):
@@ -158,16 +130,10 @@ class TestWeaponDeletionSafety:
         names = [p["name"] for p in resp.json()]
         assert names == ["Aria"]
 
-    def test_get_players_empty_for_unassigned_weapon(self, test_client):
+    def test_get_players_empty_and_404(self, test_client):
         weapon_id = test_client.post("/api/weapons", json=_VALID_PAYLOAD).json()["id"]
-
-        resp = test_client.get(f"/api/weapons/{weapon_id}/players")
-        assert resp.status_code == 200
-        assert resp.json() == []
-
-    def test_get_players_404_for_missing_weapon(self, test_client):
-        resp = test_client.get("/api/weapons/999999/players")
-        assert resp.status_code == 404
+        assert test_client.get(f"/api/weapons/{weapon_id}/players").json() == []
+        assert test_client.get("/api/weapons/999999/players").status_code == 404
 
     def test_delete_cascades_player_assignment(self, test_client):
         weapon_id = test_client.post("/api/weapons", json=_VALID_PAYLOAD).json()["id"]

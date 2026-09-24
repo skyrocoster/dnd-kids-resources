@@ -27,22 +27,16 @@ class _FakeRow(dict):
     """Minimal stand-in for sqlite3.Row (dict() over it yields the same mapping)."""
 
 
-def test_parse_json_value_decodes_json():
+def test_parse_json_value():
     assert parse_json_value('{"a": 1}') == {"a": 1}
     assert parse_json_value("[1, 2, 3]") == [1, 2, 3]
-
-
-def test_parse_json_value_passes_through_non_json_and_none():
     assert parse_json_value("just a string") == "just a string"
     assert parse_json_value(None) is None
     assert parse_json_value(42) == 42
 
 
-def test_parse_json_list_from_json_array():
+def test_parse_json_list():
     assert parse_json_list('["V", "S"]') == ["V", "S"]
-
-
-def test_parse_json_list_none_and_non_list_values():
     assert parse_json_list(None) is None
     with pytest.raises(TypeError):
         parse_json_list("V, S, M")
@@ -50,11 +44,8 @@ def test_parse_json_list_none_and_non_list_values():
         parse_json_list("42")
 
 
-def test_dict_from_row_none():
+def test_none_row_guards():
     assert dict_from_row(None) is None
-
-
-def test_parse_spell_row_none():
     assert parse_spell_row(None) is None
 
 
@@ -91,26 +82,19 @@ def test_parse_spell_row_decodes_every_json_column():
     assert parsed["attacks"] == [{"kind": "ranged", "saving_throws": ["dex"]}]
 
 
-def test_get_conn_returns_connection_with_row_factory(monkeypatch, tmp_path):
+def test_get_conn_and_db_share_row_factory(monkeypatch, tmp_path):
     monkeypatch.setattr(_db_mod, "DB_PATH", tmp_path / "test.db")
     conn = get_conn()
     assert conn.row_factory is sqlite3.Row
     conn.close()
+    with get_db() as managed:
+        assert managed.row_factory is sqlite3.Row
 
 
-def test_get_db_context_manager(monkeypatch, tmp_path):
-    monkeypatch.setattr(_db_mod, "DB_PATH", tmp_path / "test.db")
-    with get_db() as conn:
-        assert conn.row_factory is sqlite3.Row
-
-
-def test__get_db_path_uses_configured_docker_database(monkeypatch, tmp_path):
+def test__get_db_path_prefers_configured_database(monkeypatch, tmp_path):
     configured_path = tmp_path / "docker-database.db"
     monkeypatch.setenv("DND_DATABASE_PATH", str(configured_path))
     assert _get_db_path() == configured_path
-
-
-def test__get_db_path_defaults_to_docker_volume(monkeypatch):
     monkeypatch.delenv("DND_DATABASE_PATH", raising=False)
     assert _get_db_path() == Path("/workspace/data/database/dnd_kids_resources.db")
 

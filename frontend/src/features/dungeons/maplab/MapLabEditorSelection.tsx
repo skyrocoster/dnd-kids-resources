@@ -1,4 +1,6 @@
 import type { ReactNode } from 'react'
+import { SelectField } from '../../../components/form/SelectField'
+import { TextField } from '../../../components/form/TextField'
 import { FixturePropertiesForm } from './FixturePropertiesForm'
 import { InspectorPanel } from './InspectorPanel'
 import type { ObstacleInspectorAdapter } from './InspectorPanel'
@@ -95,15 +97,21 @@ export function MapLabEditorSelection({
         {selectedFeature ? (
           <>
             <InspectorPanel target={{ kind: 'feature', feature: selectedFeature }} />
-            <div className="maplab-field-row">
-              <label>Kind</label>
-              <select value={selectedFeature.kind} onChange={(e) => updateFeatureMeta(selectedFeature.feature_id, { kind: e.target.value })}>
-                {featureKindOptions.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-              </select>
+            <div className="maplab-field-row maplab-selected-feature-field">
+              <SelectField
+                label="Kind"
+                options={[...featureKindOptions]}
+                value={selectedFeature.kind}
+                onChange={(event) => updateFeatureMeta(selectedFeature.feature_id, { kind: event.target.value })}
+              />
             </div>
-            <div className="maplab-field-row">
-              <label>Title</label>
-              <input type="text" value={selectedFeature.title ?? ''} onChange={(e) => updateFeatureMeta(selectedFeature.feature_id, { title: e.target.value })} />
+            <div className="maplab-field-row maplab-selected-feature-field">
+              <TextField
+                label="Title"
+                type="text"
+                value={selectedFeature.title ?? ''}
+                onChange={(event) => updateFeatureMeta(selectedFeature.feature_id, { title: event.target.value })}
+              />
             </div>
           </>
         ) : selectedDoor ? (

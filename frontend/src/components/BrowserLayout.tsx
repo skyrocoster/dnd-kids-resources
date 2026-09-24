@@ -40,8 +40,7 @@ export function BrowserLayout({
       <PageHeader
         title={title}
         actions={actions}
-        chapterTabs={chapterIcon ? [{ key: title, label: title, icon: chapterIcon }] : undefined}
-        activeTab={chapterIcon ? title : undefined}
+        chapterMarker={chapterIcon ? { label: title, icon: chapterIcon } : undefined}
       />
 
       {error && <p className="browser-layout-error" role="alert">{error}</p>}

@@ -25,7 +25,7 @@ export function PlayerSpellbookRoute() {
       {status !== 'loading' && status !== 'error' && (
         <>
           {characters.length > 0 && (
-            <div className="player-spellbook-tabs" role="tablist" aria-label="Characters">
+            <div className="player-spellbook-tabs" role="group" aria-label="Characters">
               {characters.map((character) => {
                 const id = String(character.id)
                 return (
@@ -33,8 +33,7 @@ export function PlayerSpellbookRoute() {
                     key={id}
                     className="player-spellbook-tab"
                     type="button"
-                    role="tab"
-                    aria-selected={activeCharacterId === id}
+                    aria-pressed={activeCharacterId === id}
                     onClick={() => selectCharacter(id)}
                   >
                     {character.name}

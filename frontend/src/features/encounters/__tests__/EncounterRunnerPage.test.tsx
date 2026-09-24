@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as api from '../../../api/client'
@@ -73,6 +74,18 @@ function renderPage(encounterId = 7) {
   )
 }
 
+async function renderRunnerForSetHp() {
+  vi.spyOn(api, 'getEncounter').mockResolvedValue(baseEncounter)
+  const updateSpy = vi.spyOn(api, 'updateEncounter').mockResolvedValue(baseEncounter)
+
+  renderPage()
+  await act(async () => {
+    await Promise.resolve()
+  })
+
+  return updateSpy
+}
+
 function cardByName(name: string): HTMLElement {
   return screen.getByDisplayValue(name).closest('.combatant-card') as HTMLElement
 }
@@ -106,6 +119,9 @@ describe('EncounterRunnerPage', () => {
     expect(screen.getByRole('button', { name: 'Back to encounters' })).toBeInTheDocument()
     expect(allCardNames()).toEqual(['Goblin', 'Wolf'])
     expect(screen.getByText('Round 1')).toBeInTheDocument()
+    for (const label of ['Next turn', 'Add monster', 'Add player']) {
+      expect(screen.getByRole('button', { name: label })).toHaveAttribute('type', 'button')
+    }
   })
 
   it('−10 damages HP and moves the meter into the critical tier', async () => {
@@ -135,11 +151,101 @@ describe('EncounterRunnerPage', () => {
 
     const card = cardByName('Goblin')
     fireEvent.click(within(card).getByText('Set…'))
-    fireEvent.change(within(card).getByLabelText('Set HP'), { target: { value: '1' } })
-    fireEvent.click(within(card).getByText('Apply'))
+    fireEvent.change(screen.getByLabelText('Set HP'), { target: { value: '1' } })
+    fireEvent.click(screen.getByText('Apply'))
 
     expect(within(card).getByText('1', { selector: '.combatant-hp-number' })).toBeInTheDocument()
     expect(card.className).toContain('combatant-card-critical')
+  })
+
+  it('Set HP Apply applies the entered value and closes the panel', async () => {
+    await renderRunnerForSetHp()
+    const card = cardByName('Goblin')
+
+    fireEvent.click(within(card).getByText('Set…'))
+    fireEvent.change(screen.getByLabelText('Set HP'), { target: { value: '3' } })
+    fireEvent.click(screen.getByText('Apply'))
+
+    expect(within(card).getByText('3', { selector: '.combatant-hp-number' })).toBeInTheDocument()
+    expect(screen.queryByLabelText('Set HP')).not.toBeInTheDocument()
+    expect(document.activeElement).toBe(document.body)
+  })
+
+  it('Set HP Enter applies the entered value, closes, and leaves focus on the document body', async () => {
+    await renderRunnerForSetHp()
+    const card = cardByName('Goblin')
+
+    fireEvent.click(within(card).getByText('Set…'))
+    const input = screen.getByLabelText('Set HP')
+    expect(input).toHaveFocus()
+    fireEvent.change(input, { target: { value: '5' } })
+    fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' })
+
+    expect(within(card).getByText('5', { selector: '.combatant-hp-number' })).toBeInTheDocument()
+    expect(screen.queryByLabelText('Set HP')).not.toBeInTheDocument()
+    expect(document.activeElement).toBe(document.body)
+  })
+
+  it('Set HP trigger retoggle closes the panel', async () => {
+    await renderRunnerForSetHp()
+    const card = cardByName('Goblin')
+    const trigger = within(card).getByText('Set…')
+
+    fireEvent.click(trigger)
+    expect(screen.getByLabelText('Set HP')).toBeInTheDocument()
+
+    fireEvent.click(trigger)
+    expect(screen.queryByLabelText('Set HP')).not.toBeInTheDocument()
+  })
+
+  it('Set HP ignores outside presses and Escape for dismissal', async () => {
+    await renderRunnerForSetHp()
+    const card = cardByName('Goblin')
+
+    fireEvent.click(within(card).getByText('Set…'))
+    fireEvent.mouseDown(document.body)
+    expect(screen.getByLabelText('Set HP')).toBeInTheDocument()
+
+    fireEvent.keyDown(document, { key: 'Escape', code: 'Escape' })
+    expect(screen.getByLabelText('Set HP')).toBeInTheDocument()
+  })
+
+  it("Set HP applies 0 when Apply receives an empty value via Number('')", async () => {
+    await renderRunnerForSetHp()
+    const card = cardByName('Goblin')
+
+    fireEvent.click(within(card).getByText('Set…'))
+    expect(screen.getByLabelText('Set HP')).toHaveValue(null)
+    fireEvent.click(screen.getByText('Apply'))
+
+    expect(within(card).getByText('0', { selector: '.combatant-hp-number' })).toBeInTheDocument()
+    expect(screen.queryByLabelText('Set HP')).not.toBeInTheDocument()
+  })
+
+  it('Set HP handles an attempted non-finite value through the native number input', async () => {
+    await renderRunnerForSetHp()
+    const card = cardByName('Goblin')
+    fireEvent.click(within(card).getByText('Set…'))
+    const input = screen.getByLabelText('Set HP')
+
+    fireEvent.change(input, { target: { value: '1e999' } })
+    if (input.value !== '1e999') {
+      expect(input).toHaveValue(null)
+      fireEvent.click(screen.getByText('Apply'))
+
+      expect(within(card).getByText('0', { selector: '.combatant-hp-number' })).toBeInTheDocument()
+      expect(screen.queryByLabelText('Set HP')).not.toBeInTheDocument()
+      return
+    }
+
+    expect(Number(input.value)).toBe(Infinity)
+    fireEvent.click(screen.getByText('Apply'))
+
+    expect(within(card).getByText('7', { selector: '.combatant-hp-number' })).toBeInTheDocument()
+    expect(screen.queryByLabelText('Set HP')).not.toBeInTheDocument()
+
+    fireEvent.click(within(card).getByText('Set…'))
+    expect(screen.getByLabelText('Set HP')).toHaveValue(null)
   })
 
   it('duplicate adds a card and remove drops one', async () => {
@@ -190,9 +296,35 @@ describe('EncounterRunnerPage', () => {
     })
 
     expect(allCardNames()).toEqual(['Goblin', 'Wolf'])
+    const goblinCard = cardByName('Goblin')
     const wolfCard = cardByName('Wolf')
+    expect(within(goblinCard).getByLabelText('Move Goblin up')).toBeDisabled()
+    expect(within(wolfCard).getByLabelText('Move Wolf down')).toBeDisabled()
     fireEvent.click(within(wolfCard).getByLabelText('Move Wolf up'))
     expect(allCardNames()).toEqual(['Wolf', 'Goblin'])
+    expect(within(cardByName('Wolf')).getByLabelText('Move Wolf up')).toBeDisabled()
+    expect(within(cardByName('Goblin')).getByLabelText('Move Goblin down')).toBeDisabled()
+  })
+
+  it('setting a combatant active updates the pressed state', async () => {
+    vi.spyOn(api, 'getEncounter').mockResolvedValue(baseEncounter)
+    vi.spyOn(api, 'updateEncounter').mockResolvedValue(baseEncounter)
+    vi.spyOn(api, 'getConditions').mockResolvedValue(conditionList)
+
+    renderPage()
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    const goblinCard = cardByName('Goblin')
+    const wolfCard = cardByName('Wolf')
+    expect(within(goblinCard).getByRole('button', { name: 'Active', pressed: true })).toBeInTheDocument()
+    expect(within(wolfCard).getByRole('button', { name: 'Set active', pressed: false })).toBeInTheDocument()
+
+    fireEvent.click(within(wolfCard).getByRole('button', { name: 'Set active', pressed: false }))
+
+    expect(within(wolfCard).getByRole('button', { name: 'Active', pressed: true })).toBeInTheDocument()
+    expect(within(goblinCard).getByRole('button', { name: 'Set active', pressed: false })).toBeInTheDocument()
   })
 
   it('Next turn advances the highlight and wraps to round 2', async () => {
@@ -242,7 +374,7 @@ describe('EncounterRunnerPage', () => {
 
     const card = cardByName('Goblin')
     fireEvent.click(within(card).getByText('No conditions'))
-    fireEvent.click(within(card).getByLabelText('Prone'))
+    fireEvent.click(within(screen.getByRole('dialog', { name: 'Condition options' })).getByRole('checkbox', { name: 'Prone' }))
 
     expect(within(card).getByRole('group', { name: 'Conditions' })).toBeInTheDocument()
     expect(within(within(card).getByRole('group', { name: 'Conditions' })).getByText('Prone')).toBeInTheDocument()
@@ -313,6 +445,55 @@ describe('EncounterRunnerPage', () => {
     expect(within(playerCard).getByDisplayValue('Frodo')).toBeInTheDocument()
   })
 
+  it('status choices remain exclusive and clicking the selected status still saves', async () => {
+    const updateSpy = await renderRunnerForSetHp()
+    const card = cardByName('Goblin')
+    const group = within(card).getByRole('group', { name: 'Status' })
+    const alive = within(group).getByRole('button', { name: 'alive', pressed: true })
+
+    fireEvent.click(alive)
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(600)
+    })
+
+    expect(updateSpy).toHaveBeenCalledTimes(1)
+    expect(updateSpy.mock.calls[0][1].creatures?.[0].status).toBe('alive')
+
+    fireEvent.click(within(group).getByRole('button', { name: 'dead', pressed: false }))
+    expect(within(group).getAllByRole('button', { pressed: true })).toHaveLength(1)
+    expect(within(group).getByRole('button', { name: 'dead', pressed: true })).toBeInTheDocument()
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(600)
+    })
+
+    expect(updateSpy).toHaveBeenCalledTimes(2)
+    expect(updateSpy.mock.calls[1][1].creatures?.[0].status).toBe('dead')
+  })
+
+  it('activates a combatant status choice with the keyboard', async () => {
+    const updateSpy = await renderRunnerForSetHp()
+    vi.useRealTimers()
+    try {
+      const user = userEvent.setup()
+      const card = cardByName('Goblin')
+      const unconscious = within(card).getByRole('button', { name: 'unconscious' })
+      unconscious.focus()
+
+      await user.keyboard('{Enter}')
+      expect(within(card).getByRole('button', { name: 'unconscious', pressed: true })).toBeInTheDocument()
+
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 650))
+      })
+
+      expect(updateSpy).toHaveBeenCalledTimes(1)
+      expect(updateSpy.mock.calls[0][1].creatures?.[0].status).toBe('unconscious')
+    } finally {
+      vi.useFakeTimers()
+    }
+  })
+
   it('player card allows condition toggling', async () => {
     vi.spyOn(api, 'getEncounter').mockResolvedValue(baseEncounter)
     vi.spyOn(api, 'updateEncounter').mockResolvedValue(baseEncounter)
@@ -330,7 +511,7 @@ describe('EncounterRunnerPage', () => {
 
     const playerCard = cardByName('Frodo')
     fireEvent.click(within(playerCard).getByText('No conditions'))
-    fireEvent.click(within(playerCard).getByLabelText('Prone'))
+    fireEvent.click(within(screen.getByRole('dialog', { name: 'Condition options' })).getByRole('checkbox', { name: 'Prone' }))
 
     expect(within(playerCard).getByRole('group', { name: 'Conditions' })).toBeInTheDocument()
   })
@@ -352,6 +533,33 @@ describe('EncounterRunnerPage', () => {
     expect(screen.getByRole('status')).toBeInTheDocument()
     expect(screen.getByText(/error loading encounter/i)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument()
+  })
+
+  it('Retry reloads the page after an encounter load error', async () => {
+    const reloadSpy = vi.fn()
+    vi.spyOn(api, 'getEncounter').mockRejectedValue(new Error('network down'))
+
+    renderPage()
+
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    const originalWindow = window
+    vi.stubGlobal('window', new Proxy(originalWindow, {
+      get: (target, property) => property === 'location'
+        ? { reload: reloadSpy }
+        : Reflect.get(target, property, target),
+    }))
+
+    try {
+      const retryButton = screen.getByRole('button', { name: 'Retry' })
+      expect(retryButton).toHaveAttribute('type', 'button')
+      fireEvent.click(retryButton)
+      expect(reloadSpy).toHaveBeenCalledOnce()
+    } finally {
+      vi.unstubAllGlobals()
+    }
   })
 
   it('ordinary runner controls meet the 48px touch-target floor (VT1 touch targets)', async () => {
@@ -427,7 +635,7 @@ describe('EncounterRunnerPage', () => {
 
     const card = cardByName('Goblin')
     fireEvent.click(within(card).getByText('No conditions'))
-    fireEvent.click(within(card).getByLabelText('Prone'))
+    fireEvent.click(within(screen.getByRole('dialog', { name: 'Condition options' })).getByRole('checkbox', { name: 'Prone' }))
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(600)

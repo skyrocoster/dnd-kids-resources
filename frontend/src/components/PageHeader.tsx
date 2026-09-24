@@ -1,10 +1,17 @@
 import type { ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { useAppShellRowSlots } from '../layout/AppShell'
+import { Tabs } from './Tabs'
 import './PageHeader.css'
 
 interface ChapterTab {
   key: string
+  label: string
+  icon: ReactNode
+  content?: ReactNode
+}
+
+interface ChapterMarker {
   label: string
   icon: ReactNode
 }
@@ -13,6 +20,7 @@ interface PageHeaderProps {
   title: string
   subtitle?: string
   chapterTabs?: ChapterTab[]
+  chapterMarker?: ChapterMarker
   activeTab?: string
   onTabSelect?: (key: string) => void
   actions?: ReactNode
@@ -22,6 +30,7 @@ export function PageHeader({
   title,
   subtitle,
   chapterTabs,
+  chapterMarker,
   activeTab,
   onTabSelect,
   actions,
@@ -37,28 +46,37 @@ export function PageHeader({
     </div>
   )
   const pageHeaderTabs = chapterTabs && chapterTabs.length > 0 && (
-    <nav className="page-header-tabs" aria-label="Content sections">
-      {chapterTabs.map((tab) => (
-        <button
-          key={tab.key}
-          type="button"
-          className={`page-header-tab ${activeTab === tab.key ? 'page-header-tab--active' : ''}`}
-          aria-selected={activeTab === tab.key}
-          role="tab"
-          onClick={() => onTabSelect?.(tab.key)}
-        >
-          {tab.icon}
-          <span>{tab.label}</span>
-        </button>
-      ))}
-    </nav>
+    <Tabs
+      ariaLabel="Content sections"
+      className="page-header-tabs-root"
+      navigationClassName="page-header-tabs"
+      tabListContainer={tabsSlot}
+      tabs={chapterTabs.map((tab) => ({
+        id: tab.key,
+        label: <>{tab.icon}<span>{tab.label}</span></>,
+        content: tab.content,
+      }))}
+      selectedId={activeTab}
+      onSelectedIdChange={onTabSelect}
+    />
+  )
+  const pageHeaderMarker = chapterMarker && (
+    <div className="page-header-tabs page-header-tabs--static">
+      <span className="page-header-tab page-header-tab--active page-header-tab--static">
+        {chapterMarker.icon}
+        <span>{chapterMarker.label}</span>
+      </span>
+    </div>
+  )
+  const pageHeaderNavigation = pageHeaderTabs || (
+    tabsSlot && pageHeaderMarker ? createPortal(pageHeaderMarker, tabsSlot) : pageHeaderMarker
   )
 
   if (identitySlot || tabsSlot) {
     return (
       <>
         {identitySlot ? createPortal(pageHeaderMain, identitySlot) : pageHeaderMain}
-        {tabsSlot && pageHeaderTabs ? createPortal(pageHeaderTabs, tabsSlot) : pageHeaderTabs}
+        {pageHeaderNavigation}
       </>
     )
   }
@@ -66,7 +84,7 @@ export function PageHeader({
   return (
     <header className="page-header">
       {pageHeaderMain}
-      {pageHeaderTabs}
+      {pageHeaderNavigation}
     </header>
   )
 }

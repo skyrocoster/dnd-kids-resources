@@ -16,6 +16,21 @@ const items: Item[] = [
 ]
 
 describe('SearchList', () => {
+  it('keeps the search input label and placeholder', () => {
+    render(
+      <SearchList
+        items={items}
+        getId={(i) => i.id}
+        getLabel={(i) => i.name}
+        onSelect={() => {}}
+        searchPlaceholder="Search spells…"
+      />,
+    )
+
+    const input = screen.getByRole('searchbox', { name: 'Search spells…' })
+    expect(input).toHaveAttribute('placeholder', 'Search spells…')
+  })
+
   it('renders all items with their meta', () => {
     render(
       <SearchList

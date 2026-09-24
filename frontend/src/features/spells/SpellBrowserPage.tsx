@@ -7,6 +7,8 @@ import { Button } from '../../components/Button'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
 import { Dialog } from '../../components/Dialog'
 import { DiceText } from '../../components/DiceText'
+import { CheckboxField } from '../../components/form/CheckboxField'
+import { TextInput } from '../../components/form/TextInput'
 import { ReferenceText, spellValueReferenceRegistry } from '../../components/referenceText'
 import { SearchList } from '../../components/SearchList'
 import { StatePanel } from '../../components/StatePanel'
@@ -105,7 +107,7 @@ function ManageSpellPlayersDialog({ spell, onClose }: ManageSpellPlayersDialogPr
         <div className="spell-player-dialog-content">
           <label className="spell-player-search">
             <span>Search players</span>
-            <input
+            <TextInput
               type="search"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
@@ -120,14 +122,13 @@ function ManageSpellPlayersDialog({ spell, onClose }: ManageSpellPlayersDialogPr
           ) : (
             <div className="spell-player-checklist">
               {filteredPlayers.map((player) => (
-                <label key={player.id} className="spell-player-row">
-                  <input
-                    type="checkbox"
+                <div key={player.id} className="spell-player-row">
+                  <CheckboxField
+                    label={player.name}
                     checked={draftIds.has(player.id)}
                     onChange={() => togglePlayer(player.id)}
                   />
-                  <span>{player.name}</span>
-                </label>
+                </div>
               ))}
             </div>
           )}

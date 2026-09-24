@@ -11,7 +11,7 @@ from backend.app.reference_text import (
 )
 
 
-def test_parse_literal_only_text():
+def test_parse_text_and_references():
     assert parse_reference_text("Deal 1d6 damage.") == {
         "valid": True,
         "document": {
@@ -26,9 +26,6 @@ def test_parse_literal_only_text():
             ],
         },
     }
-
-
-def test_parse_mixed_text_and_reference():
     result = parse_reference_text("Roll {spell_attack_bonus} now")
     assert result["valid"] is True
     assert result["document"]["nodes"] == [
@@ -74,11 +71,12 @@ def test_validate_rejects_malformed_braces():
         assert result["errors"][0]["end"] == end
 
 
-def test_validate_rejects_unknown_reference_token():
-    assert validate_reference_text(
+def test_validate_rejects_unknown_tokens_in_source_order():
+    single = validate_reference_text(
         "Use {weapon_bonus}.",
         spell_value_reference_registry,
-    ) == {
+    )
+    assert single == {
         "valid": False,
         "errors": [
             {
@@ -90,9 +88,6 @@ def test_validate_rejects_unknown_reference_token():
             },
         ],
     }
-
-
-def test_validate_reports_unknown_errors_in_source_order():
     result = validate_reference_text(
         "{first_unknown} then {second_unknown}",
         spell_value_reference_registry,
@@ -104,22 +99,14 @@ def test_validate_reports_unknown_errors_in_source_order():
     ]
 
 
-def test_resolve_known_token():
+def test_resolve_tokens_uses_value_empty_and_fallback():
     doc = parse_reference_text("Roll {spell_attack_bonus}")
     result = resolve_reference_text(doc["document"], spell_value_reference_registry, SpellValueReferenceContext(spell_attack_bonus=5))
     assert result == "Roll 5"
-
-
-def test_resolve_unknown_token_uses_empty():
-    doc = parse_reference_text("Use {unknown}")
-    result = resolve_reference_text(doc["document"], spell_value_reference_registry, SpellValueReferenceContext())
-    assert result == "Use "
-
-
-def test_resolve_none_value_uses_fallback():
-    doc = parse_reference_text("DC {spell_save_dc}")
-    result = resolve_reference_text(doc["document"], spell_value_reference_registry, SpellValueReferenceContext(spell_save_dc=None))
-    assert result == "DC your spell save DC"
+    unknown = parse_reference_text("Use {unknown}")
+    assert resolve_reference_text(unknown["document"], spell_value_reference_registry, SpellValueReferenceContext()) == "Use "
+    none_doc = parse_reference_text("DC {spell_save_dc}")
+    assert resolve_reference_text(none_doc["document"], spell_value_reference_registry, SpellValueReferenceContext(spell_save_dc=None)) == "DC your spell save DC"
 
 
 def test_create_registry_rejects_duplicate_token():

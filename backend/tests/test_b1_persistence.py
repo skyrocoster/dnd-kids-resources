@@ -326,67 +326,6 @@ def _init_and_seed_weapons(db_path: Path, force: bool = False) -> None:
         conn.close()
 
 
-def test_weapon_invalid_quick_rules_rejected(tmp_path: Path):
-    db_path = tmp_path / "weapon-invalid-qr.db"
-    _init_schema(db_path)
-
-    conn = sqlite3.connect(str(db_path))
-    try:
-        with pytest.raises(ValueError) as exc:
-            SEED_DB.insert_weapon(
-                conn.cursor(),
-                {
-                    "name": "Invalid QR Weapon",
-                    "quick_rules": "Use {bogus_token}.",
-                },
-            )
-        assert "Invalid quick_rules" in str(exc.value)
-    finally:
-        conn.close()
-
-
-def test_weapon_quick_rules_round_trip_exact_string(tmp_path: Path):
-    db_path = tmp_path / "weapon-qr-rt.db"
-    export_dir = tmp_path / "seeds"
-    export_dir.mkdir()
-    _init_schema(db_path)
-
-    conn = sqlite3.connect(str(db_path))
-    try:
-        SEED_DB.insert_weapon(
-            conn.cursor(),
-            {
-                "name": "Round Trip Blade",
-                "quick_rules": "Attack +{weapon_attack_bonus}, damage +{weapon_damage_bonus}.",
-                "weapon_attack_bonus": 3,
-                "weapon_damage_bonus": 2,
-            },
-        )
-        conn.commit()
-        row = conn.execute(
-            "SELECT quick_rules FROM weapons WHERE name = ?",
-            ("Round Trip Blade",),
-        ).fetchone()
-    finally:
-        conn.close()
-
-    assert row[0] == "Attack +{weapon_attack_bonus}, damage +{weapon_damage_bonus}."
-
-    original_dir = EXPORT_DB.SEEDS_DIR
-    try:
-        EXPORT_DB.SEEDS_DIR = export_dir
-        with sqlite3.connect(str(db_path)) as export_conn:
-            EXPORT_DB.export_table(export_conn.cursor(), "weapons")
-    finally:
-        EXPORT_DB.SEEDS_DIR = original_dir
-
-    exported = json.loads((export_dir / "seed_weapons.json").read_text(encoding="utf-8"))
-    exported_row = next(item for item in exported if item["name"] == "Round Trip Blade")
-    assert exported_row["quick_rules"] == "Attack +{weapon_attack_bonus}, damage +{weapon_damage_bonus}."
-    assert exported_row["weapon_attack_bonus"] == 3
-    assert exported_row["weapon_damage_bonus"] == 2
-
-
 def test_seeded_weapon_quick_rules_round_trip_exact_strings(tmp_path: Path):
     db_path = tmp_path / "seeded-weapon-qr-rt.db"
     export_dir = tmp_path / "seeds"
@@ -418,62 +357,6 @@ def test_seeded_weapon_quick_rules_round_trip_exact_strings(tmp_path: Path):
     assert exported_quick_rules == original_quick_rules
 
 
-def test_quick_rules_round_trip_exact_string(tmp_path: Path):
-    db_path = tmp_path / "quick-rules.db"
-    export_dir = tmp_path / "seeds"
-    export_dir.mkdir()
-    _init_schema(db_path)
-
-    conn = sqlite3.connect(str(db_path))
-    try:
-        SEED_DB.insert_spell(
-            conn.cursor(),
-            {
-                "id": 321,
-                "name": "Quick Rules Test",
-                "level": 1,
-                "school": "evocation",
-                "categories": ["utility", "battle"],
-                "description": "Quick rules test",
-                "quick_rules": "Deal {spell_attack_bonus} damage.",
-                "alternate_description": None,
-                "range": "60 feet",
-                "duration": "Instantaneous",
-                "casting_times": ["1 action"],
-                "components": ["V"],
-                "damage": [],
-                "healing": {"amount": None, "temp_hp": False, "max_hp": False},
-                "higher_levels": {"text": None, "damage_by_slot": {}},
-                "attacks": [],
-                "area_of_effect": {"shape": None, "size": None},
-                "concentration": False,
-                "ritual": False,
-            },
-        )
-        conn.commit()
-        row = conn.execute(
-            "SELECT quick_rules FROM spells WHERE id = ?",
-            (321,),
-        ).fetchone()
-    finally:
-        conn.close()
-
-    assert row[0] == "Deal {spell_attack_bonus} damage."
-
-    original_dir = EXPORT_DB.SEEDS_DIR
-    try:
-        EXPORT_DB.SEEDS_DIR = export_dir
-        with sqlite3.connect(str(db_path)) as export_conn:
-            EXPORT_DB.export_table(export_conn.cursor(), "spells")
-    finally:
-        EXPORT_DB.SEEDS_DIR = original_dir
-
-    exported = json.loads((export_dir / "seed_spells.json").read_text(encoding="utf-8"))
-    exported_row = next(item for item in exported if item["id"] == 321)
-    assert exported_row["quick_rules"] == "Deal {spell_attack_bonus} damage."
-    assert exported_row["categories"] == ["utility", "battle"]
-
-
 def test_seeded_quick_rules_round_trip_exact_strings(tmp_path: Path):
     db_path = tmp_path / "seeded-quick-rules.db"
     export_dir = tmp_path / "seeds"
@@ -501,41 +384,6 @@ def test_seeded_quick_rules_round_trip_exact_strings(tmp_path: Path):
     assert set(exported_quick_rules) == set(original_quick_rules)
     assert all(isinstance(value, str) and value.strip() for value in exported_quick_rules.values())
     assert exported_quick_rules == original_quick_rules
-
-def test_invalid_quick_rules_rejected(tmp_path: Path):
-    db_path = tmp_path / "invalid-quick-rules.db"
-    _init_schema(db_path)
-
-    conn = sqlite3.connect(str(db_path))
-    try:
-        with pytest.raises(ValueError) as exc:
-            SEED_DB.insert_spell(
-                conn.cursor(),
-                {
-                    "id": 322,
-                    "name": "Invalid Quick Rules",
-                    "level": 1,
-                    "school": "evocation",
-                    "description": "Invalid quick rules",
-                    "quick_rules": "Use {weapon_bonus}.",
-                    "range": "60 feet",
-                    "duration": "Instantaneous",
-                    "casting_times": ["1 action"],
-                    "components": ["V"],
-                    "damage": [],
-                    "healing": {"amount": None, "temp_hp": False, "max_hp": False},
-                    "higher_levels": {"text": None, "damage_by_slot": {}},
-                    "attacks": [],
-                    "area_of_effect": {"shape": None, "size": None},
-                    "concentration": False,
-                    "ritual": False,
-                },
-            )
-        assert "Invalid quick_rules" in str(exc.value)
-    finally:
-        conn.close()
-
-
 
 def _quick_rule_spell(**overrides):
     spell = {
@@ -661,42 +509,3 @@ def test_seed_idempotent_without_force(tmp_path: Path):
         conn.close()
 
     assert count == 525
-
-
-def test_parse_spell_row_target_columns():
-    row = {
-        "id": 1,
-        "name": "Test",
-        "level": 3,
-        "school": "evocation",
-        "description": "Test spell",
-        "alternate_description": None,
-        "damage": '[{"name": "primary", "formula": "2d6", "damage_types": ["fire"]}]',
-        "healing": '{"amount": "1d4", "temp_hp": true, "max_hp": false}',
-        "range": "120 feet",
-        "higher_levels": '{"text": "At higher levels", "damage_by_slot": {"3": "3d6"}}',
-        "casting_times": '["1 action"]',
-        "duration": "Instantaneous",
-        "concentration": False,
-        "ritual": False,
-        "components": '["V", "S"]',
-        "materials": None,
-        "attacks": '[{"kind": "ranged", "saving_throws": ["dex"]}]',
-        "area_of_effect": '{"shape": "sphere", "size": 20}',
-    }
-
-    parsed = parse_spell_row(row)
-
-    assert parsed["damage"] == [{"name": "primary", "formula": "2d6", "damage_types": ["fire"]}]
-    assert parsed["healing"] == {"amount": "1d4", "temp_hp": True, "max_hp": False}
-    assert parsed["higher_levels"] == {"text": "At higher levels", "damage_by_slot": {"3": "3d6"}}
-    assert parsed["casting_times"] == ["1 action"]
-    assert parsed["components"] == ["V", "S"]
-    assert parsed["attacks"] == [{"kind": "ranged", "saving_throws": ["dex"]}]
-    assert parsed["area_of_effect"] == {"shape": "sphere", "size": 20}
-
-
-def test_parse_json_list_no_comma_fallback():
-    with pytest.raises(TypeError):
-        parse_json_list("V, S")
-

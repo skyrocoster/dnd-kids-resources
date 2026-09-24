@@ -9,6 +9,7 @@ import { useMapLabSessionState, type SessionFixtureKind } from './useMapLabSessi
 import { useMapCanvasZoom, type ViewportSize } from '../../../map/useMapCanvasZoom'
 import { useMapLabNavigationSession } from './useMapLabNavigationSession'
 import { EyeIcon } from '../../../components/icons'
+import { Popover } from '../../../components/Popover'
 import {
   MAP_LAYER_KEYS,
   resolveMapDensity,
@@ -161,7 +162,7 @@ export function MapLabPage() {
   const { density, setDensity } = useMapDensity()
   const [viewPopoverOpen, setViewPopoverOpen] = useState(false)
   const [finderOpen, setFinderOpen] = useState(false)
-  const viewPopoverRef = useRef<HTMLDivElement>(null)
+  const viewPopoverTriggerRef = useRef<HTMLButtonElement>(null)
   const simplified = resolveMapDensity(density, zoomApi.zoom.scale) === 'simple'
   const allLayersHidden = MAP_LAYER_KEYS.every((key) => !layerVisible[key])
 
@@ -180,18 +181,6 @@ export function MapLabPage() {
       .then((response) => setAtTableDungeonId(response.dungeon_id))
       .catch(() => setAtTableDungeonId(null))
   }, [])
-
-  useEffect(() => {
-    if (!viewPopoverOpen) return
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Node
-      if (viewPopoverRef.current && !viewPopoverRef.current.contains(target)) setViewPopoverOpen(false)
-    }
-    window.addEventListener('mousedown', handleClickOutside)
-    return () => {
-      window.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [viewPopoverOpen])
 
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
@@ -530,85 +519,98 @@ export function MapLabPage() {
             {isAtTable ? 'At the table' : 'Put at the table'}
           </button>
          </ToolbarTray>
-        <div className="maplab-view-popover-wrap" ref={viewPopoverRef}>
-           <button
-             type="button"
-             className="maplab-pill-button"
-            aria-haspopup="true"
-            aria-expanded={viewPopoverOpen}
-            data-active={viewPopoverOpen || undefined}
-             onClick={() => setViewPopoverOpen((open) => { const next = !open; if (next) setFinderOpen(false); return next })}
+        <div className="maplab-view-popover-wrap">
+          <Popover.Root
+            open={viewPopoverOpen}
+            onOpenChange={(open) => {
+              setViewPopoverOpen(open)
+              if (open) setFinderOpen(false)
+            }}
           >
-            <EyeIcon width={18} height={18} aria-hidden="true" />
-            View
-          </button>
-          {viewPopoverOpen && (
-            <div className="maplab-view-popover" role="menu">
-              <button
-                type="button"
-                className="maplab-pill-button maplab-layer-toggle-button"
-                aria-pressed={layerVisible.outside}
-                data-active={layerVisible.outside || undefined}
-                onClick={() => toggleLayer('outside')}
-              >
-                Outside
-              </button>
-              <button
-                type="button"
-                className="maplab-pill-button maplab-layer-toggle-button"
-                aria-pressed={layerVisible.props}
-                data-active={layerVisible.props || undefined}
-                onClick={() => toggleLayer('props')}
-              >
-                Props
-              </button>
-              <button
-                type="button"
-                className="maplab-pill-button maplab-layer-toggle-button"
-                aria-pressed={layerVisible.passages}
-                data-active={layerVisible.passages || undefined}
-                onClick={() => toggleLayer('passages')}
-              >
-                Passages
-              </button>
-              <button
-                type="button"
-                className="maplab-pill-button maplab-layer-toggle-button"
-                aria-pressed={layerVisible.labels}
-                data-active={layerVisible.labels || undefined}
-                onClick={() => toggleLayer('labels')}
-              >
-                Labels
-              </button>
-              <button
-                type="button"
-                className="maplab-pill-button"
-                aria-pressed={density === 'detailed'}
-                data-active={density === 'detailed' || undefined}
-                onClick={() => setDensity('detailed')}
-              >
-                Detailed
-              </button>
-              <button
-                type="button"
-                className="maplab-pill-button"
-                aria-pressed={density === 'auto'}
-                data-active={density === 'auto' || undefined}
-                onClick={() => setDensity('auto')}
-              >
-                Auto
-              </button>
-              <button
-                type="button"
-                className="maplab-pill-button"
-                aria-pressed={density === 'simple'}
-                data-active={density === 'simple' || undefined}
-                onClick={() => setDensity('simple')}
-              >
-                Simple
-              </button>
-            </div>
-          )}
+            <Popover.Trigger
+              ref={viewPopoverTriggerRef}
+              type="button"
+              className="maplab-pill-button"
+              aria-haspopup="true"
+              data-active={viewPopoverOpen || undefined}
+            >
+              <EyeIcon width={18} height={18} aria-hidden="true" />
+              View
+            </Popover.Trigger>
+            <Popover.Portal>
+              <Popover.Positioner side="bottom" align="end" className="maplab-view-popover-positioner">
+                <Popover.Popup
+                  className="maplab-view-popover"
+                  role="menu"
+                  finalFocus={(closeType) => closeType === 'keyboard' ? viewPopoverTriggerRef : false}
+                >
+                  <button
+                    type="button"
+                    className="maplab-pill-button maplab-layer-toggle-button"
+                    aria-pressed={layerVisible.outside}
+                    data-active={layerVisible.outside || undefined}
+                    onClick={() => toggleLayer('outside')}
+                  >
+                    Outside
+                  </button>
+                  <button
+                    type="button"
+                    className="maplab-pill-button maplab-layer-toggle-button"
+                    aria-pressed={layerVisible.props}
+                    data-active={layerVisible.props || undefined}
+                    onClick={() => toggleLayer('props')}
+                  >
+                    Props
+                  </button>
+                  <button
+                    type="button"
+                    className="maplab-pill-button maplab-layer-toggle-button"
+                    aria-pressed={layerVisible.passages}
+                    data-active={layerVisible.passages || undefined}
+                    onClick={() => toggleLayer('passages')}
+                  >
+                    Passages
+                  </button>
+                  <button
+                    type="button"
+                    className="maplab-pill-button maplab-layer-toggle-button"
+                    aria-pressed={layerVisible.labels}
+                    data-active={layerVisible.labels || undefined}
+                    onClick={() => toggleLayer('labels')}
+                  >
+                    Labels
+                  </button>
+                  <button
+                    type="button"
+                    className="maplab-pill-button"
+                    aria-pressed={density === 'detailed'}
+                    data-active={density === 'detailed' || undefined}
+                    onClick={() => setDensity('detailed')}
+                  >
+                    Detailed
+                  </button>
+                  <button
+                    type="button"
+                    className="maplab-pill-button"
+                    aria-pressed={density === 'auto'}
+                    data-active={density === 'auto' || undefined}
+                    onClick={() => setDensity('auto')}
+                  >
+                    Auto
+                  </button>
+                  <button
+                    type="button"
+                    className="maplab-pill-button"
+                    aria-pressed={density === 'simple'}
+                    data-active={density === 'simple' || undefined}
+                    onClick={() => setDensity('simple')}
+                  >
+                    Simple
+                  </button>
+                </Popover.Popup>
+              </Popover.Positioner>
+            </Popover.Portal>
+          </Popover.Root>
         </div>
         <div className="maplab-floor-tabs" role="tablist" aria-label="Dungeon floors">
           {floors.map((floor) => (

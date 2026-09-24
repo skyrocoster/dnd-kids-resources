@@ -172,13 +172,15 @@ export function WeaponEditor({ weapon, draftWeapon, onClose, onSaved }: WeaponEd
           <section className="weapon-editor-section">
             <div className="weapon-editor-section-header">
               <h3>Attack Rows</h3>
-              <button
+              <Button
                 type="button"
-                className="weapon-editor-add"
+                variant="secondary"
+                size="normal"
+                className="btn btn--secondary btn--normal weapon-editor-add"
                 onClick={() => patch({ attackRows: addWeaponAttackRow(form.attackRows) })}
               >
                 Add Attack
-              </button>
+              </Button>
             </div>
             {form.attackRows.length === 0 && <p className="weapon-editor-empty">No attack rows added.</p>}
             {form.attackRows.map((row) => (
@@ -222,9 +224,15 @@ export function WeaponEditor({ weapon, draftWeapon, onClose, onSaved }: WeaponEd
                     onChange={(e) => updateAttackRow(row.id, { damage_mod: e.target.value })}
                   />
                 </div>
-                <button type="button" className="weapon-editor-row-remove" onClick={() => removeAttackRow(row.id)}>
+                <Button
+                  type="button"
+                  variant="danger"
+                  size="normal"
+                  className="btn btn--danger btn--normal weapon-editor-row-remove"
+                  onClick={() => removeAttackRow(row.id)}
+                >
                   Remove Row
-                </button>
+                </Button>
               </div>
             ))}
           </section>

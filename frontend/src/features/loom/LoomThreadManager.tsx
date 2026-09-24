@@ -1,5 +1,7 @@
 import { useId, useState } from 'react'
 import type { FormEvent } from 'react'
+import { Radio } from '@base-ui/react/radio'
+import { RadioGroup } from '@base-ui/react/radio-group'
 import { createLoomThread, deleteLoomThread, updateLoomThread } from '../../api/client'
 import type { LoomThread, ThreadColor } from '../../api/types'
 import { Button } from '../../components/Button'
@@ -33,21 +35,23 @@ function threadToForm(thread: LoomThread): ThreadFormState {
 
 function ColorPicker({ value, onChange }: { value: ThreadColor; onChange: (color: ThreadColor) => void }) {
   return (
-    <div className="loom-thread-color-picker" role="radiogroup" aria-label="Thread color">
+    <RadioGroup
+      className="loom-thread-color-picker"
+      aria-label="Thread color"
+      value={value}
+      onValueChange={(color) => onChange(color)}
+    >
       {THREAD_COLORS.map((color) => (
-        <button
+        <Radio.Root
           key={color}
-          type="button"
-          role="radio"
-          aria-checked={value === color}
+          value={color}
           aria-label={color}
           className="loom-thread-swatch"
           data-selected={value === color || undefined}
           style={{ backgroundColor: `var(--md-loom-${color})` }}
-          onClick={() => onChange(color)}
         />
       ))}
-    </div>
+    </RadioGroup>
   )
 }
 

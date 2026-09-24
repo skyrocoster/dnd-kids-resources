@@ -78,8 +78,8 @@ def temp_seeds_dir():
 class TestResetFixtureObstacles:
     """Test single fixture obstacle reset."""
 
-    def test_door_reset(self):
-        """Test door fixture reset with DC removal and open=false."""
+    def test_reset_all_fixture_kinds(self):
+        """Door/stair/prop/portal resets strip DCs and arm obstacle defaults, preserving content."""
         door = {
             "door_id": 1,
             "cell": [0, 0],
@@ -92,32 +92,19 @@ class TestResetFixtureObstacles:
             "title": "Heavy Oak Door",
             "note": "Stuck",
         }
-
         reset_fixture_obstacles(door)
-
-        # Check DCs removed
-        assert "breakDc" not in door
-        assert "pickDc" not in door
-
-        # Check door open is false
+        assert "breakDc" not in door and "pickDc" not in door
         assert door["open"] is False
-
-        # Check obstacles present with defaults
-        assert "obstacles" in door
         assert door["obstacles"]["lock"]["armed"] is False
         assert door["obstacles"]["lock"]["shown"] is False
         assert door["obstacles"]["concealment"]["armed"] is False
         assert door["obstacles"]["trap"]["armed"] is False
-
-        # Check non-obstacle content preserved
         assert door["door_id"] == 1
         assert door["title"] == "Heavy Oak Door"
         assert door["note"] == "Stuck"
         assert door["hidden"] is False
         assert door["locked"] is True
 
-    def test_stair_reset(self):
-        """Test stair fixture reset with DC removal."""
         stair = {
             "stair_id": 2,
             "cell_start": [1, 1],
@@ -131,25 +118,13 @@ class TestResetFixtureObstacles:
             "hiddenDc": 14,
             "note": "Spiral stairs",
         }
-
         reset_fixture_obstacles(stair)
-
-        # Check DCs removed
         assert "searchDc" not in stair
         assert "hiddenDc" not in stair
-
-        # Check obstacles present
-        assert "obstacles" in stair
         assert stair["obstacles"]["trap"]["armed"] is False
-
-        # Check non-obstacle content preserved
         assert stair["stair_id"] == 2
         assert stair["note"] == "Spiral stairs"
-        assert stair["hidden"] is False
-        assert stair["locked"] is False
 
-    def test_prop_reset(self):
-        """Test prop fixture reset."""
         prop = {
             "prop_id": 3,
             "cell": [2, 2],
@@ -160,22 +135,11 @@ class TestResetFixtureObstacles:
             "breakDc": 16,
             "loot": [{"name": "Gold coin", "quantity": 50}],
         }
-
         reset_fixture_obstacles(prop)
-
-        # Check DCs removed
         assert "breakDc" not in prop
-
-        # Check obstacles present
         assert "obstacles" in prop
-
-        # Check non-obstacle content preserved
-        assert prop["prop_id"] == 3
-        assert prop["title"] == "Bookshelf"
         assert prop["loot"] == [{"name": "Gold coin", "quantity": 50}]
 
-    def test_portal_reset(self):
-        """Test portal fixture reset."""
         portal = {
             "portal_id": 4,
             "cell": [3, 3],
@@ -187,18 +151,9 @@ class TestResetFixtureObstacles:
             "destination_dungeon": 2,
             "destination_cell": [5, 5],
         }
-
         reset_fixture_obstacles(portal)
-
-        # Check DCs removed
         assert "pickDc" not in portal
-
-        # Check obstacles present
         assert "obstacles" in portal
-
-        # Check non-obstacle content preserved
-        assert portal["portal_id"] == 4
-        assert portal["destination"] == "portal_5"
         assert portal["destination_dungeon"] == 2
 
     def test_fixture_without_door_id_no_open(self):

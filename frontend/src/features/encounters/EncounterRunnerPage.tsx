@@ -1,4 +1,5 @@
 import { useNavigate, useParams } from 'react-router-dom'
+import { Button } from '../../components/Button'
 import { PageHeader } from '../../components/PageHeader'
 import { StatePanel } from '../../components/StatePanel'
 import { useEncounterRunner } from './useEncounterRunner'
@@ -39,7 +40,7 @@ export function EncounterRunnerPage() {
           status="error"
           title="Error loading encounter"
           message={runner.loadError}
-          action={<button type="button" onClick={() => window.location.reload()}>Retry</button>}
+          action={<Button type="button" onClick={() => window.location.reload()}>Retry</Button>}
         />
       )}
       {!runner.loading && !runner.loadError && <EncounterRunnerBoard runner={runner} />}

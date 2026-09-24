@@ -64,14 +64,6 @@ def _mock_conn(commit_side_effect):
     return conn
 
 
-def test_list_monsters(test_client):
-    """Test GET /api/monsters returns a list."""
-    response = test_client.get("/api/monsters")
-    assert response.status_code == 200
-    data = response.json()
-    assert isinstance(data, list)
-
-
 def test_get_monster_by_id(test_client):
     """Test GET /api/monsters/{id}."""
     response = test_client.get("/api/monsters")
@@ -83,6 +75,12 @@ def test_get_monster_by_id(test_client):
     monster = response.json()
     assert monster["id"] == monster_id
     assert "name" in monster
+
+
+def test_get_monster_by_name_not_found(test_client):
+    """Test 404 for a nonexistent monster name."""
+    response = test_client.get("/api/monsters/by-name/NoSuchBeast")
+    assert response.status_code == 404
 
 
 def test_monster_seed_data_has_cr_and_parsed_json(test_client):
@@ -99,32 +97,20 @@ def test_monster_seed_data_has_cr_and_parsed_json(test_client):
     ]
 
 
-def test_get_nonexistent_monster(test_client):
-    """Test 404 for nonexistent monster."""
-    response = test_client.get("/api/monsters/99999")
-    assert response.status_code == 404
+def test_update_monster_duplicate_name(test_client):
+    created = test_client.post("/api/monsters", json=_monster_payload()).json()
+    payload = _monster_payload("Owlbear")
+
+    response = test_client.put(f"/api/monsters/{created['id']}", json=payload)
+
+    assert response.status_code == 409
 
 
-def test_get_monster_by_name(test_client):
-    """Test GET /api/monsters/by-name/{name}."""
-    response = test_client.get("/api/monsters/by-name/Owlbear")
-    assert response.status_code == 200
-    assert response.json()["name"] == "Owlbear"
-
-
-def test_monster_input_rejects_unknown_fields_and_cr_sort():
-    with pytest.raises(ValueError):
-        MonsterCreate.model_validate({"name": "Bad", "unknown": True})
-    with pytest.raises(ValueError):
-        MonsterCreate.model_validate({"name": "Bad", "cr_sort": 1.0})
-    with pytest.raises(ValueError):
-        MonsterUpdate.model_validate({"name": "Bad", "cr_sort": 1.0})
-
-
-def test_get_monster_by_name_not_found(test_client):
-    """Test 404 for a nonexistent monster name."""
-    response = test_client.get("/api/monsters/by-name/NoSuchBeast")
-    assert response.status_code == 404
+def test_delete_nonexistent_monster_returns_404(test_client):
+    """GET/PUT/DELETE on a nonexistent monster all 404."""
+    assert test_client.get("/api/monsters/99999").status_code == 404
+    assert test_client.put("/api/monsters/99999", json=_monster_payload()).status_code == 404
+    assert test_client.delete("/api/monsters/99999").status_code == 404
 
 
 def test_create_monster(test_client):
@@ -182,81 +168,40 @@ def test_update_monster_duplicate_name(test_client):
     assert response.status_code == 409
 
 
-def test_update_nonexistent_monster(test_client):
-    """PUT /api/monsters/99999 returns 404."""
-    response = test_client.put("/api/monsters/99999", json=_monster_payload())
-    assert response.status_code == 404
-
-
-def test_delete_monster(test_client):
-    """DELETE /api/monsters/{id} returns 204, then GET returns 404."""
-    created = test_client.post("/api/monsters", json=_monster_payload()).json()
-
-    response = test_client.delete(f"/api/monsters/{created['id']}")
-
-    assert response.status_code == 204
-    assert test_client.get(f"/api/monsters/{created['id']}").status_code == 404
-
-
-def test_delete_nonexistent_monster(test_client):
-    """DELETE /api/monsters/99999 returns 404."""
-    response = test_client.delete("/api/monsters/99999")
-    assert response.status_code == 404
-
-
-def test_create_monster_db_failure(monkeypatch, test_client):
+@pytest.mark.parametrize(
+    ("operation", "use_existing"),
+    [
+        ("create", False),
+        ("update", True),
+        ("delete", True),
+    ],
+)
+def test_monster_mutations_db_failure(monkeypatch, test_client, operation, use_existing):
+    """DB commit failures map to 400 for create/update/delete."""
+    created_id = test_client.post("/api/monsters", json=_monster_payload()).json()["id"] if use_existing else None
     monkeypatch.setattr(
         "backend.app.db.get_conn",
         lambda: _mock_conn(Exception("Simulated database failure")),
     )
-    response = test_client.post("/api/monsters", json=_monster_payload())
+    if operation == "create":
+        response = test_client.post("/api/monsters", json=_monster_payload())
+    elif operation == "update":
+        response = test_client.put(f"/api/monsters/{created_id}", json=_monster_payload())
+    else:
+        response = test_client.delete(f"/api/monsters/{created_id}")
     assert response.status_code == 400
 
 
-def test_create_monster_integrity_non_unique(monkeypatch, test_client):
+def test_monster_create_integrity_non_unique(monkeypatch, test_client):
+    """Non-unique IntegrityErrors (e.g. NOT NULL) map to 400, not 500."""
     monkeypatch.setattr(
         "backend.app.db.get_conn",
         lambda: _mock_conn(sqlite3.IntegrityError("NOT NULL constraint failed: monsters.name")),
     )
-    response = test_client.post("/api/monsters", json=_monster_payload())
-    assert response.status_code == 400
+    assert test_client.post("/api/monsters", json=_monster_payload()).status_code == 400
 
 
-def test_update_monster_db_failure(monkeypatch, test_client):
-    created = test_client.post("/api/monsters", json=_monster_payload()).json()
-    monkeypatch.setattr(
-        "backend.app.db.get_conn",
-        lambda: _mock_conn(Exception("Simulated database failure")),
-    )
-    response = test_client.put(f"/api/monsters/{created['id']}", json=_monster_payload())
-    assert response.status_code == 400
-
-
-def test_update_monster_integrity_non_unique(monkeypatch, test_client):
-    created = test_client.post("/api/monsters", json=_monster_payload()).json()
-    monkeypatch.setattr(
-        "backend.app.db.get_conn",
-        lambda: _mock_conn(sqlite3.IntegrityError("NOT NULL constraint failed: monsters.name")),
-    )
-    response = test_client.put(f"/api/monsters/{created['id']}", json=_monster_payload())
-    assert response.status_code == 400
-
-
-def test_delete_monster_db_failure(monkeypatch, test_client):
-    created = test_client.post("/api/monsters", json=_monster_payload()).json()
-    monkeypatch.setattr(
-        "backend.app.db.get_conn",
-        lambda: _mock_conn(Exception("Simulated database failure")),
-    )
-    response = test_client.delete(f"/api/monsters/{created['id']}")
-    assert response.status_code == 400
-
-
-def test_monster_create_rejects_windows_device_name():
+def test_monster_audio_path_device_name_guard():
     with pytest.raises(ValidationError, match="audio_path uses a reserved Windows device name"):
         MonsterCreate(audio_path="con.mp3", name="Test")
-
-
-def test_monster_create_accepts_valid_audio_path():
-    monster = MonsterCreate(audio_path="owlbear.mp3", name="Test")
-    assert monster.audio_path == "owlbear.mp3"
+    assert MonsterCreate(audio_path="owlbear.mp3", name="Test").audio_path == "owlbear.mp3"

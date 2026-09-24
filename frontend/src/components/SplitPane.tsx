@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import type { CSSProperties, KeyboardEvent, PointerEvent, ReactNode } from 'react'
+import { IconButton } from './IconButton'
 import { NavCollapseIcon, NavExpandIcon } from './icons'
 import './SplitPane.css'
 
@@ -172,36 +173,34 @@ export function SplitPane({
       <div className="split-pane-left" id={separatorId}>
         {collapsible && (
           <div className="split-pane-rail-action">
-            <button
+            <IconButton
               ref={collapseButtonRef}
-              type="button"
+              label={`Collapse ${leftLabel}`}
               className="split-pane-rail-button"
-              aria-label={`Collapse ${leftLabel}`}
               title={`Collapse ${leftLabel}`}
               aria-expanded={!effectiveCollapsed}
               aria-controls={separatorId}
               onClick={collapseRail}
             >
               <NavCollapseIcon size={20} aria-hidden="true" />
-            </button>
+            </IconButton>
           </div>
         )}
         <div className="split-pane-left-content">{left}</div>
       </div>
       {effectiveCollapsed ? (
         <div className="split-pane-restore">
-          <button
+          <IconButton
             ref={restoreButtonRef}
-            type="button"
+            label={`Restore ${leftLabel}`}
             className="split-pane-rail-button"
-            aria-label={`Restore ${leftLabel}`}
             title={`Restore ${leftLabel}`}
             aria-expanded={false}
             aria-controls={separatorId}
             onClick={restoreRail}
           >
             <NavExpandIcon size={20} aria-hidden="true" />
-          </button>
+          </IconButton>
         </div>
       ) : (
         <div

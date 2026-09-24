@@ -3,6 +3,7 @@ import * as api from '../../api/client'
 import type { Monster, NPC, NPCInput } from '../../api/types'
 import { Button } from '../../components/Button'
 import { Dialog } from '../../components/Dialog'
+import { CheckboxGroup } from '../../components/form/CheckboxGroup'
 import { SearchList } from '../../components/SearchList'
 import { StatePanel } from '../../components/StatePanel'
 import { applyPull, getPullableRows } from './npcPull'
@@ -42,18 +43,6 @@ export function PullFromMonsterDialog({ npc, onClose, onPulled }: PullFromMonste
   const handleMonsterSelect = (monster: Monster) => {
     setSelectedMonster(monster)
     setSelectedRowIds(new Set())
-  }
-
-  const toggleRow = (rowId: string) => {
-    setSelectedRowIds((prev) => {
-      const next = new Set(prev)
-      if (next.has(rowId)) {
-        next.delete(rowId)
-      } else {
-        next.add(rowId)
-      }
-      return next
-    })
   }
 
   const handleCommit = async () => {
@@ -151,25 +140,35 @@ export function PullFromMonsterDialog({ npc, onClose, onPulled }: PullFromMonste
               const regionRows = grouped[region]
               if (!regionRows) return null
               return (
-                <section key={region} className="pull-from-monster-region">
-                  <h3 className="pull-from-monster-region-title">{region}</h3>
-                  {regionRows.map((row) => (
-                    <label key={row.id} className="pull-from-monster-row">
-                      <input
-                        type="checkbox"
-                        className="pull-from-monster-row-checkbox"
-                        checked={selectedRowIds.has(row.id)}
-                        onChange={() => toggleRow(row.id)}
-                      />
-                      <span className="pull-from-monster-row-label">{row.label}</span>
-                      {row.currentValueLabel && (
-                        <span className="pull-from-monster-row-existing">
-                          ← you have {row.currentValueLabel}
-                        </span>
-                      )}
-                    </label>
-                  ))}
-                </section>
+                  <section key={region} className="pull-from-monster-region">
+                    <h3 className="pull-from-monster-region-title">{region}</h3>
+                    <CheckboxGroup
+                      className="pull-from-monster-checkbox-group"
+                      label={<span className="fc-visually-hidden">{region} fields</span>}
+                      options={regionRows.map((row) => ({
+                        value: row.id,
+                        label: (
+                          <>
+                            <span className="pull-from-monster-row-label">{row.label}</span>
+                            {row.currentValueLabel && (
+                              <span className="pull-from-monster-row-existing">
+                                ← you have {row.currentValueLabel}
+                              </span>
+                            )}
+                          </>
+                        ),
+                      }))}
+                      value={regionRows.filter((row) => selectedRowIds.has(row.id)).map((row) => row.id)}
+                      onValueChange={(regionSelection) => {
+                        const regionRowIds = new Set(regionRows.map((row) => row.id))
+                        setSelectedRowIds((previous) => {
+                          const next = new Set([...previous].filter((id) => !regionRowIds.has(id)))
+                          regionSelection.forEach((id) => next.add(id))
+                          return next
+                        })
+                      }}
+                    />
+                  </section>
               )
             })}
             {rows.length === 0 && (

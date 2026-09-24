@@ -75,6 +75,118 @@ describe('MapLabEditorPage (Stage E3 — Toolbar reorganization & persistent ins
     expect(screen.getByRole('button', { name: 'New room' })).toBeInTheDocument()
   })
 
+  it('Map popover remains exclusive with utilities and View, keeps internal actions open, and dismisses outside', async () => {
+    const user = userEvent.setup()
+    window.localStorage.removeItem('dnd-kids-maplab-layer-visible:outside')
+    renderMapLabEditorPage()
+    await flush()
+
+    await user.click(screen.getByRole('button', { name: 'Find room…' }))
+    expect(screen.getByRole('dialog', { name: 'Find room' })).toBeInTheDocument()
+
+    const mapTrigger = screen.getByRole('button', { name: 'Map' })
+    await user.click(mapTrigger)
+    expect(screen.getByLabelText('Top')).toBeInTheDocument()
+    expect(screen.queryByRole('dialog', { name: 'Find room' })).not.toBeInTheDocument()
+
+    const viewTrigger = screen.getByRole('button', { name: 'View' })
+    await user.click(viewTrigger)
+    expect(screen.queryByLabelText('Top')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Outside' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Outside' }))
+    expect(screen.getByRole('button', { name: 'Labels' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Outside' }))
+    window.localStorage.removeItem('dnd-kids-maplab-layer-visible:outside')
+    await user.click(screen.getByRole('button', { name: 'Select' }))
+    expect(screen.queryByRole('button', { name: 'Labels' })).not.toBeInTheDocument()
+
+    await user.click(mapTrigger)
+    expect(screen.getByLabelText('Top')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Select' }))
+    expect(screen.queryByLabelText('Top')).not.toBeInTheDocument()
+  })
+
+  it('Map popover leaves Escape dismissal to the editor and keeps the active tool armed', async () => {
+    const user = userEvent.setup()
+    renderMapLabEditorPage()
+    await flush()
+
+    await user.click(screen.getByRole('button', { name: 'Room' }))
+    const mapTrigger = screen.getByRole('button', { name: 'Map' })
+    await user.click(mapTrigger)
+    expect(mapTrigger).toHaveFocus()
+    expect(screen.getByLabelText('Top')).toBeInTheDocument()
+
+    await user.keyboard('{Escape}')
+    expect(screen.queryByLabelText('Top')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Room' })).toHaveAttribute('aria-pressed', 'true')
+    expect(mapTrigger).toHaveFocus()
+  })
+
+  it('Connections popover retains its panel, dismisses outside without stealing focus, and restores focus on Escape', async () => {
+    const user = userEvent.setup()
+    renderMapLabEditorPage()
+    await flush()
+
+    const connectionsTrigger = screen.getByRole('button', { name: /Connections/ })
+    await user.click(connectionsTrigger)
+    const panel = screen.getByRole('dialog', { name: 'Connection utilities' })
+    expect(panel.querySelector('.maplab-connections-resolve-list')).toBeInTheDocument()
+
+    await user.click(panel.querySelector('.maplab-connections-resolve-list') as HTMLElement)
+    expect(panel).toBeInTheDocument()
+
+    const outsideTarget = screen.getByRole('button', { name: 'Select' })
+    await user.click(outsideTarget)
+    expect(screen.queryByRole('dialog', { name: 'Connection utilities' })).not.toBeInTheDocument()
+    expect(outsideTarget).toHaveFocus()
+
+    await user.click(connectionsTrigger)
+    connectionsTrigger.blur()
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(screen.queryByRole('dialog', { name: 'Connection utilities' })).not.toBeInTheDocument()
+    expect(connectionsTrigger).toHaveFocus()
+  })
+
+  it('searchable tool popovers retain their options, reset filters, and dismiss outside without stealing focus', async () => {
+    const user = userEvent.setup()
+    renderMapLabEditorPage()
+    await flush()
+
+    const flyouts = [
+      { trigger: 'Choose passage tool', filter: 'Filter passage tools', firstOption: 'Door' },
+      { trigger: 'Choose prop kind', filter: 'Filter prop tools', firstOption: 'Chest' },
+      { trigger: 'Choose terrain tool', filter: 'Filter terrain tools', firstOption: 'River' },
+    ]
+
+    for (const flyout of flyouts) {
+      const trigger = screen.getByRole('button', { name: flyout.trigger })
+      await user.click(trigger)
+      const search = await screen.findByRole('searchbox', { name: flyout.filter })
+      expect(search).toHaveFocus()
+      expect(search).toHaveValue('')
+      expect(screen.getByRole('menu')).toHaveClass('maplab-tool-palette-flyout')
+      expect(screen.getByRole('menuitem', { name: flyout.firstOption })).toBeInTheDocument()
+
+      await user.type(search, 'no matching tool')
+      expect(screen.getByText('No tools match that.')).toBeInTheDocument()
+
+      const outsideTarget = screen.getByRole('button', { name: 'Select' })
+      await user.click(outsideTarget)
+      expect(screen.queryByRole('searchbox', { name: flyout.filter })).not.toBeInTheDocument()
+      expect(outsideTarget).toHaveFocus()
+
+      await user.click(trigger)
+      const reopenedSearch = await screen.findByRole('searchbox', { name: flyout.filter })
+      expect(reopenedSearch).toHaveFocus()
+      expect(reopenedSearch).toHaveValue('')
+      expect(screen.getByRole('menuitem', { name: flyout.firstOption })).toBeInTheDocument()
+      await user.click(outsideTarget)
+      expect(outsideTarget).toHaveFocus()
+    }
+  })
+
   it('portals the save-status chip into the shell status slot instead of the toolbar', async () => {
     const slot = document.createElement('div')
     document.body.appendChild(slot)
@@ -108,13 +220,21 @@ describe('MapLabEditorPage (Stage E3 — Toolbar reorganization & persistent ins
       window.localStorage.removeItem('dnd-kids-maplab-tray-collapsed:editor-active-options')
     })
 
-    it('the Primary toolbar group collapses', async () => {
+    it('the Primary tray collapses independently and retains both trigger names and expanded states', async () => {
+      const user = userEvent.setup()
       renderMapLabEditorPage()
       await flush()
 
-      fireEvent.click(screen.getByRole('button', { name: 'Collapse Primary tools' }))
+      const primary = screen.getByRole('button', { name: 'Collapse Primary tools' })
+      const activeOptions = screen.getByRole('button', { name: 'Collapse Active tool options tools' })
+      expect(primary).toHaveAttribute('aria-expanded', 'true')
+      expect(activeOptions).toHaveAttribute('aria-expanded', 'true')
 
-      expect(screen.getByRole('button', { name: 'Expand Primary tools' })).toBeInTheDocument()
+      await user.click(primary)
+
+      expect(screen.getByRole('button', { name: 'Expand Primary tools' })).toHaveAttribute('aria-expanded', 'false')
+      expect(screen.getByRole('button', { name: 'Collapse Active tool options tools' })).toHaveAttribute('aria-expanded', 'true')
+      expect(screen.getByRole('button', { name: 'Passage tools' })).toBeInTheDocument()
     })
 
     it('toolbar tray collapse state persists across remount via localStorage', async () => {
@@ -123,7 +243,8 @@ describe('MapLabEditorPage (Stage E3 — Toolbar reorganization & persistent ins
       renderMapLabEditorPage()
       await flush()
 
-      expect(screen.getByRole('button', { name: 'Expand Primary tools' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Expand Primary tools' })).toHaveAttribute('aria-expanded', 'false')
+      expect(screen.getByRole('button', { name: 'Collapse Active tool options tools' })).toHaveAttribute('aria-expanded', 'true')
     })
   })
 

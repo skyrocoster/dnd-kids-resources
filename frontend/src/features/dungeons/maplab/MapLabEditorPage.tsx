@@ -241,10 +241,11 @@ export function MapLabEditorPage() {
   const terrainMenuRef = useRef<HTMLDivElement>(null)
   const propMenuRef = useRef<HTMLDivElement>(null)
   const [mapPopoverOpen, setMapPopoverOpen] = useState(false)
-  const mapPopoverRef = useRef<HTMLDivElement>(null)
   const [viewPopoverOpen, setViewPopoverOpen] = useState(false)
-  const viewPopoverRef = useRef<HTMLDivElement>(null)
   const [openUtility, setOpenUtility] = useState<'finder' | 'connections' | null>(null)
+  const mapTriggerRef = useRef<HTMLButtonElement>(null)
+  const viewTriggerRef = useRef<HTMLButtonElement>(null)
+  const connectionsTriggerRef = useRef<HTMLButtonElement>(null)
   const [confirmingReset, setConfirmingReset] = useState(false)
   const placeDoorMode = armedTool === 'door'
   const placePropMode = armedTool === 'prop'
@@ -848,54 +849,12 @@ export function MapLabEditorPage() {
   }, [openFlyout])
 
   useEffect(() => {
-    if (!openFlyout) return
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Node
-      const groupRef = openFlyout === 'passages' ? passagesFlyoutRef : openFlyout === 'prop' ? propFlyoutRef : terrainFlyoutRef
-      const menuRef = openFlyout === 'passages' ? passagesMenuRef : openFlyout === 'prop' ? propMenuRef : terrainMenuRef
-      if (
-        groupRef.current && !groupRef.current.contains(target) &&
-        menuRef.current && !menuRef.current.contains(target)
-      ) {
-        setOpenFlyout(null)
-      }
-    }
-    window.addEventListener('mousedown', handleClickOutside)
-    return () => {
-      window.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [openFlyout])
-
-  useEffect(() => {
-    if (!mapPopoverOpen) return
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Node
-      if (mapPopoverRef.current && !mapPopoverRef.current.contains(target)) setMapPopoverOpen(false)
-    }
-    window.addEventListener('mousedown', handleClickOutside)
-    return () => {
-      window.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [mapPopoverOpen])
-
-  useEffect(() => {
-    if (!viewPopoverOpen) return
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Node
-      if (viewPopoverRef.current && !viewPopoverRef.current.contains(target)) setViewPopoverOpen(false)
-    }
-    window.addEventListener('mousedown', handleClickOutside)
-    return () => {
-      window.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [viewPopoverOpen])
-
-  useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       const target = event.target
       if (
         target instanceof HTMLElement &&
-        (target.matches('input, textarea, select, [contenteditable]') || target.isContentEditable)
+        (target.matches('input, textarea, select, [contenteditable]') || target.isContentEditable) &&
+        event.key !== 'Escape'
       ) return
 
       if (event.key === 'Escape') {
@@ -906,12 +865,17 @@ export function MapLabEditorPage() {
           strokeRoomIdRef.current = null
         } else if (openFlyout !== null) {
           setOpenFlyout(null)
+          const flyoutGroupRef = openFlyout === 'passages' ? passagesFlyoutRef : openFlyout === 'prop' ? propFlyoutRef : terrainFlyoutRef
+          flyoutGroupRef.current?.querySelector<HTMLButtonElement>('[aria-haspopup="menu"]')?.focus()
         } else if (mapPopoverOpen) {
           setMapPopoverOpen(false)
+          mapTriggerRef.current?.focus()
         } else if (viewPopoverOpen) {
           setViewPopoverOpen(false)
+          viewTriggerRef.current?.focus()
         } else if (openUtility !== null) {
           setOpenUtility(null)
+          if (openUtility === 'connections') connectionsTriggerRef.current?.focus()
         } else if (selectionSheetExpanded) {
           setSelectionSheetExpanded(false)
         } else if (
@@ -992,8 +956,9 @@ export function MapLabEditorPage() {
       }
       event.preventDefault()
     }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
+    const captureEditorEscape = mapPopoverOpen || viewPopoverOpen || openFlyout !== null
+    window.addEventListener('keydown', handleKeyDown, captureEditorEscape)
+    return () => window.removeEventListener('keydown', handleKeyDown, captureEditorEscape)
   }, [brushArmed, mapPopoverOpen, openFlyout, openUtility, redo, selectDoor, selectFeature, selectPortal, selectProp, selectRoom, selectStair, selectionSheetExpanded, state.selectedDoorId, state.selectedFeatureId, state.selectedPortalId, state.selectedPropId, state.selectedRoomId, state.selectedStairId, strokeCells.length, undo, viewPopoverOpen])
 
   useEffect(() => {
@@ -1083,14 +1048,14 @@ export function MapLabEditorPage() {
          activatePropKind={activatePropKind}
          activateTerrainTool={activateTerrainTool}
          activateTopFilteredTool={activateTopFilteredTool}
-         layerVisible={layerVisible}
-         toggleLayer={toggleLayer}
-         viewPopoverOpen={viewPopoverOpen}
-         setViewPopoverOpen={setViewPopoverOpen}
-         viewPopoverRef={viewPopoverRef}
-         mapPopoverOpen={mapPopoverOpen}
-         setMapPopoverOpen={setMapPopoverOpen}
-         mapPopoverRef={mapPopoverRef}
+          layerVisible={layerVisible}
+           toggleLayer={toggleLayer}
+           viewPopoverOpen={viewPopoverOpen}
+           setViewPopoverOpen={setViewPopoverOpen}
+           viewTriggerRef={viewTriggerRef}
+           mapPopoverOpen={mapPopoverOpen}
+           setMapPopoverOpen={setMapPopoverOpen}
+           mapTriggerRef={mapTriggerRef}
          showGhostFloor={showGhostFloor}
          setShowGhostFloor={setShowGhostFloor}
          ghostZ={ghostZ}
@@ -1119,9 +1084,10 @@ export function MapLabEditorPage() {
           selectPortal={selectPortal}
           setGatewayToRemove={setGatewayToRemove}
           handleAddReturnGateway={handleAddReturnGateway}
-          openUtility={openUtility}
-          setOpenUtility={setOpenUtility}
-          onNewRoom={() => { selectRoom(null); setArmedTool('room'); setPlacementError(null) }}
+           openUtility={openUtility}
+           setOpenUtility={setOpenUtility}
+           connectionsTriggerRef={connectionsTriggerRef}
+           onNewRoom={() => { selectRoom(null); setArmedTool('room'); setPlacementError(null) }}
         />
 
        {drawFeatureKind !== null && state.activeZ !== 0 && !dismissZWarning && (

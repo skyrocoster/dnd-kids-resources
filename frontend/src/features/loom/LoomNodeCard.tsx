@@ -1,6 +1,7 @@
 import { memo, forwardRef, useCallback } from 'react'
 import type { LoomNode } from '../../api/types'
 import { PencilIcon, BanknoteIcon, TrashIcon } from '../../components/icons'
+import { IconButton } from '../../components/IconButton'
 
 interface LoomNodeCardProps {
   node: LoomNode
@@ -74,15 +75,15 @@ function LoomNodeCardImpl(
       {node.kind === 'session' && sessionTag && <div className="loom-node-session">{sessionTag}</div>}
       {node.kind === 'beat' && node.thread_id != null && (
         <div className="loom-node-actions">
-          <button type="button" className="loom-node-action-btn" aria-label="Edit beat" onClick={(e) => { e.stopPropagation(); onEdit?.(node) }}>
+          <IconButton label="Edit beat" className="loom-node-action-btn" onClick={(e) => { e.stopPropagation(); onEdit?.(node) }}>
             <PencilIcon size={12} aria-hidden="true" />
-          </button>
-          <button type="button" className="loom-node-action-btn" aria-label="Bank beat" onClick={(e) => { e.stopPropagation(); onBank?.(node) }}>
+          </IconButton>
+          <IconButton label="Bank beat" className="loom-node-action-btn" onClick={(e) => { e.stopPropagation(); onBank?.(node) }}>
             <BanknoteIcon size={12} aria-hidden="true" />
-          </button>
-          <button type="button" className="loom-node-action-btn" aria-label="Delete beat" onClick={(e) => { e.stopPropagation(); onDelete?.(node) }}>
+          </IconButton>
+          <IconButton label="Delete beat" className="loom-node-action-btn" onClick={(e) => { e.stopPropagation(); onDelete?.(node) }}>
             <TrashIcon size={12} aria-hidden="true" />
-          </button>
+          </IconButton>
         </div>
       )}
     </div>

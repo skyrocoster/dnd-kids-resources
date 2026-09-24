@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as api from '../../../api/client'
@@ -141,9 +141,9 @@ describe('SpellEditor', () => {
   })
 
   describe('Dialog contract', () => {
-    it('focuses the first field on open', () => {
+    it('focuses the first field on open', async () => {
       render(<SpellEditor onClose={vi.fn()} onSaved={vi.fn()} />)
-      expect(screen.getByLabelText('Spell Name')).toHaveFocus()
+      await waitFor(() => expect(screen.getByLabelText('Spell Name')).toHaveFocus())
     })
 
     it('closes on Cancel and on Escape', async () => {
@@ -193,6 +193,130 @@ describe('SpellEditor', () => {
 
       resolveCreate(targetSpell)
     })
+  })
+
+  it('saves Concentration and Ritual values changed through their checkbox handlers', async () => {
+    const createSpell = vi.spyOn(api, 'createSpell').mockResolvedValue(targetSpell)
+    const user = userEvent.setup()
+    render(<SpellEditor onClose={vi.fn()} onSaved={vi.fn()} />)
+
+    fireEvent.change(screen.getByLabelText('Spell Name'), { target: { value: 'Focused Spell' } })
+    fireEvent.change(screen.getByLabelText('Quick Rules'), { target: { value: validQuickRules } })
+    const concentration = screen.getByRole('checkbox', { name: 'Concentration' })
+    const ritual = screen.getByRole('checkbox', { name: 'Ritual' })
+    fireEvent.click(concentration)
+    fireEvent.click(ritual)
+
+    expect(concentration).toBeChecked()
+    expect(ritual).toBeChecked()
+    await user.click(screen.getByRole('button', { name: 'Create Spell' }))
+
+    await waitFor(() => expect(createSpell).toHaveBeenCalledOnce())
+    expect(createSpell).toHaveBeenCalledWith(expect.objectContaining({ concentration: true, ritual: true }))
+  })
+
+  it('saves multiple attack-save and damage-type choices from their labeled checkbox groups', async () => {
+    vi.mocked(api.getAbilities).mockResolvedValue([
+      { code: 'str', name: 'Strength' },
+      { code: 'dex', name: 'Dexterity' },
+    ] as Awaited<ReturnType<typeof api.getAbilities>>)
+    vi.mocked(api.getDamageTypes).mockResolvedValue([
+      { code: 'fire', name: 'Fire' },
+      { code: 'cold', name: 'Cold' },
+    ] as Awaited<ReturnType<typeof api.getDamageTypes>>)
+    const createSpell = vi.spyOn(api, 'createSpell').mockResolvedValue(targetSpell)
+    const user = userEvent.setup()
+    render(<SpellEditor onClose={vi.fn()} onSaved={vi.fn()} />)
+
+    await user.click(screen.getByRole('button', { name: 'Add Attack' }))
+    await user.click(screen.getByRole('button', { name: 'Add Damage' }))
+
+    const saveGroup = screen.getByRole('group', { name: 'Save' })
+    const damageTypeGroup = screen.getByRole('group', { name: 'Damage Type' })
+    const strength = await screen.findByRole('checkbox', { name: 'Strength' })
+    const dexterity = screen.getByRole('checkbox', { name: 'Dexterity' })
+    const fire = await screen.findByRole('checkbox', { name: 'Fire' })
+    const cold = screen.getByRole('checkbox', { name: 'Cold' })
+
+    expect(saveGroup).toContainElement(strength)
+    expect(damageTypeGroup).toContainElement(fire)
+
+    await user.click(screen.getByText('Strength', { selector: 'label' }))
+    dexterity.focus()
+    await user.keyboard(' ')
+    await user.click(screen.getByText('Fire', { selector: 'label' }))
+    cold.focus()
+    await user.keyboard(' ')
+
+    expect(strength).toBeChecked()
+    expect(dexterity).toBeChecked()
+    expect(fire).toBeChecked()
+    expect(cold).toBeChecked()
+
+    fireEvent.change(screen.getByLabelText('Spell Name'), { target: { value: 'Elemental Pair' } })
+    fireEvent.change(screen.getByLabelText('Quick Rules'), { target: { value: validQuickRules } })
+    await user.click(screen.getByRole('button', { name: 'Create Spell' }))
+
+    await waitFor(() => expect(createSpell).toHaveBeenCalledOnce())
+    expect(createSpell).toHaveBeenCalledWith(expect.objectContaining({
+      attacks: [{ kind: null, saving_throws: ['str', 'dex'] }],
+      damage: [{ name: '', formula: '', damage_types: ['fire', 'cold'] }],
+    }))
+  })
+
+  it('uses shared non-submit row actions and serializes only the rows that remain', async () => {
+    const createSpell = vi.spyOn(api, 'createSpell').mockResolvedValue(targetSpell)
+    const user = userEvent.setup()
+    render(<SpellEditor onClose={vi.fn()} onSaved={vi.fn()} />)
+
+    fireEvent.change(screen.getByLabelText('Spell Name'), { target: { value: 'Row Actions' } })
+    fireEvent.change(screen.getByLabelText('Quick Rules'), { target: { value: validQuickRules } })
+    await user.click(screen.getByRole('button', { name: 'Add Attack' }))
+    await user.click(screen.getByRole('button', { name: 'Add Attack' }))
+    await user.click(screen.getByRole('button', { name: 'Add Damage' }))
+    await user.click(screen.getByRole('button', { name: 'Add Damage' }))
+
+    const addAttack = screen.getByRole('button', { name: 'Add Attack' })
+    const addDamage = screen.getByRole('button', { name: 'Add Damage' })
+    expect(addAttack).toHaveAttribute('type', 'button')
+    expect(addAttack).toHaveClass('btn', 'btn--secondary', 'btn--normal', 'spell-editor-add')
+    expect(addDamage).toHaveAttribute('type', 'button')
+    expect(addDamage).toHaveClass('btn', 'btn--secondary', 'btn--normal', 'spell-editor-add')
+    expect(createSpell).not.toHaveBeenCalled()
+
+    const attackGroups = screen.getAllByRole('group', { name: 'Save' })
+    const damageGroups = screen.getAllByRole('group', { name: 'Damage Type' })
+    const firstDamageCard = damageGroups[0].closest<HTMLDivElement>('.spell-editor-row-card')
+    const retainedDamageCard = damageGroups[1].closest<HTMLDivElement>('.spell-editor-row-card')
+    expect(firstDamageCard).not.toBeNull()
+    expect(retainedDamageCard).not.toBeNull()
+    fireEvent.change(within(firstDamageCard!).getByLabelText('Name'), { target: { value: 'Removed Damage' } })
+    fireEvent.change(within(retainedDamageCard!).getByLabelText('Name'), { target: { value: 'Retained Damage' } })
+
+    const firstAttackCard = attackGroups[0].closest<HTMLDivElement>('.spell-editor-row-card')
+    expect(firstAttackCard).not.toBeNull()
+    const removeAttack = within(firstAttackCard!).getByRole('button', { name: 'Remove Row' })
+    const removeDamage = within(firstDamageCard!).getByRole('button', { name: 'Remove Row' })
+    expect(removeAttack).toHaveAttribute('type', 'button')
+    expect(removeAttack).toHaveClass('btn', 'btn--danger', 'btn--normal', 'spell-editor-row-remove')
+    expect(removeDamage).toHaveAttribute('type', 'button')
+    expect(removeDamage).toHaveClass('btn', 'btn--danger', 'btn--normal', 'spell-editor-row-remove')
+    await user.click(removeAttack)
+    await user.click(removeDamage)
+
+    expect(screen.getAllByRole('group', { name: 'Save' })).toHaveLength(1)
+    const remainingDamageGroup = screen.getAllByRole('group', { name: 'Damage Type' })
+    expect(remainingDamageGroup).toHaveLength(1)
+    expect(within(remainingDamageGroup[0].closest<HTMLDivElement>('.spell-editor-row-card')!).getByLabelText('Name')).toHaveValue('Retained Damage')
+    expect(createSpell).not.toHaveBeenCalled()
+
+    await user.click(screen.getByRole('button', { name: 'Create Spell' }))
+
+    await waitFor(() => expect(createSpell).toHaveBeenCalledOnce())
+    expect(createSpell).toHaveBeenCalledWith(expect.objectContaining({
+      attacks: [{ kind: null, saving_throws: [] }],
+      damage: [{ name: 'Retained Damage', formula: '', damage_types: [] }],
+    }))
   })
 })
 

@@ -56,6 +56,16 @@ describe('ViewerRoomRail', () => {
     expect(screen.getByRole('dialog', { name: 'Find room' })).toBeInTheDocument()
     expect(screen.getByRole('searchbox', { name: 'Find room…' })).toHaveFocus()
   })
+
+  it('renders the Finder in a portalled positioner rather than inside the navigation rail', async () => {
+    rtlRender(<ViewerRoomRail layout={mapLabLayout} parsed={parsed} activeRoomId={17} onSelectRoom={vi.fn()} />)
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Find room…' }))
+
+    const rail = screen.getByRole('navigation', { name: 'Room navigation' })
+    const positioner = document.querySelector('.maplab-viewer-rail-positioner')
+    expect(positioner).toContainElement(screen.getByRole('dialog', { name: 'Find room' }))
+    expect(rail).not.toContainElement(positioner)
+  })
   it('groups rooms by floor with headings for multi-floor layouts', () => {
     render(
       <ViewerRoomRail layout={mapLabLayout} parsed={parsed} activeRoomId={17} onSelectRoom={vi.fn()} />,
@@ -338,18 +348,74 @@ describe('ViewerRoomRail', () => {
     const user = userEvent.setup()
     render(<ViewerRoomRail layout={mapLabLayout} parsed={parsed} activeRoomId={17} onSelectRoom={vi.fn()} />)
 
+    await user.type(screen.getByRole('searchbox', { name: 'Find room…' }), 'Armoury')
     await user.click(screen.getByRole('button', { name: 'Armoury' }))
     expect(screen.queryByRole('dialog', { name: 'Find room' })).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Find room…' })).toHaveFocus()
+
+    await user.click(screen.getByRole('button', { name: 'Find room…' }))
+    expect(screen.getByRole('searchbox', { name: 'Find room…' })).toHaveValue('')
   })
 
   it('dismisses with Escape while keeping rows touch-safe', async () => {
     const user = userEvent.setup()
     render(<ViewerRoomRail layout={mapLabLayout} parsed={parsed} activeRoomId={17} onSelectRoom={vi.fn()} />)
 
-    await user.click(screen.getByRole('searchbox', { name: 'Find room…' }))
+    await user.type(screen.getByRole('searchbox', { name: 'Find room…' }), 'Armoury')
     await user.keyboard('{Escape}')
     expect(screen.queryByRole('dialog', { name: 'Find room' })).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Find room…' })).toHaveFocus()
+
+    await user.click(screen.getByRole('button', { name: 'Find room…' }))
+    expect(screen.getByRole('searchbox', { name: 'Find room…' })).toHaveValue('')
+  })
+
+  it('keeps the Finder open on outside presses', async () => {
+    const user = userEvent.setup()
+    rtlRender(
+      <>
+        <button type="button">Outside action</button>
+        <ViewerRoomRail layout={mapLabLayout} parsed={parsed} activeRoomId={17} onSelectRoom={vi.fn()} />
+      </>,
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Find room…' }))
+    await user.click(screen.getByRole('button', { name: 'Outside action' }))
+
+    expect(screen.getByRole('dialog', { name: 'Find room' })).toBeInTheDocument()
+  })
+
+  it('wraps Tab navigation around the Finder controls', async () => {
+    const user = userEvent.setup()
+    rtlRender(<ViewerRoomRail layout={mapLabLayout} parsed={parsed} activeRoomId={17} onSelectRoom={vi.fn()} />)
+    await user.click(screen.getByRole('button', { name: 'Find room…' }))
+    const roomButtons = screen.getAllByRole('listbox').flatMap((list) => within(list).getAllByRole('button'))
+    const lastRoomButton = roomButtons.at(-1)!
+    const panel = screen.getByRole('dialog', { name: 'Find room' })
+    const focusable = panel.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled])')
+    const closeButton = screen.getByRole('button', { name: 'Close room finder' })
+
+    lastRoomButton.focus()
+    expect(lastRoomButton).toHaveFocus()
+    expect(focusable[0]).toBe(closeButton)
+    expect(focusable[focusable.length - 1]).toBe(lastRoomButton)
+    await user.tab()
+    expect(closeButton).toHaveFocus()
+
+    await user.tab({ shift: true })
+    expect(lastRoomButton).toHaveFocus()
+  })
+
+  it('closes with Close, clears the query, and returns focus to Find room', async () => {
+    const user = userEvent.setup()
+    render(<ViewerRoomRail layout={mapLabLayout} parsed={parsed} activeRoomId={17} onSelectRoom={vi.fn()} />)
+    await user.type(screen.getByRole('searchbox', { name: 'Find room…' }), 'Armoury')
+
+    await user.click(screen.getByRole('button', { name: 'Close room finder' }))
+
+    expect(screen.queryByRole('dialog', { name: 'Find room' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Find room…' })).toHaveFocus()
+    await user.click(screen.getByRole('button', { name: 'Find room…' }))
+    expect(screen.getByRole('searchbox', { name: 'Find room…' })).toHaveValue('')
   })
 })

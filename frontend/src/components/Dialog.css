@@ -8,6 +8,16 @@
   z-index: var(--z-dialog);
 }
 
+.dialog-viewport {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-dialog);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
 .dialog {
   background: var(--md-surface-2, var(--md-surface));
   color: var(--md-on-surface);
@@ -18,6 +28,7 @@
   display: flex;
   flex-direction: column;
   box-shadow: var(--elevation-shadow);
+  pointer-events: auto;
 }
 
 .dialog-header {

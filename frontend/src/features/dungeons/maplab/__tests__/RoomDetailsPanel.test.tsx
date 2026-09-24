@@ -89,7 +89,11 @@ describe('RoomDetailsPanel', () => {
       />,
     )
 
-    await user.click(screen.getByRole('button', { name: 'Run encounter' }))
+    const runEncounterButton = screen.getByRole('button', { name: 'Run encounter' })
+    expect(runEncounterButton).toHaveAttribute('type', 'button')
+    expect(runEncounterButton).toHaveClass('maplab-pill-button', 'maplab-room-details-encounter-button')
+    expect(runEncounterButton).not.toBeDisabled()
+    await user.click(runEncounterButton)
     expect(onRunEncounter).toHaveBeenCalledWith(7)
   })
 
@@ -190,7 +194,12 @@ describe('RoomDetailsPanel', () => {
       />,
     )
 
-    await user.click(screen.getByRole('button', { name: 'Party is here' }))
+    const partyIsHereButton = screen.getByRole('button', { name: 'Party is here' })
+    expect(partyIsHereButton).toHaveAttribute('type', 'button')
+    expect(partyIsHereButton).toHaveClass('maplab-pill-button')
+    expect(partyIsHereButton).toHaveStyle({ minHeight: '48px', minWidth: '48px' })
+    expect(partyIsHereButton).not.toBeDisabled()
+    await user.click(partyIsHereButton)
     expect(onPartyIsHere).toHaveBeenCalledOnce()
   })
 

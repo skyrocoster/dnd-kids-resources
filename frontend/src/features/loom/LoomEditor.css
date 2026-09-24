@@ -26,12 +26,15 @@
   font: var(--type-body-sm-size) var(--type-face);
 }
 
-.loom-error-banner-dismiss {
+.loom-error-banner .loom-error-banner-dismiss {
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 32px;
+  height: 32px;
   min-width: 32px;
   min-height: 32px;
+  padding: 0;
   background: transparent;
   border: none;
   color: inherit;
@@ -39,9 +42,10 @@
   border-radius: var(--radius-sm);
 }
 
-.loom-error-banner-dismiss:hover,
-.loom-error-banner-dismiss:focus-visible {
+.loom-error-banner .loom-error-banner-dismiss:hover:not(:disabled),
+.loom-error-banner .loom-error-banner-dismiss:focus-visible {
   background: color-mix(in srgb, var(--md-on-error-container) 12%, transparent);
+  color: inherit;
 }
 
 /* ─── Card-local action buttons ──────────────────────────────────────── */
@@ -53,12 +57,13 @@
   padding: 2px 4px 2px 4px;
 }
 
-.loom-node-action-btn {
+.loom-node-actions .loom-node-action-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 20px;
   height: 20px;
+  min-height: 20px;
   padding: 0;
   background: transparent;
   border: none;
@@ -67,8 +72,8 @@
   cursor: pointer;
 }
 
-.loom-node-action-btn:hover,
-.loom-node-action-btn:focus-visible {
+.loom-node-actions .loom-node-action-btn:hover:not(:disabled),
+.loom-node-actions .loom-node-action-btn:focus-visible {
   background: color-mix(in srgb, var(--md-on-surface, #000) 10%, transparent);
   color: var(--md-on-surface, #000);
 }
@@ -131,6 +136,8 @@
 }
 
 .loom-thread-swatch {
+  display: inline-block;
+  box-sizing: border-box;
   width: 28px;
   height: 28px;
   border-radius: var(--radius-full);

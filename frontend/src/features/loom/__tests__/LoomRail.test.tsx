@@ -1,4 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi } from 'vitest'
 import type { LoomNode, LoomTapestryThread } from '../../../api/types'
 import { LoomRail } from '../LoomRail'
@@ -95,7 +96,8 @@ describe('LoomRail', () => {
     expect(onBankNodeById).not.toHaveBeenCalled()
   })
 
-  it('shows action matrix for a placed beat: Fulfil Beat + Edit + overflow with four items', () => {
+  it('shows action matrix for a placed beat: Fulfil Beat + Edit + overflow with four items', async () => {
+    const user = userEvent.setup()
     const onReorderThread = vi.fn()
     render(
       <LoomRail
@@ -108,21 +110,26 @@ describe('LoomRail', () => {
     expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument()
 
     const moreBtn = screen.getByRole('button', { name: 'More actions' })
-    fireEvent.click(moreBtn)
+    await user.click(moreBtn)
 
-    const items = screen.getAllByRole('menuitem')
+    const items = await screen.findAllByRole('menuitem')
     expect(items).toHaveLength(4)
     expect(items[0]).toHaveTextContent('Reorder planned beats…')
     expect(items[1]).toHaveTextContent('Bank Beat')
     expect(items[2]).toHaveTextContent('Replace Beat…')
     expect(items[3]).toHaveTextContent('Delete Beat…')
+    expect(screen.getAllByRole('separator')).toHaveLength(1)
+    expect(items[3].querySelector('.loom-overflow-item--danger')).toHaveTextContent('Delete Beat…')
   })
 
-  it('shows action matrix for a banked beat: Place Beat + Edit + overflow with Delete Beat… only', () => {
+  it('shows action matrix for a banked beat: Place Beat + Edit + overflow with Delete Beat… only', async () => {
+    const user = userEvent.setup()
+    const onDeleteNode = vi.fn()
     const onPlaceNode = vi.fn()
     render(
       <LoomRail
         {...baseProps}
+        onDeleteNode={onDeleteNode}
         selectedNode={{ id: 2, kind: 'beat', title: 'Banked Beat', thread_id: null, session_id: null, position: 0, carried_count: 0 }}
         onPlaceNode={onPlaceNode}
       />,
@@ -131,11 +138,121 @@ describe('LoomRail', () => {
     expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument()
 
     const moreBtn = screen.getByRole('button', { name: 'More actions' })
-    fireEvent.click(moreBtn)
+    await user.click(moreBtn)
 
-    const items = screen.getAllByRole('menuitem')
+    const items = await screen.findAllByRole('menuitem')
     expect(items).toHaveLength(1)
     expect(items[0]).toHaveTextContent('Delete Beat…')
+    expect(items[0].querySelector('.loom-overflow-item--danger')).toHaveTextContent('Delete Beat…')
+    await user.click(items[0])
+    expect(onDeleteNode).toHaveBeenCalledOnce()
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+  })
+
+  it('preserves conditional session actions and invokes Undo fulfilment', async () => {
+    const user = userEvent.setup()
+    const onUndoFulfil = vi.fn()
+    const fulfilledSession: LoomNode = {
+      id: 6,
+      kind: 'session',
+      title: 'Played scene',
+      thread_id: 1,
+      session_id: 1,
+      position: 0,
+      carried_count: 0,
+      fulfilled_planned_title: 'Planned scene',
+    }
+    const { rerender } = render(
+      <LoomRail {...baseProps} selectedNode={fulfilledSession} onUndoFulfil={onUndoFulfil} />,
+    )
+
+    await user.click(screen.getByRole('button', { name: 'More actions' }))
+    const fulfilledItems = await screen.findAllByRole('menuitem')
+    expect(fulfilledItems).toHaveLength(2)
+    expect(fulfilledItems[0]).toHaveTextContent('Undo fulfilment')
+    expect(fulfilledItems[1]).toHaveTextContent('Delete thread entry…')
+    expect(screen.getAllByRole('separator')).toHaveLength(1)
+    await user.click(fulfilledItems[0])
+    expect(onUndoFulfil).toHaveBeenCalledWith(fulfilledSession)
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+
+    rerender(
+      <LoomRail
+        {...baseProps}
+        selectedNode={{ ...fulfilledSession, fulfilled_planned_title: null }}
+        onUndoFulfil={onUndoFulfil}
+      />,
+    )
+    await user.click(screen.getByRole('button', { name: 'More actions' }))
+    expect(await screen.findAllByRole('menuitem')).toHaveLength(1)
+    expect(screen.getByRole('menuitem', { name: 'Delete thread entry…' })).toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: 'Undo fulfilment' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('separator')).not.toBeInTheDocument()
+  })
+
+  it('supports keyboard opening, navigation, selection, and focus return', async () => {
+    const user = userEvent.setup()
+    const selectedNode: LoomNode = {
+      id: 7,
+      kind: 'beat',
+      title: 'Keyboard beat',
+      thread_id: 1,
+      session_id: null,
+      position: 0,
+      carried_count: 0,
+    }
+    const onReplaceNode = vi.fn()
+    render(
+      <LoomRail {...baseProps} selectedNode={selectedNode} onReplaceNode={onReplaceNode} />,
+    )
+
+    const trigger = screen.getByRole('button', { name: 'More actions' })
+    trigger.focus()
+    await user.keyboard('{Enter}')
+
+    const items = await screen.findAllByRole('menuitem')
+    expect(items[0]).toHaveFocus()
+    await user.keyboard('{ArrowDown}')
+    expect(items[1]).toHaveFocus()
+    await user.keyboard('{Enter}')
+
+    expect(onReplaceNode).toHaveBeenCalledWith(selectedNode)
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+    expect(trigger).toHaveFocus()
+  })
+
+  it('closes on Escape and returns focus to the trigger', async () => {
+    const user = userEvent.setup()
+    render(
+      <LoomRail
+        {...baseProps}
+        selectedNode={{ id: 8, kind: 'beat', title: 'Escape beat', thread_id: null, session_id: null, position: 0, carried_count: 0 }}
+      />,
+    )
+
+    const trigger = screen.getByRole('button', { name: 'More actions' })
+    await user.click(trigger)
+    expect(await screen.findByRole('menu')).toBeInTheDocument()
+    await user.keyboard('{Escape}')
+
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+    expect(trigger).toHaveFocus()
+  })
+
+  it('closes when the user clicks outside the action menu', async () => {
+    const user = userEvent.setup()
+    render(
+      <LoomRail
+        {...baseProps}
+        selectedNode={{ id: 9, kind: 'beat', title: 'Outside beat', thread_id: null, session_id: null, position: 0, carried_count: 0 }}
+      />,
+    )
+
+    await user.click(screen.getByRole('button', { name: 'More actions' }))
+    expect(await screen.findByRole('menu')).toBeInTheDocument()
+    await user.click(screen.getByRole('heading', { name: 'Inspector' }))
+
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
   })
 
   it('calls onPlaceNode when Place Beat is clicked', () => {

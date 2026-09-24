@@ -79,14 +79,18 @@ describe('SplitPane', () => {
       />,
     )
 
-    await user.click(screen.getByRole('button', { name: 'Collapse spell list' }))
+    const collapseButton = screen.getByRole('button', { name: 'Collapse spell list' })
+    expect(collapseButton).toHaveAttribute('type', 'button')
+    await user.click(collapseButton)
 
     expect(screen.queryByRole('separator')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Restore spell list' })).toHaveFocus()
     expect(screen.getByText('list content')).toBeInTheDocument()
     expect(window.localStorage.getItem(STORAGE_KEY)).toContain('"collapsed":true')
 
-    await user.click(screen.getByRole('button', { name: 'Restore spell list' }))
+    const restoreButton = screen.getByRole('button', { name: 'Restore spell list' })
+    expect(restoreButton).toHaveAttribute('type', 'button')
+    await user.click(restoreButton)
 
     expect(screen.getByRole('separator', { name: 'Resize spell list' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Collapse spell list' })).toHaveFocus()

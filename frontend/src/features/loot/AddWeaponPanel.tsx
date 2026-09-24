@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import * as api from '../../api/client'
 import type { Weapon } from '../../api/types'
+import { IconButton } from '../../components/IconButton'
 import { SearchList } from '../../components/SearchList'
+import { CloseIcon } from '../../components/icons'
 import { initialRemoteState, remoteError, remoteLoading, remoteSuccess } from '../../components/remoteState'
 import type { RemoteState } from '../../components/remoteState'
 import './AddCatalogPanel.css'
@@ -30,7 +32,9 @@ export function AddWeaponPanel({ onAdd, onClose }: AddWeaponPanelProps) {
     <div className="add-catalog-panel">
       <div className="add-catalog-panel-header">
         <h3>Add weapon</h3>
-        <button type="button" onClick={onClose} aria-label="Close add weapon panel">×</button>
+        <IconButton label="Close add weapon panel" onClick={onClose}>
+          <CloseIcon size={18} aria-hidden />
+        </IconButton>
       </div>
       <SearchList
         items={weapons}

@@ -14,25 +14,32 @@ describe('AddPlayerPanel', () => {
     render(<AddPlayerPanel conditions={conditions} onAdd={() => {}} onClose={() => {}} />)
 
     expect(screen.getByText('Add player')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Close add player panel' })).toBeInTheDocument()
+    const close = screen.getByRole('button', { name: 'Close add player panel' })
+    expect(close).toHaveAttribute('type', 'button')
+    expect(close).toHaveClass('icon-btn', 'add-player-panel-close')
     expect(screen.getByPlaceholderText('Enter player name…')).toBeInTheDocument()
     expect(screen.getByText('No conditions')).toBeInTheDocument()
-    expect(screen.getByText('Cancel')).toBeInTheDocument()
-    expect(screen.getByText('Add')).toBeDisabled()
+    const cancel = screen.getByRole('button', { name: 'Cancel' })
+    expect(cancel).toHaveAttribute('type', 'button')
+    expect(cancel).toHaveClass('btn', 'btn--secondary', 'btn--normal', 'add-player-panel-cancel')
+    const add = screen.getByRole('button', { name: 'Add' })
+    expect(add).toHaveAttribute('type', 'button')
+    expect(add).toHaveClass('btn', 'btn--primary', 'btn--normal', 'add-player-panel-add')
+    expect(add).toBeDisabled()
   })
 
   it('enables Add when a name is entered', () => {
     render(<AddPlayerPanel conditions={conditions} onAdd={() => {}} onClose={() => {}} />)
 
     fireEvent.change(screen.getByPlaceholderText('Enter player name…'), { target: { value: 'Frodo' } })
-    expect(screen.getByText('Add')).not.toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Add' })).not.toBeDisabled()
   })
 
   it('disables Add when name is only whitespace', () => {
     render(<AddPlayerPanel conditions={conditions} onAdd={() => {}} onClose={() => {}} />)
 
     fireEvent.change(screen.getByPlaceholderText('Enter player name…'), { target: { value: '   ' } })
-    expect(screen.getByText('Add')).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Add' })).toBeDisabled()
   })
 
   it('calls onAdd with trimmed name and no conditions when Add is clicked', () => {
@@ -40,7 +47,7 @@ describe('AddPlayerPanel', () => {
     render(<AddPlayerPanel conditions={conditions} onAdd={onAdd} onClose={() => {}} />)
 
     fireEvent.change(screen.getByPlaceholderText('Enter player name…'), { target: { value: '  Frodo  ' } })
-    fireEvent.click(screen.getByText('Add'))
+    fireEvent.click(screen.getByRole('button', { name: 'Add' }))
 
     expect(onAdd).toHaveBeenCalledWith('Frodo', undefined)
   })
@@ -51,18 +58,26 @@ describe('AddPlayerPanel', () => {
 
     fireEvent.change(screen.getByPlaceholderText('Enter player name…'), { target: { value: 'Frodo' } })
     fireEvent.click(screen.getByText('No conditions'))
-    fireEvent.click(screen.getByLabelText('Prone'))
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Prone' }))
 
-    fireEvent.click(screen.getByText('Add'))
+    fireEvent.click(screen.getByRole('button', { name: 'Add' }))
 
     expect(onAdd).toHaveBeenCalledWith('Frodo', ['Prone'])
+  })
+
+  it('calls onClose when the close button is clicked', () => {
+    const onClose = vi.fn()
+    render(<AddPlayerPanel conditions={conditions} onAdd={() => {}} onClose={onClose} />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Close add player panel' }))
+    expect(onClose).toHaveBeenCalledTimes(1)
   })
 
   it('calls onClose when Cancel is clicked', () => {
     const onClose = vi.fn()
     render(<AddPlayerPanel conditions={conditions} onAdd={() => {}} onClose={onClose} />)
 
-    fireEvent.click(screen.getByText('Cancel'))
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
     expect(onClose).toHaveBeenCalledTimes(1)
   })
 
@@ -94,10 +109,10 @@ describe('AddPlayerPanel', () => {
     fireEvent.change(screen.getByPlaceholderText('Enter player name…'), { target: { value: 'Frodo' } })
     fireEvent.click(screen.getByText('No conditions'))
 
-    fireEvent.click(screen.getByLabelText('Prone'))
-    fireEvent.click(screen.getByLabelText('Poisoned'))
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Prone' }))
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Poisoned' }))
 
-    fireEvent.click(screen.getByText('Add'))
+    fireEvent.click(screen.getByRole('button', { name: 'Add' }))
 
     expect(onAdd).toHaveBeenCalledWith('Frodo', ['Prone', 'Poisoned'])
   })

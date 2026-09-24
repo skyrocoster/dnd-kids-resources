@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import type { Condition } from '../../api/types'
+import { Button } from '../../components/Button'
+import { IconButton } from '../../components/IconButton'
 import { TextField } from '../../components/form/TextField'
 import { CloseIcon, UserPlusIcon } from '../../components/icons'
 import { ConditionPicker } from './ConditionPicker'
@@ -27,9 +29,9 @@ export function AddPlayerPanel({ conditions, onAdd, onClose }: AddPlayerPanelPro
     <div className="add-player-panel">
       <div className="add-player-panel-header">
         <h3><UserPlusIcon size={18} aria-hidden /> Add player</h3>
-        <button type="button" className="add-player-panel-close" onClick={onClose} aria-label="Close add player panel">
+        <IconButton label="Close add player panel" className="add-player-panel-close" onClick={onClose}>
           <CloseIcon size={18} aria-hidden />
-        </button>
+        </IconButton>
       </div>
       <TextField
         label="Player name"
@@ -45,12 +47,23 @@ export function AddPlayerPanel({ conditions, onAdd, onClose }: AddPlayerPanelPro
         onChange={setSelectedConditions}
       />
       <div className="add-player-panel-actions">
-        <button type="button" className="add-player-panel-cancel" onClick={onClose}>
+        <Button
+          type="button"
+          variant="secondary"
+          className="btn btn--secondary btn--normal add-player-panel-cancel"
+          onClick={onClose}
+        >
           Cancel
-        </button>
-        <button type="button" className="add-player-panel-add" onClick={handleAdd} disabled={!canAdd}>
+        </Button>
+        <Button
+          type="button"
+          variant="primary"
+          className="btn btn--primary btn--normal add-player-panel-add"
+          onClick={handleAdd}
+          disabled={!canAdd}
+        >
           Add
-        </button>
+        </Button>
       </div>
     </div>
   )

@@ -40,7 +40,7 @@
   margin-top: var(--space-6);
 }
 
-.player-spellbook-tab[aria-selected='true'] {
+.player-spellbook-tab[aria-pressed='true'] {
   background: var(--md-primary);
   color: var(--md-on-primary);
 }

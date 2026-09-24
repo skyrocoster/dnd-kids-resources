@@ -1,9 +1,8 @@
-import { useState } from 'react'
 import type { Player } from '../../api/types'
 import { formatMovementSpeeds } from '../npcs/npcModel'
 import { hasCombatStats, hasStatblock, playerToMonsterView } from './playerModel'
 import { MonsterStatBlock } from '../monsters/MonsterStatBlock'
-import { ChevronDownIcon, ChevronUpIcon } from '../../components/icons'
+import { Disclosure } from '../../components/Disclosure'
 import './PlayerCombatSummary.css'
 
 interface PlayerCombatSummaryProps {
@@ -11,8 +10,6 @@ interface PlayerCombatSummaryProps {
 }
 
 export function PlayerCombatSummary({ player }: PlayerCombatSummaryProps) {
-  const [profileExpanded, setProfileExpanded] = useState(false)
-
   const speed = formatMovementSpeeds(player.speed)
   const showStatStrip = hasCombatStats(player)
   const showMonsterBlock = hasStatblock(player)
@@ -51,24 +48,13 @@ export function PlayerCombatSummary({ player }: PlayerCombatSummaryProps) {
       )}
 
       {showMonsterBlock && (
-        <>
-          <button
-            type="button"
-            className="player-combat-summary-profile-toggle"
-            aria-expanded={profileExpanded}
-            onClick={() => setProfileExpanded((prev) => !prev)}
-          >
-            {profileExpanded ? <ChevronUpIcon size={18} aria-hidden /> : <ChevronDownIcon size={18} aria-hidden />}
-            Full Profile
-          </button>
-          {profileExpanded && (
+        <Disclosure className="player-combat-summary-disclosure" summary="Full Profile" defaultOpen={false}>
             <MonsterStatBlock
               monster={playerToMonsterView(player)}
               showIdentity={false}
               showStrip={false}
             />
-          )}
-        </>
+        </Disclosure>
       )}
     </div>
   )

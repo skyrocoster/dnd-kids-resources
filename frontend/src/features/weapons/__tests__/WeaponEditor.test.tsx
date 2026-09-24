@@ -82,6 +82,44 @@ describe('WeaponEditor', () => {
     expect(onSaved).toHaveBeenCalledWith(created)
   })
 
+  it('uses shared non-submit attack-row actions and serializes only the retained row', async () => {
+    const created: Weapon = { id: 10, name: 'Row Test' }
+    const createWeapon = vi.spyOn(api, 'createWeapon').mockResolvedValue(created)
+    const user = userEvent.setup()
+
+    render(<WeaponEditor onClose={() => {}} onSaved={() => {}} />)
+
+    await user.type(screen.getByLabelText('Name'), 'Row Test')
+    await user.type(screen.getByLabelText('Quick Rules'), 'a weapon')
+    await user.click(screen.getByRole('button', { name: 'Add Attack' }))
+    await user.click(screen.getByRole('button', { name: 'Add Attack' }))
+
+    const addAttack = screen.getByRole('button', { name: 'Add Attack' })
+    expect(addAttack).toHaveAttribute('type', 'button')
+    expect(addAttack).toHaveClass('btn', 'btn--secondary', 'btn--normal', 'weapon-editor-add')
+    expect(createWeapon).not.toHaveBeenCalled()
+
+    const damageFields = screen.getAllByLabelText('Damage')
+    fireEvent.change(damageFields[0], { target: { value: '1d4' } })
+    fireEvent.change(damageFields[1], { target: { value: '1d8' } })
+    const removeButtons = screen.getAllByRole('button', { name: 'Remove Row' })
+    expect(removeButtons[0]).toHaveAttribute('type', 'button')
+    expect(removeButtons[0]).toHaveClass('btn', 'btn--danger', 'btn--normal', 'weapon-editor-row-remove')
+    await user.click(removeButtons[0])
+
+    expect(screen.getAllByLabelText('Damage')).toHaveLength(1)
+    expect(screen.getByLabelText('Damage')).toHaveValue('1d8')
+    expect(createWeapon).not.toHaveBeenCalled()
+
+    await user.click(screen.getByRole('button', { name: 'Create Weapon' }))
+
+    await waitFor(() => expect(createWeapon).toHaveBeenCalledOnce())
+    expect(createWeapon).toHaveBeenCalledWith(expect.objectContaining({
+      name: 'Row Test',
+      attack: [expect.objectContaining({ damage: '1d8' })],
+    }))
+  })
+
   describe('quick_rules validation', () => {
     it('rejects unknown tokens in quick_rules', async () => {
       const onSaved = vi.fn()
@@ -111,10 +149,10 @@ describe('WeaponEditor', () => {
   })
 
   describe('Dialog contract', () => {
-    it('renders with the expected title and focuses the first field', () => {
+    it('renders with the expected title and focuses the first field', async () => {
       render(<WeaponEditor onClose={() => {}} onSaved={() => {}} />)
       expect(screen.getByRole('dialog', { name: 'Add New Weapon' })).toBeInTheDocument()
-      expect(screen.getByLabelText('Name')).toHaveFocus()
+      await waitFor(() => expect(screen.getByLabelText('Name')).toHaveFocus())
     })
 
     it('uses the weapon title when editing', () => {

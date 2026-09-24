@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { Dialog } from '../Dialog'
@@ -31,11 +31,23 @@ describe('Dialog', () => {
         <p>Content</p>
       </Dialog>,
     )
-    await user.click(screen.getByRole('presentation'))
+    await user.click(document.querySelector('.dialog-backdrop') as HTMLElement)
     expect(onClose).toHaveBeenCalled()
   })
 
-  it('moves focus to the dialog on open', () => {
+  it('does not close when content is clicked', async () => {
+    const user = userEvent.setup()
+    const onClose = vi.fn()
+    render(
+      <Dialog open title="Confirm" onClose={onClose}>
+        <button type="button">Inside dialog</button>
+      </Dialog>,
+    )
+    await user.click(screen.getByRole('button', { name: 'Inside dialog' }))
+    expect(onClose).not.toHaveBeenCalled()
+  })
+
+  it('moves focus to the dialog on open', async () => {
     render(
       <Dialog
         open
@@ -46,16 +58,16 @@ describe('Dialog', () => {
         <p>Content</p>
       </Dialog>,
     )
-    expect(screen.getByRole('button', { name: 'First action' })).toHaveFocus()
+    await waitFor(() => expect(screen.getByRole('button', { name: 'First action' })).toHaveFocus())
   })
 
-  it('focuses the dialog itself when no focusable content exists', () => {
+  it('focuses the dialog itself when no focusable content exists', async () => {
     render(
       <Dialog open title="Confirm" onClose={vi.fn()}>
         <p>Content</p>
       </Dialog>,
     )
-    expect(screen.getByRole('dialog')).toHaveFocus()
+    await waitFor(() => expect(screen.getByRole('dialog')).toHaveFocus())
   })
 
   it('traps focus within the dialog', async () => {
@@ -77,16 +89,16 @@ describe('Dialog', () => {
     )
     const cancel = screen.getByRole('button', { name: 'Cancel' })
     const confirm = screen.getByRole('button', { name: 'Confirm' })
-    expect(cancel).toHaveFocus()
+    await waitFor(() => expect(cancel).toHaveFocus())
 
     await user.tab()
     expect(confirm).toHaveFocus()
 
     await user.tab()
-    expect(cancel).toHaveFocus()
+    await waitFor(() => expect(cancel).toHaveFocus())
 
     await user.tab({ shift: true })
-    expect(confirm).toHaveFocus()
+    await waitFor(() => expect(confirm).toHaveFocus())
   })
 
   it('closes on Escape key press', async () => {
@@ -113,7 +125,20 @@ describe('Dialog', () => {
     expect(onClose).not.toHaveBeenCalled()
   })
 
-  it('restores focus to the trigger element on close', () => {
+  it('does not close from the backdrop while pending', async () => {
+    const user = userEvent.setup()
+    const onClose = vi.fn()
+    render(
+      <Dialog open title="Confirm" onClose={onClose} pending>
+        <p>Content</p>
+      </Dialog>,
+    )
+    await user.click(document.querySelector('.dialog-backdrop') as HTMLElement)
+    expect(onClose).not.toHaveBeenCalled()
+    expect(screen.getByRole('dialog', { name: 'Confirm' })).toHaveAttribute('aria-busy', 'true')
+  })
+
+  it('restores focus to the trigger element on close', async () => {
     const trigger = document.createElement('button')
     trigger.textContent = 'Open dialog'
     document.body.appendChild(trigger)
@@ -125,14 +150,14 @@ describe('Dialog', () => {
         <p>Content</p>
       </Dialog>,
     )
-    expect(trigger).not.toHaveFocus()
+    await waitFor(() => expect(screen.getByRole('dialog')).toHaveFocus())
 
     rerender(
       <Dialog open={false} title="Confirm" onClose={vi.fn()}>
         <p>Content</p>
       </Dialog>,
     )
-    expect(trigger).toHaveFocus()
+    await waitFor(() => expect(trigger).toHaveFocus())
     trigger.remove()
   })
 
@@ -177,6 +202,18 @@ describe('Dialog', () => {
     const descId = dialog.getAttribute('aria-describedby')
     expect(descId).toBeTruthy()
     expect(screen.getByText('This cannot be undone.')).toHaveAttribute('id', descId as string)
+  })
+
+  it('preserves the role and custom class name', () => {
+    render(
+      <Dialog open title="Confirm" description="Please confirm." onClose={vi.fn()} role="alertdialog" className="danger-dialog">
+        <p>Content</p>
+      </Dialog>,
+    )
+    const dialog = screen.getByRole('alertdialog', { name: 'Confirm' })
+    expect(dialog).toHaveClass('dialog', 'danger-dialog')
+    expect(dialog).toHaveAttribute('aria-modal', 'true')
+    expect(dialog).toHaveAccessibleDescription('Please confirm.')
   })
 
   it('renders footer slot with actions', async () => {

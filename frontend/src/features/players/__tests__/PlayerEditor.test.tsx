@@ -37,10 +37,10 @@ describe('PlayerEditor', () => {
   })
 
   describe('Dialog contract', () => {
-    it('renders with the expected title and focuses the first field', () => {
+    it('renders with the expected title and focuses the first field', async () => {
       render(<PlayerEditor onClose={() => {}} onSaved={() => {}} />)
       expect(screen.getByRole('dialog', { name: 'Add New Player' })).toBeInTheDocument()
-      expect(screen.getByLabelText('Name')).toHaveFocus()
+      await waitFor(() => expect(screen.getByLabelText('Name')).toHaveFocus())
     })
 
     it('uses the player title when editing', () => {

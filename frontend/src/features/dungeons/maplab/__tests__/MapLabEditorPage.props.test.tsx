@@ -238,8 +238,14 @@ describe('VT0 — Live-surface scaffolding seams', () => {
     fireEvent.click(container.querySelector('.maplab-room') as Element)
     const actionRegion = screen.getByRole('group', { name: 'Selection actions' })
     expect(actionRegion).toBeInTheDocument(); expect(actionRegion).toHaveClass('maplab-inspector-actions')
-    expect(within(actionRegion).getByRole('button', { name: /delete room/i })).toBeInTheDocument()
-    expect(within(actionRegion).getByRole('button', { name: /close/i })).toBeInTheDocument()
+    const deleteButton = within(actionRegion).getByRole('button', { name: /delete room/i })
+    const closeButton = within(actionRegion).getByRole('button', { name: /close/i })
+    expect(deleteButton).toHaveAttribute('type', 'button')
+    expect(deleteButton).toHaveClass('maplab-pill-button', 'maplab-editor-toolbar-button')
+    expect(deleteButton).not.toBeDisabled()
+    expect(closeButton).toHaveAttribute('type', 'button')
+    expect(closeButton).toHaveClass('maplab-pill-button', 'maplab-editor-toolbar-button')
+    expect(closeButton).not.toBeDisabled()
   })
   it('inspector rail fields meet the 48px touch-target floor in normal density (VT3 compact fields)', async () => {
     const layoutWithDoor = { ...oneRoomLayout, doors: [{ door_id: 1, cell: [0, 0], side: 'N', hidden: false, locked: false, trapped: false }] }

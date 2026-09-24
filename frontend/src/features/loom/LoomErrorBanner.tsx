@@ -1,4 +1,5 @@
 import { CloseIcon } from '../../components/icons'
+import { IconButton } from '../../components/IconButton'
 import './LoomEditor.css'
 
 interface LoomErrorBannerProps {
@@ -10,14 +11,13 @@ export function LoomErrorBanner({ message, onDismiss }: LoomErrorBannerProps) {
   return (
     <div className="loom-error-banner" role="alert">
       <span>{message}</span>
-      <button
-        type="button"
+      <IconButton
+        label="Dismiss error"
         className="loom-error-banner-dismiss"
         onClick={onDismiss}
-        aria-label="Dismiss error"
       >
         <CloseIcon width={16} height={16} aria-hidden="true" />
-      </button>
+      </IconButton>
     </div>
   )
 }

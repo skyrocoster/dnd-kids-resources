@@ -80,6 +80,36 @@ describe('PlayerWeaponSection', () => {
     expect(screen.queryByText('Category')).not.toBeInTheDocument()
   })
 
+  it('keeps multiple weapon details open independently with keyboard activation', async () => {
+    const user = userEvent.setup()
+    const weapons = [
+      makeWeapon({ id: 1, name: 'Longsword', weapon_category: 'Martial Melee' }),
+      makeWeapon({ id: 2, name: 'Dagger', weapon_category: 'Simple Melee' }),
+    ]
+    render(<PlayerWeaponSection weapons={weapons} />)
+
+    const daggerToggle = screen.getByRole('button', { name: 'Dagger', expanded: false })
+    await user.tab()
+    expect(daggerToggle).toHaveFocus()
+    await user.keyboard(' ')
+
+    const longswordToggle = screen.getByRole('button', { name: 'Longsword', expanded: false })
+    await user.tab()
+    expect(longswordToggle).toHaveFocus()
+    await user.keyboard('{Enter}')
+
+    expect(screen.getByRole('button', { name: 'Dagger', expanded: true })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Longsword', expanded: true })).toBeInTheDocument()
+    expect(screen.getByText('Simple Melee')).toBeInTheDocument()
+    expect(screen.getByText('Martial Melee')).toBeInTheDocument()
+
+    await user.tab({ shift: true })
+    await user.keyboard('{Enter}')
+    expect(screen.getByRole('button', { name: 'Dagger', expanded: false })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Longsword', expanded: true })).toBeInTheDocument()
+    expect(screen.getByText('Martial Melee')).toBeInTheDocument()
+  })
+
   it('shows attack descriptions when expanded', async () => {
     const user = userEvent.setup()
     const weapons = [

@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import type { Player, Spell } from '../../api/types'
+import { Accordion } from '../../components/Accordion'
 import { DiceText } from '../../components/DiceText'
 import { ReferenceText, spellValueReferenceRegistry } from '../../components/referenceText'
-import { ChevronDownIcon, ChevronUpIcon } from '../../components/icons'
 import { levelLabel } from '../spells/constants'
 import './PlayerSpellSection.css'
 
@@ -35,13 +35,13 @@ export function PlayerSpellSection({ player, spells }: PlayerSpellSectionProps) 
 
   const levels = Array.from(grouped.keys()).sort((a, b) => a - b)
 
-  const toggleExpanded = (id: number) => {
+  const setExpanded = (id: number, open: boolean) => {
     setExpandedIds((prev) => {
       const next = new Set(prev)
-      if (next.has(id)) {
-        next.delete(id)
-      } else {
+      if (open) {
         next.add(id)
+      } else {
+        next.delete(id)
       }
       return next
     })
@@ -64,37 +64,35 @@ export function PlayerSpellSection({ player, spells }: PlayerSpellSectionProps) 
           <div key={level} className="spell-section-group">
             <h4 className="spell-section-group-heading">{levelLabel(level)}</h4>
             {group.map((spell) => {
-              const expanded = expandedIds.has(spell.id)
-              const panelId = `spell-panel-${spell.id}`
               return (
                 <div key={spell.id} className="spell-section-row">
-                  <div className="spell-section-header">
-                    <button
-                      type="button"
-                      className="spell-section-toggle"
-                      aria-expanded={expanded}
-                      aria-controls={panelId}
-                      onClick={() => toggleExpanded(spell.id)}
-                    >
-                      {expanded ? <ChevronUpIcon size={18} aria-hidden /> : <ChevronDownIcon size={18} aria-hidden />}
-                      <span className="spell-section-name">{spell.name}</span>
-                    </button>
-                  </div>
+                  <Accordion
+                    className="spell-section-accordion"
+                    itemClassName="spell-section-accordion-item"
+                    contentClassName="spell-section-body"
+                    multiple
+                    value={expandedIds.has(spell.id) ? [String(spell.id)] : []}
+                    onValueChange={(value) => setExpanded(spell.id, value.includes(String(spell.id)))}
+                    items={[{
+                      value: String(spell.id),
+                      summary: <span className="spell-section-name">{spell.name}</span>,
+                      content: (
+                        <>
+                          {spell.description && <p><DiceText text={spell.description} /></p>}
+                          {spell.alternate_description && <p><DiceText text={spell.alternate_description} /></p>}
+                          {spell.higher_levels.text && (
+                            <p>
+                              <strong>At Higher Levels: </strong>
+                              <DiceText text={spell.higher_levels.text} />
+                            </p>
+                          )}
+                        </>
+                      ),
+                    }]}
+                  />
                   {spell.quick_rules && (
                     <div className="spell-section-quick-rules">
                       <ReferenceText text={spell.quick_rules} registry={spellValueReferenceRegistry} context={spellContext} />
-                    </div>
-                  )}
-                  {expanded && (
-                    <div id={panelId} className="spell-section-body">
-                      {spell.description && <p><DiceText text={spell.description} /></p>}
-                      {spell.alternate_description && <p><DiceText text={spell.alternate_description} /></p>}
-                      {spell.higher_levels.text && (
-                        <p>
-                          <strong>At Higher Levels: </strong>
-                          <DiceText text={spell.higher_levels.text} />
-                        </p>
-                      )}
                     </div>
                   )}
                 </div>

@@ -114,11 +114,10 @@ describe('MapLabPage (R5 viewer navigation rail)', () => {
     await renderLoadedMapLabPage()
     fireEvent.click(screen.getByRole('button', { name: 'Find room…' }))
 
-    const rail = screen.getByRole('navigation', { name: 'Room navigation' })
-    expect(within(rail).getByRole('heading', { name: 'Ground Floor', level: 4 })).toBeInTheDocument()
-    expect(within(rail).getByRole('heading', { name: 'First Floor', level: 4 })).toBeInTheDocument()
-    expect(within(rail).getByRole('button', { name: /Training Hall/i })).toBeInTheDocument()
-    expect(within(rail).getByRole('button', { name: 'First Floor Landing' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Ground Floor', level: 4 })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'First Floor', level: 4 })).toBeInTheDocument()
+    expect(within(screen.getByRole('dialog', { name: 'Find room' })).getByRole('button', { name: /Training Hall/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'First Floor Landing' })).toBeInTheDocument()
   })
 
   it('rail click switches the active room and details panel', async () => {
@@ -126,8 +125,7 @@ describe('MapLabPage (R5 viewer navigation rail)', () => {
     await renderLoadedMapLabPage()
     await user.click(screen.getByRole('button', { name: 'Find room…' }))
 
-    const rail = screen.getByRole('navigation', { name: 'Room navigation' })
-    await user.click(within(rail).getByRole('button', { name: 'Armoury' }))
+    await user.click(within(screen.getByRole('dialog', { name: 'Find room' })).getByRole('button', { name: 'Armoury' }))
     expect(screen.getByText('Weapon Racks')).toBeInTheDocument()
     expect(screen.queryByText('Loose Flagstones')).not.toBeInTheDocument()
   })
@@ -137,8 +135,7 @@ describe('MapLabPage (R5 viewer navigation rail)', () => {
     await renderLoadedMapLabPage()
     await user.click(screen.getByRole('button', { name: 'Find room…' }))
 
-    const rail = screen.getByRole('navigation', { name: 'Room navigation' })
-    await user.click(within(rail).getByRole('button', { name: 'First Floor Landing' }))
+    await user.click(within(screen.getByRole('dialog', { name: 'Find room' })).getByRole('button', { name: 'First Floor Landing' }))
 
     expect(screen.getByRole('tab', { name: 'First Floor' })).toHaveAttribute('aria-selected', 'true')
     expect(screen.getByText('Balcony')).toBeInTheDocument()
@@ -151,8 +148,7 @@ describe('MapLabPage (R5 viewer navigation rail)', () => {
     await user.click(within(screen.getByRole('group', { name: /dungeon floor map/i })).getByRole('button', { name: 'Armoury' }))
     await user.click(screen.getByRole('button', { name: 'Find room…' }))
 
-    const rail = screen.getByRole('navigation', { name: 'Room navigation' })
-    expect(within(rail).getByRole('button', { name: 'Armoury' })).toHaveAttribute('aria-pressed', 'true')
+    expect(within(screen.getByRole('dialog', { name: 'Find room' })).getByRole('button', { name: 'Armoury' })).toHaveAttribute('aria-pressed', 'true')
   })
 
   it('floor tab switches keep the rail selection synchronized', async () => {
@@ -162,8 +158,7 @@ describe('MapLabPage (R5 viewer navigation rail)', () => {
     await user.click(screen.getByRole('tab', { name: 'First Floor' }))
     await user.click(screen.getByRole('button', { name: 'Find room…' }))
 
-    const rail = screen.getByRole('navigation', { name: 'Room navigation' })
-    expect(within(rail).getByRole('button', { name: 'First Floor Landing' })).toHaveAttribute('aria-pressed', 'true')
+    expect(within(screen.getByRole('dialog', { name: 'Find room' })).getByRole('button', { name: 'First Floor Landing' })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByText('Balcony')).toBeInTheDocument()
   })
 })
@@ -259,11 +254,11 @@ describe('MapLabPage portal viewer rendering and navigation', () => {
     await renderLoadedMapLabPage()
     await user.click(screen.getByRole('button', { name: 'Find room…' }))
 
-    await user.click(within(screen.getByRole('navigation', { name: 'Room navigation' })).getByRole('button', { name: 'First Floor Landing' }))
+    await user.click(within(screen.getByRole('dialog', { name: 'Find room' })).getByRole('button', { name: 'First Floor Landing' }))
 
     expect(screen.getByText('Balcony')).toBeInTheDocument()
-    await user.click(within(screen.getByRole('navigation', { name: 'Room navigation' })).getByRole('button', { name: 'Find room…' }))
-    expect(within(screen.getByRole('navigation', { name: 'Room navigation' })).getByRole('button', { name: 'First Floor Landing' })).toHaveAttribute('aria-pressed', 'true')
+    await user.click(screen.getByRole('button', { name: 'Find room…' }))
+    expect(within(screen.getByRole('dialog', { name: 'Find room' })).getByRole('button', { name: 'First Floor Landing' })).toHaveAttribute('aria-pressed', 'true')
   })
 
   it('preserves the frame when the already-visible room is selected', async () => {
@@ -271,7 +266,7 @@ describe('MapLabPage portal viewer rendering and navigation', () => {
     await renderLoadedMapLabPage()
     await user.click(screen.getByRole('button', { name: 'Find room…' }))
 
-    await user.click(within(screen.getByRole('navigation', { name: 'Room navigation' })).getByRole('button', { name: 'Armoury' }))
+    await user.click(within(screen.getByRole('dialog', { name: 'Find room' })).getByRole('button', { name: 'Armoury' }))
 
     expect(screen.getByText('Weapon Racks')).toBeInTheDocument()
     expect(screen.getByRole('tab', { name: 'Ground Floor' })).toHaveAttribute('aria-selected', 'true')
@@ -348,6 +343,64 @@ describe('MapLabPage portal viewer rendering and navigation', () => {
     expect(inspector.querySelector('.maplab-inspector-title')).not.toBeInTheDocument()
   })
 
+  it('Escape dismisses one viewer owner per press in priority order before clearing selection', async () => {
+    const user = userEvent.setup()
+    const encounterProp = {
+      prop_id: 503,
+      kind: 'encounter',
+      cell: [0, 0] as [number, number],
+      z: 0,
+      title: 'Goblin Ambush',
+      hidden: false,
+      locked: false,
+      trapped: false,
+      encounter_id: 7,
+    }
+    vi.spyOn(api, 'getDungeonLayout').mockResolvedValue({ data: { ...mapLabLayout, props: [...mapLabLayout.props, encounterProp] } })
+    vi.spyOn(api, 'getEncounter').mockResolvedValue({ id: 7, title: 'Goblin Ambush', active_index: 0, creatures: [] })
+    vi.spyOn(api, 'getConditions').mockResolvedValue([])
+
+    const { container } = await renderLoadedMapLabPage()
+    const map = screen.getByRole('group', { name: /dungeon floor map/i })
+    await user.click(within(map).getByRole('button', { name: 'Armoury' }))
+    const inspector = container.querySelector('.maplab-inspector-panel-container')!
+    expect(inspector.querySelector('.maplab-inspector-title')).toHaveTextContent('Armoury')
+
+    await user.click(screen.getByRole('button', { name: 'View' }))
+    await user.keyboard('{Escape}')
+    expect(screen.queryByRole('button', { name: 'Detailed' })).not.toBeInTheDocument()
+    expect(inspector.querySelector('.maplab-inspector-title')).toHaveTextContent('Armoury')
+
+    await user.click(screen.getByRole('button', { name: 'Find room…' }))
+    await user.keyboard('{Escape}')
+    expect(screen.queryByRole('dialog', { name: 'Find room' })).not.toBeInTheDocument()
+    expect(inspector.querySelector('.maplab-inspector-title')).toHaveTextContent('Armoury')
+
+    await user.click(screen.getByRole('button', { name: /Goblin Ambush/i }))
+    await screen.findByRole('dialog', { name: 'Goblin Ambush' })
+    await user.keyboard('{Escape}')
+    expect(screen.queryByRole('dialog', { name: 'Goblin Ambush' })).not.toBeInTheDocument()
+    expect(inspector.querySelector('.maplab-inspector-title')).toHaveTextContent('Goblin Ambush')
+
+    await user.click(within(map).getByRole('button', { name: 'Combat Training Hall' }))
+    expect(inspector.querySelector('.maplab-inspector-title')).toHaveTextContent('Training Hall')
+    await user.click(screen.getByRole('button', { name: 'Mira' }))
+    await screen.findByRole('dialog', { name: 'Mira' })
+    await user.keyboard('{Escape}')
+    expect(screen.queryByRole('dialog', { name: 'Mira' })).not.toBeInTheDocument()
+    expect(inspector.querySelector('.maplab-inspector-title')).toHaveTextContent('Training Hall')
+
+    await user.click(screen.getByRole('button', { name: 'Reset dungeon' }))
+    expect(screen.getByRole('alertdialog', { name: 'Reset "Test Dungeon"? Every door, trap, and toggle returns to its authored state. This cannot be undone.' })).toBeInTheDocument()
+    await user.keyboard('{Escape}')
+    expect(screen.queryByRole('alertdialog', { name: 'Reset "Test Dungeon"? Every door, trap, and toggle returns to its authored state. This cannot be undone.' })).not.toBeInTheDocument()
+    expect(inspector.querySelector('.maplab-inspector-title')).toHaveTextContent('Training Hall')
+    expect(api.resetDungeonSessionState).not.toHaveBeenCalled()
+
+    await user.keyboard('{Escape}')
+    expect(inspector.querySelector('.maplab-inspector-title')).not.toBeInTheDocument()
+  })
+
   it('a co-located stair and portal render as distinct, non-overlapping markers', async () => {
     const stair = {
       stair_id: 601,
@@ -417,8 +470,7 @@ describe('VT0 — Viewer room finder', () => {
     const user = userEvent.setup()
     await renderLoadedMapLabPage()
     await user.click(screen.getByRole('button', { name: 'Find room…' }))
-    const rail = screen.getByRole('navigation', { name: 'Room navigation' })
-    await user.click(within(rail).getByRole('button', { name: 'Armoury' }))
+    await user.click(within(screen.getByRole('dialog', { name: 'Find room' })).getByRole('button', { name: 'Armoury' }))
     expect(screen.queryByRole('dialog', { name: 'Find room' })).not.toBeInTheDocument()
   })
 
@@ -443,10 +495,11 @@ describe('VT0 — Viewer room finder', () => {
   })
 
   it('room buttons inside the finder meet the 48px touch floor', async () => {
+    const user = userEvent.setup()
     await renderLoadedMapLabPage()
-    fireEvent.click(screen.getByRole('button', { name: 'Find room…' }))
-    const container = document.querySelector('.maplab-viewer-finder') as HTMLElement
-    const roomButton = within(container!).getByRole('button', { name: 'Armoury' })
+    await user.click(screen.getByRole('button', { name: 'Find room…' }))
+    const finder = screen.getByRole('dialog', { name: 'Find room' })
+    const roomButton = within(finder).getByRole('button', { name: 'Armoury' })
     expect(roomButton).toBeInTheDocument()
     // The rail's min-height: 48px is set by the desktop CSS rule; the 40px narrow
     // override has been removed, so every viewer chrome control meets the touch floor.

@@ -82,6 +82,20 @@ describe('LoomPage', () => {
     expect(screen.getByRole('button', { name: 'Retry' })).toBeInTheDocument()
   })
 
+  it('retries loading the tapestry from the load error state', async () => {
+    const getTapestrySpy = vi.spyOn(api, 'getLoomTapestry')
+      .mockRejectedValueOnce(new Error('network down'))
+      .mockResolvedValueOnce(demoTapestry())
+    const user = userEvent.setup()
+    render(<LoomPage />)
+
+    await waitFor(() => expect(screen.getByText('The Loom couldn\'t load')).toBeInTheDocument())
+    await user.click(screen.getByRole('button', { name: 'Retry' }))
+
+    await waitFor(() => expect(screen.getAllByText('The Lost Puppy').length).toBeGreaterThan(0))
+    expect(getTapestrySpy).toHaveBeenCalledTimes(2)
+  })
+
   it('opens the node editor with the beat kind preset from the Add Beat toolbar button', async () => {
     vi.spyOn(api, 'getLoomTapestry').mockResolvedValue(demoTapestry())
     const user = userEvent.setup()
@@ -352,8 +366,10 @@ describe('LoomPage', () => {
     const user = userEvent.setup()
     render(<LoomPage />)
     await waitFor(() => expect(screen.getAllByText('The Lost Puppy').length).toBeGreaterThan(0))
+    const beatCard = screen.getByRole('button', { name: 'beat: Confront the goblin chief' })
     await user.click(screen.getByRole('button', { name: 'Edit beat' }))
     expect(screen.getByRole('dialog', { name: /Edit Beat/ })).toBeInTheDocument()
+    expect(beatCard).not.toHaveAttribute('aria-pressed', 'true')
   })
 
   it('calls bankLoomNode when Bank is clicked on a beat card', async () => {
@@ -442,6 +458,8 @@ describe('LoomPage', () => {
     fireEvent.drop(cardGroups[0], { dataTransfer: dt })
 
     await waitFor(() => expect(screen.getByText('Reorder failed')).toBeInTheDocument())
+    fireEvent.click(screen.getByRole('button', { name: 'Dismiss error' }))
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 
   it('calls moveLoomThreadItem on cross-lane drop', async () => {

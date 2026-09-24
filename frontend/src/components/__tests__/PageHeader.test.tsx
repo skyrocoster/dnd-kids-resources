@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
+import { BrowserLayout } from '../BrowserLayout'
 import { PageHeader } from '../PageHeader'
 
 describe('PageHeader', () => {
@@ -32,7 +33,18 @@ describe('PageHeader', () => {
     expect(screen.getByRole('tab', { name: 'Rooms' })).toHaveAttribute('aria-selected', 'false')
     const activeTab = screen.getByRole('tab', { name: 'NPCs' })
     expect(activeTab).toHaveAttribute('aria-selected', 'true')
-    expect(activeTab).toHaveClass('page-header-tab--active')
+    expect(activeTab).toHaveClass('cmt-tabs__tab')
+  })
+
+  it('composes its chapter tabs with the matching tab panels', () => {
+    const { container } = render(<PageHeader title="Dungeon" chapterTabs={tabs} activeTab="rooms" />)
+    const tab = screen.getByRole('tab', { name: 'Rooms' })
+    const panel = document.getElementById(tab.getAttribute('aria-controls')!)
+
+    expect(screen.getByRole('tablist', { name: 'Content sections' })).toContainElement(tab)
+    expect(panel).toHaveAttribute('role', 'tabpanel')
+    expect(panel).toHaveAttribute('aria-labelledby', tab.id)
+    expect(container).toContainElement(panel)
   })
 
   // VF1: tab click calls onTabSelect with the tab key
@@ -40,14 +52,30 @@ describe('PageHeader', () => {
     const user = userEvent.setup()
     const onTabSelect = vi.fn()
     render(<PageHeader title="Dungeon" chapterTabs={tabs} onTabSelect={onTabSelect} />)
-    await user.click(screen.getByRole('tab', { name: 'Rooms' }))
-    expect(onTabSelect).toHaveBeenCalledWith('rooms')
+    await user.click(screen.getByRole('tab', { name: 'NPCs' }))
+    expect(onTabSelect).toHaveBeenCalledWith('npcs')
   })
 
   // VF1: actions slot renders alongside the title
   it('renders actions in the actions slot', () => {
     render(<PageHeader title="Dungeon" actions={<button type="button">Edit</button>} />)
     expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument()
+  })
+
+  it('keeps BrowserLayout chapter markers static instead of tabs', () => {
+    const { container } = render(
+      <BrowserLayout
+        title="Spells"
+        chapterIcon={<span aria-hidden="true">✨</span>}
+        list={<div>Spell list</div>}
+        detail={<div>Spell details</div>}
+      />,
+    )
+    const marker = container.querySelector('.page-header-tab--static')
+
+    expect(screen.queryByRole('tab')).not.toBeInTheDocument()
+    expect(marker?.tagName).toBe('SPAN')
+    expect(marker).toHaveTextContent('Spells')
   })
 
   it('uses a wrapping intrinsic row so actions cannot overlay the title', async () => {

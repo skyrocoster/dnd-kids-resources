@@ -201,6 +201,7 @@ describe('MapLabEditorPage (Stage G1 — Ghost floor rendering)', () => {
     expect(screen.getByRole('button', { name: /ghost lower floor/i })).toBeDisabled()
 
     fireEvent.click(screen.getByRole('tab', { name: 'First Floor' }))
+    openViewPopover()
     expect(screen.getByRole('button', { name: /ghost lower floor/i })).not.toBeDisabled()
   })
 })

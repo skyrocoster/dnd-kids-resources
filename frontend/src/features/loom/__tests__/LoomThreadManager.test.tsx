@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as api from '../../../api/client'
@@ -39,6 +39,21 @@ describe('LoomThreadManager', () => {
       expect.objectContaining({ name: 'New Thread', color: 'thread-2' }),
     )
     expect(onChanged).toHaveBeenCalled()
+  })
+
+  it('moves the exclusive color selection with the arrow keys', async () => {
+    const user = userEvent.setup()
+    render(<LoomThreadManager threads={threads} onClose={() => {}} onChanged={() => {}} />)
+
+    await user.click(screen.getByRole('button', { name: 'New Thread' }))
+    const group = screen.getByRole('radiogroup', { name: 'Thread color' })
+    const firstColor = within(group).getByRole('radio', { name: 'thread-1' })
+    firstColor.focus()
+
+    await user.keyboard('{ArrowRight}')
+
+    expect(within(group).getByRole('radio', { name: 'thread-2' })).toHaveAttribute('aria-checked', 'true')
+    expect(within(group).getAllByRole('radio', { checked: true })).toHaveLength(1)
   })
 
   it('renames and recolors an existing thread', async () => {

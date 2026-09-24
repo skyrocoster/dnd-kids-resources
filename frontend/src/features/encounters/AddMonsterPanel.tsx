@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import * as api from '../../api/client'
 import type { Monster } from '../../api/types'
+import { IconButton } from '../../components/IconButton'
 import { SearchList } from '../../components/SearchList'
 import './AddMonsterPanel.css'
 
@@ -27,9 +28,9 @@ export function AddMonsterPanel({ onAdd, onClose }: AddMonsterPanelProps) {
     <div className="add-monster-panel">
       <div className="add-monster-panel-header">
         <h3>Add monster</h3>
-        <button type="button" className="add-monster-panel-close" onClick={onClose} aria-label="Close add monster panel">
+        <IconButton label="Close add monster panel" className="add-monster-panel-close" onClick={onClose}>
           ×
-        </button>
+        </IconButton>
       </div>
       {loadError && <p className="add-monster-panel-error">{loadError}</p>}
       <SearchList

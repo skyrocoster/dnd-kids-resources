@@ -92,7 +92,7 @@ describe('PullFromMonsterDialog', () => {
     vi.spyOn(api, 'listMonsters').mockResolvedValue([testMonster])
   })
 
-  it('with a chosen monster, ticking one row and clicking Pull commits the selected field and calls onPulled', async () => {
+  it('commits staged rows from separate regions and calls onPulled', async () => {
     const updateNPC = vi.spyOn(api, 'updateNPC').mockResolvedValue(testNPC)
     const onPulled = vi.fn()
     const onClose = vi.fn()
@@ -103,10 +103,15 @@ describe('PullFromMonsterDialog', () => {
     await screen.findByText('Goblin')
     await user.click(screen.getByText('Goblin'))
 
+    expect(screen.getByRole('heading', { name: 'Stats' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Lore' })).toBeInTheDocument()
+    expect(screen.getAllByText(/you have/).length).toBeGreaterThan(0)
+
     const acCheckbox = screen.getByRole('checkbox', { name: /Armor Class/ })
     await user.click(acCheckbox)
+    await user.click(screen.getByRole('checkbox', { name: 'Nimble Escape' }))
 
-    await user.click(screen.getByRole('button', { name: 'Pull 1 selected' }))
+    await user.click(screen.getByRole('button', { name: 'Pull 2 selected' }))
 
     await waitFor(() => expect(updateNPC).toHaveBeenCalledOnce())
     expect(updateNPC).toHaveBeenCalledWith(
@@ -114,10 +119,31 @@ describe('PullFromMonsterDialog', () => {
       expect.objectContaining({
         name: 'Barkeep',
         ac: { value: 15, note: 'leather armor, shield', alternatives: [] },
+        features: expect.objectContaining({ traits: [testMonster.features.traits[0]] }),
       }),
     )
     expect(onPulled).toHaveBeenCalledWith(testNPC)
     expect(onClose).toHaveBeenCalled()
+  })
+
+  it('clears staged rows when a different monster is selected', async () => {
+    vi.mocked(api.listMonsters).mockResolvedValue([
+      testMonster,
+      { ...testMonster, id: 11, name: 'Ogre' },
+    ])
+    const user = userEvent.setup()
+
+    render(<PullFromMonsterDialog npc={testNPC} onClose={() => {}} onPulled={() => {}} />)
+
+    await screen.findByText('Goblin')
+    await user.click(screen.getByText('Goblin'))
+    await user.click(screen.getByRole('checkbox', { name: /Armor Class/ }))
+    expect(screen.getByRole('button', { name: 'Pull 1 selected' })).toBeEnabled()
+
+    await user.click(screen.getByText('Ogre'))
+
+    expect(screen.getByRole('checkbox', { name: /Armor Class/ })).not.toBeChecked()
+    expect(screen.getByRole('button', { name: 'Pull 0 selected' })).toBeDisabled()
   })
 
   it('before any monster is chosen, shows the empty message and disables the commit button', async () => {
@@ -140,15 +166,19 @@ describe('PullFromMonsterDialog', () => {
     vi.mocked(api.listMonsters).mockResolvedValue(monsters)
     const user = userEvent.setup()
 
-    const { container } = render(<PullFromMonsterDialog npc={testNPC} onClose={() => {}} onPulled={() => {}} />)
+    render(<PullFromMonsterDialog npc={testNPC} onClose={() => {}} onPulled={() => {}} />)
 
     await screen.findByText('Target Goblin')
     await user.click(screen.getByText('Target Goblin'))
 
-    expect(container.querySelector('.pull-from-monster-list .search-list')).toBeInTheDocument()
-    expect(container.querySelector('.pull-from-monster-tree')).toContainElement(
-      screen.getByRole('checkbox', { name: /Armor Class/ }),
-    )
+    const dialog = screen.getByRole('dialog')
+    const monsterList = dialog.querySelector('.pull-from-monster-list')!
+    const pullableFields = dialog.querySelector('.pull-from-monster-tree')!
+    const armorClassCheckbox = screen.getByRole('checkbox', { name: /Armor Class/ })
+    expect(monsterList).toContainElement(screen.getByText('Target Goblin'))
+    expect(monsterList).not.toContainElement(armorClassCheckbox)
+    expect(pullableFields).toContainElement(armorClassCheckbox)
+    expect(pullableFields).not.toContainElement(screen.getByText('Target Goblin'))
     expect(screen.getByRole('button', { name: 'Pull 0 selected' })).toBeDisabled()
   })
 

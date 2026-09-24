@@ -1,4 +1,5 @@
 import { useId, useMemo, useState } from 'react'
+import { TextInput } from './form/TextInput'
 import { StatePanel } from './StatePanel'
 import './SearchList.css'
 
@@ -74,7 +75,7 @@ export function SearchList<T>({
         <label htmlFor={inputId} className="visually-hidden">
           {searchPlaceholder}
         </label>
-        <input
+        <TextInput
           id={inputId}
           type="search"
           className="search-list-input"

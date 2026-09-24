@@ -111,18 +111,31 @@ describe('Design Phase J1 — toolbar trays', () => {
     window.localStorage.removeItem(STORAGE_KEY)
   })
 
-  it('Session tray collapses on toggle, hiding its controls', async () => {
+  it('Session tray keeps its name and expanded state accurate through click and keyboard toggles', async () => {
     const user = userEvent.setup()
     renderMapLabPage()
     await flush()
 
+    const collapse = screen.getByRole('button', { name: 'Collapse Session tools' })
+    expect(collapse).toHaveAttribute('aria-expanded', 'true')
     expect(screen.getByRole('button', { name: 'Reset dungeon' })).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'Collapse Session tools' }))
+    await user.click(collapse)
 
-    expect(screen.getByRole('button', { name: 'Expand Session tools' })).toBeInTheDocument()
+    const expand = screen.getByRole('button', { name: 'Expand Session tools' })
+    expect(expand).toHaveAttribute('aria-expanded', 'false')
     const tray = document.querySelector('.maplab-toolbar-tray')
     expect(tray).toHaveAttribute('data-collapsed')
+    expect(window.localStorage.getItem(STORAGE_KEY)).toBe('true')
+
+    expand.focus()
+    await user.keyboard('{Enter}')
+    const collapseAgain = screen.getByRole('button', { name: 'Collapse Session tools' })
+    expect(collapseAgain).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByRole('button', { name: 'Reset dungeon' })).toBeInTheDocument()
+
+    await user.keyboard(' ')
+    expect(screen.getByRole('button', { name: 'Expand Session tools' })).toHaveAttribute('aria-expanded', 'false')
   })
 
   it('toolbar tray collapse state persists across remount via localStorage', async () => {
@@ -130,7 +143,7 @@ describe('Design Phase J1 — toolbar trays', () => {
     renderMapLabPage()
     await flush()
 
-    expect(screen.getByRole('button', { name: 'Expand Session tools' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Expand Session tools' })).toHaveAttribute('aria-expanded', 'false')
   })
 })
 
@@ -249,6 +262,22 @@ describe('MapLabPage (View popover)', () => {
     }
   })
 
+  it('keeps View and Finder mutually exclusive in both directions', async () => {
+    const user = userEvent.setup()
+    await renderLoadedMapLabPage()
+
+    await user.click(screen.getByRole('button', { name: 'View' }))
+    expect(screen.getByRole('button', { name: 'Detailed' })).toBeVisible()
+
+    await user.click(screen.getByRole('button', { name: 'Find room…' }))
+    expect(screen.getByRole('dialog', { name: 'Find room' })).toBeVisible()
+    expect(screen.queryByRole('button', { name: 'Detailed' })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'View' }))
+    expect(screen.queryByRole('dialog', { name: 'Find room' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Detailed' })).toBeVisible()
+  })
+
   it('closes on outside click', async () => {
     const user = userEvent.setup()
     renderMapLabPage()
@@ -282,12 +311,26 @@ describe('MapLabPage (View popover)', () => {
     viewButton.focus()
     await user.keyboard('{Enter}')
     expect(screen.getByRole('button', { name: 'Detailed' })).toBeVisible()
+    await user.click(screen.getByRole('button', { name: 'Detailed' }))
 
     await user.keyboard('{Escape}')
     expect(screen.queryByRole('button', { name: 'Detailed' })).not.toBeInTheDocument()
+    expect(viewButton).toHaveFocus()
 
     await user.keyboard(' ')
     expect(screen.getByRole('button', { name: 'Detailed' })).toBeVisible()
+  })
+
+  it('does not steal focus from an outside press target when View closes', async () => {
+    const user = userEvent.setup()
+    await renderLoadedMapLabPage()
+
+    await user.click(screen.getByRole('button', { name: 'View' }))
+    const outsideTarget = screen.getByRole('tab', { name: 'First Floor' })
+    await user.click(outsideTarget)
+
+    expect(screen.queryByRole('button', { name: 'Detailed' })).not.toBeInTheDocument()
+    expect(outsideTarget).toHaveFocus()
   })
 })
 

@@ -317,11 +317,7 @@ export function LoomPage() {
           status="error"
           title="The Loom couldn't load"
           message={tapestry.error}
-          action={
-            <button type="button" className="btn" onClick={reload}>
-              Retry
-            </button>
-          }
+          action={<Button type="button" onClick={reload}>Retry</Button>}
         />
       </div>
     )

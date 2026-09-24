@@ -52,7 +52,7 @@ describe('ItemBrowserPage', () => {
     vi.spyOn(api, 'listItems').mockResolvedValue([ruby])
     render(<ItemBrowserPage />)
     await screen.findByRole('button', { name: /Ruby/ })
-    expect(screen.getByRole('tab', { name: 'Items' })).toBeInTheDocument()
+    expect(screen.getByText('Items', { selector: 'span' })).toBeInTheDocument()
   })
 
   it('Back to items returns to the list without clearing selection', async () => {
@@ -79,6 +79,19 @@ describe('ItemBrowserPage', () => {
     const dialog = screen.getByRole('alertdialog')
     await user.click(within(dialog).getByRole('button', { name: 'Delete' }))
     await waitFor(() => expect(screen.getByRole('alertdialog')).toHaveAttribute('aria-busy', 'true'))
+
+    const cancelButton = within(dialog).getByRole('button', { name: 'Cancel' })
+    const confirmButton = within(dialog).getByRole('button', { name: 'Delete' })
+    expect(cancelButton).toBeDisabled()
+    expect(confirmButton).toBeDisabled()
+
+    await user.keyboard('{Escape}')
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument()
+
+    // With no layout in jsdom, clicking outside the dialog models a backdrop dismissal attempt.
+    await user.click(document.body)
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument()
+    expect(screen.getByRole('alertdialog')).toHaveAttribute('aria-busy', 'true')
 
     resolveDelete()
     await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument())

@@ -1,11 +1,8 @@
-from unittest.mock import MagicMock
+import pytest
+
 import backend.app.db as db_module
 
-
-def _mock_db_failure():
-    conn = MagicMock()
-    conn.commit.side_effect = Exception("Simulated database failure")
-    return conn
+from backend.tests.conftest import db_failure_conn
 
 
 def test_list_loot_bundles_returns_real_seed_bundle(real_client):
@@ -90,26 +87,15 @@ def test_loot_bundle_mutations_return_not_found_for_unknown_bundle(test_client):
     assert test_client.delete("/api/loot-bundles/9999").status_code == 404
 
 
-def test_create_loot_bundle_db_failure(monkeypatch, test_client):
-    monkeypatch.setattr(db_module, "get_conn", _mock_db_failure)
+@pytest.mark.parametrize("operation", ["create", "update", "delete"])
+def test_loot_bundle_mutations_db_failure(monkeypatch, test_client, operation):
     payload = {"name": "Fail Test", "gold": 10, "contents": []}
-    response = test_client.post("/api/loot-bundles", json=payload)
-    assert response.status_code == 400
-
-
-def test_update_loot_bundle_db_failure(monkeypatch, test_client):
-    payload = {"name": "Fail Test", "gold": 10, "contents": []}
-    created = test_client.post("/api/loot-bundles", json=payload)
-    bundle_id = created.json()["id"]
-    monkeypatch.setattr(db_module, "get_conn", _mock_db_failure)
-    response = test_client.put(f"/api/loot-bundles/{bundle_id}", json=payload)
-    assert response.status_code == 400
-
-
-def test_delete_loot_bundle_db_failure(monkeypatch, test_client):
-    payload = {"name": "Fail Test", "gold": 10, "contents": []}
-    created = test_client.post("/api/loot-bundles", json=payload)
-    bundle_id = created.json()["id"]
-    monkeypatch.setattr(db_module, "get_conn", _mock_db_failure)
-    response = test_client.delete(f"/api/loot-bundles/{bundle_id}")
+    bundle_id = test_client.post("/api/loot-bundles", json=payload).json()["id"]
+    monkeypatch.setattr(db_module, "get_conn", db_failure_conn)
+    if operation == "create":
+        response = test_client.post("/api/loot-bundles", json=payload)
+    elif operation == "update":
+        response = test_client.put(f"/api/loot-bundles/{bundle_id}", json=payload)
+    else:
+        response = test_client.delete(f"/api/loot-bundles/{bundle_id}")
     assert response.status_code == 400

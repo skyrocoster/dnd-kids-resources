@@ -157,7 +157,7 @@ describe('MonsterBrowserPage', () => {
     renderPage()
 
     await waitFor(() => expect(screen.getByText('Owlbear')).toBeInTheDocument())
-    expect(screen.getByRole('tab', { name: 'Monsters' })).toBeInTheDocument()
+    expect(screen.getByText('Monsters', { selector: 'span' })).toBeInTheDocument()
   })
 
   it('selecting a monster shows its stat block details', async () => {

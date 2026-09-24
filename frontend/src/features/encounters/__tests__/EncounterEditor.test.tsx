@@ -119,9 +119,9 @@ describe('EncounterEditor', () => {
       await user.click(screen.getByRole('button', { name: 'Add Creature' }))
       await user.click(screen.getByRole('button', { name: /No conditions/ }))
 
-      await waitFor(() => expect(screen.getByLabelText('Poisoned')).toBeInTheDocument())
-      expect(screen.getByLabelText('Prone')).toBeInTheDocument()
-      expect(screen.getByLabelText('Poisoned')).not.toBeChecked()
+      await waitFor(() => expect(screen.getByRole('checkbox', { name: 'Poisoned' })).toBeInTheDocument())
+      expect(screen.getByRole('checkbox', { name: 'Prone' })).toBeInTheDocument()
+      expect(screen.getByRole('checkbox', { name: 'Poisoned' })).not.toBeChecked()
     })
 
     it('toggling conditions updates form state', async () => {
@@ -132,13 +132,13 @@ describe('EncounterEditor', () => {
       render(<EncounterEditor onClose={() => {}} onSaved={() => {}} />)
       await user.click(screen.getByRole('button', { name: 'Add Creature' }))
       await user.click(screen.getByRole('button', { name: /No conditions/ }))
-      await waitFor(() => expect(screen.getByLabelText('Poisoned')).toBeInTheDocument())
+      await waitFor(() => expect(screen.getByRole('checkbox', { name: 'Poisoned' })).toBeInTheDocument())
 
-      await user.click(screen.getByLabelText('Poisoned'))
-      expect(screen.getByLabelText('Poisoned')).toBeChecked()
+      await user.click(screen.getByRole('checkbox', { name: 'Poisoned' }))
+      expect(screen.getByRole('checkbox', { name: 'Poisoned' })).toBeChecked()
 
-      await user.click(screen.getByLabelText('Poisoned'))
-      expect(screen.getByLabelText('Poisoned')).not.toBeChecked()
+      await user.click(screen.getByRole('checkbox', { name: 'Poisoned' }))
+      expect(screen.getByRole('checkbox', { name: 'Poisoned' })).not.toBeChecked()
     })
 
     it('conditions round-trip through formStateToEncounterInput', async () => {
@@ -154,8 +154,8 @@ describe('EncounterEditor', () => {
       await user.type(screen.getByLabelText('Title'), 'Test')
       await user.click(screen.getByRole('button', { name: 'Add Creature' }))
       await user.click(screen.getByRole('button', { name: /No conditions/ }))
-      await waitFor(() => expect(screen.getByLabelText('Poisoned')).toBeInTheDocument())
-      await user.click(screen.getByLabelText('Poisoned'))
+      await waitFor(() => expect(screen.getByRole('checkbox', { name: 'Poisoned' })).toBeInTheDocument())
+      await user.click(screen.getByRole('checkbox', { name: 'Poisoned' }))
 
       await user.click(screen.getByRole('button', { name: 'Create Encounter' }))
 
@@ -188,7 +188,7 @@ describe('EncounterEditor', () => {
       await screen.findByText('Goblin')
       await userEvent.click(screen.getByRole('button', { name: /stunned \(legacy\)/ }))
 
-      expect(await screen.findByLabelText('stunned (legacy) (custom)')).toBeChecked()
+      expect(await screen.findByRole('checkbox', { name: 'stunned (legacy) (custom)' })).toBeChecked()
     })
   })
 
@@ -232,6 +232,29 @@ describe('EncounterEditor', () => {
       await user.click(toggleAgain)
       expect(screen.getByLabelText('Monster')).toBeVisible()
     })
+
+    it('keeps expansion state independent for each creature row', async () => {
+      vi.spyOn(api, 'listMonsters').mockResolvedValue([goblin])
+      const user = userEvent.setup()
+
+      render(<EncounterEditor onClose={() => {}} onSaved={() => {}} />)
+      await user.click(screen.getByRole('button', { name: 'Add Creature' }))
+      await user.click(screen.getByRole('button', { name: 'Add Creature' }))
+
+      expect(screen.getAllByLabelText('Monster')).toHaveLength(2)
+      const toggles = screen.getAllByRole('button', { name: 'Unnamed creature' })
+      expect(toggles[0]).toHaveAttribute('aria-expanded', 'true')
+      expect(toggles[1]).toHaveAttribute('aria-expanded', 'true')
+
+      await user.click(toggles[0])
+
+      expect(screen.getAllByRole('button', { name: 'Unnamed creature' })[0]).toHaveAttribute('aria-expanded', 'false')
+      expect(screen.getAllByRole('button', { name: 'Unnamed creature' })[1]).toHaveAttribute('aria-expanded', 'true')
+      expect(screen.getAllByLabelText('Monster')).toHaveLength(1)
+
+      await user.click(screen.getAllByRole('button', { name: 'Unnamed creature' })[0])
+      expect(screen.getAllByLabelText('Monster')).toHaveLength(2)
+    })
   })
 
   describe('C5: Long creature list', () => {
@@ -240,6 +263,7 @@ describe('EncounterEditor', () => {
       const user = userEvent.setup()
 
       render(<EncounterEditor onClose={() => {}} onSaved={() => {}} />)
+      expect(screen.getByRole('button', { name: 'Add Creature' })).toHaveAttribute('type', 'button')
       for (let i = 0; i < 5; i++) {
         await user.click(screen.getByRole('button', { name: 'Add Creature' }))
       }
@@ -254,7 +278,7 @@ describe('EncounterEditor', () => {
       vi.spyOn(api, 'listMonsters').mockResolvedValue([])
       render(<EncounterEditor onClose={() => {}} onSaved={() => {}} />)
       expect(screen.getByRole('dialog', { name: 'Add New Encounter' })).toBeInTheDocument()
-      expect(screen.getByLabelText('Title')).toHaveFocus()
+      await waitFor(() => expect(screen.getByLabelText('Title')).toHaveFocus())
     })
 
     it('closes on Cancel and on Escape', async () => {

@@ -13,10 +13,15 @@ describe('ConditionPicker', () => {
   it('is closed by default and opens on trigger click', async () => {
     render(<ConditionPicker conditions={conditions} selected={[]} onChange={() => {}} />)
 
-    expect(screen.queryByLabelText('Poisoned')).not.toBeInTheDocument()
+    expect(screen.queryByRole('checkbox', { name: 'Poisoned' })).not.toBeInTheDocument()
 
-    await userEvent.click(screen.getByRole('button', { name: /No conditions/ }))
-    expect(screen.getByLabelText('Poisoned')).toBeInTheDocument()
+    const trigger = screen.getByRole('button', { name: /No conditions/ })
+    await userEvent.click(trigger)
+    expect(screen.getByRole('checkbox', { name: 'Poisoned' })).toBeInTheDocument()
+    expect(screen.getByRole('dialog', { name: 'Condition options' })).toBeInTheDocument()
+
+    await userEvent.click(trigger)
+    expect(screen.queryByRole('checkbox', { name: 'Poisoned' })).not.toBeInTheDocument()
   })
 
   it('closes on outside click', async () => {
@@ -28,20 +33,22 @@ describe('ConditionPicker', () => {
     )
 
     await userEvent.click(screen.getByRole('button', { name: /No conditions/ }))
-    expect(screen.getByLabelText('Poisoned')).toBeInTheDocument()
+    expect(screen.getByRole('checkbox', { name: 'Poisoned' })).toBeInTheDocument()
 
     await userEvent.click(screen.getByRole('button', { name: 'outside' }))
-    expect(screen.queryByLabelText('Poisoned')).not.toBeInTheDocument()
+    expect(screen.queryByRole('checkbox', { name: 'Poisoned' })).not.toBeInTheDocument()
   })
 
-  it('closes on Escape', async () => {
+  it('closes on Escape and returns focus to the trigger', async () => {
     render(<ConditionPicker conditions={conditions} selected={[]} onChange={() => {}} />)
 
-    await userEvent.click(screen.getByRole('button', { name: /No conditions/ }))
-    expect(screen.getByLabelText('Poisoned')).toBeInTheDocument()
+    const trigger = screen.getByRole('button', { name: /No conditions/ })
+    await userEvent.click(trigger)
+    expect(screen.getByRole('checkbox', { name: 'Poisoned' })).toBeInTheDocument()
 
     await userEvent.keyboard('{Escape}')
-    expect(screen.queryByLabelText('Poisoned')).not.toBeInTheDocument()
+    expect(screen.queryByRole('checkbox', { name: 'Poisoned' })).not.toBeInTheDocument()
+    expect(trigger).toHaveFocus()
   })
 
   it('calls onChange with the toggled condition', async () => {
@@ -49,15 +56,33 @@ describe('ConditionPicker', () => {
     render(<ConditionPicker conditions={conditions} selected={[]} onChange={onChange} />)
 
     await userEvent.click(screen.getByRole('button', { name: /No conditions/ }))
-    await userEvent.click(screen.getByLabelText('Poisoned'))
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Poisoned' }))
 
     expect(onChange).toHaveBeenCalledWith(['Poisoned'])
+  })
+
+  it('keeps checkbox state controlled by selected', async () => {
+    const onChange = vi.fn()
+    const { rerender } = render(
+      <ConditionPicker conditions={conditions} selected={['Poisoned']} onChange={onChange} />,
+    )
+
+    await userEvent.click(screen.getByRole('button', { name: /Poisoned/ }))
+    const poisoned = screen.getByRole('checkbox', { name: 'Poisoned' })
+    expect(poisoned).toBeChecked()
+
+    await userEvent.click(poisoned)
+    expect(onChange).toHaveBeenCalledWith([])
+    expect(poisoned).toBeChecked()
+
+    rerender(<ConditionPicker conditions={conditions} selected={[]} onChange={onChange} />)
+    expect(screen.getByRole('checkbox', { name: 'Poisoned' })).not.toBeChecked()
   })
 
   it('renders a legacy/custom condition option', async () => {
     render(<ConditionPicker conditions={conditions} selected={['stunned (legacy)']} onChange={() => {}} />)
 
     await userEvent.click(screen.getByRole('button', { name: /stunned \(legacy\)/ }))
-    expect(screen.getByLabelText('stunned (legacy) (custom)')).toBeChecked()
+    expect(screen.getByRole('checkbox', { name: 'stunned (legacy) (custom)' })).toBeChecked()
   })
 })

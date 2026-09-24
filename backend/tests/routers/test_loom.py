@@ -57,24 +57,38 @@ def test_tapestry_returns_sessions_threads_and_nodes(test_client):
     assert "edges" not in data
 
 
-def test_session_crud_and_delete_guard(test_client):
-    session = _create_session(test_client, ordinal=1, name="Session 1")
+def test_session_lifecycle(test_client):
+    """Session CRUD, list ordering, duplicate ordinal 400, update 404, and delete guard."""
+    _create_session(test_client, ordinal=1, name="Session 1")
+    session_two = _create_session(test_client, ordinal=2, name="Two")
 
     listed = test_client.get("/api/loom/sessions").json()
-    assert [row["id"] for row in listed] == [session["id"]]
+    assert [row["ordinal"] for row in listed] == [1, 2]
 
     duplicate = test_client.post(
         "/api/loom/sessions",
-        json={"ordinal": 1, "name": "Duplicate", "played_on": None, "notes": None},
+        json={"ordinal": 2, "name": "Duplicate", "played_on": None, "notes": None},
     )
     assert duplicate.status_code == 400
 
+    missing = test_client.put(
+        "/api/loom/sessions/9999",
+        json={"ordinal": 3, "name": "Missing", "played_on": None, "notes": None},
+    )
+    assert missing.status_code == 404
+
+    collision = test_client.put(
+        f"/api/loom/sessions/{session_two['id']}",
+        json={"ordinal": 1, "name": "Collision", "played_on": None, "notes": None},
+    )
+    assert collision.status_code == 400
+
     updated = test_client.put(
-        f"/api/loom/sessions/{session['id']}",
-        json={"ordinal": 2, "name": "Renamed", "played_on": "2026-02-01", "notes": "Moved"},
+        f"/api/loom/sessions/{session_two['id']}",
+        json={"ordinal": 5, "name": "Renamed", "played_on": "2026-02-01", "notes": "Moved"},
     )
     assert updated.status_code == 200
-    assert updated.json()["ordinal"] == 2
+    assert updated.json()["ordinal"] == 5
     assert updated.json()["notes"] == "Moved"
 
     thread = _create_thread(test_client, name="Delete Guard")
@@ -83,32 +97,15 @@ def test_session_crud_and_delete_guard(test_client):
         thread_id=thread["id"],
         kind="session",
         title="Played card",
-        session_id=session["id"],
+        session_id=session_two["id"],
         position=10,
     )
-    blocked = test_client.delete(f"/api/loom/sessions/{session['id']}")
+    blocked = test_client.delete(f"/api/loom/sessions/{session_two['id']}")
     assert blocked.status_code == 422
 
     assert test_client.delete(f"/api/loom/nodes/{node['id']}").status_code == 204
-    assert test_client.delete(f"/api/loom/sessions/{session['id']}").status_code == 204
+    assert test_client.delete(f"/api/loom/sessions/{session_two['id']}").status_code == 204
     assert test_client.delete("/api/loom/sessions/9999").status_code == 404
-
-
-def test_session_update_duplicate_ordinal_400(test_client):
-    _create_session(test_client, ordinal=1, name="One")
-    session_two = _create_session(test_client, ordinal=2, name="Two")
-
-    missing = test_client.put(
-        "/api/loom/sessions/9999",
-        json={"ordinal": 3, "name": "Missing", "played_on": None, "notes": None},
-    )
-    assert missing.status_code == 404
-
-    response = test_client.put(
-        f"/api/loom/sessions/{session_two['id']}",
-        json={"ordinal": 1, "name": "Collision", "played_on": None, "notes": None},
-    )
-    assert response.status_code == 400
 
 
 # ---------------------------------------------------------------------------
@@ -267,36 +264,24 @@ def test_create_update_delete_node_on_new_columns(test_client):
     assert not any(n["id"] == node["id"] for n in _tapestry(test_client)["nodes"])
 
 
-def test_create_start_or_end_node_directly_rejected_422(test_client):
+def test_node_guards(test_client):
+    """start/end nodes cannot be created, updated, or deleted directly; no canvas route."""
     assert test_client.post("/api/loom/nodes", json={"kind": "start", "title": "Nope"}).status_code == 422
     assert test_client.post("/api/loom/nodes", json={"kind": "end", "title": "Nope"}).status_code == 422
 
-
-def test_update_node_kind_immutable_except_fulfil_undo(test_client):
-    beat = _create_node(test_client, kind="beat", title="Original")
-    assert test_client.put("/api/loom/nodes/9999", json={"kind": "beat", "title": "Missing"}).status_code == 404
-
-    response = test_client.put(f"/api/loom/nodes/{beat['id']}", json={"kind": "session", "title": "Original"})
-    assert response.status_code == 422
-
-    session = _create_node(test_client, kind="session", title="Never fulfilled")
-    response = test_client.put(f"/api/loom/nodes/{session['id']}", json={"kind": "beat", "title": "Nope"})
-    assert response.status_code == 422
-
-
-def test_delete_start_or_end_node_directly_rejected_422(test_client):
     thread = _create_thread(test_client, name="Guarded")
     start = next(node for node in _nodes_for_thread(test_client, thread["id"]) if node["kind"] == "start")
-
-    response = test_client.delete(f"/api/loom/nodes/{start['id']}")
-    assert response.status_code == 422
+    assert test_client.delete(f"/api/loom/nodes/{start['id']}").status_code == 422
     assert test_client.delete("/api/loom/nodes/9999").status_code == 404
 
+    beat = _create_node(test_client, kind="beat", title="Original")
+    assert test_client.put("/api/loom/nodes/9999", json={"kind": "beat", "title": "Missing"}).status_code == 404
+    assert test_client.put(f"/api/loom/nodes/{beat['id']}", json={"kind": "session", "title": "Original"}).status_code == 422
 
-def test_no_canvas_position_route(test_client):
-    node = _create_node(test_client, kind="beat", title="No canvas")
-    response = test_client.patch(f"/api/loom/nodes/{node['id']}/position", json={"x": 1, "y": 2})
-    assert response.status_code == 404
+    session = _create_node(test_client, kind="session", title="Never fulfilled")
+    assert test_client.put(f"/api/loom/nodes/{session['id']}", json={"kind": "beat", "title": "Nope"}).status_code == 422
+
+    assert test_client.patch(f"/api/loom/nodes/{beat['id']}/position", json={"x": 1, "y": 2}).status_code == 404
 
 
 def test_one_card_per_thread_per_session_rejected_by_api(test_client):
@@ -612,30 +597,24 @@ def test_log_session_happy_path(test_client):
     assert n["session_id"] == session["id"]
 
 
-def test_log_session_duplicate_ordinal_400(test_client):
+def test_log_session_error_paths(test_client):
+    thread = _create_thread(test_client, name="For Errors")
+
     _create_session(test_client, ordinal=1, name="Existing")
-    response = test_client.post(
+    assert test_client.post(
         "/api/loom/sessions/log",
         json={"ordinal": 1, "name": "Duplicate", "outcomes": {}},
-    )
-    assert response.status_code == 400
+    ).status_code == 400
 
-
-def test_log_session_unknown_thread_422(test_client):
-    response = test_client.post(
+    assert test_client.post(
         "/api/loom/sessions/log",
         json={"ordinal": 99, "name": "Bad", "outcomes": {"999": {"outcome": "quiet"}}},
-    )
-    assert response.status_code == 422
+    ).status_code == 422
 
-
-def test_log_session_invalid_outcome_422(test_client):
-    thread = _create_thread(test_client, name="For Errors")
-    response = test_client.post(
+    assert test_client.post(
         "/api/loom/sessions/log",
         json={"ordinal": 99, "name": "Bad", "outcomes": {str(thread["id"]): {"outcome": "invalid"}}},
-    )
-    assert response.status_code == 422
+    ).status_code == 422
 
 
 def test_log_session_rollback_on_invalid_outcome(test_client):

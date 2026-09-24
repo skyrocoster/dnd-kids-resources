@@ -17,7 +17,12 @@
   flex-wrap: wrap;
 }
 
-.creature-row-toggle {
+.creature-row-disclosure {
+  display: contents;
+}
+
+.creature-row-disclosure > .cmt-disclosure__summary {
+  order: 0;
   display: flex;
   align-items: center;
   gap: 0.375rem;
@@ -32,8 +37,18 @@
   border-radius: 0.375rem;
 }
 
-.creature-row-toggle:hover {
+.creature-row-disclosure > .cmt-disclosure__summary::before {
+  display: none;
+}
+
+.creature-row-disclosure > .cmt-disclosure__summary:hover {
   background-color: var(--md-surface-4);
+}
+
+.creature-row-disclosure > .cmt-disclosure__panel {
+  order: 1;
+  flex: 1 1 100%;
+  margin-top: 0.125rem;
 }
 
 .creature-row-name {
@@ -68,7 +83,7 @@ span.creature-row-status-chip {
   text-transform: capitalize;
 }
 
-.creature-row-icon-button {
+.creature-row-header .creature-row-icon-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -82,11 +97,12 @@ span.creature-row-status-chip {
   touch-action: manipulation;
 }
 
-.creature-row-icon-button:hover {
+.creature-row-header .creature-row-icon-button:hover:not(:disabled) {
   background-color: var(--md-surface-4);
+  color: var(--md-on-surface-variant);
 }
 
-.creature-row-remove:hover {
+.creature-row-header .creature-row-icon-button.creature-row-remove:hover:not(:disabled) {
   color: var(--md-error);
 }
 
@@ -115,37 +131,56 @@ span.creature-row-status-chip {
   gap: 0.25rem;
 }
 
-.creature-row-status-chips {
+.creature-row-status-field > .creature-row-status-chips {
   display: flex;
   flex-wrap: wrap;
   gap: 0.375rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
 }
 
-button.creature-row-status-chip {
+.creature-row-status-chips .form-advanced-toggle {
   min-height: var(--control-height);
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--md-on-surface);
   cursor: pointer;
   touch-action: manipulation;
 }
 
-button.creature-row-status-chip.selected.creature-row-status-alive {
+.creature-row-status-chips .form-advanced-toggle:hover:not([data-disabled]),
+.creature-row-status-chips .form-advanced-toggle[data-pressed] {
+  background: transparent;
+  color: var(--md-on-surface);
+}
+
+.creature-row-status-chips .creature-row-status-chip {
+  align-items: center;
+}
+
+.creature-row-status-chips .form-advanced-toggle[data-pressed] .creature-row-status-alive {
   background-color: var(--md-tertiary-container);
   color: var(--md-on-tertiary-container);
   border-color: var(--md-tertiary);
 }
 
-button.creature-row-status-chip.selected.creature-row-status-unconscious {
+.creature-row-status-chips .form-advanced-toggle[data-pressed] .creature-row-status-unconscious {
   background-color: var(--md-secondary-container);
   color: var(--md-on-secondary-container);
   border-color: var(--md-secondary);
 }
 
-button.creature-row-status-chip.selected.creature-row-status-dead {
+.creature-row-status-chips .form-advanced-toggle[data-pressed] .creature-row-status-dead {
   background-color: var(--md-error-container);
   color: var(--md-on-error-container);
   border-color: var(--md-error);
 }
 
-button.creature-row-status-chip.selected.creature-row-status-fled {
+.creature-row-status-chips .form-advanced-toggle[data-pressed] .creature-row-status-fled {
   background-color: var(--md-surface-4);
   color: var(--md-on-surface);
   border-color: var(--md-outline);

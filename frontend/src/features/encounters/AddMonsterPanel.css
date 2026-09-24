@@ -20,21 +20,24 @@
   font-size: var(--type-title-size);
 }
 
-.add-monster-panel-close {
+.add-monster-panel-header .add-monster-panel-close {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 2.75rem;
   height: 2.75rem;
+  padding: 0;
   background: transparent;
   border: none;
+  border-radius: 0;
   color: var(--md-on-surface-variant);
   font-size: 1.25rem;
   cursor: pointer;
   touch-action: manipulation;
 }
 
-.add-monster-panel-close:hover {
+.add-monster-panel-header .add-monster-panel-close:hover:not(:disabled) {
+  background: transparent;
   color: var(--md-on-surface);
 }
 

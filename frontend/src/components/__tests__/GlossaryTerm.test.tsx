@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { GlossaryTerm } from '../GlossaryTerm'
@@ -46,6 +46,17 @@ describe('GlossaryTerm', () => {
     render(<GlossaryTerm content="definition text">term</GlossaryTerm>)
     await user.click(screen.getByRole('button'))
     expect(screen.getByText('definition text')).toBeInTheDocument()
+  })
+
+  it('toggles on direct touch press events', () => {
+    render(<GlossaryTerm content="definition text">term</GlossaryTerm>)
+    const trigger = screen.getByRole('button')
+
+    fireEvent.pointerUp(trigger, { pointerType: 'touch' })
+    expect(screen.getByRole('tooltip')).toHaveTextContent('definition text')
+
+    fireEvent.pointerUp(trigger, { pointerType: 'touch' })
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
   })
 
   // --- cross-instance exclusivity ---

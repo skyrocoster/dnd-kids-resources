@@ -30,8 +30,22 @@ from pathlib import Path
 
 import pytest
 
+from unittest.mock import MagicMock
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DATABASE_DIR = REPO_ROOT / "backend" / "database"
+
+
+def db_failure_conn():
+    """Return a mock connection whose commit() raises.
+
+    Shared DB-failure helper — one copy here replaces the identical
+    ``_raise_db_failure`` / ``_mock_db_failure`` factories that used to be
+    copy-pasted across 7 router test modules.
+    """
+    conn = MagicMock()
+    conn.commit.side_effect = Exception("Simulated database failure")
+    return conn
 
 
 def _load_module(name: str, path: Path):

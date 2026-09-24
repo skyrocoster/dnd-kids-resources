@@ -3,6 +3,10 @@ import type { PointerEvent } from 'react'
 import type { Condition } from '../../api/types'
 import type { RunnerCombatant } from './encounterRunner'
 import { ConditionPicker } from './ConditionPicker'
+import { Popover } from '../../components/Popover'
+import { Button } from '../../components/Button'
+import { IconButton } from '../../components/IconButton'
+import { ToggleGroup } from '../../components/form/ToggleGroup'
 import {
   ChevronDownIcon,
   ChevronUpIcon,
@@ -124,65 +128,70 @@ export function CombatantCard({
         )}
 
         <div role="group" aria-label="Combat actions">
-          <button
+          <Button
             type="button"
             className={`combatant-active-toggle ${isActive ? 'active' : ''}`}
             onClick={onSetActive}
             aria-pressed={isActive}
           >
             {isActive ? 'Active' : 'Set active'}
-          </button>
+          </Button>
         </div>
 
         <div role="group" aria-label="Roster management">
           <div className="combatant-reorder-buttons">
-            <button
-              type="button"
+            <IconButton
+              label={`Move ${combatant.name || 'combatant'} up`}
               className="combatant-reorder-button"
               onClick={onMoveUp}
               disabled={index === 0}
-              aria-label={`Move ${combatant.name || 'combatant'} up`}
             >
               <ChevronUpIcon size={16} aria-hidden />
-            </button>
-            <button
-              type="button"
+            </IconButton>
+            <IconButton
+              label={`Move ${combatant.name || 'combatant'} down`}
               className="combatant-reorder-button"
               onClick={onMoveDown}
               disabled={index === count - 1}
-              aria-label={`Move ${combatant.name || 'combatant'} down`}
             >
               <ChevronDownIcon size={16} aria-hidden />
-            </button>
+            </IconButton>
           </div>
-          <button type="button" className="combatant-icon-button" onClick={onDuplicate} aria-label="Duplicate combatant">
+          <IconButton label="Duplicate combatant" className="combatant-icon-button" onClick={onDuplicate}>
             <CopyIcon size={18} aria-hidden />
-          </button>
-          <button
-            type="button"
+          </IconButton>
+          <IconButton
+            label="Remove combatant"
             className="combatant-icon-button combatant-remove"
             onClick={onRemove}
-            aria-label="Remove combatant"
           >
             <TrashIcon size={18} aria-hidden />
-          </button>
+          </IconButton>
         </div>
       </div>
 
       {!isPlayer && (
-        <div className="combatant-status-chips" role="group" aria-label="Status">
-          {STATUS_OPTIONS.map((status) => (
-            <button
-              key={status}
-              type="button"
-              className={`combatant-status-chip combatant-status-${status} ${combatant.status === status ? 'selected' : ''}`}
-              onClick={() => onSetStatus(status)}
-              aria-pressed={combatant.status === status}
-            >
-              {status}
-            </button>
-          ))}
-        </div>
+        <ToggleGroup
+          className="combatant-status-chips"
+          aria-label="Status"
+          multiple={false}
+          value={[combatant.status]}
+          options={STATUS_OPTIONS.map((status) => ({
+            value: status,
+            ariaLabel: status,
+            label: (
+              <span
+                className={`combatant-status-chip combatant-status-${status} ${combatant.status === status ? 'selected' : ''}`}
+              >
+                {status}
+              </span>
+            ),
+          }))}
+          onValueChange={(values) => {
+            const selectedStatus = STATUS_OPTIONS.find((status) => status === values[0])
+            onSetStatus(selectedStatus ?? combatant.status)
+          }}
+        />
       )}
 
       <div className="combatant-condition-row">
@@ -239,28 +248,37 @@ export function CombatantCard({
               </button>
             </div>
             <div className="combatant-set-wrap">
-              <button type="button" className="combatant-set-toggle" onClick={() => setIsSetOpen((v) => !v)}>
-                Set…
-              </button>
-              {isSetOpen && (
-                <div className="combatant-set-popover">
-                  <label className="visually-hidden" htmlFor={`set-hp-${combatant.clientId}`}>
-                    Set HP
-                  </label>
-                  <input
-                    id={`set-hp-${combatant.clientId}`}
-                    type="number"
-                    className="combatant-set-input"
-                    value={setValue}
-                    onChange={(e) => setSetValue(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && applySet()}
-                    autoFocus
-                  />
-                  <button type="button" className="combatant-set-apply" onClick={applySet}>
-                    Apply
-                  </button>
-                </div>
-              )}
+              <Popover.Root
+                open={isSetOpen}
+                onOpenChange={setIsSetOpen}
+                closeOnOutsidePress={false}
+                closeOnEscape={false}
+              >
+                <Popover.Trigger type="button" className="combatant-set-toggle">
+                  Set…
+                </Popover.Trigger>
+                <Popover.Portal>
+                  <Popover.Positioner side="top" align="end" sideOffset={6}>
+                    <Popover.Popup className="combatant-set-popover" finalFocus={false}>
+                      <label className="visually-hidden" htmlFor={`set-hp-${combatant.clientId}`}>
+                        Set HP
+                      </label>
+                      <input
+                        id={`set-hp-${combatant.clientId}`}
+                        type="number"
+                        className="combatant-set-input"
+                        value={setValue}
+                        onChange={(e) => setSetValue(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && applySet()}
+                        autoFocus
+                      />
+                      <button type="button" className="combatant-set-apply" onClick={applySet}>
+                        Apply
+                      </button>
+                    </Popover.Popup>
+                  </Popover.Positioner>
+                </Popover.Portal>
+              </Popover.Root>
             </div>
           </div>
         </>

@@ -131,7 +131,7 @@ describe('EncounterBrowserPage', () => {
 
     renderPage()
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Ants' })).toBeInTheDocument())
-    expect(screen.getByRole('tab', { name: 'Encounters' })).toBeInTheDocument()
+    expect(screen.getByText('Encounters', { selector: 'span' })).toBeInTheDocument()
   })
 
   it('Back to encounters returns to the list without clearing selection', async () => {

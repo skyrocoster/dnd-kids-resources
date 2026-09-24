@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi } from 'vitest'
 import type { LoomNode, LoomThread } from '../../../api/types'
@@ -98,11 +98,69 @@ describe('LoomBeatBankTray', () => {
     expect(screen.queryByText('Mysterious hooded stranger')).not.toBeInTheDocument()
   })
 
-  it('makes tray entries draggable for drag-to-gap restore', async () => {
+  it('expands and collapses the tray from the keyboard', async () => {
     const user = userEvent.setup()
     render(<LoomBeatBankTray nodes={[bankedNode]} threads={threads} onSelectNode={() => {}} onRestoreNode={() => {}} />)
+    const toggle = screen.getByRole('button', { name: /Beat Bank/ })
+
+    expect(toggle).toHaveAttribute('aria-expanded', 'false')
+    await user.tab()
+    expect(toggle).toHaveFocus()
+    await user.keyboard('{Enter}')
+    expect(toggle).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByText('Mysterious hooded stranger')).toBeInTheDocument()
+
+    await user.keyboard(' ')
+    expect(toggle).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.queryByText('Mysterious hooded stranger')).not.toBeInTheDocument()
+  })
+
+  it('shows the no-thread guard on keyboard activation without activating the beat', async () => {
+    const user = userEvent.setup()
+    const onActivateNode = vi.fn()
+    render(
+      <LoomBeatBankTray
+        nodes={[bankedNode]}
+        threads={[]}
+        onSelectNode={() => {}}
+        onRestoreNode={() => {}}
+        onActivateNode={onActivateNode}
+      />,
+    )
     await user.click(screen.getByRole('button', { name: /Beat Bank/ }))
-    const entry = document.querySelector('.loom-beat-bank-tray-entry')
+    const entry = screen.getByRole('button', { name: bankedNode.title })
+    entry.focus()
+    await user.keyboard('{Enter}')
+
+    expect(onActivateNode).not.toHaveBeenCalled()
+    expect(screen.getByRole('alert')).toHaveTextContent('Create a thread before placing this beat.')
+  })
+
+  it('keeps drag restore separate from activation and the no-thread guard', async () => {
+    const user = userEvent.setup()
+    const onActivateNode = vi.fn()
+    render(
+      <LoomBeatBankTray
+        nodes={[bankedNode]}
+        threads={[]}
+        onSelectNode={() => {}}
+        onRestoreNode={() => {}}
+        onActivateNode={onActivateNode}
+      />,
+    )
+    await user.click(screen.getByRole('button', { name: /Beat Bank/ }))
+    const entry = screen.getByRole('button', { name: bankedNode.title })
+    const dataTransfer = { effectAllowed: '', setData: vi.fn() }
+
+    fireEvent.dragStart(entry, { dataTransfer })
+
     expect(entry).toHaveAttribute('draggable')
+    expect(dataTransfer.effectAllowed).toBe('move')
+    expect(dataTransfer.setData).toHaveBeenCalledWith(
+      'application/json',
+      JSON.stringify({ action: 'restore', nodeId: bankedNode.id }),
+    )
+    expect(onActivateNode).not.toHaveBeenCalled()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 })

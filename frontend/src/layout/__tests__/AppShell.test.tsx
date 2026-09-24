@@ -100,6 +100,7 @@ describe('AppShell', () => {
     const user = userEvent.setup()
     renderShell()
     const toggle = screen.getByRole('button', { name: 'Collapse navigation' })
+    expect(toggle).toHaveAttribute('type', 'button')
     const nav = document.querySelector('.app-nav')
     expect(nav).not.toHaveClass('app-nav--collapsed')
 

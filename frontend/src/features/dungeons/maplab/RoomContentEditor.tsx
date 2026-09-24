@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { listNPCs } from '../../../api/client'
 import type { NPC } from '../../../api/types'
 import { DiceText } from '../../../components/DiceText'
+import { SelectField } from '../../../components/form/SelectField'
+import { TextField } from '../../../components/form/TextField'
 import { NpcChip } from '../../npcs/NpcChip'
 import { groupEntriesByType, type DungeonEntry, type DungeonRoom } from '../dungeonModel'
 import { InspectorPanel } from './InspectorPanel'
@@ -102,24 +104,23 @@ export function RoomContentEditor({
       <InspectorPanel target={{ kind: 'room', room }} />
 
       <div className="maplab-fixture-form maplab-room-content-editor-form">
-        <label className="maplab-field-row maplab-room-content-field">
-          <span>Title</span>
-          <input type="text" value={title} onChange={(event) => onUpdateRoomTitle(room.room_id, event.target.value)} />
-        </label>
+        <div className="maplab-field-row maplab-room-content-field">
+          <TextField
+            label="Title"
+            type="text"
+            value={title}
+            onChange={(event) => onUpdateRoomTitle(room.room_id, event.target.value)}
+          />
+        </div>
 
-        <label className="maplab-field-row maplab-room-content-field">
-          <span>Wall kind</span>
-          <select
+        <div className="maplab-field-row maplab-room-content-field">
+          <SelectField
+            label="Wall kind"
+            options={WALL_KIND_OPTIONS}
             value={room.wallKind ?? 'solid'}
             onChange={(event) => onUpdateRoomWallKind(room.room_id, event.target.value)}
-          >
-            {WALL_KIND_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
+          />
+        </div>
 
         <div className="maplab-room-content-readonly">
           <div className="maplab-room-content-readonly-row">
@@ -228,34 +229,30 @@ export function RoomContentEditor({
                     setEntryDraft(emptyEntry())
                   }}
                 >
-                  <label className="maplab-field-row maplab-room-content-field">
-                    <span>Type</span>
-                    <select
+                  <div className="maplab-field-row maplab-room-content-field">
+                    <SelectField
+                      label="Type"
+                      options={ENTRY_TYPES.map((type) => ({ value: type, label: entryLabel(type) }))}
                       value={entryDraft.entry_type}
                       onChange={(event) => setEntryDraft((current) => ({ ...current, entry_type: event.target.value }))}
-                    >
-                      {ENTRY_TYPES.map((type) => (
-                        <option key={type} value={type}>
-                          {entryLabel(type)}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label className="maplab-field-row maplab-room-content-field">
-                    <span>Title</span>
-                    <input
+                    />
+                  </div>
+                  <div className="maplab-field-row maplab-room-content-field">
+                    <TextField
+                      label="Title"
                       type="text"
                       value={entryDraft.title}
                       onChange={(event) => setEntryDraft((current) => ({ ...current, title: event.target.value }))}
                     />
-                  </label>
-                  <label className="maplab-room-content-textarea-row">
-                    <span className="maplab-room-content-label">Content</span>
-                    <textarea
+                  </div>
+                  <div className="maplab-room-content-textarea-row">
+                    <TextField
+                      label="Content"
+                      multiline
                       value={entryDraft.content}
                       onChange={(event) => setEntryDraft((current) => ({ ...current, content: event.target.value }))}
                     />
-                  </label>
+                  </div>
                   <button type="submit" className="maplab-pill-button maplab-editor-toolbar-button">
                     Add entry
                   </button>

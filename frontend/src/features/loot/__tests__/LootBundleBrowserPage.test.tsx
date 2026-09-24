@@ -59,7 +59,7 @@ describe('LootBundleBrowserPage', () => {
     vi.spyOn(api, 'listLootBundles').mockResolvedValue([{ id: 1, name: 'Bandit Cache', gold: 12.5, contents: [] }])
     render(<MemoryRouter><LootBundleBrowserPage /></MemoryRouter>)
     await screen.findByRole('heading', { name: 'Bandit Cache' })
-    expect(screen.getByRole('tab', { name: 'Loot Bundles' })).toBeInTheDocument()
+    expect(screen.getByText('Loot Bundles', { selector: 'span' })).toBeInTheDocument()
   })
 
   it('Back to loot bundles returns to the list without clearing selection', async () => {

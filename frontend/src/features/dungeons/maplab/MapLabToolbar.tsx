@@ -1,5 +1,6 @@
 import { useCallback, useState, type ReactNode } from 'react'
 import { ChevronDownIcon, ChevronUpIcon } from '../../../components/icons'
+import { Disclosure } from '../../../components/Disclosure'
 import { resolveMapDensity, AUTO_DENSITY_SIMPLE_THRESHOLD } from '../../../map/mapDensity'
 import type { MapDensity } from '../../../map/mapDensity'
 
@@ -129,21 +130,22 @@ export function ToolbarTray({
   const { collapsed, toggle } = useToolbarTrayCollapse(groupKey)
   const ChevronIcon = collapsed ? ChevronDownIcon : ChevronUpIcon
   return (
-    <div
+    <Disclosure
       className={`maplab-toolbar-group maplab-toolbar-tray${extraClassName ? ` ${extraClassName}` : ''}`}
+      open={!collapsed}
+      onOpenChange={() => toggle()}
       data-collapsed={collapsed || undefined}
+      summary={
+        <>
+          <span aria-hidden="true" className="maplab-toolbar-group-label">{label}</span>
+          <span className="visually-hidden">{`${collapsed ? 'Expand' : 'Collapse'} ${label} tools`}</span>
+          <span className="maplab-toolbar-tray-chevron">
+            <ChevronIcon width={14} height={14} aria-hidden="true" />
+          </span>
+        </>
+      }
     >
-      <span className="maplab-toolbar-group-label">{label}</span>
-      <button
-        type="button"
-        className="maplab-toolbar-tray-toggle"
-        aria-expanded={!collapsed}
-        aria-label={`${collapsed ? 'Expand' : 'Collapse'} ${label} tools`}
-        onClick={toggle}
-      >
-        <ChevronIcon width={14} height={14} aria-hidden="true" />
-      </button>
       <div className="maplab-toolbar-tray-controls">{children}</div>
-    </div>
+    </Disclosure>
   )
 }

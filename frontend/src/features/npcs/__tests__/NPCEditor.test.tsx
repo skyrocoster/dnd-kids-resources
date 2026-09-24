@@ -93,10 +93,10 @@ describe('NPCEditor', () => {
   })
 
   describe('Dialog contract', () => {
-    it('renders with the expected title and focuses the first field', () => {
+    it('renders with the expected title and focuses the first field', async () => {
       render(<NPCEditor onClose={() => {}} onSaved={() => {}} />)
       expect(screen.getByRole('dialog', { name: 'Add New NPC' })).toBeInTheDocument()
-      expect(screen.getByLabelText('Name')).toHaveFocus()
+      await waitFor(() => expect(screen.getByLabelText('Name')).toHaveFocus())
     })
 
     it('uses the NPC title when editing', () => {

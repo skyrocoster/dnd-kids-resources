@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { LoomNode, LoomThread } from '../../api/types'
 import { ChevronDownIcon, ChevronUpIcon } from '../../components/icons'
 import { Button } from '../../components/Button'
+import { Disclosure } from '../../components/Disclosure'
 
 interface LoomBeatBankTrayProps {
   nodes: LoomNode[]
@@ -24,20 +25,23 @@ export function LoomBeatBankTray({
   const [guardVisible, setGuardVisible] = useState(false)
 
   return (
-    <div className="loom-beat-bank-tray" role="region" aria-label="Beat Bank">
-      <button
-        type="button"
-        className="loom-beat-bank-tray-toggle"
-        aria-expanded={!collapsed}
-        onClick={() => setCollapsed((prev) => !prev)}
-      >
-        <span>Beat Bank ({nodes.length})</span>
-        {collapsed ? (
-          <ChevronDownIcon width={16} height={16} aria-hidden="true" />
-        ) : (
-          <ChevronUpIcon width={16} height={16} aria-hidden="true" />
-        )}
-      </button>
+    <Disclosure
+      className="loom-beat-bank-tray"
+      role="region"
+      aria-label="Beat Bank"
+      open={!collapsed}
+      onOpenChange={(open) => setCollapsed(!open)}
+      summary={
+        <>
+          <span>Beat Bank ({nodes.length})</span>
+          {collapsed ? (
+            <ChevronDownIcon width={16} height={16} aria-hidden="true" />
+          ) : (
+            <ChevronUpIcon width={16} height={16} aria-hidden="true" />
+          )}
+        </>
+      }
+    >
       {!collapsed && (
         <div className="loom-beat-bank-tray-content">
           {guardVisible && (
@@ -65,27 +69,28 @@ export function LoomBeatBankTray({
               onActivateNode?.(node)
             }
             return (
-            <div
-              key={node.id}
-              className="loom-beat-bank-tray-entry"
-              draggable
-              onDragStart={handleDragStart}
-              onClick={handleActivate}
-              role="button"
-              tabIndex={0}
-              aria-label={node.title}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault()
-                  handleActivate()
-                }
-              }}
-            >
-              <span className="loom-beat-bank-tray-item">{node.title}</span>
-            </div>
-          ); })}
+              <div
+                key={node.id}
+                className="loom-beat-bank-tray-entry"
+                draggable
+                onDragStart={handleDragStart}
+                onClick={handleActivate}
+                role="button"
+                tabIndex={0}
+                aria-label={node.title}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    handleActivate()
+                  }
+                }}
+              >
+                <span className="loom-beat-bank-tray-item">{node.title}</span>
+              </div>
+            )
+          })}
         </div>
       )}
-    </div>
+    </Disclosure>
   )
 }

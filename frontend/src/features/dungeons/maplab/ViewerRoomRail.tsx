@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Popover } from '../../../components/Popover'
 import { getRoomById, getRoomThreatHints, type DungeonData } from '../dungeonModel'
 import { floorsInLayout, getNpcUnion, roomsOnZ, type MapLayout } from '../../../model/maplabModel'
 
@@ -49,6 +50,19 @@ export function ViewerRoomRail({ layout, parsed, activeRoomId, onSelectRoom, ope
     triggerRef.current?.focus()
   }, [setIsOpen])
 
+  const handleOpenChange = useCallback((next: boolean) => {
+    if (next) {
+      setIsOpen(true)
+    }
+  }, [setIsOpen])
+
+  const setActiveItemRef = useCallback((element: HTMLLIElement | null) => {
+    activeItemRef.current = element
+    if (typeof element?.scrollIntoView === 'function') {
+      element.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+    }
+  }, [])
+
   const selectRoom = (roomId: number) => {
     onSelectRoom(roomId)
     close()
@@ -75,9 +89,11 @@ export function ViewerRoomRail({ layout, parsed, activeRoomId, onSelectRoom, ope
       const last = focusable[focusable.length - 1]
       if (event.shiftKey && document.activeElement === first) {
         event.preventDefault()
+        event.stopPropagation()
         last.focus()
       } else if (!event.shiftKey && document.activeElement === last) {
         event.preventDefault()
+        event.stopPropagation()
         first.focus()
       }
     }
@@ -92,81 +108,93 @@ export function ViewerRoomRail({ layout, parsed, activeRoomId, onSelectRoom, ope
   }, [activeRoomId, isOpen])
 
   return (
-    <div className="maplab-viewer-rail" role="navigation" aria-label="Room navigation">
-      <button ref={triggerRef} type="button" className="maplab-viewer-rail-trigger" onClick={() => setIsOpen(true)} aria-expanded={isOpen}>
-        Find room…
-      </button>
-      {isOpen && <div className="maplab-viewer-rail-panel" role="dialog" aria-label="Find room">
-        <div className="maplab-viewer-rail-search-row">
-          <label htmlFor="maplab-room-search">Find room…</label>
-          <button type="button" className="maplab-viewer-rail-close" onClick={close} aria-label="Close room finder">Close</button>
-        </div>
-        <input ref={searchRef} id="maplab-room-search" type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search by number, title, or floor" />
-        <p className="maplab-viewer-rail-result-summary" aria-live="polite">Results from all floors</p>
-      {orderedFloorGroups.map(({ floor, rooms }) => {
-        const floorTitle = floor.title ?? `Floor ${floor.z}`
-        const visibleRooms = rooms.filter((room) => {
-          const dataRoom = getRoomById(parsed, room.room_id)
-          return matchesRoom(room.room_id, dataRoom?.title ?? room.title ?? `Room ${room.room_id}`, floorTitle)
-        })
-        if (visibleRooms.length === 0) return null
-        return (
-          <section key={floor.z} className="maplab-viewer-rail-floor">
-            {showFloorTitles && <h4 className="maplab-viewer-rail-floor-title">{floorTitle}</h4>}
-            <ul className="maplab-viewer-rail-room-list" role="listbox" aria-label={`${floorTitle} rooms`}>
-              {visibleRooms.map((room) => {
+    <Popover.Root open={isOpen} closeOnOutsidePress={false} closeOnEscape={false} onOpenChange={handleOpenChange}>
+      <div className="maplab-viewer-rail" role="navigation" aria-label="Room navigation">
+        <Popover.Trigger ref={triggerRef} type="button" className="maplab-viewer-rail-trigger" aria-expanded={isOpen}>
+          Find room…
+        </Popover.Trigger>
+      </div>
+      <Popover.Portal>
+        <Popover.Positioner side="bottom" align="start" className="maplab-viewer-rail-positioner">
+          <Popover.Popup
+            className="maplab-viewer-rail-panel"
+            role="dialog"
+            aria-label="Find room"
+            initialFocus={searchRef}
+            finalFocus={(closeType) => closeType === 'keyboard' ? triggerRef : false}
+          >
+            <div className="maplab-viewer-rail-search-row">
+              <label htmlFor="maplab-room-search">Find room…</label>
+              <button type="button" className="maplab-viewer-rail-close" onClick={close} aria-label="Close room finder">Close</button>
+            </div>
+            <input ref={searchRef} id="maplab-room-search" type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search by number, title, or floor" />
+            <p className="maplab-viewer-rail-result-summary" aria-live="polite">Results from all floors</p>
+            {orderedFloorGroups.map(({ floor, rooms }) => {
+              const floorTitle = floor.title ?? `Floor ${floor.z}`
+              const visibleRooms = rooms.filter((room) => {
                 const dataRoom = getRoomById(parsed, room.room_id)
-                const title = dataRoom?.title ?? room.title ?? `Room ${room.room_id}`
-                const threatHints = dataRoom ? getRoomThreatHints(dataRoom) : null
-                const npcUnion = getNpcUnion(dataRoom?.npcs, room, layout)
-                const isSelected = room.room_id === activeRoomId
-                const hasHints = threatHints && (threatHints.hasTrap || threatHints.hasMonster || threatHints.hasEncounter)
-                const hasNpcHint = npcUnion.length > 0
+                return matchesRoom(room.room_id, dataRoom?.title ?? room.title ?? `Room ${room.room_id}`, floorTitle)
+              })
+              if (visibleRooms.length === 0) return null
+              return (
+                <section key={floor.z} className="maplab-viewer-rail-floor">
+                  {showFloorTitles && <h4 className="maplab-viewer-rail-floor-title">{floorTitle}</h4>}
+                  <ul className="maplab-viewer-rail-room-list" role="listbox" aria-label={`${floorTitle} rooms`}>
+                    {visibleRooms.map((room) => {
+                      const dataRoom = getRoomById(parsed, room.room_id)
+                      const title = dataRoom?.title ?? room.title ?? `Room ${room.room_id}`
+                      const threatHints = dataRoom ? getRoomThreatHints(dataRoom) : null
+                      const npcUnion = getNpcUnion(dataRoom?.npcs, room, layout)
+                      const isSelected = room.room_id === activeRoomId
+                      const hasHints = threatHints && (threatHints.hasTrap || threatHints.hasMonster || threatHints.hasEncounter)
+                      const hasNpcHint = npcUnion.length > 0
 
-                return (
-                  <li
-                    key={room.room_id}
-                    ref={isSelected ? activeItemRef : null}
-                    className="maplab-viewer-rail-room-item"
-                    role="option"
-                    aria-selected={isSelected}
-                    data-selected={isSelected || undefined}
-                  >
-                    <button type="button" aria-pressed={isSelected} onClick={() => selectRoom(room.room_id)}>
-                      <span className="maplab-viewer-rail-room-name">{title}</span>
-                      <span className="maplab-viewer-rail-room-number" aria-hidden="true">#{room.room_id}</span>
-                      {(hasHints || hasNpcHint) && (
-                        <span className="maplab-viewer-rail-room-hints" aria-label="Room hints">
-                          {threatHints?.hasTrap && <span className="maplab-viewer-rail-room-hint">Trap</span>}
-                          {threatHints?.hasMonster && <span className="maplab-viewer-rail-room-hint">Monster</span>}
-                          {threatHints?.hasEncounter && <span className="maplab-viewer-rail-room-hint">Encounter</span>}
-                          {hasNpcHint && <span className="maplab-viewer-rail-room-hint">{npcUnion.length === 1 ? '1 NPC' : `${npcUnion.length} NPCs`}</span>}
-                        </span>
-                      )}
-                    </button>
-                  </li>
-                )
-              })}
-            </ul>
-          </section>
-        )
-      })}
-        {offMapRooms.filter((room) => matchesRoom(room.room_id, room.title ?? `Room ${room.room_id}`, 'Off map')).length > 0 && (
-          <section className="maplab-viewer-rail-floor">
-            <h4 className="maplab-viewer-rail-floor-title">Off map</h4>
-            <ul className="maplab-viewer-rail-room-list" role="listbox" aria-label="Off map rooms">
-              {offMapRooms.filter((room) => matchesRoom(room.room_id, room.title ?? `Room ${room.room_id}`, 'Off map')).map((room) => (
-                <li key={room.room_id} className="maplab-viewer-rail-room-item" role="option" aria-selected={room.room_id === activeRoomId}>
-                  <button type="button" aria-pressed={room.room_id === activeRoomId} onClick={() => selectRoom(room.room_id)}>
-                    <span className="maplab-viewer-rail-room-name">{room.title ?? `Room ${room.room_id}`}</span>
-                    <span className="maplab-viewer-rail-room-number" aria-hidden="true">Off map · #{room.room_id}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
-      </div>}
-    </div>
+                      return (
+                        <li
+                          key={room.room_id}
+                          ref={isSelected ? setActiveItemRef : null}
+                          className="maplab-viewer-rail-room-item"
+                          role="option"
+                          aria-selected={isSelected}
+                          data-selected={isSelected || undefined}
+                        >
+                          <button type="button" aria-pressed={isSelected} onClick={() => selectRoom(room.room_id)}>
+                            <span className="maplab-viewer-rail-room-name">{title}</span>
+                            <span className="maplab-viewer-rail-room-number" aria-hidden="true">#{room.room_id}</span>
+                            {(hasHints || hasNpcHint) && (
+                              <span className="maplab-viewer-rail-room-hints" aria-label="Room hints">
+                                {threatHints?.hasTrap && <span className="maplab-viewer-rail-room-hint">Trap</span>}
+                                {threatHints?.hasMonster && <span className="maplab-viewer-rail-room-hint">Monster</span>}
+                                {threatHints?.hasEncounter && <span className="maplab-viewer-rail-room-hint">Encounter</span>}
+                                {hasNpcHint && <span className="maplab-viewer-rail-room-hint">{npcUnion.length === 1 ? '1 NPC' : `${npcUnion.length} NPCs`}</span>}
+                              </span>
+                            )}
+                          </button>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                </section>
+              )
+            })}
+            {offMapRooms.filter((room) => matchesRoom(room.room_id, room.title ?? `Room ${room.room_id}`, 'Off map')).length > 0 && (
+              <section className="maplab-viewer-rail-floor">
+                <h4 className="maplab-viewer-rail-floor-title">Off map</h4>
+                <ul className="maplab-viewer-rail-room-list" role="listbox" aria-label="Off map rooms">
+                  {offMapRooms.filter((room) => matchesRoom(room.room_id, room.title ?? `Room ${room.room_id}`, 'Off map')).map((room) => (
+                    <li key={room.room_id} className="maplab-viewer-rail-room-item" role="option" aria-selected={room.room_id === activeRoomId}>
+                      <button type="button" aria-pressed={room.room_id === activeRoomId} onClick={() => selectRoom(room.room_id)}>
+                        <span className="maplab-viewer-rail-room-name">{room.title ?? `Room ${room.room_id}`}</span>
+                        <span className="maplab-viewer-rail-room-number" aria-hidden="true">Off map · #{room.room_id}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+          </Popover.Popup>
+        </Popover.Positioner>
+      </Popover.Portal>
+    </Popover.Root>
   )
 }

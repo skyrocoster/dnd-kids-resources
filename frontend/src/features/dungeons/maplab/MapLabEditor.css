@@ -83,10 +83,8 @@
 }
 
 .maplab-connections-panel {
-  position: absolute;
   z-index: var(--z-floating);
-  top: calc(100% + var(--space-2));
-  right: 0;
+  margin-top: var(--space-2);
   width: min(24rem, calc(100vw - var(--space-6)));
   max-height: min(70vh, 36rem);
   overflow-y: auto;
@@ -264,6 +262,30 @@
   width: 100%;
 }
 
+.maplab-room-content-field .form-field {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: var(--control-height);
+  margin: 0;
+  font-size: var(--type-body-sm-size);
+  color: var(--md-on-surface);
+}
+
+.maplab-room-content-field .form-label {
+  font: inherit;
+  color: inherit;
+}
+
+.maplab-room-content-field .form-control {
+  flex: 0 0 8rem;
+  font: inherit;
+}
+
 .maplab-room-content-readonly,
 .maplab-room-content-section,
 .maplab-room-content-entry-groups,
@@ -283,6 +305,7 @@
 }
 
 .maplab-room-content-label,
+.maplab-room-content-textarea-row .form-label,
 .maplab-room-content-section-subtitle {
   font-size: var(--type-caption-size);
   font-weight: var(--type-caption-weight);
@@ -335,6 +358,11 @@
   gap: var(--space-2);
 }
 
+.maplab-room-content-textarea-row .form-field {
+  gap: var(--space-2);
+  margin: 0;
+}
+
 .maplab-room-content-textarea-row textarea {
   min-height: 7rem;
   padding: var(--space-2);
@@ -375,6 +403,46 @@
   min-height: var(--control-height);
 }
 
+.maplab-field-row.maplab-fixture-checkbox-row .form-field-checkbox {
+  flex: 1 1 auto;
+  flex-direction: row-reverse;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: var(--control-height);
+  margin: 0;
+}
+
+.maplab-field-row.maplab-fixture-checkbox-row .form-label-checkbox {
+  font: inherit;
+  color: inherit;
+}
+
+.maplab-fixture-live-picker .form-field {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: var(--control-height);
+  margin: 0;
+  font-size: var(--type-body-sm-size);
+  color: var(--md-on-surface);
+}
+
+.maplab-fixture-live-picker .form-label,
+.maplab-loot-bundle-picker .form-label {
+  font: inherit;
+  color: inherit;
+}
+
+.maplab-fixture-live-picker .form-control,
+.maplab-loot-bundle-picker .form-control {
+  flex: 0 0 8rem;
+  font: inherit;
+}
+
 .maplab-field-row input[type='text'],
 .maplab-field-row input[type='number'],
 .maplab-field-row select {
@@ -391,10 +459,48 @@
   cursor: pointer;
 }
 
+.maplab-selected-feature-field .form-field {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: var(--control-height);
+  margin: 0;
+  font-size: var(--type-body-sm-size);
+  color: var(--md-on-surface);
+}
+
+.maplab-selected-feature-field .form-label {
+  font: inherit;
+  color: inherit;
+}
+
+.maplab-selected-feature-field .form-control {
+  flex: 0 0 8rem;
+  font: inherit;
+}
+
 /* Loot is a table-facing choice with enough prominence to avoid being mistaken for another
  * passage flag. Its 48px control meets the Map Lab touch-target floor. */
 .maplab-loot-bundle-picker {
   flex-wrap: wrap;
+}
+
+.maplab-loot-bundle-picker .form-field {
+  display: flex;
+  flex: 1 1 100%;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: var(--control-height);
+  margin: 0;
+  font-size: var(--type-body-sm-size);
+  color: var(--md-on-surface);
 }
 
 .maplab-field-row.maplab-loot-bundle-picker select {
@@ -402,7 +508,7 @@
   border-color: var(--md-loot);
 }
 
-.maplab-loot-bundle-picker-label {
+.maplab-loot-bundle-picker .form-label {
   color: var(--md-on-loot-container);
   font-weight: var(--type-label-weight);
 }
@@ -509,20 +615,19 @@
   cursor: pointer;
 }
 
+.maplab-tool-palette-positioner {
+  z-index: var(--z-floating);
+}
+
 .maplab-tool-palette-flyout {
-  position: absolute;
-  top: 100%;
-  left: 0;
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
-  margin-top: var(--space-1);
   padding: var(--space-2);
   border: 1px solid var(--md-outline-variant);
   border-radius: var(--radius-lg);
   background: var(--md-surface-2);
   box-shadow: var(--shadow-md);
-  z-index: 10;
   min-width: 9rem;
 }
 
@@ -564,9 +669,6 @@
 }
 
 .maplab-map-popover {
-  position: absolute;
-  top: 100%;
-  right: 0;
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
@@ -585,9 +687,6 @@
 }
 
 .maplab-view-popover {
-  position: absolute;
-  top: 100%;
-  right: 0;
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent, ReactNode } from 'react'
+import { IconButton } from './IconButton'
 import { CloseIcon, GripIcon } from './icons'
 import './FloatingWindow.css'
 
@@ -221,17 +222,16 @@ export function FloatingWindow({ title, storageKey, onClose, children }: Floatin
       <div className="floating-window-header" onPointerDown={startDragging}>
         <GripIcon size={16} aria-hidden className="floating-window-grip" />
         <span className="floating-window-title">{title}</span>
-        <button
-          type="button"
+        <IconButton
+          label={minimized ? 'Restore window' : 'Minimize window'}
           className="floating-window-minimize"
           onClick={() => setMinimized((m) => !m)}
-          aria-label={minimized ? 'Restore window' : 'Minimize window'}
         >
           {minimized ? '▢' : '−'}
-        </button>
-        <button type="button" className="floating-window-close" onClick={onClose} aria-label="Close window">
+        </IconButton>
+        <IconButton label="Close window" className="floating-window-close" onClick={onClose}>
           <CloseIcon size={16} aria-hidden />
-        </button>
+        </IconButton>
       </div>
       {!minimized && <div className="floating-window-body">{children}</div>}
 

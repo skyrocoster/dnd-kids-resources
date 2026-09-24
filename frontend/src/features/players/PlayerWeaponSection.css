@@ -19,13 +19,20 @@
   border-radius: 0.5rem;
 }
 
-.weapon-section-header {
-  display: flex;
-  align-items: center;
-  gap: 0.375rem;
+.weapon-section-row > .weapon-section-accordion {
+  display: contents;
 }
 
-.weapon-section-toggle {
+.weapon-section-row > .weapon-section-accordion > .weapon-section-accordion-item {
+  display: contents;
+}
+
+.weapon-section-row .cp-accordion-header {
+  order: 1;
+}
+
+.weapon-section-row .cp-accordion-trigger {
+  inline-size: auto;
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
@@ -39,9 +46,17 @@
   border-radius: 0.375rem;
   font-size: var(--type-title-size);
   font-weight: var(--type-title-weight);
+  justify-content: flex-start;
+  text-align: left;
 }
 
-.weapon-section-toggle:hover {
+.weapon-section-row .cp-accordion-icon {
+  order: -1;
+  inline-size: 18px;
+  block-size: 18px;
+}
+
+.weapon-section-row .cp-accordion-trigger:hover {
   background-color: var(--md-surface-4);
 }
 
@@ -50,22 +65,30 @@
 }
 
 .weapon-section-quick-rules {
+  order: 2;
   font-size: var(--type-body-sm-size);
   color: var(--md-on-surface-variant);
   padding-left: calc(18px + 0.75rem);
 }
 
-.weapon-section-body {
+.weapon-section-row .cp-accordion-panel {
+  order: 3;
+}
+
+.weapon-section-row .weapon-section-body {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
   padding-left: calc(18px + 0.75rem);
+  padding-right: 0;
+  padding-top: 0;
+  padding-bottom: 0;
   font-size: var(--type-body-size);
   line-height: var(--type-body-line-height);
   color: var(--md-on-surface);
 }
 
-.weapon-section-body p {
+.weapon-section-row .weapon-section-body p {
   margin: 0;
 }
 

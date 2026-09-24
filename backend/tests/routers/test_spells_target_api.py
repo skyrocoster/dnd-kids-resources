@@ -57,67 +57,25 @@ class TestSpellListTargetShape:
             assert set(spell.keys()) == _TARGET_FIELDS, (
                 f"Unexpected keys: {set(spell.keys()) - _TARGET_FIELDS}"
             )
+            assert not _LEGACY_FIELDS.intersection(spell.keys())
 
-    def test_list_response_excludes_legacy_fields(self, test_client):
-        resp = test_client.get("/api/spells")
-        for spell in resp.json():
-            assert not _LEGACY_FIELDS.intersection(spell.keys()), (
-                f"Legacy fields present: {_LEGACY_FIELDS.intersection(spell.keys())}"
-            )
-
-    def test_list_level_is_integer(self, test_client):
+    def test_list_field_types(self, test_client):
         resp = test_client.get("/api/spells")
         for spell in resp.json():
             assert isinstance(spell["level"], int)
-
-    def test_list_concentration_is_bool(self, test_client):
-        resp = test_client.get("/api/spells")
-        for spell in resp.json():
             assert isinstance(spell["concentration"], bool)
-
-    def test_list_ritual_is_bool(self, test_client):
-        resp = test_client.get("/api/spells")
-        for spell in resp.json():
             assert isinstance(spell["ritual"], bool)
-
-    def test_list_damage_is_list(self, test_client):
-        resp = test_client.get("/api/spells")
-        for spell in resp.json():
             assert isinstance(spell["damage"], list)
-
-    def test_list_components_is_list(self, test_client):
-        resp = test_client.get("/api/spells")
-        for spell in resp.json():
             assert isinstance(spell["components"], list)
-
-    def test_list_casting_times_is_list(self, test_client):
-        resp = test_client.get("/api/spells")
-        for spell in resp.json():
             assert isinstance(spell["casting_times"], list)
-
-    def test_list_attacks_is_list(self, test_client):
-        resp = test_client.get("/api/spells")
-        for spell in resp.json():
             assert isinstance(spell["attacks"], list)
-
-    def test_list_healing_is_object(self, test_client):
-        resp = test_client.get("/api/spells")
-        for spell in resp.json():
             assert isinstance(spell["healing"], dict)
             assert "amount" in spell["healing"]
             assert "temp_hp" in spell["healing"]
             assert "max_hp" in spell["healing"]
-
-    def test_list_higher_levels_is_object(self, test_client):
-        resp = test_client.get("/api/spells")
-        for spell in resp.json():
             assert isinstance(spell["higher_levels"], dict)
             assert "text" in spell["higher_levels"]
             assert "damage_by_slot" in spell["higher_levels"]
-
-    def test_list_area_of_effect_is_object(self, test_client):
-        resp = test_client.get("/api/spells")
-        for spell in resp.json():
             assert isinstance(spell["area_of_effect"], dict)
             assert "shape" in spell["area_of_effect"]
             assert "size" in spell["area_of_effect"]
@@ -139,11 +97,6 @@ class TestSpellDetailTargetShape:
         resp = test_client.get(f"/api/spells/{spell_id}")
         assert resp.status_code == 200
         assert set(resp.json().keys()) == _TARGET_FIELDS
-
-    def test_detail_by_id_excludes_legacy(self, test_client):
-        resp = test_client.get("/api/spells")
-        spell_id = resp.json()[0]["id"]
-        resp = test_client.get(f"/api/spells/{spell_id}")
         assert not _LEGACY_FIELDS.intersection(resp.json().keys())
 
 
@@ -156,11 +109,6 @@ class TestSpellByTitleTargetShape:
         resp = test_client.get(f"/api/spells/by-title/{name}")
         assert resp.status_code == 200
         assert set(resp.json().keys()) == _TARGET_FIELDS
-
-    def test_by_title_excludes_legacy(self, test_client):
-        resp = test_client.get("/api/spells")
-        name = resp.json()[0]["name"]
-        resp = test_client.get(f"/api/spells/by-title/{name}")
         assert not _LEGACY_FIELDS.intersection(resp.json().keys())
 
 
@@ -171,16 +119,11 @@ class TestIntegerLevelFilter:
     """Level filtering must use integer equality, not string."""
 
     def test_filter_by_integer_level(self, test_client):
-        resp = test_client.get("/api/spells?level=0")
-        assert resp.status_code == 200
-        for spell in resp.json():
-            assert spell["level"] == 0
-
-    def test_filter_by_level_excludes_others(self, test_client):
-        resp = test_client.get("/api/spells?level=3")
-        assert resp.status_code == 200
-        for spell in resp.json():
-            assert spell["level"] == 3
+        for level in (0, 3):
+            resp = test_client.get(f"/api/spells?level={level}")
+            assert resp.status_code == 200
+            for spell in resp.json():
+                assert spell["level"] == level
 
 
 # ── Create / Update / Delete lifecycle ──────────────────────────────────────
@@ -197,31 +140,26 @@ class TestCreateSpellContract:
         assert spell["name"] == "B0 Test Spell"
         assert spell["level"] == 2
 
-    def test_create_empty_collections_preserved(self, test_client):
+    def test_create_defaults_and_empty_collections(self, test_client):
         resp = test_client.post("/api/spells", json=_CREATE_PAYLOAD)
+        assert resp.status_code == 201
         spell = resp.json()
         assert spell["damage"] == []
         assert spell["attacks"] == []
         assert spell["components"] == ["V", "S"]
         assert spell["casting_times"] == []
-
-    def test_create_nested_objects_always_present(self, test_client):
-        resp = test_client.post("/api/spells", json=_CREATE_PAYLOAD)
-        spell = resp.json()
         assert isinstance(spell["healing"], dict)
         assert isinstance(spell["higher_levels"], dict)
         assert isinstance(spell["area_of_effect"], dict)
 
-    def test_create_categories_default_to_empty_list(self, test_client):
-        resp = test_client.post("/api/spells", json=_CREATE_PAYLOAD)
-        assert resp.status_code == 201
-        assert resp.json()["categories"] == ["Other"]
-
-    def test_create_multiple_categories_are_normalized(self, test_client):
+    def test_create_categories_default_and_explicit(self, test_client):
+        defaulted = test_client.post("/api/spells", json=_CREATE_PAYLOAD)
+        assert defaulted.status_code == 201
+        assert defaulted.json()["categories"] == ["Other"]
         payload = {**_CREATE_PAYLOAD, "name": "B0 Categorized Spell", "categories": ["Damage", "Protect"]}
-        resp = test_client.post("/api/spells", json=payload)
-        assert resp.status_code == 201
-        assert resp.json()["categories"] == ["Damage", "Protect"]
+        explicit = test_client.post("/api/spells", json=payload)
+        assert explicit.status_code == 201
+        assert explicit.json()["categories"] == ["Damage", "Protect"]
 
     def test_create_cantrip_level_zero(self, test_client):
         resp = test_client.post("/api/spells", json=_CREATE_CANTRIP)
@@ -277,13 +215,7 @@ class TestDeleteSpell:
 class TestDuplicateNameContract:
     """POST /api/spells rejects duplicate names with a 400."""
 
-    def test_duplicate_name_rejected(self, test_client):
-        resp = test_client.post("/api/spells", json=_CREATE_PAYLOAD)
-        assert resp.status_code == 201
-        resp = test_client.post("/api/spells", json=_CREATE_PAYLOAD)
-        assert resp.status_code == 400
-
-    def test_duplicate_name_error_is_human_readable(self, test_client):
+    def test_duplicate_name_rejected_with_message(self, test_client):
         assert test_client.post("/api/spells", json=_CREATE_PAYLOAD).status_code == 201
         resp = test_client.post("/api/spells", json=_CREATE_PAYLOAD)
         assert resp.status_code == 400
@@ -305,10 +237,6 @@ class TestSchoolFilterNormalization:
 class TestNotFoundTargetShape:
     """404 responses remain unchanged."""
 
-    def test_by_id_404(self, test_client):
-        resp = test_client.get("/api/spells/99999")
-        assert resp.status_code == 404
-
-    def test_by_title_404(self, test_client):
-        resp = test_client.get("/api/spells/by-title/Nonexistent")
-        assert resp.status_code == 404
+    def test_not_found(self, test_client):
+        assert test_client.get("/api/spells/99999").status_code == 404
+        assert test_client.get("/api/spells/by-title/Nonexistent").status_code == 404

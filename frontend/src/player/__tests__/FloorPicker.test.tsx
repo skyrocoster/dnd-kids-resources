@@ -26,12 +26,12 @@ describe('FloorPicker', () => {
     expect(screen.getByText('1')).toBeInTheDocument()
   })
 
-  it('marks the selected floor slab', () => {
+  it('styles the selected floor option as pressed', () => {
     render(<FloorPicker floors={floors} selectedZ={0} onSelectFloor={() => {}} />)
     const buttons = screen.getAllByRole('button')
-    expect(buttons[0]).not.toHaveClass('player-floor-slab--selected')
-    expect(buttons[1]).toHaveClass('player-floor-slab--selected')
-    expect(buttons[2]).not.toHaveClass('player-floor-slab--selected')
+    expect(buttons[0]).not.toHaveAttribute('data-pressed')
+    expect(buttons[1]).toHaveAttribute('data-pressed')
+    expect(buttons[2]).not.toHaveAttribute('data-pressed')
   })
 
   it('sets aria-pressed on the selected floor', () => {
@@ -52,6 +52,40 @@ describe('FloorPicker', () => {
 
     await userEvent.click(buttons[2])
     expect(onSelect).toHaveBeenCalledWith(1)
+  })
+
+  it('keeps selection controlled by selectedZ', () => {
+    const { rerender } = render(
+      <FloorPicker floors={floors} selectedZ={0} onSelectFloor={() => {}} />,
+    )
+    expect(screen.getByRole('button', { name: 'Floor 0 — Ground Floor' })).toHaveAttribute('aria-pressed', 'true')
+
+    rerender(<FloorPicker floors={floors} selectedZ={1} onSelectFloor={() => {}} />)
+    expect(screen.getByRole('button', { name: 'Floor 0 — Ground Floor' })).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByRole('button', { name: 'Floor 1' })).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('selects a floor with the vertical keyboard controls and reports a numeric z', async () => {
+    const onSelect = vi.fn()
+    const user = userEvent.setup()
+    render(<FloorPicker floors={floors} selectedZ={0} onSelectFloor={onSelect} />)
+    screen.getByRole('button', { name: 'Floor 0 — Ground Floor' }).focus()
+
+    await user.keyboard('{ArrowDown}')
+    await user.keyboard(' ')
+
+    expect(screen.getByRole('button', { name: 'Floor 1' })).toHaveFocus()
+    expect(onSelect).toHaveBeenCalledWith(1)
+  })
+
+  it('does not clear the controlled selection when the selected floor is toggled', async () => {
+    const onSelect = vi.fn()
+    render(<FloorPicker floors={floors} selectedZ={0} onSelectFloor={onSelect} />)
+    const selectedFloor = screen.getByRole('button', { name: 'Floor 0 — Ground Floor' })
+    await userEvent.click(selectedFloor)
+
+    expect(selectedFloor).toHaveAttribute('aria-pressed', 'true')
+    expect(onSelect).not.toHaveBeenCalled()
   })
 
   it('provides accessible labels including optional title', () => {

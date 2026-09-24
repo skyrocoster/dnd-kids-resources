@@ -28,8 +28,11 @@ describe('ManageAssignmentsDialog', () => {
       />,
     )
 
-    const labels = screen.getAllByRole('checkbox').map((el) => el.closest('label')?.textContent)
-    expect(labels).toEqual(['Acid Splash', 'Fireball', 'Mage Hand'])
+    const checkboxes = screen.getAllByRole('checkbox')
+    expect(checkboxes).toHaveLength(3)
+    expect(screen.getByRole('checkbox', { name: 'Acid Splash' })).toBe(checkboxes[0])
+    expect(screen.getByRole('checkbox', { name: 'Fireball' })).toBe(checkboxes[1])
+    expect(screen.getByRole('checkbox', { name: 'Mage Hand' })).toBe(checkboxes[2])
     expect(screen.getByLabelText('Fireball')).toBeChecked()
     expect(screen.getByLabelText('Acid Splash')).not.toBeChecked()
   })
@@ -51,6 +54,32 @@ describe('ManageAssignmentsDialog', () => {
     await user.type(screen.getByPlaceholderText('Search…'), 'acid')
     expect(screen.getByLabelText('Acid Splash')).toBeInTheDocument()
     expect(screen.queryByLabelText('Fireball')).not.toBeInTheDocument()
+  })
+
+  it('preserves an assigned id hidden by filtering when saving', async () => {
+    const onSave = vi.fn().mockResolvedValue(undefined)
+    const onClose = vi.fn()
+    const user = userEvent.setup()
+    render(
+      <ManageAssignmentsDialog
+        title="Manage Spells"
+        items={items}
+        assignedIds={[1]}
+        getId={(i: Item) => i.id}
+        getLabel={(i: Item) => i.name}
+        onSave={onSave}
+        onClose={onClose}
+      />,
+    )
+
+    await user.type(screen.getByPlaceholderText('Search…'), 'acid')
+    expect(screen.queryByLabelText('Fireball')).not.toBeInTheDocument()
+    await user.click(screen.getByLabelText('Acid Splash'))
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+
+    await waitFor(() => expect(onSave).toHaveBeenCalledOnce())
+    expect(onSave).toHaveBeenCalledWith([1, 2])
+    await waitFor(() => expect(onClose).toHaveBeenCalledOnce())
   })
 
   it('stages checkbox toggles and commits the full id list once on Save', async () => {

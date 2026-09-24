@@ -117,10 +117,7 @@ def test_canonical_migrated_seed_matches_m1_corpus_contract():
     for monster in monsters:
         Monster.model_validate(monster)
 
-
-def test_canonical_migrated_seed_preserves_aggregate_rich_data():
-    monsters = load_canonical_monsters()
-
+    # Aggregates: rich projection totals (idempotent with the strict-model loop above)
     assert sum(1 for monster in monsters if monster["ac"] and monster["ac"]["alternatives"]) == 91
     assert sum(1 for monster in monsters if monster["ac"] is None) == 0
     assert sum(1 for monster in monsters if monster["saving_throws"]) == 1065

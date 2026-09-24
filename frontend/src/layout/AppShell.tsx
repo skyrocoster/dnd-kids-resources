@@ -49,15 +49,14 @@ export function AppShell() {
             <MapIcon size={22} aria-hidden="true" />
              <span className={collapsed || isEncounterRunner ? 'visually-hidden' : undefined}>D&D Kids Resources</span>
           </Link>
-          <button
-            type="button"
+          <IconButton
+            label={collapsed ? 'Expand navigation' : 'Collapse navigation'}
             className="app-nav-toggle"
             onClick={toggle}
-            aria-label={collapsed ? 'Expand navigation' : 'Collapse navigation'}
             title={collapsed ? 'Expand navigation' : 'Collapse navigation'}
           >
             <ToggleIcon size={20} aria-hidden="true" />
-          </button>
+          </IconButton>
           {navSections.map((section) => (
             <div className="app-nav-section" key={section.label}>
                <h2 className={collapsed || isEncounterRunner ? 'visually-hidden' : undefined}>{section.label}</h2>

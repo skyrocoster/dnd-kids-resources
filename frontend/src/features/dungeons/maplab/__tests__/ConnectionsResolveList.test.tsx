@@ -87,7 +87,11 @@ describe('ConnectionsResolveList', () => {
     renderList({ layout: layoutWithPortals([resolvedPortal, unresolvedPortal]) })
 
     expect(screen.getByText(/Cellar tunnel/)).toBeInTheDocument()
+    const chooseButton = screen.getByRole('button', { name: 'Choose destination' })
     expect(screen.getAllByRole('button', { name: 'Choose destination' })).toHaveLength(1)
+    expect(chooseButton).toHaveAttribute('type', 'button')
+    expect(chooseButton).toHaveClass('maplab-pill-button', 'maplab-connections-resolve-list-action')
+    expect(chooseButton).not.toBeDisabled()
   })
 
   it('shows the empty-state copy when nothing is unresolved', () => {
@@ -114,10 +118,16 @@ describe('ConnectionsResolveList', () => {
 
     expect(screen.getByText(/Old gateway/)).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'Repoint' }))
+    const repointButton = screen.getByRole('button', { name: 'Repoint' })
+    expect(repointButton).toHaveAttribute('type', 'button')
+    expect(repointButton).toHaveClass('maplab-pill-button', 'maplab-connections-resolve-list-action')
+    await user.click(repointButton)
     expect(onResolve).toHaveBeenCalledWith(brokenGatewayPortal)
 
-    await user.click(screen.getByRole('button', { name: 'Remove' }))
+    const removeButton = screen.getByRole('button', { name: 'Remove' })
+    expect(removeButton).toHaveAttribute('type', 'button')
+    expect(removeButton).toHaveClass('maplab-pill-button', 'maplab-connections-resolve-list-action')
+    await user.click(removeButton)
     expect(onRemoveGateway).toHaveBeenCalledWith(brokenGatewayPortal)
   })
 
@@ -139,7 +149,10 @@ describe('ConnectionsResolveList', () => {
 
     expect(screen.getByText(/The Castle links here, at square 2,9/)).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'Add the return gateway' }))
+    const addReturnButton = screen.getByRole('button', { name: 'Add the return gateway' })
+    expect(addReturnButton).toHaveAttribute('type', 'button')
+    expect(addReturnButton).toHaveClass('maplab-pill-button', 'maplab-connections-resolve-list-action')
+    await user.click(addReturnButton)
     expect(onAddReturnGateway).toHaveBeenCalledWith(incomingGateway)
   })
 

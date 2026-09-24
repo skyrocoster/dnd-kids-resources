@@ -77,4 +77,24 @@ describe('PlayerCombatSummary', () => {
     expect(screen.getByText('STR')).toBeInTheDocument()
     expect(screen.getByText('14')).toBeInTheDocument()
   })
+
+  it('opens and closes Full Profile with the keyboard', async () => {
+    const user = userEvent.setup()
+    const player = makePlayer({
+      abilities: { str: 14, dex: 12, con: 13, int: 10, wis: 11, cha: 9 },
+    })
+    render(<PlayerCombatSummary player={player} />)
+
+    const toggle = screen.getByRole('button', { name: 'Full Profile', expanded: false })
+    await user.tab()
+    expect(toggle).toHaveFocus()
+
+    await user.keyboard(' ')
+    expect(screen.getByRole('button', { name: 'Full Profile', expanded: true })).toBeInTheDocument()
+    expect(screen.getByText('STR')).toBeInTheDocument()
+
+    await user.keyboard('{Enter}')
+    expect(screen.getByRole('button', { name: 'Full Profile', expanded: false })).toBeInTheDocument()
+    expect(screen.queryByText('STR')).not.toBeInTheDocument()
+  })
 })

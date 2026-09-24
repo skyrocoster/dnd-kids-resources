@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { listNPCs } from '../../../api/client'
 import type { NPC } from '../../../api/types'
+import { Button } from '../../../components/Button'
 import { DiceText } from '../../../components/DiceText'
 import { NpcChip } from '../../npcs/NpcChip'
 import {
@@ -79,13 +80,13 @@ function EntryBlock({
         <header className="maplab-room-details-entry-header">
           {entry.title && <h4 className="maplab-room-details-entry-title">{entry.title}</h4>}
           {entry.encounter_id != null && (
-            <button
+            <Button
               type="button"
               className="maplab-pill-button maplab-room-details-encounter-button"
               onClick={() => onRunEncounter(entry.encounter_id as number)}
             >
               Run encounter
-            </button>
+            </Button>
           )}
         </header>
       )}
@@ -148,14 +149,14 @@ export function RoomDetailsPanel({
       <header className="maplab-room-details-header">
         <h3 className="maplab-room-details-title">{roomTitle(room, dungeonRoom)}</h3>
         {onPartyIsHere && (
-          <button
+          <Button
             type="button"
             className="maplab-pill-button"
             style={{ minHeight: 48, minWidth: 48 }}
             onClick={onPartyIsHere}
           >
             Party is here
-          </button>
+          </Button>
         )}
         {actionError && (
           <p role="status" className="maplab-room-details-error">{actionError}</p>

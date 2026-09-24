@@ -1,4 +1,5 @@
 import type { Dungeon, IncomingGateway } from '../../../api/types'
+import { Button } from '../../../components/Button'
 import { StatePanel } from '../../../components/StatePanel'
 import { floorsInLayout, type MapLayout, type MapPortal } from '../../../model/maplabModel'
 
@@ -70,13 +71,13 @@ export function ConnectionsResolveList({
               <span className="maplab-connections-resolve-list-item-label">
                 {portal.title ?? `Portal ${portal.portal_id}`} — {floorLabel(layout, portal.z)}
               </span>
-              <button
+              <Button
                 type="button"
                 className="maplab-pill-button maplab-connections-resolve-list-action"
                 onClick={() => onResolve(portal)}
               >
                 Choose destination
-              </button>
+              </Button>
             </li>
           ))}
           {brokenGateways.map((portal) => (
@@ -85,20 +86,20 @@ export function ConnectionsResolveList({
                 {portal.title ?? `Portal ${portal.portal_id}`} — {floorLabel(layout, portal.z)} links to a dungeon
                 that no longer exists
               </span>
-              <button
+              <Button
                 type="button"
                 className="maplab-pill-button maplab-connections-resolve-list-action"
                 onClick={() => onResolve(portal)}
               >
                 Repoint
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
                 className="maplab-pill-button maplab-connections-resolve-list-action"
                 onClick={() => onRemoveGateway(portal)}
               >
                 Remove
-              </button>
+              </Button>
             </li>
           ))}
           {gatewaysWithoutReturn.map((gateway) => (
@@ -106,13 +107,13 @@ export function ConnectionsResolveList({
               <span className="maplab-connections-resolve-list-item-label">
                 {gateway.dungeon_title} links here, at square {gateway.cell[0]},{gateway.cell[1]}
               </span>
-              <button
+              <Button
                 type="button"
                 className="maplab-pill-button maplab-connections-resolve-list-action"
                 onClick={() => onAddReturnGateway(gateway)}
               >
                 Add the return gateway
-              </button>
+              </Button>
             </li>
           ))}
         </ul>

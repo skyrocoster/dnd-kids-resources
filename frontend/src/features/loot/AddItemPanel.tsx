@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import * as api from '../../api/client'
 import type { Item } from '../../api/types'
+import { IconButton } from '../../components/IconButton'
 import { SearchList } from '../../components/SearchList'
+import { CloseIcon } from '../../components/icons'
 import { initialRemoteState, remoteError, remoteLoading, remoteSuccess } from '../../components/remoteState'
 import type { RemoteState } from '../../components/remoteState'
 import { formatGp } from './lootTotals'
@@ -31,7 +33,9 @@ export function AddItemPanel({ onAdd, onClose }: AddItemPanelProps) {
     <div className="add-catalog-panel">
       <div className="add-catalog-panel-header">
         <h3>Add item</h3>
-        <button type="button" onClick={onClose} aria-label="Close add item panel">×</button>
+        <IconButton label="Close add item panel" onClick={onClose}>
+          <CloseIcon size={18} aria-hidden />
+        </IconButton>
       </div>
       <SearchList
         items={items}

@@ -40,7 +40,7 @@
   justify-content: space-between;
 }
 
-.spell-editor-add {
+.btn.spell-editor-add {
   background: var(--md-secondary-container);
   color: var(--md-on-secondary-container);
   border: none;
@@ -87,15 +87,19 @@
   padding: 0;
 }
 
-.spell-editor-check-option {
+.spell-editor-check-group .form-field-checkbox {
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
-  margin-right: 0.75rem;
+  min-height: 0;
+  margin: 0 0.75rem 0 0;
+}
+
+.spell-editor-check-group .form-label-checkbox {
   font-size: var(--type-body-size);
 }
 
-.spell-editor-row-remove {
+.btn.spell-editor-row-remove {
   background: none;
   border: 1px solid var(--md-error);
   color: var(--md-error);

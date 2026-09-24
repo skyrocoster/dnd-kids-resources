@@ -1,132 +1,47 @@
 """Tests for player CRUD and nested spell/weapon endpoints."""
 
-from unittest.mock import MagicMock
-
 import sqlite3
-import backend.app.db as db_module
 from pathlib import Path
 
+import pytest
 
-def _raise_db_failure():
-    conn = MagicMock()
-    conn.commit.side_effect = Exception("Simulated database failure")
-    return conn
+import backend.app.db as db_module
 
-
-def test_list_players(test_client):
-    """Test GET /api/players returns a list."""
-    response = test_client.get("/api/players")
-    assert response.status_code == 200
-    data = response.json()
-    assert isinstance(data, list)
+from backend.tests.conftest import db_failure_conn
 
 
-def test_create_player_db_failure(monkeypatch, test_client):
-    monkeypatch.setattr(db_module, "get_conn", _raise_db_failure)
-    response = test_client.post("/api/players", json={"name": "Fail", "class_": "Wizard", "level": 1})
+def test_player_crud_lifecycle(test_client):
+    created = test_client.post("/api/players", json={"name": "Lifecycle", "class_": "Wizard", "level": 2})
+    assert created.status_code == 201
+    player_id = created.json()["id"]
+
+    fetched = test_client.get(f"/api/players/{player_id}")
+    assert fetched.status_code == 200
+    assert fetched.json()["class_"] == "Wizard"
+
+    listed = test_client.get("/api/players")
+    assert listed.status_code == 200
+    assert next(p for p in listed.json() if p["name"] == "Lifecycle")["class_"] == "Wizard"
+
+    updated = test_client.put(f"/api/players/{player_id}", json={"name": "Lifecycle", "class_": "Wizard", "level": 5})
+    assert updated.status_code == 200
+    assert updated.json()["level"] == 5
+
+    assert test_client.delete(f"/api/players/{player_id}").status_code == 204
+    assert test_client.get(f"/api/players/{player_id}").status_code == 404
+
+
+@pytest.mark.parametrize("operation", ["create", "update", "delete"])
+def test_player_mutations_db_failure(monkeypatch, test_client, operation):
+    player_id = test_client.post("/api/players", json={"name": "DB Fail", "class_": "Wizard", "level": 2}).json()["id"]
+    monkeypatch.setattr(db_module, "get_conn", db_failure_conn)
+    if operation == "create":
+        response = test_client.post("/api/players", json={"name": "Fail", "class_": "Wizard", "level": 1})
+    elif operation == "update":
+        response = test_client.put(f"/api/players/{player_id}", json={"name": "DB Fail", "class_": "Wizard", "level": 5})
+    else:
+        response = test_client.delete(f"/api/players/{player_id}")
     assert response.status_code == 400
-
-
-def test_update_player_db_failure(monkeypatch, test_client):
-    response = test_client.post("/api/players", json={"name": "Update Fail", "class_": "Wizard", "level": 2})
-    player_id = response.json()["id"]
-    monkeypatch.setattr(db_module, "get_conn", _raise_db_failure)
-    response = test_client.put(f"/api/players/{player_id}", json={"name": "Update Fail", "class_": "Wizard", "level": 5})
-    assert response.status_code == 400
-
-
-def test_delete_player_db_failure(monkeypatch, test_client):
-    response = test_client.post("/api/players", json={"name": "Delete Fail", "class_": "Paladin"})
-    player_id = response.json()["id"]
-    monkeypatch.setattr(db_module, "get_conn", _raise_db_failure)
-    response = test_client.delete(f"/api/players/{player_id}")
-    assert response.status_code == 400
-
-
-def test_create_player(test_client):
-    """Test POST /api/players."""
-    new_player = {
-        "name": "Test Player",
-        "class_": "Fighter",
-        "level": 5,
-    }
-
-    response = test_client.post("/api/players", json=new_player)
-    assert response.status_code == 201
-    data = response.json()
-    assert data["name"] == "Test Player"
-    assert data["level"] == 5
-    assert data["id"] is not None
-
-
-def test_get_player(test_client):
-    """Test GET /api/players/{id}."""
-    # Create a player first
-    new_player = {
-        "name": "Retrieval Test",
-        "class_": "Rogue",
-        "level": 3,
-    }
-
-    response = test_client.post("/api/players", json=new_player)
-    player_id = response.json()["id"]
-
-    response = test_client.get(f"/api/players/{player_id}")
-    assert response.status_code == 200
-    player = response.json()
-    assert player["id"] == player_id
-    assert player["name"] == "Retrieval Test"
-    assert player["class_"] == "Rogue"
-
-
-def test_list_players_includes_class(test_client):
-    """GET /api/players must not silently drop the class column (regression: was returning None)."""
-    test_client.post("/api/players", json={"name": "List Class Test", "class_": "Wizard", "level": 4})
-
-    response = test_client.get("/api/players")
-    assert response.status_code == 200
-    player = next(p for p in response.json() if p["name"] == "List Class Test")
-    assert player["class_"] == "Wizard"
-
-
-def test_update_player(test_client):
-    """Test PUT /api/players/{id}."""
-    new_player = {
-        "name": "Update Test",
-        "class_": "Wizard",
-        "level": 2,
-    }
-
-    response = test_client.post("/api/players", json=new_player)
-    player_id = response.json()["id"]
-
-    update = {
-        "name": "Update Test",
-        "class_": "Wizard",
-        "level": 5,
-    }
-
-    response = test_client.put(f"/api/players/{player_id}", json=update)
-    assert response.status_code == 200
-    data = response.json()
-    assert data["level"] == 5
-
-
-def test_delete_player(test_client):
-    """Test DELETE /api/players/{id}."""
-    new_player = {
-        "name": "Delete Test",
-        "class_": "Paladin",
-    }
-
-    response = test_client.post("/api/players", json=new_player)
-    player_id = response.json()["id"]
-
-    response = test_client.delete(f"/api/players/{player_id}")
-    assert response.status_code == 204
-
-    response = test_client.get(f"/api/players/{player_id}")
-    assert response.status_code == 404
 
 
 def test_get_player_spells(test_client):
@@ -168,85 +83,33 @@ def test_get_player_spells(test_client):
         assert spellbook.json()[0]["spells"][0]["id"] == spell_id
 
 
-def test_create_player_with_abilities(test_client):
-    """Nested abilities dict must be preserved exactly on round-trip."""
+def test_create_player_preserves_structured_fields(test_client):
+    """Nested abilities/slots/ac/hp dicts must survive create, update, and get."""
     new_player = {
-        "name": "Ability Test",
+        "name": "Structured Test",
         "class_": "Fighter",
         "level": 3,
         "abilities": {"str": 16, "dex": 12, "con": 14, "int": 10, "wis": 8, "cha": 13},
-    }
-
-    response = test_client.post("/api/players", json=new_player)
-    assert response.status_code == 201
-    data = response.json()
-    assert data["abilities"] == new_player["abilities"]
-
-    response = test_client.get(f"/api/players/{data['id']}")
-    assert response.status_code == 200
-    assert response.json()["abilities"] == new_player["abilities"]
-
-
-def test_create_player_with_max_spell_slots(test_client):
-    """max_spell_slots dict must be preserved on round-trip."""
-    new_player = {
-        "name": "Slots Test",
-        "class_": "Wizard",
-        "level": 3,
         "max_spell_slots": {"1": 2, "2": 1},
     }
+    created = test_client.post("/api/players", json=new_player)
+    assert created.status_code == 201
+    player_id = created.json()["id"]
+    assert created.json()["abilities"] == new_player["abilities"]
+    assert created.json()["max_spell_slots"] == {"1": 2, "2": 1}
 
-    response = test_client.post("/api/players", json=new_player)
-    assert response.status_code == 201
-    data = response.json()
-    assert data["max_spell_slots"] == {"1": 2, "2": 1}
-
-    response = test_client.get(f"/api/players/{data['id']}")
-    assert response.status_code == 200
-    assert response.json()["max_spell_slots"] == {"1": 2, "2": 1}
-
-
-def test_update_player_ac_hp(test_client):
-    """ac/hp fields must survive an update round-trip."""
-    new_player = {
-        "name": "AC HP Test",
-        "class_": "Fighter",
-        "level": 3,
-    }
-
-    response = test_client.post("/api/players", json=new_player)
-    player_id = response.json()["id"]
-
-    update = {
-        "name": "AC HP Test",
-        "class_": "Fighter",
-        "level": 3,
+    updated = test_client.put(f"/api/players/{player_id}", json={
+        **new_player,
         "ac": {"value": 16, "note": "chain mail"},
         "hp": {"average": 28, "formula": "4d10+8"},
-    }
+    })
+    assert updated.status_code == 200
+    assert updated.json()["ac"] == {"value": 16, "note": "chain mail", "alternatives": []}
+    assert updated.json()["hp"] == {"average": 28, "formula": "4d10+8"}
 
-    response = test_client.put(f"/api/players/{player_id}", json=update)
-    assert response.status_code == 200
-    data = response.json()
-    assert data["ac"] == {**update["ac"], "alternatives": []}
-    assert data["hp"] == update["hp"]
-
-
-def test_get_player_weapons(test_client):
-    """Test GET /api/players/{id}/weapons."""
-    new_player = {
-        "name": "Warrior",
-        "class_": "Fighter",
-        "level": 5,
-    }
-
-    response = test_client.post("/api/players", json=new_player)
-    player_id = response.json()["id"]
-
-    response = test_client.get(f"/api/players/{player_id}/weapons")
-    assert response.status_code == 200
-    data = response.json()
-    assert isinstance(data, list)
+    fetched = test_client.get(f"/api/players/{player_id}")
+    assert fetched.json()["abilities"] == new_player["abilities"]
+    assert fetched.json()["max_spell_slots"] == {"1": 2, "2": 1}
 
 
 def test_get_player_detail(test_client):
@@ -338,134 +201,57 @@ def test_replace_player_spells_empty(test_client):
     assert get_resp.json() == []
 
 
-def test_replace_player_spells_not_found(test_client):
-    """Test PUT /api/players/{id}/spells returns 404 for nonexistent player."""
-    response = test_client.put(
-        "/api/players/99999/spells",
-        json={"spell_ids": [1]},
-    )
-    assert response.status_code == 404
+@pytest.mark.parametrize("kind", ["spells", "weapons"])
+def test_replace_player_assignments_lifecycle(test_client, kind):
+    """PUT /api/players/{id}/{kind} replaces assignments; empty clears them."""
+    player_id = test_client.post(
+        "/api/players", json={"name": f"Replace {kind}", "class_": "Wizard", "level": 5}
+    ).json()["id"]
 
-
-def test_replace_player_spells_duplicate(test_client):
-    """Test PUT /api/players/{id}/spells returns 400 for duplicate spell ids."""
-    new_player = {"name": "Dup Test", "class_": "Wizard", "level": 5}
-    response = test_client.post("/api/players", json=new_player)
-    player_id = response.json()["id"]
-
-    spells_resp = test_client.get("/api/spells?limit=1")
-    spells = spells_resp.json()
-    assert spells
-    spell_id = spells[0]["id"]
-
-    response = test_client.put(
-        f"/api/players/{player_id}/spells",
-        json={"spell_ids": [spell_id, spell_id]},
-    )
-    assert response.status_code == 400
-
-
-def test_replace_player_spells_invalid_spell(test_client):
-    """Test PUT /api/players/{id}/spells returns 400 for nonexistent spell id."""
-    new_player = {"name": "Bad Spell Test", "class_": "Wizard", "level": 5}
-    response = test_client.post("/api/players", json=new_player)
-    player_id = response.json()["id"]
+    resources = []
+    for n in (1, 2):
+        payload = {
+            "weapons": {"name": f"Replace Weapon {n}", "rarity": "common",
+                        "quick_rules": "Attack +{weapon_attack_bonus}, deal 1d8 slashing damage +{weapon_damage_bonus}."},
+        }.get(kind, {"name": f"Replace Spell {n}", "level": 1, "description": "Replace test.",
+                     "quick_rules": "Replace test.", "range": "Self", "duration": "Instantaneous",
+                     "concentration": False, "ritual": False})
+        created = test_client.post(f"/api/{kind}", json=payload)
+        assert created.status_code == 201, created.text
+        resources.append(created.json())
+    resource_ids = [r["id"] for r in resources]
 
     response = test_client.put(
-        f"/api/players/{player_id}/spells",
-        json={"spell_ids": [99999]},
-    )
-    assert response.status_code == 400
-
-
-def test_replace_player_weapons(test_client):
-    """Test PUT /api/players/{id}/weapons replaces all weapon assignments."""
-    new_player = {"name": "Weapon Replace", "class_": "Fighter", "level": 5}
-    response = test_client.post("/api/players", json=new_player)
-    player_id = response.json()["id"]
-
-    weapons_resp = test_client.get("/api/weapons?limit=500")
-    weapons = weapons_resp.json()
-    assert weapons
-    weapon_ids = [w["id"] for w in weapons]
-
-    response = test_client.put(
-        f"/api/players/{player_id}/weapons",
-        json={"weapon_ids": weapon_ids},
+        f"/api/players/{player_id}/{kind}",
+        json={f"{kind[:-1]}_ids": resource_ids},
     )
     assert response.status_code == 200
-    data = response.json()
-    assert len(data) == len(weapon_ids)
-    returned_ids = {w["id"] for w in data}
-    assert returned_ids == set(weapon_ids)
+    returned_ids = {r["id"] for r in response.json()}
+    assert returned_ids == set(resource_ids)
 
-    get_resp = test_client.get(f"/api/players/{player_id}/weapons")
-    assert get_resp.status_code == 200
-    get_ids = {w["id"] for w in get_resp.json()}
-    assert get_ids == set(weapon_ids)
+    get_resp = test_client.get(f"/api/players/{player_id}/{kind}")
+    assert {r["id"] for r in get_resp.json()} == set(resource_ids)
 
-
-def test_replace_player_weapons_empty(test_client):
-    """Test PUT /api/players/{id}/weapons with empty list removes all weapons."""
-    new_player = {"name": "Weapon Empty", "class_": "Fighter", "level": 5}
-    response = test_client.post("/api/players", json=new_player)
-    player_id = response.json()["id"]
-
-    weapons_resp = test_client.get("/api/weapons?limit=1")
-    weapons = weapons_resp.json()
-    if weapons:
-        test_client.post(f"/api/players/{player_id}/weapons/{weapons[0]['id']}")
-
-    response = test_client.put(
-        f"/api/players/{player_id}/weapons",
-        json={"weapon_ids": []},
-    )
-    assert response.status_code == 200
-    data = response.json()
-    assert data == []
-
-    get_resp = test_client.get(f"/api/players/{player_id}/weapons")
-    assert get_resp.json() == []
+    cleared = test_client.put(f"/api/players/{player_id}/{kind}", json={f"{kind[:-1]}_ids": []})
+    assert cleared.status_code == 200
+    assert cleared.json() == []
+    assert test_client.get(f"/api/players/{player_id}/{kind}").json() == []
 
 
-def test_replace_player_weapons_not_found(test_client):
-    """Test PUT /api/players/{id}/weapons returns 404 for nonexistent player."""
-    response = test_client.put(
-        "/api/players/99999/weapons",
-        json={"weapon_ids": [1]},
-    )
-    assert response.status_code == 404
+@pytest.mark.parametrize("kind", ["spells", "weapons"])
+def test_replace_player_assignments_error_paths(test_client, kind):
+    """PUT /api/players/{id}/{kind} rejects nonexistent player, duplicate ids, unknown ids."""
+    player = test_client.post("/api/players", json={"name": f"Err {kind}", "class_": "Wizard"}).json()
+    resource_id = test_client.get(f"/api/{kind}?limit=1").json()[0]["id"]
+    field = f"{kind[:-1]}_ids"
 
-
-def test_replace_player_weapons_duplicate(test_client):
-    """Test PUT /api/players/{id}/weapons returns 400 for duplicate weapon ids."""
-    new_player = {"name": "Weapon Dup", "class_": "Fighter", "level": 5}
-    response = test_client.post("/api/players", json=new_player)
-    player_id = response.json()["id"]
-
-    weapons_resp = test_client.get("/api/weapons?limit=1")
-    weapons = weapons_resp.json()
-    assert weapons
-    weapon_id = weapons[0]["id"]
-
-    response = test_client.put(
-        f"/api/players/{player_id}/weapons",
-        json={"weapon_ids": [weapon_id, weapon_id]},
-    )
-    assert response.status_code == 400
-
-
-def test_replace_player_weapons_invalid_weapon(test_client):
-    """Test PUT /api/players/{id}/weapons returns 400 for nonexistent weapon id."""
-    new_player = {"name": "Weapon Bad", "class_": "Fighter", "level": 5}
-    response = test_client.post("/api/players", json=new_player)
-    player_id = response.json()["id"]
-
-    response = test_client.put(
-        f"/api/players/{player_id}/weapons",
-        json={"weapon_ids": [99999]},
-    )
-    assert response.status_code == 400
+    assert test_client.put(f"/api/players/99999/{kind}", json={field: [1]}).status_code == 404
+    assert test_client.put(
+        f"/api/players/{player['id']}/{kind}", json={field: [resource_id, resource_id]}
+    ).status_code == 400
+    assert test_client.put(
+        f"/api/players/{player['id']}/{kind}", json={field: [99999]}
+    ).status_code == 400
 
 
 def test_delete_player_cleans_junction(test_client, test_db_path):

@@ -29,7 +29,7 @@
   color: var(--md-secondary);
 }
 
-.add-player-panel-close {
+.add-player-panel-header .add-player-panel-close {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -44,7 +44,7 @@
   touch-action: manipulation;
 }
 
-.add-player-panel-close:hover {
+.add-player-panel-header .add-player-panel-close:hover:not(:disabled) {
   color: var(--md-on-surface);
   background-color: var(--md-surface-4);
   border-color: var(--md-outline-variant);
@@ -56,7 +56,7 @@
   gap: 0.5rem;
 }
 
-.add-player-panel-cancel {
+.add-player-panel-actions .add-player-panel-cancel {
   min-height: 2.75rem;
   padding: 0 0.875rem;
   background-color: var(--md-surface-3);
@@ -68,11 +68,11 @@
   touch-action: manipulation;
 }
 
-.add-player-panel-cancel:hover {
+.add-player-panel-actions .add-player-panel-cancel:hover:not(:disabled) {
   background-color: var(--md-surface-4);
 }
 
-.add-player-panel-add {
+.add-player-panel-actions .add-player-panel-add {
   min-height: 2.75rem;
   padding: 0 1.25rem;
   background-color: var(--md-secondary);
@@ -85,11 +85,11 @@
   touch-action: manipulation;
 }
 
-.add-player-panel-add:disabled {
+.add-player-panel-actions .add-player-panel-add:disabled {
   opacity: 0.4;
   cursor: default;
 }
 
-.add-player-panel-add:hover:not(:disabled) {
+.add-player-panel-actions .add-player-panel-add:hover:not(:disabled) {
   filter: brightness(1.08);
 }

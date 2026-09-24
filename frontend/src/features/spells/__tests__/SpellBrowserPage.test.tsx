@@ -209,7 +209,7 @@ describe('SpellBrowserPage', () => {
     expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled()
   })
 
-  it('saves Manage Players with the atomic replacement payload', async () => {
+  it('keeps filtered-out assignments and saves the sorted atomic replacement payload', async () => {
     vi.spyOn(api, 'listSpells').mockResolvedValue(spells)
     vi.spyOn(api, 'listPlayers').mockResolvedValue(players)
     vi.spyOn(api, 'getSpellPlayers').mockResolvedValue([players[1]])
@@ -219,11 +219,16 @@ describe('SpellBrowserPage', () => {
     render(<SpellBrowserPage />)
     await screen.findByRole('heading', { name: /Cure Wounds/ })
     await user.click(screen.getByRole('button', { name: 'Manage Players' }))
+    const search = screen.getByRole('searchbox', { name: 'Search players' })
+    await user.type(search, 'Ari')
+    expect(screen.queryByRole('checkbox', { name: 'Mira' })).not.toBeInTheDocument()
     await user.click(await screen.findByRole('checkbox', { name: 'Ari' }))
-    await user.click(screen.getByRole('checkbox', { name: 'Mira' }))
+    await user.clear(search)
+    await user.type(search, 'zzzz')
+    expect(screen.getByText('No matches')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Save' }))
 
-    await waitFor(() => expect(replaceSpellPlayers).toHaveBeenCalledWith(2, [1]))
+    await waitFor(() => expect(replaceSpellPlayers).toHaveBeenCalledWith(2, [1, 2]))
     await waitFor(() => expect(screen.queryByRole('dialog', { name: /Manage Players for Cure Wounds/ })).not.toBeInTheDocument())
   })
 

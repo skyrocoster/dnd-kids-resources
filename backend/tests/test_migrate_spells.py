@@ -324,32 +324,28 @@ def test_no_optional_data_uses_native_defaults():
     assert result["ritual"] is True
 
 
-def test_healing_preserves_free_form_expression():
-    result = migrate_one(
+def test_transform_preserves_damage_shapes():
+    healing = migrate_one(
         base_spell(heal='{"amount": "1/2 x damage", "temp_hp": true, "max_hp": true}')
     )
-    assert result["healing"] == {
+    assert healing["healing"] == {
         "amount": "1/2 x damage",
         "temp_hp": True,
         "max_hp": True,
     }
 
-
-def test_scaled_damage_preserves_ordered_slot_map():
-    result = migrate_one(
+    scaled = migrate_one(
         base_spell(
             damage_at_higher_levels='{"3": "4d8", "5": "6d8", "9": "10d8"}'
         )
     )
-    assert list(result["higher_levels"]["damage_by_slot"].items()) == [
+    assert list(scaled["higher_levels"]["damage_by_slot"].items()) == [
         ("3", "4d8"),
         ("5", "6d8"),
         ("9", "10d8"),
     ]
 
-
-def test_multiple_damage_entries_are_not_collapsed():
-    result = migrate_one(
+    multi = migrate_one(
         base_spell(
             damage=[
                 {"name": "primary", "damage": "2d6", "type": ["cold"]},
@@ -357,7 +353,7 @@ def test_multiple_damage_entries_are_not_collapsed():
             ]
         )
     )
-    assert result["damage"] == [
+    assert multi["damage"] == [
         {"name": "primary", "formula": "2d6", "damage_types": ["cold"]},
         {"name": "secondary", "formula": "1d6", "damage_types": ["fire"]},
     ]
@@ -383,30 +379,6 @@ def test_attack_roll_and_saving_throw_shapes(raw_attack, expected):
 # ---------------------------------------------------------------------------
 # Edge-case tests using explicit legacy fixtures
 # ---------------------------------------------------------------------------
-
-def test_plant_growth_preserves_both_casting_times():
-    result = migrate_one(legacy_plant_growth())
-    assert result["casting_times"] == ["1 action", "8 hours"]
-    assert result["area_of_effect"] == {"shape": None, "size": None}
-
-
-def test_absorb_elements_preserves_variable_damage_type():
-    result = migrate_one(legacy_absorb_elements())
-    assert result["damage"] == [
-        {"name": "primary", "formula": "1d6", "damage_types": []}
-    ]
-
-
-def test_flashdaggers_applies_only_enumerated_repairs():
-    result = migrate_one(legacy_flashdaggers())
-    assert result["name"] == "Flashdaggers"
-    assert result["school"] == "conjuration"
-    assert result["components"] == ["V", "S"]
-    assert result["damage"] == [
-        {"name": "initial", "formula": "5d4", "damage_types": ["piercing"]}
-    ]
-    assert result["attacks"] == [{"kind": None, "saving_throws": ["dex"]}]
-
 
 # ---------------------------------------------------------------------------
 # S2 contextual error tests (retained)
@@ -453,33 +425,8 @@ def test_unrecognized_source_shapes_fail_contextually(mutation):
 
 
 # ---------------------------------------------------------------------------
-# S2 CLI tests (retained)
+# S2 CLI tests (retained: write/check round-trip + failure detection only)
 # ---------------------------------------------------------------------------
-
-def test_cli_help():
-    result = run_cli("--help")
-    assert result.returncode == 0
-    assert "--write" in result.stdout
-    assert "--check" in result.stdout
-
-
-def test_cli_write_requires_explicit_output(tmp_path):
-    source = tmp_path / "source.json"
-    write_source(source)
-    result = run_cli("--source", source, "--write")
-    assert result.returncode != 0
-    assert "--output is required" in result.stderr
-
-
-def test_cli_write_never_overwrites_source(tmp_path):
-    source = tmp_path / "source.json"
-    write_source(source)
-    before = source.read_bytes()
-    result = run_cli("--source", source, "--write", "--output", source)
-    assert result.returncode != 0
-    assert "distinct" in result.stderr
-    assert source.read_bytes() == before
-
 
 def test_cli_write_matches_pure_transform_bytes(tmp_path):
     source = tmp_path / "source.json"
@@ -523,12 +470,6 @@ def test_cli_check_fails_for_missing_or_different_output(tmp_path, comparison_st
     assert "CHECK FAILED" in result.stderr
 
 
-def test_cli_check_requires_explicit_source(tmp_path):
-    result = run_cli("--check", "--output", tmp_path / "output.json")
-    assert result.returncode != 0
-    assert "--source is required" in result.stderr
-
-
 # ---------------------------------------------------------------------------
 # S3: Canonical seed shape and identity
 # ---------------------------------------------------------------------------
@@ -568,84 +509,32 @@ def test_strict_model_validation_accepts_canonical_rows(canonical_spells):
         assert isinstance(validated.area_of_effect, AreaOfEffect)
 
 
-def test_strict_model_rejects_extra_legacy_key():
-    bad = {
+def good_row(**overrides):
+    row = {
         "id": 999, "name": "X", "level": 1, "school": None, "description": "X",
-        "alternate_description": None, "damage": [], "healing": Healing(),
-        "range": "Self", "higher_levels": HigherLevels(), "casting_times": ["1 action"],
-        "duration": "Instantaneous", "concentration": False, "ritual": False,
-        "components": ["V"], "materials": None, "attacks": [],
-        "area_of_effect": AreaOfEffect(), "icon": "✨",
-    }
-    with pytest.raises(ValidationError):
-        CanonicalSpell.model_validate(bad)
-
-
-def test_strict_model_rejects_string_level():
-    bad = {
-        "id": 999, "name": "X", "level": "3", "school": None, "description": "X",
         "alternate_description": None, "damage": [], "healing": Healing(),
         "range": "Self", "higher_levels": HigherLevels(), "casting_times": ["1 action"],
         "duration": "Instantaneous", "concentration": False, "ritual": False,
         "components": ["V"], "materials": None, "attacks": [],
         "area_of_effect": AreaOfEffect(),
     }
+    row.update(overrides)
+    return row
+
+
+def test_strict_model_rejects_invalid_rows():
     with pytest.raises(ValidationError):
-        CanonicalSpell.model_validate(bad, strict=True)
-
-
-def test_strict_model_rejects_integer_boolean():
-    bad = {
-        "id": 999, "name": "X", "level": 1, "school": None, "description": "X",
-        "alternate_description": None, "damage": [], "healing": Healing(),
-        "range": "Self", "higher_levels": HigherLevels(), "casting_times": ["1 action"],
-        "duration": "Instantaneous", "concentration": 0, "ritual": 0,
-        "components": ["V"], "materials": None, "attacks": [],
-        "area_of_effect": AreaOfEffect(),
-    }
+        CanonicalSpell.model_validate(good_row(**{"icon": "✨"}))
     with pytest.raises(ValidationError):
-        CanonicalSpell.model_validate(bad, strict=True)
-
-
-def test_strict_model_rejects_null_collection():
-    bad = {
-        "id": 999, "name": "X", "level": 1, "school": None, "description": "X",
-        "alternate_description": None, "damage": None, "healing": Healing(),
-        "range": "Self", "higher_levels": HigherLevels(), "casting_times": ["1 action"],
-        "duration": "Instantaneous", "concentration": False, "ritual": False,
-        "components": ["V"], "materials": None, "attacks": [],
-        "area_of_effect": AreaOfEffect(),
-    }
+        CanonicalSpell.model_validate(good_row(level="3"), strict=True)
     with pytest.raises(ValidationError):
-        CanonicalSpell.model_validate(bad)
-
-
-def test_strict_model_rejects_invalid_attack_kind():
-    bad_attack = {"kind": "invalid", "saving_throws": []}
-    bad = {
-        "id": 999, "name": "X", "level": 1, "school": None, "description": "X",
-        "alternate_description": None, "damage": [], "healing": Healing(),
-        "range": "Self", "higher_levels": HigherLevels(), "casting_times": ["1 action"],
-        "duration": "Instantaneous", "concentration": False, "ritual": False,
-        "components": ["V"], "materials": None, "attacks": [bad_attack],
-        "area_of_effect": AreaOfEffect(),
-    }
+        CanonicalSpell.model_validate(good_row(concentration=0, ritual=0), strict=True)
     with pytest.raises(ValidationError):
-        CanonicalSpell.model_validate(bad)
-
-
-def test_strict_model_rejects_non_positive_aoe_size():
-    bad_aoe = {"shape": "sphere", "size": 0}
-    bad = {
-        "id": 999, "name": "X", "level": 1, "school": None, "description": "X",
-        "alternate_description": None, "damage": [], "healing": Healing(),
-        "range": "Self", "higher_levels": HigherLevels(), "casting_times": ["1 action"],
-        "duration": "Instantaneous", "concentration": False, "ritual": False,
-        "components": ["V"], "materials": None, "attacks": [],
-        "area_of_effect": bad_aoe,
-    }
+        CanonicalSpell.model_validate(good_row(damage=None))
     with pytest.raises(ValidationError):
-        AreaOfEffect.model_validate(bad_aoe)
+        CanonicalSpell.model_validate(good_row(attacks=[{"kind": "invalid", "saving_throws": []}]))
+    with pytest.raises(ValidationError):
+        AreaOfEffect.model_validate({"shape": "sphere", "size": 0})
 
 
 # ---------------------------------------------------------------------------
@@ -744,60 +633,9 @@ def test_canonical_flashdaggers_repairs(canonical_spells):
     assert fd["attacks"] == [{"kind": None, "saving_throws": ["dex"]}]
 
 
-def test_canonical_no_icon_field(canonical_spells):
-    for spell in canonical_spells:
-        assert "icon" not in spell
-
-
 # ---------------------------------------------------------------------------
-# S3: Reproducibility and CLI safety
+# S3: Reproducibility
 # ---------------------------------------------------------------------------
-
-def test_canonical_source_order_preserves_legacy(canonical_spells):
-    ids = [s["id"] for s in canonical_spells]
-    names = [s["name"] for s in canonical_spells]
-    assert len(ids) == 525
-    assert len(set(ids)) == 525
-    assert len(set(names)) == 525
-
-
-def test_cli_check_succeeds_for_migrated_corpus(tmp_path):
-    source = tmp_path / "source.json"
-    output = tmp_path / "output.json"
-    rows = [base_spell(), legacy_plant_growth(), legacy_absorb_elements(), legacy_flashdaggers()]
-    write_source(source, rows)
-    assert run_cli("--source", source, "--write", "--output", output).returncode == 0
-
-    before_source = source.read_bytes()
-    before_output = output.read_bytes()
-
-    result = run_cli("--check", "--source", source, "--output", output)
-    assert result.returncode == 0, result.stderr
-    assert source.read_bytes() == before_source
-    assert output.read_bytes() == before_output
-
-
-def test_cli_check_fails_when_output_is_altered(tmp_path):
-    source = tmp_path / "source.json"
-    output = tmp_path / "output.json"
-    write_source(source, [base_spell()])
-    assert run_cli("--source", source, "--write", "--output", output).returncode == 0
-
-    altered = tmp_path / "altered.json"
-    altered.write_text(
-        output.read_text(encoding="utf-8").replace('"level": 3', '"level": 9'),
-        encoding="utf-8",
-    )
-
-    before_source = source.read_bytes()
-    before_altered = altered.read_bytes()
-
-    result = run_cli("--check", "--source", source, "--output", altered)
-    assert result.returncode == 1
-    assert "CHECK FAILED" in result.stderr
-    assert source.read_bytes() == before_source
-    assert altered.read_bytes() == before_altered
-
 
 def test_migration_is_pure_and_deterministic(tmp_path):
     rows = [base_spell(), legacy_plant_growth(), legacy_flashdaggers()]

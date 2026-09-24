@@ -1,7 +1,8 @@
-import { useEffect, useId, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import type { Condition } from '../../api/types'
-import { CheckboxField } from '../../components/form/CheckboxField'
+import { MultiSelectField } from '../../components/form/MultiSelectField'
 import { ChevronDownIcon, ChevronUpIcon } from '../../components/icons'
+import { Popover } from '../../components/Popover'
 import { isConditionSelected, mergeConditionOptions, toggleCondition } from './encounterForm'
 import './ConditionPicker.css'
 
@@ -19,60 +20,54 @@ function summaryText(selected: string[]): string {
 
 export function ConditionPicker({ conditions, selected, onChange }: ConditionPickerProps) {
   const [isOpen, setIsOpen] = useState(false)
-  const containerRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
-  const panelId = useId()
-
-  useEffect(() => {
-    if (!isOpen) return
-    const handlePointerDown = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setIsOpen(false)
-      }
-    }
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setIsOpen(false)
-        triggerRef.current?.focus()
-      }
-    }
-    document.addEventListener('mousedown', handlePointerDown)
-    document.addEventListener('keydown', handleKeyDown)
-    return () => {
-      document.removeEventListener('mousedown', handlePointerDown)
-      document.removeEventListener('keydown', handleKeyDown)
-    }
-  }, [isOpen])
 
   const options = mergeConditionOptions(conditions, selected)
+  const selectedOptions = options
+    .filter((option) => isConditionSelected(selected, option.value))
+    .map((option) => option.value)
+
+  const handleOptionsChange = (nextOptions: string[]) => {
+    const changedOption = options.find(
+      (option) => selectedOptions.includes(option.value) !== nextOptions.includes(option.value),
+    )
+    if (changedOption) onChange(toggleCondition(selected, changedOption.value))
+  }
 
   return (
-    <div className="condition-picker" ref={containerRef}>
+    <div className="condition-picker">
       <span className="form-label">Conditions</span>
-      <button
-        type="button"
-        ref={triggerRef}
-        className="condition-picker-trigger"
-        aria-expanded={isOpen}
-        aria-controls={panelId}
-        onClick={() => setIsOpen((v) => !v)}
-      >
-        <span className="condition-picker-summary">{summaryText(selected)}</span>
-        {isOpen ? <ChevronUpIcon size={18} aria-hidden /> : <ChevronDownIcon size={18} aria-hidden />}
-      </button>
-      {isOpen && (
-        <div id={panelId} className="condition-picker-panel" role="group" aria-label="Condition options">
-          {options.length === 0 && <p className="encounter-editor-empty">No conditions available.</p>}
-          {options.map((option) => (
-            <CheckboxField
-              key={option.value}
-              label={option.label}
-              checked={isConditionSelected(selected, option.value)}
-              onChange={() => onChange(toggleCondition(selected, option.value))}
-            />
-          ))}
-        </div>
-      )}
+      <Popover.Root open={isOpen} onOpenChange={(open) => setIsOpen(open)}>
+        <Popover.Trigger ref={triggerRef} className="condition-picker-trigger">
+          <span className="condition-picker-summary">{summaryText(selected)}</span>
+          {isOpen ? <ChevronUpIcon size={18} aria-hidden /> : <ChevronDownIcon size={18} aria-hidden />}
+        </Popover.Trigger>
+        <Popover.Portal>
+          <Popover.Positioner
+            className="condition-picker-positioner"
+            side="bottom"
+            align="start"
+            sideOffset={6}
+          >
+            <Popover.Popup
+              className="condition-picker-panel"
+              aria-label="Condition options"
+              finalFocus={(closeType) => (closeType === 'keyboard' ? triggerRef : false)}
+            >
+              {options.length === 0 ? (
+                <p className="encounter-editor-empty">No conditions available.</p>
+              ) : (
+                <MultiSelectField
+                  label="Condition options"
+                  options={options}
+                  selected={selectedOptions}
+                  onChange={handleOptionsChange}
+                />
+              )}
+            </Popover.Popup>
+          </Popover.Positioner>
+        </Popover.Portal>
+      </Popover.Root>
     </div>
   )
 }

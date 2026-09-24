@@ -119,14 +119,14 @@ export function EncounterEditor({ encounter, onClose, onSaved }: EncounterEditor
           <section className="encounter-editor-section">
             <div className="encounter-editor-section-header">
               <h3>Creatures</h3>
-              <button
+              <Button
                 type="button"
                 className="encounter-editor-add"
                 onClick={() => patch({ creatureRows: addEncounterCreatureRow(form.creatureRows) })}
               >
                 <PlusIcon size={16} aria-hidden />
                 Add Creature
-              </button>
+              </Button>
             </div>
             {form.creatureRows.length === 0 && <p className="encounter-editor-empty">No creatures added.</p>}
             {form.creatureRows.map((row) => (

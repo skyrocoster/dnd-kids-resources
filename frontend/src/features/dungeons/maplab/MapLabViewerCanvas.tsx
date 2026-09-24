@@ -1,5 +1,6 @@
 import type { ComponentProps, ReactNode } from 'react'
 import { MapCanvas } from '../../../map/MapCanvas'
+import { Button } from '../../../components/Button'
 import { FitIcon, ZoomInIcon, ZoomOutIcon } from '../../../components/icons'
 import { DoorBadgeLayer, DoorMarker } from './DoorMarker'
 import { PortalMarker } from './PortalMarker'
@@ -105,7 +106,21 @@ export function MapLabViewerCanvas({
         {allLayersHidden ? <p className="maplab-canvas-filtered-empty">All layers are hidden. Turn one on to see the map.</p> : (
           <MapCanvas viewBox={viewBox} bounds={bounds} zoom={zoom} ariaLabel={`Dungeon floor map — Floor ${activeZ}`} variant="neutral" onWheelZoom={onWheelZoom} onPanStart={onPanStart} onPanMove={onPanMove} onPanEnd={onPanEnd} onViewportResize={onViewportResize} panHint="Drag to pan. Pinch or scroll to zoom."
             bottomCenterSlot={viewerError ? <p className="maplab-viewer-status" role="status">{viewerError}</p> : null}
-            controlsSlot={<><button type="button" className="maplab-pill-button maplab-zoom-button" aria-label="Fit map to viewport" onClick={onFit}><FitIcon width={22} height={22} aria-hidden="true" /></button><div className="maplab-zoom-cluster"><button type="button" className="maplab-pill-button maplab-zoom-button" aria-label="Zoom in" onClick={onZoomIn}><ZoomInIcon width={22} height={22} aria-hidden="true" /></button><button type="button" className="maplab-pill-button maplab-zoom-button" aria-label="Zoom out" onClick={onZoomOut}><ZoomOutIcon width={22} height={22} aria-hidden="true" /></button></div></>}
+            controlsSlot={
+              <>
+                <Button type="button" className="maplab-pill-button maplab-zoom-button" aria-label="Fit map to viewport" onClick={onFit}>
+                  <FitIcon width={22} height={22} aria-hidden="true" />
+                </Button>
+                <div className="maplab-zoom-cluster">
+                  <Button type="button" className="maplab-pill-button maplab-zoom-button" aria-label="Zoom in" onClick={onZoomIn}>
+                    <ZoomInIcon width={22} height={22} aria-hidden="true" />
+                  </Button>
+                  <Button type="button" className="maplab-pill-button maplab-zoom-button" aria-label="Zoom out" onClick={onZoomOut}>
+                    <ZoomOutIcon width={22} height={22} aria-hidden="true" />
+                  </Button>
+                </div>
+              </>
+            }
           >
             <defs>
               <pattern id="feature-river-pattern" patternUnits="userSpaceOnUse" width={CELL_SIZE} height={CELL_SIZE}><rect width={CELL_SIZE} height={CELL_SIZE} fill="var(--feature-river-fill)" /><line x1={0} y1={CELL_SIZE * 0.35} x2={CELL_SIZE} y2={CELL_SIZE * 0.35} stroke="var(--md-arcane)" strokeWidth={1.5} strokeDasharray="4 3" /><line x1={0} y1={CELL_SIZE * 0.65} x2={CELL_SIZE} y2={CELL_SIZE * 0.65} stroke="var(--md-arcane)" strokeWidth={1.5} strokeDasharray="4 3" /></pattern>

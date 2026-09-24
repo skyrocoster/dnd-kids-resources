@@ -125,7 +125,7 @@ def _direct_healing_formula(amount: object) -> bool:
     return isinstance(amount, str) and re.fullmatch(r"[0-9 dD+\-]+", amount) is not None
 
 
-def test_seeded_spell_quick_rules_are_present_and_registered_token_valid():
+def test_seeded_spell_quick_rules_are_registered_and_concise():
     failures = []
     for spell in _seeded_spells():
         quick_rules = spell.get("quick_rules")
@@ -137,13 +137,6 @@ def test_seeded_spell_quick_rules_are_present_and_registered_token_valid():
         if not result["valid"]:
             failures.append(f"{spell['name']}: {result['errors']}")
 
-    assert failures == []
-
-
-def test_seeded_spell_quick_rules_stay_concise_and_single_line():
-    failures = []
-    for spell in _seeded_spells():
-        quick_rules = spell["quick_rules"]
         if len(quick_rules) > 320:
             failures.append(f"{spell['name']}: {len(quick_rules)} chars")
         if chr(10) in quick_rules or chr(13) in quick_rules:
@@ -190,7 +183,7 @@ def test_seeded_spell_quick_rules_match_direct_structured_facts():
     assert failures == []
 
 
-def test_seeded_weapon_quick_rules_are_present_and_registered_token_valid():
+def test_seeded_weapon_quick_rules_are_registered_and_concise():
     failures = []
     for weapon in _seeded_weapons():
         quick_rules = weapon.get("quick_rules")
@@ -202,13 +195,6 @@ def test_seeded_weapon_quick_rules_are_present_and_registered_token_valid():
         if not result["valid"]:
             failures.append(f"{weapon['name']}: {result['errors']}")
 
-    assert failures == []
-
-
-def test_seeded_weapon_quick_rules_stay_concise_and_single_line():
-    failures = []
-    for weapon in _seeded_weapons():
-        quick_rules = weapon["quick_rules"]
         if len(quick_rules) > 320:
             failures.append(f"{weapon['name']}: {len(quick_rules)} chars")
         if chr(10) in quick_rules or chr(13) in quick_rules:
@@ -663,11 +649,3 @@ def test_players_expose_class(real_client):
     assert players
     # At least one seeded player has a class set.
     assert any(p.get("class_") for p in players), "class column dropped for all players"
-
-
-
-
-
-
-
-

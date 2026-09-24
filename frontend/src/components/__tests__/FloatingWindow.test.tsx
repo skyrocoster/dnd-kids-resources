@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { FloatingWindow, clampSize } from '../FloatingWindow'
 import type { Size } from '../FloatingWindow'
 
@@ -99,6 +99,35 @@ describe('FloatingWindow resize', () => {
     expect(handle.tabIndex).toBe(0)
     expect(handle).toHaveAttribute('aria-orientation', 'horizontal')
     expect(handle.querySelector('.floating-window-resize-ridges')).toBeInTheDocument()
+  })
+
+  it('minimizes and restores without changing the window geometry, and closes on request', () => {
+    const onClose = vi.fn()
+    render(<FloatingWindow title="Test" storageKey="minimize-test" onClose={onClose}>content</FloatingWindow>)
+
+    const windowEl = screen.getByRole('dialog', { name: 'Test' })
+    const minimizeButton = screen.getByRole('button', { name: 'Minimize window' })
+    expect(minimizeButton).toHaveAttribute('type', 'button')
+    expect(windowEl.style.left).toBe('24px')
+    expect(windowEl.style.top).toBe('24px')
+    expect(windowEl.style.width).toBe('380px')
+    expect(windowEl.style.height).toBe('480px')
+
+    fireEvent.click(minimizeButton)
+
+    expect(screen.queryByText('content')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Restore window' })).toHaveAttribute('type', 'button')
+    expect(windowEl.style.left).toBe('24px')
+    expect(windowEl.style.top).toBe('24px')
+    expect(windowEl.style.width).toBe('380px')
+    expect(windowEl.style.height).toBe('')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Restore window' }))
+
+    expect(screen.getByText('content')).toBeInTheDocument()
+    expect(windowEl.style.height).toBe('480px')
+    fireEvent.click(screen.getByRole('button', { name: 'Close window' }))
+    expect(onClose).toHaveBeenCalledTimes(1)
   })
 
   it('keyboard arrow keys resize the window and persist', () => {

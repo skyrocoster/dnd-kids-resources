@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import type { PointerEvent as ReactPointerEvent } from 'react'
 import type { Monster } from '../../api/types'
+import { Button } from '../../components/Button'
 import { NextTurnIcon, PlusIcon } from '../../components/icons'
 import type { UseEncounterRunnerResult } from './useEncounterRunner'
 import { CombatantCard } from './CombatantCard'
@@ -81,10 +82,10 @@ export function EncounterRunnerBoard({ runner, compact = false }: EncounterRunne
     <div className={`encounter-runner-board ${compact ? 'compact' : ''}`}>
       <div className="encounter-runner-header">
         <span className="encounter-runner-round">Round {round}</span>
-        <button type="button" className="encounter-runner-next-turn" onClick={runner.nextTurn}>
+        <Button type="button" className="encounter-runner-next-turn" onClick={runner.nextTurn}>
           <NextTurnIcon size={18} aria-hidden />
           Next turn
-        </button>
+        </Button>
         <span
           className={`encounter-runner-sync encounter-runner-sync-${runner.syncStatus}`}
           role="status"
@@ -92,22 +93,22 @@ export function EncounterRunnerBoard({ runner, compact = false }: EncounterRunne
         >
           {SYNC_LABELS[runner.syncStatus]}
         </span>
-        <button
+        <Button
           type="button"
           className="encounter-runner-add-monster-toggle"
           onClick={() => setAddMonsterOpen((v) => !v)}
         >
           <PlusIcon size={16} aria-hidden />
           Add monster
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
           className="encounter-runner-add-monster-toggle"
           onClick={() => setAddPlayerOpen((v) => !v)}
         >
           <PlusIcon size={16} aria-hidden />
           Add player
-        </button>
+        </Button>
       </div>
 
       <div className="encounter-runner-body">

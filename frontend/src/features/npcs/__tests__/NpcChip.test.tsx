@@ -7,7 +7,9 @@ describe('NpcChip', () => {
   it('shows the resolved name from the roster', () => {
     const roster = new Map([[4, 'Elder Rosalind']])
     render(<NpcChip npcId={4} roster={roster} onClick={vi.fn()} />)
-    expect(screen.getByRole('button', { name: /Elder Rosalind/ })).toBeInTheDocument()
+    const button = screen.getByRole('button', { name: /Elder Rosalind/ })
+    expect(button).toBeInTheDocument()
+    expect(button).toHaveAttribute('type', 'button')
   })
 
   it('falls back to NPC #{id} only for an id not present in the roster', () => {

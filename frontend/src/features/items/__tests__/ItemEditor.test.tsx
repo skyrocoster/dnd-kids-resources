@@ -29,10 +29,10 @@ describe('ItemEditor', () => {
   })
 
   describe('Dialog contract', () => {
-    it('renders with the expected title and focuses the first field', () => {
+    it('renders with the expected title and focuses the first field', async () => {
       render(<ItemEditor onClose={() => {}} onSaved={() => {}} />)
       expect(screen.getByRole('dialog', { name: 'Add New Item' })).toBeInTheDocument()
-      expect(screen.getByLabelText('Name')).toHaveFocus()
+      await waitFor(() => expect(screen.getByLabelText('Name')).toHaveFocus())
     })
 
     it('uses the item title when editing', () => {

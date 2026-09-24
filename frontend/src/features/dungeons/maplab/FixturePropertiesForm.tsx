@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { listDungeons, listEncounters, listLootBundles, listNPCs } from '../../../api/client'
 import type { Dungeon, Encounter, LootBundle, NPC } from '../../../api/types'
+import { CheckboxField } from '../../../components/form/CheckboxField'
+import { SelectField } from '../../../components/form/SelectField'
+import { TextField } from '../../../components/form/TextField'
 import type { FieldSpec, FixtureTypeSpec } from './fixtureTypes'
 import { absoluteCells, floorsInLayout, markersAtCell, roomsOnZ, type MapCell, type MapLayout, type MapRoom } from '../../../model/maplabModel'
 
@@ -83,47 +86,39 @@ function FixtureField({
 
   if (field.type === 'boolean') {
     return (
-      <label className="maplab-field-row" htmlFor={inputId}>
-        <span>{field.label}</span>
-        <input
-          id={inputId}
-          type="checkbox"
+      <div className="maplab-field-row maplab-fixture-checkbox-row">
+        <CheckboxField
+          label={field.label}
           checked={Boolean(value)}
           onChange={(event) => onChange(field.key, event.target.checked)}
         />
-      </label>
+      </div>
     )
   }
 
   if (field.type === 'select') {
     return (
-      <label className="maplab-field-row" htmlFor={inputId}>
-        <span>{field.label}</span>
-        <select
-          id={inputId}
+      <div className="maplab-field-row">
+        <SelectField
+          label={field.label}
+          options={(field.options ?? []).map((option) => ({ value: option.value, label: option.label }))}
           value={typeof value === 'string' ? value : ''}
           onChange={(event) => onChange(field.key, event.target.value)}
-        >
-          {(field.options ?? []).map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-      </label>
+        />
+      </div>
     )
   }
 
   if (field.type === 'encounterPicker') {
-    return <EncounterPickerField inputId={inputId} field={field} value={value} onChange={onChange} />
+    return <EncounterPickerField field={field} value={value} onChange={onChange} />
   }
 
   if (field.type === 'npcPicker') {
-    return <NpcPickerField inputId={inputId} field={field} value={value} onChange={onChange} />
+    return <NpcPickerField field={field} value={value} onChange={onChange} />
   }
 
   if (field.type === 'lootBundlePicker') {
-    return <LootBundlePickerField inputId={inputId} field={field} value={value} onChange={onChange} />
+    return <LootBundlePickerField field={field} value={value} onChange={onChange} />
   }
 
   if (field.type === 'destinationPicker') {
@@ -154,28 +149,23 @@ function FixtureField({
   }
 
   return (
-    <label className="maplab-field-row" htmlFor={inputId}>
-      <span>{field.label}</span>
-      <input
-        id={inputId}
+    <div className="maplab-field-row">
+      <TextField
+        label={field.label}
         type="text"
         value={typeof value === 'string' ? value : ''}
         onChange={(event) => onChange(field.key, event.target.value)}
       />
-    </label>
+    </div>
   )
 }
 
-/** Attaches an encounter to a marker by title rather than a raw id — a custom picker (not the
- * generic `select`) because its options come from the live encounter list, not a static
- * `SelectOption[]`. */
+/** Attaches an encounter to a marker by title while preserving its live-list ID/null mapping. */
 function EncounterPickerField({
-  inputId,
   field,
   value,
   onChange,
 }: {
-  inputId: string
   field: FieldSpec
   value: unknown
   onChange: (key: string, value: unknown) => void
@@ -191,34 +181,26 @@ function EncounterPickerField({
   const selected = typeof value === 'number' ? String(value) : ''
 
   return (
-    <label className="maplab-field-row" htmlFor={inputId}>
-      <span>{field.label}</span>
-      <select
-        id={inputId}
+    <div className="maplab-field-row maplab-fixture-live-picker">
+      <SelectField
+        label={field.label}
+        options={[
+          { value: '', label: 'No encounter' },
+          ...encounters.map((encounter) => ({ value: String(encounter.id), label: encounter.title })),
+        ]}
         value={selected}
         onChange={(event) => onChange(field.key, event.target.value === '' ? null : Number(event.target.value))}
-      >
-        <option value="">No encounter</option>
-        {encounters.map((encounter) => (
-          <option key={encounter.id} value={encounter.id}>
-            {encounter.title}
-          </option>
-        ))}
-      </select>
-    </label>
+      />
+    </div>
   )
 }
 
-/** Attaches an NPC to a marker by name rather than a raw id — a custom picker (not the
- * generic `select`) because its options come from the live NPC list, not a static
- * `SelectOption[]`. */
+/** Attaches an NPC to a marker by name while preserving its live-list ID/null mapping. */
 function NpcPickerField({
-  inputId,
   field,
   value,
   onChange,
 }: {
-  inputId: string
   field: FieldSpec
   value: unknown
   onChange: (key: string, value: unknown) => void
@@ -234,21 +216,14 @@ function NpcPickerField({
   const selected = typeof value === 'number' ? String(value) : ''
 
   return (
-    <label className="maplab-field-row" htmlFor={inputId}>
-      <span>{field.label}</span>
-      <select
-        id={inputId}
+    <div className="maplab-field-row maplab-fixture-live-picker">
+      <SelectField
+        label={field.label}
+        options={[{ value: '', label: 'No NPC' }, ...npcs.map((npc) => ({ value: String(npc.id), label: npc.name }))]}
         value={selected}
         onChange={(event) => onChange(field.key, event.target.value === '' ? null : Number(event.target.value))}
-      >
-        <option value="">No NPC</option>
-        {npcs.map((npc) => (
-          <option key={npc.id} value={npc.id}>
-            {npc.name}
-          </option>
-        ))}
-      </select>
-    </label>
+      />
+    </div>
   )
 }
 
@@ -472,12 +447,10 @@ function GatewayDestinationPicker({
 /** Attaches a live loot bundle to a non-encounter prop, retaining its name as a display fallback
  * when the bundle is later unavailable. */
 function LootBundlePickerField({
-  inputId,
   field,
   value,
   onChange,
 }: {
-  inputId: string
   field: FieldSpec
   value: unknown
   onChange: (key: string, value: unknown) => void
@@ -513,20 +486,20 @@ function LootBundlePickerField({
   }
 
   return (
-    <label className="maplab-field-row maplab-loot-bundle-picker" htmlFor={inputId}>
-      <span className="maplab-loot-bundle-picker-label">{field.label}</span>
-      <select id={inputId} value={selected} onChange={(event) => handleChange(event.target.value)}>
-        <option value="">{status === 'loading' ? 'Loading loot bundles...' : 'No loot'}</option>
-        {bundles.map((bundle) => (
-          <option key={bundle.id} value={bundle.id}>
-            {bundle.name}
-          </option>
-        ))}
-      </select>
+    <div className="maplab-field-row maplab-loot-bundle-picker">
+      <SelectField
+        label={field.label}
+        options={[
+          { value: '', label: status === 'loading' ? 'Loading loot bundles...' : 'No loot' },
+          ...bundles.map((bundle) => ({ value: String(bundle.id), label: bundle.name })),
+        ]}
+        value={selected}
+        onChange={(event) => handleChange(event.target.value)}
+      />
       {status === 'error' && <span className="maplab-loot-bundle-picker-status" role="status">Unable to load loot bundles.</span>}
       {status === 'ready' && bundles.length === 0 && (
         <span className="maplab-loot-bundle-picker-status">No loot bundles available.</span>
       )}
-    </label>
+    </div>
   )
 }

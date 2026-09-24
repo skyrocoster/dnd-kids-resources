@@ -101,7 +101,7 @@ describe('NPCBrowserPage', () => {
 
     render(<NPCBrowserPage />)
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Emery Hart' })).toBeInTheDocument())
-    expect(screen.getByRole('tab', { name: 'NPCs' })).toBeInTheDocument()
+    expect(screen.getByText('NPCs', { selector: 'span' })).toBeInTheDocument()
   })
 
   it('Back to NPCs returns to the list without clearing selection', async () => {

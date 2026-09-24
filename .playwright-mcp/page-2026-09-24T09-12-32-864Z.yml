@@ -1,0 +1,65 @@
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - banner [ref=e5]:
+      - generic [ref=e8]:
+        - heading "Field Guide" [level=1] [ref=e9]
+        - paragraph [ref=e10]: Pick a chapter, then jump straight to the tools you need at the table.
+    - tablist "Content sections" [ref=e16]:
+      - tab "Reference" [selected] [ref=e17] [cursor=pointer]
+      - tab "Campaign" [ref=e22] [cursor=pointer]
+      - tab "Loot" [ref=e29] [cursor=pointer]
+  - generic [ref=e36]:
+    - navigation [ref=e37]:
+      - link "D&D Kids Resources" [ref=e38] [cursor=pointer]:
+        - /url: /
+      - button "Collapse navigation" [ref=e42] [cursor=pointer]
+      - generic [ref=e46]:
+        - heading "Reference" [level=2] [ref=e47]
+        - list [ref=e48]:
+          - listitem [ref=e49]:
+            - link "Spells" [ref=e50] [cursor=pointer]:
+              - /url: /spells
+          - listitem [ref=e55]:
+            - link "Monsters" [ref=e56] [cursor=pointer]:
+              - /url: /monsters
+          - listitem [ref=e63]:
+            - link "Weapons" [ref=e64] [cursor=pointer]:
+              - /url: /weapons
+      - generic [ref=e75]:
+        - heading "Campaign" [level=2] [ref=e76]
+        - list [ref=e77]:
+          - listitem [ref=e78]:
+            - link "Players" [ref=e79] [cursor=pointer]:
+              - /url: /players
+          - listitem [ref=e86]:
+            - link "NPCs" [ref=e87] [cursor=pointer]:
+              - /url: /npcs
+          - listitem [ref=e98]:
+            - link "The Loom" [ref=e99] [cursor=pointer]:
+              - /url: /loom
+          - listitem [ref=e108]:
+            - link "Encounters" [ref=e109] [cursor=pointer]:
+              - /url: /encounters
+          - listitem [ref=e113]:
+            - link "Dungeons" [ref=e114] [cursor=pointer]:
+              - /url: /dungeons
+      - generic [ref=e119]:
+        - heading "Loot" [level=2] [ref=e120]
+        - list [ref=e121]:
+          - listitem [ref=e122]:
+            - link "Items" [ref=e123] [cursor=pointer]:
+              - /url: /items
+          - listitem [ref=e128]:
+            - link "Loot Bundles" [ref=e129] [cursor=pointer]:
+              - /url: /loot
+    - main [ref=e136]:
+      - generic [ref=e138]:
+        - generic [ref=e139]: "Active tab: Reference"
+        - tabpanel "Reference" [ref=e144]:
+          - generic [ref=e145]:
+            - link "Spells" [ref=e146] [cursor=pointer]:
+              - /url: /spells
+            - link "Monsters" [ref=e151] [cursor=pointer]:
+              - /url: /monsters
+            - link "Weapons" [ref=e158] [cursor=pointer]:
+              - /url: /weapons

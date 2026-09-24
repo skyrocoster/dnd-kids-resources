@@ -14,9 +14,18 @@
 .manage-assignments-search-input {
   width: 100%;
   min-height: var(--control-height, 3rem);
-  padding: 0.5rem 0.75rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+}
+
+.manage-assignments-search .fc-input-frame {
+  min-height: var(--control-height, 3rem);
+  padding: 0 0.75rem;
   border-radius: 0.375rem;
-  border: 1px solid var(--md-outline-variant);
+  border-color: var(--md-outline-variant);
   background: var(--md-surface);
   color: var(--md-on-surface);
 }
@@ -37,21 +46,27 @@
   gap: 0.25rem;
 }
 
-.manage-assignments-item {
-  display: flex;
+.manage-assignments-list .form-field-checkbox {
   align-items: center;
   gap: 0.5rem;
   min-height: 48px;
+  margin: 0;
   padding: 0.35rem 0.6rem;
   border-radius: 0.375rem;
   cursor: pointer;
 }
 
-.manage-assignments-item:hover {
+.manage-assignments-list .form-field-checkbox:hover {
   background: var(--md-surface-2, var(--md-surface));
 }
 
-.manage-assignments-item input[type='checkbox'] {
+.manage-assignments-list .form-checkbox {
   width: 1.25rem;
   height: 1.25rem;
+  accent-color: auto;
+}
+
+.manage-assignments-list .form-label-checkbox {
+  color: inherit;
+  font: inherit;
 }

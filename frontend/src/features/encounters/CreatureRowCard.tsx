@@ -1,6 +1,9 @@
 import type { Condition, Monster } from '../../api/types'
+import { Disclosure } from '../../components/Disclosure'
 import { SelectField } from '../../components/form/SelectField'
 import { TextField } from '../../components/form/TextField'
+import { ToggleGroup } from '../../components/form/ToggleGroup'
+import { IconButton } from '../../components/IconButton'
 import { ChevronDownIcon, ChevronUpIcon, ShieldIcon, TrashIcon } from '../../components/icons'
 import { ConditionPicker } from './ConditionPicker'
 import type { EncounterCreatureRow } from './encounterForm'
@@ -29,23 +32,77 @@ export function CreatureRowCard({
   onChange,
   onRemove,
 }: CreatureRowCardProps) {
-  const panelId = `creature-row-panel-${row.id}`
   const displayName = row.name || 'Unnamed creature'
   const hpSummary = row.hpCurrent || row.hpMax ? `${row.hpCurrent || '?'} / ${row.hpMax || '?'} HP` : 'No HP set'
 
   return (
     <div className="creature-row-card" data-variant="monster">
       <div className="creature-row-header">
-        <button
-          type="button"
-          className="creature-row-toggle"
-          aria-expanded={!collapsed}
-          aria-controls={panelId}
-          onClick={onToggleCollapsed}
+        <Disclosure
+          className="creature-row-disclosure"
+          open={!collapsed}
+          onOpenChange={onToggleCollapsed}
+          summary={
+            <>
+              {collapsed ? <ChevronDownIcon size={18} aria-hidden /> : <ChevronUpIcon size={18} aria-hidden />}
+              <span className="creature-row-name">{displayName}</span>
+            </>
+          }
         >
-          {collapsed ? <ChevronDownIcon size={18} aria-hidden /> : <ChevronUpIcon size={18} aria-hidden />}
-          <span className="creature-row-name">{displayName}</span>
-        </button>
+          <div className="creature-row-body">
+            <div className="creature-row-identity">
+              <SelectField
+                label="Monster"
+                value={row.monsterId}
+                onChange={(e) => onPickMonster(e.target.value)}
+                options={monsters.map((m) => ({ value: String(m.id), label: m.name }))}
+                placeholder="Choose a monster…"
+              />
+              <TextField label="Display Name" value={row.name} onChange={(e) => onChange({ name: e.target.value })} />
+            </div>
+
+            <div className="creature-row-stats">
+              <TextField
+                label="HP Current"
+                type="number"
+                value={row.hpCurrent}
+                onChange={(e) => onChange({ hpCurrent: e.target.value })}
+              />
+              <TextField
+                label="HP Max"
+                type="number"
+                value={row.hpMax}
+                onChange={(e) => onChange({ hpMax: e.target.value })}
+              />
+              <TextField label="AC" type="number" value={row.ac} onChange={(e) => onChange({ ac: e.target.value })} />
+
+              <div className="creature-row-status-field">
+                <span className="form-label">Status</span>
+                <ToggleGroup
+                  className="creature-row-status-chips"
+                  aria-label="Status"
+                  multiple={false}
+                  value={[row.status]}
+                  options={STATUS_OPTIONS.map((status) => ({
+                    value: status,
+                    ariaLabel: status,
+                    label: <span className={`creature-row-status-chip creature-row-status-${status}`}>{status}</span>,
+                  }))}
+                  onValueChange={(values) => {
+                    const status = STATUS_OPTIONS.find((option) => option === values[0])
+                    if (status) onChange({ status })
+                  }}
+                />
+              </div>
+            </div>
+
+            <ConditionPicker
+              conditions={conditions}
+              selected={row.conditions}
+              onChange={(next) => onChange({ conditions: next })}
+            />
+          </div>
+        </Disclosure>
 
         <span className="creature-row-summary-stat">
           <ShieldIcon size={14} aria-hidden />
@@ -59,71 +116,14 @@ export function CreatureRowCard({
           </span>
         )}
 
-        <button
-          type="button"
+        <IconButton
+          label={`Remove ${displayName}`}
           className="creature-row-icon-button creature-row-remove"
           onClick={onRemove}
-          aria-label={`Remove ${displayName}`}
         >
           <TrashIcon size={18} aria-hidden />
-        </button>
+        </IconButton>
       </div>
-
-      {!collapsed && (
-        <div id={panelId} className="creature-row-body">
-          <div className="creature-row-identity">
-            <SelectField
-              label="Monster"
-              value={row.monsterId}
-              onChange={(e) => onPickMonster(e.target.value)}
-              options={monsters.map((m) => ({ value: String(m.id), label: m.name }))}
-              placeholder="Choose a monster…"
-            />
-            <TextField label="Display Name" value={row.name} onChange={(e) => onChange({ name: e.target.value })} />
-          </div>
-
-          <div className="creature-row-stats">
-            <TextField
-              label="HP Current"
-              type="number"
-              value={row.hpCurrent}
-              onChange={(e) => onChange({ hpCurrent: e.target.value })}
-            />
-            <TextField
-              label="HP Max"
-              type="number"
-              value={row.hpMax}
-              onChange={(e) => onChange({ hpMax: e.target.value })}
-            />
-            <TextField label="AC" type="number" value={row.ac} onChange={(e) => onChange({ ac: e.target.value })} />
-
-            <div className="creature-row-status-field">
-              <span className="form-label">Status</span>
-              <div className="creature-row-status-chips" role="group" aria-label="Status">
-                {STATUS_OPTIONS.map((status) => (
-                  <button
-                    key={status}
-                    type="button"
-                    className={`creature-row-status-chip creature-row-status-${status} ${
-                      row.status === status ? 'selected' : ''
-                    }`}
-                    onClick={() => onChange({ status })}
-                    aria-pressed={row.status === status}
-                  >
-                    {status}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <ConditionPicker
-            conditions={conditions}
-            selected={row.conditions}
-            onChange={(next) => onChange({ conditions: next })}
-          />
-        </div>
-      )}
     </div>
   )
 }

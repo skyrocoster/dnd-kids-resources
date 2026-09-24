@@ -7,21 +7,11 @@ PUT/update round-trips, the player<->spell/weapon assignment lifecycle, and the
 """
 
 import sqlite3
+import pytest
+
 import backend.app.db as db_module
 
-from unittest.mock import MagicMock
-
-
-def _raise_db_failure():
-    conn = MagicMock()
-    conn.commit.side_effect = Exception("Simulated database failure")
-    return conn
-
-
-def _mock_db_failure():
-    conn = MagicMock()
-    conn.commit.side_effect = Exception("Simulated database failure")
-    return conn
+from backend.tests.conftest import db_failure_conn
 
 
 # ---------------------------------------------------------------------------
@@ -66,38 +56,15 @@ def test_player_weapon_assignment_lifecycle(test_client):
     assert test_client.delete(f"/api/players/{pid}/weapons/{weapon_id}").status_code == 204
 
 
-def test_add_spell_to_player_db_failure(monkeypatch, test_client):
-    pid = _make_player(test_client, "Spell Fail")
-    spell_id = test_client.get("/api/spells").json()[0]["id"]
-    monkeypatch.setattr(db_module, "get_conn", _raise_db_failure)
-    response = test_client.post(f"/api/players/{pid}/spells/{spell_id}")
-    assert response.status_code == 400
-
-
-def test_remove_spell_from_player_db_failure(monkeypatch, test_client):
-    pid = _make_player(test_client, "Spell Remove Fail")
-    spell_id = test_client.get("/api/spells").json()[0]["id"]
-    test_client.post(f"/api/players/{pid}/spells/{spell_id}")
-    monkeypatch.setattr(db_module, "get_conn", _raise_db_failure)
-    response = test_client.delete(f"/api/players/{pid}/spells/{spell_id}")
-    assert response.status_code == 400
-
-
-def test_add_weapon_to_player_db_failure(monkeypatch, test_client):
-    pid = _make_player(test_client, "Weapon Fail")
-    weapon_id = test_client.get("/api/weapons").json()[0]["id"]
-    monkeypatch.setattr(db_module, "get_conn", _raise_db_failure)
-    response = test_client.post(f"/api/players/{pid}/weapons/{weapon_id}")
-    assert response.status_code == 400
-
-
-def test_remove_weapon_from_player_db_failure(monkeypatch, test_client):
-    pid = _make_player(test_client, "Weapon Remove Fail")
-    weapon_id = test_client.get("/api/weapons").json()[0]["id"]
-    test_client.post(f"/api/players/{pid}/weapons/{weapon_id}")
-    monkeypatch.setattr(db_module, "get_conn", _raise_db_failure)
-    response = test_client.delete(f"/api/players/{pid}/weapons/{weapon_id}")
-    assert response.status_code == 400
+@pytest.mark.parametrize(("kind", "remove"), [("spells", False), ("spells", True), ("weapons", False), ("weapons", True)])
+def test_player_assignment_db_failure(monkeypatch, test_client, kind, remove):
+    pid = _make_player(test_client, f"{kind} Fail")
+    resource_id = test_client.get(f"/api/{kind}").json()[0]["id"]
+    if remove:
+        test_client.post(f"/api/players/{pid}/{kind}/{resource_id}")
+    monkeypatch.setattr(db_module, "get_conn", db_failure_conn)
+    method = test_client.delete if remove else test_client.post
+    assert method(f"/api/players/{pid}/{kind}/{resource_id}").status_code == 400
 
 
 def test_player_assignment_404s(test_client):
@@ -152,24 +119,27 @@ def test_weapon_update_round_trip(test_client):
     assert data["attack"][0]["damage"] == "1d6"
 
 
-def test_weapon_update_db_failure(monkeypatch, test_client):
-    import backend.app.db as db_module
-    wid = test_client.post(
-        "/api/weapons",
-        json={
-            "name": "Upgradeable",
-            "rarity": "common",
-            "quick_rules": "Attack +{weapon_attack_bonus}, deal 1d8 slashing damage +{weapon_damage_bonus}.",
-        },
-    ).json()["id"]
-    monkeypatch.setattr(db_module, "get_conn", _mock_db_failure)
-    resp = test_client.put(
-        f"/api/weapons/{wid}",
-        json={"name": "Upgraded", "rarity": "rare", "property": ["F"],
-              "attack": [{"type": "ranged", "damage": "1d6", "damage_type": "piercing"}],
-              "quick_rules": "Attack +{weapon_attack_bonus}, deal 1d6 piercing damage +{weapon_damage_bonus}."},
-    )
-    assert resp.status_code == 400
+@pytest.mark.parametrize(
+    ("resource", "seed", "update"),
+    [
+        ("weapons",
+         {"name": "Mutable Resource", "rarity": "common",
+          "quick_rules": "Attack +{weapon_attack_bonus}, deal 1d8 slashing damage +{weapon_damage_bonus}."},
+         {"name": "Mutated Resource", "rarity": "rare",
+          "quick_rules": "Attack +{weapon_attack_bonus}, deal 1d8 slashing damage +{weapon_damage_bonus}."}),
+        ("npcs", {"name": "Mutable Resource", "race": "Human"},
+         {"name": "Mutated Resource", "race": "Dwarf", "notes": "grumpy"}),
+        ("encounters", {"title": "Mutable Resource", "creatures": []},
+         {"title": "Mutated Resource", "creatures": []}),
+        ("dungeons", {"title": "Mutable Resource", "data": {"rooms": []}},
+         {"title": "Mutated Resource", "data": {"rooms": []}}),
+    ],
+)
+def test_update_db_failure(monkeypatch, test_client, resource, seed, update):
+    """PUT maps DB commit failures to 400 on every resource."""
+    rid = test_client.post(f"/api/{resource}", json=seed).json()["id"]
+    monkeypatch.setattr(db_module, "get_conn", db_failure_conn)
+    assert test_client.put(f"/api/{resource}/{rid}", json=update).status_code == 400
 
 
 def test_weapon_get_by_name(test_client):
@@ -242,23 +212,6 @@ def test_npc_update_round_trip(test_client):
     assert data["appearance"] == {"beard": "braided"}
 
 
-def test_npc_update_db_failure(monkeypatch, test_client):
-    import backend.app.db as db_module
-    nid = test_client.post("/api/npcs", json={"name": "Mutable NPC", "race": "Human"}).json()["id"]
-    monkeypatch.setattr(db_module, "get_conn", _mock_db_failure)
-    resp = test_client.put(
-        f"/api/npcs/{nid}",
-        json={
-            "name": "Mutable NPC",
-            "race": "Dwarf",
-            "hp": {"average": 20},
-            "abilities": {"str": 15},
-            "notes": "grumpy",
-        },
-    )
-    assert resp.status_code == 400
-
-
 def test_npc_404s(test_client):
     assert test_client.get("/api/npcs/99999").status_code == 404
     assert test_client.put("/api/npcs/99999", json={"name": "X"}).status_code == 404
@@ -285,22 +238,6 @@ def test_encounter_update_round_trip(test_client):
     data = resp.json()
     assert data["title"] == "Updated Encounter"
     assert data["creatures"][0]["name"] == "Goblin"
-
-
-def test_encounter_update_db_failure(monkeypatch, test_client):
-    import backend.app.db as db_module
-    eid = test_client.post(
-        "/api/encounters", json={"title": "Mutable Encounter", "creatures": []}
-    ).json()["id"]
-    monkeypatch.setattr(db_module, "get_conn", _mock_db_failure)
-    resp = test_client.put(
-        f"/api/encounters/{eid}",
-        json={"title": "Updated Encounter",
-              "creatures": [{"creature_id": 1, "source_kind": "monster",
-                             "name": "Goblin", "hp_current": 7,
-                             "hp_max": 7, "ac": 15, "status": "alive", "conditions": []}]},
-    )
-    assert resp.status_code == 400
 
 
 def test_encounter_404s(test_client):
@@ -364,19 +301,6 @@ def test_dungeon_update_round_trip(test_client):
     data = resp.json()
     assert data["title"] == "Updated Dungeon"
     assert data["data"]["rooms"][0]["name"] == "Hall"
-
-
-def test_dungeon_update_db_failure(monkeypatch, test_client):
-    import backend.app.db as db_module
-    did = test_client.post(
-        "/api/dungeons", json={"title": "Mutable Dungeon", "data": {"rooms": []}}
-    ).json()["id"]
-    monkeypatch.setattr(db_module, "get_conn", _mock_db_failure)
-    resp = test_client.put(
-        f"/api/dungeons/{did}",
-        json={"title": "Updated Dungeon", "data": {"rooms": [{"id": 1, "name": "Hall"}]}},
-    )
-    assert resp.status_code == 400
 
 
 def test_dungeon_detail_and_404s(test_client):

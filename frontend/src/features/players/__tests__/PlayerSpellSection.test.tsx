@@ -54,7 +54,7 @@ describe('PlayerSpellSection', () => {
     ]
     render(<PlayerSpellSection player={makePlayer()} spells={spells} />)
 
-    const headings = screen.getAllByRole('heading')
+    const headings = screen.getAllByRole('heading', { level: 4 })
     expect(headings).toHaveLength(3)
     expect(headings[0]).toHaveTextContent('Cantrip')
     expect(headings[1]).toHaveTextContent('1st Level')
@@ -93,6 +93,35 @@ describe('PlayerSpellSection', () => {
 
     await user.click(toggle)
     expect(screen.queryByText('A bright streak flashes from your finger')).not.toBeInTheDocument()
+  })
+
+  it('keeps multiple spell details open independently with keyboard activation', async () => {
+    const user = userEvent.setup()
+    const spells = [
+      makeSpell({ id: 1, name: 'Fireball', description: 'Fireball details', level: 3 }),
+      makeSpell({ id: 2, name: 'Lightning Bolt', description: 'Lightning Bolt details', level: 3 }),
+    ]
+    render(<PlayerSpellSection player={makePlayer()} spells={spells} />)
+
+    const fireballToggle = screen.getByRole('button', { name: 'Fireball', expanded: false })
+    await user.tab()
+    expect(fireballToggle).toHaveFocus()
+    await user.keyboard(' ')
+
+    const lightningToggle = screen.getByRole('button', { name: 'Lightning Bolt', expanded: false })
+    await user.tab()
+    expect(lightningToggle).toHaveFocus()
+    await user.keyboard('{Enter}')
+
+    expect(screen.getByRole('button', { name: 'Fireball', expanded: true })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Lightning Bolt', expanded: true })).toBeInTheDocument()
+    expect(screen.getByText('Fireball details')).toBeInTheDocument()
+    expect(screen.getByText('Lightning Bolt details')).toBeInTheDocument()
+
+    await user.tab({ shift: true })
+    await user.keyboard('{Enter}')
+    expect(screen.getByRole('button', { name: 'Fireball', expanded: false })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Lightning Bolt', expanded: true })).toBeInTheDocument()
   })
 
   it('shows alternate_description and higher_levels when expanded', async () => {

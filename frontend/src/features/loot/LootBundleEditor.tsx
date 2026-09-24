@@ -83,8 +83,8 @@ export function LootBundleEditor({ bundle, onClose, onSaved }: LootBundleEditorP
           <div className="loot-editor-section-header">
             <h3>Contents</h3>
             <div className="loot-editor-add-actions">
-              <button type="button" onClick={() => setPicker(picker === 'item' ? null : 'item')}><PlusIcon size={16} aria-hidden /> Add Item</button>
-              <button type="button" onClick={() => setPicker(picker === 'weapon' ? null : 'weapon')}><PlusIcon size={16} aria-hidden /> Add Weapon</button>
+              <Button type="button" variant="secondary" onClick={() => setPicker(picker === 'item' ? null : 'item')}><PlusIcon size={16} aria-hidden /> Add Item</Button>
+              <Button type="button" variant="secondary" onClick={() => setPicker(picker === 'weapon' ? null : 'weapon')}><PlusIcon size={16} aria-hidden /> Add Weapon</Button>
             </div>
           </div>
           {picker === 'item' && <AddItemPanel onAdd={(item) => dispatch({ type: 'addEntry', entry: itemToLootEntry(item) })} onClose={() => setPicker(null)} />}
@@ -97,8 +97,8 @@ export function LootBundleEditor({ bundle, onClose, onSaved }: LootBundleEditorP
                   <EntryIcon size={20} aria-hidden="true" />
                   <span className="loot-editor-entry-name">{entry.name}</span>
                   <span className="loot-editor-entry-value">{entry.value_gp == null ? 'Value pending' : formatGp(entry.value_gp)}</span>
-                  <label>Quantity <input type="number" min="1" step="1" value={entry.quantity} onChange={(event) => dispatch({ type: 'setQuantity', index, quantity: Number(event.target.value) })} /></label>
-                  <button type="button" className="loot-editor-remove" onClick={() => dispatch({ type: 'removeEntry', index })}>Remove</button>
+                  <TextField label="Quantity" type="number" min="1" step="1" value={entry.quantity} onChange={(event) => dispatch({ type: 'setQuantity', index, quantity: Number(event.target.value) })} />
+                  <Button type="button" variant="secondary" className="btn btn--secondary btn--normal loot-editor-remove" onClick={() => dispatch({ type: 'removeEntry', index })}>Remove</Button>
                 </li>
               })}
             </ul>

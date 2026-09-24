@@ -188,7 +188,7 @@ describe('DungeonBrowserPage', () => {
       </MemoryRouter>,
     )
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Greenhouse' })).toBeInTheDocument())
-    expect(screen.getByRole('tab', { name: 'Dungeons' })).toBeInTheDocument()
+    expect(screen.getByText('Dungeons', { selector: 'span' })).toBeInTheDocument()
   })
 
   it('Back to dungeons returns to the list without clearing selection', async () => {

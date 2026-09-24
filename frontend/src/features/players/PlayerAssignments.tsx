@@ -1,6 +1,8 @@
 import { useId, useMemo, useState } from 'react'
 import { Button } from '../../components/Button'
 import { Dialog } from '../../components/Dialog'
+import { CheckboxField } from '../../components/form/CheckboxField'
+import { TextInput } from '../../components/form/TextInput'
 import './PlayerAssignments.css'
 
 export interface ManageAssignmentsDialogProps<T> {
@@ -88,7 +90,7 @@ export function ManageAssignmentsDialog<T>({
         <label htmlFor={searchId} className="visually-hidden">
           {searchPlaceholder}
         </label>
-        <input
+        <TextInput
           id={searchId}
           type="search"
           className="manage-assignments-search-input"
@@ -103,18 +105,13 @@ export function ManageAssignmentsDialog<T>({
         <ul className="manage-assignments-list">
           {filtered.map((item) => {
             const id = getId(item)
-            const checkboxId = `${searchId}-${id}`
             return (
               <li key={id}>
-                <label htmlFor={checkboxId} className="manage-assignments-item">
-                  <input
-                    id={checkboxId}
-                    type="checkbox"
+                <CheckboxField
+                    label={getLabel(item)}
                     checked={staged.has(id)}
                     onChange={() => toggle(id)}
                   />
-                  {getLabel(item)}
-                </label>
               </li>
             )
           })}

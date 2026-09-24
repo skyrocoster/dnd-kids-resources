@@ -2,6 +2,7 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { absoluteCells, floorsInLayout, layoutBounds, paddedBounds, roomsOnZ } from '../model/maplabModel'
 import type { KidMapLayout } from './curtain'
 import type { Bounds, MapLayout } from '../model/maplabModel'
+import { IconButton } from '../components/IconButton'
 import { FloorPicker } from './FloorPicker'
 import { useMapCanvasZoom, BASE_PX_PER_UNIT } from '../map/useMapCanvasZoom'
 import type { ViewportSize, ZoomState } from '../map/useMapCanvasZoom'
@@ -219,17 +220,18 @@ export function PlayerMapRenderer({ layout, openDoorIds, partyRoomId }: {
       />
       <FloorPicker floors={floors} selectedZ={selectedZ} onSelectFloor={setSelectedZ} />
       {partyRoomInfo && (
-        <button
+        <IconButton
+          type="button"
+          label="Return to party room"
           className="player-map-return-btn"
           onClick={handleReturnToParty}
-          aria-label="Return to party room"
         >
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M3 12a9 9 0 1 0 9-9 9 9 0 0 0-9 9" />
             <path d="M3 3v6h6" />
             <path d="M3 12h6" />
           </svg>
-        </button>
+        </IconButton>
       )}
     </>
   )

@@ -1,56 +1,13 @@
 """Tests for CRUD endpoints (weapons, NPCs, encounters, dungeons)."""
 
-from unittest.mock import MagicMock
+import pytest
+
+import backend.app.db as db_module
+
+from backend.tests.conftest import db_failure_conn
 
 
-def _mock_db_failure():
-    """Return a mock connection whose commit() raises."""
-    conn = MagicMock()
-    conn.commit.side_effect = Exception("Simulated database failure")
-    return conn
-
-
-# Weapons
-def test_list_weapons(test_client):
-    """Test GET /api/weapons."""
-    response = test_client.get("/api/weapons")
-    assert response.status_code == 200
-    data = response.json()
-    assert isinstance(data, list)
-
-
-def test_create_weapon(test_client):
-    """Test POST /api/weapons."""
-    weapon = {
-        "name": "Test Sword",
-        "rarity": "uncommon",
-        "quick_rules": "Attack +{weapon_attack_bonus}, deal 1d8 slashing damage +{weapon_damage_bonus}.",
-    }
-
-    response = test_client.post("/api/weapons", json=weapon)
-    assert response.status_code == 201
-    data = response.json()
-    assert data["name"] == "Test Sword"
-
-
-def test_weapon_crud(test_client):
-    """Test full weapon CRUD."""
-    weapon = {
-        "name": "CRUD Test",
-        "rarity": "rare",
-        "quick_rules": "Attack +{weapon_attack_bonus}, deal 1d8 slashing damage +{weapon_damage_bonus}.",
-    }
-    response = test_client.post("/api/weapons", json=weapon)
-    assert response.status_code == 201
-    weapon_id = response.json()["id"]
-
-    response = test_client.get(f"/api/weapons/{weapon_id}")
-    assert response.status_code == 200
-
-    response = test_client.delete(f"/api/weapons/{weapon_id}")
-    assert response.status_code == 204
-
-
+# Weapons (list/create/delete covered in test_weapons.py; seed JSON locks live here)
 def test_weapon_seed_data_has_attack_and_property(test_client):
     """Seeded weapon should round-trip its structured attack/property JSON fields."""
     response = test_client.get("/api/weapons")
@@ -78,47 +35,7 @@ def test_create_weapon_with_structured_fields(test_client):
     assert data["attack"][0]["damage"] == "1d12"
 
 
-def test_create_weapon_db_failure(monkeypatch, test_client):
-    """Test POST /api/weapons when DB commit fails."""
-    import backend.app.db as db_module
-    monkeypatch.setattr(db_module, "get_conn", _mock_db_failure)
-    response = test_client.post(
-        "/api/weapons",
-        json={
-            "name": "Fail",
-            "rarity": "common",
-            "quick_rules": "Attack +{weapon_attack_bonus}, deal 1d8 slashing damage +{weapon_damage_bonus}.",
-        },
-    )
-    assert response.status_code == 400
-
-
-def test_delete_weapon_db_failure(monkeypatch, test_client):
-    """Test DELETE /api/weapons when DB commit fails."""
-    response = test_client.post(
-        "/api/weapons",
-        json={
-            "name": "FailDelete",
-            "rarity": "common",
-            "quick_rules": "Attack +{weapon_attack_bonus}, deal 1d8 slashing damage +{weapon_damage_bonus}.",
-        },
-    )
-    weapon_id = response.json()["id"]
-    import backend.app.db as db_module
-    monkeypatch.setattr(db_module, "get_conn", _mock_db_failure)
-    response = test_client.delete(f"/api/weapons/{weapon_id}")
-    assert response.status_code == 400
-
-
 # NPCs
-def test_list_npcs(test_client):
-    """Test GET /api/npcs."""
-    response = test_client.get("/api/npcs")
-    assert response.status_code == 200
-    data = response.json()
-    assert isinstance(data, list)
-
-
 def test_create_npc(test_client):
     """Test POST /api/npcs with name-only statblock defaults."""
     npc = {"name": "Test NPC"}
@@ -207,43 +124,7 @@ def test_npc_full_columns_round_trip(test_client):
     assert data["appearance"] == {"hair_colour": "silver"}
 
 
-def test_create_npc_db_failure(monkeypatch, test_client):
-    """Test POST /api/npcs when DB commit fails."""
-    import backend.app.db as db_module
-    monkeypatch.setattr(db_module, "get_conn", _mock_db_failure)
-    response = test_client.post("/api/npcs", json={"name": "Fail"})
-    assert response.status_code == 400
-
-
-def test_delete_npc_db_failure(monkeypatch, test_client):
-    """Test DELETE /api/npcs when DB commit fails."""
-    response = test_client.post("/api/npcs", json={"name": "FailDelete"})
-    npc_id = response.json()["id"]
-    import backend.app.db as db_module
-    monkeypatch.setattr(db_module, "get_conn", _mock_db_failure)
-    response = test_client.delete(f"/api/npcs/{npc_id}")
-    assert response.status_code == 400
-
-
 # Encounters
-def test_list_encounters(test_client):
-    """Test GET /api/encounters."""
-    response = test_client.get("/api/encounters")
-    assert response.status_code == 200
-    data = response.json()
-    assert isinstance(data, list)
-
-
-def test_create_encounter(test_client):
-    """Test POST /api/encounters."""
-    encounter = {"title": "Test Encounter", "creatures": []}
-
-    response = test_client.post("/api/encounters", json=encounter)
-    assert response.status_code == 201
-    data = response.json()
-    assert data["title"] == "Test Encounter"
-
-
 def test_encounter_crud(test_client):
     """Test full encounter CRUD."""
     encounter = {"title": "Delete Test", "creatures": []}
@@ -286,47 +167,7 @@ def test_encounter_creatures_round_trip_structured_units(test_client):
     assert response.json()["creatures"][0]["name"] == "Goblin"
 
 
-def test_create_encounter_db_failure(monkeypatch, test_client):
-    """Test POST /api/encounters when DB commit fails."""
-    import backend.app.db as db_module
-    monkeypatch.setattr(db_module, "get_conn", _mock_db_failure)
-    response = test_client.post("/api/encounters", json={"title": "Fail", "creatures": []})
-    assert response.status_code == 400
-
-
-def test_delete_encounter_db_failure(monkeypatch, test_client):
-    """Test DELETE /api/encounters when DB commit fails."""
-    response = test_client.post("/api/encounters", json={"title": "FailDelete", "creatures": []})
-    encounter_id = response.json()["id"]
-    import backend.app.db as db_module
-    monkeypatch.setattr(db_module, "get_conn", _mock_db_failure)
-    response = test_client.delete(f"/api/encounters/{encounter_id}")
-    assert response.status_code == 400
-
-
 # Dungeons
-def test_list_dungeons(test_client):
-    """Test GET /api/dungeons."""
-    response = test_client.get("/api/dungeons")
-    assert response.status_code == 200
-    data = response.json()
-    assert isinstance(data, list)
-
-
-def test_create_dungeon(test_client):
-    """Test POST /api/dungeons."""
-    dungeon = {
-        "title": "Test Dungeon",
-        "data": {"rooms": [{"id": 1, "name": "Entrance"}]},
-    }
-
-    response = test_client.post("/api/dungeons", json=dungeon)
-    assert response.status_code == 201
-    data = response.json()
-    assert data["title"] == "Test Dungeon"
-    assert "rooms" in data["data"]
-
-
 def test_delete_dungeon(test_client):
     """Test DELETE /api/dungeons/{id}."""
     dungeon = {"title": "Delete Test", "data": {"rooms": []}}
@@ -337,19 +178,30 @@ def test_delete_dungeon(test_client):
     assert response.status_code == 204
 
 
-def test_create_dungeon_db_failure(monkeypatch, test_client):
-    """Test POST /api/dungeons when DB commit fails."""
-    import backend.app.db as db_module
-    monkeypatch.setattr(db_module, "get_conn", _mock_db_failure)
-    response = test_client.post("/api/dungeons", json={"title": "Fail", "data": {}})
-    assert response.status_code == 400
+@pytest.mark.parametrize(
+    ("resource", "payload"),
+    [
+        ("weapons", {"name": "Fail", "rarity": "common", "quick_rules": "Attack +{weapon_attack_bonus}, deal 1d8 slashing damage +{weapon_damage_bonus}."}),
+        ("npcs", {"name": "Fail"}),
+        ("encounters", {"title": "Fail", "creatures": []}),
+        ("dungeons", {"title": "Fail", "data": {}}),
+    ],
+)
+def test_create_db_failure(monkeypatch, test_client, resource, payload):
+    """POST maps DB failures to 400 on every resource."""
+    monkeypatch.setattr(db_module, "get_conn", db_failure_conn)
+    assert test_client.post(f"/api/{resource}", json=payload).status_code == 400
 
 
-def test_delete_dungeon_db_failure(monkeypatch, test_client):
-    """Test DELETE /api/dungeons when DB commit fails."""
-    response = test_client.post("/api/dungeons", json={"title": "FailDelete", "data": {}})
-    dungeon_id = response.json()["id"]
-    import backend.app.db as db_module
-    monkeypatch.setattr(db_module, "get_conn", _mock_db_failure)
-    response = test_client.delete(f"/api/dungeons/{dungeon_id}")
-    assert response.status_code == 400
+@pytest.mark.parametrize("resource", ["weapons", "npcs", "encounters", "dungeons"])
+def test_delete_db_failure(monkeypatch, test_client, resource):
+    """DELETE maps DB failures to 400 on every resource."""
+    seed = {
+        "weapons": {"name": "FailDelete", "rarity": "common", "quick_rules": "Attack +{weapon_attack_bonus}, deal 1d8 slashing damage +{weapon_damage_bonus}."},
+        "npcs": {"name": "FailDelete"},
+        "encounters": {"title": "FailDelete", "creatures": []},
+        "dungeons": {"title": "FailDelete", "data": {}},
+    }[resource]
+    resource_id = test_client.post(f"/api/{resource}", json=seed).json()["id"]
+    monkeypatch.setattr(db_module, "get_conn", db_failure_conn)
+    assert test_client.delete(f"/api/{resource}/{resource_id}").status_code == 400

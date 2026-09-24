@@ -192,7 +192,7 @@ describe('PlayerMapRenderer', () => {
     expect(screen.queryByText('Upper Room')).not.toBeInTheDocument()
   })
 
-  it('renders floor picker slabs and switches the active floor on click', () => {
+  it('renders floor picker toggles and switches the active floor on click', () => {
     const layout = createEmptyMapLayout('Tower')
     layout.floors = [{ z: -1, title: 'Basement' }, { z: 0, title: 'Ground' }, { z: 1, title: 'Top' }]
     layout.rooms.push(
@@ -202,8 +202,8 @@ describe('PlayerMapRenderer', () => {
     )
     const { container } = render(<PlayerMapRenderer layout={layout} />)
 
-    // All three slabs are visible
-    const slabs = container.querySelectorAll('.player-floor-slab')
+    // All three picker toggles are visible with their floor labels
+    const slabs = screen.getAllByRole('button', { name: /^Floor -?[01]/ })
     expect(slabs).toHaveLength(3)
     expect(slabs[0]).toHaveTextContent('-1')
     expect(slabs[1]).toHaveTextContent('0')
@@ -217,7 +217,7 @@ describe('PlayerMapRenderer', () => {
     expect(container.querySelector('[data-floor="0"]')).not.toBeInTheDocument()
     expect(container.querySelector('[data-floor="1"]')).not.toBeInTheDocument()
 
-    // Click the top slab (z=1)
+    // Click the top toggle (z=1)
     fireEvent.click(slabs[2])
     expect(container.querySelector('[data-floor="1"]')).toBeInTheDocument()
     expect(container.querySelector('[data-floor="0"]')).not.toBeInTheDocument()
@@ -276,13 +276,31 @@ describe('PlayerMapRenderer', () => {
     expect(container.querySelector('.player-map-return-btn')).not.toBeInTheDocument()
   })
 
-  it('returns to the party room and re-arms following on return button click', () => {
-    const { container } = render(<PlayerMapRenderer layout={roomLayout()} partyRoomId={12} />)
-    const btn = container.querySelector<HTMLButtonElement>('.player-map-return-btn')!
-    expect(btn).toBeInTheDocument()
-    expect(btn).toHaveAttribute('aria-label', 'Return to party room')
-    // The button has a 64px touch floor
-    expect(btn.className).toBe('player-map-return-btn')
+  it('returns to the party room floor and resumes following on return button activation', () => {
+    const layout = roomLayout()
+    layout.floors.push({ z: 1, title: 'Upstairs' })
+    layout.rooms.find((room) => room.room_id === 12)!.z = 1
+    layout.rooms.push({ room_id: 20, z: 0, origin: [8, 8], cells: [[0, 0]], title: 'Lower Room' })
+    const { container, rerender } = render(<PlayerMapRenderer layout={layout} partyRoomId={12} />)
+    const btn = screen.getByRole('button', { name: 'Return to party room' })
+    expect(btn).toHaveAttribute('type', 'button')
+    expect(btn).toHaveClass('player-map-return-btn', 'icon-btn')
+    expect(btn.querySelector('svg')).toBeInTheDocument()
+
+    // Panning disengages following, so selecting another floor remains selected until return.
+    fireEvent.pointerDown(screen.getByLabelText('Map canvas'), { pointerId: 1, clientX: 10, clientY: 10 })
+    fireEvent.click(screen.getAllByRole('button', { name: /^Floor -?[01]/ })[0])
+    expect(container.querySelector('[data-floor="0"]')).toBeInTheDocument()
+    expect(container.querySelector('[data-floor="1"]')).not.toBeInTheDocument()
+
+    fireEvent.click(btn)
+    expect(container.querySelector('[data-floor="1"]')).toBeInTheDocument()
+    expect(container.querySelector('[data-floor="0"]')).not.toBeInTheDocument()
+
+    // A changed party room is followed again after the return control re-arms following.
+    rerender(<PlayerMapRenderer layout={layout} partyRoomId={20} />)
+    expect(container.querySelector('[data-floor="0"]')).toBeInTheDocument()
+    expect(container.querySelector('[data-floor="1"]')).not.toBeInTheDocument()
   })
 
   it('selects the party room floor when party room is on another floor', () => {

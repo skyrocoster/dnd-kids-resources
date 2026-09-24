@@ -210,8 +210,8 @@ class TestBranchyThread:
         assert linearized[0]["automatic"] is False  # branchy → flagged
 
 
-class TestAbandonedAnchors:
-    """Abandoned anchors become banked beats."""
+class TestEdgeConversions:
+    """Abandoned/anchor/update node conversions, cross-thread edges, orphans, shared beats."""
 
     def test_abandoned_becomes_banked(self, tmp_path):
         db_path = _make_old_db(tmp_path)
@@ -239,10 +239,6 @@ class TestAbandonedAnchors:
         memberships = _conn_rows(db_path, "SELECT node_id FROM loom_node_threads WHERE node_id=1")
         assert len(memberships) == 0  # removed from thread
 
-
-class TestCrossThreadEdges:
-    """Edges between nodes on different threads are dropped."""
-
     def test_cross_thread_edge_dropped(self, tmp_path):
         db_path = _make_old_db(tmp_path)
         conn = sqlite3.connect(str(db_path))
@@ -266,10 +262,6 @@ class TestCrossThreadEdges:
         # loom_edges table should be gone
         assert not _conn_table_exists(db_path, "loom_edges")
 
-
-class TestOrphanNodes:
-    """Nodes with no memberships end up in the orphan bucket."""
-
     def test_orphan_in_report(self, tmp_path):
         db_path = _make_old_db(tmp_path)
         conn = sqlite3.connect(str(db_path))
@@ -285,10 +277,6 @@ class TestOrphanNodes:
         assert len(report["orphan_nodes"]) >= 1
         orphan_ids = [o["node_id"] for o in report["orphan_nodes"]]
         assert 1 in orphan_ids
-
-
-class TestSharedBeatConflict:
-    """A beat with memberships on multiple threads → conflict resolved."""
 
     def test_shared_beat_kept_on_one_thread(self, tmp_path):
         db_path = _make_old_db(tmp_path)
@@ -315,8 +303,8 @@ class TestSharedBeatConflict:
         assert len(memberships) == 1
 
 
-class TestIdempotent:
-    """Running the migration twice is a no-op the second time."""
+class TestIdempotentDryRunBackup:
+    """Second run is a no-op; dry run doesn't write; a backup is created."""
 
     def test_second_run_noop(self, tmp_path):
         db_path = _make_old_db(tmp_path)
@@ -332,10 +320,6 @@ class TestIdempotent:
 
         report2 = migrate_mod.migrate(db_path, tmp_path / "report2.json", dry_run=False)
         assert report2["summary"]["status"] == "already_migrated"
-
-
-class TestDryRun:
-    """Dry run computes the report but doesn't modify the DB."""
 
     def test_dry_run_no_write(self, tmp_path):
         db_path = _make_old_db(tmp_path)
@@ -360,10 +344,6 @@ class TestDryRun:
         written = json.loads(report_path.read_text())
         assert "summary" in written
 
-
-class TestBackupCreated:
-    """A backup file is created before migration."""
-
     def test_backup_exists(self, tmp_path):
         db_path = _make_old_db(tmp_path)
         conn = sqlite3.connect(str(db_path))
@@ -379,8 +359,8 @@ class TestBackupCreated:
         assert _conn_table_exists(backup, "loom_edges")
 
 
-class TestReachesAndPlanned:
-    """Reached anchors become sessions with provenance; planned become beats."""
+class TestReachesPlannedAndUpdate:
+    """Reached anchors become sessions with provenance; planned become beats; updates become sessions."""
 
     def test_reached_anchor_becomes_session(self, tmp_path):
         db_path = _make_old_db(tmp_path)
@@ -410,10 +390,6 @@ class TestReachesAndPlanned:
 
         nodes = _conn_rows(db_path, "SELECT kind FROM loom_nodes WHERE id=1")
         assert nodes[0]["kind"] == "beat"
-
-
-class TestUpdateBecomesSession:
-    """Update nodes become sessions."""
 
     def test_update_to_session(self, tmp_path):
         db_path = _make_old_db(tmp_path)

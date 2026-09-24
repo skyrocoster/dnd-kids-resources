@@ -1,6 +1,8 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState } from 'react'
 import type { LoomNode, LoomTapestryThread } from '../../api/types'
 import { Button } from '../../components/Button'
+import { Menu } from '../../components/menus/Menu'
+import type { MenuItemDefinition } from '../../components/menus/menuTypes'
 import { LoomBeatBankTray } from './LoomBeatBankTray'
 import { threadOrdered } from './loomGraph'
 
@@ -146,28 +148,6 @@ export function LoomRail({
 }: LoomRailProps) {
   const [bankDragOver, setBankDragOver] = useState(false)
   const [overflowOpen, setOverflowOpen] = useState(false)
-  const overflowRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (!overflowOpen) return
-    const handler = (e: MouseEvent) => {
-      if (overflowRef.current && !overflowRef.current.contains(e.target as Node)) {
-        setOverflowOpen(false)
-      }
-    }
-    const keyHandler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOverflowOpen(false)
-    }
-    const timer = setTimeout(() => {
-      document.addEventListener('mousedown', handler)
-      document.addEventListener('keydown', keyHandler)
-    }, 0)
-    return () => {
-      clearTimeout(timer)
-      document.removeEventListener('mousedown', handler)
-      document.removeEventListener('keydown', keyHandler)
-    }
-  }, [overflowOpen])
   const threadNamesById = new Map(threads.map((thread) => [thread.id, thread.name]))
   const selectedThreadName =
     selectedNode?.thread_id != null ? threadNamesById.get(selectedNode.thread_id) ?? null : null
@@ -225,6 +205,19 @@ export function LoomRail({
                   onPlaceNode,
                   onReorderThread,
                 })
+                const menuItems: MenuItemDefinition[] = config.moreItems.map((item, index) => {
+                  if (item === 'separator') {
+                    return { id: `separator-${index}`, separator: true }
+                  }
+                  return {
+                    id: item.label,
+                    label: item.destructive ? (
+                      <span className="loom-overflow-item--danger">{item.label}</span>
+                    ) : item.label,
+                    textValue: item.label,
+                    onSelect: item.onClick,
+                  }
+                })
                 return (
                   <>
                     {config.primary && (
@@ -238,37 +231,13 @@ export function LoomRail({
                       </Button>
                     )}
                     {config.moreItems.length > 0 && (
-                      <div className="loom-overflow-wrap" ref={overflowRef}>
-                        <Button
-                          variant="secondary"
-                          size="compact"
-                          onClick={() => setOverflowOpen(!overflowOpen)}
-                          aria-expanded={overflowOpen}
-                          aria-haspopup="menu"
-                        >
-                          More actions
-                        </Button>
-                        {overflowOpen && (
-                          <div className="loom-overflow-menu" role="menu">
-                            {config.moreItems.map((item, i) =>
-                              item === 'separator' ? (
-                                <div key={`sep-${i}`} className="loom-overflow-separator" role="separator" />
-                              ) : (
-                                <button
-                                  key={item.label}
-                                  className={`loom-overflow-item${item.destructive ? ' loom-overflow-item--danger' : ''}`}
-                                  role="menuitem"
-                                  onClick={() => {
-                                    item.onClick()
-                                    setOverflowOpen(false)
-                                  }}
-                                >
-                                  {item.label}
-                                </button>
-                              ),
-                            )}
-                          </div>
-                        )}
+                      <div className="loom-overflow-wrap">
+                        <Menu
+                          trigger="More actions"
+                          items={menuItems}
+                          open={overflowOpen}
+                          onOpenChange={setOverflowOpen}
+                        />
                       </div>
                     )}
                   </>

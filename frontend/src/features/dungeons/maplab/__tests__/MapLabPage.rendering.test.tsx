@@ -163,6 +163,34 @@ describe('MapLabPage (M1 SVG renderer)', () => {
     const canvas = screen.getByRole('group', { name: /dungeon floor map/i })
     expect(canvas).toContainElement(screen.getByRole('button', { name: 'Combat Training Hall' }))
   })
+
+  it('renders and operates the viewer Fit and Zoom controls as ordinary buttons', async () => {
+    const { container } = await renderLoadedMapLabPage()
+    const controls = container.querySelector('.maplab-map-controls') as HTMLElement
+    const fit = within(controls).getByRole('button', { name: 'Fit map to viewport' })
+    const zoomIn = within(controls).getByRole('button', { name: 'Zoom in' })
+    const zoomOut = within(controls).getByRole('button', { name: 'Zoom out' })
+    const svg = container.querySelector('.maplab-svg') as SVGSVGElement
+    const initialWidth = Number(svg.getAttribute('width'))
+
+    for (const control of [fit, zoomIn, zoomOut]) {
+      expect(control).toHaveAttribute('type', 'button')
+      expect(control).toHaveClass('maplab-pill-button', 'maplab-zoom-button')
+      expect(control).not.toBeDisabled()
+    }
+
+    fireEvent.click(zoomIn)
+    expect(Number(svg.getAttribute('width'))).toBeCloseTo(initialWidth * 1.25)
+
+    fireEvent.click(zoomOut)
+    expect(Number(svg.getAttribute('width'))).toBeCloseTo(initialWidth)
+
+    fireEvent.click(zoomOut)
+    expect(Number(svg.getAttribute('width'))).toBeCloseTo(initialWidth * 0.75)
+
+    fireEvent.click(fit)
+    expect(Number(svg.getAttribute('width'))).toBeCloseTo(initialWidth)
+  })
 })
 
 describe('MapLabPage (M2 stairs + second floor)', () => {

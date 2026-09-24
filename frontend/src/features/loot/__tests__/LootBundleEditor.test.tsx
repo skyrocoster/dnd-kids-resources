@@ -21,6 +21,33 @@ describe('loot catalog pickers', () => {
     expect(addWeapon).toHaveBeenCalledWith(expect.objectContaining({ name: 'Longsword' }))
   })
 
+  it('uses labeled icon buttons to close each catalog panel', async () => {
+    vi.spyOn(api, 'listItems').mockResolvedValue([])
+    vi.spyOn(api, 'listWeapons').mockResolvedValue([])
+    const onItemClose = vi.fn()
+    const onWeaponClose = vi.fn()
+    const user = userEvent.setup()
+    render(
+      <>
+        <AddItemPanel onAdd={() => {}} onClose={onItemClose} />
+        <AddWeaponPanel onAdd={() => {}} onClose={onWeaponClose} />
+      </>,
+    )
+
+    const itemClose = screen.getByRole('button', { name: 'Close add item panel' })
+    const weaponClose = screen.getByRole('button', { name: 'Close add weapon panel' })
+    for (const close of [itemClose, weaponClose]) {
+      expect(close).toHaveAttribute('type', 'button')
+      expect(close.querySelector('svg')).toBeInTheDocument()
+      expect(close).toHaveClass('btn', 'btn--ghost', 'btn--compact', 'icon-btn')
+    }
+
+    await user.click(itemClose)
+    await user.click(weaponClose)
+    expect(onItemClose).toHaveBeenCalledTimes(1)
+    expect(onWeaponClose).toHaveBeenCalledTimes(1)
+  })
+
   it('uses shared loading and error states instead of an empty catalog', async () => {
     vi.spyOn(api, 'listItems').mockRejectedValue(new Error('catalog unavailable'))
     vi.spyOn(api, 'listWeapons').mockRejectedValue(new Error('catalog unavailable'))
@@ -51,6 +78,68 @@ describe('LootBundleEditor', () => {
     await waitFor(() => expect(create).toHaveBeenCalledWith({ name: 'Chest', gold: 12.5, contents: [expect.objectContaining({ kind: 'item', name: 'Ruby', value_gp: 50, quantity: 1 })] }))
   })
 
+  it('keeps picker ownership in the editor, switches panels, and leaves a selected item panel open', async () => {
+    vi.spyOn(api, 'listItems').mockResolvedValue([{ id: 1, name: 'Ruby', value_gp: 50, category: 'gem', description: null }])
+    vi.spyOn(api, 'listWeapons').mockResolvedValue([{ id: 2, name: 'Longsword' }])
+    const user = userEvent.setup()
+    render(<LootBundleEditor onClose={() => {}} onSaved={() => {}} />)
+
+    const addItem = screen.getByRole('button', { name: 'Add Item' })
+    const addWeapon = screen.getByRole('button', { name: 'Add Weapon' })
+    expect(addItem).toHaveAttribute('type', 'button')
+    expect(addWeapon).toHaveAttribute('type', 'button')
+    expect(addItem).toHaveClass('btn', 'btn--secondary')
+    expect(addWeapon).toHaveClass('btn', 'btn--secondary')
+    expect(addItem).toHaveAccessibleName('Add Item')
+    expect(addWeapon).toHaveAccessibleName('Add Weapon')
+
+    await user.click(addItem)
+    expect(screen.getByRole('heading', { name: 'Add item' })).toBeInTheDocument()
+    await user.click(await screen.findByRole('button', { name: /Ruby/ }))
+    expect(screen.getByRole('heading', { name: 'Add item' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Quantity')).toHaveValue(1)
+
+    await user.click(addWeapon)
+    expect(screen.queryByRole('heading', { name: 'Add item' })).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Add weapon' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Close add weapon panel' }))
+    expect(screen.queryByRole('heading', { name: 'Add weapon' })).not.toBeInTheDocument()
+    expect(screen.getByRole('dialog', { name: 'Add New Loot Bundle' })).toBeInTheDocument()
+  })
+
+  it('removes the selected entry by index and recalculates the total', async () => {
+    vi.spyOn(api, 'listItems').mockResolvedValue([
+      { id: 1, name: 'Ruby', value_gp: 50, category: 'gem', description: null },
+      { id: 2, name: 'Pearl', value_gp: 10, category: 'gem', description: null },
+    ])
+    const user = userEvent.setup()
+    render(<LootBundleEditor onClose={() => {}} onSaved={() => {}} />)
+
+    const gold = screen.getByLabelText('Gold (gp)')
+    await user.clear(gold)
+    await user.type(gold, '12.5')
+    await user.click(screen.getByRole('button', { name: 'Add Item' }))
+    await user.click(await screen.findByRole('button', { name: /Ruby/ }))
+    await user.click(screen.getByRole('button', { name: /Pearl/ }))
+    await user.click(screen.getByRole('button', { name: 'Close add item panel' }))
+
+    expect(screen.getByText('Total value:')).toHaveTextContent('72.5 gp')
+    expect(screen.getByText('Ruby')).toBeInTheDocument()
+    expect(screen.getByText('Pearl')).toBeInTheDocument()
+    const removeButtons = screen.getAllByRole('button', { name: 'Remove' })
+    expect(removeButtons).toHaveLength(2)
+    for (const button of removeButtons) {
+      expect(button).toHaveAttribute('type', 'button')
+      expect(button).toHaveClass('btn', 'btn--secondary', 'btn--normal', 'loot-editor-remove')
+    }
+
+    await user.click(removeButtons[1])
+    expect(screen.getByText('Ruby')).toBeInTheDocument()
+    expect(screen.queryByText('Pearl')).not.toBeInTheDocument()
+    expect(screen.getByText('Total value:')).toHaveTextContent('62.5 gp')
+    expect(screen.getByRole('button', { name: 'Remove' })).toBeEnabled()
+  })
+
   it('duplicate selection increments quantity instead of adding a new row', async () => {
     vi.spyOn(api, 'listItems').mockResolvedValue([{ id: 1, name: 'Ruby', value_gp: 50, category: 'gem', description: null }])
     const user = userEvent.setup()
@@ -63,6 +152,24 @@ describe('LootBundleEditor', () => {
 
     await user.click(screen.getByRole('button', { name: /Ruby/ }))
     expect(screen.getByDisplayValue('2')).toBeInTheDocument()
+  })
+
+  it('keeps quantity as an immediately normalized bounded number field', async () => {
+    vi.spyOn(api, 'listItems').mockResolvedValue([{ id: 1, name: 'Ruby', value_gp: 50, category: 'gem', description: null }])
+    const user = userEvent.setup()
+    render(<LootBundleEditor onClose={() => {}} onSaved={() => {}} />)
+
+    await user.click(screen.getByRole('button', { name: 'Add Item' }))
+    await user.click(await screen.findByRole('button', { name: /Ruby/ }))
+    const quantity = screen.getByLabelText('Quantity')
+
+    expect(quantity).toHaveAttribute('type', 'number')
+    expect(quantity).toHaveAttribute('min', '1')
+    expect(quantity).toHaveAttribute('step', '1')
+    expect(quantity).toHaveValue(1)
+
+    await user.clear(quantity)
+    expect(quantity).toHaveValue(1)
   })
 
   it('shows "Value pending" for weapons without a price', async () => {

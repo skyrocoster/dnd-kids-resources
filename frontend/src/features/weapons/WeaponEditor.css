@@ -35,7 +35,7 @@
   justify-content: space-between;
 }
 
-.weapon-editor-add {
+.btn.weapon-editor-add {
   background: var(--md-secondary-container);
   color: var(--md-on-secondary-container);
   border: none;
@@ -64,7 +64,7 @@
   gap: 0 1rem;
 }
 
-.weapon-editor-row-remove {
+.btn.weapon-editor-row-remove {
   background: none;
   border: 1px solid var(--md-error);
   color: var(--md-error);

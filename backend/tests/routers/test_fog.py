@@ -1,18 +1,20 @@
-def test_get_revealed_cells_not_found_is_empty_list(test_client):
-    """GET with no cells revealed for a nonexistent dungeon returns empty cells, not 404"""
-    response = test_client.get("/api/dungeons/999/revealed-cells")
-    assert response.status_code == 200
-    assert response.json() == {"cells": []}
+import backend.app.db as db_module
+
+from backend.tests.conftest import db_failure_conn
 
 
-def test_get_revealed_cells_empty_for_fresh_dungeon(test_client):
-    """A freshly created dungeon has no revealed cells"""
+def test_get_revealed_cells_empty_for_missing_and_fresh_dungeons(test_client):
+    """Missing dungeon and fresh dungeon both return empty cells, not 404"""
+    missing = test_client.get("/api/dungeons/999/revealed-cells")
+    assert missing.status_code == 200
+    assert missing.json() == {"cells": []}
+
     dungeon_id = test_client.post(
         "/api/dungeons", json={"title": "Fog test", "data": {}}
     ).json()["id"]
-    response = test_client.get(f"/api/dungeons/{dungeon_id}/revealed-cells")
-    assert response.status_code == 200
-    assert response.json() == {"cells": []}
+    fresh = test_client.get(f"/api/dungeons/{dungeon_id}/revealed-cells")
+    assert fresh.status_code == 200
+    assert fresh.json() == {"cells": []}
 
 
 def test_put_reveals_cells_and_get_returns_union(test_client):
@@ -53,3 +55,14 @@ def test_put_to_nonexistent_dungeon_returns_404(test_client):
         "/api/dungeons/999/revealed-cells", json={"cells": [{"x": 0, "y": 0}]}
     )
     assert response.status_code == 404
+
+
+def test_put_db_failure(monkeypatch, test_client):
+    dungeon_id = test_client.post(
+        "/api/dungeons", json={"title": "Fog fail", "data": {}}
+    ).json()["id"]
+    monkeypatch.setattr(db_module, "get_conn", db_failure_conn)
+    response = test_client.put(
+        f"/api/dungeons/{dungeon_id}/revealed-cells", json={"cells": [{"x": 0, "y": 0}]}
+    )
+    assert response.status_code == 400
