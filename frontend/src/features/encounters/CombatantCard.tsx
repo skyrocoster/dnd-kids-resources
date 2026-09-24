@@ -6,6 +6,7 @@ import { ConditionPicker } from "./ConditionPicker";
 import { Popover } from "../../components/Popover";
 import { Button } from "../../components/Button";
 import { IconButton } from "../../components/IconButton";
+import { TextInput } from "../../components/form/TextInput";
 import { ToggleGroup } from "../../components/form/ToggleGroup";
 import {
   ChevronDownIcon,
@@ -21,12 +22,9 @@ import {
 } from "../../components/icons";
 import "./CombatantCard.css";
 
-export type HpTier = "healthy" | "bloodied" | "critical" | "down";
+type HpTier = "healthy" | "bloodied" | "critical" | "down";
 
-export function hpTier(
-  hpCurrent: number | null | undefined,
-  hpMax: number | null | undefined,
-): HpTier {
+function hpTier(hpCurrent: number | null | undefined, hpMax: number | null | undefined): HpTier {
   if (hpCurrent == null || hpCurrent <= 0) return "down";
   if (!hpMax || hpMax <= 0) return "healthy";
   const pct = hpCurrent / hpMax;
@@ -81,6 +79,7 @@ export function CombatantCard({
 
   const hpMax = combatant.hp_max ?? null;
   const hpCurrent = combatant.hp_current ?? 0;
+  const status = combatant.status ?? "alive";
   const tier = isPlayer ? "healthy" : hpTier(combatant.hp_current, hpMax);
   const pct = hpMax && hpMax > 0 ? Math.max(0, Math.min(100, (hpCurrent / hpMax) * 100)) : 100;
 
@@ -116,7 +115,7 @@ export function CombatantCard({
           </span>
         )}
 
-        <input
+        <TextInput
           className="combatant-name-input"
           value={combatant.name ?? ""}
           onChange={(e) => onRename(e.target.value)}
@@ -182,13 +181,13 @@ export function CombatantCard({
           className="combatant-status-chips"
           aria-label="Status"
           multiple={false}
-          value={[combatant.status]}
+          value={[status]}
           options={STATUS_OPTIONS.map((status) => ({
             value: status,
             ariaLabel: status,
             label: (
               <span
-                className={`combatant-status-chip combatant-status-${status} ${combatant.status === status ? "selected" : ""}`}
+                className={`combatant-status-chip combatant-status-${status} ${status === combatant.status ? "selected" : ""}`}
               >
                 {status}
               </span>
@@ -196,7 +195,7 @@ export function CombatantCard({
           }))}
           onValueChange={(values) => {
             const selectedStatus = STATUS_OPTIONS.find((status) => status === values[0]);
-            onSetStatus(selectedStatus ?? combatant.status);
+            onSetStatus(selectedStatus ?? status);
           }}
         />
       )}

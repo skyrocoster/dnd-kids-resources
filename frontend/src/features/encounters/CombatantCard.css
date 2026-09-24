@@ -127,20 +127,28 @@
   cursor: default;
 }
 
-.combatant-name-input {
+.combatant-card-header > .fc-input-frame:has(.combatant-name-input) {
   flex: 1 1 8rem;
-  min-width: 6rem;
+  min-inline-size: 6rem;
+  inline-size: auto;
+  padding: 0;
   background: transparent;
-  border: none;
+  border: 0;
   border-bottom: 1px solid transparent;
+  border-radius: 0;
+}
+
+.combatant-name-input {
+  background: transparent;
+  border: 0;
   color: var(--md-on-surface);
   font-size: var(--type-title-size);
   font-weight: var(--type-title-weight);
   padding: 0.25rem 0.125rem;
 }
 
-.combatant-name-input:hover,
-.combatant-name-input:focus {
+.combatant-card-header > .fc-input-frame:has(.combatant-name-input):hover,
+.combatant-card-header > .fc-input-frame:has(.combatant-name-input):focus-within {
   border-bottom-color: var(--md-outline-variant);
 }
 

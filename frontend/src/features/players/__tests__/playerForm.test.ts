@@ -7,13 +7,13 @@ import {
   validatePlayerForm,
 } from "../playerForm";
 
-const basePlayer: Player = { id: 1, name: "Pip", class_: "Wizard", level: 3 };
+const basePlayer: Player = { id: 1, name: "Pip", class: "Wizard", level: 3 };
 
 const fullPlayer: Player = {
   id: 2,
   name: "Aria",
   child_name: "Ari",
-  class_: "Cleric",
+  class: "Cleric",
   subclass: "Life Domain",
   ancestry: "Human",
   background: "Acolyte",
@@ -99,14 +99,14 @@ describe("formStateToPlayerInput", () => {
   it("round-trips form state back into API-shaped input", () => {
     const input = formStateToPlayerInput(playerToFormState(basePlayer));
     expect(input.name).toBe("Pip");
-    expect(input.class_).toBe("Wizard");
+    expect(input.class).toBe("Wizard");
     expect(input.level).toBe(3);
     expect(input.child_name).toBeNull();
   });
 
   it("nulls out blank optional fields for an empty form", () => {
     const input = formStateToPlayerInput(emptyPlayerForm());
-    expect(input.class_).toBeNull();
+    expect(input.class).toBeNull();
     expect(input.level).toBeNull();
     expect(input.ac).toBeNull();
     expect(input.hp).toBeNull();

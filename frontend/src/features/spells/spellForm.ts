@@ -1,4 +1,4 @@
-import type { Spell, SpellCategory, SpellInput } from "../../api/types";
+import { SPELL_CATEGORIES, type Spell, type SpellCategory, type SpellInput } from "../../api/types";
 
 let rowIdCounter = 0;
 export function nextRowId(): string {
@@ -74,12 +74,19 @@ export function emptySpellForm(): SpellFormState {
 }
 
 export function spellToFormState(spell: Spell): SpellFormState {
+  const higherLevels = spell.higher_levels ?? {};
+  const areaOfEffect = spell.area_of_effect ?? {};
+  const healing = spell.healing ?? {};
+  const categories = (spell.categories ?? []).filter((category): category is SpellCategory =>
+    SPELL_CATEGORIES.includes(category as SpellCategory),
+  );
+
   return {
     name: spell.name,
     level: String(spell.level),
     school: spell.school || "",
-    categories: spell.categories,
-    castingTimes: spell.casting_times.join("\n"),
+    categories,
+    castingTimes: (spell.casting_times ?? []).join("\n"),
     duration: spell.duration,
     range: spell.range,
     concentration: spell.concentration,
@@ -88,25 +95,25 @@ export function spellToFormState(spell: Spell): SpellFormState {
     description: spell.description,
     alternateDescription: spell.alternate_description || "",
     quickRules: spell.quick_rules || "",
-    higherLevelsText: spell.higher_levels.text || "",
-    higherLevelDamageBySlot: spell.higher_levels.damage_by_slot,
-    areaShape: spell.area_of_effect.shape || "",
-    areaSize: spell.area_of_effect.size == null ? "" : String(spell.area_of_effect.size),
-    attackRows: spell.attacks.map((attack) => ({
+    higherLevelsText: higherLevels.text || "",
+    higherLevelDamageBySlot: higherLevels.damage_by_slot ?? {},
+    areaShape: areaOfEffect.shape || "",
+    areaSize: areaOfEffect.size == null ? "" : String(areaOfEffect.size),
+    attackRows: (spell.attacks ?? []).map((attack) => ({
       id: nextRowId(),
       kind: attack.kind || "",
-      savingThrows: attack.saving_throws,
+      savingThrows: attack.saving_throws ?? [],
     })),
-    damageRows: spell.damage.map((damage) => ({
+    damageRows: (spell.damage ?? []).map((damage) => ({
       id: nextRowId(),
       name: damage.name,
       formula: damage.formula,
-      damageTypes: damage.damage_types,
+      damageTypes: damage.damage_types ?? [],
     })),
-    healingAmount: spell.healing.amount || "",
-    healingTempHp: spell.healing.temp_hp,
-    healingMaxHp: spell.healing.max_hp,
-    components: spell.components,
+    healingAmount: healing.amount || "",
+    healingTempHp: healing.temp_hp ?? false,
+    healingMaxHp: healing.max_hp ?? false,
+    components: spell.components ?? [],
   };
 }
 

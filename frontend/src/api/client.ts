@@ -79,6 +79,9 @@ const resultData = <T>(request: Promise<DataResult<T>>): Promise<T> =>
   request.then(({ data }) => data);
 const options = { client: apiClient, responseStyle: "fields", throwOnError: true } as const;
 
+// Health
+export const getHealth = () => resultData(sdk.getHealth(options));
+
 // Reference data
 export const getAbilities = () => resultData(sdk.getAbilities(options));
 export const getConditions = () => resultData(sdk.getConditions(options));

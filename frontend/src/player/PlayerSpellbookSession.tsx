@@ -1,36 +1,11 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
-
-export type PlayerSpellbookBrowseMode = "browse" | "search";
-
-export interface PlayerSpellbookCharacter {
-  id: string;
-}
-
-export interface PlayerSpellbookViewState {
-  browseMode: PlayerSpellbookBrowseMode;
-  openCategory: string | null;
-  openSlotSection: string | null;
-  expandedSpellId: string | null;
-  scrollPosition: number;
-}
-
-export interface PlayerSpellbookSessionValue {
-  activeCharacterId: string | null;
-  characterViews: Record<string, PlayerSpellbookViewState>;
-  setCharacters: (characters: readonly PlayerSpellbookCharacter[]) => void;
-  selectCharacter: (characterId: string) => void;
-  updateCharacterView: (characterId: string, changes: Partial<PlayerSpellbookViewState>) => void;
-}
-
-const defaultView: PlayerSpellbookViewState = {
-  browseMode: "browse",
-  openCategory: null,
-  openSlotSection: null,
-  expandedSpellId: null,
-  scrollPosition: 0,
-};
-
-const PlayerSpellbookSessionContext = createContext<PlayerSpellbookSessionValue | null>(null);
+import { useCallback, useMemo, useState, type ReactNode } from "react";
+import {
+  initialPlayerSpellbookViewState,
+  PlayerSpellbookSessionContext,
+  type PlayerSpellbookCharacter,
+  type PlayerSpellbookSessionValue,
+  type PlayerSpellbookViewState,
+} from "./playerSpellbookSessionContext";
 
 export function PlayerSpellbookSessionProvider({ children }: { children: ReactNode }) {
   const [activeCharacterId, setActiveCharacterId] = useState<string | null>(null);
@@ -38,46 +13,41 @@ export function PlayerSpellbookSessionProvider({ children }: { children: ReactNo
     {},
   );
 
-  const setCharacters = (characters: readonly PlayerSpellbookCharacter[]) => {
+  const setCharacters = useCallback((characters: readonly PlayerSpellbookCharacter[]) => {
     setActiveCharacterId((current) => {
       if (current && characters.some((character) => character.id === current)) return current;
       return characters[0]?.id ?? null;
     });
-  };
+  }, []);
 
-  const selectCharacter = (characterId: string) => {
+  const selectCharacter = useCallback((characterId: string) => {
     setActiveCharacterId(characterId);
-  };
+  }, []);
 
-  const updateCharacterView = (characterId: string, changes: Partial<PlayerSpellbookViewState>) => {
-    setCharacterViews((current) => ({
-      ...current,
-      [characterId]: { ...defaultView, ...current[characterId], ...changes },
-    }));
-  };
+  const updateCharacterView = useCallback(
+    (characterId: string, changes: Partial<PlayerSpellbookViewState>) => {
+      setCharacterViews((current) => ({
+        ...current,
+        [characterId]: { ...initialPlayerSpellbookViewState, ...current[characterId], ...changes },
+      }));
+    },
+    [],
+  );
+
+  const value = useMemo<PlayerSpellbookSessionValue>(
+    () => ({
+      activeCharacterId,
+      characterViews,
+      setCharacters,
+      selectCharacter,
+      updateCharacterView,
+    }),
+    [activeCharacterId, characterViews, selectCharacter, setCharacters, updateCharacterView],
+  );
 
   return (
-    <PlayerSpellbookSessionContext.Provider
-      value={useMemo(
-        () => ({
-          activeCharacterId,
-          characterViews,
-          setCharacters,
-          selectCharacter,
-          updateCharacterView,
-        }),
-        [activeCharacterId, characterViews],
-      )}
-    >
+    <PlayerSpellbookSessionContext.Provider value={value}>
       {children}
     </PlayerSpellbookSessionContext.Provider>
   );
-}
-
-export function usePlayerSpellbookSession() {
-  const session = useContext(PlayerSpellbookSessionContext);
-  if (!session) {
-    throw new Error("usePlayerSpellbookSession must be used within PlayerSpellbookSessionProvider");
-  }
-  return session;
 }

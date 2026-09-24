@@ -1,4 +1,12 @@
-import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import "./GlossaryTerm.css";
 
 interface GlossaryTermProps {
@@ -15,11 +23,11 @@ export function GlossaryTerm({ children, content }: GlossaryTermProps) {
   const openedByPressRef = useRef(false);
   const popoverId = useId();
 
-  function close() {
+  const close = useCallback(() => {
     openedByPressRef.current = false;
     setOpen(false);
     if (closeActivePopover === close) closeActivePopover = null;
-  }
+  }, []);
 
   function show() {
     closeActivePopover?.();
@@ -48,13 +56,13 @@ export function GlossaryTerm({ children, content }: GlossaryTermProps) {
       document.removeEventListener("pointerdown", handlePointerDown);
       document.removeEventListener("keydown", handleEscape);
     };
-  }, [open]);
+  }, [close, open]);
 
   useEffect(
     () => () => {
       if (closeActivePopover === close) closeActivePopover = null;
     },
-    [],
+    [close],
   );
 
   useLayoutEffect(() => {

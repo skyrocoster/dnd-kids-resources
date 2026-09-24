@@ -273,7 +273,7 @@ export function useMapCanvasZoom({
       e.preventDefault();
       dragOrigin.current = { clientX: e.clientX, clientY: e.clientY, pan: zoom.pan };
     },
-    [zoom.pan],
+    [beginPinch, zoom.pan],
   );
 
   const handlePointerMove = useCallback(

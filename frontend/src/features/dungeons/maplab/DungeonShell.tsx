@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link, Outlet, useLocation, useParams } from "react-router-dom";
-import { useAppShellRowSlots } from "../../../layout/AppShell";
+import { useAppShellRowSlots } from "../../../layout/appShellRowSlots";
 import "./DungeonShell.css";
 import { MapLabRouteState } from "./MapLabRouteState";
 import {

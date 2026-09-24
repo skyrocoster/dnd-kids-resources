@@ -1,11 +1,7 @@
 import { describe, expect, it, beforeEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
-import {
-  useMapLayerVisibility,
-  useMapDensity,
-  resolveMapDensity,
-  AUTO_DENSITY_SIMPLE_THRESHOLD,
-} from "../MapLabPage";
+import { useMapLayerVisibility, useMapDensity } from "../mapLabToolbarState";
+import { resolveMapDensity, AUTO_DENSITY_SIMPLE_THRESHOLD } from "../../../../map/mapDensity";
 
 describe("useMapLayerVisibility", () => {
   beforeEach(() => {

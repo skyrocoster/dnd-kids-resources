@@ -220,6 +220,12 @@ describe("MapLabEditorPage (Stage I3 — grid marker layout)", () => {
 
     const undo = screen.getByRole("button", { name: "Undo" });
     const redo = screen.getByRole("button", { name: "Redo" });
+    expect(undo).toHaveAttribute("type", "button");
+    expect(undo).toHaveClass("maplab-pill-button", "maplab-history-button");
+    expect(undo).not.toHaveClass("btn");
+    expect(redo).toHaveAttribute("type", "button");
+    expect(redo).toHaveClass("maplab-pill-button", "maplab-history-button");
+    expect(redo).not.toHaveClass("btn");
     expect(undo).toBeDisabled();
     expect(redo).toBeDisabled();
     expect(undo.closest(".maplab-map-controls")).toBeInTheDocument();
@@ -234,5 +240,8 @@ describe("MapLabEditorPage (Stage I3 — grid marker layout)", () => {
     expect(undo).toBeEnabled();
     fireEvent.click(undo);
     expect(redo).toBeEnabled();
+    fireEvent.click(redo);
+    expect(undo).toBeEnabled();
+    expect(redo).toBeDisabled();
   });
 });

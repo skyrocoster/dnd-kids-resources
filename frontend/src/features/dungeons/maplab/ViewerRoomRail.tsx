@@ -156,7 +156,7 @@ export function ViewerRoomRail({
             role="dialog"
             aria-label="Find room"
             initialFocus={searchRef}
-            finalFocus={(closeType) => (closeType === "keyboard" ? triggerRef : false)}
+            finalFocus={(closeType) => (closeType === "keyboard" ? triggerRef.current : undefined)}
           >
             <div className="maplab-viewer-rail-search-row">
               <label htmlFor="maplab-room-search">Find room…</label>

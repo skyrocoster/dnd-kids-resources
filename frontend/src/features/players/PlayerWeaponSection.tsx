@@ -3,7 +3,7 @@ import type { Weapon } from "../../api/types";
 import { Accordion } from "../../components/Accordion";
 import { DiceText } from "../../components/DiceText";
 import { ReferenceText, weaponValueReferenceRegistry } from "../../components/referenceText";
-import { describeAttack } from "../weapons/WeaponBrowserPage";
+import { describeAttack } from "../weapons/weaponPresentation";
 import "./PlayerWeaponSection.css";
 
 interface PlayerWeaponSectionProps {

@@ -208,6 +208,8 @@ export function solvePalette(
   _reservedHexes = RESERVED_HEXES,
   _bgLstars = BACKGROUND_LSTARS,
 ) {
+  void _reservedHexes;
+  void _bgLstars;
   const familyKeys = Object.keys(familySpec);
   if (familyKeys.length === 0) return {};
 

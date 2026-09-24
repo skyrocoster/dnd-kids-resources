@@ -143,7 +143,9 @@ describe("Popover", () => {
             <Popover.Portal>
               <Popover.Positioner>
                 <Popover.Popup
-                  finalFocus={(closeType) => (closeType === "keyboard" ? triggerRef : false)}
+                  finalFocus={(closeType) =>
+                    closeType === "keyboard" ? triggerRef.current : undefined
+                  }
                 >
                   <button type="button">Panel action</button>
                 </Popover.Popup>

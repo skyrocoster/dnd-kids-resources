@@ -1,4 +1,10 @@
-import type { CreatureSize, MovementMode, Player, PlayerInput } from "../../api/types";
+import {
+  completeMonsterFeatures,
+  type CreatureSize,
+  type MovementMode,
+  type Player,
+  type PlayerInput,
+} from "../../api/types";
 
 export interface PlayerFormState {
   name: string;
@@ -114,7 +120,7 @@ function textToKeyedNumbers(text: string): Record<string, number> {
   return result;
 }
 
-function damageModifiersToText(mods: { damage_type: string; note: string | null }[]): string {
+function damageModifiersToText(mods: { damage_type: string; note?: string | null }[]): string {
   return mods.map((m) => (m.note ? `${m.damage_type}: ${m.note}` : m.damage_type)).join("\n");
 }
 
@@ -133,7 +139,7 @@ function textToDamageModifiers(text: string): { damage_type: string; note: strin
     });
 }
 
-function sensesToText(senses: { type: string; range: number; note: string | null }[]): string {
+function sensesToText(senses: { type: string; range: number; note?: string | null }[]): string {
   return senses
     .map((s) => {
       const parts = [`${s.type} ${s.range} ft.`];
@@ -238,12 +244,12 @@ export function playerToFormState(player: Player): PlayerFormState {
       : {}
   ) as Record<string, number | null>;
 
-  const features = player.features;
+  const features = completeMonsterFeatures(player.features);
 
   return {
     name: player.name || "",
     child_name: player.child_name || "",
-    class_: player.class_ || "",
+    class_: player.class || "",
     subclass: player.subclass || "",
     ancestry: player.ancestry || "",
     background: player.background || "",
@@ -286,32 +292,32 @@ export function playerToFormState(player: Player): PlayerFormState {
     sensesText: sensesToText(player.senses || []),
     languages: (player.languages || []).join(", "),
 
-    traitsText: (features?.traits || []).map((t) => `${t.name}: ${t.description || ""}`).join("\n"),
-    actionsText: (features?.actions || [])
+    traitsText: (features.traits || []).map((t) => `${t.name}: ${t.description || ""}`).join("\n"),
+    actionsText: (features.actions || [])
       .map((t) => `${t.name}: ${t.description || ""}`)
       .join("\n"),
-    bonusActionsText: (features?.bonus_actions || [])
+    bonusActionsText: (features.bonus_actions || [])
       .map((t) => `${t.name}: ${t.description || ""}`)
       .join("\n"),
-    reactionsText: (features?.reactions || [])
+    reactionsText: (features.reactions || [])
       .map((t) => `${t.name}: ${t.description || ""}`)
       .join("\n"),
-    legendaryActionsText: (features?.legendary_actions || [])
+    legendaryActionsText: (features.legendary_actions || [])
       .map((t) => `${t.name}: ${t.description || ""}`)
       .join("\n"),
-    legendaryIntro: features?.legendary_intro || "",
+    legendaryIntro: features.legendary_intro || "",
     legendaryActionsPerRound:
-      features?.legendary_actions_per_round != null
+      features.legendary_actions_per_round != null
         ? String(features.legendary_actions_per_round)
         : "",
-    mythicActionsText: (features?.mythic_actions || [])
+    mythicActionsText: (features.mythic_actions || [])
       .map((t) => `${t.name}: ${t.description || ""}`)
       .join("\n"),
-    spellcastingText: (features?.spellcasting || [])
+    spellcastingText: (features.spellcasting || [])
       .map((s) => {
         const desc = s.description ? `\n${s.description}` : "";
-        const groups = s.groups
-          .map((g) => `${g.label}: ${g.spells.map((sp) => sp.name).join(", ")}`)
+        const groups = (s.groups ?? [])
+          .map((g) => `${g.label}: ${(g.spells ?? []).map((sp) => sp.name).join(", ")}`)
           .join("\n");
         return `${s.name}${desc}${groups ? `\n${groups}` : ""}`;
       })
@@ -369,7 +375,7 @@ export function formStateToPlayerInput(form: PlayerFormState): PlayerInput {
   return {
     name: form.name.trim(),
     child_name: form.child_name.trim() || null,
-    class_: form.class_.trim() || null,
+    class: form.class_.trim() || null,
     subclass: form.subclass.trim() || null,
     ancestry: form.ancestry.trim() || null,
     background: form.background.trim() || null,

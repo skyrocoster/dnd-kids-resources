@@ -20,7 +20,10 @@ import {
   Trees,
   Waves,
 } from "../../../components/icons";
+import { Button } from "../../../components/Button";
+import { Toggle } from "../../../components/form/Toggle";
 import { ToggleGroup } from "../../../components/form/ToggleGroup";
+import { TextInput } from "../../../components/form/TextInput";
 import { Popover } from "../../../components/Popover";
 import { ConnectionsResolveList } from "./ConnectionsResolveList";
 import { ToolbarTray } from "./MapLabToolbar";
@@ -31,6 +34,7 @@ import { ViewerRoomRail } from "./ViewerRoomRail";
 type ArmedTool = "select" | "room" | "door" | "stair" | "portal" | "prop" | "river" | "trees";
 type ToolFlyout = "passages" | "terrain" | "prop";
 type LayerVisibility = { outside: boolean; props: boolean; passages: boolean; labels: boolean };
+const LAYER_KEYS = ["outside", "props", "passages", "labels"] as const;
 
 export interface MapLabEditorChromeState {
   layout: MapLayout;
@@ -178,7 +182,7 @@ export function MapLabEditorChrome(props: MapLabEditorChromeProps) {
         !state.layout.portals.some((portal) => portal.to?.dungeon_id === gateway.dungeon_id),
     ).length;
   const filter = (label: string) => (
-    <input
+    <TextInput
       type="search"
       className="maplab-tool-palette-filter"
       aria-label={label}
@@ -443,7 +447,6 @@ export function MapLabEditorChrome(props: MapLabEditorChromeProps) {
                 ref={props.viewTriggerRef}
                 type="button"
                 className="maplab-pill-button maplab-editor-toolbar-button"
-                aria-haspopup="true"
               >
                 <EyeIcon width={18} height={18} aria-hidden="true" />
                 View
@@ -452,56 +455,56 @@ export function MapLabEditorChrome(props: MapLabEditorChromeProps) {
                 <Popover.Positioner side="bottom" align="end">
                   <Popover.Popup
                     className="maplab-view-popover"
-                    role="menu"
+                    aria-label="View settings"
                     initialFocus={false}
                     finalFocus={(closeType) =>
-                      closeType === "keyboard" ? props.viewTriggerRef : false
+                      closeType === "keyboard" ? props.viewTriggerRef.current : undefined
                     }
                   >
-                    {(["outside", "props", "passages", "labels"] as const).map((layer) => (
-                      <button
-                        key={layer}
-                        type="button"
-                        className="maplab-pill-button maplab-layer-toggle-button"
-                        aria-pressed={props.layerVisible[layer]}
-                        onClick={() => props.toggleLayer(layer)}
-                      >
-                        {layer[0].toUpperCase() + layer.slice(1)}
-                      </button>
-                    ))}
-                    <button
-                      type="button"
-                      className="maplab-pill-button"
-                      aria-pressed={props.showGhostFloor}
+                    <ToggleGroup
+                      className="maplab-view-toggle-group"
+                      aria-label="Map layers"
+                      multiple={true}
+                      value={LAYER_KEYS.filter((layer) => props.layerVisible[layer])}
+                      options={LAYER_KEYS.map((layer) => ({
+                        value: layer,
+                        label: layer[0].toUpperCase() + layer.slice(1),
+                      }))}
+                      onValueChange={(values) => {
+                        const nextVisible = new Set(values);
+                        for (const layer of LAYER_KEYS) {
+                          if (nextVisible.has(layer) !== props.layerVisible[layer]) {
+                            props.toggleLayer(layer);
+                          }
+                        }
+                      }}
+                    />
+                    <Toggle
+                      className="maplab-view-toggle"
+                      aria-label="Ghost lower floor"
+                      pressed={props.showGhostFloor}
                       disabled={props.ghostZ === null}
-                      onClick={() => props.setShowGhostFloor((a) => !a)}
+                      onPressedChange={(pressed) => props.setShowGhostFloor(pressed)}
                     >
                       Ghost lower floor
-                    </button>
-                    <button
-                      type="button"
-                      className="maplab-pill-button"
-                      aria-pressed={props.density === "detailed"}
-                      onClick={() => props.setDensity("detailed")}
-                    >
-                      Detailed
-                    </button>
-                    <button
-                      type="button"
-                      className="maplab-pill-button"
-                      aria-pressed={props.density === "auto"}
-                      onClick={() => props.setDensity("auto")}
-                    >
-                      Auto
-                    </button>
-                    <button
-                      type="button"
-                      className="maplab-pill-button"
-                      aria-pressed={props.density === "simple"}
-                      onClick={() => props.setDensity("simple")}
-                    >
-                      Simple
-                    </button>
+                    </Toggle>
+                    <ToggleGroup
+                      className="maplab-view-toggle-group"
+                      aria-label="Map density"
+                      multiple={false}
+                      value={[props.density]}
+                      options={[
+                        { value: "detailed", label: "Detailed" },
+                        { value: "auto", label: "Auto" },
+                        { value: "simple", label: "Simple" },
+                      ]}
+                      onValueChange={(values) => {
+                        const density = values[0];
+                        if (density === "auto" || density === "detailed" || density === "simple") {
+                          props.setDensity(density);
+                        }
+                      }}
+                    />
                   </Popover.Popup>
                 </Popover.Positioner>
               </Popover.Portal>
@@ -523,7 +526,6 @@ export function MapLabEditorChrome(props: MapLabEditorChromeProps) {
                 ref={props.mapTriggerRef}
                 type="button"
                 className="maplab-pill-button maplab-editor-toolbar-button"
-                aria-haspopup="true"
               >
                 <MapIcon width={18} height={18} aria-hidden="true" />
                 Map
@@ -532,10 +534,10 @@ export function MapLabEditorChrome(props: MapLabEditorChromeProps) {
                 <Popover.Positioner side="bottom" align="end">
                   <Popover.Popup
                     className="maplab-map-popover"
-                    role="menu"
+                    aria-label="Map settings"
                     initialFocus={false}
                     finalFocus={(closeType) =>
-                      closeType === "keyboard" ? props.mapTriggerRef : false
+                      closeType === "keyboard" ? props.mapTriggerRef.current : undefined
                     }
                   >
                     {(["top", "right", "bottom", "left"] as const).map((side) => (
@@ -557,13 +559,13 @@ export function MapLabEditorChrome(props: MapLabEditorChromeProps) {
                         />
                       </label>
                     ))}
-                    <button
+                    <Button
                       type="button"
                       className="maplab-pill-button maplab-editor-toolbar-button"
                       onClick={() => props.setConfirmingReset(true)}
                     >
                       Reset unsaved changes
-                    </button>
+                    </Button>
                   </Popover.Popup>
                 </Popover.Positioner>
               </Popover.Portal>
@@ -586,7 +588,7 @@ export function MapLabEditorChrome(props: MapLabEditorChromeProps) {
             }}
           />
           <div className="maplab-editor-floor-actions" aria-label="Floor actions">
-            <button
+            <Button
               type="button"
               className="maplab-pill-button maplab-editor-floor-action"
               disabled={hasFloorAbove}
@@ -594,8 +596,8 @@ export function MapLabEditorChrome(props: MapLabEditorChromeProps) {
             >
               <PlusIcon width={16} height={16} aria-hidden="true" />
               Add floor above
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
               className="maplab-pill-button maplab-editor-floor-action"
               disabled={hasFloorBelow}
@@ -603,16 +605,16 @@ export function MapLabEditorChrome(props: MapLabEditorChromeProps) {
             >
               <PlusIcon width={16} height={16} aria-hidden="true" />
               Add floor below
-            </button>
+            </Button>
           </div>
-          <button
+          <Button
             type="button"
             className="maplab-pill-button maplab-editor-room-list-new"
             onClick={props.onNewRoom}
           >
             <PlusIcon width={16} height={16} aria-hidden="true" />
             New room
-          </button>
+          </Button>
           <ViewerRoomRail
             layout={state.layout}
             parsed={props.parsed}
@@ -657,7 +659,7 @@ export function MapLabEditorChrome(props: MapLabEditorChromeProps) {
                     aria-label="Connection utilities"
                     initialFocus={false}
                     finalFocus={(closeType) =>
-                      closeType === "keyboard" ? props.connectionsTriggerRef : false
+                      closeType === "keyboard" ? props.connectionsTriggerRef.current : undefined
                     }
                   >
                     <ConnectionsResolveList

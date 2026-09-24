@@ -1,18 +1,21 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 
 import { ToggleGroup } from "../components/form/ToggleGroup";
 import { usePlayerSpellbook } from "./usePlayerSpellbook";
-import { usePlayerSpellbookSession } from "./PlayerSpellbookSession";
+import { usePlayerSpellbookSession } from "./playerSpellbookSessionContext";
 import "./PlayerSpellbookRoute.css";
 
 export function PlayerSpellbookRoute() {
   const { characters, status } = usePlayerSpellbook();
   const { activeCharacterId, setCharacters, selectCharacter } = usePlayerSpellbookSession();
-  const sessionCharacters = characters.map((character) => ({ id: String(character.id) }));
+  const sessionCharacters = useMemo(
+    () => characters.map((character) => ({ id: String(character.id) })),
+    [characters],
+  );
 
   useEffect(() => {
     setCharacters(sessionCharacters);
-  }, [characters, setCharacters]);
+  }, [sessionCharacters, setCharacters]);
 
   return (
     <main className="player-spellbook" aria-labelledby="player-spellbook-title">

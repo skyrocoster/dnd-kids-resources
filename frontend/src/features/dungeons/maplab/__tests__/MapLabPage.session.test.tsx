@@ -209,8 +209,14 @@ describe("MapLabPage (Stage 4 — Passage session state)", () => {
     expect(door).toHaveAttribute("data-state", "locked");
     expect(door.querySelector(".maplab-door-leaf")).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "Reset dungeon" }));
+    const resetButton = screen.getByRole("button", { name: "Reset dungeon" });
+    expect(resetButton).toHaveAttribute("type", "button");
+    expect(resetButton).toHaveClass("maplab-pill-button", "maplab-session-reset-button");
+
+    await user.click(resetButton);
+    expect(api.resetDungeonSessionState).not.toHaveBeenCalled();
     await user.click(screen.getByRole("button", { name: "Reset" }));
+    expect(api.resetDungeonSessionState).toHaveBeenCalledWith(4);
     // Back to the authored default: trapped (armed) takes precedence again, door closed.
     expect(door).toHaveAttribute("data-state", "trapped");
     expect(door.querySelector(".maplab-door-leaf-closed")).toBeInTheDocument();
@@ -234,7 +240,7 @@ describe("MapLabPage (Stage 4 — Passage session state)", () => {
     // Provide prop session data — Treasure Chest (id=1) lock.armed overridden to false
     vi.spyOn(api, "getDungeonSessionState").mockResolvedValue({
       data: { props: { 1: { obstacles: { lock: { armed: false } } } } },
-    } as any);
+    } as Awaited<ReturnType<typeof api.getDungeonSessionState>>);
 
     renderMapLabPage();
     await flush();
@@ -479,22 +485,37 @@ describe("MapLabPage (Stage 6 — at-the-table control)", () => {
   it('shows "Put at the table" when this dungeon is not at the table, and sets it on click', async () => {
     const user = userEvent.setup();
     vi.spyOn(api, "getAtTheTable").mockResolvedValue({ dungeon_id: null });
-    vi.spyOn(api, "setAtTheTable").mockResolvedValue({ dungeon_id: 4 });
+    let resolveSetAtTheTable!: (response: { dungeon_id: number }) => void;
+    const setAtTheTableResult = new Promise<{ dungeon_id: number }>((resolve) => {
+      resolveSetAtTheTable = resolve;
+    });
+    vi.spyOn(api, "setAtTheTable").mockReturnValue(setAtTheTableResult);
 
     renderMapLabPage();
     await flush();
 
     const button = screen.getByRole("button", { name: "Put at the table" });
+    expect(button).toHaveAttribute("type", "button");
+    expect(button).toHaveClass("maplab-pill-button", "maplab-at-table-button");
     expect(button).toHaveAttribute("aria-pressed", "false");
+    expect(button).not.toHaveAttribute("data-active");
+    expect(button).not.toBeDisabled();
 
     await user.click(button);
-    await flush();
+    expect(button).toBeDisabled();
 
     expect(api.setAtTheTable).toHaveBeenCalledWith({ dungeon_id: 4 });
-    expect(screen.getByRole("button", { name: "At the table" })).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
+    await act(async () => {
+      resolveSetAtTheTable({ dungeon_id: 4 });
+      await setAtTheTableResult;
+    });
+
+    const atTableButton = screen.getByRole("button", { name: "At the table" });
+    expect(atTableButton).toHaveAttribute("type", "button");
+    expect(atTableButton).toHaveClass("maplab-pill-button", "maplab-at-table-button");
+    expect(atTableButton).toHaveAttribute("aria-pressed", "true");
+    expect(atTableButton).toHaveAttribute("data-active");
+    expect(atTableButton).toBeDisabled();
   });
 
   it('shows "At the table" already pressed and disabled when this dungeon is already at the table', async () => {

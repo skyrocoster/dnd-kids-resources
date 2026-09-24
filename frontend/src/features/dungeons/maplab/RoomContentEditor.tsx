@@ -140,13 +140,13 @@ export function RoomContentEditor({
             <section className="maplab-room-content-section">
               <div className="maplab-room-content-section-header">
                 <h4 className="maplab-room-content-section-title">NPCs</h4>
-                <button
+                <Button
                   type="button"
                   className="maplab-pill-button maplab-editor-toolbar-button"
                   onClick={() => setEditingNpcs((active) => !active)}
                 >
                   {editingNpcs ? "Done" : "Edit NPCs"}
-                </button>
+                </Button>
               </div>
               {(dungeonRoom.npcs ?? []).length > 0 ? (
                 <div className="maplab-room-content-chip-row">
@@ -187,13 +187,13 @@ export function RoomContentEditor({
             <section className="maplab-room-content-section">
               <div className="maplab-room-content-section-header">
                 <h4 className="maplab-room-content-section-title">Entries</h4>
-                <button
+                <Button
                   type="button"
                   className="maplab-pill-button maplab-editor-toolbar-button"
                   onClick={() => setEditingEntries((active) => !active)}
                 >
                   {editingEntries ? "Close entry form" : "Add entry"}
-                </button>
+                </Button>
               </div>
 
               {entryGroups.length > 0 ? (

@@ -45,7 +45,6 @@ export function MonsterBrowserPage() {
           remoteError(error instanceof Error ? error.message : "Failed to load monsters."),
         ),
       );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.state]);
 
   const monsters = monstersRemote.status === "success" ? monstersRemote.data : [];

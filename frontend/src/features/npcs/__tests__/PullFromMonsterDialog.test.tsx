@@ -139,7 +139,7 @@ describe("PullFromMonsterDialog", () => {
       expect.objectContaining({
         name: "Barkeep",
         ac: { value: 15, note: "leather armor, shield", alternatives: [] },
-        features: expect.objectContaining({ traits: [testMonster.features.traits[0]] }),
+        features: expect.objectContaining({ traits: [testMonster.features?.traits?.[0]] }),
       }),
     );
     expect(onPulled).toHaveBeenCalledWith(testNPC);

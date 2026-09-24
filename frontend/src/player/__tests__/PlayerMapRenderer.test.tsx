@@ -199,8 +199,17 @@ describe("PlayerMapRenderer", () => {
     const layout = stairLayout();
     layout.floors.push({ z: 1, title: "Upstairs" });
     // Add a portal co-located with the stair at cell [2,3]
-    (layout as any).portals = [{ cell: [2, 3] as [number, number], z: 0 }];
-    (layout as any).props = [];
+    layout.portals = [
+      {
+        portal_id: 1,
+        cell: [2, 3],
+        z: 0,
+        hidden: false,
+        locked: false,
+        trapped: false,
+      },
+    ];
+    layout.props = [];
 
     const { container } = render(<PlayerMapRenderer layout={layout} />);
 

@@ -6,8 +6,8 @@ import type { Player, PlayerDetail, Spell, Weapon } from "../../../api/types";
 import { PlayerBrowserPage } from "../PlayerBrowserPage";
 
 const players: Player[] = [
-  { id: 1, name: "Pip", class_: "Wizard", level: 1 },
-  { id: 2, name: "Lark", class_: "Wizard", level: 1 },
+  { id: 1, name: "Pip", class: "Wizard", level: 1 },
+  { id: 2, name: "Lark", class: "Wizard", level: 1 },
 ];
 
 const spellFireball: Spell = {

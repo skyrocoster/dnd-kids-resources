@@ -112,11 +112,12 @@ describe("MapLabEditorPage (Stage G0 — Ghost Objects scaffolding)", () => {
     renderMapLabEditorPage();
     await flush();
 
-    fireEvent.click(screen.getByRole("tab", { name: "First Floor" }));
+    fireEvent.click(screen.getByRole("button", { name: "First Floor" }));
 
     openViewPopover();
     const toggle = screen.getByRole("button", { name: /ghost lower floor/i });
     expect(toggle).not.toBeDisabled();
+    expect(toggle).toHaveClass("form-advanced-toggle", "maplab-view-toggle");
     expect(toggle).toHaveAttribute("aria-pressed", "false");
 
     fireEvent.click(toggle);
@@ -154,7 +155,7 @@ describe("MapLabEditorPage (Stage G1 — Ghost floor rendering)", () => {
     const { container } = renderMapLabEditorPage();
     await flush();
 
-    fireEvent.click(screen.getByRole("tab", { name: "First Floor" }));
+    fireEvent.click(screen.getByRole("button", { name: "First Floor" }));
     expect(container.querySelector(".maplab-ghost-layer")).not.toBeInTheDocument();
 
     openViewPopover();
@@ -172,7 +173,7 @@ describe("MapLabEditorPage (Stage G1 — Ghost floor rendering)", () => {
     const { container } = renderMapLabEditorPage();
     await flush();
 
-    fireEvent.click(screen.getByRole("tab", { name: "First Floor" }));
+    fireEvent.click(screen.getByRole("button", { name: "First Floor" }));
     openViewPopover();
     fireEvent.click(screen.getByRole("button", { name: /ghost lower floor/i }));
 
@@ -199,7 +200,7 @@ describe("MapLabEditorPage (Stage G1 — Ghost floor rendering)", () => {
     openViewPopover();
     expect(screen.getByRole("button", { name: /ghost lower floor/i })).toBeDisabled();
 
-    fireEvent.click(screen.getByRole("tab", { name: "First Floor" }));
+    fireEvent.click(screen.getByRole("button", { name: "First Floor" }));
     openViewPopover();
     expect(screen.getByRole("button", { name: /ghost lower floor/i })).not.toBeDisabled();
   });
@@ -243,7 +244,7 @@ describe("MapLabEditorPage (Stage G2 — ghost treatment design pass)", () => {
     const { container } = renderMapLabEditorPage();
     await flush();
 
-    fireEvent.click(screen.getByRole("tab", { name: "First Floor" }));
+    fireEvent.click(screen.getByRole("button", { name: "First Floor" }));
     openViewPopover();
     fireEvent.click(screen.getByRole("button", { name: /ghost lower floor/i }));
 

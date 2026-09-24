@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import * as api from "../../api/client";
-import type { Weapon, WeaponAttackEntry } from "../../api/types";
+import type { Weapon } from "../../api/types";
 import { Card } from "../../components/Card";
 import { BrowserLayout } from "../../components/BrowserLayout";
 import { Button } from "../../components/Button";
@@ -18,6 +18,7 @@ import type { RemoteState } from "../../components/remoteState";
 import { SwordsIcon } from "../../components/icons";
 import { ReferenceText, weaponValueReferenceRegistry } from "../../components/referenceText";
 import { WeaponEditor } from "./WeaponEditor";
+import { describeAttack } from "./weaponPresentation";
 import "./WeaponBrowserPage.css";
 
 function formatNameList(names: string[]): string {
@@ -31,15 +32,6 @@ function deleteConfirmMessage(weapon: Weapon, assignedNames: string[]): string {
   const base = `Delete "${weapon.name}"? This cannot be undone.`;
   if (assignedNames.length === 0) return base;
   return `${base} ${formatNameList(assignedNames)} will lose this weapon assignment.`;
-}
-
-export function describeAttack(attack: WeaponAttackEntry): string {
-  const type = typeof attack.type === "string" ? attack.type : "";
-  const damage = typeof attack.damage === "string" ? attack.damage : "";
-  const damageType = typeof attack.damage_type === "string" ? attack.damage_type : "";
-  const hands = attack.hands;
-  const parts = [type, damage, damageType].filter(Boolean).join(" ");
-  return hands ? `${parts} (${hands}-handed)` : parts;
 }
 
 function entryToText(entry: unknown): string {
@@ -61,23 +53,25 @@ export function WeaponBrowserPage() {
   const [pendingDeleteNames, setPendingDeleteNames] = useState<string[]>([]);
   const [deleteChecking, setDeleteChecking] = useState(false);
 
-  const load = () => {
+  const load = useCallback((selectFirst = false) => {
     setWeaponsRemote(remoteLoading());
     api
       .listWeapons()
       .then((data) => {
         const sorted = [...data].sort((a, b) => a.name.localeCompare(b.name));
         setWeaponsRemote(remoteSuccess(sorted));
-        if (sorted.length > 0 && selectedId == null) setSelectedId(sorted[0].id);
+        if (selectFirst && sorted.length > 0) setSelectedId(sorted[0].id);
       })
       .catch((error) =>
         setWeaponsRemote(
           remoteError(error instanceof Error ? error.message : "Failed to load weapons."),
         ),
       );
-  };
+  }, []);
 
-  useEffect(load, []);
+  useEffect(() => {
+    load(true);
+  }, [load]);
 
   const weapons = weaponsRemote.status === "success" ? weaponsRemote.data : [];
   const selected = weapons.find((w) => w.id === selectedId) || null;

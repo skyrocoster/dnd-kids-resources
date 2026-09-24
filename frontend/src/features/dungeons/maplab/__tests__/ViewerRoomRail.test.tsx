@@ -91,7 +91,7 @@ describe("ViewerRoomRail", () => {
     await userEvent.setup().click(screen.getByRole("button", { name: "Find room…" }));
 
     const rail = screen.getByRole("navigation", { name: "Room navigation" });
-    const positioner = document.querySelector(".maplab-viewer-rail-positioner");
+    const positioner = document.querySelector<HTMLElement>(".maplab-viewer-rail-positioner");
     expect(positioner).toContainElement(screen.getByRole("dialog", { name: "Find room" }));
     expect(rail).not.toContainElement(positioner);
   });

@@ -1,10 +1,5 @@
 import { Toast as Base } from "@base-ui/react/toast";
-import type {
-  ToastManager,
-  ToastManagerAddOptions,
-  ToastProviderProps as BaseProps,
-  UseToastManagerReturnValue,
-} from "@base-ui/react/toast";
+import type { ToastManagerAddOptions, ToastProviderProps as BaseProps } from "@base-ui/react/toast";
 import type { ReactNode } from "react";
 import "./OverlayPrimitives.css";
 export interface ToastProviderProps extends Omit<BaseProps, "children"> {
@@ -49,14 +44,4 @@ export function ToastProvider({
       <Region dismissLabel={dismissLabel} />
     </Base.Provider>
   );
-}
-export function useToast<
-  Data extends object = Record<string, unknown>,
->(): UseToastManagerReturnValue<Data> {
-  return Base.useToastManager<Data>();
-}
-export function createToastManager<
-  Data extends object = Record<string, unknown>,
->(): ToastManager<Data> {
-  return Base.createToastManager<Data>();
 }

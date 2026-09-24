@@ -18,7 +18,19 @@ export default defineConfig({
           environment: "jsdom",
           setupFiles: ["./src/test/setup.ts"],
           include: ["src/**/*.test.ts", "src/**/*.test.tsx", "src/**/*.test.mjs"],
+          // The real-server health check runs through the focused API config
+          // (frontend/vitest.api.config.ts), not the fast unit project.
+          exclude: ["src/api/__tests__/healthClient.test.ts"],
           css: true,
+          // Dynamic feature imports can take several seconds during a cold parallel run.
+          testTimeout: 30_000,
+          // Cap the unit project at six workers. Vitest 4 requires projects with
+          // different maxWorkers to use distinct sequence.groupOrder values, so the
+          // unit project gets its own group; the Storybook project is untouched.
+          maxWorkers: 6,
+          sequence: {
+            groupOrder: 1,
+          },
           // Suppress Node's ExperimentalWarning for CJS->ESM require() in
           // @asamuzakjp/css-color's dependency chain; it's noise, not actionable.
           execArgv: ["--no-warnings"],
@@ -42,6 +54,10 @@ export default defineConfig({
                 browser: "chromium",
               },
             ],
+            // Windows Hyper-V/Docker can reserve the default 63315 port
+            // (EACCES on excluded ranges); use a fixed port outside the
+            // excluded ranges so Storybook browser tests can start locally.
+            api: { port: 47111 },
           },
         },
       },

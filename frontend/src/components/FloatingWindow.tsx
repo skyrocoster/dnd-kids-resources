@@ -6,16 +6,12 @@ import type {
 } from "react";
 import { IconButton } from "./IconButton";
 import { CloseIcon, GripIcon } from "./icons";
+import { clampSize, type Size } from "./floatingWindowSize";
 import "./FloatingWindow.css";
 
 interface Position {
   x: number;
   y: number;
-}
-
-export interface Size {
-  width: number;
-  height: number;
 }
 
 interface FloatingWindowProps {
@@ -25,27 +21,8 @@ interface FloatingWindowProps {
   children: ReactNode;
 }
 
-const MIN_WIDTH = 300;
-const MIN_HEIGHT = 240;
 const DEFAULT_SIZE: Size = { width: 380, height: 480 };
 const RESIZE_STEP = 16;
-
-function viewportMaxSize(): Size {
-  return {
-    width: Math.floor(window.innerWidth * 0.92),
-    height: Math.floor(window.innerHeight * 0.85),
-  };
-}
-
-/** Clamp width/height between the minimum floor and the current viewport ceiling. */
-export function clampSize(width: number, height: number): Size {
-  const max = viewportMaxSize();
-  return {
-    width: Math.max(MIN_WIDTH, Math.min(width, max.width)),
-    height: Math.max(MIN_HEIGHT, Math.min(height, max.height)),
-  };
-}
-
 const DEFAULT_POSITION: Position = { x: 24, y: 24 };
 
 /** Clamp position to keep the window within viewport bounds. */

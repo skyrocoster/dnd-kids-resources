@@ -7,7 +7,8 @@ import {
 } from "../../../map/markerBadges";
 import { fixtureStairPresentation } from "./maplabPresentation";
 import { type MapCell, type MapStair, type SessionFixtureState } from "../../../model/maplabModel";
-import { onSquareMarkerGeometry, MarkerHitArea, MarkerGlyph } from "../../../map/markerShape";
+import { onSquareMarkerGeometry } from "../../../map/markerShapeModel";
+import { MarkerHitArea, MarkerGlyph } from "../../../map/markerShape";
 
 const STAIR_IDENTITY_TOKEN = "--md-tertiary";
 

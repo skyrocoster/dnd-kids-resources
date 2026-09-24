@@ -18,7 +18,11 @@ export function emptyLootBundleForm(): LootBundleFormState {
 }
 
 export function lootBundleToFormState(bundle: LootBundle): LootBundleFormState {
-  return { name: bundle.name, gold: String(bundle.gold), contents: bundle.contents || [] };
+  return {
+    name: bundle.name,
+    gold: String(bundle.gold ?? 0),
+    contents: (bundle.contents ?? []) as LootEntry[],
+  };
 }
 
 export function lootBundleFormReducer(
@@ -61,7 +65,7 @@ export function itemToLootEntry(item: Item): LootEntry {
     kind: "item",
     ref_id: item.id,
     name: item.name,
-    value_gp: item.value_gp,
+    value_gp: item.value_gp ?? null,
     category: item.category || null,
     quantity: 1,
   };

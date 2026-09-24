@@ -1,62 +1,144 @@
+import type { ComponentType } from "react";
 import { createBrowserRouter } from "react-router-dom";
-import { DungeonBrowserPage } from "./features/dungeons/DungeonBrowserPage";
-import { DungeonShell } from "./features/dungeons/maplab/DungeonShell";
-import { MapLabPage } from "./features/dungeons/maplab/MapLabPage";
-import { MapLabEditorPage } from "./features/dungeons/maplab/MapLabEditorPage";
-import { EncounterBrowserPage } from "./features/encounters/EncounterBrowserPage";
-import { EncounterRunnerPage } from "./features/encounters/EncounterRunnerPage";
-import { MonsterBrowserPage } from "./features/monsters/MonsterBrowserPage";
-import { MonsterEditor } from "./features/monsters/MonsterEditor";
-import { NPCBrowserPage } from "./features/npcs/NPCBrowserPage";
-import { PlayerBrowserPage } from "./features/players/PlayerBrowserPage";
-import { SpellBrowserPage } from "./features/spells/SpellBrowserPage";
-import { WeaponBrowserPage } from "./features/weapons/WeaponBrowserPage";
-import { ItemBrowserPage } from "./features/items/ItemBrowserPage";
-import { LootBundleBrowserPage } from "./features/loot/LootBundleBrowserPage";
-import { LoomPage } from "./features/loom/LoomPage";
 import { AppShell } from "./layout/AppShell";
-import { ComponentDemoPage } from "./pages/ComponentDemoPage";
-import { HomePage } from "./pages/HomePage";
-import { PlayerHome, PlayerMapRoute, PlayerShell } from "./player/PlayerShell";
-import { PlayerSpellbookRoute } from "./player/PlayerSpellbookRoute";
+
+function lazyComponent(load: () => Promise<Record<string, unknown>>, exportName: string) {
+  return async () => ({
+    Component: (await load())[exportName] as ComponentType,
+  });
+}
 
 export const routes = [
   {
     path: "/",
     element: <AppShell />,
     children: [
-      { index: true, element: <HomePage /> },
-      ...(import.meta.env.DEV ? [{ path: "demo", element: <ComponentDemoPage /> }] : []),
-      { path: "spells", element: <SpellBrowserPage /> },
-      { path: "monsters", element: <MonsterBrowserPage /> },
-      { path: "monsters/new", element: <MonsterEditor /> },
-      { path: "monsters/:id/edit", element: <MonsterEditor /> },
-      { path: "weapons", element: <WeaponBrowserPage /> },
-      { path: "items", element: <ItemBrowserPage /> },
-      { path: "loot", element: <LootBundleBrowserPage /> },
-      { path: "players", element: <PlayerBrowserPage /> },
-      { path: "npcs", element: <NPCBrowserPage /> },
-      { path: "loom", element: <LoomPage /> },
-      { path: "encounters", element: <EncounterBrowserPage /> },
-      { path: "encounters/:id/run", element: <EncounterRunnerPage /> },
-      { path: "dungeons", element: <DungeonBrowserPage /> },
+      {
+        index: true,
+        lazy: lazyComponent(() => import("./pages/HomePage"), "HomePage"),
+      },
+      ...(import.meta.env.DEV
+        ? [
+            {
+              path: "demo",
+              lazy: lazyComponent(() => import("./pages/ComponentDemoPage"), "ComponentDemoPage"),
+            },
+          ]
+        : []),
+      {
+        path: "spells",
+        lazy: lazyComponent(() => import("./features/spells/SpellBrowserPage"), "SpellBrowserPage"),
+      },
+      {
+        path: "monsters",
+        lazy: lazyComponent(
+          () => import("./features/monsters/MonsterBrowserPage"),
+          "MonsterBrowserPage",
+        ),
+      },
+      {
+        path: "monsters/new",
+        lazy: lazyComponent(() => import("./features/monsters/MonsterEditor"), "MonsterEditor"),
+      },
+      {
+        path: "monsters/:id/edit",
+        lazy: lazyComponent(() => import("./features/monsters/MonsterEditor"), "MonsterEditor"),
+      },
+      {
+        path: "weapons",
+        lazy: lazyComponent(
+          () => import("./features/weapons/WeaponBrowserPage"),
+          "WeaponBrowserPage",
+        ),
+      },
+      {
+        path: "items",
+        lazy: lazyComponent(() => import("./features/items/ItemBrowserPage"), "ItemBrowserPage"),
+      },
+      {
+        path: "loot",
+        lazy: lazyComponent(
+          () => import("./features/loot/LootBundleBrowserPage"),
+          "LootBundleBrowserPage",
+        ),
+      },
+      {
+        path: "players",
+        lazy: lazyComponent(
+          () => import("./features/players/PlayerBrowserPage"),
+          "PlayerBrowserPage",
+        ),
+      },
+      {
+        path: "npcs",
+        lazy: lazyComponent(() => import("./features/npcs/NPCBrowserPage"), "NPCBrowserPage"),
+      },
+      {
+        path: "loom",
+        lazy: lazyComponent(() => import("./features/loom/LoomPage"), "LoomPage"),
+      },
+      {
+        path: "encounters",
+        lazy: lazyComponent(
+          () => import("./features/encounters/EncounterBrowserPage"),
+          "EncounterBrowserPage",
+        ),
+      },
+      {
+        path: "encounters/:id/run",
+        lazy: lazyComponent(
+          () => import("./features/encounters/EncounterRunnerPage"),
+          "EncounterRunnerPage",
+        ),
+      },
+      {
+        path: "dungeons",
+        lazy: lazyComponent(
+          () => import("./features/dungeons/DungeonBrowserPage"),
+          "DungeonBrowserPage",
+        ),
+      },
       {
         path: "dungeons/:dungeonId",
-        element: <DungeonShell />,
+        lazy: lazyComponent(
+          () => import("./features/dungeons/maplab/DungeonShell"),
+          "DungeonShell",
+        ),
         children: [
-          { index: true, element: <MapLabPage /> },
-          { path: "edit", element: <MapLabEditorPage /> },
+          {
+            index: true,
+            lazy: lazyComponent(
+              () => import("./features/dungeons/maplab/MapLabPage"),
+              "MapLabPage",
+            ),
+          },
+          {
+            path: "edit",
+            lazy: lazyComponent(
+              () => import("./features/dungeons/maplab/MapLabEditorPage"),
+              "MapLabEditorPage",
+            ),
+          },
         ],
       },
     ],
   },
   {
     path: "/play",
-    element: <PlayerShell />,
+    lazy: lazyComponent(() => import("./player/PlayerShell"), "PlayerShell"),
     children: [
-      { index: true, element: <PlayerHome /> },
-      { path: "map", element: <PlayerMapRoute /> },
-      { path: "spells", element: <PlayerSpellbookRoute /> },
+      {
+        index: true,
+        lazy: lazyComponent(() => import("./player/PlayerShell"), "PlayerHome"),
+      },
+      {
+        path: "map",
+        lazy: lazyComponent(() => import("./player/PlayerShell"), "PlayerMapRoute"),
+      },
+      {
+        path: "spells",
+        lazy: lazyComponent(() => import("./player/PlayerSpellbookRoute"), "PlayerSpellbookRoute"),
+      },
     ],
   },
 ];

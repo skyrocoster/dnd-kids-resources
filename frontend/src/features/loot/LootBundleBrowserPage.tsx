@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import * as api from "../../api/client";
-import type { LootBundle } from "../../api/types";
+import type { LootBundle, LootEntry } from "../../api/types";
 import { BrowserLayout } from "../../components/BrowserLayout";
 import { Button } from "../../components/Button";
 import { Card } from "../../components/Card";
@@ -19,6 +19,10 @@ import { LootBundleEditor } from "./LootBundleEditor";
 import { computeBundleTotal, formatGp } from "./lootTotals";
 import "./LootBundleBrowserPage.css";
 
+function bundleContents(bundle: LootBundle): LootEntry[] {
+  return (bundle.contents ?? []) as LootEntry[];
+}
+
 export function LootBundleBrowserPage() {
   const [bundlesRemote, setBundlesRemote] = useState<RemoteState<LootBundle[]>>(initialRemoteState);
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -27,25 +31,28 @@ export function LootBundleBrowserPage() {
   const [pendingDelete, setPendingDelete] = useState<LootBundle | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  const load = () => {
+  const load = useCallback((selectFirst = false) => {
     setBundlesRemote(remoteLoading());
     api
       .listLootBundles()
       .then((data) => {
         const sorted = [...data].sort((a, b) => a.name.localeCompare(b.name));
         setBundlesRemote(remoteSuccess(sorted));
-        if (sorted.length && selectedId == null) setSelectedId(sorted[0].id);
+        if (selectFirst && sorted.length > 0) setSelectedId(sorted[0].id);
       })
       .catch((error) =>
         setBundlesRemote(
           remoteError(error instanceof Error ? error.message : "Failed to load loot bundles."),
         ),
       );
-  };
+  }, []);
 
-  useEffect(load, []);
+  useEffect(() => {
+    load(true);
+  }, [load]);
   const bundles = bundlesRemote.status === "success" ? bundlesRemote.data : [];
   const selected = bundles.find((bundle) => bundle.id === selectedId) || null;
+  const selectedContents = selected ? bundleContents(selected) : [];
 
   const openCreate = () => {
     setEditingBundle(undefined);
@@ -92,7 +99,9 @@ export function LootBundleBrowserPage() {
             items={bundles}
             getId={(bundle) => bundle.id}
             getLabel={(bundle) => bundle.name}
-            getMeta={(bundle) => formatGp(computeBundleTotal(bundle.gold, bundle.contents))}
+            getMeta={(bundle) =>
+              formatGp(computeBundleTotal(bundle.gold ?? 0, bundleContents(bundle)))
+            }
             selectedId={selectedId}
             onSelect={(bundle) => setSelectedId(bundle.id)}
             variant="loot"
@@ -115,7 +124,7 @@ export function LootBundleBrowserPage() {
               </Button>
               <Card
                 title={selected.name}
-                subtitle={formatGp(computeBundleTotal(selected.gold, selected.contents))}
+                subtitle={formatGp(computeBundleTotal(selected.gold ?? 0, selectedContents))}
                 tag="Total value"
                 variant="loot"
                 footer={
@@ -129,10 +138,10 @@ export function LootBundleBrowserPage() {
                   </div>
                 }
               >
-                <p className="loot-browser-gold">Gold: {formatGp(selected.gold)}</p>
-                {selected.contents?.length ? (
+                <p className="loot-browser-gold">Gold: {formatGp(selected.gold ?? 0)}</p>
+                {selectedContents.length > 0 ? (
                   <ul className="loot-browser-contents">
-                    {selected.contents.map((entry, index) => (
+                    {selectedContents.map((entry, index) => (
                       <li key={`${entry.kind}-${entry.ref_id}-${index}`}>
                         {entry.quantity} × {entry.name}
                       </li>

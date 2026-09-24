@@ -1,4 +1,10 @@
-import type { Monster, MonsterFeatures, NPC, NPCStatblockFields } from "../../api/types";
+import {
+  completeMonsterFeatures,
+  type Monster,
+  type MonsterFeatures,
+  type NPC,
+  type NPCStatblockFields,
+} from "../../api/types";
 import {
   formatAc,
   formatCr,
@@ -67,6 +73,7 @@ const ITEM_REGIONS: Partial<Record<keyof MonsterFeatures, PullRow["region"]>> = 
 export function getPullableRows(monster: Monster, npc: NPC): PullRow[] {
   const rows: PullRow[] = [];
   const npcView = npcToMonsterView(npc);
+  const features = completeMonsterFeatures(monster.features);
 
   if (monster.ac != null) {
     rows.push({
@@ -86,7 +93,7 @@ export function getPullableRows(monster: Monster, npc: NPC): PullRow[] {
       currentValueLabel: npc.hp != null ? formatHp(npcView) : null,
     });
   }
-  if (monster.speed.length > 0) {
+  if ((monster.speed?.length ?? 0) > 0) {
     rows.push({
       id: "speed",
       region: "Stats",
@@ -128,7 +135,7 @@ export function getPullableRows(monster: Monster, npc: NPC): PullRow[] {
       currentValueLabel: formatAbilities(npcView),
     });
   }
-  if (Object.keys(monster.saving_throws).length > 0) {
+  if (Object.keys(monster.saving_throws ?? {}).length > 0) {
     const npcSaves = formatSavingThrows(npcView);
     rows.push({
       id: "saving_throws",
@@ -139,7 +146,7 @@ export function getPullableRows(monster: Monster, npc: NPC): PullRow[] {
         npcSaves.length > 0 ? npcSaves.map((s) => `${s.label} ${s.value}`).join(", ") : null,
     });
   }
-  if (Object.keys(monster.skills).length > 0) {
+  if (Object.keys(monster.skills ?? {}).length > 0) {
     const npcSkills = formatSkills(npcView);
     rows.push({
       id: "skills",
@@ -151,7 +158,7 @@ export function getPullableRows(monster: Monster, npc: NPC): PullRow[] {
     });
   }
 
-  if (monster.languages.length > 0) {
+  if ((monster.languages?.length ?? 0) > 0) {
     rows.push({
       id: "languages",
       region: "Lore",
@@ -162,7 +169,7 @@ export function getPullableRows(monster: Monster, npc: NPC): PullRow[] {
   }
 
   for (const field of FEATURE_LIST_FIELDS) {
-    const items = monster.features[field];
+    const items = features[field];
     if (items.length === 0) continue;
     const region = ITEM_REGIONS[field] ?? "Actions";
     for (let i = 0; i < items.length; i++) {
@@ -184,31 +191,18 @@ export function applyPull(
   monster: Monster,
   selectedRowIds: Set<string>,
 ): NPCStatblockFields {
-  const npcFeatures: MonsterFeatures = npc.features
-    ? {
-        traits: [...npc.features.traits],
-        spellcasting: [...npc.features.spellcasting],
-        actions: [...npc.features.actions],
-        bonus_actions: [...npc.features.bonus_actions],
-        reactions: [...npc.features.reactions],
-        reaction_intro: npc.features.reaction_intro,
-        legendary_actions: [...npc.features.legendary_actions],
-        legendary_intro: npc.features.legendary_intro,
-        legendary_actions_per_round: npc.features.legendary_actions_per_round,
-        mythic_actions: [...npc.features.mythic_actions],
-      }
-    : {
-        traits: [],
-        spellcasting: [],
-        actions: [],
-        bonus_actions: [],
-        reactions: [],
-        reaction_intro: null,
-        legendary_actions: [],
-        legendary_intro: null,
-        legendary_actions_per_round: null,
-        mythic_actions: [],
-      };
+  const currentFeatures = completeMonsterFeatures(npc.features);
+  const monsterFeatures = completeMonsterFeatures(monster.features);
+  const npcFeatures = {
+    ...currentFeatures,
+    traits: [...currentFeatures.traits],
+    spellcasting: [...currentFeatures.spellcasting],
+    actions: [...currentFeatures.actions],
+    bonus_actions: [...currentFeatures.bonus_actions],
+    reactions: [...currentFeatures.reactions],
+    legendary_actions: [...currentFeatures.legendary_actions],
+    mythic_actions: [...currentFeatures.mythic_actions],
+  };
 
   const result: NPCStatblockFields = {
     sizes: npc.sizes,
@@ -247,27 +241,34 @@ export function applyPull(
     result.experience_points = monster.experience_points;
   }
 
-  if (selectedRowIds.has("speed")) result.speed = [...(npc.speed ?? []), ...monster.speed];
+  if (selectedRowIds.has("speed")) result.speed = [...(npc.speed ?? []), ...(monster.speed ?? [])];
   if (selectedRowIds.has("damage_resistances"))
-    result.damage_resistances = [...(npc.damage_resistances ?? []), ...monster.damage_resistances];
+    result.damage_resistances = [
+      ...(npc.damage_resistances ?? []),
+      ...(monster.damage_resistances ?? []),
+    ];
   if (selectedRowIds.has("damage_immunities"))
-    result.damage_immunities = [...(npc.damage_immunities ?? []), ...monster.damage_immunities];
+    result.damage_immunities = [
+      ...(npc.damage_immunities ?? []),
+      ...(monster.damage_immunities ?? []),
+    ];
   if (selectedRowIds.has("damage_vulnerabilities"))
     result.damage_vulnerabilities = [
       ...(npc.damage_vulnerabilities ?? []),
-      ...monster.damage_vulnerabilities,
+      ...(monster.damage_vulnerabilities ?? []),
     ];
   if (selectedRowIds.has("condition_immunities"))
     result.condition_immunities = [
       ...(npc.condition_immunities ?? []),
-      ...monster.condition_immunities,
+      ...(monster.condition_immunities ?? []),
     ];
-  if (selectedRowIds.has("senses")) result.senses = [...(npc.senses ?? []), ...monster.senses];
+  if (selectedRowIds.has("senses"))
+    result.senses = [...(npc.senses ?? []), ...(monster.senses ?? [])];
   if (selectedRowIds.has("languages"))
-    result.languages = [...(npc.languages ?? []), ...monster.languages];
+    result.languages = [...(npc.languages ?? []), ...(monster.languages ?? [])];
 
   for (const field of FEATURE_LIST_FIELDS) {
-    const items = monster.features[field];
+    const items = monsterFeatures[field];
     for (let i = 0; i < items.length; i++) {
       if (selectedRowIds.has(`${field}:${i}`)) {
         const target = npcFeatures[field] as unknown[];
@@ -277,15 +278,15 @@ export function applyPull(
   }
 
   const hasReaction = [...selectedRowIds].some((id) => id.startsWith("reactions:"));
-  if (hasReaction && monster.features.reaction_intro != null) {
-    npcFeatures.reaction_intro = monster.features.reaction_intro;
+  if (hasReaction && monsterFeatures.reaction_intro != null) {
+    npcFeatures.reaction_intro = monsterFeatures.reaction_intro;
   }
   const hasLegendary = [...selectedRowIds].some((id) => id.startsWith("legendary_actions:"));
   if (hasLegendary) {
-    if (monster.features.legendary_intro != null)
-      npcFeatures.legendary_intro = monster.features.legendary_intro;
-    if (monster.features.legendary_actions_per_round != null)
-      npcFeatures.legendary_actions_per_round = monster.features.legendary_actions_per_round;
+    if (monsterFeatures.legendary_intro != null)
+      npcFeatures.legendary_intro = monsterFeatures.legendary_intro;
+    if (monsterFeatures.legendary_actions_per_round != null)
+      npcFeatures.legendary_actions_per_round = monsterFeatures.legendary_actions_per_round;
   }
 
   return result;

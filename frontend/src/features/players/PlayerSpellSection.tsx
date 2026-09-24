@@ -91,7 +91,7 @@ export function PlayerSpellSection({ player, spells }: PlayerSpellSectionProps) 
                                 <DiceText text={spell.alternate_description} />
                               </p>
                             )}
-                            {spell.higher_levels.text && (
+                            {spell.higher_levels?.text && (
                               <p>
                                 <strong>At Higher Levels: </strong>
                                 <DiceText text={spell.higher_levels.text} />

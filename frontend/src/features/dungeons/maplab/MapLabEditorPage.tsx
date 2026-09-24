@@ -24,9 +24,11 @@ import {
   ZoomOutIcon,
 } from "../../../components/icons";
 import { type ObstacleInspectorAdapter } from "./InspectorPanel";
-import { resolveMapDensity, useMapDensity, useMapLayerVisibility } from "./MapLabToolbar";
+import { useMapDensity, useMapLayerVisibility } from "./mapLabToolbarState";
+import { resolveMapDensity } from "../../../map/mapDensity";
 import { PROP_KIND_OPTIONS } from "./fixtureTypes";
 import { SelectionActions } from "./SelectionActions";
+import { Button } from "../../../components/Button";
 import { ConfirmDialog } from "../../../components/ConfirmDialog";
 import {
   absoluteCells,
@@ -194,7 +196,9 @@ function authoredInspectorAdapter(
 
 export function MapLabEditorPage() {
   const route = useDungeonShellContext();
-  const navigation = useMapLabNavigationSession(route.dungeonId);
+  const { state: navigationState, setState: setNavigationState } = useMapLabNavigationSession(
+    route.dungeonId,
+  );
   const statusSlot = useDungeonShellStatusSlot();
   const {
     state,
@@ -297,7 +301,7 @@ export function MapLabEditorPage() {
   const zoomApi = useMapCanvasZoom({
     wheelZoomMode: "always",
     pointerMode,
-    initialZoom: navigation.state.zoom,
+    initialZoom: navigationState.zoom,
   });
   // Restore the session's active floor only when the dungeon route key initializes or changes —
   // never on ordinary editor floor changes, which would deadlock against the write effect below.
@@ -311,21 +315,21 @@ export function MapLabEditorPage() {
     if (navigationRouteKey.current === route.dungeonId) return;
     navigationRouteKey.current = route.dungeonId;
     navigationRestorePending.current = true;
-    if (navigation.state.activeZ !== state.activeZ) setActiveZ(navigation.state.activeZ);
-  }, [navigation.state.activeZ, route.dungeonId, setActiveZ, state.activeZ]);
+    if (navigationState.activeZ !== state.activeZ) setActiveZ(navigationState.activeZ);
+  }, [navigationState.activeZ, route.dungeonId, setActiveZ, state.activeZ]);
   useEffect(() => {
     if (navigationRestorePending.current) {
       navigationRestorePending.current = false;
       return;
     }
-    navigation.setState((current) => ({ ...current, activeZ: state.activeZ, zoom: zoomApi.zoom }));
-  }, [navigation.setState, state.activeZ, zoomApi.zoom]);
+    setNavigationState((current) => ({ ...current, activeZ: state.activeZ, zoom: zoomApi.zoom }));
+  }, [setNavigationState, state.activeZ, zoomApi.zoom]);
   const simplified = resolveMapDensity(density, zoomApi.zoom.scale) === "simple";
   const [viewportSize, setViewportSize] = useState<ViewportSize>({ width: 0, height: 0 });
   const handleViewportResize = useCallback((size: ViewportSize) => setViewportSize(size), []);
   const bounds = useMemo(() => paddedBounds(state.layout), [state.layout]);
   const roomBounds = useMemo(() => layoutBounds(state.layout.rooms), [state.layout]);
-  const { fitToBounds } = zoomApi;
+  const { centerOn, fitToBounds } = zoomApi;
   const toggleCanvasFullscreen = useCallback(() => {
     setIsCanvasFullscreen((active) => !active);
     if (!isCanvasFullscreen) {
@@ -740,11 +744,11 @@ export function MapLabEditorPage() {
           elementRect.left <= viewportRect.right,
         );
         if (force || !isVisible) {
-          zoomApi.centerOn({ x: cell[0] - bounds.minX, y: cell[1] - bounds.minY }, viewportSize);
+          centerOn({ x: cell[0] - bounds.minX, y: cell[1] - bounds.minY }, viewportSize);
         }
       }
     },
-    [bounds.minX, bounds.minY, state.layout, state.activeZ, viewportSize, zoomApi.centerOn],
+    [bounds.minX, bounds.minY, centerOn, state.layout, state.activeZ, viewportSize],
   );
 
   const centerCanvasSelection = useCallback(
@@ -812,7 +816,7 @@ export function MapLabEditorPage() {
   );
 
   useEffect(() => {
-    const target = navigation.state.selectedTarget;
+    const target = navigationState.selectedTarget;
     if (!target) return;
     if (target.kind === "feature") selectFeature(target.id);
     else if (target.kind === "room") selectRoom(target.id);
@@ -821,7 +825,7 @@ export function MapLabEditorPage() {
     else if (target.kind === "portal") selectPortal(target.id);
     else if (target.kind === "prop") selectProp(target.id);
   }, [
-    navigation.state.selectedTarget,
+    navigationState.selectedTarget,
     selectDoor,
     selectFeature,
     selectPortal,
@@ -831,7 +835,7 @@ export function MapLabEditorPage() {
   ]);
 
   useEffect(() => {
-    const target = navigation.state.focusTarget;
+    const target = navigationState.focusTarget;
     if (!target) return;
     if (target.kind === "feature") {
       selectFeature(target.id);
@@ -852,13 +856,13 @@ export function MapLabEditorPage() {
       selectProp(target.id);
       centerSelection("prop", target.id);
     }
-    navigation.setState((current) =>
+    setNavigationState((current) =>
       current.focusTarget === target ? { ...current, focusTarget: null } : current,
     );
   }, [
     centerSelection,
-    navigation.state.focusTarget,
-    navigation.setState,
+    navigationState.focusTarget,
+    setNavigationState,
     selectDoor,
     selectFeature,
     selectPortal,
@@ -881,9 +885,9 @@ export function MapLabEditorPage() {
               : selectedPortal
                 ? { kind: "portal", id: selectedPortal.portal_id }
                 : null;
-    navigation.setState((current) => ({ ...current, selectedTarget }));
+    setNavigationState((current) => ({ ...current, selectedTarget }));
   }, [
-    navigation.setState,
+    setNavigationState,
     selectedDoor,
     selectedFeature,
     selectedPortal,
@@ -1300,14 +1304,14 @@ export function MapLabEditorPage() {
       {drawFeatureKind !== null && state.activeZ !== 0 && !dismissZWarning && (
         <p className="maplab-placement-error" role="status">
           Rivers and woods usually sit on the ground floor. Draw it here anyway?
-          <button
+          <Button
             type="button"
             className="maplab-pill-button maplab-editor-toolbar-button"
             onClick={() => setDismissZWarning(true)}
             style={{ marginLeft: "var(--space-3)" }}
           >
             Dismiss
-          </button>
+          </Button>
         </p>
       )}
 
@@ -1351,7 +1355,7 @@ export function MapLabEditorPage() {
           topRightSlot={(() => {
             const FullscreenIcon = isCanvasFullscreen ? FullscreenExitIcon : FullscreenEnterIcon;
             return (
-              <button
+              <Button
                 type="button"
                 className="maplab-pill-button maplab-zoom-button"
                 aria-label={
@@ -1360,7 +1364,7 @@ export function MapLabEditorPage() {
                 onClick={toggleCanvasFullscreen}
               >
                 <FullscreenIcon width={22} height={22} aria-hidden="true" />
-              </button>
+              </Button>
             );
           })()}
           bottomCenterSlot={
@@ -1371,40 +1375,50 @@ export function MapLabEditorPage() {
             ) : deletedFixture ? (
               <div className="maplab-placement-error" role="status">
                 Deleted {deletedFixture}.{" "}
-                <button type="button" aria-label="Undo deletion" onClick={undoDeletedFixture}>
+                <Button
+                  type="button"
+                  className=""
+                  aria-label="Undo deletion"
+                  onClick={undoDeletedFixture}
+                >
                   Undo
-                </button>
+                </Button>
               </div>
             ) : removedEmptyRoom ? (
               <div className="maplab-placement-error" role="status">
                 Removed empty room.{" "}
-                <button type="button" aria-label="Undo removal" onClick={undoRemovedEmptyRoom}>
+                <Button
+                  type="button"
+                  className=""
+                  aria-label="Undo removal"
+                  onClick={undoRemovedEmptyRoom}
+                >
                   Undo
-                </button>
+                </Button>
               </div>
             ) : null
           }
           controlsSlot={
             <>
               <div className="maplab-history-cluster">
-                <button
+                <Button
                   type="button"
                   className="maplab-pill-button maplab-history-button"
                   onClick={undo}
                   disabled={!canUndo}
                 >
                   Undo
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
                   className="maplab-pill-button maplab-history-button"
                   onClick={redo}
                   disabled={!canRedo}
                 >
                   Redo
-                </button>
+                </Button>
               </div>
-              <button
+              <Button
                 type="button"
                 className="maplab-pill-button maplab-zoom-button"
                 aria-label="Fit map to viewport"
@@ -1418,24 +1432,24 @@ export function MapLabEditorPage() {
                 }}
               >
                 <FitIcon width={22} height={22} aria-hidden="true" />
-              </button>
+              </Button>
               <div className="maplab-zoom-cluster">
-                <button
+                <Button
                   type="button"
                   className="maplab-pill-button maplab-zoom-button"
                   aria-label="Zoom in"
                   onClick={() => zoomApi.zoomIn(viewportSize)}
                 >
                   <ZoomInIcon width={22} height={22} aria-hidden="true" />
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
                   className="maplab-pill-button maplab-zoom-button"
                   aria-label="Zoom out"
                   onClick={() => zoomApi.zoomOut(viewportSize)}
                 >
                   <ZoomOutIcon width={22} height={22} aria-hidden="true" />
-                </button>
+                </Button>
               </div>
             </>
           }

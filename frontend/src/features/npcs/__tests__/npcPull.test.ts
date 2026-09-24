@@ -423,10 +423,10 @@ describe("applyPull", () => {
     const m = monster();
     const result = applyPull(n, m, new Set(["traits:0"]));
 
-    expect(result.features!.traits).toHaveLength(2);
-    expect(result.features!.traits[1]).toEqual(m.features.traits[0]);
-    expect(result.features!.traits[0]).toEqual(n.features!.traits[0]);
-    expect(result.features!.actions).toHaveLength(0);
+    expect(result.features?.traits).toHaveLength(2);
+    expect(result.features?.traits?.[1]).toEqual(m.features?.traits?.[0]);
+    expect(result.features?.traits?.[0]).toEqual(n.features?.traits?.[0]);
+    expect(result.features?.actions).toHaveLength(0);
   });
 
   it("selecting reactions:N appends the reaction and overwrites reaction_intro", () => {
@@ -440,9 +440,9 @@ describe("applyPull", () => {
     const n = npc();
     const result = applyPull(n, m, new Set(["reactions:0"]));
 
-    expect(result.features!.reactions).toHaveLength(1);
-    expect(result.features!.reactions[0].name).toBe("Tail Swipe");
-    expect(result.features!.reaction_intro).toBe("Can make one reaction per turn.");
+    expect(result.features?.reactions).toHaveLength(1);
+    expect(result.features?.reactions?.[0]?.name).toBe("Tail Swipe");
+    expect(result.features?.reaction_intro).toBe("Can make one reaction per turn.");
   });
 
   it("selecting legendary_actions:N appends and overwrites intro and actions_per_round", () => {
@@ -474,8 +474,8 @@ describe("applyPull", () => {
     const m = monster();
     applyPull(n, m, new Set(["traits:0"]));
 
-    expect(n.features!.traits).toHaveLength(1);
-    expect(n.features!.traits[0].name).toBe("Brave");
+    expect(n.features?.traits).toHaveLength(1);
+    expect(n.features?.traits?.[0]?.name).toBe("Brave");
   });
 
   it("handles npc with undefined features", () => {
@@ -483,7 +483,7 @@ describe("applyPull", () => {
     const m = monster();
     const result = applyPull(n, m, new Set(["traits:0"]));
 
-    expect(result.features!.traits).toHaveLength(1);
-    expect(result.features!.traits[0].name).toBe("Keen Senses");
+    expect(result.features?.traits).toHaveLength(1);
+    expect(result.features?.traits?.[0]?.name).toBe("Keen Senses");
   });
 });

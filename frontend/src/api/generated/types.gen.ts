@@ -5780,6 +5780,20 @@ export type RevealCellsResponses = {
 
 export type RevealCellsResponse = RevealCellsResponses[keyof RevealCellsResponses];
 
+export type GetHealthData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/health";
+};
+
+export type GetHealthResponses = {
+  /**
+   * Successful Response
+   */
+  200: unknown;
+};
+
 export type GetAtTheTableData = {
   body?: never;
   path?: never;

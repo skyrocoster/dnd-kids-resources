@@ -469,8 +469,11 @@ describe("MapLabPage portal viewer rendering and navigation", () => {
     expect(inspector.querySelector(".maplab-inspector-title")).toHaveTextContent("Armoury");
 
     await user.click(screen.getByRole("button", { name: "View" }));
+    expect(screen.getByRole("dialog", { name: "View settings" })).toBeVisible();
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
     await user.keyboard("{Escape}");
     expect(screen.queryByRole("button", { name: "Detailed" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: "View settings" })).not.toBeInTheDocument();
     expect(inspector.querySelector(".maplab-inspector-title")).toHaveTextContent("Armoury");
 
     await user.click(screen.getByRole("button", { name: "Find room…" }));

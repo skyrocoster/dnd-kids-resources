@@ -80,7 +80,7 @@ describe("reusable form-control primitives", () => {
     );
 
     await user.click(screen.getByRole("combobox", { name: "Damage choice" }));
-    expect(screen.getByRole("option", { name: "Arcane" })).toHaveAttribute("data-selected");
+    expect(await screen.findByRole("option", { name: "Arcane" })).toHaveAttribute("data-selected");
     expect(screen.getByRole("option", { name: "Fire" })).toHaveAttribute("data-disabled");
 
     const autocomplete = screen.getByRole("combobox", { name: "Search damage" });

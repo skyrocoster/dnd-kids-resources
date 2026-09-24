@@ -19,7 +19,7 @@ describe("generated API surface", () => {
     expect(typeof sdk.listSpells).toBe("function");
     expect(typeof getAbilities).toBe("function");
     expect(typeof listSpells).toBe("function");
-    expect("getHealth" in sdk).toBe(false);
+    expect(typeof sdk.getHealth).toBe("function");
   });
 
   it("provides canonical keys and invalidation for connected features", () => {

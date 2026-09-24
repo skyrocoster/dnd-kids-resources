@@ -1,11 +1,11 @@
 import { useEffect } from "react";
 import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
+import { PlayerSpellbookSessionProvider } from "../PlayerSpellbookSession";
 import {
-  PlayerSpellbookSessionProvider,
   usePlayerSpellbookSession,
   type PlayerSpellbookCharacter,
-} from "../PlayerSpellbookSession";
+} from "../playerSpellbookSessionContext";
 
 const characters: PlayerSpellbookCharacter[] = [{ id: "wizard" }, { id: "ranger" }];
 

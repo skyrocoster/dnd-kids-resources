@@ -1133,8 +1133,40 @@
   min-width: 14rem;
 }
 
-.maplab-view-popover .maplab-pill-button {
+/* View settings use shared ToggleGroups but retain the viewer's existing unboxed pill treatment.
+ * The pressed-state override is intentionally neutral to match the former raw buttons; pressed
+ * state remains exposed through the shared controls' aria-pressed attributes. */
+.maplab-view-popover .maplab-view-toggle-group.form-advanced-toggle-group {
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.maplab-view-popover .maplab-view-toggle-group .form-advanced-toggle {
+  min-width: var(--control-height);
   min-height: var(--control-height);
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--md-outline-variant);
+  border-radius: 999px;
+  background: var(--md-surface-2);
+  color: var(--md-on-surface);
+  font-size: var(--type-label-size);
+  font-weight: var(--type-label-weight);
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.maplab-view-popover .maplab-view-toggle-group .form-advanced-toggle:hover:not([data-disabled]) {
+  border-color: var(--md-outline);
+}
+
+.maplab-view-popover .maplab-view-toggle-group .form-advanced-toggle:focus-visible {
+  outline: 2px solid var(--md-primary);
+  outline-offset: 2px;
 }
 
 /* Left nav rail: floor tabs stacked above the room list as one column, instead of two unrelated

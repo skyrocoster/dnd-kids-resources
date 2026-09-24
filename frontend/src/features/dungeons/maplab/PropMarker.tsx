@@ -14,12 +14,8 @@ import {
   type MapProp,
   type SessionFixtureState,
 } from "../../../model/maplabModel";
-import {
-  MarkerHitArea,
-  MarkerGlyph,
-  onSquareMarkerGeometry,
-  wallAttachedMarkerGeometry,
-} from "../../../map/markerShape";
+import { onSquareMarkerGeometry, wallAttachedMarkerGeometry } from "../../../map/markerShapeModel";
+import { MarkerHitArea, MarkerGlyph } from "../../../map/markerShape";
 
 const PROP_IDENTITY_TOKENS: Record<string, string> = {
   chest: "--md-loot",

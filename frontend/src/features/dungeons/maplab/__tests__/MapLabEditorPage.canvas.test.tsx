@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import * as api from "../../../../api/client";
@@ -139,12 +140,19 @@ describe("MapLabEditorPage (Stage E2 — Canvas zoom & pan)", () => {
   it("zoom controls (+/−/Reset) change the scale and SVG dimensions", async () => {
     const { container } = await renderEditor();
     const svg = container.querySelector(".maplab-svg") as SVGSVGElement;
+    const zoomIn = screen.getByRole("button", { name: "Zoom in" });
+    const zoomOut = screen.getByRole("button", { name: "Zoom out" });
 
-    fireEvent.click(screen.getByRole("button", { name: "Zoom in" }));
+    expect(zoomIn).toHaveAttribute("type", "button");
+    expect(zoomIn).toHaveClass("maplab-pill-button", "maplab-zoom-button");
+    expect(zoomOut).toHaveAttribute("type", "button");
+    expect(zoomOut).toHaveClass("maplab-pill-button", "maplab-zoom-button");
+
+    fireEvent.click(zoomIn);
     expect(Number(svg.getAttribute("width"))).toBeCloseTo(CONTENT_PX_AT_SCALE_1 * 1.25);
 
-    fireEvent.click(screen.getByRole("button", { name: "Zoom out" }));
-    fireEvent.click(screen.getByRole("button", { name: "Zoom out" }));
+    fireEvent.click(zoomOut);
+    fireEvent.click(zoomOut);
     expect(Number(svg.getAttribute("width"))).toBeCloseTo(CONTENT_PX_AT_SCALE_1 * 0.75);
   });
 
@@ -158,7 +166,10 @@ describe("MapLabEditorPage (Stage E2 — Canvas zoom & pan)", () => {
     // Fit now targets the drawn room bounds (1x1 cell = 64px), not the padded grid -> scale clamps
     // to MAX_SCALE (3). The SVG itself still renders from the padded 7x7 grid, so its width/height
     // is CONTENT_PX_AT_SCALE_1 * 3.
-    fireEvent.click(screen.getByRole("button", { name: "Fit map to viewport" }));
+    const fit = screen.getByRole("button", { name: "Fit map to viewport" });
+    expect(fit).toHaveAttribute("type", "button");
+    expect(fit).toHaveClass("maplab-pill-button", "maplab-zoom-button");
+    fireEvent.click(fit);
     expect(Number(svg.getAttribute("width"))).toBeCloseTo(CONTENT_PX_AT_SCALE_1 * 3);
     expect(Number(svg.getAttribute("height"))).toBeCloseTo(CONTENT_PX_AT_SCALE_1 * 3);
   });
@@ -447,14 +458,23 @@ describe("MapLabEditorPage (Phase K scaffolding)", () => {
     const wrapper = container.querySelector(".maplab-editor");
     expect(wrapper).not.toHaveAttribute("data-fullscreen");
 
-    fireEvent.click(screen.getByRole("button", { name: "Enter fullscreen map editor" }));
+    const enterFullscreen = screen.getByRole("button", { name: "Enter fullscreen map editor" });
+    expect(enterFullscreen).toHaveAttribute("type", "button");
+    expect(enterFullscreen).toHaveClass("maplab-pill-button", "maplab-zoom-button");
+    expect(enterFullscreen).not.toHaveClass("btn");
+    fireEvent.click(enterFullscreen);
     expect(wrapper).toHaveAttribute("data-fullscreen");
     expect(wrapper).toHaveAttribute("role", "dialog");
     expect(wrapper).toHaveAttribute("aria-modal", "true");
     expect(screen.getByText(/drag to pan\. pinch or scroll to zoom\./i)).toBeInTheDocument();
+    const exitFullscreen = screen.getByRole("button", { name: "Exit fullscreen map editor" });
+    expect(exitFullscreen).toHaveAttribute("type", "button");
+    expect(exitFullscreen).toHaveClass("maplab-pill-button", "maplab-zoom-button");
+    expect(exitFullscreen).not.toHaveClass("btn");
 
     fireEvent.keyDown(window, { key: "Escape" });
     expect(wrapper).not.toHaveAttribute("data-fullscreen");
+    expect(screen.getByRole("button", { name: "Enter fullscreen map editor" })).toBeInTheDocument();
   });
 
   it("K3: the Room tool surfaces create vs. paint instructions depending on selection", async () => {
@@ -665,6 +685,9 @@ describe("MapLabEditorPage (Phase K scaffolding)", () => {
 
     expect(screen.getByText("Removed empty room.")).toBeInTheDocument();
     const undoButton = screen.getByRole("button", { name: "Undo removal" });
+    expect(undoButton).toHaveAttribute("type", "button");
+    expect(undoButton.className).toBe("");
+    expect(undoButton).not.toHaveClass("btn");
     fireEvent.click(undoButton);
 
     await act(async () => {
@@ -712,7 +735,17 @@ describe("MapLabEditorPage (Phase K scaffolding)", () => {
     selectRoomFromFinder();
     expect(container.querySelector(".maplab-room")).toHaveAttribute("data-selected", "true");
 
-    fireEvent.click(screen.getByRole("button", { name: "New room" }));
+    vi.useRealTimers();
+    const user = userEvent.setup();
+    const newRoom = screen.getByRole("button", { name: "New room" });
+    expect(newRoom.tagName).toBe("BUTTON");
+    expect(newRoom).toHaveAttribute("type", "button");
+    newRoom.focus();
+    try {
+      await user.keyboard("{Enter}");
+    } finally {
+      vi.useFakeTimers();
+    }
 
     expect(container.querySelector(".maplab-room")).not.toHaveAttribute("data-selected", "true");
     expect(screen.getByRole("button", { name: "Room" })).toHaveAttribute("aria-pressed", "true");

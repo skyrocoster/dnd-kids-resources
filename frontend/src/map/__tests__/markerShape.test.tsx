@@ -7,7 +7,7 @@ import {
   kidMarkerIcon,
   kidFamilyTokens,
   kidGlyphColorToken,
-} from "../markerShape";
+} from "../markerShapeModel";
 import {
   DoorOpen as DoorOpenIcon,
   DoorClosed as DoorClosedIcon,

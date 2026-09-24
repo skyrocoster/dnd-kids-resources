@@ -107,11 +107,17 @@ describe("MapLabEditorPage (Stage E3 — Toolbar reorganization & persistent ins
 
     const mapTrigger = screen.getByRole("button", { name: "Map" });
     await user.click(mapTrigger);
+    expect(mapTrigger).toHaveAttribute("aria-haspopup", "dialog");
+    expect(screen.getByRole("dialog", { name: "Map settings" })).toBeInTheDocument();
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
     expect(screen.getByLabelText("Top")).toBeInTheDocument();
     expect(screen.queryByRole("dialog", { name: "Find room" })).not.toBeInTheDocument();
 
     const viewTrigger = screen.getByRole("button", { name: "View" });
     await user.click(viewTrigger);
+    expect(viewTrigger).toHaveAttribute("aria-haspopup", "dialog");
+    expect(screen.getByRole("dialog", { name: "View settings" })).toBeInTheDocument();
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Top")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Outside" })).toBeInTheDocument();
 
@@ -200,6 +206,8 @@ describe("MapLabEditorPage (Stage E3 — Toolbar reorganization & persistent ins
       const trigger = screen.getByRole("button", { name: flyout.trigger });
       await user.click(trigger);
       const search = await screen.findByRole("searchbox", { name: flyout.filter });
+      expect(search).toHaveClass("fc-text-input", "maplab-tool-palette-filter");
+      expect(search.parentElement).toHaveClass("fc-input-frame");
       expect(search).toHaveFocus();
       expect(search).toHaveValue("");
       expect(screen.getByRole("list", { name: flyout.list })).toBeInTheDocument();
@@ -326,6 +334,48 @@ describe("MapLabEditorPage (Stage E3 — Toolbar reorganization & persistent ins
       }
     });
 
+    it("layer visibility is multi-select and keyboard changes only the focused layer", async () => {
+      const user = userEvent.setup();
+      for (const key of ["outside", "props", "passages", "labels"]) {
+        window.localStorage.removeItem(`dnd-kids-maplab-layer-visible:${key}`);
+      }
+      vi.spyOn(api, "getDungeonLayout").mockResolvedValue({
+        data: mapLabLayout as unknown as Record<string, unknown>,
+      });
+      vi.spyOn(api, "saveDungeonLayout").mockResolvedValue({
+        data: mapLabLayout as unknown as Record<string, unknown>,
+      });
+
+      renderMapLabEditorPage();
+      await flush();
+      openViewPopover();
+
+      const layerGroup = screen.getByRole("group", { name: "Map layers" });
+      const outside = within(layerGroup).getByRole("button", { name: "Outside" });
+      const props = within(layerGroup).getByRole("button", { name: "Props" });
+      const passages = within(layerGroup).getByRole("button", { name: "Passages" });
+      const labels = within(layerGroup).getByRole("button", { name: "Labels" });
+      for (const option of [outside, props, passages, labels]) {
+        expect(option).toHaveAttribute("aria-pressed", "true");
+      }
+
+      await user.click(outside);
+      expect(outside).toHaveAttribute("aria-pressed", "false");
+      expect(props).toHaveAttribute("aria-pressed", "true");
+      expect(window.localStorage.getItem("dnd-kids-maplab-layer-visible:outside")).toBe("false");
+
+      await user.keyboard("{ArrowRight}");
+      expect(props).toHaveFocus();
+      await user.keyboard(" ");
+
+      expect(outside).toHaveAttribute("aria-pressed", "false");
+      expect(props).toHaveAttribute("aria-pressed", "false");
+      expect(passages).toHaveAttribute("aria-pressed", "true");
+      expect(labels).toHaveAttribute("aria-pressed", "true");
+      expect(window.localStorage.getItem("dnd-kids-maplab-layer-visible:props")).toBe("false");
+      expect(screen.getByRole("dialog", { name: "View settings" })).toBeInTheDocument();
+    });
+
     it("toggling Outside off hides the unknown-space rect and back on restores it", async () => {
       vi.spyOn(api, "getDungeonLayout").mockResolvedValue({
         data: mapLabLayout as unknown as Record<string, unknown>,
@@ -425,6 +475,16 @@ describe("MapLabEditorPage (Stage E3 — Toolbar reorganization & persistent ins
     expect(floorActions).toBeInTheDocument();
     expect(floorActions?.textContent).toMatch(/Add floor above.*Add floor below/);
     expect(floorActions?.textContent).not.toMatch(/delete|connection/i);
+    for (const name of ["Add floor above", "Add floor below"]) {
+      const action = screen.getByRole("button", { name });
+      expect(action).toHaveAttribute("type", "button");
+      expect(action).toHaveClass("maplab-pill-button", "maplab-editor-floor-action");
+      expect(action).not.toHaveClass("btn");
+    }
+    const newRoom = screen.getByRole("button", { name: "New room" });
+    expect(newRoom).toHaveAttribute("type", "button");
+    expect(newRoom).toHaveClass("maplab-pill-button", "maplab-editor-room-list-new");
+    expect(newRoom).not.toHaveClass("btn");
   });
 
   it("finder results use the shared labelled room navigation contract", async () => {
@@ -452,6 +512,7 @@ describe("MapLabEditorPage (Stage E3 — Toolbar reorganization & persistent ins
 
     const addBelow = screen.getByRole("button", { name: "Add floor below" });
     expect(addBelow).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Add floor above" })).toBeEnabled();
 
     fireEvent.click(addBelow);
 

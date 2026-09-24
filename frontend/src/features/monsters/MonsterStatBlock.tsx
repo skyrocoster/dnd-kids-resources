@@ -1,4 +1,4 @@
-import type { Feature, Monster } from "../../api/types";
+import { completeMonsterFeatures, type Feature, type Monster } from "../../api/types";
 import { DiceText } from "../../components/DiceText";
 import {
   describeFeature,
@@ -43,6 +43,9 @@ export function MonsterStatBlock({
   showIdentity = true,
   showStrip = true,
 }: MonsterStatBlockProps) {
+  const features = completeMonsterFeatures(monster.features);
+  const languages = monster.languages ?? [];
+  const conditionImmunities = monster.condition_immunities ?? [];
   const abilityScores = getAbilityScores(monster);
   const saves = formatSavingThrows(monster);
   const skills = formatSkills(monster);
@@ -54,19 +57,16 @@ export function MonsterStatBlock({
   const resist = formatDamageList(monster.damage_resistances);
   const immune = formatDamageList(monster.damage_immunities);
   const vulnerable = formatDamageList(monster.damage_vulnerabilities);
-  const condImmune = monster.condition_immunities.length
-    ? monster.condition_immunities.join(", ")
-    : null;
+  const condImmune = conditionImmunities.length > 0 ? conditionImmunities.join(", ") : null;
   const cr = formatCr(monster);
   const hasActions =
-    monster.features.actions.length > 0 ||
-    monster.features.bonus_actions.length > 0 ||
-    monster.features.reactions.length > 0 ||
-    monster.features.legendary_actions.length > 0 ||
-    monster.features.mythic_actions.length > 0 ||
-    monster.features.spellcasting.length > 0;
-  const hasLore =
-    monster.features.traits.length > 0 || monster.languages.length > 0 || monster.audio_path;
+    features.actions.length > 0 ||
+    features.bonus_actions.length > 0 ||
+    features.reactions.length > 0 ||
+    features.legendary_actions.length > 0 ||
+    features.mythic_actions.length > 0 ||
+    features.spellcasting.length > 0;
+  const hasLore = features.traits.length > 0 || languages.length > 0 || monster.audio_path;
 
   return (
     <article className="monster-stat-block" data-variant="monster" data-testid="monster-stat-block">
@@ -183,7 +183,7 @@ export function MonsterStatBlock({
           <div className="monster-stat-block-rule" aria-hidden />
           <section className="monster-stat-block-region" data-region="actions">
             <RegionHeading>Actions</RegionHeading>
-            {monster.features.spellcasting.map((block, i) => (
+            {features.spellcasting.map((block, i) => (
               <div key={i} className="monster-stat-block-spellcasting">
                 <SectionHeading>{block.name}</SectionHeading>
                 {block.description && (
@@ -191,10 +191,10 @@ export function MonsterStatBlock({
                     <DiceText text={block.description} />
                   </p>
                 )}
-                {block.groups.map((group, gi) => (
+                {(block.groups ?? []).map((group, gi) => (
                   <p key={gi}>
                     <span className="monster-stat-block-spell-label">{group.label}: </span>
-                    {group.spells.map((s) => s.name).join(", ")}
+                    {(group.spells ?? []).map((s) => s.name).join(", ")}
                   </p>
                 ))}
                 {block.footer && (
@@ -204,49 +204,43 @@ export function MonsterStatBlock({
                 )}
               </div>
             ))}
-            {monster.features.actions.length > 0 && (
-              <SectionHeading>Attacks & Actions</SectionHeading>
-            )}
-            {monster.features.reaction_intro && (
+            {features.actions.length > 0 && <SectionHeading>Attacks & Actions</SectionHeading>}
+            {features.reaction_intro && (
               <p>
-                <DiceText text={monster.features.reaction_intro} />
+                <DiceText text={features.reaction_intro} />
               </p>
             )}
-            {monster.features.actions.map((action, i) => (
+            {features.actions.map((action, i) => (
               <FeatureBlock key={`action-${i}`} feature={action} />
             ))}
-            {monster.features.bonus_actions.length > 0 && (
-              <SectionHeading>Bonus Actions</SectionHeading>
-            )}
-            {monster.features.bonus_actions.map((action, i) => (
+            {features.bonus_actions.length > 0 && <SectionHeading>Bonus Actions</SectionHeading>}
+            {features.bonus_actions.map((action, i) => (
               <FeatureBlock key={`bonus-${i}`} feature={action} />
             ))}
-            {monster.features.reactions.length > 0 && <SectionHeading>Reactions</SectionHeading>}
-            {monster.features.reactions.map((action, i) => (
+            {features.reactions.length > 0 && <SectionHeading>Reactions</SectionHeading>}
+            {features.reactions.map((action, i) => (
               <FeatureBlock key={`reaction-${i}`} feature={action} />
             ))}
-            {(monster.features.legendary_actions.length > 0 ||
-              monster.features.legendary_intro ||
-              monster.features.legendary_actions_per_round != null) && (
+            {(features.legendary_actions.length > 0 ||
+              features.legendary_intro ||
+              features.legendary_actions_per_round != null) && (
               <SectionHeading>Legendary Actions</SectionHeading>
             )}
-            {monster.features.legendary_intro && (
+            {features.legendary_intro && (
               <p>
-                <DiceText text={monster.features.legendary_intro} />
+                <DiceText text={features.legendary_intro} />
               </p>
             )}
-            {monster.features.legendary_actions_per_round != null && (
+            {features.legendary_actions_per_round != null && (
               <p className="monster-stat-block-legendary-note">
-                Legendary actions per round: {monster.features.legendary_actions_per_round}
+                Legendary actions per round: {features.legendary_actions_per_round}
               </p>
             )}
-            {monster.features.legendary_actions.map((action, i) => (
+            {features.legendary_actions.map((action, i) => (
               <FeatureBlock key={`legendary-${i}`} feature={action} />
             ))}
-            {monster.features.mythic_actions.length > 0 && (
-              <SectionHeading>Mythic Actions</SectionHeading>
-            )}
-            {monster.features.mythic_actions.map((action, i) => (
+            {features.mythic_actions.length > 0 && <SectionHeading>Mythic Actions</SectionHeading>}
+            {features.mythic_actions.map((action, i) => (
               <FeatureBlock key={`mythic-${i}`} feature={action} />
             ))}
           </section>
@@ -258,13 +252,13 @@ export function MonsterStatBlock({
           <div className="monster-stat-block-rule" aria-hidden />
           <section className="monster-stat-block-region" data-region="lore">
             <RegionHeading>Lore</RegionHeading>
-            {monster.features.traits.map((trait, i) => (
+            {features.traits.map((trait, i) => (
               <FeatureBlock key={`trait-${i}`} feature={trait} />
             ))}
-            {monster.languages.length > 0 && (
+            {languages.length > 0 && (
               <p className="monster-stat-block-def-row">
                 <span className="monster-stat-block-def-label">Languages</span>
-                <span className="monster-stat-block-def-value">{monster.languages.join(", ")}</span>
+                <span className="monster-stat-block-def-value">{languages.join(", ")}</span>
               </p>
             )}
             {monster.audio_path && (

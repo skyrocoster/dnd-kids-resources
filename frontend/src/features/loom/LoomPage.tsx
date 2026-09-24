@@ -141,14 +141,17 @@ export function LoomPage() {
     reload();
   };
 
-  const runLifecycleCommand = async (command: () => Promise<unknown>, fallback: string) => {
-    try {
-      await command();
-      reload();
-    } catch (err) {
-      setBannerError(errorMessage(err, fallback));
-    }
-  };
+  const runLifecycleCommand = useCallback(
+    async (command: () => Promise<unknown>, fallback: string) => {
+      try {
+        await command();
+        reload();
+      } catch (err) {
+        setBannerError(errorMessage(err, fallback));
+      }
+    },
+    [reload],
+  );
 
   const handleFulfilNode = (node: LoomNodeType) =>
     void runLifecycleCommand(() => fulfilLoomNode(node.id), "Failed to fulfil the beat.");
@@ -180,13 +183,16 @@ export function LoomPage() {
     setNodeEditor({ initialKind: "beat", insertThreadId: threadId, insertPosition: position });
   }, []);
 
-  const handleGapRestore = useCallback((nodeId: number, threadId: number, position: number) => {
-    setPlacingNodeId(null);
-    void runLifecycleCommand(
-      () => insertLoomThreadItem(threadId, { node_id: nodeId, position }),
-      "Failed to restore the beat.",
-    );
-  }, []);
+  const handleGapRestore = useCallback(
+    (nodeId: number, threadId: number, position: number) => {
+      setPlacingNodeId(null);
+      void runLifecycleCommand(
+        () => insertLoomThreadItem(threadId, { node_id: nodeId, position }),
+        "Failed to restore the beat.",
+      );
+    },
+    [runLifecycleCommand],
+  );
 
   const handleActivateBankedNode = useCallback((node: LoomNodeType) => {
     setPlacingNodeId(node.id);
@@ -221,7 +227,7 @@ export function LoomPage() {
         "Failed to reorder the beat.",
       );
     },
-    [tapestry],
+    [runLifecycleCommand, tapestry],
   );
 
   const handleCrossLaneDrop = useCallback(
@@ -244,7 +250,7 @@ export function LoomPage() {
         "Failed to move the node.",
       );
     },
-    [tapestry],
+    [runLifecycleCommand, tapestry],
   );
 
   const handleReplaceNode = (node: LoomNodeType) => {

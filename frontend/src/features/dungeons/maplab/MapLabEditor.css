@@ -631,13 +631,26 @@
   min-width: 9rem;
 }
 
-.maplab-tool-palette-filter {
+.maplab-tool-palette-flyout .fc-input-frame {
   min-height: var(--control-height);
   width: 100%;
-  padding: 0 var(--space-3);
+  padding: 0;
   border: 1px solid var(--md-outline-variant);
   border-radius: var(--radius-full);
   background: var(--md-surface-1);
+  color: var(--md-on-surface);
+}
+
+.maplab-tool-palette-flyout .maplab-tool-palette-filter {
+  box-sizing: border-box;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: var(--control-height);
+  width: 100%;
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: var(--radius-full);
+  background: transparent;
   color: var(--md-on-surface);
   font: inherit;
 }
@@ -702,6 +715,46 @@
 
 .maplab-view-popover .maplab-pill-button {
   min-height: var(--control-height);
+}
+
+.maplab-view-popover .maplab-view-toggle-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.maplab-view-popover .form-advanced-toggle {
+  min-width: var(--control-height);
+  min-height: var(--control-height);
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--md-outline-variant);
+  border-radius: 999px;
+  background: var(--md-surface-2);
+  color: var(--md-on-surface);
+  font-size: var(--type-label-size);
+  font-weight: var(--type-label-weight);
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.maplab-view-popover .form-advanced-toggle:hover:not([data-disabled]) {
+  border-color: var(--md-outline);
+}
+
+.maplab-view-popover .form-advanced-toggle:focus-visible {
+  outline: 2px solid var(--md-primary);
+  outline-offset: 2px;
+}
+
+.maplab-view-popover .form-advanced-toggle[data-pressed] {
+  border-color: var(--md-secondary);
+  background: var(--md-secondary-container);
+  color: var(--md-on-secondary-container);
 }
 
 /* Options slot: renders next to the tool palette while a brush tool (Room/River/Trees) is

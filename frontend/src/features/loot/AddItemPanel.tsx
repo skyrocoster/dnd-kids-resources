@@ -50,7 +50,7 @@ export function AddItemPanel({ onAdd, onClose }: AddItemPanelProps) {
         items={items}
         getId={(item) => item.id}
         getLabel={(item) => item.name}
-        getMeta={(item) => formatGp(item.value_gp)}
+        getMeta={(item) => formatGp(item.value_gp ?? 0)}
         onSelect={onAdd}
         variant="neutral"
         searchPlaceholder="Search items…"

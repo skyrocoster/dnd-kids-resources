@@ -105,14 +105,12 @@ function EntryBlock({
 export function RoomDetailsPanel({
   room,
   dungeonRoom,
-  parsed: _parsed,
   dungeonId,
   layout,
   onRunEncounter,
   onOpenNpc,
   onPartyIsHere,
   actionError,
-  clearActionError: _clearActionError,
 }: RoomDetailsPanelProps) {
   const [npcs, setNpcs] = useState<NPC[]>([]);
 

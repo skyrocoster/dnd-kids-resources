@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { FloatingWindow, clampSize } from "../FloatingWindow";
-import type { Size } from "../FloatingWindow";
+import { FloatingWindow } from "../FloatingWindow";
+import { clampSize, type Size } from "../floatingWindowSize";
 
 const VIEWPORT_W = 1024;
 const VIEWPORT_H = 768;

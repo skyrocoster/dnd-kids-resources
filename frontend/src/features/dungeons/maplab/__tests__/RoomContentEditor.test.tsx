@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as api from "../../../../api/client";
 import type { DungeonEntry, DungeonRoom } from "../../dungeonModel";
@@ -91,7 +92,13 @@ describe("RoomContentEditor", () => {
     const { container, callbacks } = renderEditor();
     const openEntryForm = screen.getByRole("button", { name: "Add entry" });
     expect(openEntryForm).toHaveAttribute("type", "button");
+    expect(openEntryForm).toHaveClass("maplab-pill-button", "maplab-editor-toolbar-button");
+    expect(openEntryForm).not.toHaveClass("btn");
     fireEvent.click(openEntryForm);
+    expect(screen.getByRole("button", { name: "Close entry form" })).toHaveAttribute(
+      "type",
+      "button",
+    );
 
     const entryForm = container.querySelector(".maplab-room-content-entry-form") as HTMLFormElement;
     const entryFields = within(entryForm);
@@ -132,15 +139,24 @@ describe("RoomContentEditor", () => {
     expect(type.value).toBe("feature");
     expect(title.value).toBe("");
     expect(content.value).toBe("");
+
+    fireEvent.click(screen.getByRole("button", { name: "Close entry form" }));
+    expect(container.querySelector(".maplab-room-content-entry-form")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Add entry" })).toHaveAttribute("type", "button");
   });
 
   it("updates NPC assignment immediately and preserves selected IDs absent from the roster", async () => {
     const { callbacks } = renderEditor({ dungeonRoom: { ...dungeonRoom, npcs: [5, 99] } });
     const editNpcs = screen.getByRole("button", { name: "Edit NPCs" });
     expect(editNpcs).toHaveAttribute("type", "button");
+    expect(editNpcs).toHaveClass("maplab-pill-button", "maplab-editor-toolbar-button");
+    expect(editNpcs).not.toHaveClass("btn");
     fireEvent.click(editNpcs);
 
     expect(screen.getByRole("group", { name: "Edit NPCs" })).toBeInTheDocument();
+    const done = screen.getByRole("button", { name: "Done" });
+    expect(done).toHaveAttribute("type", "button");
+    expect(done).toHaveClass("maplab-pill-button", "maplab-editor-toolbar-button");
     const mira = await screen.findByLabelText("Mira");
     const tobin = await screen.findByLabelText("Tobin");
     expect(tobin).toHaveAttribute("type", "checkbox");
@@ -155,6 +171,33 @@ describe("RoomContentEditor", () => {
     fireEvent.click(mira);
     expect(callbacks.onUpdateRoomNpcs).toHaveBeenNthCalledWith(2, 7, [99, 6]);
     expect(mira).not.toBeChecked();
+
+    fireEvent.click(done);
+    expect(screen.queryByRole("group", { name: "Edit NPCs" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Edit NPCs" })).toBeInTheDocument();
+  });
+
+  it("opens and closes the NPC and entry editors with keyboard-operable buttons", async () => {
+    const user = userEvent.setup();
+    const { container } = renderEditor();
+
+    const editNpcs = screen.getByRole("button", { name: "Edit NPCs" });
+    editNpcs.focus();
+    await user.keyboard("{Enter}");
+    expect(screen.getByRole("group", { name: "Edit NPCs" })).toBeInTheDocument();
+    const done = screen.getByRole("button", { name: "Done" });
+    done.focus();
+    await user.keyboard(" ");
+    expect(screen.queryByRole("group", { name: "Edit NPCs" })).not.toBeInTheDocument();
+
+    const addEntry = screen.getByRole("button", { name: "Add entry" });
+    addEntry.focus();
+    await user.keyboard(" ");
+    expect(container.querySelector(".maplab-room-content-entry-form")).toBeInTheDocument();
+    const closeEntryForm = screen.getByRole("button", { name: "Close entry form" });
+    closeEntryForm.focus();
+    await user.keyboard("{Enter}");
+    expect(container.querySelector(".maplab-room-content-entry-form")).not.toBeInTheDocument();
   });
 
   it("uses the ordinary create-room action as a button and passes the room ID", () => {

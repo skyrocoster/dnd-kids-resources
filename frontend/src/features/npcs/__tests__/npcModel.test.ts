@@ -11,7 +11,7 @@ import {
   identityLine,
   npcToMonsterView,
 } from "../npcModel";
-import type { Monster, NPC } from "../../../api/types";
+import type { MonsterView, NPC } from "../../../api/types";
 
 function makeNpc(overrides: Partial<NPC> = {}): NPC {
   return {
@@ -182,7 +182,7 @@ describe("npcToMonsterView", () => {
     });
 
     const result = npcToMonsterView(npc);
-    const requiredKeys: (keyof Monster)[] = [
+    const requiredKeys: (keyof MonsterView)[] = [
       "id",
       "name",
       "aliases",
@@ -228,7 +228,7 @@ describe("npcToMonsterView", () => {
 
   it("produces empty-safe defaults for a bare id/name NPC", () => {
     const result = npcToMonsterView(makeNpc());
-    const requiredKeys: (keyof Monster)[] = [
+    const requiredKeys: (keyof MonsterView)[] = [
       "id",
       "name",
       "aliases",

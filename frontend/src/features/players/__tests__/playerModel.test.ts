@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { hasCombatStats, hasStatblock, playerToMonsterView } from "../playerModel";
-import type { Monster, Player } from "../../../api/types";
+import type { MonsterView, Player } from "../../../api/types";
 
 function makePlayer(overrides: Partial<Player> = {}): Player {
   return {
@@ -73,7 +73,7 @@ describe("playerToMonsterView", () => {
     });
 
     const result = playerToMonsterView(player);
-    const requiredKeys: (keyof Monster)[] = [
+    const requiredKeys: (keyof MonsterView)[] = [
       "id",
       "name",
       "aliases",
@@ -122,7 +122,7 @@ describe("playerToMonsterView", () => {
 
   it("produces empty-safe defaults for a bare id/name Player", () => {
     const result = playerToMonsterView(makePlayer());
-    const requiredKeys: (keyof Monster)[] = [
+    const requiredKeys: (keyof MonsterView)[] = [
       "id",
       "name",
       "aliases",

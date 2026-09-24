@@ -1,6 +1,7 @@
 import { Popover } from "@base-ui/react/popover";
 import { DayPicker, type ClassNames } from "react-day-picker";
 import { useRef, useState } from "react";
+import { Button } from "./Button";
 import "./CalendarDate.css";
 import {
   formatUtcDate,
@@ -112,7 +113,7 @@ export function CalendarDate({
               classNames={calendarClassNames}
             />
             <div className="calendar-date__actions">
-              <button
+              <Button
                 type="button"
                 className="calendar-date__clear-button"
                 disabled={!value}
@@ -122,7 +123,7 @@ export function CalendarDate({
                 }}
               >
                 Clear date
-              </button>
+              </Button>
               <Popover.Close className="calendar-date__close-button" aria-label="Close calendar">
                 Close
               </Popover.Close>

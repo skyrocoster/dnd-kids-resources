@@ -8,9 +8,9 @@ import { SpellBrowserPage } from "../SpellBrowserPage";
 import { targetSpell } from "./spellFixtures";
 
 const players: Player[] = [
-  { id: 1, name: "Ari", class_: "Wizard", level: 3 },
-  { id: 2, name: "Mira", class_: "Cleric", level: 4 },
-  { id: 3, name: "Bryn", class_: "Druid", level: 2 },
+  { id: 1, name: "Ari", class: "Wizard", level: 3 },
+  { id: 2, name: "Mira", class: "Cleric", level: 4 },
+  { id: 3, name: "Bryn", class: "Druid", level: 2 },
 ];
 const spells: Spell[] = [
   {

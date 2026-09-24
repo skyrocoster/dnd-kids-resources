@@ -129,7 +129,11 @@ describe("MapLabEditorPage (Stage 03 — editable per-side padding)", () => {
     const topInput = screen.getByLabelText("Top") as HTMLInputElement;
     fireEvent.change(topInput, { target: { value: "5" } });
     expect(topInput.value).toBe("5");
-    fireEvent.click(screen.getByRole("button", { name: "Reset unsaved changes" }));
+    const reset = screen.getByRole("button", { name: "Reset unsaved changes" });
+    expect(reset.tagName).toBe("BUTTON");
+    expect(reset).toHaveAttribute("type", "button");
+    expect(reset).toHaveClass("maplab-pill-button", "maplab-editor-toolbar-button");
+    fireEvent.click(reset);
     expect(topInput).toBeInTheDocument();
     expect(
       screen.getByText("Discard unsaved changes and restore the last saved layout?"),
@@ -201,6 +205,37 @@ describe("MapLabEditorPage (Stage 03 — editable per-side padding)", () => {
     ]);
     expect(container.querySelectorAll(".maplab-feature-cell")).toHaveLength(3);
   });
+
+  it("dismisses the off-ground terrain warning with its existing button styling", async () => {
+    const layout = {
+      meta: { cellSizeFt: 5, padding: { top: 3, right: 3, bottom: 3, left: 3 } },
+      rooms: [],
+      doors: [],
+      stairs: [],
+      floors: [
+        { z: 0, title: "Ground Floor" },
+        { z: 1, title: "First Floor" },
+      ],
+      props: [],
+      features: [],
+    };
+    vi.spyOn(api, "getDungeonLayout").mockResolvedValue({ data: layout });
+    vi.spyOn(api, "saveDungeonLayout").mockResolvedValue({ data: layout });
+    renderMapLabEditorPage();
+    await flush();
+
+    armTerrainTool("trees");
+    fireEvent.click(screen.getByRole("button", { name: "First Floor" }));
+
+    const dismiss = screen.getByRole("button", { name: "Dismiss" });
+    expect(dismiss).toHaveAttribute("type", "button");
+    expect(dismiss).toHaveClass("maplab-pill-button", "maplab-editor-toolbar-button");
+    expect(dismiss).not.toHaveClass("btn");
+    expect(dismiss).toHaveStyle({ marginLeft: "var(--space-3)" });
+
+    fireEvent.click(dismiss);
+    expect(screen.queryByRole("button", { name: "Dismiss" })).not.toBeInTheDocument();
+  });
 });
 
 describe("MapLabEditorPage (density control)", () => {
@@ -242,12 +277,31 @@ describe("MapLabEditorPage (density control)", () => {
     renderMapLabEditorPage();
     await flush();
     openViewPopover();
-    await user.click(screen.getByRole("button", { name: "Detailed" }));
-    expect(screen.getByRole("button", { name: "Detailed" })).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
+    const densityGroup = screen.getByRole("group", { name: "Map density" });
+    const detailed = within(densityGroup).getByRole("button", { name: "Detailed" });
+    const auto = within(densityGroup).getByRole("button", { name: "Auto" });
+    const simple = within(densityGroup).getByRole("button", { name: "Simple" });
+    expect(auto).toHaveAttribute("aria-pressed", "true");
+    expect(detailed).toHaveAttribute("aria-pressed", "false");
+    expect(simple).toHaveAttribute("aria-pressed", "false");
+
+    await user.click(detailed);
+    expect(detailed).toHaveAttribute("aria-pressed", "true");
+    expect(auto).toHaveAttribute("aria-pressed", "false");
+    expect(simple).toHaveAttribute("aria-pressed", "false");
     expect(window.localStorage.getItem("dnd-kids-maplab-density")).toBe("detailed");
+
+    await user.click(detailed);
+    expect(detailed).toHaveAttribute("aria-pressed", "true");
+
+    detailed.focus();
+    await user.keyboard("{ArrowRight}");
+    expect(auto).toHaveFocus();
+    await user.keyboard(" ");
+    expect(auto).toHaveAttribute("aria-pressed", "true");
+    expect(detailed).toHaveAttribute("aria-pressed", "false");
+    expect(simple).toHaveAttribute("aria-pressed", "false");
+    expect(window.localStorage.getItem("dnd-kids-maplab-density")).toBe("auto");
   });
 });
 

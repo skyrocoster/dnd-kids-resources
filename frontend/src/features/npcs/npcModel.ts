@@ -3,7 +3,13 @@
  * human-authored dict (see api/types.ts); every helper here degrades
  * gracefully on missing/absent fields rather than assuming a fixed shape.
  */
-import type { Monster, MonsterFeatures, MovementSpeed, NPC, Sense } from "../../api/types";
+import {
+  completeMonsterFeatures,
+  type MonsterView,
+  type MovementSpeed,
+  type NPC,
+  type Sense,
+} from "../../api/types";
 
 export interface AbilityScore {
   key: "STR" | "DEX" | "CON" | "INT" | "WIS" | "CHA";
@@ -149,20 +155,7 @@ export function hasCombatStats(npc: NPC): boolean {
   return npc.ac != null || npc.hp != null || formatMovementSpeeds(npc.speed) != null;
 }
 
-const EMPTY_FEATURES: MonsterFeatures = {
-  traits: [],
-  spellcasting: [],
-  actions: [],
-  bonus_actions: [],
-  reactions: [],
-  reaction_intro: null,
-  legendary_actions: [],
-  legendary_intro: null,
-  legendary_actions_per_round: null,
-  mythic_actions: [],
-};
-
-export function npcToMonsterView(npc: NPC): Monster {
+export function npcToMonsterView(npc: NPC): MonsterView {
   return {
     id: npc.id,
     name: npc.name,
@@ -185,7 +178,7 @@ export function npcToMonsterView(npc: NPC): Monster {
     senses: npc.senses ?? [],
     languages: npc.languages ?? [],
     audio_path: null,
-    features: npc.features ?? EMPTY_FEATURES,
+    features: completeMonsterFeatures(npc.features),
     cr: npc.cr ?? null,
     cr_sort: null,
     cr_note: npc.cr_note ?? null,
@@ -207,15 +200,13 @@ export function hasStatblock(npc: NPC): boolean {
   if (npc.senses != null && npc.senses.length > 0) return true;
   if (npc.languages != null && npc.languages.length > 0) return true;
   if (npc.cr != null) return true;
-  if (npc.features != null) {
-    const f = npc.features;
-    if (f.traits.length > 0) return true;
-    if (f.spellcasting.length > 0) return true;
-    if (f.actions.length > 0) return true;
-    if (f.bonus_actions.length > 0) return true;
-    if (f.reactions.length > 0) return true;
-    if (f.legendary_actions.length > 0) return true;
-    if (f.mythic_actions.length > 0) return true;
-  }
+  const features = completeMonsterFeatures(npc.features);
+  if (features.traits.length > 0) return true;
+  if (features.spellcasting.length > 0) return true;
+  if (features.actions.length > 0) return true;
+  if (features.bonus_actions.length > 0) return true;
+  if (features.reactions.length > 0) return true;
+  if (features.legendary_actions.length > 0) return true;
+  if (features.mythic_actions.length > 0) return true;
   return false;
 }

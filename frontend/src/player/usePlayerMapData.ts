@@ -53,7 +53,8 @@ export function usePlayerMapData(): PlayerMapData {
         const pointer = await getAtTheTable(request.signal);
         if (cancelled || request.signal.aborted) return;
 
-        if (pointer.dungeon_id === null) {
+        const dungeonId = pointer.dungeon_id;
+        if (dungeonId == null) {
           lastGoodFrame.current = null;
           setState({
             dungeonId: null,
@@ -67,7 +68,7 @@ export function usePlayerMapData(): PlayerMapData {
           return;
         }
 
-        const blob = await getDungeonLayout(pointer.dungeon_id, request.signal);
+        const blob = await getDungeonLayout(dungeonId, request.signal);
         if (cancelled || request.signal.aborted) return;
 
         // A dungeon with no session row yet (404) simply has no open doors — that must not fail the
@@ -75,7 +76,7 @@ export function usePlayerMapData(): PlayerMapData {
         // On the first frame, any failure degrades to default (closed, unlocked, armed) state so
         // the tablet layout still reaches the player. On a later frame, a transient session-read
         // failure throws to the outer catch which retains the last confirmed frame.
-        const session = await getDungeonSessionState(pointer.dungeon_id, request.signal)
+        const session = await getDungeonSessionState(dungeonId, request.signal)
           .then((s) => {
             const data = s.data as {
               doors?: Record<string, SessionFixtureState>;
@@ -122,7 +123,7 @@ export function usePlayerMapData(): PlayerMapData {
           portals: session.portals,
         });
         const frame: PlayerMapData = {
-          dungeonId: pointer.dungeon_id,
+          dungeonId,
           layout,
           openDoorIds: playerOpenDoorIds(session.doors),
           partyRoomId: session.partyRoomId,

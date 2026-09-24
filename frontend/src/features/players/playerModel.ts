@@ -1,4 +1,4 @@
-import type { Monster, MonsterFeatures, Player } from "../../api/types";
+import { completeMonsterFeatures, type MonsterView, type Player } from "../../api/types";
 import { abilityModifier, formatMovementSpeeds } from "../npcs/npcModel";
 
 export { formatMovementSpeeds, formatSenses } from "../npcs/npcModel";
@@ -42,8 +42,8 @@ export function getAbilityScores(player: Player): AbilityScore[] {
 export function identityLine(player: Player): string | null {
   const parts: string[] = [];
   if (player.ancestry) parts.push(player.ancestry);
-  if (player.class_) {
-    parts.push(player.level ? `${player.class_} ${player.level}` : player.class_);
+  if (player.class) {
+    parts.push(player.level ? `${player.class} ${player.level}` : player.class);
   }
   if (player.background) parts.push(player.background);
   return parts.length > 0 ? parts.join(" · ") : null;
@@ -53,20 +53,7 @@ export function hasCombatStats(player: Player): boolean {
   return player.ac != null || player.hp != null || formatMovementSpeeds(player.speed) != null;
 }
 
-const EMPTY_FEATURES: MonsterFeatures = {
-  traits: [],
-  spellcasting: [],
-  actions: [],
-  bonus_actions: [],
-  reactions: [],
-  reaction_intro: null,
-  legendary_actions: [],
-  legendary_intro: null,
-  legendary_actions_per_round: null,
-  mythic_actions: [],
-};
-
-export function playerToMonsterView(player: Player): Monster {
+export function playerToMonsterView(player: Player): MonsterView {
   return {
     id: player.id,
     name: player.name,
@@ -89,7 +76,7 @@ export function playerToMonsterView(player: Player): Monster {
     senses: player.senses ?? [],
     languages: player.languages ?? [],
     audio_path: null,
-    features: player.features ?? EMPTY_FEATURES,
+    features: completeMonsterFeatures(player.features),
     cr: null,
     cr_sort: null,
     cr_note: null,
@@ -111,15 +98,13 @@ export function hasStatblock(player: Player): boolean {
   if (player.condition_immunities != null && player.condition_immunities.length > 0) return true;
   if (player.senses != null && player.senses.length > 0) return true;
   if (player.languages != null && player.languages.length > 0) return true;
-  if (player.features != null) {
-    const f = player.features;
-    if (f.traits.length > 0) return true;
-    if (f.spellcasting.length > 0) return true;
-    if (f.actions.length > 0) return true;
-    if (f.bonus_actions.length > 0) return true;
-    if (f.reactions.length > 0) return true;
-    if (f.legendary_actions.length > 0) return true;
-    if (f.mythic_actions.length > 0) return true;
-  }
+  const features = completeMonsterFeatures(player.features);
+  if (features.traits.length > 0) return true;
+  if (features.spellcasting.length > 0) return true;
+  if (features.actions.length > 0) return true;
+  if (features.bonus_actions.length > 0) return true;
+  if (features.reactions.length > 0) return true;
+  if (features.legendary_actions.length > 0) return true;
+  if (features.mythic_actions.length > 0) return true;
   return false;
 }

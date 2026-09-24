@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import * as api from "../../api/client";
 import type { Player, Spell } from "../../api/types";
 import { Card } from "../../components/Card";
@@ -164,14 +164,14 @@ export function SpellBrowserPage() {
   const [pendingDelete, setPendingDelete] = useState<Spell | null>(null);
   const [managingPlayersSpell, setManagingPlayersSpell] = useState<Spell | null>(null);
 
-  const load = () => {
+  const load = useCallback((selectFirst = false) => {
     setSpellsRemote(remoteLoading());
     api
       .listSpells()
       .then((data) => {
         const sorted = sortSpells(data);
         setSpellsRemote(remoteSuccess(sorted));
-        if (sorted.length > 0 && selectedId == null) {
+        if (selectFirst && sorted.length > 0) {
           setSelectedId(sorted[0].id);
         }
       })
@@ -180,12 +180,16 @@ export function SpellBrowserPage() {
           remoteError(error instanceof Error ? error.message : "Failed to load spells."),
         ),
       );
-  };
+  }, []);
 
-  useEffect(load, []);
+  useEffect(() => {
+    load(true);
+  }, [load]);
 
   const spells = spellsRemote.status === "success" ? spellsRemote.data : [];
   const selected = spells.find((s) => s.id === selectedId) || null;
+  const selectedCastingTimes = selected?.casting_times ?? [];
+  const selectedHigherLevelsText = selected?.higher_levels?.text;
 
   const openCreate = () => {
     setEditingSpell(undefined);
@@ -273,10 +277,10 @@ export function SpellBrowserPage() {
                 }
               >
                 <dl className="spell-browser-meta">
-                  {selected.casting_times.length > 0 && (
+                  {selectedCastingTimes.length > 0 && (
                     <>
                       <dt>Casting Time</dt>
-                      <dd>{selected.casting_times.join(" or ")}</dd>
+                      <dd>{selectedCastingTimes.join(" or ")}</dd>
                     </>
                   )}
                   {selected.range && (
@@ -335,10 +339,10 @@ export function SpellBrowserPage() {
                     <DiceText text={selected.alternate_description} />
                   </p>
                 )}
-                {selected.higher_levels.text && (
+                {selectedHigherLevelsText && (
                   <p>
                     <strong>At Higher Levels: </strong>
-                    <DiceText text={selected.higher_levels.text} />
+                    <DiceText text={selectedHigherLevelsText} />
                   </p>
                 )}
               </Card>

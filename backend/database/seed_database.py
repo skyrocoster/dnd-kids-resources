@@ -1038,7 +1038,7 @@ def populate_players(cursor, conn, force=False):
                  initiative, proficiency_bonus, spell_attack_bonus, spell_save_dc,
                  max_spell_slots, notes, created_at, updated_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
                 (
                     player.get("id"),

@@ -1,4 +1,5 @@
 import type { NPC } from "../../api/types";
+import { Button } from "../../components/Button";
 import { DiceText } from "../../components/DiceText";
 import { MonsterStatBlock } from "../monsters/MonsterStatBlock";
 import {
@@ -80,9 +81,14 @@ export function NPCStatCard({ npc, compact = false, onPull }: NPCStatCardProps) 
       ) : !compact ? (
         <div className="npc-stat-card-empty">
           <p className="npc-stat-card-empty-text">No combat stats yet.</p>
-          <button className="npc-stat-card-empty-button" disabled={!onPull} onClick={onPull}>
+          <Button
+            type="submit"
+            className="npc-stat-card-empty-button"
+            disabled={!onPull}
+            onClick={onPull}
+          >
             Pull from a monster…
-          </button>
+          </Button>
         </div>
       ) : null}
     </article>

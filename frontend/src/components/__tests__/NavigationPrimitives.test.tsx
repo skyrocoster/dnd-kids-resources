@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { Disclosure } from "../Disclosure";
@@ -102,5 +102,38 @@ describe("navigation primitives", () => {
       "aria-labelledby",
       spellsTab.id,
     );
+  });
+
+  it("scrolls overflowing tabs and updates the arrow endpoints", async () => {
+    const user = userEvent.setup();
+    render(
+      <Tabs
+        tabs={[
+          { id: "overview", label: "Overview", content: "Overview details" },
+          { id: "spells", label: "Spells", content: "Spell details" },
+        ]}
+      />,
+    );
+
+    const scroll = screen.getByTestId("tabs-scroll");
+    Object.defineProperties(scroll, {
+      clientWidth: { configurable: true, value: 200 },
+      scrollWidth: { configurable: true, value: 300 },
+      scrollLeft: { configurable: true, writable: true, value: 0 },
+    });
+    act(() => window.dispatchEvent(new Event("resize")));
+
+    const left = screen.getByRole("button", { name: "Scroll tabs left" });
+    const right = screen.getByRole("button", { name: "Scroll tabs right" });
+    expect(left).toBeDisabled();
+    expect(right).toBeEnabled();
+    expect(left).toHaveAttribute("type", "button");
+    expect(right).toHaveAttribute("type", "button");
+
+    await user.click(right);
+
+    expect(scroll.scrollLeft).toBe(100);
+    expect(left).toBeEnabled();
+    expect(right).toBeDisabled();
   });
 });

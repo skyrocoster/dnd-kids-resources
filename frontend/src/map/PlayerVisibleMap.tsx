@@ -37,7 +37,7 @@ import {
   onSquareMarkerGeometry,
   openingMarkerGeometry,
   wallAttachedMarkerGeometry,
-} from "./markerShape";
+} from "./markerShapeModel";
 
 const CELL_SIZE = BASE_PX_PER_UNIT;
 const LABEL_PX = 16;
@@ -180,11 +180,11 @@ export function PlayerVisibleMap({
       const cell = cells.get(key)!;
       // Use markersAtCell only for count and ordering (fan-out needs total count)
       const allAtCell = markersAtCell(ml, selectedZ, cell);
-      const nonStairCount = allAtCell.filter((m: any) => (m as any).kind !== "stair").length;
+      const nonStairCount = allAtCell.filter((marker) => marker.type !== "stair").length;
       return collected.map((item, idx) => {
         const offset = gridMarkerOffset(nonStairCount, idx);
         const geo = onSquareMarkerGeometry(cell, CELL_SIZE, {
-          offset: { dx: (offset as any).dx ?? 0, dy: (offset as any).dy ?? 0 },
+          offset: { dx: offset.dx, dy: offset.dy },
           grouped: nonStairCount > 1,
         });
         const Icon = kidMarkerIcon(item.kind);
@@ -209,9 +209,10 @@ export function PlayerVisibleMap({
   })();
 
   // --- Wall-attached props ---
-  const wallPropEls = ((layout.props ?? []) as any[])
-    .filter((p: any) => p.z === selectedZ && p.side)
-    .map((prop: any, idx: number) => {
+  const wallPropEls = layout.props
+    .filter((prop) => prop.z === selectedZ && prop.side)
+    .map((prop, idx) => {
+      if (!prop.side) return null;
       // A window is an opening, so it straddles its wall at doorway size; anything else hung on a
       // wall stays the smaller fixture disc.
       const geo =

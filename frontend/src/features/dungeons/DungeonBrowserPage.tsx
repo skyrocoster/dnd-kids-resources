@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import * as api from "../../api/client";
 import type { Dungeon } from "../../api/types";
@@ -36,23 +36,23 @@ export function DungeonBrowserPage() {
   const [pendingDelete, setPendingDelete] = useState<Dungeon | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  const load = async () => {
+  const load = useCallback(async (selectFirst = false) => {
     setDungeonsRemote(remoteLoading());
     try {
       const data = await api.listDungeons();
       const sorted = [...data].sort((a, b) => a.title.localeCompare(b.title));
       setDungeonsRemote(remoteSuccess(sorted));
-      if (sorted.length > 0 && selectedId == null) setSelectedId(sorted[0].id);
+      if (selectFirst && sorted.length > 0) setSelectedId(sorted[0].id);
     } catch (error) {
       setDungeonsRemote(
         remoteError(error instanceof Error ? error.message : "Failed to load dungeons."),
       );
     }
-  };
+  }, []);
 
   useEffect(() => {
-    void load();
-  }, []);
+    void load(true);
+  }, [load]);
 
   const dungeons = dungeonsRemote.status === "success" ? dungeonsRemote.data : [];
   const selected = dungeons.find((d) => d.id === selectedId) || null;

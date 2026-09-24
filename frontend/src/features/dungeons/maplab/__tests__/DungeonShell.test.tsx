@@ -181,7 +181,7 @@ describe("DungeonShell", () => {
     expect(
       screen.getByText("No saved layout yet. This dungeon is starting from a blank map."),
     ).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: "Starting Floor" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Starting Floor" })).toBeInTheDocument();
   });
 
   // ── VT2 responsive regions ────────────────────────────────────────────────────

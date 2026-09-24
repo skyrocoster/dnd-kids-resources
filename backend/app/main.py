@@ -12,6 +12,7 @@ from .routers import (
     dungeons,
     encounters,
     fog,
+    health,
     items,
     layouts,
     loom,
@@ -75,6 +76,7 @@ def create_app(database_path: Path | str | None = None) -> FastAPI:
     app.include_router(layouts.router)
     app.include_router(session_state.router)
     app.include_router(fog.router)
+    app.include_router(health.router)
     app.include_router(at_the_table.router)
     app.include_router(loom.router)
 

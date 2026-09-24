@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import "./MapLabPage.css";
 import { getAtTheTable, listDungeons, setAtTheTable } from "../../../api/client";
+import { Button } from "../../../components/Button";
 import { MapLabRouteState } from "./MapLabRouteState";
 import { useDungeonShellContext } from "./dungeonRouteContext";
 import { useMapLabLayout } from "./useMapLabLayout";
@@ -11,20 +12,9 @@ import { useMapLabNavigationSession } from "./useMapLabNavigationSession";
 import { EyeIcon } from "../../../components/icons";
 import { Popover } from "../../../components/Popover";
 import { ToggleGroup } from "../../../components/form/ToggleGroup";
-import {
-  MAP_LAYER_KEYS,
-  resolveMapDensity,
-  ToolbarTray,
-  useMapDensity,
-  useMapLayerVisibility,
-} from "./MapLabToolbar";
-export { resolveMapDensity, AUTO_DENSITY_SIMPLE_THRESHOLD } from "./MapLabToolbar";
-export {
-  ToolbarTray,
-  useMapDensity,
-  useMapLayerVisibility,
-  useToolbarTrayCollapse,
-} from "./MapLabToolbar";
+import { ToolbarTray } from "./MapLabToolbar";
+import { MAP_LAYER_KEYS, useMapDensity, useMapLayerVisibility } from "./mapLabToolbarState";
+import { resolveMapDensity } from "../../../map/mapDensity";
 import { parseDungeonData } from "../dungeonModel";
 import { type ObstacleInspectorAdapter } from "./InspectorPanel";
 import { useActiveRoom } from "./useActiveRoom";
@@ -142,13 +132,15 @@ export function MapLabPage() {
   } = useMapLabLayout(route.dungeonId);
   const [parsed, setParsed] = useState(() => parseDungeonData(route.dungeon?.data ?? {}));
   const floors = useMemo(() => floorsInLayout(layout), [layout]);
-  const navigation = useMapLabNavigationSession(route.dungeonId);
-  const [activeZ, setActiveZ] = useState<number>(navigation.state.activeZ ?? floors[0]?.z ?? 0);
+  const { state: navigationState, setState: setNavigationState } = useMapLabNavigationSession(
+    route.dungeonId,
+  );
+  const [activeZ, setActiveZ] = useState<number>(navigationState.activeZ ?? floors[0]?.z ?? 0);
   // The inspector follows one explicitly selected object — the same rule the editor uses. Click,
   // Enter/Space, and keyboard focus select; hovering only highlights, and nothing clears the
   // selection except selecting something else or re-selecting the same object.
   const [selectedInspectable, setSelectedInspectable] = useState<InspectableRef | null>(
-    navigation.state.selectedTarget as InspectableRef | null,
+    navigationState.selectedTarget as InspectableRef | null,
   );
   const focusSelectedRef = useRef(false);
   const {
@@ -173,17 +165,18 @@ export function MapLabPage() {
   const [activeEncounterId, setActiveEncounterId] = useState<number | null>(null);
   const [activeNpcId, setActiveNpcId] = useState<number | null>(null);
   const [portalNavigationError, setPortalNavigationError] = useState<string | null>(null);
-  const zoomApi = useMapCanvasZoom({ initialZoom: navigation.state.zoom });
+  const zoomApi = useMapCanvasZoom({ initialZoom: navigationState.zoom });
+  const { centerOn } = zoomApi;
   const navigationRouteKey = useRef(route.dungeonId);
   useEffect(() => {
     if (navigationRouteKey.current !== route.dungeonId) {
       navigationRouteKey.current = route.dungeonId;
-      if (navigation.state.activeZ !== undefined) {
-        setActiveZ(navigation.state.activeZ);
+      if (navigationState.activeZ !== undefined) {
+        setActiveZ(navigationState.activeZ);
         return;
       }
     }
-    navigation.setState((current) => ({
+    setNavigationState((current) => ({
       ...current,
       activeZ,
       zoom: zoomApi.zoom,
@@ -191,9 +184,8 @@ export function MapLabPage() {
     }));
   }, [
     activeZ,
-    navigation.setState,
-    navigation.state.activeZ,
-    navigation.state.zoom,
+    setNavigationState,
+    navigationState.activeZ,
     route.dungeonId,
     selectedInspectable,
     zoomApi.zoom,
@@ -222,7 +214,7 @@ export function MapLabPage() {
 
   useEffect(() => {
     getAtTheTable()
-      .then((response) => setAtTableDungeonId(response.dungeon_id))
+      .then((response) => setAtTableDungeonId(response.dungeon_id ?? null))
       .catch(() => setAtTableDungeonId(null));
   }, []);
 
@@ -271,7 +263,7 @@ export function MapLabPage() {
     setAtTablePending(true);
     try {
       const response = await setAtTheTable({ dungeon_id: route.dungeonId });
-      setAtTableDungeonId(response.dungeon_id);
+      setAtTableDungeonId(response.dungeon_id ?? null);
     } catch {
       setAtTableError("Couldn't put this map at the table. Try again.");
     } finally {
@@ -280,9 +272,10 @@ export function MapLabPage() {
   }
 
   useEffect(() => {
-    if (floors.length === 0) return;
+    const firstFloor = floors[0];
+    if (!firstFloor) return;
     if (!floors.some((floor) => floor.z === activeZ)) {
-      setActiveZ(floors[0].z);
+      setActiveZ(firstFloor.z);
     }
   }, [activeZ, floors]);
 
@@ -300,10 +293,13 @@ export function MapLabPage() {
   const viewBox = `${bounds.minX * CELL_SIZE} ${bounds.minY * CELL_SIZE} ${
     (bounds.maxX - bounds.minX + 1) * CELL_SIZE
   } ${(bounds.maxY - bounds.minY + 1) * CELL_SIZE}`;
-  const contentCell = (cell: [number, number]) => ({
-    x: cell[0] - bounds.minX,
-    y: cell[1] - bounds.minY,
-  });
+  const contentCell = useCallback(
+    (cell: [number, number]) => ({
+      x: cell[0] - bounds.minX,
+      y: cell[1] - bounds.minY,
+    }),
+    [bounds.minX, bounds.minY],
+  );
 
   // Scale ruler: one cell, ticked at both ends, sits in the padding band above the rooms.
   const rulerX1 = (bounds.minX + 1) * CELL_SIZE;
@@ -328,7 +324,7 @@ export function MapLabPage() {
   function focusInspectable(ref: InspectableRef) {
     focusSelectedRef.current = true;
     setSelectedInspectable(ref);
-    navigation.setState((current) => ({ ...current, focusTarget: ref }));
+    setNavigationState((current) => ({ ...current, focusTarget: ref }));
     const fixture =
       ref.kind === "room"
         ? layout.rooms.find((room) => room.room_id === ref.id)
@@ -415,7 +411,7 @@ export function MapLabPage() {
   }
 
   useEffect(() => {
-    const target = navigation.state.focusTarget;
+    const target = navigationState.focusTarget;
     if (!target) return;
     setSelectedInspectable(target as InspectableRef);
     const fixture =
@@ -438,17 +434,18 @@ export function MapLabPage() {
               ? fixture.from.cell
               : fixture.to.cell
             : null;
-    if (cell) zoomApi.centerOn(contentCell(cell), viewportSize);
-    navigation.setState((current) =>
+    if (cell) centerOn(contentCell(cell), viewportSize);
+    setNavigationState((current) =>
       current.focusTarget === target ? { ...current, focusTarget: null } : current,
     );
   }, [
     activeZ,
+    centerOn,
+    contentCell,
     layout,
-    navigation.state.focusTarget,
-    navigation.setState,
+    navigationState.focusTarget,
+    setNavigationState,
     viewportSize,
-    zoomApi.centerOn,
   ]);
 
   /** Click selects, and clicking the already-selected object again clears the selection. A click
@@ -578,14 +575,14 @@ export function MapLabPage() {
 
       <div className="maplab-toolbar">
         <ToolbarTray groupKey="viewer-session" label="Session">
-          <button
+          <Button
             type="button"
             className="maplab-pill-button maplab-session-reset-button"
             onClick={() => setResetDungeonConfirmOpen(true)}
           >
             Reset dungeon
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             className="maplab-pill-button maplab-at-table-button"
             aria-pressed={isAtTable}
@@ -594,7 +591,7 @@ export function MapLabPage() {
             onClick={putThisDungeonAtTheTable}
           >
             {isAtTable ? "At the table" : "Put at the table"}
-          </button>
+          </Button>
         </ToolbarTray>
         <div className="maplab-view-popover-wrap">
           <Popover.Root
@@ -608,7 +605,6 @@ export function MapLabPage() {
               ref={viewPopoverTriggerRef}
               type="button"
               className="maplab-pill-button"
-              aria-haspopup="true"
               data-active={viewPopoverOpen || undefined}
             >
               <EyeIcon width={18} height={18} aria-hidden="true" />
@@ -622,74 +618,50 @@ export function MapLabPage() {
               >
                 <Popover.Popup
                   className="maplab-view-popover"
-                  role="menu"
+                  aria-label="View settings"
                   finalFocus={(closeType) =>
-                    closeType === "keyboard" ? viewPopoverTriggerRef : false
+                    closeType === "keyboard" ? viewPopoverTriggerRef.current : undefined
                   }
                 >
-                  <button
-                    type="button"
-                    className="maplab-pill-button maplab-layer-toggle-button"
-                    aria-pressed={layerVisible.outside}
-                    data-active={layerVisible.outside || undefined}
-                    onClick={() => toggleLayer("outside")}
-                  >
-                    Outside
-                  </button>
-                  <button
-                    type="button"
-                    className="maplab-pill-button maplab-layer-toggle-button"
-                    aria-pressed={layerVisible.props}
-                    data-active={layerVisible.props || undefined}
-                    onClick={() => toggleLayer("props")}
-                  >
-                    Props
-                  </button>
-                  <button
-                    type="button"
-                    className="maplab-pill-button maplab-layer-toggle-button"
-                    aria-pressed={layerVisible.passages}
-                    data-active={layerVisible.passages || undefined}
-                    onClick={() => toggleLayer("passages")}
-                  >
-                    Passages
-                  </button>
-                  <button
-                    type="button"
-                    className="maplab-pill-button maplab-layer-toggle-button"
-                    aria-pressed={layerVisible.labels}
-                    data-active={layerVisible.labels || undefined}
-                    onClick={() => toggleLayer("labels")}
-                  >
-                    Labels
-                  </button>
-                  <button
-                    type="button"
-                    className="maplab-pill-button"
-                    aria-pressed={density === "detailed"}
-                    data-active={density === "detailed" || undefined}
-                    onClick={() => setDensity("detailed")}
-                  >
-                    Detailed
-                  </button>
-                  <button
-                    type="button"
-                    className="maplab-pill-button"
-                    aria-pressed={density === "auto"}
-                    data-active={density === "auto" || undefined}
-                    onClick={() => setDensity("auto")}
-                  >
-                    Auto
-                  </button>
-                  <button
-                    type="button"
-                    className="maplab-pill-button"
-                    aria-pressed={density === "simple"}
-                    data-active={density === "simple" || undefined}
-                    onClick={() => setDensity("simple")}
-                  >
-                    Simple
-                  </button>
+                  <ToggleGroup
+                    className="maplab-view-toggle-group"
+                    aria-label="Map layers"
+                    multiple
+                    value={MAP_LAYER_KEYS.filter((key) => layerVisible[key])}
+                    options={[
+                      { value: "outside", label: "Outside" },
+                      { value: "props", label: "Props" },
+                      { value: "passages", label: "Passages" },
+                      { value: "labels", label: "Labels" },
+                    ]}
+                    onValueChange={(values) => {
+                      const changedLayer = MAP_LAYER_KEYS.find(
+                        (key) => values.includes(key) !== layerVisible[key],
+                      );
+                      if (changedLayer) toggleLayer(changedLayer);
+                    }}
+                  />
+                  <ToggleGroup
+                    className="maplab-view-toggle-group"
+                    aria-label="Map density"
+                    multiple={false}
+                    value={[density]}
+                    options={[
+                      { value: "detailed", label: "Detailed" },
+                      { value: "auto", label: "Auto" },
+                      { value: "simple", label: "Simple" },
+                    ]}
+                    onValueChange={(values) => {
+                      const nextDensity = values[0];
+                      if (
+                        nextDensity === "detailed" ||
+                        nextDensity === "auto" ||
+                        nextDensity === "simple"
+                      ) {
+                        setDensity(nextDensity);
+                      }
+                    }}
+                  />
                 </Popover.Popup>
               </Popover.Positioner>
             </Popover.Portal>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import * as api from "../../api/client";
 import type { NPC } from "../../api/types";
 import { BrowserLayout } from "../../components/BrowserLayout";
@@ -30,21 +30,23 @@ export function NPCBrowserPage() {
   const [pullTarget, setPullTarget] = useState<NPC | null>(null);
   const [addToEncounterTarget, setAddToEncounterTarget] = useState<NPC | null>(null);
 
-  const load = () => {
+  const load = useCallback((selectFirst = false) => {
     setNPCsRemote(remoteLoading());
     api
       .listNPCs()
       .then((data) => {
         const sorted = [...data].sort((a, b) => a.name.localeCompare(b.name));
         setNPCsRemote(remoteSuccess(sorted));
-        if (sorted.length > 0 && selectedId == null) setSelectedId(sorted[0].id);
+        if (selectFirst && sorted.length > 0) setSelectedId(sorted[0].id);
       })
       .catch((error) =>
         setNPCsRemote(remoteError(error instanceof Error ? error.message : "Failed to load NPCs.")),
       );
-  };
+  }, []);
 
-  useEffect(load, []);
+  useEffect(() => {
+    load(true);
+  }, [load]);
 
   const npcs = npcsRemote.status === "success" ? npcsRemote.data : [];
   const selected = npcs.find((n) => n.id === selectedId) || null;

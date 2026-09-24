@@ -303,7 +303,12 @@ describe("MapLabPage (density control)", () => {
     renderMapLabPage();
     await flush();
     await user.click(screen.getByRole("button", { name: "View" }));
-    expect(screen.getByRole("button", { name: "Auto" })).toHaveAttribute("aria-pressed", "true");
+    const densityGroup = screen.getByRole("group", { name: "Map density" });
+    expect(within(densityGroup).getByRole("button", { name: "Auto" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(within(densityGroup).getAllByRole("button", { pressed: true })).toHaveLength(1);
     expect(screen.getByRole("button", { name: "Detailed" })).toHaveAttribute(
       "aria-pressed",
       "false",
@@ -334,6 +339,45 @@ describe("MapLabPage (density control)", () => {
     expect(screen.getByRole("button", { name: "Simple" })).toHaveAttribute("aria-pressed", "true");
     expect(window.localStorage.getItem("dnd-kids-maplab-density")).toBe("simple");
   });
+
+  it("does not clear or persist a change when the selected density is activated again", async () => {
+    const user = userEvent.setup();
+    renderMapLabPage();
+    await flush();
+    await user.click(screen.getByRole("button", { name: "View" }));
+
+    const densityGroup = screen.getByRole("group", { name: "Map density" });
+    await user.click(within(densityGroup).getByRole("button", { name: "Auto" }));
+
+    expect(within(densityGroup).getByRole("button", { name: "Auto" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(within(densityGroup).getAllByRole("button", { pressed: true })).toHaveLength(1);
+    expect(window.localStorage.getItem("dnd-kids-maplab-density")).toBeNull();
+  });
+
+  it("supports density selection with the group's arrow and Space keys", async () => {
+    const user = userEvent.setup();
+    renderMapLabPage();
+    await flush();
+    await user.click(screen.getByRole("button", { name: "View" }));
+
+    const densityGroup = screen.getByRole("group", { name: "Map density" });
+    const detailed = within(densityGroup).getByRole("button", { name: "Detailed" });
+    const auto = within(densityGroup).getByRole("button", { name: "Auto" });
+    const simple = within(densityGroup).getByRole("button", { name: "Simple" });
+    detailed.focus();
+    await user.keyboard("{ArrowRight}");
+    expect(auto).toHaveFocus();
+    await user.keyboard("{ArrowRight}");
+    expect(simple).toHaveFocus();
+    await user.keyboard(" ");
+
+    expect(simple).toHaveAttribute("aria-pressed", "true");
+    expect(within(densityGroup).getAllByRole("button", { pressed: true })).toHaveLength(1);
+    expect(window.localStorage.getItem("dnd-kids-maplab-density")).toBe("simple");
+  });
 });
 
 describe("MapLabPage (View popover)", () => {
@@ -351,6 +395,18 @@ describe("MapLabPage (View popover)", () => {
     for (const label of ["Outside", "Props", "Passages", "Labels"]) {
       expect(screen.getByRole("button", { name: label })).toBeVisible();
     }
+  });
+
+  it("exposes View settings with the shared popover's dialog semantics", async () => {
+    const user = userEvent.setup();
+    await renderLoadedMapLabPage();
+
+    const viewButton = screen.getByRole("button", { name: "View" });
+    await user.click(viewButton);
+
+    expect(screen.getByRole("dialog", { name: "View settings" })).toBeVisible();
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+    expect(viewButton).toHaveAttribute("aria-haspopup", "dialog");
   });
 
   it("keeps View and Finder mutually exclusive in both directions", async () => {
@@ -430,6 +486,51 @@ describe("MapLabPage (Session view — layer toggles)", () => {
     for (const key of ["outside", "props", "passages", "labels"]) {
       window.localStorage.removeItem(`dnd-kids-maplab-layer-visible:${key}`);
     }
+  });
+
+  it("keeps layer toggles independently pressed and persists each changed key", async () => {
+    const user = userEvent.setup();
+    await renderLoadedMapLabPage();
+    await user.click(screen.getByRole("button", { name: "View" }));
+
+    const layerGroup = screen.getByRole("group", { name: "Map layers" });
+    const outside = within(layerGroup).getByRole("button", { name: "Outside" });
+    const props = within(layerGroup).getByRole("button", { name: "Props" });
+    const passages = within(layerGroup).getByRole("button", { name: "Passages" });
+    const labels = within(layerGroup).getByRole("button", { name: "Labels" });
+    expect(within(layerGroup).getAllByRole("button", { pressed: true })).toHaveLength(4);
+
+    await user.click(outside);
+    await user.click(props);
+    expect(outside).toHaveAttribute("aria-pressed", "false");
+    expect(props).toHaveAttribute("aria-pressed", "false");
+    expect(passages).toHaveAttribute("aria-pressed", "true");
+    expect(labels).toHaveAttribute("aria-pressed", "true");
+    expect(window.localStorage.getItem("dnd-kids-maplab-layer-visible:outside")).toBe("false");
+    expect(window.localStorage.getItem("dnd-kids-maplab-layer-visible:props")).toBe("false");
+
+    await user.click(props);
+    expect(outside).toHaveAttribute("aria-pressed", "false");
+    expect(props).toHaveAttribute("aria-pressed", "true");
+    expect(window.localStorage.getItem("dnd-kids-maplab-layer-visible:props")).toBe("true");
+  });
+
+  it("supports layer toggles with the group's arrow and Space keys", async () => {
+    const user = userEvent.setup();
+    await renderLoadedMapLabPage();
+    await user.click(screen.getByRole("button", { name: "View" }));
+
+    const layerGroup = screen.getByRole("group", { name: "Map layers" });
+    const outside = within(layerGroup).getByRole("button", { name: "Outside" });
+    const props = within(layerGroup).getByRole("button", { name: "Props" });
+    outside.focus();
+    await user.keyboard("{ArrowRight}");
+    expect(props).toHaveFocus();
+    await user.keyboard(" ");
+
+    expect(outside).toHaveAttribute("aria-pressed", "true");
+    expect(props).toHaveAttribute("aria-pressed", "false");
+    expect(window.localStorage.getItem("dnd-kids-maplab-layer-visible:props")).toBe("false");
   });
 
   it("toggling Outside off hides the unknown-space rect and back on restores it", async () => {

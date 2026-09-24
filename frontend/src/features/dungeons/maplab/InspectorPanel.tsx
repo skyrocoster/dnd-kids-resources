@@ -2,7 +2,7 @@ import { Fragment, useEffect, useState } from "react";
 import { CoinsIcon, SwordsIcon } from "../../../components/icons";
 import { Button } from "../../../components/Button";
 import { ApiError, getLootBundle } from "../../../api/client";
-import type { LootBundle } from "../../../api/types";
+import type { LootBundle, LootEntry } from "../../../api/types";
 import { categoryIcon } from "../../loot/itemCategories";
 import { computeBundleTotal, formatGp } from "../../loot/lootTotals";
 import {
@@ -427,15 +427,16 @@ function LootSummaryShell({ loot }: { loot: { bundle_id: number; bundle_name?: s
     );
   }
 
-  const contents = bundle.contents ?? [];
+  const contents = (bundle.contents ?? []) as LootEntry[];
+  const gold = bundle.gold ?? 0;
   return (
     <section className="maplab-loot-summary" aria-label="Loot contents">
       <div className="maplab-loot-summary-header">
         <CoinsIcon width={16} height={16} aria-hidden="true" />
         <span>{bundle.name}</span>
-        <strong>{formatGp(computeBundleTotal(bundle.gold, contents))}</strong>
+        <strong>{formatGp(computeBundleTotal(gold, contents))}</strong>
       </div>
-      <div className="maplab-loot-gold">Gold: {formatGp(bundle.gold)}</div>
+      <div className="maplab-loot-gold">Gold: {formatGp(gold)}</div>
       {contents.length > 0 ? (
         <ul className="maplab-loot-entries">
           {contents.map((entry, index) => {

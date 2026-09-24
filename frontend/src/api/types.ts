@@ -12,7 +12,6 @@ import type {
   AttackDamage,
   CreatureType,
   DamageModifier,
-  Encounter,
   Feature,
   HitPoints,
   LootBundle,
@@ -71,7 +70,28 @@ export type SpellReferenceInput = SpellReference;
 export type SpellGroupInput = SpellGroup;
 export type SpellcastingBlockInput = SpellcastingBlock;
 export type MonsterFeaturesInput = MonsterFeatures;
+export type MonsterFeaturesView = Required<MonsterFeatures>;
+export type MonsterView = Omit<Required<Monster>, "features" | "created_at" | "updated_at"> & {
+  features: MonsterFeaturesView;
+};
 export type MonsterInput = MonsterCreate;
+
+export function completeMonsterFeatures(
+  features: MonsterFeatures | null | undefined,
+): MonsterFeaturesView {
+  return {
+    traits: features?.traits ?? [],
+    spellcasting: features?.spellcasting ?? [],
+    actions: features?.actions ?? [],
+    bonus_actions: features?.bonus_actions ?? [],
+    reactions: features?.reactions ?? [],
+    reaction_intro: features?.reaction_intro ?? null,
+    legendary_actions: features?.legendary_actions ?? [],
+    legendary_intro: features?.legendary_intro ?? null,
+    legendary_actions_per_round: features?.legendary_actions_per_round ?? null,
+    mythic_actions: features?.mythic_actions ?? [],
+  };
+}
 
 /**
  * The OpenAPI schema currently represents nested weapon attacks as an opaque object.
@@ -101,7 +121,7 @@ export type LootEntry = NonNullable<LootBundle["contents"]>[number] & {
 };
 export type LootBundleInput = import("./generated/types.gen").LootBundleCreate;
 
-export type PlayerInput = PlayerCreate & { class_?: string | null };
+export type PlayerInput = PlayerCreate;
 export type NPCStatblockFields = Omit<
   NpcCreate,
   "name" | "race" | "gender" | "background" | "appearance" | "notes"
@@ -109,7 +129,8 @@ export type NPCStatblockFields = Omit<
 export type NPC = Npc;
 export type NPCInput = NpcCreate;
 
-export type EncounterCreature = NonNullable<Encounter["creatures"]>[number] & {
+export type EncounterCreature = {
+  [key: string]: unknown;
   creature_id?: number | null;
   source_kind?: "monster" | "npc" | null;
   original_name?: string | null;
@@ -124,6 +145,7 @@ export type EncounterCreature = NonNullable<Encounter["creatures"]>[number] & {
 export type EncounterInput = import("./generated/types.gen").EncounterCreate;
 export type DungeonInput = import("./generated/types.gen").DungeonCreate;
 export type ThreadColor = `thread-${1 | 2 | 3 | 4 | 5 | 6}`;
+export type LoomNodeKind = import("./generated/types.gen").LoomNode["kind"];
 export type LoomThreadInput = import("./generated/types.gen").LoomThreadUpdate;
 export type LoomNodeInput = import("./generated/types.gen").LoomNodeCreate;
 export type LoomSessionInput = import("./generated/types.gen").LoomSessionCreate;

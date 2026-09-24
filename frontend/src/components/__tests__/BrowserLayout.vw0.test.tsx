@@ -96,14 +96,14 @@ const weaponB: Weapon = {
 const playerA: Player = {
   id: 1,
   name: "Aelindra",
-  class_: "Wizard",
+  class: "Wizard",
   level: 5,
 };
 
 const playerB: Player = {
   id: 2,
   name: "Brom",
-  class_: "Fighter",
+  class: "Fighter",
   level: 3,
 };
 

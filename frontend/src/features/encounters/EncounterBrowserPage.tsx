@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import * as api from "../../api/client";
-import type { Encounter } from "../../api/types";
+import type { Encounter, EncounterCreature } from "../../api/types";
 import { BrowserLayout } from "../../components/BrowserLayout";
 import { Button } from "../../components/Button";
 import { Card } from "../../components/Card";
@@ -29,26 +29,29 @@ export function EncounterBrowserPage() {
   const [pendingDelete, setPendingDelete] = useState<Encounter | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  const load = () => {
+  const load = useCallback((selectFirst = false) => {
     setEncountersRemote(remoteLoading());
     api
       .listEncounters()
       .then((data) => {
         const sorted = [...data].sort((a, b) => a.title.localeCompare(b.title));
         setEncountersRemote(remoteSuccess(sorted));
-        if (sorted.length > 0 && selectedId == null) setSelectedId(sorted[0].id);
+        if (selectFirst && sorted.length > 0) setSelectedId(sorted[0].id);
       })
       .catch((error) =>
         setEncountersRemote(
           remoteError(error instanceof Error ? error.message : "Failed to load encounters."),
         ),
       );
-  };
+  }, []);
 
-  useEffect(load, []);
+  useEffect(() => {
+    load(true);
+  }, [load]);
 
   const encounters = encountersRemote.status === "success" ? encountersRemote.data : [];
   const selected = encounters.find((e) => e.id === selectedId) || null;
+  const selectedCreatures = selected?.creatures as EncounterCreature[] | null | undefined;
 
   const openCreate = () => {
     setEditingEncounter(undefined);
@@ -118,7 +121,7 @@ export function EncounterBrowserPage() {
               </Button>
               <Card
                 title={selected.title}
-                tag={selected.creatures ? `${selected.creatures.length} creature(s)` : undefined}
+                tag={selectedCreatures ? `${selectedCreatures.length} creature(s)` : undefined}
                 variant="neutral"
                 footer={
                   <div className="encounter-browser-actions">
@@ -137,9 +140,9 @@ export function EncounterBrowserPage() {
                   </div>
                 }
               >
-                {selected.creatures && selected.creatures.length > 0 ? (
+                {selectedCreatures && selectedCreatures.length > 0 ? (
                   <ul className="encounter-browser-creatures">
-                    {selected.creatures.map((creature, i) => (
+                    {selectedCreatures.map((creature, i) => (
                       <li key={i}>
                         <span className="encounter-browser-creature-name">
                           {creature.name || "Unknown"}

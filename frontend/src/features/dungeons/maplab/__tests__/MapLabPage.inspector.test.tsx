@@ -470,7 +470,7 @@ describe("MapLabPage (R4 viewer room-reading surface)", () => {
     const user = userEvent.setup();
     await renderLoadedMapLabPage();
 
-    await user.click(screen.getByRole("tab", { name: "First Floor" }));
+    await user.click(screen.getByRole("button", { name: "First Floor" }));
     await user.click(
       within(screen.getByRole("group", { name: /dungeon floor map/i })).getByRole("button", {
         name: "First Floor Landing",

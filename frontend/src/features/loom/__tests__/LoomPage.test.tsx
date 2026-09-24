@@ -300,7 +300,9 @@ describe("LoomPage", () => {
       carried_count: 0,
     };
     const createLoomNodeSpy = vi.spyOn(api, "createLoomNode").mockResolvedValue(createdNode);
-    const insertSpy = vi.spyOn(api, "insertLoomThreadItem").mockResolvedValue({} as any);
+    const insertSpy = vi
+      .spyOn(api, "insertLoomThreadItem")
+      .mockResolvedValue({} as Awaited<ReturnType<typeof api.insertLoomThreadItem>>);
     const user = userEvent.setup();
     render(<LoomPage />);
     await waitFor(() => expect(screen.getAllByText("The Lost Puppy").length).toBeGreaterThan(0));
@@ -463,7 +465,9 @@ describe("LoomPage", () => {
 
   it("calls bankLoomNode when Bank is clicked on a beat card", async () => {
     vi.spyOn(api, "getLoomTapestry").mockResolvedValue(demoTapestry());
-    const bankSpy = vi.spyOn(api, "bankLoomNode").mockResolvedValue({} as any);
+    const bankSpy = vi
+      .spyOn(api, "bankLoomNode")
+      .mockResolvedValue({} as Awaited<ReturnType<typeof api.bankLoomNode>>);
     const user = userEvent.setup();
     render(<LoomPage />);
     await waitFor(() => expect(screen.getAllByText("The Lost Puppy").length).toBeGreaterThan(0));
@@ -527,7 +531,9 @@ describe("LoomPage", () => {
       ],
     };
     vi.spyOn(api, "getLoomTapestry").mockResolvedValue(tapestry);
-    const reorderSpy = vi.spyOn(api, "reorderLoomThreadItem").mockResolvedValue({} as any);
+    const reorderSpy = vi
+      .spyOn(api, "reorderLoomThreadItem")
+      .mockResolvedValue({} as Awaited<ReturnType<typeof api.reorderLoomThreadItem>>);
     render(<LoomPage />);
     await waitFor(() => expect(screen.getAllByText("The Lost Puppy").length).toBeGreaterThan(0));
 
@@ -688,7 +694,9 @@ describe("LoomPage", () => {
       ],
     };
     vi.spyOn(api, "getLoomTapestry").mockResolvedValue(tapestry);
-    const moveSpy = vi.spyOn(api, "moveLoomThreadItem").mockResolvedValue({} as any);
+    const moveSpy = vi
+      .spyOn(api, "moveLoomThreadItem")
+      .mockResolvedValue({} as Awaited<ReturnType<typeof api.moveLoomThreadItem>>);
     render(<LoomPage />);
     await waitFor(() => expect(screen.getByText("Thread A")).toBeInTheDocument());
 
@@ -855,7 +863,9 @@ describe("LoomPage", () => {
       ],
     };
     vi.spyOn(api, "getLoomTapestry").mockResolvedValue(tapestry);
-    const bankSpy = vi.spyOn(api, "bankLoomNode").mockResolvedValue({} as any);
+    const bankSpy = vi
+      .spyOn(api, "bankLoomNode")
+      .mockResolvedValue({} as Awaited<ReturnType<typeof api.bankLoomNode>>);
     render(<LoomPage />);
     await waitFor(() => expect(screen.getAllByText("The Lost Puppy").length).toBeGreaterThan(0));
 
@@ -918,7 +928,9 @@ describe("LoomPage", () => {
       ],
     };
     vi.spyOn(api, "getLoomTapestry").mockResolvedValue(tapestry);
-    const bankSpy = vi.spyOn(api, "bankLoomNode").mockResolvedValue({} as any);
+    const bankSpy = vi
+      .spyOn(api, "bankLoomNode")
+      .mockResolvedValue({} as Awaited<ReturnType<typeof api.bankLoomNode>>);
     render(<LoomPage />);
     await waitFor(() => expect(screen.getAllByText("The Lost Puppy").length).toBeGreaterThan(0));
 
@@ -1047,7 +1059,9 @@ describe("LoomPage", () => {
       ],
     };
     vi.spyOn(api, "getLoomTapestry").mockResolvedValue(tapestry);
-    const insertSpy = vi.spyOn(api, "insertLoomThreadItem").mockResolvedValue({} as any);
+    const insertSpy = vi
+      .spyOn(api, "insertLoomThreadItem")
+      .mockResolvedValue({} as Awaited<ReturnType<typeof api.insertLoomThreadItem>>);
     render(<LoomPage />);
     await waitFor(() => expect(screen.getAllByText("The Lost Puppy").length).toBeGreaterThan(0));
 
@@ -1157,7 +1171,9 @@ describe("LoomPage", () => {
 
   it("activates placement mode and restores the banked beat when a highlighted gap is clicked", async () => {
     vi.spyOn(api, "getLoomTapestry").mockResolvedValue(demoTapestry());
-    const insertSpy = vi.spyOn(api, "insertLoomThreadItem").mockResolvedValue({} as any);
+    const insertSpy = vi
+      .spyOn(api, "insertLoomThreadItem")
+      .mockResolvedValue({} as Awaited<ReturnType<typeof api.insertLoomThreadItem>>);
     const user = userEvent.setup();
     render(<LoomPage />);
     await waitFor(() => expect(screen.getAllByText("The Lost Puppy").length).toBeGreaterThan(0));
@@ -1179,7 +1195,9 @@ describe("LoomPage", () => {
 
   it("cancels placement mode on Escape without restoring the beat", async () => {
     vi.spyOn(api, "getLoomTapestry").mockResolvedValue(demoTapestry());
-    const insertSpy = vi.spyOn(api, "insertLoomThreadItem").mockResolvedValue({} as any);
+    const insertSpy = vi
+      .spyOn(api, "insertLoomThreadItem")
+      .mockResolvedValue({} as Awaited<ReturnType<typeof api.insertLoomThreadItem>>);
     const user = userEvent.setup();
     render(<LoomPage />);
     await waitFor(() => expect(screen.getAllByText("The Lost Puppy").length).toBeGreaterThan(0));

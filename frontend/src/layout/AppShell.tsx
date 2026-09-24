@@ -1,25 +1,12 @@
-import { createContext, useContext, useState } from "react";
+import { useState } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import { useNavCollapse } from "../hooks/useNavCollapse";
 import { navSections } from "./navSections";
 import { Dialog } from "../components/Dialog";
 import { IconButton } from "../components/IconButton";
 import { MapIcon, MenuIcon, NavCollapseIcon, NavExpandIcon } from "../components/icons";
+import { AppShellRowSlotsContext } from "./appShellRowSlots";
 import "./AppShell.css";
-
-type AppShellRowSlots = {
-  identitySlot: HTMLElement | null;
-  tabsSlot: HTMLElement | null;
-};
-
-const appShellRowSlotsContext = createContext<AppShellRowSlots>({
-  identitySlot: null,
-  tabsSlot: null,
-});
-
-export function useAppShellRowSlots(): AppShellRowSlots {
-  return useContext(appShellRowSlotsContext);
-}
 
 export function AppShell() {
   const { collapsed, toggle } = useNavCollapse();
@@ -31,7 +18,7 @@ export function AppShell() {
   const isEncounterRunner = /^\/encounters\/[^/]+\/run\/?$/.test(pathname);
 
   return (
-    <appShellRowSlotsContext.Provider value={{ identitySlot, tabsSlot }}>
+    <AppShellRowSlotsContext.Provider value={{ identitySlot, tabsSlot }}>
       <div className="app-shell">
         <div className="app-top-band">
           <header className="app-header">
@@ -119,6 +106,6 @@ export function AppShell() {
           </nav>
         </Dialog>
       </div>
-    </appShellRowSlotsContext.Provider>
+    </AppShellRowSlotsContext.Provider>
   );
 }

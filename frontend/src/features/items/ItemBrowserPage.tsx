@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import * as api from "../../api/client";
 import type { Item } from "../../api/types";
 import { BrowserLayout } from "../../components/BrowserLayout";
@@ -31,23 +31,25 @@ export function ItemBrowserPage() {
   const [pendingDelete, setPendingDelete] = useState<Item | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  const load = () => {
+  const load = useCallback((selectFirst = false) => {
     setItemsRemote(remoteLoading());
     api
       .listItems()
       .then((data) => {
         const sorted = [...data].sort((a, b) => a.name.localeCompare(b.name));
         setItemsRemote(remoteSuccess(sorted));
-        if (sorted.length > 0 && selectedId == null) setSelectedId(sorted[0].id);
+        if (selectFirst && sorted.length > 0) setSelectedId(sorted[0].id);
       })
       .catch((error) =>
         setItemsRemote(
           remoteError(error instanceof Error ? error.message : "Failed to load items."),
         ),
       );
-  };
+  }, []);
 
-  useEffect(load, []);
+  useEffect(() => {
+    load(true);
+  }, [load]);
 
   const items = itemsRemote.status === "success" ? itemsRemote.data : [];
   const selected = items.find((item) => item.id === selectedId) || null;
@@ -98,7 +100,7 @@ export function ItemBrowserPage() {
             items={items}
             getId={(item) => item.id}
             getLabel={(item) => item.name}
-            getMeta={(item) => formatGp(item.value_gp)}
+            getMeta={(item) => formatGp(item.value_gp ?? 0)}
             selectedId={selectedId}
             onSelect={(item) => setSelectedId(item.id)}
             variant="loot"
@@ -121,7 +123,7 @@ export function ItemBrowserPage() {
               </Button>
               <Card
                 title={selected.name}
-                subtitle={formatGp(selected.value_gp)}
+                subtitle={formatGp(selected.value_gp ?? 0)}
                 tag={selected.category || "other"}
                 variant="loot"
                 footer={

@@ -82,8 +82,6 @@ export const PROP_KIND_OPTIONS: SelectOption[] = [
   { value: "other", label: "Other" },
 ];
 
-const PROP_KINDS = PROP_KIND_OPTIONS.map((option) => option.value);
-
 const PROP_WALL_SIDE_OPTIONS: SelectOption[] = [
   { value: "Off", label: "On the floor" },
   { value: "N", label: "North wall" },
@@ -139,7 +137,7 @@ export const PROP_FIELDS: FieldSpec[] = [
   { key: "note", label: "Note", type: "text" },
 ];
 
-export type PropKind = (typeof PROP_KINDS)[number];
+export type PropKind = (typeof PROP_KIND_OPTIONS)[number]["value"];
 
 export const PROP_KIND_ICONS: Record<PropKind, LucideIcon> = {
   chest: PropChestIcon,

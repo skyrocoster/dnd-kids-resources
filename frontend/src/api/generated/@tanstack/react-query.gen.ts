@@ -12,6 +12,7 @@ import {
   getDungeonLayout,
   getDungeonSessionState,
   getEncounter,
+  getHealth,
   getIncomingGateways,
   getItem,
   getLootBundle,
@@ -68,6 +69,7 @@ import type {
   GetEncounterData,
   GetEncounterError,
   GetEncounterResponse,
+  GetHealthData,
   GetIncomingGatewaysData,
   GetIncomingGatewaysError,
   GetIncomingGatewaysResponse,
@@ -1189,6 +1191,28 @@ export const getRevealedCellsOptions = (options: Options<GetRevealedCellsData>) 
       return data;
     },
     queryKey: getRevealedCellsQueryKey(options),
+  });
+
+export const getHealthQueryKey = (options?: Options<GetHealthData>) =>
+  createQueryKey("getHealth", options);
+
+/**
+ * Get Health
+ *
+ * Readiness endpoint for tooling (e2e servers, healthchecks); no database access.
+ */
+export const getHealthOptions = (options?: Options<GetHealthData>) =>
+  queryOptions<unknown, DefaultError, unknown, ReturnType<typeof getHealthQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+      const { data } = await getHealth({
+        ...options,
+        ...queryKey[0],
+        signal,
+        throwOnError: true,
+      });
+      return data;
+    },
+    queryKey: getHealthQueryKey(options),
   });
 
 export const getAtTheTableQueryKey = (options?: Options<GetAtTheTableData>) =>

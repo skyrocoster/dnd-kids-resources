@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { useAppShellRowSlots } from "../layout/AppShell";
+import { useAppShellRowSlots } from "../layout/appShellRowSlots";
 import { Tabs } from "./Tabs";
 import "./PageHeader.css";
 

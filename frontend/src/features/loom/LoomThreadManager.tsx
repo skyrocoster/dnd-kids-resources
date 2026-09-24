@@ -20,6 +20,10 @@ const THREAD_COLORS: ThreadColor[] = [
   "thread-6",
 ];
 
+function isThreadColor(value: string): value is ThreadColor {
+  return THREAD_COLORS.some((color) => color === value);
+}
+
 interface LoomThreadManagerProps {
   threads: LoomThread[];
   onClose: () => void;
@@ -37,7 +41,11 @@ function emptyForm(): ThreadFormState {
 }
 
 function threadToForm(thread: LoomThread): ThreadFormState {
-  return { name: thread.name, color: thread.color, description: thread.description ?? "" };
+  return {
+    name: thread.name,
+    color: thread.color != null && isThreadColor(thread.color) ? thread.color : "thread-1",
+    description: thread.description ?? "",
+  };
 }
 
 function ColorPicker({
@@ -52,7 +60,9 @@ function ColorPicker({
       className="loom-thread-color-picker"
       aria-label="Thread color"
       value={value}
-      onValueChange={(color) => onChange(color)}
+      onValueChange={(color) => {
+        if (isThreadColor(color)) onChange(color);
+      }}
     >
       {THREAD_COLORS.map((color) => (
         <Radio.Root

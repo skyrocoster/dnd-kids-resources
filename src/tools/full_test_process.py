@@ -34,7 +34,8 @@ FAILURE_LOG_PATH = STAGE_DIR / "latest-failure.log"
 FINISH_LINE = "PASS complete full-test process"
 
 # Warning text in a check's output is a failure even when the command exits 0.
-WARNING_PATTERN = re.compile(r"\bwarn(?:ings?)?\b", re.IGNORECASE)
+# A hyphenated option such as ESLint's `--max-warnings` is not warning output.
+WARNING_PATTERN = re.compile(r"(?<!-)\bwarn(?:ings?)?\b", re.IGNORECASE)
 
 # Accepted exception 1 (the only one repository-wide): npm's local engine
 # mismatch warning when the installed Node version is outside the repository's
@@ -77,10 +78,11 @@ def build_checks() -> list[Check]:
         Check("Python tests", (python, "-m", "pytest", "-x", "-W", "error"), ".", 900),
         Check("Vitest unit tests", ("npm", "test", "--", "--bail", "1"), "frontend", 1800),
         Check("Development service health", ("powershell", "-ExecutionPolicy", "Bypass", "-File", "./dev.ps1", "status"), ".", 180),
+        Check("Frontend real-backend API tests", ("npm", "run", "test:api", "--", "--bail", "1"), "frontend", 300),
         Check("Frontend production build", ("npm", "run", "build"), "frontend", 600),
         Check("Storybook browser tests", ("npm", "run", "test:storybook", "--", "--bail", "1"), "frontend", 1800),
         Check("Storybook production build", ("npm", "run", "build-storybook"), "frontend", 900),
-        Check("Playwright end-to-end tests", ("npm", "run", "test:e2e", "--", "--max-failures", "1"), "frontend", 900),
+        Check("Playwright end-to-end tests", ("npm", "run", "test:e2e", "--", "--max-failures", "1"), "frontend", 1800),
     ]
 
 

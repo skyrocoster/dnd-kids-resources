@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import * as api from "../../api/client";
 import type { Player, PlayerDetail, Spell, Weapon } from "../../api/types";
 import { Card } from "../../components/Card";
@@ -36,7 +36,7 @@ export function PlayerBrowserPage() {
   const [manageDialog, setManageDialog] = useState<ManageDialogKind>(null);
   const detailCache = useRef<Map<number, PlayerDetail>>(new Map());
 
-  const prefetchDetails = (roster: Player[], skipId: number | null) => {
+  const prefetchDetails = useCallback((roster: Player[], skipId: number | null) => {
     for (const player of roster) {
       if (player.id === skipId) continue;
       if (detailCache.current.has(player.id)) continue;
@@ -45,27 +45,32 @@ export function PlayerBrowserPage() {
         .then((detail) => detailCache.current.set(player.id, detail))
         .catch(() => {});
     }
-  };
+  }, []);
 
-  const load = () => {
-    setPlayersRemote(remoteLoading());
-    api
-      .listPlayers()
-      .then((data) => {
-        const sorted = [...data].sort((a, b) => a.name.localeCompare(b.name));
-        setPlayersRemote(remoteSuccess(sorted));
-        const autoSelected = sorted.length > 0 && selectedId == null ? sorted[0].id : selectedId;
-        if (sorted.length > 0 && selectedId == null) setSelectedId(sorted[0].id);
-        prefetchDetails(sorted, autoSelected);
-      })
-      .catch((error) =>
-        setPlayersRemote(
-          remoteError(error instanceof Error ? error.message : "Failed to load players."),
-        ),
-      );
-  };
+  const load = useCallback(
+    (currentSelectedId: number | null, selectFirst = false) => {
+      setPlayersRemote(remoteLoading());
+      api
+        .listPlayers()
+        .then((data) => {
+          const sorted = [...data].sort((a, b) => a.name.localeCompare(b.name));
+          setPlayersRemote(remoteSuccess(sorted));
+          const activeId = selectFirst && sorted.length > 0 ? sorted[0].id : currentSelectedId;
+          if (selectFirst && sorted.length > 0) setSelectedId(activeId);
+          prefetchDetails(sorted, activeId);
+        })
+        .catch((error) =>
+          setPlayersRemote(
+            remoteError(error instanceof Error ? error.message : "Failed to load players."),
+          ),
+        );
+    },
+    [prefetchDetails],
+  );
 
-  useEffect(load, []);
+  useEffect(() => {
+    load(null, true);
+  }, [load]);
   useEffect(() => {
     api
       .listSpells()
@@ -122,14 +127,14 @@ export function PlayerBrowserPage() {
   const handleSaved = (player: Player) => {
     setEditorOpen(false);
     setSelectedId(player.id);
-    load();
+    load(player.id);
   };
   const confirmDelete = async () => {
     if (!pendingDelete) return;
     await api.deletePlayer(pendingDelete.id);
     setPendingDelete(null);
     setSelectedId(null);
-    load();
+    load(null);
   };
 
   return (
@@ -151,7 +156,7 @@ export function PlayerBrowserPage() {
             items={players}
             getId={(p) => p.id}
             getLabel={(p) => p.name}
-            getMeta={(p) => p.class_ || undefined}
+            getMeta={(p) => p.class || undefined}
             selectedId={selectedId}
             onSelect={(p) => setSelectedId(p.id)}
             variant="neutral"
@@ -174,7 +179,7 @@ export function PlayerBrowserPage() {
               </Button>
               <Card
                 title={selected.name}
-                subtitle={selected.class_ || undefined}
+                subtitle={selected.class || undefined}
                 tag={selected.level != null ? `Level ${selected.level}` : undefined}
                 variant="neutral"
                 footer={
@@ -202,7 +207,7 @@ export function PlayerBrowserPage() {
                           Manage Spells
                         </Button>
                       </div>
-                      <PlayerSpellSection player={selected} spells={detail.spells} />
+                      <PlayerSpellSection player={selected} spells={detail.spells ?? []} />
                     </section>
                     <section className="player-assignment-group">
                       <div className="player-assignment-group-header">
@@ -211,7 +216,7 @@ export function PlayerBrowserPage() {
                           Manage Weapons
                         </Button>
                       </div>
-                      <PlayerWeaponSection weapons={detail.weapons} />
+                      <PlayerWeaponSection weapons={detail.weapons ?? []} />
                     </section>
                   </div>
                 ) : null}
@@ -245,7 +250,7 @@ export function PlayerBrowserPage() {
             <ManageAssignmentsDialog<Spell>
               title="Manage Spells"
               items={allSpells}
-              assignedIds={detail.spells.map((s) => s.id)}
+              assignedIds={(detail.spells ?? []).map((s) => s.id)}
               getId={(s) => s.id}
               getLabel={(s) => s.name}
               onSave={async (ids) => {
@@ -259,7 +264,7 @@ export function PlayerBrowserPage() {
             <ManageAssignmentsDialog<Weapon>
               title="Manage Weapons"
               items={allWeapons}
-              assignedIds={detail.weapons.map((w) => w.id)}
+              assignedIds={(detail.weapons ?? []).map((w) => w.id)}
               getId={(w) => w.id}
               getLabel={(w) => w.name}
               onSave={async (ids) => {

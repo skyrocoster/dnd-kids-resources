@@ -1,5 +1,5 @@
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 import { NPCStatCard } from "../NPCStatCard";
 import type { NPC } from "../../../api/types";
 
@@ -70,8 +70,23 @@ describe("NPCStatCard", () => {
   it("shows a statless affordance for a bare NPC in non-compact mode", () => {
     render(<NPCStatCard npc={makeNpc()} />);
     expect(screen.getByText("No combat stats yet.")).toBeInTheDocument();
-    expect(screen.getByText("Pull from a monster…")).toBeInTheDocument();
+    const pullButton = screen.getByRole("button", { name: "Pull from a monster…" });
+    expect(pullButton).toHaveAttribute("type", "submit");
+    expect(pullButton).toHaveClass("npc-stat-card-empty-button");
+    expect(pullButton).toBeDisabled();
     expect(screen.queryByTestId("monster-stat-block")).not.toBeInTheDocument();
+  });
+
+  it("calls the optional Pull callback when enabled", () => {
+    const onPull = vi.fn();
+    render(<NPCStatCard npc={makeNpc()} onPull={onPull} />);
+
+    const pullButton = screen.getByRole("button", { name: "Pull from a monster…" });
+    expect(pullButton).toHaveAttribute("type", "submit");
+    expect(pullButton).toBeEnabled();
+
+    fireEvent.click(pullButton);
+    expect(onPull).toHaveBeenCalledTimes(1);
   });
 });
 

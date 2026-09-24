@@ -3,7 +3,8 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { Dialog } from "../Dialog";
 import { PreviewCard } from "../PreviewCard";
-import { ToastProvider, useToast } from "../Toast";
+import { ToastProvider } from "../Toast";
+import { useToast } from "../toastManager";
 import { Tooltip } from "../Tooltip";
 
 function ToastButton() {

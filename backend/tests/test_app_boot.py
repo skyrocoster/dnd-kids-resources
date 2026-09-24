@@ -192,7 +192,7 @@ def test_openapi_declares_stable_ids_for_api_operations_without_spa_catch_all():
     ]
     operation_ids = [operation.get("operationId") for operation in api_operations]
 
-    assert len(api_operations) == 96
+    assert len(api_operations) == 97
     assert all(operation_ids)
     assert len(operation_ids) == len(set(operation_ids))
     assert {"listSpells", "getSpell"} <= set(operation_ids)

@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { createPortal } from "react-dom";
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { ComponentPropsWithoutRef, KeyboardEvent, ReactNode } from "react";
+import { Button } from "./Button";
 import "./Tabs.css";
 export interface TabDefinition {
   id: string;
@@ -193,7 +194,7 @@ export function Tabs({
       data-testid="tabs-navigation"
     >
       {overflow.hasOverflow && (
-        <button
+        <Button
           className="cmt-tabs__scroll-button"
           type="button"
           aria-label="Scroll tabs left"
@@ -201,7 +202,7 @@ export function Tabs({
           onClick={() => scroll(-1)}
         >
           <ChevronLeft aria-hidden="true" focusable="false" />
-        </button>
+        </Button>
       )}
       <div
         className="cmt-tabs__viewport"
@@ -240,7 +241,7 @@ export function Tabs({
         </div>
       </div>
       {overflow.hasOverflow && (
-        <button
+        <Button
           className="cmt-tabs__scroll-button"
           type="button"
           aria-label="Scroll tabs right"
@@ -248,7 +249,7 @@ export function Tabs({
           onClick={() => scroll(1)}
         >
           <ChevronRight aria-hidden="true" focusable="false" />
-        </button>
+        </Button>
       )}
     </div>
   );

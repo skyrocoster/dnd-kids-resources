@@ -2,6 +2,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import * as api from "../../../api/client";
+import type { LootBundle, Weapon } from "../../../api/types";
 import { AddItemPanel } from "../AddItemPanel";
 import { AddWeaponPanel } from "../AddWeaponPanel";
 import { LootBundleEditor } from "../LootBundleEditor";
@@ -204,7 +205,7 @@ describe("LootBundleEditor", () => {
 
   it('shows "Value pending" for weapons without a price', async () => {
     vi.spyOn(api, "listItems").mockResolvedValue([]);
-    vi.spyOn(api, "listWeapons").mockResolvedValue([{ id: 2, name: "Longsword" }] as any);
+    vi.spyOn(api, "listWeapons").mockResolvedValue([{ id: 2, name: "Longsword" } as Weapon]);
     const user = userEvent.setup();
     render(<LootBundleEditor onClose={() => {}} onSaved={() => {}} />);
 
@@ -246,7 +247,7 @@ describe("LootBundleEditor Dialog contract", () => {
   });
 
   it("renders with the expected title for edit mode", () => {
-    const existing: any = { id: 1, name: "Chest", gold: 0, contents: [] };
+    const existing: LootBundle = { id: 1, name: "Chest", gold: 0, contents: [] };
     render(<LootBundleEditor bundle={existing} onClose={() => {}} onSaved={() => {}} />);
     expect(screen.getByRole("dialog", { name: "Edit Loot Bundle: Chest" })).toBeInTheDocument();
   });

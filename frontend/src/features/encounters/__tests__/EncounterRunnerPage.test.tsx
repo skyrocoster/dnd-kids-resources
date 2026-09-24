@@ -178,6 +178,31 @@ describe("EncounterRunnerPage", () => {
     expect(card.className).toContain("combatant-card-critical");
   });
 
+  it("combatant name edits stay live and save empty and raw whitespace values", async () => {
+    const updateSpy = await renderRunnerForSetHp();
+    const nameInput = within(cardByName("Goblin")).getByLabelText("Combatant name");
+
+    fireEvent.change(nameInput, { target: { value: "" } });
+    expect(nameInput).toHaveValue("");
+    expect(updateSpy).not.toHaveBeenCalled();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(600);
+    });
+    expect(updateSpy).toHaveBeenCalledTimes(1);
+    expect(updateSpy.mock.calls[0][1].creatures?.[0].name).toBe("");
+
+    fireEvent.change(nameInput, { target: { value: "  Goblin Boss  " } });
+    expect(nameInput).toHaveValue("  Goblin Boss  ");
+    expect(updateSpy).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(600);
+    });
+    expect(updateSpy).toHaveBeenCalledTimes(2);
+    expect(updateSpy.mock.calls[1][1].creatures?.[0].name).toBe("  Goblin Boss  ");
+  });
+
   it("Set HP Apply applies the entered value and closes the panel", async () => {
     await renderRunnerForSetHp();
     const card = cardByName("Goblin");
@@ -249,7 +274,7 @@ describe("EncounterRunnerPage", () => {
     await renderRunnerForSetHp();
     const card = cardByName("Goblin");
     fireEvent.click(within(card).getByText("Set…"));
-    const input = screen.getByLabelText("Set HP");
+    const input = screen.getByLabelText("Set HP") as HTMLInputElement;
 
     fireEvent.change(input, { target: { value: "1e999" } });
     if (input.value !== "1e999") {

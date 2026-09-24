@@ -243,7 +243,11 @@ describe("MapLabEditorPage", () => {
     fireEvent.click(screen.getByRole("button", { name: /delete door/i }));
     expect(container.querySelector(".maplab-fixture-form")).not.toBeInTheDocument();
     expect(screen.getByText("Deleted door.")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Undo deletion" }));
+    const undoDeletion = screen.getByRole("button", { name: "Undo deletion" });
+    expect(undoDeletion).toHaveAttribute("type", "button");
+    expect(undoDeletion.className).toBe("");
+    expect(undoDeletion).not.toHaveClass("btn");
+    fireEvent.click(undoDeletion);
     expect(container.querySelector(".maplab-door")).toBeInTheDocument();
   });
 

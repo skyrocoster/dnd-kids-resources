@@ -110,6 +110,8 @@ import type {
   GetEncounterData,
   GetEncounterErrors,
   GetEncounterResponses,
+  GetHealthData,
+  GetHealthResponses,
   GetIncomingGatewaysData,
   GetIncomingGatewaysErrors,
   GetIncomingGatewaysResponses,
@@ -1396,6 +1398,19 @@ export const revealCells = <ThrowOnError extends boolean = false>(
       "Content-Type": "application/json",
       ...options.headers,
     },
+  });
+
+/**
+ * Get Health
+ *
+ * Readiness endpoint for tooling (e2e servers, healthchecks); no database access.
+ */
+export const getHealth = <ThrowOnError extends boolean = false>(
+  options?: Options<GetHealthData, ThrowOnError>,
+): RequestResult<GetHealthResponses, unknown, ThrowOnError> =>
+  (options?.client ?? client).get<GetHealthResponses, unknown, ThrowOnError>({
+    url: "/api/health",
+    ...options,
   });
 
 /**

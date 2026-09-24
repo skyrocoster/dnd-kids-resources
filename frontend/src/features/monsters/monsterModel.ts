@@ -45,8 +45,9 @@ export function formatHp(monster: Monster): string | null {
 }
 
 export function formatSpeed(monster: Monster): string | null {
-  if (!monster.speed.length) return null;
-  return monster.speed
+  const speed = monster.speed ?? [];
+  if (speed.length === 0) return null;
+  return speed
     .map((entry) => {
       const base = entry.mode === "walk" ? `${entry.feet} ft.` : `${entry.mode} ${entry.feet} ft.`;
       const hover = entry.hover ? " (hover)" : "";
@@ -57,9 +58,10 @@ export function formatSpeed(monster: Monster): string | null {
 
 export function formatSenses(monster: Monster): string | null {
   const parts: string[] = [];
-  if (monster.senses.length) {
+  const senses = monster.senses ?? [];
+  if (senses.length > 0) {
     parts.push(
-      ...monster.senses.map((s) => {
+      ...senses.map((s) => {
         const note = s.note ? ` (${s.note})` : "";
         return `${s.type} ${s.range} ft.${note}`;
       }),
@@ -71,8 +73,10 @@ export function formatSenses(monster: Monster): string | null {
   return parts.length ? parts.join(", ") : null;
 }
 
-export function formatDamageList(modifiers: Monster["damage_resistances"]): string | null {
-  if (!modifiers.length) return null;
+export function formatDamageList(
+  modifiers: Monster["damage_resistances"] | null | undefined,
+): string | null {
+  if (!modifiers?.length) return null;
   return modifiers
     .map((d) => {
       const note = d.note ? ` (${d.note})` : "";
@@ -101,13 +105,13 @@ export interface DictEntry {
 }
 
 export function formatSavingThrows(monster: Monster): DictEntry[] {
-  return Object.entries(monster.saving_throws)
+  return Object.entries(monster.saving_throws ?? {})
     .filter(([, value]) => value != null)
     .map(([key, value]) => ({ label: humanizeKey(key), value: signedBonus(value) }));
 }
 
 export function formatSkills(monster: Monster): DictEntry[] {
-  return Object.entries(monster.skills)
+  return Object.entries(monster.skills ?? {})
     .filter(([, value]) => value != null)
     .map(([key, value]) => ({ label: humanizeKey(key), value: signedBonus(value) }));
 }
@@ -115,8 +119,8 @@ export function formatSkills(monster: Monster): DictEntry[] {
 /** Describe a feature as display text (name + prose). */
 export function describeFeature(feature: {
   name: string;
-  description: string | null;
-  attack: unknown;
+  description?: string | null;
+  attack?: unknown;
 }): string {
   if (!feature.description) return feature.name;
   return `${feature.name}: ${feature.description}`;
@@ -125,7 +129,8 @@ export function describeFeature(feature: {
 /** Identity line: "Medium humanoid, chaotic evil" or null. */
 export function identityLine(monster: Monster): string | null {
   const parts: string[] = [];
-  if (monster.sizes.length) parts.push(monster.sizes.join(" or "));
+  const sizes = monster.sizes ?? [];
+  if (sizes.length > 0) parts.push(sizes.join(" or "));
   if (monster.creature_type) parts.push(monster.creature_type.category);
   if (monster.alignment) parts.push(monster.alignment);
   return parts.length ? parts.join(", ") : null;

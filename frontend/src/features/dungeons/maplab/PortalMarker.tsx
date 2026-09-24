@@ -13,7 +13,8 @@ import {
   type MapPortal,
   type SessionFixtureState,
 } from "../../../model/maplabModel";
-import { onSquareMarkerGeometry, MarkerHitArea, MarkerGlyph } from "../../../map/markerShape";
+import { onSquareMarkerGeometry } from "../../../map/markerShapeModel";
+import { MarkerHitArea, MarkerGlyph } from "../../../map/markerShape";
 
 const PORTAL_IDENTITY_TOKEN = "--md-primary";
 

@@ -56,7 +56,9 @@ export function ConditionPicker({ conditions, selected, onChange }: ConditionPic
             <Popover.Popup
               className="condition-picker-panel"
               aria-label="Condition options"
-              finalFocus={(closeType) => (closeType === "keyboard" ? triggerRef : false)}
+              finalFocus={(closeType) =>
+                closeType === "keyboard" ? triggerRef.current : undefined
+              }
             >
               {options.length === 0 ? (
                 <p className="encounter-editor-empty">No conditions available.</p>

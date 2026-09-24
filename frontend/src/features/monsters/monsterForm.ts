@@ -1,4 +1,10 @@
-import type { CreatureSize, Monster, MonsterInput, MovementMode } from "../../api/types";
+import {
+  completeMonsterFeatures,
+  type CreatureSize,
+  type Monster,
+  type MonsterInput,
+  type MovementMode,
+} from "../../api/types";
 
 export interface MonsterFormState {
   name: string;
@@ -104,7 +110,7 @@ function textToKeyedNumbers(text: string): Record<string, number> {
   return result;
 }
 
-function damageModifiersToText(mods: { damage_type: string; note: string | null }[]): string {
+function damageModifiersToText(mods: { damage_type: string; note?: string | null }[]): string {
   return mods.map((m) => (m.note ? `${m.damage_type}: ${m.note}` : m.damage_type)).join("\n");
 }
 
@@ -123,7 +129,7 @@ function textToDamageModifiers(text: string): { damage_type: string; note: strin
     });
 }
 
-function sensesToText(senses: { type: string; range: number; note: string | null }[]): string {
+function sensesToText(senses: { type: string; range: number; note?: string | null }[]): string {
   return senses
     .map((s) => {
       const parts = [`${s.type} ${s.range} ft.`];
@@ -221,22 +227,29 @@ export function monsterToFormState(monster: Monster): MonsterFormState {
         }
       : {}
   ) as Record<string, number | null>;
+  const features = completeMonsterFeatures(monster.features);
+  const damageResistances = monster.damage_resistances ?? [];
+  const damageImmunities = monster.damage_immunities ?? [];
+  const damageVulnerabilities = monster.damage_vulnerabilities ?? [];
+  const conditionImmunities = monster.condition_immunities ?? [];
+  const senses = monster.senses ?? [];
+  const languages = monster.languages ?? [];
 
   return {
     name: monster.name || "",
-    size: monster.sizes.join(", "),
+    size: (monster.sizes ?? []).join(", "),
     creatureType: monster.creature_type?.category || "",
     creatureTags: (monster.creature_type?.tags || []).join(", "),
     alignment: monster.alignment || "",
     family: monster.family || "",
-    aliases: monster.aliases.join(", "),
+    aliases: (monster.aliases ?? []).join(", "),
 
     acValue: monster.ac != null ? String(monster.ac.value) : "",
     acNote: monster.ac?.note || "",
     hpAverage: monster.hp != null ? String(monster.hp.average) : "",
     hpFormula: monster.hp?.formula || "",
 
-    speedText: monster.speed
+    speedText: (monster.speed ?? [])
       .map((s) => {
         const base = s.mode === "walk" ? `${s.feet}` : `${s.mode} ${s.feet}`;
         const hover = s.hover ? " (hover)" : "";
@@ -256,45 +269,41 @@ export function monsterToFormState(monster: Monster): MonsterFormState {
     skillsText: dictToText(monster.skills),
     passivePerception: monster.passive_perception != null ? String(monster.passive_perception) : "",
 
-    damageResistances: damageModifiersToText(monster.damage_resistances),
-    damageImmunities: damageModifiersToText(monster.damage_immunities),
-    damageVulnerabilities: damageModifiersToText(monster.damage_vulnerabilities),
-    conditionImmunities: monster.condition_immunities.join("\n"),
+    damageResistances: damageModifiersToText(damageResistances),
+    damageImmunities: damageModifiersToText(damageImmunities),
+    damageVulnerabilities: damageModifiersToText(damageVulnerabilities),
+    conditionImmunities: conditionImmunities.join("\n"),
 
-    sensesText: sensesToText(monster.senses),
+    sensesText: sensesToText(senses),
 
-    traitsText: monster.features.traits.map((t) => `${t.name}: ${t.description || ""}`).join("\n"),
-    actionsText: monster.features.actions
+    traitsText: features.traits.map((t) => `${t.name}: ${t.description || ""}`).join("\n"),
+    actionsText: features.actions.map((t) => `${t.name}: ${t.description || ""}`).join("\n"),
+    bonusActionsText: features.bonus_actions
       .map((t) => `${t.name}: ${t.description || ""}`)
       .join("\n"),
-    bonusActionsText: monster.features.bonus_actions
+    reactionsText: features.reactions.map((t) => `${t.name}: ${t.description || ""}`).join("\n"),
+    legendaryActionsText: features.legendary_actions
       .map((t) => `${t.name}: ${t.description || ""}`)
       .join("\n"),
-    reactionsText: monster.features.reactions
-      .map((t) => `${t.name}: ${t.description || ""}`)
-      .join("\n"),
-    legendaryActionsText: monster.features.legendary_actions
-      .map((t) => `${t.name}: ${t.description || ""}`)
-      .join("\n"),
-    legendaryIntro: monster.features.legendary_intro || "",
+    legendaryIntro: features.legendary_intro || "",
     legendaryActionsPerRound:
-      monster.features.legendary_actions_per_round != null
-        ? String(monster.features.legendary_actions_per_round)
+      features.legendary_actions_per_round != null
+        ? String(features.legendary_actions_per_round)
         : "",
-    mythicActionsText: monster.features.mythic_actions
+    mythicActionsText: features.mythic_actions
       .map((t) => `${t.name}: ${t.description || ""}`)
       .join("\n"),
-    spellcastingText: monster.features.spellcasting
+    spellcastingText: features.spellcasting
       .map((s) => {
         const desc = s.description ? `\n${s.description}` : "";
-        const groups = s.groups
-          .map((g) => `${g.label}: ${g.spells.map((sp) => sp.name).join(", ")}`)
+        const groups = (s.groups ?? [])
+          .map((g) => `${g.label}: ${(g.spells ?? []).map((sp) => sp.name).join(", ")}`)
           .join("\n");
         return `${s.name}${desc}${groups ? `\n${groups}` : ""}`;
       })
       .join("\n---\n"),
 
-    languages: monster.languages.join(", "),
+    languages: languages.join(", "),
     audioPath: monster.audio_path || "",
 
     cr: monster.cr || "",

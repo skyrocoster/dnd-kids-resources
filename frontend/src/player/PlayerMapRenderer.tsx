@@ -141,7 +141,7 @@ export function PlayerMapRenderer({
     if (partyRoomId == null) return null;
     for (const f of floors) {
       const roomsHere = roomsOnZ(ml, f.z);
-      const room = roomsHere.find((r: any) => r.room_id === partyRoomId);
+      const room = roomsHere.find((candidate) => candidate.room_id === partyRoomId);
       if (room) {
         const cells = absoluteCells(room) as [number, number][];
         if (cells.length === 0) return null;
@@ -155,7 +155,7 @@ export function PlayerMapRenderer({
           minY = Math.min(minY, y);
           maxY = Math.max(maxY, y);
         }
-        return { room: room as any, z: f.z, bounds: { minX, maxX, minY, maxY }, cells };
+        return { room, z: f.z, bounds: { minX, maxX, minY, maxY }, cells };
       }
     }
     return null;
